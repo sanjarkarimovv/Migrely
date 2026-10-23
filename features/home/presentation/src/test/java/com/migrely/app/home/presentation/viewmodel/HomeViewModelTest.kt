@@ -351,6 +351,15 @@ class HomeViewModelTest :
         assertEquals(HomePresentationNavigationEvent.OnViewAttackDetails("a"), event.await())
     }
 
+    @Test
+    fun `When adding a past attack then asks to navigate there`() = runTest {
+        val event = async(start = UNDISPATCHED) { classUnderTest.navigationEvent.first() }
+
+        classUnderTest.onAddPastAttackAction()
+
+        assertEquals(HomePresentationNavigationEvent.OnAddPastAttack, event.await())
+    }
+
     private fun givenToday(today: TodayDomainModel) {
         getTodayUseCase.givenSuccessfulExecution(TodayResultDomainModel.Loaded(today))
     }

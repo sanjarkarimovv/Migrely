@@ -6,10 +6,13 @@ import androidx.navigation.Navigator
 import com.migrely.app.architecture.presentation.navigation.PresentationNavigationEvent
 import com.migrely.app.architecture.ui.navigation.exception.UnhandledNavigationException
 import com.migrely.app.home.presentation.navigation.HomePresentationNavigationEvent
+import com.migrely.app.ui.main.route.AddPastAttack
 import com.migrely.app.ui.main.route.AttackDetails
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
@@ -37,6 +40,24 @@ class HomeNavigationEventDestinationMapperTest {
             anyOrNull<NavOptions>(),
             anyOrNull<Navigator.Extras>()
         )
+    }
+
+    @Test
+    fun `Given adding a past attack when toUi then opens the add screen once`() {
+        // Given
+        val navController: NavController = mock()
+
+        // When
+        classUnderTest.toUi(HomePresentationNavigationEvent.OnAddPastAttack).navigate(navController)
+
+        // Then
+        val options = argumentCaptor<NavOptions>()
+        verify(navController).navigate(
+            eq(AddPastAttack),
+            options.capture(),
+            anyOrNull<Navigator.Extras>()
+        )
+        assertTrue(options.firstValue.shouldLaunchSingleTop())
     }
 
     @Test(expected = UnhandledNavigationException::class)
