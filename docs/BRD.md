@@ -310,6 +310,10 @@ Boshqa davlatlarda narxni Play avtomatik konvertatsiya qiladi. Hindiston, Brazil
 | EC-ATK-12 | Oʻzi qoʻshadigan teglar chegarasi | Nom 1–40 belgi, takror nom (katta-kichik harf farqisiz) qoʻshilmaydi, har turdan koʻpi bilan 100 ta | ✅ |
 | EC-ATK-13 | Izoh 1 000 belgidan uzun | Kiritish 1 000 belgida toʻxtaydi, hisoblagich koʻrinadi | ✅ |
 | EC-ATK-14 | Oʻchirilgan xurujni qaytarish | Faqat 5 soniyalik Undo. Keyin butunlay oʻchadi | ✅ |
+| EC-ATK-15 | Yangi yoki oʻzgartirilgan vaqt bir nechta xuruj bilan ustma-ust tushadi | Hammasi vaqtlari bilan sanab koʻrsatiladi. "Birlashtirish" ularning hammasini bitta xurujga qoʻshadi (D27) | ✅ |
+| EC-ATK-16 | Birlashtirilgan izohlar 1 000 belgidan oshadi | Izohlar vaqt tartibida boʻsh qator bilan ulanadi va 1 000 belgida kesiladi, kesilgan qism eng oxirgi izohning oxiri boʻladi (EC-ATK-13) | ✅ |
+| EC-ATK-17 | "Add migraine" yoki "Merge them" ikki marta tez bosildi | Faqat bitta xuruj yaratiladi yoki bir marta birlashtiriladi: tugma natija kelguncha bosilmaydi, saqlash esa bitta tranzaksiyada ustma-ust tushishni qayta tekshiradi | ✅ |
+| EC-ATK-18 | Vaqt butun daqiqada tanlanadi, saqlangan vaqtda esa soniyalar bor, va ular bir daqiqadan kamroq ustma-ust tushadi | Bu ustma-ust tushish emas: vaqt qoʻshni xurujning chegarasiga yopishtiriladi (ular bir lahzada tegib turadi) | ✅ |
 
 ### 9.2 Vaqt
 
@@ -527,7 +531,7 @@ Ish sikli: `/opsx:explore` (ixtiyoriy) → `/opsx:propose <nom>` → review → 
 | 1 | `add-attack-logging` — tez boshlash/tugatish, ogʻriq kuchi, "qorongʻi xona", bugungi osmon, app shortcut, Room asosi | ATK-F1, F2, F4, F6, EC-ATK-01, 02, 03, 06, 07, 08, 10, EC-TIM-01…03, SAF-F3, EC-UX-07, 08, 10, 12, 13 |
 | 1a | `refine-messages-and-type` — brend shrifti (Fraunces va Figtree), barcha holatlarni hisobga olgan maxsus snackbar | 18.5, EC-UX-01, 03, 04, 08, 16, 17, ATK-F1, F2, D20, D21 |
 | 1b | `add-attack-details` — xuruj tafsilotlari ekrani (vaqtlar, ogʻriq nuqtalari, joylashuv, belgilar, triggerlar, taʼsir, izoh), oʻz teglari, Undo bilan oʻchirish, birinchi 10 ball kartasi | ATK-F4, F5, F6, F7, EC-ATK-03, 04, 09…14, EC-TIM-04, 05, SAF-F2 |
-| 1c | `add-past-attacks` — oʻtgan xurujni qoʻshish, ustma-ust tushganda birlashtirish yoki vaqtni oʻzgartirish | ATK-F3, EC-ATK-03, 04, 05 |
+| 1c | `add-past-attacks` — oʻtgan xurujni qoʻshish, ustma-ust tushganda birlashtirish yoki vaqtni oʻzgartirish | ATK-F3, EC-ATK-03, 04, 05, 15…18, D26–D28 |
 | 2 | `add-attack-history` | HIS-F*, EC-HIS-* |
 | 3 | `add-medication-tracking` | MED-F*, EC-MED-* |
 | 4 | `add-day-markers` | DAY-F* |
@@ -640,6 +644,9 @@ Ilova 2023-yil 13-noyabrdan oldin ochilgan akkauntda chiqadi, shuning uchun 12 t
 | D23 | Oʻchirilgan xuruj Undo oynasi davomida yashirin turadi (soft delete) va 2 daqiqadan keyin butunlay oʻchiriladi. 2 daqiqa Android'dagi eng uzun "Harakat qilish vaqti". Foydalanuvchi uchun u 5 soniyalik Undo'dan keyin yoʻq | PO | 2026-10-23 |
 | D24 | "Qorongʻi xona"da xira "Details" havolasi bor. Koʻp kun davom etadigan xurujda (P2) belgilarni xuruj tugashini kutmasdan yozish mumkin | PO | 2026-10-23 |
 | D25 | Tayyor joylashuv, belgi va triggerlar kodda barqaror kalitlar bilan turadi, foydalanuvchining oʻz teglari bazada saqlanadi | PO | 2026-10-23 |
+| D26 | "Add a past migraine" havolasi faqat bosh ekranning oddiy rejimida, "Migraine started" ostida turadi ("qorongʻi xona"da yoʻq, G4). Oʻtgan xuruj ekranida faqat boshlanish va tugash bor: standart qiymat 2 soat oldin va hozir, daqiqagacha yaxlitlangan. Boshlanish oʻzgarsa, davomiylik saqlanadi (kalendardagi kabi). Qoʻshilgandan keyin tafsilotlar ekrani ochiladi. Oʻtgan xuruj doim tugagan boʻladi: hali davom etayotgan xuruj "Migraine started" va "Started earlier?" orqali yoziladi | PO | 2026-10-23 |
+| D27 | Birlashtirish qoidalari: bitta xuruj qoladi (tahrirlanayotgani, yangi xurujda esa eng birinchi boshlangani). Vaqt hamma xurujlar va ogʻriq nuqtalarini qamraydi va hech qachon qisqarmaydi. Ogʻriq nuqtalari va teglar qoʻshiladi, taʼsirning eng yuqorisi olinadi, izohlar vaqt tartibida ulanadi (EC-ATK-16). Birortasi davom etayotgan boʻlsa, natija ham davom etayotgan boʻladi. Qolganlari bitta tranzaksiyada oʻchiriladi | PO | 2026-10-23 |
+| D28 | Birlashtirishda Undo yoʻq. Foydalanuvchi qaysi xurujlar bilan ustma-ust tushganini koʻrib, "Merge them"ni oʻzi tanlaydi va kiritilgan maʼlumot yoʻqolmaydi (faqat pastroq taʼsir darajasi va 1 000 belgidan ortiq izoh). Keyin "Migraines merged." xabari chiqadi. Beta'da xato birlashtirishlar koʻp boʻlsa, Undo qayta koʻriladi | PO | 2026-10-23 |
 
 ---
 
@@ -678,7 +685,7 @@ Ilova 2023-yil 13-noyabrdan oldin ochilgan akkauntda chiqadi, shuning uchun 12 t
 - Yuqorida bugungi osmon kartasi bor. Bugun hali belgilanmagan boʻlsa: "Calm so far today".
 - Ostida oylik kalendar. Har bir kun kichik osmon: ochiq, tumanli, bulutli yoki boʻron (EC-UX-09).
 - Taraqqiyot xabari: "3 fewer migraine days than September" (EC-UX-14).
-- Pastda bitta katta tugma: "Migraine started" va kichik havola "Add a past attack".
+- Pastda bitta katta tugma: "Migraine started" va kichik havola "Add a past migraine" (D26).
 - Shifokor uchun bu aslida ogʻirlik boʻyicha issiqlik xaritasi, faqat insoniy koʻrinishda. PDF hisobotda ham xuddi shu osmonlar ishlatiladi.
 
 **B. "Qorongʻi xona" (xuruj rejimi)**
