@@ -1,0 +1,40 @@
+package com.migrely.app.designsystem.snackbar
+
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.PathParser
+import androidx.compose.ui.unit.dp
+
+// Icons are drawn in code from path data (BRD D19); the shapes follow Material Symbols (Apache 2.0) on a 24-unit grid.
+internal object SnackbarIcons {
+    private const val CIRCLE =
+        "M12,2C6.48,2 2,6.48 2,12s4.48,10 10,10 10,-4.48 10,-10S17.52,2 12,2z" +
+            "M12,20c-4.41,0 -8,-3.59 -8,-8s3.59,-8 8,-8 8,3.59 8,8 -3.59,8 -8,8z"
+
+    val Confirmation: ImageVector =
+        icon("Confirmation", "M16.59,7.58L10,14.17l-3.59,-3.58L5,12l5,5 8,-8z$CIRCLE")
+    val Information: ImageVector = icon("Information", "M11,7h2v2h-2zM11,11h2v6h-2z$CIRCLE")
+    val Error: ImageVector = icon("Error", "M11,15h2v2h-2zM11,7h2v6h-2z$CIRCLE")
+    val Close: ImageVector = icon(
+        "Close",
+        "M19,6.41L17.59,5 12,10.59 6.41,5 5,6.41 10.59,12 5,17.59 6.41,19 12,13.41 17.59,19 19,17.59 13.41,12z"
+    )
+
+    fun forTone(tone: SnackbarTone): ImageVector = when (tone) {
+        SnackbarTone.Confirmation -> Confirmation
+        SnackbarTone.Information -> Information
+        SnackbarTone.Error -> Error
+    }
+
+    private fun icon(name: String, pathData: String): ImageVector = ImageVector.Builder(
+        name = name,
+        defaultWidth = 24.dp,
+        defaultHeight = 24.dp,
+        viewportWidth = 24f,
+        viewportHeight = 24f
+    ).addPath(
+        pathData = PathParser().parsePathString(pathData).toNodes(),
+        fill = SolidColor(Color.Black)
+    ).build()
+}
