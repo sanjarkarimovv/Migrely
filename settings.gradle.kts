@@ -19,6 +19,7 @@ dependencyResolutionManagement {
 rootProject.name = "Migrely"
 include(":app")
 include(":coroutine")
+include(":designsystem")
 
 setOf(
     "ui",

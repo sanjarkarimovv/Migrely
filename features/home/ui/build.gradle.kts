@@ -52,6 +52,7 @@ detekt {
 
 dependencies {
     implementation(projects.features.home.presentation)
+    implementation(projects.designsystem)
     implementation(projects.architecture.ui)
     implementation(projects.architecture.presentation)
 

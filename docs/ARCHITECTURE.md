@@ -44,8 +44,9 @@ target API 37, whichever comes first. Until then, do not mix AGP 9 idioms into b
 | `:architecture:ui` | Android | `com.migrely.app.architecture.ui` | `BaseComposeHolder`, `UiDestination`, `NavigationEventDestinationMapper`, `ScreenEnterObserver`, notification contracts |
 | `:architecture:instrumentation-test` | Android | `com.migrely.app.test` | E2E test helpers (first used by a feature change) |
 | `:coroutine` | JVM | `com.migrely.app.coroutine` | `CoroutineContextProvider` |
+| `:designsystem` | Android | `com.migrely.app.designsystem.{theme,sky,motion}` | `MigrelyTheme`, `MigrelyColors`, `SkyCanvas` / `SkyAppearance`, `rememberReduceMotion()`. Compose only; depends on no feature, presentation or domain module |
 | `:datasource:source` | JVM | `com.migrely.app.datasource.<resource>.{datasource,model,exception}` | datasource interfaces, `*DataModel` / `*LocalModel`, `*DataException` |
-| `:datasource:implementation` | JVM as generated; becomes an Android library with the first Android-backed datasource (Room, change 1) | `com.migrely.app.datasource.<resource>.{datasource,...}` | `*DataSourceImpl`, Room/DataStore/SDK code, `*ApiModel` / `*LocalModel` mappers |
+| `:datasource:implementation` | Android (Room via KSP) | `com.migrely.app.datasource.<resource>.{datasource,model,dao,mapper}` and `com.migrely.app.datasource.database` | `*DataSourceImpl`, Room entities (`*LocalModel`), DAOs, `MigrelyDatabase`, `*LocalMapper` |
 | `:features:<feature>:domain` | JVM | `com.migrely.app.<feature>.domain` | `model/`, `repository/` (interfaces), `usecase/`, `exception/` |
 | `:features:<feature>:presentation` | JVM | `com.migrely.app.<feature>.presentation` | `viewmodel/`, `model/`, `navigation/`, `mapper/` |
 | `:features:<feature>:data` | JVM | `com.migrely.app.<feature>.data` | `repository/` (implementations), `mapper/` |
@@ -94,6 +95,20 @@ None. The app declares no `INTERNET` permission. The billing (RevenueCat) and an
 only code allowed to use the network. The changes that add them also add `INTERNET` and update the `app-shell` spec.
 Health data must never be passed to either SDK.
 
+## 6a. Persistence binding (Room)
+
+- One database, `MigrelyDatabase` in `:datasource:implementation`, provided as a singleton by `:app/di/DatabaseModule`.
+- Entities are `*LocalModel` classes, used only inside `:datasource:implementation`. `*LocalMapper` classes turn them
+  into the `*DataModel`s exposed by `:datasource:source`.
+- Times are stored as epoch milliseconds plus the IANA zone id where the event started (BRD EC-TIM-01).
+- Every schema version is exported to `datasource/implementation/schemas` and committed. Migrations are written and
+  tested; `fallbackToDestructiveMigration` is forbidden (BRD EC-STO-01).
+- Rules that must be atomic (for example "only one attack in progress") run in one DAO `@Transaction`.
+- `SQLiteFullException` becomes `StorageFullDataException`. Any other `SQLiteException` becomes
+  `DatabaseDataException`. Repositories turn both into failure values (section 7).
+- DAO SQL is covered by instrumented tests (`connectedDebugAndroidTest` on the `Migrely_API_36` emulator). Datasource
+  implementations are unit-tested with a mocked DAO.
+
 ## 7. Failure routing (skill rule 9)
 
 `UseCaseExecutor` catches only exceptions thrown synchronously by `execute()`. `BackgroundExecutingUseCase` runs
@@ -113,6 +128,9 @@ Health data must never be passed to either SDK.
 3. `executeInBackground` never throws. Each repository has a unit test that proves a failure comes back as a value.
 4. `onException` is used only for synchronous use cases.
 5. `ContinuousExecutingUseCase` flows catch inside the repository and emit failure values.
+6. `ContinuousExecutingUseCase` launches in a scope that is never cancelled, and ViewModels are unscoped. Use it only with
+   a cancellable scope. Screens load data with one-shot use cases on `onEnter`, on `onResume()` and after every
+   action (change `add-attack-logging`, design D11).
 
 ## 8. UI event collection and state
 
@@ -137,9 +155,13 @@ Health data must never be passed to either SDK.
 
 ## 10. Theme and resources
 
-- The theme lives in `:app/ui/theme`. The app is always dark: a fixed `darkColorScheme`, no dynamic colour, no pure
-  white anywhere (BRD EC-UX-01).
-- Feature previews wrap content in `MaterialTheme(colorScheme = darkColorScheme())`.
+- The theme lives in `:designsystem` (`MigrelyTheme`, `MigrelyColors`). The app is always dark: a fixed
+  `darkColorScheme`, no dynamic colour, no pure white anywhere (BRD EC-UX-01).
+- Feature previews wrap content in `MigrelyTheme`.
+- Feature UI mappers convert their own UI models into design-system parameters (for example `SkyAppearance`). No
+  feature model is passed into `:designsystem`.
+- Motion: every animation checks `rememberReduceMotion()` (true when the system animator scale is 0) and snaps
+  instead of animating (BRD EC-UX-08). Animations never flash more than three times per second (EC-UX-07).
 - User-facing strings live in the owning feature's `ui` module resources. Screens never hard-code strings.
 
 ## 11. Testing
@@ -174,4 +196,5 @@ The same command runs in `.github/workflows/ci.yml`. A change is done when:
 | Features grouped under `features/` | `cag` layout | permanent |
 | `minSdk` 26 instead of 24 | BRD section 10 | permanent |
 | `ViewModelObserver` collects in `LaunchedEffect` | skill `bindings/nav2.md` | permanent |
+| `:designsystem` module holds the theme (the sample keeps it in `:app`) | home and history both draw skies; profile section 3 allows a shared module with its own reason | permanent |
 | Konsist rule adaptations | recorded here when made | — |

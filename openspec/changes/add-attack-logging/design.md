@@ -62,7 +62,7 @@ Each use case has one single-function repository interface (skill rule 3):
 
 | Use case | Kind | Rule it owns |
 |---|---|---|
-| `ObserveTodayUseCase` | continuous | Classifies today. `longAttackCheckDue` = not disabled and `now − (confirmedAt ?: start) ≥ 72 h` |
+| `GetTodayUseCase` | background | Classifies today. `longAttackCheckDue` = not disabled and `now − (confirmedAt ?: start) ≥ 72 h` |
 | `StartAttackUseCase` | background | Delegates to an atomic start-if-none in the repository (D5) |
 | `RecordIntensityUseCase(level)` | background | Mild 3 / Moderate 6 / Severe 9. Replaces the last point if it is less than 2 minutes old |
 | `MoveAttackStartEarlierUseCase(minutes)` | background | Rejects a new start earlier than the previous attack's end |
@@ -92,18 +92,20 @@ mapper classes and translates datasource exceptions into the result values:
 
 A unit test for each repository function proves that failures come back as values.
 
-`ObserveTodayUseCase` streams from `HomeRepository.observeToday()`. That flow combines three sources:
+`GetTodayUseCase` reads `HomeRepository.today()`, a one-shot snapshot of three things:
 - the attack in progress;
-- the attacks touching today;
-- a date ticker from the clock datasource, so the card resets at midnight.
+- the attacks touching today (device zone);
+- the current time.
+
+It is not a continuous flow. See D11 for why.
 
 ### D5. Datasources: Room for attacks, a clock resource
 
 **`:datasource:source`** (JVM). Package `com.migrely.app.datasource.<resource>.{datasource,model,exception}`:
 
 - `AttackDataSource`:
-  - `observeInProgress()`
-  - `observeTouching(from, to)`
+  - `inProgress()`
+  - `endedTouching(from, to)`
   - `startIfNoneInProgress(start, zone): AttackStartDataModel`
   - `addIntensityPoint`
   - `replaceLatestIntensityPoint`
@@ -113,8 +115,7 @@ A unit test for each repository function proves that failures come back as value
   - `reopen`
   - `delete`
   - `updateLongAttackCheck`
-- `ClockDataSource`: `now()`, `zone()`, `observeDate(): Flow<LocalDate>`. The flow emits now and again at each local
-  midnight.
+- `ClockDataSource`: `now()` and `zone()`.
 - `AttackDataModel`, `IntensityPointDataModel`, `StorageFullDataException`, `DatabaseDataException`.
 
 **`:datasource:implementation`** becomes an Android library with Room 2.8.5 via KSP and the Room Gradle plugin:
@@ -176,7 +177,9 @@ There are no navigation events yet.
 
 | Function | Purpose |
 |---|---|
-| `onEnter(startAttackRequested)` | starts observing today and, if requested by the shortcut, starts an attack |
+| `onEnter(startAttackRequested)` | if requested by the shortcut, starts an attack; then loads today |
+| `onResume()` | loads today (rotation, return from background, the 72-hour check "when the app is opened") |
+| `onDateChanged()` | loads today after local midnight; called by the UI's 30-second ticker when the local date differs |
 | `onStartAttackAction()` | start |
 | `onIntensityAction(level)` | record intensity |
 | `onMoveStartEarlierAction(minutes)` | move the start earlier |
@@ -224,12 +227,33 @@ There are no navigation events yet.
 |---|---|
 | Domain | Every use-case rule: single start, 2-minute replacement, overlap rejection, 72-hour due computation including `confirmedAt`, end-time bounds, undo guards |
 | Data | `HomeRepository` success and failure-as-value paths, plus the mappers |
-| Datasource | `AttackDataSourceImpl` with a mocked DAO (exception mapping); mappers; `ClockDataSourceImpl` midnight computation with an injected `java.time.Clock` |
+| Datasource | `AttackDataSourceImpl` with a mocked DAO (exception mapping); mappers; `ClockDataSourceImpl` with an injected `java.time.Clock` |
 | Instrumented | `AttackDaoTest` on the emulator: the transaction rules, cascade delete, the touching-range query |
 | Presentation | `HomeViewModel` for every action and notification |
 | UI | Mappers, `TimeUiFormatter`, and the navigation mapper with the new route |
 
 Konsist runs unchanged. The app is then walked through the spec scenarios on the API 36 emulator.
+
+### D11. One-shot loading instead of a continuous observation (revised during implementation)
+
+The first draft observed today through `ContinuousExecutingUseCase`. Implementation showed two defects:
+
+- **It cannot be cancelled.** The base class launches in its own `CoroutineScope(Dispatchers.Main)`, so every
+  subscription leaks.
+- **It misses rotations.** ViewModels are unscoped, as in the sample, so a rotation creates a new ViewModel. That
+  ViewModel never subscribes, because `ScreenEnterObserver` does not call `onEnter` again.
+
+The home feature therefore loads today with the one-shot `GetTodayUseCase`, the way the sample's home screen does. It
+is called:
+- after every successful action;
+- on every resume (`onResume()`, from a `LifecycleResumeEffect`);
+- after local midnight (`onDateChanged()`).
+
+The ViewModel stays stateless and nothing leaks. `ContinuousExecutingUseCase` is reserved for flows that are tied to a
+cancellable scope, recorded in profile §7.
+
+- **Alternative: an activity-retained ViewModel with a cancellable scope.** Rejected. It diverges from the sample's DI
+  shape, and the ViewModel would need to remember whether it had subscribed, which breaks skill rule 4.
 
 ## Risks / Trade-offs
 
@@ -237,9 +261,8 @@ Konsist runs unchanged. The app is then walked through the spec scenarios on the
   works with KSP 2.2.20-2.0.4. Verify with the first module build before writing DAO code.
 - **[Converting `:datasource:implementation` to Android]** → Copy the build shape of `:architecture:ui`, the
   generator's Android library template. Konsist datasource rules already expect this package layout.
-- **[Midnight ticker and time-zone changes while the app is open]** → `observeDate()` recomputes the zone at every
-  emission, and the home screen re-subscribes on resume. A zone change mid-session updates on the next resume, which is
-  acceptable.
+- **[Midnight and time-zone changes while the app is open]** → The UI's 30-second ticker compares the local date and
+  calls `onDateChanged()`. A zone change mid-session is picked up on the next resume, which is acceptable.
 - **[Snackbar timing is not exactly 5 seconds on every device]** → The undo guards in D2 keep a late undo safe.
 - **[The hand-drawn look on Canvas may read as flat]** → Deterministic jitter, plus comparing previews against the
   style frames before the change is closed.

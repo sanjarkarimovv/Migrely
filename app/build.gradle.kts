@@ -77,6 +77,7 @@ dependencies {
     debugImplementation(libs.compose.ui.tooling)
     debugImplementation(libs.compose.ui.test.manifest)
 
+    implementation(projects.designsystem)
     implementation(projects.architecture.ui)
     implementation(projects.architecture.presentation)
     implementation(projects.architecture.domain)

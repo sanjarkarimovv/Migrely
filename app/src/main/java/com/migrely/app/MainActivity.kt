@@ -13,7 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.rememberNavController
 import com.migrely.app.ui.main.AppNavHost
 import com.migrely.app.ui.main.di.AppNavHostDependencies
-import com.migrely.app.ui.theme.MigrelyTheme
+import com.migrely.app.designsystem.theme.MigrelyTheme
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
