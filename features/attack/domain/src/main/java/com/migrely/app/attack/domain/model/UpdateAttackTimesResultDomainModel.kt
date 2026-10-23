@@ -14,7 +14,8 @@ sealed interface UpdateAttackTimesResultDomainModel {
 
     data object EndBeforeStart : UpdateAttackTimesResultDomainModel
 
-    data class Overlaps(val otherStart: Instant, val otherEnd: Instant?) :
+    /** The times overlap [attacks], oldest first (BRD EC-ATK-05, EC-ATK-15). */
+    data class Overlaps(val attacks: List<AttackRangeDomainModel>) :
         UpdateAttackTimesResultDomainModel
 
     data object NotFound : UpdateAttackTimesResultDomainModel

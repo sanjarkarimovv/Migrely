@@ -5,6 +5,7 @@ import com.migrely.app.attack.domain.model.BuiltInTriggerDomainModel
 import com.migrely.app.attack.domain.model.FunctionalImpactDomainModel
 import com.migrely.app.attack.domain.model.HeadLocationDomainModel
 import com.migrely.app.attack.domain.model.TagKindDomainModel
+import com.migrely.app.attack.domain.model.TimeFieldDomainModel
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -43,5 +44,10 @@ class PresentationEnumMappersTest {
         val presentation = TagKindPresentationMapper().toPresentation(domain)
         assertEquals(domain.name, presentation.name)
         assertEquals(domain, TagKindDomainMapper().toDomain(presentation))
+    }
+
+    @Test
+    fun `Time fields keep their name`() = TimeFieldDomainModel.entries.forEach { domain ->
+        assertEquals(domain.name, TimeFieldPresentationMapper().toPresentation(domain).name)
     }
 }

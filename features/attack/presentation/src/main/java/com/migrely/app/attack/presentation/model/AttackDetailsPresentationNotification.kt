@@ -23,6 +23,9 @@ sealed interface AttackDetailsPresentationNotification : PresentationNotificatio
 
     data object TagLimitReached : AttackDetailsPresentationNotification
 
+    /** Overlapping attacks are now this one (BRD D27). */
+    data object AttacksMerged : AttackDetailsPresentationNotification
+
     data object Undone : AttackDetailsPresentationNotification
 
     data object UndoNotPossible : AttackDetailsPresentationNotification

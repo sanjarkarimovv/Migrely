@@ -6,7 +6,7 @@ import com.migrely.app.attack.domain.model.OverlapLookupResultDomainModel
 import com.migrely.app.attack.domain.model.UndoTimesChangeRequestDomainModel
 import com.migrely.app.attack.domain.model.UndoTimesChangeResultDomainModel
 import com.migrely.app.attack.domain.model.WriteResultDomainModel
-import com.migrely.app.attack.domain.repository.FindOverlappingAttackRepository
+import com.migrely.app.attack.domain.repository.FindOverlappingAttacksRepository
 import com.migrely.app.attack.domain.repository.GetAttackDetailsRepository
 import com.migrely.app.attack.domain.repository.GetCurrentTimeRepository
 import com.migrely.app.attack.domain.repository.RestoreAttackTimesRepository
@@ -16,7 +16,7 @@ import com.migrely.app.coroutine.CoroutineContextProvider
 class UndoTimesChangeUseCase(
     private val getAttackDetailsRepository: GetAttackDetailsRepository,
     private val getCurrentTimeRepository: GetCurrentTimeRepository,
-    private val findOverlappingAttackRepository: FindOverlappingAttackRepository,
+    private val findOverlappingAttacksRepository: FindOverlappingAttacksRepository,
     private val restoreAttackTimesRepository: RestoreAttackTimesRepository,
     coroutineContextProvider: CoroutineContextProvider
 ) : BackgroundExecutingUseCase<
@@ -40,7 +40,7 @@ class UndoTimesChangeUseCase(
         val end = if (attack.isInProgress) null else request.end
         val rangeEnd = end ?: maxOf(getCurrentTimeRepository.currentTime().instant, request.start)
         when (
-            findOverlappingAttackRepository.overlappingAttack(
+            findOverlappingAttacksRepository.overlappingAttacks(
                 attack.id,
                 request.start,
                 rangeEnd

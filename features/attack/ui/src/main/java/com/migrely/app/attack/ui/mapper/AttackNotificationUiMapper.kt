@@ -15,7 +15,8 @@ import com.migrely.app.attack.ui.notification.AttackDetailsEventPresenter
 
 class AttackNotificationUiMapper(
     private val attackDetailsEventPresenter: AttackDetailsEventPresenter,
-    private val timeFieldUiMapper: TimeFieldUiMapper
+    private val timeFieldUiMapper: TimeFieldUiMapper,
+    private val attackRangeUiMapper: AttackRangeUiMapper
 ) : NotificationUiMapper<AttackDetailsPresentationNotification> {
     override fun toUi(notification: AttackDetailsPresentationNotification): UiNotification {
         val event = when (notification) {
@@ -57,6 +58,9 @@ class AttackNotificationUiMapper(
             AttackDetailsPresentationNotification.TagLimitReached ->
                 AttackDetailsEventUiModel.Message(AttackMessageUiModel.TagLimitReached)
 
+            AttackDetailsPresentationNotification.AttacksMerged ->
+                AttackDetailsEventUiModel.Message(AttackMessageUiModel.AttacksMerged)
+
             AttackDetailsPresentationNotification.Undone ->
                 AttackDetailsEventUiModel.Message(AttackMessageUiModel.Undone)
             AttackDetailsPresentationNotification.UndoNotPossible ->
@@ -76,8 +80,11 @@ class AttackNotificationUiMapper(
     ) {
         TimeRejectionPresentationModel.InFuture -> TimeErrorReasonUiModel.InFuture
         TimeRejectionPresentationModel.EndBeforeStart -> TimeErrorReasonUiModel.EndBeforeStart
-        is TimeRejectionPresentationModel.Overlaps ->
-            TimeErrorReasonUiModel.Overlaps(reason.start.toEpochMilli(), reason.end?.toEpochMilli())
+        is TimeRejectionPresentationModel.Overlaps -> TimeErrorReasonUiModel.Overlaps(
+            attacks = reason.attacks.map(attackRangeUiMapper::toUi),
+            requestedStartEpochMillis = reason.requestedStart.toEpochMilli(),
+            requestedEndEpochMillis = reason.requestedEnd?.toEpochMilli()
+        )
     }
 
     private fun pointOf(point: IntensityPointPresentationModel) =

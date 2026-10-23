@@ -19,6 +19,9 @@ sealed interface AttackMessageUiModel : Parcelable {
     data object TagLimitReached : AttackMessageUiModel
 
     @Parcelize
+    data object AttacksMerged : AttackMessageUiModel
+
+    @Parcelize
     data object Undone : AttackMessageUiModel
 
     @Parcelize

@@ -11,7 +11,7 @@ import com.migrely.app.attack.domain.model.UndoTimesChangeRequestDomainModel
 import com.migrely.app.attack.domain.model.UndoTimesChangeResultDomainModel
 import com.migrely.app.attack.domain.model.WriteResultDomainModel
 import com.migrely.app.attack.domain.model.attackDetails
-import com.migrely.app.attack.domain.repository.FindOverlappingAttackRepository
+import com.migrely.app.attack.domain.repository.FindOverlappingAttacksRepository
 import com.migrely.app.attack.domain.repository.GetAttackDetailsRepository
 import com.migrely.app.attack.domain.repository.GetCurrentTimeRepository
 import com.migrely.app.attack.domain.repository.RestoreAttackTimesRepository
@@ -35,7 +35,7 @@ class UndoTimesChangeUseCaseTest {
     private lateinit var classUnderTest: UndoTimesChangeUseCase
     private val getAttackDetailsRepository: GetAttackDetailsRepository = mock()
     private val getCurrentTimeRepository: GetCurrentTimeRepository = mock()
-    private val findOverlappingAttackRepository: FindOverlappingAttackRepository = mock()
+    private val findOverlappingAttacksRepository: FindOverlappingAttacksRepository = mock()
     private val restoreAttackTimesRepository: RestoreAttackTimesRepository = mock()
 
     @Before
@@ -43,7 +43,7 @@ class UndoTimesChangeUseCaseTest {
         classUnderTest = UndoTimesChangeUseCase(
             getAttackDetailsRepository,
             getCurrentTimeRepository,
-            findOverlappingAttackRepository,
+            findOverlappingAttacksRepository,
             restoreAttackTimesRepository,
             CoroutineContextProvider.Default
         )
@@ -58,7 +58,7 @@ class UndoTimesChangeUseCaseTest {
 
     @Test
     fun `Given nothing overlaps the old times when undoing then restores times and points`() {
-        given(findOverlappingAttackRepository.overlappingAttack("a", FIXTURE_START, OLD_END))
+        given(findOverlappingAttacksRepository.overlappingAttacks("a", FIXTURE_START, OLD_END))
             .willReturn(OverlapLookupResultDomainModel.None)
 
         val actual = classUnderTest.executeInBackground(REQUEST)
@@ -71,8 +71,12 @@ class UndoTimesChangeUseCaseTest {
 
     @Test
     fun `Given another attack now overlaps the old times when undoing then not possible`() {
-        given(findOverlappingAttackRepository.overlappingAttack("a", FIXTURE_START, OLD_END))
-            .willReturn(OverlapLookupResultDomainModel.Found(OLD_END.minusSeconds(60), null))
+        given(findOverlappingAttacksRepository.overlappingAttacks("a", FIXTURE_START, OLD_END))
+            .willReturn(
+                OverlapLookupResultDomainModel.Found(
+                    listOf(attackDetails("b", OLD_END.minusSeconds(60), null))
+                )
+            )
 
         val actual = classUnderTest.executeInBackground(REQUEST)
 

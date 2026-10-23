@@ -11,16 +11,19 @@ import com.migrely.app.attack.data.mapper.FunctionalImpactDomainMapper
 import com.migrely.app.attack.data.mapper.HeadLocationDataMapper
 import com.migrely.app.attack.data.mapper.HeadLocationDomainMapper
 import com.migrely.app.attack.domain.model.AttackDetailsLookupResultDomainModel
+import com.migrely.app.attack.domain.model.AttackMergeDomainModel
 import com.migrely.app.attack.domain.model.AttackTagDomainModel
 import com.migrely.app.attack.domain.model.FunctionalImpactDomainModel
 import com.migrely.app.attack.domain.model.HeadLocationDomainModel
 import com.migrely.app.attack.domain.model.IntensityPointDomainModel
 import com.migrely.app.attack.domain.model.MaximumRecordedResultDomainModel
 import com.migrely.app.attack.domain.model.OverlapLookupResultDomainModel
+import com.migrely.app.attack.domain.model.StorePastAttackResultDomainModel
 import com.migrely.app.attack.domain.model.WriteResultDomainModel
 import com.migrely.app.datasource.attack.datasource.AttackDataSource
 import com.migrely.app.datasource.attack.model.AttackDataModel
 import com.migrely.app.datasource.attack.model.AttackTagDataModel
+import com.migrely.app.datasource.attack.model.CreateEndedDataModel
 import com.migrely.app.datasource.attack.model.HeadLocationDataModel
 import com.migrely.app.datasource.attack.model.IntensityPointDataModel
 import com.migrely.app.datasource.clock.datasource.ClockDataSource
@@ -28,6 +31,7 @@ import com.migrely.app.datasource.exception.DatabaseDataException
 import com.migrely.app.datasource.exception.StorageFullDataException
 import com.migrely.app.datasource.tag.datasource.TagDataSource
 import java.time.Instant
+import java.time.ZoneId
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -118,24 +122,43 @@ class AttackDetailsRepositoryTest {
     }
 
     @Test
-    fun `Given another attack overlaps when checking then returns its times`() {
-        given(attackDataSource.overlapping("a", START, END)).willReturn(stored().copy(id = "b"))
+    fun `Given two attacks overlap when checking then returns both with their custom tags`() {
+        val first = stored(listOf(AttackTagDataModel.CustomSymptom("t"))).copy(id = "b")
+        val second = stored(
+            listOf(AttackTagDataModel.CustomSymptom("t"))
+        ).copy(id = "c", end = null)
+        given(attackDataSource.overlapping("a", START, END)).willReturn(listOf(first, second))
+        given(tagDataSource.customTags(listOf("t"))).willReturn(emptyList())
+
+        val actual = classUnderTest.overlappingAttacks("a", START, END)
+
+        assertTrue(actual is OverlapLookupResultDomainModel.Found)
+        assertEquals(
+            listOf("b" to END, "c" to null),
+            (actual as OverlapLookupResultDomainModel.Found).attacks.map { it.id to it.end }
+        )
+        verify(tagDataSource).customTags(listOf("t"))
+    }
+
+    @Test
+    fun `Given nothing overlaps when checking then none`() {
+        given(attackDataSource.overlapping(null, START, END)).willReturn(emptyList())
 
         assertEquals(
-            OverlapLookupResultDomainModel.Found(START, END),
-            classUnderTest.overlappingAttack("a", START, END)
+            OverlapLookupResultDomainModel.None,
+            classUnderTest.overlappingAttacks(null, START, END)
         )
     }
 
     @Test
     fun `Given the overlap check fails when checking then failed`() {
-        whenever(attackDataSource.overlapping(any(), any(), any())).doThrow(
+        whenever(attackDataSource.overlapping(anyOrNull(), any(), any())).doThrow(
             DatabaseDataException(RuntimeException())
         )
 
         assertEquals(
             OverlapLookupResultDomainModel.Failed,
-            classUnderTest.overlappingAttack("a", START, END)
+            classUnderTest.overlappingAttacks("a", START, END)
         )
     }
 
@@ -233,6 +256,82 @@ class AttackDetailsRepositoryTest {
         assertEquals(
             WriteResultDomainModel.StorageFull,
             classUnderTest.addIntensityPoint("a", IntensityPointDomainModel(START, 6))
+        )
+    }
+
+    @Test
+    fun `Given nothing overlaps when storing a past attack then stored`() {
+        given(attackDataSource.createEnded(START, "Asia/Tashkent", END))
+            .willReturn(CreateEndedDataModel.Created("new"))
+
+        assertEquals(
+            StorePastAttackResultDomainModel.Stored("new"),
+            classUnderTest.storePastAttack(START, ZoneId.of("Asia/Tashkent"), END)
+        )
+    }
+
+    @Test
+    fun `Given an overlap appeared when storing a past attack then overlapping`() {
+        given(attackDataSource.createEnded(any(), any(), any()))
+            .willReturn(CreateEndedDataModel.Overlapping)
+
+        assertEquals(
+            StorePastAttackResultDomainModel.Overlapping,
+            classUnderTest.storePastAttack(START, ZoneId.of("UTC"), END)
+        )
+    }
+
+    @Test
+    fun `Given the disk is full when storing a past attack then storage full`() {
+        whenever(attackDataSource.createEnded(any(), any(), any()))
+            .doThrow(StorageFullDataException(RuntimeException()))
+
+        assertEquals(
+            StorePastAttackResultDomainModel.StorageFull,
+            classUnderTest.storePastAttack(START, ZoneId.of("UTC"), END)
+        )
+    }
+
+    @Test
+    fun `Given the database fails when storing a past attack then failed`() {
+        whenever(attackDataSource.createEnded(any(), any(), any()))
+            .doThrow(DatabaseDataException(RuntimeException()))
+
+        assertEquals(
+            StorePastAttackResultDomainModel.Failed,
+            classUnderTest.storePastAttack(START, ZoneId.of("UTC"), END)
+        )
+    }
+
+    @Test
+    fun `When merging then passes the levels and zone id to the datasource`() {
+        val actual = classUnderTest.mergeAttacks(
+            AttackMergeDomainModel(
+                survivorId = "a",
+                absorbedIds = listOf("b"),
+                start = START,
+                startZone = ZoneId.of("Asia/Tokyo"),
+                end = null,
+                functionalImpact = FunctionalImpactDomainModel.BedRest,
+                note = "Note"
+            )
+        )
+
+        assertEquals(WriteResultDomainModel.Written, actual)
+        verify(attackDataSource).merge("a", listOf("b"), START, "Asia/Tokyo", null, 3, "Note")
+    }
+
+    @Test
+    fun `Given the disk is full when merging then storage full`() {
+        whenever(
+            attackDataSource.merge(any(), any(), any(), any(), anyOrNull(), anyOrNull(), any())
+        ).doThrow(StorageFullDataException(RuntimeException()))
+
+        assertEquals(
+            WriteResultDomainModel.StorageFull,
+            classUnderTest.mergeAttacks(
+                AttackMergeDomainModel("a", emptyList(), START, ZoneId.of("UTC"), END, null, "")
+            )
         )
     }
 }

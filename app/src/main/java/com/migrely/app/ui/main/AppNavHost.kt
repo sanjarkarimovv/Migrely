@@ -30,8 +30,10 @@ fun AppNavHostDependencies.AppNavHost(
             )
         }
         composable<AttackDetails> { entry ->
+            val route = entry.toRoute<AttackDetails>()
             attackDetailsDependencies.AttackDetails(
-                attackId = entry.toRoute<AttackDetails>().attackId,
+                attackId = route.attackId,
+                announceMerge = route.announceMerge,
                 navController = navController
             )
         }

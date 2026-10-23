@@ -57,6 +57,20 @@ abstract class AttackDao {
         endEpochMillis: Long
     ): AttackWithPointsLocalModel?
 
+    /** Every attack other than [excludingId] that overlaps, oldest first, with the same rule as [overlapping]. */
+    @Transaction
+    @Query(
+        "SELECT * FROM attack WHERE (:excludingId IS NULL OR id != :excludingId) " +
+            "AND deleted_epoch_millis IS NULL AND start_epoch_millis < :endEpochMillis " +
+            "AND (end_epoch_millis IS NULL OR end_epoch_millis > :startEpochMillis) " +
+            "ORDER BY start_epoch_millis"
+    )
+    abstract fun overlappingAll(
+        excludingId: String?,
+        startEpochMillis: Long,
+        endEpochMillis: Long
+    ): List<AttackWithPointsLocalModel>
+
     @Insert
     abstract fun insertAttack(attack: AttackLocalModel)
 
@@ -172,6 +186,42 @@ abstract class AttackDao {
     )
     abstract fun deleteTag(attackId: String, kind: String, tagKey: String)
 
+    @Query("SELECT * FROM attack_tag WHERE attack_id IN (:attackIds)")
+    abstract fun tagsOf(attackIds: List<String>): List<AttackTagLocalModel>
+
+    @Query(
+        "UPDATE intensity_point SET attack_id = :toAttackId WHERE attack_id IN (:fromAttackIds)"
+    )
+    abstract fun moveIntensityPoints(fromAttackIds: List<String>, toAttackId: String)
+
+    /** The strictest long-attack check among [attackIds]: disabled if any was, and the latest confirmation. */
+    @Query(
+        "UPDATE attack SET long_check_disabled = " +
+            "(SELECT MAX(long_check_disabled) FROM attack WHERE id IN (:attackIds)), " +
+            "long_check_confirmed_epoch_millis = (SELECT MAX(long_check_confirmed_epoch_millis) " +
+            "FROM attack WHERE id IN (:attackIds)) WHERE id = :survivorId"
+    )
+    abstract fun mergeLongCheck(survivorId: String, attackIds: List<String>)
+
+    @Suppress("LongParameterList")
+    @Query(
+        "UPDATE attack SET start_epoch_millis = :startEpochMillis, start_zone_id = :startZoneId, " +
+            "end_epoch_millis = :endEpochMillis, functional_impact = :impact, note = :note, " +
+            "updated_epoch_millis = :nowEpochMillis WHERE id = :attackId"
+    )
+    abstract fun updateMerged(
+        attackId: String,
+        startEpochMillis: Long,
+        startZoneId: String,
+        endEpochMillis: Long?,
+        impact: Int?,
+        note: String,
+        nowEpochMillis: Long
+    )
+
+    @Query("DELETE FROM attack WHERE id IN (:attackIds)")
+    abstract fun deleteAll(attackIds: List<String>)
+
     @Query(
         "UPDATE attack SET functional_impact = :impact, updated_epoch_millis = :nowEpochMillis " +
             "WHERE id = :attackId"
@@ -256,6 +306,49 @@ abstract class AttackDao {
         if (overlapping(attackId, deleted.startEpochMillis, end) != null) return false
         clearDeleted(attackId, nowEpochMillis)
         return true
+    }
+
+    /** Inserts the ended [attack] unless another attack overlaps it, in one step (BRD EC-ATK-17). */
+    @Transaction
+    open fun insertEndedIfNoOverlap(attack: AttackLocalModel): Boolean {
+        val end = checkNotNull(attack.endEpochMillis) { "Only an ended attack is inserted here" }
+        if (overlappingAll(null, attack.startEpochMillis, end).isNotEmpty()) return false
+        insertAttack(attack)
+        return true
+    }
+
+    /**
+     * Merges [absorbedIds] into [survivorId] in one step (BRD D27): their intensity points move, their tags are copied
+     * once, the survivor takes the new fields and the strictest long-attack check, and the absorbed attacks are
+     * deleted, which removes their copied tags with them.
+     */
+    @Suppress("LongParameterList")
+    @Transaction
+    open fun mergeInto(
+        survivorId: String,
+        absorbedIds: List<String>,
+        startEpochMillis: Long,
+        startZoneId: String,
+        endEpochMillis: Long?,
+        impact: Int?,
+        note: String,
+        nowEpochMillis: Long
+    ) {
+        if (absorbedIds.isNotEmpty()) {
+            moveIntensityPoints(absorbedIds, survivorId)
+            tagsOf(absorbedIds).forEach { tag -> insertTag(tag.copy(attackId = survivorId)) }
+            mergeLongCheck(survivorId, absorbedIds + survivorId)
+        }
+        updateMerged(
+            survivorId,
+            startEpochMillis,
+            startZoneId,
+            endEpochMillis,
+            impact,
+            note,
+            nowEpochMillis
+        )
+        if (absorbedIds.isNotEmpty()) deleteAll(absorbedIds)
     }
 
     data class StartOutcome(val attack: AttackWithPointsLocalModel, val created: Boolean)

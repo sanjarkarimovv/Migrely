@@ -3,6 +3,7 @@ package com.migrely.app.datasource.attack.datasource
 import com.migrely.app.datasource.attack.model.AttackDataModel
 import com.migrely.app.datasource.attack.model.AttackStartDataModel
 import com.migrely.app.datasource.attack.model.AttackTagDataModel
+import com.migrely.app.datasource.attack.model.CreateEndedDataModel
 import com.migrely.app.datasource.attack.model.DeletedAttackDataModel
 import com.migrely.app.datasource.attack.model.IntensityPointDataModel
 import com.migrely.app.datasource.attack.model.ReopenDataModel
@@ -27,10 +28,29 @@ interface AttackDataSource {
     fun endedTouching(from: Instant, to: Instant): List<AttackDataModel>
 
     /**
-     * Another attack than [attackId] that overlaps `(start, end)`. An attack in progress counts as open-ended, and
-     * attacks that only touch at one instant do not overlap.
+     * Every attack other than [excludingId] that overlaps `(start, end)`, oldest first. An attack in progress counts as
+     * open-ended, and attacks that only touch at one instant do not overlap.
      */
-    fun overlapping(attackId: String, start: Instant, end: Instant): AttackDataModel?
+    fun overlapping(excludingId: String?, start: Instant, end: Instant): List<AttackDataModel>
+
+    /** Atomic: stores an ended attack only when no attack overlaps it (BRD EC-ATK-17). */
+    fun createEnded(start: Instant, zoneId: String, end: Instant): CreateEndedDataModel
+
+    /**
+     * Atomic (BRD D27): [survivorId] takes the given fields and the intensity points and tags of [absorbedIds], keeps
+     * the strictest long-attack check of them all, and [absorbedIds] are removed for good. [functionalImpact] is 0 to 3
+     * or null; [note] holds at most 1,000 characters.
+     */
+    @Suppress("LongParameterList")
+    fun merge(
+        survivorId: String,
+        absorbedIds: List<String>,
+        start: Instant,
+        startZoneId: String,
+        end: Instant?,
+        functionalImpact: Int?,
+        note: String
+    )
 
     /** Atomic: starts a new attack only when none is in progress. */
     fun startIfNoneInProgress(start: Instant, zoneId: String): AttackStartDataModel

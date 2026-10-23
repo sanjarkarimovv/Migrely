@@ -18,16 +18,18 @@ import com.migrely.app.attack.domain.repository.CountActiveCustomTagsRepository
 import com.migrely.app.attack.domain.repository.CreateCustomTagRepository
 import com.migrely.app.attack.domain.repository.DeleteAttackRepository
 import com.migrely.app.attack.domain.repository.FindCustomTagRepository
-import com.migrely.app.attack.domain.repository.FindOverlappingAttackRepository
+import com.migrely.app.attack.domain.repository.FindOverlappingAttacksRepository
 import com.migrely.app.attack.domain.repository.GetActiveCustomTagsRepository
 import com.migrely.app.attack.domain.repository.GetAttackDetailsRepository
 import com.migrely.app.attack.domain.repository.GetCurrentTimeRepository
 import com.migrely.app.attack.domain.repository.GetMaximumRecordedRepository
+import com.migrely.app.attack.domain.repository.MergeAttacksRepository
 import com.migrely.app.attack.domain.repository.RemoveIntensityPointRepository
 import com.migrely.app.attack.domain.repository.RestoreAttackTimesRepository
 import com.migrely.app.attack.domain.repository.SelectAttackTagRepository
 import com.migrely.app.attack.domain.repository.SetCustomTagArchivedRepository
 import com.migrely.app.attack.domain.repository.SetFunctionalImpactRepository
+import com.migrely.app.attack.domain.repository.StorePastAttackRepository
 import com.migrely.app.attack.domain.repository.UpdateAttackNoteRepository
 import com.migrely.app.attack.domain.repository.UpdateAttackTimesRepository
 import com.migrely.app.datasource.attack.datasource.AttackDataSource
@@ -80,9 +82,19 @@ internal object AttackDataModule {
     ): GetCurrentTimeRepository = repository
 
     @Provides
-    fun providesFindOverlappingAttackRepository(
+    fun providesFindOverlappingAttacksRepository(
         repository: AttackDetailsRepository
-    ): FindOverlappingAttackRepository = repository
+    ): FindOverlappingAttacksRepository = repository
+
+    @Provides
+    fun providesStorePastAttackRepository(
+        repository: AttackDetailsRepository
+    ): StorePastAttackRepository = repository
+
+    @Provides
+    fun providesMergeAttacksRepository(
+        repository: AttackDetailsRepository
+    ): MergeAttacksRepository = repository
 
     @Provides
     fun providesUpdateAttackTimesRepository(

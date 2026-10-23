@@ -1,6 +1,7 @@
 package com.migrely.app.attack.ui.mapper
 
 import com.migrely.app.attack.presentation.model.AttackDetailsPresentationNotification
+import com.migrely.app.attack.presentation.model.AttackRangePresentationModel
 import com.migrely.app.attack.presentation.model.IntensityPointPresentationModel
 import com.migrely.app.attack.presentation.model.PointRejectionPresentationModel
 import com.migrely.app.attack.presentation.model.TimeFieldPresentationModel
@@ -8,6 +9,7 @@ import com.migrely.app.attack.presentation.model.TimeRejectionPresentationModel
 import com.migrely.app.attack.presentation.model.TimesUndoPresentationModel
 import com.migrely.app.attack.ui.model.AttackDetailsEventUiModel
 import com.migrely.app.attack.ui.model.AttackMessageUiModel
+import com.migrely.app.attack.ui.model.AttackRangeUiModel
 import com.migrely.app.attack.ui.model.IntensityPointUiModel
 import com.migrely.app.attack.ui.model.TimeErrorReasonUiModel
 import com.migrely.app.attack.ui.model.TimeErrorUiModel
@@ -33,14 +35,35 @@ class AttackNotificationUiMapperTest(
             arrayOf<Any>(
                 AttackDetailsPresentationNotification.TimeRejected(
                     TimeFieldPresentationModel.Start,
-                    TimeRejectionPresentationModel.Overlaps(Instant.ofEpochMilli(1_000L), null)
+                    TimeRejectionPresentationModel.Overlaps(
+                        listOf(
+                            AttackRangePresentationModel(
+                                Instant.ofEpochMilli(1_000L),
+                                Instant.ofEpochMilli(2_000L)
+                            ),
+                            AttackRangePresentationModel(Instant.ofEpochMilli(3_000L), null)
+                        ),
+                        requestedStart = Instant.ofEpochMilli(500L),
+                        requestedEnd = null
+                    )
                 ),
                 AttackDetailsEventUiModel.TimeRejected(
                     TimeErrorUiModel(
                         TimeFieldUiModel.Start,
-                        TimeErrorReasonUiModel.Overlaps(1_000L, null)
+                        TimeErrorReasonUiModel.Overlaps(
+                            listOf(
+                                AttackRangeUiModel(1_000L, 2_000L),
+                                AttackRangeUiModel(3_000L, null)
+                            ),
+                            requestedStartEpochMillis = 500L,
+                            requestedEndEpochMillis = null
+                        )
                     )
                 )
+            ),
+            arrayOf<Any>(
+                AttackDetailsPresentationNotification.AttacksMerged,
+                AttackDetailsEventUiModel.Message(AttackMessageUiModel.AttacksMerged)
             ),
             arrayOf<Any>(
                 AttackDetailsPresentationNotification.TimeRejected(
@@ -92,7 +115,11 @@ class AttackNotificationUiMapperTest(
     fun `When the notification is presented then the event reaches the screen`() {
         // Given
         val presenter: AttackDetailsEventPresenter = mock()
-        val classUnderTest = AttackNotificationUiMapper(presenter, TimeFieldUiMapper())
+        val classUnderTest = AttackNotificationUiMapper(
+            presenter,
+            TimeFieldUiMapper(),
+            AttackRangeUiMapper()
+        )
 
         // When
         classUnderTest.toUi(notification).present()

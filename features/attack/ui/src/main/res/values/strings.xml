@@ -14,6 +14,14 @@
     <string name="time_error_end_before_start">The end must be after the start.</string>
     <string name="time_error_overlaps">This would overlap the migraine from %1$s to %2$s.</string>
     <string name="time_error_overlaps_in_progress">This would overlap the migraine in progress since %1$s.</string>
+    <plurals name="time_error_overlaps_many">
+        <item quantity="one">This would overlap %1$d migraine: %2$s.</item>
+        <item quantity="other">This would overlap %1$d migraines: %2$s.</item>
+    </plurals>
+    <string name="overlap_range">%1$s – %2$s</string>
+    <string name="overlap_range_in_progress">since %1$s, in progress</string>
+    <string name="overlap_separator">"; "</string>
+    <string name="time_merge">Merge them</string>
     <string name="picker_start_title">When did it start?</string>
     <string name="picker_end_title">When did it end?</string>
     <string name="picker_point_title">When was it this strong?</string>
@@ -58,6 +66,12 @@
     <string name="note_hint">Anything else worth remembering</string>
     <string name="note_counter">%1$d/1000</string>
     <string name="delete_attack">Delete migraine</string>
+    <string name="past_title">Past migraine</string>
+    <string name="past_intro">When was it? You can add the pain level and the rest next.</string>
+    <string name="past_add">Add migraine</string>
+    <string name="past_merge_explanation">Merging makes them one migraine that covers all their times, pain levels and details.</string>
+    <string name="past_change_times">Change the times</string>
+    <string name="picker_past_start_out_of_range">Pick a time before now.</string>
     <string name="not_found_title">This migraine no longer exists</string>
     <string name="not_found_back">Go back</string>
     <string name="snackbar_undo">Undo</string>
@@ -106,6 +120,7 @@
     <string name="impact_less_active">Less active</string>
     <string name="impact_had_to_stop">Had to stop</string>
     <string name="impact_bed_rest">Bed rest</string>
+    <string name="message_attacks_merged">Migraines merged.</string>
     <plurals name="message_points_removed">
         <item quantity="one">%1$d pain level outside the new time was removed</item>
         <item quantity="other">%1$d pain levels outside the new time were removed</item>

@@ -48,7 +48,6 @@ private const val SLIDER_STEPS = 8
 private const val DEFAULT_LEVEL = 5f
 private const val MILD_UP_TO = 3
 private const val MODERATE_UP_TO = 6
-private const val CLOCK_TOLERANCE_MILLIS = 5 * 60_000L
 
 /** Pain over time (BRD ATK-F4): the peak, every entry in time order, and adding or removing an entry. */
 @Composable

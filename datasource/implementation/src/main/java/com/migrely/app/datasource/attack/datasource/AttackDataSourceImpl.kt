@@ -8,6 +8,7 @@ import com.migrely.app.datasource.attack.model.AttackDataModel
 import com.migrely.app.datasource.attack.model.AttackLocalModel
 import com.migrely.app.datasource.attack.model.AttackStartDataModel
 import com.migrely.app.datasource.attack.model.AttackTagDataModel
+import com.migrely.app.datasource.attack.model.CreateEndedDataModel
 import com.migrely.app.datasource.attack.model.DeletedAttackDataModel
 import com.migrely.app.datasource.attack.model.IntensityPointDataModel
 import com.migrely.app.datasource.attack.model.IntensityPointLocalModel
@@ -50,14 +51,69 @@ class AttackDataSourceImpl(
         ).map(attackLocalMapper::toData)
     }
 
-    override fun overlapping(attackId: String, start: Instant, end: Instant): AttackDataModel? =
-        database {
-            attackDao.overlapping(
-                attackId,
-                start.toEpochMilli(),
-                end.toEpochMilli()
-            )?.let(attackLocalMapper::toData)
+    override fun overlapping(
+        excludingId: String?,
+        start: Instant,
+        end: Instant
+    ): List<AttackDataModel> = database {
+        attackDao.overlappingAll(
+            excludingId,
+            start.toEpochMilli(),
+            end.toEpochMilli()
+        ).map(attackLocalMapper::toData)
+    }
+
+    override fun createEnded(start: Instant, zoneId: String, end: Instant): CreateEndedDataModel {
+        require(end.isAfter(start)) { "An ended attack must end after it starts" }
+        return database {
+            val now = clock.millis()
+            val attack = AttackLocalModel(
+                id = generateId(),
+                startEpochMillis = start.toEpochMilli(),
+                startZoneId = zoneId,
+                endEpochMillis = end.toEpochMilli(),
+                longCheckConfirmedEpochMillis = null,
+                longCheckDisabled = false,
+                createdEpochMillis = now,
+                updatedEpochMillis = now
+            )
+            if (attackDao.insertEndedIfNoOverlap(attack)) {
+                CreateEndedDataModel.Created(attack.id)
+            } else {
+                CreateEndedDataModel.Overlapping
+            }
         }
+    }
+
+    override fun merge(
+        survivorId: String,
+        absorbedIds: List<String>,
+        start: Instant,
+        startZoneId: String,
+        end: Instant?,
+        functionalImpact: Int?,
+        note: String
+    ) {
+        require(survivorId !in absorbedIds) { "The surviving attack cannot also be absorbed" }
+        require(functionalImpact == null || functionalImpact in VALID_IMPACT) {
+            "Impact must be within $VALID_IMPACT, was $functionalImpact"
+        }
+        require(note.length <= MAXIMUM_NOTE_LENGTH) {
+            "A note holds at most $MAXIMUM_NOTE_LENGTH characters"
+        }
+        database {
+            attackDao.mergeInto(
+                survivorId = survivorId,
+                absorbedIds = absorbedIds,
+                startEpochMillis = start.toEpochMilli(),
+                startZoneId = startZoneId,
+                endEpochMillis = end?.toEpochMilli(),
+                impact = functionalImpact,
+                note = note,
+                nowEpochMillis = clock.millis()
+            )
+        }
+    }
 
     override fun startIfNoneInProgress(start: Instant, zoneId: String): AttackStartDataModel =
         database {

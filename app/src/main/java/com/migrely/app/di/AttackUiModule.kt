@@ -9,6 +9,7 @@ import com.migrely.app.attack.ui.di.AttackDetailsDependencies
 import com.migrely.app.attack.ui.mapper.AttackDetailsViewStateUiMapper
 import com.migrely.app.attack.ui.mapper.AttackMessageBehaviourUiMapper
 import com.migrely.app.attack.ui.mapper.AttackNotificationUiMapper
+import com.migrely.app.attack.ui.mapper.AttackRangeUiMapper
 import com.migrely.app.attack.ui.mapper.AttackTagUiToPresentationMapper
 import com.migrely.app.attack.ui.mapper.AttackTimeUiFormatter
 import com.migrely.app.attack.ui.mapper.BuiltInSymptomUiMapper
@@ -96,7 +97,8 @@ internal object AttackUiModule {
             attackDetailsNavigationMapper = attackDetailsNavigationMapper,
             attackNotificationMapper = AttackNotificationUiMapper(
                 eventPresenter,
-                TimeFieldUiMapper()
+                TimeFieldUiMapper(),
+                AttackRangeUiMapper()
             )
         )
     }

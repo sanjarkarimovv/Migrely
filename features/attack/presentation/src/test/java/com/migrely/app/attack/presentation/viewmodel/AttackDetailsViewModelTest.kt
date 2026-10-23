@@ -8,9 +8,12 @@ import com.migrely.app.attack.domain.model.AddIntensityPointResultDomainModel
 import com.migrely.app.attack.domain.model.AttackDetailsDomainModel
 import com.migrely.app.attack.domain.model.AttackDetailsResultDomainModel
 import com.migrely.app.attack.domain.model.AttackDetailsScreenDomainModel
+import com.migrely.app.attack.domain.model.AttackRangeDomainModel
 import com.migrely.app.attack.domain.model.AttackTagDomainModel
 import com.migrely.app.attack.domain.model.HeadLocationDomainModel
 import com.migrely.app.attack.domain.model.IntensityPointDomainModel
+import com.migrely.app.attack.domain.model.MergeAttacksRequestDomainModel
+import com.migrely.app.attack.domain.model.MergeAttacksResultDomainModel
 import com.migrely.app.attack.domain.model.RemoveIntensityPointRequestDomainModel
 import com.migrely.app.attack.domain.model.SelectAttackTagRequestDomainModel
 import com.migrely.app.attack.domain.model.TagKindDomainModel
@@ -27,6 +30,7 @@ import com.migrely.app.attack.domain.usecase.AddIntensityPointUseCase
 import com.migrely.app.attack.domain.usecase.ArchiveCustomTagUseCase
 import com.migrely.app.attack.domain.usecase.DeleteAttackUseCase
 import com.migrely.app.attack.domain.usecase.GetAttackDetailsUseCase
+import com.migrely.app.attack.domain.usecase.MergeAttacksUseCase
 import com.migrely.app.attack.domain.usecase.RemoveIntensityPointUseCase
 import com.migrely.app.attack.domain.usecase.SelectAttackTagUseCase
 import com.migrely.app.attack.domain.usecase.SetFunctionalImpactUseCase
@@ -34,6 +38,7 @@ import com.migrely.app.attack.domain.usecase.UndoTimesChangeUseCase
 import com.migrely.app.attack.domain.usecase.UpdateAttackNoteUseCase
 import com.migrely.app.attack.domain.usecase.UpdateAttackTimesUseCase
 import com.migrely.app.attack.presentation.mapper.AttackDetailsPresentationMapper
+import com.migrely.app.attack.presentation.mapper.AttackRangePresentationMapper
 import com.migrely.app.attack.presentation.mapper.AttackTagDomainMapper
 import com.migrely.app.attack.presentation.mapper.BuiltInSymptomDomainMapper
 import com.migrely.app.attack.presentation.mapper.BuiltInSymptomPresentationMapper
@@ -49,8 +54,10 @@ import com.migrely.app.attack.presentation.mapper.IntensityPointDomainMapper
 import com.migrely.app.attack.presentation.mapper.IntensityPointPresentationMapper
 import com.migrely.app.attack.presentation.mapper.TagKindDomainMapper
 import com.migrely.app.attack.presentation.mapper.TagKindPresentationMapper
+import com.migrely.app.attack.presentation.mapper.TimeFieldPresentationMapper
 import com.migrely.app.attack.presentation.model.AttackDetailsPresentationNotification
 import com.migrely.app.attack.presentation.model.AttackDetailsViewState
+import com.migrely.app.attack.presentation.model.AttackRangePresentationModel
 import com.migrely.app.attack.presentation.model.AttackTagPresentationModel
 import com.migrely.app.attack.presentation.model.HeadLocationPresentationModel
 import com.migrely.app.attack.presentation.model.IntensityPointPresentationModel
@@ -122,6 +129,8 @@ class AttackDetailsViewModelTest :
 
     @Mock private lateinit var deleteAttackUseCase: DeleteAttackUseCase
 
+    @Mock private lateinit var mergeAttacksUseCase: MergeAttacksUseCase
+
     private val presentationMapper = AttackDetailsPresentationMapper(
         HeadLocationPresentationMapper(),
         BuiltInSymptomPresentationMapper(),
@@ -146,6 +155,7 @@ class AttackDetailsViewModelTest :
             addCustomTagUseCase,
             archiveCustomTagUseCase,
             deleteAttackUseCase,
+            mergeAttacksUseCase,
             presentationMapper,
             AttackTagDomainMapper(
                 HeadLocationDomainMapper(),
@@ -157,6 +167,8 @@ class AttackDetailsViewModelTest :
             IntensityPointDomainMapper(),
             IntensityPointPresentationMapper(),
             TagKindDomainMapper(),
+            AttackRangePresentationMapper(),
+            TimeFieldPresentationMapper(),
             useCaseExecutor
         )
     }
@@ -183,7 +195,7 @@ class AttackDetailsViewModelTest :
         givenDetails()
         val states = async(start = UNDISPATCHED) { classUnderTest.viewState.take(2).toList() }
 
-        classUnderTest.onEnter("a")
+        classUnderTest.onEnter("a", attacksMerged = false)
 
         assertEquals(listOf(AttackDetailsViewState.Loading, ready), states.await())
     }
@@ -193,7 +205,7 @@ class AttackDetailsViewModelTest :
         givenDetails(AttackDetailsResultDomainModel.NotFound)
         val states = async(start = UNDISPATCHED) { classUnderTest.viewState.take(2).toList() }
 
-        classUnderTest.onEnter("a")
+        classUnderTest.onEnter("a", attacksMerged = false)
 
         assertEquals(AttackDetailsViewState.NotFound, states.await().last())
     }
@@ -286,7 +298,9 @@ class AttackDetailsViewModelTest :
         givenTimes(
             START.minusSeconds(3_600),
             END,
-            UpdateAttackTimesResultDomainModel.Overlaps(otherStart, otherEnd)
+            UpdateAttackTimesResultDomainModel.Overlaps(
+                listOf(AttackRangeDomainModel(otherStart, otherEnd))
+            )
         )
         val notification = nextNotification()
 
@@ -300,7 +314,11 @@ class AttackDetailsViewModelTest :
         assertEquals(
             AttackDetailsPresentationNotification.TimeRejected(
                 TimeFieldPresentationModel.Start,
-                TimeRejectionPresentationModel.Overlaps(otherStart, otherEnd)
+                TimeRejectionPresentationModel.Overlaps(
+                    listOf(AttackRangePresentationModel(otherStart, otherEnd)),
+                    START.minusSeconds(3_600),
+                    END
+                )
             ),
             notification.await()
         )
@@ -458,6 +476,87 @@ class AttackDetailsViewModelTest :
         classUnderTest.onLeaveAction()
 
         assertTrue(event.await() is AttackDetailsPresentationNavigationEvent.OnLeave)
+    }
+
+    @Test
+    fun `Given the screen opens on a merge when entering then confirms the merge`() = runTest {
+        givenDetails()
+        val notification = nextNotification()
+
+        classUnderTest.onEnter("a", attacksMerged = true)
+
+        assertEquals(AttackDetailsPresentationNotification.AttacksMerged, notification.await())
+    }
+
+    @Test
+    fun `When merging then confirms and reloads`() = runTest {
+        givenMerge(START.minusSeconds(3_600), END, MergeAttacksResultDomainModel.Merged("a"))
+        givenDetails()
+        val notification = nextNotification()
+        val state = nextViewState()
+
+        classUnderTest.onMergeAction("a", START.minusSeconds(3_600), END)
+
+        assertEquals(AttackDetailsPresentationNotification.AttacksMerged, notification.await())
+        assertEquals(ready, state.await())
+    }
+
+    @Test
+    fun `Given nothing overlaps any more when merging then reloads without a message`() = runTest {
+        givenMerge(START, END, MergeAttacksResultDomainModel.Saved("a"))
+        givenDetails()
+        val state = nextViewState()
+
+        classUnderTest.onMergeAction("a", START, END)
+
+        assertEquals(ready, state.await())
+    }
+
+    @Test
+    fun `Given the start is now in the future when merging then rejects the start`() = runTest {
+        givenMerge(
+            START,
+            END,
+            MergeAttacksResultDomainModel.InFuture(TimeFieldDomainModel.Start)
+        )
+        val notification = nextNotification()
+
+        classUnderTest.onMergeAction("a", START, END)
+
+        assertEquals(
+            AttackDetailsPresentationNotification.TimeRejected(
+                TimeFieldPresentationModel.Start,
+                TimeRejectionPresentationModel.InFuture
+            ),
+            notification.await()
+        )
+    }
+
+    @Test
+    fun `Given the attack is gone when merging then not found`() = runTest {
+        givenMerge(START, END, MergeAttacksResultDomainModel.NotFound)
+        val state = nextViewState()
+
+        classUnderTest.onMergeAction("a", START, END)
+
+        assertEquals(AttackDetailsViewState.NotFound, state.await())
+    }
+
+    @Test
+    fun `Given storage is full when merging then says so`() = runTest {
+        givenMerge(START, END, MergeAttacksResultDomainModel.StorageFull)
+        val notification = nextNotification()
+
+        classUnderTest.onMergeAction("a", START, END)
+
+        assertEquals(AttackDetailsPresentationNotification.StorageFull, notification.await())
+    }
+
+    private fun givenMerge(start: Instant, end: Instant?, result: MergeAttacksResultDomainModel) {
+        mergeAttacksUseCase.givenSuccessfulExecution(
+            MergeAttacksRequestDomainModel("a", start, end),
+            result
+        )
     }
 
     private fun TestScope.nextViewState() = async(start = UNDISPATCHED) {

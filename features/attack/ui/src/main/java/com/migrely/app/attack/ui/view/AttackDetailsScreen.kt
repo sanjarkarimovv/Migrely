@@ -72,6 +72,7 @@ data class AttackDetailsActions(
     val onBack: () -> Unit,
     val onStartPicked: (epochMillis: Long) -> Unit,
     val onEndPicked: (epochMillis: Long) -> Unit,
+    val onMerge: (startEpochMillis: Long, endEpochMillis: Long?) -> Unit,
     val onAddPoint: (point: IntensityPointUiModel) -> Unit,
     val onRemovePoint: (point: IntensityPointUiModel) -> Unit,
     val onTag: (tag: AttackTagUiModel, selected: Boolean) -> Unit,
@@ -93,10 +94,12 @@ data class AttackDetailsLocalState(
 @Composable
 fun AttackDetailsDependencies.AttackDetails(
     attackId: String,
+    announceMerge: Boolean,
     navController: NavController,
     modifier: Modifier = Modifier
 ) {
-    ScreenEnterObserver { attackDetailsViewModel.onEnter(attackId) }
+    // Entered once per visit, so "Migraines merged." is not repeated after rotation or process death.
+    ScreenEnterObserver { attackDetailsViewModel.onEnter(attackId, attacksMerged = announceMerge) }
     LifecycleResumeEffect(attackId) {
         attackDetailsViewModel.onResume(attackId)
         onPauseOrDispose { }
@@ -151,6 +154,14 @@ fun AttackDetailsDependencies.AttackDetails(
                 TimeFieldPresentationModel.End,
                 Instant.ofEpochMilli(details?.startEpochMillis ?: end),
                 Instant.ofEpochMilli(end)
+            )
+        },
+        onMerge = { start, end ->
+            timeError = null
+            viewModel.onMergeAction(
+                attackId,
+                Instant.ofEpochMilli(start),
+                end?.let(Instant::ofEpochMilli)
             )
         },
         onAddPoint = { point ->
@@ -361,8 +372,20 @@ private fun NotFoundContents(onBack: () -> Unit) {
     }
 }
 
-private val previewActions = AttackDetailsActions({}, {}, {}, {}, {}, { _, _ ->
-}, {}, {}, { _, _ -> }, {}, {})
+private val previewActions = AttackDetailsActions(
+    onBack = {},
+    onStartPicked = {},
+    onEndPicked = {},
+    onMerge = { _, _ -> },
+    onAddPoint = {},
+    onRemovePoint = {},
+    onTag = { _, _ -> },
+    onImpact = {},
+    onNote = {},
+    onAddCustomTag = { _, _ -> },
+    onArchiveCustomTag = {},
+    onDelete = {}
+)
 
 private val previewLocalState = AttackDetailsLocalState(null, safetyCardVisible = true, {}, {})
 
