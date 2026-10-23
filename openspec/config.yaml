@@ -1,0 +1,30 @@
+schema: spec-driven
+
+context: |
+  Product requirements live in docs/BRD.md (written in Uzbek). Every change references the BRD IDs it covers (FR, EC, ADR, D).
+  Architecture is strict Clean Architecture by Eran Boudjnah: the book (2nd edition), the sample repo
+  EranBoudjnah/CleanArchitectureForAndroid and the clean-arch-for-android-developers skill. docs/ARCHITECTURE.md is the
+  project profile and overrides the skill bindings, never the twelve rules.
+  New modules, features, use cases, ViewModels and datasources are generated with the `cag` CLI (CleanArchitectureGenerator)
+  and then completed by hand.
+  Health data never leaves the device: no accounts, no backend, no network calls except the billing and analytics SDKs.
+  The app is published to Google Play under applicationId com.migrely.app, which can never change.
+
+rules:
+  proposal:
+    - Reference the BRD IDs the change covers.
+    - State explicitly what is out of scope.
+  specs:
+    - Write requirements with SHALL and scenarios with WHEN/THEN.
+    - Every EC-* decision referenced by the change becomes at least one scenario.
+  design:
+    - Name the modules and layers touched, following the skill's new-feature checklist order.
+  tasks:
+    - Order tasks domain, presentation, data and datasource, UI, app DI and navigation, tests, verify.
+    - Keep each task small enough to finish in about two hours.
+    - End with a verify task that runs the build, unit tests, Konsist architecture tests, ktlint and detekt.
+
+operations:
+  apply:
+    guidance:
+      - Run the verify gate before marking the last task done and report its real output.

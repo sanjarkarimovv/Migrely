@@ -1,0 +1,3 @@
+package com.migrely.app.architecture.presentation.notification
+
+interface PresentationNotification
