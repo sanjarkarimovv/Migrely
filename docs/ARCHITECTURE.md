@@ -178,10 +178,12 @@ Health data must never be passed to either SDK.
 ## 12. Quality gate and Definition of Done
 
 ```bash
-./gradlew assembleDebug testDebugUnitTest ktlintCheck detekt
+./gradlew assembleDebug test ktlintCheck detekt
 ```
 
-The same command runs in `.github/workflows/ci.yml`. A change is done when:
+The gate uses `test`, not `testDebugUnitTest`: the domain, presentation and data modules are plain JVM modules
+with no `testDebugUnitTest` task, so `testDebugUnitTest` alone would skip their tests. The same command runs in
+`.github/workflows/ci.yml`. A change is done when:
 
 - the gate passes;
 - `openspec validate <change> --strict` passes;

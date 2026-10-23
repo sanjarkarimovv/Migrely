@@ -32,7 +32,7 @@ jobs:
 
       # Same command as the local gate in docs/ARCHITECTURE.md section 12.
       - name: Quality gate
-        run: ./gradlew assembleDebug testDebugUnitTest ktlintCheck detekt --stacktrace
+        run: ./gradlew assembleDebug test ktlintCheck detekt --stacktrace
 
       - name: Upload reports
         if: failure()
