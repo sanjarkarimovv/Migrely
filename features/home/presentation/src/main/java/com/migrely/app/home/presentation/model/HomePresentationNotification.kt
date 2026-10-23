@@ -14,5 +14,9 @@ sealed interface HomePresentationNotification : PresentationNotification {
 
     data object EndTimeOutOfRange : HomePresentationNotification
 
+    data object Undone : HomePresentationNotification
+
+    data object UndoNotPossible : HomePresentationNotification
+
     data object SomethingWentWrong : HomePresentationNotification
 }

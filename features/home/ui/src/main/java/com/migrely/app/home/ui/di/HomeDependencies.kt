@@ -7,6 +7,7 @@ import com.migrely.app.home.presentation.model.HomePresentationNotification
 import com.migrely.app.home.presentation.model.HomeViewState
 import com.migrely.app.home.presentation.navigation.HomePresentationNavigationEvent
 import com.migrely.app.home.presentation.viewmodel.HomeViewModel
+import com.migrely.app.home.ui.mapper.HomeMessageBehaviourUiMapper
 import com.migrely.app.home.ui.mapper.HomeViewStateUiMapper
 import com.migrely.app.home.ui.mapper.IntensityLevelUiToPresentationMapper
 import com.migrely.app.home.ui.mapper.SkyAppearanceUiMapper
@@ -21,6 +22,7 @@ class HomeDependencies(
     val intensityLevelUiToPresentationMapper: IntensityLevelUiToPresentationMapper,
     val timeUiFormatter: TimeUiFormatter,
     val homeMessagePresenter: HomeMessagePresenter,
+    val homeMessageBehaviourUiMapper: HomeMessageBehaviourUiMapper,
     homeNavigationMapper: NavigationEventDestinationMapper<HomePresentationNavigationEvent>,
     homeNotificationMapper: NotificationUiMapper<HomePresentationNotification>
 ) : BaseComposeHolder<HomeViewState, HomePresentationNotification>(

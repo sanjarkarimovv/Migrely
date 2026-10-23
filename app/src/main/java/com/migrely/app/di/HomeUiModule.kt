@@ -6,6 +6,7 @@ import com.migrely.app.architecture.ui.navigation.mapper.NavigationEventDestinat
 import com.migrely.app.home.presentation.navigation.HomePresentationNavigationEvent
 import com.migrely.app.home.presentation.viewmodel.HomeViewModel
 import com.migrely.app.home.ui.di.HomeDependencies
+import com.migrely.app.home.ui.mapper.HomeMessageBehaviourUiMapper
 import com.migrely.app.home.ui.mapper.HomeNotificationUiMapper
 import com.migrely.app.home.ui.mapper.HomeViewStateUiMapper
 import com.migrely.app.home.ui.mapper.IntensityLevelUiToPresentationMapper
@@ -54,6 +55,7 @@ internal object HomeUiModule {
             intensityLevelUiToPresentationMapper = IntensityLevelUiToPresentationMapper(),
             timeUiFormatter = timeUiFormatter,
             homeMessagePresenter = homeMessagePresenter,
+            homeMessageBehaviourUiMapper = HomeMessageBehaviourUiMapper(),
             homeNavigationMapper = homeNavigationMapper,
             homeNotificationMapper = HomeNotificationUiMapper(homeMessagePresenter)
         )

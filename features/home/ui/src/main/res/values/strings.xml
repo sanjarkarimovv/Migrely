@@ -48,6 +48,11 @@
     <string name="snackbar_attack_started">Migraine started</string>
     <string name="snackbar_attack_ended">Migraine ended</string>
     <string name="snackbar_undo">Undo</string>
+    <string name="snackbar_undo_start_description">Undo the start</string>
+    <string name="snackbar_undo_end_description">Undo the end</string>
+    <string name="snackbar_dismiss">Dismiss</string>
+    <string name="message_undone">Undone.</string>
+    <string name="message_undo_not_possible">This can no longer be undone.</string>
     <string name="message_storage_full">Couldn\'t save. Your phone\'s storage is full.</string>
     <string name="message_move_rejected">Your previous migraine ended at %1$s.</string>
     <string name="message_end_out_of_range">Pick a time between the start and now.</string>
