@@ -76,7 +76,8 @@ site, because tabular figures in running text would look gappy.
 - **`MigrelySnackbar(text, tone, action, onDismiss, timeLeft, modifier)`** is stateless:
   - container `SurfaceContainerHigh`, 1 dp `OutlineVariant` border, 20 dp corners, no shadow;
   - text `bodyMedium` in `OnSurface` (#C8CCD2), with no line limit;
-  - `action` is `SnackbarActionUiModel(label, spokenLabel, onClick)` or null;
+  - `action` is `SnackbarAction(label, spokenLabel, onClick)` or null. It is not named `*UiModel`, because the
+    Konsist rule keeps `*Model` classes in `model` packages;
   - without an action it shows a 48 dp close button labelled "Dismiss";
   - `timeLeft: (() -> Float)?` draws a 2 dp line in `Primary` at 45% alpha along the bottom edge, read in the draw
     phase so the countdown does not recompose.
@@ -85,7 +86,7 @@ site, because tabular figures in running text would look gappy.
 - **`SwipeToDismissBox`** wraps the component; a sideways swipe calls `onDismiss`.
 - **Semantics:** `liveRegion` is `Polite`, or `Assertive` for `Error`. The action's content description is the spoken
   label.
-- **`MigrelySnackbarHost(visibleKey, reduceMotion, content)`:**
+- **`MigrelySnackbarHost(message, reduceMotion, content)`:**
   - places the component at the top within `WindowInsets.safeDrawing` (top and horizontal), at most 560 dp wide and
     centred;
   - wraps it in `AnimatedContent`: slide and fade in over 250 ms, fade out over 200 ms, and `None` with reduce motion.
