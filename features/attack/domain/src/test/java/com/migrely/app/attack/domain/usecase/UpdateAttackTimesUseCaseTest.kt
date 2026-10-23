@@ -221,4 +221,45 @@ class UpdateAttackTimesUseCaseTest {
 
         assertEquals(UpdateAttackTimesResultDomainModel.NotFound, update(FIXTURE_START, END))
     }
+
+    @Test
+    fun `Given the previous end is seconds into the picked minute then the start snaps to it`() {
+        givenAttack()
+        val pickedStart = FIXTURE_START.minus(Duration.ofMinutes(30))
+        val otherEnd = pickedStart.plusSeconds(42)
+        given(findOverlappingAttackRepository.overlappingAttack("a", pickedStart, END))
+            .willReturn(
+                OverlapLookupResultDomainModel.Found(otherEnd.minus(Duration.ofHours(1)), otherEnd)
+            )
+
+        val actual = update(pickedStart, END)
+
+        assertEquals(
+            UpdateAttackTimesResultDomainModel.Updated(FIXTURE_START, END, emptyList()),
+            actual
+        )
+        verify(updateAttackTimesRepository).updateAttackTimes("a", otherEnd, END, emptyList())
+    }
+
+    @Test
+    fun `Given the next start is seconds before the picked end then the end snaps to it`() {
+        givenAttack()
+        val nextStart = END.plus(Duration.ofMinutes(10)).minusSeconds(20)
+        val pickedEnd = END.plus(Duration.ofMinutes(10))
+        given(findOverlappingAttackRepository.overlappingAttack("a", FIXTURE_START, pickedEnd))
+            .willReturn(
+                OverlapLookupResultDomainModel.Found(nextStart, nextStart.plus(Duration.ofHours(1)))
+            )
+        given(getCurrentTimeRepository.currentTime())
+            .willReturn(CurrentTimeDomainModel(pickedEnd.plus(Duration.ofHours(1)), FIXTURE_ZONE))
+
+        update(FIXTURE_START, pickedEnd)
+
+        verify(updateAttackTimesRepository).updateAttackTimes(
+            "a",
+            FIXTURE_START,
+            nextStart,
+            emptyList()
+        )
+    }
 }

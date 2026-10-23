@@ -152,4 +152,16 @@ class AddCustomTagUseCaseTest {
 
         assertEquals(AddCustomTagResultDomainModel.StorageFull, add("Jaw pain"))
     }
+
+    @Test
+    fun `Given 100 active tags and an archived match when adding then limit reached`() {
+        val archived = customTag(id = "e", name = "Jaw pain", archived = true)
+        given(findCustomTagRepository.customTag(TagKindDomainModel.Symptom, "jaw pain"))
+            .willReturn(CustomTagLookupResultDomainModel.Found(archived))
+        given(countActiveCustomTagsRepository.activeCustomTagCount(TagKindDomainModel.Symptom))
+            .willReturn(CustomTagCountResultDomainModel.Counted(100))
+
+        assertEquals(AddCustomTagResultDomainModel.LimitReached, add("Jaw pain"))
+        verify(setCustomTagArchivedRepository, never()).setCustomTagArchived(any(), any())
+    }
 }

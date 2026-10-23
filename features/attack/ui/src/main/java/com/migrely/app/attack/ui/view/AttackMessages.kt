@@ -34,6 +34,7 @@ internal fun AttackMessages(
     shown: ShownAttackMessageUiModel?,
     behaviourMapper: AttackMessageBehaviourUiMapper,
     reduceMotion: Boolean,
+    isShown: (ShownAttackMessageUiModel) -> Boolean,
     onClear: (ShownAttackMessageUiModel) -> Unit,
     onUndoTimes: (TimesUndoUiModel) -> Unit,
     onUndoPoint: (AttackMessageUiModel.PointRemoved) -> Unit,
@@ -41,8 +42,9 @@ internal fun AttackMessages(
 ) {
     val accessibilityManager = LocalAccessibilityManager.current
     val currentOnClear by rememberUpdatedState(onClear)
-    // Undo acts only while its message is still on screen, so a tap on a message fading out cannot undo twice.
-    val currentShown by rememberUpdatedState(shown)
+    // Undo acts only while its message is still on screen, read from the state itself at tap time, so two taps in
+    // one frame or a tap on a message fading out cannot undo twice.
+    val currentIsShown by rememberUpdatedState(isShown)
 
     fun timeoutMillis(behaviour: AttackMessageBehaviourUiModel): Long? =
         behaviour.baseDurationMillis?.let { base ->
@@ -75,7 +77,7 @@ internal fun AttackMessages(
                 label = stringResource(R.string.snackbar_undo),
                 spokenLabel = stringResource(R.string.snackbar_undo_times_description),
                 onClick = {
-                    if (currentShown == visible) {
+                    if (currentIsShown(visible)) {
                         currentOnClear(visible)
                         onUndoTimes(message.undo)
                     }
@@ -86,7 +88,7 @@ internal fun AttackMessages(
                 label = stringResource(R.string.snackbar_undo),
                 spokenLabel = stringResource(R.string.snackbar_undo_point_description),
                 onClick = {
-                    if (currentShown == visible) {
+                    if (currentIsShown(visible)) {
                         currentOnClear(visible)
                         onUndoPoint(message)
                     }

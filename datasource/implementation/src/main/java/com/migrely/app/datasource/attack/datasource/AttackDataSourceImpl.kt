@@ -1,5 +1,6 @@
 package com.migrely.app.datasource.attack.datasource
 
+import android.database.sqlite.SQLiteException
 import com.migrely.app.datasource.attack.dao.AttackDao
 import com.migrely.app.datasource.attack.mapper.AttackLocalMapper
 import com.migrely.app.datasource.attack.mapper.AttackTagLocalMapper
@@ -156,7 +157,7 @@ class AttackDataSourceImpl(
 
     override fun softDelete(attackId: String) = database {
         val now = clock.millis()
-        attackDao.purgeDeletedBefore(now - DELETED_RETENTION.toMillis())
+        purgeExpiredDeletions(now)
         attackDao.softDelete(attackId, now)
     }
 
@@ -170,7 +171,7 @@ class AttackDataSourceImpl(
 
     override fun recentlyDeleted(since: Instant): DeletedAttackDataModel? = database {
         val cutoff = clock.millis() - DELETED_RETENTION.toMillis()
-        attackDao.purgeDeletedBefore(cutoff)
+        purgeExpiredDeletions(clock.millis())
         attackDao.recentlyDeleted(maxOf(since.toEpochMilli(), cutoff))?.let { local ->
             local.deletedEpochMillis?.let { deletedAt ->
                 DeletedAttackDataModel(local.id, Instant.ofEpochMilli(deletedAt))
@@ -211,6 +212,19 @@ class AttackDataSourceImpl(
             "A note holds at most $MAXIMUM_NOTE_LENGTH characters"
         }
         database { attackDao.setNote(attackId, note, clock.millis()) }
+    }
+
+    /**
+     * Housekeeping only: a purge that fails, for example when storage is full, must not stop the read or the deletion
+     * it runs before. Rows it leaves behind are hidden anyway and are purged on a later call.
+     */
+    @Suppress("SwallowedException")
+    private fun purgeExpiredDeletions(nowEpochMillis: Long) {
+        try {
+            attackDao.purgeDeletedBefore(nowEpochMillis - DELETED_RETENTION.toMillis())
+        } catch (exception: SQLiteException) {
+            // Ignored on purpose; see above.
+        }
     }
 
     private fun intensityPoint(attackId: String, at: Instant, value: Int) =

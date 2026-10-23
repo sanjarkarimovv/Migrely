@@ -30,6 +30,9 @@ import com.migrely.app.home.ui.notification.HomeMessagePresenter
 import java.time.ZoneId
 import kotlinx.coroutines.delay
 
+private const val DELETION_OFFER_MAX_AGE_MILLIS = 30_000L
+private const val OFFERED_DELETIONS_KEPT = 10
+
 /**
  * The home screen's messages (BRD EC-UX-16). The newest message replaces the one on screen. The message and the time
  * it appeared are saved, so after a rotation it stays only for the time it has left. Each message's base duration is
@@ -47,9 +50,9 @@ internal fun HomeMessages(
     modifier: Modifier = Modifier
 ) {
     var shown by rememberSaveable { mutableStateOf<ShownHomeMessageUiModel?>(null) }
-    // The deletion already offered, so returning to home or rotating does not offer it again after a dismissal.
-    var offeredDeletion by rememberSaveable {
-        mutableStateOf<HomeMessageUiModel.AttackDeleted?>(null)
+    // Deletions already offered, so a return to home or a rotation does not offer one again after a dismissal.
+    var offeredDeletions by rememberSaveable {
+        mutableStateOf(ArrayList<HomeMessageUiModel.AttackDeleted>())
     }
     val haptics = LocalHapticFeedback.current
     val accessibilityManager = LocalAccessibilityManager.current
@@ -72,8 +75,15 @@ internal fun HomeMessages(
             // A deletion arrives with every return to home while it is restorable; offer it once. Its window starts
             // when home shows it, so the trip back from the details screen does not shorten it.
             if (message is HomeMessageUiModel.AttackDeleted) {
-                if (message == offeredDeletion) return@collect
-                offeredDeletion = message
+                // Home learns of a deletion right after the details screen closes; an older one, for example after the
+                // app was closed and opened again, is past its undo and is never offered.
+                val fresh =
+                    System.currentTimeMillis() - message.deletedAtEpochMillis <=
+                        DELETION_OFFER_MAX_AGE_MILLIS
+                if (!fresh || message in offeredDeletions) return@collect
+                offeredDeletions = ArrayList(
+                    offeredDeletions.takeLast(OFFERED_DELETIONS_KEPT - 1) + message
+                )
             }
             when (message) {
                 is HomeMessageUiModel.AttackStarted,

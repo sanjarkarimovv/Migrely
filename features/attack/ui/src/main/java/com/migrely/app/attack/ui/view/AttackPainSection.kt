@@ -148,11 +148,19 @@ private fun AddPainDialog(
     onAdd: (IntensityPointUiModel) -> Unit,
     onDismiss: () -> Unit
 ) {
-    val latest = details.endEpochMillis ?: (details.nowEpochMillis + CLOCK_TOLERANCE_MILLIS)
+    // "Now" is read when the dialog opens, so a screen left open for a while still offers the current time.
+    val openedAt = rememberSaveable { System.currentTimeMillis() }
+    val latest = details.endEpochMillis ?: (openedAt + CLOCK_TOLERANCE_MILLIS)
     var level by rememberSaveable { mutableFloatStateOf(DEFAULT_LEVEL) }
     var at by rememberSaveable {
         mutableLongStateOf(
-            details.endEpochMillis?.let { details.startEpochMillis } ?: details.nowEpochMillis
+            if (details.endEpochMillis ==
+                null
+            ) {
+                openedAt
+            } else {
+                details.startEpochMillis
+            }
         )
     }
     var pickingTime by rememberSaveable { mutableStateOf(false) }

@@ -1,5 +1,6 @@
 package com.migrely.app.datasource.attack.datasource
 
+import android.database.sqlite.SQLiteFullException
 import com.migrely.app.datasource.attack.dao.AttackDao
 import com.migrely.app.datasource.attack.mapper.AttackLocalMapper
 import com.migrely.app.datasource.attack.model.AttackLocalModel
@@ -16,10 +17,12 @@ import java.time.ZoneOffset
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.given
 import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 
 private val NOW: Instant = Instant.parse("2026-10-23T09:00:00Z")
 private const val TWO_MINUTES = 120_000L
@@ -130,5 +133,14 @@ class AttackDataSourceDetailsTest {
             ),
             nowEpochMillis = NOW.toEpochMilli()
         )
+    }
+
+    @Test
+    fun `Given the purge fails when asking for a recent deletion then still answers`() {
+        whenever(
+            attackDao.purgeDeletedBefore(NOW.toEpochMilli() - TWO_MINUTES)
+        ).doThrow(SQLiteFullException())
+
+        assertEquals(null, classUnderTest.recentlyDeleted(Instant.EPOCH))
     }
 }

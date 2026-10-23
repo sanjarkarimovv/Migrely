@@ -50,8 +50,13 @@ class AddCustomTagUseCase(
         }
         val nameKey = name.lowercase(Locale.ROOT)
         val tag = when (val existing = findCustomTagRepository.customTag(request.kind, nameKey)) {
-            is CustomTagLookupResultDomainModel.Found -> reuse(existing.tag)
-                ?: return AddCustomTagResultDomainModel.Failed
+            is CustomTagLookupResultDomainModel.Found -> when (
+                val reused = reuse(request.kind, existing.tag)
+            ) {
+                is CreateOutcome.Created -> reused.tag
+                is CreateOutcome.Stopped -> return reused.result
+            }
+
             CustomTagLookupResultDomainModel.None -> when (
                 val created = create(
                     request.kind,
@@ -78,31 +83,35 @@ class AddCustomTagUseCase(
         }
     }
 
-    private fun reuse(tag: CustomTagDomainModel): CustomTagDomainModel? {
-        if (!tag.archived) return tag
+    /** An archived match comes back to the list, which counts against the limit like a new tag (BRD EC-ATK-12). */
+    private fun reuse(kind: TagKindDomainModel, tag: CustomTagDomainModel): CreateOutcome {
+        if (!tag.archived) return CreateOutcome.Created(tag)
+        limitReached(kind)?.let { return CreateOutcome.Stopped(it) }
         return when (
-            setCustomTagArchivedRepository.setCustomTagArchived(
-                tag.id,
-                archived = false
-            )
+            setCustomTagArchivedRepository.setCustomTagArchived(tag.id, archived = false)
         ) {
-            WriteResultDomainModel.Written -> tag.copy(archived = false)
-            WriteResultDomainModel.StorageFull,
-            WriteResultDomainModel.Failed -> null
+            WriteResultDomainModel.Written -> CreateOutcome.Created(tag.copy(archived = false))
+            WriteResultDomainModel.StorageFull ->
+                CreateOutcome.Stopped(AddCustomTagResultDomainModel.StorageFull)
+            WriteResultDomainModel.Failed ->
+                CreateOutcome.Stopped(AddCustomTagResultDomainModel.Failed)
         }
     }
 
-    private fun create(kind: TagKindDomainModel, name: String, nameKey: String): CreateOutcome {
+    /** What stops adding when the active list of [kind] is full or cannot be counted; null when there is room. */
+    private fun limitReached(kind: TagKindDomainModel): AddCustomTagResultDomainModel? =
         when (val count = countActiveCustomTagsRepository.activeCustomTagCount(kind)) {
             is CustomTagCountResultDomainModel.Counted ->
-                if (count.count >= MAXIMUM_ACTIVE_CUSTOM_TAGS) {
-                    return CreateOutcome.Stopped(AddCustomTagResultDomainModel.LimitReached)
+                AddCustomTagResultDomainModel.LimitReached.takeIf {
+                    count.count >=
+                        MAXIMUM_ACTIVE_CUSTOM_TAGS
                 }
 
-            CustomTagCountResultDomainModel.Failed -> return CreateOutcome.Stopped(
-                AddCustomTagResultDomainModel.Failed
-            )
+            CustomTagCountResultDomainModel.Failed -> AddCustomTagResultDomainModel.Failed
         }
+
+    private fun create(kind: TagKindDomainModel, name: String, nameKey: String): CreateOutcome {
+        limitReached(kind)?.let { return CreateOutcome.Stopped(it) }
         return when (val created = createCustomTagRepository.createCustomTag(kind, name, nameKey)) {
             is CreateCustomTagResultDomainModel.Created -> CreateOutcome.Created(created.tag)
             CreateCustomTagResultDomainModel.StorageFull ->

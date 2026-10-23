@@ -137,6 +137,22 @@
   - the 100-tag limit;
   - the haptics (no vibration motor).
 - 9.5 `openspec validate add-attack-details --strict`: valid.
+- Independent code review (after the walk): no high-severity findings. Two medium and seven low findings, all fixed:
+  1. **Double tap on back or delete** popped home and left an empty screen. Exits now pop up to the details route.
+  2. **Minute pickers and stored seconds.** Picked whole minutes against stored seconds refused touching attacks and could drop entries in an unchanged end's last seconds. Three fixes:
+     - an overlap under a minute snaps to the neighbour's boundary;
+     - pickers accept the minute that holds a boundary and clamp to it;
+     - re-confirming the shown minute changes nothing.
+  3. **The 100-tag limit.** Unarchiving a custom tag now counts against it.
+  4. **Stale "now".** "Now" for pickers and new pain entries is read when they open.
+  5. **Deletion offers.** Each deletion is offered once, and only within 30 seconds of happening.
+  6. **Late results.** A late result for another attack is ignored by the details screen.
+  7. **Double undo.** Undo checks the live message state, so two taps in one frame cannot undo twice.
+  8. **Time zone.** The overlap error uses the attack's time zone.
+  9. **Purge failures.** A failing purge of old deletions no longer stops loading today.
+
+  Unit tests: 352 after the fixes; gate BUILD SUCCESSFUL. A double tap on back was re-checked on the emulator: home stays.
+- Note for later walks: running `connectedDebugAndroidTest` from the root also runs `:app`'s test task, which uninstalls the app and wipes its data on the emulator. Run the module tasks instead.
 
 ## Workflow follow-up
 

@@ -104,8 +104,12 @@ fun AttackDetailsDependencies.AttackDetails(
     ViewModelObserver(navController)
 
     val viewState by attackDetailsViewModel.viewState.collectAsState(AttackDetailsViewState.Loading)
+    // One ViewModel serves every details screen, so a late result for another attack is ignored here.
     val uiState by rememberSaveable(viewState) {
-        mutableStateOf(attackDetailsViewStateUiMapper.toUi(viewState))
+        val mapped = attackDetailsViewStateUiMapper.toUi(viewState)
+        val otherAttack =
+            mapped is AttackDetailsViewStateUiModel.Ready && mapped.details.id != attackId
+        mutableStateOf(if (otherAttack) AttackDetailsViewStateUiModel.Loading else mapped)
     }
     var timeError by rememberSaveable(attackId) { mutableStateOf<TimeErrorUiModel?>(null) }
     var safetyCardVisible by rememberSaveable(attackId) { mutableStateOf(false) }
@@ -207,6 +211,7 @@ fun AttackDetailsDependencies.AttackDetails(
             shown = shownMessage,
             behaviourMapper = attackMessageBehaviourUiMapper,
             reduceMotion = rememberReduceMotion(),
+            isShown = { message -> shownMessage == message },
             onClear = { message -> if (shownMessage == message) shownMessage = null },
             onUndoTimes = { undo ->
                 viewModel.onUndoTimesChangeAction(

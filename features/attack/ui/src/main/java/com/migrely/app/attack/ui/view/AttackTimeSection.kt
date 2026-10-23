@@ -13,6 +13,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -58,7 +59,8 @@ internal fun TimeSection(
     actions: AttackDetailsActions
 ) {
     var picking by rememberSaveable(details.id) { mutableStateOf<TimeFieldUiModel?>(null) }
-    val latestAllowed = details.nowEpochMillis + CLOCK_TOLERANCE_MILLIS
+    // Read when a picker opens, so a screen left open for a while still allows the current time.
+    val latestAllowed = remember(picking) { System.currentTimeMillis() } + CLOCK_TOLERANCE_MILLIS
     val end = details.endEpochMillis
     Column {
         SectionTitle(stringResource(R.string.section_time))
@@ -71,6 +73,7 @@ internal fun TimeSection(
             value = startText,
             description = stringResource(R.string.time_change_start, startText),
             error = timeError?.takeIf { it.field == TimeFieldUiModel.Start },
+            zoneId = details.startZoneId,
             timeUiFormatter = timeUiFormatter,
             onClick = { picking = TimeFieldUiModel.Start }
         )
@@ -80,6 +83,7 @@ internal fun TimeSection(
                 value = stringResource(R.string.time_in_progress),
                 description = null,
                 error = null,
+                zoneId = details.startZoneId,
                 timeUiFormatter = timeUiFormatter,
                 onClick = null
             )
@@ -90,6 +94,7 @@ internal fun TimeSection(
                 value = endText,
                 description = stringResource(R.string.time_change_end, endText),
                 error = timeError?.takeIf { it.field == TimeFieldUiModel.End },
+                zoneId = details.startZoneId,
                 timeUiFormatter = timeUiFormatter,
                 onClick = { picking = TimeFieldUiModel.End }
             )
@@ -116,20 +121,21 @@ internal fun TimeSection(
             labels = pickerLabels(R.string.picker_start_title, R.string.picker_start_out_of_range),
             onConfirm = { start ->
                 picking = null
-                actions.onStartPicked(start)
+                // Confirming the minute already shown keeps the stored time and its seconds.
+                if (!sameMinute(start, details.startEpochMillis)) actions.onStartPicked(start)
             },
             onDismiss = { picking = null }
         )
 
         TimeFieldUiModel.End -> MigrelyDateTimePicker(
-            initialEpochMillis = end ?: details.nowEpochMillis,
+            initialEpochMillis = end ?: (latestAllowed - CLOCK_TOLERANCE_MILLIS),
             minEpochMillis = details.startEpochMillis + 1,
             maxEpochMillis = latestAllowed,
             zoneId = zone,
             labels = pickerLabels(R.string.picker_end_title, R.string.picker_end_out_of_range),
             onConfirm = { newEnd ->
                 picking = null
-                actions.onEndPicked(newEnd)
+                if (end == null || !sameMinute(newEnd, end)) actions.onEndPicked(newEnd)
             },
             onDismiss = { picking = null }
         )
@@ -145,6 +151,7 @@ private fun TimeRow(
     value: String,
     description: String?,
     error: TimeErrorUiModel?,
+    zoneId: String,
     timeUiFormatter: AttackTimeUiFormatter,
     onClick: (() -> Unit)?
 ) {
@@ -194,7 +201,7 @@ private fun TimeRow(
             )
             if (error != null) {
                 Text(
-                    text = errorText(error.reason, timeUiFormatter),
+                    text = errorText(error.reason, zoneId, timeUiFormatter),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.error,
                     modifier = Modifier.padding(top = 6.dp)
@@ -207,13 +214,14 @@ private fun TimeRow(
 @Composable
 private fun errorText(
     reason: TimeErrorReasonUiModel,
+    zone: String,
     timeUiFormatter: AttackTimeUiFormatter
 ): String = when (reason) {
     TimeErrorReasonUiModel.InFuture -> stringResource(R.string.time_error_in_future)
     TimeErrorReasonUiModel.EndBeforeStart ->
         stringResource(R.string.time_error_end_before_start)
     is TimeErrorReasonUiModel.Overlaps -> {
-        val zone = ZoneId.systemDefault().id
+        // In the attack's zone, like every other time on this screen.
         val start = timeUiFormatter.formatDateTime(reason.startEpochMillis, zone)
         val otherEnd = reason.endEpochMillis
         if (otherEnd == null) {
@@ -255,6 +263,9 @@ internal fun durationText(millis: Long): String {
         )
     }
 }
+
+private fun sameMinute(first: Long, second: Long) =
+    first / MILLIS_PER_MINUTE == second / MILLIS_PER_MINUTE
 
 internal fun zoneOf(id: String): ZoneId = try {
     ZoneId.of(id)

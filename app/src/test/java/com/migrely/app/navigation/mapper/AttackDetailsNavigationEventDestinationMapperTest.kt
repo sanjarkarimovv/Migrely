@@ -2,6 +2,7 @@ package com.migrely.app.navigation.mapper
 
 import androidx.navigation.NavController
 import com.migrely.app.attack.presentation.navigation.AttackDetailsPresentationNavigationEvent
+import com.migrely.app.ui.main.route.AttackDetails
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -22,7 +23,7 @@ class AttackDetailsNavigationEventDestinationMapperTest(
     }
 
     @Test
-    fun `When leaving the details screen then goes back`() {
+    fun `When leaving the details screen then pops up to and including it`() {
         // Given
         val navController: NavController = mock()
 
@@ -30,6 +31,6 @@ class AttackDetailsNavigationEventDestinationMapperTest(
         AttackDetailsNavigationEventDestinationMapper().toUi(event).navigate(navController)
 
         // Then
-        verify(navController).popBackStack()
+        verify(navController).popBackStack(AttackDetails::class, true, false)
     }
 }

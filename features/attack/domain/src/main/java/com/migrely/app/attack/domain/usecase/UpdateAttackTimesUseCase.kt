@@ -12,6 +12,10 @@ import com.migrely.app.attack.domain.repository.GetAttackDetailsRepository
 import com.migrely.app.attack.domain.repository.GetCurrentTimeRepository
 import com.migrely.app.attack.domain.repository.UpdateAttackTimesRepository
 import com.migrely.app.coroutine.CoroutineContextProvider
+import java.time.Duration
+import java.time.Instant
+
+private val SAME_MINUTE: Duration = Duration.ofMinutes(1)
 
 /**
  * Sets an attack's start and end (BRD EC-ATK-03, EC-ATK-04). The end of an attack in progress stays empty. Times may
@@ -44,8 +48,8 @@ class UpdateAttackTimesUseCase(
         }
         val now = getCurrentTimeRepository.currentTime().instant
         val latestAllowed = now.plus(CLOCK_TOLERANCE)
-        val start = request.start
-        val end = if (attack.isInProgress) null else request.end ?: attack.end
+        var start = request.start
+        var end = if (attack.isInProgress) null else request.end ?: attack.end
         when {
             start.isAfter(latestAllowed) ->
                 return UpdateAttackTimesResultDomainModel.InFuture(TimeFieldDomainModel.Start)
@@ -53,20 +57,44 @@ class UpdateAttackTimesUseCase(
             end != null && end.isAfter(latestAllowed) ->
                 return UpdateAttackTimesResultDomainModel.InFuture(TimeFieldDomainModel.End)
 
-            end != null && !end.isAfter(
-                start
-            ) -> return UpdateAttackTimesResultDomainModel.EndBeforeStart
+            end != null && !end.isAfter(start) ->
+                return UpdateAttackTimesResultDomainModel.EndBeforeStart
         }
-        val rangeEnd = end ?: maxOf(now, start)
+        val overlap = overlapping(attack.id, start, end, now)
+        if (overlap is OverlapLookupResultDomainModel.Found) {
+            // Times are picked in whole minutes while stored times keep their seconds. An overlap shorter than a
+            // minute means the user meant to touch the other attack, so the time snaps to its boundary.
+            val otherEnd = overlap.end
+            val currentEnd = end
+            when {
+                !overlap.start.isAfter(start) && otherEnd != null && otherEnd.isAfter(start) &&
+                    Duration.between(start, otherEnd) < SAME_MINUTE -> start = otherEnd
+
+                overlap.start.isAfter(start) && currentEnd != null &&
+                    Duration.between(overlap.start, currentEnd) < SAME_MINUTE -> end = overlap.start
+
+                else ->
+                    return UpdateAttackTimesResultDomainModel.Overlaps(overlap.start, overlap.end)
+            }
+            val snappedEnd = end
+            if (snappedEnd != null && !snappedEnd.isAfter(start)) {
+                return UpdateAttackTimesResultDomainModel.EndBeforeStart
+            }
+        }
         when (
-            val overlap = findOverlappingAttackRepository.overlappingAttack(
-                attack.id,
-                start,
-                rangeEnd
-            )
+            val check = if (overlap is OverlapLookupResultDomainModel.Found) {
+                overlapping(
+                    attack.id,
+                    start,
+                    end,
+                    now
+                )
+            } else {
+                overlap
+            }
         ) {
             is OverlapLookupResultDomainModel.Found ->
-                return UpdateAttackTimesResultDomainModel.Overlaps(overlap.start, overlap.end)
+                return UpdateAttackTimesResultDomainModel.Overlaps(check.start, check.end)
 
             OverlapLookupResultDomainModel.None -> Unit
             OverlapLookupResultDomainModel.Failed ->
@@ -93,4 +121,7 @@ class UpdateAttackTimesUseCase(
             WriteResultDomainModel.Failed -> UpdateAttackTimesResultDomainModel.Failed
         }
     }
+
+    private fun overlapping(attackId: String, start: Instant, end: Instant?, now: Instant) =
+        findOverlappingAttackRepository.overlappingAttack(attackId, start, end ?: maxOf(now, start))
 }

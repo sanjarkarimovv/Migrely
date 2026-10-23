@@ -158,7 +158,9 @@ private fun TimeStep(
         .atZone(zoneId)
         .toInstant()
         .toEpochMilli()
-    val inRange = pickedEpochMillis in range
+    // The picker works in whole minutes while the bounds may carry seconds: the minute that holds the lower bound is
+    // allowed and the result is clamped to the exact bound, so a boundary can always be picked.
+    val inRange = pickedEpochMillis in pickableRange(range)
     Dialog(onDismissRequest = onDismiss) {
         Surface(
             shape = RoundedCornerShape(28.dp),
@@ -185,7 +187,9 @@ private fun TimeStep(
                 }
                 Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
                     TextButton(onClick = onDismiss) { Text(labels.cancel) }
-                    TextButton(onClick = { onConfirm(pickedEpochMillis) }, enabled = inRange) {
+                    TextButton(onClick = {
+                        onConfirm(pickedEpochMillis.coerceIn(range))
+                    }, enabled = inRange) {
                         Text(labels.confirm)
                     }
                 }
@@ -201,3 +205,9 @@ private fun LocalDate.coerceIn(first: LocalDate, last: LocalDate): LocalDate = w
     isAfter(last) -> last
     else -> this
 }
+
+private const val MILLIS_PER_MINUTE = 60_000L
+
+/** [range] widened to the start of the minute that holds its lower bound. */
+internal fun pickableRange(range: LongRange): LongRange =
+    (range.first - Math.floorMod(range.first, MILLIS_PER_MINUTE))..range.last
