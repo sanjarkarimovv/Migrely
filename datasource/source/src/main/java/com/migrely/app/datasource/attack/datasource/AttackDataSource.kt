@@ -2,19 +2,35 @@ package com.migrely.app.datasource.attack.datasource
 
 import com.migrely.app.datasource.attack.model.AttackDataModel
 import com.migrely.app.datasource.attack.model.AttackStartDataModel
+import com.migrely.app.datasource.attack.model.AttackTagDataModel
+import com.migrely.app.datasource.attack.model.DeletedAttackDataModel
+import com.migrely.app.datasource.attack.model.IntensityPointDataModel
 import com.migrely.app.datasource.attack.model.ReopenDataModel
+import com.migrely.app.datasource.attack.model.RestoreDataModel
 import java.time.Instant
 
 /**
  * Attacks stored on the device. Every function blocks and must be called off the main thread.
  * Writes throw [com.migrely.app.datasource.exception.StorageFullDataException] when the device is full and
  * [com.migrely.app.datasource.exception.DatabaseDataException] for other storage failures.
+ *
+ * Deleted attacks ([softDelete]) are invisible to every read except [recentlyDeleted], can be restored for a short
+ * while, and are purged for good after it (BRD D23).
  */
+@Suppress("TooManyFunctions")
 interface AttackDataSource {
     fun inProgress(): AttackDataModel?
 
+    fun byId(attackId: String): AttackDataModel?
+
     /** Ended attacks that overlap `[from, to)`. */
     fun endedTouching(from: Instant, to: Instant): List<AttackDataModel>
+
+    /**
+     * Another attack than [attackId] that overlaps `(start, end)`. An attack in progress counts as open-ended, and
+     * attacks that only touch at one instant do not overlap.
+     */
+    fun overlapping(attackId: String, start: Instant, end: Instant): AttackDataModel?
 
     /** Atomic: starts a new attack only when none is in progress. */
     fun startIfNoneInProgress(start: Instant, zoneId: String): AttackStartDataModel
@@ -23,7 +39,29 @@ interface AttackDataSource {
 
     fun replaceLatestIntensityPoint(attackId: String, at: Instant, value: Int)
 
+    /** Removes one intensity point equal to [point]. */
+    fun removeIntensityPoint(attackId: String, point: IntensityPointDataModel)
+
+    /** Whether any attack that is not deleted has an intensity point of 10. */
+    fun maximumRecorded(): Boolean
+
     fun updateStart(attackId: String, start: Instant)
+
+    /** Atomic: sets both times and removes [pointsToRemove]. */
+    fun updateTimes(
+        attackId: String,
+        start: Instant,
+        end: Instant?,
+        pointsToRemove: List<IntensityPointDataModel>
+    )
+
+    /** Atomic: sets both times and adds [points] back. */
+    fun restoreTimes(
+        attackId: String,
+        start: Instant,
+        end: Instant?,
+        points: List<IntensityPointDataModel>
+    )
 
     /** The latest end among other attacks that ended at or before [before], if any. */
     fun previousEndBefore(attackId: String, before: Instant): Instant?
@@ -33,7 +71,25 @@ interface AttackDataSource {
     /** Atomic: reopens only when no other attack is in progress. */
     fun reopen(attackId: String): ReopenDataModel
 
+    /** Removes the attack for good; used to undo a start, when it should never have existed. */
     fun delete(attackId: String)
 
+    fun softDelete(attackId: String)
+
+    /** Atomic: undoes [softDelete] unless the attack would overlap another one or be a second one in progress. */
+    fun restore(attackId: String): RestoreDataModel
+
+    /** The newest attack deleted at or after [since], if it is still restorable. */
+    fun recentlyDeleted(since: Instant): DeletedAttackDataModel?
+
     fun updateLongAttackCheck(attackId: String, confirmedAt: Instant?, disabled: Boolean)
+
+    /** Idempotent: selecting a selected tag or clearing a cleared one changes nothing. */
+    fun setTag(attackId: String, tag: AttackTagDataModel, selected: Boolean)
+
+    /** [impact] is 0 to 3, or null for none (BRD ATK-F5). */
+    fun setFunctionalImpact(attackId: String, impact: Int?)
+
+    /** At most 1,000 characters (BRD EC-ATK-13). */
+    fun setNote(attackId: String, note: String)
 }

@@ -6,5 +6,7 @@ import androidx.room.Relation
 data class AttackWithPointsLocalModel(
     @Embedded val attack: AttackLocalModel,
     @Relation(parentColumn = "id", entityColumn = "attack_id")
-    val intensityPoints: List<IntensityPointLocalModel>
+    val intensityPoints: List<IntensityPointLocalModel>,
+    @Relation(parentColumn = "id", entityColumn = "attack_id")
+    val tags: List<AttackTagLocalModel> = emptyList()
 )

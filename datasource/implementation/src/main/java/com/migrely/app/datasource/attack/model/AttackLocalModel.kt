@@ -18,5 +18,9 @@ data class AttackLocalModel(
     Long?,
     @ColumnInfo(name = "long_check_disabled") val longCheckDisabled: Boolean,
     @ColumnInfo(name = "created_epoch_millis") val createdEpochMillis: Long,
-    @ColumnInfo(name = "updated_epoch_millis") val updatedEpochMillis: Long
+    @ColumnInfo(name = "updated_epoch_millis") val updatedEpochMillis: Long,
+    // Added in version 2 (change add-attack-details).
+    @ColumnInfo(name = "functional_impact") val functionalImpact: Int? = null,
+    @ColumnInfo(name = "note") val note: String? = null,
+    @ColumnInfo(name = "deleted_epoch_millis") val deletedEpochMillis: Long? = null
 )

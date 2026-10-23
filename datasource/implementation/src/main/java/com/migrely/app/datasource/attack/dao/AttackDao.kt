@@ -2,26 +2,39 @@ package com.migrely.app.datasource.attack.dao
 
 import androidx.room.Dao
 import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Update
 import com.migrely.app.datasource.attack.model.AttackLocalModel
+import com.migrely.app.datasource.attack.model.AttackTagLocalModel
 import com.migrely.app.datasource.attack.model.AttackWithPointsLocalModel
 import com.migrely.app.datasource.attack.model.IntensityPointLocalModel
 
+/**
+ * Attack queries. Every read except [deletedById] and [recentlyDeleted] skips deleted attacks
+ * (`deleted_epoch_millis IS NOT NULL`), which wait for their undo window to pass before they are purged (BRD D23).
+ */
+@Suppress("TooManyFunctions")
 @Dao
 abstract class AttackDao {
     @Transaction
-    @Query("SELECT * FROM attack WHERE end_epoch_millis IS NULL LIMIT 1")
+    @Query(
+        "SELECT * FROM attack WHERE end_epoch_millis IS NULL AND deleted_epoch_millis IS NULL LIMIT 1"
+    )
     abstract fun inProgress(): AttackWithPointsLocalModel?
 
     @Transaction
-    @Query("SELECT * FROM attack WHERE id = :attackId")
+    @Query("SELECT * FROM attack WHERE id = :attackId AND deleted_epoch_millis IS NULL")
     abstract fun byId(attackId: String): AttackWithPointsLocalModel?
+
+    @Query("SELECT * FROM attack WHERE id = :attackId AND deleted_epoch_millis IS NOT NULL")
+    abstract fun deletedById(attackId: String): AttackLocalModel?
 
     @Transaction
     @Query(
-        "SELECT * FROM attack WHERE end_epoch_millis IS NOT NULL " +
+        "SELECT * FROM attack WHERE end_epoch_millis IS NOT " +
+            "NULL AND deleted_epoch_millis IS NULL " +
             "AND start_epoch_millis < :toEpochMillis AND end_epoch_millis > :fromEpochMillis " +
             "ORDER BY start_epoch_millis"
     )
@@ -29,6 +42,20 @@ abstract class AttackDao {
         fromEpochMillis: Long,
         toEpochMillis: Long
     ): List<AttackWithPointsLocalModel>
+
+    /** An attack in progress is open-ended; attacks that only touch at one instant do not overlap. */
+    @Transaction
+    @Query(
+        "SELECT * FROM attack WHERE id != :attackId AND deleted_epoch_millis IS NULL " +
+            "AND start_epoch_millis < :endEpochMillis " +
+            "AND (end_epoch_millis IS NULL OR end_epoch_millis > :startEpochMillis) " +
+            "ORDER BY start_epoch_millis LIMIT 1"
+    )
+    abstract fun overlapping(
+        attackId: String,
+        startEpochMillis: Long,
+        endEpochMillis: Long
+    ): AttackWithPointsLocalModel?
 
     @Insert
     abstract fun insertAttack(attack: AttackLocalModel)
@@ -46,6 +73,19 @@ abstract class AttackDao {
     abstract fun latestIntensityPoint(attackId: String): IntensityPointLocalModel?
 
     @Query(
+        "DELETE FROM intensity_point WHERE id IN (SELECT id FROM intensity_point " +
+            "WHERE attack_id = :attackId AND at_epoch_millis = :atEpochMillis AND value = :value LIMIT 1)"
+    )
+    abstract fun deleteIntensityPoint(attackId: String, atEpochMillis: Long, value: Int)
+
+    @Query(
+        "SELECT EXISTS(SELECT 1 FROM intensity_point INNER JOIN " +
+            "attack ON attack.id = intensity_point.attack_id " +
+            "WHERE intensity_point.value = :value AND attack.deleted_epoch_millis IS NULL)"
+    )
+    abstract fun anyIntensityPointOf(value: Int): Boolean
+
+    @Query(
         "UPDATE attack SET start_epoch_millis = :startEpochMillis, " +
             "updated_epoch_millis = :nowEpochMillis " +
             "WHERE id = :attackId"
@@ -53,7 +93,20 @@ abstract class AttackDao {
     abstract fun updateStart(attackId: String, startEpochMillis: Long, nowEpochMillis: Long)
 
     @Query(
-        "SELECT MAX(end_epoch_millis) FROM attack WHERE id != :attackId " +
+        "UPDATE attack SET start_epoch_millis = " +
+            ":startEpochMillis, end_epoch_millis = :endEpochMillis, " +
+            "updated_epoch_millis = :nowEpochMillis WHERE id = :attackId"
+    )
+    abstract fun updateTimes(
+        attackId: String,
+        startEpochMillis: Long,
+        endEpochMillis: Long?,
+        nowEpochMillis: Long
+    )
+
+    @Query(
+        "SELECT MAX(end_epoch_millis) FROM attack WHERE id != " +
+            ":attackId AND deleted_epoch_millis IS NULL " +
             "AND end_epoch_millis IS NOT NULL AND end_epoch_millis <= :beforeEpochMillis"
     )
     abstract fun previousEndBefore(attackId: String, beforeEpochMillis: Long): Long?
@@ -75,6 +128,32 @@ abstract class AttackDao {
     abstract fun delete(attackId: String)
 
     @Query(
+        "UPDATE attack SET deleted_epoch_millis = :nowEpochMillis, " +
+            "updated_epoch_millis = :nowEpochMillis " +
+            "WHERE id = :attackId AND deleted_epoch_millis IS NULL"
+    )
+    abstract fun softDelete(attackId: String, nowEpochMillis: Long)
+
+    @Query(
+        "UPDATE attack SET deleted_epoch_millis = NULL, updated_epoch_millis = :nowEpochMillis " +
+            "WHERE id = :attackId"
+    )
+    abstract fun clearDeleted(attackId: String, nowEpochMillis: Long)
+
+    @Query(
+        "SELECT * FROM attack WHERE deleted_epoch_millis IS NOT NULL " +
+            "AND deleted_epoch_millis >= :sinceEpochMillis " +
+            "ORDER BY deleted_epoch_millis DESC LIMIT 1"
+    )
+    abstract fun recentlyDeleted(sinceEpochMillis: Long): AttackLocalModel?
+
+    /** Removes deleted attacks for good; their points and tags go with them (foreign keys cascade). */
+    @Query(
+        "DELETE FROM attack WHERE deleted_epoch_millis IS NOT NULL AND deleted_epoch_millis < :cutoffEpochMillis"
+    )
+    abstract fun purgeDeletedBefore(cutoffEpochMillis: Long)
+
+    @Query(
         "UPDATE attack SET long_check_confirmed_epoch_millis = :confirmedEpochMillis, " +
             "long_check_disabled = :disabled, updated_epoch_millis = :nowEpochMillis WHERE id = :attackId"
     )
@@ -84,6 +163,25 @@ abstract class AttackDao {
         disabled: Boolean,
         nowEpochMillis: Long
     )
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    abstract fun insertTag(tag: AttackTagLocalModel)
+
+    @Query(
+        "DELETE FROM attack_tag WHERE attack_id = :attackId AND kind = :kind AND tag_key = :tagKey"
+    )
+    abstract fun deleteTag(attackId: String, kind: String, tagKey: String)
+
+    @Query(
+        "UPDATE attack SET functional_impact = :impact, updated_epoch_millis = :nowEpochMillis " +
+            "WHERE id = :attackId"
+    )
+    abstract fun setFunctionalImpact(attackId: String, impact: Int?, nowEpochMillis: Long)
+
+    @Query(
+        "UPDATE attack SET note = :note, updated_epoch_millis = :nowEpochMillis WHERE id = :attackId"
+    )
+    abstract fun setNote(attackId: String, note: String, nowEpochMillis: Long)
 
     /**
      * Inserts [attack] unless an attack is already in progress, in one transaction so that two quick taps can never
@@ -115,6 +213,48 @@ abstract class AttackDao {
         val inProgress = inProgress()
         if (inProgress != null && inProgress.attack.id != attackId) return false
         clearEnd(attackId, nowEpochMillis)
+        return true
+    }
+
+    /** Sets new times and removes the points they leave outside, in one step (BRD EC-ATK-09). */
+    @Transaction
+    open fun updateTimesRemovingPoints(
+        attackId: String,
+        startEpochMillis: Long,
+        endEpochMillis: Long?,
+        pointsToRemove: List<IntensityPointLocalModel>,
+        nowEpochMillis: Long
+    ) {
+        updateTimes(attackId, startEpochMillis, endEpochMillis, nowEpochMillis)
+        pointsToRemove.forEach { point ->
+            deleteIntensityPoint(attackId, point.atEpochMillis, point.value)
+        }
+    }
+
+    /** Puts back earlier times and the points a time change removed, in one step. */
+    @Transaction
+    open fun restoreTimesWithPoints(
+        attackId: String,
+        startEpochMillis: Long,
+        endEpochMillis: Long?,
+        points: List<IntensityPointLocalModel>,
+        nowEpochMillis: Long
+    ) {
+        updateTimes(attackId, startEpochMillis, endEpochMillis, nowEpochMillis)
+        points.forEach(::insertIntensityPoint)
+    }
+
+    /**
+     * Undoes a deletion unless the attack would become a second attack in progress or overlap another attack. The
+     * range of an attack in progress runs to [nowEpochMillis].
+     */
+    @Transaction
+    open fun restoreIfPossible(attackId: String, nowEpochMillis: Long): Boolean {
+        val deleted = deletedById(attackId) ?: return false
+        if (deleted.endEpochMillis == null && inProgress() != null) return false
+        val end = deleted.endEpochMillis ?: maxOf(nowEpochMillis, deleted.startEpochMillis)
+        if (overlapping(attackId, deleted.startEpochMillis, end) != null) return false
+        clearDeleted(attackId, nowEpochMillis)
         return true
     }
 
