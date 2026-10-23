@@ -15,7 +15,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -111,7 +110,8 @@ internal fun TimeSection(
         TimeFieldUiModel.Start -> MigrelyDateTimePicker(
             initialEpochMillis = details.startEpochMillis,
             minEpochMillis = EARLIEST_START_MILLIS,
-            maxEpochMillis = (end ?: latestAllowed) - if (end == null) 0L else MILLIS_PER_MINUTE,
+            // Strictly before the end: the picker works in whole minutes, the stored end may have seconds.
+            maxEpochMillis = end?.minus(1) ?: latestAllowed,
             zoneId = zone,
             labels = pickerLabels(R.string.picker_start_title, R.string.picker_start_out_of_range),
             onConfirm = { start ->
@@ -123,7 +123,7 @@ internal fun TimeSection(
 
         TimeFieldUiModel.End -> MigrelyDateTimePicker(
             initialEpochMillis = end ?: details.nowEpochMillis,
-            minEpochMillis = details.startEpochMillis + MILLIS_PER_MINUTE,
+            minEpochMillis = details.startEpochMillis + 1,
             maxEpochMillis = latestAllowed,
             zoneId = zone,
             labels = pickerLabels(R.string.picker_end_title, R.string.picker_end_out_of_range),
@@ -176,23 +176,22 @@ private fun TimeRow(
                 .heightIn(min = 56.dp)
                 .padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = label,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.weight(1f)
-                )
-                Text(
-                    text = value,
-                    style = MaterialTheme.typography.bodyLarge.copy(fontFeatureSettings = "tnum"),
-                    color = if (onClick == null) {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    } else {
-                        MaterialTheme.colorScheme.primary
-                    }
-                )
-            }
+            // The label sits above the value, so a long date never squeezes the label at large font sizes.
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = value,
+                style = MaterialTheme.typography.bodyLarge.copy(fontFeatureSettings = "tnum"),
+                color = if (onClick == null) {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                } else {
+                    MaterialTheme.colorScheme.primary
+                },
+                modifier = Modifier.padding(top = 2.dp)
+            )
             if (error != null) {
                 Text(
                     text = errorText(error.reason, timeUiFormatter),

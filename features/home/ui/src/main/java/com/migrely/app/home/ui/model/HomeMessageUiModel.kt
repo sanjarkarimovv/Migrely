@@ -11,7 +11,7 @@ sealed interface HomeMessageUiModel : Parcelable {
     @Parcelize
     data class AttackEnded(val attackId: String) : HomeMessageUiModel
 
-    /** Deleted on the details screen at [deletedAtEpochMillis]; the undo window counts from then (BRD D23). */
+    /** Deleted on the details screen at [deletedAtEpochMillis]; offered once for undo (BRD D23). */
     @Parcelize
     data class AttackDeleted(val attackId: String, val deletedAtEpochMillis: Long) :
         HomeMessageUiModel

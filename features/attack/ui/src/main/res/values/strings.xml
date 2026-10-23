@@ -37,7 +37,7 @@
     <string name="pain_level_mild">Mild</string>
     <string name="pain_level_moderate">Moderate</string>
     <string name="pain_level_severe">Severe</string>
-    <string name="safety_title">If this pain came on suddenly</string>
+    <string name="safety_title">Sudden, worst-ever pain?</string>
     <string name="safety_body">If this pain came on suddenly and is the worst of your life, call emergency services now.</string>
     <string name="safety_dismiss">Got it</string>
     <string name="section_location">Where it hurts</string>

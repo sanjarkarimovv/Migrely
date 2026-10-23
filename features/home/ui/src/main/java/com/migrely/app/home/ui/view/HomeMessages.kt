@@ -69,18 +69,12 @@ internal fun HomeMessages(
 
     LaunchedEffect(presenter) {
         presenter.messages.collect { message ->
-            val now = System.currentTimeMillis()
-            // A deletion is timed from the moment it happened on the details screen, not from when home shows it.
-            val shownAt = if (message is HomeMessageUiModel.AttackDeleted) {
+            // A deletion arrives with every return to home while it is restorable; offer it once. Its window starts
+            // when home shows it, so the trip back from the details screen does not shorten it.
+            if (message is HomeMessageUiModel.AttackDeleted) {
                 if (message == offeredDeletion) return@collect
                 offeredDeletion = message
-                message.deletedAtEpochMillis
-            } else {
-                now
             }
-            val candidate = ShownHomeMessageUiModel(message, shownAt)
-            val timeout = timeoutMillis(behaviourMapper.toUi(message))
-            if (timeout != null && candidate.remainingMillis(now, timeout) == 0L) return@collect
             when (message) {
                 is HomeMessageUiModel.AttackStarted,
                 is HomeMessageUiModel.AttackEnded -> haptics.performHapticFeedback(
@@ -94,7 +88,7 @@ internal fun HomeMessages(
 
                 else -> Unit
             }
-            shown = candidate
+            shown = ShownHomeMessageUiModel(message, System.currentTimeMillis())
         }
     }
 
