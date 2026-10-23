@@ -86,9 +86,12 @@ and only gains navigation events. Features never depend on each other (skill rul
   - after loading today it notifies `AttackDeleted(attackId, deletedAt)` when `recentlyDeleted` is set;
   - `onUndoDeleteAction(attackId)` restores and then notifies `Undone` or `UndoNotPossible`;
   - `onAttackDetailsAction(attackId)` emits `HomePresentationNavigationEvent.OnViewAttackDetails(attackId)`.
-- `HomeMessageUiModel.AttackDeleted(attackId, deletedAtEpochMillis)` is a confirmation with undo, 5 s base. Its
-  `ShownHomeMessageUiModel.shownAtEpochMillis` is the deletion time, so a reload or rotation never restarts the window.
-  An expired one is not shown.
+- `HomeMessageUiModel.AttackDeleted(attackId, deletedAtEpochMillis)` is a confirmation with undo, 5 s base.
+  - Home offers each deletion once: `HomeMessages` remembers the deletion it offered in `rememberSaveable`, so a reload
+    or a rotation does not offer it again after a dismissal.
+  - The window starts when home shows the message, so the trip back from the details screen does not shorten it.
+  - The emulator walk showed the alternative, timing from the deletion itself, left only about 3.5 seconds on a slow
+    device.
 
 ### D4. Storage: database v2, soft delete, tags
 
