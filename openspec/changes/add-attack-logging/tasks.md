@@ -27,8 +27,8 @@
 
 ## 4. Data (`:features:home:data`)
 
-- [ ] 4.1 Add data-to-domain and domain-to-data mappers with parameterized tests; verify `./gradlew :features:home:data:test` passes
-- [ ] 4.2 Implement `HomeRepository` for every home repository interface, with `today()` returning a one-shot snapshot of the attack in progress, the ended attacks touching today and the current time, and with every failure returned as a value; add a test for each function's success and failure path; verify `./gradlew :features:home:data:test` passes
+- [x] 4.1 Add data-to-domain and domain-to-data mappers with parameterized tests; verify `./gradlew :features:home:data:test` passes
+- [x] 4.2 Implement `HomeRepository` for every home repository interface, with `today()` returning a one-shot snapshot of the attack in progress, the ended attacks touching today and the current time, and with every failure returned as a value; add a test for each function's success and failure path; verify `./gradlew :features:home:data:test` passes
 
 ## 5. Presentation (`:features:home:presentation`)
 
