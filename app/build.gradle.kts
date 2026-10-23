@@ -95,4 +95,8 @@ dependencies {
     implementation(projects.features.home.presentation)
     implementation(projects.features.home.domain)
     implementation(projects.features.home.data)
+    implementation(projects.features.attack.ui)
+    implementation(projects.features.attack.presentation)
+    implementation(projects.features.attack.domain)
+    implementation(projects.features.attack.data)
 }
