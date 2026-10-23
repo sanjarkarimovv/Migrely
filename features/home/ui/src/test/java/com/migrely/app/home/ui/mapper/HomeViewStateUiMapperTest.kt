@@ -1,41 +1,107 @@
 package com.migrely.app.home.ui.mapper
 
+import com.migrely.app.home.presentation.model.AttackInProgressPresentationModel
 import com.migrely.app.home.presentation.model.HomeViewState
+import com.migrely.app.home.presentation.model.IntensityLevelPresentationModel
+import com.migrely.app.home.presentation.model.PeakPresentationModel
+import com.migrely.app.home.presentation.model.SkyPresentationModel
+import com.migrely.app.home.presentation.model.TodayPresentationModel
+import com.migrely.app.home.ui.model.AttackInProgressUiModel
 import com.migrely.app.home.ui.model.HomeViewStateUiModel
+import com.migrely.app.home.ui.model.IntensityLevelUiModel
+import com.migrely.app.home.ui.model.PeakUiModel
+import com.migrely.app.home.ui.model.SkyUiModel
+import com.migrely.app.home.ui.model.TodayUiModel
+import java.time.Instant
+import java.time.ZoneId
 import org.junit.Assert.assertEquals
-import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
-import org.junit.runners.Parameterized.Parameters
 
 @RunWith(Parameterized::class)
 class HomeViewStateUiMapperTest(
-    private val givenViewState: HomeViewState,
-    private val expectedUiModel: HomeViewStateUiModel
+    private val given: HomeViewState,
+    private val expected: HomeViewStateUiModel
 ) {
     companion object {
+        private val START = Instant.parse("2026-10-23T09:05:00Z")
+
         @JvmStatic
-        @Parameters(name = "Given {0} then returns {1}")
-        fun testCases(): Collection<Array<*>> = listOf(
-            arrayOf(HomeViewState.Loading, HomeViewStateUiModel.Loading),
-            arrayOf(HomeViewState.Ready, HomeViewStateUiModel.Ready)
+        @Parameterized.Parameters(name = "{index}: {0}")
+        fun data(): Collection<Array<*>> = listOf(
+            arrayOf<Any>(HomeViewState.Loading, HomeViewStateUiModel.Loading),
+            arrayOf<Any>(
+                HomeViewState.Today(TodayPresentationModel(SkyPresentationModel.Calm, 0, null)),
+                HomeViewStateUiModel.Today(TodayUiModel(SkyUiModel.Calm, 0, null))
+            ),
+            arrayOf<Any>(
+                HomeViewState.Today(
+                    TodayPresentationModel(SkyPresentationModel.Hazy, 1, PeakPresentationModel.Mild)
+                ),
+                HomeViewStateUiModel.Today(TodayUiModel(SkyUiModel.Hazy, 1, PeakUiModel.Mild))
+            ),
+            arrayOf<Any>(
+                HomeViewState.Today(
+                    TodayPresentationModel(
+                        SkyPresentationModel.Cloudy,
+                        1,
+                        PeakPresentationModel.NotRecorded
+                    )
+                ),
+                HomeViewStateUiModel.Today(
+                    TodayUiModel(SkyUiModel.Cloudy, 1, PeakUiModel.NotRecorded)
+                )
+            ),
+            arrayOf<Any>(
+                HomeViewState.Today(
+                    TodayPresentationModel(
+                        SkyPresentationModel.Storm,
+                        2,
+                        PeakPresentationModel.Severe
+                    )
+                ),
+                HomeViewStateUiModel.Today(TodayUiModel(SkyUiModel.Storm, 2, PeakUiModel.Severe))
+            ),
+            arrayOf<Any>(
+                HomeViewState.AttackInProgress(
+                    AttackInProgressPresentationModel(
+                        "a",
+                        START,
+                        ZoneId.of("Asia/Tashkent"),
+                        IntensityLevelPresentationModel.Moderate,
+                        longAttackCheckDue = true
+                    )
+                ),
+                HomeViewStateUiModel.AttackInProgress(
+                    AttackInProgressUiModel(
+                        "a",
+                        START.toEpochMilli(),
+                        "Asia/Tashkent",
+                        IntensityLevelUiModel.Moderate,
+                        true
+                    )
+                )
+            ),
+            arrayOf<Any>(
+                HomeViewState.AttackInProgress(
+                    AttackInProgressPresentationModel(
+                        "a",
+                        START,
+                        ZoneId.of("UTC"),
+                        null,
+                        longAttackCheckDue = false
+                    )
+                ),
+                HomeViewStateUiModel.AttackInProgress(
+                    AttackInProgressUiModel("a", START.toEpochMilli(), "UTC", null, false)
+                )
+            )
         )
     }
 
-    private lateinit var classUnderTest: HomeViewStateUiMapper
-
-    @Before
-    fun setUp() {
-        classUnderTest = HomeViewStateUiMapper()
-    }
-
     @Test
-    fun `When toUi then returns expected UI model`() {
-        // When
-        val actualUiModel = classUnderTest.toUi(givenViewState)
-
-        // Then
-        assertEquals(expectedUiModel, actualUiModel)
+    fun `When toUi then returns the expected UI model`() {
+        assertEquals(expected, HomeViewStateUiMapper().toUi(given))
     }
 }

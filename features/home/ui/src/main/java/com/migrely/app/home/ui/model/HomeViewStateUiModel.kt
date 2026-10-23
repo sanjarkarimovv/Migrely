@@ -8,5 +8,8 @@ sealed interface HomeViewStateUiModel : Parcelable {
     data object Loading : HomeViewStateUiModel
 
     @Parcelize
-    data object Ready : HomeViewStateUiModel
+    data class Today(val today: TodayUiModel) : HomeViewStateUiModel
+
+    @Parcelize
+    data class AttackInProgress(val attack: AttackInProgressUiModel) : HomeViewStateUiModel
 }
