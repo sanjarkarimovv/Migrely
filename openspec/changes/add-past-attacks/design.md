@@ -135,8 +135,8 @@ DAO:
 capped at 640 dp:
 1. a short line: "When was it? You can add the pain and the rest next.";
 2. "Started" and "Ended" rows (`TimeRow`, shared with details) and the duration;
-3. the overlap card, when shown;
-4. "Add migraine" (filled, at least 56 dp).
+3. "Add migraine" (filled, at least 56 dp), or the overlap card in its place. With the card shown, "Add migraine"
+   would only bring the card back, so the card's two choices replace it.
 
 **State.**
 - The picked times live in `rememberSaveable` as `PastAttackDraftUiModel(startEpochMillis, endEpochMillis, zoneId)`.
@@ -166,8 +166,8 @@ start to now + 5 minutes (the domain checks again).
   - home `OnAddPastAttack` → `navigate(AddPastAttack) { launchSingleTop = true }`;
   - add `OnLeave` → `popBackStack(AddPastAttack::class, inclusive = true)`;
   - `OnPastAttackAdded(id)` and `OnAttacksMerged(id)` → `navigate(AttackDetails(id, announceMerge))` with
-    `popUpTo<AddPastAttack> { inclusive = true }`, only while the add screen is the current destination, so a late
-    second event does nothing.
+    `popUpTo<AddPastAttack> { inclusive = true }` and `launchSingleTop`, so a late second event updates that details
+    screen instead of stacking another one.
 
   All of them have parameterized tests.
 

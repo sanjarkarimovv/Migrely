@@ -61,7 +61,7 @@ EC-ATK-18).
 #### Scenario: One overlap
 - **WHEN** a migraine ran 12:00–13:30 and the user adds 13:00–15:00
 - **THEN** nothing is stored and a card says it overlaps the migraine from 12:00 to 13:30, with "Merge them" and
-  "Change the times"
+  "Change the times" in place of "Add migraine"
 
 #### Scenario: Two overlaps
 - **WHEN** migraines ran 09:00–10:00 and 12:00–13:30 and the user adds 08:00–14:00
@@ -69,7 +69,7 @@ EC-ATK-18).
 
 #### Scenario: Change the times
 - **WHEN** the card is shown and the user taps "Change the times" or picks a new start or end
-- **THEN** the card disappears and the times stay as they were picked
+- **THEN** the card disappears, "Add migraine" is back and the times stay as they were picked
 
 #### Scenario: Touching attacks
 - **WHEN** a migraine ended at 13:30 and the user adds 13:30–15:00
@@ -98,8 +98,8 @@ rest SHALL be removed in the same step, with no undo (BRD EC-ATK-05, D27, D28).
   and "Skipped lunch"
 
 #### Scenario: Merge with the attack in progress
-- **WHEN** a migraine ran 10:00–11:00, another has been in progress since 11:30, and on the first one's details screen
-  the user moves its end to 12:00 and taps "Merge them"
+- **WHEN** a migraine ran 10:00–11:00, another has been in progress since 11:30, and on the details screen of the one in
+  progress the user moves its start to 10:30 and taps "Merge them"
 - **THEN** one migraine in progress since 10:00 remains and the home screen shows attack mode for it
 
 #### Scenario: Nothing overlaps any more

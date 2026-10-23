@@ -248,19 +248,21 @@ private fun DraftContents(
                 )
             }
             if (problem is PastAttackProblemUiModel.Overlaps) {
+                // The card's two choices replace "Add migraine", which would only show the card again.
                 OverlapCard(problem.attacks, draft.zoneId, timeUiFormatter, saving, actions)
-            }
-            Button(
-                onClick = actions.onAdd,
-                enabled = !saving,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = 56.dp)
-            ) {
-                Text(
-                    text = stringResource(R.string.past_add),
-                    style = MaterialTheme.typography.labelLarge
-                )
+            } else {
+                Button(
+                    onClick = actions.onAdd,
+                    enabled = !saving,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 56.dp)
+                ) {
+                    Text(
+                        text = stringResource(R.string.past_add),
+                        style = MaterialTheme.typography.labelLarge
+                    )
+                }
             }
             Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
         }
