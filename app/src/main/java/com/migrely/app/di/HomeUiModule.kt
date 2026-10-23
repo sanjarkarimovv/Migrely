@@ -1,38 +1,61 @@
 package com.migrely.app.di
 
+import android.content.Context
+import android.text.format.DateFormat
 import com.migrely.app.architecture.ui.navigation.mapper.NavigationEventDestinationMapper
-import com.migrely.app.architecture.ui.notification.mapper.NoNotificationUiMapper
 import com.migrely.app.home.presentation.navigation.HomePresentationNavigationEvent
 import com.migrely.app.home.presentation.viewmodel.HomeViewModel
 import com.migrely.app.home.ui.di.HomeDependencies
+import com.migrely.app.home.ui.mapper.HomeNotificationUiMapper
 import com.migrely.app.home.ui.mapper.HomeViewStateUiMapper
+import com.migrely.app.home.ui.mapper.IntensityLevelUiToPresentationMapper
+import com.migrely.app.home.ui.mapper.SkyAppearanceUiMapper
+import com.migrely.app.home.ui.mapper.TimeUiFormatter
+import com.migrely.app.home.ui.notification.HomeMessagePresenter
 import com.migrely.app.navigation.mapper.HomeNavigationEventDestinationMapper
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import java.time.ZoneId
 
 @Module
 @InstallIn(SingletonComponent::class)
 internal object HomeUiModule {
-    @Provides
-    fun providesHomeViewStateUiMapper(): HomeViewStateUiMapper = HomeViewStateUiMapper()
-
     @Provides
     fun providesHomeNavigationEventDestinationMapper():
         NavigationEventDestinationMapper<HomePresentationNavigationEvent> =
         HomeNavigationEventDestinationMapper()
 
     @Provides
+    fun providesTimeUiFormatter(@ApplicationContext context: Context) = TimeUiFormatter(
+        locale = { context.resources.configuration.locales[0] },
+        is24HourFormat = { DateFormat.is24HourFormat(context) },
+        deviceZone = { ZoneId.systemDefault() },
+        bestDateTimePattern = { locale, skeleton ->
+            DateFormat.getBestDateTimePattern(locale, skeleton)
+        }
+    )
+
+    @Provides
     fun providesHomeDependencies(
         homeViewModel: HomeViewModel,
-        homeViewStateUiMapper: HomeViewStateUiMapper,
+        timeUiFormatter: TimeUiFormatter,
         homeNavigationMapper:
         @JvmSuppressWildcards NavigationEventDestinationMapper<HomePresentationNavigationEvent>
-    ): HomeDependencies = HomeDependencies(
-        homeViewModel = homeViewModel,
-        homeViewStateUiMapper = homeViewStateUiMapper,
-        homeNavigationMapper = homeNavigationMapper,
-        homeNotificationMapper = NoNotificationUiMapper()
-    )
+    ): HomeDependencies {
+        // The mapper and the screen must share one presenter so notifications reach this screen's snackbar.
+        val homeMessagePresenter = HomeMessagePresenter()
+        return HomeDependencies(
+            homeViewModel = homeViewModel,
+            homeViewStateUiMapper = HomeViewStateUiMapper(),
+            skyAppearanceUiMapper = SkyAppearanceUiMapper(),
+            intensityLevelUiToPresentationMapper = IntensityLevelUiToPresentationMapper(),
+            timeUiFormatter = timeUiFormatter,
+            homeMessagePresenter = homeMessagePresenter,
+            homeNavigationMapper = homeNavigationMapper,
+            homeNotificationMapper = HomeNotificationUiMapper(homeMessagePresenter)
+        )
+    }
 }
