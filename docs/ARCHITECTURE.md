@@ -197,4 +197,5 @@ The same command runs in `.github/workflows/ci.yml`. A change is done when:
 | `minSdk` 26 instead of 24 | BRD section 10 | permanent |
 | `ViewModelObserver` collects in `LaunchedEffect` | skill `bindings/nav2.md` | permanent |
 | `:designsystem` module holds the theme (the sample keeps it in `:app`) | home and history both draw skies; profile section 3 allows a shared module with its own reason | permanent |
-| Konsist rule adaptations | recorded here when made | — |
+| Konsist: the four "models are suffixed with …Model" rules scan production code only (`scopeFromProduction()`) | unit tests for a model belong in the model's package (for example `AttackDomainModelTest`); the skill forbids renaming classes to dodge a rule | permanent |
+| Further Konsist rule adaptations | recorded here when made | — |

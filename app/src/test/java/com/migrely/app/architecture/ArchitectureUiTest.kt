@@ -28,7 +28,8 @@ class ArchitectureUiTest {
 
     @Test
     fun `UI models are suffixed with UiModel`() {
-        Konsist.scopeFromProject()
+        // Production only: tests for a model live in the model's package (docs/ARCHITECTURE.md section 13).
+        Konsist.scopeFromProduction()
             .classes()
             .withPackage("..ui..model")
             .withTopLevel()

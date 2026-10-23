@@ -19,11 +19,11 @@
 
 ## 3. Datasources (`:datasource:source`, `:datasource:implementation`)
 
-- [ ] 3.1 Add `AttackDataSource`, `ClockDataSource`, `AttackDataModel`, `IntensityPointDataModel`, `AttackStartDataModel`, `StorageFullDataException` and `DatabaseDataException` in `com.migrely.app.datasource.{attack,clock}`; verify `./gradlew :datasource:source:build` and Konsist `ArchitectureDataSourceTest` pass
-- [ ] 3.2 Add `AttackLocalModel`, `IntensityPointLocalModel` (cascade delete, value CHECK 1–10), `AttackDao` (in-progress, touching-range and previous-end queries; transactional start-if-none) and `MigrelyDatabase` version 1 with `exportSchema = true`; verify the build writes `schemas/.../1.json` and the file is committed
-- [ ] 3.3 Implement `AttackDataSourceImpl` and `AttackLocalMapper` with unit tests for mapping both ways, `SQLiteFullException` to `StorageFullDataException`, and other `SQLiteException`s to `DatabaseDataException`; verify `./gradlew :datasource:implementation:testDebugUnitTest` passes
-- [ ] 3.4 Implement `ClockDataSourceImpl` with an injected `java.time.Clock` and tests for `now()` and `zone()`; verify datasource unit tests pass
-- [ ] 3.5 Add the instrumented `AttackDaoTest` covering single in-progress start under concurrent calls, cascade delete of intensity points, the touching-range query across midnight, and the previous-end query; verify `./gradlew :datasource:implementation:connectedDebugAndroidTest` passes on the `Medium_Phone_API_36.0` emulator
+- [x] 3.1 Add `AttackDataSource`, `ClockDataSource`, `AttackDataModel`, `IntensityPointDataModel`, `AttackStartDataModel`, `StorageFullDataException` and `DatabaseDataException` in `com.migrely.app.datasource.{attack,clock}`; verify `./gradlew :datasource:source:build` and Konsist `ArchitectureDataSourceTest` pass
+- [x] 3.2 Add `AttackLocalModel`, `IntensityPointLocalModel` (cascade delete; the 1–10 value range is enforced in `AttackDataSourceImpl` because Room cannot declare CHECK constraints), `AttackDao` (in-progress, touching-range and previous-end queries; transactional start-if-none) and `MigrelyDatabase` version 1 with `exportSchema = true`; verify the build writes `schemas/.../1.json` and the file is committed
+- [x] 3.3 Implement `AttackDataSourceImpl` and `AttackLocalMapper` with unit tests for mapping both ways, `SQLiteFullException` to `StorageFullDataException`, and other `SQLiteException`s to `DatabaseDataException`; verify `./gradlew :datasource:implementation:testDebugUnitTest` passes
+- [x] 3.4 Implement `ClockDataSourceImpl` with an injected `java.time.Clock` and tests for `now()` and `zone()`; verify datasource unit tests pass
+- [x] 3.5 Add the instrumented `AttackDaoTest` covering single in-progress start under concurrent calls, cascade delete of intensity points, the touching-range query across midnight, and the previous-end query; verify `./gradlew :datasource:implementation:connectedDebugAndroidTest` passes on the `Medium_Phone_API_36.0` emulator
 
 ## 4. Data (`:features:home:data`)
 

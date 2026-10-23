@@ -18,7 +18,8 @@ class ArchitectureDomainTest {
 
     @Test
     fun `Domain models are suffixed with DomainModel`() {
-        Konsist.scopeFromProject()
+        // Production only: tests for a model live in the model's package (docs/ARCHITECTURE.md section 13).
+        Konsist.scopeFromProduction()
             .classes()
             .withPackage("..domain..model")
             .withTopLevel()

@@ -30,6 +30,10 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+    testOptions {
+        // Lets JVM unit tests construct android.database exceptions to test their mapping.
+        unitTests.isReturnDefaultValues = true
+    }
 }
 
 // Every schema version is committed so migrations can be tested; destructive migration is forbidden (BRD EC-STO-01).
