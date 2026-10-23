@@ -311,7 +311,7 @@ Boshqa davlatlarda narxni Play avtomatik konvertatsiya qiladi. Hindiston, Brazil
 | EC-ATK-13 | Izoh 1 000 belgidan uzun | Kiritish 1 000 belgida toʻxtaydi, hisoblagich koʻrinadi | ✅ |
 | EC-ATK-14 | Oʻchirilgan xurujni qaytarish | Faqat 5 soniyalik Undo. Keyin butunlay oʻchadi | ✅ |
 | EC-ATK-15 | Yangi yoki oʻzgartirilgan vaqt bir nechta xuruj bilan ustma-ust tushadi | Hammasi vaqtlari bilan sanab koʻrsatiladi. "Birlashtirish" ularning hammasini bitta xurujga qoʻshadi (D27) | ✅ |
-| EC-ATK-16 | Birlashtirilgan izohlar 1 000 belgidan oshadi | Izohlar vaqt tartibida boʻsh qator bilan ulanadi va 1 000 belgida kesiladi, kesilgan qism eng oxirgi izohning oxiri boʻladi (EC-ATK-13) | ✅ |
+| EC-ATK-16 | Birlashtirilgan izohlar 1 000 belgidan oshadi | Izohlar vaqt tartibida boʻsh qator bilan ulanadi. Ulangan matn 1 000 belgida oxiridan kesiladi, yaʼni eng yangi izohlar oxiridan qisqaradi. Belgi yarmidan kesilmaydi, oxirida boʻsh qator qolmaydi. Yagona izoh oʻzgarmaydi (EC-ATK-13) | ✅ |
 | EC-ATK-17 | "Add migraine" yoki "Merge them" ikki marta tez bosildi | Faqat bitta xuruj yaratiladi yoki bir marta birlashtiriladi: tugma natija kelguncha bosilmaydi, saqlash esa bitta tranzaksiyada ustma-ust tushishni qayta tekshiradi | ✅ |
 | EC-ATK-18 | Vaqt butun daqiqada tanlanadi, saqlangan vaqtda esa soniyalar bor, va ular bir daqiqadan kamroq ustma-ust tushadi | Bu ustma-ust tushish emas: vaqt qoʻshni xurujning chegarasiga yopishtiriladi (ular bir lahzada tegib turadi) | ✅ |
 

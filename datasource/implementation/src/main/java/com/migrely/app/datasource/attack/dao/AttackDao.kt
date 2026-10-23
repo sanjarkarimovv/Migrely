@@ -71,6 +71,14 @@ abstract class AttackDao {
         endEpochMillis: Long
     ): List<AttackWithPointsLocalModel>
 
+    /** Whether any attack overlaps, with the same rule as [overlapping], without loading the attacks. */
+    @Query(
+        "SELECT EXISTS(SELECT 1 FROM attack WHERE deleted_epoch_millis IS NULL " +
+            "AND start_epoch_millis < :endEpochMillis " +
+            "AND (end_epoch_millis IS NULL OR end_epoch_millis > :startEpochMillis))"
+    )
+    abstract fun anyOverlapping(startEpochMillis: Long, endEpochMillis: Long): Boolean
+
     @Insert
     abstract fun insertAttack(attack: AttackLocalModel)
 
@@ -312,7 +320,7 @@ abstract class AttackDao {
     @Transaction
     open fun insertEndedIfNoOverlap(attack: AttackLocalModel): Boolean {
         val end = checkNotNull(attack.endEpochMillis) { "Only an ended attack is inserted here" }
-        if (overlappingAll(null, attack.startEpochMillis, end).isNotEmpty()) return false
+        if (anyOverlapping(attack.startEpochMillis, end)) return false
         insertAttack(attack)
         return true
     }

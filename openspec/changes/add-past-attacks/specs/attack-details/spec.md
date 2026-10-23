@@ -20,6 +20,11 @@ overlap shorter than a minute SHALL snap to the other attack's boundary (BRD EC-
 - **THEN** this attack runs from 12:00 to its end with the other attack's pain entries and details, the other attack
   is gone, and "Migraines merged." is shown
 
+#### Scenario: Note typed before merging
+- **WHEN** the user types "Took ibuprofen" in this attack's note, the other attack's note is "Bright office", and the
+  user taps "Merge them" and then leaves the screen
+- **THEN** the stored note is "Bright office", a blank line and "Took ibuprofen"
+
 #### Scenario: Touching attacks
 - **WHEN** another attack ended at 13:30 and the user sets this attack's start to 13:30
 - **THEN** the start is stored

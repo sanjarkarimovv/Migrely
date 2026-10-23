@@ -187,6 +187,31 @@ class CreatePastAttackUseCaseTest {
         assertEquals(CreatePastAttackResultDomainModel.Failed, create())
     }
 
+    @Test
+    fun `Given a short attack inside the first minute when creating then the start snaps`() {
+        val shortEnd = START.plusSeconds(40)
+        given(findOverlappingAttacksRepository.overlappingAttacks(null, START, END))
+            .willReturn(found(attackDetails("b", START.plusSeconds(10), shortEnd)))
+
+        assertEquals(CreatePastAttackResultDomainModel.Created("new"), create())
+        verify(storePastAttackRepository).storePastAttack(shortEnd, FIXTURE_ZONE, END)
+    }
+
+    @Test
+    fun `Given neighbours seconds into both minutes when creating then both times snap`() {
+        val previousEnd = START.plusSeconds(25)
+        val nextStart = END.minusSeconds(15)
+        given(findOverlappingAttacksRepository.overlappingAttacks(null, START, END)).willReturn(
+            found(
+                attackDetails("b", START.minus(Duration.ofHours(1)), previousEnd),
+                attackDetails("c", nextStart, null)
+            )
+        )
+
+        assertEquals(CreatePastAttackResultDomainModel.Created("new"), create())
+        verify(storePastAttackRepository).storePastAttack(previousEnd, FIXTURE_ZONE, nextStart)
+    }
+
     private fun found(vararg attacks: AttackDetailsDomainModel) =
         OverlapLookupResultDomainModel.Found(attacks.toList())
 }

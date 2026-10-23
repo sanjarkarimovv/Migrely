@@ -77,7 +77,12 @@ class AddPastAttackViewModel(
 
     fun onMergeAction(start: Instant, end: Instant) {
         mergeAttacksUseCase(
-            value = MergeAttacksRequestDomainModel(attackId = null, start = start, end = end),
+            value = MergeAttacksRequestDomainModel(
+                attackId = null,
+                start = start,
+                end = end,
+                editedNote = null
+            ),
             onResult = { result ->
                 when (result) {
                     is MergeAttacksResultDomainModel.Merged -> emitNavigationEvent(

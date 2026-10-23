@@ -203,6 +203,7 @@ internal object AttackModule {
         storePastAttackRepository: StorePastAttackRepository,
         updateAttackTimesRepository: UpdateAttackTimesRepository,
         mergeAttacksRepository: MergeAttacksRepository,
+        updateAttackNoteRepository: UpdateAttackNoteRepository,
         coroutineContextProvider: CoroutineContextProvider
     ) = MergeAttacksUseCase(
         getAttackDetailsRepository,
@@ -211,6 +212,7 @@ internal object AttackModule {
         storePastAttackRepository,
         updateAttackTimesRepository,
         mergeAttacksRepository,
+        updateAttackNoteRepository,
         coroutineContextProvider
     )
 

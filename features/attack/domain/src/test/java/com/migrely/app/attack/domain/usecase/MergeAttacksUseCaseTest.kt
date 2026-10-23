@@ -19,6 +19,7 @@ import com.migrely.app.attack.domain.repository.GetAttackDetailsRepository
 import com.migrely.app.attack.domain.repository.GetCurrentTimeRepository
 import com.migrely.app.attack.domain.repository.MergeAttacksRepository
 import com.migrely.app.attack.domain.repository.StorePastAttackRepository
+import com.migrely.app.attack.domain.repository.UpdateAttackNoteRepository
 import com.migrely.app.attack.domain.repository.UpdateAttackTimesRepository
 import com.migrely.app.coroutine.CoroutineContextProvider
 import java.time.Instant
@@ -47,6 +48,7 @@ class MergeAttacksUseCaseTest {
     private val storePastAttackRepository: StorePastAttackRepository = mock()
     private val updateAttackTimesRepository: UpdateAttackTimesRepository = mock()
     private val mergeAttacksRepository: MergeAttacksRepository = mock()
+    private val updateAttackNoteRepository: UpdateAttackNoteRepository = mock()
 
     @Before
     fun setUp() {
@@ -57,6 +59,7 @@ class MergeAttacksUseCaseTest {
             storePastAttackRepository,
             updateAttackTimesRepository,
             mergeAttacksRepository,
+            updateAttackNoteRepository,
             CoroutineContextProvider.Default
         )
         given(getCurrentTimeRepository.currentTime())
@@ -65,6 +68,8 @@ class MergeAttacksUseCaseTest {
         given(storePastAttackRepository.storePastAttack(any(), any(), any()))
             .willReturn(StorePastAttackResultDomainModel.Stored("new"))
         given(updateAttackTimesRepository.updateAttackTimes(any(), any(), anyOrNull(), any()))
+            .willReturn(WriteResultDomainModel.Written)
+        given(updateAttackNoteRepository.updateAttackNote(any(), any()))
             .willReturn(WriteResultDomainModel.Written)
     }
 
@@ -76,8 +81,14 @@ class MergeAttacksUseCaseTest {
         }
     }
 
-    private fun merge(attackId: String?, start: Instant, end: Instant?) =
-        classUnderTest.executeInBackground(MergeAttacksRequestDomainModel(attackId, start, end))
+    private fun merge(
+        attackId: String?,
+        start: Instant,
+        end: Instant?,
+        editedNote: String? = null
+    ) = classUnderTest.executeInBackground(
+        MergeAttacksRequestDomainModel(attackId, start, end, editedNote)
+    )
 
     private fun written(): AttackMergeDomainModel {
         val captor = argumentCaptor<AttackMergeDomainModel>()
@@ -268,7 +279,7 @@ class MergeAttacksUseCaseTest {
 
         merge(null, at("09:30"), at("11:30"))
 
-        assertEquals("a".repeat(997) + "\n\n", written().note)
+        assertEquals("a".repeat(997), written().note)
     }
 
     @Test
@@ -395,6 +406,103 @@ class MergeAttacksUseCaseTest {
             .willReturn(StorePastAttackResultDomainModel.Overlapping)
 
         assertEquals(MergeAttacksResultDomainModel.Failed, merge(null, at("13:00"), at("14:00")))
+    }
+
+    @Test
+    fun `Given three long notes when merging then the joined text is cut from its end`() {
+        givenStored(
+            attackDetails("a", at("09:00"), at("10:00"), note = "a".repeat(600)),
+            attackDetails("b", at("11:00"), at("12:00"), note = "b".repeat(600)),
+            attackDetails("c", at("13:00"), at("14:00"), note = "c".repeat(10))
+        )
+
+        merge(null, at("09:30"), at("13:30"))
+
+        assertEquals("a".repeat(600) + "\n\n" + "b".repeat(398), written().note)
+    }
+
+    @Test
+    fun `Given only one note when merging then it is kept exactly`() {
+        givenStored(
+            attackDetails("a", at("09:00"), at("10:00"), note = "Bright office\n"),
+            attackDetails("b", at("11:00"), at("12:00"))
+        )
+
+        merge(null, at("09:30"), at("11:30"))
+
+        assertEquals("Bright office\n", written().note)
+    }
+
+    @Test
+    fun `Given a note typed on the edited attack when merging then it is stored and joined`() {
+        givenStored(
+            attackDetails("other", at("11:00"), at("13:00"), note = "Bright office"),
+            attackDetails("edited", at("14:00"), at("16:00"), note = "Took")
+        )
+
+        merge("edited", at("12:00"), at("16:00"), editedNote = "Took ibuprofen")
+
+        verify(updateAttackNoteRepository).updateAttackNote("edited", "Took ibuprofen")
+        assertEquals("Bright office\n\nTook ibuprofen", written().note)
+    }
+
+    @Test
+    fun `Given the note on screen is already stored when merging then it is not written again`() {
+        givenStored(
+            attackDetails("other", at("11:00"), at("13:00")),
+            attackDetails("edited", at("14:00"), at("16:00"), note = "Took")
+        )
+
+        merge("edited", at("12:00"), at("16:00"), editedNote = "Took")
+
+        verify(updateAttackNoteRepository, never()).updateAttackNote(any(), any())
+        assertEquals("Took", written().note)
+    }
+
+    @Test
+    fun `Given the disk is full when storing the note on screen then storage full and no merge`() {
+        givenStored(
+            attackDetails("other", at("11:00"), at("13:00")),
+            attackDetails("edited", at("14:00"), at("16:00"))
+        )
+        given(updateAttackNoteRepository.updateAttackNote(any(), any()))
+            .willReturn(WriteResultDomainModel.StorageFull)
+
+        val actual = merge("edited", at("12:00"), at("16:00"), editedNote = "Took ibuprofen")
+
+        assertEquals(MergeAttacksResultDomainModel.StorageFull, actual)
+        verify(mergeAttacksRepository, never()).mergeAttacks(any())
+    }
+
+    @Test
+    fun `Given the same merge again when merging then the merged attack stays as it is`() {
+        // After a first merge of 13:00 to 14:30 into 12:00 to 13:30, only the grown attack is left.
+        givenStored(
+            attackDetails(
+                "a",
+                at("12:00"),
+                at("14:30"),
+                listOf(IntensityPointDomainModel(at("12:30"), 6)),
+                functionalImpact = FunctionalImpactDomainModel.HadToStop,
+                note = "Bright office"
+            )
+        )
+
+        val actual = merge(null, at("13:00"), at("14:30"))
+
+        assertEquals(MergeAttacksResultDomainModel.Merged("a"), actual)
+        assertEquals(
+            AttackMergeDomainModel(
+                survivorId = "a",
+                absorbedIds = emptyList(),
+                start = at("12:00"),
+                startZone = FIXTURE_ZONE,
+                end = at("14:30"),
+                functionalImpact = FunctionalImpactDomainModel.HadToStop,
+                note = "Bright office"
+            ),
+            written()
+        )
     }
 
     /** The overlap rule of the datasource: in progress is open-ended, touching does not count. */

@@ -234,4 +234,6 @@ with no `testDebugUnitTest` task, so `testDebugUnitTest` alone would skip their 
 | `ViewModelObserver` collects in `LaunchedEffect` | skill `bindings/nav2.md` | permanent |
 | `:designsystem` module holds the theme (the sample keeps it in `:app`) | home and history both draw skies; profile section 3 allows a shared module with its own reason | permanent |
 | Konsist: the four "models are suffixed with …Model" rules scan production code only (`scopeFromProduction()`) | unit tests for a model belong in the model's package (for example `AttackDomainModelTest`); the skill forbids renaming classes to dodge a rule | permanent |
+| The add-past-attack screen asks for its defaults with `LaunchedEffect` while its saveable times are empty, instead of `ScreenEnterObserver` | after process death before the defaults arrived, `ScreenEnterObserver` would never ask again and leave the screen empty; once picked, the saved times win | permanent |
+| The add screen carries the end along with a new start and caps it at the current minute in `PastAttackDraftUiModel` | an editing convenience of the form, like the picker bounds; the domain validates the times again | permanent |
 | Further Konsist rule adaptations | recorded here when made | — |

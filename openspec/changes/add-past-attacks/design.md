@@ -92,7 +92,7 @@ use case checks the end against the start and looks the overlaps up again.
 | Start zone | The zone of whichever start is earliest: an attack's own zone, or the device's zone for the new attack's start (EC-TIM-01). |
 | Pain entries and tags | Moved and copied to the survivor in the datasource; a tag selected on both is kept once. |
 | Impact | The highest level among the merged attacks, or none. |
-| Note | Non-empty notes in order of start, joined with a blank line, cut at 1,000 characters without splitting a surrogate pair (EC-ATK-16). |
+| Note | The edited attack's note is the one on screen, stored first (ATK-F6). Non-empty notes in order of start are joined with a blank line; a single note is kept as it is. Text past 1,000 characters is cut from the end, without splitting a surrogate pair or leaving a blank line (EC-ATK-16). |
 | Long-attack check | Kept by the datasource: disabled if any was disabled, and the latest confirmation (change 1, EC-ATK-02). The domain of this feature does not model it. |
 | Nothing overlaps | When the lookup finds no other attack any more: a new attack is stored, an edited one gets the range; the result is `Saved`. |
 
@@ -125,7 +125,8 @@ DAO:
 **Details screen:**
 - `TimeRejectionPresentationModel.Overlaps(attacks, requestedStart, requestedEnd?)` carries the rejected times, so
   "Merge them" can send them back without ViewModel state (skill rule 4).
-- `onMergeAction(attackId, start, end?)` and the `AttacksMerged` notification.
+- `onMergeAction(attackId, start, end?, note?)` and the `AttacksMerged` notification. `note` is the note on screen, so
+  the merge joins what the user sees.
 - `onEnter(attackId, attacksMerged)` notifies `AttacksMerged` once when the screen was opened by a merge from the add
   screen.
 
@@ -154,8 +155,11 @@ start to now + 5 minutes (the domain checks again).
 - A body line explains merging. The buttons are "Merge them" (tonal) and "Change the times" (text).
 - It is a polite live region, so TalkBack announces it.
 
-**Details screen.** The inline overlap error lists every overlapping attack and has a "Merge them" text button.
-"Migraines merged." is a confirmation message. It is also shown when the screen opens with `announceMerge`.
+**Details screen.**
+- The inline overlap error lists every overlapping attack and has a "Merge them" text button.
+- The note being typed moves from `NoteSection` to the screen's saveable state. "Merge them" sends it and clears it,
+  so a stale draft can never overwrite the merged note when the screen is left.
+- "Migraines merged." is a confirmation message. It is also shown when the screen opens with `announceMerge`.
 
 ### D8. Home and navigation
 
@@ -181,5 +185,9 @@ start to now + 5 minutes (the domain checks again).
 - **Read, then write.** The merge plan is computed from reads and written in one transaction. A write that lands in
   between (only possible from another screen) is caught by the next overlap check; the tap guard and the store
   transaction cover the double tap.
+- **Rotation during a write.** ViewModels are unscoped (profile §7), so a rotation in the milliseconds between a tap
+  and its result sends the result to the old screen. The attack is stored, but the screen stays. Tapping again then
+  names the attack just added. Scoping screen dependencies to the back-stack entry is left to `upgrade-toolchain`
+  (Navigation 3).
 - **Defaults are a guess.** Two hours ago to now is only a starting point. Moving the start carries the end along, and
   the duration under the times makes a wrong default visible before "Add migraine".

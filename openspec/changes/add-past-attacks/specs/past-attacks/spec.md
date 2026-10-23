@@ -107,12 +107,17 @@ rest SHALL be removed in the same step, with no undo (BRD EC-ATK-05, D27, D28).
 - **THEN** the new attack is stored as picked and its details screen opens without "Migraines merged."
 
 ### Requirement: Merged notes stay within the limit
-A note that results from a merge SHALL hold at most 1,000 characters. When the joined notes are longer, the end of the
-newest note SHALL be cut, and no character SHALL be split in half (BRD EC-ATK-13, EC-ATK-16).
+A note that results from a merge SHALL hold at most 1,000 characters. A single note SHALL be kept as it is. Joined
+notes that are longer SHALL be cut from the end of the joined text, so the newest notes lose their end first; no
+character SHALL be split in half and no blank line SHALL be left at the end (BRD EC-ATK-13, EC-ATK-16).
 
 #### Scenario: Long notes
 - **WHEN** two migraines with notes of 700 characters each are merged
 - **THEN** the merged note is the first note, a blank line and the first 298 characters of the second
+
+#### Scenario: Three notes
+- **WHEN** migraines with notes of 600, 600 and 10 characters are merged
+- **THEN** the merged note is the first note, a blank line and the first 398 characters of the second
 
 ### Requirement: One attack per tap
 Tapping "Add migraine" or "Merge them" again before the result arrives SHALL NOT store a second attack or merge twice.

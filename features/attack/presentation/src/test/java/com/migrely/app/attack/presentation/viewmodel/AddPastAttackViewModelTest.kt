@@ -75,7 +75,7 @@ class AddPastAttackViewModelTest :
 
     private fun givenMerge(result: MergeAttacksResultDomainModel) {
         mergeAttacksUseCase.givenSuccessfulExecution(
-            MergeAttacksRequestDomainModel(null, START, END),
+            MergeAttacksRequestDomainModel(null, START, END, editedNote = null),
             result
         )
     }

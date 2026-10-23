@@ -18,7 +18,7 @@
         <item quantity="one">This would overlap %1$d migraine: %2$s.</item>
         <item quantity="other">This would overlap %1$d migraines: %2$s.</item>
     </plurals>
-    <string name="overlap_range">%1$s – %2$s</string>
+    <string name="overlap_range">%1$s to %2$s</string>
     <string name="overlap_range_in_progress">since %1$s, in progress</string>
     <string name="overlap_separator">"; "</string>
     <string name="time_merge">Merge them</string>

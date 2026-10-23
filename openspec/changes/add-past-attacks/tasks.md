@@ -80,14 +80,14 @@
 
 ## Verification record (2026-10-23)
 
-- 8.2 Gate `./gradlew assembleDebug test ktlintCheck detekt`: BUILD SUCCESSFUL. 450 unit tests (debug variants), 0
-  failures:
+- 8.2 Gate `./gradlew assembleDebug test ktlintCheck detekt`: BUILD SUCCESSFUL. 459 unit tests after the review fixes
+  (debug variants), 0 failures:
 
   | Module | Tests |
   |---|---|
-  | attack domain | 85 |
+  | attack domain | 93 |
   | attack data | 43 |
-  | attack presentation | 49 |
+  | attack presentation | 50 |
   | attack UI | 40 |
   | home domain | 51 |
   | home data | 26 |
@@ -98,7 +98,7 @@
   | designsystem | 4 |
 
 - 8.3 Instrumented tests on `Migrely_API_36`, per module:
-  - datasource 30/30, including the 7 new `AttackDaoPastAttacksTest` cases for listing overlaps, refusing an
+  - datasource 31/31, including the 8 new `AttackDaoPastAttacksTest` cases for listing overlaps, refusing an
     overlapping insert and the merge transaction;
   - designsystem 7/7.
 - 8.4 Emulator walk (`emulator-5570`, 12-hour clock, Asia/Tashkent), as specified unless noted:
@@ -153,3 +153,45 @@
     transaction (DAO test);
   - the overlap card's spoken announcement: the card text is a polite live region, but the emulator has no audio.
 - 8.5 `openspec validate add-past-attacks --strict` and `openspec validate --specs --strict`: valid.
+
+## Independent review (after the walk)
+
+A `superpowers:code-reviewer` subagent reviewed `feat/add-attack-details..feat/add-past-attacks` against the specs.
+It found one high and ten low findings. Each was checked in the code.
+
+1. **High: a merge from the details screen could lose notes.** Confirmed in `NoteSection`: once the note was edited,
+   its draft stayed on screen, and leaving the screen wrote it over the merged note. A note typed less than 600 ms
+   before the merge was also missed. Fixed:
+   - the screen keeps the note draft, and "Merge them" sends it with the merge and clears it;
+   - `MergeAttacksUseCase` stores that note first (ATK-F6) and joins it in place of the stored one;
+   - new domain and ViewModel tests, and an `attack-details` scenario.
+
+   Re-checked on the emulator. A stored, still-shown note "Took ibuprofen" was merged into an attack noted "Bright
+   offi", and the screen was left. The stored note was "Bright offi", a blank line and "Took ibuprofen". (`adb input
+   text` lost keystrokes under the host load, which is why it reads "Bright offi"; the screen, the keyboard and the
+   database agreed each time.)
+2. **Low: a short attack lying wholly inside the start's minute did not snap (EC-ATK-18).** Fixed in
+   `AttackTimesPlacer`, with a test, and a test where both times snap.
+3. **Low: the note join trimmed a single note and could end on a blank line.** Fixed: a single note is kept as it
+   is, and cut text is trimmed at the end.
+4. **Low: with three or more notes, the cut could remove the newest note entirely, against the spec's wording.** The
+   spec and BRD EC-ATK-16 now say the joined text is cut from its end, and a three-note scenario and test were added.
+5. **Low: "Merge them" hid the card while waiting, and a failure left no card.** Fixed: the card stays, with its
+   buttons disabled, until the answer.
+6. **Low: a rotation in the milliseconds of a write loses the result.** Not changed; it comes from the unscoped
+   ViewModels of the profile. It is recorded in design.md's risks, for `upgrade-toolchain` (Navigation 3).
+7. **Low: the KDoc of `Saved` was inaccurate.** Fixed.
+8. **Low: test gaps.** Added:
+   - the same merge twice;
+   - the edited note joined in start order;
+   - both times snapping;
+   - the absorbed attack's tags being gone;
+   - touching and deleted rows not blocking an insert.
+
+   The tap guard stays UI-only and was walked.
+9. **Low: the add screen deviates from the profile.** It uses `LaunchedEffect` instead of `ScreenEnterObserver`, and
+   it carries the end along in the UI model. Both are recorded in `docs/ARCHITECTURE.md` §13.
+10. **Low: the overlap check before an insert loaded whole attacks.** It is now an `EXISTS` query.
+11. **Low: the list of several overlaps used an en dash.** It now uses "to", like the single form.
+
+Gate after the fixes: BUILD SUCCESSFUL, 459 unit tests; datasource instrumented 31/31.

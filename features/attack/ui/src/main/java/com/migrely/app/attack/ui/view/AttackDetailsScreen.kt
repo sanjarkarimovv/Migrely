@@ -83,12 +83,17 @@ data class AttackDetailsActions(
     val onDelete: () -> Unit
 )
 
-/** Everything the screen keeps for itself between the ViewModel's states: inline errors and the safety card. */
+/**
+ * Everything the screen keeps for itself between the ViewModel's states: inline errors, the safety card and the note
+ * being typed.
+ */
 data class AttackDetailsLocalState(
     val timeError: TimeErrorUiModel?,
     val safetyCardVisible: Boolean,
     val onDismissSafetyCard: () -> Unit,
-    val onTimeErrorShown: () -> Unit
+    val onTimeErrorShown: () -> Unit,
+    val noteDraft: String? = null,
+    val onNoteDraft: (String) -> Unit = {}
 )
 
 @Composable
@@ -116,6 +121,7 @@ fun AttackDetailsDependencies.AttackDetails(
     }
     var timeError by rememberSaveable(attackId) { mutableStateOf<TimeErrorUiModel?>(null) }
     var safetyCardVisible by rememberSaveable(attackId) { mutableStateOf(false) }
+    var noteDraft by rememberSaveable(attackId) { mutableStateOf<String?>(null) }
     var shownMessage by rememberSaveable(attackId) {
         mutableStateOf<ShownAttackMessageUiModel?>(null)
     }
@@ -158,10 +164,14 @@ fun AttackDetailsDependencies.AttackDetails(
         },
         onMerge = { start, end ->
             timeError = null
+            // The merge stores and joins the note on screen; dropping the draft keeps it from overwriting the result.
+            val note = noteDraft
+            noteDraft = null
             viewModel.onMergeAction(
                 attackId,
                 Instant.ofEpochMilli(start),
-                end?.let(Instant::ofEpochMilli)
+                end?.let(Instant::ofEpochMilli),
+                note
             )
         },
         onAddPoint = { point ->
@@ -214,7 +224,9 @@ fun AttackDetailsDependencies.AttackDetails(
                 timeError = timeError,
                 safetyCardVisible = safetyCardVisible,
                 onDismissSafetyCard = { safetyCardVisible = false },
-                onTimeErrorShown = { timeError = null }
+                onTimeErrorShown = { timeError = null },
+                noteDraft = noteDraft,
+                onNoteDraft = { noteDraft = it }
             ),
             actions = actions
         )
@@ -322,7 +334,13 @@ private fun ReadyContents(
             PainSection(details, timeUiFormatter, actions)
             ChoiceSections(details, labels, actions)
             ImpactSection(details.functionalImpact, labels, actions.onImpact)
-            NoteSection(attackId = details.id, savedNote = details.note, onNote = actions.onNote)
+            NoteSection(
+                attackId = details.id,
+                draft = localState.noteDraft,
+                savedNote = details.note,
+                onDraftChange = localState.onNoteDraft,
+                onNote = actions.onNote
+            )
             TextButton(
                 onClick = actions.onDelete,
                 modifier = Modifier

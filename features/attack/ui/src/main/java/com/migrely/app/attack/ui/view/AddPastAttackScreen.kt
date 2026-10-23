@@ -117,11 +117,11 @@ fun AddPastAttackDependencies.AddPastAttack(
     }
 
     val viewModel = addPastAttackViewModel
-    fun send(action: (start: Instant, end: Instant) -> Unit) {
+    fun send(clearProblem: Boolean, action: (start: Instant, end: Instant) -> Unit) {
         val times = draft ?: return
         if (saving) return
         saving = true
-        problem = null
+        if (clearProblem) problem = null
         action(
             Instant.ofEpochMilli(times.startEpochMillis),
             Instant.ofEpochMilli(times.endEpochMillis)
@@ -137,8 +137,9 @@ fun AddPastAttackDependencies.AddPastAttack(
             problem = null
             draft = draft?.copy(endEpochMillis = end)
         },
-        onAdd = { send(viewModel::onAddAction) },
-        onMerge = { send(viewModel::onMergeAction) },
+        onAdd = { send(clearProblem = true, viewModel::onAddAction) },
+        // The card stays, with its buttons waiting, until the merge answers; a failure leaves it there to try again.
+        onMerge = { send(clearProblem = false, viewModel::onMergeAction) },
         onChangeTimes = { problem = null }
     )
 

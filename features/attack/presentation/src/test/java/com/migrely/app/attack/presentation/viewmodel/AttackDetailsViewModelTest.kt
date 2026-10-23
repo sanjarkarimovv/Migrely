@@ -495,10 +495,21 @@ class AttackDetailsViewModelTest :
         val notification = nextNotification()
         val state = nextViewState()
 
-        classUnderTest.onMergeAction("a", START.minusSeconds(3_600), END)
+        classUnderTest.onMergeAction("a", START.minusSeconds(3_600), END, note = null)
 
         assertEquals(AttackDetailsPresentationNotification.AttacksMerged, notification.await())
         assertEquals(ready, state.await())
+    }
+
+    @Test
+    fun `Given an edited note when merging then sends it with the merge`() = runTest {
+        givenMerge(START, END, MergeAttacksResultDomainModel.Merged("a"), note = "Took ibuprofen")
+        givenDetails()
+        val notification = nextNotification()
+
+        classUnderTest.onMergeAction("a", START, END, note = "Took ibuprofen")
+
+        assertEquals(AttackDetailsPresentationNotification.AttacksMerged, notification.await())
     }
 
     @Test
@@ -507,7 +518,7 @@ class AttackDetailsViewModelTest :
         givenDetails()
         val state = nextViewState()
 
-        classUnderTest.onMergeAction("a", START, END)
+        classUnderTest.onMergeAction("a", START, END, note = null)
 
         assertEquals(ready, state.await())
     }
@@ -521,7 +532,7 @@ class AttackDetailsViewModelTest :
         )
         val notification = nextNotification()
 
-        classUnderTest.onMergeAction("a", START, END)
+        classUnderTest.onMergeAction("a", START, END, note = null)
 
         assertEquals(
             AttackDetailsPresentationNotification.TimeRejected(
@@ -537,7 +548,7 @@ class AttackDetailsViewModelTest :
         givenMerge(START, END, MergeAttacksResultDomainModel.NotFound)
         val state = nextViewState()
 
-        classUnderTest.onMergeAction("a", START, END)
+        classUnderTest.onMergeAction("a", START, END, note = null)
 
         assertEquals(AttackDetailsViewState.NotFound, state.await())
     }
@@ -547,14 +558,19 @@ class AttackDetailsViewModelTest :
         givenMerge(START, END, MergeAttacksResultDomainModel.StorageFull)
         val notification = nextNotification()
 
-        classUnderTest.onMergeAction("a", START, END)
+        classUnderTest.onMergeAction("a", START, END, note = null)
 
         assertEquals(AttackDetailsPresentationNotification.StorageFull, notification.await())
     }
 
-    private fun givenMerge(start: Instant, end: Instant?, result: MergeAttacksResultDomainModel) {
+    private fun givenMerge(
+        start: Instant,
+        end: Instant?,
+        result: MergeAttacksResultDomainModel,
+        note: String? = null
+    ) {
         mergeAttacksUseCase.givenSuccessfulExecution(
-            MergeAttacksRequestDomainModel("a", start, end),
+            MergeAttacksRequestDomainModel("a", start, end, editedNote = note),
             result
         )
     }

@@ -55,7 +55,9 @@ internal class AttackTimesPlacer(
         others.forEach { other ->
             val otherEnd = other.end
             val currentEnd = end
-            if (!other.start.isAfter(start) && otherEnd != null && otherEnd.isAfter(start) &&
+            // An attack that ends within a minute after the start, even one that lies wholly inside that minute, is
+            // touched, not overlapped.
+            if (otherEnd != null && otherEnd.isAfter(start) &&
                 Duration.between(start, otherEnd) < SAME_MINUTE
             ) {
                 start = otherEnd

@@ -18,6 +18,7 @@ import com.migrely.app.attack.domain.repository.GetAttackDetailsRepository
 import com.migrely.app.attack.domain.repository.GetCurrentTimeRepository
 import com.migrely.app.attack.domain.repository.MergeAttacksRepository
 import com.migrely.app.attack.domain.repository.StorePastAttackRepository
+import com.migrely.app.attack.domain.repository.UpdateAttackNoteRepository
 import com.migrely.app.attack.domain.repository.UpdateAttackTimesRepository
 import com.migrely.app.attack.domain.usecase.AttackTimesPlacer.Placement
 import com.migrely.app.coroutine.CoroutineContextProvider
@@ -42,6 +43,7 @@ class MergeAttacksUseCase(
     private val storePastAttackRepository: StorePastAttackRepository,
     private val updateAttackTimesRepository: UpdateAttackTimesRepository,
     private val mergeAttacksRepository: MergeAttacksRepository,
+    private val updateAttackNoteRepository: UpdateAttackNoteRepository,
     coroutineContextProvider: CoroutineContextProvider
 ) : BackgroundExecutingUseCase<
     MergeAttacksRequestDomainModel,
@@ -52,7 +54,7 @@ class MergeAttacksUseCase(
     override fun executeInBackground(
         request: MergeAttacksRequestDomainModel
     ): MergeAttacksResultDomainModel {
-        val edited = request.attackId?.let { attackId ->
+        val stored = request.attackId?.let { attackId ->
             when (val lookup = getAttackDetailsRepository.attackDetails(attackId)) {
                 is AttackDetailsLookupResultDomainModel.Found -> lookup.details
                 AttackDetailsLookupResultDomainModel.NotFound ->
@@ -60,6 +62,20 @@ class MergeAttacksUseCase(
                 AttackDetailsLookupResultDomainModel.Failed ->
                     return MergeAttacksResultDomainModel.Failed
             }
+        }
+        // The note on screen is stored first, as every change is (BRD ATK-F6), so a refused merge loses no typing.
+        val editedNote = request.editedNote
+        val edited = if (stored != null && editedNote != null && editedNote != stored.note) {
+            if (editedNote.length > MAXIMUM_NOTE_LENGTH) return MergeAttacksResultDomainModel.Failed
+            when (updateAttackNoteRepository.updateAttackNote(stored.id, editedNote)) {
+                WriteResultDomainModel.Written -> stored.copy(note = editedNote)
+                WriteResultDomainModel.StorageFull ->
+                    return MergeAttacksResultDomainModel.StorageFull
+
+                WriteResultDomainModel.Failed -> return MergeAttacksResultDomainModel.Failed
+            }
+        } else {
+            stored
         }
         val now = getCurrentTimeRepository.currentTime()
         val end = when {
@@ -212,17 +228,20 @@ class MergeAttacksUseCase(
         return AttackRangeDomainModel(start, end)
     }
 
-    /** Non-empty notes, oldest first, within the note limit; a character is never cut in half (BRD EC-ATK-16). */
+    /**
+     * Non-empty notes, oldest first, within the note limit (BRD EC-ATK-16). A single note is kept as it is. Joined text
+     * that is too long is cut from its end, never inside a character and never leaving a blank line behind.
+     */
     private fun joinNotes(notes: List<String>): String {
-        val joined = notes
-            .filter(String::isNotBlank)
-            .joinToString(NOTE_SEPARATOR, transform = String::trim)
+        val parts = notes.filter(String::isNotBlank)
+        val joined = parts.singleOrNull()
+            ?: parts.joinToString(NOTE_SEPARATOR, transform = String::trim)
         if (joined.length <= MAXIMUM_NOTE_LENGTH) return joined
         val cut = if (joined[MAXIMUM_NOTE_LENGTH - 1].isHighSurrogate()) {
             MAXIMUM_NOTE_LENGTH - 1
         } else {
             MAXIMUM_NOTE_LENGTH
         }
-        return joined.substring(0, cut)
+        return joined.substring(0, cut).trimEnd()
     }
 }

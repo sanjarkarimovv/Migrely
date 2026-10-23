@@ -113,10 +113,13 @@ class AttackDetailsViewModel(
         )
     }
 
-    /** The user chose to merge the refused times with the attacks they overlap (BRD EC-ATK-05, D27). */
-    fun onMergeAction(attackId: String, start: Instant, end: Instant?) {
+    /**
+     * The user chose to merge the refused times with the attacks they overlap (BRD EC-ATK-05, D27). [note] is the note
+     * as the screen shows it, or null when the user has not edited it.
+     */
+    fun onMergeAction(attackId: String, start: Instant, end: Instant?, note: String?) {
         mergeAttacksUseCase(
-            value = MergeAttacksRequestDomainModel(attackId, start, end),
+            value = MergeAttacksRequestDomainModel(attackId, start, end, editedNote = note),
             onResult = { result ->
                 when (result) {
                     is MergeAttacksResultDomainModel.Merged ->

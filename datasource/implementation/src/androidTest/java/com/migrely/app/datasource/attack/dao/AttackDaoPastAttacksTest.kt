@@ -74,6 +74,15 @@ class AttackDaoPastAttacksTest {
     }
 
     @Test
+    fun givenOnlyTouchingOrDeletedAttacks_whenInsertingAnEndedAttack_thenStored() {
+        classUnderTest.insertAttack(attack(id = "touching", start = 1_000L, end = 2_000L))
+        classUnderTest.insertAttack(attack(id = "gone", start = 2_000L, end = 3_000L))
+        classUnderTest.softDelete("gone", 9_000L)
+
+        assertTrue(classUnderTest.insertEndedIfNoOverlap(attack("new", 2_000L, 3_000L)))
+    }
+
+    @Test
     fun givenAnOverlap_whenInsertingAnEndedAttack_thenNothingIsStored() {
         classUnderTest.insertAttack(attack(id = "open", start = 2_500L, end = null))
 
@@ -125,6 +134,7 @@ class AttackDaoPastAttacksTest {
         )
         assertNull(classUnderTest.byId("absorbed"))
         assertNull(classUnderTest.deletedById("absorbed"))
+        assertTrue(classUnderTest.tagsOf(listOf("absorbed")).isEmpty())
         assertEquals("survivor", classUnderTest.inProgress()?.attack?.id)
     }
 
