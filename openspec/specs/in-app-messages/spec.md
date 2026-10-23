@@ -1,7 +1,8 @@
 # in-app-messages Specification
 
 ## Purpose
-TBD - created by archiving change refine-messages-and-type. Update Purpose after archive.
+Defines how short messages (snackbars) appear, how long they stay, how they are dismissed and announced, and how
+they survive rotation, so that confirmations, undo offers and errors stay calm, readable and accessible (BRD EC-UX-16).
 
 ## Requirements
 

@@ -1,7 +1,8 @@
 # brand-typography Specification
 
 ## Purpose
-TBD - created by archiving change refine-messages-and-type. Update Purpose after archive.
+Defines the bundled typefaces, the roles each plays, and the reading-comfort rules for text and numbers on the dark
+theme (BRD D20, EC-UX-17).
 
 ## Requirements
 
