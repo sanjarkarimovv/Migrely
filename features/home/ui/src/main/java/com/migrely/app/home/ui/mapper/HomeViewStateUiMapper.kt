@@ -7,6 +7,7 @@ import com.migrely.app.home.presentation.model.PeakPresentationModel
 import com.migrely.app.home.presentation.model.SkyPresentationModel
 import com.migrely.app.home.presentation.model.TodayPresentationModel
 import com.migrely.app.home.ui.model.AttackInProgressUiModel
+import com.migrely.app.home.ui.model.AttackSummaryUiModel
 import com.migrely.app.home.ui.model.HomeViewStateUiModel
 import com.migrely.app.home.ui.model.IntensityLevelUiModel
 import com.migrely.app.home.ui.model.PeakUiModel
@@ -36,6 +37,15 @@ class HomeViewStateUiMapper {
             PeakPresentationModel.Severe -> PeakUiModel.Severe
             PeakPresentationModel.NotRecorded -> PeakUiModel.NotRecorded
             null -> null
+        },
+        attacks = attacks.map { attack ->
+            AttackSummaryUiModel(
+                id = attack.id,
+                startEpochMillis = attack.start.toEpochMilli(),
+                startZoneId = attack.startZone.id,
+                endEpochMillis = attack.end.toEpochMilli(),
+                peakIntensity = attack.peakIntensity
+            )
         }
     )
 

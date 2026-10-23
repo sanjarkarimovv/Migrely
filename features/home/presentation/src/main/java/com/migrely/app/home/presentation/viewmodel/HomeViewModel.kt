@@ -17,12 +17,14 @@ import com.migrely.app.home.domain.usecase.EndAttackUseCase
 import com.migrely.app.home.domain.usecase.GetTodayUseCase
 import com.migrely.app.home.domain.usecase.MoveAttackStartEarlierUseCase
 import com.migrely.app.home.domain.usecase.RecordIntensityUseCase
+import com.migrely.app.home.domain.usecase.RestoreDeletedAttackUseCase
 import com.migrely.app.home.domain.usecase.StartAttackUseCase
 import com.migrely.app.home.domain.usecase.UndoAttackEndUseCase
 import com.migrely.app.home.domain.usecase.UndoAttackStartUseCase
 import com.migrely.app.home.presentation.mapper.IntensityLevelDomainMapper
 import com.migrely.app.home.presentation.mapper.TodayPresentationMapper
 import com.migrely.app.home.presentation.model.HomePresentationNotification
+import com.migrely.app.home.presentation.model.HomePresentationNotification.AttackDeleted
 import com.migrely.app.home.presentation.model.HomePresentationNotification.AttackEnded
 import com.migrely.app.home.presentation.model.HomePresentationNotification.AttackStarted
 import com.migrely.app.home.presentation.model.HomePresentationNotification.EndTimeOutOfRange
@@ -33,6 +35,7 @@ import com.migrely.app.home.presentation.model.HomePresentationNotification.Undo
 import com.migrely.app.home.presentation.model.HomePresentationNotification.Undone
 import com.migrely.app.home.presentation.model.HomeViewState
 import com.migrely.app.home.presentation.model.IntensityLevelPresentationModel
+import com.migrely.app.home.presentation.navigation.HomePresentationNavigationEvent
 import java.time.Duration
 import java.time.Instant
 
@@ -50,15 +53,16 @@ class HomeViewModel(
     private val undoAttackStartUseCase: UndoAttackStartUseCase,
     private val undoAttackEndUseCase: UndoAttackEndUseCase,
     private val answerLongAttackCheckUseCase: AnswerLongAttackCheckUseCase,
+    private val restoreDeletedAttackUseCase: RestoreDeletedAttackUseCase,
     private val todayPresentationMapper: TodayPresentationMapper,
     private val intensityLevelDomainMapper: IntensityLevelDomainMapper,
     useCaseExecutor: UseCaseExecutor
 ) : BaseViewModel<HomeViewState, HomePresentationNotification>(useCaseExecutor) {
     fun onEnter(startAttackRequested: Boolean) {
-        if (startAttackRequested) startAttack() else loadToday()
+        if (startAttackRequested) startAttack() else loadToday(announceDeletion = true)
     }
 
-    fun onResume() = loadToday()
+    fun onResume() = loadToday(announceDeletion = true)
 
     fun onDateChanged() = loadToday()
 
@@ -108,6 +112,13 @@ class HomeViewModel(
     fun onUndoEndAction(attackId: String) {
         undoAttackEndUseCase(value = attackId, onResult = ::presentUndo)
     }
+
+    fun onUndoDeleteAction(attackId: String) {
+        restoreDeletedAttackUseCase(value = attackId, onResult = ::presentUndo)
+    }
+
+    fun onAttackDetailsAction(attackId: String) =
+        emitNavigationEvent(HomePresentationNavigationEvent.OnViewAttackDetails(attackId))
 
     fun onStillGoingAction(attackId: String) =
         answerLongAttackCheck(attackId, LongAttackAnswerDomainModel.StillGoing)
@@ -182,13 +193,22 @@ class HomeViewModel(
         }
     }
 
-    private fun loadToday() {
+    /**
+     * Loads today. Only a load on entering or returning to the screen announces a recent deletion, so the undo of a
+     * deletion never replaces the undo of an action taken here.
+     */
+    private fun loadToday(announceDeletion: Boolean = false) {
         getTodayUseCase(
             onResult = { result ->
                 when (result) {
-                    is TodayResultDomainModel.Loaded -> updateViewState(
-                        todayPresentationMapper.toPresentation(result.today)
-                    )
+                    is TodayResultDomainModel.Loaded -> {
+                        updateViewState(todayPresentationMapper.toPresentation(result.today))
+                        val deleted = result.recentlyDeleted
+                        if (announceDeletion && deleted != null) {
+                            notify(AttackDeleted(deleted.id, deleted.deletedAt))
+                        }
+                    }
+
                     TodayResultDomainModel.Failed -> notify(SomethingWentWrong)
                 }
             }

@@ -2,6 +2,7 @@ package com.migrely.app.home.presentation.mapper
 
 import com.migrely.app.home.domain.model.TodayDomainModel
 import com.migrely.app.home.presentation.model.AttackInProgressPresentationModel
+import com.migrely.app.home.presentation.model.AttackSummaryPresentationModel
 import com.migrely.app.home.presentation.model.HomeViewState
 import com.migrely.app.home.presentation.model.IntensityLevelPresentationModel
 import com.migrely.app.home.presentation.model.PeakPresentationModel
@@ -45,7 +46,16 @@ class TodayPresentationMapper(
         return TodayPresentationModel(
             sky = skyLevel.toSky(),
             attackCount = today.count,
-            peak = recordedLevel.toPeak()
+            peak = recordedLevel.toPeak(),
+            attacks = today.attacks.map { attack ->
+                AttackSummaryPresentationModel(
+                    id = attack.id,
+                    start = attack.start,
+                    startZone = attack.startZone,
+                    end = attack.end,
+                    peakIntensity = attack.peakIntensity
+                )
+            }
         )
     }
 

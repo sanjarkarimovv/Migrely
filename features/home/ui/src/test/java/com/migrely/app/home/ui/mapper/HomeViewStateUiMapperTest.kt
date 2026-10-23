@@ -1,12 +1,14 @@
 package com.migrely.app.home.ui.mapper
 
 import com.migrely.app.home.presentation.model.AttackInProgressPresentationModel
+import com.migrely.app.home.presentation.model.AttackSummaryPresentationModel
 import com.migrely.app.home.presentation.model.HomeViewState
 import com.migrely.app.home.presentation.model.IntensityLevelPresentationModel
 import com.migrely.app.home.presentation.model.PeakPresentationModel
 import com.migrely.app.home.presentation.model.SkyPresentationModel
 import com.migrely.app.home.presentation.model.TodayPresentationModel
 import com.migrely.app.home.ui.model.AttackInProgressUiModel
+import com.migrely.app.home.ui.model.AttackSummaryUiModel
 import com.migrely.app.home.ui.model.HomeViewStateUiModel
 import com.migrely.app.home.ui.model.IntensityLevelUiModel
 import com.migrely.app.home.ui.model.PeakUiModel
@@ -62,6 +64,40 @@ class HomeViewStateUiMapperTest(
                     )
                 ),
                 HomeViewStateUiModel.Today(TodayUiModel(SkyUiModel.Storm, 2, PeakUiModel.Severe))
+            ),
+            arrayOf<Any>(
+                HomeViewState.Today(
+                    TodayPresentationModel(
+                        SkyPresentationModel.Cloudy,
+                        1,
+                        PeakPresentationModel.Moderate,
+                        listOf(
+                            AttackSummaryPresentationModel(
+                                "a",
+                                START,
+                                ZoneId.of("Asia/Tashkent"),
+                                START.plusSeconds(3_600),
+                                5
+                            )
+                        )
+                    )
+                ),
+                HomeViewStateUiModel.Today(
+                    TodayUiModel(
+                        SkyUiModel.Cloudy,
+                        1,
+                        PeakUiModel.Moderate,
+                        listOf(
+                            AttackSummaryUiModel(
+                                "a",
+                                START.toEpochMilli(),
+                                "Asia/Tashkent",
+                                START.plusSeconds(3_600).toEpochMilli(),
+                                5
+                            )
+                        )
+                    )
+                )
             ),
             arrayOf<Any>(
                 HomeViewState.AttackInProgress(

@@ -3,6 +3,7 @@ package com.migrely.app.home.presentation.viewmodel
 import com.migrely.app.architecture.presentation.viewmodel.BaseViewModelTest
 import com.migrely.app.home.domain.model.AnswerLongAttackResultDomainModel
 import com.migrely.app.home.domain.model.AttackDomainModel
+import com.migrely.app.home.domain.model.DeletedAttackDomainModel
 import com.migrely.app.home.domain.model.EndAttackRequestDomainModel
 import com.migrely.app.home.domain.model.EndAttackResultDomainModel
 import com.migrely.app.home.domain.model.IntensityLevelDomainModel
@@ -20,6 +21,7 @@ import com.migrely.app.home.domain.usecase.EndAttackUseCase
 import com.migrely.app.home.domain.usecase.GetTodayUseCase
 import com.migrely.app.home.domain.usecase.MoveAttackStartEarlierUseCase
 import com.migrely.app.home.domain.usecase.RecordIntensityUseCase
+import com.migrely.app.home.domain.usecase.RestoreDeletedAttackUseCase
 import com.migrely.app.home.domain.usecase.StartAttackUseCase
 import com.migrely.app.home.domain.usecase.UndoAttackEndUseCase
 import com.migrely.app.home.domain.usecase.UndoAttackStartUseCase
@@ -31,6 +33,7 @@ import com.migrely.app.home.presentation.model.HomeViewState
 import com.migrely.app.home.presentation.model.IntensityLevelPresentationModel
 import com.migrely.app.home.presentation.model.SkyPresentationModel
 import com.migrely.app.home.presentation.model.TodayPresentationModel
+import com.migrely.app.home.presentation.navigation.HomePresentationNavigationEvent
 import java.time.Duration
 import java.time.Instant
 import java.time.ZoneId
@@ -76,6 +79,8 @@ class HomeViewModelTest :
 
     @Mock private lateinit var answerLongAttackCheckUseCase: AnswerLongAttackCheckUseCase
 
+    @Mock private lateinit var restoreDeletedAttackUseCase: RestoreDeletedAttackUseCase
+
     @Before
     fun setUp() {
         classUnderTest = HomeViewModel(
@@ -87,6 +92,7 @@ class HomeViewModelTest :
             undoAttackStartUseCase,
             undoAttackEndUseCase,
             answerLongAttackCheckUseCase,
+            restoreDeletedAttackUseCase,
             TodayPresentationMapper(IntensityLevelPresentationMapper()),
             IntensityLevelDomainMapper(),
             useCaseExecutor
@@ -304,6 +310,45 @@ class HomeViewModelTest :
         classUnderTest.onResume()
 
         assertEquals(HomePresentationNotification.SomethingWentWrong, notification.await())
+    }
+
+    @Test
+    fun `Given a recent deletion when returning to home then offers to undo it`() = runTest {
+        val deletedAt = START.plusSeconds(60)
+        getTodayUseCase.givenSuccessfulExecution(
+            TodayResultDomainModel.Loaded(
+                TodayDomainModel.Calm,
+                DeletedAttackDomainModel("gone", deletedAt)
+            )
+        )
+        val notification = nextNotification()
+
+        classUnderTest.onResume()
+
+        assertEquals(
+            HomePresentationNotification.AttackDeleted("gone", deletedAt),
+            notification.await()
+        )
+    }
+
+    @Test
+    fun `When undoing a deletion then restores and confirms`() = runTest {
+        restoreDeletedAttackUseCase.givenSuccessfulExecution("gone", UndoResultDomainModel.Undone)
+        givenToday(TodayDomainModel.Calm)
+        val notification = nextNotification()
+
+        classUnderTest.onUndoDeleteAction("gone")
+
+        assertEquals(HomePresentationNotification.Undone, notification.await())
+    }
+
+    @Test
+    fun `When opening an attack's details then asks to navigate there`() = runTest {
+        val event = async(start = UNDISPATCHED) { classUnderTest.navigationEvent.first() }
+
+        classUnderTest.onAttackDetailsAction("a")
+
+        assertEquals(HomePresentationNavigationEvent.OnViewAttackDetails("a"), event.await())
     }
 
     private fun givenToday(today: TodayDomainModel) {

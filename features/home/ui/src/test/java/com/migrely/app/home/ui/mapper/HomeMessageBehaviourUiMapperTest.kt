@@ -37,6 +37,14 @@ class HomeMessageBehaviourUiMapperTest(
                     5_000L
                 )
             ),
+            arrayOf<Any>(
+                HomeMessageUiModel.AttackDeleted("a", 1L),
+                HomeMessageBehaviourUiModel(
+                    SnackbarTone.Confirmation,
+                    HomeUndoTargetUiModel.Delete,
+                    5_000L
+                )
+            ),
             arrayOf<Any>(HomeMessageUiModel.Undone, information),
             arrayOf<Any>(HomeMessageUiModel.UndoNotPossible, information),
             arrayOf<Any>(HomeMessageUiModel.StartMoveRejected(1_000L), information),

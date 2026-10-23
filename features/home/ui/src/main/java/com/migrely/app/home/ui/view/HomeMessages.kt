@@ -43,16 +43,44 @@ internal fun HomeMessages(
     reduceMotion: Boolean,
     onUndoStart: (attackId: String) -> Unit,
     onUndoEnd: (attackId: String) -> Unit,
+    onUndoDelete: (attackId: String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var shown by rememberSaveable { mutableStateOf<ShownHomeMessageUiModel?>(null) }
+    // The deletion already offered, so returning to home or rotating does not offer it again after a dismissal.
+    var offeredDeletion by rememberSaveable {
+        mutableStateOf<HomeMessageUiModel.AttackDeleted?>(null)
+    }
     val haptics = LocalHapticFeedback.current
     val accessibilityManager = LocalAccessibilityManager.current
     val currentOnUndoStart by rememberUpdatedState(onUndoStart)
     val currentOnUndoEnd by rememberUpdatedState(onUndoEnd)
+    val currentOnUndoDelete by rememberUpdatedState(onUndoDelete)
+
+    fun timeoutMillis(behaviour: HomeMessageBehaviourUiModel): Long? =
+        behaviour.baseDurationMillis?.let { base ->
+            accessibilityManager?.calculateRecommendedTimeoutMillis(
+                originalTimeoutMillis = base,
+                containsIcons = true,
+                containsText = true,
+                containsControls = behaviour.undoTarget != null
+            ) ?: base
+        }
 
     LaunchedEffect(presenter) {
         presenter.messages.collect { message ->
+            val now = System.currentTimeMillis()
+            // A deletion is timed from the moment it happened on the details screen, not from when home shows it.
+            val shownAt = if (message is HomeMessageUiModel.AttackDeleted) {
+                if (message == offeredDeletion) return@collect
+                offeredDeletion = message
+                message.deletedAtEpochMillis
+            } else {
+                now
+            }
+            val candidate = ShownHomeMessageUiModel(message, shownAt)
+            val timeout = timeoutMillis(behaviourMapper.toUi(message))
+            if (timeout != null && candidate.remainingMillis(now, timeout) == 0L) return@collect
             when (message) {
                 is HomeMessageUiModel.AttackStarted,
                 is HomeMessageUiModel.AttackEnded -> haptics.performHapticFeedback(
@@ -66,19 +94,9 @@ internal fun HomeMessages(
 
                 else -> Unit
             }
-            shown = ShownHomeMessageUiModel(message, System.currentTimeMillis())
+            shown = candidate
         }
     }
-
-    fun timeoutMillis(behaviour: HomeMessageBehaviourUiModel): Long? =
-        behaviour.baseDurationMillis?.let { base ->
-            accessibilityManager?.calculateRecommendedTimeoutMillis(
-                originalTimeoutMillis = base,
-                containsIcons = true,
-                containsText = true,
-                containsControls = behaviour.undoTarget != null
-            ) ?: base
-        }
 
     val current = shown
     val currentTimeout = current?.let { timeoutMillis(behaviourMapper.toUi(it.message)) }
@@ -109,6 +127,7 @@ internal fun HomeMessages(
                     when (val message = visible.message) {
                         is HomeMessageUiModel.AttackStarted -> currentOnUndoStart(message.attackId)
                         is HomeMessageUiModel.AttackEnded -> currentOnUndoEnd(message.attackId)
+                        is HomeMessageUiModel.AttackDeleted -> currentOnUndoDelete(message.attackId)
                         else -> Unit
                     }
                 }
@@ -137,6 +156,7 @@ private fun HomeSnackbar(
                 when (target) {
                     HomeUndoTargetUiModel.Start -> R.string.snackbar_undo_start_description
                     HomeUndoTargetUiModel.End -> R.string.snackbar_undo_end_description
+                    HomeUndoTargetUiModel.Delete -> R.string.snackbar_undo_delete_description
                 }
             ),
             onClick = onUndo
@@ -176,6 +196,7 @@ private fun messageText(message: HomeMessageUiModel, timeUiFormatter: TimeUiForm
     when (message) {
         is HomeMessageUiModel.AttackStarted -> stringResource(R.string.snackbar_attack_started)
         is HomeMessageUiModel.AttackEnded -> stringResource(R.string.snackbar_attack_ended)
+        is HomeMessageUiModel.AttackDeleted -> stringResource(R.string.snackbar_attack_deleted)
         HomeMessageUiModel.Undone -> stringResource(R.string.message_undone)
         HomeMessageUiModel.UndoNotPossible -> stringResource(R.string.message_undo_not_possible)
         HomeMessageUiModel.StorageFull -> stringResource(R.string.message_storage_full)

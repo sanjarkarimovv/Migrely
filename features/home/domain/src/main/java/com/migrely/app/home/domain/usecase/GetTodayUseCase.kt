@@ -3,6 +3,7 @@ package com.migrely.app.home.domain.usecase
 import com.migrely.app.architecture.domain.usecase.BackgroundExecutingUseCase
 import com.migrely.app.coroutine.CoroutineContextProvider
 import com.migrely.app.home.domain.model.AttackDomainModel
+import com.migrely.app.home.domain.model.AttackSummaryDomainModel
 import com.migrely.app.home.domain.model.TodayDomainModel
 import com.migrely.app.home.domain.model.TodayResultDomainModel
 import com.migrely.app.home.domain.model.TodaySnapshotDomainModel
@@ -21,7 +22,8 @@ class GetTodayUseCase(
     override fun executeInBackground(request: Unit): TodayResultDomainModel =
         when (val result = getTodayRepository.today()) {
             is TodaySnapshotResultDomainModel.Loaded -> TodayResultDomainModel.Loaded(
-                result.snapshot.toToday()
+                today = result.snapshot.toToday(),
+                recentlyDeleted = result.snapshot.recentlyDeleted
             )
             TodaySnapshotResultDomainModel.Failed -> TodayResultDomainModel.Failed
         }
@@ -42,7 +44,20 @@ class GetTodayUseCase(
                     AttackDomainModel::peakIntensity
                 )
                     .maxOrNull(),
-                anyIntensityNotRecorded = endedAttacksTouchingToday.any { it.peakIntensity == null }
+                anyIntensityNotRecorded = endedAttacksTouchingToday.any {
+                    it.peakIntensity == null
+                },
+                attacks = endedAttacksTouchingToday
+                    .sortedBy(AttackDomainModel::start)
+                    .map { attack ->
+                        AttackSummaryDomainModel(
+                            id = attack.id,
+                            start = attack.start,
+                            startZone = attack.startZone,
+                            end = requireNotNull(attack.end) { "An ended attack has an end" },
+                            peakIntensity = attack.peakIntensity
+                        )
+                    }
             )
         }
     }

@@ -3,12 +3,14 @@ package com.migrely.app.home.data.repository
 import com.migrely.app.datasource.attack.datasource.AttackDataSource
 import com.migrely.app.datasource.attack.model.AttackStartDataModel
 import com.migrely.app.datasource.attack.model.ReopenDataModel
+import com.migrely.app.datasource.attack.model.RestoreDataModel
 import com.migrely.app.datasource.clock.datasource.ClockDataSource
 import com.migrely.app.datasource.exception.DataException
 import com.migrely.app.datasource.exception.StorageFullDataException
 import com.migrely.app.home.data.mapper.AttackDomainMapper
 import com.migrely.app.home.domain.model.AttackLookupResultDomainModel
 import com.migrely.app.home.domain.model.CurrentTimeDomainModel
+import com.migrely.app.home.domain.model.DeletedAttackDomainModel
 import com.migrely.app.home.domain.model.IntensityPointDomainModel
 import com.migrely.app.home.domain.model.LongAttackCheckDomainModel
 import com.migrely.app.home.domain.model.PreviousEndResultDomainModel
@@ -16,6 +18,7 @@ import com.migrely.app.home.domain.model.ReopenResultDomainModel
 import com.migrely.app.home.domain.model.StartAttackResultDomainModel
 import com.migrely.app.home.domain.model.TodaySnapshotDomainModel
 import com.migrely.app.home.domain.model.TodaySnapshotResultDomainModel
+import com.migrely.app.home.domain.model.UndoResultDomainModel
 import com.migrely.app.home.domain.model.WriteResultDomainModel
 import com.migrely.app.home.domain.repository.AddIntensityPointRepository
 import com.migrely.app.home.domain.repository.DeleteAttackRepository
@@ -26,6 +29,7 @@ import com.migrely.app.home.domain.repository.GetPreviousAttackEndRepository
 import com.migrely.app.home.domain.repository.GetTodayRepository
 import com.migrely.app.home.domain.repository.ReopenAttackRepository
 import com.migrely.app.home.domain.repository.ReplaceLatestIntensityPointRepository
+import com.migrely.app.home.domain.repository.RestoreDeletedAttackRepository
 import com.migrely.app.home.domain.repository.StartAttackRepository
 import com.migrely.app.home.domain.repository.UpdateAttackStartRepository
 import com.migrely.app.home.domain.repository.UpdateLongAttackCheckRepository
@@ -52,7 +56,8 @@ class HomeRepository(
     EndAttackRepository,
     DeleteAttackRepository,
     ReopenAttackRepository,
-    UpdateLongAttackCheckRepository {
+    UpdateLongAttackCheckRepository,
+    RestoreDeletedAttackRepository {
     override fun today(): TodaySnapshotResultDomainModel = try {
         val now = clockDataSource.now()
         val zone = clockDataSource.zone()
@@ -64,7 +69,13 @@ class HomeRepository(
                     from,
                     to
                 ).map(attackDomainMapper::toDomain),
-                now = now
+                now = now,
+                // The datasource keeps a deletion restorable only for its retention window (BRD D23).
+                recentlyDeleted = attackDataSource.recentlyDeleted(
+                    since = Instant.EPOCH
+                )?.let { deleted ->
+                    DeletedAttackDomainModel(deleted.id, deleted.deletedAt)
+                }
             )
         )
     } catch (_: DataException) {
@@ -146,6 +157,15 @@ class HomeRepository(
         write {
             attackDataSource.updateLongAttackCheck(attackId, check.confirmedAt, check.disabled)
         }
+
+    override fun restoreDeletedAttack(attackId: String): UndoResultDomainModel = try {
+        when (attackDataSource.restore(attackId)) {
+            RestoreDataModel.Restored -> UndoResultDomainModel.Undone
+            RestoreDataModel.NotPossible -> UndoResultDomainModel.NotPossible
+        }
+    } catch (_: DataException) {
+        UndoResultDomainModel.Failed
+    }
 
     // Java 8 time APIs only: this code runs on Android 8 (API 26).
     private fun dayBounds(now: Instant, zone: ZoneId): Pair<Instant, Instant> {

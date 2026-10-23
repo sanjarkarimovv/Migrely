@@ -11,6 +11,7 @@ import com.migrely.app.home.domain.repository.GetPreviousAttackEndRepository
 import com.migrely.app.home.domain.repository.GetTodayRepository
 import com.migrely.app.home.domain.repository.ReopenAttackRepository
 import com.migrely.app.home.domain.repository.ReplaceLatestIntensityPointRepository
+import com.migrely.app.home.domain.repository.RestoreDeletedAttackRepository
 import com.migrely.app.home.domain.repository.StartAttackRepository
 import com.migrely.app.home.domain.repository.UpdateAttackStartRepository
 import com.migrely.app.home.domain.repository.UpdateLongAttackCheckRepository
@@ -19,6 +20,7 @@ import com.migrely.app.home.domain.usecase.EndAttackUseCase
 import com.migrely.app.home.domain.usecase.GetTodayUseCase
 import com.migrely.app.home.domain.usecase.MoveAttackStartEarlierUseCase
 import com.migrely.app.home.domain.usecase.RecordIntensityUseCase
+import com.migrely.app.home.domain.usecase.RestoreDeletedAttackUseCase
 import com.migrely.app.home.domain.usecase.StartAttackUseCase
 import com.migrely.app.home.domain.usecase.UndoAttackEndUseCase
 import com.migrely.app.home.domain.usecase.UndoAttackStartUseCase
@@ -124,6 +126,12 @@ internal object HomeModule {
     )
 
     @Provides
+    fun providesRestoreDeletedAttackUseCase(
+        restoreDeletedAttackRepository: RestoreDeletedAttackRepository,
+        coroutineContextProvider: CoroutineContextProvider
+    ) = RestoreDeletedAttackUseCase(restoreDeletedAttackRepository, coroutineContextProvider)
+
+    @Provides
     fun providesTodayPresentationMapper() =
         TodayPresentationMapper(IntensityLevelPresentationMapper())
 
@@ -140,6 +148,7 @@ internal object HomeModule {
         undoAttackStartUseCase: UndoAttackStartUseCase,
         undoAttackEndUseCase: UndoAttackEndUseCase,
         answerLongAttackCheckUseCase: AnswerLongAttackCheckUseCase,
+        restoreDeletedAttackUseCase: RestoreDeletedAttackUseCase,
         todayPresentationMapper: TodayPresentationMapper,
         intensityLevelDomainMapper: IntensityLevelDomainMapper,
         useCaseExecutor: UseCaseExecutor
@@ -152,6 +161,7 @@ internal object HomeModule {
         undoAttackStartUseCase = undoAttackStartUseCase,
         undoAttackEndUseCase = undoAttackEndUseCase,
         answerLongAttackCheckUseCase = answerLongAttackCheckUseCase,
+        restoreDeletedAttackUseCase = restoreDeletedAttackUseCase,
         todayPresentationMapper = todayPresentationMapper,
         intensityLevelDomainMapper = intensityLevelDomainMapper,
         useCaseExecutor = useCaseExecutor

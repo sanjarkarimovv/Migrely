@@ -19,6 +19,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -27,8 +28,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.migrely.app.designsystem.sky.SkyAppearance
@@ -36,6 +40,8 @@ import com.migrely.app.designsystem.sky.SkyCanvas
 import com.migrely.app.designsystem.theme.MigrelyTheme
 import com.migrely.app.home.ui.R
 import com.migrely.app.home.ui.mapper.SkyAppearanceUiMapper
+import com.migrely.app.home.ui.mapper.TimeUiFormatter
+import com.migrely.app.home.ui.model.AttackSummaryUiModel
 import com.migrely.app.home.ui.model.PeakUiModel
 import com.migrely.app.home.ui.model.SkyUiModel
 import com.migrely.app.home.ui.model.TodayUiModel
@@ -47,8 +53,11 @@ private val SkyCardSubtitle = Color(0xFF9AA0A9)
 fun TodayContents(
     today: TodayUiModel,
     dayTitle: String,
+    nowMillis: Long,
     skyAppearanceUiMapper: SkyAppearanceUiMapper,
+    timeUiFormatter: TimeUiFormatter,
     onStartAttack: () -> Unit,
+    onAttackDetails: (attackId: String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val screenModifier = modifier
@@ -66,6 +75,7 @@ fun TodayContents(
             ) {
                 DayTitle(dayTitle)
                 TodaySkyCard(today = today, appearance = appearance)
+                TodayAttackList(today.attacks, nowMillis, timeUiFormatter, onAttackDetails)
                 Spacer(Modifier.height(24.dp))
             }
             Column(
@@ -86,10 +96,92 @@ fun TodayContents(
             ) {
                 DayTitle(dayTitle)
                 TodaySkyCard(today = today, appearance = appearance)
+                TodayAttackList(today.attacks, nowMillis, timeUiFormatter, onAttackDetails)
             }
             Spacer(Modifier.height(16.dp))
             StartAttackButton(onStartAttack)
             Spacer(Modifier.height(24.dp))
+        }
+    }
+}
+
+/** Today's ended attacks under the sky, oldest first; each opens its details (BRD 18.3 A). */
+@Composable
+private fun TodayAttackList(
+    attacks: List<AttackSummaryUiModel>,
+    nowMillis: Long,
+    timeUiFormatter: TimeUiFormatter,
+    onAttackDetails: (attackId: String) -> Unit
+) {
+    if (attacks.isEmpty()) return
+    Text(
+        text = stringResource(R.string.today_list_title),
+        style = MaterialTheme.typography.labelMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(start = 8.dp, top = 20.dp, bottom = 8.dp)
+    )
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        attacks.forEach { attack ->
+            AttackSummaryRow(attack, nowMillis, timeUiFormatter) { onAttackDetails(attack.id) }
+        }
+    }
+}
+
+@Composable
+private fun AttackSummaryRow(
+    attack: AttackSummaryUiModel,
+    nowMillis: Long,
+    timeUiFormatter: TimeUiFormatter,
+    onClick: () -> Unit
+) {
+    // An attack that began on an earlier day shows that day before its start (spec: today-sky).
+    val start = timeUiFormatter.formatStartTime(
+        attack.startEpochMillis,
+        attack.startZoneId,
+        nowMillis
+    )
+    val end = timeUiFormatter.formatClockTime(attack.endEpochMillis, attack.startZoneId)
+    val peak = attack.peakIntensity
+    val peakText = if (peak == null) {
+        stringResource(R.string.attack_summary_peak_not_recorded)
+    } else {
+        stringResource(R.string.attack_summary_peak, peak)
+    }
+    val spokenPeak = if (peak == null) {
+        stringResource(R.string.attack_summary_peak_not_recorded)
+    } else {
+        stringResource(R.string.attack_summary_peak_spoken, peak)
+    }
+    val description = stringResource(R.string.attack_summary_description, start, end, spokenPeak)
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 56.dp)
+            .clearAndSetSemantics {
+                contentDescription = description
+                role = Role.Button
+                onClick { onClick().let { true } }
+            }
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+        ) {
+            Text(
+                text = stringResource(R.string.attack_summary_range, start, end),
+                style = MaterialTheme.typography.bodyLarge.copy(fontFeatureSettings = "tnum"),
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.weight(1f)
+            )
+            Text(
+                text = peakText,
+                style = MaterialTheme.typography.bodyMedium.copy(fontFeatureSettings = "tnum"),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 12.dp)
+            )
         }
     }
 }
@@ -171,6 +263,9 @@ private fun TodaySkyCard(today: TodayUiModel, appearance: SkyAppearance) {
     }
 }
 
+// 23 October 2026, 17:00 in Tashkent.
+private const val PREVIEW_NOW = 1_792_756_800_000L
+
 @Preview(name = "Today: calm")
 @Composable
 private fun TodayCalmPreview() {
@@ -178,8 +273,11 @@ private fun TodayCalmPreview() {
         TodayContents(
             today = TodayUiModel(SkyUiModel.Calm, attackCount = 0, peak = null),
             dayTitle = "Thursday, 23 October",
+            nowMillis = PREVIEW_NOW,
             skyAppearanceUiMapper = SkyAppearanceUiMapper(),
-            onStartAttack = {}
+            timeUiFormatter = previewFormatter,
+            onStartAttack = {},
+            onAttackDetails = {}
         )
     }
 }
@@ -189,10 +287,33 @@ private fun TodayCalmPreview() {
 private fun TodayStormPreview() {
     MigrelyTheme {
         TodayContents(
-            today = TodayUiModel(SkyUiModel.Storm, attackCount = 2, peak = PeakUiModel.Severe),
+            today = TodayUiModel(
+                sky = SkyUiModel.Storm,
+                attackCount = 2,
+                peak = PeakUiModel.Severe,
+                attacks = listOf(
+                    AttackSummaryUiModel(
+                        "a",
+                        PREVIEW_NOW - 30_600_000L,
+                        "Asia/Tashkent",
+                        PREVIEW_NOW - 27_600_000L,
+                        4
+                    ),
+                    AttackSummaryUiModel(
+                        "b",
+                        PREVIEW_NOW - 9_000_000L,
+                        "Asia/Tashkent",
+                        PREVIEW_NOW - 600_000L,
+                        9
+                    )
+                )
+            ),
             dayTitle = "Thursday, 23 October",
+            nowMillis = PREVIEW_NOW,
             skyAppearanceUiMapper = SkyAppearanceUiMapper(),
-            onStartAttack = {}
+            timeUiFormatter = previewFormatter,
+            onStartAttack = {},
+            onAttackDetails = {}
         )
     }
 }

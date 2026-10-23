@@ -18,5 +18,9 @@ sealed interface HomePresentationNotification : PresentationNotification {
 
     data object UndoNotPossible : HomePresentationNotification
 
+    /** An attack was deleted on its details screen at [deletedAt] and can still be restored (BRD D23). */
+    data class AttackDeleted(val attackId: String, val deletedAt: Instant) :
+        HomePresentationNotification
+
     data object SomethingWentWrong : HomePresentationNotification
 }
