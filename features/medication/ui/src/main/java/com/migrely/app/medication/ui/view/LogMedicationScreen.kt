@@ -422,7 +422,7 @@ private fun MedicationButton(
     onClick: () -> Unit
 ) {
     val preventive = medication.kind == MedicationKindUiModel.Preventive
-    val title = medication.title()
+    val title = medication.spokenTitle()
     val what = if (preventive) "$title, ${medication.typeLabel()}" else title
     val description = stringResource(R.string.log_medication_description, what)
     Surface(

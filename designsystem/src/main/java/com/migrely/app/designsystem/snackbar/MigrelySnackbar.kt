@@ -42,12 +42,16 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.migrely.app.designsystem.theme.MigrelyColors
 import com.migrely.app.designsystem.theme.MigrelyTheme
@@ -250,14 +254,21 @@ private fun SnackbarLayout(
  * Shows [message] at the top of the screen, inside the status bar and display cutout and at most 560 dp wide. A new
  * message replaces the old one. Messages slide and fade in over 250 ms and fade out over 200 ms, or switch at once with
  * [reduceMotion] (BRD EC-UX-07, EC-UX-08).
+ *
+ * [onMessageBottomChanged] gets the bottom of the message in root coordinates (`positionInRoot`), or 0 dp while none
+ * shows, as it moves; a screen measures its own content the same way to keep it clear of the message (BRD D52). The
+ * area grows with the message's slide in and shrinks only once its fade out ends, so what follows it never slides under
+ * a message still on screen.
  */
 @Composable
 fun <T : Any> MigrelySnackbarHost(
     message: T?,
     reduceMotion: Boolean,
     modifier: Modifier = Modifier,
+    onMessageBottomChanged: (Dp) -> Unit = {},
     content: @Composable (T) -> Unit
 ) {
+    val density = LocalDensity.current
     Box(
         contentAlignment = Alignment.TopCenter,
         modifier = modifier
@@ -271,17 +282,30 @@ fun <T : Any> MigrelySnackbarHost(
             targetState = message,
             transitionSpec = {
                 if (reduceMotion) {
-                    EnterTransition.None togetherWith ExitTransition.None
+                    // No size animation either, so what follows the message's bottom moves at once too.
+                    EnterTransition.None togetherWith ExitTransition.None using null
                 } else {
                     (
                         slideInVertically(tween(ENTER_MILLIS)) { -it / 2 } +
                             fadeIn(tween(ENTER_MILLIS))
                         ) togetherWith
-                        fadeOut(tween(EXIT_MILLIS)) using SizeTransform(clip = false)
+                        fadeOut(tween(EXIT_MILLIS)) using
+                        SizeTransform(clip = false) { initial, target ->
+                            if (target.height < initial.height) {
+                                tween(ENTER_MILLIS, delayMillis = EXIT_MILLIS)
+                            } else {
+                                tween(ENTER_MILLIS)
+                            }
+                        }
                 }
             },
             contentAlignment = Alignment.TopCenter,
-            label = "snackbar"
+            label = "snackbar",
+            modifier = Modifier.onGloballyPositioned { coordinates ->
+                val height = coordinates.size.height
+                val bottom = if (height == 0) 0f else coordinates.positionInRoot().y + height
+                onMessageBottomChanged(with(density) { bottom.toDp() })
+            }
         ) { shown ->
             if (shown != null) {
                 Box(modifier = Modifier.widthIn(max = MAX_WIDTH)) { content(shown) }
