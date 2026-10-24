@@ -58,7 +58,11 @@ internal object HomeModule {
         getCurrentTimeRepository: GetCurrentTimeRepository,
         setPeriodRepository: SetPeriodRepository,
         coroutineContextProvider: CoroutineContextProvider
-    ) = SetPeriodTodayUseCase(getCurrentTimeRepository, setPeriodRepository, coroutineContextProvider)
+    ) = SetPeriodTodayUseCase(
+        getCurrentTimeRepository,
+        setPeriodRepository,
+        coroutineContextProvider
+    )
 
     @Provides
     fun providesStartAttackUseCase(
