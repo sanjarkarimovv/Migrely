@@ -22,6 +22,7 @@ import com.migrely.app.insights.domain.model.InsightsMedicationKindDomainModel
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import java.time.ZoneOffset
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -224,6 +225,27 @@ class InsightsRecordsDomainMapperTest {
             ),
             classUnderTest.toDomain(records).intakes
         )
+    }
+
+    @Test
+    fun `Given a zone this phone does not know, or not a zone at all, then UTC`() {
+        val records = records(
+            attacks = listOf(
+                attack(emptyList(), zone = "Mars/Olympus_Mons"),
+                attack(emptyList(), zone = "Asia//Tashkent!")
+            ),
+            medications = listOf(medication("m1", "Ibuprofen", MedicationKindDataModel.Acute)),
+            intakes = listOf(
+                intake("m1", null, zone = "Mars/Olympus_Mons"),
+                intake("m1", null, zone = "+99:99")
+            )
+        )
+
+        val domain = classUnderTest.toDomain(records)
+
+        assertEquals(listOf(ZoneOffset.UTC, ZoneOffset.UTC), domain.attacks.map { it.zone })
+        assertEquals(listOf(ZoneOffset.UTC, ZoneOffset.UTC), domain.intakes.map { it.zone })
+        assertEquals(listOf(START, START), domain.attacks.map { it.start })
     }
 
     @Test

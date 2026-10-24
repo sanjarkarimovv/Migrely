@@ -10,7 +10,9 @@ import com.migrely.app.insights.domain.model.InsightsEffectDomainModel
 import com.migrely.app.insights.domain.model.InsightsIntakeDomainModel
 import com.migrely.app.insights.domain.model.InsightsMedicationKindDomainModel
 import com.migrely.app.insights.domain.model.InsightsRecordsDomainModel
+import java.time.DateTimeException
 import java.time.ZoneId
+import java.time.ZoneOffset
 
 /**
  * The records Insights uses. Triggers become the English words the app shows, as on the doctor report; the user's own
@@ -24,7 +26,7 @@ class InsightsRecordsDomainMapper {
             attacks = records.attacks.map { attack ->
                 InsightsAttackDomainModel(
                     start = attack.start,
-                    zone = ZoneId.of(attack.startZoneId),
+                    zone = zoneOf(attack.startZoneId),
                     end = attack.end,
                     functionalImpact = attack.functionalImpact,
                     triggers = attack.tags.mapNotNull { triggerOf(it, tagNames) }
@@ -40,7 +42,7 @@ class InsightsRecordsDomainMapper {
                                 InsightsMedicationKindDomainModel.Preventive
                         },
                         takenAt = intake.takenAt,
-                        zone = ZoneId.of(intake.takenZoneId),
+                        zone = zoneOf(intake.takenZoneId),
                         effect = when (intake.effect) {
                             IntakeEffectDataModel.NotAtAll -> InsightsEffectDomainModel.NotAtAll
                             IntakeEffectDataModel.ALittle -> InsightsEffectDomainModel.ALittle
@@ -53,6 +55,17 @@ class InsightsRecordsDomainMapper {
             },
             periodDates = records.dayMarks.filter { it.period }.map { it.date }.toSet()
         )
+    }
+
+    /**
+     * A zone id saved on another device may be unknown to this device's time-zone data, for example in a database
+     * restored from a phone with newer tzdata, or not a zone id at all; UTC keeps the instant correct.
+     */
+    @Suppress("SwallowedException")
+    private fun zoneOf(zoneId: String): ZoneId = try {
+        ZoneId.of(zoneId)
+    } catch (exception: DateTimeException) {
+        ZoneOffset.UTC
     }
 
     private fun triggerOf(tag: AttackTagDataModel, tagNames: Map<String, String>): String? =
