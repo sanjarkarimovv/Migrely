@@ -7,8 +7,8 @@ import com.migrely.app.history.presentation.model.MonthSkyPresentationNotificati
 import com.migrely.app.history.presentation.model.MonthSkyViewState
 import com.migrely.app.history.presentation.navigation.MonthSkyPresentationNavigationEvent
 import com.migrely.app.history.presentation.viewmodel.MonthSkyViewModel
+import com.migrely.app.history.ui.mapper.HistoryCalendarMappers
 import com.migrely.app.history.ui.mapper.MonthSkyViewStateUiMapper
-import com.migrely.app.history.ui.view.HistoryCalendarMappers
 
 /** The month card that `:app` puts into home's slot under today's card (design D1). */
 class MonthSkyDependencies(

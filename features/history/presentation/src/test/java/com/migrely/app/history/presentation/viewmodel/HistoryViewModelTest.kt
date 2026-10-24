@@ -19,6 +19,7 @@ import java.time.YearMonth
 import kotlinx.coroutines.CoroutineStart.UNDISPATCHED
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -76,7 +77,10 @@ class HistoryViewModelTest :
         classUnderTest.onEnter(SEPTEMBER)
 
         assertEquals(
-            HistoryViewState.Ready(historyMonthPresentationMapper.toPresentation(month())),
+            HistoryViewState.Ready(
+                historyMonthPresentationMapper.toPresentation(month()),
+                requestedMonth = SEPTEMBER
+            ),
             state.await()
         )
     }
@@ -88,7 +92,34 @@ class HistoryViewModelTest :
 
         classUnderTest.onEnter(null)
 
-        assertTrue(state.await() is HistoryViewState.NoAttacks)
+        assertEquals(
+            HistoryViewState.NoAttacks(
+                historyMonthPresentationMapper.toPresentation(month(anyAttackLogged = false)),
+                requestedMonth = null
+            ),
+            state.await()
+        )
+    }
+
+    @Test
+    fun `Given a recent deletion when changing month then it is not announced again`() = runTest {
+        givenMonth(
+            HistoryMonthResultDomainModel.Loaded(
+                month(),
+                DeletedAttackDomainModel("gone", DELETED_AT)
+            )
+        )
+        val notifications = mutableListOf<HistoryPresentationNotification>()
+        val collector = launch(start = UNDISPATCHED) {
+            classUnderTest.notification.collect { notifications += it }
+        }
+        val state = nextViewState()
+
+        classUnderTest.onMonthAction(SEPTEMBER)
+        state.await()
+        collector.cancel()
+
+        assertEquals(emptyList<HistoryPresentationNotification>(), notifications)
     }
 
     @Test

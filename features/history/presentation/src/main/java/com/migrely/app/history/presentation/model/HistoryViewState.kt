@@ -1,10 +1,18 @@
 package com.migrely.app.history.presentation.model
 
+import java.time.YearMonth
+
+/**
+ * [requestedMonth] is the month the screen asked for (null for the current one), returned so the screen can ignore a
+ * slower answer to a request it has since replaced; [month] is what the domain showed after clamping it.
+ */
 sealed interface HistoryViewState {
     data object Loading : HistoryViewState
 
     /** Nothing has been logged yet (BRD EC-HIS-01). */
-    data class NoAttacks(val month: HistoryMonthPresentationModel) : HistoryViewState
+    data class NoAttacks(val month: HistoryMonthPresentationModel, val requestedMonth: YearMonth?) :
+        HistoryViewState
 
-    data class Ready(val month: HistoryMonthPresentationModel) : HistoryViewState
+    data class Ready(val month: HistoryMonthPresentationModel, val requestedMonth: YearMonth?) :
+        HistoryViewState
 }

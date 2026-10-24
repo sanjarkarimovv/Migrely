@@ -33,7 +33,8 @@ private const val OFFERED_DELETIONS_KEPT = 10
 /**
  * History's messages (BRD EC-UX-16), as on home: the newest replaces the one on screen, and the message and the time it
  * appeared are saved, so after a rotation it stays only for the time it has left. Each base duration is stretched to
- * the user's accessibility timeout. A deletion made on the details screen is offered once (BRD EC-HIS-04, D31).
+ * the user's accessibility timeout. A deletion made on the details screen opened from here is offered once
+ * (BRD EC-HIS-04, D31); one made before History was opened, for example from home, belongs to home and is not offered.
  */
 @Composable
 internal fun HistoryMessages(
@@ -44,6 +45,7 @@ internal fun HistoryMessages(
     modifier: Modifier = Modifier
 ) {
     var shown by rememberSaveable { mutableStateOf<ShownHistoryMessageUiModel?>(null) }
+    val enteredAtEpochMillis = rememberSaveable { System.currentTimeMillis() }
     // Deletions already offered, so a return to History or a rotation does not offer one again after a dismissal.
     var offeredDeletions by rememberSaveable {
         mutableStateOf(ArrayList<HistoryMessageUiModel.AttackDeleted>())
@@ -67,7 +69,8 @@ internal fun HistoryMessages(
                 val fresh =
                     System.currentTimeMillis() - message.deletedAtEpochMillis <=
                         DELETION_OFFER_MAX_AGE_MILLIS
-                if (!fresh || message in offeredDeletions) return@collect
+                val madeHere = message.deletedAtEpochMillis >= enteredAtEpochMillis
+                if (!fresh || !madeHere || message in offeredDeletions) return@collect
                 offeredDeletions = ArrayList(
                     offeredDeletions.takeLast(OFFERED_DELETIONS_KEPT - 1) + message
                 )

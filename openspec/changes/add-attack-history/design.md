@@ -66,11 +66,13 @@ Paging 3 would add a library and carry `PagingData` through every layer. The arr
 
 | State | Owner |
 |---|---|
-| Month asked for, chosen day | `History()` composable, `rememberSaveable` as epoch values; it follows the month in the view state after clamping |
+| Month asked for, chosen day | `History()` composable, `rememberSaveable`. The request stays as the user made it, never replaced by the clamped month, so an undo that brings back an earlier month shows it; the arrows step from the month shown |
 | Month data | Database, loaded on `onEnter`, `onResume()` and after undo |
 | Shown message, deletions already offered | `HistoryMessages`, `rememberSaveable`, as in `HomeMessages` |
 
-The `History(epochDay)` route argument seeds the chosen day and its month.
+The `History(epochDay)` route argument seeds the chosen day and its month. The view state returns the month it was asked
+for, and the screen ignores an answer to a request it has since replaced, because loads run in parallel and a slower one
+could otherwise show a month the user has left.
 
 ### D5. Datasource additions, no schema change
 
@@ -104,7 +106,8 @@ existing `LaunchedEffect` that asks for defaults while the saveable times are em
 | Nothing logged | A dashed outline |
 | Future day | A faint outline, not clickable |
 | Today | A thin ring |
-| Chosen day | A thick primary ring, with `selected` semantics |
+| Chosen day | A thick primary ring and the state description "Chosen". The `selected` property would make every day a "not checked" checkbox for TalkBack |
+| Selectable | Only today and earlier, passed in explicitly, so a device-future day that has a sky from an attack logged in a zone ahead cannot be chosen |
 
 Feature UI mappers build `CalendarDay` from their own UI models, and the locale's first weekday sets
 `leadingEmptyDays` (EC-TIM-05).
@@ -113,7 +116,8 @@ Feature UI mappers build `CalendarDay` from their own UI models, and the locale'
 
 History repeats home's deletion handling:
 - `onEnter` and `onResume` announce a restorable deletion;
-- `HistoryMessages` offers it once, if it is younger than 30 s;
+- `HistoryMessages` offers it once, if it is younger than 30 s and was made after History was entered (a deletion
+  made from home belongs to home);
 - undo calls `RestoreDeletedAttackUseCase` and then loads again.
 
 Returning home within 30 s offers it once more there, which BRD D31 accepts.
@@ -144,6 +148,9 @@ Returning home within 30 s offers it once more there, which BRD D31 accepts.
 - **An attack logged in a zone ahead of the device can fall in a day or month the device has not reached.** Its day
   still shows its sky (data wins, G6). A month the device has not reached cannot be opened until it arrives, which is
   hours at most.
+- **The earliest month comes from the earliest instant.** With attacks logged in different zones at a month boundary at
+  the very start of the history, a slightly later attack in a zone behind could fall in an earlier local month, which
+  could not be opened. This is accepted as very rare.
 - **Home's calendar reloads on every home view state, about one extra query per action.** It is cheap, because one
   month is read through an index.
 - **Two copies of the deletion-undo UI, in home and history.** This follows skill rule 6: identical UI in two features

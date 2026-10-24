@@ -16,6 +16,7 @@ import com.migrely.app.designsystem.sky.MonthSkyLegend
 import com.migrely.app.history.ui.R
 import com.migrely.app.history.ui.mapper.CalendarLayoutUiMapper
 import com.migrely.app.history.ui.mapper.DaySkyAppearanceUiMapper
+import com.migrely.app.history.ui.mapper.HistoryCalendarMappers
 import com.migrely.app.history.ui.mapper.HistoryTimeUiFormatter
 import com.migrely.app.history.ui.model.DaySkyUiModel
 import com.migrely.app.history.ui.model.HistoryDayUiModel
@@ -25,13 +26,6 @@ import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId
 import java.util.Locale
-
-/** The mappers the calendar needs, shared by History and the month card. */
-data class HistoryCalendarMappers(
-    val calendarLayoutUiMapper: CalendarLayoutUiMapper,
-    val daySkyAppearanceUiMapper: DaySkyAppearanceUiMapper,
-    val historyTimeUiFormatter: HistoryTimeUiFormatter
-)
 
 /** A month of skies with its legend (spec: month-sky). [onDay] receives the epoch day of a tapped day. */
 @Composable
@@ -50,6 +44,7 @@ internal fun HistoryCalendar(
             appearance = mappers.daySkyAppearanceUiMapper.toAppearance(day.sky),
             isToday = isToday,
             isSelected = day.epochDay == selectedEpochDay,
+            isSelectable = day.epochDay <= month.todayEpochDay,
             description = dayDescription(day, isToday, mappers.historyTimeUiFormatter)
         )
     }

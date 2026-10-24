@@ -70,10 +70,14 @@ class HistoryViewStateUiMapperTest {
     @Test
     fun `When mapping a ready month then every field`() {
         assertEquals(
-            HistoryViewStateUiModel.Ready(monthUi(DaySkyUiModel.Storm, PeakUiModel.Severe)),
+            HistoryViewStateUiModel.Ready(
+                monthUi(DaySkyUiModel.Storm, PeakUiModel.Severe),
+                requestedMonth = "2026-09"
+            ),
             classUnderTest.toUi(
                 HistoryViewState.Ready(
-                    month(DaySkyPresentationModel.Storm, PeakPresentationModel.Severe)
+                    month(DaySkyPresentationModel.Storm, PeakPresentationModel.Severe),
+                    requestedMonth = YearMonth.of(2026, 9)
                 )
             )
         )
@@ -82,9 +86,15 @@ class HistoryViewStateUiMapperTest {
     @Test
     fun `When mapping no attacks then no attacks`() {
         assertEquals(
-            HistoryViewStateUiModel.NoAttacks(monthUi(DaySkyUiModel.NothingLogged, null)),
+            HistoryViewStateUiModel.NoAttacks(
+                monthUi(DaySkyUiModel.NothingLogged, null),
+                requestedMonth = null
+            ),
             classUnderTest.toUi(
-                HistoryViewState.NoAttacks(month(DaySkyPresentationModel.NothingLogged, null))
+                HistoryViewState.NoAttacks(
+                    month(DaySkyPresentationModel.NothingLogged, null),
+                    requestedMonth = null
+                )
             )
         )
     }

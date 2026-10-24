@@ -64,13 +64,17 @@ enum class DaySkyAppearance {
     Rain
 }
 
-/** One day of [MonthSkyCalendar]. [description] is what a screen reader says for it (BRD EC-UX-15). */
+/**
+ * One day of [MonthSkyCalendar]. [description] is what a screen reader says for it (BRD EC-UX-15). [isSelectable] is
+ * false for days after today, even when an attack logged in a zone ahead gives such a day a sky.
+ */
 @Immutable
 data class CalendarDay(
     val dayOfMonth: Int,
     val appearance: DaySkyAppearance,
     val isToday: Boolean,
     val isSelected: Boolean,
+    val isSelectable: Boolean,
     val description: String
 )
 
@@ -80,9 +84,9 @@ data class LegendEntry(val appearance: DaySkyAppearance, val label: String)
 
 /**
  * A month of small skies (BRD 18.3 A, HIS-F1). [leadingEmptyDays] blank cells come before the first day so weeks start
- * on the locale's first day (BRD EC-TIM-05). Future days are never selectable. The weekday initials are hidden from
- * screen readers, because every day says its own weekday. Screen readers hear [chosenStateDescription] after the chosen
- * day only: the `selected` property would make every day a "not checked" checkbox.
+ * on the locale's first day (BRD EC-TIM-05). Days that are not selectable have no action. The weekday initials are
+ * hidden from screen readers, because every day says its own weekday. Screen readers hear [chosenStateDescription]
+ * after the chosen day only: the `selected` property would make every day a "not checked" checkbox.
  */
 @Composable
 fun MonthSkyCalendar(
@@ -136,7 +140,7 @@ private fun DayCell(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val selectable = day.appearance != DaySkyAppearance.Future
+    val selectable = day.isSelectable
     val ring = when {
         day.isSelected -> Modifier.border(2.5.dp, MaterialTheme.colorScheme.primary, CellShape)
         day.isToday -> Modifier.border(
@@ -336,6 +340,7 @@ private fun MonthSkyCalendarPreview() {
                         },
                         isToday = day == 23,
                         isSelected = day == 14,
+                        isSelectable = day <= 23,
                         description = "$day October"
                     )
                 },

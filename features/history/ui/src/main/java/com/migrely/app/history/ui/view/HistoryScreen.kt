@@ -63,6 +63,7 @@ import com.migrely.app.designsystem.theme.MigrelyTheme
 import com.migrely.app.history.presentation.model.HistoryViewState
 import com.migrely.app.history.ui.R
 import com.migrely.app.history.ui.di.HistoryDependencies
+import com.migrely.app.history.ui.mapper.HistoryCalendarMappers
 import com.migrely.app.history.ui.mapper.HistoryTimeUiFormatter
 import com.migrely.app.history.ui.model.HistoryAttackUiModel
 import com.migrely.app.history.ui.model.HistoryDayUiModel
@@ -76,8 +77,9 @@ private val CONTENT_MAX_WIDTH = 600.dp
 
 /**
  * History (spec: attack-history). The month asked for and the chosen day are saveable, so rotation and process death
- * keep them; the month shown follows the view state after the domain clamps it (design D4). [initialDay] comes from home
- * and seeds both.
+ * keep them (design D4). [initialDay] comes from home and seeds both. The request is kept as the user made it, never
+ * replaced by the month the domain clamped it to, so an undo that brings back an earlier month shows it again; the
+ * arrows step from the month shown. A slower answer to a request the user has since replaced is ignored.
  */
 @Composable
 fun HistoryDependencies.History(
@@ -99,13 +101,15 @@ fun HistoryDependencies.History(
     ViewModelObserver(navController)
 
     val viewState by historyViewModel.viewState.collectAsState(HistoryViewState.Loading)
-    val uiState by rememberSaveable(viewState) {
-        mutableStateOf(historyViewStateUiMapper.toUi(viewState))
+    var uiState by rememberSaveable {
+        mutableStateOf(historyViewStateUiMapper.toUi(HistoryViewState.Loading))
+    }
+    val currentRequest by rememberUpdatedState(requestedMonth)
+    LaunchedEffect(viewState) {
+        val answer = historyViewStateUiMapper.toUi(viewState)
+        if (answer.month != null && answer.requestedMonth == currentRequest) uiState = answer
     }
     val shown = uiState.month
-    LaunchedEffect(shown?.year, shown?.month) {
-        if (shown != null) requestedMonth = YearMonth.of(shown.year, shown.month).toString()
-    }
     val reduceMotion = rememberReduceMotion()
 
     fun showMonth(target: YearMonth) {
@@ -161,6 +165,13 @@ private val HistoryViewStateUiModel.month: HistoryMonthUiModel?
         HistoryViewStateUiModel.Loading -> null
         is HistoryViewStateUiModel.NoAttacks -> month
         is HistoryViewStateUiModel.Ready -> month
+    }
+
+private val HistoryViewStateUiModel.requestedMonth: String?
+    get() = when (this) {
+        HistoryViewStateUiModel.Loading -> null
+        is HistoryViewStateUiModel.NoAttacks -> requestedMonth
+        is HistoryViewStateUiModel.Ready -> requestedMonth
     }
 
 private fun HistoryMonthUiModel.yearMonth(): YearMonth = YearMonth.of(year, month)
@@ -525,7 +536,7 @@ private val previewActions = HistoryActions({}, {}, {}, {}, {}, {}, {})
 private fun HistoryReadyPreview() {
     MigrelyTheme {
         HistoryContents(
-            viewState = HistoryViewStateUiModel.Ready(previewMonth()),
+            viewState = HistoryViewStateUiModel.Ready(previewMonth(), null),
             selectedEpochDay = null,
             mappers = previewMappers,
             actions = previewActions,
@@ -539,7 +550,7 @@ private fun HistoryReadyPreview() {
 private fun HistoryDayPreview() {
     MigrelyTheme {
         HistoryContents(
-            viewState = HistoryViewStateUiModel.Ready(previewMonth()),
+            viewState = HistoryViewStateUiModel.Ready(previewMonth(), null),
             selectedEpochDay = LocalDate.parse("2026-10-06").toEpochDay(),
             mappers = previewMappers,
             actions = previewActions,
@@ -553,7 +564,7 @@ private fun HistoryDayPreview() {
 private fun HistoryEmptyPreview() {
     MigrelyTheme {
         HistoryContents(
-            viewState = HistoryViewStateUiModel.NoAttacks(previewMonth()),
+            viewState = HistoryViewStateUiModel.NoAttacks(previewMonth(), null),
             selectedEpochDay = null,
             mappers = previewMappers,
             actions = previewActions,

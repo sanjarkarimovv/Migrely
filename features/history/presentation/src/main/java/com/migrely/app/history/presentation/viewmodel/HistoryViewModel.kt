@@ -77,9 +77,9 @@ class HistoryViewModel(
                         val shown = historyMonthPresentationMapper.toPresentation(result.month)
                         updateViewState(
                             if (result.month.anyAttackLogged) {
-                                HistoryViewState.Ready(shown)
+                                HistoryViewState.Ready(shown, requestedMonth = month)
                             } else {
-                                HistoryViewState.NoAttacks(shown)
+                                HistoryViewState.NoAttacks(shown, requestedMonth = month)
                             }
                         )
                         val deleted = result.recentlyDeleted

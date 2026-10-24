@@ -33,6 +33,7 @@ class MonthSkyCalendarTest {
             appearance = appearance,
             isToday = number == 3,
             isSelected = selected,
+            isSelectable = number <= 3,
             description = "Day $number"
         )
 

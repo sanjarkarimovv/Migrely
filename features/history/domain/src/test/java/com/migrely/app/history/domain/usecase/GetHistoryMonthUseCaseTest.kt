@@ -200,6 +200,28 @@ class GetHistoryMonthUseCaseTest {
     }
 
     @Test
+    fun `Given an attack in progress since September when September is shown then its last days`() {
+        givenEarliest(EarliestAttackResultDomainModel.Found(at("2026-09-28T20:00"), TASHKENT))
+        givenAttacks(attack("open", "2026-09-28T20:00", end = null))
+
+        val actual = loaded(YearMonth.of(2026, 9))
+
+        assertTrue(actual.idsOn(27).isEmpty())
+        assertEquals((28..30).map { listOf("open") }, (28..30).map { actual.idsOn(it) })
+    }
+
+    @Test
+    fun `Given an attack in progress since September when October is shown then up to today`() {
+        givenEarliest(EarliestAttackResultDomainModel.Found(at("2026-09-28T20:00"), TASHKENT))
+        givenAttacks(attack("open", "2026-09-28T20:00", end = null))
+
+        val actual = loaded(request = null)
+
+        assertEquals((1..23).map { listOf("open") }, (1..23).map { actual.idsOn(it) })
+        assertTrue(actual.idsOn(24).isEmpty())
+    }
+
+    @Test
     fun `Given an attack from the last day of September when October is shown then it is listed`() {
         givenAttacks(attack("across", "2026-09-30T23:00", "2026-10-01T02:00"))
 

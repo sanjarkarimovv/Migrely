@@ -7,10 +7,10 @@ import com.migrely.app.history.presentation.model.HistoryPresentationNotificatio
 import com.migrely.app.history.presentation.model.HistoryViewState
 import com.migrely.app.history.presentation.navigation.HistoryPresentationNavigationEvent
 import com.migrely.app.history.presentation.viewmodel.HistoryViewModel
+import com.migrely.app.history.ui.mapper.HistoryCalendarMappers
 import com.migrely.app.history.ui.mapper.HistoryMessageBehaviourUiMapper
 import com.migrely.app.history.ui.mapper.HistoryViewStateUiMapper
 import com.migrely.app.history.ui.notification.HistoryMessagePresenter
-import com.migrely.app.history.ui.view.HistoryCalendarMappers
 
 @Suppress("LongParameterList")
 class HistoryDependencies(

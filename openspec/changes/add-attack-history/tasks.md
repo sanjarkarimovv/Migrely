@@ -88,7 +88,7 @@
   - restore every setting afterwards.
 
   Fix what the walk finds and record a verification record here
-- [ ] 9.3 Run an independent code review (`superpowers:code-reviewer`) on `git diff develop...feature/add-attack-history`, fix the real findings, record them here and run `openspec validate add-attack-history --strict`
+- [x] 9.3 Run an independent code review (`superpowers:code-reviewer`) on `git diff develop...feature/add-attack-history`, fix the real findings, record them here and run `openspec validate add-attack-history --strict`
 
 ## Verification record
 
@@ -160,4 +160,44 @@ October, and the first attack in June.
 **Environmental:** the host load was 10 to 18, from other sessions' emulators.
 - One cold start was killed with "start timeout" before any app code ran. A relaunch worked.
 - Loads take 3 to 8 s on this emulator.
+
+## Independent review
+
+A `superpowers:code-reviewer` pass on `git diff develop...feature/add-attack-history` found no high-severity
+defects, one medium and five low. Each was checked against the code.
+
+**It confirmed as correct:**
+- the domain rules: zones, midnight, the attack in progress, the margin and clamping;
+- the sky rule, the same as today's card;
+- `rememberUpdatedState`, and the refresh key, with no loop and no missed reload;
+- the navigation back stack, the Hilt bindings and the semantics order.
+
+**Fixed:**
+- **M1:** the screen replaced the month asked for with the clamped month. After deleting the earliest attack, an undo
+  brought it back but showed the clamped month. The request now stays as the user made it. Re-walked on the emulator:
+  June's only attack deleted, History moved to August, and Undo showed June again with 10 June chosen.
+- **L2:** a slower answer to an older month request could replace a newer one. The view state now returns its request,
+  and the screen ignores stale answers.
+- **L1:** a deletion made from home was offered again on History within 30 s. History now offers only deletions made
+  after it was entered.
+- **L3:** a device-future day could be chosen when an attack logged in a zone ahead gave it a sky. Selectability is now
+  passed explicitly: today and earlier.
+- **L5:** the add-screen navigation KDoc and design D7 were out of date.
+- **Test gaps:**
+  - an attack in progress since an earlier month, shown in both months;
+  - no deletion announced on a month change.
+- **Style:** `HistoryCalendarMappers` moved to the `mapper` package.
+
+**Accepted and documented (design risks):**
+- **L4:** the earliest month comes from the earliest instant, so mixed zones at a month boundary at the very start of
+  the history could hide a local month. This is very rare.
+
+**Not changed:**
+- **Day cells of about 41 dp at 360 dp width:** a common calendar density, under the 48 dp guideline.
+- **Description strings rebuilt on recomposition:** cheap for 31 days.
+
+**After the fixes:**
+- Gate: 569 unit tests, 0 failures.
+- designsystem 12/12 instrumented.
+- `openspec validate add-attack-history --strict`: valid.
 

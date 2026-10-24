@@ -7,10 +7,12 @@ class HistoryViewStateUiMapper(private val historyMonthUiMapper: HistoryMonthUiM
     fun toUi(viewState: HistoryViewState): HistoryViewStateUiModel = when (viewState) {
         HistoryViewState.Loading -> HistoryViewStateUiModel.Loading
         is HistoryViewState.NoAttacks -> HistoryViewStateUiModel.NoAttacks(
-            historyMonthUiMapper.toUi(viewState.month)
+            historyMonthUiMapper.toUi(viewState.month),
+            viewState.requestedMonth?.toString()
         )
         is HistoryViewState.Ready -> HistoryViewStateUiModel.Ready(
-            historyMonthUiMapper.toUi(viewState.month)
+            historyMonthUiMapper.toUi(viewState.month),
+            viewState.requestedMonth?.toString()
         )
     }
 }

@@ -11,6 +11,7 @@ import com.migrely.app.history.ui.di.HistoryDependencies
 import com.migrely.app.history.ui.di.MonthSkyDependencies
 import com.migrely.app.history.ui.mapper.CalendarLayoutUiMapper
 import com.migrely.app.history.ui.mapper.DaySkyAppearanceUiMapper
+import com.migrely.app.history.ui.mapper.HistoryCalendarMappers
 import com.migrely.app.history.ui.mapper.HistoryMessageBehaviourUiMapper
 import com.migrely.app.history.ui.mapper.HistoryMonthUiMapper
 import com.migrely.app.history.ui.mapper.HistoryNotificationUiMapper
@@ -19,7 +20,6 @@ import com.migrely.app.history.ui.mapper.HistoryViewStateUiMapper
 import com.migrely.app.history.ui.mapper.MonthSkyNotificationUiMapper
 import com.migrely.app.history.ui.mapper.MonthSkyViewStateUiMapper
 import com.migrely.app.history.ui.notification.HistoryMessagePresenter
-import com.migrely.app.history.ui.view.HistoryCalendarMappers
 import com.migrely.app.navigation.mapper.HistoryNavigationEventDestinationMapper
 import com.migrely.app.navigation.mapper.MonthSkyNavigationEventDestinationMapper
 import dagger.Module
