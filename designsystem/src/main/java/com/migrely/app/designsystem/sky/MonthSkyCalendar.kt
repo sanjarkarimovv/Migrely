@@ -243,11 +243,12 @@ fun MonthSkyLegend(entries: List<LegendEntry>, modifier: Modifier = Modifier) {
 private fun DaySkyAppearance.hasSky() =
     this != DaySkyAppearance.NothingLogged && this != DaySkyAppearance.Future
 
-// The four-point stars of a pain-free day, as fractions of the cell; they sit below the day number.
+// The four-point stars of a pain-free day, as fractions of the cell: below the day number and clear of the period drop
+// in the bottom end corner.
 private val CLEAR_DAY_STARS = listOf(
-    Triple(0.38f, 0.60f, 9f),
-    Triple(0.66f, 0.50f, 6f),
-    Triple(0.60f, 0.80f, 5f)
+    Triple(0.40f, 0.58f, 9f),
+    Triple(0.68f, 0.44f, 6f),
+    Triple(0.22f, 0.82f, 5f)
 )
 
 /** Draws a day's sky in a small square. Glyphs sit in the lower part, below the day number. */
