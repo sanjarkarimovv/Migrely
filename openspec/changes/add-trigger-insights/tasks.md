@@ -9,7 +9,7 @@
 
 ## 2. History and app
 
-- [ ] 2.1 History's "Insights" action, the route, and DI.
+- [x] 2.1 History's "Insights" action, the route, and DI.
 
 ## 3. Verify
 

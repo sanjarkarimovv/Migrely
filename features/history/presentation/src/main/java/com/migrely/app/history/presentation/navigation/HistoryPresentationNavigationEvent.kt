@@ -13,4 +13,7 @@ sealed interface HistoryPresentationNavigationEvent : PresentationNavigationEven
 
     /** The user wants a report for their doctor (BRD REP-F1, D81). */
     data object OnOpenReport : HistoryPresentationNavigationEvent
+
+    /** The user wants to see their patterns (BRD INS-F1, D87). */
+    data object OnOpenInsights : HistoryPresentationNavigationEvent
 }

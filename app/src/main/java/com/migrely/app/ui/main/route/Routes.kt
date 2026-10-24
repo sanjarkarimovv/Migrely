@@ -58,3 +58,7 @@ data object Onboarding
 /** The doctor report (change add-doctor-report, BRD D81). */
 @Serializable
 data object Report
+
+/** Insights (change add-trigger-insights, BRD D87). */
+@Serializable
+data object Insights

@@ -135,6 +135,7 @@ fun HistoryDependencies.History(
         actions = HistoryActions(
             onBack = historyViewModel::onLeaveAction,
             onReport = historyViewModel::onReportAction,
+            onInsights = historyViewModel::onInsightsAction,
             onPreviousMonth = { shown?.let { showMonth(it.yearMonth().minusMonths(1)) } },
             onNextMonth = { shown?.let { showMonth(it.yearMonth().plusMonths(1)) } },
             onDay = { epochDay ->
@@ -186,7 +187,8 @@ data class HistoryActions(
     val onAddPastAttack: (epochDay: Long?) -> Unit,
     val onPeriod: (epochDay: Long, marked: Boolean) -> Unit = { _, _ -> },
     val onPainFree: (epochDay: Long, marked: Boolean) -> Unit = { _, _ -> },
-    val onReport: () -> Unit = {}
+    val onReport: () -> Unit = {},
+    val onInsights: () -> Unit = {}
 )
 
 private val HistoryViewStateUiModel.month: HistoryMonthUiModel?
@@ -238,6 +240,12 @@ fun HistoryContents(
                     }
                 },
                 actions = {
+                    IconButton(onClick = actions.onInsights) {
+                        Icon(
+                            MigrelyIcons.Insights,
+                            contentDescription = stringResource(R.string.history_insights)
+                        )
+                    }
                     IconButton(onClick = actions.onReport) {
                         Icon(
                             MigrelyIcons.Report,

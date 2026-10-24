@@ -81,6 +81,8 @@ class HistoryViewModel(
 
     fun onReportAction() = emitNavigationEvent(HistoryPresentationNavigationEvent.OnOpenReport)
 
+    fun onInsightsAction() = emitNavigationEvent(HistoryPresentationNavigationEvent.OnOpenInsights)
+
     private fun setMark(month: YearMonth?, request: SetDayMarkRequestDomainModel) {
         setDayMarkUseCase(
             value = request,

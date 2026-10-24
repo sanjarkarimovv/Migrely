@@ -102,4 +102,5 @@
     <string name="message_attack_logged_on_day">A migraine is logged on this day, so it can\'t be pain-free.</string>
     <string name="message_storage_full">Couldn\'t save. Your phone\'s storage is full.</string>
     <string name="history_doctor_report">Doctor report</string>
+    <string name="history_insights">Insights</string>
 </resources>

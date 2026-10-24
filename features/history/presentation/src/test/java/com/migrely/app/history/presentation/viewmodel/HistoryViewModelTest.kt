@@ -241,6 +241,24 @@ class HistoryViewModelTest :
         assertEquals(HistoryPresentationNavigationEvent.OnLeave, event.await())
     }
 
+    @Test
+    fun `When asking for the doctor report then emits its event`() = runTest {
+        val event = nextNavigationEvent()
+
+        classUnderTest.onReportAction()
+
+        assertEquals(HistoryPresentationNavigationEvent.OnOpenReport, event.await())
+    }
+
+    @Test
+    fun `When asking for insights then emits their event`() = runTest {
+        val event = nextNavigationEvent()
+
+        classUnderTest.onInsightsAction()
+
+        assertEquals(HistoryPresentationNavigationEvent.OnOpenInsights, event.await())
+    }
+
     private fun TestScope.nextViewState() = async(start = UNDISPATCHED) {
         classUnderTest.viewState.first()
     }
