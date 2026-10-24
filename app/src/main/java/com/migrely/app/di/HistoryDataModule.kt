@@ -1,0 +1,55 @@
+package com.migrely.app.di
+
+import com.migrely.app.datasource.attack.datasource.AttackDataSource
+import com.migrely.app.datasource.clock.datasource.ClockDataSource
+import com.migrely.app.history.data.mapper.HistoryAttackDomainMapper
+import com.migrely.app.history.data.mapper.ZoneDomainMapper
+import com.migrely.app.history.data.repository.HistoryRepository
+import com.migrely.app.history.domain.repository.GetAttacksTouchingRepository
+import com.migrely.app.history.domain.repository.GetCurrentTimeRepository
+import com.migrely.app.history.domain.repository.GetEarliestAttackRepository
+import com.migrely.app.history.domain.repository.GetRecentlyDeletedAttackRepository
+import com.migrely.app.history.domain.repository.RestoreDeletedAttackRepository
+import dagger.Module
+import dagger.Provides
+import dagger.hilt.InstallIn
+import dagger.hilt.components.SingletonComponent
+
+@Module
+@InstallIn(SingletonComponent::class)
+internal object HistoryDataModule {
+    @Provides
+    fun providesHistoryRepository(
+        attackDataSource: AttackDataSource,
+        clockDataSource: ClockDataSource
+    ): HistoryRepository = HistoryRepository(
+        attackDataSource = attackDataSource,
+        clockDataSource = clockDataSource,
+        historyAttackDomainMapper = HistoryAttackDomainMapper(ZoneDomainMapper()),
+        zoneDomainMapper = ZoneDomainMapper()
+    )
+
+    @Provides
+    fun providesGetCurrentTimeRepository(repository: HistoryRepository): GetCurrentTimeRepository =
+        repository
+
+    @Provides
+    fun providesGetEarliestAttackRepository(
+        repository: HistoryRepository
+    ): GetEarliestAttackRepository = repository
+
+    @Provides
+    fun providesGetAttacksTouchingRepository(
+        repository: HistoryRepository
+    ): GetAttacksTouchingRepository = repository
+
+    @Provides
+    fun providesGetRecentlyDeletedAttackRepository(
+        repository: HistoryRepository
+    ): GetRecentlyDeletedAttackRepository = repository
+
+    @Provides
+    fun providesRestoreDeletedAttackRepository(
+        repository: HistoryRepository
+    ): RestoreDeletedAttackRepository = repository
+}

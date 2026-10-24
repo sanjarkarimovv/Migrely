@@ -53,7 +53,7 @@ class HomeNavigationEventDestinationMapperTest {
         // Then
         val options = argumentCaptor<NavOptions>()
         verify(navController).navigate(
-            eq(AddPastAttack),
+            eq(AddPastAttack()),
             options.capture(),
             anyOrNull<Navigator.Extras>()
         )

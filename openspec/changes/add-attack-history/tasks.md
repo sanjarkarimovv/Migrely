@@ -61,13 +61,13 @@
 
 ## 6. UI (`:features:history:ui`, `:features:home:ui`, `:features:attack:ui`)
 
-- [ ] 6.1 Add the history UI models, `HistoryViewStateUiMapper`, `MonthSkyViewStateUiMapper`, `HistoryNotificationUiMapper`, `HistoryMessageBehaviourUiMapper`, `CalendarDayUiMapper` (day descriptions and weekday layout by locale) and `HistoryTimeUiFormatter`, each with unit tests; verify `./gradlew :features:history:ui:test`
-- [ ] 6.2 Build the `History` screen and its contents: month header, calendar, legend, the month or day list, "Add a past migraine", the empty state, landscape and messages; add previews; verify `./gradlew :features:history:ui:assembleDebug`
-- [ ] 6.3 Build the `MonthSky` card and add home's `monthCalendar` slot under today's list in both layouts; pass the day into `AddPastAttack(navController, day)`; verify `./gradlew :features:home:ui:test :features:attack:ui:test`
+- [x] 6.1 Add the history UI models, `HistoryViewStateUiMapper`, `MonthSkyViewStateUiMapper`, `HistoryNotificationUiMapper`, `HistoryMessageBehaviourUiMapper`, `CalendarDayUiMapper` (day descriptions and weekday layout by locale) and `HistoryTimeUiFormatter`, each with unit tests; verify `./gradlew :features:history:ui:test`
+- [x] 6.2 Build the `History` screen and its contents: month header, calendar, legend, the month or day list, "Add a past migraine", the empty state, landscape and messages; add previews; verify `./gradlew :features:history:ui:assembleDebug`
+- [x] 6.3 Build the `MonthSky` card and add home's `monthCalendar` slot under today's list in both layouts; pass the day into `AddPastAttack(navController, day)`; verify `./gradlew :features:home:ui:test :features:attack:ui:test`
 
 ## 7. App (`:app`)
 
-- [ ] 7.1 Add the `History(epochDay)` route and `AddPastAttack(epochDay)`, the nav host entries and the slot, the Hilt modules (`HistoryModule`, `HistoryDataModule`, `HistoryUiModule`) and the `History` and `MonthSky` navigation mappers with parameterized tests; check that Konsist covers the new modules; verify `./gradlew :app:test`
+- [x] 7.1 Add the `History(epochDay)` route and `AddPastAttack(epochDay)`, the nav host entries and the slot, the Hilt modules (`HistoryModule`, `HistoryDataModule`, `HistoryUiModule`) and the `History` and `MonthSky` navigation mappers with parameterized tests; check that Konsist covers the new modules; verify `./gradlew :app:test`
 
 ## 8. Docs
 
