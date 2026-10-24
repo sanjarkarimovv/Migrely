@@ -10,6 +10,7 @@ import com.migrely.app.home.domain.model.TodayResultDomainModel
 import com.migrely.app.home.domain.model.TodaySnapshotDomainModel
 import com.migrely.app.home.domain.model.TodaySnapshotResultDomainModel
 import com.migrely.app.home.domain.repository.GetCurrentTimeRepository
+import com.migrely.app.home.domain.repository.GetDayMarksRepository
 import com.migrely.app.home.domain.repository.GetTodayRepository
 import java.time.Duration
 import java.time.Instant
@@ -28,6 +29,7 @@ private const val ZONE_MARGIN_DAYS = 2L
 class GetTodayUseCase(
     private val getCurrentTimeRepository: GetCurrentTimeRepository,
     private val getTodayRepository: GetTodayRepository,
+    private val getDayMarksRepository: GetDayMarksRepository,
     coroutineContextProvider: CoroutineContextProvider
 ) : BackgroundExecutingUseCase<Unit, TodayResultDomainModel>(coroutineContextProvider) {
     override fun executeInBackground(request: Unit): TodayResultDomainModel {
@@ -36,17 +38,22 @@ class GetTodayUseCase(
         val from = today.minusDays(ZONE_MARGIN_DAYS).atStartOfDay(now.zone).toInstant()
         val to = today.plusDays(1 + ZONE_MARGIN_DAYS).atStartOfDay(now.zone).toInstant()
         return when (val result = getTodayRepository.today(from, to)) {
-            is TodaySnapshotResultDomainModel.Loaded -> TodayResultDomainModel.Loaded(
-                today = result.snapshot.toToday(now, today),
-                recentlyDeleted = result.snapshot.recentlyDeleted
-            )
+            is TodaySnapshotResultDomainModel.Loaded -> {
+                val marks = getDayMarksRepository.dayMarks(today)
+                TodayResultDomainModel.Loaded(
+                    today = result.snapshot.toToday(now, today, marks.painFree),
+                    recentlyDeleted = result.snapshot.recentlyDeleted,
+                    periodToday = marks.period
+                )
+            }
             TodaySnapshotResultDomainModel.Failed -> TodayResultDomainModel.Failed
         }
     }
 
     private fun TodaySnapshotDomainModel.toToday(
         now: CurrentTimeDomainModel,
-        today: LocalDate
+        today: LocalDate,
+        markedPainFree: Boolean
     ): TodayDomainModel {
         val attack = attackInProgress
         val endedAttacksTouchingToday = endedAttacks.filter { it.touches(today) }
@@ -55,6 +62,9 @@ class GetTodayUseCase(
                 attack = attack,
                 longAttackCheckDue = attack.isLongAttackCheckDue(now.instant)
             )
+
+            // An attack always wins over a pain-free mark (BRD EC-DAY-01).
+            endedAttacksTouchingToday.isEmpty() && markedPainFree -> TodayDomainModel.PainFree
 
             endedAttacksTouchingToday.isEmpty() -> TodayDomainModel.Calm
 

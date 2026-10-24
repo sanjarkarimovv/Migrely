@@ -25,7 +25,7 @@
 
 ## 4. Home (design D5)
 
-- [ ] 4.1 Domain and data: today's marks, `SetPeriodTodayUseCase`; tests.
+- [x] 4.1 Domain and data: today's marks, `SetPeriodTodayUseCase`; tests.
   Verify: `./gradlew :features:home:domain:test :features:home:data:test`
 - [ ] 4.2 Presentation and UI: the clear calm card and the "Period" toggle; tests.
   Verify: `./gradlew :features:home:presentation:test :features:home:ui:test`

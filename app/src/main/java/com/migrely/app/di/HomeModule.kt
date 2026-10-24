@@ -7,11 +7,13 @@ import com.migrely.app.home.domain.repository.DeleteAttackRepository
 import com.migrely.app.home.domain.repository.EndAttackRepository
 import com.migrely.app.home.domain.repository.GetAttackInProgressRepository
 import com.migrely.app.home.domain.repository.GetCurrentTimeRepository
+import com.migrely.app.home.domain.repository.GetDayMarksRepository
 import com.migrely.app.home.domain.repository.GetPreviousAttackEndRepository
 import com.migrely.app.home.domain.repository.GetTodayRepository
 import com.migrely.app.home.domain.repository.ReopenAttackRepository
 import com.migrely.app.home.domain.repository.ReplaceLatestIntensityPointRepository
 import com.migrely.app.home.domain.repository.RestoreDeletedAttackRepository
+import com.migrely.app.home.domain.repository.SetPeriodRepository
 import com.migrely.app.home.domain.repository.StartAttackRepository
 import com.migrely.app.home.domain.repository.UpdateAttackStartRepository
 import com.migrely.app.home.domain.repository.UpdateLongAttackCheckRepository
@@ -21,6 +23,7 @@ import com.migrely.app.home.domain.usecase.GetTodayUseCase
 import com.migrely.app.home.domain.usecase.MoveAttackStartEarlierUseCase
 import com.migrely.app.home.domain.usecase.RecordIntensityUseCase
 import com.migrely.app.home.domain.usecase.RestoreDeletedAttackUseCase
+import com.migrely.app.home.domain.usecase.SetPeriodTodayUseCase
 import com.migrely.app.home.domain.usecase.StartAttackUseCase
 import com.migrely.app.home.domain.usecase.UndoAttackEndUseCase
 import com.migrely.app.home.domain.usecase.UndoAttackStartUseCase
@@ -41,8 +44,21 @@ internal object HomeModule {
     fun providesGetTodayUseCase(
         getCurrentTimeRepository: GetCurrentTimeRepository,
         repository: GetTodayRepository,
+        getDayMarksRepository: GetDayMarksRepository,
         coroutineContextProvider: CoroutineContextProvider
-    ) = GetTodayUseCase(getCurrentTimeRepository, repository, coroutineContextProvider)
+    ) = GetTodayUseCase(
+        getCurrentTimeRepository,
+        repository,
+        getDayMarksRepository,
+        coroutineContextProvider
+    )
+
+    @Provides
+    fun providesSetPeriodTodayUseCase(
+        getCurrentTimeRepository: GetCurrentTimeRepository,
+        setPeriodRepository: SetPeriodRepository,
+        coroutineContextProvider: CoroutineContextProvider
+    ) = SetPeriodTodayUseCase(getCurrentTimeRepository, setPeriodRepository, coroutineContextProvider)
 
     @Provides
     fun providesStartAttackUseCase(
