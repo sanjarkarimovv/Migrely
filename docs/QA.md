@@ -42,6 +42,14 @@ Visual regression (Roborazzi screenshots of the `@Preview`s with pseudo-locales)
 - start from `subflows/launch-clean.yaml`;
 - run every new flow three times before keeping it.
 
+`qa/maestro.sh` runs three passes:
+1. the default timing;
+2. `a11y-timeout` flows with a 20 s accessibility timeout;
+3. `known-bug` flows, whose failure is expected.
+
+Only passes 1 and 2 decide the exit status, so an open known bug never hides a new regression. A known-bug flow that
+starts passing is reported as "NOW PASSES".
+
 `python3 -I qa/e2e_coverage.py --missing` shows the spec scenarios that have no flow yet.
 
 ## 4. Bugs
@@ -65,6 +73,9 @@ Visual regression (Roborazzi screenshots of the `@Preview`s with pseudo-locales)
 - **Who fixes.** QA never edits product code. The dev session fixes the issue on its own branch.
 - **Retest.** When the fix merges, QA merges develop into its branch and reruns the reproducing flows, the related
   audits and the full regression. It comments the results on the fix PR and removes `known-bug` tags that now pass.
+- **Doubts about a test.** When a flow fails, QA proves whether the app or the test is at fault before filing anything.
+  It reproduces the failure by hand with adb and reads the Maestro step timings, the screenshot and the hierarchy.
+  So far, test timing on the software-GPU emulator explained every red flow that was not a filed issue.
 
 ## 5. Release Go/No-Go
 
@@ -75,8 +86,8 @@ results in the release PR.
 |---|---|---|---|
 | 1 | Build gate | `./gradlew assembleDebug test ktlintCheck detekt` | BUILD SUCCESSFUL |
 | 2 | Smoke on Android 8.0 | `QA_SERIAL=emulator-5582 qa/maestro.sh --install --tags smoke` | every flow passes |
-| 3 | Full regression on the target version | `qa/maestro.sh --install` | every flow passes |
-| 4 | Accessibility audit | `qa/a11y_audit.sh` | `0 failure(s)`; every warning looked at |
+| 3 | Full regression on the target version | `qa/maestro.sh --install` | exit 0 (passes 1 and 2 green). Pass 3 lists the open known bugs; none of them may be S1 or S2 |
+| 4 | Accessibility audit | `qa/a11y_audit.sh` | `0 failure(s)` and no state that could not be captured; every warning and every "not judged" line looked at |
 | 5 | Device scenarios | `qa/device_scenarios.sh` | `All scenarios passed` |
 | 6 | Random input | `qa/monkey.sh 20261024 5000` | 0 crashes, 0 ANRs |
 | 7 | Permissions | `qa/permission_audit.sh` (and on the release APK) | `Permission audit passed` |

@@ -1,0 +1,27 @@
+# Covers: attack-logging › Durable logging › App update
+# Runs after a newer build was installed over an older one that holds data (qa/device_scenarios.sh upgrade, or by hand:
+# seed on the old build, then "adb install -r" the new APK). Seeded data: a 2-hour attack on the 12th of last month
+# without a pain level, and an attack today with Severe and Nausea.
+appId: com.migrely.app
+---
+- launchApp
+- extendedWaitUntil:
+    visible: "Today: storm\\. 1 migraine today\\. Peak: severe\\."
+    timeout: 10000
+- tapOn: "Migraine from .*peak 9 out of 10\\. Opens its details\\."
+- scrollUntilVisible:
+    element: "Nausea"
+    direction: DOWN
+- assertVisible:
+    containsChild: "Nausea"
+    checked: true
+- back
+- scrollUntilVisible:
+    element: ".*\\. Opens History\\."
+    direction: DOWN
+- tapOn: ".*\\. Opens History\\."
+- tapOn: "Previous month"
+- extendedWaitUntil:
+    visible: "1 migraine in .*"
+    timeout: 5000
+- assertVisible: ".*, [A-Za-z]+ 12: cloudy\\. 1 migraine\\. Peak: not recorded\\."

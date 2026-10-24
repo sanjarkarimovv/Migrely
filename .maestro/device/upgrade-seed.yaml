@@ -1,0 +1,18 @@
+# Device scenario step (upgrade): on the OLDER build, log a 2-hour attack on the 12th of last month without a pain level
+# and an attack today with Severe and Nausea. upgrade-kept.yaml checks them after the newer build is installed over it.
+appId: com.migrely.app
+---
+- runFlow: ../subflows/launch-clean.yaml
+- runFlow: ../subflows/add-past-attack-last-month.yaml
+- runFlow: ../subflows/start-attack.yaml
+- tapOn: "Severe"
+- tapOn: "Details of this migraine"
+- scrollUntilVisible:
+    element: "Nausea"
+    direction: DOWN
+- tapOn: "Nausea"
+- back
+- runFlow: ../subflows/end-attack.yaml
+- extendedWaitUntil:
+    visible: "Today: storm\\. 1 migraine today\\. Peak: severe\\."
+    timeout: 8000

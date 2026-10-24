@@ -6,7 +6,8 @@
 #   qa/device_scenarios.sh                         every scenario
 #   qa/device_scenarios.sh long midnight           only the named ones
 #
-# Scenarios: long (72-hour check), history_death, past_death, details_kill, midnight, travel, double_tap.
+# Scenarios: long (72-hour check), history_death, past_death, details_kill, midnight, travel, double_tap, upgrade.
+# upgrade needs QA_OLD_APK=<older debug APK of com.migrely.app>; without it, it is reported as not run.
 set -euo pipefail
 
 QA_SERIAL="emulator-5580"
@@ -173,13 +174,40 @@ scenario_double_tap() {
     adbq shell "input tap $point & sleep $gap; input tap $point"
     echo "    double tap on \"Migraine ended\" at ($point), ${gap} s apart"
     run_flow double-tap-end-result || return 1
+    # The upper part of "Migraine started" lies over "+ Medication taken" in attack mode (change 3).
+    run_flow double-tap-ready || return 1
+    point="$(point_in 'Migraine started' 0.15)"
+    adbq shell "input tap $point & sleep $gap; input tap $point"
+    echo "    double tap on the upper part of \"Migraine started\" at ($point), ${gap} s apart"
+    run_flow double-tap-start-result || return 1
   done
+}
+
+scenario_upgrade() {
+  echo "Scenario upgrade: a newer build installed over an older one keeps every attack (EC-STO-01, ATK-F6)"
+  if [[ -z "${QA_OLD_APK:-}" || ! -f "${QA_OLD_APK:-}" ]]; then
+    echo "  NOT RUN: set QA_OLD_APK to the older APK (for a release: the APK of the previous release)"
+    return 1
+  fi
+  local new_apk="$ROOT/app/build/outputs/apk/debug/app-debug.apk"
+  adbq uninstall "$APP" >/dev/null 2>&1 || true
+  adbq install "$QA_OLD_APK" >/dev/null || { echo "  FAILED: could not install $QA_OLD_APK"; return 1; }
+  echo "    installed the older build $(adbq shell dumpsys package "$APP" | grep -m1 versionCode | tr -s ' ')"
+  run_flow upgrade-seed || return 1
+  adbq install -r "$new_apk" >/dev/null || { echo "  FAILED: could not install the newer build over it"; return 1; }
+  echo "    installed the newer build over it, data kept"
+  run_flow upgrade-kept || return 1
 }
 
 out="$ROOT/build/qa/device/$(date +%Y%m%d-%H%M%S)"
 mkdir -p "$out"
 if [[ $# -eq 0 ]]; then
   set -- long history_death past_death details_kill midnight travel double_tap
+  if [[ -n "${QA_OLD_APK:-}" ]]; then
+    set -- "$@" upgrade
+  else
+    echo "Note: upgrade is not in this run; set QA_OLD_APK to the older APK to include it."
+  fi
 fi
 failed=()
 for s in "$@"; do
