@@ -8,6 +8,16 @@
     <string name="your_data_export_csv_summary">One row per migraine, to read or share</string>
     <string name="your_data_import">Import a backup</string>
     <string name="your_data_import_summary">From a Migrely backup file</string>
+    <!-- Restoring the automatic copy (BRD D98). -->
+    <string name="your_data_restore_copy">Restore the copy from %1$s</string>
+    <string name="your_data_restore_copy_summary">Saved on this phone before your entries were last replaced</string>
+    <string name="your_data_restore_title">Restore the copy from %1$s?</string>
+    <string name="your_data_restore_replaces">It replaces what\'s on this phone now. A copy of what\'s here is saved first, so you can switch back.</string>
+    <string name="your_data_restore">Restore</string>
+    <plurals name="your_data_restored">
+        <item quantity="one">Copy restored: %d migraine.</item>
+        <item quantity="other">Copy restored: %d migraines.</item>
+    </plurals>
     <string name="your_data_note">Migrely has no internet access. Your entries stay on this phone, in Android\'s own backup, and in the files you save.</string>
     <string name="your_data_working">Working on your file</string>
     <string name="your_data_confirm_title">Import this backup?</string>

@@ -7,12 +7,17 @@ import com.migrely.app.backup.data.mapper.BackupSummaryDomainMapper
 import com.migrely.app.backup.data.repository.BackupRepository
 import com.migrely.app.backup.domain.usecase.ExportBackupUseCase
 import com.migrely.app.backup.domain.usecase.ExportCsvUseCase
+import com.migrely.app.backup.domain.usecase.GetAutomaticCopyUseCase
 import com.migrely.app.backup.domain.usecase.ImportBackupUseCase
 import com.migrely.app.backup.domain.usecase.ReadBackupUseCase
+import com.migrely.app.backup.domain.usecase.RestoreAutomaticCopyUseCase
+import com.migrely.app.backup.presentation.mapper.AutomaticCopyPresentationMapper
 import com.migrely.app.backup.presentation.mapper.BackupSummaryPresentationMapper
 import com.migrely.app.backup.presentation.mapper.ImportModeDomainMapper
 import com.migrely.app.backup.presentation.viewmodel.YourDataViewModel
 import com.migrely.app.backup.ui.di.YourDataDependencies
+import com.migrely.app.backup.ui.mapper.AutomaticCopyUiMapper
+import com.migrely.app.backup.ui.mapper.BackupSummaryUiMapper
 import com.migrely.app.backup.ui.mapper.YourDataEventPresenter
 import com.migrely.app.backup.ui.mapper.YourDataNotificationUiMapper
 import com.migrely.app.backup.ui.mapper.YourDataViewStateUiMapper
@@ -103,7 +108,10 @@ internal object BackupModule {
         ExportCsvUseCase(repository, coroutines),
         ReadBackupUseCase(repository, repository, coroutines),
         ImportBackupUseCase(repository, repository, repository, coroutines),
+        GetAutomaticCopyUseCase(repository, coroutines),
+        RestoreAutomaticCopyUseCase(repository, repository, coroutines),
         BackupSummaryPresentationMapper(),
+        AutomaticCopyPresentationMapper(BackupSummaryPresentationMapper()),
         ImportModeDomainMapper(),
         useCaseExecutor
     )
@@ -114,10 +122,12 @@ internal object BackupModule {
         val presenter = YourDataEventPresenter()
         return YourDataDependencies(
             yourDataViewModel = yourDataViewModel,
-            yourDataViewStateUiMapper = YourDataViewStateUiMapper(),
+            yourDataViewStateUiMapper = YourDataViewStateUiMapper(
+                AutomaticCopyUiMapper(BackupSummaryUiMapper())
+            ),
             yourDataEventPresenter = presenter,
             navigationMapper = YourDataNavigationEventDestinationMapper(),
-            notificationMapper = YourDataNotificationUiMapper(presenter)
+            notificationMapper = YourDataNotificationUiMapper(presenter, BackupSummaryUiMapper())
         )
     }
 }

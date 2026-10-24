@@ -2,15 +2,18 @@ package com.migrely.app.backup.data.repository
 
 import com.migrely.app.backup.data.mapper.AttacksCsvMapper
 import com.migrely.app.backup.data.mapper.BackupSummaryDomainMapper
+import com.migrely.app.backup.domain.model.AutomaticCopyDomainModel
 import com.migrely.app.backup.domain.model.BackupFileDomainModel
 import com.migrely.app.backup.domain.model.BackupSummaryDomainModel
 import com.migrely.app.backup.domain.model.BackupWriteResultDomainModel
 import com.migrely.app.backup.domain.model.ImportResultDomainModel
 import com.migrely.app.backup.domain.model.PhoneRecordsDomainModel
+import com.migrely.app.backup.domain.model.RestoreResultDomainModel
 import com.migrely.app.datasource.backup.datasource.BackupDataSource
 import com.migrely.app.datasource.backup.model.AddedRecordsDataModel
 import com.migrely.app.datasource.backup.model.BackupRecordsDataModel
 import com.migrely.app.datasource.backupfile.datasource.BackupFileDataSource
+import com.migrely.app.datasource.backupfile.model.AutomaticCopyDataModel
 import com.migrely.app.datasource.backupfile.model.BackupDecodedDataModel
 import com.migrely.app.datasource.clock.datasource.ClockDataSource
 import com.migrely.app.datasource.document.datasource.DocumentDataSource
@@ -38,6 +41,17 @@ private const val URI = "content://downloads/1"
 private val NOW = Instant.parse("2026-10-25T08:00:00Z")
 private val EMPTY =
     BackupRecordsDataModel(emptyList(), emptyList(), emptyList(), emptyList(), emptyList())
+private val MADE_AT = Instant.parse("2026-10-24T19:30:00Z")
+private val COPY = AutomaticCopyDataModel(MADE_AT, "copy")
+
+/** 16 migraines, 2 medications and 5 marked days; only the counts are read. */
+private val SIXTEEN = BackupRecordsDataModel(
+    attacks = List(16) { mock() },
+    customTags = emptyList(),
+    medications = List(2) { mock() },
+    intakes = emptyList(),
+    dayMarks = List(5) { mock() }
+)
 
 class BackupRepositoryTest {
     private val backupDataSource: BackupDataSource = mock()
@@ -225,5 +239,100 @@ class BackupRepositoryTest {
         )
         given(backupDataSource.add(any())).willThrow(DatabaseDataException())
         assertEquals(ImportResultDomainModel.Failed, classUnderTest.addBackup(URI))
+    }
+
+    @Test
+    fun `When asking for the automatic copy then when it was made and what it holds`() {
+        given(backupFileDataSource.newestAutomatic()).willReturn(COPY)
+        given(
+            backupFileDataSource.decode("copy")
+        ).willReturn(BackupDecodedDataModel.Records(SIXTEEN, 6))
+
+        assertEquals(
+            AutomaticCopyDomainModel.Available(MADE_AT, BackupSummaryDomainModel(16, 2, 5)),
+            classUnderTest.automaticCopy()
+        )
+    }
+
+    @Test
+    fun `Given no copy, a damaged one or a read failure then no copy is offered`() {
+        assertEquals(AutomaticCopyDomainModel.None, classUnderTest.automaticCopy())
+
+        given(backupFileDataSource.newestAutomatic()).willReturn(COPY)
+        listOf(BackupDecodedDataModel.NotABackup, BackupDecodedDataModel.Newer).forEach {
+            given(backupFileDataSource.decode("copy")).willReturn(it)
+            assertEquals(AutomaticCopyDomainModel.None, classUnderTest.automaticCopy())
+        }
+
+        given(backupFileDataSource.newestAutomatic()).willThrow(FileDataException())
+        assertEquals(AutomaticCopyDomainModel.None, classUnderTest.automaticCopy())
+    }
+
+    @Test
+    fun `When restoring the copy then the phone's records are saved first, then replaced`() {
+        given(backupFileDataSource.newestAutomatic()).willReturn(COPY)
+        given(
+            backupFileDataSource.decode("copy")
+        ).willReturn(BackupDecodedDataModel.Records(SIXTEEN, 6))
+        given(backupDataSource.records()).willReturn(EMPTY)
+        given(backupFileDataSource.encode(EMPTY, NOW)).willReturn("{json}")
+
+        assertEquals(
+            RestoreResultDomainModel.Restored(BackupSummaryDomainModel(16, 2, 5)),
+            classUnderTest.restoreAutomaticCopy(saveCopyFirst = true)
+        )
+        val order = inOrder(backupFileDataSource, backupDataSource)
+        order.verify(backupFileDataSource).newestAutomatic()
+        order.verify(backupFileDataSource).saveAutomatic("{json}", NOW)
+        order.verify(backupDataSource).replaceAll(SIXTEEN)
+    }
+
+    @Test
+    fun `Given an empty phone when restoring then the copy replaces with no copy saved`() {
+        given(backupFileDataSource.newestAutomatic()).willReturn(COPY)
+        given(
+            backupFileDataSource.decode("copy")
+        ).willReturn(BackupDecodedDataModel.Records(SIXTEEN, 6))
+
+        classUnderTest.restoreAutomaticCopy(saveCopyFirst = false)
+
+        verify(backupFileDataSource, never()).saveAutomatic(any(), any())
+        verify(backupDataSource).replaceAll(SIXTEEN)
+    }
+
+    @Test
+    fun `Given the copy is gone or damaged, or the phone fails, then nothing is replaced`() {
+        assertEquals(
+            RestoreResultDomainModel.Failed,
+            classUnderTest.restoreAutomaticCopy(saveCopyFirst = true)
+        )
+
+        given(backupFileDataSource.newestAutomatic()).willReturn(COPY)
+        given(backupFileDataSource.decode("copy")).willReturn(BackupDecodedDataModel.NotABackup)
+        assertEquals(
+            RestoreResultDomainModel.Failed,
+            classUnderTest.restoreAutomaticCopy(saveCopyFirst = true)
+        )
+        verify(backupDataSource, never()).replaceAll(any())
+
+        given(
+            backupFileDataSource.decode("copy")
+        ).willReturn(BackupDecodedDataModel.Records(SIXTEEN, 6))
+        given(backupDataSource.records()).willReturn(EMPTY)
+        given(backupFileDataSource.encode(any(), any())).willReturn("{json}")
+        whenever(
+            backupFileDataSource.saveAutomatic(any(), any())
+        ).doThrow(StorageFullDataException())
+        assertEquals(
+            RestoreResultDomainModel.StorageFull,
+            classUnderTest.restoreAutomaticCopy(saveCopyFirst = true)
+        )
+        verify(backupDataSource, never()).replaceAll(any())
+
+        whenever(backupDataSource.replaceAll(any())).doThrow(DatabaseDataException())
+        assertEquals(
+            RestoreResultDomainModel.Failed,
+            classUnderTest.restoreAutomaticCopy(saveCopyFirst = false)
+        )
     }
 }

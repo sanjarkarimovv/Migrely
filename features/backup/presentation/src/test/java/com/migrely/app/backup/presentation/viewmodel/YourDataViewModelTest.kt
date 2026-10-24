@@ -2,23 +2,30 @@ package com.migrely.app.backup.presentation.viewmodel
 
 import com.migrely.app.architecture.domain.exception.UnknownDomainException
 import com.migrely.app.architecture.presentation.viewmodel.BaseViewModelTest
+import com.migrely.app.backup.domain.model.AutomaticCopyDomainModel
 import com.migrely.app.backup.domain.model.BackupSummaryDomainModel
 import com.migrely.app.backup.domain.model.BackupWriteResultDomainModel
 import com.migrely.app.backup.domain.model.ImportBackupRequestDomainModel
 import com.migrely.app.backup.domain.model.ImportModeDomainModel
 import com.migrely.app.backup.domain.model.ImportResultDomainModel
 import com.migrely.app.backup.domain.model.ReadBackupResultDomainModel
+import com.migrely.app.backup.domain.model.RestoreResultDomainModel
 import com.migrely.app.backup.domain.usecase.ExportBackupUseCase
 import com.migrely.app.backup.domain.usecase.ExportCsvUseCase
+import com.migrely.app.backup.domain.usecase.GetAutomaticCopyUseCase
 import com.migrely.app.backup.domain.usecase.ImportBackupUseCase
 import com.migrely.app.backup.domain.usecase.ReadBackupUseCase
+import com.migrely.app.backup.domain.usecase.RestoreAutomaticCopyUseCase
+import com.migrely.app.backup.presentation.mapper.AutomaticCopyPresentationMapper
 import com.migrely.app.backup.presentation.mapper.BackupSummaryPresentationMapper
 import com.migrely.app.backup.presentation.mapper.ImportModeDomainMapper
+import com.migrely.app.backup.presentation.model.AutomaticCopyPresentationModel
 import com.migrely.app.backup.presentation.model.BackupSummaryPresentationModel
 import com.migrely.app.backup.presentation.model.ImportModePresentationModel
 import com.migrely.app.backup.presentation.model.YourDataPresentationNotification
 import com.migrely.app.backup.presentation.model.YourDataViewState
 import com.migrely.app.backup.presentation.navigation.YourDataPresentationNavigationEvent
+import java.time.Instant
 import kotlinx.coroutines.CoroutineStart.UNDISPATCHED
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -42,6 +49,11 @@ private val REPLACE = ImportBackupRequestDomainModel(URI, ImportModeDomainModel.
 private val ADD = ImportBackupRequestDomainModel(URI, ImportModeDomainModel.Add)
 private val SUMMARY_SHOWN =
     BackupSummaryPresentationModel(attacks = 10, medications = 2, dayMarks = 5)
+private val MADE_AT = Instant.parse("2026-10-24T19:30:00Z")
+private val COPY = AutomaticCopyDomainModel.Available(MADE_AT, SUMMARY)
+private val COPY_SHOWN = AutomaticCopyPresentationModel(MADE_AT, SUMMARY_SHOWN)
+private val IDLE = YourDataViewState.Idle(automaticCopy = null)
+private val WORKING = YourDataViewState.Working(automaticCopy = null)
 
 @RunWith(MockitoJUnitRunner::class)
 class YourDataViewModelTest :
@@ -54,6 +66,10 @@ class YourDataViewModelTest :
 
     @Mock private lateinit var importBackupUseCase: ImportBackupUseCase
 
+    @Mock private lateinit var getAutomaticCopyUseCase: GetAutomaticCopyUseCase
+
+    @Mock private lateinit var restoreAutomaticCopyUseCase: RestoreAutomaticCopyUseCase
+
     @Before
     fun setUp() {
         classUnderTest = YourDataViewModel(
@@ -61,11 +77,18 @@ class YourDataViewModelTest :
             exportCsvUseCase,
             readBackupUseCase,
             importBackupUseCase,
+            getAutomaticCopyUseCase,
+            restoreAutomaticCopyUseCase,
             BackupSummaryPresentationMapper(),
+            AutomaticCopyPresentationMapper(BackupSummaryPresentationMapper()),
             ImportModeDomainMapper(),
             useCaseExecutor
         )
     }
+
+    /** Work that finishes reads the copy again, so every test that finishes work says what it finds. */
+    private fun givenNoCopy() =
+        getAutomaticCopyUseCase.givenSuccessfulExecution(AutomaticCopyDomainModel.None)
 
     private suspend fun notificationOf(action: () -> Unit): YourDataPresentationNotification =
         coroutineScope {
@@ -75,16 +98,18 @@ class YourDataViewModelTest :
         }
 
     @Test
-    fun `When entering then idle`() = runTest {
-        val state = async(start = UNDISPATCHED) { classUnderTest.viewState.first() }
+    fun `When entering then idle, then the copy there is to restore`() = runTest {
+        getAutomaticCopyUseCase.givenSuccessfulExecution(COPY)
+        val states = async(start = UNDISPATCHED) { classUnderTest.viewState.take(2).toList() }
 
         classUnderTest.onEnter()
 
-        assertEquals(YourDataViewState.Idle, state.await())
+        assertEquals(listOf(IDLE, YourDataViewState.Idle(COPY_SHOWN)), states.await())
     }
 
     @Test
     fun `When exporting then working, then idle with how it went`() = runTest {
+        givenNoCopy()
         exportBackupUseCase.givenSuccessfulExecution(URI, BackupWriteResultDomainModel.Saved)
         val states = async(start = UNDISPATCHED) { classUnderTest.viewState.take(2).toList() }
 
@@ -92,11 +117,12 @@ class YourDataViewModelTest :
             YourDataPresentationNotification.BackupSaved,
             notificationOf { classUnderTest.onExportBackupAction(URI) }
         )
-        assertEquals(listOf(YourDataViewState.Working, YourDataViewState.Idle), states.await())
+        assertEquals(listOf(WORKING, IDLE), states.await())
     }
 
     @Test
     fun `When exporting for Excel then saved, storage full or something went wrong`() = runTest {
+        givenNoCopy()
         mapOf(
             BackupWriteResultDomainModel.Saved to YourDataPresentationNotification.CsvSaved,
             BackupWriteResultDomainModel.StorageFull to
@@ -111,6 +137,7 @@ class YourDataViewModelTest :
 
     @Test
     fun `When a file is picked then what it holds for confirmation, or why not`() = runTest {
+        givenNoCopy()
         mapOf(
             ReadBackupResultDomainModel.Readable(SUMMARY, true) to
                 YourDataPresentationNotification.ConfirmImport(URI, SUMMARY_SHOWN, true),
@@ -128,6 +155,7 @@ class YourDataViewModelTest :
     @Test
     fun `When the import is confirmed then it runs in that mode and reports how it went`() =
         runTest {
+            givenNoCopy()
             importBackupUseCase.givenSuccessfulExecution(
                 REPLACE,
                 ImportResultDomainModel.Replaced(SUMMARY)
@@ -166,6 +194,7 @@ class YourDataViewModelTest :
 
     @Test
     fun `Given an unexpected failure then idle again and something went wrong`() = runTest {
+        givenNoCopy()
         importBackupUseCase.givenFailedExecution(ADD, UnknownDomainException())
         val states = async(start = UNDISPATCHED) { classUnderTest.viewState.take(2).toList() }
 
@@ -173,12 +202,13 @@ class YourDataViewModelTest :
             YourDataPresentationNotification.SomethingWentWrong,
             notificationOf { classUnderTest.onImportAction(URI, ImportModePresentationModel.Add) }
         )
-        assertEquals(listOf(YourDataViewState.Working, YourDataViewState.Idle), states.await())
+        assertEquals(listOf(WORKING, IDLE), states.await())
     }
 
     @Test
     fun `Given an outcome not taken when the screen listens again then it is sent again`() =
         runTest {
+            givenNoCopy()
             exportCsvUseCase.givenSuccessfulExecution(URI, BackupWriteResultDomainModel.Saved)
             classUnderTest.onExportCsvAction(URI)
 
@@ -192,7 +222,7 @@ class YourDataViewModelTest :
             classUnderTest.onOutcomeShownAction()
             val states = async(start = UNDISPATCHED) { classUnderTest.viewState.first() }
             classUnderTest.onResume()
-            assertEquals(YourDataViewState.Idle, states.await())
+            assertEquals(IDLE, states.await())
             verify(useCaseExecutor).execute(
                 useCase = eq(exportCsvUseCase),
                 value = eq(URI),
@@ -209,7 +239,40 @@ class YourDataViewModelTest :
 
             classUnderTest.onEnter()
 
-            assertEquals(YourDataViewState.Working, state.await())
+            assertEquals(WORKING, state.await())
+        }
+
+    @Test
+    fun `When the copy is restored then working, then the copy now there and how it went`() =
+        runTest {
+            getAutomaticCopyUseCase.givenSuccessfulExecution(COPY)
+            // Restoring runs through the same work as a file, which passes its value along.
+            restoreAutomaticCopyUseCase.givenSuccessfulExecution(
+                Unit,
+                RestoreResultDomainModel.Restored(SUMMARY)
+            )
+            val states = async(start = UNDISPATCHED) { classUnderTest.viewState.take(2).toList() }
+
+            assertEquals(
+                YourDataPresentationNotification.Restored(SUMMARY_SHOWN),
+                notificationOf { classUnderTest.onRestoreCopyAction() }
+            )
+            assertEquals(listOf(WORKING, YourDataViewState.Idle(COPY_SHOWN)), states.await())
+        }
+
+    @Test
+    fun `Given restoring fails then storage full or something went wrong, as an import`() =
+        runTest {
+            givenNoCopy()
+            mapOf(
+                RestoreResultDomainModel.StorageFull to
+                    YourDataPresentationNotification.StorageFull,
+                RestoreResultDomainModel.Failed to
+                    YourDataPresentationNotification.SomethingWentWrong
+            ).forEach { (result, expected) ->
+                restoreAutomaticCopyUseCase.givenSuccessfulExecution(Unit, result)
+                assertEquals(expected, notificationOf { classUnderTest.onRestoreCopyAction() })
+            }
         }
 
     @Test
