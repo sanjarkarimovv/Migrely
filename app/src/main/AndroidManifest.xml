@@ -5,6 +5,18 @@
     <!-- Asked for only when the user turns a reminder on (BRD EC-REM-01). No INTERNET and no exact alarms. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+    <!--
+        WorkManager declares these for network constraints and foreground work, and Migrely uses neither: it has no
+        network at all, and its reminders are plain one-time work (BRD EC-REM-03, issue #36). The build checks that no
+        library brings them back (app/build.gradle.kts, checkDebugPermissions).
+    -->
+    <uses-permission
+        android:name="android.permission.ACCESS_NETWORK_STATE"
+        tools:node="remove" />
+    <uses-permission
+        android:name="android.permission.FOREGROUND_SERVICE"
+        tools:node="remove" />
+
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -16,6 +28,10 @@
         android:theme="@style/Theme.Migrely"
         android:name=".MigrelyApplication"
         tools:targetApi="31">
+        <!-- Only foreground work uses it, and no Migrely work runs in the foreground. -->
+        <service
+            android:name="androidx.work.impl.foreground.SystemForegroundService"
+            tools:node="remove" />
         <activity
             android:name=".MainActivity"
             android:exported="true"
