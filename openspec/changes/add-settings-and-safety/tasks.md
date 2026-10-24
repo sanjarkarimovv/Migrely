@@ -2,22 +2,22 @@
 
 ## 1. Datasources
 
-- [ ] 1.1 Preferences: theme and `clear()`. Backup: `deleteAll()`. Backup file: `newestAutomatic()` and `deleteAll()`.
+- [x] 1.1 Preferences: theme and `clear()`. Backup: `deleteAll()`. Backup file: `newestAutomatic()` and `deleteAll()`.
   Reports: `deleteAll()`. Reminders: `cancelAll()` for work and notifications. `AppInfoDataSource`. Tests.
 
 ## 2. Theme
 
-- [ ] 2.1 A light scheme in `:designsystem`, `MigrelyTheme(dark)`, and the start-up read and live apply in `:app`.
+- [x] 2.1 A light scheme in `:designsystem`, `MigrelyTheme(dark)`, and the start-up read and live apply in `:app`.
 
 ## 3. Settings
 
-- [ ] 3.1 Domain and data: theme, delete all, version; tests.
-- [ ] 3.2 Presentation and UI: sections, the theme dialog, Warning signs, About, Privacy, licences, version, and the
+- [x] 3.1 Domain and data: theme, delete all, version; tests.
+- [x] 3.2 Presentation and UI: sections, the theme dialog, Warning signs, About, Privacy, licences, version, and the
   Delete all data confirmation; tests.
 
 ## 4. Your data
 
-- [ ] 4.1 Restore the automatic copy: domain, data, presentation, UI; tests.
+- [x] 4.1 Restore the automatic copy: domain, data, presentation, UI; tests.
 
 ## 5. Verify
 
