@@ -1,6 +1,9 @@
 package com.migrely.app.designsystem.theme
 
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
@@ -43,5 +46,16 @@ fun MigrelyDarkRoom(active: Boolean = true, content: @Composable () -> Unit) {
             if (active) screens.leave()
         }
     }
-    MigrelyTheme(dark = active || LocalMigrelyDark.current, content = content)
+    val contentColor = LocalContentColor.current
+    MigrelyTheme(dark = active || LocalMigrelyDark.current) {
+        // Text without a colour of its own is light here, not the dark text the light theme's screen gives it.
+        CompositionLocalProvider(
+            LocalContentColor provides if (active) {
+                MaterialTheme.colorScheme.onBackground
+            } else {
+                contentColor
+            },
+            content = content
+        )
+    }
 }
