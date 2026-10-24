@@ -39,7 +39,11 @@ class NotificationDataSourceImpl(private val context: Context) : NotificationDat
                     PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
                 )
             )
-            .addAction(0, context.getString(R.string.notification_daily_log), openApp())
+            .addAction(
+                0,
+                context.getString(R.string.notification_daily_log),
+                openApp(dismissDaily = true)
+            )
     )
 
     override fun showAttackLoggedToday() = notify(
@@ -75,10 +79,13 @@ class NotificationDataSourceImpl(private val context: Context) : NotificationDat
             .setAutoCancel(true)
     }
 
-    private fun openApp(): PendingIntent = PendingIntent.getActivity(
+    // An action button does not clear its notification, so "Log a migraine" asks the app to (its own request code).
+    private fun openApp(dismissDaily: Boolean = false): PendingIntent = PendingIntent.getActivity(
         context,
-        0,
-        Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+        if (dismissDaily) DAILY_ID else 0,
+        Intent(context, MainActivity::class.java)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            .putExtra(EXTRA_DISMISS_DAILY, dismissDaily),
         PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
     )
 
@@ -90,10 +97,12 @@ class NotificationDataSourceImpl(private val context: Context) : NotificationDat
 
     private fun effectId(intakeId: String) = EFFECT_ID_BASE + intakeId.hashCode()
 
-    private companion object {
-        const val CHANNEL_DAILY = "daily"
-        const val CHANNEL_EFFECT = "effect"
+    companion object {
+        /** Set on the intent of "Log a migraine": the app clears the daily reminder when it opens. */
+        const val EXTRA_DISMISS_DAILY = "com.migrely.app.DISMISS_DAILY_REMINDER"
         const val DAILY_ID = 1
-        const val EFFECT_ID_BASE = 1000
+        private const val CHANNEL_DAILY = "daily"
+        private const val CHANNEL_EFFECT = "effect"
+        private const val EFFECT_ID_BASE = 1000
     }
 }

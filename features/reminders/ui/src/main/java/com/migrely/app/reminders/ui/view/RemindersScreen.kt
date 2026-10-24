@@ -185,7 +185,7 @@ fun RemindersDependencies.Reminders(navController: NavController, modifier: Modi
                     text = stringResource(shown.text()),
                     tone = SnackbarTone.Error,
                     action = null,
-                    dismissLabel = stringResource(R.string.message_dismiss),
+                    dismissLabel = stringResource(R.string.reminders_message_dismiss),
                     onDismiss = { message = null }
                 )
             }
@@ -271,12 +271,13 @@ private fun ReminderRows(reminders: RemindersUiModel, actions: RemindersActions)
     if (!allowed) NotificationsOffNotice(onOpenSettings = actions.onOpenSettings)
     // A switch shows on only while its reminder can arrive.
     SwitchRow(
-        title = stringResource(R.string.daily_title),
-        summary = stringResource(R.string.daily_summary),
+        title = stringResource(R.string.reminders_daily_title),
+        summary = stringResource(R.string.reminders_daily_summary),
         checked = reminders.dailyEnabled && allowed,
         onCheckedChange = actions.onDaily
     )
-    if (reminders.dailyEnabled && allowed) {
+    // Shown while off too, so the time can be chosen before the reminder is turned on.
+    run {
         // The phone's own 12- or 24-hour choice, as the picker uses.
         val pattern = if (android.text.format.DateFormat.is24HourFormat(LocalContext.current)) {
             DateTimeFormatter.ofPattern("HH:mm")
@@ -284,7 +285,7 @@ private fun ReminderRows(reminders: RemindersUiModel, actions: RemindersActions)
             DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT)
         }
         val time = reminders.dailyMinuteOfDay.toLocalTime().format(pattern)
-        val description = stringResource(R.string.daily_time_description, time)
+        val description = stringResource(R.string.reminders_daily_time_description, time)
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
@@ -297,7 +298,7 @@ private fun ReminderRows(reminders: RemindersUiModel, actions: RemindersActions)
                 .padding(horizontal = 16.dp)
         ) {
             Text(
-                text = stringResource(R.string.daily_time),
+                text = stringResource(R.string.reminders_daily_time),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier
@@ -313,8 +314,8 @@ private fun ReminderRows(reminders: RemindersUiModel, actions: RemindersActions)
         }
     }
     SwitchRow(
-        title = stringResource(R.string.effect_title),
-        summary = stringResource(R.string.effect_summary),
+        title = stringResource(R.string.reminders_effect_title),
+        summary = stringResource(R.string.reminders_effect_summary),
         checked = reminders.effectEnabled && allowed,
         onCheckedChange = actions.onEffect
     )
@@ -382,7 +383,7 @@ private fun NotificationsOffNotice(onOpenSettings: () -> Unit) {
                     modifier = Modifier.padding(end = 12.dp)
                 )
                 Text(
-                    text = stringResource(R.string.notifications_off),
+                    text = stringResource(R.string.reminders_notifications_off),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface
                 )
@@ -393,7 +394,7 @@ private fun NotificationsOffNotice(onOpenSettings: () -> Unit) {
                     .align(Alignment.End)
                     .heightIn(min = 48.dp)
             ) {
-                Text(stringResource(R.string.open_settings))
+                Text(stringResource(R.string.reminders_open_settings))
             }
         }
     }
@@ -410,15 +411,17 @@ private fun TimeDialog(minuteOfDay: Int, onPick: (Int) -> Unit, onDismiss: () ->
     )
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.picker_title)) },
+        title = { Text(stringResource(R.string.reminders_picker_title)) },
         text = { TimePicker(state = state) },
         confirmButton = {
             TextButton(onClick = { onPick(state.hour * MINUTES_PER_HOUR + state.minute) }) {
-                Text(stringResource(R.string.picker_ok))
+                Text(stringResource(R.string.reminders_picker_ok))
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.picker_cancel)) }
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.reminders_picker_cancel))
+            }
         }
     )
 }
@@ -429,8 +432,8 @@ private fun Int.toLocalTime(): LocalTime = LocalTime.of(
 )
 
 private fun RemindersMessageUiModel.text() = when (this) {
-    RemindersMessageUiModel.StorageFull -> R.string.message_storage_full
-    RemindersMessageUiModel.SomethingWentWrong -> R.string.message_something_went_wrong
+    RemindersMessageUiModel.StorageFull -> R.string.reminders_message_storage_full
+    RemindersMessageUiModel.SomethingWentWrong -> R.string.reminders_message_something_went_wrong
 }
 
 private val previewActions = RemindersActions({}, {}, {}, {}, {})

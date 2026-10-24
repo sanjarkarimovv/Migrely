@@ -190,11 +190,13 @@ internal object MedicationModule {
         effectReminderRepository: EffectReminderRepository,
         getCurrentTimeRepository: GetCurrentTimeRepository,
         getPendingEffectQuestionOfRepository: GetPendingEffectQuestionOfRepository,
+        findAttackAtRepository: FindAttackAtRepository,
         coroutineContextProvider: CoroutineContextProvider
     ) = RunEffectQuestionUseCase(
         effectReminderRepository,
         effectReminderRepository,
         getCurrentTimeRepository,
+        findAttackAtRepository,
         getPendingEffectQuestionOfRepository,
         effectReminderRepository,
         coroutineContextProvider

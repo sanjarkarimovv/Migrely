@@ -1,8 +1,8 @@
 ## Purpose
 
 Defines the reminders Migrely sends and how the user controls them, so that a pain-free day and a medication's effect
-can be recorded without the user remembering to open the app, while nothing is sent the user did not turn on (BRD
-REM-F1, REM-F2, EC-REM-01–06, D65–D68).
+can be recorded without the user remembering to open the app, and nothing is sent before the user allows notifications
+on the Reminders screen (BRD REM-F1, REM-F2, EC-REM-01–06, D65–D69).
 
 ## ADDED Requirements
 
@@ -65,12 +65,17 @@ EC-REM-06, EC-DAY-01, D66).
 ### Requirement: "Did it help?" notification
 Two hours after an attack-medication intake, if its question is still open and "Ask if a medication helped" is on with
 notifications allowed, a notification "Did <medication> help?" SHALL arrive, and tapping it SHALL open home, where the
-card asks. It SHALL be cancelled when the question is answered, skipped or the intake undone. Without permission the
-in-app card SHALL still ask (BRD REM-F2, MED-F4, EC-MED-05, D39, D67).
+card asks. It SHALL be cancelled when the question is answered, skipped or the intake undone, and SHALL not be sent while
+an attack is in progress. Without permission the in-app card SHALL still ask (BRD REM-F2, MED-F4, EC-MED-05, D39, D67,
+D69).
 
 #### Scenario: Two hours later
 - **WHEN** Ibuprofen is logged at 2:00 PM and nothing is answered
 - **THEN** at about 4:00 PM "Did Ibuprofen help?" arrives
+
+#### Scenario: During an attack
+- **WHEN** the two hours pass while an attack is still in progress
+- **THEN** no notification arrives, and home's card asks once the attack ends
 
 #### Scenario: Answered first
 - **WHEN** the user answers "Did it help?" on home before 4:00 PM
