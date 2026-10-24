@@ -24,10 +24,11 @@
   - attack mode and the dark room keep their own dark colours, so they are dark in either theme. Screens built only
     from `MaterialTheme.colorScheme` follow the theme.
 - **`:app`:**
-  - `MainActivity` reads the theme in the same splash wait as the start decision, through `StartEntryPoint`;
-  - it keeps it as Compose state;
-  - Settings changes it through the use case and then asks the activity to apply it. The UI calls
-    `(context as? Activity)?.recreate()` after the save succeeds, so every screen redraws in the new theme.
+  - `PreferencesDataSource.themeChanges(): Flow<ThemeDataModel>` starts with the current value and follows every change
+    (a SharedPreferences listener);
+  - `MainActivity` reads the theme in the same splash wait as the start decision, through `StartEntryPoint`, then
+    collects the flow into Compose state, so a change in Settings redraws every screen at once with no restart;
+  - the status and navigation bars follow the theme: light icons on dark, dark icons on light;
   - "Match the phone" follows `isSystemInDarkTheme()`.
 
 ### D3. Delete all data
@@ -38,8 +39,12 @@
   - `BackupFileDataSource.deleteAll()`: `files/backups`;
   - `ReportDocumentDataSource.deleteAll()`: `cache/reports`;
   - `ReminderScheduleDataSource.cancelAll()` and `NotificationDataSource.cancelAll()`.
-- **The UI:** on Deleted, the app restarts its task into `MainActivity`, which finds no records and no finished
-  onboarding and shows onboarding.
+- **Order:** the reminders are cancelled before anything is deleted, so a worker that runs mid-way finds no settings and
+  does nothing.
+- **The restart:** on Deleted, the ViewModel emits `OnAllDataDeleted`, and `:app` restarts the process
+  (`Intent.makeRestartActivityTask` and then `exitProcess(0)`). App-wide singletons, such as Your data's and the
+  report's ViewModels, can hold nothing from before. The app then finds no records and no finished onboarding, and
+  shows onboarding.
 
 ### D4. Restoring the copy
 
