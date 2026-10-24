@@ -3,9 +3,8 @@
 ### Requirement: Accessibility audit on real screens
 The accessibility audit SHALL capture every listed screen state on the QA emulator at 100% font, at 200% font and in
 landscape, and SHALL fail on any enabled text below WCAG 2.1 AA contrast (4.5:1, or 3:1 for large text), any control
-smaller than 48 × 48 dp, any control without a label, and any control a keyboard cannot reach. Items of a group that is one Tab stop, such as
-the month grid, SHALL still be focusable for accessibility services; their Tab order is checked by key events, not by
-the audit (BRD §10, EC-UX-03, EC-UX-04, D42, D62).
+smaller than 48 × 48 dp, any control without a label, and any control that accessibility services cannot focus. The
+Tab order is checked by key events instead (BRD §10, EC-UX-03, EC-UX-04, D42, D62).
 
 #### Scenario: Low contrast
 - **WHEN** a 15 sp line is drawn at 4.05:1 against its background
