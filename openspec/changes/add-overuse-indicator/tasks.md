@@ -2,7 +2,7 @@
 
 ## 1. Domain
 
-- [ ] 1.1 `OveruseDayCounter` used by `GetMedicationPromptUseCase`; `GetOveruseStatusUseCase` and its models with tests.
+- [x] 1.1 `OveruseDayCounter` used by `GetMedicationPromptUseCase`; `GetOveruseStatusUseCase` and its models with tests.
   Verify: `./gradlew :features:medication:domain:test`
 
 ## 2. Presentation and UI

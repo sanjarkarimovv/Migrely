@@ -1,12 +1,9 @@
 package com.migrely.app.medication.domain.usecase
 
 import com.migrely.app.architecture.domain.usecase.BackgroundExecutingUseCase
-import com.migrely.app.attackdays.domain.AttackDays
 import com.migrely.app.coroutine.CoroutineContextProvider
-import com.migrely.app.medication.domain.model.AcuteIntakeDomainModel
 import com.migrely.app.medication.domain.model.AcuteIntakesResultDomainModel
 import com.migrely.app.medication.domain.model.CurrentTimeDomainModel
-import com.migrely.app.medication.domain.model.MedicationCategoryDomainModel
 import com.migrely.app.medication.domain.model.MedicationPromptDomainModel
 import com.migrely.app.medication.domain.model.OveruseCategoryDomainModel
 import com.migrely.app.medication.domain.model.OveruseLevelDomainModel
@@ -18,9 +15,6 @@ import com.migrely.app.medication.domain.repository.GetCurrentTimeRepository
 import com.migrely.app.medication.domain.repository.GetOveruseNoticesRepository
 import com.migrely.app.medication.domain.repository.GetPendingEffectQuestionRepository
 import java.time.Duration
-import java.time.LocalDate
-
-private const val WINDOW_DAYS = 30L
 
 private const val SOFT_DAYS_BEFORE_THRESHOLD = 2
 private val NOTICE_QUIET_PERIOD: Duration = Duration.ofDays(30)
@@ -56,18 +50,18 @@ class GetMedicationPromptUseCase(
     private val getPendingEffectQuestionRepository: GetPendingEffectQuestionRepository,
     coroutineContextProvider: CoroutineContextProvider
 ) : BackgroundExecutingUseCase<Unit, MedicationPromptDomainModel>(coroutineContextProvider) {
+    private val overuseDayCounter = OveruseDayCounter()
+
     override fun executeInBackground(request: Unit): MedicationPromptDomainModel {
         val now = getCurrentTimeRepository.currentTime()
         return overuseWarning(now) ?: effectQuestion(now)
     }
 
     private fun overuseWarning(now: CurrentTimeDomainModel): MedicationPromptDomainModel.Overuse? {
-        val today = now.instant.atZone(now.zone).toLocalDate()
-        val firstDay = today.minusDays(WINDOW_DAYS - 1)
         val intakes = when (
             val result = getAcuteIntakesRepository.acuteIntakesTakenBetween(
-                AttackDays.windowStart(firstDay, now.zone),
-                AttackDays.windowEnd(today, now.zone)
+                overuseDayCounter.readFrom(now),
+                overuseDayCounter.readTo(now)
             )
         ) {
             is AcuteIntakesResultDomainModel.Loaded -> result.intakes
@@ -78,7 +72,7 @@ class GetMedicationPromptUseCase(
             OveruseNoticesResultDomainModel.Failed -> return null
         }
         // Quiet categories go first, so a "Got it" on one category never hides another's warning (EC-MED-06).
-        val shown = candidates(datesByCategory(intakes, firstDay..today))
+        val shown = candidates(overuseDayCounter.days(intakes, now))
             .filterNot { it.isQuiet(notices, now) }
         val topLevel = shown.maxOfOrNull { it.level } ?: return null
         return shown
@@ -87,28 +81,14 @@ class GetMedicationPromptUseCase(
             ?.let { MedicationPromptDomainModel.Overuse(it.category, it.level, it.days) }
     }
 
-    private fun datesByCategory(
-        intakes: List<AcuteIntakeDomainModel>,
-        window: ClosedRange<LocalDate>
-    ): Map<OveruseCategoryDomainModel, Set<LocalDate>> = intakes
-        .map { it.overuseCategory() to it.takenAt.atZone(it.zone).toLocalDate() }
-        .filter { (_, date) -> date in window }
-        .groupBy({ it.first }, { it.second })
-        .mapValues { (_, dates) -> dates.toSet() }
-
-    private fun candidates(
-        dates: Map<OveruseCategoryDomainModel, Set<LocalDate>>
-    ): List<Candidate> {
+    private fun candidates(days: Map<OveruseCategoryDomainModel, Int>): List<Candidate> {
         val singles = SINGLE_CATEGORIES.mapNotNull { category ->
-            candidate(category, dates[category].orEmpty().size)
+            candidate(category, days[category] ?: 0)
         }
         val topSingleLevel = singles.maxOfOrNull { it.level }
-        val multiple = if (dates.size >= 2) {
-            candidate(OveruseCategoryDomainModel.Multiple, dates.values.flatten().toSet().size)
-                ?.takeIf { topSingleLevel == null || it.level > topSingleLevel }
-        } else {
-            null
-        }
+        val multiple = days[OveruseCategoryDomainModel.Multiple]
+            ?.let { candidate(OveruseCategoryDomainModel.Multiple, it) }
+            ?.takeIf { topSingleLevel == null || it.level > topSingleLevel }
         return singles + listOfNotNull(multiple)
     }
 
@@ -133,15 +113,6 @@ class GetMedicationPromptUseCase(
 
         PendingEffectQuestionResultDomainModel.None,
         PendingEffectQuestionResultDomainModel.Failed -> MedicationPromptDomainModel.None
-    }
-
-    private fun AcuteIntakeDomainModel.overuseCategory() = when (category) {
-        MedicationCategoryDomainModel.SimplePainkiller ->
-            OveruseCategoryDomainModel.SimplePainkiller
-
-        MedicationCategoryDomainModel.Triptan -> OveruseCategoryDomainModel.Triptan
-        MedicationCategoryDomainModel.CombinationOrOther,
-        null -> OveruseCategoryDomainModel.CombinationOrOther
     }
 
     internal data class Candidate(
