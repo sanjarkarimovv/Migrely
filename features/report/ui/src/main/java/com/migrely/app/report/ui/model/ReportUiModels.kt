@@ -12,11 +12,12 @@ sealed interface ReportPeriodUiModel : Parcelable {
     data class Range(val fromEpochDay: Long, val toEpochDay: Long) : ReportPeriodUiModel
 }
 
+@Parcelize
 data class ReportOptionsUiModel(
     val fromEpochDay: Long,
     val toEpochDay: Long,
     val anythingLogged: Boolean
-)
+) : Parcelable
 
 sealed interface ReportViewStateUiModel {
     data object Loading : ReportViewStateUiModel

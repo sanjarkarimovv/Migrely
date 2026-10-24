@@ -43,7 +43,9 @@ data class ReportAttackDomainModel(
     val locations: List<String>,
     val symptoms: List<String>,
     val triggers: List<String>,
-    val medications: List<String>
+    val medications: List<String>,
+    /** The zone as stored, when this phone does not know it and [zone] fell back to UTC; empty otherwise. */
+    val unknownZoneName: String = ""
 )
 
 data class ReportIntakeDomainModel(

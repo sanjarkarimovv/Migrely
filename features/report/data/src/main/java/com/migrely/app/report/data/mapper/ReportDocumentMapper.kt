@@ -74,12 +74,22 @@ class ReportDocumentMapper {
             ReportBlockDataModel.Facts(
                 listOf(
                     ReportFactDataModel(
-                        "Migraine days a month, on average",
+                        if (summary.days <
+                            AVERAGE_FROM_DAYS
+                        ) {
+                            "Migraine days"
+                        } else {
+                            "Migraine days a month, on average"
+                        },
                         averageOf(summary.migraineDaysPerMonth, summary.migraineDays, summary.days)
                     ),
                     ReportFactDataModel("Migraines started", summary.attacksStarted.toString()),
                     ReportFactDataModel(
-                        "Days with attack medication a month, on average",
+                        if (summary.days < AVERAGE_FROM_DAYS) {
+                            "Days with attack medication"
+                        } else {
+                            "Days with attack medication a month, on average"
+                        },
                         averageOf(
                             summary.attackMedicationDaysPerMonth,
                             summary.attackMedicationDays,
@@ -171,7 +181,7 @@ class ReportDocumentMapper {
         val began = attack.start.atZone(attack.zone)
         // Listed for its days in the period, but not counted as started in it (walk B4).
         val start = DATE_TIME.format(began) +
-            (if (attack.zone != deviceZone) " (${attack.zone.id})" else "") +
+            zoneLabel(attack, deviceZone) +
             if (began.toLocalDate().isBefore(from)) ", began before the period" else ""
         val duration =
             attack.end?.let { durationOf(Duration.between(attack.start, it)) } ?: "In progress"
@@ -185,6 +195,13 @@ class ReportDocumentMapper {
             attack.triggers.joinToString(", "),
             attack.medications.joinToString(", ")
         )
+    }
+
+    /** The zone is named when it is not the phone's; one this phone does not know is named as stored. */
+    private fun zoneLabel(attack: ReportAttackDomainModel, deviceZone: ZoneId) = when {
+        attack.unknownZoneName.isNotEmpty() -> " (${attack.unknownZoneName}, shown in UTC)"
+        attack.zone != deviceZone -> " (${attack.zone.id})"
+        else -> ""
     }
 
     private fun medications(report: ReportDomainModel): List<ReportBlockDataModel> = listOf(
