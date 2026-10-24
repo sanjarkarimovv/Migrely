@@ -1,0 +1,9 @@
+# Covers: app-shell › Times follow a time zone change › History open during the change
+# The zone changed from Dubai to Tashkent while History was on screen.
+appId: com.migrely.app
+---
+- extendedWaitUntil:
+    visible: ".*\\(Dubai\\).*Opens its details\\."
+    timeout: 10000
+- assertVisible: "History"
+- assertVisible: "1 migraine in .*"

@@ -1,0 +1,13 @@
+# Covers: medication-effect › One question at a time › Two intakes waiting
+# Sumatriptan was logged 4 h ago and Ibuprofen 3 h ago; both are due.
+appId: com.migrely.app
+---
+- launchApp
+- extendedWaitUntil:
+    visible: "How much did Sumatriptan help\\?"
+    timeout: 10000
+- assertNotVisible: "How much did Ibuprofen help\\?"
+- tapOn: "A lot"
+- extendedWaitUntil:
+    visible: "How much did Ibuprofen help\\?"
+    timeout: 10000

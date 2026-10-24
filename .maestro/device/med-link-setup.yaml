@@ -1,0 +1,10 @@
+# Device scenario step: a past migraine with the default times (two hours ago until now); the app is closed.
+appId: com.migrely.app
+---
+- runFlow: ../subflows/launch-clean.yaml
+- tapOn: "Add a past migraine"
+- tapOn: "Add migraine"
+- extendedWaitUntil:
+    visible: "Not recorded"
+    timeout: 5000
+- stopApp

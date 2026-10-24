@@ -1,0 +1,8 @@
+# Covers: app-shell › Times follow a time zone change › Back from another time zone during an attack
+# The zone moved from Dubai to Tashkent while the app was in the background.
+appId: com.migrely.app
+---
+- extendedWaitUntil:
+    visible: "Started .*\\(Dubai\\).*"
+    timeout: 10000
+- assertVisible: "Rest now\\. We'll keep time\\."

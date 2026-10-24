@@ -1,0 +1,28 @@
+# From My medications: add a medication with the editor. env: NAME, KIND ("For an attack" or "Preventive"),
+# TYPE (ignored for Preventive), DOSE (may be empty).
+appId: com.migrely.app
+---
+- tapOn: "Add medication"
+- tapOn: "Name"
+- inputText: "${NAME}"
+- hideKeyboard
+- tapOn: "${KIND}"
+- runFlow:
+    when:
+      true: ${KIND == "For an attack"}
+    commands:
+      - tapOn: "${TYPE}"
+- runFlow:
+    when:
+      true: ${DOSE != ""}
+    commands:
+      - scrollUntilVisible:
+          element: "Usual dose \\(optional\\)"
+          direction: DOWN
+      - tapOn: "Usual dose \\(optional\\)"
+      - inputText: "${DOSE}"
+      - hideKeyboard
+- scrollUntilVisible:
+    element: "Save"
+    direction: DOWN
+- tapOn: "Save"

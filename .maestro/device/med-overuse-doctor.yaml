@@ -1,0 +1,9 @@
+# Covers: medication-overuse › A warning once in 30 days › From soft to doctor
+# After "Got it" on the soft card at 13 days, painkillers reach 15 days.
+appId: com.migrely.app
+---
+- launchApp
+- extendedWaitUntil:
+    visible: "Painkillers on 15 of the last 30 days"
+    timeout: 10000
+- assertVisible: ".*It's worth talking to your doctor\\."

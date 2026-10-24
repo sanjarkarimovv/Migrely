@@ -1,0 +1,9 @@
+# Covers: medication-intakes › Intakes link to their attack › Logged from home during a past attack's time
+# Ibuprofen was logged from home one hour before the end of a two-hour past migraine.
+appId: com.migrely.app
+---
+- launchApp
+- tapOn: "Migraine from .*Opens its details\\."
+- scrollUntilVisible:
+    element: "Ibuprofen.*"
+    direction: DOWN

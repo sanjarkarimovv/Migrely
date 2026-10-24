@@ -1,0 +1,8 @@
+# Device scenario step: the "Did it help?" card for Ibuprofen is shown (23 h after the intake, still inside the window).
+appId: com.migrely.app
+---
+- launchApp
+- extendedWaitUntil:
+    visible: "How much did Ibuprofen help\\?"
+    timeout: 10000
+- stopApp

@@ -1,0 +1,73 @@
+# Covers: medication-list › Add a medication › Add an acute medication
+# Covers: medication-list › Add a medication › Preventive has no category
+# Covers: medication-list › Add a medication › Name too long
+# Covers: medication-intakes › No medication yet › First medication during an attack
+# Covers: medication-list › Archive instead of delete › Archive
+# Covers: medication-list › Names are unique › Archived name
+# Covers: medication-list › Accessible medication screens › Screen reader on a medication
+appId: com.migrely.app
+name: Medications are added with a type and dose, preventive has no category, names stop at 60
+tags: [smoke, regression, medication-list]
+---
+- runFlow: ../subflows/launch-clean.yaml
+- runFlow: ../subflows/start-attack.yaml
+- tapOn: ".*Medication taken"
+- extendedWaitUntil:
+    visible: "Add and log"
+    timeout: 5000
+- runFlow:
+    file: ../subflows/add-first-medication.yaml
+    env:
+      NAME: "Paracetamol"
+      TYPE: "Simple painkiller"
+- tapOn: "Done"
+- runFlow: ../subflows/end-attack.yaml
+- runFlow: ../subflows/open-my-medications.yaml
+- runFlow:
+    file: ../subflows/add-medication.yaml
+    env:
+      NAME: "Ibuprofen"
+      KIND: "For an attack"
+      TYPE: "Simple painkiller"
+      DOSE: "400 mg"
+- extendedWaitUntil:
+    visible: "Ibuprofen, 400 mg, Simple painkiller\\. Opens it to edit\\."
+    timeout: 5000
+- tapOn: "Add medication"
+- assertVisible: "Simple painkiller"
+- tapOn: "Preventive"
+- assertNotVisible: "Simple painkiller"
+- assertNotVisible: "Triptan"
+- tapOn: "Name"
+- inputText: "ABCDEFGHIJABCDEFGHIJABCDEFGHIJABCDEFGHIJABCDEFGHIJABCDEFGHIJX"
+- hideKeyboard
+- assertVisible: "60/60"
+- assertVisible: "ABCDEFGHIJABCDEFGHIJABCDEFGHIJABCDEFGHIJABCDEFGHIJABCDEFGHIJ"
+- back
+# Archive Paracetamol, which was logged during the attack: it leaves the choices and stays on the attack.
+- tapOn: "Remove Paracetamol"
+- extendedWaitUntil:
+    visible: "Medication removed"
+    timeout: 5000
+- back
+- back
+- tapOn: "Log medication"
+- assertNotVisible: "Log Paracetamol.*"
+- back
+- tapOn: "Migraine from .*Opens its details\\."
+- scrollUntilVisible:
+    element: "Paracetamol.*"
+    direction: DOWN
+- back
+# Adding the archived name brings Paracetamol back as it was (Simple painkiller), with its intake.
+- runFlow: ../subflows/open-my-medications.yaml
+- runFlow:
+    file: ../subflows/add-medication.yaml
+    env:
+      NAME: "paracetamol"
+      KIND: "For an attack"
+      TYPE: "Not sure"
+      DOSE: ""
+- extendedWaitUntil:
+    visible: "Paracetamol, Simple painkiller\\. Opens it to edit\\."
+    timeout: 5000

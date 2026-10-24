@@ -1,0 +1,12 @@
+# From home in normal mode: log an existing medication now and go back home. env: NAME.
+appId: com.migrely.app
+---
+- tapOn: "Log medication"
+- tapOn: "Log ${NAME}.*"
+- extendedWaitUntil:
+    visible: "${NAME}.* logged at .*"
+    timeout: 5000
+- tapOn: "Done"
+- extendedWaitUntil:
+    visible: "Migraine started"
+    timeout: 5000

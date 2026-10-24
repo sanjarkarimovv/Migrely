@@ -1,0 +1,15 @@
+# Device scenario step: from home, add the first medication and log it now. env: NAME, TYPE.
+appId: com.migrely.app
+---
+- launchApp
+- extendedWaitUntil:
+    visible: "Log medication"
+    timeout: 10000
+- tapOn: "Log medication"
+- runFlow:
+    file: ../subflows/add-first-medication.yaml
+    env:
+      NAME: "${NAME}"
+      TYPE: "${TYPE}"
+- tapOn: "Done"
+- stopApp
