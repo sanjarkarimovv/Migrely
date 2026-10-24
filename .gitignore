@@ -1,0 +1,22 @@
+# Gradle
+.gradle/
+build/
+.kotlin/
+
+# Local configuration
+local.properties
+
+# IDE
+.idea/
+*.iml
+.DS_Store
+captures/
+
+# Signing (never commit)
+*.jks
+*.keystore
+keystore.properties
+
+# Play Console and service account credentials (never commit)
+*service-account*.json
+play-*.json
