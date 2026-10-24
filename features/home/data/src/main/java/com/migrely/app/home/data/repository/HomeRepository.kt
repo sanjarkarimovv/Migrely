@@ -58,18 +58,12 @@ class HomeRepository(
     ReopenAttackRepository,
     UpdateLongAttackCheckRepository,
     RestoreDeletedAttackRepository {
-    override fun today(): TodaySnapshotResultDomainModel = try {
-        val now = clockDataSource.now()
-        val zone = clockDataSource.zone()
-        val (from, to) = dayBounds(now, zone)
+    override fun today(from: Instant, to: Instant): TodaySnapshotResultDomainModel = try {
         TodaySnapshotResultDomainModel.Loaded(
             TodaySnapshotDomainModel(
                 attackInProgress = attackDataSource.inProgress()?.let(attackDomainMapper::toDomain),
-                endedAttacksTouchingToday = attackDataSource.endedTouching(
-                    from,
-                    to
-                ).map(attackDomainMapper::toDomain),
-                now = now,
+                endedAttacks = attackDataSource.endedTouching(from, to)
+                    .map(attackDomainMapper::toDomain),
                 // The datasource keeps a deletion restorable only for its retention window (BRD D23).
                 recentlyDeleted = attackDataSource.recentlyDeleted(
                     since = Instant.EPOCH
@@ -165,13 +159,6 @@ class HomeRepository(
         }
     } catch (_: DataException) {
         UndoResultDomainModel.Failed
-    }
-
-    // Java 8 time APIs only: this code runs on Android 8 (API 26).
-    private fun dayBounds(now: Instant, zone: ZoneId): Pair<Instant, Instant> {
-        val date = now.atZone(zone).toLocalDate()
-        return date.atStartOfDay(zone).toInstant() to
-            date.plusDays(1).atStartOfDay(zone).toInstant()
     }
 
     private inline fun write(block: () -> Unit): WriteResultDomainModel = try {

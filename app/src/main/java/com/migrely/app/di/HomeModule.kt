@@ -39,9 +39,10 @@ import dagger.hilt.components.SingletonComponent
 internal object HomeModule {
     @Provides
     fun providesGetTodayUseCase(
+        getCurrentTimeRepository: GetCurrentTimeRepository,
         repository: GetTodayRepository,
         coroutineContextProvider: CoroutineContextProvider
-    ) = GetTodayUseCase(repository, coroutineContextProvider)
+    ) = GetTodayUseCase(getCurrentTimeRepository, repository, coroutineContextProvider)
 
     @Provides
     fun providesStartAttackUseCase(
