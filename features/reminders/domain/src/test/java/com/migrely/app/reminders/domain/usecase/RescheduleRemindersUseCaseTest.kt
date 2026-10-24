@@ -59,7 +59,8 @@ class RescheduleRemindersUseCaseTest {
         classUnderTest.executeInBackground(Unit)
 
         verify(scheduleDailyReminderRepository).scheduleDailyReminder(
-            LocalDateTime.parse("2026-10-24T20:00").atZone(BERLIN).toInstant()
+            LocalDateTime.parse("2026-10-24T20:00").atZone(BERLIN).toInstant(),
+            java.time.LocalDate.of(2026, 10, 24)
         )
     }
 

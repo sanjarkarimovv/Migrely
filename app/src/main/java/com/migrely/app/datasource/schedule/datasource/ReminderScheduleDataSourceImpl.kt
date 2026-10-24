@@ -1,14 +1,15 @@
 package com.migrely.app.datasource.schedule.datasource
 
+import androidx.work.Data
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.workDataOf
 import com.migrely.app.datasource.clock.datasource.ClockDataSource
-import com.migrely.app.datasource.schedule.datasource.ReminderScheduleDataSource
 import com.migrely.app.reminder.ReminderWorker
 import java.time.Duration
 import java.time.Instant
+import java.time.LocalDate
 
 /**
  * Reminders as WorkManager one-time work (BRD EC-REM-03): inexact by design, so no exact-alarm permission is needed,
@@ -18,30 +19,39 @@ class ReminderScheduleDataSourceImpl(
     private val workManager: WorkManager,
     private val clockDataSource: ClockDataSource
 ) : ReminderScheduleDataSource {
-    override fun scheduleDaily(at: Instant) =
-        enqueue(DAILY_WORK, at, ReminderWorker.KIND_DAILY, intakeId = null)
+    override fun scheduleDaily(at: Instant, date: LocalDate) = enqueue(
+        DAILY_WORK,
+        at,
+        workDataOf(
+            ReminderWorker.KEY_KIND to ReminderWorker.KIND_DAILY,
+            ReminderWorker.KEY_DATE to date.toString()
+        )
+    )
 
     override fun cancelDaily() {
         workManager.cancelUniqueWork(DAILY_WORK)
     }
 
-    override fun scheduleEffectQuestion(intakeId: String, at: Instant) =
-        enqueue(effectWork(intakeId), at, ReminderWorker.KIND_EFFECT, intakeId)
+    override fun scheduleEffectQuestion(intakeId: String, at: Instant) = enqueue(
+        effectWork(intakeId),
+        at,
+        workDataOf(
+            ReminderWorker.KEY_KIND to ReminderWorker.KIND_EFFECT,
+            ReminderWorker.KEY_INTAKE_ID to intakeId
+        )
+    )
 
     override fun cancelEffectQuestion(intakeId: String) {
         workManager.cancelUniqueWork(effectWork(intakeId))
     }
 
-    private fun enqueue(name: String, at: Instant, kind: String, intakeId: String?) {
+    // REPLACE also covers the daily run planning its own next run: WorkManager marks the running work cancelled but
+    // never interrupts a Worker's doWork, which finishes normally (androidx.work.Worker).
+    private fun enqueue(name: String, at: Instant, input: Data) {
         val delay = Duration.between(clockDataSource.now(), at).coerceAtLeast(Duration.ZERO)
         val request = OneTimeWorkRequestBuilder<ReminderWorker>()
             .setInitialDelay(delay)
-            .setInputData(
-                workDataOf(
-                    ReminderWorker.KEY_KIND to kind,
-                    ReminderWorker.KEY_INTAKE_ID to intakeId
-                )
-            )
+            .setInputData(input)
             .build()
         workManager.enqueueUniqueWork(name, ExistingWorkPolicy.REPLACE, request)
     }

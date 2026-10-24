@@ -20,6 +20,7 @@ import com.migrely.app.medication.domain.repository.GetAttackRepository
 import com.migrely.app.medication.domain.repository.GetCurrentTimeRepository
 import com.migrely.app.medication.domain.repository.GetMedicationRepository
 import com.migrely.app.medication.domain.repository.GetOveruseNoticesRepository
+import com.migrely.app.medication.domain.repository.GetPendingEffectQuestionOfRepository
 import com.migrely.app.medication.domain.repository.GetPendingEffectQuestionRepository
 import com.migrely.app.medication.domain.repository.SetIntakeEffectRepository
 import com.migrely.app.medication.domain.repository.SetMedicationArchivedRepository
@@ -188,13 +189,13 @@ internal object MedicationModule {
     fun providesRunEffectQuestionUseCase(
         effectReminderRepository: EffectReminderRepository,
         getCurrentTimeRepository: GetCurrentTimeRepository,
-        getPendingEffectQuestionRepository: GetPendingEffectQuestionRepository,
+        getPendingEffectQuestionOfRepository: GetPendingEffectQuestionOfRepository,
         coroutineContextProvider: CoroutineContextProvider
     ) = RunEffectQuestionUseCase(
         effectReminderRepository,
         effectReminderRepository,
         getCurrentTimeRepository,
-        getPendingEffectQuestionRepository,
+        getPendingEffectQuestionOfRepository,
         effectReminderRepository,
         coroutineContextProvider
     )

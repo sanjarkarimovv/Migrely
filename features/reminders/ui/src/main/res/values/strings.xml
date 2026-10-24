@@ -3,7 +3,7 @@
     <string name="reminders_title">Reminders</string>
     <string name="reminders_back">Back</string>
     <string name="daily_title">Daily reminder</string>
-    <string name="daily_summary">“How was today?” in the evening, so you can mark a pain-free day</string>
+    <string name="daily_summary">“How was today?” once a day, so you can mark a pain-free day</string>
     <string name="daily_time">Time</string>
     <string name="daily_time_description">Reminder time, %1$s. Change it.</string>
     <string name="effect_title">Ask if a medication helped</string>

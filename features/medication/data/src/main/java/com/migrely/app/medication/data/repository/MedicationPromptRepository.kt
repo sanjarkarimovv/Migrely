@@ -3,6 +3,7 @@ package com.migrely.app.medication.data.repository
 import com.migrely.app.datasource.exception.DataException
 import com.migrely.app.datasource.exception.StorageFullDataException
 import com.migrely.app.datasource.medication.datasource.MedicationDataSource
+import com.migrely.app.datasource.medication.model.PendingEffectQuestionDataModel
 import com.migrely.app.medication.data.mapper.AcuteIntakeDomainMapper
 import com.migrely.app.medication.data.mapper.IntakeEffectDataMapper
 import com.migrely.app.medication.data.mapper.OveruseDataMapper
@@ -19,6 +20,7 @@ import com.migrely.app.medication.domain.repository.AcknowledgeOveruseRepository
 import com.migrely.app.medication.domain.repository.CloseEffectQuestionRepository
 import com.migrely.app.medication.domain.repository.GetAcuteIntakesRepository
 import com.migrely.app.medication.domain.repository.GetOveruseNoticesRepository
+import com.migrely.app.medication.domain.repository.GetPendingEffectQuestionOfRepository
 import com.migrely.app.medication.domain.repository.GetPendingEffectQuestionRepository
 import com.migrely.app.medication.domain.repository.SetIntakeEffectRepository
 import java.time.Instant
@@ -35,11 +37,30 @@ class MedicationPromptRepository(
     private val intakeEffectDataMapper: IntakeEffectDataMapper,
     private val overuseDataMapper: OveruseDataMapper
 ) : GetPendingEffectQuestionRepository,
+    GetPendingEffectQuestionOfRepository,
     GetAcuteIntakesRepository,
     GetOveruseNoticesRepository,
     SetIntakeEffectRepository,
     CloseEffectQuestionRepository,
     AcknowledgeOveruseRepository {
+    override fun pendingEffectQuestionOf(
+        intakeId: String,
+        takenFrom: Instant,
+        takenTo: Instant
+    ): PendingEffectQuestionResultDomainModel = found {
+        medicationDataSource.pendingEffectQuestionOf(intakeId, takenFrom, takenTo)
+    }
+
+    private inline fun found(read: () -> PendingEffectQuestionDataModel?) = try {
+        read()?.let {
+            PendingEffectQuestionResultDomainModel.Found(
+                pendingEffectQuestionDomainMapper.toDomain(it)
+            )
+        } ?: PendingEffectQuestionResultDomainModel.None
+    } catch (_: DataException) {
+        PendingEffectQuestionResultDomainModel.Failed
+    }
+
     override fun pendingEffectQuestion(
         takenFrom: Instant,
         takenTo: Instant

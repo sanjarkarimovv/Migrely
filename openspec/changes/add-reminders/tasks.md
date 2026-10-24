@@ -8,7 +8,7 @@
   run followed by a reschedule never reminds twice in one day. v6 is not pushed yet, so `6.json` is regenerated.
 - [x] 1.2 Interfaces `ReminderScheduleDataSource` and `NotificationDataSource` in `:datasource:source`. Their
   implementations live in `:app` (task 4.1): they need `MainActivity`, the receivers and the notification copy. This
-  is recorded in ARCHITECTURE §13.
+  is recorded in ARCHITECTURE §3 and §13.
 
 ## 2. Reminders feature (`:features:reminders:{domain,presentation,ui,data}`)
 

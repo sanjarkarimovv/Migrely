@@ -4,6 +4,7 @@ import com.migrely.app.reminders.domain.model.CurrentTimeDomainModel
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
+import java.time.ZoneId
 import java.time.ZonedDateTime
 
 /**
@@ -14,14 +15,22 @@ internal class DailyReminderTime {
     /** The first [time] strictly after now: today if it is still ahead, otherwise tomorrow. */
     fun next(now: CurrentTimeDomainModel, time: LocalTime): Instant {
         val today = now.instant.atZone(now.zone).toLocalDate()
-        val todayAt = at(today, time, now)
-        return if (todayAt.isAfter(now.instant)) todayAt else at(today.plusDays(1), time, now)
+        val todayAt = at(today, time, now.zone)
+        return if (todayAt.isAfter(now.instant)) todayAt else at(today.plusDays(1), time, now.zone)
     }
 
-    /** [time] on the day after now's date, so a run that came a little early never repeats the same day. */
-    fun tomorrow(now: CurrentTimeDomainModel, time: LocalTime): Instant =
-        at(now.instant.atZone(now.zone).toLocalDate().plusDays(1), time, now)
+    /**
+     * The run after the one for [date]: the next day's [time], so a run that came a little early never repeats its own
+     * day; or, when that has passed too, the first [time] after now, so a run that came very late loses no day.
+     */
+    fun after(date: LocalDate, now: CurrentTimeDomainModel, time: LocalTime): Instant {
+        val nextDay = at(date.plusDays(1), time, now.zone)
+        return if (nextDay.isAfter(now.instant)) nextDay else next(now, time)
+    }
 
-    private fun at(date: LocalDate, time: LocalTime, now: CurrentTimeDomainModel): Instant =
-        ZonedDateTime.of(date, time, now.zone).toInstant()
+    /** The date a run at [at] asks about, in the device's zone. */
+    fun dateOf(at: Instant, zone: ZoneId): LocalDate = at.atZone(zone).toLocalDate()
+
+    private fun at(date: LocalDate, time: LocalTime, zone: ZoneId): Instant =
+        ZonedDateTime.of(date, time, zone).toInstant()
 }

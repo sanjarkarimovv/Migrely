@@ -9,8 +9,9 @@ import com.migrely.app.reminders.domain.repository.GetReminderSettingsRepository
 import com.migrely.app.reminders.domain.repository.ScheduleDailyReminderRepository
 
 /**
- * Plans the daily reminder again by the device's local time, after a reboot or a change of time zone or clock (BRD
- * EC-REM-04, EC-REM-05). A reminder that is off stays unplanned.
+ * Plans the daily reminder again by the device's local time: when the app starts, which also covers a restore from a
+ * backup, and when the time zone or the clock changes (BRD EC-REM-05). Planning replaces any run already planned, so
+ * it is safe to repeat. A reminder that is off stays unplanned.
  */
 class RescheduleRemindersUseCase(
     private val getReminderSettingsRepository: GetReminderSettingsRepository,
@@ -25,8 +26,11 @@ class RescheduleRemindersUseCase(
         val result = getReminderSettingsRepository.reminderSettings()
         val settings = (result as? ReminderSettingsResultDomainModel.Loaded)?.settings ?: return
         if (settings.dailyEnabled) {
+            val now = getCurrentTimeRepository.currentTime()
+            val at = dailyReminderTime.next(now, settings.dailyTime)
             scheduleDailyReminderRepository.scheduleDailyReminder(
-                dailyReminderTime.next(getCurrentTimeRepository.currentTime(), settings.dailyTime)
+                at,
+                dailyReminderTime.dateOf(at, now.zone)
             )
         } else {
             cancelDailyReminderRepository.cancelDailyReminder()

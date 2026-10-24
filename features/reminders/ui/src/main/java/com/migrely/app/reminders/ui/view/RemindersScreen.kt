@@ -1,7 +1,9 @@
 package com.migrely.app.reminders.ui.view
 
 import android.Manifest
+import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -163,10 +165,18 @@ fun RemindersDependencies.Reminders(navController: NavController, modifier: Modi
             },
             onEffect = remindersViewModel::onEffectReminderAction,
             onOpenSettings = {
-                context.startActivity(
-                    Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
-                        .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
-                )
+                try {
+                    context.startActivity(
+                        Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                            .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                    )
+                } catch (_: ActivityNotFoundException) {
+                    // Some builds lack the notification screen; the app's own settings page always exists.
+                    context.startActivity(
+                        Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                            .setData(Uri.fromParts("package", context.packageName, null))
+                    )
+                }
             }
         ),
         messages = {
@@ -267,16 +277,22 @@ private fun ReminderRows(reminders: RemindersUiModel, actions: RemindersActions)
         onCheckedChange = actions.onDaily
     )
     if (reminders.dailyEnabled && allowed) {
-        val time = reminders.dailyMinuteOfDay.toLocalTime().format(
+        // The phone's own 12- or 24-hour choice, as the picker uses.
+        val pattern = if (android.text.format.DateFormat.is24HourFormat(LocalContext.current)) {
+            DateTimeFormatter.ofPattern("HH:mm")
+        } else {
             DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT)
-        )
+        }
+        val time = reminders.dailyMinuteOfDay.toLocalTime().format(pattern)
         val description = stringResource(R.string.daily_time_description, time)
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(min = 56.dp)
-                .clearAndSetSemantics { contentDescription = description }
+                // Merged into the clickable, so the row keeps its click action for TalkBack and Switch Access
+                // (EC-UX-19, QA #14); the texts inside are cleared so the row is read once.
+                .semantics { contentDescription = description }
                 .clickable(role = Role.Button) { picking = true }
                 .padding(horizontal = 16.dp)
         ) {
@@ -284,12 +300,15 @@ private fun ReminderRows(reminders: RemindersUiModel, actions: RemindersActions)
                 text = stringResource(R.string.daily_time),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier
+                    .weight(1f)
+                    .clearAndSetSemantics { }
             )
             Text(
                 text = time,
                 style = MaterialTheme.typography.bodyLarge.copy(fontFeatureSettings = "tnum"),
-                color = MaterialTheme.colorScheme.primary
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.clearAndSetSemantics { }
             )
         }
     }

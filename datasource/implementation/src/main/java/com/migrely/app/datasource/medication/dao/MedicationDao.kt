@@ -99,6 +99,27 @@ interface MedicationDao {
         toEpochMillis: Long
     ): PendingEffectQuestionLocalModel?
 
+    /** The same question for one intake only: what its planned "Did it help?" run asks (change add-reminders). */
+    @Query(
+        "SELECT medication_intake.id, medication.name AS medication_name, " +
+            "medication_intake.dose, medication_intake.taken_epoch_millis, " +
+            "medication_intake.taken_zone_id " +
+            "FROM medication_intake " +
+            "JOIN medication ON medication.id = medication_intake.medication_id " +
+            "LEFT JOIN attack ON attack.id = medication_intake.attack_id " +
+            "WHERE medication_intake.id = :intakeId " +
+            "AND medication.kind != 'PREVENTIVE' AND medication_intake.effect IS NULL " +
+            "AND medication_intake.effect_closed = 0 " +
+            "AND medication_intake.taken_epoch_millis >= :fromEpochMillis " +
+            "AND medication_intake.taken_epoch_millis < :toEpochMillis " +
+            "AND attack.deleted_epoch_millis IS NULL"
+    )
+    fun pendingEffectQuestionOf(
+        intakeId: String,
+        fromEpochMillis: Long,
+        toEpochMillis: Long
+    ): PendingEffectQuestionLocalModel?
+
     @Query(
         "UPDATE medication_intake SET effect = :effect, effect_closed = 1 WHERE id = :intakeId"
     )

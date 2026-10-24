@@ -7,7 +7,7 @@ import com.migrely.app.medication.domain.model.PendingEffectQuestionResultDomain
 import com.migrely.app.medication.domain.repository.GetCurrentTimeRepository
 import com.migrely.app.medication.domain.repository.GetEffectReminderEnabledRepository
 import com.migrely.app.medication.domain.repository.GetNotificationsAllowedRepository
-import com.migrely.app.medication.domain.repository.GetPendingEffectQuestionRepository
+import com.migrely.app.medication.domain.repository.GetPendingEffectQuestionOfRepository
 import com.migrely.app.medication.domain.repository.ShowEffectQuestionRepository
 import java.time.Instant
 import java.time.ZoneId
@@ -26,7 +26,7 @@ class RunEffectQuestionUseCaseTest {
     private val getEffectReminderEnabledRepository: GetEffectReminderEnabledRepository = mock()
     private val getNotificationsAllowedRepository: GetNotificationsAllowedRepository = mock()
     private val getCurrentTimeRepository: GetCurrentTimeRepository = mock()
-    private val getPendingEffectQuestionRepository: GetPendingEffectQuestionRepository = mock()
+    private val getPendingEffectQuestionOfRepository: GetPendingEffectQuestionOfRepository = mock()
     private val showEffectQuestionRepository: ShowEffectQuestionRepository = mock()
     private lateinit var classUnderTest: RunEffectQuestionUseCase
 
@@ -36,7 +36,7 @@ class RunEffectQuestionUseCaseTest {
             getEffectReminderEnabledRepository,
             getNotificationsAllowedRepository,
             getCurrentTimeRepository,
-            getPendingEffectQuestionRepository,
+            getPendingEffectQuestionOfRepository,
             showEffectQuestionRepository,
             CoroutineContextProvider.Default
         )
@@ -45,7 +45,9 @@ class RunEffectQuestionUseCaseTest {
         ).willReturn(CurrentTimeDomainModel(NOW, TASHKENT))
         given(getEffectReminderEnabledRepository.effectReminderEnabled()).willReturn(true)
         given(getNotificationsAllowedRepository.notificationsAllowed()).willReturn(true)
-        given(getPendingEffectQuestionRepository.pendingEffectQuestion(any(), any())).willReturn(
+        given(
+            getPendingEffectQuestionOfRepository.pendingEffectQuestionOf(any(), any(), any())
+        ).willReturn(
             PendingEffectQuestionResultDomainModel.Found(
                 PendingEffectQuestionDomainModel(
                     "i",
@@ -59,10 +61,11 @@ class RunEffectQuestionUseCaseTest {
     }
 
     @Test
-    fun `Given an open question when run then the card's question from 2 to 24 hours ago`() {
-        classUnderTest.executeInBackground(Unit)
+    fun `Given its question is open when run then that intake is asked about`() {
+        classUnderTest.executeInBackground("i")
 
-        verify(getPendingEffectQuestionRepository).pendingEffectQuestion(
+        verify(getPendingEffectQuestionOfRepository).pendingEffectQuestionOf(
+            intakeId = "i",
             takenFrom = Instant.parse("2026-10-23T11:00:00Z"),
             takenTo = Instant.parse("2026-10-24T09:00:00Z")
         )
@@ -72,21 +75,21 @@ class RunEffectQuestionUseCaseTest {
     @Test
     fun `Given the setting is off or notifications are off when run then nothing is asked`() {
         given(getEffectReminderEnabledRepository.effectReminderEnabled()).willReturn(false)
-        classUnderTest.executeInBackground(Unit)
+        classUnderTest.executeInBackground("i")
 
         given(getEffectReminderEnabledRepository.effectReminderEnabled()).willReturn(true)
         given(getNotificationsAllowedRepository.notificationsAllowed()).willReturn(false)
-        classUnderTest.executeInBackground(Unit)
+        classUnderTest.executeInBackground("i")
 
         verify(showEffectQuestionRepository, never()).showEffectQuestion(any(), any())
     }
 
     @Test
-    fun `Given no open question when run then nothing is asked`() {
-        given(getPendingEffectQuestionRepository.pendingEffectQuestion(any(), any()))
+    fun `Given that intake's question is closed or not acute when run then nothing is asked`() {
+        given(getPendingEffectQuestionOfRepository.pendingEffectQuestionOf(any(), any(), any()))
             .willReturn(PendingEffectQuestionResultDomainModel.None)
 
-        classUnderTest.executeInBackground(Unit)
+        classUnderTest.executeInBackground("i")
 
         verify(showEffectQuestionRepository, never()).showEffectQuestion(any(), any())
     }

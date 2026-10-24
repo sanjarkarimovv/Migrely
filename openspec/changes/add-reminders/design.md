@@ -25,23 +25,33 @@
 - **Android components live in `:app`:**
   - the `ReminderWorker`;
   - a `ReminderActionReceiver` for "Pain-free day";
-  - a `TimeChangeReceiver` for `TIMEZONE_CHANGED`, `TIME_SET` and `BOOT_COMPLETED`, which WorkManager's own reboot
-    handling covers too.
+  - a `TimeChangeReceiver` for `TIMEZONE_CHANGED` and `TIME_SET`. A reboot needs nothing, because WorkManager keeps
+    planned work, and `MigrelyApplication` plans the reminder again at each start, which also covers a restored
+    backup.
   Each calls a use case through Hilt's `EntryPoint`.
 
 ### D2. Use cases
 
 - `GetReminderSettingsUseCase` and `SetDailyReminderUseCase(enabled, minuteOfDay)`, which saves and then schedules or
   cancels; `SetEffectReminderUseCase(enabled)`.
-- `RescheduleRemindersUseCase` runs after boot or a time change, and after each daily run. It works out the next local
+- `RescheduleRemindersUseCase` runs at app start and on a change of time zone or clock. It works out the next local
   occurrence from the device zone and stores nothing about time zones.
-- `RunDailyReminderUseCase` decides at run time whether to show the reminder. It shows nothing when today has a
-  pain-free mark or an attack touching it (the `AttackDays` rule).
-- `MarkPainFreeFromReminderUseCase` reuses the History rule. `:app` calls History's `SetDayMarkUseCase`, and an
-  `AttackLogged` result shows "A migraine is logged today."
-- **The effect question:** `LogIntakeUseCase` (medication) schedules `effect-<id>` at takenAt + 2 h through a new
-  single-function repository. `AnswerEffectUseCase`, `SkipEffectQuestionUseCase` and `UndoIntakeUseCase` cancel it.
-  The worker checks the question is still open and that the setting is on before it shows anything.
+- `SetDailyReminderUseCase` plans the reminder whenever it is on, even while notifications are off. Each run checks
+  them, so allowing them later needs nothing more (review).
+- **`RunDailyReminderUseCase(date)`** runs for the date it was planned for (review).
+  - It first plans the next run: the next day's time, or the first time after now when that has passed too.
+  - It shows nothing when the run slipped past its day, when it already showed for that date, or when that date has a
+    pain-free mark or an attack touching it (the `AttackDays` rule).
+  - A failed read returns `Failed`, and the worker retries.
+- **"Pain-free day"** carries the reminder's date. `:app`'s receiver calls History's `SetDayMarkUseCase` for that date,
+  and an `AttackLogged` result shows "A migraine is logged today."
+- **The effect question:**
+  - `LogIntakeUseCase` (medication) schedules `effect-<id>` at takenAt + 2 h, unless that has already passed. Such an
+    intake is asked about by home's card instead.
+  - `AnswerEffectUseCase`, `SkipEffectQuestionUseCase` and `UndoIntakeUseCase` cancel it.
+  - `RunEffectQuestionUseCase(intakeId)` asks only while that intake's question is open
+    (`MedicationDataSource.pendingEffectQuestionOf`), so an answered or preventive intake asks nothing (review), and
+    only while the setting is on.
 
 ### D3. Permission and UI
 

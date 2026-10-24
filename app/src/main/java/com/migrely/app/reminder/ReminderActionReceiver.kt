@@ -7,6 +7,7 @@ import com.migrely.app.history.domain.model.DayMarkKindDomainModel
 import com.migrely.app.history.domain.model.SetDayMarkRequestDomainModel
 import com.migrely.app.history.domain.model.SetDayMarkResultDomainModel
 import dagger.hilt.android.EntryPointAccessors
+import java.time.LocalDate
 import kotlin.concurrent.thread
 
 /**
@@ -25,10 +26,12 @@ class ReminderActionReceiver : BroadcastReceiver() {
         thread {
             try {
                 val clock = entryPoint.clockDataSource()
-                val today = clock.now().atZone(clock.zone()).toLocalDate()
+                // The day the reminder asked about, even when it is tapped after midnight.
+                val date = intent.getStringExtra(EXTRA_DATE)?.let(LocalDate::parse)
+                    ?: clock.now().atZone(clock.zone()).toLocalDate()
                 val result = entryPoint.setDayMarkUseCase().executeInBackground(
                     SetDayMarkRequestDomainModel(
-                        today,
+                        date,
                         DayMarkKindDomainModel.PainFree,
                         marked = true
                     )
@@ -51,5 +54,6 @@ class ReminderActionReceiver : BroadcastReceiver() {
 
     companion object {
         const val ACTION_PAIN_FREE = "com.migrely.app.reminder.PAIN_FREE"
+        const val EXTRA_DATE = "date"
     }
 }

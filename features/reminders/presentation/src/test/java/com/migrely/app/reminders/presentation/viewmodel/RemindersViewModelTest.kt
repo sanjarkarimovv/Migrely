@@ -164,4 +164,11 @@ class RemindersViewModelTest :
 
         assertEquals(RemindersPresentationNotification.StorageFull, notification.await())
     }
+
+    @Test
+    fun `When moving the time then it is saved as it is, on or off`() {
+        classUnderTest.onDailyTimeAction(on = true, time = EIGHT_PM)
+
+        verifyDailySet(on = true)
+    }
 }

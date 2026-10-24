@@ -32,10 +32,27 @@ class DailyReminderTimeTest {
     }
 
     @Test
-    fun `Given a run that came early when planning the next then tomorrow, not later today`() {
+    fun `Given a run that came early then the next day, not later today`() {
         assertEquals(
             at("2026-10-25T20:00"),
-            classUnderTest.tomorrow(now("2026-10-24T19:50"), EIGHT_PM)
+            classUnderTest.after(
+                java.time.LocalDate.of(2026, 10, 24),
+                now("2026-10-24T19:50"),
+                EIGHT_PM
+            )
+        )
+    }
+
+    @Test
+    fun `Given a run that came a day late then the next time from now, so no day is lost`() {
+        // The run for 23 October arrives at 21:00 on 24 October.
+        assertEquals(
+            at("2026-10-25T20:00"),
+            classUnderTest.after(
+                java.time.LocalDate.of(2026, 10, 23),
+                now("2026-10-24T21:00"),
+                EIGHT_PM
+            )
         )
     }
 

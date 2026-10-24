@@ -30,11 +30,14 @@ import com.migrely.app.reminders.domain.repository.ShowAttackLoggedTodayReposito
 import com.migrely.app.reminders.domain.repository.ShowDailyReminderRepository
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalTime
 
 /**
  * What the reminders feature reads and writes (BRD D65–D68). Storage failures are values (docs/ARCHITECTURE.md
  * section 7); scheduling and notifications do not fail.
  */
+private const val MINUTES_PER_HOUR = 60
+
 @Suppress("LongParameterList")
 class RemindersRepository(
     private val reminderSettingsDataSource: ReminderSettingsDataSource,
@@ -71,8 +74,12 @@ class RemindersRepository(
 
     override fun notificationsAllowed(): Boolean = notificationDataSource.areEnabled()
 
-    override fun setDailyReminder(enabled: Boolean, minuteOfDay: Int) =
-        write { reminderSettingsDataSource.setDaily(enabled, minuteOfDay) }
+    override fun setDailyReminder(enabled: Boolean, time: LocalTime) = write {
+        reminderSettingsDataSource.setDaily(
+            enabled,
+            time.hour * MINUTES_PER_HOUR + time.minute
+        )
+    }
 
     override fun setEffectReminder(enabled: Boolean) = write {
         reminderSettingsDataSource.setEffect(enabled)
@@ -86,11 +93,12 @@ class RemindersRepository(
         reminderSettingsDataSource.setDailyShown(date)
     }
 
-    override fun scheduleDailyReminder(at: Instant) = reminderScheduleDataSource.scheduleDaily(at)
+    override fun scheduleDailyReminder(at: Instant, date: LocalDate) =
+        reminderScheduleDataSource.scheduleDaily(at, date)
 
     override fun cancelDailyReminder() = reminderScheduleDataSource.cancelDaily()
 
-    override fun showDailyReminder() = notificationDataSource.showDailyReminder()
+    override fun showDailyReminder(date: LocalDate) = notificationDataSource.showDailyReminder(date)
 
     override fun showAttackLoggedToday() = notificationDataSource.showAttackLoggedToday()
 

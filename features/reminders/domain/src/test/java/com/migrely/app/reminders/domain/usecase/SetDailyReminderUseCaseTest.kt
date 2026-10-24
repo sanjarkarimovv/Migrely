@@ -6,7 +6,6 @@ import com.migrely.app.reminders.domain.model.ReminderWriteResultDomainModel
 import com.migrely.app.reminders.domain.model.SetDailyReminderRequestDomainModel
 import com.migrely.app.reminders.domain.repository.CancelDailyReminderRepository
 import com.migrely.app.reminders.domain.repository.GetCurrentTimeRepository
-import com.migrely.app.reminders.domain.repository.GetNotificationsAllowedRepository
 import com.migrely.app.reminders.domain.repository.ScheduleDailyReminderRepository
 import com.migrely.app.reminders.domain.repository.SetDailyReminderRepository
 import java.time.Instant
@@ -25,7 +24,6 @@ private val TASHKENT = ZoneId.of("Asia/Tashkent")
 
 class SetDailyReminderUseCaseTest {
     private val setDailyReminderRepository: SetDailyReminderRepository = mock()
-    private val getNotificationsAllowedRepository: GetNotificationsAllowedRepository = mock()
     private val getCurrentTimeRepository: GetCurrentTimeRepository = mock()
     private val scheduleDailyReminderRepository: ScheduleDailyReminderRepository = mock()
     private val cancelDailyReminderRepository: CancelDailyReminderRepository = mock()
@@ -35,7 +33,6 @@ class SetDailyReminderUseCaseTest {
     fun setUp() {
         classUnderTest = SetDailyReminderUseCase(
             setDailyReminderRepository,
-            getNotificationsAllowedRepository,
             getCurrentTimeRepository,
             scheduleDailyReminderRepository,
             cancelDailyReminderRepository,
@@ -52,42 +49,37 @@ class SetDailyReminderUseCaseTest {
         SetDailyReminderRequestDomainModel(enabled, LocalTime.of(21, 30))
 
     @Test
-    fun `Given notifications are allowed when turning it on then saved and planned for tonight`() {
-        given(getNotificationsAllowedRepository.notificationsAllowed()).willReturn(true)
-
+    fun `When turning it on then saved and planned for tonight, whatever notifications are`() {
         assertEquals(
             ReminderWriteResultDomainModel.Done,
             classUnderTest.executeInBackground(request(true))
         )
 
-        verify(setDailyReminderRepository).setDailyReminder(true, 21 * 60 + 30)
-        verify(
-            scheduleDailyReminderRepository
-        ).scheduleDailyReminder(Instant.parse("2026-10-24T16:30:00Z"))
+        verify(setDailyReminderRepository).setDailyReminder(true, LocalTime.of(21, 30))
+        verify(scheduleDailyReminderRepository)
+            .scheduleDailyReminder(
+                Instant.parse("2026-10-24T16:30:00Z"),
+                java.time.LocalDate.of(2026, 10, 24)
+            )
     }
 
     @Test
-    fun `Given notifications are off, or it is turned off, when saving then nothing is planned`() {
-        given(getNotificationsAllowedRepository.notificationsAllowed()).willReturn(false)
-        classUnderTest.executeInBackground(request(true))
-
-        given(getNotificationsAllowedRepository.notificationsAllowed()).willReturn(true)
+    fun `When turning it off then nothing stays planned`() {
         classUnderTest.executeInBackground(request(false))
 
-        verify(cancelDailyReminderRepository, org.mockito.kotlin.times(2)).cancelDailyReminder()
-        verify(scheduleDailyReminderRepository, never()).scheduleDailyReminder(any())
+        verify(cancelDailyReminderRepository).cancelDailyReminder()
+        verify(scheduleDailyReminderRepository, never()).scheduleDailyReminder(any(), any())
     }
 
     @Test
     fun `Given saving fails when turning it on then nothing is planned`() {
         given(setDailyReminderRepository.setDailyReminder(any(), any()))
             .willReturn(ReminderWriteResultDomainModel.StorageFull)
-        given(getNotificationsAllowedRepository.notificationsAllowed()).willReturn(true)
 
         assertEquals(
             ReminderWriteResultDomainModel.StorageFull,
             classUnderTest.executeInBackground(request(true))
         )
-        verify(scheduleDailyReminderRepository, never()).scheduleDailyReminder(any())
+        verify(scheduleDailyReminderRepository, never()).scheduleDailyReminder(any(), any())
     }
 }

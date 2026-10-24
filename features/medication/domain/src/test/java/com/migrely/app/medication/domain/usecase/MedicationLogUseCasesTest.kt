@@ -209,6 +209,15 @@ class LogIntakeUseCaseTest {
     }
 
     @Test
+    fun `When an intake is logged more than two hours late then no notification is planned`() {
+        givenAdded()
+
+        classUnderTest.executeInBackground(request(NOW.minus(java.time.Duration.ofHours(3))))
+
+        verify(scheduleEffectQuestionRepository, never()).scheduleEffectQuestion(any(), any())
+    }
+
+    @Test
     fun `Given an attack recorded in Tokyo when logging for it then stored in Tokyo`() {
         givenAdded()
         given(getAttackRepository.attack("x")).willReturn(

@@ -92,7 +92,6 @@ internal object RemindersModule {
         repository,
         repository,
         repository,
-        repository,
         coroutines
     )
 

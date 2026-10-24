@@ -71,7 +71,7 @@ class RemindersRepositoryTest {
     fun `When writing then done, storage full or failed`() {
         assertEquals(
             ReminderWriteResultDomainModel.Done,
-            classUnderTest.setDailyReminder(true, 1200)
+            classUnderTest.setDailyReminder(true, LocalTime.of(20, 0))
         )
         verify(reminderSettingsDataSource).setDaily(true, 1200)
 
@@ -119,10 +119,10 @@ class RemindersRepositoryTest {
         given(notificationDataSource.areEnabled()).willReturn(true)
 
         assertEquals(true, classUnderTest.notificationsAllowed())
-        classUnderTest.scheduleDailyReminder(TO)
+        classUnderTest.scheduleDailyReminder(TO, DATE)
         classUnderTest.dismissDailyReminder()
 
-        verify(reminderScheduleDataSource).scheduleDaily(TO)
+        verify(reminderScheduleDataSource).scheduleDaily(TO, DATE)
         verify(notificationDataSource).cancelDailyReminder()
     }
 }

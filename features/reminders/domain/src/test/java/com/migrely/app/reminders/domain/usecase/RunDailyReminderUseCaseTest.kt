@@ -81,15 +81,17 @@ class RunDailyReminderUseCaseTest {
             .willReturn(TodayEntriesResultDomainModel.Loaded(attacks, painFree))
     }
 
-    private fun run() = classUnderTest.executeInBackground(Unit)
+    private fun run(date: LocalDate? = TODAY) = classUnderTest.executeInBackground(date)
 
     @Test
     fun `Given nothing logged today when run then shown, noted, and tomorrow planned`() {
         assertEquals(DailyReminderRunDomainModel.Shown, run())
 
-        verify(showDailyReminderRepository).showDailyReminder()
+        verify(showDailyReminderRepository).showDailyReminder(TODAY)
         verify(setDailyShownRepository).setDailyShown(TODAY)
-        verify(scheduleDailyReminderRepository).scheduleDailyReminder(at("2026-10-25T20:00"))
+        verify(
+            scheduleDailyReminderRepository
+        ).scheduleDailyReminder(at("2026-10-25T20:00"), TODAY.plusDays(1))
     }
 
     @Test
@@ -116,7 +118,7 @@ class RunDailyReminderUseCaseTest {
         givenEntries(painFree = true)
         assertEquals(DailyReminderRunDomainModel.Skipped, run())
 
-        verify(showDailyReminderRepository, never()).showDailyReminder()
+        verify(showDailyReminderRepository, never()).showDailyReminder(any())
     }
 
     @Test
@@ -128,9 +130,9 @@ class RunDailyReminderUseCaseTest {
         given(getNotificationsAllowedRepository.notificationsAllowed()).willReturn(false)
         assertEquals(DailyReminderRunDomainModel.Skipped, run())
 
-        verify(showDailyReminderRepository, never()).showDailyReminder()
+        verify(showDailyReminderRepository, never()).showDailyReminder(any())
         verify(scheduleDailyReminderRepository, org.mockito.kotlin.times(2))
-            .scheduleDailyReminder(at("2026-10-25T20:00"))
+            .scheduleDailyReminder(at("2026-10-25T20:00"), TODAY.plusDays(1))
     }
 
     @Test
@@ -140,7 +142,7 @@ class RunDailyReminderUseCaseTest {
         assertEquals(DailyReminderRunDomainModel.Skipped, run())
 
         verify(cancelDailyReminderRepository).cancelDailyReminder()
-        verify(scheduleDailyReminderRepository, never()).scheduleDailyReminder(any())
+        verify(scheduleDailyReminderRepository, never()).scheduleDailyReminder(any(), any())
     }
 
     @Test
@@ -149,6 +151,31 @@ class RunDailyReminderUseCaseTest {
             .willReturn(TodayEntriesResultDomainModel.Failed)
 
         assertEquals(DailyReminderRunDomainModel.Failed, run())
-        verify(showDailyReminderRepository, never()).showDailyReminder()
+        verify(showDailyReminderRepository, never()).showDailyReminder(any())
+    }
+
+    @Test
+    fun `Given yesterday's run arrives after midnight then nothing is asked, tonight planned`() {
+        // The 23:45 run for 23 October arrives at 00:10 on 24 October.
+        given(getReminderSettingsRepository.reminderSettings()).willReturn(
+            ReminderSettingsResultDomainModel.Loaded(
+                ReminderSettingsDomainModel(true, LocalTime.of(23, 45), true, null, null)
+            )
+        )
+        given(getCurrentTimeRepository.currentTime())
+            .willReturn(CurrentTimeDomainModel(at("2026-10-24T00:10"), TASHKENT))
+
+        assertEquals(DailyReminderRunDomainModel.Skipped, run(TODAY.minusDays(1)))
+
+        verify(showDailyReminderRepository, never()).showDailyReminder(any())
+        verify(scheduleDailyReminderRepository).scheduleDailyReminder(at("2026-10-24T23:45"), TODAY)
+    }
+
+    @Test
+    fun `Given the settings cannot be read when run then failed, so the run is tried again`() {
+        given(getReminderSettingsRepository.reminderSettings())
+            .willReturn(ReminderSettingsResultDomainModel.Failed)
+
+        assertEquals(DailyReminderRunDomainModel.Failed, run())
     }
 }

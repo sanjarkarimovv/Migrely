@@ -11,6 +11,7 @@ import com.migrely.app.MainActivity
 import com.migrely.app.R
 import com.migrely.app.datasource.notification.datasource.NotificationDataSource
 import com.migrely.app.reminder.ReminderActionReceiver
+import java.time.LocalDate
 
 /**
  * Migrely's notifications (BRD D66, D67), in two channels so the user can silence one kind in system settings. Nothing
@@ -21,7 +22,7 @@ class NotificationDataSourceImpl(private val context: Context) : NotificationDat
 
     override fun areEnabled(): Boolean = manager.areNotificationsEnabled()
 
-    override fun showDailyReminder() = notify(
+    override fun showDailyReminder(date: LocalDate) = notify(
         DAILY_ID,
         builder(CHANNEL_DAILY, R.string.notification_channel_daily)
             .setContentTitle(context.getString(R.string.notification_daily_title))
@@ -33,7 +34,8 @@ class NotificationDataSourceImpl(private val context: Context) : NotificationDat
                     context,
                     DAILY_ID,
                     Intent(context, ReminderActionReceiver::class.java)
-                        .setAction(ReminderActionReceiver.ACTION_PAIN_FREE),
+                        .setAction(ReminderActionReceiver.ACTION_PAIN_FREE)
+                        .putExtra(ReminderActionReceiver.EXTRA_DATE, date.toString()),
                     PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
                 )
             )
@@ -44,6 +46,7 @@ class NotificationDataSourceImpl(private val context: Context) : NotificationDat
         DAILY_ID,
         builder(CHANNEL_DAILY, R.string.notification_channel_daily)
             .setContentTitle(context.getString(R.string.notification_attack_logged))
+            .setOnlyAlertOnce(true)
     )
 
     override fun cancelDailyReminder() = manager.cancel(DAILY_ID)

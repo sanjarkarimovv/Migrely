@@ -65,11 +65,12 @@ class LogIntakeUseCase(
             )
         ) {
             is AddIntakeResultDomainModel.Added -> {
-                // The run itself checks that the question is still open, so a preventive intake asks nothing (D67).
-                scheduleEffectQuestionRepository.scheduleEffectQuestion(
-                    added.intakeId,
-                    request.takenAt.plus(QUESTION_FROM)
-                )
+                // An intake logged after its two hours have passed is asked by home's card, not by a notification that
+                // would arrive while the user is still on this screen (D67). The run checks that the question is open.
+                val askAt = request.takenAt.plus(QUESTION_FROM)
+                if (askAt.isAfter(now.instant)) {
+                    scheduleEffectQuestionRepository.scheduleEffectQuestion(added.intakeId, askAt)
+                }
                 LogIntakeResultDomainModel.Logged(
                     IntakeDomainModel(
                         id = added.intakeId,
