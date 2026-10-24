@@ -27,6 +27,7 @@ import com.migrely.app.medication.domain.usecase.GetMedicationLogUseCase
 import com.migrely.app.medication.domain.usecase.GetMedicationPromptUseCase
 import com.migrely.app.medication.domain.usecase.GetMedicationUseCase
 import com.migrely.app.medication.domain.usecase.GetMedicationsUseCase
+import com.migrely.app.medication.domain.usecase.GetOveruseStatusUseCase
 import com.migrely.app.medication.domain.usecase.LogIntakeUseCase
 import com.migrely.app.medication.domain.usecase.RestoreMedicationUseCase
 import com.migrely.app.medication.domain.usecase.SaveMedicationUseCase
@@ -38,11 +39,14 @@ import com.migrely.app.medication.presentation.mapper.MedicationLogPresentationM
 import com.migrely.app.medication.presentation.mapper.MedicationPresentationMapper
 import com.migrely.app.medication.presentation.mapper.MedicationPromptDomainMapper
 import com.migrely.app.medication.presentation.mapper.MedicationPromptPresentationMapper
+import com.migrely.app.medication.presentation.mapper.OveruseCategoryPresentationMapper
+import com.migrely.app.medication.presentation.mapper.OveruseIndicatorPresentationMapper
 import com.migrely.app.medication.presentation.mapper.SaveProblemPresentationMapper
 import com.migrely.app.medication.presentation.viewmodel.EditMedicationViewModel
 import com.migrely.app.medication.presentation.viewmodel.LogMedicationViewModel
 import com.migrely.app.medication.presentation.viewmodel.MedicationPromptViewModel
 import com.migrely.app.medication.presentation.viewmodel.MedicationsViewModel
+import com.migrely.app.medication.presentation.viewmodel.OveruseIndicatorViewModel
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -167,6 +171,27 @@ internal object MedicationModule {
     ) = AcknowledgeOveruseUseCase(getCurrentTimeRepository, repository, coroutineContextProvider)
 
     @Provides
+    fun providesGetOveruseStatusUseCase(
+        getCurrentTimeRepository: GetCurrentTimeRepository,
+        getAcuteIntakesRepository: GetAcuteIntakesRepository,
+        coroutineContextProvider: CoroutineContextProvider
+    ) = GetOveruseStatusUseCase(
+        getCurrentTimeRepository,
+        getAcuteIntakesRepository,
+        coroutineContextProvider
+    )
+
+    @Provides
+    fun providesOveruseIndicatorViewModel(
+        getOveruseStatusUseCase: GetOveruseStatusUseCase,
+        useCaseExecutor: UseCaseExecutor
+    ) = OveruseIndicatorViewModel(
+        getOveruseStatusUseCase,
+        OveruseIndicatorPresentationMapper(OveruseCategoryPresentationMapper()),
+        useCaseExecutor
+    )
+
+    @Provides
     fun providesMedicationPromptViewModel(
         getMedicationPromptUseCase: GetMedicationPromptUseCase,
         answerEffectUseCase: AnswerEffectUseCase,
@@ -178,7 +203,7 @@ internal object MedicationModule {
         answerEffectUseCase,
         skipEffectQuestionUseCase,
         acknowledgeOveruseUseCase,
-        MedicationPromptPresentationMapper(),
+        MedicationPromptPresentationMapper(OveruseCategoryPresentationMapper()),
         MedicationPromptDomainMapper(),
         useCaseExecutor
     )

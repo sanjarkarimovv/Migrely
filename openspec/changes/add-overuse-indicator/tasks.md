@@ -7,12 +7,12 @@
 
 ## 2. Presentation and UI
 
-- [ ] 2.1 `OveruseIndicatorViewModel`, view state and mapper with tests.
-- [ ] 2.2 `OveruseIndicator` composable and `Dependencies`; strings; History's slot; DI and the route in `:app`.
+- [x] 2.1 `OveruseIndicatorViewModel`, view state and mapper with tests.
+- [x] 2.2 `OveruseIndicator` composable and `Dependencies`; strings; History's slot; DI and the route in `:app`.
   Verify: `./gradlew :features:medication:presentation:test :app:assembleDebug`
 
 ## 3. Verify
 
-- [ ] 3.1 Gate.
+- [x] 3.1 Gate (893 unit tests).
 - [ ] 3.2 Emulator walk with seeded intakes: below, at and over each limit, two categories, a past month, none.
 - [ ] 3.3 Independent review; fix and record.

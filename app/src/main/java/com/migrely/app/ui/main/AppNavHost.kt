@@ -15,6 +15,7 @@ import com.migrely.app.medication.ui.view.EditMedication
 import com.migrely.app.medication.ui.view.LogMedication
 import com.migrely.app.medication.ui.view.MedicationPrompt
 import com.migrely.app.medication.ui.view.Medications
+import com.migrely.app.medication.ui.view.OveruseIndicator
 import com.migrely.app.ui.main.di.AppNavHostDependencies
 import com.migrely.app.ui.main.route.AddPastAttack
 import com.migrely.app.ui.main.route.AttackDetails
@@ -84,7 +85,9 @@ fun AppNavHostDependencies.AppNavHost(
         composable<History> { entry ->
             historyDependencies.History(
                 navController,
-                initialDay = entry.toRoute<History>().epochDay?.let(LocalDate::ofEpochDay)
+                initialDay = entry.toRoute<History>().epochDay?.let(LocalDate::ofEpochDay),
+                // History hosts the medication feature's standing overuse indicator without knowing it (BRD D59).
+                overuseIndicator = { overuseIndicatorDependencies.OveruseIndicator() }
             )
         }
     }

@@ -26,8 +26,11 @@
 
 ### D3. Presentation and UI
 
-- `OveruseIndicatorViewModel.onEnter()` loads the status and emits `OveruseIndicatorViewState(rows)`. An empty list
-  means hidden. Each row carries `reached = days >= limit`.
+- `OveruseIndicatorViewModel.onEnter()` loads the status and emits `OveruseIndicatorViewState`: `Hidden` (no attack
+  medication, or `Failed`) or `Shown(rows)`. It is a sealed interface, as the architecture tests require of view
+  states. Each row carries `reached = days >= limit`.
+- `OveruseCategoryPresentationMapper` and `OveruseCategoryUiMapper` now hold the category mapping that home's card
+  kept privately, so the card and the indicator share it.
 - `OveruseIndicatorDependencies.OveruseIndicator()` draws a small section with a "Last 30 days" label, one row per
   category, and the doctor line when any row is reached.
   - Reached rows use `tertiary` (amber, reserved for overuse); the others use `onSurfaceVariant`.

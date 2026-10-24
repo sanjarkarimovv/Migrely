@@ -86,6 +86,7 @@ private val CONTENT_MAX_WIDTH = 600.dp
 fun HistoryDependencies.History(
     navController: NavController,
     initialDay: LocalDate?,
+    overuseIndicator: @Composable () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var requestedMonth by rememberSaveable {
@@ -160,6 +161,7 @@ fun HistoryDependencies.History(
                 }
             )
         },
+        overuseIndicator = overuseIndicator,
         modifier = modifier
     )
 }
@@ -201,6 +203,7 @@ fun HistoryContents(
     mappers: HistoryCalendarMappers,
     actions: HistoryActions,
     messages: @Composable () -> Unit,
+    overuseIndicator: @Composable () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -240,7 +243,8 @@ fun HistoryContents(
                     noAttacks = viewState is HistoryViewStateUiModel.NoAttacks,
                     selectedEpochDay = selectedEpochDay,
                     mappers = mappers,
-                    actions = actions
+                    actions = actions,
+                    overuseIndicator = overuseIndicator
                 )
             }
         }
@@ -254,7 +258,8 @@ private fun MonthContents(
     noAttacks: Boolean,
     selectedEpochDay: Long?,
     mappers: HistoryCalendarMappers,
-    actions: HistoryActions
+    actions: HistoryActions,
+    overuseIndicator: @Composable () -> Unit
 ) {
     val contentModifier = Modifier
         .windowInsetsPadding(
@@ -274,6 +279,7 @@ private fun MonthContents(
             MonthSummary(
                 month = month,
                 timeUiFormatter = mappers.historyTimeUiFormatter,
+                currentMonthExtra = overuseIndicator,
                 modifier = Modifier.padding(top = 16.dp)
             )
         }
@@ -634,7 +640,8 @@ private fun HistoryReadyPreview() {
             selectedEpochDay = null,
             mappers = previewMappers,
             actions = previewActions,
-            messages = {}
+            messages = {},
+            overuseIndicator = {}
         )
     }
 }
@@ -648,7 +655,8 @@ private fun HistoryDayPreview() {
             selectedEpochDay = LocalDate.parse("2026-10-06").toEpochDay(),
             mappers = previewMappers,
             actions = previewActions,
-            messages = {}
+            messages = {},
+            overuseIndicator = {}
         )
     }
 }
@@ -662,7 +670,8 @@ private fun HistoryEmptyPreview() {
             selectedEpochDay = null,
             mappers = previewMappers,
             actions = previewActions,
-            messages = {}
+            messages = {},
+            overuseIndicator = {}
         )
     }
 }

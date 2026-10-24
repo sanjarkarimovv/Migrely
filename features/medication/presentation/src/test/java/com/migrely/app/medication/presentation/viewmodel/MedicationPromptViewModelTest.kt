@@ -14,6 +14,7 @@ import com.migrely.app.medication.domain.usecase.GetMedicationPromptUseCase
 import com.migrely.app.medication.domain.usecase.SkipEffectQuestionUseCase
 import com.migrely.app.medication.presentation.mapper.MedicationPromptDomainMapper
 import com.migrely.app.medication.presentation.mapper.MedicationPromptPresentationMapper
+import com.migrely.app.medication.presentation.mapper.OveruseCategoryPresentationMapper
 import com.migrely.app.medication.presentation.model.IntakeEffectPresentationModel
 import com.migrely.app.medication.presentation.model.MedicationPromptPresentationNotification
 import com.migrely.app.medication.presentation.model.MedicationPromptViewState
@@ -59,7 +60,7 @@ class MedicationPromptViewModelTest :
             answerEffectUseCase,
             skipEffectQuestionUseCase,
             acknowledgeOveruseUseCase,
-            MedicationPromptPresentationMapper(),
+            MedicationPromptPresentationMapper(OveruseCategoryPresentationMapper()),
             MedicationPromptDomainMapper(),
             useCaseExecutor
         )

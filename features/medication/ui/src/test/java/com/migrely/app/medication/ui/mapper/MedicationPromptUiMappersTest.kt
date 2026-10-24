@@ -6,6 +6,7 @@ import com.migrely.app.medication.presentation.model.MedicationPromptViewState
 import com.migrely.app.medication.presentation.model.OveruseCategoryPresentationModel
 import com.migrely.app.medication.presentation.model.OveruseLevelPresentationModel
 import com.migrely.app.medication.presentation.model.OveruseWarningPresentationModel
+import com.migrely.app.medication.ui.mapper.OveruseCategoryUiMapper
 import com.migrely.app.medication.ui.model.IntakeEffectUiModel
 import com.migrely.app.medication.ui.model.MedicationPromptUiModel
 import com.migrely.app.medication.ui.model.OveruseCategoryUiModel
@@ -16,7 +17,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class MedicationPromptUiMappersTest {
-    private val uiMapper = MedicationPromptUiMapper()
+    private val uiMapper = MedicationPromptUiMapper(OveruseCategoryUiMapper())
     private val presentationMapper = MedicationPromptUiToPresentationMapper()
 
     @Test
