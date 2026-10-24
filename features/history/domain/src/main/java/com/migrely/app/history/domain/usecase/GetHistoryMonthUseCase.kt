@@ -1,6 +1,7 @@
 package com.migrely.app.history.domain.usecase
 
 import com.migrely.app.architecture.domain.usecase.BackgroundExecutingUseCase
+import com.migrely.app.attackdays.domain.AttackDays
 import com.migrely.app.coroutine.CoroutineContextProvider
 import com.migrely.app.history.domain.model.AttacksTouchingResultDomainModel
 import com.migrely.app.history.domain.model.DayMarkDomainModel
@@ -64,8 +65,8 @@ class GetHistoryMonthUseCase(
             currentMonth
         ).min()
         val month = (request ?: currentMonth).coerceIn(earliestMonth, currentMonth)
-        val from = windowStart(month.atDay(1), now.zone)
-        val to = windowEnd(month.atEndOfMonth(), now.zone)
+        val from = AttackDays.windowStart(month.atDay(1), now.zone)
+        val to = AttackDays.windowEnd(month.atEndOfMonth(), now.zone)
         val attacks = when (val result = getAttacksTouchingRepository.attacksTouching(from, to)) {
             is AttacksTouchingResultDomainModel.Loaded -> result.attacks
             AttacksTouchingResultDomainModel.Failed -> return HistoryMonthResultDomainModel.Failed

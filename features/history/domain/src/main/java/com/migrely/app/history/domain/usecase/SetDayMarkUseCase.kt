@@ -1,6 +1,7 @@
 package com.migrely.app.history.domain.usecase
 
 import com.migrely.app.architecture.domain.usecase.BackgroundExecutingUseCase
+import com.migrely.app.attackdays.domain.AttackDays
 import com.migrely.app.coroutine.CoroutineContextProvider
 import com.migrely.app.history.domain.model.AttacksTouchingResultDomainModel
 import com.migrely.app.history.domain.model.CurrentTimeDomainModel
@@ -51,8 +52,8 @@ class SetDayMarkUseCase(
     /** Whether an attack touches [date]; null when the attacks cannot be read. */
     private fun attacksTouch(date: LocalDate, now: CurrentTimeDomainModel): Boolean? = when (
         val result = getAttacksTouchingRepository.attacksTouching(
-            windowStart(date, now.zone),
-            windowEnd(date, now.zone)
+            AttackDays.windowStart(date, now.zone),
+            AttackDays.windowEnd(date, now.zone)
         )
     ) {
         is AttacksTouchingResultDomainModel.Loaded ->

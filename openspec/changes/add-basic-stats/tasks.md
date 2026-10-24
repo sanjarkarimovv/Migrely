@@ -2,7 +2,7 @@
 
 ## 1. Shared rule (design D1)
 
-- [ ] 1.1 `:features:attackdays:domain` with `AttackDays` and its tests; History and home use it, and their copies go.
+- [x] 1.1 `:features:attackdays:domain` with `AttackDays` and its tests; History and home use it, and their copies go.
   Verify: `./gradlew :features:attackdays:domain:test :features:history:domain:test :features:home:domain:test`
 
 ## 2. Domain (design D2)
