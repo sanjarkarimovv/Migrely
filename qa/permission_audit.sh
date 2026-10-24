@@ -23,7 +23,8 @@ if [[ "${1:-}" == "--list" ]]; then
 else
   apk="${1:-$ROOT/app/build/outputs/apk/debug/app-debug.apk}"
   aapt2="$(ls -d "$SDK"/build-tools/*/ | sort -V | tail -1)aapt2"
-  permissions="$("$aapt2" dump permissions "$apk" | sed -n "s/^uses-permission: name='\([^']*\)'.*/\1/p")"
+  # Both "uses-permission:" and "uses-permission-sdk-23:" grant permissions.
+  permissions="$("$aapt2" dump permissions "$apk" | sed -n "s/^uses-permission\(-sdk-23\)\{0,1\}: name='\([^']*\)'.*/\2/p")"
   source_name="$apk"
 fi
 

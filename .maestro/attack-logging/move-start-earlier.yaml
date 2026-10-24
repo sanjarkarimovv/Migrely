@@ -1,4 +1,5 @@
 # Covers: attack-logging › Move the start of an attack earlier › Pain began before logging
+# Covers: attack-mode › Elapsed time follows a moved start › Started an hour earlier
 appId: com.migrely.app
 name: Move the start one hour earlier
 tags: [regression, attack-logging]

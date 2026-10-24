@@ -13,9 +13,18 @@ QA_SERIAL=emulator-5582 qa/maestro.sh --tags smoke   # on Android 8.0
 qa/maestro.sh --install --tags smoke  # reinstall the debug APK first
 ```
 
-The script runs only on the QA emulator `emulator-5580` (AVD `Migrely_QA_API_36`). Flows clear the app's data, so they
-must never run on the dev emulator `emulator-5570` or on a personal phone. Reports (JUnit XML, screenshots, logs) go to
+The script runs only on the QA emulators `emulator-5580` (AVD `Migrely_QA_API_36`) and `emulator-5582` (AVD
+`Migrely_QA_API_26`), one QA script per emulator at a time (`qa/lib.sh` lock). Flows clear the app's data, so they must
+never run on the dev emulator `emulator-5570` or on a personal phone. Reports (JUnit XML, screenshots, logs) go to
 `build/qa/maestro/<run>/`.
+
+It runs three passes:
+1. the default timing;
+2. `a11y-timeout` flows with a 20 s accessibility timeout;
+3. `known-bug` flows, whose failure is the expected reproduction of an open issue: it is reported and does not fail
+   the run, while a pass is reported as "NOW PASSES".
+
+The exit status comes from passes 1 and 2 only.
 
 ## Conventions
 
@@ -28,7 +37,9 @@ must never run on the dev emulator `emulator-5570` or on a personal phone. Repor
 - **Tags:**
   - `smoke`: fast and must pass for every release candidate;
   - `regression`: everything;
-  - `known-bug`: expected to fail until the linked issue is fixed. Remove the tag together with the fix.
+  - `known-bug`: reproduces an open issue (the flow links it) and runs in pass 3. Remove the tag together with the fix.
+  - `geometry`: taps a screen point measured on the QA AVD (API 36). It is skipped below API 29, where the navigation
+    bar moves the controls.
   - `a11y-timeout`: checks what Undo does inside its window. `qa/maestro.sh` runs these in a second pass with
     Android's "Time to take action" at 20 s, which the app honours (EC-UX-16). The default 5 s window has its own
     flow, `attack-logging/undo-window-passes.yaml`.
@@ -44,4 +55,7 @@ must never run on the dev emulator `emulator-5570` or on a personal phone. Repor
 | Acting inside an undo window | Tag the flow `a11y-timeout`, tap Undo as the very next step with `waitToSettleTimeoutMs: 0` and `retryTapIfNoChange: false`, then check "Undone." first |
 | Unchecked chip or disabled button | `checked: false` / `enabled: false` do not match when the label sits on a child. Use `assertNotVisible` with `checked: true`, or check the behaviour |
 | Process death | Not with `killApp` (a force stop clears saved state). Use `qa/device_scenarios.sh` |
-| Double tap | Two `tapOn: point` steps without settle waits, not `doubleTapOn` |
+| Double tap | `doubleTapOn` (both taps in one quick gesture on the device). Exact gaps between taps need adb: `qa/device_scenarios.sh double_tap` |
+| A fixed wait | `extendedWaitUntil` on a text that never appears, with `optional: true`; `waitForAnimationToEnd` returns early once the screen settles |
+| Copying a label | `copyTextFrom` the element, then `evalScript` to cut it, for example the day of a calendar cell |
+| Turning the screen | Put `setOrientation: PORTRAIT` in `onFlowComplete`, so a failed flow never leaves the device in landscape |

@@ -4,16 +4,18 @@ Each state is a pair <name>.xml (uiautomator dump) and <name>.png (screencap) in
 package are checked:
 
 - contrast: WCAG 2.1 AA, 4.5:1 for normal text and 3:1 for large text. The text colour is the glyph core (the pixel
-  with the highest contrast inside the node), the background is the most common colour. A single-line node at least
-  32 dp high counts as large text (about 24 sp with line spacing), which is a heuristic, so 3–4.5:1 on large text is
-  reported as a warning to look at, not as a failure. Disabled controls are exempt (WCAG 1.4.3).
+  with the highest contrast inside the node), the background is the most common colour. Text counts as large when its
+  tallest line of glyphs, measured on the pixels, is at least 22 dp (about 24 sp, WCAG's 18 pt). Bold 14 pt is not
+  recognised, which only makes the check stricter. Disabled controls are exempt (WCAG 1.4.3).
 - touch target: every clickable node is at least 48 × 48 dp (Android and Play pre-launch report guidance).
 - label: every clickable node has a text or a spoken label on itself or a descendant.
 - keyboard: every clickable node is focusable, so Tab and switch access can reach it (WCAG 2.1.1).
 
-A node that touches the edge of its scrolling container is cut off there, and uiautomator only reports the visible
-part, so its size, label and contrast cannot be judged on this capture. Such nodes are counted as "clipped" and left to
-a capture where they are scrolled fully into view.
+Not judged, and listed as such:
+- nodes cut off at the top or bottom edge of their scrolling container, because uiautomator reports only their
+  visible part. They are checked on a capture where they are scrolled fully into view;
+- text drawn inside merged nodes that expose only a spoken label (cards, calendar days, list rows). The tree has no
+  text node for it to measure. Their touch target, label and keyboard reach are still checked.
 
     python3 qa/a11y_audit.py <folder> [--density 420]
 Exit code 1 when any failure is found.
@@ -27,7 +29,7 @@ from pathlib import Path
 
 APP_PACKAGE = "com.migrely.app"
 MIN_TARGET_DP = 48
-LARGE_TEXT_DP = 32
+LARGE_TEXT_GLYPH_DP = 22
 
 
 def read_png(path):
@@ -85,18 +87,38 @@ def bounds(node):
     return x1, y1, x2, y2
 
 
-def clipped(node, parents, width, height):
-    """True when the node touches an edge of its nearest scrollable ancestor (or of the screen) and may be cut off."""
-    x1, y1, x2, y2 = bounds(node)
-    container = (0, 0, width, height)
+def clipped(node, parents):
+    """True when the node touches the top or bottom edge of its nearest scrolling ancestor and may be cut off there.
+
+    Only the vertical axis counts: every scrolling container in the app scrolls vertically, and a full-width row that
+    touches the container's sides is not cut off.
+    """
+    _, y1, _, y2 = bounds(node)
     parent = parents.get(node)
     while parent is not None and parent.tag == "node":
         if parent.get("scrollable") == "true":
-            container = bounds(parent)
-            break
+            _, cy1, _, cy2 = bounds(parent)
+            return y1 <= cy1 + 1 or y2 >= cy2 - 1
         parent = parents.get(parent)
-    cx1, cy1, cx2, cy2 = container
-    return y1 <= cy1 + 1 or y2 >= cy2 - 1 or x1 <= cx1 + 1 or x2 >= cx2 - 1
+    return False
+
+
+def tallest_glyph_line_px(rows, bpp, box, background):
+    """Height in px of the tallest run of pixel rows that hold text-coloured pixels (gaps of up to 2 rows bridged)."""
+    x1, y1, x2, y2 = box
+    inked = [any(contrast(tuple(rows[y][x * bpp:x * bpp + 3]), background) >= 2.0 for x in range(x1, x2))
+             for y in range(y1, y2)]
+    best = run = gap = 0
+    for row in inked:
+        if row:
+            run += gap + 1
+            gap = 0
+        elif run:
+            gap += 1
+            if gap > 2:
+                run = gap = 0
+        best = max(best, run)
+    return best
 
 
 def has_label(node):
@@ -114,17 +136,20 @@ def audit_state(xml_path, png_path, density):
     rows, bpp = read_png(png_path)
     height, width = len(rows), len(rows[0]) // bpp
     scale = density / 160
-    failures, warnings, skipped = [], [], 0
+    failures, warnings, clipped_labels, merged = [], [], [], 0
     root = ET.parse(xml_path).getroot()
     parents = {child: parent for parent in root.iter() for child in parent}
     for node in root.iter("node"):
         if node.get("package") != APP_PACKAGE:
             continue
-        judged = node.get("clickable") == "true" or bool(node.get("text"))
-        if not judged:
+        clickable = node.get("clickable") == "true"
+        text = node.get("text", "")
+        if not clickable and not text:
+            if node.get("content-desc"):
+                merged += 1
             continue
-        if clipped(node, parents, width, height):
-            skipped += 1
+        if clipped(node, parents):
+            clipped_labels.append(label_of(node))
             continue
         x1, y1, x2, y2 = bounds(node)
         x1, y1, x2, y2 = max(x1, 0), max(y1, 0), min(x2, width), min(y2, height)
@@ -132,7 +157,7 @@ def audit_state(xml_path, png_path, density):
             continue
         w_dp, h_dp = (x2 - x1) / scale, (y2 - y1) / scale
 
-        if node.get("clickable") == "true" and node.get("enabled") == "true":
+        if clickable and node.get("enabled") == "true":
             name = label_of(node)
             if w_dp < MIN_TARGET_DP - 0.5 or h_dp < MIN_TARGET_DP - 0.5:
                 failures.append(f"touch target {w_dp:.0f}x{h_dp:.0f} dp < 48 dp: {name!r}")
@@ -140,8 +165,9 @@ def audit_state(xml_path, png_path, density):
                 failures.append(f"clickable without a label at {node.get('bounds')}")
             if node.get("focusable") != "true":
                 failures.append(f"clickable but not keyboard-focusable: {name!r}")
+            if not text and node.get("content-desc") and not any(c.get("text") for c in node.iter("node")):
+                merged += 1
 
-        text = node.get("text", "")
         if not text:
             continue
         parent = parents.get(node)
@@ -152,14 +178,17 @@ def audit_state(xml_path, png_path, density):
         background = Counter(pixels).most_common(1)[0][0]
         foreground = max(pixels, key=lambda p: contrast(p, background))
         ratio = contrast(foreground, background)
-        large = h_dp >= LARGE_TEXT_DP and "\n" not in text
+        if ratio >= 4.5:
+            continue
+        glyph_dp = tallest_glyph_line_px(rows, bpp, (x1, y1, x2, y2), background) / scale
+        large = glyph_dp >= LARGE_TEXT_GLYPH_DP
         detail = (f"contrast {ratio:.2f}:1 (#{'%02X%02X%02X' % foreground} on #{'%02X%02X%02X' % background}, "
-                  f"{h_dp:.0f} dp high): {text[:60]!r}")
-        if ratio < 3.0:
+                  f"glyphs {glyph_dp:.0f} dp): {text[:60]!r}")
+        if ratio < 3.0 or not large:
             failures.append(detail)
-        elif ratio < 4.5:
-            (warnings if large else failures).append(detail + (" [large text]" if large else ""))
-    return failures, warnings, skipped
+        else:
+            warnings.append(detail + " [large text]")
+    return failures, warnings, clipped_labels, merged
 
 
 def main():
@@ -170,15 +199,18 @@ def main():
         png_path = xml_path.with_suffix(".png")
         if not png_path.exists():
             continue
-        failures, warnings, skipped = audit_state(xml_path, png_path, density)
+        failures, warnings, clipped_labels, merged = audit_state(xml_path, png_path, density)
         total_failures += len(failures)
         status = "FAIL" if failures else ("WARN" if warnings else "ok")
-        note = f" ({skipped} clipped node(s) not judged)" if skipped else ""
-        print(f"[{status}] {xml_path.stem}{note}")
+        print(f"[{status}] {xml_path.stem}")
         for line in failures:
             print(f"    fail: {line}")
         for line in warnings:
             print(f"    warn: {line}")
+        if clipped_labels:
+            print(f"    not judged, cut off by scrolling: {', '.join(repr(l[:30]) for l in clipped_labels)}")
+        if merged:
+            print(f"    text contrast not measurable in {merged} merged node(s) with only a spoken label")
     print(f"\n{total_failures} failure(s)")
     return 1 if total_failures else 0
 

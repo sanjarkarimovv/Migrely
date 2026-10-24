@@ -4,6 +4,9 @@
 appId: com.migrely.app
 name: The shown month and chosen day survive rotation
 tags: [regression, attack-history]
+# Back to portrait even when an assertion fails, so later flows are not run in landscape.
+onFlowComplete:
+  - setOrientation: PORTRAIT
 ---
 - runFlow: ../subflows/launch-clean.yaml
 - runFlow: ../subflows/add-past-attack-last-month.yaml

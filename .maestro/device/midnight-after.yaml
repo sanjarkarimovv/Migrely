@@ -1,4 +1,5 @@
 # Covers: today-sky › Card stays current › Midnight passes
+# The clock is set to 23:55 on the 15th (qa/device_scenarios.sh), so yesterday is always in the month shown.
 # Home has stayed open across local midnight; nothing touches the new day.
 appId: com.migrely.app
 ---

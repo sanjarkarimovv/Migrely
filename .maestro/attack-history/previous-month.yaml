@@ -14,7 +14,9 @@ tags: [regression, attack-history]
     timeout: 5000
 # "Next month" is disabled: tapping it leaves the month as it is. (Maestro reads the label from the icon inside
 # the button, which does not carry the button's disabled state, so the state is checked by behaviour.)
+- copyTextFrom: "[A-Z][a-z]+ [0-9]{4}"
 - tapOn: "Next month"
+- assertVisible: "${maestro.copiedText}"
 - assertVisible: "No migraines logged in .*"
 - tapOn: "Previous month"
 - extendedWaitUntil:
@@ -23,6 +25,8 @@ tags: [regression, attack-history]
 - assertVisible: ".*, [A-Za-z]+ 12: cloudy\\. 1 migraine\\. Peak: not recorded\\."
 # "Previous month" is disabled: tapping it leaves the month as it is. (Maestro reads the label from the icon inside
 # the button, which does not carry the button's disabled state, so the state is checked by behaviour.)
+- copyTextFrom: "[A-Z][a-z]+ [0-9]{4}"
 - tapOn: "Previous month"
+- assertVisible: "${maestro.copiedText}"
 - assertVisible: "1 migraine in .*"
 - takeScreenshot: attack-history-previous-month

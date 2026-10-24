@@ -1,22 +1,18 @@
+# Covers: attack-logging › Double taps never cross a mode switch › Double tap on "Migraine started"
 # Covers: attack-logging › One attack in progress at a time › Rapid double tap
 # Regression guard for https://github.com/sanjarkarimovv/Migrely/issues/12 (fixed in PR #18): "Migraine ended" in attack mode lies under the lower part of "Migraine started", so the second tap of a
 # double tap ends the attack that the first tap started. The point below is inside that overlap on the QA AVD
 # (pixel_6, 1080x2400, 420 dpi): "Migraine started" spans y 1979-2168 px, "Migraine ended" y 2085-2274 px.
 appId: com.migrely.app
 name: A rapid double tap on "Migraine started" leaves one attack in progress
-tags: [smoke, regression, attack-logging]
+tags: [smoke, regression, attack-logging, geometry]
 ---
 - runFlow: ../subflows/launch-clean.yaml
-# Two separate taps with no settle wait, so the second lands while the screen switches modes, like a finger
-# tapping twice "to be sure". 88% of the height (y 2112 px) is inside the overlap with a margin on both sides.
-- tapOn:
+# doubleTapOn sends both taps as one quick gesture on the device, so Maestro's step time (1–7 s here) cannot
+# stretch the gap. 88% of the height (y 2112 px) is inside the old overlap of the two buttons. Exact gaps
+# (0.15 / 0.4 / 0.7 s) are covered by qa/device_scenarios.sh double_tap.
+- doubleTapOn:
     point: "50%,88%"
-    waitToSettleTimeoutMs: 0
-    retryTapIfNoChange: false
-- tapOn:
-    point: "50%,88%"
-    waitToSettleTimeoutMs: 0
-    retryTapIfNoChange: false
 - extendedWaitUntil:
     visible: "Rest now. We'll keep time."
     timeout: 5000

@@ -4,12 +4,17 @@
 #   qa/maestro.sh                      all flows (regression)
 #   qa/maestro.sh --tags smoke         only flows tagged smoke
 #   qa/maestro.sh .maestro/today-sky   one folder or one flow file
-#   qa/maestro.sh --install ...        reinstall the debug APK first
+#   qa/maestro.sh --install ...        build and reinstall the debug APK first
 #   QA_SERIAL=emulator-5582 qa/maestro.sh --tags smoke    on the Android 8.0 QA emulator
 #
-# Two passes: flows tagged a11y-timeout check what Undo does, not how long the window lasts, so they run with
-# Android's "Time to take action" at 20 s. The app honours it (EC-UX-16), and Maestro's 1–7 s per step on the
-# software-GPU emulator can then never use up the 5 s window. Every other flow runs with the default timing.
+# Three passes:
+#   1. flows with the default timing;
+#   2. flows tagged a11y-timeout, which check what Undo does rather than how long the window lasts, with Android's
+#      "Time to take action" at 20 s (the app honours it, EC-UX-16). Maestro's 1–7 s per step on the software-GPU
+#      emulator can then never use up the 5 s window;
+#   3. flows tagged known-bug, read the other way round: a failure is the expected reproduction of an open issue and
+#      does not fail the run; a pass means the issue looks fixed, so the tag should go.
+# The exit status comes from passes 1 and 2 only, so an open known bug never hides a new regression.
 #
 # The serial is pinned on purpose: emulator-5570 belongs to the dev session and other emulators to other
 # projects. Flows clear the app's data, so running them anywhere else would wipe someone else's state.
@@ -27,6 +32,8 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 ADB="${ANDROID_HOME:-$HOME/Library/Android/sdk}/platform-tools/adb"
 APK="$ROOT/app/build/outputs/apk/debug/app-debug.apk"
 LONG_TIMEOUT_TAG="a11y-timeout"
+KNOWN_BUG_TAG="known-bug"
+GEOMETRY_TAG="geometry"
 LONG_TIMEOUT_MS=20000
 adbq() { "$ADB" -s "$QA_SERIAL" "$@"; }
 
@@ -54,60 +61,115 @@ fi
 
 source "$ROOT/qa/lib.sh"
 qa_lock_device
-trap qa_unlock_device EXIT
+
+SDK_LEVEL="$(adbq shell getprop ro.build.version.sdk | tr -d '\r')"
+ORIGINAL_TIMEOUT="$(adbq shell settings get secure accessibility_interactive_ui_timeout_ms | tr -d '\r')"
+ORIGINAL_ROTATION="$(adbq shell settings get system user_rotation | tr -d '\r')"
+ORIGINAL_AUTO_ROTATE="$(adbq shell settings get system accelerometer_rotation | tr -d '\r')"
+put_or_delete() { # $1 namespace, $2 key, $3 value or "null"
+  if [[ "$3" == "null" ]]; then adbq shell settings delete "$1" "$2" >/dev/null; else adbq shell settings put "$1" "$2" "$3"; fi
+}
+restore() {
+  set +e # restore everything even if one command fails
+  put_or_delete secure accessibility_interactive_ui_timeout_ms "$ORIGINAL_TIMEOUT"
+  # Flows that turn the screen use Maestro's setOrientation, which can leave auto-rotate off.
+  put_or_delete system user_rotation "$ORIGINAL_ROTATION"
+  put_or_delete system accelerometer_rotation "$ORIGINAL_AUTO_ROTATE"
+  qa_unlock_device
+}
+trap restore EXIT
 
 if $install; then
-  [[ -f "$APK" ]] || (cd "$ROOT" && ./gradlew :app:assembleDebug --console=plain -q)
+  # Always build: Gradle is incremental, and an old APK must never be retested by mistake.
+  (cd "$ROOT" && ./gradlew :app:assembleDebug --console=plain -q)
   adbq install -r "$APK" >/dev/null
 fi
+
+# Flow files of the run: the folders listed in .maestro/config.yaml, or the given folder or file.
+flow_files() {
+  local dirs=() glob
+  if [[ -d "$target" && "$target" == "$ROOT/.maestro" ]]; then
+    while IFS= read -r glob; do
+      [[ -n "$glob" ]] && dirs+=("$ROOT/.maestro/${glob%%/*}")
+    done < <(sed -n 's/^[[:space:]]*-[[:space:]]*"\{0,1\}\([^"]*\)"\{0,1\}[[:space:]]*$/\1/p' "$ROOT/.maestro/config.yaml")
+    if [[ ${#dirs[@]} -eq 0 ]]; then
+      echo "No flow folders found in .maestro/config.yaml" >&2
+      exit 2
+    fi
+  else
+    dirs=("$target")
+  fi
+  find "${dirs[@]}" -name '*.yaml' | sort
+}
+has_tag() { # $1 flow file, $2 tag: exact match on one of the comma-separated names in "tags: [...]"
+  grep -m1 '^tags:' "$1" | tr -d '[] ' | sed 's/^tags://' | tr ',' '\n' | grep -qx "$2"
+}
+wanted() { # $1 flow file: matches the --tags filter (any of a comma-separated list), if one was given
+  [[ -z "$tags" ]] && return 0
+  local t
+  for t in $(echo "$tags" | tr ',' ' '); do has_tag "$1" "$t" && return 0; done
+  return 1
+}
+
+pass1=() pass2=() pass3=()
+skipped_geometry=0
+while IFS= read -r flow; do
+  wanted "$flow" || continue
+  if [[ "$SDK_LEVEL" -lt 29 ]] && has_tag "$flow" "$GEOMETRY_TAG"; then
+    # Screen points measured on the API 36 edge-to-edge layout do not hold with Android 8's navigation bar.
+    skipped_geometry=$((skipped_geometry + 1))
+    continue
+  fi
+  if has_tag "$flow" "$KNOWN_BUG_TAG"; then pass3+=("$flow")
+  elif has_tag "$flow" "$LONG_TIMEOUT_TAG"; then pass2+=("$flow")
+  else pass1+=("$flow")
+  fi
+done < <(flow_files)
 
 run_id="$(date +%Y%m%d-%H%M%S)"
 out="$ROOT/build/qa/maestro/$run_id"
 mkdir -p "$out"
 status=0
+echo "Maestro on $QA_SERIAL (API $SDK_LEVEL) -> $out"
+[[ $skipped_geometry -gt 0 ]] && echo "Skipped $skipped_geometry flow(s) tagged $GEOMETRY_TAG: not valid below API 29"
 
-# Pass 1: default timing.
-args=(--device "$QA_SERIAL" test "$target" --exclude-tags "$LONG_TIMEOUT_TAG"
-  --format junit --output "$out/report.xml" --test-output-dir "$out")
-[[ -n "$tags" ]] && args+=(--include-tags "$tags")
-echo "Maestro on $QA_SERIAL -> $out"
-if [[ "$tags" != "$LONG_TIMEOUT_TAG" ]]; then
-  maestro "${args[@]}" || status=$?
+run_pass() { # $1 name, then flow files
+  local name="$1"
+  shift
+  maestro --device "$QA_SERIAL" test "$@" --format junit --output "$out/report-$name.xml" --test-output-dir "$out/$name"
+}
+long_timeout_on() {
+  if [[ "$SDK_LEVEL" -ge 29 ]]; then
+    adbq shell settings put secure accessibility_interactive_ui_timeout_ms "$LONG_TIMEOUT_MS"
+  else
+    echo "Note: API $SDK_LEVEL has no accessibility timeout setting; these flows run with the default 5 s window."
+  fi
+}
+long_timeout_off() { put_or_delete secure accessibility_interactive_ui_timeout_ms "$ORIGINAL_TIMEOUT"; }
+
+if [[ ${#pass1[@]} -gt 0 ]]; then
+  echo "Pass 1: ${#pass1[@]} flow(s) with the default timing"
+  run_pass default "${pass1[@]}" || status=1
 fi
-
-# Pass 2: flows tagged a11y-timeout (and the requested tag, if any), with a 20 s accessibility timeout.
-flow_dirs=()
-if [[ -d "$target" && "$target" == "$ROOT/.maestro" ]]; then
-  while IFS= read -r glob; do flow_dirs+=("$ROOT/.maestro/${glob%/\*}"); done \
-    < <(sed -n 's/^  - "\(.*\)"$/\1/p' "$ROOT/.maestro/config.yaml")
-else
-  flow_dirs=("$target")
+if [[ ${#pass2[@]} -gt 0 ]]; then
+  echo "Pass 2: ${#pass2[@]} flow(s) with a $((LONG_TIMEOUT_MS / 1000)) s accessibility timeout"
+  long_timeout_on
+  run_pass "$LONG_TIMEOUT_TAG" "${pass2[@]}" || status=1
+  long_timeout_off
 fi
-long_flows=()
-while IFS= read -r flow; do
-  tag_line="$(grep -m1 '^tags:' "$flow" || true)"
-  [[ "$tag_line" == *"$LONG_TIMEOUT_TAG"* ]] || continue
-  [[ -z "$tags" || "$tag_line" == *"$tags"* ]] || continue
-  long_flows+=("$flow")
-done < <(find "${flow_dirs[@]}" -name '*.yaml' 2>/dev/null | sort)
-
-if [[ ${#long_flows[@]} -gt 0 ]]; then
-  original="$(adbq shell settings get secure accessibility_interactive_ui_timeout_ms | tr -d '\r')"
-  restore() {
-    if [[ "$original" == "null" ]]; then
-      adbq shell settings delete secure accessibility_interactive_ui_timeout_ms >/dev/null
+if [[ ${#pass3[@]} -gt 0 ]]; then
+  echo "Pass 3: ${#pass3[@]} known-bug flow(s); a failure is the expected reproduction"
+  for flow in "${pass3[@]}"; do
+    has_tag "$flow" "$LONG_TIMEOUT_TAG" && long_timeout_on >/dev/null
+    issue="$(grep -o 'issues/[0-9]*' "$flow" | head -1 || true)"
+    if run_pass "known-bug-$(basename "$flow" .yaml)" "$flow" >"$out/known-bug-$(basename "$flow" .yaml).log" 2>&1; then
+      echo "  NOW PASSES: $(basename "$flow") (${issue:-no issue linked}): retest the issue and remove the known-bug tag"
     else
-      adbq shell settings put secure accessibility_interactive_ui_timeout_ms "$original"
+      echo "  still reproduces: $(basename "$flow") (${issue:-no issue linked})"
     fi
-  }
-  trap 'restore; qa_unlock_device' EXIT
-  adbq shell settings put secure accessibility_interactive_ui_timeout_ms "$LONG_TIMEOUT_MS"
-  echo "Pass 2: ${#long_flows[@]} flow(s) with a $((LONG_TIMEOUT_MS / 1000)) s accessibility timeout"
-  maestro --device "$QA_SERIAL" test "${long_flows[@]}" --format junit --output "$out/report-$LONG_TIMEOUT_TAG.xml" \
-    --test-output-dir "$out/$LONG_TIMEOUT_TAG" || status=$?
-  restore
-  trap qa_unlock_device EXIT
+    long_timeout_off
+  done
 fi
 
-echo "Reports: $out/report*.xml"
+echo "Reports: $out/report-*.xml"
 exit $status

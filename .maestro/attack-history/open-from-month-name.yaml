@@ -15,7 +15,9 @@ tags: [smoke, regression, attack-history]
 - assertNotVisible: "Show all of .*"
 # "Next month" is disabled: tapping it leaves the month as it is. (Maestro reads the label from the icon inside
 # the button, which does not carry the button's disabled state, so the state is checked by behaviour.)
+- copyTextFrom: "[A-Z][a-z]+ [0-9]{4}"
 - tapOn: "Next month"
+- assertVisible: "${maestro.copiedText}"
 - assertVisible: "1 migraine in .*"
 - tapOn: ".*, peak not recorded\\. Opens its details\\."
 - extendedWaitUntil:

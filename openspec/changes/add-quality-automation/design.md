@@ -41,18 +41,20 @@
   cannot be found by its label is reported as an accessibility issue, as for #14 and #17.
 - **Clean start.** Every flow starts with `launchApp: clearState: true`, through `subflows/launch-clean.yaml`. Data is
   built through the UI only, so the flows never depend on the database layout.
-- **Device pin.** `qa/maestro.sh` refuses any `ANDROID_SERIAL` other than `emulator-5580` and turns Maestro analytics
+- **Device pin.** `qa/maestro.sh` refuses any device other than `emulator-5580` and `emulator-5582` and turns Maestro analytics
   off (`MAESTRO_CLI_NO_ANALYTICS=1`).
 
 **Timing rules learned on this emulator** (also in `.maestro/README.md`):
 
 | Situation | Rule |
 |---|---|
-| Inside a 5 s undo window | Tap Undo as the very next step, with `waitToSettleTimeoutMs: 0` and `retryTapIfNoChange: false`. Check "Undone." (8 s) before anything else |
+| Inside a 5 s undo window | Tag the flow `a11y-timeout`. `qa/maestro.sh` runs it in a second pass with Android's "Time to take action" at 20 s, which the app honours (EC-UX-16): one Maestro tap took 5.5–7.4 s under load. Tap Undo as the very next step and check "Undone." first. The default 5 s window was timed by hand (5.6–5.8 s) |
 | After a mode switch | `subflows/start-attack.yaml` and `end-attack.yaml` end with `waitForAnimationToEnd: 1500`. This waits out the TapGuard (1–1.2 s), because the rain or the countdown line keeps the screen moving |
 | A chip's checked state | `checked: false` and `enabled: false` do not match when the label sits on a child node. Use `assertNotVisible` with `checked: true`, or check the behaviour: a disabled button leaves the screen as it was |
 | Process death | Maestro `killApp` is a force stop and clears saved state, so it is only used for "the app was closed". Process death runs in the device scenarios (D4) |
-| A double tap | Two `tapOn: point` steps with no settle wait, at 88% of the height inside the old overlap. `doubleTapOn` at 87% passed while #12 still reproduced |
+| A double tap | `doubleTapOn` at 88% of the height, inside the old overlap: both taps go as one quick gesture on the device. Two separate `tapOn` steps were 2.1 s apart under load, which is a deliberate second tap rather than a double tap. Exact gaps (0.15 / 0.4 / 0.7 s) come from adb in `qa/device_scenarios.sh double_tap`. These flows are tagged `geometry` and skipped below API 29 |
+| Known bugs | `known-bug` flows run in a third pass, read the other way round. A failure is the expected reproduction and does not fail the run; a pass is reported as "NOW PASSES". The exit status comes from passes 1 and 2, so an open known bug never hides a new regression |
+| A fixed wait | `extendedWaitUntil` on a text that never appears, with `optional: true`. `waitForAnimationToEnd` returns early once the screen settles |
 
 ### D2. Traceability by comment, checked by a script (D41)
 
@@ -81,10 +83,20 @@ with the dev tests. The report lists them with `--missing`, so the choice is vis
 
 | Check | Rule |
 |---|---|
-| Contrast | The text colour is the glyph core, the pixel with the highest contrast inside the node. The background is the most common colour inside the node. Normal text needs 4.5:1. A single-line node at least 32 dp high counts as large text: 3–4.5:1 is a warning there, under 3:1 a failure. Disabled nodes are exempt (WCAG 1.4.3) |
+| Contrast | The text colour is the glyph core, the pixel with the highest contrast inside the node. The background is the most common colour inside the node. Normal text needs 4.5:1. Text counts as large when its tallest line of glyphs, measured on the pixels, is at least 22 dp (WCAG 18 pt), so a wrapped paragraph of body text stays normal. 3–4.5:1 on large text is a warning, under 3:1 a failure. Disabled nodes are exempt (WCAG 1.4.3) |
 | Target size | Every enabled clickable node is at least 48 × 48 dp |
 | Label | Every enabled clickable node has a text or a spoken label on itself or a descendant |
 | Keyboard | Every enabled clickable node is focusable |
+
+Some things are not judged, and the report lists them:
+- nodes cut off at the top or bottom edge of their scrolling container, where uiautomator reports only the visible
+  part. Only the vertical axis counts, so full-width rows are judged; a first version also skipped nodes that touched a
+  container's sides and silently skipped every list row (code review finding);
+- text drawn inside merged nodes that expose only a spoken label (cards, days, rows). There is no text node to
+  measure, so contrast there is checked by hand, as for #13. Their target, label and keyboard reach are judged.
+
+A state the tour cannot reach fails the audit: it was not checked. This is how the audit found #20, where a message
+covers "Mild" and "Moderate".
 
 `qa/a11y_audit.sh` runs each `.maestro/a11y-tour/*.yaml` state three times:
 - font 1.0 portrait;
@@ -105,8 +117,13 @@ It sets a 30 s accessibility timeout, so messages are still on screen at capture
 | The system ends the app | HOME, then `run-as com.migrely.app kill -9 <pid>`, then reopen with the launcher intent (`monkey -c android.intent.category.LAUNCHER 1`) so the task and its saved state come back |
 | Killed while open | `run-as … kill -9` in the foreground, then reopen |
 
-- **Midnight.** The midnight scenario sets the clock to 23:55 in the device's zone. If the setup runs past midnight, it
-  reports INCONCLUSIVE instead of a false pass.
+- **Midnight and travel on the 15th.** Both scenarios set the clock to the 15th of the current month (23:55 in the
+  device's zone; 23:15 in Berlin), so "yesterday" is always in the month that home's calendar shows. If the midnight
+  setup runs past midnight, it reports INCONCLUSIVE instead of a false pass.
+- **Every step counts.** A scenario runs inside `||`, where bash ignores `set -e`, so every step ends with `|| return 1`.
+  A kill that leaves the process alive fails the scenario (code review finding).
+- **Exact double-tap gaps.** `double_tap` taps the lower 15% of "Migraine started", then the upper 15% of "Migraine
+  ended", twice with gaps of 0.15, 0.4 and 0.7 s, through adb, independent of Maestro's step time.
 - **Clean state between scenarios.** After each scenario the zone and the real time are restored, so one scenario's
   clock never leaks into the next. A `trap … EXIT` restores the clock, the zone and automatic time at the end.
 
@@ -114,8 +131,10 @@ It sets a 30 s accessibility timeout, so messages are still on screen at capture
 
 - **`qa/monkey.sh`:**
   - runs `monkey -p com.migrely.app -s <seed> --throttle 50 --pct-syskeys 0 -v 5000`;
-  - clears logcat first, then fails on any `FATAL EXCEPTION`, `ANR in com.migrely.app` or crash-buffer line for the
-    app's process;
+  - clears the logs first, then fails on a Java crash (`Process: com.migrely.app`) or a native one (`>>> com.migrely.app <<<`)
+    in the crash buffer, and on `am_anr` for the app in the events buffer, which the app's own logging cannot overflow;
+  - compares quick-settings-like values before and after (rotation, font, night mode, airplane mode), restores any that
+    random swipes changed, and collapses the notification shade;
   - takes the seed as an argument, so a failure can be replayed.
 - **`qa/permission_audit.sh`:**
   - reads the APK with `aapt2 dump permissions`, from the newest installed build-tools;

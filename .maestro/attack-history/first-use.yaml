@@ -1,5 +1,5 @@
 # Covers: attack-history › No attacks yet › First use
-# Covers: attack-history › Month by month (only the current month with nothing logged)
+# Also checks: attack-history › Month by month: only the current month is shown with nothing logged
 appId: com.migrely.app
 name: History before any attack explains the skies and offers the first log
 tags: [smoke, regression, attack-history]
@@ -13,11 +13,13 @@ tags: [smoke, regression, attack-history]
 - assertVisible: "Log your first migraine"
 # "Previous month" is disabled: tapping it leaves the month as it is. (Maestro reads the label from the icon inside
 # the button, which does not carry the button's disabled state, so the state is checked by behaviour.)
+- copyTextFrom: "[A-Z][a-z]+ [0-9]{4}"
 - tapOn: "Previous month"
-- assertVisible: "No migraines logged yet"
+- assertVisible: "${maestro.copiedText}"
 # "Next month" is disabled: tapping it leaves the month as it is. (Maestro reads the label from the icon inside
 # the button, which does not carry the button's disabled state, so the state is checked by behaviour.)
 - tapOn: "Next month"
+- assertVisible: "${maestro.copiedText}"
 - assertVisible: "No migraines logged yet"
 - takeScreenshot: attack-history-first-use
 - tapOn: "Log your first migraine"

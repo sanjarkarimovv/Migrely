@@ -20,6 +20,10 @@ if [[ "$(adbq shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" != "1"
   exit 2
 fi
 
+# Take the device first, then read the settings: another QA run may have a temporary value in place until it ends.
+source "$ROOT/qa/lib.sh"
+qa_lock_device
+trap qa_unlock_device EXIT
 SETTINGS=("system font_scale" "system user_rotation" "system accelerometer_rotation"
   "secure accessibility_interactive_ui_timeout_ms")
 declare -a ORIGINAL
@@ -27,17 +31,17 @@ for i in "${!SETTINGS[@]}"; do
   ORIGINAL[$i]="$(adbq shell settings get ${SETTINGS[$i]} | tr -d '\r')"
 done
 restore() {
+  set +e # restore everything even if one command fails
   for i in "${!SETTINGS[@]}"; do
     if [[ "${ORIGINAL[$i]}" == "null" ]]; then
-      adbq shell settings delete ${SETTINGS[$i]} >/dev/null
+      adbq shell settings delete ${SETTINGS[$i]} >/dev/null 2>&1
     else
-      adbq shell settings put ${SETTINGS[$i]} "${ORIGINAL[$i]}"
+      adbq shell settings put ${SETTINGS[$i]} "${ORIGINAL[$i]}" >/dev/null 2>&1
     fi
   done
+  qa_unlock_device
 }
-source "$ROOT/qa/lib.sh"
-qa_lock_device
-trap 'restore; qa_unlock_device' EXIT
+trap restore EXIT
 
 # Messages with Undo stay 5 s by default; a 30 s accessibility timeout keeps them on screen until the capture.
 adbq shell settings put secure accessibility_interactive_ui_timeout_ms 30000
@@ -74,7 +78,14 @@ for config in "font100:1.0:0" "font200:2.0:0" "landscape:1.0:1"; do
       skipped+=("$name")
       continue
     fi
-    adbq shell uiautomator dump /sdcard/a11y.xml >/dev/null
+    # uiautomator exits 0 without writing a file when the screen never goes idle; never pair an old tree with a new
+    # screenshot.
+    adbq shell rm -f /sdcard/a11y.xml
+    if ! adbq shell uiautomator dump /sdcard/a11y.xml | grep -q "dumped to"; then
+      echo "[skip] $name: uiautomator could not dump the screen"
+      skipped+=("$name")
+      continue
+    fi
     adbq pull /sdcard/a11y.xml "$out/$name.xml" >/dev/null
     adbq exec-out screencap -p >"$out/$name.png"
   done
@@ -82,7 +93,9 @@ done
 
 echo "Captures: $out"
 status=0
-python3 -I "$ROOT/qa/a11y_audit.py" "$out" --density "$(adbq shell wm density | awk '{print $NF}' | tr -d '\r')" || status=1
+# "wm density" prints a second "Override density" line when one is set; the last line is the density in effect.
+density="$(adbq shell wm density | tail -1 | awk '{print $NF}' | tr -d '\r')"
+python3 -I "$ROOT/qa/a11y_audit.py" "$out" --density "$density" || status=1
 # A state that could not be reached was not checked: that is a failure, not a pass. A tour flow that cannot find a
 # control by its label usually means the control is hidden or covered (#20).
 if [[ ${#skipped[@]} -gt 0 ]]; then

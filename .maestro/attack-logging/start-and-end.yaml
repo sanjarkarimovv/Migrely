@@ -1,4 +1,5 @@
 # Covers: attack-logging › Start an attack in one tap › Start from the home screen
+# Covers: attack-logging › Double taps never cross a mode switch › Opening the app
 # Covers: attack-logging › End an attack in one tap › End an attack
 # Covers: attack-logging › Record pain intensity during an attack › No intensity recorded
 # Covers: today-sky › Sky by peak intensity after attacks end › Intensity never recorded

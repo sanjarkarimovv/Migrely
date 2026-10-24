@@ -1,7 +1,7 @@
 # Covers: in-app-messages › Messages can be dismissed › Swipe away
 appId: com.migrely.app
 name: Swiping the message away does not undo the start
-tags: [regression, in-app-messages]
+tags: [regression, in-app-messages, a11y-timeout]
 ---
 - runFlow: ../subflows/launch-clean.yaml
 - runFlow: ../subflows/start-attack.yaml

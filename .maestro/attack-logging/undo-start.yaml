@@ -1,6 +1,6 @@
 # Covers: attack-logging › Start an attack in one tap › Undo a start
 # Covers: in-app-messages › Undo outcomes are confirmed › Undo succeeds
-# Covers: in-app-messages › Accessible messages (spoken undo label "Undo the start")
+# Also checks: in-app-messages › Accessible messages: the spoken undo label "Undo the start"
 appId: com.migrely.app
 name: Undo a start removes the attack and confirms it
 tags: [smoke, regression, attack-logging, in-app-messages, a11y-timeout]

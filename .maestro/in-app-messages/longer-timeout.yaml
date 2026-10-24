@@ -10,8 +10,10 @@ tags: [regression, in-app-messages, a11y-timeout]
     text: "Migraine started"
     waitToSettleTimeoutMs: 0
     retryTapIfNoChange: false
-# The rain keeps attack mode moving, so this waits the full 8 s: longer than the default 5 s window.
-- waitForAnimationToEnd:
+# A fixed 8 s wait, longer than the default 5 s window: the text below never appears, and the wait is optional.
+- extendedWaitUntil:
+    visible: "QA fixed wait, never on screen"
     timeout: 8000
+    optional: true
 - assertVisible: "Undo the start"
 - takeScreenshot: in-app-messages-longer-timeout
