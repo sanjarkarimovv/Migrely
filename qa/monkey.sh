@@ -30,7 +30,7 @@ out="$ROOT/build/qa/monkey/$(date +%Y%m%d-%H%M%S)"
 mkdir -p "$out"
 # Random swipes can open the notification shade and flip quick settings; compare and restore them afterwards.
 WATCHED=("system user_rotation" "system accelerometer_rotation" "system font_scale" "secure ui_night_mode"
-  "global airplane_mode_on")
+  "global airplane_mode_on" "global zen_mode")
 declare -a BEFORE
 for i in "${!WATCHED[@]}"; do BEFORE[$i]="$(adbq shell settings get ${WATCHED[$i]} | tr -d '\r')"; done
 restore() {
@@ -48,11 +48,17 @@ restore() {
 }
 trap restore EXIT
 adbq shell pm clear "$APP" >/dev/null
-adbq logcat -c
-adbq logcat -c -b events
+# Older Android versions sometimes refuse to clear a buffer ("failed to clear the 'main' log"); the crash and events
+# buffers are what the verdict reads, so a failed clear only means more history to scan.
+adbq logcat -c || true
+adbq logcat -c -b crash || true
+adbq logcat -c -b events || true
 adbq shell monkey -p "$APP" -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1
 sleep 3
-adbq shell monkey -p "$APP" -s "$SEED" --throttle 50 --pct-syskeys 0 -v "$EVENTS" >"$out/monkey.txt" 2>&1 || true
+# --ignore-crashes/--ignore-timeouts keep monkey going when ANOTHER app fails: the AOSP keyboard of the API 26 image
+# crashes under random input ("Empty keySpec"). The verdict below reads only this app's crashes and ANRs.
+adbq shell monkey -p "$APP" -s "$SEED" --throttle 50 --pct-syskeys 0 --ignore-crashes --ignore-timeouts -v "$EVENTS" \
+  >"$out/monkey.txt" 2>&1 || true
 adbq logcat -d -b crash >"$out/crash-buffer.txt"
 adbq logcat -d -b events >"$out/events.txt"
 adbq logcat -d >"$out/logcat.txt"
@@ -62,7 +68,9 @@ adbq logcat -d >"$out/logcat.txt"
 crashes=$(grep -c -e "Process: $APP" -e ">>> $APP <<<" "$out/crash-buffer.txt" || true)
 anrs=$(grep -c "am_anr.*$APP" "$out/events.txt" || true)
 finished=$(grep -c "// Monkey finished" "$out/monkey.txt" || true)
-echo "monkey seed $SEED, $EVENTS events on $QA_SERIAL: crashes $crashes, ANRs $anrs, finished $finished (logs: $out)"
+others=$(grep -c "^// CRASH: " "$out/monkey.txt" || true)
+echo "monkey seed $SEED, $EVENTS events on $QA_SERIAL: crashes $crashes, ANRs $anrs, finished $finished," \
+  "crashes of other apps $others (logs: $out)"
 if [[ "$crashes" -gt 0 || "$anrs" -gt 0 || "$finished" -eq 0 ]]; then
   grep -A12 "Process: $APP" "$out/crash-buffer.txt" | head -30 || true
   exit 1

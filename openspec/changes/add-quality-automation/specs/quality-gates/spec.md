@@ -82,10 +82,10 @@ time zone) SHALL restore the value it found when it exits, including when a chec
 - **THEN** the font scale, rotation and accessibility timeout are back to their original values
 
 ### Requirement: Device scenarios without test code
-Behaviour that depends on the clock, the time zone or the system ending the app SHALL be checked by changing the QA
-emulator itself between end-to-end flows, with no test-only code in the app. The scenarios SHALL cover the 72-hour
-check, process death on History, the add screen and the details screen, home across midnight and travel between time
-zones (BRD EC-ATK-02, EC-ATK-10, EC-TIM-02, D43).
+Behaviour that depends on the clock, the time zone, exact tap timing, the system ending the app or an app update
+SHALL be checked by changing the QA emulator itself between end-to-end flows, with no test-only code in the app. This
+covers the 72-hour check, process death on three screens, midnight, travel between zones, double taps with exact gaps
+and an update over an older build (BRD EC-ATK-02, EC-ATK-10, EC-TIM-02, EC-STO-01, D43).
 
 #### Scenario: Attack left open for days
 - **WHEN** an attack is started, the clock moves forward 73 hours and the app is opened
@@ -100,6 +100,14 @@ zones (BRD EC-ATK-02, EC-ATK-10, EC-TIM-02, D43).
 #### Scenario: Travel
 - **WHEN** an attack is logged at 23:15 in Berlin and the app is opened at 02:15 the next day in Tashkent
 - **THEN** the scenario checks that every part of home attributes the attack to the Berlin day
+
+#### Scenario: Double tap with an exact gap
+- **WHEN** "Migraine started" is tapped twice 0.15, 0.4 and 0.7 seconds apart, in its lower and in its upper part
+- **THEN** the scenario checks that exactly one attack is in progress and attack mode is shown each time
+
+#### Scenario: Update over an older build
+- **WHEN** attacks with pain levels and symptoms are logged on an older build and the newer build is installed over it
+- **THEN** the scenario checks that every attack, pain level and symptom is still there
 
 ### Requirement: Robustness and privacy checks
 A seeded random-input run of at least 5,000 events SHALL finish with no crash and no "app not responding" in the app's

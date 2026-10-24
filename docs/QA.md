@@ -11,7 +11,7 @@ How Migrely's quality is checked before anything reaches Google Play. The requir
 | Instrumented tests | `:datasource:implementation`, `:designsystem` | SQL, migrations, design-system components | per module, every change |
 | **End-to-end flows** | `.maestro/` (Maestro) | a person's journeys, navigation, persistence, regressions between changes | `qa/maestro.sh` |
 | **Accessibility audit** | `qa/a11y_audit.sh` | contrast, touch targets, labels and keyboard reach on real pixels, at 100% and 200% font and in landscape | before a release, after UI changes |
-| **Device scenarios** | `qa/device_scenarios.sh` | the clock, time zones, midnight, process death | before a release, after time or lifecycle changes |
+| **Device scenarios** | `qa/device_scenarios.sh` | the clock, time zones, midnight, process death, exact double-tap gaps, upgrades with real data | before a release, after time, lifecycle or database changes |
 | **Robustness and privacy** | `qa/monkey.sh`, `qa/permission_audit.sh` | crashes and ANRs under random input, unexpected permissions (never `INTERNET`) | before a release |
 | Exploratory testing | the QA session, by hand and through the Maestro MCP server | everything a script did not think of | every change |
 
@@ -90,6 +90,7 @@ results in the release PR.
 | 4 | Accessibility audit | `qa/a11y_audit.sh` | `0 failure(s)` and no state that could not be captured; every warning and every "not judged" line looked at |
 | 5 | Device scenarios | `qa/device_scenarios.sh` | `All scenarios passed` |
 | 6 | Random input | `qa/monkey.sh 20261024 5000` | 0 crashes, 0 ANRs |
+| 6a | Upgrade from the previous release | `QA_OLD_APK=<previous release APK> qa/device_scenarios.sh upgrade` | every attack, pain level and symptom logged on the old build is still there |
 | 7 | Permissions | `qa/permission_audit.sh` (and on the release APK) | `Permission audit passed` |
 | 8 | Open defects | `gh issue list --label qa --state open` | no S1 or S2 |
 | 9 | Coverage report | `python3 -I qa/e2e_coverage.py` | exits 0 (no stale scenario names) |
