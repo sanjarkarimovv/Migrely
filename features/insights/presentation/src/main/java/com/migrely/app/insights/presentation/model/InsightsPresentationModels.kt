@@ -41,12 +41,24 @@ sealed interface InsightsPatternsPresentationModel {
     ) : InsightsPatternsPresentationModel
 }
 
-/** [percent] is [migraines] as a share of the period's migraines, rounded. */
+/** [percent] is [migraines] as a share of the period's migraines. */
 data class InsightsTriggerCountPresentationModel(
     val trigger: InsightsTriggerPresentationModel,
     val migraines: Int,
-    val percent: Int
+    val percent: InsightsPercentPresentationModel
 )
+
+/**
+ * A share as shown: a whole percent, or "<1%" for a share above 0 that rounds to 0, and ">99%" for a share under 100
+ * that rounds to 100, so that some never reads as none, nor most as all.
+ */
+sealed interface InsightsPercentPresentationModel {
+    data class Whole(val percent: Int) : InsightsPercentPresentationModel
+
+    data object BelowOne : InsightsPercentPresentationModel
+
+    data object AboveNinetyNine : InsightsPercentPresentationModel
+}
 
 /** A built-in trigger, which the screen names, or one of the user's own by its name. */
 sealed interface InsightsTriggerPresentationModel {
@@ -87,24 +99,26 @@ data class InsightsTimeOfDayCountPresentationModel(
 )
 
 /**
- * [migraines] started in the days around a period, [percent] of the period's migraines; those days are [daysPercent]
- * of the period's days (BRD D91).
+ * [migraines] started in the days around a period, [percent] of the period's migraines; those [days] are [daysPercent]
+ * of the period's [periodDays] (BRD D91).
  */
 data class InsightsCyclePresentationModel(
     val migraines: Int,
-    val percent: Int,
-    val daysPercent: Int
+    val percent: InsightsPercentPresentationModel,
+    val days: Int,
+    val periodDays: Int,
+    val daysPercent: InsightsPercentPresentationModel
 )
 
 sealed interface InsightsMedicationPresentationModel {
     val name: String
 
-    /** [helped] of [answered] answers were "A lot" or "Completely", [percent] rounded (BRD D92). */
+    /** [helped] of [answered] answers were "A lot" or "Completely" (BRD D92). */
     data class Rated(
         override val name: String,
         val helped: Int,
         val answered: Int,
-        val percent: Int
+        val percent: InsightsPercentPresentationModel
     ) : InsightsMedicationPresentationModel
 
     /** Fewer than 3 answers so far. */

@@ -20,6 +20,7 @@ import com.migrely.app.insights.presentation.model.InsightsCyclePresentationMode
 import com.migrely.app.insights.presentation.model.InsightsMedicationPresentationModel
 import com.migrely.app.insights.presentation.model.InsightsMonthPresentationModel
 import com.migrely.app.insights.presentation.model.InsightsPatternsPresentationModel
+import com.migrely.app.insights.presentation.model.InsightsPercentPresentationModel
 import com.migrely.app.insights.presentation.model.InsightsPresentationModel
 import com.migrely.app.insights.presentation.model.InsightsTimeOfDayCountPresentationModel
 import com.migrely.app.insights.presentation.model.InsightsTimeOfDayPresentationModel
@@ -40,6 +41,8 @@ private val OCTOBER_PRESENTATION =
 private val TIMES = InsightsTimeOfDayDomainModel.entries.zip(
     InsightsTimeOfDayPresentationModel.entries
 )
+
+private fun whole(percent: Int) = InsightsPercentPresentationModel.Whole(percent)
 
 private fun insights(patterns: InsightsPatternsDomainModel) =
     InsightsResultDomainModel.Ready(InsightsDomainModel(6, DATES, patterns, listOf(OCTOBER)))
@@ -103,12 +106,12 @@ class InsightsPresentationMapperTest {
                                     InsightsBuiltInTriggerPresentationModel.Stress
                                 ),
                                 6,
-                                60
+                                whole(60)
                             ),
                             InsightsTriggerCountPresentationModel(
                                 InsightsTriggerPresentationModel.Custom("Long drive"),
                                 1,
-                                10
+                                whole(10)
                             )
                         ),
                         weekdays = DayOfWeek.entries.map {
@@ -121,11 +124,13 @@ class InsightsPresentationMapperTest {
                         busiestTimeOfDay = InsightsTimeOfDayPresentationModel.Evening,
                         cycle = InsightsCyclePresentationModel(
                             migraines = 4,
-                            percent = 40,
-                            daysPercent = 13
+                            percent = whole(40),
+                            days = 24,
+                            periodDays = 183,
+                            daysPercent = whole(13)
                         ),
                         medications = listOf(
-                            InsightsMedicationPresentationModel.Rated("Ibuprofen", 7, 9, 78),
+                            InsightsMedicationPresentationModel.Rated("Ibuprofen", 7, 9, whole(78)),
                             InsightsMedicationPresentationModel.NeedsAnswers("Sumatriptan", 2)
                         )
                     ),
@@ -176,10 +181,40 @@ class InsightsPresentationMapperTest {
                 emptyList(),
                 null,
                 null,
-                listOf(InsightsMedicationPresentationModel.Rated("Aspirin", 0, 3, 0))
+                listOf(InsightsMedicationPresentationModel.Rated("Aspirin", 0, 3, whole(0)))
             ),
             ready.insights.patterns
         )
+    }
+
+    @Test
+    fun `A share above none never shows as 0%, nor one below all as 100%`() {
+        val patterns = InsightsPatternsDomainModel.Enough(
+            migraines = 300,
+            triggers = listOf(1, 2, 199, 299, 300).map {
+                InsightsTriggerCountDomainModel(InsightsTriggerDomainModel.Custom("t$it"), it)
+            },
+            weekdays = InsightsWeekdaysDomainModel(emptyList(), null),
+            timesOfDay = InsightsTimesOfDayDomainModel(emptyList(), null),
+            cycle = InsightsCycleDomainModel(cycles = 2, migraines = 0, days = 1, periodDays = 366),
+            medications = emptyList()
+        )
+
+        val ready = classUnderTest.toPresentation(insights(patterns)) as InsightsViewState.Ready
+        val enough = ready.insights.patterns as InsightsPatternsPresentationModel.Enough
+
+        assertEquals(
+            listOf(
+                InsightsPercentPresentationModel.BelowOne,
+                whole(1),
+                whole(66),
+                InsightsPercentPresentationModel.AboveNinetyNine,
+                whole(100)
+            ),
+            enough.triggers.map { it.percent }
+        )
+        assertEquals(whole(0), enough.cycle?.percent)
+        assertEquals(InsightsPercentPresentationModel.BelowOne, enough.cycle?.daysPercent)
     }
 
     @Test

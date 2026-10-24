@@ -4,6 +4,7 @@ import com.migrely.app.insights.presentation.model.InsightsCyclePresentationMode
 import com.migrely.app.insights.presentation.model.InsightsMedicationPresentationModel
 import com.migrely.app.insights.presentation.model.InsightsMonthPresentationModel
 import com.migrely.app.insights.presentation.model.InsightsPatternsPresentationModel
+import com.migrely.app.insights.presentation.model.InsightsPercentPresentationModel
 import com.migrely.app.insights.presentation.model.InsightsPresentationModel
 import com.migrely.app.insights.presentation.model.InsightsTimeOfDayCountPresentationModel
 import com.migrely.app.insights.presentation.model.InsightsTimeOfDayPresentationModel
@@ -15,6 +16,7 @@ import com.migrely.app.insights.ui.model.InsightsCycleUiModel
 import com.migrely.app.insights.ui.model.InsightsMedicationUiModel
 import com.migrely.app.insights.ui.model.InsightsMonthUiModel
 import com.migrely.app.insights.ui.model.InsightsPatternsUiModel
+import com.migrely.app.insights.ui.model.InsightsPercentUiModel
 import com.migrely.app.insights.ui.model.InsightsTimeOfDayBarUiModel
 import com.migrely.app.insights.ui.model.InsightsTimeOfDayUiModel
 import com.migrely.app.insights.ui.model.InsightsTriggerCountUiModel
@@ -44,7 +46,7 @@ class InsightsUiMappersTest {
                         InsightsTriggerCountPresentationModel(
                             InsightsTriggerPresentationModel.Custom("Long drive"),
                             6,
-                            60
+                            InsightsPercentPresentationModel.Whole(60)
                         )
                     ),
                     weekdays = DayOfWeek.entries.map {
@@ -55,9 +57,20 @@ class InsightsUiMappersTest {
                         InsightsTimeOfDayCountPresentationModel(time, index + 1)
                     },
                     busiestTimeOfDay = InsightsTimeOfDayPresentationModel.Evening,
-                    cycle = InsightsCyclePresentationModel(4, 40, 13),
+                    cycle = InsightsCyclePresentationModel(
+                        4,
+                        InsightsPercentPresentationModel.Whole(40),
+                        24,
+                        183,
+                        InsightsPercentPresentationModel.BelowOne
+                    ),
                     medications = listOf(
-                        InsightsMedicationPresentationModel.Rated("Ibuprofen", 7, 9, 78),
+                        InsightsMedicationPresentationModel.Rated(
+                            "Ibuprofen",
+                            7,
+                            9,
+                            InsightsPercentPresentationModel.AboveNinetyNine
+                        ),
                         InsightsMedicationPresentationModel.NeedsAnswers("Sumatriptan", 2)
                     )
                 ),
@@ -75,7 +88,7 @@ class InsightsUiMappersTest {
                             InsightsTriggerCountUiModel(
                                 InsightsTriggerUiModel.Custom("Long drive"),
                                 6,
-                                60
+                                InsightsPercentUiModel.Whole(60)
                             )
                         ),
                         weekdays = DayOfWeek.entries.map {
@@ -90,9 +103,20 @@ class InsightsUiMappersTest {
                             InsightsTimeOfDayBarUiModel(time, index + 1, (index + 1) / 4f)
                         },
                         busiestTimeOfDay = InsightsTimeOfDayUiModel.Evening,
-                        cycle = InsightsCycleUiModel(4, 40, 13),
+                        cycle = InsightsCycleUiModel(
+                            4,
+                            InsightsPercentUiModel.Whole(40),
+                            24,
+                            183,
+                            InsightsPercentUiModel.BelowOne
+                        ),
                         medications = listOf(
-                            InsightsMedicationUiModel.Rated("Ibuprofen", 7, 9, 78),
+                            InsightsMedicationUiModel.Rated(
+                                "Ibuprofen",
+                                7,
+                                9,
+                                InsightsPercentUiModel.AboveNinetyNine
+                            ),
                             InsightsMedicationUiModel.NeedsAnswers("Sumatriptan", 2)
                         )
                     ),

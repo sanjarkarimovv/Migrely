@@ -11,6 +11,7 @@ import com.migrely.app.insights.presentation.model.InsightsCyclePresentationMode
 import com.migrely.app.insights.presentation.model.InsightsMedicationPresentationModel
 import com.migrely.app.insights.presentation.model.InsightsMonthPresentationModel
 import com.migrely.app.insights.presentation.model.InsightsPatternsPresentationModel
+import com.migrely.app.insights.presentation.model.InsightsPercentPresentationModel
 import com.migrely.app.insights.presentation.model.InsightsPresentationModel
 import com.migrely.app.insights.presentation.model.InsightsTimeOfDayCountPresentationModel
 import com.migrely.app.insights.presentation.model.InsightsTimeOfDayPresentationModel
@@ -20,8 +21,9 @@ import com.migrely.app.insights.presentation.model.InsightsWeekdayPresentationMo
 import kotlin.math.roundToInt
 
 private const val HUNDRED = 100.0
+private const val ALL = 100
 
-/** Insights as the screen shows them, each share rounded to a whole percent of its total. */
+/** Insights as the screen shows them, each share a whole percent of its total. */
 class InsightsPresentationMapper(
     private val insightsTriggerPresentationMapper: InsightsTriggerPresentationMapper
 ) {
@@ -76,6 +78,8 @@ class InsightsPresentationMapper(
         InsightsCyclePresentationModel(
             migraines = cycle.migraines,
             percent = percentOf(cycle.migraines, migraines),
+            days = cycle.days,
+            periodDays = cycle.periodDays,
             daysPercent = percentOf(cycle.days, cycle.periodDays)
         )
 
@@ -98,6 +102,13 @@ class InsightsPresentationMapper(
         bedRestMigraines = month.bedRestMigraines
     )
 
-    private fun percentOf(count: Int, total: Int) =
-        if (total == 0) 0 else (count * HUNDRED / total).roundToInt()
+    /** Rounded to a whole percent, but never to 0 for some or to 100 for less than all. */
+    private fun percentOf(count: Int, total: Int): InsightsPercentPresentationModel {
+        val percent = if (total == 0) 0 else (count * HUNDRED / total).roundToInt()
+        return when {
+            percent == 0 && count > 0 -> InsightsPercentPresentationModel.BelowOne
+            percent == ALL && count < total -> InsightsPercentPresentationModel.AboveNinetyNine
+            else -> InsightsPercentPresentationModel.Whole(percent)
+        }
+    }
 }

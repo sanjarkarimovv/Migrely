@@ -57,6 +57,7 @@ import com.migrely.app.insights.ui.model.InsightsCycleUiModel
 import com.migrely.app.insights.ui.model.InsightsMedicationUiModel
 import com.migrely.app.insights.ui.model.InsightsMonthUiModel
 import com.migrely.app.insights.ui.model.InsightsPatternsUiModel
+import com.migrely.app.insights.ui.model.InsightsPercentUiModel
 import com.migrely.app.insights.ui.model.InsightsTimeOfDayBarUiModel
 import com.migrely.app.insights.ui.model.InsightsTimeOfDayUiModel
 import com.migrely.app.insights.ui.model.InsightsTriggerCountUiModel
@@ -239,19 +240,19 @@ private fun InsightsPreview() {
                                     InsightsBuiltInTriggerUiModel.Stress
                                 ),
                                 6,
-                                60
+                                InsightsPercentUiModel.Whole(60)
                             ),
                             InsightsTriggerCountUiModel(
                                 InsightsTriggerUiModel.BuiltIn(
                                     InsightsBuiltInTriggerUiModel.TooLittleSleep
                                 ),
                                 4,
-                                40
+                                InsightsPercentUiModel.Whole(40)
                             ),
                             InsightsTriggerCountUiModel(
                                 InsightsTriggerUiModel.Custom("Long drive"),
                                 2,
-                                20
+                                InsightsPercentUiModel.Whole(20)
                             )
                         ),
                         weekdays = DayOfWeek.entries.mapIndexed { index, day ->
@@ -262,9 +263,20 @@ private fun InsightsPreview() {
                             InsightsTimeOfDayBarUiModel(time, times[index], times[index] / 4f)
                         },
                         busiestTimeOfDay = InsightsTimeOfDayUiModel.Morning,
-                        cycle = InsightsCycleUiModel(migraines = 4, percent = 40, daysPercent = 13),
+                        cycle = InsightsCycleUiModel(
+                            migraines = 4,
+                            percent = InsightsPercentUiModel.Whole(40),
+                            days = 24,
+                            periodDays = 184,
+                            daysPercent = InsightsPercentUiModel.Whole(13)
+                        ),
                         medications = listOf(
-                            InsightsMedicationUiModel.Rated("Ibuprofen", 7, 9, 78),
+                            InsightsMedicationUiModel.Rated(
+                                "Ibuprofen",
+                                7,
+                                9,
+                                InsightsPercentUiModel.Whole(78)
+                            ),
                             InsightsMedicationUiModel.NeedsAnswers("Sumatriptan", 2)
                         )
                     ),

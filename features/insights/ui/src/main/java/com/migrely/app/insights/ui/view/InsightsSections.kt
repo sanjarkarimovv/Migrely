@@ -22,6 +22,7 @@ import com.migrely.app.insights.ui.model.InsightsCycleUiModel
 import com.migrely.app.insights.ui.model.InsightsMedicationUiModel
 import com.migrely.app.insights.ui.model.InsightsMonthUiModel
 import com.migrely.app.insights.ui.model.InsightsPatternsUiModel
+import com.migrely.app.insights.ui.model.InsightsPercentUiModel
 import com.migrely.app.insights.ui.model.InsightsTriggerUiModel
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
@@ -120,7 +121,7 @@ internal fun TriggersSection(patterns: InsightsPatternsUiModel.Enough) {
                     name,
                     it.migraines,
                     patterns.migraines,
-                    it.percent
+                    percentText(it.percent)
                 )
             )
         }
@@ -194,16 +195,21 @@ private fun CountBar(label: String, migraines: Int, total: Int, fraction: Float)
 @Composable
 internal fun CycleSection(cycle: InsightsCycleUiModel, migraines: Int) {
     Section(stringResource(R.string.insights_cycle_title)) {
-        BodyText(
-            pluralStringResource(
-                R.plurals.insights_cycle_share,
-                migraines,
-                cycle.migraines,
-                migraines,
-                cycle.percent,
-                cycle.daysPercent
-            )
+        val share = pluralStringResource(
+            R.plurals.insights_cycle_share,
+            migraines,
+            cycle.migraines,
+            migraines,
+            percentText(cycle.percent)
         )
+        val base = pluralStringResource(
+            R.plurals.insights_cycle_base,
+            cycle.periodDays,
+            percentText(cycle.daysPercent),
+            cycle.days,
+            cycle.periodDays
+        )
+        BodyText(stringResource(R.string.insights_cycle_text, share, base))
         BodyText(stringResource(R.string.insights_cycle_window), muted = true)
     }
 }
@@ -222,7 +228,7 @@ internal fun MedicationsSection(medications: List<InsightsMedicationUiModel>) {
                     medication.answered,
                     medication.helped,
                     medication.answered,
-                    medication.percent
+                    percentText(medication.percent)
                 )
                 is InsightsMedicationUiModel.NeedsAnswers ->
                     stringResource(R.string.insights_needs_answers, medication.answered)
@@ -281,6 +287,14 @@ internal fun TrendsSection(trends: List<InsightsMonthUiModel>) {
             )
         }
     }
+}
+
+/** "60%", or "<1%" and ">99%" for a share that is not quite none or all. */
+@Composable
+private fun percentText(percent: InsightsPercentUiModel): String = when (percent) {
+    is InsightsPercentUiModel.Whole -> stringResource(R.string.insights_percent, percent.percent)
+    InsightsPercentUiModel.BelowOne -> stringResource(R.string.insights_percent_below, 1)
+    InsightsPercentUiModel.AboveNinetyNine -> stringResource(R.string.insights_percent_above, 99)
 }
 
 /** "October 2026", in the order of the device's language. */

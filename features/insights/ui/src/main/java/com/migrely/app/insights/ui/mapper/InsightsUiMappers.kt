@@ -4,6 +4,7 @@ import com.migrely.app.architecture.ui.notification.mapper.NotificationUiMapper
 import com.migrely.app.architecture.ui.notification.model.UiNotification
 import com.migrely.app.insights.presentation.model.InsightsMedicationPresentationModel
 import com.migrely.app.insights.presentation.model.InsightsPatternsPresentationModel
+import com.migrely.app.insights.presentation.model.InsightsPercentPresentationModel
 import com.migrely.app.insights.presentation.model.InsightsPresentationModel
 import com.migrely.app.insights.presentation.model.InsightsPresentationNotification
 import com.migrely.app.insights.presentation.model.InsightsTimeOfDayPresentationModel
@@ -12,6 +13,7 @@ import com.migrely.app.insights.ui.model.InsightsCycleUiModel
 import com.migrely.app.insights.ui.model.InsightsMedicationUiModel
 import com.migrely.app.insights.ui.model.InsightsMonthUiModel
 import com.migrely.app.insights.ui.model.InsightsPatternsUiModel
+import com.migrely.app.insights.ui.model.InsightsPercentUiModel
 import com.migrely.app.insights.ui.model.InsightsTimeOfDayBarUiModel
 import com.migrely.app.insights.ui.model.InsightsTimeOfDayUiModel
 import com.migrely.app.insights.ui.model.InsightsTriggerCountUiModel
@@ -63,7 +65,7 @@ class InsightsViewStateUiMapper(private val insightsTriggerUiMapper: InsightsTri
                 InsightsTriggerCountUiModel(
                     insightsTriggerUiMapper.toUi(it.trigger),
                     it.migraines,
-                    it.percent
+                    percentOf(it.percent)
                 )
             },
             weekdays = patterns.weekdays.map {
@@ -83,12 +85,23 @@ class InsightsViewStateUiMapper(private val insightsTriggerUiMapper: InsightsTri
             },
             busiestTimeOfDay = patterns.busiestTimeOfDay?.let(::timeOf),
             cycle = patterns.cycle?.let {
-                InsightsCycleUiModel(it.migraines, it.percent, it.daysPercent)
+                InsightsCycleUiModel(
+                    it.migraines,
+                    percentOf(it.percent),
+                    it.days,
+                    it.periodDays,
+                    percentOf(it.daysPercent)
+                )
             },
             medications = patterns.medications.map {
                 when (it) {
                     is InsightsMedicationPresentationModel.Rated ->
-                        InsightsMedicationUiModel.Rated(it.name, it.helped, it.answered, it.percent)
+                        InsightsMedicationUiModel.Rated(
+                            it.name,
+                            it.helped,
+                            it.answered,
+                            percentOf(it.percent)
+                        )
                     is InsightsMedicationPresentationModel.NeedsAnswers ->
                         InsightsMedicationUiModel.NeedsAnswers(it.name, it.answered)
                 }
@@ -101,6 +114,12 @@ class InsightsViewStateUiMapper(private val insightsTriggerUiMapper: InsightsTri
         InsightsTimeOfDayPresentationModel.Morning -> InsightsTimeOfDayUiModel.Morning
         InsightsTimeOfDayPresentationModel.Afternoon -> InsightsTimeOfDayUiModel.Afternoon
         InsightsTimeOfDayPresentationModel.Evening -> InsightsTimeOfDayUiModel.Evening
+    }
+
+    private fun percentOf(percent: InsightsPercentPresentationModel) = when (percent) {
+        is InsightsPercentPresentationModel.Whole -> InsightsPercentUiModel.Whole(percent.percent)
+        InsightsPercentPresentationModel.BelowOne -> InsightsPercentUiModel.BelowOne
+        InsightsPercentPresentationModel.AboveNinetyNine -> InsightsPercentUiModel.AboveNinetyNine
     }
 
     private fun fractionOf(count: Int, highest: Int) =

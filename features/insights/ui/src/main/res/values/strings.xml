@@ -7,6 +7,9 @@
         <item quantity="other">%d months</item>
     </plurals>
     <string name="insights_loading">Reading your entries</string>
+    <string name="insights_percent">%d%%</string>
+    <string name="insights_percent_below">&lt;%d%%</string>
+    <string name="insights_percent_above">&gt;%d%%</string>
     <string name="insights_unavailable">Your entries can\'t be read right now. Try again in a moment.</string>
     <!-- Not enough to go on yet (BRD EC-INS-01, D88). -->
     <plurals name="insights_more_migraines">
@@ -20,8 +23,8 @@
     <!-- Triggers as counts and shares only, with no causal words (BRD INS-F1, INS-F6, D89). -->
     <string name="insights_triggers_title">Often logged with your migraines</string>
     <plurals name="insights_trigger_share">
-        <item quantity="one">%1$s — %2$d of %3$d migraine (%4$d%%)</item>
-        <item quantity="other">%1$s — %2$d of %3$d migraines (%4$d%%)</item>
+        <item quantity="one">%1$s — %2$d of %3$d migraine (%4$s)</item>
+        <item quantity="other">%1$s — %2$d of %3$d migraines (%4$s)</item>
     </plurals>
     <string name="insights_no_triggers">No triggers were logged in this period.</string>
     <string name="insights_trigger_stress">Stress</string>
@@ -74,15 +77,20 @@
     <!-- Around the period (BRD INS-F3, EC-INS-02, EC-INS-03, D91). -->
     <string name="insights_cycle_title">Around your period</string>
     <plurals name="insights_cycle_share">
-        <item quantity="one">%1$d of %2$d migraine (%3$d%%) started in the days around your period. Those days are %4$d%% of this period.</item>
-        <item quantity="other">%1$d of %2$d migraines (%3$d%%) started in the days around your period. Those days are %4$d%% of this period.</item>
+        <item quantity="one">%1$d of %2$d migraine (%3$s) started in the days around your period.</item>
+        <item quantity="other">%1$d of %2$d migraines (%3$s) started in the days around your period.</item>
     </plurals>
+    <plurals name="insights_cycle_base">
+        <item quantity="one">Those days are %1$s of this period (%2$d of %3$d day).</item>
+        <item quantity="other">Those days are %1$s of this period (%2$d of %3$d days).</item>
+    </plurals>
+    <string name="insights_cycle_text">%1$s %2$s</string>
     <string name="insights_cycle_window">The days around your period run from 2 days before it starts through its third day.</string>
     <!-- What helped (BRD INS-F4, D92). -->
     <string name="insights_medications_title">What helped</string>
     <plurals name="insights_helped">
-        <item quantity="one">Helped a lot or completely: %1$d of %2$d answer (%3$d%%)</item>
-        <item quantity="other">Helped a lot or completely: %1$d of %2$d answers (%3$d%%)</item>
+        <item quantity="one">Helped a lot or completely: %1$d of %2$d answer (%3$s)</item>
+        <item quantity="other">Helped a lot or completely: %1$d of %2$d answers (%3$s)</item>
     </plurals>
     <string name="insights_needs_answers">Needs 3 answers (has %1$d)</string>
     <string name="insights_no_medications">No attack medication was logged in this period.</string>

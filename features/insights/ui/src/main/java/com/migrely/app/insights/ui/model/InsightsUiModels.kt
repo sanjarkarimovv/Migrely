@@ -36,8 +36,17 @@ sealed interface InsightsPatternsUiModel {
 data class InsightsTriggerCountUiModel(
     val trigger: InsightsTriggerUiModel,
     val migraines: Int,
-    val percent: Int
+    val percent: InsightsPercentUiModel
 )
+
+/** A share as shown: a whole percent, "<1%" or ">99%". */
+sealed interface InsightsPercentUiModel {
+    data class Whole(val percent: Int) : InsightsPercentUiModel
+
+    data object BelowOne : InsightsPercentUiModel
+
+    data object AboveNinetyNine : InsightsPercentUiModel
+}
 
 /** A built-in trigger, named from this module's strings, or one of the user's own by its name. */
 sealed interface InsightsTriggerUiModel {
@@ -79,7 +88,13 @@ data class InsightsTimeOfDayBarUiModel(
     val fraction: Float
 )
 
-data class InsightsCycleUiModel(val migraines: Int, val percent: Int, val daysPercent: Int)
+data class InsightsCycleUiModel(
+    val migraines: Int,
+    val percent: InsightsPercentUiModel,
+    val days: Int,
+    val periodDays: Int,
+    val daysPercent: InsightsPercentUiModel
+)
 
 sealed interface InsightsMedicationUiModel {
     val name: String
@@ -88,7 +103,7 @@ sealed interface InsightsMedicationUiModel {
         override val name: String,
         val helped: Int,
         val answered: Int,
-        val percent: Int
+        val percent: InsightsPercentUiModel
     ) : InsightsMedicationUiModel
 
     data class NeedsAnswers(override val name: String, val answered: Int) :
