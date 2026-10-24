@@ -19,9 +19,9 @@
 
 ## 3. Medication presentation and data
 
-- [ ] 3.1 `MedicationPromptViewModel` and its presentation models and mappers, with tests.
+- [x] 3.1 `MedicationPromptViewModel` and its presentation models and mappers, with tests.
   Verify: `./gradlew :features:medication:presentation:test`
-- [ ] 3.2 `MedicationRepository` implements the new repositories, with tests.
+- [x] 3.2 `MedicationRepository` implements the new repositories, with tests.
   Verify: `./gradlew :features:medication:data:test`
 
 ## 4. Attack feature (design D4)
