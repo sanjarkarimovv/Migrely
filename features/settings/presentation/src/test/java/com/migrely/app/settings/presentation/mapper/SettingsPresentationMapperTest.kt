@@ -1,6 +1,7 @@
 package com.migrely.app.settings.presentation.mapper
 
 import com.migrely.app.settings.domain.model.SettingsDomainModel
+import com.migrely.app.settings.domain.model.ThemeDomainModel
 import com.migrely.app.settings.presentation.model.SettingsPresentationModel
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -12,7 +13,7 @@ class SettingsPresentationMapperTest {
             assertEquals(
                 SettingsPresentationModel(periodTracking = it),
                 SettingsPresentationMapper().toPresentation(
-                    SettingsDomainModel(periodTracking = it)
+                    SettingsDomainModel(periodTracking = it, ThemeDomainModel.Dark, "1.0")
                 )
             )
         }

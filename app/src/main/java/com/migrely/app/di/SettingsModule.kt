@@ -2,7 +2,6 @@ package com.migrely.app.di
 
 import com.migrely.app.architecture.domain.UseCaseExecutor
 import com.migrely.app.coroutine.CoroutineContextProvider
-import com.migrely.app.datasource.preferences.datasource.PreferencesDataSource
 import com.migrely.app.navigation.mapper.SettingsNavigationEventDestinationMapper
 import com.migrely.app.settings.data.repository.SettingsRepository
 import com.migrely.app.settings.domain.usecase.GetSettingsUseCase
@@ -24,18 +23,15 @@ import dagger.hilt.components.SingletonComponent
 internal object SettingsModule {
     @Provides
     fun providesSettingsViewModel(
-        preferencesDataSource: PreferencesDataSource,
+        repository: SettingsRepository,
         coroutines: CoroutineContextProvider,
         useCaseExecutor: UseCaseExecutor
-    ): SettingsViewModel {
-        val repository = SettingsRepository(preferencesDataSource)
-        return SettingsViewModel(
-            GetSettingsUseCase(repository, coroutines),
-            SetPeriodTrackingUseCase(repository, coroutines),
-            SettingsPresentationMapper(),
-            useCaseExecutor
-        )
-    }
+    ) = SettingsViewModel(
+        GetSettingsUseCase(repository, coroutines),
+        SetPeriodTrackingUseCase(repository, coroutines),
+        SettingsPresentationMapper(),
+        useCaseExecutor
+    )
 
     @Provides
     fun providesSettingsDependencies(settingsViewModel: SettingsViewModel): SettingsDependencies {

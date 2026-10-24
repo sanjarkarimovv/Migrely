@@ -3,6 +3,7 @@ package com.migrely.app.settings.presentation.viewmodel
 import com.migrely.app.architecture.presentation.viewmodel.BaseViewModelTest
 import com.migrely.app.settings.domain.model.SettingsDomainModel
 import com.migrely.app.settings.domain.model.SettingsWriteResultDomainModel
+import com.migrely.app.settings.domain.model.ThemeDomainModel
 import com.migrely.app.settings.domain.usecase.GetSettingsUseCase
 import com.migrely.app.settings.domain.usecase.SetPeriodTrackingUseCase
 import com.migrely.app.settings.presentation.mapper.SettingsPresentationMapper
@@ -40,7 +41,7 @@ class SettingsViewModelTest :
 
     @Test
     fun `When entering then the settings`() = runTest {
-        getSettingsUseCase.givenSuccessfulExecution(SettingsDomainModel(periodTracking = false))
+        getSettingsUseCase.givenSuccessfulExecution(SettingsDomainModel(false, ThemeDomainModel.Dark, "1.0"))
         val state = async(start = UNDISPATCHED) { classUnderTest.viewState.first() }
 
         classUnderTest.onEnter()
@@ -53,7 +54,7 @@ class SettingsViewModelTest :
 
     @Test
     fun `Given Track periods is not saved when turning it off then the user is told`() = runTest {
-        getSettingsUseCase.givenSuccessfulExecution(SettingsDomainModel(periodTracking = true))
+        getSettingsUseCase.givenSuccessfulExecution(SettingsDomainModel(true, ThemeDomainModel.Dark, "1.0"))
         setPeriodTrackingUseCase.givenSuccessfulExecution(
             false,
             SettingsWriteResultDomainModel.Failed
@@ -67,7 +68,7 @@ class SettingsViewModelTest :
 
     @Test
     fun `When Track periods is saved then the settings are read again`() = runTest {
-        getSettingsUseCase.givenSuccessfulExecution(SettingsDomainModel(periodTracking = false))
+        getSettingsUseCase.givenSuccessfulExecution(SettingsDomainModel(false, ThemeDomainModel.Dark, "1.0"))
         setPeriodTrackingUseCase.givenSuccessfulExecution(
             false,
             SettingsWriteResultDomainModel.Done
