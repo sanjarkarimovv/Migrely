@@ -46,7 +46,7 @@
 
 ## 7. Docs
 
-- [ ] 7.1 ARCHITECTURE §3 (the prompt slot) and §6a (DB v4).
+- [x] 7.1 ARCHITECTURE §3 (the prompt slot) and §6a (DB v4).
 
 ## 8. Verify
 

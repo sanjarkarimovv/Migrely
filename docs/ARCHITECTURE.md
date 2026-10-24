@@ -68,6 +68,11 @@ target API 37, whichever comes first. Until then, do not mix AGP 9 idioms into b
   with its own ViewModel and `Dependencies`. Home shows the card through a slot,
   `Home(monthCalendar: @Composable (refreshKey: Int) -> Unit)`, that `:app` fills; home never sees the history
   feature. The key counts home's view states, so the card loads again whenever home does.
+- `medication` owns home's medication card the same way (change `add-medication-effect-and-overuse`, BRD D46):
+  - `MedicationPromptViewModel` and `MedicationPromptDependencies` fill the slot
+    `Home(medicationPrompt: @Composable (refreshKey: Int) -> Unit)` under today's card;
+  - `GetMedicationPromptUseCase` picks the one card: an overuse warning first, then "Did it help?";
+  - the card neither navigates nor shows messages, so its `Dependencies` has no observer.
 - Features never depend on other features. Something two features need goes into a datasource, `:app`, or a dedicated
   shared domain module with its own reason to exist.
 
@@ -147,6 +152,14 @@ Health data must never be passed to either SDK.
   - `mergeInto` moves intakes to the survivor in the same transaction. `discard`, which undoes a mistaken start,
     detaches them first, so a medication logged meanwhile stays on its own.
   - Version 3 is an additive `AutoMigration(2, 3)`, covered by `MigrationTest`.
+- **Answers and overuse notices (version 4, change `add-medication-effect-and-overuse`).**
+  - `medication_intake.effect` holds the answer to "Did it help?". `effect_closed` is set by an answer or a skip, so
+    the question is asked once (BRD D39).
+  - `overuse_notice` keeps the last "Got it" per category and level, primary key `(category, level)`, written with
+    `@Upsert` (BRD EC-MED-06).
+  - The pending question and the acute intakes are read with a `LEFT JOIN` on `attack` that leaves out attacks being
+    deleted. Preventive medications are left out by `kind`.
+  - Version 4 is an additive `AutoMigration(3, 4)`, covered by `MigrationTest` 3→4 and 1→4.
 - **Range reads (History).** A month is read with `overlapping(null, from, to)`, which returns every attack touching
   the range, the one in progress included, with a margin of two days on each side so that attacks logged in other
   zones are found. The first month that can be shown comes from `earliestStart()`. Both use the start index; the
