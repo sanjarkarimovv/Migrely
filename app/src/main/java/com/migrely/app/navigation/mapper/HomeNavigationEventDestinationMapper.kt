@@ -7,6 +7,7 @@ import com.migrely.app.home.presentation.navigation.HomePresentationNavigationEv
 import com.migrely.app.ui.main.route.AddPastAttack
 import com.migrely.app.ui.main.route.AttackDetails
 import com.migrely.app.ui.main.route.LogMedication
+import com.migrely.app.ui.main.route.Reminders
 
 class HomeNavigationEventDestinationMapper :
     NavigationEventDestinationMapper<HomePresentationNavigationEvent>(
@@ -31,6 +32,10 @@ class HomeNavigationEventDestinationMapper :
                     darkRoom = navigationEvent.attackId != null
                 )
                 UiDestination { it.navigate(route, navOptions { launchSingleTop = true }) }
+            }
+
+            HomePresentationNavigationEvent.OnOpenReminders -> UiDestination { navController ->
+                navController.navigate(Reminders, navOptions { launchSingleTop = true })
             }
         }
 }

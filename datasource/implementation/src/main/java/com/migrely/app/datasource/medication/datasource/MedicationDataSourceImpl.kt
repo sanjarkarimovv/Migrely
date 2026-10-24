@@ -156,6 +156,19 @@ class MedicationDataSourceImpl(
             ?.let(medicationLocalMapper::toData)
     }
 
+    override fun pendingEffectQuestionOf(
+        intakeId: String,
+        takenFrom: Instant,
+        takenTo: Instant
+    ): PendingEffectQuestionDataModel? = database {
+        medicationDao.pendingEffectQuestionOf(
+            intakeId,
+            takenFrom.toEpochMilli(),
+            takenTo.toEpochMilli()
+        )
+            ?.let(medicationLocalMapper::toData)
+    }
+
     override fun setIntakeEffect(intakeId: String, effect: IntakeEffectDataModel?) = database {
         medicationDao.setEffect(intakeId, medicationLocalMapper.toLocalEffect(effect))
     }

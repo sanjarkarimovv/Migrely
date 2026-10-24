@@ -108,4 +108,9 @@ dependencies {
     implementation(projects.features.medication.presentation)
     implementation(projects.features.medication.domain)
     implementation(projects.features.medication.data)
+    implementation(projects.features.reminders.ui)
+    implementation(projects.features.reminders.presentation)
+    implementation(projects.features.reminders.domain)
+    implementation(projects.features.reminders.data)
+    implementation(libs.androidx.work.runtime)
 }

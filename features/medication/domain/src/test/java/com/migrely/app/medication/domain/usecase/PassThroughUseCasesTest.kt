@@ -11,6 +11,7 @@ import com.migrely.app.medication.domain.model.OveruseCategoryDomainModel
 import com.migrely.app.medication.domain.model.OveruseLevelDomainModel
 import com.migrely.app.medication.domain.model.WriteResultDomainModel
 import com.migrely.app.medication.domain.repository.AcknowledgeOveruseRepository
+import com.migrely.app.medication.domain.repository.CancelEffectQuestionRepository
 import com.migrely.app.medication.domain.repository.CloseEffectQuestionRepository
 import com.migrely.app.medication.domain.repository.DeleteIntakeRepository
 import com.migrely.app.medication.domain.repository.GetActiveMedicationsRepository
@@ -24,6 +25,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.mockito.kotlin.given
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
+import org.mockito.kotlin.verify
 
 class PassThroughUseCasesTest {
     private val context = CoroutineContextProvider.Default
@@ -68,8 +71,32 @@ class PassThroughUseCasesTest {
 
         assertEquals(
             WriteResultDomainModel.Failed,
-            UndoIntakeUseCase(repository, context).executeInBackground("i")
+            UndoIntakeUseCase(repository, mock(), context).executeInBackground("i")
         )
+    }
+
+    @Test
+    fun `When an intake is undone, answered or skipped then its notification is dropped`() {
+        val cancel: CancelEffectQuestionRepository = mock()
+        val delete: DeleteIntakeRepository = mock()
+        val answer: SetIntakeEffectRepository = mock()
+        val close: CloseEffectQuestionRepository = mock()
+        given(delete.deleteIntake("a")).willReturn(WriteResultDomainModel.Done)
+        given(
+            answer.setIntakeEffect("b", IntakeEffectDomainModel.ALot)
+        ).willReturn(WriteResultDomainModel.Done)
+        given(close.closeEffectQuestion("c")).willReturn(WriteResultDomainModel.Done)
+        given(close.closeEffectQuestion("d")).willReturn(WriteResultDomainModel.Failed)
+
+        UndoIntakeUseCase(delete, cancel, context).executeInBackground("a")
+        AnswerEffectUseCase(answer, cancel, context).executeInBackground(
+            AnswerEffectRequestDomainModel("b", IntakeEffectDomainModel.ALot)
+        )
+        SkipEffectQuestionUseCase(close, cancel, context).executeInBackground("c")
+        SkipEffectQuestionUseCase(close, cancel, context).executeInBackground("d")
+
+        listOf("a", "b", "c").forEach { verify(cancel).cancelEffectQuestion(it) }
+        verify(cancel, never()).cancelEffectQuestion("d")
     }
 
     @Test
@@ -80,7 +107,7 @@ class PassThroughUseCasesTest {
 
         assertEquals(
             WriteResultDomainModel.Done,
-            AnswerEffectUseCase(repository, context).executeInBackground(
+            AnswerEffectUseCase(repository, mock(), context).executeInBackground(
                 AnswerEffectRequestDomainModel("i", IntakeEffectDomainModel.ALot)
             )
         )
@@ -93,7 +120,7 @@ class PassThroughUseCasesTest {
 
         assertEquals(
             WriteResultDomainModel.StorageFull,
-            SkipEffectQuestionUseCase(repository, context).executeInBackground("i")
+            SkipEffectQuestionUseCase(repository, mock(), context).executeInBackground("i")
         )
     }
 

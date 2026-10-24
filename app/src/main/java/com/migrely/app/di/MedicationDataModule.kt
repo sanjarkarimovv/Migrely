@@ -29,6 +29,7 @@ import com.migrely.app.medication.domain.repository.GetAttackRepository
 import com.migrely.app.medication.domain.repository.GetCurrentTimeRepository
 import com.migrely.app.medication.domain.repository.GetMedicationRepository
 import com.migrely.app.medication.domain.repository.GetOveruseNoticesRepository
+import com.migrely.app.medication.domain.repository.GetPendingEffectQuestionOfRepository
 import com.migrely.app.medication.domain.repository.GetPendingEffectQuestionRepository
 import com.migrely.app.medication.domain.repository.SetIntakeEffectRepository
 import com.migrely.app.medication.domain.repository.SetMedicationArchivedRepository
@@ -76,6 +77,11 @@ internal object MedicationDataModule {
     fun providesGetPendingEffectQuestionRepository(
         repository: MedicationPromptRepository
     ): GetPendingEffectQuestionRepository = repository
+
+    @Provides
+    fun providesGetPendingEffectQuestionOfRepository(
+        repository: MedicationPromptRepository
+    ): GetPendingEffectQuestionOfRepository = repository
 
     @Provides
     fun providesGetAcuteIntakesRepository(

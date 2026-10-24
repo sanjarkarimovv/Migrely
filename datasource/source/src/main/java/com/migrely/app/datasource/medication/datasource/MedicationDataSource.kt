@@ -74,6 +74,13 @@ interface MedicationDataSource {
      */
     fun pendingEffectQuestion(takenFrom: Instant, takenTo: Instant): PendingEffectQuestionDataModel?
 
+    /** [intakeId]'s question when it is still open by the same rules, or null (BRD D67). */
+    fun pendingEffectQuestionOf(
+        intakeId: String,
+        takenFrom: Instant,
+        takenTo: Instant
+    ): PendingEffectQuestionDataModel?
+
     /** Stores the answer, or clears it when null, and closes the question (BRD D39, EC-MED-12). */
     fun setIntakeEffect(intakeId: String, effect: IntakeEffectDataModel?)
 

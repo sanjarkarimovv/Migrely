@@ -131,6 +131,8 @@ class HomeViewModel(
         emitNavigationEvent(HomePresentationNavigationEvent.OnLogMedication(attackId))
 
     /** Home's one-tap period toggle for today (BRD DAY-F1, D48). */
+    fun onRemindersAction() = emitNavigationEvent(HomePresentationNavigationEvent.OnOpenReminders)
+
     fun onPeriodTodayAction(marked: Boolean) {
         setPeriodTodayUseCase(
             value = marked,
