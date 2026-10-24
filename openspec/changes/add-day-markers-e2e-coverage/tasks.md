@@ -87,7 +87,7 @@
 - [x] 7.1 Full regression, all device scenarios, the audit, `python3 -I qa/e2e_coverage.py` (exit 0), the permission
   audit. Record the results, the coverage, and the day-markers and month-sky gaps with reasons (D61) in a
   "Verification record"
-- [ ] 7.2 Comment the #22 and #26 retests on PR #30 and close them when they pass
+- [x] 7.2 Comment the #22 and #26 retests on PR #30 and close them when they pass
 - [x] 7.3 Gate `./gradlew assembleDebug test ktlintCheck detekt` and `openspec validate add-day-markers-e2e-coverage
   --strict`
 
