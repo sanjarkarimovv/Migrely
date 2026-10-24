@@ -8,13 +8,13 @@
 ## 2. Domain (design D2)
 
 - [x] 2.1 `MonthStatsDomainModel`, `ProgressDomainModel`, `MonthStatsCalculator` with tests.
-- [ ] 2.2 `GetAttackMedicationIntakesRepository`; `GetHistoryMonthUseCase` reads the extra data and fills `stats`;
+- [x] 2.2 `GetAttackMedicationIntakesRepository`; `GetHistoryMonthUseCase` reads the extra data and fills `stats`;
   tests for the failure paths.
   Verify: `./gradlew :features:history:domain:test`
 
 ## 3. Data (design D3)
 
-- [ ] 3.1 `HistoryRepository` reads attack-medication intakes; DI.
+- [x] 3.1 `HistoryRepository` reads attack-medication intakes; DI.
   Verify: `./gradlew :features:history:data:test :app:assembleDebug`
 
 ## 4. Presentation and UI (design D4)

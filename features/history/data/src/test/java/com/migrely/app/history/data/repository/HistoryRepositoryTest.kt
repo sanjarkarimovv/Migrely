@@ -10,9 +10,14 @@ import com.migrely.app.datasource.daymark.datasource.DayMarkDataSource
 import com.migrely.app.datasource.daymark.model.DayMarkDataModel
 import com.migrely.app.datasource.exception.DatabaseDataException
 import com.migrely.app.datasource.exception.StorageFullDataException
+import com.migrely.app.datasource.medication.datasource.MedicationDataSource
+import com.migrely.app.datasource.medication.model.AcuteIntakeDataModel
+import com.migrely.app.history.data.mapper.AttackMedicationIntakeDomainMapper
 import com.migrely.app.history.data.mapper.DayMarkDomainMapper
 import com.migrely.app.history.data.mapper.HistoryAttackDomainMapper
 import com.migrely.app.history.data.mapper.ZoneDomainMapper
+import com.migrely.app.history.domain.model.AttackMedicationIntakeDomainModel
+import com.migrely.app.history.domain.model.AttackMedicationIntakesResultDomainModel
 import com.migrely.app.history.domain.model.AttacksTouchingResultDomainModel
 import com.migrely.app.history.domain.model.CurrentTimeDomainModel
 import com.migrely.app.history.domain.model.DayMarkDomainModel
@@ -45,13 +50,16 @@ class HistoryRepositoryTest {
     private val attackDataSource: AttackDataSource = mock()
     private val clockDataSource: ClockDataSource = mock()
     private val dayMarkDataSource: DayMarkDataSource = mock()
+    private val medicationDataSource: MedicationDataSource = mock()
     private val classUnderTest = HistoryRepository(
         attackDataSource,
         clockDataSource,
         dayMarkDataSource,
+        medicationDataSource,
         HistoryAttackDomainMapper(ZoneDomainMapper()),
         ZoneDomainMapper(),
-        DayMarkDomainMapper()
+        DayMarkDomainMapper(),
+        AttackMedicationIntakeDomainMapper(ZoneDomainMapper())
     )
 
     @Test
@@ -223,5 +231,29 @@ class HistoryRepositoryTest {
 
         given(dayMarkDataSource.earliestMark()).willThrow(DatabaseDataException())
         assertEquals(EarliestDayMarkResultDomainModel.Failed, classUnderTest.earliestDayMark())
+    }
+
+    @Test
+    fun `When reading attack-medication intakes then each with its zone, or failed`() {
+        val from = Instant.parse("2026-09-28T19:00:00Z")
+        val to = Instant.parse("2026-11-02T19:00:00Z")
+        val takenAt = Instant.parse("2026-10-04T05:00:00Z")
+        given(medicationDataSource.acuteIntakesTakenBetween(from, to)).willReturn(
+            listOf(AcuteIntakeDataModel(takenAt, "Asia/Tashkent", category = null))
+        )
+        assertEquals(
+            AttackMedicationIntakesResultDomainModel.Loaded(
+                listOf(AttackMedicationIntakeDomainModel(takenAt, ZoneId.of("Asia/Tashkent")))
+            ),
+            classUnderTest.attackMedicationIntakes(from, to)
+        )
+
+        given(
+            medicationDataSource.acuteIntakesTakenBetween(from, to)
+        ).willThrow(DatabaseDataException())
+        assertEquals(
+            AttackMedicationIntakesResultDomainModel.Failed,
+            classUnderTest.attackMedicationIntakes(from, to)
+        )
     }
 }

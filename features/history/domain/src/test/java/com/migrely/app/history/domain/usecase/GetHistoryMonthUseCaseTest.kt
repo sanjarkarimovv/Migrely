@@ -1,6 +1,8 @@
 package com.migrely.app.history.domain.usecase
 
 import com.migrely.app.coroutine.CoroutineContextProvider
+import com.migrely.app.history.domain.model.AttackMedicationIntakeDomainModel
+import com.migrely.app.history.domain.model.AttackMedicationIntakesResultDomainModel
 import com.migrely.app.history.domain.model.AttacksTouchingResultDomainModel
 import com.migrely.app.history.domain.model.CurrentTimeDomainModel
 import com.migrely.app.history.domain.model.DayMarkDomainModel
@@ -11,6 +13,9 @@ import com.migrely.app.history.domain.model.EarliestDayMarkResultDomainModel
 import com.migrely.app.history.domain.model.HistoryAttackDomainModel
 import com.migrely.app.history.domain.model.HistoryMonthDomainModel
 import com.migrely.app.history.domain.model.HistoryMonthResultDomainModel
+import com.migrely.app.history.domain.model.PainLevelDomainModel
+import com.migrely.app.history.domain.model.ProgressDomainModel
+import com.migrely.app.history.domain.repository.GetAttackMedicationIntakesRepository
 import com.migrely.app.history.domain.repository.GetAttacksTouchingRepository
 import com.migrely.app.history.domain.repository.GetCurrentTimeRepository
 import com.migrely.app.history.domain.repository.GetDayMarksRepository
@@ -23,6 +28,7 @@ import java.time.LocalDateTime
 import java.time.YearMonth
 import java.time.ZoneId
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -45,6 +51,7 @@ class GetHistoryMonthUseCaseTest {
     private val getRecentlyDeletedAttackRepository: GetRecentlyDeletedAttackRepository = mock()
     private val getDayMarksRepository: GetDayMarksRepository = mock()
     private val getEarliestDayMarkRepository: GetEarliestDayMarkRepository = mock()
+    private val getAttackMedicationIntakesRepository: GetAttackMedicationIntakesRepository = mock()
 
     @Before
     fun setUp() {
@@ -55,8 +62,11 @@ class GetHistoryMonthUseCaseTest {
             getRecentlyDeletedAttackRepository,
             getDayMarksRepository,
             getEarliestDayMarkRepository,
+            getAttackMedicationIntakesRepository,
             CoroutineContextProvider.Default
         )
+        given(getAttackMedicationIntakesRepository.attackMedicationIntakes(any(), any()))
+            .willReturn(AttackMedicationIntakesResultDomainModel.Loaded(emptyList()))
         given(getEarliestDayMarkRepository.earliestDayMark())
             .willReturn(EarliestDayMarkResultDomainModel.None)
         givenNow("2026-10-23T12:00")
@@ -389,5 +399,75 @@ class GetHistoryMonthUseCaseTest {
         givenMarks(DayMarkDomainModel(TODAY, period = false, painFree = true))
 
         assertEquals(false, loaded(OCTOBER).days[22].painFree)
+    }
+
+    @Test
+    fun `Given the month's intakes cannot be read when executed then failed`() {
+        given(getAttackMedicationIntakesRepository.attackMedicationIntakes(any(), any()))
+            .willReturn(AttackMedicationIntakesResultDomainModel.Failed)
+
+        assertEquals(HistoryMonthResultDomainModel.Failed, classUnderTest.executeInBackground(null))
+    }
+
+    /** Period marks on the 1st to 12th of whichever month is read, so both months have enough entries. */
+    private fun givenEntriesInEveryMonth() {
+        given(getDayMarksRepository.dayMarks(any(), any())).willAnswer { invocation ->
+            val first = invocation.getArgument<LocalDate>(0)
+            DayMarksResultDomainModel.Loaded(
+                (1..12).map {
+                    DayMarkDomainModel(first.withDayOfMonth(it), period = true, painFree = false)
+                }
+            )
+        }
+    }
+
+    @Test
+    fun `Given both months have enough entries when executed then progress against last month`() {
+        givenEntriesInEveryMonth()
+
+        assertEquals(
+            ProgressDomainModel(0, ProgressDomainModel.ComparedWith.SameDaysLastMonth),
+            loaded(OCTOBER).stats.progress
+        )
+    }
+
+    @Test
+    fun `Given the month before cannot be read when executed then the month without progress`() {
+        givenEntriesInEveryMonth()
+        val octoberWindowStart = at("2026-09-29T00:00")
+        given(getAttackMedicationIntakesRepository.attackMedicationIntakes(any(), any()))
+            .willAnswer { invocation ->
+                if (invocation.getArgument<Instant>(0) == octoberWindowStart) {
+                    AttackMedicationIntakesResultDomainModel.Loaded(emptyList())
+                } else {
+                    AttackMedicationIntakesResultDomainModel.Failed
+                }
+            }
+
+        val actual = loaded(OCTOBER)
+
+        assertNull(actual.stats.progress)
+    }
+
+    @Test
+    fun `Given the current month then counts to today, the attack in progress included`() {
+        givenAttacks(
+            attack("a", "2026-10-02T10:00", "2026-10-02T12:00", peak = 3),
+            attack("b", "2026-10-22T09:00", end = null, peak = 6)
+        )
+        given(getAttackMedicationIntakesRepository.attackMedicationIntakes(any(), any()))
+            .willReturn(
+                AttackMedicationIntakesResultDomainModel.Loaded(
+                    listOf(AttackMedicationIntakeDomainModel(at("2026-10-22T10:00"), TASHKENT))
+                )
+            )
+
+        val actual = loaded(OCTOBER).stats
+
+        assertEquals(2, actual.migraines)
+        // 2 October, and 22 and 23 October so far.
+        assertEquals(3, actual.migraineDays)
+        assertEquals(1, actual.attackMedicationDays)
+        assertEquals(PainLevelDomainModel.Moderate, actual.averagePeak)
     }
 }

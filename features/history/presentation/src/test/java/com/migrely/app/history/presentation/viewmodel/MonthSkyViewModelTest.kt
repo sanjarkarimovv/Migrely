@@ -3,6 +3,7 @@ package com.migrely.app.history.presentation.viewmodel
 import com.migrely.app.architecture.presentation.viewmodel.BaseViewModelTest
 import com.migrely.app.history.domain.model.HistoryMonthDomainModel
 import com.migrely.app.history.domain.model.HistoryMonthResultDomainModel
+import com.migrely.app.history.domain.model.MonthStatsDomainModel
 import com.migrely.app.history.domain.usecase.GetHistoryMonthUseCase
 import com.migrely.app.history.presentation.mapper.HistoryAttackPresentationMapper
 import com.migrely.app.history.presentation.mapper.HistoryMonthPresentationMapper
@@ -30,7 +31,8 @@ private val OCTOBER = HistoryMonthDomainModel(
     earliestMonth = YearMonth.of(2026, 8),
     anyAttackLogged = true,
     days = emptyList(),
-    attacks = emptyList()
+    attacks = emptyList(),
+    stats = MonthStatsDomainModel(0, 0, 0, null, 0, chronic = false, progress = null)
 )
 
 @RunWith(MockitoJUnitRunner::class)

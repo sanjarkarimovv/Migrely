@@ -5,6 +5,7 @@ import com.migrely.app.history.domain.model.DayMarkKindDomainModel
 import com.migrely.app.history.domain.model.DeletedAttackDomainModel
 import com.migrely.app.history.domain.model.HistoryMonthDomainModel
 import com.migrely.app.history.domain.model.HistoryMonthResultDomainModel
+import com.migrely.app.history.domain.model.MonthStatsDomainModel
 import com.migrely.app.history.domain.model.SetDayMarkRequestDomainModel
 import com.migrely.app.history.domain.model.SetDayMarkResultDomainModel
 import com.migrely.app.history.domain.model.UndoResultDomainModel
@@ -44,7 +45,8 @@ private fun month(anyAttackLogged: Boolean = true) = HistoryMonthDomainModel(
     earliestMonth = YearMonth.of(2026, 8),
     anyAttackLogged = anyAttackLogged,
     days = emptyList(),
-    attacks = emptyList()
+    attacks = emptyList(),
+    stats = MonthStatsDomainModel(0, 0, 0, null, 0, chronic = false, progress = null)
 )
 
 @RunWith(MockitoJUnitRunner::class)

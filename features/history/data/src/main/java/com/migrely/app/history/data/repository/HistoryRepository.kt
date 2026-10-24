@@ -6,9 +6,12 @@ import com.migrely.app.datasource.clock.datasource.ClockDataSource
 import com.migrely.app.datasource.daymark.datasource.DayMarkDataSource
 import com.migrely.app.datasource.exception.DataException
 import com.migrely.app.datasource.exception.StorageFullDataException
+import com.migrely.app.datasource.medication.datasource.MedicationDataSource
+import com.migrely.app.history.data.mapper.AttackMedicationIntakeDomainMapper
 import com.migrely.app.history.data.mapper.DayMarkDomainMapper
 import com.migrely.app.history.data.mapper.HistoryAttackDomainMapper
 import com.migrely.app.history.data.mapper.ZoneDomainMapper
+import com.migrely.app.history.domain.model.AttackMedicationIntakesResultDomainModel
 import com.migrely.app.history.domain.model.AttacksTouchingResultDomainModel
 import com.migrely.app.history.domain.model.CurrentTimeDomainModel
 import com.migrely.app.history.domain.model.DayMarkKindDomainModel
@@ -18,6 +21,7 @@ import com.migrely.app.history.domain.model.DeletedAttackDomainModel
 import com.migrely.app.history.domain.model.EarliestAttackResultDomainModel
 import com.migrely.app.history.domain.model.EarliestDayMarkResultDomainModel
 import com.migrely.app.history.domain.model.UndoResultDomainModel
+import com.migrely.app.history.domain.repository.GetAttackMedicationIntakesRepository
 import com.migrely.app.history.domain.repository.GetAttacksTouchingRepository
 import com.migrely.app.history.domain.repository.GetCurrentTimeRepository
 import com.migrely.app.history.domain.repository.GetDayMarksRepository
@@ -38,9 +42,11 @@ class HistoryRepository(
     private val attackDataSource: AttackDataSource,
     private val clockDataSource: ClockDataSource,
     private val dayMarkDataSource: DayMarkDataSource,
+    private val medicationDataSource: MedicationDataSource,
     private val historyAttackDomainMapper: HistoryAttackDomainMapper,
     private val zoneDomainMapper: ZoneDomainMapper,
-    private val dayMarkDomainMapper: DayMarkDomainMapper
+    private val dayMarkDomainMapper: DayMarkDomainMapper,
+    private val attackMedicationIntakeDomainMapper: AttackMedicationIntakeDomainMapper
 ) : GetCurrentTimeRepository,
     GetEarliestAttackRepository,
     GetAttacksTouchingRepository,
@@ -48,7 +54,8 @@ class HistoryRepository(
     RestoreDeletedAttackRepository,
     GetDayMarksRepository,
     SetDayMarkRepository,
-    GetEarliestDayMarkRepository {
+    GetEarliestDayMarkRepository,
+    GetAttackMedicationIntakesRepository {
     override fun currentTime() =
         CurrentTimeDomainModel(instant = clockDataSource.now(), zone = clockDataSource.zone())
 
@@ -98,6 +105,18 @@ class HistoryRepository(
         )
     } catch (_: DataException) {
         DayMarksResultDomainModel.Failed
+    }
+
+    override fun attackMedicationIntakes(
+        from: Instant,
+        to: Instant
+    ): AttackMedicationIntakesResultDomainModel = try {
+        AttackMedicationIntakesResultDomainModel.Loaded(
+            medicationDataSource.acuteIntakesTakenBetween(from, to)
+                .map(attackMedicationIntakeDomainMapper::toDomain)
+        )
+    } catch (_: DataException) {
+        AttackMedicationIntakesResultDomainModel.Failed
     }
 
     override fun earliestDayMark(): EarliestDayMarkResultDomainModel = try {
