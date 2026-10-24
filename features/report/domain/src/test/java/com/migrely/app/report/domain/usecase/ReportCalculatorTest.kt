@@ -182,7 +182,13 @@ class ReportCalculatorTest {
 
         val summary = classUnderTest.summary(records(intakes = simple + triptan + together))
 
-        assertEquals(listOf(YearMonth.of(2026, 8), YearMonth.of(2026, 10)), summary.overuseMonths)
+        assertEquals(
+            listOf(
+                ReportDatesDomainModel(LocalDate.of(2026, 7, 28), LocalDate.of(2026, 8, 26)),
+                ReportDatesDomainModel(LocalDate.of(2026, 9, 26), TODAY)
+            ),
+            summary.overuseSpans
+        )
         assertEquals(34, summary.attackMedicationDays)
     }
 
@@ -308,5 +314,47 @@ class ReportCalculatorTest {
             classUnderTest.anythingLogged(records(intakes = listOf(intake("2026-10-01T09:00"))))
         )
         assertTrue(classUnderTest.anythingLogged(records(painFree = setOf(TODAY))))
+    }
+
+    @Test
+    fun `Given a month partly in the period then overuse and chronic count as home and History`() {
+        val oneMonth = ReportCalculator(ReportPeriodDomainModel.LastMonths(1).datesOn(TODAY), NOW)
+        // 26 September to 25 October: triptans on 11 days across the month change, as home's 30-day card counts them.
+        val triptans = (20..30).map {
+            intake(
+                "2026-09-%02dT09:00".format(it),
+                ReportMedicationCategoryDomainModel.Triptan,
+                "Sumatriptan"
+            )
+        }.filter { it.takenAt >= at("2026-09-26T00:00") } +
+            (1..6).map {
+                intake(
+                    "2026-10-%02dT09:00".format(it),
+                    ReportMedicationCategoryDomainModel.Triptan,
+                    "Sumatriptan"
+                )
+            }
+        // 16 migraine days in September, most of them before the period: History's month card calls September chronic.
+        val september = (1..16).map { attack("2026-09-%02dT09:00".format(it + 14)) }
+
+        val summary = oneMonth.summary(records(attacks = september, intakes = triptans))
+
+        assertEquals(
+            listOf(ReportDatesDomainModel(LocalDate.of(2026, 9, 26), TODAY)),
+            summary.overuseSpans
+        )
+        assertTrue(summary.chronic)
+    }
+
+    @Test
+    fun `A custom range is at most 24 months, and 3 months back from 31 March starts 1 January`() {
+        assertEquals(
+            ReportDatesDomainModel(LocalDate.of(2024, 10, 26), TODAY),
+            ReportPeriodDomainModel.Range(LocalDate.of(1900, 1, 1), TODAY).datesOn(TODAY)
+        )
+        assertEquals(
+            ReportDatesDomainModel(LocalDate.of(2027, 1, 1), LocalDate.of(2027, 3, 31)),
+            ReportPeriodDomainModel.LastMonths(3).datesOn(LocalDate.of(2027, 3, 31))
+        )
     }
 }

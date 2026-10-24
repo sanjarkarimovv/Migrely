@@ -7,8 +7,8 @@ D81–D85).
 ## ADDED Requirements
 
 ### Requirement: Choosing the period
-The "Doctor report" screen SHALL offer 1, 3, 6 and 12 months and a custom range ending no later than today, with 3
-months chosen at first, and an "Include notes" switch that is off at first (BRD REP-F1, D81).
+The "Doctor report" screen SHALL offer 1, 3, 6 and 12 months and a custom range of at most 24 months ending no later
+than today, with 3 months chosen at first, and an "Include notes" switch that is off at first (BRD REP-F1, D81).
 
 #### Scenario: Opening the report
 - **WHEN** the user taps "Doctor report" in History
@@ -26,16 +26,21 @@ When nothing was logged in the chosen period, "Create report" SHALL be off and s
 The first page SHALL show the period, the date made, and, for the period:
 - migraine days a month on average;
 - the number of attacks;
-- attack-medication days a month on average and the months over the overuse limit;
+- attack-medication days a month on average, and the 30-day spans back from its last day at the overuse limit, as
+  home's card counts them;
 - the number of "Bed rest" attacks;
 - the average peak level;
-- whether any month had 15 or more migraine days.
+- whether a calendar month it touches had 15 or more migraine days, as History counts them.
 
 (BRD REP-F2, D82.)
 
 #### Scenario: Three months
 - **WHEN** the report covers 92 days with 18 migraine days and 4 attacks at "Bed rest"
 - **THEN** the summary says 5.9 migraine days a month and 4 "Bed rest" attacks
+
+#### Scenario: A month only partly in the period
+- **WHEN** a one-month report starts on 26 September and triptans were taken on 11 of its days across the month change
+- **THEN** the span 26 September to 25 October is at the overuse limit, as home's card says
 
 ### Requirement: The details
 After the summary the report SHALL hold:
@@ -59,9 +64,9 @@ the zone it was taken in, and attacks being deleted left out (BRD D45, D57, D83)
 - **THEN** the report counts it on 14 or 15 October as the calendar shows it
 
 ### Requirement: Large periods
-The report SHALL be made in the background with progress showing, and SHALL have at most 50 pages. When the attacks
-table would not fit, it SHALL show the latest attacks and say "Showing the latest N of M attacks. The summary counts all
-of them." (BRD EC-REP-02, D84).
+The report SHALL be made in the background with progress showing, and SHALL have at most 50 pages. When the migraines
+table would not fit, it SHALL show the latest and say "Showing the latest N of M migraines. The summary counts all of
+them."; the notes are shortened the same way (BRD EC-REP-02, D84).
 
 #### Scenario: Twelve heavy months
 - **WHEN** the user makes a 12-month report with 900 attacks

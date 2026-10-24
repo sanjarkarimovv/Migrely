@@ -7,22 +7,31 @@ import android.graphics.Typeface
 import android.graphics.pdf.PdfDocument
 import android.text.StaticLayout
 import android.text.TextPaint
+import android.text.TextUtils
 import com.migrely.app.datasource.report.model.ReportBlockDataModel
 import com.migrely.app.datasource.report.model.ReportDayLevelDataModel
 import com.migrely.app.datasource.report.model.ReportDocumentDataModel
 import com.migrely.app.datasource.report.model.ReportHeatMonthDataModel
 import com.migrely.app.datasource.report.model.ReportLegendDataModel
+import java.util.IdentityHashMap
+import java.util.Locale
 
 private const val MARGIN = 40f
 private const val FOOTER_HEIGHT = 28f
 private const val GAP = 8f
 private const val CELL_PADDING = 3f
-private const val HEADING_KEEP = 48f
+private const val HEADING_KEEP = 72f
 private const val MONTHS_PER_ROW = 3
+private const val DOT_X = 0.78f
+private const val DOT_Y = 0.78f
+private const val DOT_RADIUS = 0.1f
 private const val WEEK_DAYS = 7
 private const val WEEK_ROWS = 6
 private const val SWATCH = 9f
 private const val LINE_SPACING = 1.1f
+
+/** A cell or paragraph longer than this is cut with an ellipsis, so no row is ever taller than a page. */
+private const val MAXIMUM_LINES = 40
 private val WEEKDAY_LETTERS = listOf("M", "T", "W", "T", "F", "S", "S")
 
 /**
@@ -48,12 +57,26 @@ internal class ReportPageLayout(private val document: ReportDocumentDataModel) {
         style = Paint.Style.STROKE
     }
 
+    /** Each block's and each table row's piece, measured once however often the pages are counted (review I2). */
+    private val pieces = IdentityHashMap<Any, Piece>()
+
     /** How many pages [blocks] take. */
     fun pageCount(blocks: List<ReportBlockDataModel>): Int = paginate(items(blocks)).size
 
-    fun render(blocks: List<ReportBlockDataModel>): PdfDocument {
-        val pages = paginate(items(blocks))
+    /** Draws [blocks]; past [maxPages] the rest is cut off, so the limit always holds (review I1). */
+    fun render(blocks: List<ReportBlockDataModel>, maxPages: Int): PdfDocument {
+        val pages = paginate(items(blocks)).take(maxPages)
         val pdf = PdfDocument()
+        try {
+            draw(pdf, pages)
+        } catch (failure: RuntimeException) {
+            pdf.close()
+            throw failure
+        }
+        return pdf
+    }
+
+    private fun draw(pdf: PdfDocument, pages: List<List<Pair<Float, Piece>>>) {
         pages.forEachIndexed { index, placed ->
             val page = pdf.startPage(
                 PdfDocument.PageInfo.Builder(
@@ -66,7 +89,6 @@ internal class ReportPageLayout(private val document: ReportDocumentDataModel) {
             drawFooter(page.canvas, index + 1, pages.size)
             pdf.finishPage(page)
         }
-        return pdf
     }
 
     /** Something drawn at a top position. [header] is drawn first whenever it starts a page. */
@@ -141,11 +163,15 @@ internal class ReportPageLayout(private val document: ReportDocumentDataModel) {
                 }
             }
             is ReportBlockDataModel.HeatMap ->
-                block.months.chunked(MONTHS_PER_ROW).map { Item.Draw(monthRow(it)) } +
-                    Item.Draw(legend(block.legend))
+                block.months.chunked(MONTHS_PER_ROW).map {
+                    Item.Draw(cached(it.first()) { monthRow(it) })
+                } +
+                    Item.Draw(cached(block.legend) { legend(block.legend) })
             ReportBlockDataModel.PageBreak -> listOf(Item.Break)
         }
     }
+
+    private fun cached(source: Any, make: () -> Piece): Piece = pieces.getOrPut(source, make)
 
     private fun text(
         text: String,
@@ -264,7 +290,12 @@ internal class ReportPageLayout(private val document: ReportDocumentDataModel) {
         val top = height - MARGIN - FOOTER_HEIGHT / 2
         canvas.drawLine(MARGIN, top - GAP / 2, MARGIN + contentWidth, top - GAP / 2, linePaint)
         draw(canvas, layout(document.footer, smallPaint, contentWidth * 2 / 3), MARGIN, top)
-        val label = layout(document.pageLabel.format(page, pages), smallPaint, contentWidth / 3)
+        val label =
+            layout(
+                String.format(Locale.ENGLISH, document.pageLabel, page, pages),
+                smallPaint,
+                contentWidth / 3
+            )
         draw(canvas, label, MARGIN + contentWidth - label.getLineWidth(0), top)
     }
 
@@ -284,6 +315,8 @@ internal class ReportPageLayout(private val document: ReportDocumentDataModel) {
         StaticLayout.Builder.obtain(text, 0, text.length, paint, width.toInt().coerceAtLeast(1))
             .setLineSpacing(0f, LINE_SPACING)
             .setIncludePad(false)
+            .setMaxLines(MAXIMUM_LINES)
+            .setEllipsize(TextUtils.TruncateAt.END)
             .build()
 
     private fun draw(canvas: Canvas, layout: StaticLayout, x: Float, y: Float) {

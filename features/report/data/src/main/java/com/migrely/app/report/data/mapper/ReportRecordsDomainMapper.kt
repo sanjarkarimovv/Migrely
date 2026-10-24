@@ -14,7 +14,9 @@ import com.migrely.app.report.domain.model.ReportIntakeDomainModel
 import com.migrely.app.report.domain.model.ReportMedicationCategoryDomainModel
 import com.migrely.app.report.domain.model.ReportMedicationKindDomainModel
 import com.migrely.app.report.domain.model.ReportRecordsDomainModel
+import java.time.DateTimeException
 import java.time.ZoneId
+import java.time.ZoneOffset
 
 /**
  * The records a report uses. Tags and medications become the English words the app shows, since the report only lists
@@ -29,7 +31,7 @@ class ReportRecordsDomainMapper {
             attacks = records.attacks.map { attack ->
                 ReportAttackDomainModel(
                     start = attack.start,
-                    zone = ZoneId.of(attack.startZoneId),
+                    zone = zoneOf(attack.startZoneId),
                     end = attack.end,
                     peakIntensity = attack.intensityPoints.maxOfOrNull { it.value },
                     functionalImpact = attack.functionalImpact,
@@ -67,7 +69,7 @@ class ReportRecordsDomainMapper {
                             null -> null
                         },
                         takenAt = intake.takenAt,
-                        zone = ZoneId.of(intake.takenZoneId),
+                        zone = zoneOf(intake.takenZoneId),
                         effect = when (intake.effect) {
                             IntakeEffectDataModel.NotAtAll -> ReportEffectDomainModel.NotAtAll
                             IntakeEffectDataModel.ALittle -> ReportEffectDomainModel.ALittle
@@ -80,6 +82,17 @@ class ReportRecordsDomainMapper {
             },
             painFreeDates = records.dayMarks.filter { it.painFree }.map { it.date }.toSet()
         )
+    }
+
+    /**
+     * A database restored from a phone with newer time-zone data can hold a zone this phone does not know; it is read
+     * as UTC, as the rest of the app does, rather than stopping the report (review C2).
+     */
+    @Suppress("SwallowedException")
+    private fun zoneOf(zoneId: String): ZoneId = try {
+        ZoneId.of(zoneId)
+    } catch (exception: DateTimeException) {
+        ZoneOffset.UTC
     }
 
     private fun symptomOf(tag: AttackTagDataModel, tagNames: Map<String, String>): String? =

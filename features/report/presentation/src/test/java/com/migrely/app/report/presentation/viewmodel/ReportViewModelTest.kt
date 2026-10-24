@@ -29,6 +29,10 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.mockito.Mock
 import org.mockito.junit.MockitoJUnitRunner
+import org.mockito.kotlin.any
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
 
 private val THREE = ReportPeriodPresentationModel.LastMonths(3)
 private val THREE_DOMAIN = ReportPeriodDomainModel.LastMonths(3)
@@ -167,4 +171,37 @@ class ReportViewModelTest :
 
         assertEquals(ReportPresentationNavigationEvent.OnBack, event.await())
     }
+
+    @Test
+    fun `Given a report is being made when Create is tapped again then no second report starts`() {
+        classUnderTest.onCreateAction(THREE, includeNotes = false)
+        classUnderTest.onCreateAction(THREE, includeNotes = false)
+
+        verify(useCaseExecutor, times(1)).execute(
+            useCase = eq(createReportUseCase),
+            value = any(),
+            onResult = any(),
+            onException = any()
+        )
+    }
+
+    @Test
+    fun `Given an outcome left from an earlier visit when entering again then it is not sent`() =
+        runTest {
+            getReportOptionsUseCase.givenSuccessfulExecution(
+                THREE_DOMAIN,
+                ReportOptionsDomainModel.Ready(DATES, true)
+            )
+            createReportUseCase.givenSuccessfulExecution(
+                CreateReportRequestDomainModel(THREE_DOMAIN, false),
+                CreateReportResultDomainModel.Created("content://r")
+            )
+            classUnderTest.onCreateAction(THREE, includeNotes = false)
+
+            classUnderTest.onEnter(THREE)
+            val state = async(start = UNDISPATCHED) { classUnderTest.viewState.first() }
+            classUnderTest.onResume(THREE)
+
+            assertEquals(READY, state.await())
+        }
 }

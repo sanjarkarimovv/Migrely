@@ -63,6 +63,9 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavController
 import com.migrely.app.architecture.ui.view.ScreenEnterObserver
 import com.migrely.app.designsystem.icon.MigrelyIcons
@@ -124,25 +127,29 @@ fun ReportDependencies.Report(navController: NavController, modifier: Modifier =
         message = ShownMessage(it, shownCount)
     }
     val shareTitle = stringResource(R.string.report_share)
-    LaunchedEffect(reportEventPresenter) {
-        // Asked once this screen listens, so a report finished during a rotation is still shared.
-        reportEventPresenter.events
-            .onSubscription { reportViewModel.onResume(toPresentation.toPresentation(period)) }
-            .collect { event ->
-                reportViewModel.onOutcomeShownAction()
-                when (event) {
-                    is ReportEventUiModel.Share ->
-                        if (!share(
-                                context,
-                                event.uri,
-                                shareTitle
-                            )
-                        ) {
-                            show(ReportMessageUiModel.NoAppToShare)
-                        }
-                    is ReportEventUiModel.Message -> show(event.message)
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    LaunchedEffect(reportEventPresenter, lifecycle) {
+        // Only while the screen shows, so the share sheet never opens over another app. An outcome that comes while
+        // the app is away is asked for again when it comes back, and after a rotation (review I3).
+        lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            reportEventPresenter.events
+                .onSubscription { reportViewModel.onResume(toPresentation.toPresentation(period)) }
+                .collect { event ->
+                    reportViewModel.onOutcomeShownAction()
+                    when (event) {
+                        is ReportEventUiModel.Share ->
+                            if (!share(
+                                    context,
+                                    event.uri,
+                                    shareTitle
+                                )
+                            ) {
+                                show(ReportMessageUiModel.NoAppToShare)
+                            }
+                        is ReportEventUiModel.Message -> show(event.message)
+                    }
                 }
-            }
+        }
     }
     LaunchedEffect(message) {
         if (message != null) {
@@ -306,7 +313,8 @@ fun ReportContents(
                         Text(
                             stringResource(R.string.report_nothing_logged),
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
                         )
                     }
                     Text(
@@ -376,6 +384,8 @@ private fun RangeDialog(
 ) {
     val today = LocalDate.now()
     val state = rememberDateRangePickerState(
+        // A report covers at most 24 months (BRD D84), so the picker offers this year and the two before.
+        yearRange = (today.year - 2)..today.year,
         selectableDates = object : SelectableDates {
             override fun isSelectableDate(utcTimeMillis: Long) =
                 utcTimeMillis <= today.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()

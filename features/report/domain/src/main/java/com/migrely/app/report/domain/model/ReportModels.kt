@@ -60,7 +60,7 @@ enum class ReportMedicationKindDomainModel {
     Preventive
 }
 
-/** Null on an intake means "Not sure", which counts as combination or other for overuse (BRD D40). */
+/** Null on an intake means "Not sure", which counts as combination or other for overuse (BRD D45). */
 enum class ReportMedicationCategoryDomainModel {
     SimplePainkiller,
     Triptan,
@@ -102,8 +102,9 @@ data class ReportDomainModel(
 )
 
 /**
- * The first page. A month's average is the count times 30 over the period's days (D83). [overuseMonths] are the
- * calendar months in which some category reached its limit (D40); [chronic] is a month with 15 or more migraine days.
+ * The first page. A month's average is the count times 30 over the period's days (D83). [overuseSpans] are the 30-day
+ * spans, back from the period's last day, in which some category reached its limit, as home's card counts them (D45);
+ * [chronic] is a calendar month the period touches with 15 or more migraine days, as History counts it.
  */
 data class ReportSummaryDomainModel(
     val days: Int,
@@ -112,7 +113,7 @@ data class ReportSummaryDomainModel(
     val attacksStarted: Int,
     val attackMedicationDays: Int,
     val attackMedicationDaysPerMonth: Double,
-    val overuseMonths: List<YearMonth>,
+    val overuseSpans: List<ReportDatesDomainModel>,
     val bedRestAttacks: Int,
     val averagePeak: ReportPainLevelDomainModel?,
     val chronic: Boolean

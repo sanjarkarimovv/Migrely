@@ -25,11 +25,12 @@ private const val MILD_UNTIL = 3
 private const val MODERATE_UNTIL = 6
 private const val BED_REST = 3
 private const val CHRONIC_DAYS = 15
+private const val SPAN_DAYS = 30L
 private const val SIMPLE_LIMIT = 15
 private const val OTHER_LIMIT = 10
 
 /**
- * The report's numbers, by the app's own rules (BRD D40, D45, D57, D82, D83): an attack's days in the zone it was
+ * The report's numbers, by the app's own rules (BRD D45, D57, D82, D83): an attack's days in the zone it was
  * logged in, a medication's days in the zone it was taken in. [now] ends an attack still in progress.
  */
 class ReportCalculator(private val dates: ReportDatesDomainModel, private val now: Instant) {
@@ -50,7 +51,14 @@ class ReportCalculator(private val dates: ReportDatesDomainModel, private val no
         val migraineDates = attacks.flatMap(::touched).filter(period::contains).toSet()
         val acute = intakes(records).filter { it.kind == ReportMedicationKindDomainModel.Acute }
         val medicationDates = acute.map(::dateOf).toSet()
-        val months = monthsOfPeriod()
+        // Overuse by home's rule (D45): 30-day spans back from the period's last day, each counted whole from every
+        // record, so a span reaching before the period counts as home's card would (review C1).
+        val allAcute = records.intakes.filter { it.kind == ReportMedicationKindDomainModel.Acute }
+        val overuseSpans = spansOfPeriod().filter { span ->
+            overused(allAcute.filter { dateOf(it) in span.from..span.to })
+        }
+        // Chronic by History's rule: a calendar month the period touches, counted whole from every attack.
+        val allMigraineDates = records.attacks.flatMap(::touched).toSet()
         return ReportSummaryDomainModel(
             days = days,
             migraineDays = migraineDates.size,
@@ -58,19 +66,11 @@ class ReportCalculator(private val dates: ReportDatesDomainModel, private val no
             attacksStarted = started.size,
             attackMedicationDays = medicationDates.size,
             attackMedicationDaysPerMonth = perMonth(medicationDates.size),
-            overuseMonths = months.filter {
-                overused(
-                    acute.filter { intake ->
-                        YearMonth.from(dateOf(intake)) ==
-                            it
-                    }
-                )
-            },
+            overuseSpans = overuseSpans,
             bedRestAttacks = started.count { it.functionalImpact == BED_REST },
             averagePeak = averageOf(started.mapNotNull { it.peakIntensity }),
-            chronic = months.any { month ->
-                migraineDates.count { YearMonth.from(it) == month } >=
-                    CHRONIC_DAYS
+            chronic = monthsOfPeriod().any { month ->
+                allMigraineDates.count { YearMonth.from(it) == month } >= CHRONIC_DAYS
             }
         )
     }
@@ -144,6 +144,15 @@ class ReportCalculator(private val dates: ReportDatesDomainModel, private val no
     private fun dateOf(intake: ReportIntakeDomainModel): LocalDate =
         intake.takenAt.atZone(intake.zone).toLocalDate()
 
+    /** 30-day spans ending on the period's last day, then 30 days before, while they reach into the period; oldest first. */
+    private fun spansOfPeriod(): List<ReportDatesDomainModel> = generateSequence(dates.to) {
+        it.minusDays(SPAN_DAYS)
+    }
+        .takeWhile { it >= dates.from }
+        .map { end -> ReportDatesDomainModel(end.minusDays(SPAN_DAYS - 1), end) }
+        .toList()
+        .reversed()
+
     private fun monthsOfPeriod(): List<YearMonth> = generateSequence(YearMonth.from(dates.from)) {
         it.plusMonths(1)
     }
@@ -153,7 +162,7 @@ class ReportCalculator(private val dates: ReportDatesDomainModel, private val no
     private fun perMonth(count: Int) =
         (count * DAYS_PER_MONTH / days).toBigDecimal().setScale(1, RoundingMode.HALF_UP).toDouble()
 
-    /** One category at its limit, or two or more together on 10 days (BRD D40). "Not sure" counts as other. */
+    /** One category at its limit, or two or more together on 10 days (BRD D45). "Not sure" counts as other. */
     private fun overused(intakes: List<ReportIntakeDomainModel>): Boolean {
         val byCategory = intakes.groupBy({
             it.category
