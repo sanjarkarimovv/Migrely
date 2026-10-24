@@ -16,9 +16,11 @@ import com.migrely.app.datasource.medication.model.MedicationCategoryDataModel
 import com.migrely.app.datasource.medication.model.MedicationKindDataModel
 import com.migrely.app.datasource.tag.model.CustomTagKindDataModel
 import com.migrely.app.insights.domain.model.InsightsAttackDomainModel
+import com.migrely.app.insights.domain.model.InsightsBuiltInTriggerDomainModel
 import com.migrely.app.insights.domain.model.InsightsEffectDomainModel
 import com.migrely.app.insights.domain.model.InsightsIntakeDomainModel
 import com.migrely.app.insights.domain.model.InsightsMedicationKindDomainModel
+import com.migrely.app.insights.domain.model.InsightsTriggerDomainModel
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -90,7 +92,7 @@ class InsightsRecordsDomainMapperTest {
     private val classUnderTest = InsightsRecordsDomainMapper()
 
     @Test
-    fun `Built-in triggers become the words the app shows`() {
+    fun `Each built-in trigger keeps its own kind`() {
         val records = records(
             attacks = listOf(
                 attack(BuiltInTriggerDataModel.entries.map(AttackTagDataModel::BuiltInTrigger))
@@ -99,20 +101,20 @@ class InsightsRecordsDomainMapperTest {
 
         assertEquals(
             listOf(
-                "Stress",
-                "Too little sleep",
-                "Too much sleep",
-                "Skipped meal",
-                "Dehydration",
-                "Alcohol",
-                "Caffeine",
-                "Period",
-                "Weather",
-                "Bright light or screens",
-                "Smell",
-                "Physical effort",
-                "Travel"
-            ),
+                InsightsBuiltInTriggerDomainModel.Stress,
+                InsightsBuiltInTriggerDomainModel.TooLittleSleep,
+                InsightsBuiltInTriggerDomainModel.TooMuchSleep,
+                InsightsBuiltInTriggerDomainModel.SkippedMeal,
+                InsightsBuiltInTriggerDomainModel.Dehydration,
+                InsightsBuiltInTriggerDomainModel.Alcohol,
+                InsightsBuiltInTriggerDomainModel.Caffeine,
+                InsightsBuiltInTriggerDomainModel.Period,
+                InsightsBuiltInTriggerDomainModel.Weather,
+                InsightsBuiltInTriggerDomainModel.BrightLightOrScreens,
+                InsightsBuiltInTriggerDomainModel.Smell,
+                InsightsBuiltInTriggerDomainModel.PhysicalEffort,
+                InsightsBuiltInTriggerDomainModel.Travel
+            ).map(InsightsTriggerDomainModel::BuiltIn),
             classUnderTest.toDomain(records).attacks.single().triggers
         )
     }
@@ -159,7 +161,10 @@ class InsightsRecordsDomainMapperTest {
                     zone = ZoneId.of("Asia/Tokyo"),
                     end = null,
                     functionalImpact = 3,
-                    triggers = listOf("Long drive", "Stress")
+                    triggers = listOf(
+                        InsightsTriggerDomainModel.Custom("Long drive"),
+                        InsightsTriggerDomainModel.BuiltIn(InsightsBuiltInTriggerDomainModel.Stress)
+                    )
                 )
             ),
             classUnderTest.toDomain(records).attacks

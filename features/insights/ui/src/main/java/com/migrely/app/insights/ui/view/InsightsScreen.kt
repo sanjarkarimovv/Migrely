@@ -52,12 +52,14 @@ import com.migrely.app.designsystem.theme.MigrelyTheme
 import com.migrely.app.insights.presentation.model.InsightsViewState
 import com.migrely.app.insights.ui.R
 import com.migrely.app.insights.ui.di.InsightsDependencies
+import com.migrely.app.insights.ui.model.InsightsBuiltInTriggerUiModel
 import com.migrely.app.insights.ui.model.InsightsCycleUiModel
 import com.migrely.app.insights.ui.model.InsightsMedicationUiModel
 import com.migrely.app.insights.ui.model.InsightsMonthUiModel
 import com.migrely.app.insights.ui.model.InsightsPatternsUiModel
 import com.migrely.app.insights.ui.model.InsightsTimeOfDayBarUiModel
 import com.migrely.app.insights.ui.model.InsightsTimeOfDayUiModel
+import com.migrely.app.insights.ui.model.InsightsTriggerCountUiModel
 import com.migrely.app.insights.ui.model.InsightsTriggerUiModel
 import com.migrely.app.insights.ui.model.InsightsUiModel
 import com.migrely.app.insights.ui.model.InsightsViewStateUiModel
@@ -232,9 +234,25 @@ private fun InsightsPreview() {
                     patterns = InsightsPatternsUiModel.Enough(
                         migraines = 10,
                         triggers = listOf(
-                            InsightsTriggerUiModel("Stress", 6, 60),
-                            InsightsTriggerUiModel("Too little sleep", 4, 40),
-                            InsightsTriggerUiModel("Long drive", 2, 20)
+                            InsightsTriggerCountUiModel(
+                                InsightsTriggerUiModel.BuiltIn(
+                                    InsightsBuiltInTriggerUiModel.Stress
+                                ),
+                                6,
+                                60
+                            ),
+                            InsightsTriggerCountUiModel(
+                                InsightsTriggerUiModel.BuiltIn(
+                                    InsightsBuiltInTriggerUiModel.TooLittleSleep
+                                ),
+                                4,
+                                40
+                            ),
+                            InsightsTriggerCountUiModel(
+                                InsightsTriggerUiModel.Custom("Long drive"),
+                                2,
+                                20
+                            )
                         ),
                         weekdays = DayOfWeek.entries.mapIndexed { index, day ->
                             InsightsWeekdayBarUiModel(day, weekdays[index], weekdays[index] / 3f)

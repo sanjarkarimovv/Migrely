@@ -22,6 +22,7 @@ import com.migrely.app.insights.ui.model.InsightsCycleUiModel
 import com.migrely.app.insights.ui.model.InsightsMedicationUiModel
 import com.migrely.app.insights.ui.model.InsightsMonthUiModel
 import com.migrely.app.insights.ui.model.InsightsPatternsUiModel
+import com.migrely.app.insights.ui.model.InsightsTriggerUiModel
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -108,11 +109,15 @@ internal fun TriggersSection(patterns: InsightsPatternsUiModel.Enough) {
             BodyText(stringResource(R.string.insights_no_triggers), muted = true)
         }
         patterns.triggers.forEach {
+            val name = when (val trigger = it.trigger) {
+                is InsightsTriggerUiModel.BuiltIn -> stringResource(trigger.trigger.label())
+                is InsightsTriggerUiModel.Custom -> trigger.name
+            }
             BodyText(
                 pluralStringResource(
-                    R.plurals.insights_trigger,
+                    R.plurals.insights_trigger_share,
                     patterns.migraines,
-                    it.name,
+                    name,
                     it.migraines,
                     patterns.migraines,
                     it.percent

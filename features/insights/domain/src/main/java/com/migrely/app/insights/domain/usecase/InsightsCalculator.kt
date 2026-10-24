@@ -2,6 +2,7 @@ package com.migrely.app.insights.domain.usecase
 
 import com.migrely.app.attackdays.domain.AttackDays
 import com.migrely.app.insights.domain.model.InsightsAttackDomainModel
+import com.migrely.app.insights.domain.model.InsightsBuiltInTriggerDomainModel
 import com.migrely.app.insights.domain.model.InsightsCycleDomainModel
 import com.migrely.app.insights.domain.model.InsightsDatesDomainModel
 import com.migrely.app.insights.domain.model.InsightsEffectDomainModel
@@ -14,6 +15,7 @@ import com.migrely.app.insights.domain.model.InsightsRecordsDomainModel
 import com.migrely.app.insights.domain.model.InsightsTimeOfDayCountDomainModel
 import com.migrely.app.insights.domain.model.InsightsTimeOfDayDomainModel
 import com.migrely.app.insights.domain.model.InsightsTimesOfDayDomainModel
+import com.migrely.app.insights.domain.model.InsightsTriggerCountDomainModel
 import com.migrely.app.insights.domain.model.InsightsTriggerDomainModel
 import com.migrely.app.insights.domain.model.InsightsWeekdayDomainModel
 import com.migrely.app.insights.domain.model.InsightsWeekdaysDomainModel
@@ -23,6 +25,7 @@ import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
+import java.util.Locale
 
 private const val MIGRAINES_NEEDED = 5
 private const val DAYS_NEEDED = 30
@@ -32,6 +35,20 @@ private const val ANSWERS_NEEDED = 3
 private const val BED_REST = 3
 private const val TREND_MONTHS = 12L
 private const val HOURS_PER_TIME_OF_DAY = 6
+
+private val PERIOD_TRIGGER = InsightsTriggerDomainModel.BuiltIn(
+    InsightsBuiltInTriggerDomainModel.Period
+)
+
+/** Built-ins in the app's order, then the user's own by name; the order of ties in the triggers list. */
+private val TRIGGER_TIES = compareBy<InsightsTriggerDomainModel> {
+    when (it) {
+        is InsightsTriggerDomainModel.BuiltIn -> it.trigger.ordinal
+        is InsightsTriggerDomainModel.Custom -> InsightsBuiltInTriggerDomainModel.entries.size
+    }
+}.thenBy(String.CASE_INSENSITIVE_ORDER) {
+    (it as? InsightsTriggerDomainModel.Custom)?.name.orEmpty()
+}
 
 /** The window around a cycle's start (BRD D91): two days before it, through its third day (start + 2). */
 private const val DAYS_BEFORE_CYCLE = 2L
@@ -52,7 +69,7 @@ class InsightsCalculator(private val dates: InsightsDatesDomainModel, private va
         periodTracking: Boolean
     ): InsightsPatternsDomainModel = notEnough(records) ?: InsightsPatternsDomainModel.Enough(
         migraines = started(records).size,
-        triggers = triggers(records),
+        triggers = triggers(records, periodTracking),
         weekdays = weekdays(records),
         timesOfDay = timesOfDay(records),
         cycle = if (periodTracking) cycle(records) else null,
@@ -75,19 +92,28 @@ class InsightsCalculator(private val dates: InsightsDatesDomainModel, private va
         }
     }
 
-    /** The five triggers logged with the most of the period's migraines, ties by name (BRD D89). */
-    fun triggers(records: InsightsRecordsDomainModel): List<InsightsTriggerDomainModel> =
-        started(records)
-            .flatMap { it.triggers.distinct() }
-            .groupingBy { it }
-            .eachCount()
-            .map { (name, migraines) -> InsightsTriggerDomainModel(name, migraines) }
-            .sortedWith(
-                compareByDescending(InsightsTriggerDomainModel::migraines)
-                    .thenBy(String.CASE_INSENSITIVE_ORDER, InsightsTriggerDomainModel::name)
-                    .thenBy(InsightsTriggerDomainModel::name)
-            )
-            .take(TOP_TRIGGERS)
+    /**
+     * The five triggers logged with the most of the period's migraines (BRD D89). Each counts once a migraine. A trigger
+     * of the user's own stays apart from a built-in one of the same name; its names that differ only in case are one
+     * trigger, shown as first found, since such names are unique ignoring case. Ties, at the fifth place too, go to the
+     * built-ins in the app's order, then to the user's own by name. With Track periods off, the built-in "Period" is left
+     * out (EC-INS-03).
+     */
+    fun triggers(
+        records: InsightsRecordsDomainModel,
+        periodTracking: Boolean
+    ): List<InsightsTriggerCountDomainModel> = started(records)
+        .flatMap { attack ->
+            attack.triggers.filter { periodTracking || it != PERIOD_TRIGGER }.distinctBy(::sameAs)
+        }
+        .groupBy(::sameAs)
+        .values
+        .map { same -> InsightsTriggerCountDomainModel(same.first(), same.size) }
+        .sortedWith(
+            compareByDescending(InsightsTriggerCountDomainModel::migraines)
+                .thenBy(TRIGGER_TIES, InsightsTriggerCountDomainModel::trigger)
+        )
+        .take(TOP_TRIGGERS)
 
     /** The period's migraines by the weekday they started on, Monday first (BRD D90). */
     fun weekdays(records: InsightsRecordsDomainModel): InsightsWeekdaysDomainModel {
@@ -178,6 +204,12 @@ class InsightsCalculator(private val dates: InsightsDatesDomainModel, private va
                 bedRestMigraines = started.count { it.functionalImpact == BED_REST }
             )
         }
+    }
+
+    /** What makes two logged triggers the same one: the built-in itself, or the user's name ignoring case. */
+    private fun sameAs(trigger: InsightsTriggerDomainModel): Any = when (trigger) {
+        is InsightsTriggerDomainModel.BuiltIn -> trigger
+        is InsightsTriggerDomainModel.Custom -> trigger.name.lowercase(Locale.ROOT)
     }
 
     private fun started(records: InsightsRecordsDomainModel) =

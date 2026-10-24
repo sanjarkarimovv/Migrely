@@ -1,5 +1,6 @@
 package com.migrely.app.insights.presentation.mapper
 
+import com.migrely.app.insights.domain.model.InsightsBuiltInTriggerDomainModel
 import com.migrely.app.insights.domain.model.InsightsCycleDomainModel
 import com.migrely.app.insights.domain.model.InsightsDatesDomainModel
 import com.migrely.app.insights.domain.model.InsightsDomainModel
@@ -10,9 +11,11 @@ import com.migrely.app.insights.domain.model.InsightsResultDomainModel
 import com.migrely.app.insights.domain.model.InsightsTimeOfDayCountDomainModel
 import com.migrely.app.insights.domain.model.InsightsTimeOfDayDomainModel
 import com.migrely.app.insights.domain.model.InsightsTimesOfDayDomainModel
+import com.migrely.app.insights.domain.model.InsightsTriggerCountDomainModel
 import com.migrely.app.insights.domain.model.InsightsTriggerDomainModel
 import com.migrely.app.insights.domain.model.InsightsWeekdayDomainModel
 import com.migrely.app.insights.domain.model.InsightsWeekdaysDomainModel
+import com.migrely.app.insights.presentation.model.InsightsBuiltInTriggerPresentationModel
 import com.migrely.app.insights.presentation.model.InsightsCyclePresentationModel
 import com.migrely.app.insights.presentation.model.InsightsMedicationPresentationModel
 import com.migrely.app.insights.presentation.model.InsightsMonthPresentationModel
@@ -20,6 +23,7 @@ import com.migrely.app.insights.presentation.model.InsightsPatternsPresentationM
 import com.migrely.app.insights.presentation.model.InsightsPresentationModel
 import com.migrely.app.insights.presentation.model.InsightsTimeOfDayCountPresentationModel
 import com.migrely.app.insights.presentation.model.InsightsTimeOfDayPresentationModel
+import com.migrely.app.insights.presentation.model.InsightsTriggerCountPresentationModel
 import com.migrely.app.insights.presentation.model.InsightsTriggerPresentationModel
 import com.migrely.app.insights.presentation.model.InsightsViewState
 import com.migrely.app.insights.presentation.model.InsightsWeekdayPresentationModel
@@ -41,15 +45,18 @@ private fun insights(patterns: InsightsPatternsDomainModel) =
     InsightsResultDomainModel.Ready(InsightsDomainModel(6, DATES, patterns, listOf(OCTOBER)))
 
 class InsightsPresentationMapperTest {
-    private val classUnderTest = InsightsPresentationMapper()
+    private val classUnderTest = InsightsPresentationMapper(InsightsTriggerPresentationMapper())
 
     @Test
     fun `Given enough then each share as a rounded percent of its total`() {
         val patterns = InsightsPatternsDomainModel.Enough(
             migraines = 10,
             triggers = listOf(
-                InsightsTriggerDomainModel("Stress", 6),
-                InsightsTriggerDomainModel("Long drive", 1)
+                InsightsTriggerCountDomainModel(
+                    InsightsTriggerDomainModel.BuiltIn(InsightsBuiltInTriggerDomainModel.Stress),
+                    6
+                ),
+                InsightsTriggerCountDomainModel(InsightsTriggerDomainModel.Custom("Long drive"), 1)
             ),
             weekdays = InsightsWeekdaysDomainModel(
                 DayOfWeek.entries.map {
@@ -91,8 +98,18 @@ class InsightsPresentationMapperTest {
                     patterns = InsightsPatternsPresentationModel.Enough(
                         migraines = 10,
                         triggers = listOf(
-                            InsightsTriggerPresentationModel("Stress", 6, 60),
-                            InsightsTriggerPresentationModel("Long drive", 1, 10)
+                            InsightsTriggerCountPresentationModel(
+                                InsightsTriggerPresentationModel.BuiltIn(
+                                    InsightsBuiltInTriggerPresentationModel.Stress
+                                ),
+                                6,
+                                60
+                            ),
+                            InsightsTriggerCountPresentationModel(
+                                InsightsTriggerPresentationModel.Custom("Long drive"),
+                                1,
+                                10
+                            )
                         ),
                         weekdays = DayOfWeek.entries.map {
                             InsightsWeekdayPresentationModel(it, if (it.value == 1) 4 else 1)

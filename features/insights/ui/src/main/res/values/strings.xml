@@ -19,11 +19,24 @@
     </plurals>
     <!-- Triggers as counts and shares only, with no causal words (BRD INS-F1, INS-F6, D89). -->
     <string name="insights_triggers_title">Often logged with your migraines</string>
-    <plurals name="insights_trigger">
+    <plurals name="insights_trigger_share">
         <item quantity="one">%1$s — %2$d of %3$d migraine (%4$d%%)</item>
         <item quantity="other">%1$s — %2$d of %3$d migraines (%4$d%%)</item>
     </plurals>
     <string name="insights_no_triggers">No triggers were logged in this period.</string>
+    <string name="insights_trigger_stress">Stress</string>
+    <string name="insights_trigger_too_little_sleep">Too little sleep</string>
+    <string name="insights_trigger_too_much_sleep">Too much sleep</string>
+    <string name="insights_trigger_skipped_meal">Skipped meal</string>
+    <string name="insights_trigger_dehydration">Dehydration</string>
+    <string name="insights_trigger_alcohol">Alcohol</string>
+    <string name="insights_trigger_caffeine">Caffeine</string>
+    <string name="insights_trigger_period">Period</string>
+    <string name="insights_trigger_weather">Weather</string>
+    <string name="insights_trigger_bright_light_or_screens">Bright light or screens</string>
+    <string name="insights_trigger_smell">Smell</string>
+    <string name="insights_trigger_physical_effort">Physical effort</string>
+    <string name="insights_trigger_travel">Travel</string>
     <!-- When migraines come (BRD INS-F2, D90). -->
     <string name="insights_when_title">When migraines come</string>
     <string name="insights_weekdays_title">By day of the week</string>

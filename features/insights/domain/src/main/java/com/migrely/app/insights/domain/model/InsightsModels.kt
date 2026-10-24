@@ -12,8 +12,8 @@ data class CurrentTimeDomainModel(val instant: Instant, val zone: ZoneId)
 data class InsightsDatesDomainModel(val from: LocalDate, val to: LocalDate)
 
 /**
- * Every record Insights may use. Trigger names arrive as the words the app shows: the built-in English labels and the
- * user's own names as typed. [periodDates] are the dates marked as period days; a date has no zone (BRD EC-DAY-04).
+ * Every record Insights may use. [periodDates] are the dates marked as period days; a date has no zone (BRD
+ * EC-DAY-04).
  */
 data class InsightsRecordsDomainModel(
     val attacks: List<InsightsAttackDomainModel>,
@@ -27,8 +27,32 @@ data class InsightsAttackDomainModel(
     val zone: ZoneId,
     val end: Instant?,
     val functionalImpact: Int?,
-    val triggers: List<String>
+    val triggers: List<InsightsTriggerDomainModel>
 )
+
+/** A trigger logged with an attack: a built-in one, or one of the user's own by its name (BRD D25, D89). */
+sealed interface InsightsTriggerDomainModel {
+    data class BuiltIn(val trigger: InsightsBuiltInTriggerDomainModel) : InsightsTriggerDomainModel
+
+    data class Custom(val name: String) : InsightsTriggerDomainModel
+}
+
+/** The built-in triggers, in the order the app lists them. */
+enum class InsightsBuiltInTriggerDomainModel {
+    Stress,
+    TooLittleSleep,
+    TooMuchSleep,
+    SkippedMeal,
+    Dehydration,
+    Alcohol,
+    Caffeine,
+    Period,
+    Weather,
+    BrightLightOrScreens,
+    Smell,
+    PhysicalEffort,
+    Travel
+}
 
 data class InsightsIntakeDomainModel(
     val medicationName: String,
@@ -82,7 +106,7 @@ sealed interface InsightsPatternsDomainModel {
      */
     data class Enough(
         val migraines: Int,
-        val triggers: List<InsightsTriggerDomainModel>,
+        val triggers: List<InsightsTriggerCountDomainModel>,
         val weekdays: InsightsWeekdaysDomainModel,
         val timesOfDay: InsightsTimesOfDayDomainModel,
         val cycle: InsightsCycleDomainModel?,
@@ -90,8 +114,11 @@ sealed interface InsightsPatternsDomainModel {
     ) : InsightsPatternsDomainModel
 }
 
-/** [migraines] of the period's migraines have [name] logged with them (BRD D89). */
-data class InsightsTriggerDomainModel(val name: String, val migraines: Int)
+/** [migraines] of the period's migraines have [trigger] logged with them (BRD D89). */
+data class InsightsTriggerCountDomainModel(
+    val trigger: InsightsTriggerDomainModel,
+    val migraines: Int
+)
 
 data class InsightsWeekdayDomainModel(val day: DayOfWeek, val migraines: Int)
 

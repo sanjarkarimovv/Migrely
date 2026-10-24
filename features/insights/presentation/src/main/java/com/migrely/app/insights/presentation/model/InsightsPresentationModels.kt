@@ -31,7 +31,7 @@ sealed interface InsightsPatternsPresentationModel {
     /** Every count is out of the [migraines] that started in the period. */
     data class Enough(
         val migraines: Int,
-        val triggers: List<InsightsTriggerPresentationModel>,
+        val triggers: List<InsightsTriggerCountPresentationModel>,
         val weekdays: List<InsightsWeekdayPresentationModel>,
         val busiestWeekday: DayOfWeek?,
         val timesOfDay: List<InsightsTimeOfDayCountPresentationModel>,
@@ -42,7 +42,35 @@ sealed interface InsightsPatternsPresentationModel {
 }
 
 /** [percent] is [migraines] as a share of the period's migraines, rounded. */
-data class InsightsTriggerPresentationModel(val name: String, val migraines: Int, val percent: Int)
+data class InsightsTriggerCountPresentationModel(
+    val trigger: InsightsTriggerPresentationModel,
+    val migraines: Int,
+    val percent: Int
+)
+
+/** A built-in trigger, which the screen names, or one of the user's own by its name. */
+sealed interface InsightsTriggerPresentationModel {
+    data class BuiltIn(val trigger: InsightsBuiltInTriggerPresentationModel) :
+        InsightsTriggerPresentationModel
+
+    data class Custom(val name: String) : InsightsTriggerPresentationModel
+}
+
+enum class InsightsBuiltInTriggerPresentationModel {
+    Stress,
+    TooLittleSleep,
+    TooMuchSleep,
+    SkippedMeal,
+    Dehydration,
+    Alcohol,
+    Caffeine,
+    Period,
+    Weather,
+    BrightLightOrScreens,
+    Smell,
+    PhysicalEffort,
+    Travel
+}
 
 data class InsightsWeekdayPresentationModel(val day: DayOfWeek, val migraines: Int)
 

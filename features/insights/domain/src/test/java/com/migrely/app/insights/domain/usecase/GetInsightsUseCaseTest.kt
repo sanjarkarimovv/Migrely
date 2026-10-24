@@ -3,11 +3,13 @@ package com.migrely.app.insights.domain.usecase
 import com.migrely.app.coroutine.CoroutineContextProvider
 import com.migrely.app.insights.domain.model.CurrentTimeDomainModel
 import com.migrely.app.insights.domain.model.InsightsAttackDomainModel
+import com.migrely.app.insights.domain.model.InsightsBuiltInTriggerDomainModel
 import com.migrely.app.insights.domain.model.InsightsDatesDomainModel
 import com.migrely.app.insights.domain.model.InsightsPatternsDomainModel
 import com.migrely.app.insights.domain.model.InsightsRecordsDomainModel
 import com.migrely.app.insights.domain.model.InsightsRecordsResultDomainModel
 import com.migrely.app.insights.domain.model.InsightsResultDomainModel
+import com.migrely.app.insights.domain.model.InsightsTriggerDomainModel
 import com.migrely.app.insights.domain.repository.GetCurrentTimeRepository
 import com.migrely.app.insights.domain.repository.GetInsightsRecordsRepository
 import com.migrely.app.insights.domain.repository.GetPeriodTrackingRepository
@@ -29,8 +31,10 @@ private val ZONE: ZoneId = ZoneId.of("Asia/Tashkent")
 // 25 October in Tashkent, still 24 October in UTC.
 private val NOW: Instant = LocalDateTime.parse("2026-10-25T02:00").atZone(ZONE).toInstant()
 
+private val STRESS = InsightsTriggerDomainModel.BuiltIn(InsightsBuiltInTriggerDomainModel.Stress)
+
 private fun attack(start: String) = LocalDateTime.parse(start).atZone(ZONE).toInstant().let {
-    InsightsAttackDomainModel(it, ZONE, it.plusSeconds(7_200), null, listOf("Stress"))
+    InsightsAttackDomainModel(it, ZONE, it.plusSeconds(7_200), null, listOf(STRESS))
 }
 
 private val SIX = listOf(

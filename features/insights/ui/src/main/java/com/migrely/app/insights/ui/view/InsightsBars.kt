@@ -21,6 +21,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.migrely.app.insights.ui.R
+import com.migrely.app.insights.ui.model.InsightsBuiltInTriggerUiModel
 import com.migrely.app.insights.ui.model.InsightsTimeOfDayUiModel
 import java.time.DayOfWeek
 
@@ -128,4 +129,22 @@ internal fun InsightsTimeOfDayUiModel.busiest(): Int = when (this) {
     InsightsTimeOfDayUiModel.Morning -> R.string.insights_busiest_morning
     InsightsTimeOfDayUiModel.Afternoon -> R.string.insights_busiest_afternoon
     InsightsTimeOfDayUiModel.Evening -> R.string.insights_busiest_evening
+}
+
+@StringRes
+internal fun InsightsBuiltInTriggerUiModel.label(): Int = when (this) {
+    InsightsBuiltInTriggerUiModel.Stress -> R.string.insights_trigger_stress
+    InsightsBuiltInTriggerUiModel.TooLittleSleep -> R.string.insights_trigger_too_little_sleep
+    InsightsBuiltInTriggerUiModel.TooMuchSleep -> R.string.insights_trigger_too_much_sleep
+    InsightsBuiltInTriggerUiModel.SkippedMeal -> R.string.insights_trigger_skipped_meal
+    InsightsBuiltInTriggerUiModel.Dehydration -> R.string.insights_trigger_dehydration
+    InsightsBuiltInTriggerUiModel.Alcohol -> R.string.insights_trigger_alcohol
+    InsightsBuiltInTriggerUiModel.Caffeine -> R.string.insights_trigger_caffeine
+    InsightsBuiltInTriggerUiModel.Period -> R.string.insights_trigger_period
+    InsightsBuiltInTriggerUiModel.Weather -> R.string.insights_trigger_weather
+    InsightsBuiltInTriggerUiModel.BrightLightOrScreens ->
+        R.string.insights_trigger_bright_light_or_screens
+    InsightsBuiltInTriggerUiModel.Smell -> R.string.insights_trigger_smell
+    InsightsBuiltInTriggerUiModel.PhysicalEffort -> R.string.insights_trigger_physical_effort
+    InsightsBuiltInTriggerUiModel.Travel -> R.string.insights_trigger_travel
 }

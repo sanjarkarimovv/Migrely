@@ -1,6 +1,7 @@
 package com.migrely.app.insights.domain.usecase
 
 import com.migrely.app.insights.domain.model.InsightsAttackDomainModel
+import com.migrely.app.insights.domain.model.InsightsBuiltInTriggerDomainModel
 import com.migrely.app.insights.domain.model.InsightsCycleDomainModel
 import com.migrely.app.insights.domain.model.InsightsDatesDomainModel
 import com.migrely.app.insights.domain.model.InsightsEffectDomainModel
@@ -13,6 +14,7 @@ import com.migrely.app.insights.domain.model.InsightsRecordsDomainModel
 import com.migrely.app.insights.domain.model.InsightsTimeOfDayCountDomainModel
 import com.migrely.app.insights.domain.model.InsightsTimeOfDayDomainModel
 import com.migrely.app.insights.domain.model.InsightsTimesOfDayDomainModel
+import com.migrely.app.insights.domain.model.InsightsTriggerCountDomainModel
 import com.migrely.app.insights.domain.model.InsightsTriggerDomainModel
 import com.migrely.app.insights.domain.model.InsightsWeekdayDomainModel
 import com.migrely.app.insights.domain.model.InsightsWeekdaysDomainModel
@@ -40,13 +42,24 @@ private val NOT_AT_ALL = InsightsEffectDomainModel.NotAtAll
 private fun at(text: String, zone: ZoneId = TASHKENT): Instant =
     LocalDateTime.parse(text).atZone(zone).toInstant()
 
+private val STRESS = builtIn(InsightsBuiltInTriggerDomainModel.Stress)
+private val PERIOD = builtIn(InsightsBuiltInTriggerDomainModel.Period)
+
+private fun builtIn(trigger: InsightsBuiltInTriggerDomainModel) =
+    InsightsTriggerDomainModel.BuiltIn(trigger)
+
+private fun custom(name: String) = InsightsTriggerDomainModel.Custom(name)
+
+private fun count(trigger: InsightsTriggerDomainModel, migraines: Int) =
+    InsightsTriggerCountDomainModel(trigger, migraines)
+
 private fun date(text: String): LocalDate = LocalDate.parse(text)
 
 private fun attack(
     start: String,
     hours: Long? = 2,
     impact: Int? = null,
-    triggers: List<String> = emptyList(),
+    triggers: List<InsightsTriggerDomainModel> = emptyList(),
     zone: ZoneId = TASHKENT
 ) = InsightsAttackDomainModel(
     start = at(start, zone),
@@ -164,46 +177,107 @@ class InsightsCalculatorTest {
     }
 
     @Test
-    fun `The five triggers logged with the most migraines come first, ties by name`() {
+    fun `The five triggers logged with the most migraines come first, ties in a stable order`() {
+        val weather = builtIn(InsightsBuiltInTriggerDomainModel.Weather)
+        val caffeine = builtIn(InsightsBuiltInTriggerDomainModel.Caffeine)
+        val sleep = builtIn(InsightsBuiltInTriggerDomainModel.TooLittleSleep)
         val attacks = listOf(
-            listOf("Stress", "Weather"),
-            listOf("Stress", "dehydration"),
-            listOf("Stress", "Weather", "dehydration", "Caffeine"),
-            listOf("Stress", "Too little sleep", "Caffeine"),
-            listOf("Stress", "Too little sleep"),
-            listOf("Stress", "Smell")
+            listOf(STRESS, weather, custom("Long drive")),
+            listOf(STRESS, caffeine, custom("anger")),
+            listOf(STRESS, weather, caffeine, custom("Long drive")),
+            listOf(STRESS, sleep, custom("anger")),
+            listOf(STRESS, sleep),
+            listOf(STRESS, builtIn(InsightsBuiltInTriggerDomainModel.Smell))
         ).mapIndexed { day, triggers ->
             attack("2026-10-${10 + day}T09:00", triggers = triggers)
         }
 
+        // Five share 2: the built-ins in the app's order, then the user's own by name, so
+        // "Long drive" falls at the fifth place.
         assertEquals(
             listOf(
-                InsightsTriggerDomainModel("Stress", 6),
-                InsightsTriggerDomainModel("Caffeine", 2),
-                InsightsTriggerDomainModel("dehydration", 2),
-                InsightsTriggerDomainModel("Too little sleep", 2),
-                InsightsTriggerDomainModel("Weather", 2)
+                count(STRESS, 6),
+                count(sleep, 2),
+                count(caffeine, 2),
+                count(weather, 2),
+                count(custom("anger"), 2)
             ),
-            classUnderTest.triggers(records(attacks))
+            classUnderTest.triggers(records(attacks), periodTracking = true)
+        )
+    }
+
+    @Test
+    fun `A tie at the fifth place goes to the built-in first in the app's order`() {
+        val attack = attack(
+            "2026-10-10T09:00",
+            triggers = listOf(
+                builtIn(InsightsBuiltInTriggerDomainModel.Travel),
+                STRESS,
+                custom("Zebra"),
+                custom("apple"),
+                builtIn(InsightsBuiltInTriggerDomainModel.Alcohol),
+                PERIOD
+            )
+        )
+
+        assertEquals(
+            listOf(
+                count(STRESS, 1),
+                count(builtIn(InsightsBuiltInTriggerDomainModel.Alcohol), 1),
+                count(PERIOD, 1),
+                count(builtIn(InsightsBuiltInTriggerDomainModel.Travel), 1),
+                count(custom("apple"), 1)
+            ),
+            classUnderTest.triggers(records(listOf(attack)), periodTracking = true)
         )
     }
 
     @Test
     fun `A trigger counts once a migraine, only for migraines started in the period`() {
         val attacks = listOf(
-            attack("2026-10-10T09:00", triggers = listOf("Stress", "Stress")),
-            attack("2026-10-11T09:00", triggers = listOf("Alcohol")),
-            attack("2026-07-20T09:00", triggers = listOf("Alcohol", "Alcohol"))
+            attack("2026-10-10T09:00", triggers = listOf(STRESS, STRESS, custom("Long drive"))),
+            attack(
+                "2026-10-11T09:00",
+                triggers = listOf(custom("long drive"), custom("Long drive"))
+            ),
+            attack("2026-10-12T09:00", triggers = listOf(custom("LONG DRIVE"), custom("Stress"))),
+            attack("2026-07-20T09:00", triggers = listOf(custom("Long drive"), STRESS))
+        )
+
+        // The user's names that differ only in case are one trigger; one named like a built-in is
+        // its own.
+        assertEquals(
+            listOf(
+                count(custom("Long drive"), 3),
+                count(STRESS, 1),
+                count(custom("Stress"), 1)
+            ),
+            classUnderTest.triggers(records(attacks), periodTracking = true)
+        )
+        assertEquals(emptyList<Any>(), classUnderTest.triggers(records(FIVE), true))
+    }
+
+    @Test
+    fun `Given Track periods is off then the built-in Period trigger is left out`() {
+        val attacks = listOf(
+            attack("2026-10-10T09:00", triggers = listOf(PERIOD, STRESS)),
+            attack("2026-10-11T09:00", triggers = listOf(PERIOD)),
+            attack("2026-10-12T09:00", triggers = listOf(custom("Period pain")))
         )
 
         assertEquals(
-            listOf(
-                InsightsTriggerDomainModel("Alcohol", 1),
-                InsightsTriggerDomainModel("Stress", 1)
-            ),
-            classUnderTest.triggers(records(attacks))
+            listOf(count(PERIOD, 2), count(STRESS, 1), count(custom("Period pain"), 1)),
+            classUnderTest.triggers(records(attacks), periodTracking = true)
         )
-        assertEquals(emptyList<Any>(), classUnderTest.triggers(records(FIVE)))
+        assertEquals(
+            listOf(count(STRESS, 1), count(custom("Period pain"), 1)),
+            classUnderTest.triggers(records(attacks), periodTracking = false)
+        )
+        val enough = classUnderTest.patterns(records(FIVE + attacks), periodTracking = false)
+        assertEquals(
+            listOf(count(STRESS, 1), count(custom("Period pain"), 1)),
+            (enough as InsightsPatternsDomainModel.Enough).triggers
+        )
     }
 
     @Test
@@ -342,6 +416,25 @@ class InsightsCalculatorTest {
             )
         )
         assertNull(classUnderTest.cycle(records()))
+    }
+
+    @Test
+    fun `A cycle that starts three days before the period adds no days to it`() {
+        val inside = arrayOf("2026-08-10" to "2026-08-10", "2026-09-08" to "2026-09-08")
+
+        assertEquals(
+            InsightsCycleDomainModel(cycles = 2, migraines = 0, days = 10, periodDays = 92),
+            classUnderTest.cycle(
+                records(periodDates = marks("2026-07-23" to "2026-07-23", *inside))
+            )
+        )
+        // Two days before, its window reaches the period's first day.
+        assertEquals(
+            InsightsCycleDomainModel(cycles = 2, migraines = 0, days = 11, periodDays = 92),
+            classUnderTest.cycle(
+                records(periodDates = marks("2026-07-24" to "2026-07-24", *inside))
+            )
+        )
     }
 
     @Test

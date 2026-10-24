@@ -23,7 +23,7 @@ sealed interface InsightsPatternsUiModel {
     /** Every count is out of the [migraines] that started in the period. */
     data class Enough(
         val migraines: Int,
-        val triggers: List<InsightsTriggerUiModel>,
+        val triggers: List<InsightsTriggerCountUiModel>,
         val weekdays: List<InsightsWeekdayBarUiModel>,
         val busiestWeekday: DayOfWeek?,
         val timesOfDay: List<InsightsTimeOfDayBarUiModel>,
@@ -33,7 +33,34 @@ sealed interface InsightsPatternsUiModel {
     ) : InsightsPatternsUiModel
 }
 
-data class InsightsTriggerUiModel(val name: String, val migraines: Int, val percent: Int)
+data class InsightsTriggerCountUiModel(
+    val trigger: InsightsTriggerUiModel,
+    val migraines: Int,
+    val percent: Int
+)
+
+/** A built-in trigger, named from this module's strings, or one of the user's own by its name. */
+sealed interface InsightsTriggerUiModel {
+    data class BuiltIn(val trigger: InsightsBuiltInTriggerUiModel) : InsightsTriggerUiModel
+
+    data class Custom(val name: String) : InsightsTriggerUiModel
+}
+
+enum class InsightsBuiltInTriggerUiModel {
+    Stress,
+    TooLittleSleep,
+    TooMuchSleep,
+    SkippedMeal,
+    Dehydration,
+    Alcohol,
+    Caffeine,
+    Period,
+    Weather,
+    BrightLightOrScreens,
+    Smell,
+    PhysicalEffort,
+    Travel
+}
 
 /** [fraction] is the bar's length next to the longest bar, from 0 to 1. */
 data class InsightsWeekdayBarUiModel(val day: DayOfWeek, val migraines: Int, val fraction: Float)

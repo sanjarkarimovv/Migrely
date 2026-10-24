@@ -7,6 +7,7 @@ import com.migrely.app.insights.domain.model.InsightsPatternsDomainModel
 import com.migrely.app.insights.domain.model.InsightsResultDomainModel
 import com.migrely.app.insights.domain.usecase.GetInsightsUseCase
 import com.migrely.app.insights.presentation.mapper.InsightsPresentationMapper
+import com.migrely.app.insights.presentation.mapper.InsightsTriggerPresentationMapper
 import com.migrely.app.insights.presentation.model.InsightsPatternsPresentationModel
 import com.migrely.app.insights.presentation.model.InsightsPresentationModel
 import com.migrely.app.insights.presentation.model.InsightsPresentationNotification
@@ -54,7 +55,7 @@ class InsightsViewModelTest :
     fun setUp() {
         classUnderTest = InsightsViewModel(
             getInsightsUseCase,
-            InsightsPresentationMapper(),
+            InsightsPresentationMapper(InsightsTriggerPresentationMapper()),
             useCaseExecutor
         )
     }

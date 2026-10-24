@@ -6,17 +6,19 @@ import com.migrely.app.datasource.backup.model.BackupRecordsDataModel
 import com.migrely.app.datasource.medication.model.IntakeEffectDataModel
 import com.migrely.app.datasource.medication.model.MedicationKindDataModel
 import com.migrely.app.insights.domain.model.InsightsAttackDomainModel
+import com.migrely.app.insights.domain.model.InsightsBuiltInTriggerDomainModel
 import com.migrely.app.insights.domain.model.InsightsEffectDomainModel
 import com.migrely.app.insights.domain.model.InsightsIntakeDomainModel
 import com.migrely.app.insights.domain.model.InsightsMedicationKindDomainModel
 import com.migrely.app.insights.domain.model.InsightsRecordsDomainModel
+import com.migrely.app.insights.domain.model.InsightsTriggerDomainModel
 import java.time.DateTimeException
 import java.time.ZoneId
 import java.time.ZoneOffset
 
 /**
- * The records Insights uses. Triggers become the English words the app shows, as on the doctor report; the user's own
- * names stay as typed, and a custom trigger that cannot be found is left out.
+ * The records Insights uses. A built-in trigger keeps its kind, for the screen to name; the user's own keeps its name as
+ * typed, and one that cannot be found is left out.
  */
 class InsightsRecordsDomainMapper {
     fun toDomain(records: BackupRecordsDataModel): InsightsRecordsDomainModel {
@@ -68,26 +70,33 @@ class InsightsRecordsDomainMapper {
         ZoneOffset.UTC
     }
 
-    private fun triggerOf(tag: AttackTagDataModel, tagNames: Map<String, String>): String? =
-        when (tag) {
-            is AttackTagDataModel.BuiltInTrigger -> when (tag.trigger) {
-                BuiltInTriggerDataModel.Stress -> "Stress"
-                BuiltInTriggerDataModel.TooLittleSleep -> "Too little sleep"
-                BuiltInTriggerDataModel.TooMuchSleep -> "Too much sleep"
-                BuiltInTriggerDataModel.SkippedMeal -> "Skipped meal"
-                BuiltInTriggerDataModel.Dehydration -> "Dehydration"
-                BuiltInTriggerDataModel.Alcohol -> "Alcohol"
-                BuiltInTriggerDataModel.Caffeine -> "Caffeine"
-                BuiltInTriggerDataModel.Period -> "Period"
-                BuiltInTriggerDataModel.Weather -> "Weather"
-                BuiltInTriggerDataModel.BrightLightOrScreens -> "Bright light or screens"
-                BuiltInTriggerDataModel.Smell -> "Smell"
-                BuiltInTriggerDataModel.PhysicalEffort -> "Physical effort"
-                BuiltInTriggerDataModel.Travel -> "Travel"
-            }
-            is AttackTagDataModel.CustomTrigger -> tagNames[tag.tagId]
-            is AttackTagDataModel.Location,
-            is AttackTagDataModel.BuiltInSymptom,
-            is AttackTagDataModel.CustomSymptom -> null
-        }
+    private fun triggerOf(
+        tag: AttackTagDataModel,
+        tagNames: Map<String, String>
+    ): InsightsTriggerDomainModel? = when (tag) {
+        is AttackTagDataModel.BuiltInTrigger ->
+            InsightsTriggerDomainModel.BuiltIn(builtInOf(tag.trigger))
+        is AttackTagDataModel.CustomTrigger ->
+            tagNames[tag.tagId]?.let(InsightsTriggerDomainModel::Custom)
+        is AttackTagDataModel.Location,
+        is AttackTagDataModel.BuiltInSymptom,
+        is AttackTagDataModel.CustomSymptom -> null
+    }
+
+    private fun builtInOf(trigger: BuiltInTriggerDataModel) = when (trigger) {
+        BuiltInTriggerDataModel.Stress -> InsightsBuiltInTriggerDomainModel.Stress
+        BuiltInTriggerDataModel.TooLittleSleep -> InsightsBuiltInTriggerDomainModel.TooLittleSleep
+        BuiltInTriggerDataModel.TooMuchSleep -> InsightsBuiltInTriggerDomainModel.TooMuchSleep
+        BuiltInTriggerDataModel.SkippedMeal -> InsightsBuiltInTriggerDomainModel.SkippedMeal
+        BuiltInTriggerDataModel.Dehydration -> InsightsBuiltInTriggerDomainModel.Dehydration
+        BuiltInTriggerDataModel.Alcohol -> InsightsBuiltInTriggerDomainModel.Alcohol
+        BuiltInTriggerDataModel.Caffeine -> InsightsBuiltInTriggerDomainModel.Caffeine
+        BuiltInTriggerDataModel.Period -> InsightsBuiltInTriggerDomainModel.Period
+        BuiltInTriggerDataModel.Weather -> InsightsBuiltInTriggerDomainModel.Weather
+        BuiltInTriggerDataModel.BrightLightOrScreens ->
+            InsightsBuiltInTriggerDomainModel.BrightLightOrScreens
+        BuiltInTriggerDataModel.Smell -> InsightsBuiltInTriggerDomainModel.Smell
+        BuiltInTriggerDataModel.PhysicalEffort -> InsightsBuiltInTriggerDomainModel.PhysicalEffort
+        BuiltInTriggerDataModel.Travel -> InsightsBuiltInTriggerDomainModel.Travel
+    }
 }

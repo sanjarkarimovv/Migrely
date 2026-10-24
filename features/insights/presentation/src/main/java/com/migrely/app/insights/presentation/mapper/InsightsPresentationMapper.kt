@@ -14,7 +14,7 @@ import com.migrely.app.insights.presentation.model.InsightsPatternsPresentationM
 import com.migrely.app.insights.presentation.model.InsightsPresentationModel
 import com.migrely.app.insights.presentation.model.InsightsTimeOfDayCountPresentationModel
 import com.migrely.app.insights.presentation.model.InsightsTimeOfDayPresentationModel
-import com.migrely.app.insights.presentation.model.InsightsTriggerPresentationModel
+import com.migrely.app.insights.presentation.model.InsightsTriggerCountPresentationModel
 import com.migrely.app.insights.presentation.model.InsightsViewState
 import com.migrely.app.insights.presentation.model.InsightsWeekdayPresentationModel
 import kotlin.math.roundToInt
@@ -22,7 +22,9 @@ import kotlin.math.roundToInt
 private const val HUNDRED = 100.0
 
 /** Insights as the screen shows them, each share rounded to a whole percent of its total. */
-class InsightsPresentationMapper {
+class InsightsPresentationMapper(
+    private val insightsTriggerPresentationMapper: InsightsTriggerPresentationMapper
+) {
     fun toPresentation(result: InsightsResultDomainModel): InsightsViewState = when (result) {
         is InsightsResultDomainModel.Ready -> InsightsViewState.Ready(insightsOf(result.insights))
         InsightsResultDomainModel.Failed -> InsightsViewState.Unavailable
@@ -45,8 +47,8 @@ class InsightsPresentationMapper {
         InsightsPatternsPresentationModel.Enough(
             migraines = patterns.migraines,
             triggers = patterns.triggers.map {
-                InsightsTriggerPresentationModel(
-                    it.name,
+                InsightsTriggerCountPresentationModel(
+                    insightsTriggerPresentationMapper.toPresentation(it.trigger),
                     it.migraines,
                     percentOf(it.migraines, patterns.migraines)
                 )

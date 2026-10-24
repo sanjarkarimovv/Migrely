@@ -14,13 +14,13 @@ import com.migrely.app.insights.ui.model.InsightsMonthUiModel
 import com.migrely.app.insights.ui.model.InsightsPatternsUiModel
 import com.migrely.app.insights.ui.model.InsightsTimeOfDayBarUiModel
 import com.migrely.app.insights.ui.model.InsightsTimeOfDayUiModel
-import com.migrely.app.insights.ui.model.InsightsTriggerUiModel
+import com.migrely.app.insights.ui.model.InsightsTriggerCountUiModel
 import com.migrely.app.insights.ui.model.InsightsUiModel
 import com.migrely.app.insights.ui.model.InsightsViewStateUiModel
 import com.migrely.app.insights.ui.model.InsightsWeekdayBarUiModel
 
 /** Insights as drawn: each bar's length is its count next to the highest count of its chart. */
-class InsightsViewStateUiMapper {
+class InsightsViewStateUiMapper(private val insightsTriggerUiMapper: InsightsTriggerUiMapper) {
     fun toUi(viewState: InsightsViewState): InsightsViewStateUiModel = when (viewState) {
         InsightsViewState.Loading -> InsightsViewStateUiModel.Loading
         is InsightsViewState.Ready -> InsightsViewStateUiModel.Ready(insightsOf(viewState.insights))
@@ -60,7 +60,11 @@ class InsightsViewStateUiMapper {
         return InsightsPatternsUiModel.Enough(
             migraines = patterns.migraines,
             triggers = patterns.triggers.map {
-                InsightsTriggerUiModel(it.name, it.migraines, it.percent)
+                InsightsTriggerCountUiModel(
+                    insightsTriggerUiMapper.toUi(it.trigger),
+                    it.migraines,
+                    it.percent
+                )
             },
             weekdays = patterns.weekdays.map {
                 InsightsWeekdayBarUiModel(

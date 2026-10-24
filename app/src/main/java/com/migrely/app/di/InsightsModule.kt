@@ -9,9 +9,11 @@ import com.migrely.app.insights.data.mapper.InsightsRecordsDomainMapper
 import com.migrely.app.insights.data.repository.InsightsRepository
 import com.migrely.app.insights.domain.usecase.GetInsightsUseCase
 import com.migrely.app.insights.presentation.mapper.InsightsPresentationMapper
+import com.migrely.app.insights.presentation.mapper.InsightsTriggerPresentationMapper
 import com.migrely.app.insights.presentation.viewmodel.InsightsViewModel
 import com.migrely.app.insights.ui.di.InsightsDependencies
 import com.migrely.app.insights.ui.mapper.InsightsNotificationUiMapper
+import com.migrely.app.insights.ui.mapper.InsightsTriggerUiMapper
 import com.migrely.app.insights.ui.mapper.InsightsViewStateUiMapper
 import com.migrely.app.navigation.mapper.InsightsNavigationEventDestinationMapper
 import dagger.Module
@@ -42,14 +44,14 @@ internal object InsightsModule {
         useCaseExecutor: UseCaseExecutor
     ) = InsightsViewModel(
         GetInsightsUseCase(repository, repository, repository, coroutines),
-        InsightsPresentationMapper(),
+        InsightsPresentationMapper(InsightsTriggerPresentationMapper()),
         useCaseExecutor
     )
 
     @Provides
     fun providesInsightsDependencies(insightsViewModel: InsightsViewModel) = InsightsDependencies(
         insightsViewModel = insightsViewModel,
-        insightsViewStateUiMapper = InsightsViewStateUiMapper(),
+        insightsViewStateUiMapper = InsightsViewStateUiMapper(InsightsTriggerUiMapper()),
         navigationMapper = InsightsNavigationEventDestinationMapper(),
         notificationMapper = InsightsNotificationUiMapper()
     )

@@ -7,6 +7,7 @@ import com.migrely.app.insights.presentation.model.InsightsPatternsPresentationM
 import com.migrely.app.insights.presentation.model.InsightsPresentationModel
 import com.migrely.app.insights.presentation.model.InsightsTimeOfDayCountPresentationModel
 import com.migrely.app.insights.presentation.model.InsightsTimeOfDayPresentationModel
+import com.migrely.app.insights.presentation.model.InsightsTriggerCountPresentationModel
 import com.migrely.app.insights.presentation.model.InsightsTriggerPresentationModel
 import com.migrely.app.insights.presentation.model.InsightsViewState
 import com.migrely.app.insights.presentation.model.InsightsWeekdayPresentationModel
@@ -16,6 +17,7 @@ import com.migrely.app.insights.ui.model.InsightsMonthUiModel
 import com.migrely.app.insights.ui.model.InsightsPatternsUiModel
 import com.migrely.app.insights.ui.model.InsightsTimeOfDayBarUiModel
 import com.migrely.app.insights.ui.model.InsightsTimeOfDayUiModel
+import com.migrely.app.insights.ui.model.InsightsTriggerCountUiModel
 import com.migrely.app.insights.ui.model.InsightsTriggerUiModel
 import com.migrely.app.insights.ui.model.InsightsUiModel
 import com.migrely.app.insights.ui.model.InsightsViewStateUiModel
@@ -29,7 +31,7 @@ private val WEEKDAYS = listOf(4, 2, 0, 1, 1, 1, 1)
 private val TIMES = InsightsTimeOfDayPresentationModel.entries.zip(InsightsTimeOfDayUiModel.entries)
 
 class InsightsUiMappersTest {
-    private val classUnderTest = InsightsViewStateUiMapper()
+    private val classUnderTest = InsightsViewStateUiMapper(InsightsTriggerUiMapper())
 
     @Test
     fun `When mapping the sections then each bar is its count next to the highest of its chart`() {
@@ -38,7 +40,13 @@ class InsightsUiMappersTest {
                 months = 6,
                 patterns = InsightsPatternsPresentationModel.Enough(
                     migraines = 10,
-                    triggers = listOf(InsightsTriggerPresentationModel("Stress", 6, 60)),
+                    triggers = listOf(
+                        InsightsTriggerCountPresentationModel(
+                            InsightsTriggerPresentationModel.Custom("Long drive"),
+                            6,
+                            60
+                        )
+                    ),
                     weekdays = DayOfWeek.entries.map {
                         InsightsWeekdayPresentationModel(it, WEEKDAYS[it.ordinal])
                     },
@@ -63,7 +71,13 @@ class InsightsUiMappersTest {
                     months = 6,
                     patterns = InsightsPatternsUiModel.Enough(
                         migraines = 10,
-                        triggers = listOf(InsightsTriggerUiModel("Stress", 6, 60)),
+                        triggers = listOf(
+                            InsightsTriggerCountUiModel(
+                                InsightsTriggerUiModel.Custom("Long drive"),
+                                6,
+                                60
+                            )
+                        ),
                         weekdays = DayOfWeek.entries.map {
                             InsightsWeekdayBarUiModel(
                                 it,
