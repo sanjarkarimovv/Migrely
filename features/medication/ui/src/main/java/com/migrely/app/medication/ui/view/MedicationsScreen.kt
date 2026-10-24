@@ -191,7 +191,7 @@ fun MedicationsContents(
 
 @Composable
 private fun MedicationRow(medication: MedicationUiModel, onOpen: () -> Unit, onRemove: () -> Unit) {
-    val summary = "${medication.title()}, ${medication.typeLabel()}"
+    val summary = "${medication.spokenTitle()}, ${medication.typeLabel()}"
     val description = stringResource(R.string.list_item_description, summary)
     Row(verticalAlignment = Alignment.CenterVertically) {
         Surface(
