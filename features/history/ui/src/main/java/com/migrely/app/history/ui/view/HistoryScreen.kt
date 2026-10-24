@@ -48,7 +48,6 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
@@ -496,18 +495,17 @@ private fun AttackRow(
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = 56.dp)
-            .clearAndSetSemantics {
+            // Merged into the clickable, so the row stays focusable for keyboards and switch access (BRD EC-UX-19).
+            .semantics {
                 contentDescription = description
                 role = Role.Button
-                onClick {
-                    onClick()
-                    true
-                }
             }
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+            modifier = Modifier
+                .padding(horizontal = 16.dp, vertical = 12.dp)
+                .clearAndSetSemantics { }
         ) {
             Text(
                 text = stringResource(

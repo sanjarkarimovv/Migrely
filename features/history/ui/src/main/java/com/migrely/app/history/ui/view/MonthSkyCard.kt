@@ -23,8 +23,8 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
@@ -80,22 +80,19 @@ fun MonthSkyContents(
             modifier = Modifier
                 .heightIn(min = 48.dp)
                 .clip(RoundedCornerShape(12.dp))
-                .clearAndSetSemantics {
+                // Merged into the clickable, so the title stays focusable for keyboards and switch access (EC-UX-19).
+                .semantics {
                     contentDescription = description
-                    role = Role.Button
                     heading()
-                    onClick {
-                        onMonth()
-                        true
-                    }
                 }
-                .clickable(onClick = onMonth)
+                .clickable(role = Role.Button, onClick = onMonth)
                 .padding(start = 8.dp, end = 4.dp)
         ) {
             Text(
                 text = monthName,
                 style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onSurface
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.clearAndSetSemantics { }
             )
             Icon(
                 MigrelyIcons.ChevronEnd,

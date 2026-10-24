@@ -2,6 +2,7 @@ package com.migrely.app.designsystem.sky
 
 import androidx.compose.foundation.layout.width
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
@@ -76,6 +77,15 @@ class MonthSkyCalendarTest {
     fun aFutureDayHasNoClickAction() {
         composeTestRule.onNodeWithContentDescription("Day 4")
             .assert(SemanticsMatcher.keyNotDefined(SemanticsActions.OnClick))
+            .assert(SemanticsMatcher.keyNotDefined(SemanticsProperties.Focused))
+    }
+
+    @Test
+    fun aSelectableDayIsAFocusableButtonForKeyboardsAndSwitchAccess() {
+        composeTestRule.onNodeWithContentDescription("Day 2")
+            .assert(SemanticsMatcher.keyIsDefined(SemanticsActions.OnClick))
+            .assert(SemanticsMatcher.keyIsDefined(SemanticsProperties.Focused))
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button))
     }
 
     @Test
