@@ -7,6 +7,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -31,6 +32,7 @@ import androidx.navigation.NavController
 import com.migrely.app.architecture.ui.view.ScreenEnterObserver
 import com.migrely.app.designsystem.input.TapGuard
 import com.migrely.app.designsystem.motion.rememberReduceMotion
+import com.migrely.app.designsystem.theme.MigrelyColors
 import com.migrely.app.designsystem.theme.MigrelyDarkRoom
 import com.migrely.app.home.presentation.model.HomeViewState
 import com.migrely.app.home.ui.di.HomeDependencies
@@ -225,7 +227,15 @@ fun HomeContents(
             label = "homeMode"
         ) { state ->
             when (state) {
-                HomeViewStateUiModel.Loading -> Box(Modifier.fillMaxSize())
+                // Dark in every theme, like the splash before it: an attack running at a cold start never shows
+                // light, and the light theme comes in with today's card (BRD D94).
+                HomeViewStateUiModel.Loading -> MigrelyDarkRoom {
+                    Box(
+                        Modifier
+                            .fillMaxSize()
+                            .background(MigrelyColors.AttackModeBackground)
+                    )
+                }
 
                 is HomeViewStateUiModel.Today -> TodayContents(
                     today = state.today,

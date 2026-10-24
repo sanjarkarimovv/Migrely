@@ -30,6 +30,7 @@ import androidx.navigation.compose.rememberNavController
 import com.migrely.app.datasource.notification.datasource.NotificationDataSourceImpl
 import com.migrely.app.designsystem.theme.DarkScreens
 import com.migrely.app.designsystem.theme.LocalDarkScreens
+import com.migrely.app.designsystem.theme.MigrelyColors
 import com.migrely.app.designsystem.theme.MigrelyTheme
 import com.migrely.app.settings.domain.model.ThemeDomainModel
 import com.migrely.app.start.StartEntryPoint
@@ -197,7 +198,14 @@ class MainActivity : ComponentActivity() {
                 MigrelyTheme(dark = dark) {
                     Surface(
                         modifier = Modifier.fillMaxSize(),
-                        color = MaterialTheme.colorScheme.background
+                        // Dark under attack mode and the dark room, so a fade between two of them never shows the
+                        // light theme in between.
+                        color = if (darkScreens.shown > 0) {
+                            MigrelyColors.AttackModeBackground
+                        } else {
+                            MaterialTheme.colorScheme.background
+                        },
+                        contentColor = MaterialTheme.colorScheme.onBackground
                     ) {
                         val controller = rememberNavController().also { navController = it }
                         appNavHostDependencies.AppNavHost(
