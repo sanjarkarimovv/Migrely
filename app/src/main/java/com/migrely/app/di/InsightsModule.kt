@@ -13,6 +13,7 @@ import com.migrely.app.insights.presentation.mapper.InsightsTriggerPresentationM
 import com.migrely.app.insights.presentation.viewmodel.InsightsViewModel
 import com.migrely.app.insights.ui.di.InsightsDependencies
 import com.migrely.app.insights.ui.mapper.InsightsNotificationUiMapper
+import com.migrely.app.insights.ui.mapper.InsightsShownStateResolver
 import com.migrely.app.insights.ui.mapper.InsightsTriggerUiMapper
 import com.migrely.app.insights.ui.mapper.InsightsViewStateUiMapper
 import com.migrely.app.navigation.mapper.InsightsNavigationEventDestinationMapper
@@ -52,6 +53,7 @@ internal object InsightsModule {
     fun providesInsightsDependencies(insightsViewModel: InsightsViewModel) = InsightsDependencies(
         insightsViewModel = insightsViewModel,
         insightsViewStateUiMapper = InsightsViewStateUiMapper(InsightsTriggerUiMapper()),
+        insightsShownStateResolver = InsightsShownStateResolver(),
         navigationMapper = InsightsNavigationEventDestinationMapper(),
         notificationMapper = InsightsNotificationUiMapper()
     )

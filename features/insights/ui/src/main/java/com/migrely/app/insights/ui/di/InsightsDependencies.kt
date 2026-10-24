@@ -7,11 +7,13 @@ import com.migrely.app.insights.presentation.model.InsightsPresentationNotificat
 import com.migrely.app.insights.presentation.model.InsightsViewState
 import com.migrely.app.insights.presentation.navigation.InsightsPresentationNavigationEvent
 import com.migrely.app.insights.presentation.viewmodel.InsightsViewModel
+import com.migrely.app.insights.ui.mapper.InsightsShownStateResolver
 import com.migrely.app.insights.ui.mapper.InsightsViewStateUiMapper
 
 class InsightsDependencies(
     val insightsViewModel: InsightsViewModel,
     val insightsViewStateUiMapper: InsightsViewStateUiMapper,
+    val insightsShownStateResolver: InsightsShownStateResolver,
     navigationMapper: NavigationEventDestinationMapper<InsightsPresentationNavigationEvent>,
     notificationMapper: NotificationUiMapper<InsightsPresentationNotification>
 ) : BaseComposeHolder<InsightsViewState, InsightsPresentationNotification>(

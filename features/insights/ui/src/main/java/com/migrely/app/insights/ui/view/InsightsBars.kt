@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.LayoutDirection
@@ -26,6 +27,7 @@ import com.migrely.app.insights.ui.model.InsightsTimeOfDayUiModel
 import java.time.DayOfWeek
 
 private val BAR_HEIGHT = 10.dp
+private const val STACKED_FONT_SCALE = 1.5f
 
 /**
  * One row of a chart: its label and value, the bar beneath, and an optional line of details. A screen reader reads the
@@ -46,19 +48,15 @@ internal fun BarRow(
             .padding(vertical = 4.dp)
             .clearAndSetSemantics { contentDescription = description }
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.weight(1f)
-            )
-            Text(
-                text = value,
-                style = MaterialTheme.typography.bodyMedium.copy(fontFeatureSettings = "tnum"),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(start = 12.dp)
-            )
+        // With large text the value goes under the label, so neither has to break inside a word.
+        if (LocalDensity.current.fontScale >= STACKED_FONT_SCALE) {
+            LabelText(label)
+            ValueText(value)
+        } else {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                LabelText(label, Modifier.weight(1f))
+                ValueText(value, Modifier.padding(start = 12.dp))
+            }
         }
         Bar(fraction, Modifier.fillMaxWidth().height(BAR_HEIGHT))
         if (details != null) {
@@ -69,6 +67,26 @@ internal fun BarRow(
             )
         }
     }
+}
+
+@Composable
+private fun LabelText(text: String, modifier: Modifier = Modifier) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurface,
+        modifier = modifier
+    )
+}
+
+@Composable
+private fun ValueText(text: String, modifier: Modifier = Modifier) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodyMedium.copy(fontFeatureSettings = "tnum"),
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = modifier
+    )
 }
 
 /** A rounded track with its filled share, growing from the start side in either direction. */

@@ -28,9 +28,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -49,9 +50,9 @@ import androidx.navigation.NavController
 import com.migrely.app.architecture.ui.view.ScreenEnterObserver
 import com.migrely.app.designsystem.icon.MigrelyIcons
 import com.migrely.app.designsystem.theme.MigrelyTheme
-import com.migrely.app.insights.presentation.model.InsightsViewState
 import com.migrely.app.insights.ui.R
 import com.migrely.app.insights.ui.di.InsightsDependencies
+import com.migrely.app.insights.ui.mapper.InsightsShownStateResolver
 import com.migrely.app.insights.ui.model.InsightsBuiltInTriggerUiModel
 import com.migrely.app.insights.ui.model.InsightsCycleUiModel
 import com.migrely.app.insights.ui.model.InsightsMedicationUiModel
@@ -77,12 +78,26 @@ data class InsightsActions(val onBack: () -> Unit, val onPeriod: (months: Int) -
 
 /**
  * Insights (BRD INS-F1–F6, EC-INS-01–03, D87–D92), opened from History. The chosen months, 6 at first, are kept here.
- * The numbers are read on entering, on every return to the screen and on each new choice.
+ * The numbers are read on entering, on every return to the screen and on each new choice; every result goes through
+ * [InsightsShownStateResolver], so a late answer for an earlier choice never replaces the chosen months' insights.
  */
 @Composable
 fun InsightsDependencies.Insights(navController: NavController, modifier: Modifier = Modifier) {
     var months by rememberSaveable { mutableIntStateOf(DEFAULT_MONTHS) }
     val currentMonths by rememberUpdatedState(months)
+    var shown by remember {
+        mutableStateOf<InsightsViewStateUiModel>(InsightsViewStateUiModel.Loading)
+    }
+    // Every result is looked at, even two in one frame, which a collected state could merge.
+    LaunchedEffect(insightsViewModel) {
+        insightsViewModel.viewState.collect { viewState ->
+            shown = insightsShownStateResolver.resolve(
+                shown,
+                insightsViewStateUiMapper.toUi(viewState),
+                currentMonths
+            )
+        }
+    }
     ScreenEnterObserver { insightsViewModel.onEnter(currentMonths) }
     // A rotation brings a new view model, so the numbers are read again whenever the screen resumes.
     LifecycleResumeEffect(insightsViewModel) {
@@ -90,10 +105,8 @@ fun InsightsDependencies.Insights(navController: NavController, modifier: Modifi
         onPauseOrDispose { }
     }
     ViewModelObserver(navController)
-    val viewState by insightsViewModel.viewState.collectAsState(InsightsViewState.Loading)
-    val uiState = remember(viewState) { insightsViewStateUiMapper.toUi(viewState) }
     InsightsContents(
-        viewState = uiState,
+        viewState = shown,
         months = months,
         actions = InsightsActions(
             onBack = insightsViewModel::onBackAction,
@@ -106,7 +119,7 @@ fun InsightsDependencies.Insights(navController: NavController, modifier: Modifi
     )
 }
 
-/** The screen itself, without its view model. Insights for months other than the chosen ones show as loading. */
+/** The screen itself, without its view model. */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun InsightsContents(
@@ -171,15 +184,14 @@ fun InsightsContents(
                             )
                         }
                     }
-                    val insights = (viewState as? InsightsViewStateUiModel.Ready)?.insights
-                    when {
-                        insights != null && insights.months == months -> InsightsBody(insights)
-                        viewState == InsightsViewStateUiModel.Unavailable -> Text(
+                    when (viewState) {
+                        is InsightsViewStateUiModel.Ready -> InsightsBody(viewState.insights)
+                        InsightsViewStateUiModel.Unavailable -> Text(
                             stringResource(R.string.insights_unavailable),
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        else -> {
+                        InsightsViewStateUiModel.Loading -> {
                             val description = stringResource(R.string.insights_loading)
                             LinearProgressIndicator(
                                 modifier = Modifier.fillMaxWidth().semantics {
@@ -304,6 +316,18 @@ private fun InsightsNotEnoughPreview() {
                     trends = PREVIEW_TRENDS
                 )
             ),
+            months = 6,
+            actions = InsightsActions({}, {})
+        )
+    }
+}
+
+@Preview(name = "Insights, loading")
+@Composable
+private fun InsightsLoadingPreview() {
+    MigrelyTheme {
+        InsightsContents(
+            viewState = InsightsViewStateUiModel.Loading,
             months = 6,
             actions = InsightsActions({}, {})
         )
