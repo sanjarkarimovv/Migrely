@@ -7,7 +7,8 @@
 #   qa/device_scenarios.sh long midnight           only the named ones
 #
 # Scenarios: long (72-hour check), history_death, past_death, details_kill, midnight, travel, travel_west, same_date,
-# zone_attack, zone_history, double_tap, upgrade.
+# zone_attack, zone_history, double_tap, med_effect, med_effect_attack, med_effect_skip, med_effect_late,
+# med_preventive, med_two_waiting, med_link_home, med_overuse, upgrade.
 # upgrade needs QA_OLD_APK=<older debug APK of com.migrely.app>; without it, it is reported as not run.
 set -euo pipefail
 
@@ -97,6 +98,23 @@ for n in root.iter('node'):
         x1, y1, x2, y2 = map(int, n.get('bounds').replace('][', ',').strip('[]').split(','))
         print((x1 + x2) // 2, int(y1 + (y2 - y1) * float(sys.argv[2]))); break" "$1" "$2"
 }
+
+run_flow_env() { # $1 flow, then KEY=VALUE pairs passed to Maestro with -e
+  local flow="$1"
+  shift
+  local args=()
+  for kv in "$@"; do args+=(-e "$kv"); done
+  echo "  flow $flow ($*)"
+  maestro --device "$QA_SERIAL" test "${args[@]}" "$FLOWS/$flow.yaml" --test-output-dir "$out/$flow" >"$out/$flow.log" 2>&1 || {
+    echo "  FAILED: $flow (log: $out/$flow.log)"
+    return 1
+  }
+}
+day_millis() { # $1 days before the 15th of this month, at 10:00 in the device's zone (negative: after)
+  echo $(( $(mid_month_millis "$ORIGINAL_ZONE" 10:00) - $1 * 86400000 ))
+}
+long_undo_window() { adbq shell settings put secure accessibility_interactive_ui_timeout_ms 20000; }
+default_undo_window() { adbq shell settings delete secure accessibility_interactive_ui_timeout_ms >/dev/null; }
 
 # Each step ends the scenario on failure: a scenario runs inside "||", where set -e does not apply.
 scenario_long() {
@@ -197,6 +215,92 @@ scenario_zone_history() {
   run_flow zone-history-after || return 1
 }
 
+scenario_med_effect() {
+  echo "Scenario med_effect: \"Did it help?\" 2 h after an intake, answered, changed and kept by Undo (MED-F4)"
+  set_clock_millis "$(day_millis 0)"
+  run_flow med-attack-intake-setup || return 1
+  shift_clock_hours 1 || return 1
+  run_flow med-no-question || return 1
+  shift_clock_hours 2 || return 1
+  long_undo_window
+  run_flow med-effect-answer || { default_undo_window; return 1; }
+  default_undo_window
+}
+
+scenario_med_effect_attack() {
+  echo "Scenario med_effect_attack: no question while an attack is in progress (G4)"
+  set_clock_millis "$(day_millis 0)"
+  run_flow med-attack-open-setup || return 1
+  shift_clock_hours 3 || return 1
+  run_flow med-attack-no-question || return 1
+}
+
+scenario_med_effect_skip() {
+  echo "Scenario med_effect_skip: a skipped question never comes back"
+  set_clock_millis "$(day_millis 0)"
+  run_flow med-attack-intake-setup || return 1
+  shift_clock_hours 3 || return 1
+  run_flow med-skip || return 1
+  shift_clock_hours 1 || return 1
+  run_flow med-no-question || return 1
+}
+
+scenario_med_effect_late() {
+  echo "Scenario med_effect_late: no question 25 h after the intake"
+  set_clock_millis "$(day_millis 0)"
+  run_flow med-attack-intake-setup || return 1
+  shift_clock_hours 25 || return 1
+  run_flow med-no-question || return 1
+}
+
+scenario_med_preventive() {
+  echo "Scenario med_preventive: a preventive medication is never asked about"
+  set_clock_millis "$(day_millis 0)"
+  run_flow med-add-preventive || return 1
+  shift_clock_hours 3 || return 1
+  run_flow med-no-question || return 1
+}
+
+scenario_med_two_waiting() {
+  echo "Scenario med_two_waiting: with two intakes waiting, the older one is asked first"
+  set_clock_millis "$(day_millis 0)"
+  run_flow clean || return 1
+  run_flow_env med-first-log-home NAME=Sumatriptan TYPE=Triptan || return 1
+  shift_clock_hours 1 || return 1
+  run_flow_env med-add-and-log-home NAME=Ibuprofen "TYPE=Simple painkiller" || return 1
+  shift_clock_hours 2 || return 1
+  run_flow med-two-waiting || return 1
+}
+
+scenario_med_link_home() {
+  echo "Scenario med_link_home: an intake logged from home inside a past attack's time joins that attack (EC-MED-09)"
+  set_clock_millis "$(day_millis 0)"
+  run_flow med-link-setup || return 1
+  shift_clock_hours -1 || return 1
+  run_flow_env med-first-log-home NAME=Ibuprofen "TYPE=Simple painkiller" || return 1
+  shift_clock_hours 1 || return 1
+  run_flow med-link-after || return 1
+}
+
+scenario_med_overuse() {
+  echo "Scenario med_overuse: painkillers on 13 days warn softly, \"Got it\" hides it, 15 days warn about the doctor"
+  local d
+  set_clock_millis "$(day_millis 12)"
+  run_flow clean || return 1
+  run_flow_env med-first-log-home NAME=Ibuprofen "TYPE=Simple painkiller" || return 1
+  for d in 11 10 9 8 7 6 5 4 3 2 1 0 0; do
+    set_clock_millis "$(day_millis "$d")"
+    run_flow_env med-log-home NAME=Ibuprofen || return 1
+  done
+  run_flow med-overuse-soft || return 1
+  for d in 13 14; do
+    set_clock_millis "$(day_millis "$d")"
+    run_flow_env med-log-home NAME=Ibuprofen || return 1
+  done
+  set_clock_millis "$(( $(day_millis 0) + 3600000 ))"
+  run_flow med-overuse-doctor || return 1
+}
+
 scenario_double_tap() {
   echo "Scenario double_tap: double taps never cross a mode switch (EC-UX-18, D32), with exact gaps between the taps"
   local gap point
@@ -242,7 +346,8 @@ out="$ROOT/build/qa/device/$(date +%Y%m%d-%H%M%S)"
 mkdir -p "$out"
 if [[ $# -eq 0 ]]; then
   set -- long history_death past_death details_kill midnight travel travel_west same_date zone_attack zone_history \
-    double_tap
+    double_tap med_effect med_effect_attack med_effect_skip med_effect_late med_preventive med_two_waiting \
+    med_link_home med_overuse
   if [[ -n "${QA_OLD_APK:-}" ]]; then
     set -- "$@" upgrade
   else

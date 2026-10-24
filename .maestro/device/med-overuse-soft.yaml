@@ -1,0 +1,15 @@
+# Covers: medication-overuse › Soft and doctor warnings › Soft warning
+# Covers: medication-overuse › Count overuse days › Several intakes in one day
+# Ibuprofen on 13 distinct days of the last 30 (twice on one of them).
+appId: com.migrely.app
+---
+- launchApp
+- extendedWaitUntil:
+    visible: "Painkillers on 13 of the last 30 days"
+    timeout: 10000
+- assertVisible: "Taking them on 15 days or more a month can lead to more headaches\\..*"
+- tapOn: "Got it"
+- extendedWaitUntil:
+    notVisible: "Painkillers on 13 of the last 30 days"
+    timeout: 5000
+- stopApp

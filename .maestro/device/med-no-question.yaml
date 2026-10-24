@@ -1,0 +1,17 @@
+# Covers: medication-effect › Ask whether a medication helped › Too early
+# Covers: medication-effect › Ask whether a medication helped › Too late
+# Covers: medication-effect › Ask whether a medication helped › Preventive medication
+# Home is open and no "Did it help?" question is shown.
+appId: com.migrely.app
+---
+- launchApp
+- extendedWaitUntil:
+    visible: "Migraine started"
+    timeout: 10000
+# The question card loads after home; give it time to appear before checking that it does not.
+- extendedWaitUntil:
+    visible: "How much did .* help\\?"
+    timeout: 4000
+    optional: true
+- assertNotVisible: "How much did .* help\\?"
+- stopApp

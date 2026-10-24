@@ -1,0 +1,8 @@
+# From home in normal mode, with at least one medication: open My medications.
+appId: com.migrely.app
+---
+- tapOn: "Log medication"
+- tapOn: "Manage medications"
+- extendedWaitUntil:
+    visible: "My medications"
+    timeout: 5000

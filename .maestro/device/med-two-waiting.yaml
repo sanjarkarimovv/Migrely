@@ -1,0 +1,9 @@
+# Covers: medication-effect › One question at a time › Two intakes waiting
+# Sumatriptan was logged first, Ibuprofen an hour later; both are now waiting for an answer.
+appId: com.migrely.app
+---
+- launchApp
+- extendedWaitUntil:
+    visible: "How much did Sumatriptan help\\?"
+    timeout: 10000
+- assertNotVisible: "How much did Ibuprofen help\\?"

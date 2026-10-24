@@ -1,0 +1,40 @@
+# Covers: medication-effect › Ask whether a medication helped › Two hours later
+# Covers: medication-effect › Ask whether a medication helped › Answer
+# Covers: medication-effect › Answer in the attack's details › Change an answer
+# Covers: medication-effect › Answer in the attack's details › Undo keeps the answer
+# Three hours after Ibuprofen was logged during an attack (qa/device_scenarios.sh med_effect).
+appId: com.migrely.app
+---
+- launchApp
+- extendedWaitUntil:
+    visible: "How much did Ibuprofen help\\?"
+    timeout: 10000
+- assertVisible: "Taken at .*"
+- assertVisible: "Not at all"
+- assertVisible: "A little"
+- assertVisible: "A lot"
+- assertVisible: "Completely"
+- tapOn: "A lot"
+- extendedWaitUntil:
+    notVisible: "How much did Ibuprofen help\\?"
+    timeout: 5000
+- tapOn: "Migraine from .*Opens its details\\."
+- scrollUntilVisible:
+    element: ".*Helped a lot.*"
+    direction: DOWN
+- tapOn: ".*Helped a lot.*"
+- tapOn: "Not at all"
+- extendedWaitUntil:
+    visible: ".*Did not help.*"
+    timeout: 5000
+- tapOn:
+    text: "Remove Ibuprofen.*"
+    waitToSettleTimeoutMs: 0
+    retryTapIfNoChange: false
+- tapOn:
+    text: "Undo.*"
+    waitToSettleTimeoutMs: 0
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible: ".*Did not help.*"
+    timeout: 5000

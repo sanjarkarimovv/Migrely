@@ -1,0 +1,13 @@
+# Covers: medication-effect › Ask whether a medication helped › Attack in progress
+# Three hours after Ibuprofen was logged during an attack that is still in progress.
+appId: com.migrely.app
+---
+- launchApp
+- extendedWaitUntil:
+    visible: "Details of this migraine"
+    timeout: 10000
+- extendedWaitUntil:
+    visible: "How much did .* help\\?"
+    timeout: 4000
+    optional: true
+- assertNotVisible: "How much did .* help\\?"

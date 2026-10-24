@@ -1,0 +1,12 @@
+# On "Medication taken" with no medication yet: add one by name and type and log it at once ("Add and log").
+# env: NAME (for example Ibuprofen), TYPE (Simple painkiller, Triptan, Combination or other, Not sure).
+appId: com.migrely.app
+---
+- tapOn: "Name"
+- inputText: "${NAME}"
+- hideKeyboard
+- tapOn: "${TYPE}"
+- tapOn: "Add and log"
+- extendedWaitUntil:
+    visible: "${NAME} logged at .*"
+    timeout: 5000

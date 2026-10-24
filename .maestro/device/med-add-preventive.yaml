@@ -1,0 +1,26 @@
+# Device scenario step: a clean install with Topiramate (preventive) added and logged from home now.
+appId: com.migrely.app
+---
+- runFlow: ../subflows/launch-clean.yaml
+- tapOn: "Log medication"
+- runFlow:
+    file: ../subflows/add-first-medication.yaml
+    env:
+      NAME: "Paracetamol"
+      TYPE: "Simple painkiller"
+- tapOn: "Undo"
+- tapOn: "Manage medications"
+- runFlow:
+    file: ../subflows/add-medication.yaml
+    env:
+      NAME: "Topiramate"
+      KIND: "Preventive"
+      TYPE: ""
+      DOSE: ""
+- back
+- tapOn: "Log Topiramate.*"
+- extendedWaitUntil:
+    visible: "Topiramate.* logged at .*"
+    timeout: 5000
+- tapOn: "Done"
+- stopApp

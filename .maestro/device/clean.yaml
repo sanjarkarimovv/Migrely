@@ -1,0 +1,5 @@
+# Device scenario step: a clean install on the home screen, then the app is closed.
+appId: com.migrely.app
+---
+- runFlow: ../subflows/launch-clean.yaml
+- stopApp

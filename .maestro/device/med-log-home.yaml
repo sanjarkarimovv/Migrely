@@ -1,0 +1,12 @@
+# Device scenario step: from home, log an existing medication now. env: NAME.
+appId: com.migrely.app
+---
+- launchApp
+- extendedWaitUntil:
+    visible: "Log medication"
+    timeout: 10000
+- runFlow:
+    file: ../subflows/log-from-home.yaml
+    env:
+      NAME: "${NAME}"
+- stopApp

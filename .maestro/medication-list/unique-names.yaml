@@ -1,0 +1,80 @@
+# Covers: medication-list › Names are unique › Duplicate name
+# Covers: medication-list › Archive instead of delete › Archive
+# Covers: medication-list › Names are unique › Renaming to an archived name
+# Covers: medication-list › Names are unique › Archived name
+appId: com.migrely.app
+name: Names are unique, archiving can be undone, an archived name comes back as it was
+tags: [regression, medication-list, a11y-timeout]
+---
+- runFlow: ../subflows/launch-clean.yaml
+- tapOn: "Log medication"
+- runFlow:
+    file: ../subflows/add-first-medication.yaml
+    env:
+      NAME: "Ibuprofen"
+      TYPE: "Simple painkiller"
+- tapOn: "Done"
+- runFlow: ../subflows/open-my-medications.yaml
+- runFlow:
+    file: ../subflows/add-medication.yaml
+    env:
+      NAME: " ibuprofen "
+      KIND: "For an attack"
+      TYPE: "Simple painkiller"
+      DOSE: ""
+- extendedWaitUntil:
+    visible: "You already have Ibuprofen\\."
+    timeout: 5000
+- back
+- runFlow:
+    file: ../subflows/add-medication.yaml
+    env:
+      NAME: "Sumatriptan"
+      KIND: "For an attack"
+      TYPE: "Triptan"
+      DOSE: "50 mg"
+- extendedWaitUntil:
+    visible: "Sumatriptan · 50 mg, .*"
+    timeout: 5000
+# Archive, then Undo.
+- tapOn:
+    text: "Remove Sumatriptan"
+    waitToSettleTimeoutMs: 0
+    retryTapIfNoChange: false
+- tapOn:
+    text: "Undo.*"
+    waitToSettleTimeoutMs: 0
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible: "Sumatriptan · 50 mg, .*"
+    timeout: 5000
+# Archive for good, then try to rename Ibuprofen to the archived name.
+- tapOn: "Remove Sumatriptan"
+- extendedWaitUntil:
+    visible: "Medication removed"
+    timeout: 5000
+- assertNotVisible: "Sumatriptan · 50 mg, .*"
+- tapOn: "Ibuprofen.*Opens it to edit\\."
+- tapOn: "Ibuprofen"
+- eraseText: 20
+- inputText: "Sumatriptan"
+- hideKeyboard
+- scrollUntilVisible:
+    element: "Save"
+    direction: DOWN
+- tapOn: "Save"
+- extendedWaitUntil:
+    visible: "Sumatriptan is in your archive\\. Add it as a new medication to bring it back\\."
+    timeout: 5000
+- back
+# Adding the archived name brings it back as it was (Triptan, 50 mg), not as typed ("Not sure", no dose).
+- runFlow:
+    file: ../subflows/add-medication.yaml
+    env:
+      NAME: "sumatriptan"
+      KIND: "For an attack"
+      TYPE: "Not sure"
+      DOSE: ""
+- extendedWaitUntil:
+    visible: "Sumatriptan · 50 mg, Triptan.*"
+    timeout: 5000
