@@ -18,7 +18,8 @@
 - **Datasource `preferences`:** `PreferencesDataSource` in `:datasource:source`, and `PreferencesDataSourceImpl` over
   `SharedPreferences("migrely_preferences")` in `:datasource:implementation`. It has:
   - `onboardingFinished(): Boolean` and `finishOnboarding()`;
-  - `setGoal(String?)` and `setAttackFrequency(String?)`, stored as keys;
+  - `goal()` and `setGoal(GoalDataModel)`, `attackFrequency()` and `setAttackFrequency(AttackFrequencyDataModel)`, stored
+    by their keys;
   - `periodTracking(): Boolean` (default true) and `setPeriodTracking(Boolean)`.
   - Writes use `commit()` on the background thread, so a failure is seen; a failed write is a `DataException`.
 - **The goal and frequency keys** are typed in the datasource (`GoalDataModel`, `AttackFrequencyDataModel`, each with a
@@ -40,18 +41,21 @@
 
 ### D3. Steps (BRD D77)
 
-- **`OnboardingViewModel` is stateless.** The UI keeps the step index in `rememberSaveable` and passes it back.
+- **`OnboardingViewModel` is stateless.** The UI keeps the step index in `rememberSaveable` and moves on as soon as an
+  answer is chosen or "Skip" is tapped.
 - **Events:**
-  - `onGoalAction(goal)`, `onFrequencyAction(frequency)`, `onPeriodTrackingAction(on)`: save the answer, then emit
-    `ShowStep(next)`;
-  - `onSkipAction(step)`;
-  - `onReminderDoneAction()`: finish, then `OnFinished`;
+  - `onGoalAction(goal)`, `onFrequencyAction(frequency)`, `onPeriodTrackingAction(on)`: save the answer;
+  - `onFinishAction()`: after the last step, finish, then `OnFinished`, whatever the save's result;
   - `onRestoreAction()`: `OnRestoreBackup`.
+- **A tap guard** covers each new step for 800 ms, so a double tap never answers the next step (BRD EC-UX-18).
 - **Step 4** hosts the reminders slot. When the offer reports done (turned on, refused or "Not now"), onboarding
   finishes.
 - **System Back** moves back a step, with `BackHandler` while step > 1. On step 1 it leaves the app.
-- **A failed save** shows "Couldn't save that. You can change it later in Settings." and still moves on, so onboarding
-  never traps the user.
+- **A failed save** shows "Couldn't save that answer. Migrely works without it." and still moves on, so onboarding never
+  traps the user.
+- **Opened to log:** the shortcut and the daily reminder's "Log a migraine" skip onboarding. A shortcut arriving while
+  the start is still decided is kept and applied. A recreation during the splash keeps the shortcut. The decision
+  falls back to home after 2 s or on any failure.
 
 ### D4. The reminder offer (BRD D80)
 

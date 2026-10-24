@@ -37,7 +37,8 @@ private fun month(
     days: List<HistoryDayDomainModel> = emptyList(),
     attacks: List<HistoryAttackDomainModel> = emptyList(),
     shown: YearMonth = OCTOBER,
-    earliest: YearMonth = YearMonth.of(2026, 8)
+    earliest: YearMonth = YearMonth.of(2026, 8),
+    periodTracking: Boolean = true
 ) = HistoryMonthDomainModel(
     shown,
     TODAY,
@@ -45,7 +46,8 @@ private fun month(
     true,
     days,
     attacks,
-    MonthStatsDomainModel(0, 0, 0, null, 0, chronic = false, progress = null)
+    MonthStatsDomainModel(0, 0, 0, null, 0, chronic = false, progress = null),
+    periodTracking = periodTracking
 )
 
 @RunWith(Parameterized::class)
@@ -199,5 +201,22 @@ class HistoryMonthPresentationMapperTest {
             ),
             actual.attacks
         )
+    }
+
+    @Test
+    fun `Given Track periods is off when mapping then only a marked day offers Period`() {
+        val marked =
+            HistoryDayDomainModel(LocalDate.parse("2026-10-12"), emptyList(), period = true)
+        val unmarked = HistoryDayDomainModel(LocalDate.parse("2026-10-13"), emptyList())
+
+        val off = classUnderTest.toPresentation(
+            month(days = listOf(marked, unmarked), periodTracking = false)
+        ).days
+        val on = classUnderTest.toPresentation(
+            month(days = listOf(unmarked), periodTracking = true)
+        ).days
+
+        assertEquals(listOf(true, false), off.map { it.periodOffered })
+        assertEquals(listOf(true), on.map { it.periodOffered })
     }
 }

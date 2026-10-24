@@ -157,4 +157,21 @@ class DailyReminderOfferViewModelTest :
         assertEquals(DailyReminderOfferPresentationNotification.Done, notification.await())
         verifyNotTurnedOn()
     }
+
+    @Test
+    fun `Given a failed read or save when turning it on then done all the same`() = runTest {
+        getRemindersUseCase.givenSuccessfulExecution(RemindersResultDomainModel.Failed)
+        val unread = async(start = UNDISPATCHED) { classUnderTest.notification.first() }
+        classUnderTest.onTurnOnAction(EIGHT_PM)
+        assertEquals(DailyReminderOfferPresentationNotification.Done, unread.await())
+
+        givenReminders(allowed = true)
+        setDailyReminderUseCase.givenSuccessfulExecution(
+            ON_AT_EIGHT,
+            ReminderWriteResultDomainModel.Failed
+        )
+        val unsaved = async(start = UNDISPATCHED) { classUnderTest.notification.first() }
+        classUnderTest.onTurnOnAction(EIGHT_PM)
+        assertEquals(DailyReminderOfferPresentationNotification.Done, unsaved.await())
+    }
 }

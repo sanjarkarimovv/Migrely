@@ -259,4 +259,11 @@ class HistoryRepositoryTest {
             classUnderTest.attackMedicationIntakes(from, to)
         )
     }
+
+    @Test
+    fun `When reading Track periods then the preference`() {
+        given(preferencesDataSource.periodTracking()).willReturn(false)
+
+        assertEquals(false, classUnderTest.periodTracking())
+    }
 }

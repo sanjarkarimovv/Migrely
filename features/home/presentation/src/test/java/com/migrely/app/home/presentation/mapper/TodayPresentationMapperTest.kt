@@ -130,4 +130,11 @@ class TodayPresentationMapperPeriodTest {
             actual
         )
     }
+
+    @Test
+    fun `Given Period is not offered when mapping today then the model says so`() {
+        val actual = classUnderTest.toPresentation(TodayDomainModel.Calm, periodOffered = false)
+
+        assertEquals(false, (actual as HomeViewState.Today).today.periodOffered)
+    }
 }
