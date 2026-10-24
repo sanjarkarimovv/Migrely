@@ -2,7 +2,7 @@
 
 ## 1. Datasource (design D1)
 
-- [ ] 1.1 `day_mark` entity, `DayMarkDao`, `DayMarkDataSource` and its impl, DB v5 `AutoMigration(4, 5)`, schema
+- [x] 1.1 `day_mark` entity, `DayMarkDao`, `DayMarkDataSource` and its impl, DB v5 `AutoMigration(4, 5)`, schema
   `5.json`; unit tests, DAO tests and `MigrationTest` 4→5.
   Verify: `./gradlew :datasource:implementation:test` and
   `ANDROID_SERIAL=emulator-5570 ./gradlew :datasource:implementation:connectedDebugAndroidTest`

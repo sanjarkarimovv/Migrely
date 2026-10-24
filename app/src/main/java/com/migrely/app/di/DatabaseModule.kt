@@ -9,6 +9,10 @@ import com.migrely.app.datasource.attack.mapper.AttackLocalMapper
 import com.migrely.app.datasource.clock.datasource.ClockDataSource
 import com.migrely.app.datasource.clock.datasource.ClockDataSourceImpl
 import com.migrely.app.datasource.database.MigrelyDatabase
+import com.migrely.app.datasource.daymark.dao.DayMarkDao
+import com.migrely.app.datasource.daymark.datasource.DayMarkDataSource
+import com.migrely.app.datasource.daymark.datasource.DayMarkDataSourceImpl
+import com.migrely.app.datasource.daymark.mapper.DayMarkLocalMapper
 import com.migrely.app.datasource.medication.dao.MedicationDao
 import com.migrely.app.datasource.medication.datasource.MedicationDataSource
 import com.migrely.app.datasource.medication.datasource.MedicationDataSourceImpl
@@ -56,6 +60,13 @@ internal object DatabaseModule {
     @Provides
     fun providesMedicationDataSource(medicationDao: MedicationDao): MedicationDataSource =
         MedicationDataSourceImpl(medicationDao, MedicationLocalMapper(), OveruseNoticeLocalMapper())
+
+    @Provides
+    fun providesDayMarkDao(database: MigrelyDatabase): DayMarkDao = database.dayMarkDao()
+
+    @Provides
+    fun providesDayMarkDataSource(dayMarkDao: DayMarkDao): DayMarkDataSource =
+        DayMarkDataSourceImpl(dayMarkDao, DayMarkLocalMapper())
 
     @Provides
     fun providesClockDataSource(): ClockDataSource = ClockDataSourceImpl()
