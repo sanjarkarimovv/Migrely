@@ -95,8 +95,9 @@ class ReportDocumentDataSourceImpl(
         val offset = blocks.indexOfFirst { it === table }
         fun keeping(kept: Int): List<ReportBlockDataModel> = blocks.toMutableList().apply {
             set(offset, table.copy(rows = table.rows.take(kept)))
+            // Before the table, where a reader starts it (walk B3).
             add(
-                offset + 1,
+                offset,
                 ReportBlockDataModel.Paragraph(
                     String.format(Locale.ENGLISH, table.shortenedNote!!, kept, table.rows.size)
                 )

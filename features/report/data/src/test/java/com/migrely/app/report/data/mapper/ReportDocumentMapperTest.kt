@@ -230,4 +230,15 @@ class ReportDocumentMapperTest {
             }
         )
     }
+
+    @Test
+    fun `Given a migraine that began before the period then its row says so`() {
+        val before = attack(TASHKENT, null).copy(start = Instant.parse("2026-07-25T18:00:00Z"))
+
+        val rows = blocks(
+            report(attacks = listOf(before))
+        ).filterIsInstance<ReportBlockDataModel.Table>().first().rows
+
+        assertEquals("25 Jul 2026, 23:00, began before the period", rows.single().first())
+    }
 }

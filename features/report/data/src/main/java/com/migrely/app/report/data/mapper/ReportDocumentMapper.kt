@@ -16,6 +16,7 @@ import com.migrely.app.report.domain.model.ReportMedicationDomainModel
 import com.migrely.app.report.domain.model.ReportMedicationKindDomainModel
 import com.migrely.app.report.domain.model.ReportPainLevelDomainModel
 import java.time.Duration
+import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -158,13 +159,20 @@ class ReportDocumentMapper {
                 ReportColumnDataModel("Triggers", 1.5f),
                 ReportColumnDataModel("Medications", 1.5f)
             ),
-            rows = report.attacks.map { row(it, deviceZone) },
+            rows = report.attacks.map { row(it, deviceZone, report.dates.from) },
             shortenedNote = SHORTENED_NOTE
         )
 
-    private fun row(attack: ReportAttackDomainModel, deviceZone: ZoneId): List<String> {
-        val start = DATE_TIME.format(attack.start.atZone(attack.zone)) +
-            if (attack.zone != deviceZone) " (${attack.zone.id})" else ""
+    private fun row(
+        attack: ReportAttackDomainModel,
+        deviceZone: ZoneId,
+        from: LocalDate
+    ): List<String> {
+        val began = attack.start.atZone(attack.zone)
+        // Listed for its days in the period, but not counted as started in it (walk B4).
+        val start = DATE_TIME.format(began) +
+            (if (attack.zone != deviceZone) " (${attack.zone.id})" else "") +
+            if (began.toLocalDate().isBefore(from)) ", began before the period" else ""
         val duration =
             attack.end?.let { durationOf(Duration.between(attack.start, it)) } ?: "In progress"
         return listOf(
