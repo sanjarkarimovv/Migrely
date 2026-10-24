@@ -2,7 +2,7 @@
 
 ## 1. Insights feature
 
-- [ ] 1.1 Domain: `InsightsCalculator`, `GetInsightsUseCase`, tests.
+- [x] 1.1 Domain: `InsightsCalculator`, `GetInsightsUseCase`, tests.
 - [ ] 1.2 Data: `InsightsRepository`, mappers, tests.
 - [ ] 1.3 Presentation: `InsightsViewModel`, tests.
 - [ ] 1.4 UI: the Insights screen, the bars, accessible text.
