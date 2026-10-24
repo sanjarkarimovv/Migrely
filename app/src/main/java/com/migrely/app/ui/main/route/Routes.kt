@@ -50,3 +50,7 @@ data object Settings
 /** Your data: backups, exports and imports (change add-data-export-import). */
 @Serializable
 data object YourData
+
+/** Onboarding, on a new user's first start (change add-onboarding, BRD D76). */
+@Serializable
+data object Onboarding

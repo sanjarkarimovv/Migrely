@@ -25,7 +25,9 @@ import com.migrely.app.reminders.domain.usecase.SetDailyReminderUseCase
 import com.migrely.app.reminders.domain.usecase.SetEffectReminderUseCase
 import com.migrely.app.reminders.domain.usecase.ShowAttackLoggedTodayUseCase
 import com.migrely.app.reminders.presentation.mapper.RemindersPresentationMapper
+import com.migrely.app.reminders.presentation.viewmodel.DailyReminderOfferViewModel
 import com.migrely.app.reminders.presentation.viewmodel.RemindersViewModel
+import com.migrely.app.reminders.ui.di.DailyReminderOfferDependencies
 import com.migrely.app.reminders.ui.di.RemindersDependencies
 import com.migrely.app.reminders.ui.mapper.ReminderKindUiToPresentationMapper
 import com.migrely.app.reminders.ui.mapper.RemindersEventPresenter
@@ -155,6 +157,21 @@ internal object RemindersModule {
         recordPermissionAskedUseCase,
         RemindersPresentationMapper(),
         useCaseExecutor
+    )
+
+    @Provides
+    fun providesDailyReminderOfferDependencies(
+        getRemindersUseCase: GetRemindersUseCase,
+        setDailyReminderUseCase: SetDailyReminderUseCase,
+        recordPermissionAskedUseCase: RecordPermissionAskedUseCase,
+        useCaseExecutor: UseCaseExecutor
+    ) = DailyReminderOfferDependencies(
+        DailyReminderOfferViewModel(
+            getRemindersUseCase,
+            setDailyReminderUseCase,
+            recordPermissionAskedUseCase,
+            useCaseExecutor
+        )
     )
 
     @Provides

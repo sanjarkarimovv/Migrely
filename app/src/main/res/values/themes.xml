@@ -4,4 +4,14 @@
     <style name="Theme.Migrely" parent="Theme.Material3.Dark.NoActionBar">
         <item name="android:windowBackground">@color/window_background</item>
     </style>
+
+    <!--
+        The launch theme: the system splash, held while the app decides whether onboarding comes first (BRD D76), then
+        Theme.Migrely.
+    -->
+    <style name="Theme.Migrely.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/window_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="postSplashScreenTheme">@style/Theme.Migrely</item>
+    </style>
 </resources>

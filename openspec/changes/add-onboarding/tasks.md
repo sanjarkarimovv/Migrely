@@ -23,7 +23,7 @@
 
 ## 5. App
 
-- [ ] 5.1 core-splashscreen, the start decision in `MainActivity`, the route, the slot, and DI.
+- [x] 5.1 core-splashscreen, the start decision in `MainActivity`, the route, the slot, and DI.
 
 ## 6. Verify
 
