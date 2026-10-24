@@ -134,6 +134,7 @@ fun HistoryDependencies.History(
         mappers = historyCalendarMappers,
         actions = HistoryActions(
             onBack = historyViewModel::onLeaveAction,
+            onReport = historyViewModel::onReportAction,
             onPreviousMonth = { shown?.let { showMonth(it.yearMonth().minusMonths(1)) } },
             onNextMonth = { shown?.let { showMonth(it.yearMonth().plusMonths(1)) } },
             onDay = { epochDay ->
@@ -184,7 +185,8 @@ data class HistoryActions(
     val onAttack: (attackId: String) -> Unit,
     val onAddPastAttack: (epochDay: Long?) -> Unit,
     val onPeriod: (epochDay: Long, marked: Boolean) -> Unit = { _, _ -> },
-    val onPainFree: (epochDay: Long, marked: Boolean) -> Unit = { _, _ -> }
+    val onPainFree: (epochDay: Long, marked: Boolean) -> Unit = { _, _ -> },
+    val onReport: () -> Unit = {}
 )
 
 private val HistoryViewStateUiModel.month: HistoryMonthUiModel?
@@ -232,6 +234,14 @@ fun HistoryContents(
                         Icon(
                             MigrelyIcons.Back,
                             contentDescription = stringResource(R.string.navigate_back)
+                        )
+                    }
+                },
+                actions = {
+                    IconButton(onClick = actions.onReport) {
+                        Icon(
+                            MigrelyIcons.Report,
+                            contentDescription = stringResource(R.string.history_doctor_report)
                         )
                     }
                 },

@@ -2,6 +2,7 @@ package com.migrely.app
 
 import android.app.Application
 import com.migrely.app.reminder.ReminderEntryPoint
+import com.migrely.app.start.StartEntryPoint
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.android.HiltAndroidApp
 import kotlin.concurrent.thread
@@ -15,6 +16,10 @@ class MigrelyApplication : Application() {
         thread {
             EntryPointAccessors.fromApplication(this, ReminderEntryPoint::class.java)
                 .rescheduleRemindersUseCase()
+                .executeInBackground(Unit)
+            // A report cut off by the app closing leaves a partial file; it goes now (BRD EC-REP-03).
+            EntryPointAccessors.fromApplication(this, StartEntryPoint::class.java)
+                .cleanUpReportsUseCase()
                 .executeInBackground(Unit)
         }
     }

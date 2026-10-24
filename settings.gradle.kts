@@ -109,3 +109,12 @@ setOf(
 ).forEach { module ->
     include(":features:onboarding:$module")
 }
+
+setOf(
+    "ui",
+    "presentation",
+    "domain",
+    "data"
+).forEach { module ->
+    include(":features:report:$module")
+}

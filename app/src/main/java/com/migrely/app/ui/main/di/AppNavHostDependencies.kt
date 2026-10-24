@@ -14,6 +14,7 @@ import com.migrely.app.medication.ui.di.OveruseIndicatorDependencies
 import com.migrely.app.onboarding.ui.di.OnboardingDependencies
 import com.migrely.app.reminders.ui.di.DailyReminderOfferDependencies
 import com.migrely.app.reminders.ui.di.RemindersDependencies
+import com.migrely.app.report.ui.di.ReportDependencies
 import com.migrely.app.settings.ui.di.SettingsDependencies
 
 data class AppNavHostDependencies(
@@ -31,5 +32,6 @@ data class AppNavHostDependencies(
     val settingsDependencies: SettingsDependencies,
     val yourDataDependencies: YourDataDependencies,
     val onboardingDependencies: OnboardingDependencies,
-    val dailyReminderOfferDependencies: DailyReminderOfferDependencies
+    val dailyReminderOfferDependencies: DailyReminderOfferDependencies,
+    val reportDependencies: ReportDependencies
 )
