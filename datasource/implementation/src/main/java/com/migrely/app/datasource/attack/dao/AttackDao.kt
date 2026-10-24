@@ -352,6 +352,7 @@ abstract class AttackDao {
     ) {
         if (absorbedIds.isNotEmpty()) {
             moveIntensityPoints(absorbedIds, survivorId)
+            moveIntakes(absorbedIds, survivorId)
             tagsOf(absorbedIds).forEach { tag -> insertTag(tag.copy(attackId = survivorId)) }
             mergeLongCheck(survivorId, absorbedIds + survivorId)
         }
@@ -366,6 +367,10 @@ abstract class AttackDao {
         )
         if (absorbedIds.isNotEmpty()) deleteAll(absorbedIds)
     }
+
+    /** Intakes of merged attacks move to the remaining one (BRD EC-MED-10, D27). */
+    @Query("UPDATE medication_intake SET attack_id = :survivorId WHERE attack_id IN (:absorbedIds)")
+    abstract fun moveIntakes(absorbedIds: List<String>, survivorId: String)
 
     data class StartOutcome(val attack: AttackWithPointsLocalModel, val created: Boolean)
 }

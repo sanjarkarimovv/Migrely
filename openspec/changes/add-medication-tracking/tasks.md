@@ -26,8 +26,8 @@
 
 ## 3. Datasource
 
-- [ ] 3.1 Add `MedicationLocalModel`, `MedicationIntakeLocalModel`, `MedicationDao`, database version 3 with `AutoMigration(2, 3)` and the exported schema, and the intake move in `mergeInto`, with instrumented DAO tests and a `MigrationTest` from 2 to 3; verify `ANDROID_SERIAL=emulator-5570 ./gradlew :datasource:implementation:connectedDebugAndroidTest`
-- [ ] 3.2 Add `MedicationDataSource` with its implementation, data models and unit tests (mocked DAO, failure mapping); verify `./gradlew :datasource:implementation:test`
+- [x] 3.1 Add `MedicationLocalModel`, `MedicationIntakeLocalModel`, `MedicationDao`, database version 3 with `AutoMigration(2, 3)` and the exported schema, and the intake move in `mergeInto`, with instrumented DAO tests and a `MigrationTest` from 2 to 3; verify `ANDROID_SERIAL=emulator-5570 ./gradlew :datasource:implementation:connectedDebugAndroidTest`
+- [x] 3.2 Add `MedicationDataSource` with its implementation, data models and unit tests (mocked DAO, failure mapping); verify `./gradlew :datasource:implementation:test`
 
 ## 4. Data
 

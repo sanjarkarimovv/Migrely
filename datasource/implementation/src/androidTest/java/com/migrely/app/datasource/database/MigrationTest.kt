@@ -65,4 +65,44 @@ class MigrationTest {
         }
         migrated.close()
     }
+
+    @Test
+    fun migrating2To3_keepsAttacks_andAddsEmptyMedicationTables() {
+        // Given a version 2 database with an attack and a tag
+        helper.createDatabase(TEST_DATABASE, 2).apply {
+            execSQL(
+                "INSERT INTO attack (id, start_epoch_millis, start_zone_id, end_epoch_millis, " +
+                    "long_check_confirmed_epoch_millis, long_check_disabled, " +
+                    "created_epoch_millis, updated_epoch_millis, functional_impact, note, " +
+                    "deleted_epoch_millis) " +
+                    "VALUES ('a', 1000, 'Asia/Tashkent', 5000, NULL, 0, 1000, 5000, 2, " +
+                    "'Dark room', NULL)"
+            )
+            execSQL(
+                "INSERT INTO attack_tag (attack_id, kind, tag_key) VALUES ('a', 'SYMPTOM', 'aura')"
+            )
+            close()
+        }
+
+        // When
+        val migrated = helper.runMigrationsAndValidate(TEST_DATABASE, 3, true)
+
+        // Then the attack is intact and the medication tables exist and are empty
+        migrated.query("SELECT functional_impact, note FROM attack WHERE id = 'a'").use { cursor ->
+            cursor.moveToFirst()
+            assertEquals(2, cursor.getInt(0))
+            assertEquals("Dark room", cursor.getString(1))
+        }
+        migrated.query("SELECT COUNT(*) FROM attack_tag").use { cursor ->
+            cursor.moveToFirst()
+            assertEquals(1, cursor.getInt(0))
+        }
+        listOf("medication", "medication_intake").forEach { table ->
+            migrated.query("SELECT COUNT(*) FROM $table").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals(0, cursor.getInt(0))
+            }
+        }
+        migrated.close()
+    }
 }
