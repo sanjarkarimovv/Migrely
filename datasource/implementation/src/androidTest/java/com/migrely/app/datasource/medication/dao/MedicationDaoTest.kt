@@ -185,6 +185,25 @@ class MedicationDaoTest {
     }
 
     @Test
+    fun givenIntakes_whenReadingOneIntakesQuestion_thenOnlyThatOneWhileOpenAcuteAndInTheWindow() {
+        attackDao.insertAttack(attack("gone", 1_000L).copy(deletedEpochMillis = 9_000L))
+        classUnderTest.insert(medication("i", "Ibuprofen"))
+        classUnderTest.insert(medication("t", "Topiramate", kind = "PREVENTIVE", category = null))
+        classUnderTest.insertIntake(intake("older", "i", null, 1_100L))
+        classUnderTest.insertIntake(intake("asked", "i", null, 1_500L))
+        classUnderTest.insertIntake(intake("preventive", "t", null, 1_500L))
+        classUnderTest.insertIntake(intake("deleted", "i", "gone", 1_500L))
+        classUnderTest.insertIntake(intake("answered", "i", null, 1_500L).copy(effect = "A_LOT"))
+
+        // An older open question does not stand in for the one asked about (review of add-reminders).
+        assertEquals("asked", classUnderTest.pendingEffectQuestionOf("asked", 1_000L, 2_000L)?.id)
+        listOf("preventive", "deleted", "answered").forEach {
+            assertNull(classUnderTest.pendingEffectQuestionOf(it, 1_000L, 2_000L))
+        }
+        assertNull(classUnderTest.pendingEffectQuestionOf("asked", 1_600L, 2_000L))
+    }
+
+    @Test
     fun givenAnIntake_whenAnsweredThenCleared_thenTheQuestionStaysClosed() {
         classUnderTest.insert(medication("i", "Ibuprofen"))
         classUnderTest.insertIntake(intake("1", "i", null, 1_000L))
