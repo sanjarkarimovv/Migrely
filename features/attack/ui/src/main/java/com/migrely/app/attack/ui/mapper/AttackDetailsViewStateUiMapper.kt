@@ -6,6 +6,7 @@ import com.migrely.app.attack.presentation.model.SymptomPresentationModel
 import com.migrely.app.attack.presentation.model.TriggerPresentationModel
 import com.migrely.app.attack.ui.model.AttackDetailsUiModel
 import com.migrely.app.attack.ui.model.AttackDetailsViewStateUiModel
+import com.migrely.app.attack.ui.model.AttackIntakeUiModel
 import com.migrely.app.attack.ui.model.IntensityPointUiModel
 import com.migrely.app.attack.ui.model.SymptomUiModel
 import com.migrely.app.attack.ui.model.TriggerUiModel
@@ -41,7 +42,17 @@ class AttackDetailsViewStateUiMapper(
         triggerChoices = details.triggerChoices.map(::toUi),
         selectedTriggers = details.selectedTriggers.map(::toUi).toSet(),
         functionalImpact = details.functionalImpact?.let(functionalImpactUiMapper::toUi),
-        note = details.note
+        note = details.note,
+        intakes = details.intakes.map { intake ->
+            AttackIntakeUiModel(
+                id = intake.id,
+                medicationId = intake.medicationId,
+                medicationName = intake.medicationName,
+                dose = intake.dose,
+                takenAtEpochMillis = intake.takenAt.toEpochMilli(),
+                zoneId = intake.zone.id
+            )
+        }
     )
 
     private fun toUi(symptom: SymptomPresentationModel): SymptomUiModel = when (symptom) {

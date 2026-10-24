@@ -105,7 +105,8 @@ fun HomeDependencies.Home(
                 homeViewModel.onEndedAtAction(Instant.ofEpochMilli(endEpochMillis))
             },
             onAttackDetails = homeViewModel::onAttackDetailsAction,
-            onAddPastAttack = homeViewModel::onAddPastAttackAction
+            onAddPastAttack = homeViewModel::onAddPastAttackAction,
+            onLogMedication = homeViewModel::onLogMedicationAction
         ),
         monthCalendar = { monthCalendar(homeLoads) },
         messages = {
@@ -133,7 +134,8 @@ data class HomeActions(
     val onDontAskAgain: (attackId: String) -> Unit,
     val onEndedAt: (endEpochMillis: Long) -> Unit,
     val onAttackDetails: (attackId: String) -> Unit,
-    val onAddPastAttack: () -> Unit
+    val onAddPastAttack: () -> Unit,
+    val onLogMedication: (attackId: String?) -> Unit
 )
 
 internal enum class HomeMode { Loading, Today, Attack }
@@ -205,6 +207,7 @@ fun HomeContents(
                     onStartAttack = actions.onStartAttack,
                     onAttackDetails = actions.onAttackDetails,
                     onAddPastAttack = actions.onAddPastAttack,
+                    onLogMedication = { actions.onLogMedication(null) },
                     monthCalendar = monthCalendar
                 )
 

@@ -6,6 +6,7 @@ import com.migrely.app.attack.presentation.model.AttackDetailsPresentationNotifi
 import com.migrely.app.attack.presentation.model.IntensityPointPresentationModel
 import com.migrely.app.attack.presentation.model.TimeRejectionPresentationModel
 import com.migrely.app.attack.ui.model.AttackDetailsEventUiModel
+import com.migrely.app.attack.ui.model.AttackIntakeUiModel
 import com.migrely.app.attack.ui.model.AttackMessageUiModel
 import com.migrely.app.attack.ui.model.IntensityPointUiModel
 import com.migrely.app.attack.ui.model.TimeErrorReasonUiModel
@@ -50,6 +51,21 @@ class AttackNotificationUiMapper(
                     AttackMessageUiModel.PointRemoved(
                         notification.attackId,
                         pointOf(notification.point)
+                    )
+                )
+
+            is AttackDetailsPresentationNotification.IntakeRemoved ->
+                AttackDetailsEventUiModel.Message(
+                    AttackMessageUiModel.IntakeRemoved(
+                        notification.attackId,
+                        AttackIntakeUiModel(
+                            id = notification.intake.id,
+                            medicationId = notification.intake.medicationId,
+                            medicationName = notification.intake.medicationName,
+                            dose = notification.intake.dose,
+                            takenAtEpochMillis = notification.intake.takenAt.toEpochMilli(),
+                            zoneId = notification.intake.zone.id
+                        )
                     )
                 )
 

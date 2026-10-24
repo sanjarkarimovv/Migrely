@@ -35,8 +35,8 @@
 
 ## 5. UI
 
-- [ ] 5.1 Build Medication taken (list, time row and picker, logged state with Undo and Done, first-use form, dark-room styling), My medications and the medication editor, with UI models, mappers, previews and unit tests; verify `./gradlew :features:medication:ui:test`
-- [ ] 5.2 Add the details "Medications" section with remove and Undo, the attack-mode "+ Medication taken" button and the home "Log medication" link, checked at 200% and in landscape; verify the attack and home UI tests
+- [x] 5.1 Build Medication taken (list, time row and picker, logged state with Undo and Done, first-use form, dark-room styling), My medications and the medication editor, with UI models, mappers, previews and unit tests; verify `./gradlew :features:medication:ui:test`
+- [x] 5.2 Add the details "Medications" section with remove and Undo, the attack-mode "+ Medication taken" button and the home "Log medication" link, checked at 200% and in landscape; verify the attack and home UI tests
 
 ## 6. App
 

@@ -12,6 +12,11 @@ sealed interface AttackMessageUiModel : Parcelable {
     data class PointRemoved(val attackId: String, val point: IntensityPointUiModel) :
         AttackMessageUiModel
 
+    /** A medication removed from the attack, offered for "Undo" (BRD D34). */
+    @Parcelize
+    data class IntakeRemoved(val attackId: String, val intake: AttackIntakeUiModel) :
+        AttackMessageUiModel
+
     @Parcelize
     data object PointOutsideAttack : AttackMessageUiModel
 
