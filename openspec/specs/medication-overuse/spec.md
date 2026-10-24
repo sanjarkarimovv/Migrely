@@ -88,16 +88,20 @@ it SHALL not be quieted by "Got it", and it SHALL not show without such an intak
 
 #### Scenario: Below the limit
 - **WHEN** simple painkillers were taken on 6 of the last 30 days
-- **THEN** the section reads "Simple painkillers: 6 of 15 days" in the neutral colour
+- **THEN** the section reads "Simple painkillers: 6 days (limit 15)" in the neutral colour
+
+#### Scenario: One day
+- **WHEN** a triptan was taken on 1 of the last 30 days
+- **THEN** the section reads "Triptans: 1 day (limit 10)"
 
 #### Scenario: At the limit
 - **WHEN** a triptan was taken on 10 of the last 30 days
-- **THEN** "Triptans: 10 of 10 days, at the limit" reads in amber, followed by "At this many days, medication can
+- **THEN** "Triptans: 10 days (limit 10), at the limit" reads in amber, followed by "At this many days, medication can
   make headaches more frequent. Talk to your doctor about it."
 
 #### Scenario: Two categories
 - **WHEN** simple painkillers were taken on 7 days and triptans on 5 other days
-- **THEN** the section also reads "All attack medication: 12 of 10 days, over the limit", in amber
+- **THEN** the section also reads "All attack medication: 12 days (limit 10), over the limit", in amber
 
 #### Scenario: After an undo
 - **WHEN** an attack whose intakes reach a limit is deleted and then restored with "Undo" in History
