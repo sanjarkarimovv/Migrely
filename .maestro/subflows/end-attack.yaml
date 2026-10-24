@@ -5,8 +5,9 @@ appId: com.migrely.app
     text: "Migraine ended"
     index: 0
     waitToSettleTimeoutMs: 500
+# Waits for attack mode to go: "Rest now…" could be hidden under a message in landscape, which would end the wait early.
 - extendedWaitUntil:
-    notVisible: "Rest now. We'll keep time."
+    notVisible: "Details of this migraine"
     timeout: 5000
 # Home ignores taps for 1–1.2 s after switching between normal and attack mode (TapGuard, fix for #12), and the
 # rain or the message countdown keeps the screen moving, so this waits out the switch.

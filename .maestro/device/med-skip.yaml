@@ -1,0 +1,12 @@
+# Covers: medication-effect › Ask whether a medication helped › Skip
+appId: com.migrely.app
+---
+- launchApp
+- extendedWaitUntil:
+    visible: "How much did Ibuprofen help\\?"
+    timeout: 10000
+- tapOn: "Don't ask about this one"
+- extendedWaitUntil:
+    notVisible: "How much did Ibuprofen help\\?"
+    timeout: 5000
+- stopApp

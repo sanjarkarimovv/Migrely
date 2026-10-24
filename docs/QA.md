@@ -50,7 +50,15 @@ Visual regression (Roborazzi screenshots of the `@Preview`s with pseudo-locales)
 Only passes 1 and 2 decide the exit status, so an open known bug never hides a new regression. A known-bug flow that
 starts passing is reported as "NOW PASSES".
 
-`python3 -I qa/e2e_coverage.py --missing` shows the spec scenarios that have no flow yet.
+`python3 -I qa/e2e_coverage.py --missing` shows the spec scenarios that have no flow yet. Before the QA of a change
+that adds a capability is closed, each user-visible scenario of that capability has a flow or a device scenario. A
+scenario without one is listed in the change's tasks with the reason and the follow-up (D61).
+
+Behaviour that depends on time is checked by moving the device clock and logging through the UI (D60). Examples are
+"Did it help?" 2–24 h after an intake, overuse over the last 30 days, and intakes that join an attack. The base time is
+10:00 on the 15th of the current month (`day_millis` in `qa/device_scenarios.sh`). Writing to the debug database with
+`run-as … sqlite3` is a fallback for data the UI cannot create in a reasonable time. Do it only with the app stopped
+and on the matching schema version.
 
 ## 4. Bugs
 

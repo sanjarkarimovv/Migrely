@@ -1,9 +1,11 @@
-# Covers: in-app-messages › Messages appear at the top and stay dim › Message during attack mode
-# Known bug (https://github.com/sanjarkarimovv/Migrely/issues/20): in landscape the start message covers Mild and
-# Moderate. Runs in pass 2 (20 s accessibility timeout), so the message is surely still on screen when checked.
+# Partly checks: in-app-messages › Landscape attack mode keeps messages beside the controls › Message during
+# landscape attack mode: the controls stay visible. The guidance moving below the message (#26, D52) is checked by
+# the QA change add-day-markers-e2e-coverage, which then turns this line into a Covers line.
+# Regression guard for https://github.com/sanjarkarimovv/Migrely/issues/20 (fixed in PR #24): in landscape the start
+# message covered Mild and Moderate. Runs in pass 2 (20 s accessibility timeout), so the message is surely on screen.
 appId: com.migrely.app
 name: In landscape the start message leaves every intensity choice visible
-tags: [regression, in-app-messages, a11y-timeout, known-bug]
+tags: [regression, in-app-messages, a11y-timeout]
 # Back to portrait even when an assertion fails, so later flows are not run in landscape.
 onFlowComplete:
   - setOrientation: PORTRAIT
@@ -20,6 +22,7 @@ onFlowComplete:
 - assertVisible: "Mild"
 - assertVisible: "Moderate"
 - assertVisible: "Severe"
+- assertVisible: ".*Medication taken"
 - assertVisible:
     text: "Migraine ended"
     index: 0

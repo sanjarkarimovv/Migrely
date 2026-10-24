@@ -4,8 +4,9 @@ appId: com.migrely.app
 - tapOn:
     text: "Migraine started"
     waitToSettleTimeoutMs: 500
+# "Details of this migraine" marks attack mode in both orientations; in landscape the message covers "Rest now…".
 - extendedWaitUntil:
-    visible: "Rest now. We'll keep time."
+    visible: "Details of this migraine"
     timeout: 5000
 # Home ignores taps for 1–1.2 s after switching between normal and attack mode (TapGuard, fix for #12), and the
 # rain or the message countdown keeps the screen moving, so this waits out the switch.

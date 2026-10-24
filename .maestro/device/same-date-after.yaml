@@ -1,0 +1,11 @@
+# Covers: today-sky › Today's sky reflects today's data only › Logged in another zone on the same date
+# Covers: today-sky › Today's attacks open their details › Logged in another zone
+# Logged at 08:00 Tashkent on the 15th, opened at 07:0x Dubai the same date: it counts today and names its city once.
+appId: com.migrely.app
+---
+- launchApp
+- extendedWaitUntil:
+    visible: "Today: cloudy\\. 1 migraine today\\. Peak: not recorded\\."
+    timeout: 10000
+- assertVisible: ".*\\(Tashkent\\).*Opens its details\\."
+- assertNotVisible: ".*\\(Tashkent\\).*\\(Tashkent\\).*"

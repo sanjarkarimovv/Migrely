@@ -1,0 +1,24 @@
+# Covers: medication-intakes › One tap logs a medication › Undo a logged intake
+appId: com.migrely.app
+name: Undo right after logging removes the intake and shows the medications again
+tags: [regression, medication-intakes]
+---
+- runFlow: ../subflows/launch-clean.yaml
+- tapOn: "Log medication"
+- runFlow:
+    file: ../subflows/add-first-medication.yaml
+    env:
+      NAME: "Paracetamol"
+      TYPE: "Simple painkiller"
+- tapOn: "Done"
+- tapOn: "Log medication"
+- tapOn: "Log Paracetamol.*"
+- extendedWaitUntil:
+    visible: "Paracetamol.* logged at .*"
+    timeout: 5000
+- tapOn: "Undo"
+- extendedWaitUntil:
+    visible: "Removed\\. Nothing was logged\\."
+    timeout: 5000
+- assertVisible: "Log Paracetamol.*"
+- assertVisible: "Manage medications"

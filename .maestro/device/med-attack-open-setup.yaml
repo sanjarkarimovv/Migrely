@@ -1,0 +1,13 @@
+# Device scenario step: an attack in progress with Ibuprofen logged during it; the app is closed.
+appId: com.migrely.app
+---
+- runFlow: ../subflows/launch-clean.yaml
+- runFlow: ../subflows/start-attack.yaml
+- tapOn: ".*Medication taken"
+- runFlow:
+    file: ../subflows/add-first-medication.yaml
+    env:
+      NAME: "Ibuprofen"
+      TYPE: "Simple painkiller"
+- tapOn: "Done"
+- stopApp
