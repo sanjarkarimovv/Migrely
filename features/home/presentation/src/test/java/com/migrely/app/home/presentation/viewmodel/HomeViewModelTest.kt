@@ -214,6 +214,31 @@ class HomeViewModelTest :
     }
 
     @Test
+    fun `When undoing a start then confirms it`() = runTest {
+        undoAttackStartUseCase.givenSuccessfulExecution("a", UndoResultDomainModel.Undone)
+        givenToday(TodayDomainModel.Calm)
+        val notification = nextNotification()
+
+        classUnderTest.onUndoStartAction("a")
+
+        assertEquals(HomePresentationNotification.Undone, notification.await())
+    }
+
+    @Test
+    fun `Given the end can no longer be undone when undoing then tells the user and reloads`() =
+        runTest {
+            undoAttackEndUseCase.givenSuccessfulExecution("a", UndoResultDomainModel.NotPossible)
+            givenToday(TodayDomainModel.Calm)
+            val notification = nextNotification()
+            val state = nextViewState()
+
+            classUnderTest.onUndoEndAction("a")
+
+            assertEquals(HomePresentationNotification.UndoNotPossible, notification.await())
+            assertEquals(CALM, state.await())
+        }
+
+    @Test
     fun `Given undoing an end fails then tells the user`() = runTest {
         undoAttackEndUseCase.givenSuccessfulExecution("a", UndoResultDomainModel.Failed)
         val notification = nextNotification()

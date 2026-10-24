@@ -33,6 +33,8 @@ android {
     testOptions {
         // Lets JVM unit tests construct android.database exceptions to test their mapping.
         unitTests.isReturnDefaultValues = true
+        // Without it the instrumented test APK targets minSdk and Android warns about an old app on every run.
+        targetSdk = libs.versions.targetSdk.get().toInt()
     }
 }
 

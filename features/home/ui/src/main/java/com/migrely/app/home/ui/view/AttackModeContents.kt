@@ -219,17 +219,20 @@ private fun RainCard(startedAt: String, reduceMotion: Boolean) {
 
 @Composable
 private fun AttackGuidance(startedAt: String, textAlign: TextAlign) {
+    // The one calming line uses the title face (BRD D20); the time below uses tabular figures so it does not shift
+    // sideways as the minutes tick (EC-UX-17).
     Text(
         text = stringResource(R.string.attack_rest),
-        style = MaterialTheme.typography.bodyLarge,
+        style = MaterialTheme.typography.titleLarge,
         color = MigrelyColors.AttackModeText,
         textAlign = textAlign
     )
     Text(
         text = startedAt,
-        style = MaterialTheme.typography.bodyMedium,
+        style = MaterialTheme.typography.bodyMedium.copy(fontFeatureSettings = "tnum"),
         color = MigrelyColors.AttackModeText.copy(alpha = 0.8f),
-        textAlign = textAlign
+        textAlign = textAlign,
+        modifier = Modifier.padding(top = 4.dp)
     )
 }
 

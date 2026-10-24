@@ -411,6 +411,8 @@ Boshqa davlatlarda narxni Play avtomatik konvertatsiya qiladi. Hindiston, Brazil
 | EC-UX-13 | Xuruj rejimi | Mukofot, paywall, baho soʻrash va taraqqiyot xabarlari koʻrsatilmaydi. Ekranda bir qator matn va katta tugmalar | ✅ |
 | EC-UX-14 | Taraqqiyot xabari ("3 fewer migraine days than September") | Faqat yaxshilanish boʻlsa iliq rangda koʻrsatiladi. Yomonlashsa, neytral raqam beriladi, ayblov yoʻq. Oldingi oyda 10 kundan kam yozuv boʻlsa, taqqoslash koʻrsatilmaydi (ishonchsiz) | ✅ |
 | EC-UX-15 | Rang koʻrlik va TalkBack | Holat faqat rang bilan emas, shakl bilan ham ajraladi: yulduz, toʻlqin, bulut, chaqmoq. TalkBack har bir kunni oʻqiydi, masalan "15 October, storm, severe migraine" | ✅ |
+| EC-UX-16 | Ekrandagi qisqa xabarlar (snackbar) | Ekran tepasida, xira rangda. Xabar turi rang bilan birga ikonka shakli bilan ham ajraladi: tasdiq ✓, maʼlumot i, xato !. Undo 5 soniya turadi. Foydalanuvchi Android'da "Harakat qilish vaqti"ni (Accessibility timeout) uzaytirgan boʻlsa, shu vaqtgacha uzayadi. Qolgan vaqt ingichka chiziq bilan koʻrsatiladi, "Reduce motion"da chiziq chiqmaydi. Maʼlumot xabarlari va umumiy xato 8 soniya turadi. "Xotira toʻldi" foydalanuvchi oʻzi yopguncha turadi. Yangi xabar eskisining oʻrnini darhol egallaydi. Ekran burilsa yoki ilova qisqa vaqt fonga oʻtsa, xabar qolgan vaqti bilan saqlanadi. Xabarni surib yopish mumkin. Undo bajarilgach "Undone" deb tasdiqlanadi, bajarib boʻlmasa sababi aytiladi. TalkBack xabarni oʻqiydi, xato xabarini darhol oʻqiydi | ✅ |
+| EC-UX-17 | Matn chiziqlari koʻzni charchatadi (pattern glare, migrenda kuchliroq) | Asosiy matnda qator oraligʻi taxminan 1,5 baravar. Ingichka (300 va undan past) ogʻirlik ishlatilmaydi. Vaqt va davomiylik tabular raqamlarda yoziladi, sanab turganda matn sakramaydi. Shrift ilova ichida keladi va internetsiz ishlaydi (D20) | ✅ |
 
 ### 9.10 Lokalizatsiya
 
@@ -523,6 +525,7 @@ Ish sikli: `/opsx:explore` (ixtiyoriy) → `/opsx:propose <nom>` → review → 
 |---|---|---|
 | 0 | `setup-project-foundation` — modullar skeleti, `docs/ARCHITECTURE.md`, dizayn tizimi (qorongʻi tema), Konsist, CI | ADR-01…12, NFR |
 | 1 | `add-attack-logging` — tez boshlash/tugatish, ogʻriq kuchi, "qorongʻi xona", bugungi osmon, app shortcut, Room asosi | ATK-F1, F2, F4, F6, EC-ATK-01, 02, 03, 06, 07, 08, 10, EC-TIM-01…03, SAF-F3, EC-UX-07, 08, 10, 12, 13 |
+| 1a | `refine-messages-and-type` — brend shrifti (Fraunces va Figtree), barcha holatlarni hisobga olgan maxsus snackbar | 18.5, EC-UX-01, 03, 04, 08, 16, 17, ATK-F1, F2, D20, D21 |
 | 1b | `add-attack-details` — xuruj tafsilotlari, oʻtgan xurujni qoʻshish, teglar, ustma-ust tushish va birlashtirish, oʻchirish va Undo | ATK-F3, F5, F7, EC-ATK-03, 04, 05, 09, 11…14, EC-TIM-04, 05, SAF-F2 |
 | 2 | `add-attack-history` | HIS-F*, EC-HIS-* |
 | 3 | `add-medication-tracking` | MED-F*, EC-MED-* |
@@ -630,6 +633,8 @@ Ilova 2023-yil 13-noyabrdan oldin ochilgan akkauntda chiqadi, shuning uchun 12 t
 | D18 | Owner barcha mahsulot va dizayn qarorlarini PO'ga topshirdi. Ulashilgan manbalardan tamoyil olinadi, nusxa koʻchirilmaydi | Owner | 2026-10-23 |
 | D19 | Illustratsiya va ikonkalar protsedurali vektor sifatida (kod bilan) chiziladi, tashqi illustrator kerak emas | PO | 2026-10-23 |
 | D17 | Launch'dan oldin 20–40 nafar migrenli bemor bilan 3–4 haftalik beta | PO | 2026-10-23 |
+| D20 | Shrift: sarlavhalar uchun Fraunces (Soft), matn uchun Figtree. Rad etilganlar: Roboto va Inter (oddiy, "standart Android" koʻrinishi), Atkinson Hyperlegible Next (har bir vaqt va sanada nolni chiziqli qilib koʻrsatadi, buni oʻchirib boʻlmaydi), Lexend (tabular raqamlari yoʻq), Plus Jakarta Sans va Manrope (zich, matn chiziqlari koʻpayadi), Newsreader (ingichka shtrixlar qorongʻi fonda yoyilib koʻrinadi), Nunito Sans (x-height past). Kirill yozuvi kerak boʻlsa, shu tilda tizim shrifti ishlatiladi | PO | 2026-10-23 |
+| D21 | Snackbar qoidalari EC-UX-16 boʻyicha. Material standart snackbar oʻrniga `:designsystem`dagi maxsus komponent | PO | 2026-10-23 |
 
 ---
 
@@ -702,7 +707,7 @@ Ilova 2023-yil 13-noyabrdan oldin ochilgan akkauntda chiqadi, shuning uchun 12 t
 
   Har bir holat rangdan tashqari shakl bilan ham ajraladi (EC-UX-15).
 - **"Qoʻlda chizilgan" his.** Bulut va toʻlqin konturlari ataylab biroz notekis, ustida past kontrastli tekstura bor.
-- **Shrift.** Barcha matnlarda oʻqilishi oson sans-serif.
+- **Shrift (D20).** Sarlavhalar va "qorongʻi xona"dagi bitta tinchlantiruvchi gap uchun **Fraunces** (yumshoq serif: Soft 100, Wonky oʻchirilgan). Qolgan barcha matn, tugma va raqamlar uchun **Figtree**. Kundalik ruhidagi iliq ovoz va tugmalarda aniq oʻqiladigan matn shu juftlikdan chiqadi. Ikkalasi ham OFL litsenziyali variable font, ilova ichiga joylanadi (taxminan 0,4 MB).
 - **Texnik ijro.** Osmon kartochkalari Compose Canvas'da kod bilan chiziladi. Rastr rasm va illustrator kerak emas (D19), APK hajmi kichik qoladi.
 
 ### 18.6 Bemorlar bilan beta

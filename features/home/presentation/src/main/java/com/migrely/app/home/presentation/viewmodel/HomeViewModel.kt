@@ -29,6 +29,8 @@ import com.migrely.app.home.presentation.model.HomePresentationNotification.EndT
 import com.migrely.app.home.presentation.model.HomePresentationNotification.SomethingWentWrong
 import com.migrely.app.home.presentation.model.HomePresentationNotification.StartMoveRejected
 import com.migrely.app.home.presentation.model.HomePresentationNotification.StorageFull
+import com.migrely.app.home.presentation.model.HomePresentationNotification.UndoNotPossible
+import com.migrely.app.home.presentation.model.HomePresentationNotification.Undone
 import com.migrely.app.home.presentation.model.HomeViewState
 import com.migrely.app.home.presentation.model.IntensityLevelPresentationModel
 import java.time.Duration
@@ -166,8 +168,15 @@ class HomeViewModel(
 
     private fun presentUndo(result: UndoResultDomainModel) {
         when (result) {
-            UndoResultDomainModel.Undone,
-            UndoResultDomainModel.NotPossible -> loadToday()
+            UndoResultDomainModel.Undone -> {
+                notify(Undone)
+                loadToday()
+            }
+
+            UndoResultDomainModel.NotPossible -> {
+                notify(UndoNotPossible)
+                loadToday()
+            }
 
             UndoResultDomainModel.Failed -> notify(SomethingWentWrong)
         }

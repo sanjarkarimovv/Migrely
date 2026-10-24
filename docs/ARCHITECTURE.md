@@ -163,6 +163,16 @@ Health data must never be passed to either SDK.
 - Motion: every animation checks `rememberReduceMotion()` (true when the system animator scale is 0) and snaps
   instead of animating (BRD EC-UX-08). Animations never flash more than three times per second (EC-UX-07).
 - User-facing strings live in the owning feature's `ui` module resources. Screens never hard-code strings.
+- Type (BRD D20): Fraunces (soft serif) for display, headline and `titleLarge`, and Figtree for every other style.
+  - Both are bundled variable fonts in `designsystem/src/main/res/font`, and their OFL texts are in
+    `designsystem/src/main/assets/licenses/fonts`. Fonts are never downloaded.
+  - Screens use `MaterialTheme.typography` roles, never a font family directly.
+  - Times that tick add `fontFeatureSettings = "tnum"` at the call site.
+- Messages (BRD D21, EC-UX-16): screens show snackbars only through `MigrelySnackbarHost` and `MigrelySnackbar` in
+  `com.migrely.app.designsystem.snackbar`, never Material's `SnackbarHost`.
+  - A feature maps each message to a `SnackbarTone`, an optional `SnackbarAction` and a base duration (UI mapper).
+  - The feature keeps the shown message in `rememberSaveable` and stretches the base duration with
+    `LocalAccessibilityManager.calculateRecommendedTimeoutMillis`. The home feature's `HomeMessages` is the reference.
 
 ## 11. Testing
 
@@ -174,6 +184,7 @@ Health data must never be passed to either SDK.
 | Datasources | `:datasource:implementation` unit tests | |
 | UI mappers, navigation mappers | `:features:<f>:ui` and `:app` unit tests | parameterized |
 | Architecture rules | `:app` unit tests, `com.migrely.app.architecture` | Konsist 0.17.3 (skill templates) |
+| Design-system components | `:designsystem` instrumented tests (`connectedDebugAndroidTest`) | Compose UI test (`createComposeRule`) |
 
 ## 12. Quality gate and Definition of Done
 
