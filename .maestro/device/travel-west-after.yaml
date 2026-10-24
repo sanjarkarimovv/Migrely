@@ -1,0 +1,9 @@
+# Covers: today-sky › Today's sky reflects today's data only › Logged before flying west
+# Logged at 01:00 Tashkent on the 15th, opened at 22:00 Berlin on the 14th: the attack belongs to the 15th.
+appId: com.migrely.app
+---
+- launchApp
+- extendedWaitUntil:
+    visible: "Today: calm\\. Calm so far today\\. No migraine logged\\."
+    timeout: 10000
+- assertNotVisible: "Logged today"

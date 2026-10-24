@@ -1,0 +1,6 @@
+# Device scenario step: a clean install with one attack logged now (no pain level), then the app is closed.
+appId: com.migrely.app
+---
+- runFlow: ../subflows/launch-clean.yaml
+- runFlow: ../subflows/log-attack-today.yaml
+- stopApp

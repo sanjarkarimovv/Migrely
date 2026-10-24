@@ -6,7 +6,8 @@
 #   qa/device_scenarios.sh                         every scenario
 #   qa/device_scenarios.sh long midnight           only the named ones
 #
-# Scenarios: long (72-hour check), history_death, past_death, details_kill, midnight, travel, double_tap, upgrade.
+# Scenarios: long (72-hour check), history_death, past_death, details_kill, midnight, travel, travel_west, same_date,
+# zone_attack, zone_history, double_tap, upgrade.
 # upgrade needs QA_OLD_APK=<older debug APK of com.migrely.app>; without it, it is reported as not run.
 set -euo pipefail
 
@@ -158,6 +159,44 @@ scenario_travel() {
   run_flow travel-after || return 1
 }
 
+scenario_travel_west() {
+  echo "Scenario travel_west: logged at 01:00 in Tashkent, opened the evening before in Berlin (EC-TIM-02)"
+  set_zone Asia/Tashkent
+  set_clock_millis "$(mid_month_millis Asia/Tashkent 01:00)"
+  run_flow log-and-close || return 1
+  set_zone Europe/Berlin
+  run_flow travel-west-after || return 1
+}
+
+scenario_same_date() {
+  echo "Scenario same_date: logged at 08:00 in Tashkent, opened the same date in Dubai (EC-TIM-02)"
+  set_zone Asia/Tashkent
+  set_clock_millis "$(mid_month_millis Asia/Tashkent 08:00)"
+  run_flow log-and-close || return 1
+  set_zone Asia/Dubai
+  run_flow same-date-after || return 1
+}
+
+scenario_zone_attack() {
+  echo "Scenario zone_attack: the zone changes while an attack is in progress and the app is in the background"
+  set_zone Asia/Dubai
+  run_flow zone-attack-setup || return 1
+  adbq shell input keyevent KEYCODE_HOME
+  sleep 2
+  set_zone Asia/Tashkent
+  open_from_launcher
+  run_flow zone-attack-after || return 1
+}
+
+scenario_zone_history() {
+  echo "Scenario zone_history: the zone changes while History is on screen"
+  set_zone Asia/Dubai
+  run_flow zone-history-setup || return 1
+  set_zone Asia/Tashkent
+  sleep 2
+  run_flow zone-history-after || return 1
+}
+
 scenario_double_tap() {
   echo "Scenario double_tap: double taps never cross a mode switch (EC-UX-18, D32), with exact gaps between the taps"
   local gap point
@@ -202,7 +241,8 @@ scenario_upgrade() {
 out="$ROOT/build/qa/device/$(date +%Y%m%d-%H%M%S)"
 mkdir -p "$out"
 if [[ $# -eq 0 ]]; then
-  set -- long history_death past_death details_kill midnight travel double_tap
+  set -- long history_death past_death details_kill midnight travel travel_west same_date zone_attack zone_history \
+    double_tap
   if [[ -n "${QA_OLD_APK:-}" ]]; then
     set -- "$@" upgrade
   else
