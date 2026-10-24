@@ -14,14 +14,15 @@
 - **`:features:report:{domain,data,presentation,ui}`.** The domain depends on `:features:attackdays:domain` for the
   day rule.
 - **Datasource `report`**, in `:datasource:source` and `:datasource:implementation`:
-  - `ReportRecordsDataSource.records(from, to)`: the attacks touching the period that are not being deleted, with
-    points and tags; the intakes taken in it, with their medication's name, kind and category; the period's day marks;
-    and the custom tag names. Read in one transaction.
+  - the records come from change 7's `BackupDataSource.records()`. It reads every health record in one transaction,
+    without attacks being deleted or their intakes. The domain keeps the period's: ten years are a few megabytes, and
+    a second read path would only repeat its rules.
   - `ReportDocumentDataSource`:
     - `write(document: ReportDocumentDataModel): String` renders and returns the content URI;
     - `cleanUp(now)` removes leftover `.partial` files and reports older than a day.
   - The document model is plain data: rows of text and the calendar's day levels. The datasource draws it with
-    `PdfDocument` and knows no rules.
+    `PdfDocument` and knows no rules. It is told the page limit and which table may be shortened, with the line to
+    say so, and it keeps as many of that table's first rows as fit. Only it can measure the text.
 - **The FileProvider** authority is `${applicationId}.reports`, over `cache/reports/`. Its URIs are built in the
   datasource with `FileProvider.getUriForFile`.
 

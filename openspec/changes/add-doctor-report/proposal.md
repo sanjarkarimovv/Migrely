@@ -42,9 +42,9 @@ They also need a picture of the months and the details to look up. The MVP promi
 ## Impact
 
 - **New** `:features:report:{domain,data,presentation,ui}`.
-- **Datasource `report`:**
-  - `ReportRecordsDataSource` (Room): the period's attacks, intakes with their medications, and day marks;
-  - `ReportDocumentDataSource`: renders with Android `PdfDocument` (ADR-07) into the cache, cleans leftovers, and gives a
-    shareable content URI. Both live in `:datasource:implementation`.
+- **Datasources:**
+  - the records come from `BackupDataSource`;
+  - the new `report` datasource (`ReportDocumentDataSource`) renders with Android `PdfDocument` (ADR-07) into the cache,
+    cleans up leftovers, and gives a shareable content URI.
 - **History:** a top-bar action and its navigation event.
 - **`:app`:** a `FileProvider` for `cache/reports`, the route, DI, and cleaning up at start.

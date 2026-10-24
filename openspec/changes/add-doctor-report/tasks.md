@@ -2,8 +2,9 @@
 
 ## 1. Datasources
 
-- [ ] 1.1 `ReportRecordsDataSource` (a one-transaction read), with instrumented tests.
-- [ ] 1.2 `ReportDocumentDataSource` (`PdfDocument`, partial then rename, clean-up, FileProvider URI), with tests.
+- [x] 1.1 Records: reuse `BackupDataSource.records()`, which already reads every record in one transaction (design
+  D1).
+- [x] 1.2 `ReportDocumentDataSource` (`PdfDocument`, partial then rename, clean-up, FileProvider URI), with tests.
 
 ## 2. Report feature
 
