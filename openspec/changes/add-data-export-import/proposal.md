@@ -37,7 +37,8 @@ Android's own backup kept deliberate.
 - **New** `:features:backup:{domain,data,presentation,ui}`.
 - **Datasource:**
   - `backup` (`BackupDataSource`): reads every record and writes them in one Room transaction;
-  - `document` (`DocumentDataSource`): reads and writes a content URI's text, implemented in `:app` with the
-    `ContentResolver`, like the other Android-bound datasources.
+  - `backupfile` (`BackupFileDataSource`): the file format, and the automatic backups;
+  - `document` (`DocumentDataSource`): reads and writes a content URI's text through the `ContentResolver`.
+  - All three are implemented in `:datasource:implementation`, which only needs a `Context`.
 - **Dependencies:** `kotlinx-serialization-json` for the file format, in `:datasource:implementation`.
 - **`:app`:** routes, DI, `backup_rules.xml` and `data_extraction_rules.xml`.

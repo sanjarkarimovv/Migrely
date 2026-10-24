@@ -2,11 +2,11 @@
 
 ## 1. Datasources
 
-- [ ] 1.1 DAO additions (read all, delete all, insert-ignore) and `BackupDataSource` with one-transaction replace and
+- [x] 1.1 DAO additions (read all, delete all, insert-ignore) and `BackupDataSource` with one-transaction replace and
   add; instrumented tests.
-- [ ] 1.2 `BackupFileDataSource` (kotlinx.serialization JSON, decode results, automatic backups keeping 3) with unit
+- [x] 1.2 `BackupFileDataSource` (kotlinx.serialization JSON, decode results, automatic backups keeping 3) with unit
   tests.
-- [ ] 1.3 `DocumentDataSource` (ContentResolver).
+- [x] 1.3 `DocumentDataSource` (ContentResolver).
 
 ## 2. Backup feature
 
