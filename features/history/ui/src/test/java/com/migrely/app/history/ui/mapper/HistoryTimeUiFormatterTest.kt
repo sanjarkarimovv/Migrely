@@ -1,5 +1,6 @@
 package com.migrely.app.history.ui.mapper
 
+import com.migrely.app.history.ui.model.HistoryTimeRangeUiModel
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -49,42 +50,47 @@ class HistoryTimeUiFormatterTest {
     }
 
     @Test
-    fun `When formatting a start then the short day and the time`() {
+    fun `When formatting an ended range then the short day, the start and the end`() {
         assertEquals(
-            "Wed 14 Oct, 09:10",
-            formatter().formatStart(millis("2026-10-14T09:10"), "Asia/Tashkent")
+            HistoryTimeRangeUiModel("Wed 14 Oct, 09:10", "10:00"),
+            formatter().formatRange(
+                millis("2026-10-14T09:10"),
+                millis("2026-10-14T10:00"),
+                "Asia/Tashkent"
+            )
         )
     }
 
     @Test
-    fun `When formatting a spoken start then the full day`() {
+    fun `When formatting a spoken range then the full day`() {
         assertEquals(
             "Wednesday, 14 October, 09:10",
-            formatter().formatStart(millis("2026-10-14T09:10"), "Asia/Tashkent", spoken = true)
-        )
-    }
-
-    @Test
-    fun `Given the same day when formatting an end then the time alone`() {
-        assertEquals(
-            "10:00",
-            formatter().formatEnd(
-                millis("2026-10-14T10:00"),
+            formatter().formatRange(
                 millis("2026-10-14T09:10"),
-                "Asia/Tashkent"
-            )
+                millis("2026-10-14T10:00"),
+                "Asia/Tashkent",
+                spoken = true
+            ).start
         )
     }
 
     @Test
-    fun `Given the next day when formatting an end then its weekday too`() {
+    fun `Given the next day when formatting a range then the end has its weekday too`() {
         assertEquals(
             "Thu 03:00",
-            formatter().formatEnd(
-                millis("2026-10-15T03:00"),
+            formatter().formatRange(
                 millis("2026-10-14T22:00"),
+                millis("2026-10-15T03:00"),
                 "Asia/Tashkent"
-            )
+            ).end
+        )
+    }
+
+    @Test
+    fun `Given an attack in progress when formatting a range then no end`() {
+        assertEquals(
+            HistoryTimeRangeUiModel("Wed 14 Oct, 09:10", null),
+            formatter().formatRange(millis("2026-10-14T09:10"), null, "Asia/Tashkent")
         )
     }
 
@@ -108,25 +114,25 @@ class HistoryTimeUiFormatterTest {
     }
 
     @Test
-    fun `Given another zone when formatting a start without the city then day and time`() {
+    fun `Given another zone when formatting an ended range then the city once, after the end`() {
+        val tokyo = ZoneId.of("Asia/Tokyo")
         assertEquals(
-            "Thu 15 Oct, 08:00",
-            formatter().formatStart(
-                millis("2026-10-15T08:00", ZoneId.of("Asia/Tokyo")),
-                "Asia/Tokyo",
-                withCity = false
+            HistoryTimeRangeUiModel("Thu 15 Oct, 08:00", "09:00 (Tokyo)"),
+            formatter().formatRange(
+                millis("2026-10-15T08:00", tokyo),
+                millis("2026-10-15T09:00", tokyo),
+                "Asia/Tokyo"
             )
         )
     }
 
     @Test
-    fun `Given another zone when formatting an end then its city once`() {
-        val tokyo = ZoneId.of("Asia/Tokyo")
+    fun `Given another zone when formatting a range in progress then the city on the start`() {
         assertEquals(
-            "09:00 (Tokyo)",
-            formatter().formatEnd(
-                millis("2026-10-15T09:00", tokyo),
-                millis("2026-10-15T08:00", tokyo),
+            HistoryTimeRangeUiModel("Thu 15 Oct, 08:00 (Tokyo)", null),
+            formatter().formatRange(
+                millis("2026-10-15T08:00", ZoneId.of("Asia/Tokyo")),
+                null,
                 "Asia/Tokyo"
             )
         )

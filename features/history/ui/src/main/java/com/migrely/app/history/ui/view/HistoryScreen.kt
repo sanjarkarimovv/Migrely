@@ -466,22 +466,17 @@ private fun AttackRow(
     timeUiFormatter: HistoryTimeUiFormatter,
     onClick: () -> Unit
 ) {
-    // A city is named once, after the last time shown (BRD D36): after the end, or after the start while in progress.
-    val ended = attack.endEpochMillis != null
-    val start = timeUiFormatter.formatStart(
+    val (start, end) = timeUiFormatter.formatRange(
         attack.startEpochMillis,
-        attack.startZoneId,
-        withCity = !ended
+        attack.endEpochMillis,
+        attack.startZoneId
     )
-    val spokenStart = timeUiFormatter.formatStart(
+    val spokenStart = timeUiFormatter.formatRange(
         attack.startEpochMillis,
+        attack.endEpochMillis,
         attack.startZoneId,
-        spoken = true,
-        withCity = !ended
-    )
-    val end = attack.endEpochMillis?.let {
-        timeUiFormatter.formatEnd(it, attack.startEpochMillis, attack.startZoneId)
-    }
+        spoken = true
+    ).start
     val peak = attack.peakIntensity
     val peakText = if (peak == null) {
         stringResource(R.string.attack_peak_not_recorded)

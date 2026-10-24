@@ -16,7 +16,6 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
@@ -238,7 +237,8 @@ fun HomeContents(
                 Modifier.matchParentSize()
             )
         }
-        // Half the width at the start edge always ends before the controls column, whatever the insets (design D4).
+        // Half the width at the start edge always ends before the controls column of SideBySideAttackLayout, whatever
+        // the insets (design D4).
         val messageArea = if (messagesBesideControls(mode, isCompactHeight())) {
             Modifier.fillMaxWidth(GUIDANCE_COLUMN_WIDTH_FRACTION)
         } else {
@@ -251,18 +251,12 @@ fun HomeContents(
 /**
  * Current time for the elapsed timer, ticking every 30 seconds; reports when the local date changes (design D11). A new
  * [restartKey], the start of the attack in progress, reads the clock at once, so a moved start never shows a stale
- * elapsed time (QA #15). Every resume reads it at once too, so a time zone changed while away shows its city without
- * waiting for the next tick (BRD EC-TIM-02, D36).
+ * elapsed time (QA #15).
  */
 @Composable
 private fun rememberNowMillis(onDateChanged: () -> Unit, restartKey: Long?): State<Long> {
     val currentOnDateChanged by rememberUpdatedState(onDateChanged)
-    var resumes by remember { mutableIntStateOf(0) }
-    LifecycleResumeEffect(Unit) {
-        resumes++
-        onPauseOrDispose { }
-    }
-    return produceState(initialValue = System.currentTimeMillis(), restartKey, resumes) {
+    return produceState(initialValue = System.currentTimeMillis(), restartKey) {
         value = System.currentTimeMillis()
         var date = LocalDate.now()
         while (true) {

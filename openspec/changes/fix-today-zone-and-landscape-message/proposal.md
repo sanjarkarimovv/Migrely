@@ -28,13 +28,15 @@ QA found two defects on the home screen (GitHub issues #19 and #20). Both are S3
   messages appear over the left (guidance) column only. The intensity choices, "+ Medication taken" and "Migraine
   ended" stay visible and usable for as long as the message shows. Undo stays above the tap guard. Portrait and normal
   mode are unchanged.
+- **Times follow a time zone change (found in the walk and the review, EC-TIM-02, D36):** a zone changed while the app
+  is open or away recreates the activity, like a rotation, so every screen draws its times again. Before, attack mode
+  showed a start without its city for up to 30 s, and History kept stale cities until it was opened again.
 - **Keyboard order decision (#22, D38):** recorded only. The month grid becomes one Tab stop with arrow keys in change
   4, which reworks the calendar days.
 
 **Out of scope:**
 - the keyboard grid itself (#22), which comes in change 4;
-- messages on other screens in landscape, where no controls sit at the top right;
-- a reload when the time zone changes while home is open. Home already reloads on every resume and every date change.
+- messages on other screens in landscape, where no controls sit at the top right.
 
 ## Capabilities
 
@@ -47,6 +49,7 @@ None.
 - `today-sky`: today's card and list use the attack's own days; a listed time range names the city once.
 - `attack-history`: a listed time range names the city once.
 - `in-app-messages`: in landscape attack mode, messages stay over the guidance column.
+- `app-shell`: a time zone change redraws every screen's times.
 
 ## Impact
 
@@ -55,9 +58,9 @@ None.
     window; the snapshot no longer carries the clock;
   - `:features:home:data`: `HomeRepository.today(from, to)` only reads;
   - `:features:home:ui`: the message area in `HomeContents`, and `TimeUiFormatter` for the city;
-  - `:features:history:ui`: `HistoryTimeUiFormatter` and the History row.
-- **Unchanged:** presentation, datasource and `:app` code, apart from the use case's new constructor parameter in
-  `HomeModule`.
+  - `:features:history:ui`: `HistoryTimeUiFormatter` and the History row;
+  - `:app`: `MainActivity` recreates itself when the device zone changes; `HomeModule` passes the clock to the use case.
+- **Unchanged:** presentation and datasource.
 - **Docs:** BRD 9.9 (EC-UX-20), 13 (row 2c) and 17 (D36–D38).
 - **QA retest** on emulator-5580:
   - `qa/device_scenarios.sh travel` (#19);

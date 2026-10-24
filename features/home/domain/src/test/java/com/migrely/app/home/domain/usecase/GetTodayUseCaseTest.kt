@@ -240,6 +240,76 @@ class GetTodayUseCaseTest {
     }
 
     @Test
+    fun `Given today's attack and a nearby day's then only today's counts and peaks`() {
+        val today = attack(id = "today", end = NOW, intensityPoints = listOf(point(3)))
+        // 10:00 to 11:00 on 22 October in Tashkent: inside the window, not today.
+        val yesterday = attack(
+            id = "yesterday",
+            start = Instant.parse("2026-10-22T05:00:00Z"),
+            end = Instant.parse("2026-10-22T06:00:00Z"),
+            intensityPoints = listOf(point(9))
+        )
+        givenSnapshot(inProgress = null, ended = listOf(yesterday, today))
+
+        val actual = classUnderTest.executeInBackground(Unit)
+
+        assertEquals(
+            TodayResultDomainModel.Loaded(
+                TodayDomainModel.AttacksEnded(
+                    count = 1,
+                    highestRecordedIntensity = 3,
+                    anyIntensityNotRecorded = false,
+                    attacks = listOf(summary(today))
+                )
+            ),
+            actual
+        )
+    }
+
+    @Test
+    fun `Given an attack from yesterday to tomorrow then it counts for today`() {
+        // 22:00 on 22 October to 01:00 on 24 October in Tashkent.
+        val spanning = attack(
+            start = Instant.parse("2026-10-22T17:00:00Z"),
+            end = Instant.parse("2026-10-23T20:00:00Z")
+        )
+        givenSnapshot(inProgress = null, ended = listOf(spanning))
+
+        val actual = classUnderTest.executeInBackground(Unit)
+
+        assertEquals(1, endedCount(actual))
+    }
+
+    @Test
+    fun `Given an attack that started exactly at midnight then it counts for that day`() {
+        // 00:00 to 01:00 on 23 October in Tashkent.
+        val atMidnight = attack(
+            start = Instant.parse("2026-10-22T19:00:00Z"),
+            end = Instant.parse("2026-10-22T20:00:00Z")
+        )
+        givenSnapshot(inProgress = null, ended = listOf(atMidnight))
+
+        val actual = classUnderTest.executeInBackground(Unit)
+
+        assertEquals(1, endedCount(actual))
+    }
+
+    @Test
+    fun `Given the clocks go back today when executed then the window follows local midnights`() {
+        // 25 October 2026 in Berlin: summer time ends at 03:00. The window runs from 23 October 00:00 (UTC+2) to
+        // 28 October 00:00 (UTC+1).
+        givenClock(Instant.parse("2026-10-25T12:00:00Z"), BERLIN)
+        givenSnapshot(inProgress = null)
+
+        classUnderTest.executeInBackground(Unit)
+
+        verify(getTodayRepository).today(
+            Instant.parse("2026-10-22T22:00:00Z"),
+            Instant.parse("2026-10-27T23:00:00Z")
+        )
+    }
+
+    @Test
     fun `Given ended attacks with peaks 3 and 9 when executed then two attacks with highest 9`() {
         val mild = attack(id = "a", end = NOW, intensityPoints = listOf(point(3)))
         val severe = attack(id = "b", end = NOW, intensityPoints = listOf(point(9)))
@@ -324,6 +394,9 @@ class GetTodayUseCaseTest {
             )
         )
     }
+
+    private fun endedCount(result: TodayResultDomainModel): Int =
+        ((result as TodayResultDomainModel.Loaded).today as TodayDomainModel.AttacksEnded).count
 
     private fun givenClock(instant: Instant, zone: ZoneId) {
         given(getCurrentTimeRepository.currentTime())

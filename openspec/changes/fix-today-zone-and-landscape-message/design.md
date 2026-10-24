@@ -18,10 +18,9 @@
 
 ## Goals and non-goals
 
-- **Goals:** one rule for "which day" across home, the calendar and History; the city once per range; landscape attack
-  controls never covered.
-- **Non-goals:** the keyboard grid (#22, D38, change 4); a reload when the zone changes while home is open; a shared
-  "attack days" module (see D2).
+- **Goals:** one rule for "which day" across home, the calendar and History; the city once per range; times redrawn
+  when the zone changes; landscape attack controls never covered.
+- **Non-goals:** the keyboard grid (#22, D38, change 4); a shared "attack days" module (see D2).
 
 ## Decisions
 
@@ -44,18 +43,22 @@
 `GetHistoryMonthUseCase.dates()` and the new private function in `GetTodayUseCase` are three lines each. Features never
 depend on each other (rule 6), and a shared domain module for three lines would add a module, a Konsist rule and DI
 wiring. Stats (change 5) and the doctor report (change 10) need the same rule. Change 5 is the third user, so it
-moves the rule into a shared pure-Kotlin module. This is recorded in `tasks.md` and in the progress memory.
+moves the rule into a shared pure-Kotlin module. This is recorded under "Follow-ups" in `tasks.md`.
 
 ### D3. The city once per range
 
 | Formatter | Change |
 |---|---|
-| Home `TimeUiFormatter` | `formatClockTime` and `formatStartTime` take `withCity: Boolean = true` |
-| History `HistoryTimeUiFormatter` | `formatStart` and `formatClockTime` take `withCity: Boolean = true` |
+| Home `TimeUiFormatter` | `formatRange(start, end, zone, now)` returns `AttackTimeRangeUiModel(start, end)` |
+| History `HistoryTimeUiFormatter` | `formatRange(start, end?, zone, spoken)` returns `HistoryTimeRangeUiModel(start, end?)`, replacing `formatStart` and `formatEnd` |
 
-- A "Logged today" row formats its start without the city and its end with it: "11:15 PM – 11:45 PM (Berlin)".
+- The rule lives in the formatters, so it is unit tested rather than assembled at each call site.
+- A "Logged today" row: the start without the city, the end with it: "11:15 PM – 11:45 PM (Berlin)".
 - A History row does the same when the attack has ended. A row for an attack in progress has no end, so its start
   keeps the city.
+- The weekday before a start compares the start's date with the **device's** date, which is "today" under D36. A
+  Tashkent attack at 08:00 on Friday, listed at 23:30 that Friday in Dubai, reads "08:00 – 09:00 (Tashkent)", not
+  "Fri 08:00".
 - The spoken descriptions use the same texts, so a screen reader says the city once too.
 - Attack mode's "Started …" line, the messages, the details screen and "Taken at" show one time each and keep their
   city.
@@ -78,6 +81,19 @@ moves the rule into a shared pure-Kotlin module. This is recorded in `tasks.md` 
   The message is the confirmation at that moment (D37).
 - Normal mode in landscape, portrait and tablets (height ≥ 480 dp) keep the centred message.
 
+### D5. A time zone change redraws every screen
+
+- Formatters read the device zone when they are called. A screen whose state did not change is not composed again,
+  so its times kept the old city. The walk saw it in attack mode, and the review traced the same cause in History. It
+  applies to every screen that shows a time.
+- `MainActivity` keeps the zone it was created with. On `onStart`, and on `ACTION_TIMEZONE_CHANGED` while started, a
+  different device zone calls `recreate()`. That is the path a rotation takes, so saved state, the back stack and a
+  message on screen are kept.
+- **Why not per screen:** a resume key on each screen would repeat the same code in four features and still miss a
+  change while a screen is open.
+- **Cost:** a zone change is rare, and recreating looks like a rotation. A write still running at that instant can lose
+  its result, as with a rotation (known since change 1c, fixed by `upgrade-toolchain`).
+
 ## Risks
 
 | Risk | Mitigation |
@@ -85,3 +101,5 @@ moves the rule into a shared pure-Kotlin module. This is recorded in `tasks.md` 
 | A narrower message wraps more at 200% font | the snackbar already moves the action below the text when it does not fit (EC-UX-03); walked at 200% in landscape |
 | An attack logged west of the device's date line looks missing today | it is on its own date in the calendar, which the card now agrees with; scenario "Logged before flying west" |
 | Two clock reads (use case, then repository) | the repository no longer reads the clock for today; only the use case does |
+| Westward travel across a month boundary: an attack logged on 1 November in Tokyo, viewed on 31 October in Honolulu, is on no screen until the device reaches 1 November (History stops at the current month, EC-HIS-03) | accepted: it needs a month boundary, a flight west and an attack in the last hours; adding it again as a past migraine is caught by the overlap check (EC-ATK-04), so nothing is logged twice |
+| The message area depends on the equal columns of `SideBySideAttackLayout` | both places point to each other in comments |

@@ -1,5 +1,6 @@
 package com.migrely.app.history.ui.mapper
 
+import com.migrely.app.history.ui.model.HistoryTimeRangeUiModel
 import java.time.DateTimeException
 import java.time.Instant
 import java.time.LocalDate
@@ -31,31 +32,43 @@ class HistoryTimeUiFormatter(
     fun formatDayTitle(epochDay: Long): String = format("EEEEdMMMM", LocalDate.ofEpochDay(epochDay))
 
     /**
-     * The start of a listed attack: "Tue 14 Oct, 09:10". [spoken] gives the full weekday and month for screen readers.
-     * [withCity] false leaves the city out when the end that follows names it (BRD D36).
+     * A listed attack's start ("Tue 14 Oct, 09:10") and end ("10:00", or "Thu 03:00" when it ended on another day); the
+     * end is null while the attack is in progress. A city, when shown, comes once, after the last time (BRD D36).
+     * [spoken] gives the full weekday and month for screen readers.
      */
-    fun formatStart(
+    fun formatRange(
+        startEpochMillis: Long,
+        endEpochMillis: Long?,
+        zoneId: String,
+        spoken: Boolean = false
+    ) = HistoryTimeRangeUiModel(
+        start = start(startEpochMillis, zoneId, spoken, withCity = endEpochMillis == null),
+        end = endEpochMillis?.let { end(it, startEpochMillis, zoneId) }
+    )
+
+    fun formatClockTime(epochMillis: Long, zoneId: String): String =
+        clockTime(epochMillis, zoneId, withCity = true)
+
+    private fun start(
         epochMillis: Long,
         zoneId: String,
-        spoken: Boolean = false,
-        withCity: Boolean = true
+        spoken: Boolean,
+        withCity: Boolean
     ): String {
-        val zone = zoneOf(zoneId)
-        val date = Instant.ofEpochMilli(epochMillis).atZone(zone).toLocalDate()
+        val date = Instant.ofEpochMilli(epochMillis).atZone(zoneOf(zoneId)).toLocalDate()
         val day = format(if (spoken) "EEEEdMMMM" else "EEEdMMM", date)
-        return "$day, ${formatClockTime(epochMillis, zoneId, withCity)}"
+        return "$day, ${clockTime(epochMillis, zoneId, withCity)}"
     }
 
-    /** The end of a listed attack: its clock time, with the weekday when it ended on another day than it started. */
-    fun formatEnd(endEpochMillis: Long, startEpochMillis: Long, zoneId: String): String {
+    private fun end(endEpochMillis: Long, startEpochMillis: Long, zoneId: String): String {
         val zone = zoneOf(zoneId)
         val endDate = Instant.ofEpochMilli(endEpochMillis).atZone(zone).toLocalDate()
         val startDate = Instant.ofEpochMilli(startEpochMillis).atZone(zone).toLocalDate()
-        val time = formatClockTime(endEpochMillis, zoneId)
+        val time = clockTime(endEpochMillis, zoneId, withCity = true)
         return if (endDate == startDate) time else "${format("EEE", endDate)} $time"
     }
 
-    fun formatClockTime(epochMillis: Long, zoneId: String, withCity: Boolean = true): String {
+    private fun clockTime(epochMillis: Long, zoneId: String, withCity: Boolean): String {
         val zone = zoneOf(zoneId)
         val skeleton = if (is24HourFormat()) "Hm" else "hm"
         val time = DateTimeFormatter.ofPattern(bestDateTimePattern(locale(), skeleton), locale())

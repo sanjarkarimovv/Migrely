@@ -147,15 +147,13 @@ private fun AttackSummaryRow(
     timeUiFormatter: TimeUiFormatter,
     onClick: () -> Unit
 ) {
-    // An attack that began on an earlier day shows that day before its start, and a city is named once, after the end
-    // (spec: today-sky, BRD D36).
-    val start = timeUiFormatter.formatStartTime(
+    // An attack that began on an earlier day shows that day before its start (spec: today-sky).
+    val (start, end) = timeUiFormatter.formatRange(
         attack.startEpochMillis,
+        attack.endEpochMillis,
         attack.startZoneId,
-        nowMillis,
-        withCity = false
+        nowMillis
     )
-    val end = timeUiFormatter.formatClockTime(attack.endEpochMillis, attack.startZoneId)
     val peak = attack.peakIntensity
     val peakText = if (peak == null) {
         stringResource(R.string.attack_summary_peak_not_recorded)
