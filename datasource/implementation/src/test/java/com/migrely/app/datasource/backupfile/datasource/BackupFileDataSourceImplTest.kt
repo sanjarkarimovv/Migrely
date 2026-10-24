@@ -4,6 +4,7 @@ import com.migrely.app.datasource.attack.mapper.AttackTagLocalMapper
 import com.migrely.app.datasource.backup.model.BackupRecordsDataModel
 import com.migrely.app.datasource.backupfile.RECORDS
 import com.migrely.app.datasource.backupfile.mapper.BackupFileMapper
+import com.migrely.app.datasource.backupfile.model.AutomaticCopyDataModel
 import com.migrely.app.datasource.backupfile.model.BackupDecodedDataModel
 import com.migrely.app.datasource.backupfile.validator.BackupRecordsValidator
 import com.migrely.app.datasource.medication.mapper.MedicationLocalMapper
@@ -11,6 +12,8 @@ import com.migrely.app.datasource.tag.mapper.CustomTagLocalMapper
 import java.io.File
 import java.time.Instant
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -149,6 +152,49 @@ class BackupFileDataSourceImplTest {
             listOf("migrely-auto-1000.json", "migrely-auto-4000.json", "migrely-auto-5000.json"),
             File(folder.root, "backups").list().orEmpty().sorted()
         )
+    }
+
+    @Test
+    fun `Given no automatic backup then there is no newest one`() {
+        assertNull(classUnderTest.newestAutomatic())
+
+        File(folder.root, "backups/notes.txt").apply { parentFile?.mkdirs() }.writeText("x")
+        assertNull(classUnderTest.newestAutomatic())
+    }
+
+    @Test
+    fun `When asked for the newest automatic backup then its time and text`() {
+        listOf(4_000L, 9_000L, 6_000L).forEach {
+            classUnderTest.saveAutomatic("backup $it", Instant.ofEpochMilli(it))
+        }
+
+        assertEquals(
+            AutomaticCopyDataModel(Instant.ofEpochMilli(9_000L), "backup 9000"),
+            classUnderTest.newestAutomatic()
+        )
+    }
+
+    @Test
+    fun `Given the newest automatic backup cannot be read then the next one`() {
+        classUnderTest.saveAutomatic("backup 4", Instant.ofEpochMilli(4_000L))
+        // A folder where a file should be: reading it fails.
+        File(folder.root, "backups/migrely-auto-9000.json").mkdirs()
+
+        assertEquals(
+            AutomaticCopyDataModel(Instant.ofEpochMilli(4_000L), "backup 4"),
+            classUnderTest.newestAutomatic()
+        )
+    }
+
+    @Test
+    fun `When deleting every automatic backup then none is left, and again is fine`() {
+        (1..3).forEach { classUnderTest.saveAutomatic("backup $it", Instant.ofEpochMilli(it * 1L)) }
+
+        classUnderTest.deleteAll()
+        classUnderTest.deleteAll()
+
+        assertFalse(File(folder.root, "backups").exists())
+        assertNull(classUnderTest.newestAutomatic())
     }
 
     @Test

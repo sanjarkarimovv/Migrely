@@ -2,12 +2,14 @@ package com.migrely.app.datasource.backupfile.datasource
 
 import com.migrely.app.datasource.backup.model.BackupRecordsDataModel
 import com.migrely.app.datasource.backupfile.mapper.BackupFileMapper
+import com.migrely.app.datasource.backupfile.model.AutomaticCopyDataModel
 import com.migrely.app.datasource.backupfile.model.BackupDecodedDataModel
 import com.migrely.app.datasource.backupfile.model.BackupFileHeaderLocalModel
 import com.migrely.app.datasource.backupfile.model.BackupFileLocalModel
 import com.migrely.app.datasource.backupfile.validator.BackupRecordsValidator
 import com.migrely.app.datasource.file.file
 import java.io.File
+import java.io.IOException
 import java.time.DateTimeException
 import java.time.Instant
 import kotlinx.serialization.json.Json
@@ -79,7 +81,7 @@ class BackupFileDataSourceImpl(
         try {
             partial.writeText(text, Charsets.UTF_8)
             if (!partial.renameTo(File(directory, name))) {
-                throw java.io.IOException("Could not save $name")
+                throw IOException("Could not save $name")
             }
         } finally {
             partial.delete()
@@ -90,11 +92,29 @@ class BackupFileDataSourceImpl(
         }.drop(AUTOMATIC_KEPT - 1).forEach(File::delete)
     }
 
+    @Suppress("SwallowedException")
+    override fun newestAutomatic(): AutomaticCopyDataModel? =
+        automaticBackups(File(filesDirectory, AUTOMATIC_DIRECTORY)).firstNotNullOfOrNull { copy ->
+            try {
+                AutomaticCopyDataModel(
+                    madeAt = Instant.ofEpochMilli(madeAtMillis(copy)),
+                    text = copy.readText(Charsets.UTF_8)
+                )
+            } catch (exception: IOException) {
+                null
+            }
+        }
+
+    override fun deleteAll() = file {
+        val directory = File(filesDirectory, AUTOMATIC_DIRECTORY)
+        if (!directory.deleteRecursively()) throw IOException("Could not delete ${directory.name}")
+    }
+
     /** Newest first. */
     private fun automaticBackups(directory: File): List<File> = directory.listFiles().orEmpty()
         .filter { it.name.startsWith(AUTOMATIC_PREFIX) && it.name.endsWith(AUTOMATIC_SUFFIX) }
-        .sortedByDescending {
-            it.name.removePrefix(AUTOMATIC_PREFIX).removeSuffix(AUTOMATIC_SUFFIX).toLongOrNull()
-                ?: 0L
-        }
+        .sortedByDescending(::madeAtMillis)
+
+    private fun madeAtMillis(copy: File): Long =
+        copy.name.removePrefix(AUTOMATIC_PREFIX).removeSuffix(AUTOMATIC_SUFFIX).toLongOrNull() ?: 0L
 }

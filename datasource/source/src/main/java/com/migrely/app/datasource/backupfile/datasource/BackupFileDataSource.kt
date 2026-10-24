@@ -1,6 +1,7 @@
 package com.migrely.app.datasource.backupfile.datasource
 
 import com.migrely.app.datasource.backup.model.BackupRecordsDataModel
+import com.migrely.app.datasource.backupfile.model.AutomaticCopyDataModel
 import com.migrely.app.datasource.backupfile.model.BackupDecodedDataModel
 import java.time.Instant
 
@@ -18,4 +19,13 @@ interface BackupFileDataSource {
      * [com.migrely.app.datasource.exception.FileDataException] when it cannot be written.
      */
     fun saveAutomatic(text: String, madeAt: Instant)
+
+    /**
+     * The newest automatic backup that can be read, or null when there is none (BRD D98). A copy that cannot be read is
+     * passed over for the next one. Its text is not checked here; [decode] does that.
+     */
+    fun newestAutomatic(): AutomaticCopyDataModel?
+
+    /** Deletes every automatic backup (BRD D96). Throws [com.migrely.app.datasource.exception.FileDataException]. */
+    fun deleteAll()
 }

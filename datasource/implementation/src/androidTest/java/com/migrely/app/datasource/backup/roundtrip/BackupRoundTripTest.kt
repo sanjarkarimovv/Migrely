@@ -21,6 +21,7 @@ import com.migrely.app.datasource.daymark.model.DayMarkLocalModel
 import com.migrely.app.datasource.medication.mapper.MedicationLocalMapper
 import com.migrely.app.datasource.medication.model.MedicationIntakeLocalModel
 import com.migrely.app.datasource.medication.model.MedicationLocalModel
+import com.migrely.app.datasource.medication.model.OveruseNoticeLocalModel
 import com.migrely.app.datasource.tag.mapper.CustomTagLocalMapper
 import com.migrely.app.datasource.tag.model.CustomTagLocalModel
 import java.io.File
@@ -141,7 +142,7 @@ class BackupRoundTripTest {
 
     @Test
     fun whenExportedReadAndRestored_thenTheSameRecords_andAddingThemBackChangesNothing() {
-        val source = BackupDataSourceImpl(phone.backupDao(), localMapper)
+        val source = BackupDataSourceImpl(phone.backupDao(), localMapper, phone::clearAllTables)
         val exported = source.records()
         assertEquals(listOf("ended", "now"), exported.attacks.map { it.id })
         assertEquals(listOf("i2", "i1"), exported.intakes.map { it.id })
@@ -149,7 +150,8 @@ class BackupRoundTripTest {
         val decoded = files.decode(files.encode(exported, Instant.EPOCH))
         assertEquals(BackupDecodedDataModel.Records(exported, 6), decoded)
 
-        val restored = BackupDataSourceImpl(newPhone.backupDao(), localMapper)
+        val restored =
+            BackupDataSourceImpl(newPhone.backupDao(), localMapper, newPhone::clearAllTables)
         restored.replaceAll((decoded as BackupDecodedDataModel.Records).records)
         assertEquals(exported, restored.records())
 
@@ -158,5 +160,33 @@ class BackupRoundTripTest {
             source.add(exported)
         )
         assertEquals(exported, source.records())
+    }
+
+    /** Delete all data (change add-settings-and-safety, BRD D96): the device's own state goes with the records. */
+    @Test
+    fun whenEverythingIsDeleted_thenNoTableKeepsARow() {
+        phone.reminderSettingsDao().update { it.copy(dailyEnabled = true) }
+        phone.medicationDao().upsertOveruseNotice(OveruseNoticeLocalModel("SIMPLE", "SOFT", 1L))
+        val source = BackupDataSourceImpl(phone.backupDao(), localMapper, phone::clearAllTables)
+
+        source.deleteAll()
+
+        assertEquals(false, source.hasRecords())
+        listOf(
+            "attack",
+            "intensity_point",
+            "attack_tag",
+            "custom_tag",
+            "medication",
+            "medication_intake",
+            "overuse_notice",
+            "day_mark",
+            "reminder_settings"
+        ).forEach { table ->
+            phone.query("SELECT COUNT(*) FROM $table", null).use { cursor ->
+                cursor.moveToFirst()
+                assertEquals(table, 0, cursor.getInt(0))
+            }
+        }
     }
 }

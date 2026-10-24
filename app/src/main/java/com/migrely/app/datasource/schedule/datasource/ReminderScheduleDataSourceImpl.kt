@@ -6,10 +6,12 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.workDataOf
 import com.migrely.app.datasource.clock.datasource.ClockDataSource
+import com.migrely.app.datasource.exception.DatabaseDataException
 import com.migrely.app.reminder.ReminderWorker
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
+import java.util.concurrent.ExecutionException
 
 /**
  * Reminders as WorkManager one-time work (BRD EC-REM-03): inexact by design, so no exact-alarm permission is needed,
@@ -43,6 +45,19 @@ class ReminderScheduleDataSourceImpl(
 
     override fun cancelEffectQuestion(intakeId: String) {
         workManager.cancelUniqueWork(effectWork(intakeId))
+    }
+
+    // WorkManager tags every request with its worker's class name, so this also reaches runs planned by older
+    // versions. Waiting for the result makes the cancellation stored before the app may stop.
+    override fun cancelAll() {
+        try {
+            workManager.cancelAllWorkByTag(ReminderWorker::class.java.name).result.get()
+        } catch (exception: ExecutionException) {
+            throw DatabaseDataException(exception)
+        } catch (exception: InterruptedException) {
+            Thread.currentThread().interrupt()
+            throw DatabaseDataException(exception)
+        }
     }
 
     // REPLACE also covers the daily run planning its own next run: WorkManager marks the running work cancelled but

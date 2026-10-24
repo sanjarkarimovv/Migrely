@@ -1,6 +1,7 @@
 package com.migrely.app.datasource.backup.datasource
 
 import android.database.sqlite.SQLiteConstraintException
+import android.database.sqlite.SQLiteException
 import android.database.sqlite.SQLiteFullException
 import com.migrely.app.datasource.attack.mapper.AttackTagLocalMapper
 import com.migrely.app.datasource.backup.dao.BackupDao
@@ -29,7 +30,12 @@ class BackupDataSourceImplTest {
         MedicationLocalMapper(),
         DayMarkLocalMapper()
     )
-    private val classUnderTest = BackupDataSourceImpl(backupDao, backupLocalMapper)
+    private var tablesCleared = 0
+    private var clearFailure: RuntimeException? = null
+    private val classUnderTest = BackupDataSourceImpl(backupDao, backupLocalMapper) {
+        clearFailure?.let { throw it }
+        tablesCleared++
+    }
 
     @Test
     fun `When reading then every record, and whether there are any`() {
@@ -63,5 +69,20 @@ class BackupDataSourceImplTest {
 
         assertThrows(StorageFullDataException::class.java) { classUnderTest.replaceAll(RECORDS) }
         assertThrows(DatabaseDataException::class.java) { classUnderTest.add(RECORDS) }
+    }
+
+    @Test
+    fun `When deleting everything then every table is cleared at once`() {
+        classUnderTest.deleteAll()
+
+        assertEquals(1, tablesCleared)
+    }
+
+    @Test
+    fun `Given the database fails when deleting everything then a database failure`() {
+        clearFailure = SQLiteException()
+
+        assertThrows(DatabaseDataException::class.java) { classUnderTest.deleteAll() }
+        assertEquals(0, tablesCleared)
     }
 }

@@ -56,7 +56,8 @@ internal object BackupModule {
                 CustomTagLocalMapper(),
                 MedicationLocalMapper(),
                 DayMarkLocalMapper()
-            )
+            ),
+            database::clearAllTables
         )
 
     @Provides
