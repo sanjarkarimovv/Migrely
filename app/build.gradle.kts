@@ -100,4 +100,8 @@ dependencies {
     implementation(projects.features.attack.presentation)
     implementation(projects.features.attack.domain)
     implementation(projects.features.attack.data)
+    implementation(projects.features.history.ui)
+    implementation(projects.features.history.presentation)
+    implementation(projects.features.history.domain)
+    implementation(projects.features.history.data)
 }

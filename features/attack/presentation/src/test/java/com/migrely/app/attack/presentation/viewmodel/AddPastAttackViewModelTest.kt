@@ -21,6 +21,7 @@ import com.migrely.app.attack.presentation.model.PastAttackDraftPresentationMode
 import com.migrely.app.attack.presentation.model.TimeFieldPresentationModel
 import com.migrely.app.attack.presentation.navigation.AddPastAttackPresentationNavigationEvent
 import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneId
 import kotlinx.coroutines.CoroutineStart.UNDISPATCHED
 import kotlinx.coroutines.async
@@ -83,11 +84,12 @@ class AddPastAttackViewModelTest :
     @Test
     fun `When entering then shows loading and then the default times`() = runTest {
         getPastAttackDraftUseCase.givenSuccessfulExecution(
+            null,
             PastAttackDraftDomainModel(START, END, ZONE)
         )
         val states = async(start = UNDISPATCHED) { classUnderTest.viewState.take(2).toList() }
 
-        classUnderTest.onEnter()
+        classUnderTest.onEnter(day = null)
 
         assertEquals(
             listOf(
@@ -95,6 +97,23 @@ class AddPastAttackViewModelTest :
                 AddPastAttackViewState.Ready(PastAttackDraftPresentationModel(START, END, ZONE))
             ),
             states.await()
+        )
+    }
+
+    @Test
+    fun `Given a chosen day when entering then asks for that day's times`() = runTest {
+        val day = LocalDate.parse("2026-10-20")
+        getPastAttackDraftUseCase.givenSuccessfulExecution(
+            day,
+            PastAttackDraftDomainModel(START, END, ZONE)
+        )
+        val states = async(start = UNDISPATCHED) { classUnderTest.viewState.take(2).toList() }
+
+        classUnderTest.onEnter(day)
+
+        assertEquals(
+            AddPastAttackViewState.Ready(PastAttackDraftPresentationModel(START, END, ZONE)),
+            states.await().last()
         )
     }
 
