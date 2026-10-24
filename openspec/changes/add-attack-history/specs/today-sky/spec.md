@@ -14,8 +14,8 @@ whenever home's data changes. Attack mode SHALL NOT show it (BRD 18.3 A, HIS-F1,
 - **THEN** History opens with 14 October chosen
 
 #### Scenario: Undo on home updates the calendar
-- **WHEN** the user deletes the 14 October attack from its details opened from home, and taps "Undo" on home
-- **THEN** 14 October shows its sky again without leaving home
+- **WHEN** the user deletes the 8 October storm from History, goes back home within 30 seconds and taps "Undo" there
+- **THEN** 8 October shows its storm again without leaving home
 
 #### Scenario: Not in attack mode
 - **WHEN** an attack is in progress

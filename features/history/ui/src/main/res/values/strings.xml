@@ -15,6 +15,7 @@
 
     <!-- What a screen reader says for a day (BRD EC-UX-15). -->
     <string name="day_today">Today, %1$s</string>
+    <string name="day_chosen">Chosen</string>
     <string name="day_nothing_logged">%1$s: nothing logged.</string>
     <string name="day_in_progress">%1$s: rain. Migraine in progress.</string>
     <string name="day_attacks">%1$s: %2$s. %3$s. Peak: %4$s.</string>

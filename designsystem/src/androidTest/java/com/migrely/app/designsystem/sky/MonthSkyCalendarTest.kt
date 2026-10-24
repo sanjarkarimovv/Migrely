@@ -6,8 +6,6 @@ import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
-import androidx.compose.ui.test.assertIsNotSelected
-import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -51,6 +49,7 @@ class MonthSkyCalendarTest {
                         day(3, DaySkyAppearance.Rain),
                         day(4, DaySkyAppearance.Future)
                     ),
+                    chosenStateDescription = "Chosen",
                     onDayClick = { clicked += it },
                     modifier = Modifier.width(350.dp)
                 )
@@ -76,13 +75,16 @@ class MonthSkyCalendarTest {
     fun aFutureDayHasNoClickAction() {
         composeTestRule.onNodeWithContentDescription("Day 4")
             .assert(SemanticsMatcher.keyNotDefined(SemanticsActions.OnClick))
-            .assert(SemanticsMatcher.keyNotDefined(SemanticsProperties.Selected))
     }
 
     @Test
-    fun theChosenDayIsSelected() {
-        composeTestRule.onNodeWithContentDescription("Day 1").assertIsSelected()
-        composeTestRule.onNodeWithContentDescription("Day 2").assertIsNotSelected()
+    fun onlyTheChosenDaySaysSoAndNoDayIsACheckbox() {
+        composeTestRule.onNodeWithContentDescription("Day 1")
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Chosen"))
+            .assert(SemanticsMatcher.keyNotDefined(SemanticsProperties.Selected))
+        composeTestRule.onNodeWithContentDescription("Day 2")
+            .assert(SemanticsMatcher.keyNotDefined(SemanticsProperties.StateDescription))
+            .assert(SemanticsMatcher.keyNotDefined(SemanticsProperties.Selected))
     }
 
     @Test

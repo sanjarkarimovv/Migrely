@@ -58,6 +58,7 @@ internal fun HistoryCalendar(
             weekdayInitials = layout.weekdayInitials,
             leadingEmptyDays = layout.leadingEmptyDays,
             days = days,
+            chosenStateDescription = stringResource(R.string.day_chosen),
             onDayClick = { dayOfMonth -> onDay(month.days[dayOfMonth - 1].epochDay) },
             modifier = Modifier.fillMaxWidth()
         )

@@ -71,7 +71,7 @@
 
 ## 8. Docs
 
-- [ ] 8.1 Update `docs/ARCHITECTURE.md`:
+- [x] 8.1 Update `docs/ARCHITECTURE.md`:
   - §3: the history feature and home's slot;
   - §6a: the range queries;
   - §13: deviations, if any.
@@ -80,8 +80,8 @@
 
 ## 9. Verify
 
-- [ ] 9.1 Run the gate `./gradlew assembleDebug test ktlintCheck detekt` and the instrumented tests per module (`:datasource:implementation`, `:designsystem`) on `emulator-5570`; verify all pass
-- [ ] 9.2 Walk every spec scenario on `emulator-5570`:
+- [x] 9.1 Run the gate `./gradlew assembleDebug test ktlintCheck detekt` and the instrumented tests per module (`:datasource:implementation`, `:designsystem`) on `emulator-5570`; verify all pass
+- [x] 9.2 Walk every spec scenario on `emulator-5570`:
   - portrait, landscape and 200% font;
   - TalkBack labels via `uiautomator dump`;
   - rotation and process death on History;
@@ -89,3 +89,75 @@
 
   Fix what the walk finds and record a verification record here
 - [ ] 9.3 Run an independent code review (`superpowers:code-reviewer`) on `git diff develop...feature/add-attack-history`, fix the real findings, record them here and run `openspec validate add-attack-history --strict`
+
+## Verification record
+
+**Gate and tests (2026-10-24)**
+- `./gradlew assembleDebug test ktlintCheck detekt`: BUILD SUCCESSFUL. 566 unit tests in the debug variants (459
+  before), 0 failures:
+  - history: domain 18, presentation 35, data 15, ui 22;
+  - attack: domain 98 (+5), presentation 51 (+1);
+  - datasource 61 (+3);
+  - app 31 (+8).
+- Instrumented on `Migrely_API_36` (emulator-5570), per module:
+  - datasource 34/34, with 3 new DAO tests for the earliest start;
+  - designsystem 12/12, with 5 new calendar tests.
+
+**Emulator walk** (en-US locale, so weeks start on Sunday; 12-hour clock; Asia/Tashkent). Data was seeded with SQL:
+peaks 2 to 9, one without a pain level, past midnight, ending at midnight, logged in Tokyo, across September and
+October, and the first attack in June.
+- **month-sky:**
+  - the worst attack decides (8 October: 3 and 8 make a storm), no pain level gives cloudy, unrecorded and mild give
+    cloudy;
+  - nothing logged is dashed, future days are empty, and today has a ring;
+  - past midnight marks both days and an attack ending at midnight only one;
+  - the legend has no clear sky;
+  - with the phone moved to America/New_York (adb root, restored and unrooted afterwards), the Tokyo attack still
+    marks 15 October.
+- **TalkBack** (`uiautomator dump`):
+  - every day reads as in the spec, for example "Thursday, October 8: storm. 2 migraines. Peak: severe." and "Today,
+    Saturday, October 24: nothing logged.";
+  - future days have no action;
+  - rows read "Wednesday, October 14, 9:10 AM to 10:00 AM, peak 4 of 10. Opens its details.";
+  - the arrows read "Previous month" and "Next month", and the disabled one is disabled on the button node.
+- **attack-history:**
+  - open from the month name and from a day;
+  - previous month through September and an empty July ("No migraines logged in July") to June, where "Previous month"
+    is disabled; "Next month" is disabled in October;
+  - 13 attacks in October, newest first, with the across-month attack in both months;
+  - choose a day (oldest first), choose it again to clear, "Show all of October", and a month change clears it;
+  - a day with nothing logged;
+  - add for 7 October (07:49 to 09:49 at 09:49, D30), back to History showing the new attack;
+  - first use with an emptied database (restored afterwards): both arrows are disabled, and "Log your first migraine"
+    opens the add screen with the usual times;
+  - delete from details opened here: "Migraine deleted", Undo and "Undone.", with the attack back in the calendar and
+    the list;
+  - dismissed and rotated, the undo is not offered again;
+  - rotation and process death (`run-as kill -9`, cold start) keep September with 12 September chosen;
+  - landscape side by side, 200% font in portrait and landscape: nothing is clipped and everything scrolls.
+- **today-sky:**
+  - the calendar sits under today's card, in landscape in the left column;
+  - deleted from History, back home within 30 s: home offers the undo once (D31), and Undo on home brings back 8
+    October's sky without leaving home;
+  - attack mode shows no calendar.
+- **past-attacks:** the chosen-day draft as above; today and yesterday-late are covered by unit tests.
+
+**Found in the walk and fixed**
+- **The chosen day used `selected` semantics.** Compose exposes that as a checkbox, so every past day was announced
+  "not checked". The calendar now gives only the chosen day a state description, "Chosen".
+- **Cell clouds were small and the legend's dashed square was invisible.** The glyphs are larger, and outlines keep a
+  minimum width and dash.
+- **Spec scenarios used wrong weekdays for 2026.**
+- **The today-sky undo scenario named an unreachable path.** It now follows the reachable one, through History.
+
+**Not walked, and why**
+- **A day with an attack in progress (rain) on History:** History cannot be reached during attack mode (G4). Covered by
+  unit tests and the design-system preview.
+- **Moving an attack to another day from details:** covered by the reload on resume, walked after adding and deleting,
+  and by unit tests.
+- **Weeks starting on Monday:** covered by the en-GB unit test.
+
+**Environmental:** the host load was 10 to 18, from other sessions' emulators.
+- One cold start was killed with "start timeout" before any app code ran. A relaunch worked.
+- Loads take 3 to 8 s on this emulator.
+

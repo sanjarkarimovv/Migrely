@@ -44,7 +44,7 @@ target API 37, whichever comes first. Until then, do not mix AGP 9 idioms into b
 | `:architecture:ui` | Android | `com.migrely.app.architecture.ui` | `BaseComposeHolder`, `UiDestination`, `NavigationEventDestinationMapper`, `ScreenEnterObserver`, notification contracts |
 | `:architecture:instrumentation-test` | Android | `com.migrely.app.test` | E2E test helpers (first used by a feature change) |
 | `:coroutine` | JVM | `com.migrely.app.coroutine` | `CoroutineContextProvider` |
-| `:designsystem` | Android | `com.migrely.app.designsystem.{theme,sky,motion,snackbar,picker,icon}` | `MigrelyTheme`, `MigrelyColors`, `SkyCanvas` / `SkyAppearance`, `rememberReduceMotion()`, `MigrelySnackbar`, `MigrelyDateTimePicker`, `MigrelyIcons`. Compose only; depends on no feature, presentation or domain module |
+| `:designsystem` | Android | `com.migrely.app.designsystem.{theme,sky,motion,snackbar,picker,icon}` | `MigrelyTheme`, `MigrelyColors`, `SkyCanvas` / `SkyAppearance`, `MonthSkyCalendar` / `MonthSkyLegend` / `DaySkyAppearance`, `rememberReduceMotion()`, `MigrelySnackbar`, `MigrelyDateTimePicker`, `MigrelyIcons`. Compose only; depends on no feature, presentation or domain module |
 | `:datasource:source` | JVM | `com.migrely.app.datasource.<resource>.{datasource,model,exception}` | datasource interfaces, `*DataModel` / `*LocalModel`, `*DataException` |
 | `:datasource:implementation` | Android (Room via KSP) | `com.migrely.app.datasource.<resource>.{datasource,model,dao,mapper}` and `com.migrely.app.datasource.database` | `*DataSourceImpl`, Room entities (`*LocalModel`), DAOs, `MigrelyDatabase`, `*LocalMapper` |
 | `:features:<feature>:domain` | JVM | `com.migrely.app.<feature>.domain` | `model/`, `repository/` (interfaces), `usecase/`, `exception/` |
@@ -55,10 +55,15 @@ target API 37, whichever comes first. Until then, do not mix AGP 9 idioms into b
 - Datasources share one `source`/`implementation` pair, one package per resource (`database`, `attack`, `tag`,
   `preferences`, `billing`, `scheduler`, `pdf`, `file`, `analytics`, `clock`), as in the sample. The pair may be split later only for build-time
   reasons.
-- Features: `home` (today's sky, attack mode, quick actions) and `attack`. `attack` has two screens, each with its own
-  ViewModel, view state, notifications, navigation events and `Dependencies`: one attack's details, and adding a past
-  attack (change `add-past-attacks`). They share the feature's domain, models and UI pieces such as `TimeRow`. Both
-  features read the same `AttackDataSource` through their own models and repositories.
+- Features: `home` (today's sky, attack mode, quick actions), `attack` and `history`. All three read the same
+  `AttackDataSource` through their own models and repositories.
+- `attack` has two screens, each with its own ViewModel, view state, notifications, navigation events and
+  `Dependencies`: one attack's details, and adding a past attack (change `add-past-attacks`). They share the feature's
+  domain, models and UI pieces such as `TimeRow`.
+- `history` (change `add-attack-history`) owns the month sky calendar. It has the History screen and a month card, each
+  with its own ViewModel and `Dependencies`. Home shows the card through a slot,
+  `Home(monthCalendar: @Composable (refreshKey: Int) -> Unit)`, that `:app` fills; home never sees the history
+  feature. The key counts home's view states, so the card loads again whenever home does.
 - Features never depend on other features. Something two features need goes into a datasource, `:app`, or a dedicated
   shared domain module with its own reason to exist.
 
@@ -127,6 +132,10 @@ Health data must never be passed to either SDK.
     4. the survivor takes the new fields;
     5. the absorbed rows are deleted for good (no undo, BRD D28).
   - The schema did not change for this.
+- **Range reads (History).** A month is read with `overlapping(null, from, to)`, which returns every attack touching
+  the range, the one in progress included, with a margin of two days on each side so that attacks logged in other
+  zones are found. The first month that can be shown comes from `earliestStart()`. Both use the start index; the
+  domain assigns days in each attack's zone (BRD EC-TIM-02).
 - `SQLiteFullException` becomes `StorageFullDataException`. Any other `SQLiteException` becomes
   `DatabaseDataException`. Repositories turn both into failure values (section 7).
 - DAO SQL is covered by instrumented tests (`connectedDebugAndroidTest` on the `Migrely_API_36` emulator). Datasource
@@ -236,4 +245,5 @@ with no `testDebugUnitTest` task, so `testDebugUnitTest` alone would skip their 
 | Konsist: the four "models are suffixed with …Model" rules scan production code only (`scopeFromProduction()`) | unit tests for a model belong in the model's package (for example `AttackDomainModelTest`); the skill forbids renaming classes to dodge a rule | permanent |
 | The add-past-attack screen asks for its defaults with `LaunchedEffect` while its saveable times are empty, instead of `ScreenEnterObserver` | after process death before the defaults arrived, `ScreenEnterObserver` would never ask again and leave the screen empty; once picked, the saved times win | permanent |
 | The add screen carries the end along with a new start and caps it at the current minute in `PastAttackDraftUiModel` | an editing convenience of the form, like the picker bounds; the domain validates the times again | permanent |
+| Home hosts History's month card through a composable slot that `:app` fills, and the card loads when its refresh key changes instead of using `ScreenEnterObserver` | one calendar implementation without a feature depending on another; the sample has no screen composed of two features. The key is home's view-state count, so the card follows every home load, including an undo on home | permanent |
 | Further Konsist rule adaptations | recorded here when made | — |

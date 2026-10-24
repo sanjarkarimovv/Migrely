@@ -37,7 +37,7 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
-import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -81,13 +81,15 @@ data class LegendEntry(val appearance: DaySkyAppearance, val label: String)
 /**
  * A month of small skies (BRD 18.3 A, HIS-F1). [leadingEmptyDays] blank cells come before the first day so weeks start
  * on the locale's first day (BRD EC-TIM-05). Future days are never selectable. The weekday initials are hidden from
- * screen readers, because every day says its own weekday.
+ * screen readers, because every day says its own weekday. Screen readers hear [chosenStateDescription] after the chosen
+ * day only: the `selected` property would make every day a "not checked" checkbox.
  */
 @Composable
 fun MonthSkyCalendar(
     weekdayInitials: List<String>,
     leadingEmptyDays: Int,
     days: List<CalendarDay>,
+    chosenStateDescription: String,
     onDayClick: (dayOfMonth: Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -115,6 +117,7 @@ fun MonthSkyCalendar(
                     } else {
                         DayCell(
                             day = day,
+                            chosenStateDescription = chosenStateDescription,
                             onClick = { onDayClick(day.dayOfMonth) },
                             modifier = Modifier.weight(1f)
                         )
@@ -127,7 +130,12 @@ fun MonthSkyCalendar(
 }
 
 @Composable
-private fun DayCell(day: CalendarDay, onClick: () -> Unit, modifier: Modifier = Modifier) {
+private fun DayCell(
+    day: CalendarDay,
+    chosenStateDescription: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     val selectable = day.appearance != DaySkyAppearance.Future
     val ring = when {
         day.isSelected -> Modifier.border(2.5.dp, MaterialTheme.colorScheme.primary, CellShape)
@@ -146,9 +154,9 @@ private fun DayCell(day: CalendarDay, onClick: () -> Unit, modifier: Modifier = 
             .clip(CellShape)
             .clearAndSetSemantics {
                 contentDescription = day.description
+                if (day.isSelected) stateDescription = chosenStateDescription
                 if (selectable) {
                     role = Role.Button
-                    selected = day.isSelected
                     onClick {
                         onClick()
                         true
@@ -209,19 +217,22 @@ private fun DaySkyAppearance.hasSky() =
 private fun DrawScope.drawDaySky(appearance: DaySkyAppearance, outline: Color) {
     val u = size.minDimension / 100f
     when (appearance) {
+        // Outlines keep a minimum width and dash length, so they stay visible in the small legend squares too.
         DaySkyAppearance.NothingLogged -> drawRoundRect(
             color = outline,
             cornerRadius = CornerRadius(22f * u),
             style = Stroke(
-                width = 2.5f * u,
-                pathEffect = PathEffect.dashPathEffect(floatArrayOf(7f * u, 5f * u))
+                width = maxOf(2.5f * u, 1.dp.toPx()),
+                pathEffect = PathEffect.dashPathEffect(
+                    floatArrayOf(maxOf(7f * u, 3.dp.toPx()), maxOf(5f * u, 2.dp.toPx()))
+                )
             )
         )
 
         DaySkyAppearance.Future -> drawRoundRect(
             color = outline.copy(alpha = 0.45f),
             cornerRadius = CornerRadius(22f * u),
-            style = Stroke(width = 1.5f * u)
+            style = Stroke(width = maxOf(1.5f * u, 1.dp.toPx()))
         )
 
         DaySkyAppearance.Hazy -> {
@@ -232,22 +243,22 @@ private fun DrawScope.drawDaySky(appearance: DaySkyAppearance, outline: Color) {
 
         DaySkyAppearance.Cloudy -> {
             drawRect(Brush.verticalGradient(SkyPalette.gradient(SkyAppearance.Cloudy)))
-            dayCloud(center = Offset(size.width * 0.55f, size.height * 0.64f), SkyPalette.Cloud)
+            dayCloud(center = Offset(size.width * 0.55f, size.height * 0.62f), SkyPalette.Cloud)
         }
 
         DaySkyAppearance.Storm -> {
             drawRect(Brush.verticalGradient(SkyPalette.gradient(SkyAppearance.Storm)))
             dayCloud(
-                center = Offset(size.width * 0.56f, size.height * 0.54f),
+                center = Offset(size.width * 0.55f, size.height * 0.50f),
                 SkyPalette.StormCloud
             )
-            dayBolt(x = size.width * 0.56f, y = size.height * 0.68f)
+            dayBolt(x = size.width * 0.58f, y = size.height * 0.64f)
         }
 
         DaySkyAppearance.Rain -> {
             drawRect(Brush.verticalGradient(SkyPalette.gradient(SkyAppearance.Rain)))
             dayCloud(
-                center = Offset(size.width * 0.56f, size.height * 0.52f),
+                center = Offset(size.width * 0.55f, size.height * 0.50f),
                 SkyPalette.RainCloudFront
             )
             listOf(0.40f, 0.56f, 0.72f).forEach { x ->
@@ -264,8 +275,8 @@ private fun DrawScope.drawDaySky(appearance: DaySkyAppearance, outline: Color) {
 }
 
 private fun DrawScope.dayCloud(center: Offset, color: Color) {
-    // drawCloud scales with the area it is given; 70% of the cell keeps the cloud clear of the day number.
-    drawCloud(area = Size(size.width * 0.7f, size.height * 0.7f), center = center, color = color)
+    // drawCloud scales with the area it is given; 95% of the cell keeps the cloud clear of the day number.
+    drawCloud(area = Size(size.width * 0.95f, size.height * 0.95f), center = center, color = color)
 }
 
 private fun DrawScope.dayWave(y: Float, from: Float, to: Float, color: Color) {
@@ -328,6 +339,7 @@ private fun MonthSkyCalendarPreview() {
                         description = "$day October"
                     )
                 },
+                chosenStateDescription = "Chosen",
                 onDayClick = {},
                 modifier = Modifier.fillMaxWidth()
             )
