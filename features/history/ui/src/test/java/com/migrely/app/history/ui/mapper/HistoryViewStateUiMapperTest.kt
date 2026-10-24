@@ -6,6 +6,7 @@ import com.migrely.app.history.presentation.model.HistoryDayPresentationModel
 import com.migrely.app.history.presentation.model.HistoryMonthPresentationModel
 import com.migrely.app.history.presentation.model.HistoryViewState
 import com.migrely.app.history.presentation.model.MonthSkyViewState
+import com.migrely.app.history.presentation.model.MonthStatsPresentationModel
 import com.migrely.app.history.presentation.model.PeakPresentationModel
 import com.migrely.app.history.ui.model.DaySkyUiModel
 import com.migrely.app.history.ui.model.HistoryAttackUiModel
@@ -13,6 +14,7 @@ import com.migrely.app.history.ui.model.HistoryDayUiModel
 import com.migrely.app.history.ui.model.HistoryMonthUiModel
 import com.migrely.app.history.ui.model.HistoryViewStateUiModel
 import com.migrely.app.history.ui.model.MonthSkyViewStateUiModel
+import com.migrely.app.history.ui.model.MonthStatsUiModel
 import com.migrely.app.history.ui.model.PeakUiModel
 import java.time.Instant
 import java.time.LocalDate
@@ -42,7 +44,8 @@ private fun month(sky: DaySkyPresentationModel, peak: PeakPresentationModel?) =
         hasPreviousMonth = true,
         hasNextMonth = false,
         days = listOf(HistoryDayPresentationModel(DAY, sky, peak, listOf(ATTACK))),
-        attacks = listOf(ATTACK)
+        attacks = listOf(ATTACK),
+        stats = MonthStatsPresentationModel(0, 0, 0, null, 0, chronic = false, progress = null)
     )
 
 private fun monthUi(sky: DaySkyUiModel, peak: PeakUiModel?) = HistoryMonthUiModel(
@@ -52,7 +55,8 @@ private fun monthUi(sky: DaySkyUiModel, peak: PeakUiModel?) = HistoryMonthUiMode
     hasPreviousMonth = true,
     hasNextMonth = false,
     days = listOf(HistoryDayUiModel(DAY.toEpochDay(), sky, peak, listOf(ATTACK_UI))),
-    attacks = listOf(ATTACK_UI)
+    attacks = listOf(ATTACK_UI),
+    stats = MonthStatsUiModel(0, 0, 0, null, 0, chronic = false, progress = null)
 )
 
 class HistoryViewStateUiMapperTest {

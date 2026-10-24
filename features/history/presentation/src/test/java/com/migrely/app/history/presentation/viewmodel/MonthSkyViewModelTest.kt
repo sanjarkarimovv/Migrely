@@ -3,10 +3,13 @@ package com.migrely.app.history.presentation.viewmodel
 import com.migrely.app.architecture.presentation.viewmodel.BaseViewModelTest
 import com.migrely.app.history.domain.model.HistoryMonthDomainModel
 import com.migrely.app.history.domain.model.HistoryMonthResultDomainModel
+import com.migrely.app.history.domain.model.MonthStatsDomainModel
 import com.migrely.app.history.domain.usecase.GetHistoryMonthUseCase
 import com.migrely.app.history.presentation.mapper.HistoryAttackPresentationMapper
 import com.migrely.app.history.presentation.mapper.HistoryMonthPresentationMapper
 import com.migrely.app.history.presentation.mapper.IntensityLevelPresentationMapper
+import com.migrely.app.history.presentation.mapper.MonthStatsPresentationMapper
+import com.migrely.app.history.presentation.mapper.PainLevelPresentationMapper
 import com.migrely.app.history.presentation.model.MonthSkyPresentationNotification
 import com.migrely.app.history.presentation.model.MonthSkyViewState
 import com.migrely.app.history.presentation.navigation.MonthSkyPresentationNavigationEvent
@@ -30,7 +33,8 @@ private val OCTOBER = HistoryMonthDomainModel(
     earliestMonth = YearMonth.of(2026, 8),
     anyAttackLogged = true,
     days = emptyList(),
-    attacks = emptyList()
+    attacks = emptyList(),
+    stats = MonthStatsDomainModel(0, 0, 0, null, 0, chronic = false, progress = null)
 )
 
 @RunWith(MockitoJUnitRunner::class)
@@ -40,7 +44,8 @@ class MonthSkyViewModelTest :
 
     private val historyMonthPresentationMapper = HistoryMonthPresentationMapper(
         HistoryAttackPresentationMapper(),
-        IntensityLevelPresentationMapper()
+        IntensityLevelPresentationMapper(PainLevelPresentationMapper()),
+        MonthStatsPresentationMapper(PainLevelPresentationMapper())
     )
 
     @Before

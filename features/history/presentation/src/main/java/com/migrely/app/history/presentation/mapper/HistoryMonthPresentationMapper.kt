@@ -18,7 +18,8 @@ import java.time.YearMonth
  */
 class HistoryMonthPresentationMapper(
     private val historyAttackPresentationMapper: HistoryAttackPresentationMapper,
-    private val intensityLevelPresentationMapper: IntensityLevelPresentationMapper
+    private val intensityLevelPresentationMapper: IntensityLevelPresentationMapper,
+    private val monthStatsPresentationMapper: MonthStatsPresentationMapper
 ) {
     fun toPresentation(month: HistoryMonthDomainModel) = HistoryMonthPresentationModel(
         month = month.month,
@@ -26,7 +27,8 @@ class HistoryMonthPresentationMapper(
         hasPreviousMonth = month.month > month.earliestMonth,
         hasNextMonth = month.month < YearMonth.from(month.today),
         days = month.days.map { day -> day.toPresentation(month.today) },
-        attacks = month.attacks.map(historyAttackPresentationMapper::toPresentation)
+        attacks = month.attacks.map(historyAttackPresentationMapper::toPresentation),
+        stats = monthStatsPresentationMapper.toPresentation(month.stats)
     )
 
     private fun HistoryDayDomainModel.toPresentation(

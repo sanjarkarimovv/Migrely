@@ -269,6 +269,14 @@ private fun MonthContents(
             mappers = mappers,
             onDay = actions.onDay
         )
+        // Before any attack, History's first-use card stands in for the numbers (BRD EC-HIS-01).
+        if (!noAttacks) {
+            MonthSummary(
+                month = month,
+                timeUiFormatter = mappers.historyTimeUiFormatter,
+                modifier = Modifier.padding(top = 16.dp)
+            )
+        }
     }
     val list: @Composable () -> Unit = {
         ListSection(month, noAttacks, selectedEpochDay, mappers.historyTimeUiFormatter, actions)

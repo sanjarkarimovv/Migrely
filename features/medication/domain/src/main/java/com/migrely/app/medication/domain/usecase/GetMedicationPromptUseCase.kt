@@ -1,6 +1,7 @@
 package com.migrely.app.medication.domain.usecase
 
 import com.migrely.app.architecture.domain.usecase.BackgroundExecutingUseCase
+import com.migrely.app.attackdays.domain.AttackDays
 import com.migrely.app.coroutine.CoroutineContextProvider
 import com.migrely.app.medication.domain.model.AcuteIntakeDomainModel
 import com.migrely.app.medication.domain.model.AcuteIntakesResultDomainModel
@@ -21,8 +22,6 @@ import java.time.LocalDate
 
 private const val WINDOW_DAYS = 30L
 
-/** Zone offsets differ by at most 26 hours, so two days on each side cover any zone an intake was taken in. */
-private const val ZONE_MARGIN_DAYS = 2L
 private const val SOFT_DAYS_BEFORE_THRESHOLD = 2
 private val NOTICE_QUIET_PERIOD: Duration = Duration.ofDays(30)
 private val QUESTION_FROM: Duration = Duration.ofHours(2)
@@ -67,8 +66,8 @@ class GetMedicationPromptUseCase(
         val firstDay = today.minusDays(WINDOW_DAYS - 1)
         val intakes = when (
             val result = getAcuteIntakesRepository.acuteIntakesTakenBetween(
-                firstDay.minusDays(ZONE_MARGIN_DAYS).atStartOfDay(now.zone).toInstant(),
-                today.plusDays(1 + ZONE_MARGIN_DAYS).atStartOfDay(now.zone).toInstant()
+                AttackDays.windowStart(firstDay, now.zone),
+                AttackDays.windowEnd(today, now.zone)
             )
         ) {
             is AcuteIntakesResultDomainModel.Loaded -> result.intakes

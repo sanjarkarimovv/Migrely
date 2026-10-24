@@ -21,7 +21,12 @@ import com.migrely.app.history.ui.mapper.HistoryTimeUiFormatter
 import com.migrely.app.history.ui.model.DaySkyUiModel
 import com.migrely.app.history.ui.model.HistoryDayUiModel
 import com.migrely.app.history.ui.model.HistoryMonthUiModel
+import com.migrely.app.history.ui.model.MonthStatsUiModel
+import com.migrely.app.history.ui.model.PainLevelUiModel
 import com.migrely.app.history.ui.model.PeakUiModel
+import com.migrely.app.history.ui.model.ProgressAgainstUiModel
+import com.migrely.app.history.ui.model.ProgressTrendUiModel
+import com.migrely.app.history.ui.model.ProgressUiModel
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId
@@ -197,6 +202,19 @@ internal fun previewMonth(): HistoryMonthUiModel {
                 attacks = emptyList()
             )
         },
-        attacks = emptyList()
+        attacks = emptyList(),
+        stats = MonthStatsUiModel(
+            migraines = 4,
+            migraineDays = 5,
+            painFreeDays = 9,
+            averagePeak = PainLevelUiModel.Moderate,
+            attackMedicationDays = 3,
+            chronic = false,
+            progress = ProgressUiModel(
+                ProgressTrendUiModel.Fewer,
+                2,
+                ProgressAgainstUiModel.SameDaysLastMonth
+            )
+        )
     )
 }

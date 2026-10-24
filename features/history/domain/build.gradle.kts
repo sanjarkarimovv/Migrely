@@ -17,6 +17,7 @@ detekt {
 dependencies {
     implementation(projects.architecture.domain)
     implementation(projects.coroutine)
+    implementation(projects.features.attackdays.domain)
 
     testImplementation(libs.test.junit)
     testImplementation(libs.test.mockito.kotlin)

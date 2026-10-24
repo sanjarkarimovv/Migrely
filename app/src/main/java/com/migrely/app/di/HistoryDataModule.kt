@@ -3,10 +3,13 @@ package com.migrely.app.di
 import com.migrely.app.datasource.attack.datasource.AttackDataSource
 import com.migrely.app.datasource.clock.datasource.ClockDataSource
 import com.migrely.app.datasource.daymark.datasource.DayMarkDataSource
+import com.migrely.app.datasource.medication.datasource.MedicationDataSource
+import com.migrely.app.history.data.mapper.AttackMedicationIntakeDomainMapper
 import com.migrely.app.history.data.mapper.DayMarkDomainMapper
 import com.migrely.app.history.data.mapper.HistoryAttackDomainMapper
 import com.migrely.app.history.data.mapper.ZoneDomainMapper
 import com.migrely.app.history.data.repository.HistoryRepository
+import com.migrely.app.history.domain.repository.GetAttackMedicationIntakesRepository
 import com.migrely.app.history.domain.repository.GetAttacksTouchingRepository
 import com.migrely.app.history.domain.repository.GetCurrentTimeRepository
 import com.migrely.app.history.domain.repository.GetDayMarksRepository
@@ -27,15 +30,23 @@ internal object HistoryDataModule {
     fun providesHistoryRepository(
         attackDataSource: AttackDataSource,
         clockDataSource: ClockDataSource,
-        dayMarkDataSource: DayMarkDataSource
+        dayMarkDataSource: DayMarkDataSource,
+        medicationDataSource: MedicationDataSource
     ): HistoryRepository = HistoryRepository(
         attackDataSource = attackDataSource,
         clockDataSource = clockDataSource,
         dayMarkDataSource = dayMarkDataSource,
+        medicationDataSource = medicationDataSource,
         historyAttackDomainMapper = HistoryAttackDomainMapper(ZoneDomainMapper()),
         zoneDomainMapper = ZoneDomainMapper(),
-        dayMarkDomainMapper = DayMarkDomainMapper()
+        dayMarkDomainMapper = DayMarkDomainMapper(),
+        attackMedicationIntakeDomainMapper = AttackMedicationIntakeDomainMapper(ZoneDomainMapper())
     )
+
+    @Provides
+    fun providesGetAttackMedicationIntakesRepository(
+        repository: HistoryRepository
+    ): GetAttackMedicationIntakesRepository = repository
 
     @Provides
     fun providesGetDayMarksRepository(repository: HistoryRepository): GetDayMarksRepository =

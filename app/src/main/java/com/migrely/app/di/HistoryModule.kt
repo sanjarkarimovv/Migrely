@@ -2,6 +2,7 @@ package com.migrely.app.di
 
 import com.migrely.app.architecture.domain.UseCaseExecutor
 import com.migrely.app.coroutine.CoroutineContextProvider
+import com.migrely.app.history.domain.repository.GetAttackMedicationIntakesRepository
 import com.migrely.app.history.domain.repository.GetAttacksTouchingRepository
 import com.migrely.app.history.domain.repository.GetCurrentTimeRepository
 import com.migrely.app.history.domain.repository.GetDayMarksRepository
@@ -16,6 +17,8 @@ import com.migrely.app.history.domain.usecase.SetDayMarkUseCase
 import com.migrely.app.history.presentation.mapper.HistoryAttackPresentationMapper
 import com.migrely.app.history.presentation.mapper.HistoryMonthPresentationMapper
 import com.migrely.app.history.presentation.mapper.IntensityLevelPresentationMapper
+import com.migrely.app.history.presentation.mapper.MonthStatsPresentationMapper
+import com.migrely.app.history.presentation.mapper.PainLevelPresentationMapper
 import com.migrely.app.history.presentation.viewmodel.HistoryViewModel
 import com.migrely.app.history.presentation.viewmodel.MonthSkyViewModel
 import dagger.Module
@@ -34,6 +37,7 @@ internal object HistoryModule {
         getRecentlyDeletedAttackRepository: GetRecentlyDeletedAttackRepository,
         getDayMarksRepository: GetDayMarksRepository,
         getEarliestDayMarkRepository: GetEarliestDayMarkRepository,
+        getAttackMedicationIntakesRepository: GetAttackMedicationIntakesRepository,
         coroutineContextProvider: CoroutineContextProvider
     ) = GetHistoryMonthUseCase(
         getCurrentTimeRepository,
@@ -42,6 +46,7 @@ internal object HistoryModule {
         getRecentlyDeletedAttackRepository,
         getDayMarksRepository,
         getEarliestDayMarkRepository,
+        getAttackMedicationIntakesRepository,
         coroutineContextProvider
     )
 
@@ -67,7 +72,8 @@ internal object HistoryModule {
     @Provides
     fun providesHistoryMonthPresentationMapper() = HistoryMonthPresentationMapper(
         HistoryAttackPresentationMapper(),
-        IntensityLevelPresentationMapper()
+        IntensityLevelPresentationMapper(PainLevelPresentationMapper()),
+        MonthStatsPresentationMapper(PainLevelPresentationMapper())
     )
 
     @Provides

@@ -26,6 +26,9 @@ class IntensityLevelPresentationMapperTest(
 
     @Test
     fun `When mapping then the level of the value`() {
-        assertEquals(expected, IntensityLevelPresentationMapper().toPresentation(value))
+        assertEquals(
+            expected,
+            IntensityLevelPresentationMapper(PainLevelPresentationMapper()).toPresentation(value)
+        )
     }
 }

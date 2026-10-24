@@ -20,6 +20,7 @@ rootProject.name = "Migrely"
 include(":app")
 include(":coroutine")
 include(":designsystem")
+include(":features:attackdays:domain")
 
 setOf(
     "ui",
