@@ -110,7 +110,8 @@ fun HomeDependencies.Home(
             },
             onAttackDetails = homeViewModel::onAttackDetailsAction,
             onAddPastAttack = homeViewModel::onAddPastAttackAction,
-            onLogMedication = homeViewModel::onLogMedicationAction
+            onLogMedication = homeViewModel::onLogMedicationAction,
+            onPeriodToday = homeViewModel::onPeriodTodayAction
         ),
         monthCalendar = { monthCalendar(homeLoads) },
         medicationPrompt = { medicationPrompt(homeLoads) },
@@ -140,7 +141,8 @@ data class HomeActions(
     val onEndedAt: (endEpochMillis: Long) -> Unit,
     val onAttackDetails: (attackId: String) -> Unit,
     val onAddPastAttack: () -> Unit,
-    val onLogMedication: (attackId: String?) -> Unit
+    val onLogMedication: (attackId: String?) -> Unit,
+    val onPeriodToday: (marked: Boolean) -> Unit = {}
 )
 
 internal enum class HomeMode { Loading, Today, Attack }
@@ -221,6 +223,7 @@ fun HomeContents(
                     onAttackDetails = actions.onAttackDetails,
                     onAddPastAttack = actions.onAddPastAttack,
                     onLogMedication = { actions.onLogMedication(null) },
+                    onPeriodToday = actions.onPeriodToday,
                     monthCalendar = monthCalendar,
                     medicationPrompt = medicationPrompt
                 )

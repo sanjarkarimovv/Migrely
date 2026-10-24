@@ -160,6 +160,13 @@ Health data must never be passed to either SDK.
   - The pending question and the acute intakes are read with a `LEFT JOIN` on `attack` that leaves out attacks being
     deleted. Preventive medications are left out by `kind`.
   - Version 4 is an additive `AutoMigration(3, 4)`, covered by `MigrationTest` 3→4 and 1→4.
+- **Day marks (version 5, change `add-day-markers`).**
+  - `day_mark` keys a row by its ISO date (`yyyy-MM-dd`), so a range is a text `BETWEEN`. It holds `period` and
+    `pain_free`. A date has no zone (BRD EC-DAY-04).
+  - `DayMarkDao.update` changes one flag in a `@Transaction` and deletes the row when no mark is left.
+  - The domain decides the rest: a pain-free mark counts only while no attack touches the day, and is refused on such
+    a day (EC-DAY-01).
+  - Version 5 is an additive `AutoMigration(4, 5)`, covered by `MigrationTest` 4→5 and 1→5.
 - **Range reads (History).** A month is read with `overlapping(null, from, to)`, which returns every attack touching
   the range, the one in progress included, with a margin of two days on each side so that attacks logged in other
   zones are found. The first month that can be shown comes from `earliestStart()`. Both use the start index; the

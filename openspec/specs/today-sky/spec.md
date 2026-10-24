@@ -9,8 +9,8 @@ storm), and the rule that the app never shows more than the data says.
 ### Requirement: Today's sky reflects today's data only
 The home screen SHALL show a sky card for today derived only from attacks that touch today: attacks whose days,
 worked out in the zone where each one started, include the device's current date. The calendar and History use the
-same days. The card SHALL NOT claim today is pain-free unless the user has marked it so (marking arrives in a later
-change), and SHALL never show a clear sky as a guess (BRD EC-UX-09, EC-UX-10, EC-TIM-02, G6, D36).
+same days. The card SHALL show a clear sky with a full moon and "Pain-free today" only when the user marked today
+pain-free and no attack touches it, and SHALL never guess a clear sky (BRD EC-UX-09, EC-UX-10, EC-TIM-02, G6, D36, D49).
 
 #### Scenario: Nothing logged today
 - **WHEN** no attack touches today
@@ -39,6 +39,14 @@ change), and SHALL never show a clear sky as a guess (BRD EC-UX-09, EC-UX-10, EC
 - **WHEN** an attack ran from 08:00 to 09:00 Tashkent time on 24 October and the user opens the app in Dubai later
   that day
 - **THEN** today's card counts it
+
+#### Scenario: Marked pain-free
+- **WHEN** no attack touches today and the user marked today pain-free in History
+- **THEN** the card shows a clear sky with a full moon, "Pain-free today" and "Marked by you"
+
+#### Scenario: Pain-free mark and an attack
+- **WHEN** today is marked pain-free and the user then starts and ends an attack
+- **THEN** the card shows the attack's sky, not a clear sky
 
 ### Requirement: Sky by peak intensity after attacks end
 When every attack touching today has ended, the card SHALL show the sky for the highest peak intensity among them:

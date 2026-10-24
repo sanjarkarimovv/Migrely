@@ -17,5 +17,11 @@ sealed interface HistoryMessageUiModel : Parcelable {
     data object UndoNotPossible : HistoryMessageUiModel
 
     @Parcelize
+    data object AttackLoggedOnDay : HistoryMessageUiModel
+
+    @Parcelize
+    data object StorageFull : HistoryMessageUiModel
+
+    @Parcelize
     data object SomethingWentWrong : HistoryMessageUiModel
 }

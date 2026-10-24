@@ -168,7 +168,7 @@ class MigrationTest {
     }
 
     @Test
-    fun migrating1To4_keepsAttacks_throughEveryStep() {
+    fun migrating1To5_keepsAttacks_throughEveryStep() {
         // Given a version 1 database with an ended attack
         helper.createDatabase(TEST_DATABASE, 1).apply {
             execSQL(
@@ -181,12 +181,51 @@ class MigrationTest {
         }
 
         // When
-        val migrated = helper.runMigrationsAndValidate(TEST_DATABASE, 4, true)
+        val migrated = helper.runMigrationsAndValidate(TEST_DATABASE, 5, true)
 
         // Then
         migrated.query("SELECT end_epoch_millis FROM attack WHERE id = 'a'").use { cursor ->
             cursor.moveToFirst()
             assertEquals(5000L, cursor.getLong(0))
+        }
+        migrated.close()
+    }
+
+    @Test
+    fun migrating4To5_keepsMedications_andAddsAnEmptyDayMarkTable() {
+        // Given a version 4 database with a medication, an answered intake and a notice
+        helper.createDatabase(TEST_DATABASE, 4).apply {
+            execSQL(
+                "INSERT INTO medication (id, name, name_key, kind, category, default_dose, " +
+                    "archived, created_epoch_millis, updated_epoch_millis) " +
+                    "VALUES ('m', 'Ibuprofen', 'ibuprofen', 'ACUTE', 'SIMPLE', '400 mg', 0, 1, 1)"
+            )
+            execSQL(
+                "INSERT INTO medication_intake (id, medication_id, attack_id, " +
+                    "taken_epoch_millis, taken_zone_id, dose, created_epoch_millis, effect, " +
+                    "effect_closed) VALUES ('i', 'm', NULL, 2000, 'Asia/Tashkent', NULL, 2000, " +
+                    "'A_LOT', 1)"
+            )
+            execSQL(
+                "INSERT INTO overuse_notice (category, level, acknowledged_epoch_millis) " +
+                    "VALUES ('TRIPTAN', 'SOFT', 3000)"
+            )
+            close()
+        }
+
+        // When
+        val migrated = helper.runMigrationsAndValidate(TEST_DATABASE, 5, true)
+
+        // Then
+        migrated.query("SELECT effect FROM medication_intake WHERE id = 'i'").use { cursor ->
+            cursor.moveToFirst()
+            assertEquals("A_LOT", cursor.getString(0))
+        }
+        listOf("overuse_notice" to 1, "day_mark" to 0).forEach { (table, count) ->
+            migrated.query("SELECT COUNT(*) FROM $table").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals(count, cursor.getInt(0))
+            }
         }
         migrated.close()
     }

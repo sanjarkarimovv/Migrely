@@ -15,6 +15,7 @@ class SmallUiMappersTest {
         assertEquals(
             listOf(
                 SkyAppearance.Calm,
+                SkyAppearance.Clear,
                 SkyAppearance.Hazy,
                 SkyAppearance.Cloudy,
                 SkyAppearance.Storm

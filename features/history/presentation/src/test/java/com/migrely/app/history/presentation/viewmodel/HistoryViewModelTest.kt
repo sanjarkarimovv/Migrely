@@ -1,12 +1,16 @@
 package com.migrely.app.history.presentation.viewmodel
 
 import com.migrely.app.architecture.presentation.viewmodel.BaseViewModelTest
+import com.migrely.app.history.domain.model.DayMarkKindDomainModel
 import com.migrely.app.history.domain.model.DeletedAttackDomainModel
 import com.migrely.app.history.domain.model.HistoryMonthDomainModel
 import com.migrely.app.history.domain.model.HistoryMonthResultDomainModel
+import com.migrely.app.history.domain.model.SetDayMarkRequestDomainModel
+import com.migrely.app.history.domain.model.SetDayMarkResultDomainModel
 import com.migrely.app.history.domain.model.UndoResultDomainModel
 import com.migrely.app.history.domain.usecase.GetHistoryMonthUseCase
 import com.migrely.app.history.domain.usecase.RestoreDeletedAttackUseCase
+import com.migrely.app.history.domain.usecase.SetDayMarkUseCase
 import com.migrely.app.history.presentation.mapper.HistoryAttackPresentationMapper
 import com.migrely.app.history.presentation.mapper.HistoryMonthPresentationMapper
 import com.migrely.app.history.presentation.mapper.IntensityLevelPresentationMapper
@@ -50,6 +54,8 @@ class HistoryViewModelTest :
 
     @Mock private lateinit var restoreDeletedAttackUseCase: RestoreDeletedAttackUseCase
 
+    @Mock private lateinit var setDayMarkUseCase: SetDayMarkUseCase
+
     private val historyMonthPresentationMapper = HistoryMonthPresentationMapper(
         HistoryAttackPresentationMapper(),
         IntensityLevelPresentationMapper()
@@ -60,6 +66,7 @@ class HistoryViewModelTest :
         classUnderTest = HistoryViewModel(
             getHistoryMonthUseCase,
             restoreDeletedAttackUseCase,
+            setDayMarkUseCase,
             historyMonthPresentationMapper,
             useCaseExecutor
         )
@@ -240,4 +247,76 @@ class HistoryViewModelTest :
     private fun TestScope.nextNavigationEvent() = async(start = UNDISPATCHED) {
         classUnderTest.navigationEvent.first()
     }
+
+    @Test
+    fun `When marking a period day then writes it and loads the month again`() = runTest {
+        val day = LocalDate.parse("2026-09-14")
+        setDayMarkUseCase.givenSuccessfulExecution(
+            SetDayMarkRequestDomainModel(day, DayMarkKindDomainModel.Period, true),
+            SetDayMarkResultDomainModel.Done
+        )
+        givenMonth(HistoryMonthResultDomainModel.Loaded(month()))
+        val state = nextViewState()
+
+        classUnderTest.onPeriodAction(SEPTEMBER, day, marked = true)
+
+        assertEquals(
+            HistoryViewState.Ready(
+                historyMonthPresentationMapper.toPresentation(month()),
+                requestedMonth = SEPTEMBER
+            ),
+            state.await()
+        )
+    }
+
+    @Test
+    fun `Given an attack on the day when marking pain-free then says so`() = runTest {
+        val day = LocalDate.parse("2026-09-14")
+        setDayMarkUseCase.givenSuccessfulExecution(
+            SetDayMarkRequestDomainModel(day, DayMarkKindDomainModel.PainFree, true),
+            SetDayMarkResultDomainModel.AttackLogged
+        )
+        givenMonth(HistoryMonthResultDomainModel.Loaded(month()))
+        val notification = async(start = UNDISPATCHED) { classUnderTest.notification.first() }
+
+        classUnderTest.onPainFreeAction(SEPTEMBER, day, marked = true)
+
+        assertEquals(HistoryPresentationNotification.AttackLoggedOnDay, notification.await())
+    }
+
+    @Test
+    fun `Given storage is full when marking then says so`() = runTest {
+        val day = LocalDate.parse("2026-09-14")
+        setDayMarkUseCase.givenSuccessfulExecution(
+            SetDayMarkRequestDomainModel(day, DayMarkKindDomainModel.PainFree, false),
+            SetDayMarkResultDomainModel.StorageFull
+        )
+        val notification = async(start = UNDISPATCHED) { classUnderTest.notification.first() }
+
+        classUnderTest.onPainFreeAction(SEPTEMBER, day, marked = false)
+
+        assertEquals(HistoryPresentationNotification.StorageFull, notification.await())
+    }
+
+    @Test
+    fun `Given marking fails or the day is in the future when marking then something went wrong`() =
+        runTest {
+            val day = LocalDate.parse("2026-09-14")
+            listOf(SetDayMarkResultDomainModel.Failed, SetDayMarkResultDomainModel.FutureDay)
+                .forEach { result ->
+                    setDayMarkUseCase.givenSuccessfulExecution(
+                        SetDayMarkRequestDomainModel(day, DayMarkKindDomainModel.Period, true),
+                        result
+                    )
+                    val notification =
+                        async(start = UNDISPATCHED) { classUnderTest.notification.first() }
+
+                    classUnderTest.onPeriodAction(SEPTEMBER, day, marked = true)
+
+                    assertEquals(
+                        HistoryPresentationNotification.SomethingWentWrong,
+                        notification.await()
+                    )
+                }
+        }
 }

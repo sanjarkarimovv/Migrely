@@ -27,6 +27,7 @@ class HistoryMonthUiMapper {
         sky = when (sky) {
             DaySkyPresentationModel.NothingLogged -> DaySkyUiModel.NothingLogged
             DaySkyPresentationModel.Future -> DaySkyUiModel.Future
+            DaySkyPresentationModel.Clear -> DaySkyUiModel.Clear
             DaySkyPresentationModel.Hazy -> DaySkyUiModel.Hazy
             DaySkyPresentationModel.Cloudy -> DaySkyUiModel.Cloudy
             DaySkyPresentationModel.Storm -> DaySkyUiModel.Storm
@@ -39,7 +40,10 @@ class HistoryMonthUiMapper {
             PeakPresentationModel.NotRecorded -> PeakUiModel.NotRecorded
             null -> null
         },
-        attacks = attacks.map { it.toUi() }
+        attacks = attacks.map { it.toUi() },
+        period = period,
+        painFree = painFree,
+        painFreeAllowed = painFreeAllowed
     )
 
     private fun HistoryAttackPresentationModel.toUi() = HistoryAttackUiModel(

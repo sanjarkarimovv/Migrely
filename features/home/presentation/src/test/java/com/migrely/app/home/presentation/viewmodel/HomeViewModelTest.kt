@@ -16,12 +16,14 @@ import com.migrely.app.home.domain.model.StartAttackResultDomainModel
 import com.migrely.app.home.domain.model.TodayDomainModel
 import com.migrely.app.home.domain.model.TodayResultDomainModel
 import com.migrely.app.home.domain.model.UndoResultDomainModel
+import com.migrely.app.home.domain.model.WriteResultDomainModel
 import com.migrely.app.home.domain.usecase.AnswerLongAttackCheckUseCase
 import com.migrely.app.home.domain.usecase.EndAttackUseCase
 import com.migrely.app.home.domain.usecase.GetTodayUseCase
 import com.migrely.app.home.domain.usecase.MoveAttackStartEarlierUseCase
 import com.migrely.app.home.domain.usecase.RecordIntensityUseCase
 import com.migrely.app.home.domain.usecase.RestoreDeletedAttackUseCase
+import com.migrely.app.home.domain.usecase.SetPeriodTodayUseCase
 import com.migrely.app.home.domain.usecase.StartAttackUseCase
 import com.migrely.app.home.domain.usecase.UndoAttackEndUseCase
 import com.migrely.app.home.domain.usecase.UndoAttackStartUseCase
@@ -81,6 +83,8 @@ class HomeViewModelTest :
 
     @Mock private lateinit var restoreDeletedAttackUseCase: RestoreDeletedAttackUseCase
 
+    @Mock private lateinit var setPeriodTodayUseCase: SetPeriodTodayUseCase
+
     @Before
     fun setUp() {
         classUnderTest = HomeViewModel(
@@ -93,6 +97,7 @@ class HomeViewModelTest :
             undoAttackEndUseCase,
             answerLongAttackCheckUseCase,
             restoreDeletedAttackUseCase,
+            setPeriodTodayUseCase,
             TodayPresentationMapper(IntensityLevelPresentationMapper()),
             IntensityLevelDomainMapper(),
             useCaseExecutor
@@ -388,5 +393,48 @@ class HomeViewModelTest :
         classUnderTest.onLogMedicationAction(null)
 
         assertEquals(HomePresentationNavigationEvent.OnLogMedication(null), event.await())
+    }
+
+    @Test
+    fun `When marking today's period then writes it and loads today again`() = runTest {
+        setPeriodTodayUseCase.givenSuccessfulExecution(true, WriteResultDomainModel.Written)
+        getTodayUseCase.givenSuccessfulExecution(
+            TodayResultDomainModel.Loaded(TodayDomainModel.Calm, periodToday = true)
+        )
+        val state = nextViewState()
+
+        classUnderTest.onPeriodTodayAction(marked = true)
+
+        assertEquals(
+            HomeViewState.Today(
+                TodayPresentationModel(
+                    sky = SkyPresentationModel.Calm,
+                    attackCount = 0,
+                    peak = null,
+                    periodToday = true
+                )
+            ),
+            state.await()
+        )
+    }
+
+    @Test
+    fun `Given storage is full when marking today's period then says so`() = runTest {
+        setPeriodTodayUseCase.givenSuccessfulExecution(false, WriteResultDomainModel.StorageFull)
+        val notification = async(start = UNDISPATCHED) { classUnderTest.notification.first() }
+
+        classUnderTest.onPeriodTodayAction(marked = false)
+
+        assertEquals(HomePresentationNotification.StorageFull, notification.await())
+    }
+
+    @Test
+    fun `Given the write fails when marking today's period then something went wrong`() = runTest {
+        setPeriodTodayUseCase.givenSuccessfulExecution(true, WriteResultDomainModel.Failed)
+        val notification = async(start = UNDISPATCHED) { classUnderTest.notification.first() }
+
+        classUnderTest.onPeriodTodayAction(marked = true)
+
+        assertEquals(HomePresentationNotification.SomethingWentWrong, notification.await())
     }
 }

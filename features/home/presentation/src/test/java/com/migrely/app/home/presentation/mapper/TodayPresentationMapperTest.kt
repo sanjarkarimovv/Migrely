@@ -30,6 +30,7 @@ class TodayPresentationMapperTest(
         @Parameterized.Parameters(name = "{index}: {0}")
         fun data(): Collection<Array<*>> = listOf(
             case(TodayDomainModel.Calm, today(SkyPresentationModel.Calm, 0, null)),
+            case(TodayDomainModel.PainFree, today(SkyPresentationModel.Clear, 0, null)),
             case(
                 ended(highest = 3),
                 today(SkyPresentationModel.Hazy, 1, PeakPresentationModel.Mild)
@@ -107,5 +108,26 @@ class TodayPresentationMapperTest(
     @Test
     fun `When toPresentation then returns the expected view state`() {
         assertEquals(expected, classUnderTest.toPresentation(given))
+    }
+}
+
+class TodayPresentationMapperPeriodTest {
+    private val classUnderTest = TodayPresentationMapper(IntensityLevelPresentationMapper())
+
+    @Test
+    fun `Given a period mark when mapping today then it is on today's model`() {
+        val actual = classUnderTest.toPresentation(TodayDomainModel.PainFree, periodToday = true)
+
+        assertEquals(
+            HomeViewState.Today(
+                TodayPresentationModel(
+                    sky = SkyPresentationModel.Clear,
+                    attackCount = 0,
+                    peak = null,
+                    periodToday = true
+                )
+            ),
+            actual
+        )
     }
 }

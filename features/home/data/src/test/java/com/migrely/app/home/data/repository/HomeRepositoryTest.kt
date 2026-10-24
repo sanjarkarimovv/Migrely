@@ -7,11 +7,15 @@ import com.migrely.app.datasource.attack.model.DeletedAttackDataModel
 import com.migrely.app.datasource.attack.model.ReopenDataModel
 import com.migrely.app.datasource.attack.model.RestoreDataModel
 import com.migrely.app.datasource.clock.datasource.ClockDataSource
+import com.migrely.app.datasource.daymark.datasource.DayMarkDataSource
+import com.migrely.app.datasource.daymark.model.DayMarkDataModel
 import com.migrely.app.datasource.exception.DatabaseDataException
 import com.migrely.app.datasource.exception.StorageFullDataException
 import com.migrely.app.home.data.mapper.AttackDomainMapper
 import com.migrely.app.home.data.mapper.IntensityPointDomainMapper
 import com.migrely.app.home.domain.model.AttackLookupResultDomainModel
+import com.migrely.app.home.domain.model.DayMarksDomainModel
+import com.migrely.app.home.domain.model.DayMarksResultDomainModel
 import com.migrely.app.home.domain.model.DeletedAttackDomainModel
 import com.migrely.app.home.domain.model.IntensityPointDomainModel
 import com.migrely.app.home.domain.model.LongAttackCheckDomainModel
@@ -23,6 +27,7 @@ import com.migrely.app.home.domain.model.TodaySnapshotResultDomainModel
 import com.migrely.app.home.domain.model.UndoResultDomainModel
 import com.migrely.app.home.domain.model.WriteResultDomainModel
 import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneId
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -43,11 +48,13 @@ class HomeRepositoryTest {
     private lateinit var classUnderTest: HomeRepository
     private val attackDataSource: AttackDataSource = mock()
     private val clockDataSource: ClockDataSource = mock()
+    private val dayMarkDataSource: DayMarkDataSource = mock()
     private val mapper = AttackDomainMapper(IntensityPointDomainMapper())
 
     @Before
     fun setUp() {
-        classUnderTest = HomeRepository(attackDataSource, clockDataSource, mapper)
+        classUnderTest =
+            HomeRepository(attackDataSource, clockDataSource, dayMarkDataSource, mapper)
         given(clockDataSource.now()).willReturn(NOW)
         given(clockDataSource.zone()).willReturn(TASHKENT)
     }
@@ -282,5 +289,38 @@ class HomeRepositoryTest {
         whenever(attackDataSource.restore("a")).doThrow(DatabaseDataException(RuntimeException()))
 
         assertEquals(UndoResultDomainModel.Failed, classUnderTest.restoreDeletedAttack("a"))
+    }
+
+    @Test
+    fun `Given marks for a date when reading them then both marks`() {
+        val date = LocalDate.parse("2026-10-23")
+        given(dayMarkDataSource.marksBetween(date, date))
+            .willReturn(listOf(DayMarkDataModel(date, period = true, painFree = true)))
+
+        assertEquals(
+            DayMarksResultDomainModel.Loaded(DayMarksDomainModel(period = true, painFree = true)),
+            classUnderTest.dayMarks(date)
+        )
+    }
+
+    @Test
+    fun `Given no marks or a failed read when reading them then none or failed`() {
+        val date = LocalDate.parse("2026-10-23")
+        given(dayMarkDataSource.marksBetween(date, date)).willReturn(emptyList())
+        assertEquals(
+            DayMarksResultDomainModel.Loaded(DayMarksDomainModel(period = false, painFree = false)),
+            classUnderTest.dayMarks(date)
+        )
+
+        given(dayMarkDataSource.marksBetween(date, date)).willThrow(DatabaseDataException())
+        assertEquals(DayMarksResultDomainModel.Failed, classUnderTest.dayMarks(date))
+    }
+
+    @Test
+    fun `When setting the period then writes it`() {
+        val date = LocalDate.parse("2026-10-23")
+
+        assertEquals(WriteResultDomainModel.Written, classUnderTest.setPeriod(date, true))
+        verify(dayMarkDataSource).setPeriod(date, true)
     }
 }

@@ -12,12 +12,14 @@ import com.migrely.app.home.domain.model.RecordIntensityResultDomainModel
 import com.migrely.app.home.domain.model.StartAttackResultDomainModel
 import com.migrely.app.home.domain.model.TodayResultDomainModel
 import com.migrely.app.home.domain.model.UndoResultDomainModel
+import com.migrely.app.home.domain.model.WriteResultDomainModel
 import com.migrely.app.home.domain.usecase.AnswerLongAttackCheckUseCase
 import com.migrely.app.home.domain.usecase.EndAttackUseCase
 import com.migrely.app.home.domain.usecase.GetTodayUseCase
 import com.migrely.app.home.domain.usecase.MoveAttackStartEarlierUseCase
 import com.migrely.app.home.domain.usecase.RecordIntensityUseCase
 import com.migrely.app.home.domain.usecase.RestoreDeletedAttackUseCase
+import com.migrely.app.home.domain.usecase.SetPeriodTodayUseCase
 import com.migrely.app.home.domain.usecase.StartAttackUseCase
 import com.migrely.app.home.domain.usecase.UndoAttackEndUseCase
 import com.migrely.app.home.domain.usecase.UndoAttackStartUseCase
@@ -54,6 +56,7 @@ class HomeViewModel(
     private val undoAttackEndUseCase: UndoAttackEndUseCase,
     private val answerLongAttackCheckUseCase: AnswerLongAttackCheckUseCase,
     private val restoreDeletedAttackUseCase: RestoreDeletedAttackUseCase,
+    private val setPeriodTodayUseCase: SetPeriodTodayUseCase,
     private val todayPresentationMapper: TodayPresentationMapper,
     private val intensityLevelDomainMapper: IntensityLevelDomainMapper,
     useCaseExecutor: UseCaseExecutor
@@ -126,6 +129,20 @@ class HomeViewModel(
     /** [attackId] is the attack in progress when called from attack mode, or null from the normal mode (BRD D34). */
     fun onLogMedicationAction(attackId: String?) =
         emitNavigationEvent(HomePresentationNavigationEvent.OnLogMedication(attackId))
+
+    /** Home's one-tap period toggle for today (BRD DAY-F1, D48). */
+    fun onPeriodTodayAction(marked: Boolean) {
+        setPeriodTodayUseCase(
+            value = marked,
+            onResult = { result ->
+                when (result) {
+                    WriteResultDomainModel.Written -> loadToday()
+                    WriteResultDomainModel.StorageFull -> notify(StorageFull)
+                    WriteResultDomainModel.Failed -> notify(SomethingWentWrong)
+                }
+            }
+        )
+    }
 
     fun onStillGoingAction(attackId: String) =
         answerLongAttackCheck(attackId, LongAttackAnswerDomainModel.StillGoing)
@@ -209,7 +226,9 @@ class HomeViewModel(
             onResult = { result ->
                 when (result) {
                     is TodayResultDomainModel.Loaded -> {
-                        updateViewState(todayPresentationMapper.toPresentation(result.today))
+                        updateViewState(
+                            todayPresentationMapper.toPresentation(result.today, result.periodToday)
+                        )
                         val deleted = result.recentlyDeleted
                         if (announceDeletion && deleted != null) {
                             notify(AttackDeleted(deleted.id, deleted.deletedAt))

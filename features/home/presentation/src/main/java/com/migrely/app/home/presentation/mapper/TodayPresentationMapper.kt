@@ -11,29 +11,46 @@ import com.migrely.app.home.presentation.model.TodayPresentationModel
 
 /**
  * Turns today's data into what the home screen shows. Sky rule (BRD EC-UX-09): 1–3 hazy, 4–6 cloudy, 7–10 storm, and
- * an attack without recorded intensity counts as cloudy. Nothing logged is calm, never clear.
+ * an attack without recorded intensity counts as cloudy. Nothing logged is calm; clear only when the user marked today
+ * pain-free (BRD D49). [periodToday] travels with the normal mode only.
  */
 class TodayPresentationMapper(
     private val intensityLevelPresentationMapper: IntensityLevelPresentationMapper
 ) {
-    fun toPresentation(today: TodayDomainModel): HomeViewState = when (today) {
-        TodayDomainModel.Calm -> HomeViewState.Today(
-            TodayPresentationModel(sky = SkyPresentationModel.Calm, attackCount = 0, peak = null)
-        )
-
-        is TodayDomainModel.AttackInProgress -> HomeViewState.AttackInProgress(
-            AttackInProgressPresentationModel(
-                id = today.attack.id,
-                start = today.attack.start,
-                startZone = today.attack.startZone,
-                currentLevel = today.attack.latestIntensityPoint?.value
-                    ?.let(intensityLevelPresentationMapper::toPresentation),
-                longAttackCheckDue = today.longAttackCheckDue
+    fun toPresentation(today: TodayDomainModel, periodToday: Boolean = false): HomeViewState =
+        when (today) {
+            TodayDomainModel.Calm -> HomeViewState.Today(
+                TodayPresentationModel(
+                    sky = SkyPresentationModel.Calm,
+                    attackCount = 0,
+                    peak = null,
+                    periodToday = periodToday
+                )
             )
-        )
 
-        is TodayDomainModel.AttacksEnded -> HomeViewState.Today(endedToday(today))
-    }
+            TodayDomainModel.PainFree -> HomeViewState.Today(
+                TodayPresentationModel(
+                    sky = SkyPresentationModel.Clear,
+                    attackCount = 0,
+                    peak = null,
+                    periodToday = periodToday
+                )
+            )
+
+            is TodayDomainModel.AttackInProgress -> HomeViewState.AttackInProgress(
+                AttackInProgressPresentationModel(
+                    id = today.attack.id,
+                    start = today.attack.start,
+                    startZone = today.attack.startZone,
+                    currentLevel = today.attack.latestIntensityPoint?.value
+                        ?.let(intensityLevelPresentationMapper::toPresentation),
+                    longAttackCheckDue = today.longAttackCheckDue
+                )
+            )
+
+            is TodayDomainModel.AttacksEnded ->
+                HomeViewState.Today(endedToday(today).copy(periodToday = periodToday))
+        }
 
     private fun endedToday(today: TodayDomainModel.AttacksEnded): TodayPresentationModel {
         val recordedLevel = today.highestRecordedIntensity?.let(
