@@ -9,6 +9,7 @@ import com.migrely.app.medication.ui.di.EditMedicationDependencies
 import com.migrely.app.medication.ui.di.LogMedicationDependencies
 import com.migrely.app.medication.ui.di.MedicationPromptDependencies
 import com.migrely.app.medication.ui.di.MedicationsDependencies
+import com.migrely.app.medication.ui.di.OveruseIndicatorDependencies
 import com.migrely.app.ui.main.di.AppNavHostDependencies
 import dagger.Module
 import dagger.Provides
@@ -28,7 +29,8 @@ internal object AppNavHostModule {
         logMedicationDependencies: LogMedicationDependencies,
         medicationsDependencies: MedicationsDependencies,
         editMedicationDependencies: EditMedicationDependencies,
-        medicationPromptDependencies: MedicationPromptDependencies
+        medicationPromptDependencies: MedicationPromptDependencies,
+        overuseIndicatorDependencies: OveruseIndicatorDependencies
     ): AppNavHostDependencies = AppNavHostDependencies(
         homeDependencies = homeDependencies,
         attackDetailsDependencies = attackDetailsDependencies,
@@ -38,6 +40,7 @@ internal object AppNavHostModule {
         logMedicationDependencies = logMedicationDependencies,
         medicationsDependencies = medicationsDependencies,
         editMedicationDependencies = editMedicationDependencies,
-        medicationPromptDependencies = medicationPromptDependencies
+        medicationPromptDependencies = medicationPromptDependencies,
+        overuseIndicatorDependencies = overuseIndicatorDependencies
     )
 }

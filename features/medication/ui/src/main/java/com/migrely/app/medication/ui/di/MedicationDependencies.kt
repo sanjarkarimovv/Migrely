@@ -16,6 +16,7 @@ import com.migrely.app.medication.presentation.viewmodel.EditMedicationViewModel
 import com.migrely.app.medication.presentation.viewmodel.LogMedicationViewModel
 import com.migrely.app.medication.presentation.viewmodel.MedicationPromptViewModel
 import com.migrely.app.medication.presentation.viewmodel.MedicationsViewModel
+import com.migrely.app.medication.presentation.viewmodel.OveruseIndicatorViewModel
 import com.migrely.app.medication.ui.mapper.EditMedicationViewStateUiMapper
 import com.migrely.app.medication.ui.mapper.LogMedicationViewStateUiMapper
 import com.migrely.app.medication.ui.mapper.MedicationCategoryUiToPresentationMapper
@@ -26,6 +27,7 @@ import com.migrely.app.medication.ui.mapper.MedicationPromptUiToPresentationMapp
 import com.migrely.app.medication.ui.mapper.MedicationTimeUiFormatter
 import com.migrely.app.medication.ui.mapper.MedicationUiToPresentationMapper
 import com.migrely.app.medication.ui.mapper.MedicationsViewStateUiMapper
+import com.migrely.app.medication.ui.mapper.OveruseIndicatorUiMapper
 import com.migrely.app.medication.ui.notification.MedicationEventPresenter
 
 @Suppress("LongParameterList")
@@ -83,4 +85,9 @@ class MedicationPromptDependencies(
     val medicationPromptUiMapper: MedicationPromptUiMapper,
     val medicationPromptUiToPresentationMapper: MedicationPromptUiToPresentationMapper,
     val medicationTimeUiFormatter: MedicationTimeUiFormatter
+)
+
+class OveruseIndicatorDependencies(
+    val overuseIndicatorViewModel: OveruseIndicatorViewModel,
+    val overuseIndicatorUiMapper: OveruseIndicatorUiMapper
 )

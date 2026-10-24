@@ -36,11 +36,14 @@ import java.time.LocalDate
 /**
  * The month's numbers under the calendar (BRD D53–D56): "October so far" for the current month. The chronic notice and
  * the progress message follow them (D54, D55). Each number is one node for screen readers, read as "Migraine days: 6".
+ * [overuseIndicator] follows the numbers in the current month only: `:app` fills it with the medication feature's
+ * standing indicator (D59), so History knows nothing about medications.
  */
 @Composable
 internal fun MonthSummary(
     month: HistoryMonthUiModel,
     timeUiFormatter: HistoryTimeUiFormatter,
+    overuseIndicator: @Composable () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val stats = month.stats
@@ -77,6 +80,8 @@ internal fun MonthSummary(
                 stringResource(R.string.stat_attack_medication_days),
                 stats.attackMedicationDays.toString()
             )
+            // The last 30 days are not a month, so only the current month carries them (BRD D59).
+            if (current) overuseIndicator()
             if (stats.chronic) ChronicNotice(name)
             stats.progress?.let {
                 ProgressLine(it, timeUiFormatter, Modifier.padding(top = 8.dp))

@@ -17,7 +17,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class MedicationPromptMappersTest {
-    private val presentationMapper = MedicationPromptPresentationMapper()
+    private val presentationMapper =
+        MedicationPromptPresentationMapper(OveruseCategoryPresentationMapper())
     private val domainMapper = MedicationPromptDomainMapper()
 
     @Test

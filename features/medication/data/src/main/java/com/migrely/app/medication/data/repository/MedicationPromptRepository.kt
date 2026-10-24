@@ -24,7 +24,7 @@ import com.migrely.app.medication.domain.repository.SetIntakeEffectRepository
 import java.time.Instant
 
 /**
- * What home's medication card reads and writes (BRD MED-F4, MED-F5, D46). Failures are values (docs/ARCHITECTURE.md
+ * What home's medication card and History's overuse indicator read and write (BRD MED-F4, MED-F5, D46, D59). Failures are values (docs/ARCHITECTURE.md
  * section 7).
  */
 class MedicationPromptRepository(

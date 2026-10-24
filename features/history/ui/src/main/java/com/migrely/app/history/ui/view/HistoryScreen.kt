@@ -38,6 +38,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -81,11 +82,15 @@ private val CONTENT_MAX_WIDTH = 600.dp
  * keep them (design D4). [initialDay] comes from home and seeds both. The request is kept as the user made it, never
  * replaced by the month the domain clamped it to, so an undo that brings back an earlier month shows it again; the
  * arrows step from the month shown. A slower answer to a request the user has since replaced is ignored.
+ *
+ * [overuseIndicator] is the medication feature's standing overuse indicator, filled by `:app` and given History's load
+ * count as its refresh key (BRD D59).
  */
 @Composable
 fun HistoryDependencies.History(
     navController: NavController,
     initialDay: LocalDate?,
+    overuseIndicator: @Composable (refreshKey: Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var requestedMonth by rememberSaveable {
@@ -102,6 +107,10 @@ fun HistoryDependencies.History(
     ViewModelObserver(navController)
 
     val viewState by historyViewModel.viewState.collectAsState(HistoryViewState.Loading)
+    // Counts History's loads, so the overuse indicator loads with each of them, an undo or a resume included (D59).
+    val historyLoads by produceState(initialValue = 0, historyViewModel) {
+        historyViewModel.viewState.collect { value += 1 }
+    }
     var uiState by rememberSaveable {
         mutableStateOf(historyViewStateUiMapper.toUi(HistoryViewState.Loading))
     }
@@ -160,6 +169,7 @@ fun HistoryDependencies.History(
                 }
             )
         },
+        overuseIndicator = { overuseIndicator(historyLoads) },
         modifier = modifier
     )
 }
@@ -201,6 +211,7 @@ fun HistoryContents(
     mappers: HistoryCalendarMappers,
     actions: HistoryActions,
     messages: @Composable () -> Unit,
+    overuseIndicator: @Composable () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -240,7 +251,8 @@ fun HistoryContents(
                     noAttacks = viewState is HistoryViewStateUiModel.NoAttacks,
                     selectedEpochDay = selectedEpochDay,
                     mappers = mappers,
-                    actions = actions
+                    actions = actions,
+                    overuseIndicator = overuseIndicator
                 )
             }
         }
@@ -254,7 +266,8 @@ private fun MonthContents(
     noAttacks: Boolean,
     selectedEpochDay: Long?,
     mappers: HistoryCalendarMappers,
-    actions: HistoryActions
+    actions: HistoryActions,
+    overuseIndicator: @Composable () -> Unit
 ) {
     val contentModifier = Modifier
         .windowInsetsPadding(
@@ -274,6 +287,7 @@ private fun MonthContents(
             MonthSummary(
                 month = month,
                 timeUiFormatter = mappers.historyTimeUiFormatter,
+                overuseIndicator = overuseIndicator,
                 modifier = Modifier.padding(top = 16.dp)
             )
         }
@@ -634,7 +648,8 @@ private fun HistoryReadyPreview() {
             selectedEpochDay = null,
             mappers = previewMappers,
             actions = previewActions,
-            messages = {}
+            messages = {},
+            overuseIndicator = {}
         )
     }
 }
@@ -648,7 +663,8 @@ private fun HistoryDayPreview() {
             selectedEpochDay = LocalDate.parse("2026-10-06").toEpochDay(),
             mappers = previewMappers,
             actions = previewActions,
-            messages = {}
+            messages = {},
+            overuseIndicator = {}
         )
     }
 }
@@ -662,7 +678,8 @@ private fun HistoryEmptyPreview() {
             selectedEpochDay = null,
             mappers = previewMappers,
             actions = previewActions,
-            messages = {}
+            messages = {},
+            overuseIndicator = {}
         )
     }
 }
