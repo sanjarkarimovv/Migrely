@@ -22,9 +22,9 @@ from (BRD HIS-F1, 18.3 A, D29).
 - **THEN** History opens on October 2026 with 14 October chosen
 
 ### Requirement: Month by month
-History SHALL show one month at a time with "Previous month" and "Next month" buttons. It SHALL NOT go before the month
-in which the first attack started, in that attack's zone, nor past the current month. With no attack logged, only the
-current month SHALL be shown (BRD EC-HIS-03).
+History SHALL show one month at a time with "Previous month" and "Next month" buttons. It SHALL NOT go before the
+earlier of the month in which the first attack started, in that attack's zone, and the month of the first day mark, nor
+past the current month. With nothing logged or marked, only the current month SHALL be shown (BRD EC-HIS-03, D51).
 
 #### Scenario: Previous month
 - **WHEN** History shows October 2026 and the first attack was in August 2026, and the user taps "Previous month"
@@ -37,6 +37,10 @@ current month SHALL be shown (BRD EC-HIS-03).
 #### Scenario: Not past this month
 - **WHEN** History shows the current month
 - **THEN** "Next month" is disabled
+
+#### Scenario: A mark before any attack
+- **WHEN** no migraine was ever logged, 30 September is marked as a period day, and today is 2 October
+- **THEN** History can go back to September 2026, where 30 September shows its period mark
 
 ### Requirement: The month's attacks
 Under the calendar, History SHALL list every attack that touches the shown month, newest first. Each row SHALL show its
@@ -67,8 +71,8 @@ that attack's details. The list SHALL load one month at a time (BRD HIS-F2, EC-H
 
 ### Requirement: Choose a day
 Tapping today or a past day SHALL choose it: the day is outlined, and the list shows that day's attacks, oldest first,
-under the day's title, with "Show all of <month>" to return to the month. Tapping the chosen day again, or changing the
-month, SHALL clear the choice (BRD HIS-F3).
+under the day's title, with its marks (`day-markers`) and "Show all of <month>" to return to the month. Tapping the
+chosen day again, or changing the month, SHALL clear the choice (BRD HIS-F3).
 
 #### Scenario: Choose a day
 - **WHEN** the user taps 14 October, which had attacks at 09:10 and at 18:00
@@ -76,7 +80,7 @@ month, SHALL clear the choice (BRD HIS-F3).
 
 #### Scenario: Day with nothing logged
 - **WHEN** the user taps 6 October, when nothing was logged
-- **THEN** History shows "Nothing logged on this day." and "Add a past migraine"
+- **THEN** History shows "No migraine logged on this day.", the day's marks and "Add a past migraine"
 
 #### Scenario: Back to the month
 - **WHEN** a day is chosen and the user taps "Show all of October"

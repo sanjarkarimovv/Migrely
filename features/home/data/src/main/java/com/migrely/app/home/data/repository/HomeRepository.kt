@@ -5,11 +5,14 @@ import com.migrely.app.datasource.attack.model.AttackStartDataModel
 import com.migrely.app.datasource.attack.model.ReopenDataModel
 import com.migrely.app.datasource.attack.model.RestoreDataModel
 import com.migrely.app.datasource.clock.datasource.ClockDataSource
+import com.migrely.app.datasource.daymark.datasource.DayMarkDataSource
 import com.migrely.app.datasource.exception.DataException
 import com.migrely.app.datasource.exception.StorageFullDataException
 import com.migrely.app.home.data.mapper.AttackDomainMapper
 import com.migrely.app.home.domain.model.AttackLookupResultDomainModel
 import com.migrely.app.home.domain.model.CurrentTimeDomainModel
+import com.migrely.app.home.domain.model.DayMarksDomainModel
+import com.migrely.app.home.domain.model.DayMarksResultDomainModel
 import com.migrely.app.home.domain.model.DeletedAttackDomainModel
 import com.migrely.app.home.domain.model.IntensityPointDomainModel
 import com.migrely.app.home.domain.model.LongAttackCheckDomainModel
@@ -25,15 +28,18 @@ import com.migrely.app.home.domain.repository.DeleteAttackRepository
 import com.migrely.app.home.domain.repository.EndAttackRepository
 import com.migrely.app.home.domain.repository.GetAttackInProgressRepository
 import com.migrely.app.home.domain.repository.GetCurrentTimeRepository
+import com.migrely.app.home.domain.repository.GetDayMarksRepository
 import com.migrely.app.home.domain.repository.GetPreviousAttackEndRepository
 import com.migrely.app.home.domain.repository.GetTodayRepository
 import com.migrely.app.home.domain.repository.ReopenAttackRepository
 import com.migrely.app.home.domain.repository.ReplaceLatestIntensityPointRepository
 import com.migrely.app.home.domain.repository.RestoreDeletedAttackRepository
+import com.migrely.app.home.domain.repository.SetPeriodRepository
 import com.migrely.app.home.domain.repository.StartAttackRepository
 import com.migrely.app.home.domain.repository.UpdateAttackStartRepository
 import com.migrely.app.home.domain.repository.UpdateLongAttackCheckRepository
 import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneId
 
 /**
@@ -44,8 +50,11 @@ import java.time.ZoneId
 class HomeRepository(
     private val attackDataSource: AttackDataSource,
     private val clockDataSource: ClockDataSource,
+    private val dayMarkDataSource: DayMarkDataSource,
     private val attackDomainMapper: AttackDomainMapper
 ) : GetTodayRepository,
+    GetDayMarksRepository,
+    SetPeriodRepository,
     GetCurrentTimeRepository,
     StartAttackRepository,
     GetAttackInProgressRepository,
@@ -74,6 +83,20 @@ class HomeRepository(
         )
     } catch (_: DataException) {
         TodaySnapshotResultDomainModel.Failed
+    }
+
+    override fun dayMarks(date: LocalDate): DayMarksResultDomainModel = try {
+        DayMarksResultDomainModel.Loaded(
+            dayMarkDataSource.marksBetween(date, date).firstOrNull()
+                ?.let { DayMarksDomainModel(it.period, it.painFree) }
+                ?: DayMarksDomainModel(period = false, painFree = false)
+        )
+    } catch (_: DataException) {
+        DayMarksResultDomainModel.Failed
+    }
+
+    override fun setPeriod(date: LocalDate, marked: Boolean) = write {
+        dayMarkDataSource.setPeriod(date, marked)
     }
 
     override fun currentTime() =

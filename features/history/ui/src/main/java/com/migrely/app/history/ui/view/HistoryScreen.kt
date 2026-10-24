@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
@@ -27,6 +28,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -132,6 +134,20 @@ fun HistoryDependencies.History(
             onAttack = historyViewModel::onAttackAction,
             onAddPastAttack = { epochDay ->
                 historyViewModel.onAddPastAttackAction(epochDay?.let(LocalDate::ofEpochDay))
+            },
+            onPeriod = { epochDay, marked ->
+                historyViewModel.onPeriodAction(
+                    currentMonth,
+                    LocalDate.ofEpochDay(epochDay),
+                    marked
+                )
+            },
+            onPainFree = { epochDay, marked ->
+                historyViewModel.onPainFreeAction(
+                    currentMonth,
+                    LocalDate.ofEpochDay(epochDay),
+                    marked
+                )
             }
         ),
         messages = {
@@ -156,7 +172,9 @@ data class HistoryActions(
     val onDay: (epochDay: Long) -> Unit,
     val onShowAllMonth: () -> Unit,
     val onAttack: (attackId: String) -> Unit,
-    val onAddPastAttack: (epochDay: Long?) -> Unit
+    val onAddPastAttack: (epochDay: Long?) -> Unit,
+    val onPeriod: (epochDay: Long, marked: Boolean) -> Unit = { _, _ -> },
+    val onPainFree: (epochDay: Long, marked: Boolean) -> Unit = { _, _ -> }
 )
 
 private val HistoryViewStateUiModel.month: HistoryMonthUiModel?
@@ -356,7 +374,7 @@ private fun ListSection(
     }
 }
 
-/** The chosen day's attacks, oldest first, with adding one for that day (BRD HIS-F3, D30). */
+/** The chosen day's attacks, oldest first, its marks, and adding an attack for that day (BRD HIS-F3, D30, D48). */
 @Composable
 private fun DaySection(
     day: HistoryDayUiModel,
@@ -375,6 +393,24 @@ private fun DaySection(
     } else {
         AttackRows(day.attacks, timeUiFormatter, actions.onAttack)
     }
+    Spacer(Modifier.height(8.dp))
+    MarkSwitch(
+        label = stringResource(R.string.mark_period),
+        checked = day.period,
+        onChange = { actions.onPeriod(day.epochDay, it) }
+    )
+    MarkSwitch(
+        label = stringResource(R.string.mark_pain_free),
+        checked = day.painFree,
+        onChange = { actions.onPainFree(day.epochDay, it) },
+        disabledReason = if (day.painFreeAllowed) {
+            null
+        } else {
+            stringResource(
+                R.string.mark_pain_free_blocked
+            )
+        }
+    )
     Spacer(Modifier.height(16.dp))
     OutlinedButton(
         onClick = { actions.onAddPastAttack(day.epochDay) },
@@ -394,6 +430,53 @@ private fun DaySection(
             stringResource(R.string.show_all_month, monthName),
             style = MaterialTheme.typography.labelLarge
         )
+    }
+}
+
+/**
+ * One day mark as a whole row that toggles, with a [Switch] that only shows the state. With [disabledReason] the row is
+ * off and cannot be toggled, and the reason is shown and read under the label (BRD EC-DAY-01).
+ */
+@Composable
+private fun MarkSwitch(
+    label: String,
+    checked: Boolean,
+    onChange: (Boolean) -> Unit,
+    disabledReason: String? = null
+) {
+    val enabled = disabledReason == null
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 56.dp)
+            .toggleable(
+                value = checked,
+                enabled = enabled,
+                role = Role.Switch,
+                onValueChange = onChange
+            )
+            .padding(horizontal = 8.dp, vertical = 4.dp)
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodyLarge,
+                color = if (enabled) {
+                    MaterialTheme.colorScheme.onSurface
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                }
+            )
+            if (disabledReason != null) {
+                Text(
+                    text = disabledReason,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+        Switch(checked = checked, onCheckedChange = null, enabled = enabled)
     }
 }
 

@@ -6,22 +6,34 @@ import com.migrely.app.datasource.attack.model.DeletedAttackDataModel
 import com.migrely.app.datasource.attack.model.EarliestAttackDataModel
 import com.migrely.app.datasource.attack.model.RestoreDataModel
 import com.migrely.app.datasource.clock.datasource.ClockDataSource
+import com.migrely.app.datasource.daymark.datasource.DayMarkDataSource
+import com.migrely.app.datasource.daymark.model.DayMarkDataModel
 import com.migrely.app.datasource.exception.DatabaseDataException
+import com.migrely.app.datasource.exception.StorageFullDataException
+import com.migrely.app.history.data.mapper.DayMarkDomainMapper
 import com.migrely.app.history.data.mapper.HistoryAttackDomainMapper
 import com.migrely.app.history.data.mapper.ZoneDomainMapper
 import com.migrely.app.history.domain.model.AttacksTouchingResultDomainModel
 import com.migrely.app.history.domain.model.CurrentTimeDomainModel
+import com.migrely.app.history.domain.model.DayMarkDomainModel
+import com.migrely.app.history.domain.model.DayMarkKindDomainModel
+import com.migrely.app.history.domain.model.DayMarkWriteResultDomainModel
+import com.migrely.app.history.domain.model.DayMarksResultDomainModel
 import com.migrely.app.history.domain.model.DeletedAttackDomainModel
 import com.migrely.app.history.domain.model.EarliestAttackResultDomainModel
+import com.migrely.app.history.domain.model.EarliestDayMarkResultDomainModel
 import com.migrely.app.history.domain.model.HistoryAttackDomainModel
 import com.migrely.app.history.domain.model.UndoResultDomainModel
 import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneId
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
+import org.mockito.kotlin.any
 import org.mockito.kotlin.given
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
 private val NOW: Instant = Instant.parse("2026-10-23T07:00:00Z")
@@ -32,11 +44,14 @@ private val TASHKENT: ZoneId = ZoneId.of("Asia/Tashkent")
 class HistoryRepositoryTest {
     private val attackDataSource: AttackDataSource = mock()
     private val clockDataSource: ClockDataSource = mock()
+    private val dayMarkDataSource: DayMarkDataSource = mock()
     private val classUnderTest = HistoryRepository(
         attackDataSource,
         clockDataSource,
+        dayMarkDataSource,
         HistoryAttackDomainMapper(ZoneDomainMapper()),
-        ZoneDomainMapper()
+        ZoneDomainMapper(),
+        DayMarkDomainMapper()
     )
 
     @Test
@@ -133,5 +148,80 @@ class HistoryRepositoryTest {
         whenever(attackDataSource.restore("gone")).thenThrow(DatabaseDataException())
 
         assertEquals(UndoResultDomainModel.Failed, classUnderTest.restoreDeletedAttack("gone"))
+    }
+
+    @Test
+    fun `When reading day marks then maps them`() {
+        val from = LocalDate.parse("2026-10-01")
+        val to = LocalDate.parse("2026-10-31")
+        given(dayMarkDataSource.marksBetween(from, to)).willReturn(
+            listOf(DayMarkDataModel(LocalDate.parse("2026-10-14"), period = true, painFree = false))
+        )
+
+        assertEquals(
+            DayMarksResultDomainModel.Loaded(
+                listOf(
+                    DayMarkDomainModel(
+                        LocalDate.parse("2026-10-14"),
+                        period = true,
+                        painFree = false
+                    )
+                )
+            ),
+            classUnderTest.dayMarks(from, to)
+        )
+    }
+
+    @Test
+    fun `Given the read fails when reading day marks then failed`() {
+        given(dayMarkDataSource.marksBetween(any(), any())).willThrow(DatabaseDataException())
+
+        assertEquals(
+            DayMarksResultDomainModel.Failed,
+            classUnderTest.dayMarks(LocalDate.MIN, LocalDate.MAX)
+        )
+    }
+
+    @Test
+    fun `When setting each kind of mark then writes that mark`() {
+        val date = LocalDate.parse("2026-10-06")
+
+        assertEquals(
+            DayMarkWriteResultDomainModel.Written,
+            classUnderTest.setDayMark(date, DayMarkKindDomainModel.Period, true)
+        )
+        assertEquals(
+            DayMarkWriteResultDomainModel.Written,
+            classUnderTest.setDayMark(date, DayMarkKindDomainModel.PainFree, false)
+        )
+
+        verify(dayMarkDataSource).setPeriod(date, true)
+        verify(dayMarkDataSource).setPainFree(date, false)
+    }
+
+    @Test
+    fun `Given storage is full when setting a mark then storage full`() {
+        val date = LocalDate.parse("2026-10-06")
+        given(dayMarkDataSource.setPeriod(date, true)).willThrow(StorageFullDataException())
+
+        assertEquals(
+            DayMarkWriteResultDomainModel.StorageFull,
+            classUnderTest.setDayMark(date, DayMarkKindDomainModel.Period, true)
+        )
+    }
+
+    @Test
+    fun `When reading the earliest mark then found, none or failed`() {
+        given(dayMarkDataSource.earliestMark()).willReturn(LocalDate.parse("2026-09-28"))
+        assertEquals(
+            EarliestDayMarkResultDomainModel.Found(LocalDate.parse("2026-09-28")),
+            classUnderTest.earliestDayMark()
+        )
+
+        given(dayMarkDataSource.earliestMark()).willReturn(null)
+        assertEquals(EarliestDayMarkResultDomainModel.None, classUnderTest.earliestDayMark())
+
+        given(dayMarkDataSource.earliestMark()).willThrow(DatabaseDataException())
+        assertEquals(EarliestDayMarkResultDomainModel.Failed, classUnderTest.earliestDayMark())
     }
 }

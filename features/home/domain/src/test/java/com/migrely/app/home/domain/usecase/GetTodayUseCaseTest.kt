@@ -4,6 +4,8 @@ import com.migrely.app.coroutine.CoroutineContextProvider
 import com.migrely.app.home.domain.model.AttackDomainModel
 import com.migrely.app.home.domain.model.AttackSummaryDomainModel
 import com.migrely.app.home.domain.model.CurrentTimeDomainModel
+import com.migrely.app.home.domain.model.DayMarksDomainModel
+import com.migrely.app.home.domain.model.DayMarksResultDomainModel
 import com.migrely.app.home.domain.model.DeletedAttackDomainModel
 import com.migrely.app.home.domain.model.IntensityPointDomainModel
 import com.migrely.app.home.domain.model.LongAttackCheckDomainModel
@@ -14,11 +16,14 @@ import com.migrely.app.home.domain.model.TodaySnapshotDomainModel
 import com.migrely.app.home.domain.model.TodaySnapshotResultDomainModel
 import com.migrely.app.home.domain.model.attack
 import com.migrely.app.home.domain.repository.GetCurrentTimeRepository
+import com.migrely.app.home.domain.repository.GetDayMarksRepository
 import com.migrely.app.home.domain.repository.GetTodayRepository
 import java.time.Duration
 import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneId
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.mockito.kotlin.any
@@ -34,13 +39,16 @@ class GetTodayUseCaseTest {
     private lateinit var classUnderTest: GetTodayUseCase
     private val getCurrentTimeRepository: GetCurrentTimeRepository = mock()
     private val getTodayRepository: GetTodayRepository = mock()
+    private val getDayMarksRepository: GetDayMarksRepository = mock()
 
     @Before
     fun setUp() {
         givenClock(NOW, TASHKENT)
+        givenMarks(period = false, painFree = false)
         classUnderTest = GetTodayUseCase(
             getCurrentTimeRepository,
             getTodayRepository,
+            getDayMarksRepository,
             CoroutineContextProvider.Default
         )
     }
@@ -398,6 +406,11 @@ class GetTodayUseCaseTest {
     private fun endedCount(result: TodayResultDomainModel): Int =
         ((result as TodayResultDomainModel.Loaded).today as TodayDomainModel.AttacksEnded).count
 
+    private fun givenMarks(period: Boolean, painFree: Boolean) {
+        given(getDayMarksRepository.dayMarks(any()))
+            .willReturn(DayMarksResultDomainModel.Loaded(DayMarksDomainModel(period, painFree)))
+    }
+
     private fun givenClock(instant: Instant, zone: ZoneId) {
         given(getCurrentTimeRepository.currentTime())
             .willReturn(CurrentTimeDomainModel(instant, zone))
@@ -426,4 +439,58 @@ class GetTodayUseCaseTest {
         end = requireNotNull(attack.end),
         peakIntensity = attack.peakIntensity
     )
+
+    @Test
+    fun `Given today marked pain-free and nothing logged when executed then pain-free`() {
+        givenMarks(period = false, painFree = true)
+        givenSnapshot(inProgress = null)
+
+        assertEquals(
+            TodayResultDomainModel.Loaded(TodayDomainModel.PainFree),
+            classUnderTest.executeInBackground(Unit)
+        )
+        verify(getDayMarksRepository).dayMarks(LocalDate.parse("2026-10-23"))
+    }
+
+    @Test
+    fun `Given a pain-free mark and an attack ended today then the attack wins`() {
+        givenMarks(period = false, painFree = true)
+        givenSnapshot(inProgress = null, ended = listOf(attack(end = NOW)))
+
+        val actual = classUnderTest.executeInBackground(Unit) as TodayResultDomainModel.Loaded
+
+        assertEquals(1, (actual.today as TodayDomainModel.AttacksEnded).count)
+    }
+
+    @Test
+    fun `Given today marked pain-free and an attack in progress when executed then attack mode`() {
+        givenMarks(period = false, painFree = true)
+        givenSnapshot(inProgress = attack(start = NOW.minus(Duration.ofHours(1))))
+
+        val actual = classUnderTest.executeInBackground(Unit) as TodayResultDomainModel.Loaded
+
+        assertTrue(actual.today is TodayDomainModel.AttackInProgress)
+    }
+
+    @Test
+    fun `Given a period mark today when executed then passes it on`() {
+        givenMarks(period = true, painFree = false)
+        givenSnapshot(inProgress = null)
+
+        assertEquals(
+            TodayResultDomainModel.Loaded(TodayDomainModel.Calm, periodToday = true),
+            classUnderTest.executeInBackground(Unit)
+        )
+    }
+
+    @Test
+    fun `Given the marks cannot be read when executed then today without marks`() {
+        given(getDayMarksRepository.dayMarks(any())).willReturn(DayMarksResultDomainModel.Failed)
+        givenSnapshot(inProgress = null)
+
+        assertEquals(
+            TodayResultDomainModel.Loaded(TodayDomainModel.Calm, periodToday = false),
+            classUnderTest.executeInBackground(Unit)
+        )
+    }
 }

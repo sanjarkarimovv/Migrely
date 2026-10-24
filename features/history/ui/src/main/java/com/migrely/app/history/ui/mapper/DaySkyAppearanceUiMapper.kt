@@ -7,6 +7,7 @@ class DaySkyAppearanceUiMapper {
     fun toAppearance(sky: DaySkyUiModel): DaySkyAppearance = when (sky) {
         DaySkyUiModel.NothingLogged -> DaySkyAppearance.NothingLogged
         DaySkyUiModel.Future -> DaySkyAppearance.Future
+        DaySkyUiModel.Clear -> DaySkyAppearance.Clear
         DaySkyUiModel.Hazy -> DaySkyAppearance.Hazy
         DaySkyUiModel.Cloudy -> DaySkyAppearance.Cloudy
         DaySkyUiModel.Storm -> DaySkyAppearance.Storm

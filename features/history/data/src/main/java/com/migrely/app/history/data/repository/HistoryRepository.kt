@@ -3,35 +3,52 @@ package com.migrely.app.history.data.repository
 import com.migrely.app.datasource.attack.datasource.AttackDataSource
 import com.migrely.app.datasource.attack.model.RestoreDataModel
 import com.migrely.app.datasource.clock.datasource.ClockDataSource
+import com.migrely.app.datasource.daymark.datasource.DayMarkDataSource
 import com.migrely.app.datasource.exception.DataException
+import com.migrely.app.datasource.exception.StorageFullDataException
+import com.migrely.app.history.data.mapper.DayMarkDomainMapper
 import com.migrely.app.history.data.mapper.HistoryAttackDomainMapper
 import com.migrely.app.history.data.mapper.ZoneDomainMapper
 import com.migrely.app.history.domain.model.AttacksTouchingResultDomainModel
 import com.migrely.app.history.domain.model.CurrentTimeDomainModel
+import com.migrely.app.history.domain.model.DayMarkKindDomainModel
+import com.migrely.app.history.domain.model.DayMarkWriteResultDomainModel
+import com.migrely.app.history.domain.model.DayMarksResultDomainModel
 import com.migrely.app.history.domain.model.DeletedAttackDomainModel
 import com.migrely.app.history.domain.model.EarliestAttackResultDomainModel
+import com.migrely.app.history.domain.model.EarliestDayMarkResultDomainModel
 import com.migrely.app.history.domain.model.UndoResultDomainModel
 import com.migrely.app.history.domain.repository.GetAttacksTouchingRepository
 import com.migrely.app.history.domain.repository.GetCurrentTimeRepository
+import com.migrely.app.history.domain.repository.GetDayMarksRepository
 import com.migrely.app.history.domain.repository.GetEarliestAttackRepository
+import com.migrely.app.history.domain.repository.GetEarliestDayMarkRepository
 import com.migrely.app.history.domain.repository.GetRecentlyDeletedAttackRepository
 import com.migrely.app.history.domain.repository.RestoreDeletedAttackRepository
+import com.migrely.app.history.domain.repository.SetDayMarkRepository
 import java.time.Instant
+import java.time.LocalDate
 
 /**
  * Every function returns failures as values (docs/ARCHITECTURE.md section 7): datasource exceptions never reach the
  * background use cases.
  */
+@Suppress("TooManyFunctions")
 class HistoryRepository(
     private val attackDataSource: AttackDataSource,
     private val clockDataSource: ClockDataSource,
+    private val dayMarkDataSource: DayMarkDataSource,
     private val historyAttackDomainMapper: HistoryAttackDomainMapper,
-    private val zoneDomainMapper: ZoneDomainMapper
+    private val zoneDomainMapper: ZoneDomainMapper,
+    private val dayMarkDomainMapper: DayMarkDomainMapper
 ) : GetCurrentTimeRepository,
     GetEarliestAttackRepository,
     GetAttacksTouchingRepository,
     GetRecentlyDeletedAttackRepository,
-    RestoreDeletedAttackRepository {
+    RestoreDeletedAttackRepository,
+    GetDayMarksRepository,
+    SetDayMarkRepository,
+    GetEarliestDayMarkRepository {
     override fun currentTime() =
         CurrentTimeDomainModel(instant = clockDataSource.now(), zone = clockDataSource.zone())
 
@@ -73,5 +90,37 @@ class HistoryRepository(
         }
     } catch (_: DataException) {
         UndoResultDomainModel.Failed
+    }
+
+    override fun dayMarks(from: LocalDate, to: LocalDate): DayMarksResultDomainModel = try {
+        DayMarksResultDomainModel.Loaded(
+            dayMarkDataSource.marksBetween(from, to).map(dayMarkDomainMapper::toDomain)
+        )
+    } catch (_: DataException) {
+        DayMarksResultDomainModel.Failed
+    }
+
+    override fun earliestDayMark(): EarliestDayMarkResultDomainModel = try {
+        dayMarkDataSource.earliestMark()
+            ?.let(EarliestDayMarkResultDomainModel::Found)
+            ?: EarliestDayMarkResultDomainModel.None
+    } catch (_: DataException) {
+        EarliestDayMarkResultDomainModel.Failed
+    }
+
+    override fun setDayMark(
+        date: LocalDate,
+        kind: DayMarkKindDomainModel,
+        marked: Boolean
+    ): DayMarkWriteResultDomainModel = try {
+        when (kind) {
+            DayMarkKindDomainModel.Period -> dayMarkDataSource.setPeriod(date, marked)
+            DayMarkKindDomainModel.PainFree -> dayMarkDataSource.setPainFree(date, marked)
+        }
+        DayMarkWriteResultDomainModel.Written
+    } catch (_: StorageFullDataException) {
+        DayMarkWriteResultDomainModel.StorageFull
+    } catch (_: DataException) {
+        DayMarkWriteResultDomainModel.Failed
     }
 }
