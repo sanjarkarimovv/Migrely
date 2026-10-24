@@ -10,10 +10,12 @@ import com.migrely.app.medication.presentation.viewmodel.EditMedicationViewModel
 import com.migrely.app.medication.presentation.viewmodel.LogMedicationViewModel
 import com.migrely.app.medication.presentation.viewmodel.MedicationPromptViewModel
 import com.migrely.app.medication.presentation.viewmodel.MedicationsViewModel
+import com.migrely.app.medication.presentation.viewmodel.OveruseIndicatorViewModel
 import com.migrely.app.medication.ui.di.EditMedicationDependencies
 import com.migrely.app.medication.ui.di.LogMedicationDependencies
 import com.migrely.app.medication.ui.di.MedicationPromptDependencies
 import com.migrely.app.medication.ui.di.MedicationsDependencies
+import com.migrely.app.medication.ui.di.OveruseIndicatorDependencies
 import com.migrely.app.medication.ui.mapper.EditMedicationNotificationUiMapper
 import com.migrely.app.medication.ui.mapper.EditMedicationViewStateUiMapper
 import com.migrely.app.medication.ui.mapper.IntakeUiMapper
@@ -29,6 +31,8 @@ import com.migrely.app.medication.ui.mapper.MedicationUiMapper
 import com.migrely.app.medication.ui.mapper.MedicationUiToPresentationMapper
 import com.migrely.app.medication.ui.mapper.MedicationsNotificationUiMapper
 import com.migrely.app.medication.ui.mapper.MedicationsViewStateUiMapper
+import com.migrely.app.medication.ui.mapper.OveruseCategoryUiMapper
+import com.migrely.app.medication.ui.mapper.OveruseIndicatorUiMapper
 import com.migrely.app.medication.ui.mapper.SaveProblemUiMapper
 import com.migrely.app.medication.ui.notification.MedicationEventPresenter
 import com.migrely.app.navigation.mapper.EditMedicationNavigationEventDestinationMapper
@@ -111,10 +115,17 @@ internal object MedicationUiModule {
         medicationTimeUiFormatter: MedicationTimeUiFormatter
     ) = MedicationPromptDependencies(
         medicationPromptViewModel = medicationPromptViewModel,
-        medicationPromptUiMapper = MedicationPromptUiMapper(),
+        medicationPromptUiMapper = MedicationPromptUiMapper(OveruseCategoryUiMapper()),
         medicationPromptUiToPresentationMapper = MedicationPromptUiToPresentationMapper(),
         medicationTimeUiFormatter = medicationTimeUiFormatter
     )
+
+    @Provides
+    fun providesOveruseIndicatorDependencies(overuseIndicatorViewModel: OveruseIndicatorViewModel) =
+        OveruseIndicatorDependencies(
+            overuseIndicatorViewModel = overuseIndicatorViewModel,
+            overuseIndicatorUiMapper = OveruseIndicatorUiMapper(OveruseCategoryUiMapper())
+        )
 
     @Provides
     fun providesMedicationsDependencies(

@@ -73,7 +73,12 @@ target API 37, whichever comes first. Until then, do not mix AGP 9 idioms into b
   - `MedicationPromptViewModel` and `MedicationPromptDependencies` fill the slot
     `Home(medicationPrompt: @Composable (refreshKey: Int) -> Unit)` under today's card;
   - `GetMedicationPromptUseCase` picks the one card: an overuse warning first, then "Did it help?";
-  - the card neither navigates nor shows messages, so its `Dependencies` has no observer.
+  - the card neither navigates nor shows messages, so its `Dependencies` has no observer;
+  - History's standing overuse indicator works the same way (change `add-overuse-indicator`, BRD D59):
+    `OveruseIndicatorDependencies` fills the slot `History(overuseIndicator: @Composable (refreshKey: Int) -> Unit)`,
+    which History's month summary shows for the current month only. The key counts History's view states, so the
+    indicator loads again whenever History does, an undo or a resume included. The warning and the indicator count
+    through one `OveruseDayCounter`.
 - Features never depend on other features. Something two features need goes into a datasource, `:app`, or a dedicated
   shared domain module with its own reason to exist.
 
@@ -284,5 +289,5 @@ with no `testDebugUnitTest` task, so `testDebugUnitTest` alone would skip their 
 | Konsist: the four "models are suffixed with …Model" rules scan production code only (`scopeFromProduction()`) | unit tests for a model belong in the model's package (for example `AttackDomainModelTest`); the skill forbids renaming classes to dodge a rule | permanent |
 | The add-past-attack screen asks for its defaults with `LaunchedEffect` while its saveable times are empty, instead of `ScreenEnterObserver` | after process death before the defaults arrived, `ScreenEnterObserver` would never ask again and leave the screen empty; once picked, the saved times win | permanent |
 | The add screen carries the end along with a new start and caps it at the current minute in `PastAttackDraftUiModel` | an editing convenience of the form, like the picker bounds; the domain validates the times again | permanent |
-| Home hosts History's month card through a composable slot that `:app` fills, and the card loads when its refresh key changes instead of using `ScreenEnterObserver` | one calendar implementation without a feature depending on another; the sample has no screen composed of two features. The key is home's view-state count, so the card follows every home load, including an undo on home | permanent |
+| Home hosts History's month card and the medication card, and History hosts the overuse indicator, through composable slots that `:app` fills; each loads when its refresh key changes instead of using `ScreenEnterObserver` | one calendar implementation without a feature depending on another; the sample has no screen composed of two features. The key is home's view-state count, so the card follows every home load, including an undo on home | permanent |
 | Further Konsist rule adaptations | recorded here when made | — |

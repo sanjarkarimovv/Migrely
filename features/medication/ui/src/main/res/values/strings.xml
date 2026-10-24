@@ -93,4 +93,12 @@
     <string name="overuse_body_soft">Taking them on %1$d days or more a month can lead to more headaches. Worth keeping an eye on.</string>
     <string name="overuse_body_doctor">Taking them this often can make headaches more frequent. It\'s worth talking to your doctor.</string>
     <string name="overuse_got_it">Got it</string>
+    <string name="indicator_title">Last 30 days</string>
+    <string name="indicator_row_simple">Simple painkillers: %1$d of %2$d days</string>
+    <string name="indicator_row_triptan">Triptans: %1$d of %2$d days</string>
+    <string name="indicator_row_other">Combination or other: %1$d of %2$d days</string>
+    <string name="indicator_row_multiple">All attack medication: %1$d of %2$d days</string>
+    <string name="indicator_at_limit">%1$s, at the limit</string>
+    <string name="indicator_over_limit">%1$s, over the limit</string>
+    <string name="indicator_reached">At this many days, medication can make headaches more frequent. Talk to your doctor about it.</string>
 </resources>
