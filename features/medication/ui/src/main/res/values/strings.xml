@@ -64,4 +64,33 @@
     <string name="message_generic">Something went wrong. Please try again.</string>
     <string name="snackbar_undo">Undo</string>
     <string name="snackbar_dismiss">Dismiss</string>
+    <!-- Home's medication card (BRD D39, D45, D46) -->
+    <string name="prompt_effect_title">How much did %1$s help?</string>
+    <string name="prompt_effect_taken">Taken at %1$s</string>
+    <string name="prompt_effect_taken_dose">Taken at %1$s · %2$s</string>
+    <string name="prompt_effect_taken_dose_spoken">Taken at %1$s, %2$s</string>
+    <string name="prompt_effect_skip">Don\'t ask about this one</string>
+    <string name="effect_not_at_all">Not at all</string>
+    <string name="effect_a_little">A little</string>
+    <string name="effect_a_lot">A lot</string>
+    <string name="effect_completely">Completely</string>
+    <plurals name="overuse_title_simple">
+        <item quantity="one">Painkillers on %1$d of the last 30 days</item>
+        <item quantity="other">Painkillers on %1$d of the last 30 days</item>
+    </plurals>
+    <plurals name="overuse_title_triptan">
+        <item quantity="one">Triptans on %1$d of the last 30 days</item>
+        <item quantity="other">Triptans on %1$d of the last 30 days</item>
+    </plurals>
+    <plurals name="overuse_title_other">
+        <item quantity="one">Combination or other medications on %1$d of the last 30 days</item>
+        <item quantity="other">Combination or other medications on %1$d of the last 30 days</item>
+    </plurals>
+    <plurals name="overuse_title_multiple">
+        <item quantity="one">Acute medications on %1$d of the last 30 days</item>
+        <item quantity="other">Acute medications on %1$d of the last 30 days</item>
+    </plurals>
+    <string name="overuse_body_soft">Taking them on %1$d days or more a month can lead to more headaches. Worth keeping an eye on.</string>
+    <string name="overuse_body_doctor">Taking them this often can make headaches more frequent. It\'s worth talking to your doctor.</string>
+    <string name="overuse_got_it">Got it</string>
 </resources>

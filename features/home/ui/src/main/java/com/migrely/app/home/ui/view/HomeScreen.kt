@@ -56,15 +56,17 @@ internal fun isCompactHeight(): Boolean =
 
 /**
  * [monthCalendar] is drawn under today's card and list; `:app` fills it with this month's calendar (change
- * add-attack-history, design D1). It receives the number of view states home has received, so it can load again
- * whenever home does: after every action and on every resume.
+ * add-attack-history, design D1). [medicationPrompt] is drawn right under today's card; `:app` fills it with the
+ * medication card (BRD D46). Both receive the number of view states home has received, so they can load again whenever
+ * home does: after every action and on every resume. Attack mode shows neither (G4).
  */
 @Composable
 fun HomeDependencies.Home(
     navController: NavController,
     startAttackRequested: Boolean,
     modifier: Modifier = Modifier,
-    monthCalendar: @Composable (refreshKey: Int) -> Unit = {}
+    monthCalendar: @Composable (refreshKey: Int) -> Unit = {},
+    medicationPrompt: @Composable (refreshKey: Int) -> Unit = {}
 ) {
     ScreenEnterObserver { homeViewModel.onEnter(startAttackRequested) }
     LifecycleResumeEffect(homeViewModel) {
@@ -111,6 +113,7 @@ fun HomeDependencies.Home(
             onLogMedication = homeViewModel::onLogMedicationAction
         ),
         monthCalendar = { monthCalendar(homeLoads) },
+        medicationPrompt = { medicationPrompt(homeLoads) },
         messages = {
             HomeMessages(
                 presenter = homeMessagePresenter,
@@ -175,7 +178,8 @@ fun HomeContents(
     actions: HomeActions,
     messages: @Composable () -> Unit,
     modifier: Modifier = Modifier,
-    monthCalendar: @Composable () -> Unit = {}
+    monthCalendar: @Composable () -> Unit = {},
+    medicationPrompt: @Composable () -> Unit = {}
 ) {
     // Decided from the target mode in the same pass as the switch, so a quick switch back (for example Undo) can never
     // leave a stale previous mode behind (BRD EC-UX-18, D32).
@@ -217,7 +221,8 @@ fun HomeContents(
                     onAttackDetails = actions.onAttackDetails,
                     onAddPastAttack = actions.onAddPastAttack,
                     onLogMedication = { actions.onLogMedication(null) },
-                    monthCalendar = monthCalendar
+                    monthCalendar = monthCalendar,
+                    medicationPrompt = medicationPrompt
                 )
 
                 is HomeViewStateUiModel.AttackInProgress -> AttackModeContents(

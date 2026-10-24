@@ -32,16 +32,16 @@
 
 ## 5. UI
 
-- [ ] 5.1 `MedicationPrompt` card (question, soft and doctor), its strings and its UI mappers, with tests.
+- [x] 5.1 `MedicationPrompt` card (question, soft and doctor), its strings and its UI mappers, with tests.
   Verify: `./gradlew :features:medication:ui:test`
-- [ ] 5.2 Details: the answer on each row and the answer dialog.
+- [x] 5.2 Details: the answer on each row and the answer dialog.
   Verify: `./gradlew :features:attack:ui:test`
-- [ ] 5.3 Home: the `medicationPrompt` slot under today's card.
+- [x] 5.3 Home: the `medicationPrompt` slot under today's card.
   Verify: `./gradlew :features:home:ui:test`
 
 ## 6. App wiring
 
-- [ ] 6.1 DI for the new use cases, ViewModel and dependencies; the slot filled in `AppNavHost`.
+- [x] 6.1 DI for the new use cases, ViewModel and dependencies; the slot filled in `AppNavHost`.
   Verify: `./gradlew :app:assembleDebug`
 
 ## 7. Docs

@@ -2,33 +2,46 @@ package com.migrely.app.di
 
 import com.migrely.app.architecture.domain.UseCaseExecutor
 import com.migrely.app.coroutine.CoroutineContextProvider
+import com.migrely.app.medication.domain.repository.AcknowledgeOveruseRepository
 import com.migrely.app.medication.domain.repository.AddIntakeRepository
+import com.migrely.app.medication.domain.repository.CloseEffectQuestionRepository
 import com.migrely.app.medication.domain.repository.CountActiveMedicationsRepository
 import com.migrely.app.medication.domain.repository.CreateMedicationRepository
 import com.migrely.app.medication.domain.repository.DeleteIntakeRepository
 import com.migrely.app.medication.domain.repository.FindAttackAtRepository
 import com.migrely.app.medication.domain.repository.FindMedicationByNameRepository
 import com.migrely.app.medication.domain.repository.GetActiveMedicationsRepository
+import com.migrely.app.medication.domain.repository.GetAcuteIntakesRepository
 import com.migrely.app.medication.domain.repository.GetAttackRepository
 import com.migrely.app.medication.domain.repository.GetCurrentTimeRepository
 import com.migrely.app.medication.domain.repository.GetMedicationRepository
+import com.migrely.app.medication.domain.repository.GetOveruseNoticesRepository
+import com.migrely.app.medication.domain.repository.GetPendingEffectQuestionRepository
+import com.migrely.app.medication.domain.repository.SetIntakeEffectRepository
 import com.migrely.app.medication.domain.repository.SetMedicationArchivedRepository
 import com.migrely.app.medication.domain.repository.UpdateMedicationRepository
+import com.migrely.app.medication.domain.usecase.AcknowledgeOveruseUseCase
+import com.migrely.app.medication.domain.usecase.AnswerEffectUseCase
 import com.migrely.app.medication.domain.usecase.ArchiveMedicationUseCase
 import com.migrely.app.medication.domain.usecase.GetMedicationLogUseCase
+import com.migrely.app.medication.domain.usecase.GetMedicationPromptUseCase
 import com.migrely.app.medication.domain.usecase.GetMedicationUseCase
 import com.migrely.app.medication.domain.usecase.GetMedicationsUseCase
 import com.migrely.app.medication.domain.usecase.LogIntakeUseCase
 import com.migrely.app.medication.domain.usecase.RestoreMedicationUseCase
 import com.migrely.app.medication.domain.usecase.SaveMedicationUseCase
+import com.migrely.app.medication.domain.usecase.SkipEffectQuestionUseCase
 import com.migrely.app.medication.domain.usecase.UndoIntakeUseCase
 import com.migrely.app.medication.presentation.mapper.IntakePresentationMapper
 import com.migrely.app.medication.presentation.mapper.MedicationDomainMapper
 import com.migrely.app.medication.presentation.mapper.MedicationLogPresentationMapper
 import com.migrely.app.medication.presentation.mapper.MedicationPresentationMapper
+import com.migrely.app.medication.presentation.mapper.MedicationPromptDomainMapper
+import com.migrely.app.medication.presentation.mapper.MedicationPromptPresentationMapper
 import com.migrely.app.medication.presentation.mapper.SaveProblemPresentationMapper
 import com.migrely.app.medication.presentation.viewmodel.EditMedicationViewModel
 import com.migrely.app.medication.presentation.viewmodel.LogMedicationViewModel
+import com.migrely.app.medication.presentation.viewmodel.MedicationPromptViewModel
 import com.migrely.app.medication.presentation.viewmodel.MedicationsViewModel
 import dagger.Module
 import dagger.Provides
@@ -118,6 +131,57 @@ internal object MedicationModule {
         repository: DeleteIntakeRepository,
         coroutineContextProvider: CoroutineContextProvider
     ) = UndoIntakeUseCase(repository, coroutineContextProvider)
+
+    @Provides
+    fun providesGetMedicationPromptUseCase(
+        getCurrentTimeRepository: GetCurrentTimeRepository,
+        getAcuteIntakesRepository: GetAcuteIntakesRepository,
+        getOveruseNoticesRepository: GetOveruseNoticesRepository,
+        getPendingEffectQuestionRepository: GetPendingEffectQuestionRepository,
+        coroutineContextProvider: CoroutineContextProvider
+    ) = GetMedicationPromptUseCase(
+        getCurrentTimeRepository,
+        getAcuteIntakesRepository,
+        getOveruseNoticesRepository,
+        getPendingEffectQuestionRepository,
+        coroutineContextProvider
+    )
+
+    @Provides
+    fun providesAnswerEffectUseCase(
+        repository: SetIntakeEffectRepository,
+        coroutineContextProvider: CoroutineContextProvider
+    ) = AnswerEffectUseCase(repository, coroutineContextProvider)
+
+    @Provides
+    fun providesSkipEffectQuestionUseCase(
+        repository: CloseEffectQuestionRepository,
+        coroutineContextProvider: CoroutineContextProvider
+    ) = SkipEffectQuestionUseCase(repository, coroutineContextProvider)
+
+    @Provides
+    fun providesAcknowledgeOveruseUseCase(
+        getCurrentTimeRepository: GetCurrentTimeRepository,
+        repository: AcknowledgeOveruseRepository,
+        coroutineContextProvider: CoroutineContextProvider
+    ) = AcknowledgeOveruseUseCase(getCurrentTimeRepository, repository, coroutineContextProvider)
+
+    @Provides
+    fun providesMedicationPromptViewModel(
+        getMedicationPromptUseCase: GetMedicationPromptUseCase,
+        answerEffectUseCase: AnswerEffectUseCase,
+        skipEffectQuestionUseCase: SkipEffectQuestionUseCase,
+        acknowledgeOveruseUseCase: AcknowledgeOveruseUseCase,
+        useCaseExecutor: UseCaseExecutor
+    ) = MedicationPromptViewModel(
+        getMedicationPromptUseCase,
+        answerEffectUseCase,
+        skipEffectQuestionUseCase,
+        acknowledgeOveruseUseCase,
+        MedicationPromptPresentationMapper(),
+        MedicationPromptDomainMapper(),
+        useCaseExecutor
+    )
 
     @Provides
     fun providesMedicationsViewModel(

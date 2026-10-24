@@ -53,6 +53,7 @@ import com.migrely.app.attack.ui.mapper.AttackTimeUiFormatter
 import com.migrely.app.attack.ui.model.AttackDetailsEventUiModel
 import com.migrely.app.attack.ui.model.AttackDetailsUiModel
 import com.migrely.app.attack.ui.model.AttackDetailsViewStateUiModel
+import com.migrely.app.attack.ui.model.AttackIntakeEffectUiModel
 import com.migrely.app.attack.ui.model.AttackIntakeUiModel
 import com.migrely.app.attack.ui.model.AttackTagUiModel
 import com.migrely.app.attack.ui.model.FunctionalImpactUiModel
@@ -83,7 +84,9 @@ data class AttackDetailsActions(
     val onArchiveCustomTag: (tagId: String) -> Unit,
     val onDelete: () -> Unit,
     val onAddMedication: () -> Unit = {},
-    val onRemoveIntake: (intake: AttackIntakeUiModel) -> Unit = {}
+    val onRemoveIntake: (intake: AttackIntakeUiModel) -> Unit = {},
+    val onIntakeEffect: (intake: AttackIntakeUiModel, effect: AttackIntakeEffectUiModel) -> Unit =
+        { _, _ -> }
 )
 
 /**
@@ -221,6 +224,13 @@ fun AttackDetailsDependencies.AttackDetails(
             viewModel.onRemoveIntakeAction(
                 attackId,
                 attackIntakeUiToPresentationMapper.toPresentation(intake)
+            )
+        },
+        onIntakeEffect = { intake, effect ->
+            viewModel.onIntakeEffectAction(
+                attackId,
+                intake.id,
+                attackIntakeUiToPresentationMapper.toPresentation(effect)
             )
         }
     )

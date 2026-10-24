@@ -14,12 +14,15 @@ import com.migrely.app.medication.presentation.navigation.LogMedicationPresentat
 import com.migrely.app.medication.presentation.navigation.MedicationsPresentationNavigationEvent
 import com.migrely.app.medication.presentation.viewmodel.EditMedicationViewModel
 import com.migrely.app.medication.presentation.viewmodel.LogMedicationViewModel
+import com.migrely.app.medication.presentation.viewmodel.MedicationPromptViewModel
 import com.migrely.app.medication.presentation.viewmodel.MedicationsViewModel
 import com.migrely.app.medication.ui.mapper.EditMedicationViewStateUiMapper
 import com.migrely.app.medication.ui.mapper.LogMedicationViewStateUiMapper
 import com.migrely.app.medication.ui.mapper.MedicationCategoryUiToPresentationMapper
 import com.migrely.app.medication.ui.mapper.MedicationKindUiToPresentationMapper
 import com.migrely.app.medication.ui.mapper.MedicationMessageBehaviourUiMapper
+import com.migrely.app.medication.ui.mapper.MedicationPromptUiMapper
+import com.migrely.app.medication.ui.mapper.MedicationPromptUiToPresentationMapper
 import com.migrely.app.medication.ui.mapper.MedicationTimeUiFormatter
 import com.migrely.app.medication.ui.mapper.MedicationUiToPresentationMapper
 import com.migrely.app.medication.ui.mapper.MedicationsViewStateUiMapper
@@ -69,4 +72,15 @@ class EditMedicationDependencies(
     editMedicationViewModel,
     navigationMapper,
     notificationMapper
+)
+
+/**
+ * Home's medication card, which `:app` puts into home's slot under today's card (BRD D46). It neither navigates nor shows
+ * messages, so it needs no observer.
+ */
+class MedicationPromptDependencies(
+    val medicationPromptViewModel: MedicationPromptViewModel,
+    val medicationPromptUiMapper: MedicationPromptUiMapper,
+    val medicationPromptUiToPresentationMapper: MedicationPromptUiToPresentationMapper,
+    val medicationTimeUiFormatter: MedicationTimeUiFormatter
 )

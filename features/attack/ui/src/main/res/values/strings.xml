@@ -131,6 +131,17 @@
     <string name="medication_none">None logged yet.</string>
     <string name="medication_row">%1$s · %2$s</string>
     <string name="medication_remove">Remove %1$s</string>
+    <string name="medication_row_description">%1$s, %2$s. Opens how much it helped.</string>
+    <string name="medication_row_description_answered">%1$s, %2$s, %3$s. Opens how much it helped.</string>
+    <string name="medication_effect_title">How much did %1$s help?</string>
+    <string name="medication_effect_not_at_all">Not at all</string>
+    <string name="medication_effect_a_little">A little</string>
+    <string name="medication_effect_a_lot">A lot</string>
+    <string name="medication_effect_completely">Completely</string>
+    <string name="medication_helped_not_at_all">Did not help</string>
+    <string name="medication_helped_a_little">Helped a little</string>
+    <string name="medication_helped_a_lot">Helped a lot</string>
+    <string name="medication_helped_completely">Helped completely</string>
     <string name="message_intake_removed">Medication removed</string>
     <string name="snackbar_undo_intake_description">Undo removing the medication</string>
 </resources>
