@@ -84,8 +84,8 @@ time zone) SHALL restore the value it found when it exits, including when a chec
 ### Requirement: Device scenarios without test code
 Behaviour that depends on the clock, the time zone, exact tap timing, the system ending the app or an app update
 SHALL be checked by changing the QA emulator itself between end-to-end flows, with no test-only code in the app. This
-covers the 72-hour check, process death on three screens, midnight, travel between zones, double taps with exact gaps
-and an update over an older build (BRD EC-ATK-02, EC-ATK-10, EC-TIM-02, EC-STO-01, D43).
+covers the 72-hour check, process death, midnight, travel and zone changes while the app runs, double taps, an update
+over an older build, and medication timing (BRD EC-ATK-02, EC-ATK-10, EC-TIM-02, EC-STO-01, MED-F4, MED-F5, D43, D60).
 
 #### Scenario: Attack left open for days
 - **WHEN** an attack is started, the clock moves forward 73 hours and the app is opened
@@ -108,6 +108,15 @@ and an update over an older build (BRD EC-ATK-02, EC-ATK-10, EC-TIM-02, EC-STO-0
 #### Scenario: Update over an older build
 - **WHEN** attacks with pain levels and symptoms are logged on an older build and the newer build is installed over it
 - **THEN** the scenario checks that every attack, pain level and symptom is still there
+
+#### Scenario: Medication timing
+- **WHEN** one intake is checked 1 hour and 3 hours after it is logged, and another one 23 hours and 25 hours after it
+  is logged
+- **THEN** the scenario checks that "Did it help?" is absent at 1 hour, shown at 3 and 23 hours, and absent at 25 hours
+
+#### Scenario: Overuse days
+- **WHEN** painkillers are logged through the UI on 13 distinct days, with the clock set to each day in turn
+- **THEN** the scenario checks that the soft warning names 13 days, and after 2 more days the doctor warning names 15
 
 ### Requirement: Robustness and privacy checks
 A seeded random-input run of at least 5,000 events SHALL finish with no crash and no "app not responding" in the app's
@@ -152,3 +161,13 @@ A release candidate SHALL go to a Play track only when all of these hold:
 #### Scenario: All checks pass
 - **WHEN** every check in the gate passes for a release candidate
 - **THEN** the candidate is Go for the internal testing track
+
+### Requirement: New capabilities get end-to-end coverage
+Before the QA of a change that adds a capability is closed, every user-visible scenario of that capability SHALL have
+an end-to-end flow or a device scenario, or SHALL be listed in that QA change's tasks with the reason it has none and
+the follow-up (BRD D61).
+
+#### Scenario: Coverage of a new capability
+- **WHEN** the QA of a change that adds a capability is about to be closed
+- **THEN** the coverage report lists that capability, and each of its scenarios without a flow is listed in the
+  change's tasks with a reason and a follow-up
