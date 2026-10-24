@@ -31,6 +31,7 @@ import androidx.navigation.NavController
 import com.migrely.app.architecture.ui.view.ScreenEnterObserver
 import com.migrely.app.designsystem.input.TapGuard
 import com.migrely.app.designsystem.motion.rememberReduceMotion
+import com.migrely.app.designsystem.theme.MigrelyDarkRoom
 import com.migrely.app.home.presentation.model.HomeViewState
 import com.migrely.app.home.ui.di.HomeDependencies
 import com.migrely.app.home.ui.mapper.SkyAppearanceUiMapper
@@ -267,7 +268,10 @@ fun HomeContents(
         } else {
             Modifier
         }
-        Box(messageArea) { messages() }
+        // Messages over attack mode are dark like it; the same call either way, so a message showing keeps its state.
+        MigrelyDarkRoom(active = mode == HomeMode.Attack) {
+            Box(messageArea) { messages() }
+        }
     }
 }
 

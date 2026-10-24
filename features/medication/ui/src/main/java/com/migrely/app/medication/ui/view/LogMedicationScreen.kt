@@ -67,6 +67,7 @@ import com.migrely.app.designsystem.motion.rememberReduceMotion
 import com.migrely.app.designsystem.picker.DateTimePickerLabels
 import com.migrely.app.designsystem.picker.MigrelyDateTimePicker
 import com.migrely.app.designsystem.theme.MigrelyColors
+import com.migrely.app.designsystem.theme.MigrelyDarkRoom
 import com.migrely.app.designsystem.theme.MigrelyTheme
 import com.migrely.app.medication.presentation.model.LogMedicationViewState
 import com.migrely.app.medication.ui.R
@@ -281,7 +282,8 @@ fun LogMedicationContents(
     actions: LogMedicationActions,
     messages: @Composable () -> Unit,
     modifier: Modifier = Modifier
-) {
+) = MigrelyDarkRoom(active = darkRoom) {
+    // The dark room is dark in every theme, its pickers and messages included (BRD D94).
     val colors = palette(darkRoom)
     Box(
         modifier = modifier
