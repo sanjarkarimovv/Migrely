@@ -13,4 +13,7 @@ sealed interface HomePresentationNavigationEvent : PresentationNavigationEvent {
      * from the normal mode when null.
      */
     data class OnLogMedication(val attackId: String?) : HomePresentationNavigationEvent
+
+    /** The user wants to set their reminders (BRD D65). */
+    data object OnOpenReminders : HomePresentationNavigationEvent
 }

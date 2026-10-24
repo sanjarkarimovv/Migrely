@@ -38,3 +38,7 @@ data object Medications
 /** The medication editor; [medicationId] is null when adding one. */
 @Serializable
 data class EditMedication(val medicationId: String? = null)
+
+/** Reminders (change add-reminders). */
+@Serializable
+data object Reminders

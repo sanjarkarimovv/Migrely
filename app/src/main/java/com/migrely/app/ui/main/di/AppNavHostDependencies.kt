@@ -10,6 +10,7 @@ import com.migrely.app.medication.ui.di.LogMedicationDependencies
 import com.migrely.app.medication.ui.di.MedicationPromptDependencies
 import com.migrely.app.medication.ui.di.MedicationsDependencies
 import com.migrely.app.medication.ui.di.OveruseIndicatorDependencies
+import com.migrely.app.reminders.ui.di.RemindersDependencies
 
 data class AppNavHostDependencies(
     val homeDependencies: HomeDependencies,
@@ -21,5 +22,6 @@ data class AppNavHostDependencies(
     val medicationsDependencies: MedicationsDependencies,
     val editMedicationDependencies: EditMedicationDependencies,
     val medicationPromptDependencies: MedicationPromptDependencies,
-    val overuseIndicatorDependencies: OveruseIndicatorDependencies
+    val overuseIndicatorDependencies: OveruseIndicatorDependencies,
+    val remindersDependencies: RemindersDependencies
 )

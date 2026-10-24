@@ -35,7 +35,7 @@
   notifications; tests.
 - [x] 2.4 UI: the Reminders screen (switch rows, time row with `MigrelyDateTimePicker`'s time picker, a notice when
   notifications are off with "Open settings", the runtime permission launcher).
-- [ ] 2.5 Home: the header bell "Reminders" (normal mode only) emits `OnOpenReminders`; `:app` navigates.
+- [x] 2.5 Home: the header bell "Reminders" (normal mode only) emits `OnOpenReminders`; `:app` navigates.
 
 ## 3. Medication link (the "Did it help?" notification belongs to the medication feature)
 
@@ -47,7 +47,7 @@
 
 ## 4. Android components in `:app` (`com.migrely.app.reminder`)
 
-- [ ] 4.1 Implementations:
+- [x] 4.1 Implementations (the effect-question run is wired in 3.2):
   - `ReminderScheduleDataSourceImpl`: WorkManager unique one-time work, `daily` and `effect-<id>`, with input data
     giving the kind and the intake id;
   - `NotificationDataSourceImpl`: channels for the daily reminder and the medication question; "Pain-free day" goes
@@ -55,8 +55,11 @@
   - `ReminderWorker`, which runs the use cases through a Hilt `EntryPoint`;
   - `ReminderActionReceiver`: "Pain-free day" calls History's `SetDayMarkUseCase`, then dismisses the reminder or
     shows "A migraine is logged today.";
-  - `TimeChangeReceiver`: `TIMEZONE_CHANGED`, `TIME_SET` and `BOOT_COMPLETED` call `RescheduleRemindersUseCase`;
-  - the manifest's `POST_NOTIFICATIONS`, and DI.
+  - `TimeChangeReceiver`: `TIMEZONE_CHANGED` and `TIME_SET` call `RescheduleRemindersUseCase`; there is no
+    `BOOT_COMPLETED`, because WorkManager keeps planned work across a reboot (EC-REM-04);
+  - the manifest's `POST_NOTIFICATIONS`, and DI;
+  - the two datasource implementations sit in `:app` under `com.migrely.app.datasource.<resource>.datasource`, as the
+    architecture tests require.
 
 ## 5. Verify
 

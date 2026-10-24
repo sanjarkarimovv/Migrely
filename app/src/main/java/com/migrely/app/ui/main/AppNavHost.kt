@@ -16,6 +16,7 @@ import com.migrely.app.medication.ui.view.LogMedication
 import com.migrely.app.medication.ui.view.MedicationPrompt
 import com.migrely.app.medication.ui.view.Medications
 import com.migrely.app.medication.ui.view.OveruseIndicator
+import com.migrely.app.reminders.ui.view.Reminders
 import com.migrely.app.ui.main.di.AppNavHostDependencies
 import com.migrely.app.ui.main.route.AddPastAttack
 import com.migrely.app.ui.main.route.AttackDetails
@@ -24,6 +25,7 @@ import com.migrely.app.ui.main.route.History
 import com.migrely.app.ui.main.route.Home
 import com.migrely.app.ui.main.route.LogMedication
 import com.migrely.app.ui.main.route.Medications
+import com.migrely.app.ui.main.route.Reminders
 import java.time.LocalDate
 
 @Composable
@@ -81,6 +83,9 @@ fun AppNavHostDependencies.AppNavHost(
                 navController,
                 medicationId = entry.toRoute<EditMedication>().medicationId
             )
+        }
+        composable<Reminders> {
+            remindersDependencies.Reminders(navController)
         }
         composable<History> { entry ->
             historyDependencies.History(
