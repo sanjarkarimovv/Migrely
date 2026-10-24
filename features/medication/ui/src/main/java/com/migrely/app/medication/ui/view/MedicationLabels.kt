@@ -29,6 +29,13 @@ internal fun categoryExamples(category: MedicationCategoryUiModel?): String? = w
 internal fun MedicationUiModel.title(): String =
     listOfNotNull(name, defaultDose).joinToString(" · ")
 
+/**
+ * The title as screen readers say it: "Ibuprofen, 400 mg". A comma gives a pause, while a middle dot is read aloud
+ * or skipped, depending on the punctuation setting (QA #29).
+ */
+internal fun MedicationUiModel.spokenTitle(): String =
+    listOfNotNull(name, defaultDose).joinToString(", ")
+
 /** What a medication is, for lists and screen readers: its type, or "preventive". */
 @Composable
 internal fun MedicationUiModel.typeLabel(): String = when (kind) {
