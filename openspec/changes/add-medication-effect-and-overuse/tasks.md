@@ -12,7 +12,7 @@
 
 ## 2. Medication domain (design D2)
 
-- [ ] 2.1 Models, repositories and `GetMedicationPromptUseCase`, `AnswerEffectUseCase`, `SkipEffectQuestionUseCase`,
+- [x] 2.1 Models, repositories and `GetMedicationPromptUseCase`, `AnswerEffectUseCase`, `SkipEffectQuestionUseCase`,
   `AcknowledgeOveruseUseCase`, with tests for every spec scenario of `medication-effect`, `medication-overuse` and the
   card order.
   Verify: `./gradlew :features:medication:domain:test`
