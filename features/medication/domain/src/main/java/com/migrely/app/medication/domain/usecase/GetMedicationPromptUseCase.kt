@@ -17,8 +17,6 @@ import java.time.Duration
 
 private const val SOFT_DAYS_BEFORE_THRESHOLD = 2
 private val NOTICE_QUIET_PERIOD: Duration = Duration.ofDays(30)
-private val QUESTION_FROM: Duration = Duration.ofHours(2)
-private val QUESTION_UNTIL: Duration = Duration.ofHours(24)
 
 // Ties go to the category declared first.
 private val MOST_DAYS_FIRST: Comparator<GetMedicationPromptUseCase.Candidate> =

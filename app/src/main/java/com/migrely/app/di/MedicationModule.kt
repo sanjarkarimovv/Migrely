@@ -2,6 +2,10 @@ package com.migrely.app.di
 
 import com.migrely.app.architecture.domain.UseCaseExecutor
 import com.migrely.app.coroutine.CoroutineContextProvider
+import com.migrely.app.datasource.notification.datasource.NotificationDataSource
+import com.migrely.app.datasource.reminder.datasource.ReminderSettingsDataSource
+import com.migrely.app.datasource.schedule.datasource.ReminderScheduleDataSource
+import com.migrely.app.medication.data.repository.EffectReminderRepository
 import com.migrely.app.medication.domain.repository.AcknowledgeOveruseRepository
 import com.migrely.app.medication.domain.repository.AddIntakeRepository
 import com.migrely.app.medication.domain.repository.CloseEffectQuestionRepository
@@ -30,6 +34,7 @@ import com.migrely.app.medication.domain.usecase.GetMedicationsUseCase
 import com.migrely.app.medication.domain.usecase.GetOveruseStatusUseCase
 import com.migrely.app.medication.domain.usecase.LogIntakeUseCase
 import com.migrely.app.medication.domain.usecase.RestoreMedicationUseCase
+import com.migrely.app.medication.domain.usecase.RunEffectQuestionUseCase
 import com.migrely.app.medication.domain.usecase.SaveMedicationUseCase
 import com.migrely.app.medication.domain.usecase.SkipEffectQuestionUseCase
 import com.migrely.app.medication.domain.usecase.UndoIntakeUseCase
@@ -121,20 +126,23 @@ internal object MedicationModule {
         getAttackRepository: GetAttackRepository,
         findAttackAtRepository: FindAttackAtRepository,
         addIntakeRepository: AddIntakeRepository,
+        effectReminderRepository: EffectReminderRepository,
         coroutineContextProvider: CoroutineContextProvider
     ) = LogIntakeUseCase(
         getCurrentTimeRepository,
         getAttackRepository,
         findAttackAtRepository,
         addIntakeRepository,
+        effectReminderRepository,
         coroutineContextProvider
     )
 
     @Provides
     fun providesUndoIntakeUseCase(
         repository: DeleteIntakeRepository,
+        effectReminderRepository: EffectReminderRepository,
         coroutineContextProvider: CoroutineContextProvider
-    ) = UndoIntakeUseCase(repository, coroutineContextProvider)
+    ) = UndoIntakeUseCase(repository, effectReminderRepository, coroutineContextProvider)
 
     @Provides
     fun providesGetMedicationPromptUseCase(
@@ -154,14 +162,42 @@ internal object MedicationModule {
     @Provides
     fun providesAnswerEffectUseCase(
         repository: SetIntakeEffectRepository,
+        effectReminderRepository: EffectReminderRepository,
         coroutineContextProvider: CoroutineContextProvider
-    ) = AnswerEffectUseCase(repository, coroutineContextProvider)
+    ) = AnswerEffectUseCase(repository, effectReminderRepository, coroutineContextProvider)
 
     @Provides
     fun providesSkipEffectQuestionUseCase(
         repository: CloseEffectQuestionRepository,
+        effectReminderRepository: EffectReminderRepository,
         coroutineContextProvider: CoroutineContextProvider
-    ) = SkipEffectQuestionUseCase(repository, coroutineContextProvider)
+    ) = SkipEffectQuestionUseCase(repository, effectReminderRepository, coroutineContextProvider)
+
+    @Provides
+    fun providesEffectReminderRepository(
+        reminderScheduleDataSource: ReminderScheduleDataSource,
+        notificationDataSource: NotificationDataSource,
+        reminderSettingsDataSource: ReminderSettingsDataSource
+    ) = EffectReminderRepository(
+        reminderScheduleDataSource,
+        notificationDataSource,
+        reminderSettingsDataSource
+    )
+
+    @Provides
+    fun providesRunEffectQuestionUseCase(
+        effectReminderRepository: EffectReminderRepository,
+        getCurrentTimeRepository: GetCurrentTimeRepository,
+        getPendingEffectQuestionRepository: GetPendingEffectQuestionRepository,
+        coroutineContextProvider: CoroutineContextProvider
+    ) = RunEffectQuestionUseCase(
+        effectReminderRepository,
+        effectReminderRepository,
+        getCurrentTimeRepository,
+        getPendingEffectQuestionRepository,
+        effectReminderRepository,
+        coroutineContextProvider
+    )
 
     @Provides
     fun providesAcknowledgeOveruseUseCase(

@@ -39,10 +39,10 @@
 
 ## 3. Medication link (the "Did it help?" notification belongs to the medication feature)
 
-- [ ] 3.1 `LogIntakeUseCase` schedules `effect-<id>` at takenAt + 2 h for an acute intake. `AnswerEffectUseCase`,
+- [x] 3.1 `LogIntakeUseCase` schedules `effect-<id>` at takenAt + 2 h for an acute intake. `AnswerEffectUseCase`,
   `SkipEffectQuestionUseCase` and `UndoIntakeUseCase` cancel it, and clear a shown notification. Each step goes through
   a single-function repository over the schedule and notification datasources.
-- [ ] 3.2 `RunEffectQuestionUseCase(intakeId)` shows "Did <name> help?" only while the question is open, the setting is
+- [x] 3.2 `RunEffectQuestionUseCase(intakeId)` shows "Did <name> help?" only while the question is open, the setting is
   on (it reads `ReminderSettingsDataSource` through medication's data), and notifications are allowed. Tests.
 
 ## 4. Android components in `:app` (`com.migrely.app.reminder`)

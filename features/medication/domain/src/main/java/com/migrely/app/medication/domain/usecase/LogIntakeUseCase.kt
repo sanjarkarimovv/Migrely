@@ -11,6 +11,7 @@ import com.migrely.app.medication.domain.repository.AddIntakeRepository
 import com.migrely.app.medication.domain.repository.FindAttackAtRepository
 import com.migrely.app.medication.domain.repository.GetAttackRepository
 import com.migrely.app.medication.domain.repository.GetCurrentTimeRepository
+import com.migrely.app.medication.domain.repository.ScheduleEffectQuestionRepository
 import java.time.Duration
 
 /** Clock tolerance for "now" on another device or a slightly fast clock (BRD EC-ATK-03). */
@@ -29,6 +30,7 @@ class LogIntakeUseCase(
     private val getAttackRepository: GetAttackRepository,
     private val findAttackAtRepository: FindAttackAtRepository,
     private val addIntakeRepository: AddIntakeRepository,
+    private val scheduleEffectQuestionRepository: ScheduleEffectQuestionRepository,
     coroutineContextProvider: CoroutineContextProvider
 ) : BackgroundExecutingUseCase<LogIntakeRequestDomainModel, LogIntakeResultDomainModel>(
     coroutineContextProvider
@@ -62,17 +64,24 @@ class LogIntakeUseCase(
                 dose = request.dose
             )
         ) {
-            is AddIntakeResultDomainModel.Added -> LogIntakeResultDomainModel.Logged(
-                IntakeDomainModel(
-                    id = added.intakeId,
-                    medicationId = request.medicationId,
-                    medicationName = request.medicationName,
-                    dose = request.dose,
-                    takenAt = request.takenAt,
-                    zone = zone,
-                    attackId = attackId
+            is AddIntakeResultDomainModel.Added -> {
+                // The run itself checks that the question is still open, so a preventive intake asks nothing (D67).
+                scheduleEffectQuestionRepository.scheduleEffectQuestion(
+                    added.intakeId,
+                    request.takenAt.plus(QUESTION_FROM)
                 )
-            )
+                LogIntakeResultDomainModel.Logged(
+                    IntakeDomainModel(
+                        id = added.intakeId,
+                        medicationId = request.medicationId,
+                        medicationName = request.medicationName,
+                        dose = request.dose,
+                        takenAt = request.takenAt,
+                        zone = zone,
+                        attackId = attackId
+                    )
+                )
+            }
 
             AddIntakeResultDomainModel.StorageFull -> LogIntakeResultDomainModel.StorageFull
             AddIntakeResultDomainModel.Failed -> LogIntakeResultDomainModel.Failed

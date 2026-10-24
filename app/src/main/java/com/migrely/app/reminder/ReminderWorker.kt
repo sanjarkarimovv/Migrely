@@ -16,7 +16,7 @@ class ReminderWorker(context: Context, parameters: WorkerParameters) : Worker(co
     override fun doWork(): Result {
         when (inputData.getString(KEY_KIND)) {
             KIND_DAILY -> entryPoint.runDailyReminderUseCase().executeInBackground(Unit)
-            // The medication question arrives with the medication feature's step (tasks 3.x).
+            KIND_EFFECT -> entryPoint.runEffectQuestionUseCase().executeInBackground(Unit)
             else -> Unit
         }
         return Result.success()
