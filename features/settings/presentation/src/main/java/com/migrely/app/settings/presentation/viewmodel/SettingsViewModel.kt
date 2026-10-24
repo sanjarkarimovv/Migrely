@@ -2,22 +2,43 @@ package com.migrely.app.settings.presentation.viewmodel
 
 import com.migrely.app.architecture.domain.UseCaseExecutor
 import com.migrely.app.architecture.presentation.viewmodel.BaseViewModel
+import com.migrely.app.settings.domain.model.DeleteAllDataResultDomainModel
 import com.migrely.app.settings.domain.model.SettingsWriteResultDomainModel
+import com.migrely.app.settings.domain.usecase.DeleteAllDataUseCase
 import com.migrely.app.settings.domain.usecase.GetSettingsUseCase
 import com.migrely.app.settings.domain.usecase.SetPeriodTrackingUseCase
+import com.migrely.app.settings.domain.usecase.SetThemeUseCase
 import com.migrely.app.settings.presentation.mapper.SettingsPresentationMapper
+import com.migrely.app.settings.presentation.mapper.ThemeDomainMapper
 import com.migrely.app.settings.presentation.model.SettingsPresentationNotification
 import com.migrely.app.settings.presentation.model.SettingsViewState
+import com.migrely.app.settings.presentation.model.ThemePresentationModel
 import com.migrely.app.settings.presentation.navigation.SettingsPresentationNavigationEvent
 
-/** Settings (BRD D70, D79): where the app's own settings live, reached from home's header. */
+/**
+ * Settings (BRD SET-F1, D70, D79, D93–D97), reached from home's header.
+ *
+ * Deleting all data can outlast a rotation, so this view model lives as long as the app and keeps two things, only for
+ * delivery: whether the deletion is going on, and whether it finished. A screen that comes back sees the progress, or
+ * is sent on to the restart it missed (ARCHITECTURE section 13).
+ */
+@Suppress("TooManyFunctions")
 class SettingsViewModel(
     private val getSettingsUseCase: GetSettingsUseCase,
     private val setPeriodTrackingUseCase: SetPeriodTrackingUseCase,
+    private val setThemeUseCase: SetThemeUseCase,
+    private val deleteAllDataUseCase: DeleteAllDataUseCase,
     private val settingsPresentationMapper: SettingsPresentationMapper,
+    private val themeDomainMapper: ThemeDomainMapper,
     useCaseExecutor: UseCaseExecutor
 ) : BaseViewModel<SettingsViewState, SettingsPresentationNotification>(useCaseExecutor) {
+    private var deleting = false
+    private var allDeleted = false
+
     fun onEnter() = load()
+
+    /** The screen shows again, after a rotation for example: the settings as they are, and a restart it missed. */
+    fun onResume() = load()
 
     fun onBackAction() = emitNavigationEvent(SettingsPresentationNavigationEvent.OnBack)
 
@@ -25,22 +46,74 @@ class SettingsViewModel(
 
     fun onYourDataAction() = emitNavigationEvent(SettingsPresentationNavigationEvent.OnYourData)
 
+    fun onWarningSignsAction() =
+        emitNavigationEvent(SettingsPresentationNavigationEvent.OnWarningSigns)
+
+    fun onAboutMigrelyAction() =
+        emitNavigationEvent(SettingsPresentationNavigationEvent.OnAboutMigrely)
+
+    fun onPrivacyAction() = emitNavigationEvent(SettingsPresentationNavigationEvent.OnPrivacy)
+
+    fun onLicencesAction() = emitNavigationEvent(SettingsPresentationNavigationEvent.OnLicences)
+
     fun onPeriodTrackingAction(on: Boolean) = setPeriodTrackingUseCase(
         value = on,
-        onResult = { result ->
-            when (result) {
-                SettingsWriteResultDomainModel.Done -> Unit
-                SettingsWriteResultDomainModel.Failed -> notify(
-                    SettingsPresentationNotification.NotSaved
-                )
-            }
-            load()
-        }
+        onResult = ::saved
     )
+
+    /** Every screen turns to the new theme at once, through the app's own theme (BRD D94). */
+    fun onThemeAction(theme: ThemePresentationModel) = setThemeUseCase(
+        value = themeDomainMapper.toDomain(theme),
+        onResult = ::saved
+    )
+
+    /** The user typed the confirmation word and confirmed (BRD D96). */
+    fun onDeleteAllDataAction() {
+        if (deleting || allDeleted) return
+        deleting = true
+        load()
+        deleteAllDataUseCase(
+            onResult = { result ->
+                when (result) {
+                    DeleteAllDataResultDomainModel.Deleted -> {
+                        // The progress stays until the app starts again.
+                        allDeleted = true
+                        emitNavigationEvent(SettingsPresentationNavigationEvent.OnAllDataDeleted)
+                    }
+
+                    DeleteAllDataResultDomainModel.Failed -> notDeleted()
+                }
+            },
+            onException = { notDeleted() }
+        )
+    }
+
+    private fun notDeleted() {
+        deleting = false
+        notify(SettingsPresentationNotification.NotDeleted)
+        load()
+    }
+
+    private fun saved(result: SettingsWriteResultDomainModel) {
+        when (result) {
+            SettingsWriteResultDomainModel.Done -> Unit
+            SettingsWriteResultDomainModel.Failed -> notify(
+                SettingsPresentationNotification.NotSaved
+            )
+        }
+        load()
+    }
 
     private fun load() = getSettingsUseCase(
         onResult = {
-            updateViewState(SettingsViewState.Ready(settingsPresentationMapper.toPresentation(it)))
+            updateViewState(
+                SettingsViewState.Ready(settingsPresentationMapper.toPresentation(it), deleting)
+            )
+            if (allDeleted) {
+                emitNavigationEvent(
+                    SettingsPresentationNavigationEvent.OnAllDataDeleted
+                )
+            }
         }
     )
 }

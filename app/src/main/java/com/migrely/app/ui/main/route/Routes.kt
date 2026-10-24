@@ -47,6 +47,22 @@ data object Reminders
 @Serializable
 data object Settings
 
+/** Warning signs, from Settings' Help (change add-settings-and-safety, BRD D95). */
+@Serializable
+data object WarningSigns
+
+/** About Migrely: the full disclaimer (change add-settings-and-safety, BRD D97). */
+@Serializable
+data object AboutMigrely
+
+/** Privacy (change add-settings-and-safety, BRD D97). */
+@Serializable
+data object Privacy
+
+/** Open-source licences (change add-settings-and-safety, BRD D97). */
+@Serializable
+data object Licences
+
 /** Your data: backups, exports and imports (change add-data-export-import). */
 @Serializable
 data object YourData

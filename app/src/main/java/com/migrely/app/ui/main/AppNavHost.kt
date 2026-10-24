@@ -22,20 +22,28 @@ import com.migrely.app.onboarding.ui.view.Onboarding
 import com.migrely.app.reminders.ui.view.DailyReminderOffer
 import com.migrely.app.reminders.ui.view.Reminders
 import com.migrely.app.report.ui.view.Report
+import com.migrely.app.settings.ui.view.AboutMigrely
+import com.migrely.app.settings.ui.view.Licences
+import com.migrely.app.settings.ui.view.Privacy
 import com.migrely.app.settings.ui.view.Settings
+import com.migrely.app.settings.ui.view.WarningSigns
 import com.migrely.app.ui.main.di.AppNavHostDependencies
+import com.migrely.app.ui.main.route.AboutMigrely
 import com.migrely.app.ui.main.route.AddPastAttack
 import com.migrely.app.ui.main.route.AttackDetails
 import com.migrely.app.ui.main.route.EditMedication
 import com.migrely.app.ui.main.route.History
 import com.migrely.app.ui.main.route.Home
 import com.migrely.app.ui.main.route.Insights
+import com.migrely.app.ui.main.route.Licences
 import com.migrely.app.ui.main.route.LogMedication
 import com.migrely.app.ui.main.route.Medications
 import com.migrely.app.ui.main.route.Onboarding
+import com.migrely.app.ui.main.route.Privacy
 import com.migrely.app.ui.main.route.Reminders
 import com.migrely.app.ui.main.route.Report
 import com.migrely.app.ui.main.route.Settings
+import com.migrely.app.ui.main.route.WarningSigns
 import com.migrely.app.ui.main.route.YourData
 import java.time.LocalDate
 
@@ -115,6 +123,18 @@ fun AppNavHostDependencies.AppNavHost(
         }
         composable<Settings> {
             settingsDependencies.Settings(navController)
+        }
+        composable<WarningSigns> {
+            settingsPageDependencies.WarningSigns(navController)
+        }
+        composable<AboutMigrely> {
+            settingsPageDependencies.AboutMigrely(navController)
+        }
+        composable<Privacy> {
+            settingsPageDependencies.Privacy(navController)
+        }
+        composable<Licences> {
+            settingsPageDependencies.Licences(navController)
         }
         composable<YourData> {
             yourDataDependencies.YourData(navController)
