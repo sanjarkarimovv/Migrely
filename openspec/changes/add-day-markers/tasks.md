@@ -37,7 +37,7 @@
 
 ## 6. Docs
 
-- [ ] 6.1 ARCHITECTURE §6a (DB v5, day marks).
+- [x] 6.1 ARCHITECTURE §6a (DB v5, day marks).
 
 ## 7. Verify
 
