@@ -21,6 +21,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -58,6 +59,7 @@ fun TodayContents(
     timeUiFormatter: TimeUiFormatter,
     onStartAttack: () -> Unit,
     onAttackDetails: (attackId: String) -> Unit,
+    onAddPastAttack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val screenModifier = modifier
@@ -83,8 +85,11 @@ fun TodayContents(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxHeight()
+                    .verticalScroll(rememberScrollState())
             ) {
                 StartAttackButton(onStartAttack)
+                Spacer(Modifier.height(8.dp))
+                AddPastAttackLink(onAddPastAttack)
             }
         }
     } else {
@@ -100,7 +105,9 @@ fun TodayContents(
             }
             Spacer(Modifier.height(16.dp))
             StartAttackButton(onStartAttack)
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(4.dp))
+            AddPastAttackLink(onAddPastAttack)
+            Spacer(Modifier.height(12.dp))
         }
     }
 }
@@ -216,6 +223,22 @@ private fun StartAttackButton(onStartAttack: () -> Unit) {
     }
 }
 
+/** The quiet way to log an attack that has already ended, under the big button (BRD 18.3 A, D26). */
+@Composable
+private fun AddPastAttackLink(onAddPastAttack: () -> Unit) {
+    TextButton(
+        onClick = onAddPastAttack,
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 48.dp)
+    ) {
+        Text(
+            text = stringResource(R.string.add_past_attack),
+            style = MaterialTheme.typography.labelLarge
+        )
+    }
+}
+
 @Composable
 private fun TodaySkyCard(today: TodayUiModel, appearance: SkyAppearance) {
     val title = if (today.attackCount == 0) {
@@ -277,7 +300,8 @@ private fun TodayCalmPreview() {
             skyAppearanceUiMapper = SkyAppearanceUiMapper(),
             timeUiFormatter = previewFormatter,
             onStartAttack = {},
-            onAttackDetails = {}
+            onAttackDetails = {},
+            onAddPastAttack = {}
         )
     }
 }
@@ -313,7 +337,8 @@ private fun TodayStormPreview() {
             skyAppearanceUiMapper = SkyAppearanceUiMapper(),
             timeUiFormatter = previewFormatter,
             onStartAttack = {},
-            onAttackDetails = {}
+            onAttackDetails = {},
+            onAddPastAttack = {}
         )
     }
 }

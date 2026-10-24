@@ -15,8 +15,13 @@ sealed interface TimeErrorReasonUiModel : Parcelable {
     @Parcelize
     data object EndBeforeStart : TimeErrorReasonUiModel
 
-    /** Another attack ran from [startEpochMillis]; [endEpochMillis] is null when it is in progress. */
+    /**
+     * The times overlap [attacks], oldest first (BRD EC-ATK-15). The refused times go back with "Merge them".
+     */
     @Parcelize
-    data class Overlaps(val startEpochMillis: Long, val endEpochMillis: Long?) :
-        TimeErrorReasonUiModel
+    data class Overlaps(
+        val attacks: List<AttackRangeUiModel>,
+        val requestedStartEpochMillis: Long,
+        val requestedEndEpochMillis: Long?
+    ) : TimeErrorReasonUiModel
 }

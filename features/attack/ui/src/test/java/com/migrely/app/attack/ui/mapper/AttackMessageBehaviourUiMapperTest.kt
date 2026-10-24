@@ -41,6 +41,10 @@ class AttackMessageBehaviourUiMapperTest(
             arrayOf<Any>(AttackMessageUiModel.Undone, information),
             arrayOf<Any>(AttackMessageUiModel.UndoNotPossible, information),
             arrayOf<Any>(
+                AttackMessageUiModel.AttacksMerged,
+                AttackMessageBehaviourUiModel(SnackbarTone.Confirmation, false, 8_000L)
+            ),
+            arrayOf<Any>(
                 AttackMessageUiModel.SomethingWentWrong,
                 AttackMessageBehaviourUiModel(SnackbarTone.Error, false, 8_000L)
             ),

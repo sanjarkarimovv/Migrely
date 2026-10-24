@@ -120,6 +120,9 @@ class HomeViewModel(
     fun onAttackDetailsAction(attackId: String) =
         emitNavigationEvent(HomePresentationNavigationEvent.OnViewAttackDetails(attackId))
 
+    fun onAddPastAttackAction() =
+        emitNavigationEvent(HomePresentationNavigationEvent.OnAddPastAttack)
+
     fun onStillGoingAction(attackId: String) =
         answerLongAttackCheck(attackId, LongAttackAnswerDomainModel.StillGoing)
 

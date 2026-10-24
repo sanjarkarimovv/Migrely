@@ -453,7 +453,7 @@ internal val previewFormatter = TimeUiFormatter(
     }
 )
 
-internal val previewActions = HomeActions({}, {}, {}, {}, {}, {}, {}, {})
+internal val previewActions = HomeActions({}, {}, {}, {}, {}, {}, {}, {}, {})
 
 private fun previewMillis(hour: Int, minute: Int): Long =
     LocalDate.of(2026, 10, 23).atTime(hour, minute).atZone(PREVIEW_ZONE).toInstant().toEpochMilli()

@@ -19,4 +19,6 @@ data class AttackDetailsDomainModel(
     val isInProgress: Boolean get() = end == null
 
     val peakIntensity: Int? get() = intensityPoints.maxOfOrNull(IntensityPointDomainModel::value)
+
+    val range: AttackRangeDomainModel get() = AttackRangeDomainModel(start, end)
 }

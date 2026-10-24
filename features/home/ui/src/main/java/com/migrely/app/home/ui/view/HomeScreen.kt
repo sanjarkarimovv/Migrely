@@ -83,7 +83,8 @@ fun HomeDependencies.Home(
             onEndedAt = { endEpochMillis ->
                 homeViewModel.onEndedAtAction(Instant.ofEpochMilli(endEpochMillis))
             },
-            onAttackDetails = homeViewModel::onAttackDetailsAction
+            onAttackDetails = homeViewModel::onAttackDetailsAction,
+            onAddPastAttack = homeViewModel::onAddPastAttackAction
         ),
         messages = {
             HomeMessages(
@@ -109,7 +110,8 @@ data class HomeActions(
     val onStillGoing: (attackId: String) -> Unit,
     val onDontAskAgain: (attackId: String) -> Unit,
     val onEndedAt: (endEpochMillis: Long) -> Unit,
-    val onAttackDetails: (attackId: String) -> Unit
+    val onAttackDetails: (attackId: String) -> Unit,
+    val onAddPastAttack: () -> Unit
 )
 
 private enum class HomeMode { Loading, Today, Attack }
@@ -158,7 +160,8 @@ fun HomeContents(
                     skyAppearanceUiMapper = skyAppearanceUiMapper,
                     timeUiFormatter = timeUiFormatter,
                     onStartAttack = actions.onStartAttack,
-                    onAttackDetails = actions.onAttackDetails
+                    onAttackDetails = actions.onAttackDetails,
+                    onAddPastAttack = actions.onAddPastAttack
                 )
 
                 is HomeViewStateUiModel.AttackInProgress -> AttackModeContents(

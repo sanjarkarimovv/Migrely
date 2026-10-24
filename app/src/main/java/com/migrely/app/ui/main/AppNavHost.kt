@@ -6,9 +6,11 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
+import com.migrely.app.attack.ui.view.AddPastAttack
 import com.migrely.app.attack.ui.view.AttackDetails
 import com.migrely.app.home.ui.view.Home
 import com.migrely.app.ui.main.di.AppNavHostDependencies
+import com.migrely.app.ui.main.route.AddPastAttack
 import com.migrely.app.ui.main.route.AttackDetails
 import com.migrely.app.ui.main.route.Home
 
@@ -30,10 +32,15 @@ fun AppNavHostDependencies.AppNavHost(
             )
         }
         composable<AttackDetails> { entry ->
+            val route = entry.toRoute<AttackDetails>()
             attackDetailsDependencies.AttackDetails(
-                attackId = entry.toRoute<AttackDetails>().attackId,
+                attackId = route.attackId,
+                announceMerge = route.announceMerge,
                 navController = navController
             )
+        }
+        composable<AddPastAttack> {
+            addPastAttackDependencies.AddPastAttack(navController)
         }
     }
 }

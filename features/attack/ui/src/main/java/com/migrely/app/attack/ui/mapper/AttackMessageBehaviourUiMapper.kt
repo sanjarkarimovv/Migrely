@@ -28,6 +28,13 @@ class AttackMessageBehaviourUiMapper {
                 baseDurationMillis = READING_MILLIS
             )
 
+        AttackMessageUiModel.AttacksMerged ->
+            AttackMessageBehaviourUiModel(
+                SnackbarTone.Confirmation,
+                hasUndo = false,
+                baseDurationMillis = READING_MILLIS
+            )
+
         AttackMessageUiModel.SomethingWentWrong ->
             AttackMessageBehaviourUiModel(
                 SnackbarTone.Error,

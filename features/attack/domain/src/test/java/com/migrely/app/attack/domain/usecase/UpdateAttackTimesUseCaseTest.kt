@@ -1,6 +1,8 @@
 package com.migrely.app.attack.domain.usecase
 
+import com.migrely.app.attack.domain.model.AttackDetailsDomainModel
 import com.migrely.app.attack.domain.model.AttackDetailsLookupResultDomainModel
+import com.migrely.app.attack.domain.model.AttackRangeDomainModel
 import com.migrely.app.attack.domain.model.CurrentTimeDomainModel
 import com.migrely.app.attack.domain.model.FIXTURE_NOW
 import com.migrely.app.attack.domain.model.FIXTURE_START
@@ -12,7 +14,7 @@ import com.migrely.app.attack.domain.model.UpdateAttackTimesRequestDomainModel
 import com.migrely.app.attack.domain.model.UpdateAttackTimesResultDomainModel
 import com.migrely.app.attack.domain.model.WriteResultDomainModel
 import com.migrely.app.attack.domain.model.attackDetails
-import com.migrely.app.attack.domain.repository.FindOverlappingAttackRepository
+import com.migrely.app.attack.domain.repository.FindOverlappingAttacksRepository
 import com.migrely.app.attack.domain.repository.GetAttackDetailsRepository
 import com.migrely.app.attack.domain.repository.GetCurrentTimeRepository
 import com.migrely.app.attack.domain.repository.UpdateAttackTimesRepository
@@ -35,7 +37,7 @@ class UpdateAttackTimesUseCaseTest {
     private lateinit var classUnderTest: UpdateAttackTimesUseCase
     private val getAttackDetailsRepository: GetAttackDetailsRepository = mock()
     private val getCurrentTimeRepository: GetCurrentTimeRepository = mock()
-    private val findOverlappingAttackRepository: FindOverlappingAttackRepository = mock()
+    private val findOverlappingAttacksRepository: FindOverlappingAttacksRepository = mock()
     private val updateAttackTimesRepository: UpdateAttackTimesRepository = mock()
 
     @Before
@@ -43,14 +45,14 @@ class UpdateAttackTimesUseCaseTest {
         classUnderTest = UpdateAttackTimesUseCase(
             getAttackDetailsRepository,
             getCurrentTimeRepository,
-            findOverlappingAttackRepository,
+            findOverlappingAttacksRepository,
             updateAttackTimesRepository,
             CoroutineContextProvider.Default
         )
         given(
             getCurrentTimeRepository.currentTime()
         ).willReturn(CurrentTimeDomainModel(FIXTURE_NOW, FIXTURE_ZONE))
-        given(findOverlappingAttackRepository.overlappingAttack(any(), any(), any()))
+        given(findOverlappingAttacksRepository.overlappingAttacks(anyOrNull(), any(), any()))
             .willReturn(OverlapLookupResultDomainModel.None)
         given(updateAttackTimesRepository.updateAttackTimes(any(), any(), anyOrNull(), any()))
             .willReturn(WriteResultDomainModel.Written)
@@ -151,7 +153,7 @@ class UpdateAttackTimesUseCaseTest {
         update(newStart, END)
 
         verify(updateAttackTimesRepository).updateAttackTimes("a", newStart, null, emptyList())
-        verify(findOverlappingAttackRepository).overlappingAttack("a", newStart, FIXTURE_NOW)
+        verify(findOverlappingAttacksRepository).overlappingAttacks("a", newStart, FIXTURE_NOW)
     }
 
     @Test
@@ -160,12 +162,17 @@ class UpdateAttackTimesUseCaseTest {
         val otherStart = FIXTURE_START.minus(Duration.ofHours(2))
         val otherEnd = FIXTURE_START.minus(Duration.ofMinutes(30))
         val newStart = FIXTURE_START.minus(Duration.ofHours(1))
-        given(findOverlappingAttackRepository.overlappingAttack("a", newStart, END))
-            .willReturn(OverlapLookupResultDomainModel.Found(otherStart, otherEnd))
+        given(findOverlappingAttacksRepository.overlappingAttacks("a", newStart, END))
+            .willReturn(found(attackDetails("b", otherStart, otherEnd)))
 
         val actual = update(newStart, END)
 
-        assertEquals(UpdateAttackTimesResultDomainModel.Overlaps(otherStart, otherEnd), actual)
+        assertEquals(
+            UpdateAttackTimesResultDomainModel.Overlaps(
+                listOf(AttackRangeDomainModel(otherStart, otherEnd))
+            ),
+            actual
+        )
         verify(updateAttackTimesRepository, never()).updateAttackTimes(
             any(),
             any(),
@@ -227,10 +234,8 @@ class UpdateAttackTimesUseCaseTest {
         givenAttack()
         val pickedStart = FIXTURE_START.minus(Duration.ofMinutes(30))
         val otherEnd = pickedStart.plusSeconds(42)
-        given(findOverlappingAttackRepository.overlappingAttack("a", pickedStart, END))
-            .willReturn(
-                OverlapLookupResultDomainModel.Found(otherEnd.minus(Duration.ofHours(1)), otherEnd)
-            )
+        given(findOverlappingAttacksRepository.overlappingAttacks("a", pickedStart, END))
+            .willReturn(found(attackDetails("b", otherEnd.minus(Duration.ofHours(1)), otherEnd)))
 
         val actual = update(pickedStart, END)
 
@@ -246,10 +251,8 @@ class UpdateAttackTimesUseCaseTest {
         givenAttack()
         val nextStart = END.plus(Duration.ofMinutes(10)).minusSeconds(20)
         val pickedEnd = END.plus(Duration.ofMinutes(10))
-        given(findOverlappingAttackRepository.overlappingAttack("a", FIXTURE_START, pickedEnd))
-            .willReturn(
-                OverlapLookupResultDomainModel.Found(nextStart, nextStart.plus(Duration.ofHours(1)))
-            )
+        given(findOverlappingAttacksRepository.overlappingAttacks("a", FIXTURE_START, pickedEnd))
+            .willReturn(found(attackDetails("b", nextStart, nextStart.plus(Duration.ofHours(1)))))
         given(getCurrentTimeRepository.currentTime())
             .willReturn(CurrentTimeDomainModel(pickedEnd.plus(Duration.ofHours(1)), FIXTURE_ZONE))
 
@@ -262,4 +265,57 @@ class UpdateAttackTimesUseCaseTest {
             emptyList()
         )
     }
+
+    @Test
+    fun `Given two attacks overlap when updating then both are named oldest first`() {
+        givenAttack()
+        val newStart = FIXTURE_START.minus(Duration.ofHours(5))
+        val first = attackDetails("b", newStart.plusSeconds(600), newStart.plusSeconds(3_600))
+        val second = attackDetails("c", FIXTURE_START.minus(Duration.ofHours(2)), null)
+        given(findOverlappingAttacksRepository.overlappingAttacks("a", newStart, END))
+            .willReturn(found(first, second))
+
+        val actual = update(newStart, END)
+
+        assertEquals(
+            UpdateAttackTimesResultDomainModel.Overlaps(listOf(first.range, second.range)),
+            actual
+        )
+    }
+
+    @Test
+    fun `Given one neighbour snaps and one overlaps when updating then only that one is named`() {
+        givenAttack()
+        val pickedStart = FIXTURE_START.minus(Duration.ofHours(2))
+        val previousEnd = pickedStart.plusSeconds(30)
+        val previous = attackDetails("b", pickedStart.minus(Duration.ofHours(1)), previousEnd)
+        val overlapping = attackDetails(
+            "c",
+            FIXTURE_START.minus(Duration.ofHours(1)),
+            FIXTURE_START.minus(Duration.ofMinutes(20))
+        )
+        given(findOverlappingAttacksRepository.overlappingAttacks("a", pickedStart, END))
+            .willReturn(found(previous, overlapping))
+        given(findOverlappingAttacksRepository.overlappingAttacks("a", previousEnd, END))
+            .willReturn(found(overlapping))
+
+        val actual = update(pickedStart, END)
+
+        assertEquals(
+            UpdateAttackTimesResultDomainModel.Overlaps(listOf(overlapping.range)),
+            actual
+        )
+    }
+
+    @Test
+    fun `Given the overlap lookup fails when updating then failed`() {
+        givenAttack()
+        given(findOverlappingAttacksRepository.overlappingAttacks(anyOrNull(), any(), any()))
+            .willReturn(OverlapLookupResultDomainModel.Failed)
+
+        assertEquals(UpdateAttackTimesResultDomainModel.Failed, update(FIXTURE_START, END))
+    }
+
+    private fun found(vararg attacks: AttackDetailsDomainModel) =
+        OverlapLookupResultDomainModel.Found(attacks.toList())
 }

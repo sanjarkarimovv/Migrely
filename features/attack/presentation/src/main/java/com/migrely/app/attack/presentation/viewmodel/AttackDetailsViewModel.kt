@@ -7,10 +7,11 @@ import com.migrely.app.attack.domain.model.AddCustomTagResultDomainModel
 import com.migrely.app.attack.domain.model.AddIntensityPointRequestDomainModel
 import com.migrely.app.attack.domain.model.AddIntensityPointResultDomainModel
 import com.migrely.app.attack.domain.model.AttackDetailsResultDomainModel
+import com.migrely.app.attack.domain.model.MergeAttacksRequestDomainModel
+import com.migrely.app.attack.domain.model.MergeAttacksResultDomainModel
 import com.migrely.app.attack.domain.model.RemoveIntensityPointRequestDomainModel
 import com.migrely.app.attack.domain.model.SelectAttackTagRequestDomainModel
 import com.migrely.app.attack.domain.model.SetFunctionalImpactRequestDomainModel
-import com.migrely.app.attack.domain.model.TimeFieldDomainModel
 import com.migrely.app.attack.domain.model.UndoTimesChangeRequestDomainModel
 import com.migrely.app.attack.domain.model.UndoTimesChangeResultDomainModel
 import com.migrely.app.attack.domain.model.UpdateAttackNoteRequestDomainModel
@@ -23,6 +24,7 @@ import com.migrely.app.attack.domain.usecase.AddIntensityPointUseCase
 import com.migrely.app.attack.domain.usecase.ArchiveCustomTagUseCase
 import com.migrely.app.attack.domain.usecase.DeleteAttackUseCase
 import com.migrely.app.attack.domain.usecase.GetAttackDetailsUseCase
+import com.migrely.app.attack.domain.usecase.MergeAttacksUseCase
 import com.migrely.app.attack.domain.usecase.RemoveIntensityPointUseCase
 import com.migrely.app.attack.domain.usecase.SelectAttackTagUseCase
 import com.migrely.app.attack.domain.usecase.SetFunctionalImpactUseCase
@@ -30,12 +32,15 @@ import com.migrely.app.attack.domain.usecase.UndoTimesChangeUseCase
 import com.migrely.app.attack.domain.usecase.UpdateAttackNoteUseCase
 import com.migrely.app.attack.domain.usecase.UpdateAttackTimesUseCase
 import com.migrely.app.attack.presentation.mapper.AttackDetailsPresentationMapper
+import com.migrely.app.attack.presentation.mapper.AttackRangePresentationMapper
 import com.migrely.app.attack.presentation.mapper.AttackTagDomainMapper
 import com.migrely.app.attack.presentation.mapper.FunctionalImpactDomainMapper
 import com.migrely.app.attack.presentation.mapper.IntensityPointDomainMapper
 import com.migrely.app.attack.presentation.mapper.IntensityPointPresentationMapper
 import com.migrely.app.attack.presentation.mapper.TagKindDomainMapper
+import com.migrely.app.attack.presentation.mapper.TimeFieldPresentationMapper
 import com.migrely.app.attack.presentation.model.AttackDetailsPresentationNotification
+import com.migrely.app.attack.presentation.model.AttackDetailsPresentationNotification.AttacksMerged
 import com.migrely.app.attack.presentation.model.AttackDetailsPresentationNotification.FirstMaximumRecorded
 import com.migrely.app.attack.presentation.model.AttackDetailsPresentationNotification.PointRejected
 import com.migrely.app.attack.presentation.model.AttackDetailsPresentationNotification.PointRemoved
@@ -75,16 +80,21 @@ class AttackDetailsViewModel(
     private val addCustomTagUseCase: AddCustomTagUseCase,
     private val archiveCustomTagUseCase: ArchiveCustomTagUseCase,
     private val deleteAttackUseCase: DeleteAttackUseCase,
+    private val mergeAttacksUseCase: MergeAttacksUseCase,
     private val attackDetailsPresentationMapper: AttackDetailsPresentationMapper,
     private val attackTagDomainMapper: AttackTagDomainMapper,
     private val functionalImpactDomainMapper: FunctionalImpactDomainMapper,
     private val intensityPointDomainMapper: IntensityPointDomainMapper,
     private val intensityPointPresentationMapper: IntensityPointPresentationMapper,
     private val tagKindDomainMapper: TagKindDomainMapper,
+    private val attackRangePresentationMapper: AttackRangePresentationMapper,
+    private val timeFieldPresentationMapper: TimeFieldPresentationMapper,
     useCaseExecutor: UseCaseExecutor
 ) : BaseViewModel<AttackDetailsViewState, AttackDetailsPresentationNotification>(useCaseExecutor) {
-    fun onEnter(attackId: String) {
+    /** [attacksMerged] is true when the screen opens on the result of a merge from the add screen. */
+    fun onEnter(attackId: String, attacksMerged: Boolean) {
         updateViewState(AttackDetailsViewState.Loading)
+        if (attacksMerged) notify(AttacksMerged)
         loadDetails(attackId)
     }
 
@@ -99,7 +109,43 @@ class AttackDetailsViewModel(
     ) {
         updateAttackTimesUseCase(
             value = UpdateAttackTimesRequestDomainModel(attackId, start, end),
-            onResult = { result -> presentTimesResult(attackId, field, result) }
+            onResult = { result -> presentTimesResult(attackId, field, start, end, result) }
+        )
+    }
+
+    /**
+     * The user chose to merge the refused times with the attacks they overlap (BRD EC-ATK-05, D27). [note] is the note
+     * as the screen shows it, or null when the user has not edited it.
+     */
+    fun onMergeAction(attackId: String, start: Instant, end: Instant?, note: String?) {
+        mergeAttacksUseCase(
+            value = MergeAttacksRequestDomainModel(attackId, start, end, editedNote = note),
+            onResult = { result ->
+                when (result) {
+                    is MergeAttacksResultDomainModel.Merged ->
+                        succeeded(result.attackId, AttacksMerged)
+
+                    is MergeAttacksResultDomainModel.Saved -> loadDetails(result.attackId)
+                    is MergeAttacksResultDomainModel.InFuture -> notify(
+                        TimeRejected(
+                            timeFieldPresentationMapper.toPresentation(result.field),
+                            TimeRejectionPresentationModel.InFuture
+                        )
+                    )
+
+                    MergeAttacksResultDomainModel.EndBeforeStart -> notify(
+                        TimeRejected(
+                            TimeFieldPresentationModel.End,
+                            TimeRejectionPresentationModel.EndBeforeStart
+                        )
+                    )
+
+                    MergeAttacksResultDomainModel.NotFound ->
+                        updateViewState(AttackDetailsViewState.NotFound)
+                    MergeAttacksResultDomainModel.StorageFull -> notify(StorageFull)
+                    MergeAttacksResultDomainModel.Failed -> notify(SomethingWentWrong)
+                }
+            }
         )
     }
 
@@ -265,9 +311,12 @@ class AttackDetailsViewModel(
 
     fun onLeaveAction() = emitNavigationEvent(AttackDetailsPresentationNavigationEvent.OnLeave)
 
+    @Suppress("LongParameterList")
     private fun presentTimesResult(
         attackId: String,
         field: TimeFieldPresentationModel,
+        start: Instant,
+        end: Instant?,
         result: UpdateAttackTimesResultDomainModel
     ) {
         when (result) {
@@ -292,10 +341,7 @@ class AttackDetailsViewModel(
 
             is UpdateAttackTimesResultDomainModel.InFuture -> notify(
                 TimeRejected(
-                    field = when (result.field) {
-                        TimeFieldDomainModel.Start -> TimeFieldPresentationModel.Start
-                        TimeFieldDomainModel.End -> TimeFieldPresentationModel.End
-                    },
+                    field = timeFieldPresentationMapper.toPresentation(result.field),
                     reason = TimeRejectionPresentationModel.InFuture
                 )
             )
@@ -306,7 +352,11 @@ class AttackDetailsViewModel(
             is UpdateAttackTimesResultDomainModel.Overlaps -> notify(
                 TimeRejected(
                     field,
-                    TimeRejectionPresentationModel.Overlaps(result.otherStart, result.otherEnd)
+                    TimeRejectionPresentationModel.Overlaps(
+                        attacks = result.attacks.map(attackRangePresentationMapper::toPresentation),
+                        requestedStart = start,
+                        requestedEnd = end
+                    )
                 )
             )
 

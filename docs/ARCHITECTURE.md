@@ -55,8 +55,10 @@ target API 37, whichever comes first. Until then, do not mix AGP 9 idioms into b
 - Datasources share one `source`/`implementation` pair, one package per resource (`database`, `attack`, `tag`,
   `preferences`, `billing`, `scheduler`, `pdf`, `file`, `analytics`, `clock`), as in the sample. The pair may be split later only for build-time
   reasons.
-- Features: `home` (today's sky, attack mode, quick actions) and `attack` (one attack's details). Both read the same
-  `AttackDataSource` through their own models and repositories.
+- Features: `home` (today's sky, attack mode, quick actions) and `attack`. `attack` has two screens, each with its own
+  ViewModel, view state, notifications, navigation events and `Dependencies`: one attack's details, and adding a past
+  attack (change `add-past-attacks`). They share the feature's domain, models and UI pieces such as `TimeRow`. Both
+  features read the same `AttackDataSource` through their own models and repositories.
 - Features never depend on other features. Something two features need goes into a datasource, `:app`, or a dedicated
   shared domain module with its own reason to exist.
 
@@ -105,7 +107,8 @@ Health data must never be passed to either SDK.
 - Times are stored as epoch milliseconds plus the IANA zone id where the event started (BRD EC-TIM-01).
 - Every schema version is exported to `datasource/implementation/schemas` and committed. Migrations are written and
   tested; `fallbackToDestructiveMigration` is forbidden (BRD EC-STO-01).
-- Rules that must be atomic (for example "only one attack in progress") run in one DAO `@Transaction`.
+- Rules that must be atomic run in one DAO `@Transaction`: "only one attack in progress", "store a past attack only
+  when nothing overlaps it" (`insertEndedIfNoOverlap`) and a merge (`mergeInto`).
 - **Schema changes.** Additive versions use `@AutoMigration`; anything else gets a hand-written `Migration`. Every step
   has an instrumented `MigrationTestHelper` test that migrates a database holding data (`MigrationTest`). Version 2
   (change `add-attack-details`) added impact, note and deleted-at columns and the `attack_tag` and `custom_tag` tables.
@@ -115,6 +118,15 @@ Health data must never be passed to either SDK.
 - **Soft delete.** Deleting an attack sets `deleted_epoch_millis`. Every read except `recentlyDeleted` and the restore
   check hides deleted attacks. Rows deleted more than 2 minutes ago are purged by the datasource when it deletes or
   lists deletions (BRD D23). The hard `delete` remains only for "undo start".
+- **Overlaps and merges.** Stored attacks never overlap; touching at one instant is allowed, and an attack in progress
+  is open-ended. `overlapping(excludingId?, start, end)` lists every overlapping attack, oldest first.
+  - The domain decides what a merge means (BRD D27). `AttackDataSource.merge` then writes it in one transaction:
+    1. the absorbed attacks' intensity points move to the survivor;
+    2. their tags are copied with `IGNORE`, so a tag on both is kept once;
+    3. the long-attack check takes the strictest state;
+    4. the survivor takes the new fields;
+    5. the absorbed rows are deleted for good (no undo, BRD D28).
+  - The schema did not change for this.
 - `SQLiteFullException` becomes `StorageFullDataException`. Any other `SQLiteException` becomes
   `DatabaseDataException`. Repositories turn both into failure values (section 7).
 - DAO SQL is covered by instrumented tests (`connectedDebugAndroidTest` on the `Migrely_API_36` emulator). Datasource
@@ -222,4 +234,6 @@ with no `testDebugUnitTest` task, so `testDebugUnitTest` alone would skip their 
 | `ViewModelObserver` collects in `LaunchedEffect` | skill `bindings/nav2.md` | permanent |
 | `:designsystem` module holds the theme (the sample keeps it in `:app`) | home and history both draw skies; profile section 3 allows a shared module with its own reason | permanent |
 | Konsist: the four "models are suffixed with …Model" rules scan production code only (`scopeFromProduction()`) | unit tests for a model belong in the model's package (for example `AttackDomainModelTest`); the skill forbids renaming classes to dodge a rule | permanent |
+| The add-past-attack screen asks for its defaults with `LaunchedEffect` while its saveable times are empty, instead of `ScreenEnterObserver` | after process death before the defaults arrived, `ScreenEnterObserver` would never ask again and leave the screen empty; once picked, the saved times win | permanent |
+| The add screen carries the end along with a new start and caps it at the current minute in `PastAttackDraftUiModel` | an editing convenience of the form, like the picker bounds; the domain validates the times again | permanent |
 | Further Konsist rule adaptations | recorded here when made | — |

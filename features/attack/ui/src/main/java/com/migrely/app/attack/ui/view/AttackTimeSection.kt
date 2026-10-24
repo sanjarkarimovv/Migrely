@@ -10,6 +10,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -17,14 +18,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.migrely.app.attack.ui.R
 import com.migrely.app.attack.ui.mapper.AttackTimeUiFormatter
 import com.migrely.app.attack.ui.model.AttackDetailsUiModel
+import com.migrely.app.attack.ui.model.AttackRangeUiModel
 import com.migrely.app.attack.ui.model.TimeErrorReasonUiModel
 import com.migrely.app.attack.ui.model.TimeErrorUiModel
 import com.migrely.app.attack.ui.model.TimeFieldUiModel
@@ -33,15 +38,15 @@ import com.migrely.app.designsystem.picker.MigrelyDateTimePicker
 import java.time.LocalDate
 import java.time.ZoneId
 
-private const val MILLIS_PER_MINUTE = 60_000L
+internal const val MILLIS_PER_MINUTE = 60_000L
 private const val MINUTES_PER_HOUR = 60L
 private const val MINUTES_PER_DAY = 24 * 60L
 
 /** The clock tolerance of the domain (BRD EC-ATK-03), so the pickers allow what the domain accepts. */
-private const val CLOCK_TOLERANCE_MILLIS = 5 * MILLIS_PER_MINUTE
+internal const val CLOCK_TOLERANCE_MILLIS = 5 * MILLIS_PER_MINUTE
 
 /** The earliest start a picker offers; attacks are never logged this far back. */
-private val EARLIEST_START_MILLIS = LocalDate.of(
+internal val EARLIEST_START_MILLIS = LocalDate.of(
     2000,
     1,
     1
@@ -75,7 +80,10 @@ internal fun TimeSection(
             error = timeError?.takeIf { it.field == TimeFieldUiModel.Start },
             zoneId = details.startZoneId,
             timeUiFormatter = timeUiFormatter,
-            onClick = { picking = TimeFieldUiModel.Start }
+            onClick = { picking = TimeFieldUiModel.Start },
+            onMerge = { overlap ->
+                actions.onMerge(overlap.requestedStartEpochMillis, overlap.requestedEndEpochMillis)
+            }
         )
         if (end == null) {
             TimeRow(
@@ -96,7 +104,13 @@ internal fun TimeSection(
                 error = timeError?.takeIf { it.field == TimeFieldUiModel.End },
                 zoneId = details.startZoneId,
                 timeUiFormatter = timeUiFormatter,
-                onClick = { picking = TimeFieldUiModel.End }
+                onClick = { picking = TimeFieldUiModel.End },
+                onMerge = { overlap ->
+                    actions.onMerge(
+                        overlap.requestedStartEpochMillis,
+                        overlap.requestedEndEpochMillis
+                    )
+                }
             )
         }
         val duration = durationText((end ?: details.nowEpochMillis) - details.startEpochMillis)
@@ -144,16 +158,21 @@ internal fun TimeSection(
     }
 }
 
+/**
+ * One time with its label, shared by the details and add screens. An inline [error] sits under it and is announced;
+ * an overlap offers "Merge them" when [onMerge] is given (BRD EC-ATK-05).
+ */
 @Suppress("LongParameterList")
 @Composable
-private fun TimeRow(
+internal fun TimeRow(
     label: String,
     value: String,
     description: String?,
     error: TimeErrorUiModel?,
     zoneId: String,
     timeUiFormatter: AttackTimeUiFormatter,
-    onClick: (() -> Unit)?
+    onClick: (() -> Unit)?,
+    onMerge: ((TimeErrorReasonUiModel.Overlaps) -> Unit)? = null
 ) {
     Surface(
         shape = RoundedCornerShape(16.dp),
@@ -162,50 +181,65 @@ private fun TimeRow(
             .fillMaxWidth()
             .padding(vertical = 4.dp)
     ) {
-        Column(
-            modifier = Modifier
-                .then(
-                    if (onClick == null) {
-                        Modifier
-                    } else {
-                        Modifier.clickable(role = Role.Button, onClick = onClick)
-                    }
-                )
-                .then(
-                    if (description ==
-                        null
-                    ) {
-                        Modifier
-                    } else {
-                        Modifier.semantics { contentDescription = description }
-                    }
-                )
-                .heightIn(min = 56.dp)
-                .padding(horizontal = 16.dp, vertical = 12.dp)
-        ) {
-            // The label sits above the value, so a long date never squeezes the label at large font sizes.
-            Text(
-                text = label,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Text(
-                text = value,
-                style = MaterialTheme.typography.bodyLarge.copy(fontFeatureSettings = "tnum"),
-                color = if (onClick == null) {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                } else {
-                    MaterialTheme.colorScheme.primary
-                },
-                modifier = Modifier.padding(top = 2.dp)
-            )
-            if (error != null) {
+        Column {
+            Column(
+                modifier = Modifier
+                    .then(
+                        if (onClick == null) {
+                            Modifier
+                        } else {
+                            Modifier.clickable(role = Role.Button, onClick = onClick)
+                        }
+                    )
+                    .then(
+                        if (description == null) {
+                            Modifier
+                        } else {
+                            Modifier.semantics { contentDescription = description }
+                        }
+                    )
+                    .fillMaxWidth()
+                    .heightIn(min = 56.dp)
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
+            ) {
+                // The label sits above the value, so a long date never squeezes the label at large font sizes.
                 Text(
-                    text = errorText(error.reason, zoneId, timeUiFormatter),
+                    text = label,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.padding(top = 6.dp)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+                Text(
+                    text = value,
+                    style = MaterialTheme.typography.bodyLarge.copy(fontFeatureSettings = "tnum"),
+                    color = if (onClick == null) {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    } else {
+                        MaterialTheme.colorScheme.primary
+                    },
+                    modifier = Modifier.padding(top = 2.dp)
+                )
+            }
+            if (error != null) {
+                Column(modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 12.dp)) {
+                    Text(
+                        text = errorText(error.reason, zoneId, timeUiFormatter),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
+                    )
+                    val reason = error.reason
+                    if (onMerge != null && reason is TimeErrorReasonUiModel.Overlaps) {
+                        TextButton(
+                            onClick = { onMerge(reason) },
+                            modifier = Modifier.heightIn(min = 48.dp)
+                        ) {
+                            Text(
+                                text = stringResource(R.string.time_merge),
+                                style = MaterialTheme.typography.labelLarge
+                            )
+                        }
+                    }
+                }
             }
         }
     }
@@ -220,20 +254,49 @@ private fun errorText(
     TimeErrorReasonUiModel.InFuture -> stringResource(R.string.time_error_in_future)
     TimeErrorReasonUiModel.EndBeforeStart ->
         stringResource(R.string.time_error_end_before_start)
-    is TimeErrorReasonUiModel.Overlaps -> {
-        // In the attack's zone, like every other time on this screen.
-        val start = timeUiFormatter.formatDateTime(reason.startEpochMillis, zone)
-        val otherEnd = reason.endEpochMillis
-        if (otherEnd == null) {
+    is TimeErrorReasonUiModel.Overlaps -> overlapText(reason.attacks, zone, timeUiFormatter)
+}
+
+/** Names every overlapping attack in [zone], like every other time on the screen (BRD EC-ATK-15). */
+@Composable
+internal fun overlapText(
+    attacks: List<AttackRangeUiModel>,
+    zone: String,
+    timeUiFormatter: AttackTimeUiFormatter
+): String {
+    val single = attacks.singleOrNull()
+    if (single != null) {
+        val start = timeUiFormatter.formatDateTime(single.startEpochMillis, zone)
+        val end = single.endEpochMillis
+        return if (end == null) {
             stringResource(R.string.time_error_overlaps_in_progress, start)
         } else {
             stringResource(
                 R.string.time_error_overlaps,
                 start,
-                timeUiFormatter.formatWithinAttack(otherEnd, reason.startEpochMillis, zone)
+                timeUiFormatter.formatWithinAttack(end, single.startEpochMillis, zone)
             )
         }
     }
+    val ranges = attacks.map { attack ->
+        val start = timeUiFormatter.formatDateTime(attack.startEpochMillis, zone)
+        val end = attack.endEpochMillis
+        if (end == null) {
+            stringResource(R.string.overlap_range_in_progress, start)
+        } else {
+            stringResource(
+                R.string.overlap_range,
+                start,
+                timeUiFormatter.formatWithinAttack(end, attack.startEpochMillis, zone)
+            )
+        }
+    }
+    return pluralStringResource(
+        R.plurals.time_error_overlaps_many,
+        attacks.size,
+        attacks.size,
+        ranges.joinToString(stringResource(R.string.overlap_separator))
+    )
 }
 
 @Composable

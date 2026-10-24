@@ -72,13 +72,19 @@ internal fun ImpactSection(
 }
 
 /**
- * A note of up to 1,000 characters with a counter (BRD EC-ATK-13). Once edited, the text on screen wins over reloads.
- * It is saved shortly after typing stops, when the app goes to the background and when the screen is left, so it
- * survives a back press or the app being killed (BRD ATK-F6, EC-ATK-10).
+ * A note of up to 1,000 characters with a counter (BRD EC-ATK-13). Once edited, the text on screen ([draft], kept by
+ * the screen) wins over reloads. It is saved shortly after typing stops, when the app goes to the background and when
+ * the screen is left, so it survives a back press or the app being killed (BRD ATK-F6, EC-ATK-10). The screen clears
+ * [draft] when it hands the text to a merge, so a stale draft never overwrites the merged note.
  */
 @Composable
-internal fun NoteSection(attackId: String, savedNote: String, onNote: (String) -> Unit) {
-    var draft by rememberSaveable(attackId) { mutableStateOf<String?>(null) }
+internal fun NoteSection(
+    attackId: String,
+    draft: String?,
+    savedNote: String,
+    onDraftChange: (String) -> Unit,
+    onNote: (String) -> Unit
+) {
     val currentDraft by rememberUpdatedState(draft)
     val currentSaved by rememberUpdatedState(savedNote)
     val currentOnNote by rememberUpdatedState(onNote)
@@ -99,7 +105,7 @@ internal fun NoteSection(attackId: String, savedNote: String, onNote: (String) -
         SectionTitle(stringResource(R.string.section_note))
         OutlinedTextField(
             value = text,
-            onValueChange = { draft = it.take(MAXIMUM_NOTE_LENGTH) },
+            onValueChange = { onDraftChange(it.take(MAXIMUM_NOTE_LENGTH)) },
             placeholder = { Text(stringResource(R.string.note_hint)) },
             supportingText = {
                 Text(
