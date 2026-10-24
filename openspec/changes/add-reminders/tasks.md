@@ -30,7 +30,7 @@
   - Tests.
 - [x] 2.2 Data: `RemindersRepository` over `ReminderSettingsDataSource`, `ReminderScheduleDataSource`,
   `NotificationDataSource`, `AttackDataSource`, `DayMarkDataSource` and `ClockDataSource`, with tests.
-- [ ] 2.3 Presentation: `RemindersViewModel` with `onEnter`, `onDailyReminderAction(on)`, `onDailyTimeAction(time)`,
+- [x] 2.3 Presentation: `RemindersViewModel` with `onEnter`, `onDailyReminderAction(on)`, `onDailyTimeAction(time)`,
   `onEffectReminderAction(on)`, `onPermissionResultAction(granted)` and `onOpenSettingsAction`; view state and
   notifications; tests.
 - [ ] 2.4 UI: the Reminders screen (switch rows, time row with `MigrelyDateTimePicker`'s time picker, a notice when

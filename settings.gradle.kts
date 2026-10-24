@@ -75,6 +75,7 @@ setOf(
 }
 
 setOf(
+    "presentation",
     "domain",
     "data"
 ).forEach { module ->
