@@ -183,7 +183,7 @@ private fun EffectDialog(
         },
         confirmButton = {},
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.picker_cancel)) }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.attack_picker_cancel)) }
         }
     )
 }

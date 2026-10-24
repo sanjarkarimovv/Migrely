@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="attack_details_title">Migraine</string>
-    <string name="navigate_back">Back</string>
+    <string name="attack_navigate_back">Back</string>
     <string name="section_time">Time</string>
     <string name="time_started">Started</string>
     <string name="time_ended">Ended</string>
@@ -28,9 +28,9 @@
     <string name="picker_start_out_of_range">Pick a time before the end.</string>
     <string name="picker_end_out_of_range">Pick a time between the start and now.</string>
     <string name="picker_point_out_of_range">Pick a time inside this migraine.</string>
-    <string name="picker_next">Next</string>
-    <string name="picker_cancel">Cancel</string>
-    <string name="picker_confirm">OK</string>
+    <string name="attack_picker_next">Next</string>
+    <string name="attack_picker_cancel">Cancel</string>
+    <string name="attack_picker_confirm">OK</string>
     <string name="section_pain">Pain</string>
     <string name="pain_peak">Peak %1$d/10</string>
     <string name="pain_not_recorded">Not recorded</string>
@@ -74,17 +74,17 @@
     <string name="picker_past_start_out_of_range">Pick a time before now.</string>
     <string name="not_found_title">This migraine no longer exists</string>
     <string name="not_found_back">Go back</string>
-    <string name="snackbar_undo">Undo</string>
+    <string name="attack_snackbar_undo">Undo</string>
     <string name="snackbar_undo_times_description">Undo the time change</string>
     <string name="snackbar_undo_point_description">Undo removing the pain level</string>
-    <string name="snackbar_dismiss">Dismiss</string>
+    <string name="attack_snackbar_dismiss">Dismiss</string>
     <string name="message_point_removed">Pain level removed</string>
     <string name="message_point_outside">That time is outside this migraine.</string>
     <string name="message_tag_limit">Your list is full. Remove one to add another.</string>
-    <string name="message_undone">Undone.</string>
-    <string name="message_undo_not_possible">This can no longer be undone.</string>
-    <string name="message_storage_full">Couldn\'t save. Your phone\'s storage is full.</string>
-    <string name="message_generic">Something went wrong. Please try again.</string>
+    <string name="attack_message_undone">Undone.</string>
+    <string name="attack_message_undo_not_possible">This can no longer be undone.</string>
+    <string name="attack_message_storage_full">Couldn\'t save. Your phone\'s storage is full.</string>
+    <string name="attack_message_generic">Something went wrong. Please try again.</string>
     <string name="duration_minutes">%1$d min</string>
     <string name="duration_hours_minutes">%1$d h %2$d min</string>
     <string name="duration_days_hours">%1$d d %2$d h</string>

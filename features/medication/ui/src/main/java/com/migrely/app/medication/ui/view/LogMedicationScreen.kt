@@ -301,7 +301,7 @@ fun LogMedicationContents(
                     IconButton(onClick = actions.onBack) {
                         Icon(
                             MigrelyIcons.Back,
-                            contentDescription = stringResource(R.string.navigate_back),
+                            contentDescription = stringResource(R.string.medication_navigate_back),
                             tint = colors.content
                         )
                     }
@@ -400,9 +400,9 @@ private fun TimeRow(
             zoneId = runCatching { ZoneId.of(zoneId) }.getOrDefault(ZoneId.systemDefault()),
             labels = DateTimePickerLabels(
                 title = stringResource(R.string.picker_title),
-                next = stringResource(R.string.picker_next),
-                cancel = stringResource(R.string.picker_cancel),
-                confirm = stringResource(R.string.picker_confirm),
+                next = stringResource(R.string.medication_picker_next),
+                cancel = stringResource(R.string.medication_picker_cancel),
+                confirm = stringResource(R.string.medication_picker_confirm),
                 outOfRange = stringResource(R.string.picker_out_of_range)
             ),
             onConfirm = {
