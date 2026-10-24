@@ -1,0 +1,8 @@
+# Time scenario step: a clean install with one attack in progress, then the app is closed.
+# qa/device_scenarios.sh moves the device clock between steps; these flows are not run on their own.
+appId: com.migrely.app
+---
+- runFlow: ../subflows/launch-clean.yaml
+- runFlow: ../subflows/start-attack.yaml
+- runFlow: ../subflows/wait-message-gone.yaml
+- stopApp

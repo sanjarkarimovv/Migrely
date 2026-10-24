@@ -6,8 +6,15 @@ name: Undo a start removes the attack and confirms it
 tags: [smoke, regression, attack-logging, in-app-messages]
 ---
 - runFlow: ../subflows/launch-clean.yaml
-- runFlow: ../subflows/start-attack.yaml
-- tapOn: "Undo the start"
+# Undo is tapped as the very next action (see in-app-messages/newest-wins.yaml).
+- tapOn:
+    text: "Migraine started"
+    waitToSettleTimeoutMs: 0
+    retryTapIfNoChange: false
+- tapOn:
+    text: "Undo the start"
+    waitToSettleTimeoutMs: 0
+    retryTapIfNoChange: false
 - extendedWaitUntil:
     visible: "Undone."
     timeout: 3000

@@ -1,0 +1,27 @@
+# Covers: attack-history › Undo a deletion on History › Undo from History
+appId: com.migrely.app
+name: An attack deleted from History comes back with Undo
+tags: [regression, attack-history]
+---
+- runFlow: ../subflows/launch-clean.yaml
+- runFlow: ../subflows/log-attack-today.yaml
+- tapOn: ".*\\. Opens History\\."
+- tapOn: ".*, peak not recorded\\. Opens its details\\."
+- scrollUntilVisible:
+    element: "Delete migraine"
+    direction: DOWN
+- tapOn:
+    text: "Delete migraine"
+    waitToSettleTimeoutMs: 0
+    retryTapIfNoChange: false
+# Undo is tapped as the very next action (see in-app-messages/newest-wins.yaml).
+- tapOn:
+    text: "Undo the deletion"
+    waitToSettleTimeoutMs: 0
+    retryTapIfNoChange: false
+# "Undone." is checked first: it stays 8 s, and each Maestro step takes 1–4 s on this emulator.
+- extendedWaitUntil:
+    visible: "Undone\\."
+    timeout: 5000
+- assertVisible: "1 migraine in .*"
+- assertVisible: "History"

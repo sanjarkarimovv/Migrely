@@ -1,0 +1,15 @@
+# Accessibility tour state: the overlap card with "Merge them" and "Change the times".
+appId: com.migrely.app
+---
+- runFlow: ../subflows/launch-clean.yaml
+- tapOn: "Add a past migraine"
+- tapOn: "Add migraine"
+- extendedWaitUntil:
+    visible: "Not recorded"
+    timeout: 5000
+- back
+- tapOn: "Add a past migraine"
+- tapOn: "Add migraine"
+- extendedWaitUntil:
+    visible: "Merge them"
+    timeout: 5000

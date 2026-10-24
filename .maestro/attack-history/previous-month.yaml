@@ -1,0 +1,28 @@
+# Covers: attack-history › Month by month › Previous month
+# Covers: attack-history › Month by month › Not before the first attack
+# Covers: attack-history › Month by month › Not past this month
+# Covers: attack-history › The month's attacks › Empty month
+appId: com.migrely.app
+name: History goes back to the month of the first attack and no further
+tags: [regression, attack-history]
+---
+- runFlow: ../subflows/launch-clean.yaml
+- runFlow: ../subflows/add-past-attack-last-month.yaml
+- tapOn: ".*\\. Opens History\\."
+- extendedWaitUntil:
+    visible: "No migraines logged in .*"
+    timeout: 5000
+# "Next month" is disabled: tapping it leaves the month as it is. (Maestro reads the label from the icon inside
+# the button, which does not carry the button's disabled state, so the state is checked by behaviour.)
+- tapOn: "Next month"
+- assertVisible: "No migraines logged in .*"
+- tapOn: "Previous month"
+- extendedWaitUntil:
+    visible: "1 migraine in .*"
+    timeout: 3000
+- assertVisible: ".*, [A-Za-z]+ 12: cloudy\\. 1 migraine\\. Peak: not recorded\\."
+# "Previous month" is disabled: tapping it leaves the month as it is. (Maestro reads the label from the icon inside
+# the button, which does not carry the button's disabled state, so the state is checked by behaviour.)
+- tapOn: "Previous month"
+- assertVisible: "1 migraine in .*"
+- takeScreenshot: attack-history-previous-month

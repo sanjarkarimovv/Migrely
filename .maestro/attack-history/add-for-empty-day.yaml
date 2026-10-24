@@ -1,0 +1,31 @@
+# Covers: attack-history › Choose a day › Day with nothing logged
+# Covers: attack-history › Add a past migraine for the chosen day › Add for a chosen day
+# Covers: attack-history › Add a past migraine for the chosen day › Back to History after adding
+# Picks the first past day of this month with nothing logged, so it needs today not to be the 1st.
+appId: com.migrely.app
+name: An empty day offers a past migraine that lands on that day
+tags: [regression, attack-history, past-attacks]
+---
+- runFlow: ../subflows/launch-clean.yaml
+- runFlow: ../subflows/log-attack-today.yaml
+- tapOn: ".*\\. Opens History\\."
+- tapOn:
+    text: ".*: nothing logged\\."
+    index: 0
+- extendedWaitUntil:
+    visible: "Nothing logged on this day\\."
+    timeout: 3000
+- tapOn: "Add a past migraine"
+- extendedWaitUntil:
+    visible: "Past migraine"
+    timeout: 5000
+- tapOn: "Add migraine"
+- extendedWaitUntil:
+    visible: "Not recorded"
+    timeout: 5000
+- back
+- extendedWaitUntil:
+    visible: ".*: cloudy\\. 1 migraine\\. Peak: not recorded\\..*"
+    timeout: 5000
+- assertVisible: "Show all of .*"
+- assertNotVisible: "Nothing logged on this day\\."

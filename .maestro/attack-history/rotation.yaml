@@ -1,0 +1,22 @@
+# Covers: attack-history › History stays current › Rotation and process death (rotation part)
+# The process-death part needs adb and runs in qa/device_scenarios.sh (Maestro's killApp is a force stop,
+# which clears saved state on purpose, so it cannot show process death).
+appId: com.migrely.app
+name: The shown month and chosen day survive rotation
+tags: [regression, attack-history]
+---
+- runFlow: ../subflows/launch-clean.yaml
+- runFlow: ../subflows/add-past-attack-last-month.yaml
+- tapOn: ".*\\. Opens History\\."
+- tapOn: "Previous month"
+- tapOn: ".*, [A-Za-z]+ 12: cloudy\\. 1 migraine\\. Peak: not recorded\\."
+- extendedWaitUntil:
+    visible: "Show all of .*"
+    timeout: 3000
+- setOrientation: LANDSCAPE_LEFT
+- extendedWaitUntil:
+    visible: "Show all of .*"
+    timeout: 5000
+- setOrientation: PORTRAIT
+- assertVisible: "Show all of .*"
+- assertVisible: ".*, [A-Za-z]+ 12: cloudy\\. 1 migraine\\. Peak: not recorded\\..*"

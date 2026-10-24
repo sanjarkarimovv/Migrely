@@ -9,5 +9,6 @@ flows:
   - "today-sky/*"
   - "in-app-messages/*"
   - "past-attacks/*"
+  - "attack-history/*"
   - "attack-details/*"
   - "custom-tags/*"

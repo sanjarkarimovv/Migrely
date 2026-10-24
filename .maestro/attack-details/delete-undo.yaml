@@ -12,12 +12,15 @@ tags: [smoke, regression, attack-details, today-sky]
 - scrollUntilVisible:
     element: "Delete migraine"
     direction: DOWN
-- tapOn: "Delete migraine"
-- extendedWaitUntil:
-    visible: "Migraine deleted"
-    timeout: 5000
-- assertVisible: ".*Calm so far today.*"
-- tapOn: "Undo the deletion"
+- tapOn:
+    text: "Delete migraine"
+    waitToSettleTimeoutMs: 0
+    retryTapIfNoChange: false
+# Undo is tapped as the very next action (see in-app-messages/newest-wins.yaml); the tap waits for the message.
+- tapOn:
+    text: "Undo the deletion"
+    waitToSettleTimeoutMs: 0
+    retryTapIfNoChange: false
 - extendedWaitUntil:
     visible: "Today: cloudy. 1 migraine today. Peak: moderate."
     timeout: 5000

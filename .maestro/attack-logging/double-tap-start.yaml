@@ -7,8 +7,16 @@ name: A rapid double tap on "Migraine started" leaves one attack in progress
 tags: [regression, attack-logging, known-bug]
 ---
 - runFlow: ../subflows/launch-clean.yaml
-- doubleTapOn:
-    point: "50%,87%"
+# Two separate taps with no settle wait, so the second lands while the screen switches modes, like a finger
+# tapping twice "to be sure". 88% of the height (y 2112 px) is inside the overlap with a margin on both sides.
+- tapOn:
+    point: "50%,88%"
+    waitToSettleTimeoutMs: 0
+    retryTapIfNoChange: false
+- tapOn:
+    point: "50%,88%"
+    waitToSettleTimeoutMs: 0
+    retryTapIfNoChange: false
 - extendedWaitUntil:
     visible: "Rest now. We'll keep time."
     timeout: 5000

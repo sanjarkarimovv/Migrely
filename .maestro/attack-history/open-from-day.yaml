@@ -1,0 +1,18 @@
+# Covers: attack-history › Open History › Open from a day
+# Covers: attack-history › Choose a day › Back to the month
+appId: com.migrely.app
+name: A day on home opens History with that day chosen
+tags: [regression, attack-history]
+---
+- runFlow: ../subflows/launch-clean.yaml
+- runFlow: ../subflows/log-attack-today.yaml
+- tapOn: "Today, .*: cloudy\\. 1 migraine\\. Peak: not recorded\\."
+- extendedWaitUntil:
+    visible: "Show all of .*"
+    timeout: 5000
+- assertNotVisible: "1 migraine in .*"
+- tapOn: "Show all of .*"
+- extendedWaitUntil:
+    visible: "1 migraine in .*"
+    timeout: 3000
+- assertNotVisible: "Show all of .*"

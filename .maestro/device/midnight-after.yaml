@@ -1,0 +1,9 @@
+# Covers: today-sky › Card stays current › Midnight passes
+# Home has stayed open across local midnight; nothing touches the new day.
+appId: com.migrely.app
+---
+- extendedWaitUntil:
+    visible: "Today: calm\\. Calm so far today\\. No migraine logged\\."
+    timeout: 45000
+- assertNotVisible: "Logged today"
+- assertVisible: ".*: cloudy\\. 1 migraine\\. Peak: not recorded\\."

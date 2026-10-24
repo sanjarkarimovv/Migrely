@@ -1,15 +1,24 @@
 # Covers: in-app-messages › Newest message wins › End right after start
+# Undo is tapped as the very next action: Maestro needs 1–4 s per step on the software-GPU emulator, so checks placed
+# between the end and the tap could use up the 5 s window. If the start message had won, "Undo" would remove the
+# attack; getting the attack back in progress proves that "Undo" belonged to the end.
 appId: com.migrely.app
 name: Ending inside the undo window replaces the start message
 tags: [regression, in-app-messages]
 ---
 - runFlow: ../subflows/launch-clean.yaml
 - runFlow: ../subflows/start-attack.yaml
-- assertVisible: "Undo the start"
-- runFlow: ../subflows/end-attack.yaml
-- assertVisible: "Undo the end"
-- assertNotVisible: "Undo the start"
-- tapOn: "Undo the end"
+- tapOn:
+    text: "Migraine ended"
+    index: 0
+    waitToSettleTimeoutMs: 0
+    retryTapIfNoChange: false
+- tapOn:
+    text: "Undo the end"
+    waitToSettleTimeoutMs: 0
+    retryTapIfNoChange: false
 - extendedWaitUntil:
     visible: "Rest now. We'll keep time."
     timeout: 5000
+- assertVisible: "Undone."
+- assertNotVisible: "Undo the start"

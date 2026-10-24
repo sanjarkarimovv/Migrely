@@ -4,6 +4,7 @@ appId: com.migrely.app
 - tapOn:
     text: "Migraine ended"
     index: 0
+    waitToSettleTimeoutMs: 500
 - extendedWaitUntil:
     notVisible: "Rest now. We'll keep time."
     timeout: 5000

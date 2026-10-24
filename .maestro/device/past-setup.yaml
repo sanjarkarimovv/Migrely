@@ -1,0 +1,11 @@
+# Device scenario step: the add screen with the start moved to the 12th of last month, nothing added yet.
+appId: com.migrely.app
+---
+- runFlow: ../subflows/launch-clean.yaml
+- tapOn: "Add a past migraine"
+- tapOn: "Change when it started, now .*"
+- tapOn: "Change to previous month"
+- tapOn: "[A-Za-z]+, [A-Za-z]+ 12, [0-9]{4}"
+- tapOn: "Next"
+- tapOn: "OK"
+- assertVisible: "Change when it started, now [A-Za-z]+, [A-Za-z]+ 12, .*"

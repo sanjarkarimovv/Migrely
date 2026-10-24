@@ -1,0 +1,26 @@
+# Covers: attack-history › No attacks yet › First use
+# Covers: attack-history › Month by month (only the current month with nothing logged)
+appId: com.migrely.app
+name: History before any attack explains the skies and offers the first log
+tags: [smoke, regression, attack-history]
+---
+- runFlow: ../subflows/launch-clean.yaml
+- tapOn: ".*\\. Opens History\\."
+- extendedWaitUntil:
+    visible: "No migraines logged yet"
+    timeout: 5000
+- assertVisible: "Each day you log becomes a small sky.*"
+- assertVisible: "Log your first migraine"
+# "Previous month" is disabled: tapping it leaves the month as it is. (Maestro reads the label from the icon inside
+# the button, which does not carry the button's disabled state, so the state is checked by behaviour.)
+- tapOn: "Previous month"
+- assertVisible: "No migraines logged yet"
+# "Next month" is disabled: tapping it leaves the month as it is. (Maestro reads the label from the icon inside
+# the button, which does not carry the button's disabled state, so the state is checked by behaviour.)
+- tapOn: "Next month"
+- assertVisible: "No migraines logged yet"
+- takeScreenshot: attack-history-first-use
+- tapOn: "Log your first migraine"
+- extendedWaitUntil:
+    visible: "Past migraine"
+    timeout: 5000

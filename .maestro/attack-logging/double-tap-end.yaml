@@ -8,8 +8,16 @@ tags: [regression, attack-logging, known-bug]
 - runFlow: ../subflows/launch-clean.yaml
 - runFlow: ../subflows/start-attack.yaml
 - runFlow: ../subflows/wait-message-gone.yaml
-- doubleTapOn:
+# Two separate taps with no settle wait, so the second lands while the screen switches modes, like a finger
+# tapping twice "to be sure". 88% of the height (y 2112 px) is inside the overlap with a margin on both sides.
+- tapOn:
     point: "50%,88%"
+    waitToSettleTimeoutMs: 0
+    retryTapIfNoChange: false
+- tapOn:
+    point: "50%,88%"
+    waitToSettleTimeoutMs: 0
+    retryTapIfNoChange: false
 - extendedWaitUntil:
     visible: "Today: cloudy. 1 migraine today. Peak: not recorded."
     timeout: 5000

@@ -8,8 +8,16 @@ tags: [smoke, regression, attack-logging, in-app-messages]
 - runFlow: ../subflows/start-attack.yaml
 - tapOn: "Moderate"
 - runFlow: ../subflows/wait-message-gone.yaml
-- runFlow: ../subflows/end-attack.yaml
-- tapOn: "Undo the end"
+# Undo is tapped as the very next action after the end (see in-app-messages/newest-wins.yaml).
+- tapOn:
+    text: "Migraine ended"
+    index: 0
+    waitToSettleTimeoutMs: 0
+    retryTapIfNoChange: false
+- tapOn:
+    text: "Undo the end"
+    waitToSettleTimeoutMs: 0
+    retryTapIfNoChange: false
 - extendedWaitUntil:
     visible: "Rest now. We'll keep time."
     timeout: 5000

@@ -1,0 +1,25 @@
+# Covers: attack-history › Open History › Open from the month name
+# Covers: attack-history › The month's attacks › Open an attack
+# Covers: today-sky › This month under today's sky › Opens History
+appId: com.migrely.app
+name: The month card opens History on this month, and a row opens its attack
+tags: [smoke, regression, attack-history]
+---
+- runFlow: ../subflows/launch-clean.yaml
+- runFlow: ../subflows/log-attack-today.yaml
+- tapOn: ".*\\. Opens History\\."
+- extendedWaitUntil:
+    visible: "1 migraine in .*"
+    timeout: 5000
+- assertVisible: "History"
+- assertNotVisible: "Show all of .*"
+# "Next month" is disabled: tapping it leaves the month as it is. (Maestro reads the label from the icon inside
+# the button, which does not carry the button's disabled state, so the state is checked by behaviour.)
+- tapOn: "Next month"
+- assertVisible: "1 migraine in .*"
+- tapOn: ".*, peak not recorded\\. Opens its details\\."
+- extendedWaitUntil:
+    visible: "Duration .*"
+    timeout: 5000
+- back
+- assertVisible: "1 migraine in .*"

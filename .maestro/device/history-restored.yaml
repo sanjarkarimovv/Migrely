@@ -1,0 +1,9 @@
+# Covers: attack-history › History stays current › Rotation and process death (process-death part)
+# Runs after the system ended the app in the background and the user opened it again from the launcher.
+appId: com.migrely.app
+---
+- extendedWaitUntil:
+    visible: "Show all of .*"
+    timeout: 10000
+- assertVisible: "History"
+- assertVisible: "1 migraine in .*|.*, [A-Za-z]+ 12: cloudy\\. 1 migraine\\. Peak: not recorded\\..*"
