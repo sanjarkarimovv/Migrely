@@ -35,8 +35,8 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -152,22 +152,25 @@ private fun DayCell(
     }
     val outline = MaterialTheme.colorScheme.outlineVariant
     Box(
-        // The semantics come before clickable, so they replace its own instead of adding a second action.
+        // Merged into the clickable rather than replacing it, so a day stays focusable for keyboards and switch
+        // access (BRD EC-UX-19); the day number inside is cleared so the description is read once.
         modifier = modifier
             .aspectRatio(1f)
             .clip(CellShape)
-            .clearAndSetSemantics {
+            .semantics {
                 contentDescription = day.description
                 if (day.isSelected) stateDescription = chosenStateDescription
-                if (selectable) {
-                    role = Role.Button
-                    onClick {
-                        onClick()
-                        true
-                    }
-                }
             }
-            .then(if (selectable) Modifier.clickable(onClick = onClick) else Modifier)
+            .then(
+                if (selectable) {
+                    Modifier.clickable(
+                        role = Role.Button,
+                        onClick = onClick
+                    )
+                } else {
+                    Modifier
+                }
+            )
             .then(ring)
     ) {
         Canvas(Modifier.matchParentSize()) { drawDaySky(day.appearance, outline) }
@@ -183,6 +186,7 @@ private fun DayCell(
             modifier = Modifier
                 .align(Alignment.TopStart)
                 .padding(start = 5.dp, top = 3.dp)
+                .clearAndSetSemantics { }
         )
     }
 }
