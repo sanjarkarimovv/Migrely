@@ -2,9 +2,9 @@
 
 ## 1. Datasource (design D1)
 
-- [ ] 1.1 DB v4: `effect`, `effect_closed` on `medication_intake`, the `overuse_notice` table, `AutoMigration(3, 4)`,
+- [x] 1.1 DB v4: `effect`, `effect_closed` on `medication_intake`, the `overuse_notice` table, `AutoMigration(3, 4)`,
   schema `4.json`.
-- [ ] 1.2 `MedicationDataSource`: `pendingEffectQuestion`, `setIntakeEffect`, `closeEffectQuestion`,
+- [x] 1.2 `MedicationDataSource`: `pendingEffectQuestion`, `setIntakeEffect`, `closeEffectQuestion`,
   `acuteIntakesTakenBetween`, `overuseNotices`, `acknowledgeOveruse`; `IntakeDataModel` with `effect` and
   `effectClosed`, restored by `restoreIntake`. Unit tests for the impl, and DAO and `MigrationTest` 3→4 instrumented tests.
   Verify: `./gradlew :datasource:implementation:test` and

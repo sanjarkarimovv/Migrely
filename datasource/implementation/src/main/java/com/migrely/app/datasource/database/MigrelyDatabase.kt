@@ -10,6 +10,7 @@ import com.migrely.app.datasource.attack.model.IntensityPointLocalModel
 import com.migrely.app.datasource.medication.dao.MedicationDao
 import com.migrely.app.datasource.medication.model.MedicationIntakeLocalModel
 import com.migrely.app.datasource.medication.model.MedicationLocalModel
+import com.migrely.app.datasource.medication.model.OveruseNoticeLocalModel
 import com.migrely.app.datasource.tag.dao.TagDao
 import com.migrely.app.datasource.tag.model.CustomTagLocalModel
 
@@ -17,7 +18,8 @@ import com.migrely.app.datasource.tag.model.CustomTagLocalModel
  * Version history (each schema is committed under `schemas/` and every migration has an instrumented test):
  * 1. attacks and intensity points (change add-attack-logging);
  * 2. impact, note and deletion time on attacks, the `attack_tag` and `custom_tag` tables (change add-attack-details);
- * 3. the `medication` and `medication_intake` tables (change add-medication-tracking).
+ * 3. the `medication` and `medication_intake` tables (change add-medication-tracking);
+ * 4. `effect` and `effect_closed` on intakes, the `overuse_notice` table (change add-medication-effect-and-overuse).
  */
 @Database(
     entities = [
@@ -26,11 +28,16 @@ import com.migrely.app.datasource.tag.model.CustomTagLocalModel
         AttackTagLocalModel::class,
         CustomTagLocalModel::class,
         MedicationLocalModel::class,
-        MedicationIntakeLocalModel::class
+        MedicationIntakeLocalModel::class,
+        OveruseNoticeLocalModel::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = true,
-    autoMigrations = [AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3)]
+    autoMigrations = [
+        AutoMigration(from = 1, to = 2),
+        AutoMigration(from = 2, to = 3),
+        AutoMigration(from = 3, to = 4)
+    ]
 )
 abstract class MigrelyDatabase : RoomDatabase() {
     abstract fun attackDao(): AttackDao

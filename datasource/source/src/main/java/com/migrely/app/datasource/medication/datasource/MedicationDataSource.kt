@@ -1,9 +1,15 @@
 package com.migrely.app.datasource.medication.datasource
 
+import com.migrely.app.datasource.medication.model.AcuteIntakeDataModel
 import com.migrely.app.datasource.medication.model.IntakeDataModel
+import com.migrely.app.datasource.medication.model.IntakeEffectDataModel
 import com.migrely.app.datasource.medication.model.MedicationCategoryDataModel
 import com.migrely.app.datasource.medication.model.MedicationDataModel
 import com.migrely.app.datasource.medication.model.MedicationKindDataModel
+import com.migrely.app.datasource.medication.model.OveruseCategoryDataModel
+import com.migrely.app.datasource.medication.model.OveruseLevelDataModel
+import com.migrely.app.datasource.medication.model.OveruseNoticeDataModel
+import com.migrely.app.datasource.medication.model.PendingEffectQuestionDataModel
 import java.time.Instant
 
 /**
@@ -61,4 +67,28 @@ interface MedicationDataSource {
 
     /** The intakes of [attackId], oldest first. */
     fun intakesOfAttack(attackId: String): List<IntakeDataModel>
+
+    /**
+     * The oldest intake of an acute medication taken in the half-open window [[takenFrom], [takenTo]) that has no
+     * answer, was not skipped and is not in an attack being deleted (BRD MED-F4, EC-MED-05, EC-MED-11).
+     */
+    fun pendingEffectQuestion(takenFrom: Instant, takenTo: Instant): PendingEffectQuestionDataModel?
+
+    /** Stores the answer, or clears it when null, and closes the question (BRD D39, EC-MED-12). */
+    fun setIntakeEffect(intakeId: String, effect: IntakeEffectDataModel?)
+
+    /** Closes the question without an answer. */
+    fun closeEffectQuestion(intakeId: String)
+
+    /** Acute intakes taken in the half-open window [[from], [to]), outside attacks being deleted (BRD D45). */
+    fun acuteIntakesTakenBetween(from: Instant, to: Instant): List<AcuteIntakeDataModel>
+
+    /** The last "Got it" of each overuse category and level (BRD EC-MED-06). */
+    fun overuseNotices(): List<OveruseNoticeDataModel>
+
+    fun acknowledgeOveruse(
+        category: OveruseCategoryDataModel,
+        level: OveruseLevelDataModel,
+        acknowledgedAt: Instant
+    )
 }

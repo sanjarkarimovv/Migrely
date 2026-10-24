@@ -6,13 +6,23 @@ import com.migrely.app.datasource.exception.DatabaseDataException
 import com.migrely.app.datasource.exception.StorageFullDataException
 import com.migrely.app.datasource.medication.dao.MedicationDao
 import com.migrely.app.datasource.medication.mapper.MedicationLocalMapper
+import com.migrely.app.datasource.medication.mapper.OveruseNoticeLocalMapper
+import com.migrely.app.datasource.medication.model.AcuteIntakeDataModel
+import com.migrely.app.datasource.medication.model.AcuteIntakeLocalModel
 import com.migrely.app.datasource.medication.model.IntakeDataModel
+import com.migrely.app.datasource.medication.model.IntakeEffectDataModel
 import com.migrely.app.datasource.medication.model.IntakeWithMedicationLocalModel
 import com.migrely.app.datasource.medication.model.MedicationCategoryDataModel
 import com.migrely.app.datasource.medication.model.MedicationDataModel
 import com.migrely.app.datasource.medication.model.MedicationIntakeLocalModel
 import com.migrely.app.datasource.medication.model.MedicationKindDataModel
 import com.migrely.app.datasource.medication.model.MedicationLocalModel
+import com.migrely.app.datasource.medication.model.OveruseCategoryDataModel
+import com.migrely.app.datasource.medication.model.OveruseLevelDataModel
+import com.migrely.app.datasource.medication.model.OveruseNoticeDataModel
+import com.migrely.app.datasource.medication.model.OveruseNoticeLocalModel
+import com.migrely.app.datasource.medication.model.PendingEffectQuestionDataModel
+import com.migrely.app.datasource.medication.model.PendingEffectQuestionLocalModel
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneOffset
@@ -33,6 +43,7 @@ class MedicationDataSourceImplTest {
     private val classUnderTest = MedicationDataSourceImpl(
         medicationDao = medicationDao,
         medicationLocalMapper = MedicationLocalMapper(),
+        overuseNoticeLocalMapper = OveruseNoticeLocalMapper(),
         clock = Clock.fixed(NOW, ZoneOffset.UTC),
         generateId = { "new" }
     )
@@ -217,7 +228,7 @@ class MedicationDataSourceImplTest {
     }
 
     @Test
-    fun `When reading an attack's intakes then maps instants and names`() {
+    fun `When reading an attack's intakes then maps instants, names and answers`() {
         given(medicationDao.intakesOfAttack("a")).willReturn(
             listOf(
                 IntakeWithMedicationLocalModel(
@@ -227,14 +238,168 @@ class MedicationDataSourceImplTest {
                     "a",
                     NOW.toEpochMilli(),
                     "UTC",
-                    "400 mg"
+                    "400 mg",
+                    effect = "A_LOT",
+                    effectClosed = true
+                ),
+                IntakeWithMedicationLocalModel(
+                    "j",
+                    "m",
+                    "Ibuprofen",
+                    "a",
+                    NOW.toEpochMilli(),
+                    "UTC",
+                    null,
+                    effect = "SOMETHING_NEWER",
+                    effectClosed = false
                 )
             )
         )
 
         assertEquals(
-            listOf(IntakeDataModel("i", "m", "Ibuprofen", "a", NOW, "UTC", "400 mg")),
+            listOf(
+                IntakeDataModel(
+                    "i",
+                    "m",
+                    "Ibuprofen",
+                    "a",
+                    NOW,
+                    "UTC",
+                    "400 mg",
+                    IntakeEffectDataModel.ALot,
+                    effectClosed = true
+                ),
+                IntakeDataModel("j", "m", "Ibuprofen", "a", NOW, "UTC", null)
+            ),
             classUnderTest.intakesOfAttack("a")
         )
+    }
+
+    @Test
+    fun `When restoring an intake then its answer is stored again`() {
+        classUnderTest.restoreIntake(
+            IntakeDataModel(
+                "i",
+                "m",
+                "Ibuprofen",
+                null,
+                NOW,
+                "UTC",
+                null,
+                IntakeEffectDataModel.NotAtAll,
+                effectClosed = true
+            )
+        )
+
+        verify(medicationDao).insertIntake(
+            MedicationIntakeLocalModel(
+                id = "i",
+                medicationId = "m",
+                attackId = null,
+                takenEpochMillis = NOW.toEpochMilli(),
+                takenZoneId = "UTC",
+                dose = null,
+                createdEpochMillis = NOW.toEpochMilli(),
+                effect = "NOT_AT_ALL",
+                effectClosed = true
+            )
+        )
+    }
+
+    @Test
+    fun `When reading the pending question then passes the window and maps it`() {
+        given(medicationDao.pendingEffectQuestion(1_000L, 2_000L)).willReturn(
+            PendingEffectQuestionLocalModel("i", "Ibuprofen", "400 mg", 1_500L, "UTC")
+        )
+
+        assertEquals(
+            PendingEffectQuestionDataModel(
+                "i",
+                "Ibuprofen",
+                "400 mg",
+                Instant.ofEpochMilli(1_500L),
+                "UTC"
+            ),
+            classUnderTest.pendingEffectQuestion(
+                Instant.ofEpochMilli(1_000L),
+                Instant.ofEpochMilli(2_000L)
+            )
+        )
+    }
+
+    @Test
+    fun `When setting or clearing an answer then stores its key`() {
+        classUnderTest.setIntakeEffect("i", IntakeEffectDataModel.Completely)
+        classUnderTest.setIntakeEffect("j", null)
+
+        verify(medicationDao).setEffect("i", "COMPLETELY")
+        verify(medicationDao).setEffect("j", null)
+    }
+
+    @Test
+    fun `When skipping a question then closes it`() {
+        classUnderTest.closeEffectQuestion("i")
+
+        verify(medicationDao).closeEffectQuestion("i")
+    }
+
+    @Test
+    fun `When reading acute intakes then maps categories with Not sure as null`() {
+        given(medicationDao.acuteIntakesBetween(1_000L, 2_000L)).willReturn(
+            listOf(
+                AcuteIntakeLocalModel(1_100L, "UTC", "TRIPTAN"),
+                AcuteIntakeLocalModel(1_200L, "Asia/Tokyo", null)
+            )
+        )
+
+        assertEquals(
+            listOf(
+                AcuteIntakeDataModel(
+                    Instant.ofEpochMilli(1_100L),
+                    "UTC",
+                    MedicationCategoryDataModel.Triptan
+                ),
+                AcuteIntakeDataModel(Instant.ofEpochMilli(1_200L), "Asia/Tokyo", null)
+            ),
+            classUnderTest.acuteIntakesTakenBetween(
+                Instant.ofEpochMilli(1_000L),
+                Instant.ofEpochMilli(2_000L)
+            )
+        )
+    }
+
+    @Test
+    fun `When reading notices then skips keys this version does not know`() {
+        given(medicationDao.overuseNotices()).willReturn(
+            listOf(
+                OveruseNoticeLocalModel("TRIPTAN", "DOCTOR", 5_000L),
+                OveruseNoticeLocalModel("OPIOID", "DOCTOR", 5_000L),
+                OveruseNoticeLocalModel("MULTIPLE", "URGENT", 5_000L)
+            )
+        )
+
+        assertEquals(
+            listOf(
+                OveruseNoticeDataModel(
+                    OveruseCategoryDataModel.Triptan,
+                    OveruseLevelDataModel.Doctor,
+                    Instant.ofEpochMilli(5_000L)
+                )
+            ),
+            classUnderTest.overuseNotices()
+        )
+    }
+
+    @Test
+    fun `When acknowledging a warning then upserts its notice`() {
+        classUnderTest.acknowledgeOveruse(
+            OveruseCategoryDataModel.Multiple,
+            OveruseLevelDataModel.Soft,
+            Instant.ofEpochMilli(7_000L)
+        )
+
+        verify(
+            medicationDao
+        ).upsertOveruseNotice(OveruseNoticeLocalModel("MULTIPLE", "SOFT", 7_000L))
     }
 }

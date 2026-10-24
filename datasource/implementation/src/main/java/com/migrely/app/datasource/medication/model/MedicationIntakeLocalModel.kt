@@ -8,7 +8,7 @@ import androidx.room.PrimaryKey
 import com.migrely.app.datasource.attack.model.AttackLocalModel
 
 /**
- * A medication taken (database version 3). Medications are never deleted, so the medication key restricts; an attack
+ * A medication taken (database version 3; [effect] and [effectClosed] since version 4). Medications are never deleted, so the medication key restricts; an attack
  * removed for good takes its intakes with it (BRD EC-MED-10).
  */
 @Entity(
@@ -36,5 +36,8 @@ data class MedicationIntakeLocalModel(
     @ColumnInfo(name = "taken_epoch_millis") val takenEpochMillis: Long,
     @ColumnInfo(name = "taken_zone_id") val takenZoneId: String,
     @ColumnInfo(name = "dose") val dose: String?,
-    @ColumnInfo(name = "created_epoch_millis") val createdEpochMillis: Long
+    @ColumnInfo(name = "created_epoch_millis") val createdEpochMillis: Long,
+    /** `NOT_AT_ALL`, `A_LITTLE`, `A_LOT`, `COMPLETELY` or null (BRD D39). */
+    @ColumnInfo(name = "effect") val effect: String? = null,
+    @ColumnInfo(name = "effect_closed", defaultValue = "0") val effectClosed: Boolean = false
 )

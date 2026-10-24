@@ -10,5 +10,7 @@ data class IntakeWithMedicationLocalModel(
     @ColumnInfo(name = "attack_id") val attackId: String?,
     @ColumnInfo(name = "taken_epoch_millis") val takenEpochMillis: Long,
     @ColumnInfo(name = "taken_zone_id") val takenZoneId: String,
-    @ColumnInfo(name = "dose") val dose: String?
+    @ColumnInfo(name = "dose") val dose: String?,
+    @ColumnInfo(name = "effect") val effect: String?,
+    @ColumnInfo(name = "effect_closed") val effectClosed: Boolean
 )

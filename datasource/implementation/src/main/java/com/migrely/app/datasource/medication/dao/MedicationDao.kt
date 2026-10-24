@@ -3,11 +3,15 @@ package com.migrely.app.datasource.medication.dao
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
+import androidx.room.Upsert
+import com.migrely.app.datasource.medication.model.AcuteIntakeLocalModel
 import com.migrely.app.datasource.medication.model.IntakeWithMedicationLocalModel
 import com.migrely.app.datasource.medication.model.MedicationIntakeLocalModel
 import com.migrely.app.datasource.medication.model.MedicationLocalModel
+import com.migrely.app.datasource.medication.model.OveruseNoticeLocalModel
+import com.migrely.app.datasource.medication.model.PendingEffectQuestionLocalModel
 
-/** Medication and intake queries (database version 3). */
+/** Medication, intake and overuse notice queries (database version 4). */
 @Dao
 interface MedicationDao {
     /** Active medications, the most recently taken first, then never-taken ones by name. */
@@ -67,10 +71,57 @@ interface MedicationDao {
         "SELECT medication_intake.id, medication_intake.medication_id, " +
             "medication.name AS medication_name, medication_intake.attack_id, " +
             "medication_intake.taken_epoch_millis, medication_intake.taken_zone_id, " +
-            "medication_intake.dose FROM medication_intake " +
+            "medication_intake.dose, medication_intake.effect, medication_intake.effect_closed " +
+            "FROM medication_intake " +
             "JOIN medication ON medication.id = medication_intake.medication_id " +
             "WHERE medication_intake.attack_id = :attackId " +
             "ORDER BY medication_intake.taken_epoch_millis"
     )
     fun intakesOfAttack(attackId: String): List<IntakeWithMedicationLocalModel>
+
+    /** Oldest first; an intake outside any attack has no attack row, so its deletion time reads as null. */
+    @Query(
+        "SELECT medication_intake.id, medication.name AS medication_name, " +
+            "medication_intake.dose, medication_intake.taken_epoch_millis, " +
+            "medication_intake.taken_zone_id " +
+            "FROM medication_intake " +
+            "JOIN medication ON medication.id = medication_intake.medication_id " +
+            "LEFT JOIN attack ON attack.id = medication_intake.attack_id " +
+            "WHERE medication.kind != 'PREVENTIVE' AND medication_intake.effect IS NULL " +
+            "AND medication_intake.effect_closed = 0 " +
+            "AND medication_intake.taken_epoch_millis >= :fromEpochMillis " +
+            "AND medication_intake.taken_epoch_millis < :toEpochMillis " +
+            "AND attack.deleted_epoch_millis IS NULL " +
+            "ORDER BY medication_intake.taken_epoch_millis LIMIT 1"
+    )
+    fun pendingEffectQuestion(
+        fromEpochMillis: Long,
+        toEpochMillis: Long
+    ): PendingEffectQuestionLocalModel?
+
+    @Query(
+        "UPDATE medication_intake SET effect = :effect, effect_closed = 1 WHERE id = :intakeId"
+    )
+    fun setEffect(intakeId: String, effect: String?)
+
+    @Query("UPDATE medication_intake SET effect_closed = 1 WHERE id = :intakeId")
+    fun closeEffectQuestion(intakeId: String)
+
+    @Query(
+        "SELECT medication_intake.taken_epoch_millis, medication_intake.taken_zone_id, " +
+            "medication.category FROM medication_intake " +
+            "JOIN medication ON medication.id = medication_intake.medication_id " +
+            "LEFT JOIN attack ON attack.id = medication_intake.attack_id " +
+            "WHERE medication.kind != 'PREVENTIVE' " +
+            "AND medication_intake.taken_epoch_millis >= :fromEpochMillis " +
+            "AND medication_intake.taken_epoch_millis < :toEpochMillis " +
+            "AND attack.deleted_epoch_millis IS NULL"
+    )
+    fun acuteIntakesBetween(fromEpochMillis: Long, toEpochMillis: Long): List<AcuteIntakeLocalModel>
+
+    @Query("SELECT * FROM overuse_notice")
+    fun overuseNotices(): List<OveruseNoticeLocalModel>
+
+    @Upsert
+    fun upsertOveruseNotice(notice: OveruseNoticeLocalModel)
 }
