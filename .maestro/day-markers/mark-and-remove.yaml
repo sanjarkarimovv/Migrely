@@ -1,0 +1,53 @@
+# Covers: day-markers › Mark a chosen day › Mark a period day
+# Covers: day-markers › Mark a chosen day › Remove a mark
+# Covers: day-markers › Mark a chosen day › Mark a pain-free day
+# Covers: day-markers › Mark a chosen day › Future day
+# Covers: month-sky › Accessible days › Screen reader on a pain-free period day
+# The cells are checked by their spoken labels; the sky and the drop themselves are in the screenshot.
+appId: com.migrely.app
+name: A past day takes a period and a pain-free mark and loses them again; a future day cannot be chosen
+tags: [regression, day-markers]
+---
+- runFlow: ../subflows/launch-clean.yaml
+- runFlow: ../subflows/log-attack-today.yaml
+- tapOn: ".*\\. Opens History\\."
+- runFlow: ../subflows/choose-empty-past-day.yaml
+- tapOn:
+    text: "Period"
+    below: "No migraine logged on this day\\."
+- scrollUntilVisible:
+    element: "${output.day}: nothing logged\\. Period\\."
+    direction: UP
+# Pain-free too: the cell reads both marks.
+- scrollUntilVisible:
+    element: "Pain-free day"
+    direction: DOWN
+- tapOn: "Pain-free day"
+- scrollUntilVisible:
+    element: "${output.day}: pain-free\\. Period\\."
+    direction: UP
+- takeScreenshot: day-markers-pain-free-period
+# Tapping each mark again removes it (EC-DAY-05).
+- scrollUntilVisible:
+    element: "Pain-free day"
+    direction: DOWN
+- tapOn:
+    text: "Period"
+    below: "No migraine logged on this day\\."
+- tapOn: "Pain-free day"
+- scrollUntilVisible:
+    element: "${output.day}: nothing logged\\."
+    direction: UP
+# A future day cannot be chosen: its cell is only a date, and tapping it keeps the past day chosen (EC-DAY-03).
+- runFlow:
+    when:
+      visible: "[A-Za-z]+, [A-Za-z]+ [0-9]+"
+    commands:
+      - tapOn:
+          text: "[A-Za-z]+, [A-Za-z]+ [0-9]+"
+          index: 0
+      - scrollUntilVisible:
+          element: "Pain-free day"
+          direction: DOWN
+      - assertVisible: "${output.day}"
+      - assertVisible: "No migraine logged on this day\\."

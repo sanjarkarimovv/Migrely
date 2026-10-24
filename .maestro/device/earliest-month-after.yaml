@@ -1,0 +1,23 @@
+# Device scenario step: a period was marked last month and nothing was ever logged. History still reaches last month,
+# shows the mark there, and goes no further back (D51).
+appId: com.migrely.app
+---
+- launchApp
+- tapOn: ".*\\. Opens History\\."
+- copyTextFrom: "[A-Z][a-z]+ [0-9]{4}"
+- evalScript: ${output.thisMonth = maestro.copiedText}
+- tapOn: "Previous month"
+- extendedWaitUntil:
+    notVisible: "${output.thisMonth}"
+    timeout: 5000
+- assertVisible: ".*: nothing logged\\. Period\\."
+- copyTextFrom: "[A-Z][a-z]+ [0-9]{4}"
+- evalScript: ${output.lastMonth = maestro.copiedText}
+# The month of the first mark is the earliest: "Previous month" does nothing there.
+- tapOn: "Previous month"
+- extendedWaitUntil:
+    notVisible: "${output.lastMonth}"
+    timeout: 3000
+    optional: true
+- assertVisible: "${output.lastMonth}"
+- stopApp

@@ -9,7 +9,7 @@
 # Scenarios: long (72-hour check), history_death, past_death, details_kill, midnight, travel, travel_west, same_date,
 # zone_attack, zone_history, double_tap, med_effect, med_effect_attack, med_effect_skip, med_effect_late,
 # med_preventive, med_two_waiting, med_link_home, med_overuse, keyboard_home, keyboard_history, keyboard_rtl,
-# landscape_band, upgrade.
+# landscape_band, mark_travel, mark_earliest_month, upgrade.
 # upgrade needs QA_OLD_APK=<older debug APK of com.migrely.app>; without it, it is reported as not run.
 set -euo pipefail
 
@@ -498,6 +498,28 @@ scenario_landscape_band() {
   done
 }
 
+# Covers: day-markers › Period on any day › After travel
+# Covers: quality-gates › Device scenarios without test code › Day mark after travel
+scenario_mark_travel() {
+  echo "Scenario mark_travel: a period day marked in Tashkent stays on its date in Berlin and Pago Pago (EC-DAY-04)"
+  set_zone Asia/Tashkent || return 1
+  set_clock_millis "$(day_millis 0)" || return 1
+  run_flow mark-period-today || return 1
+  set_zone Europe/Berlin || return 1
+  run_flow mark-travel-berlin || return 1
+  set_zone Pacific/Pago_Pago || return 1
+  run_flow mark-travel-pago || return 1
+}
+
+# D51 is in the requirement "Month by month" of attack-history; the spec has no scenario for it yet.
+scenario_mark_earliest_month() {
+  echo "Scenario mark_earliest_month: a period marked last month, before any migraine, keeps last month in History (D51)"
+  set_clock_millis "$(day_millis 30)" || return 1
+  run_flow mark-period-today || return 1
+  set_clock_millis "$(day_millis 0)" || return 1
+  run_flow earliest-month-after || return 1
+}
+
 scenario_double_tap() {
   echo "Scenario double_tap: double taps never cross a mode switch (EC-UX-18, D32), with exact gaps between the taps"
   local gap point
@@ -544,7 +566,7 @@ mkdir -p "$out"
 if [[ $# -eq 0 ]]; then
   set -- long history_death past_death details_kill midnight travel travel_west same_date zone_attack zone_history \
     double_tap med_effect med_effect_attack med_effect_skip med_effect_late med_preventive med_two_waiting \
-    med_link_home med_overuse keyboard_home keyboard_history keyboard_rtl landscape_band
+    med_link_home med_overuse keyboard_home keyboard_history keyboard_rtl landscape_band mark_travel mark_earliest_month
   if [[ -n "${QA_OLD_APK:-}" ]]; then
     set -- "$@" upgrade
   else

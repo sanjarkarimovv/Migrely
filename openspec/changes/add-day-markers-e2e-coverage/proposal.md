@@ -15,8 +15,7 @@ Changes 4 (`add-day-markers`, PR #28) and 4a (`add-calendar-keyboard-grid`, PR #
   stopping at the edge of the selectable days, and Enter.
 - **Retest of #26** in landscape attack mode:
   - the guidance starts below the message and moves back when it goes;
-  - with Reduce motion (animator scale 0) it moves at once;
-  - "2 h earlier" ignores taps while the guidance moves;
+  - the same holds with Reduce motion (animator scale 0);
   - `landscape-message-clear` turns its "Partly checks" line into a Covers line.
 - **Day-marker flows** (DAY-F1, DAY-F2, EC-DAY-01, 02, 03 and 05):
   - Period and Pain-free on a chosen day, removing them, and a future day;
@@ -28,10 +27,10 @@ Changes 4 (`add-day-markers`, PR #28) and 4a (`add-calendar-keyboard-grid`, PR #
   mark comes before the first attack (D51).
 - **Device scenario** `mark_travel` (EC-DAY-04): a period day marked in Tashkent is still marked in Berlin and in Pago
   Pago.
-- **Audit:**
-  - the keyboard rule counts the month grid as one stop (D62);
-  - the landscape attack states are captured with and without Reduce motion;
-  - the animator scale is restored.
+- **Audit:** its keyboard rule keeps checking every day cell, which stays focusable for accessibility services. The
+  Tab order is left to the key-event checks (D62).
+- **Restored settings:** the device scenarios also save and restore the animator scale, the rotation and the app
+  language.
 - **BRD:** §13 row 4b and D62.
 
 ## Capabilities
@@ -42,7 +41,7 @@ None.
 ### Modified Capabilities
 - `quality-gates`:
   - keyboard paths are checked with key events (ADDED, D62);
-  - the audit's keyboard rule and its restored settings include the animator scale (MODIFIED);
+  - the audit's keyboard rule for one-stop groups, and the animator scale among the restored settings (MODIFIED);
   - a day-mark travel device scenario (MODIFIED, EC-DAY-04).
 
 ## Impact
@@ -56,6 +55,8 @@ None.
 - **BRD IDs:** DAY-F1, DAY-F2, EC-DAY-01…05, EC-UX-03, EC-UX-04, D38, D47–D52 and D62.
 
 **Out of scope:**
+- "A tap while the guidance moves" (D52). It cannot be timed black-box; a Compose UI test is suggested to the dev
+  session.
 - Product code. Defects are filed as issues for the dev session.
 - Change 5 (`month-stats`: summary, chronic card, progress line). It gets its own QA change, `add-basic-stats-e2e-coverage`
   (row 5b). Here only the flows it made stale are fixed.

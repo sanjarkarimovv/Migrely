@@ -1,0 +1,31 @@
+# Covers: day-markers › Period today from home › Mark today from home
+# Covers: day-markers › Period today from home › Attack mode
+# Covers: today-sky › Today's sky reflects today's data only › Marked pain-free
+appId: com.migrely.app
+name: Home's Period chip marks today, attack mode has no chip, and a pain-free today shows on home
+tags: [regression, day-markers]
+---
+- runFlow: ../subflows/launch-clean.yaml
+- tapOn: "Period today"
+- extendedWaitUntil:
+    visible: "Today, .*: nothing logged\\. Period\\."
+    timeout: 5000
+- tapOn: "Period today"
+- extendedWaitUntil:
+    visible: "Today, .*: nothing logged\\."
+    timeout: 5000
+# Pain-free today, marked in History, shows on home's card.
+- tapOn: ".*\\. Opens History\\."
+- tapOn: "Today, .*: nothing logged\\."
+- scrollUntilVisible:
+    element: "Pain-free day"
+    direction: DOWN
+- tapOn: "Pain-free day"
+- back
+# The card is read as one label, "Today: <sky>. <title>. <subtitle>."
+- extendedWaitUntil:
+    visible: "Today: clear\\. Pain-free today\\. Marked by you\\."
+    timeout: 5000
+# Attack mode has no chip.
+- runFlow: ../subflows/start-attack.yaml
+- assertNotVisible: "Period today"

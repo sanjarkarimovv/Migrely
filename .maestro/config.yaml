@@ -14,3 +14,5 @@ flows:
   - "custom-tags/*"
   - "medication-list/*"
   - "medication-intakes/*"
+  - "day-markers/*"
+  - "month-sky/*"

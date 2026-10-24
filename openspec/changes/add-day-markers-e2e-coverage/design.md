@@ -41,17 +41,19 @@ The app reads `Settings.Global.ANIMATOR_DURATION_SCALE == 0` ("Remove animations
 `global animator_duration_scale 0`. They save the value they found and restore it on exit, like the font scale and
 rotation.
 
-### D3. The audit's grid rule
+### D3. The audit's keyboard rule stays
 
-A clickable day cell that is not Tab-focusable is accepted only inside the month grid. The grid must itself be one
-focusable node, or hold the focused cell. It is found by its spoken day labels (`<date>: <sky>.`) under one parent.
-Every other clickable keeps the rule as it is. Whether the arrows reach the cells is proven by D1, not by the audit.
+The plan was to accept day cells that are not Tab-focusable. A measurement on the device (task 5.1) showed that each
+day cell is still focusable and clickable for accessibility services, as `month-sky` › "Accessibility services"
+requires. D38 changes only the Tab order, and uiautomator cannot see the Tab order. So the audit's rule ("every
+clickable is focusable") stays as it is and still judges the cells. The Tab order is proven by the key events (D1).
 
 ### D4. Data through the UI
 
 - **Marks.** They are set with History's switches and the home chip.
 - **Past attacks.** They are added with History's "Add for this day".
-- **Clock.** Only the earliest-month (D51) and travel (EC-DAY-04) checks move it, through `qa/device_scenarios.sh`,
+- **Clock.** Only the keyboard checks (pinned to the 24th), the earliest-month check (D51) and the travel check
+  (EC-DAY-04) move it, through `qa/device_scenarios.sh`,
   with the base at the 15th at 10:00 (D60).
 - **No sqlite.** No database writes are needed.
 

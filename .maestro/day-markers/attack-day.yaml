@@ -1,0 +1,60 @@
+# Covers: day-markers › Pain-free only without attacks › Attack day
+# Covers: day-markers › Pain-free only without attacks › Attack added later
+# Covers: day-markers › Pain-free only without attacks › Attack deleted again
+# Covers: day-markers › Period on any day › Period and migraine
+appId: com.migrely.app
+name: An attack day cannot be pain-free but can be a period day; a later attack wins over a pain-free mark
+tags: [regression, day-markers]
+---
+- runFlow: ../subflows/launch-clean.yaml
+- runFlow: ../subflows/log-attack-today.yaml
+- tapOn: ".*\\. Opens History\\."
+- tapOn: "Today, .*: cloudy\\. 1 migraine\\. Peak: not recorded\\."
+- scrollUntilVisible:
+    element: "Pain-free day"
+    direction: DOWN
+- assertVisible: "A migraine is logged on this day\\."
+# The disabled switch ignores a tap; Period works on the same day (EC-DAY-01, EC-DAY-02).
+- tapOn: "Pain-free day"
+- tapOn:
+    text: "Period"
+    below: ".*Opens its details\\."
+- scrollUntilVisible:
+    element: "Today, .*: cloudy\\. 1 migraine\\. Peak: not recorded\\. Period\\."
+    direction: UP
+- assertNotVisible: "Today, .*: pain-free.*"
+# A pain-free past day, then a migraine added for it: the attack's sky wins, and deleting it brings the mark back.
+- runFlow: ../subflows/choose-empty-past-day.yaml
+- tapOn: "Pain-free day"
+- scrollUntilVisible:
+    element: "${output.day}: pain-free\\."
+    direction: UP
+- scrollUntilVisible:
+    element: "Add a past migraine"
+    direction: DOWN
+- tapOn: "Add a past migraine"
+- extendedWaitUntil:
+    visible: "Past migraine"
+    timeout: 5000
+- tapOn: "Add migraine"
+- extendedWaitUntil:
+    visible: "Not recorded"
+    timeout: 5000
+- back
+- scrollUntilVisible:
+    element: "${output.day}: cloudy\\. 1 migraine\\. Peak: not recorded\\."
+    direction: UP
+- scrollUntilVisible:
+    element: "${output.day}, .*Opens its details\\."
+    direction: DOWN
+- tapOn: "${output.day}, .*Opens its details\\."
+- scrollUntilVisible:
+    element: "Delete migraine"
+    direction: DOWN
+- tapOn: "Delete migraine"
+- extendedWaitUntil:
+    visible: "Undo the deletion"
+    timeout: 5000
+- scrollUntilVisible:
+    element: "${output.day}: pain-free\\."
+    direction: UP

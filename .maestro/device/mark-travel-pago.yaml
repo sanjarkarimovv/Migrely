@@ -1,0 +1,10 @@
+# Device scenario step: in Pago Pago it is still the 14th; the 15th keeps its period mark as a future day.
+appId: com.migrely.app
+---
+- launchApp
+- tapOn: ".*\\. Opens History\\."
+- extendedWaitUntil:
+    visible: ".*[^0-9]15: period\\."
+    timeout: 10000
+- assertVisible: "Today, .*[^0-9]14: nothing logged\\."
+- stopApp

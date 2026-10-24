@@ -40,21 +40,22 @@
 
 ## 4. Day markers and the month sky
 
-- [ ] 4.1 `day-markers/mark-and-remove.yaml`: Period on a past day shows the drop and "Period."; turning it off removes
+- [x] 4.1 `day-markers/mark-and-remove.yaml`: Period on a past day shows the drop and "Period."; turning it off removes
   it; Pain-free shows a clear sky "…: pain-free."; a future day cannot be chosen. Verify: passes 3 times
-- [ ] 4.2 `day-markers/attack-day.yaml`: on an attack day "Pain-free day" is disabled with "A migraine is logged on this
+- [x] 4.2 `day-markers/attack-day.yaml`: on an attack day "Pain-free day" is disabled with "A migraine is logged on this
   day."; Period and a storm on one day; an attack added later on a pain-free day wins and deleting it brings the clear
   sky back. Verify: passes 3 times
-- [ ] 4.3 `day-markers/home-chip.yaml`: "Period today" checked and not checked, today's cell shows the mark, no chip in
+- [x] 4.3 `day-markers/home-chip.yaml`: "Period today" checked and not checked, today's cell shows the mark, no chip in
   attack mode, "Pain-free today" / "Marked by you". Verify: passes 3 times
-- [ ] 4.4 `month-sky/legend.yaml`: 6 entries. Verify: passes 3 times
-- [ ] 4.5 Device scenarios `mark_travel` (EC-DAY-04) and `mark_earliest_month` (D51). Verify: each passes twice
+- [x] 4.4 `month-sky/legend.yaml`: 6 entries. Verify: passes 3 times
+- [x] 4.5 Device scenarios `mark_travel` (EC-DAY-04) and `mark_earliest_month` (D51). Verify: each passes twice (done 2026-10-24 22:35). D51 has no spec scenario yet; reported to the dev session
 
 ## 5. Audit
 
-- [ ] 5.1 `qa/a11y_audit.py`: the grid rule (design D3); `qa/a11y_audit.sh`: landscape attack states with and without
-  Reduce motion, saving and restoring the animator scale. Verify: `qa/a11y_audit.sh` shows 0 failures, and a
-  non-focusable clickable outside the grid still fails (unit check with a recorded dump)
+- [x] 5.1 The audit's keyboard rule stays (design D3): every day cell is focusable and clickable for accessibility
+  services, measured on the device, and the Tab order is checked by key events. No Reduce-motion audit states: Reduce
+  motion changes only the animation, and `landscape_band` checks both modes. Verify: `qa/a11y_audit.sh` shows 0
+  failures on the new base (baseline 21:26: 0 failures; rerun in 7.1)
 
 ## 6. Documents
 
