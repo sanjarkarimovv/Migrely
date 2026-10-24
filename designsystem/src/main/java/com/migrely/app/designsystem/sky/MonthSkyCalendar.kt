@@ -306,7 +306,8 @@ private fun DayCell(
         day.isToday -> Modifier.border(1.5.dp, colors.today, CellShape)
         else -> Modifier
     }
-    val outline = MaterialTheme.colorScheme.outlineVariant
+    // A nothing-logged day must be told apart from the page, at 3:1 or more (WCAG 1.4.11).
+    val outline = MaterialTheme.colorScheme.outline
     Box(
         // Merged into the clickable rather than replacing it, so a day stays focusable for keyboards and switch
         // access (BRD EC-UX-19); the day number inside is cleared so the description is read once.
@@ -355,7 +356,8 @@ private fun DayCell(
 /** The legend under a calendar: one small sky and a label per entry, wrapping at large font sizes (BRD EC-UX-03). */
 @Composable
 fun MonthSkyLegend(entries: List<LegendEntry>, modifier: Modifier = Modifier) {
-    val outline = MaterialTheme.colorScheme.outlineVariant
+    // A nothing-logged day must be told apart from the page, at 3:1 or more (WCAG 1.4.11).
+    val outline = MaterialTheme.colorScheme.outline
     FlowRow(
         horizontalArrangement = Arrangement.spacedBy(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
