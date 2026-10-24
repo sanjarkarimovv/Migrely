@@ -54,3 +54,7 @@ data object YourData
 /** Onboarding, on a new user's first start (change add-onboarding, BRD D76). */
 @Serializable
 data object Onboarding
+
+/** The doctor report (change add-doctor-report, BRD D81). */
+@Serializable
+data object Report

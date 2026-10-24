@@ -20,6 +20,7 @@ import com.migrely.app.medication.ui.view.OveruseIndicator
 import com.migrely.app.onboarding.ui.view.Onboarding
 import com.migrely.app.reminders.ui.view.DailyReminderOffer
 import com.migrely.app.reminders.ui.view.Reminders
+import com.migrely.app.report.ui.view.Report
 import com.migrely.app.settings.ui.view.Settings
 import com.migrely.app.ui.main.di.AppNavHostDependencies
 import com.migrely.app.ui.main.route.AddPastAttack
@@ -31,6 +32,7 @@ import com.migrely.app.ui.main.route.LogMedication
 import com.migrely.app.ui.main.route.Medications
 import com.migrely.app.ui.main.route.Onboarding
 import com.migrely.app.ui.main.route.Reminders
+import com.migrely.app.ui.main.route.Report
 import com.migrely.app.ui.main.route.Settings
 import com.migrely.app.ui.main.route.YourData
 import java.time.LocalDate
@@ -102,6 +104,9 @@ fun AppNavHostDependencies.AppNavHost(
                     dailyReminderOfferDependencies.DailyReminderOffer(onDone)
                 }
             )
+        }
+        composable<Report> {
+            reportDependencies.Report(navController)
         }
         composable<Settings> {
             settingsDependencies.Settings(navController)
