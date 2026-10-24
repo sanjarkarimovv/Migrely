@@ -108,3 +108,13 @@ An independent `superpowers:code-reviewer` pass found nothing critical. It confi
 | **I4** the time row lost its click action for TalkBack and Switch Access | fixed: the semantics are merged into the clickable |
 | **I5** the docs disagreed with the code | ARCHITECTURE §3 and §13, design D1 and D2, and the KDoc updated |
 | Minor | fixed: `setOnlyAlertOnce`, the settings fallback, the 12/24-hour format, the summary copy, a comment on REPLACE inside the worker, and `LocalTime` in the domain instead of a minute count. Accepted: channels are created on the first post, and an answer from attack details leaves an already shown notification (its planned run checks the question) |
+
+**Re-walk after the fixes** (e74055e): every check passed.
+- The medication pickers read "When did you take it?", and the Reminders picker reads "Reminder time".
+- No "Did it help?" during an attack. After "Migraine ended", home's card asks; without an attack, the notification
+  arrives.
+- "Log a migraine" leaves no notification behind.
+- While the reminder is off, the time row shows 8:00 PM. Choosing 9:30 PM saves 1290, keeps it off, plans nothing and
+  asks for nothing.
+
+The database was restored byte-identical.
