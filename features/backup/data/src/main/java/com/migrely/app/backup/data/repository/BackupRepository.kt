@@ -94,18 +94,24 @@ class BackupRepository(
     }
 
     override fun automaticCopy(): AutomaticCopyDomainModel = try {
-        newestAutomaticRecords()?.let { (madeAt, records) ->
-            AutomaticCopyDomainModel.Available(madeAt, backupSummaryDomainMapper.toDomain(records))
+        backupFileDataSource.newestAutomatic()?.let { copy ->
+            AutomaticCopyDomainModel.Available(
+                copy.madeAt,
+                backupSummaryDomainMapper.toDomain(copy.records)
+            )
         } ?: AutomaticCopyDomainModel.None
     } catch (_: DataException) {
         AutomaticCopyDomainModel.None
     }
 
-    override fun restoreAutomaticCopy(saveCopyFirst: Boolean): RestoreResultDomainModel = try {
+    override fun restoreAutomaticCopy(
+        madeAt: Instant,
+        saveCopyFirst: Boolean
+    ): RestoreResultDomainModel = try {
         // Read before the phone's records are saved, which makes a newer copy.
-        newestAutomaticRecords()?.let { (_, records) ->
-            replace(records, saveCopyFirst)
-            RestoreResultDomainModel.Restored(backupSummaryDomainMapper.toDomain(records))
+        backupFileDataSource.automatic(madeAt)?.let { copy ->
+            replace(copy.records, saveCopyFirst)
+            RestoreResultDomainModel.Restored(backupSummaryDomainMapper.toDomain(copy.records))
         } ?: RestoreResultDomainModel.Failed
     } catch (_: StorageFullDataException) {
         RestoreResultDomainModel.StorageFull
@@ -134,16 +140,6 @@ class BackupRepository(
             )
         }
         backupDataSource.replaceAll(records)
-    }
-
-    /** The newest automatic copy with its records, or null when there is none this version can restore. */
-    private fun newestAutomaticRecords(): Pair<Instant, BackupRecordsDataModel>? {
-        val copy = backupFileDataSource.newestAutomatic() ?: return null
-        return when (val decoded = backupFileDataSource.decode(copy.text)) {
-            is BackupDecodedDataModel.Records -> copy.madeAt to decoded.records
-            // Copies are written by this app, so this means a damaged file; it is not offered.
-            BackupDecodedDataModel.NotABackup, BackupDecodedDataModel.Newer -> null
-        }
     }
 
     private fun decode(uri: String) =

@@ -201,7 +201,8 @@ fun YourDataDependencies.YourData(navController: NavController, modifier: Modifi
             copy = copy,
             onRestore = {
                 confirmingRestore = false
-                yourDataViewModel.onRestoreCopyAction()
+                // Exactly the copy the dialog showed, even if a newer one was saved meanwhile.
+                yourDataViewModel.onRestoreCopyAction(Instant.ofEpochMilli(copy.madeAtEpochMillis))
             },
             onDismiss = { confirmingRestore = false }
         )

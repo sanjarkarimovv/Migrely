@@ -54,10 +54,13 @@
 
 ### D4. Restoring the copy
 
-- **Datasource:** `BackupFileDataSource.newestAutomatic(): AutomaticCopyDataModel?`, with its time and text.
+- **Datasource:** `BackupFileDataSource.newestAutomatic(): AutomaticCopyDataModel?`, with its time and records. It
+  tries the copies newest first until one decodes, so a damaged copy never hides older good ones.
+  `automatic(madeAt)` reads exactly the copy made then, or null.
 - **Backup domain:**
   - `GetAutomaticCopyUseCase` returns the time and summary of the newest copy, or None;
-  - `RestoreAutomaticCopyUseCase` saves the current records as a copy first, then replaces from the copy read before.
+  - `RestoreAutomaticCopyUseCase` takes the time of the copy the dialog showed. It saves the current records as a copy
+    first, then replaces from that copy, read before; a copy that is gone fails as a read failure.
 - **Your data** gets a row "Restore the copy from <date>" and a confirmation dialog like the import's.
 
 ## Risks

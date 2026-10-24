@@ -246,16 +246,15 @@ class YourDataViewModelTest :
     fun `When the copy is restored then working, then the copy now there and how it went`() =
         runTest {
             getAutomaticCopyUseCase.givenSuccessfulExecution(COPY)
-            // Restoring runs through the same work as a file, which passes its value along.
             restoreAutomaticCopyUseCase.givenSuccessfulExecution(
-                Unit,
+                MADE_AT,
                 RestoreResultDomainModel.Restored(SUMMARY)
             )
             val states = async(start = UNDISPATCHED) { classUnderTest.viewState.take(2).toList() }
 
             assertEquals(
                 YourDataPresentationNotification.Restored(SUMMARY_SHOWN),
-                notificationOf { classUnderTest.onRestoreCopyAction() }
+                notificationOf { classUnderTest.onRestoreCopyAction(MADE_AT) }
             )
             assertEquals(listOf(WORKING, YourDataViewState.Idle(COPY_SHOWN)), states.await())
         }
@@ -270,8 +269,13 @@ class YourDataViewModelTest :
                 RestoreResultDomainModel.Failed to
                     YourDataPresentationNotification.SomethingWentWrong
             ).forEach { (result, expected) ->
-                restoreAutomaticCopyUseCase.givenSuccessfulExecution(Unit, result)
-                assertEquals(expected, notificationOf { classUnderTest.onRestoreCopyAction() })
+                restoreAutomaticCopyUseCase.givenSuccessfulExecution(MADE_AT, result)
+                assertEquals(
+                    expected,
+                    notificationOf {
+                        classUnderTest.onRestoreCopyAction(MADE_AT)
+                    }
+                )
             }
         }
 

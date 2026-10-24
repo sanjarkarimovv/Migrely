@@ -75,7 +75,7 @@ class BackupFileDataSourceImpl(
 
     override fun saveAutomatic(text: String, madeAt: Instant) = file {
         val directory = File(filesDirectory, AUTOMATIC_DIRECTORY).apply { mkdirs() }
-        val name = "$AUTOMATIC_PREFIX${madeAt.toEpochMilli()}$AUTOMATIC_SUFFIX"
+        val name = automaticName(madeAt)
         // Written aside first, so a full phone never leaves a half backup behind.
         val partial = File(directory, "$name.partial")
         try {
@@ -92,18 +92,28 @@ class BackupFileDataSourceImpl(
         }.drop(AUTOMATIC_KEPT - 1).forEach(File::delete)
     }
 
+    override fun newestAutomatic(): AutomaticCopyDataModel? = automaticBackups(
+        File(filesDirectory, AUTOMATIC_DIRECTORY)
+    ).firstNotNullOfOrNull(::restorable)
+
+    override fun automatic(madeAt: Instant): AutomaticCopyDataModel? =
+        restorable(File(File(filesDirectory, AUTOMATIC_DIRECTORY), automaticName(madeAt)))
+
+    /** The copy in [copy] with its records, or null when it is gone, cannot be read or is not a backup this reads. */
     @Suppress("SwallowedException")
-    override fun newestAutomatic(): AutomaticCopyDataModel? =
-        automaticBackups(File(filesDirectory, AUTOMATIC_DIRECTORY)).firstNotNullOfOrNull { copy ->
-            try {
-                AutomaticCopyDataModel(
-                    madeAt = Instant.ofEpochMilli(madeAtMillis(copy)),
-                    text = copy.readText(Charsets.UTF_8)
-                )
-            } catch (exception: IOException) {
-                null
-            }
+    private fun restorable(copy: File): AutomaticCopyDataModel? {
+        val text = try {
+            copy.readText(Charsets.UTF_8)
+        } catch (exception: IOException) {
+            return null
         }
+        return when (val decoded = decode(text)) {
+            is BackupDecodedDataModel.Records ->
+                AutomaticCopyDataModel(Instant.ofEpochMilli(madeAtMillis(copy)), decoded.records)
+
+            BackupDecodedDataModel.NotABackup, BackupDecodedDataModel.Newer -> null
+        }
+    }
 
     override fun deleteAll() = file {
         val directory = File(filesDirectory, AUTOMATIC_DIRECTORY)
@@ -114,6 +124,9 @@ class BackupFileDataSourceImpl(
     private fun automaticBackups(directory: File): List<File> = directory.listFiles().orEmpty()
         .filter { it.name.startsWith(AUTOMATIC_PREFIX) && it.name.endsWith(AUTOMATIC_SUFFIX) }
         .sortedByDescending(::madeAtMillis)
+
+    private fun automaticName(madeAt: Instant) =
+        "$AUTOMATIC_PREFIX${madeAt.toEpochMilli()}$AUTOMATIC_SUFFIX"
 
     private fun madeAtMillis(copy: File): Long =
         copy.name.removePrefix(AUTOMATIC_PREFIX).removeSuffix(AUTOMATIC_SUFFIX).toLongOrNull() ?: 0L

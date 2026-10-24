@@ -21,10 +21,13 @@ interface BackupFileDataSource {
     fun saveAutomatic(text: String, madeAt: Instant)
 
     /**
-     * The newest automatic backup that can be read, or null when there is none (BRD D98). A copy that cannot be read is
-     * passed over for the next one. Its text is not checked here; [decode] does that.
+     * The newest automatic backup this version can restore, or null when there is none (BRD D98). A copy that cannot be
+     * read, or does not decode as a backup, is passed over for the next one, so a damaged copy never hides older ones.
      */
     fun newestAutomatic(): AutomaticCopyDataModel?
+
+    /** The automatic backup made at [madeAt], or null when it is gone or cannot be restored. */
+    fun automatic(madeAt: Instant): AutomaticCopyDataModel?
 
     /** Deletes every automatic backup (BRD D96). Throws [com.migrely.app.datasource.exception.FileDataException]. */
     fun deleteAll()

@@ -42,7 +42,6 @@ private val NOW = Instant.parse("2026-10-25T08:00:00Z")
 private val EMPTY =
     BackupRecordsDataModel(emptyList(), emptyList(), emptyList(), emptyList(), emptyList())
 private val MADE_AT = Instant.parse("2026-10-24T19:30:00Z")
-private val COPY = AutomaticCopyDataModel(MADE_AT, "copy")
 
 /** 16 migraines, 2 medications and 5 marked days; only the counts are read. */
 private val SIXTEEN = BackupRecordsDataModel(
@@ -52,6 +51,7 @@ private val SIXTEEN = BackupRecordsDataModel(
     intakes = emptyList(),
     dayMarks = List(5) { mock() }
 )
+private val COPY = AutomaticCopyDataModel(MADE_AT, SIXTEEN)
 
 class BackupRepositoryTest {
     private val backupDataSource: BackupDataSource = mock()
@@ -244,9 +244,6 @@ class BackupRepositoryTest {
     @Test
     fun `When asking for the automatic copy then when it was made and what it holds`() {
         given(backupFileDataSource.newestAutomatic()).willReturn(COPY)
-        given(
-            backupFileDataSource.decode("copy")
-        ).willReturn(BackupDecodedDataModel.Records(SIXTEEN, 6))
 
         assertEquals(
             AutomaticCopyDomainModel.Available(MADE_AT, BackupSummaryDomainModel(16, 2, 5)),
@@ -255,69 +252,49 @@ class BackupRepositoryTest {
     }
 
     @Test
-    fun `Given no copy, a damaged one or a read failure then no copy is offered`() {
+    fun `Given no copy, or a read failure, then no copy is offered`() {
         assertEquals(AutomaticCopyDomainModel.None, classUnderTest.automaticCopy())
-
-        given(backupFileDataSource.newestAutomatic()).willReturn(COPY)
-        listOf(BackupDecodedDataModel.NotABackup, BackupDecodedDataModel.Newer).forEach {
-            given(backupFileDataSource.decode("copy")).willReturn(it)
-            assertEquals(AutomaticCopyDomainModel.None, classUnderTest.automaticCopy())
-        }
 
         given(backupFileDataSource.newestAutomatic()).willThrow(FileDataException())
         assertEquals(AutomaticCopyDomainModel.None, classUnderTest.automaticCopy())
     }
 
     @Test
-    fun `When restoring the copy then the phone's records are saved first, then replaced`() {
-        given(backupFileDataSource.newestAutomatic()).willReturn(COPY)
-        given(
-            backupFileDataSource.decode("copy")
-        ).willReturn(BackupDecodedDataModel.Records(SIXTEEN, 6))
+    fun `When restoring the copy then that copy, after the phone's records are saved first`() {
+        given(backupFileDataSource.automatic(MADE_AT)).willReturn(COPY)
         given(backupDataSource.records()).willReturn(EMPTY)
         given(backupFileDataSource.encode(EMPTY, NOW)).willReturn("{json}")
 
         assertEquals(
             RestoreResultDomainModel.Restored(BackupSummaryDomainModel(16, 2, 5)),
-            classUnderTest.restoreAutomaticCopy(saveCopyFirst = true)
+            classUnderTest.restoreAutomaticCopy(MADE_AT, saveCopyFirst = true)
         )
         val order = inOrder(backupFileDataSource, backupDataSource)
-        order.verify(backupFileDataSource).newestAutomatic()
+        order.verify(backupFileDataSource).automatic(MADE_AT)
         order.verify(backupFileDataSource).saveAutomatic("{json}", NOW)
         order.verify(backupDataSource).replaceAll(SIXTEEN)
+        verify(backupFileDataSource, never()).newestAutomatic()
     }
 
     @Test
     fun `Given an empty phone when restoring then the copy replaces with no copy saved`() {
-        given(backupFileDataSource.newestAutomatic()).willReturn(COPY)
-        given(
-            backupFileDataSource.decode("copy")
-        ).willReturn(BackupDecodedDataModel.Records(SIXTEEN, 6))
+        given(backupFileDataSource.automatic(MADE_AT)).willReturn(COPY)
 
-        classUnderTest.restoreAutomaticCopy(saveCopyFirst = false)
+        classUnderTest.restoreAutomaticCopy(MADE_AT, saveCopyFirst = false)
 
         verify(backupFileDataSource, never()).saveAutomatic(any(), any())
         verify(backupDataSource).replaceAll(SIXTEEN)
     }
 
     @Test
-    fun `Given the copy is gone or damaged, or the phone fails, then nothing is replaced`() {
+    fun `Given the copy is gone, or the phone fails, then nothing is replaced`() {
         assertEquals(
             RestoreResultDomainModel.Failed,
-            classUnderTest.restoreAutomaticCopy(saveCopyFirst = true)
-        )
-
-        given(backupFileDataSource.newestAutomatic()).willReturn(COPY)
-        given(backupFileDataSource.decode("copy")).willReturn(BackupDecodedDataModel.NotABackup)
-        assertEquals(
-            RestoreResultDomainModel.Failed,
-            classUnderTest.restoreAutomaticCopy(saveCopyFirst = true)
+            classUnderTest.restoreAutomaticCopy(MADE_AT, saveCopyFirst = true)
         )
         verify(backupDataSource, never()).replaceAll(any())
 
-        given(
-            backupFileDataSource.decode("copy")
-        ).willReturn(BackupDecodedDataModel.Records(SIXTEEN, 6))
+        given(backupFileDataSource.automatic(MADE_AT)).willReturn(COPY)
         given(backupDataSource.records()).willReturn(EMPTY)
         given(backupFileDataSource.encode(any(), any())).willReturn("{json}")
         whenever(
@@ -325,14 +302,14 @@ class BackupRepositoryTest {
         ).doThrow(StorageFullDataException())
         assertEquals(
             RestoreResultDomainModel.StorageFull,
-            classUnderTest.restoreAutomaticCopy(saveCopyFirst = true)
+            classUnderTest.restoreAutomaticCopy(MADE_AT, saveCopyFirst = true)
         )
         verify(backupDataSource, never()).replaceAll(any())
 
         whenever(backupDataSource.replaceAll(any())).doThrow(DatabaseDataException())
         assertEquals(
             RestoreResultDomainModel.Failed,
-            classUnderTest.restoreAutomaticCopy(saveCopyFirst = false)
+            classUnderTest.restoreAutomaticCopy(MADE_AT, saveCopyFirst = false)
         )
     }
 }

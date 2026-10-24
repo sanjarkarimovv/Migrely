@@ -22,6 +22,7 @@ import com.migrely.app.backup.presentation.model.ImportModePresentationModel
 import com.migrely.app.backup.presentation.model.YourDataPresentationNotification
 import com.migrely.app.backup.presentation.model.YourDataViewState
 import com.migrely.app.backup.presentation.navigation.YourDataPresentationNavigationEvent
+import java.time.Instant
 
 /**
  * "Your data" (BRD BAK-F1–F3, D71–D73, D98). Each event carries the file the user picked through the system's picker.
@@ -113,8 +114,8 @@ class YourDataViewModel(
         }
     }
 
-    /** The user confirmed restoring the newest automatic copy (BRD D98). */
-    fun onRestoreCopyAction() = work(restoreAutomaticCopyUseCase, Unit) { result ->
+    /** The user confirmed restoring the automatic copy made at [madeAt], the one the screen showed (BRD D98). */
+    fun onRestoreCopyAction(madeAt: Instant) = work(restoreAutomaticCopyUseCase, madeAt) { result ->
         when (result) {
             is RestoreResultDomainModel.Restored -> YourDataPresentationNotification.Restored(
                 backupSummaryPresentationMapper.toPresentation(result.summary)
