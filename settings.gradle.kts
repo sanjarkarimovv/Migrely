@@ -54,3 +54,12 @@ setOf(
 ).forEach { module ->
     include(":features:attack:$module")
 }
+
+setOf(
+    "ui",
+    "presentation",
+    "domain",
+    "data"
+).forEach { module ->
+    include(":features:history:$module")
+}

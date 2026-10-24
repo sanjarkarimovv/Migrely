@@ -65,6 +65,7 @@ import com.migrely.app.designsystem.motion.rememberReduceMotion
 import com.migrely.app.designsystem.picker.MigrelyDateTimePicker
 import com.migrely.app.designsystem.theme.MigrelyTheme
 import java.time.Instant
+import java.time.LocalDate
 
 private val CONTENT_MAX_WIDTH = 640.dp
 
@@ -81,11 +82,13 @@ data class AddPastAttackActions(
 /**
  * "Add a past migraine" (BRD ATK-F3, D26). The picked times, the problem shown and the message on screen are saveable,
  * so rotation and process death keep them (EC-ATK-10). Nothing is stored until "Add migraine" or "Merge them", and both
- * wait for their result before they can be tapped again (EC-ATK-17).
+ * wait for their result before they can be tapped again (EC-ATK-17). [day] is the day chosen in History, or null for
+ * the usual defaults (BRD D30).
  */
 @Composable
 fun AddPastAttackDependencies.AddPastAttack(
     navController: NavController,
+    day: LocalDate?,
     modifier: Modifier = Modifier
 ) {
     ViewModelObserver(navController)
@@ -93,7 +96,7 @@ fun AddPastAttackDependencies.AddPastAttack(
     var draft by rememberSaveable { mutableStateOf<PastAttackDraftUiModel?>(null) }
     // The defaults are asked for until they arrive, also after process death before they did; once picked, the
     // saved times win.
-    LaunchedEffect(Unit) { if (draft == null) addPastAttackViewModel.onEnter() }
+    LaunchedEffect(Unit) { if (draft == null) addPastAttackViewModel.onEnter(day) }
     val defaults = (viewState as? AddPastAttackViewState.Ready)?.draft
     LaunchedEffect(defaults) {
         if (draft == null && defaults != null) draft = pastAttackDraftUiMapper.toUi(defaults)

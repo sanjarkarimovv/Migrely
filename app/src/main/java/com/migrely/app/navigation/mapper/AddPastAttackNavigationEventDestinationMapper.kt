@@ -8,8 +8,9 @@ import com.migrely.app.ui.main.route.AddPastAttack
 import com.migrely.app.ui.main.route.AttackDetails
 
 /**
- * Leaving the add screen pops it. A new or merged attack replaces it with its details, so back from there returns home
- * (BRD D26); a late second event updates that details screen instead of stacking another one.
+ * Leaving the add screen pops it. A new or merged attack replaces it with its details, so back from there returns to
+ * the screen that opened the add screen, home or History (BRD D26, D30); a late second event updates that details
+ * screen instead of stacking another one.
  */
 class AddPastAttackNavigationEventDestinationMapper :
     NavigationEventDestinationMapper<AddPastAttackPresentationNavigationEvent>(

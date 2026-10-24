@@ -20,7 +20,7 @@ class HomeNavigationEventDestinationMapper :
 
             // A double tap on the link opens the add screen once.
             HomePresentationNavigationEvent.OnAddPastAttack -> UiDestination { navController ->
-                navController.navigate(AddPastAttack, navOptions { launchSingleTop = true })
+                navController.navigate(AddPastAttack(), navOptions { launchSingleTop = true })
             }
         }
 }

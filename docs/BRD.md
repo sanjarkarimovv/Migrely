@@ -342,6 +342,8 @@ Boshqa davlatlarda narxni Play avtomatik konvertatsiya qiladi. Hindiston, Brazil
 |---|---|---|---|
 | EC-HIS-01 | Hali maʼlumot yoʻq | Kalendar va statistika ekranida "Birinchi xurujni yozing" tugmasi va qisqa tushuntirish chiqadi | ✅ |
 | EC-HIS-02 | Koʻp maʼlumot (10 yilda 3 600+ xuruj) | Roʻyxat sahifalab yuklanadi (paging), soʻrovlar indekslangan, kalendar faqat koʻrinayotgan oyni yuklaydi | ✅ |
+| EC-HIS-03 | Birinchi xurujdan oldingi yoki kelajakdagi oyga oʻtish | Ruxsat berilmaydi: oldingi oy tugmasi birinchi xuruj boshlangan oyda, keyingi oy tugmasi joriy oyda oʻchadi. Hech qanday xuruj boʻlmasa, faqat joriy oy koʻrinadi | ✅ |
+| EC-HIS-04 | Tarixdan ochilgan xuruj tafsilotlar ekranida oʻchirildi | Foydalanuvchi tarix ekraniga qaytadi va u yerda "Migraine deleted" va "Undo" chiqadi (bosh ekrandagidek, EC-ATK-14). Kalendar va roʻyxat darhol yangilanadi | ✅ |
 | EC-INS-01 | Tahlil uchun maʼlumot yetarli emas | Tahlil kamida 5 ta xuruj va 30 kunlik tarix boʻlganda koʻrsatiladi. Undan oldin "Yana N ta xuruj kerak" degan progress chiqadi. Premium ekranida bu oldindan aytiladi | ✅ |
 | EC-INS-02 | Hayz bilan bogʻliqlikni hisoblash uchun hayz maʼlumoti yetarli emas | Kamida 2 ta hayz sikli belgilangan boʻlishi kerak, aks holda bu boʻlim yashiriladi | ✅ |
 | EC-INS-03 | Hayz kuzatish oʻchirilgan | Hayz bilan bogʻliq UI va tahlil butunlay yashiriladi | ✅ |
@@ -532,10 +534,10 @@ Ish sikli: `/opsx:explore` (ixtiyoriy) → `/opsx:propose <nom>` → review → 
 | 1a | `refine-messages-and-type` — brend shrifti (Fraunces va Figtree), barcha holatlarni hisobga olgan maxsus snackbar | 18.5, EC-UX-01, 03, 04, 08, 16, 17, ATK-F1, F2, D20, D21 |
 | 1b | `add-attack-details` — xuruj tafsilotlari ekrani (vaqtlar, ogʻriq nuqtalari, joylashuv, belgilar, triggerlar, taʼsir, izoh), oʻz teglari, Undo bilan oʻchirish, birinchi 10 ball kartasi | ATK-F4, F5, F6, F7, EC-ATK-03, 04, 09…14, EC-TIM-04, 05, SAF-F2 |
 | 1c | `add-past-attacks` — oʻtgan xurujni qoʻshish, ustma-ust tushganda birlashtirish yoki vaqtni oʻzgartirish | ATK-F3, EC-ATK-03, 04, 05, 15…18, D26–D28 |
-| 2 | `add-attack-history` | HIS-F*, EC-HIS-* |
+| 2 | `add-attack-history` — oylik osmon kalendari (bosh ekranda joriy oy, "History" ekranida oyma-oy), oyning xurujlar roʻyxati, kunni tanlash, tanlangan kunga oʻtgan xurujni qoʻshish, tarixda oʻchirishni Undo qilish | HIS-F1…F3, EC-HIS-01…04, EC-ATK-06, 07, EC-TIM-02, 05, EC-UX-09, 15, D29–D31 |
 | 3 | `add-medication-tracking` | MED-F*, EC-MED-* |
-| 4 | `add-day-markers` | DAY-F* |
-| 5 | `add-basic-stats` | STA-F* |
+| 4 | `add-day-markers` — hayz va ogʻriqsiz kun belgilari, kalendarda "ochiq" osmon (D29) | DAY-F*, HIS-F1 va F3 ning belgilar qismi |
+| 5 | `add-basic-stats` — oylik statistika va taraqqiyot xabari (D29) | STA-F*, EC-UX-14 |
 | 6 | `add-reminders` | REM-F*, EC-REM-* |
 | 7 | `add-data-export-import` | BAK-F*, EC-BAK-* |
 | 8 | `add-onboarding` | ONB-F* |
@@ -647,6 +649,9 @@ Ilova 2023-yil 13-noyabrdan oldin ochilgan akkauntda chiqadi, shuning uchun 12 t
 | D26 | "Add a past migraine" havolasi faqat bosh ekranning oddiy rejimida, "Migraine started" ostida turadi ("qorongʻi xona"da yoʻq, G4). Oʻtgan xuruj ekranida faqat boshlanish va tugash bor: standart qiymat 2 soat oldin va hozir, daqiqagacha yaxlitlangan. Boshlanish oʻzgarsa, davomiylik saqlanadi (kalendardagi kabi). Qoʻshilgandan keyin tafsilotlar ekrani ochiladi. Oʻtgan xuruj doim tugagan boʻladi: hali davom etayotgan xuruj "Migraine started" va "Started earlier?" orqali yoziladi | PO | 2026-10-23 |
 | D27 | Birlashtirish qoidalari: bitta xuruj qoladi (tahrirlanayotgani, yangi xurujda esa eng birinchi boshlangani). Vaqt hamma xurujlar va ogʻriq nuqtalarini qamraydi va hech qachon qisqarmaydi. Ogʻriq nuqtalari va teglar qoʻshiladi, taʼsirning eng yuqorisi olinadi, izohlar vaqt tartibida ulanadi (EC-ATK-16). Birortasi davom etayotgan boʻlsa, natija ham davom etayotgan boʻladi. Qolganlari bitta tranzaksiyada oʻchiriladi | PO | 2026-10-23 |
 | D28 | Birlashtirishda Undo yoʻq. Foydalanuvchi qaysi xurujlar bilan ustma-ust tushganini koʻrib, "Merge them"ni oʻzi tanlaydi va kiritilgan maʼlumot yoʻqolmaydi (faqat pastroq taʼsir darajasi va 1 000 belgidan ortiq izoh). Keyin "Migraines merged." xabari chiqadi. Beta'da xato birlashtirishlar koʻp boʻlsa, Undo qayta koʻriladi | PO | 2026-10-23 |
+| D29 | Tarix: bosh ekranda bugungi kartaning ostida joriy oyning osmon kalendari turadi (18.3 A). Oy nomini yoki kunni bosish "History" ekranini ochadi: u yerda oyma-oy oʻtiladi, kalendar ostida oyning xurujlari (yangilari tepada) chiqadi, kun tanlansa shu kungi xurujlar. Roʻyxat oyma-oy yuklanadi, bu EC-HIS-02 dagi paging: bir oyda koʻpi bilan bir necha oʻnta xuruj boʻladi. Kun xurujlarning yozilgan zonasi boʻyicha aniqlanadi (EC-TIM-02), yarim tundan oʻtgan xuruj har bir kunni belgilaydi (EC-ATK-06), davom etayotgan xuruj kunlari yomgʻir bilan ajraladi (HIS-F1). Hayz va ogʻriqsiz kun belgilari hamda "ochiq" osmon 4-change'da (`add-day-markers`) keladi, shuning uchun hozircha legend'da "Clear" yoʻq (G6). Taraqqiyot xabari (EC-UX-14) 5-change'da (`add-basic-stats`) qoʻshiladi | PO | 2026-10-24 |
+| D30 | Tarixda tanlangan kun uchun "Add a past migraine": bugun tanlansa D26 qiymatlari ishlatiladi. Oʻtgan kun tanlansa, boshlanish shu kunda, odatdagi standart boshlanish (hozirdan 2 soat oldin) soatida boʻladi, tugash esa 2 soat keyin, lekin hech qachon hozirdan keyin emas. Kelajakdagi kunni tanlab boʻlmaydi | PO | 2026-10-24 |
+| D31 | Tafsilotlar ekranidan oʻchirilgan xurujning Undo'si foydalanuvchi qaytgan ekranda chiqadi: bosh ekran yoki tarix (EC-HIS-04). Oʻchirilganiga 30 soniya boʻlmay turib bosh ekranga qaytilsa, Undo u yerda ham bir marta taklif qilinadi: bu xavfsiz, chunki faqat shu xuruj qaytariladi va keyinroq xabar takrorlanmaydi | PO | 2026-10-24 |
 
 ---
 
@@ -683,7 +688,7 @@ Ilova 2023-yil 13-noyabrdan oldin ochilgan akkauntda chiqadi, shuning uchun 12 t
 **A. "Sizning osmoningiz" (bosh ekran)**
 
 - Yuqorida bugungi osmon kartasi bor. Bugun hali belgilanmagan boʻlsa: "Calm so far today".
-- Ostida oylik kalendar. Har bir kun kichik osmon: ochiq, tumanli, bulutli yoki boʻron (EC-UX-09).
+- Ostida oylik kalendar. Har bir kun kichik osmon: ochiq, tumanli, bulutli yoki boʻron (EC-UX-09). Oy nomi yoki kun bosilsa, "History" ekrani ochiladi (D29).
 - Taraqqiyot xabari: "3 fewer migraine days than September" (EC-UX-14).
 - Pastda bitta katta tugma: "Migraine started" va kichik havola "Add a past migraine" (D26).
 - Shifokor uchun bu aslida ogʻirlik boʻyicha issiqlik xaritasi, faqat insoniy koʻrinishda. PDF hisobotda ham xuddi shu osmonlar ishlatiladi.

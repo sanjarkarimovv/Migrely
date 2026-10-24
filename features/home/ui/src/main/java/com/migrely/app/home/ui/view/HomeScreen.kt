@@ -43,11 +43,17 @@ private const val COMPACT_HEIGHT_DP = 480
 internal fun isCompactHeight(): Boolean =
     LocalConfiguration.current.screenHeightDp < COMPACT_HEIGHT_DP
 
+/**
+ * [monthCalendar] is drawn under today's card and list; `:app` fills it with this month's calendar (change
+ * add-attack-history, design D1). It receives the number of view states home has received, so it can load again
+ * whenever home does: after every action and on every resume.
+ */
 @Composable
 fun HomeDependencies.Home(
     navController: NavController,
     startAttackRequested: Boolean,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    monthCalendar: @Composable (refreshKey: Int) -> Unit = {}
 ) {
     ScreenEnterObserver { homeViewModel.onEnter(startAttackRequested) }
     LifecycleResumeEffect(homeViewModel) {
@@ -57,6 +63,9 @@ fun HomeDependencies.Home(
     ViewModelObserver(navController)
 
     val viewState by homeViewModel.viewState.collectAsState(HomeViewState.Loading)
+    val homeLoads by produceState(initialValue = 0, homeViewModel) {
+        homeViewModel.viewState.collect { value += 1 }
+    }
     val uiState by rememberSaveable(viewState) {
         mutableStateOf(homeViewStateUiMapper.toUi(viewState))
     }
@@ -86,6 +95,7 @@ fun HomeDependencies.Home(
             onAttackDetails = homeViewModel::onAttackDetailsAction,
             onAddPastAttack = homeViewModel::onAddPastAttackAction
         ),
+        monthCalendar = { monthCalendar(homeLoads) },
         messages = {
             HomeMessages(
                 presenter = homeMessagePresenter,
@@ -133,7 +143,8 @@ fun HomeContents(
     timeUiFormatter: TimeUiFormatter,
     actions: HomeActions,
     messages: @Composable () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    monthCalendar: @Composable () -> Unit = {}
 ) {
     Box(modifier = modifier.fillMaxSize()) {
         AnimatedContent(
@@ -161,7 +172,8 @@ fun HomeContents(
                     timeUiFormatter = timeUiFormatter,
                     onStartAttack = actions.onStartAttack,
                     onAttackDetails = actions.onAttackDetails,
-                    onAddPastAttack = actions.onAddPastAttack
+                    onAddPastAttack = actions.onAddPastAttack,
+                    monthCalendar = monthCalendar
                 )
 
                 is HomeViewStateUiModel.AttackInProgress -> AttackModeContents(

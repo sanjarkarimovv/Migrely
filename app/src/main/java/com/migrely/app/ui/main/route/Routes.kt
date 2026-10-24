@@ -13,6 +13,13 @@ data class Home(val startAttack: Boolean = false)
 @Serializable
 data class AttackDetails(val attackId: String, val announceMerge: Boolean = false)
 
-/** Adding an attack that has already ended (change add-past-attacks). */
+/**
+ * Adding an attack that has already ended (change add-past-attacks). [epochDay] is the day chosen in History, or null
+ * for the usual defaults (change add-attack-history, BRD D30).
+ */
 @Serializable
-data object AddPastAttack
+data class AddPastAttack(val epochDay: Long? = null)
+
+/** History (change add-attack-history). [epochDay] is the day chosen on home's calendar, or null for this month. */
+@Serializable
+data class History(val epochDay: Long? = null)
