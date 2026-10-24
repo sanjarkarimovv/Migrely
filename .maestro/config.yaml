@@ -16,3 +16,5 @@ flows:
   - "medication-intakes/*"
   - "day-markers/*"
   - "month-sky/*"
+  - "month-stats/*"
+  - "reminders/*"

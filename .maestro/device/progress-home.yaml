@@ -1,0 +1,21 @@
+# Device scenario step: home shows the progress message TEXT under the month card's title in normal mode; in attack
+# mode (ATTACK "true", the app opened in attack mode) it shows none.
+appId: com.migrely.app
+---
+- launchApp
+- runFlow:
+    when:
+      true: ${ATTACK != "true"}
+    commands:
+      - scrollUntilVisible:
+          element: "${TEXT}"
+          direction: DOWN
+- runFlow:
+    when:
+      true: ${ATTACK == "true"}
+    commands:
+      - extendedWaitUntil:
+          visible: "Details of this migraine"
+          timeout: 10000
+      - assertNotVisible: "${TEXT}"
+- stopApp

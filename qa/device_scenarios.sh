@@ -242,6 +242,22 @@ MED_BASE_MILLIS="$(mid_month_millis "$ORIGINAL_ZONE" 10:00)"
 day_millis() { # $1 days before 10:00 on the 15th of this month in the device's zone (negative: after)
   echo $(( MED_BASE_MILLIS - $1 * 86400000 ))
 }
+when_millis() { # $1 months before this month, $2 day of the month or "last", $3 HH:MM, in the device's zone
+  # "This month" is the month of MED_BASE_MILLIS, computed once, so a long scenario never straddles two months.
+  python3 -I -c "import sys, calendar, datetime as d, zoneinfo as z
+zone = z.ZoneInfo(sys.argv[5]); base = d.datetime.fromtimestamp(int(sys.argv[4]) / 1000, zone)
+y, m = base.year, base.month - int(sys.argv[1])
+while m < 1: y, m = y - 1, m + 12
+day = calendar.monthrange(y, m)[1] if sys.argv[2] == 'last' else int(sys.argv[2])
+h, mi = map(int, sys.argv[3].split(':'))
+print(int(d.datetime(y, m, day, h, mi, tzinfo=zone).timestamp() * 1000))" "$1" "$2" "$3" "$MED_BASE_MILLIS" "$ORIGINAL_ZONE"
+}
+long_attack() { # $1 months back, $2 first day, $3 last day: a migraine from 10:00 on the first day to 10:00 on the last
+  set_clock_millis "$(when_millis "$1" "$2" 10:00)" || return 1
+  run_flow_env attack-start LEVEL= || return 1
+  set_clock_millis "$(when_millis "$1" "$3" 10:00)" || return 1
+  run_flow attack-end || return 1
+}
 long_undo_window() { adbq shell settings put secure accessibility_interactive_ui_timeout_ms 20000; }
 default_undo_window() { put_or_delete secure accessibility_interactive_ui_timeout_ms "$ORIGINAL_TIMEOUT"; }
 
@@ -566,6 +582,68 @@ scenario_mark_earliest_month() {
   run_flow mark-period-today || return 1
   set_clock_millis "$(day_millis 0)" || return 1
   run_flow earliest-month-after || return 1
+}
+
+# Covers: month-stats › How the numbers are counted › An attack over two months
+# Covers: month-stats › Migraines started › An attack from the month before
+# Covers: month-stats › How the numbers are counted › A pain-free mark under an attack
+scenario_stats_counting() {
+  echo "Scenario stats_counting: a migraine over two months; a pain-free mark under a later migraine (D57, D58)"
+  set_clock_millis "$(when_millis 1 last 22:00)" || return 1
+  run_flow clean || return 1
+  run_flow_env attack-start LEVEL= || return 1
+  set_clock_millis "$(when_millis 0 1 03:00)" || return 1
+  run_flow attack-end || return 1
+  run_flow stats-two-months-after || return 1
+  set_clock_millis "$(when_millis 0 10 12:00)" || return 1
+  run_flow mark-pain-free-today || return 1
+  set_clock_millis "$(when_millis 0 12 12:00)" || return 1
+  run_flow_env pain-free-attack-later DAY=10 || return 1
+}
+
+# Covers: month-stats › The chronic indicator › Fifteen migraine days
+# Covers: month-stats › The chronic indicator › Fourteen migraine days
+scenario_stats_chronic() {
+  echo "Scenario stats_chronic: the chronic card at 15 migraine days, none at 14 (D54)"
+  set_clock_millis "$(when_millis 0 1 09:00)" || return 1
+  run_flow clean || return 1
+  long_attack 0 1 15 || return 1
+  run_flow_env chronic-check DAYS=15 SHOWN=true || return 1
+  set_clock_millis "$(when_millis 0 2 09:00)" || return 1
+  run_flow clean || return 1
+  long_attack 0 2 15 || return 1
+  run_flow_env chronic-check DAYS=14 SHOWN=false || return 1
+}
+
+# Covers: month-stats › The progress message › Better than last month
+# Covers: month-stats › The progress message › Too few entries
+# Covers: month-stats › The progress message › Worse
+# Covers: month-stats › The progress message › The current month
+# Covers: month-stats › Progress on home › Home in normal mode
+# Covers: month-stats › Progress on home › Attack mode
+scenario_stats_progress() {
+  echo "Scenario stats_progress: the progress message against last month, its threshold, and on home (EC-UX-14, D55)"
+  # A: 12, then 10 days (2 fewer), then 8 days this month (too few entries: no message).
+  set_clock_millis "$(when_millis 2 1 09:00)" || return 1
+  run_flow clean || return 1
+  long_attack 2 1 12 || return 1
+  long_attack 1 1 10 || return 1
+  long_attack 0 1 8 || return 1
+  set_clock_millis "$(when_millis 0 15 12:00)" || return 1
+  run_flow_env progress-check MONTHS_BACK=1 "TEXT=2 fewer migraine days than [A-Z][a-z]+" || return 1
+  run_flow_env progress-check MONTHS_BACK=0 TEXT= || return 1
+  # B: 10, then 12 days (2 more), then 11 days by the 15th against 12 by the 15th last month (1 fewer).
+  set_clock_millis "$(when_millis 2 1 09:00)" || return 1
+  run_flow clean || return 1
+  long_attack 2 1 10 || return 1
+  long_attack 1 1 12 || return 1
+  long_attack 0 1 11 || return 1
+  set_clock_millis "$(when_millis 0 15 12:00)" || return 1
+  run_flow_env progress-check MONTHS_BACK=1 "TEXT=2 more migraine days than [A-Z][a-z]+" || return 1
+  run_flow_env progress-check MONTHS_BACK=0 "TEXT=1 fewer migraine day than this time last month" || return 1
+  run_flow_env progress-home "TEXT=1 fewer migraine day than this time last month" ATTACK=false || return 1
+  run_flow_env attack-start LEVEL= || return 1
+  run_flow_env progress-home "TEXT=1 fewer migraine day than this time last month" ATTACK=true || return 1
 }
 
 scenario_double_tap() {

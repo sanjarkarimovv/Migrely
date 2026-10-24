@@ -1,0 +1,26 @@
+# Device scenario step: History's summary of this month (MONTHS_BACK "0") or last month ("1") shows the progress
+# message TEXT (a regex), or none when TEXT is "".
+appId: com.migrely.app
+---
+- launchApp
+- tapOn: ".*\\. Opens History\\."
+- runFlow:
+    when:
+      true: ${MONTHS_BACK == "1"}
+    commands:
+      - tapOn: "Previous month"
+- scrollUntilVisible:
+    element: "Days with attack medication: .*"
+    direction: DOWN
+- runFlow:
+    when:
+      true: ${TEXT != ""}
+    commands:
+      - assertVisible: "${TEXT}"
+- runFlow:
+    when:
+      true: ${TEXT == ""}
+    commands:
+      - assertNotVisible: ".*migraine days? than .*"
+      - assertNotVisible: "As many migraine days as .*"
+- stopApp

@@ -1,0 +1,14 @@
+# Device scenario step: mark today pain-free in History, then close the app.
+appId: com.migrely.app
+---
+- launchApp
+- tapOn: ".*\\. Opens History\\."
+- tapOn: "Today, .*: nothing logged\\."
+- scrollUntilVisible:
+    element: "Pain-free day"
+    direction: DOWN
+- tapOn: "Pain-free day"
+- scrollUntilVisible:
+    element: "Today, .*: pain-free\\."
+    direction: UP
+- stopApp

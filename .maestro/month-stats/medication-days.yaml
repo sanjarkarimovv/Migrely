@@ -1,0 +1,46 @@
+# Covers: month-stats › How the numbers are counted › Preventive medication
+appId: com.migrely.app
+name: Only attack medication counts as a day with attack medication
+tags: [regression, month-stats]
+---
+- runFlow: ../subflows/launch-clean.yaml
+- tapOn: "Log medication"
+- runFlow:
+    file: ../subflows/add-first-medication.yaml
+    env:
+      NAME: "Paracetamol"
+      TYPE: "Simple painkiller"
+- tapOn: "Undo"
+- extendedWaitUntil:
+    visible: "Removed\\. Nothing was logged\\."
+    timeout: 5000
+- tapOn: "Manage medications"
+- runFlow:
+    file: ../subflows/add-medication.yaml
+    env:
+      NAME: "Topiramate"
+      KIND: "Preventive"
+      TYPE: ""
+      DOSE: ""
+- back
+- tapOn: "Log Topiramate.*"
+- extendedWaitUntil:
+    visible: "Topiramate.* logged at .*"
+    timeout: 5000
+- tapOn: "Done"
+# The month summary needs a migraine in History.
+- runFlow: ../subflows/log-attack-today.yaml
+- tapOn: ".*\\. Opens History\\."
+- scrollUntilVisible:
+    element: "Days with attack medication: 0"
+    direction: DOWN
+- back
+# An attack medication on the same day counts.
+- runFlow:
+    file: ../subflows/log-from-home.yaml
+    env:
+      NAME: "Paracetamol"
+- tapOn: ".*\\. Opens History\\."
+- scrollUntilVisible:
+    element: "Days with attack medication: 1"
+    direction: DOWN
