@@ -2,7 +2,7 @@
 
 ## 1. Datasource
 
-- [ ] 1.1 `PreferencesDataSource` (onboarding finished, goal, frequency, period tracking) over SharedPreferences, with
+- [x] 1.1 `PreferencesDataSource` (onboarding finished, goal, frequency, period tracking) over SharedPreferences, with
   tests.
 
 ## 2. Onboarding feature
