@@ -30,6 +30,9 @@ import com.migrely.app.home.ui.notification.HomeMessagePresenter
 import java.time.ZoneId
 import kotlinx.coroutines.delay
 
+private const val DELETION_OFFER_MAX_AGE_MILLIS = 30_000L
+private const val OFFERED_DELETIONS_KEPT = 10
+
 /**
  * The home screen's messages (BRD EC-UX-16). The newest message replaces the one on screen. The message and the time
  * it appeared are saved, so after a rotation it stays only for the time it has left. Each message's base duration is
@@ -43,16 +46,45 @@ internal fun HomeMessages(
     reduceMotion: Boolean,
     onUndoStart: (attackId: String) -> Unit,
     onUndoEnd: (attackId: String) -> Unit,
+    onUndoDelete: (attackId: String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var shown by rememberSaveable { mutableStateOf<ShownHomeMessageUiModel?>(null) }
+    // Deletions already offered, so a return to home or a rotation does not offer one again after a dismissal.
+    var offeredDeletions by rememberSaveable {
+        mutableStateOf(ArrayList<HomeMessageUiModel.AttackDeleted>())
+    }
     val haptics = LocalHapticFeedback.current
     val accessibilityManager = LocalAccessibilityManager.current
     val currentOnUndoStart by rememberUpdatedState(onUndoStart)
     val currentOnUndoEnd by rememberUpdatedState(onUndoEnd)
+    val currentOnUndoDelete by rememberUpdatedState(onUndoDelete)
+
+    fun timeoutMillis(behaviour: HomeMessageBehaviourUiModel): Long? =
+        behaviour.baseDurationMillis?.let { base ->
+            accessibilityManager?.calculateRecommendedTimeoutMillis(
+                originalTimeoutMillis = base,
+                containsIcons = true,
+                containsText = true,
+                containsControls = behaviour.undoTarget != null
+            ) ?: base
+        }
 
     LaunchedEffect(presenter) {
         presenter.messages.collect { message ->
+            // A deletion arrives with every return to home while it is restorable; offer it once. Its window starts
+            // when home shows it, so the trip back from the details screen does not shorten it.
+            if (message is HomeMessageUiModel.AttackDeleted) {
+                // Home learns of a deletion right after the details screen closes; an older one, for example after the
+                // app was closed and opened again, is past its undo and is never offered.
+                val fresh =
+                    System.currentTimeMillis() - message.deletedAtEpochMillis <=
+                        DELETION_OFFER_MAX_AGE_MILLIS
+                if (!fresh || message in offeredDeletions) return@collect
+                offeredDeletions = ArrayList(
+                    offeredDeletions.takeLast(OFFERED_DELETIONS_KEPT - 1) + message
+                )
+            }
             when (message) {
                 is HomeMessageUiModel.AttackStarted,
                 is HomeMessageUiModel.AttackEnded -> haptics.performHapticFeedback(
@@ -69,16 +101,6 @@ internal fun HomeMessages(
             shown = ShownHomeMessageUiModel(message, System.currentTimeMillis())
         }
     }
-
-    fun timeoutMillis(behaviour: HomeMessageBehaviourUiModel): Long? =
-        behaviour.baseDurationMillis?.let { base ->
-            accessibilityManager?.calculateRecommendedTimeoutMillis(
-                originalTimeoutMillis = base,
-                containsIcons = true,
-                containsText = true,
-                containsControls = behaviour.undoTarget != null
-            ) ?: base
-        }
 
     val current = shown
     val currentTimeout = current?.let { timeoutMillis(behaviourMapper.toUi(it.message)) }
@@ -109,6 +131,7 @@ internal fun HomeMessages(
                     when (val message = visible.message) {
                         is HomeMessageUiModel.AttackStarted -> currentOnUndoStart(message.attackId)
                         is HomeMessageUiModel.AttackEnded -> currentOnUndoEnd(message.attackId)
+                        is HomeMessageUiModel.AttackDeleted -> currentOnUndoDelete(message.attackId)
                         else -> Unit
                     }
                 }
@@ -137,6 +160,7 @@ private fun HomeSnackbar(
                 when (target) {
                     HomeUndoTargetUiModel.Start -> R.string.snackbar_undo_start_description
                     HomeUndoTargetUiModel.End -> R.string.snackbar_undo_end_description
+                    HomeUndoTargetUiModel.Delete -> R.string.snackbar_undo_delete_description
                 }
             ),
             onClick = onUndo
@@ -176,6 +200,7 @@ private fun messageText(message: HomeMessageUiModel, timeUiFormatter: TimeUiForm
     when (message) {
         is HomeMessageUiModel.AttackStarted -> stringResource(R.string.snackbar_attack_started)
         is HomeMessageUiModel.AttackEnded -> stringResource(R.string.snackbar_attack_ended)
+        is HomeMessageUiModel.AttackDeleted -> stringResource(R.string.snackbar_attack_deleted)
         HomeMessageUiModel.Undone -> stringResource(R.string.message_undone)
         HomeMessageUiModel.UndoNotPossible -> stringResource(R.string.message_undo_not_possible)
         HomeMessageUiModel.StorageFull -> stringResource(R.string.message_storage_full)

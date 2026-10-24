@@ -5,5 +5,6 @@ import java.time.Instant
 data class TodaySnapshotDomainModel(
     val attackInProgress: AttackDomainModel?,
     val endedAttacksTouchingToday: List<AttackDomainModel>,
-    val now: Instant
+    val now: Instant,
+    val recentlyDeleted: DeletedAttackDomainModel? = null
 )

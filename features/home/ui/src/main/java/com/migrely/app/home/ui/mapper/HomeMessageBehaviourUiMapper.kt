@@ -25,6 +25,13 @@ class HomeMessageBehaviourUiMapper {
                 UNDO_MILLIS
             )
 
+        is HomeMessageUiModel.AttackDeleted ->
+            HomeMessageBehaviourUiModel(
+                SnackbarTone.Confirmation,
+                HomeUndoTargetUiModel.Delete,
+                UNDO_MILLIS
+            )
+
         HomeMessageUiModel.Undone,
         HomeMessageUiModel.UndoNotPossible,
         is HomeMessageUiModel.StartMoveRejected,

@@ -44,7 +44,7 @@ target API 37, whichever comes first. Until then, do not mix AGP 9 idioms into b
 | `:architecture:ui` | Android | `com.migrely.app.architecture.ui` | `BaseComposeHolder`, `UiDestination`, `NavigationEventDestinationMapper`, `ScreenEnterObserver`, notification contracts |
 | `:architecture:instrumentation-test` | Android | `com.migrely.app.test` | E2E test helpers (first used by a feature change) |
 | `:coroutine` | JVM | `com.migrely.app.coroutine` | `CoroutineContextProvider` |
-| `:designsystem` | Android | `com.migrely.app.designsystem.{theme,sky,motion}` | `MigrelyTheme`, `MigrelyColors`, `SkyCanvas` / `SkyAppearance`, `rememberReduceMotion()`. Compose only; depends on no feature, presentation or domain module |
+| `:designsystem` | Android | `com.migrely.app.designsystem.{theme,sky,motion,snackbar,picker,icon}` | `MigrelyTheme`, `MigrelyColors`, `SkyCanvas` / `SkyAppearance`, `rememberReduceMotion()`, `MigrelySnackbar`, `MigrelyDateTimePicker`, `MigrelyIcons`. Compose only; depends on no feature, presentation or domain module |
 | `:datasource:source` | JVM | `com.migrely.app.datasource.<resource>.{datasource,model,exception}` | datasource interfaces, `*DataModel` / `*LocalModel`, `*DataException` |
 | `:datasource:implementation` | Android (Room via KSP) | `com.migrely.app.datasource.<resource>.{datasource,model,dao,mapper}` and `com.migrely.app.datasource.database` | `*DataSourceImpl`, Room entities (`*LocalModel`), DAOs, `MigrelyDatabase`, `*LocalMapper` |
 | `:features:<feature>:domain` | JVM | `com.migrely.app.<feature>.domain` | `model/`, `repository/` (interfaces), `usecase/`, `exception/` |
@@ -52,9 +52,11 @@ target API 37, whichever comes first. Until then, do not mix AGP 9 idioms into b
 | `:features:<feature>:data` | JVM | `com.migrely.app.<feature>.data` | `repository/` (implementations), `mapper/` |
 | `:features:<feature>:ui` | Android | `com.migrely.app.<feature>.ui` | `view/`, `model/`, `mapper/`, `di/` (`*Dependencies`, plain classes, no Hilt) |
 
-- Datasources share one `source`/`implementation` pair, one package per resource (`database`, `preferences`, `billing`,
-  `scheduler`, `pdf`, `file`, `analytics`, `clock`), as in the sample. The pair may be split later only for build-time
+- Datasources share one `source`/`implementation` pair, one package per resource (`database`, `attack`, `tag`,
+  `preferences`, `billing`, `scheduler`, `pdf`, `file`, `analytics`, `clock`), as in the sample. The pair may be split later only for build-time
   reasons.
+- Features: `home` (today's sky, attack mode, quick actions) and `attack` (one attack's details). Both read the same
+  `AttackDataSource` through their own models and repositories.
 - Features never depend on other features. Something two features need goes into a datasource, `:app`, or a dedicated
   shared domain module with its own reason to exist.
 
@@ -104,6 +106,15 @@ Health data must never be passed to either SDK.
 - Every schema version is exported to `datasource/implementation/schemas` and committed. Migrations are written and
   tested; `fallbackToDestructiveMigration` is forbidden (BRD EC-STO-01).
 - Rules that must be atomic (for example "only one attack in progress") run in one DAO `@Transaction`.
+- **Schema changes.** Additive versions use `@AutoMigration`; anything else gets a hand-written `Migration`. Every step
+  has an instrumented `MigrationTestHelper` test that migrates a database holding data (`MigrationTest`). Version 2
+  (change `add-attack-details`) added impact, note and deleted-at columns and the `attack_tag` and `custom_tag` tables.
+- **Tags.** `attack_tag` stores locations, symptoms and triggers as `(kind, tag_key)`. Built-in keys are the stable
+  `key` values of the `*DataModel` enums in `:datasource:source` (BRD D25) and must never change. Custom tags are
+  `custom:<id>` rows in `custom_tag`, which are archived but never deleted. Unknown keys are skipped when read.
+- **Soft delete.** Deleting an attack sets `deleted_epoch_millis`. Every read except `recentlyDeleted` and the restore
+  check hides deleted attacks. Rows deleted more than 2 minutes ago are purged by the datasource when it deletes or
+  lists deletions (BRD D23). The hard `delete` remains only for "undo start".
 - `SQLiteFullException` becomes `StorageFullDataException`. Any other `SQLiteException` becomes
   `DatabaseDataException`. Repositories turn both into failure values (section 7).
 - DAO SQL is covered by instrumented tests (`connectedDebugAndroidTest` on the `Migrely_API_36` emulator). Datasource

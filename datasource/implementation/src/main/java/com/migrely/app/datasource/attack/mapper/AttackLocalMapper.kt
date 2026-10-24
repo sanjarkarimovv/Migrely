@@ -5,7 +5,9 @@ import com.migrely.app.datasource.attack.model.AttackWithPointsLocalModel
 import com.migrely.app.datasource.attack.model.IntensityPointDataModel
 import java.time.Instant
 
-class AttackLocalMapper {
+class AttackLocalMapper(
+    private val attackTagLocalMapper: AttackTagLocalMapper = AttackTagLocalMapper()
+) {
     fun toData(local: AttackWithPointsLocalModel): AttackDataModel = AttackDataModel(
         id = local.attack.id,
         start = Instant.ofEpochMilli(local.attack.startEpochMillis),
@@ -19,6 +21,9 @@ class AttackLocalMapper {
         longCheckConfirmedAt = local.attack.longCheckConfirmedEpochMillis?.let(
             Instant::ofEpochMilli
         ),
-        longCheckDisabled = local.attack.longCheckDisabled
+        longCheckDisabled = local.attack.longCheckDisabled,
+        tags = local.tags.mapNotNull(attackTagLocalMapper::toData),
+        functionalImpact = local.attack.functionalImpact,
+        note = local.attack.note
     )
 }

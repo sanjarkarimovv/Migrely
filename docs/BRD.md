@@ -526,7 +526,8 @@ Ish sikli: `/opsx:explore` (ixtiyoriy) → `/opsx:propose <nom>` → review → 
 | 0 | `setup-project-foundation` — modullar skeleti, `docs/ARCHITECTURE.md`, dizayn tizimi (qorongʻi tema), Konsist, CI | ADR-01…12, NFR |
 | 1 | `add-attack-logging` — tez boshlash/tugatish, ogʻriq kuchi, "qorongʻi xona", bugungi osmon, app shortcut, Room asosi | ATK-F1, F2, F4, F6, EC-ATK-01, 02, 03, 06, 07, 08, 10, EC-TIM-01…03, SAF-F3, EC-UX-07, 08, 10, 12, 13 |
 | 1a | `refine-messages-and-type` — brend shrifti (Fraunces va Figtree), barcha holatlarni hisobga olgan maxsus snackbar | 18.5, EC-UX-01, 03, 04, 08, 16, 17, ATK-F1, F2, D20, D21 |
-| 1b | `add-attack-details` — xuruj tafsilotlari, oʻtgan xurujni qoʻshish, teglar, ustma-ust tushish va birlashtirish, oʻchirish va Undo | ATK-F3, F5, F7, EC-ATK-03, 04, 05, 09, 11…14, EC-TIM-04, 05, SAF-F2 |
+| 1b | `add-attack-details` — xuruj tafsilotlari ekrani (vaqtlar, ogʻriq nuqtalari, joylashuv, belgilar, triggerlar, taʼsir, izoh), oʻz teglari, Undo bilan oʻchirish, birinchi 10 ball kartasi | ATK-F4, F5, F6, F7, EC-ATK-03, 04, 09…14, EC-TIM-04, 05, SAF-F2 |
+| 1c | `add-past-attacks` — oʻtgan xurujni qoʻshish, ustma-ust tushganda birlashtirish yoki vaqtni oʻzgartirish | ATK-F3, EC-ATK-03, 04, 05 |
 | 2 | `add-attack-history` | HIS-F*, EC-HIS-* |
 | 3 | `add-medication-tracking` | MED-F*, EC-MED-* |
 | 4 | `add-day-markers` | DAY-F* |
@@ -635,6 +636,10 @@ Ilova 2023-yil 13-noyabrdan oldin ochilgan akkauntda chiqadi, shuning uchun 12 t
 | D17 | Launch'dan oldin 20–40 nafar migrenli bemor bilan 3–4 haftalik beta | PO | 2026-10-23 |
 | D20 | Shrift: sarlavhalar uchun Fraunces (Soft), matn uchun Figtree. Rad etilganlar: Roboto va Inter (oddiy, "standart Android" koʻrinishi), Atkinson Hyperlegible Next (har bir vaqt va sanada nolni chiziqli qilib koʻrsatadi, buni oʻchirib boʻlmaydi), Lexend (tabular raqamlari yoʻq), Plus Jakarta Sans va Manrope (zich, matn chiziqlari koʻpayadi), Newsreader (ingichka shtrixlar qorongʻi fonda yoyilib koʻrinadi), Nunito Sans (x-height past). Kirill yozuvi kerak boʻlsa, shu tilda tizim shrifti ishlatiladi | PO | 2026-10-23 |
 | D21 | Snackbar qoidalari EC-UX-16 boʻyicha. Material standart snackbar oʻrniga `:designsystem`dagi maxsus komponent | PO | 2026-10-23 |
+| D22 | 1b ikkiga boʻlindi: 1b tafsilotlar, 1c oʻtgan xuruj va birlashtirish. 1c gacha vaqtni boshqa xuruj bilan ustma-ust tushadigan qilib oʻzgartirish rad etiladi va oʻsha xurujning vaqti aytiladi | PO | 2026-10-23 |
+| D23 | Oʻchirilgan xuruj Undo oynasi davomida yashirin turadi (soft delete) va 2 daqiqadan keyin butunlay oʻchiriladi. 2 daqiqa Android'dagi eng uzun "Harakat qilish vaqti". Foydalanuvchi uchun u 5 soniyalik Undo'dan keyin yoʻq | PO | 2026-10-23 |
+| D24 | "Qorongʻi xona"da xira "Details" havolasi bor. Koʻp kun davom etadigan xurujda (P2) belgilarni xuruj tugashini kutmasdan yozish mumkin | PO | 2026-10-23 |
+| D25 | Tayyor joylashuv, belgi va triggerlar kodda barqaror kalitlar bilan turadi, foydalanuvchining oʻz teglari bazada saqlanadi | PO | 2026-10-23 |
 
 ---
 

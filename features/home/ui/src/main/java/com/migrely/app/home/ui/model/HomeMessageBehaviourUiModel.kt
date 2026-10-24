@@ -13,4 +13,4 @@ data class HomeMessageBehaviourUiModel(
     val baseDurationMillis: Long?
 )
 
-enum class HomeUndoTargetUiModel { Start, End }
+enum class HomeUndoTargetUiModel { Start, End, Delete }

@@ -1,6 +1,9 @@
 package com.migrely.app.home.domain.usecase
 
 import com.migrely.app.coroutine.CoroutineContextProvider
+import com.migrely.app.home.domain.model.AttackDomainModel
+import com.migrely.app.home.domain.model.AttackSummaryDomainModel
+import com.migrely.app.home.domain.model.DeletedAttackDomainModel
 import com.migrely.app.home.domain.model.IntensityPointDomainModel
 import com.migrely.app.home.domain.model.LongAttackCheckDomainModel
 import com.migrely.app.home.domain.model.TodayDomainModel
@@ -129,13 +132,9 @@ class GetTodayUseCaseTest {
 
     @Test
     fun `Given ended attacks with peaks 3 and 9 when executed then two attacks with highest 9`() {
-        givenSnapshot(
-            inProgress = null,
-            ended = listOf(
-                attack(id = "a", end = NOW, intensityPoints = listOf(point(3))),
-                attack(id = "b", end = NOW, intensityPoints = listOf(point(9)))
-            )
-        )
+        val mild = attack(id = "a", end = NOW, intensityPoints = listOf(point(3)))
+        val severe = attack(id = "b", end = NOW, intensityPoints = listOf(point(9)))
+        givenSnapshot(inProgress = null, ended = listOf(mild, severe))
 
         val actual = classUnderTest.executeInBackground(Unit)
 
@@ -144,7 +143,8 @@ class GetTodayUseCaseTest {
                 TodayDomainModel.AttacksEnded(
                     count = 2,
                     highestRecordedIntensity = 9,
-                    anyIntensityNotRecorded = false
+                    anyIntensityNotRecorded = false,
+                    attacks = listOf(summary(mild), summary(severe))
                 )
             ),
             actual
@@ -153,7 +153,8 @@ class GetTodayUseCaseTest {
 
     @Test
     fun `Given an ended attack without intensity when executed then not recorded`() {
-        givenSnapshot(inProgress = null, ended = listOf(attack(end = NOW)))
+        val unrecorded = attack(end = NOW)
+        givenSnapshot(inProgress = null, ended = listOf(unrecorded))
 
         val actual = classUnderTest.executeInBackground(Unit)
 
@@ -162,7 +163,8 @@ class GetTodayUseCaseTest {
                 TodayDomainModel.AttacksEnded(
                     count = 1,
                     highestRecordedIntensity = null,
-                    anyIntensityNotRecorded = true
+                    anyIntensityNotRecorded = true,
+                    attacks = listOf(summary(unrecorded))
                 )
             ),
             actual
@@ -185,7 +187,8 @@ class GetTodayUseCaseTest {
                 TodayDomainModel.AttacksEnded(
                     count = 1,
                     highestRecordedIntensity = 6,
-                    anyIntensityNotRecorded = false
+                    anyIntensityNotRecorded = false,
+                    attacks = listOf(summary(overnight))
                 )
             ),
             actual
@@ -217,4 +220,26 @@ class GetTodayUseCaseTest {
     }
 
     private fun point(value: Int) = IntensityPointDomainModel(NOW.minus(Duration.ofHours(1)), value)
+
+    @Test
+    fun `Given a recent deletion when executed then passes it on`() {
+        val deleted = DeletedAttackDomainModel("gone", NOW.minusSeconds(2))
+        given(getTodayRepository.today()).willReturn(
+            TodaySnapshotResultDomainModel.Loaded(
+                TodaySnapshotDomainModel(null, emptyList(), NOW, deleted)
+            )
+        )
+
+        val actual = classUnderTest.executeInBackground(Unit)
+
+        assertEquals(TodayResultDomainModel.Loaded(TodayDomainModel.Calm, deleted), actual)
+    }
+
+    private fun summary(attack: AttackDomainModel) = AttackSummaryDomainModel(
+        id = attack.id,
+        start = attack.start,
+        startZone = attack.startZone,
+        end = requireNotNull(attack.end),
+        peakIntensity = attack.peakIntensity
+    )
 }

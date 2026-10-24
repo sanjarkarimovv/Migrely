@@ -9,6 +9,10 @@ import com.migrely.app.datasource.attack.mapper.AttackLocalMapper
 import com.migrely.app.datasource.clock.datasource.ClockDataSource
 import com.migrely.app.datasource.clock.datasource.ClockDataSourceImpl
 import com.migrely.app.datasource.database.MigrelyDatabase
+import com.migrely.app.datasource.tag.dao.TagDao
+import com.migrely.app.datasource.tag.datasource.TagDataSource
+import com.migrely.app.datasource.tag.datasource.TagDataSourceImpl
+import com.migrely.app.datasource.tag.mapper.CustomTagLocalMapper
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -31,6 +35,15 @@ internal object DatabaseModule {
     @Provides
     fun providesAttackDataSource(attackDao: AttackDao): AttackDataSource =
         AttackDataSourceImpl(attackDao, AttackLocalMapper())
+
+    @Provides
+    fun providesTagDao(database: MigrelyDatabase): TagDao = database.tagDao()
+
+    @Provides
+    fun providesTagDataSource(tagDao: TagDao): TagDataSource = TagDataSourceImpl(
+        tagDao,
+        CustomTagLocalMapper()
+    )
 
     @Provides
     fun providesClockDataSource(): ClockDataSource = ClockDataSourceImpl()

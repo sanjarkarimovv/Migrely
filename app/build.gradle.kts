@@ -89,10 +89,15 @@ dependencies {
 
     testImplementation(libs.test.junit)
     testImplementation(libs.test.konsist)
+    testImplementation(libs.test.mockito.kotlin)
     androidTestImplementation(libs.test.androidx.junit)
     androidTestImplementation(libs.test.androidx.espresso.core)
     implementation(projects.features.home.ui)
     implementation(projects.features.home.presentation)
     implementation(projects.features.home.domain)
     implementation(projects.features.home.data)
+    implementation(projects.features.attack.ui)
+    implementation(projects.features.attack.presentation)
+    implementation(projects.features.attack.domain)
+    implementation(projects.features.attack.data)
 }

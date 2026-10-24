@@ -9,5 +9,8 @@ data class AttackDataModel(
     val end: Instant?,
     val intensityPoints: List<IntensityPointDataModel>,
     val longCheckConfirmedAt: Instant?,
-    val longCheckDisabled: Boolean
+    val longCheckDisabled: Boolean,
+    val tags: List<AttackTagDataModel> = emptyList(),
+    val functionalImpact: Int? = null,
+    val note: String? = null
 )

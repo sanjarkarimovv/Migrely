@@ -51,6 +51,16 @@
     <string name="snackbar_undo_start_description">Undo the start</string>
     <string name="snackbar_undo_end_description">Undo the end</string>
     <string name="snackbar_dismiss">Dismiss</string>
+    <string name="snackbar_attack_deleted">Migraine deleted</string>
+    <string name="snackbar_undo_delete_description">Undo the deletion</string>
+    <string name="today_list_title">Logged today</string>
+    <string name="attack_summary_range">%1$s – %2$s</string>
+    <string name="attack_summary_peak">%1$d/10</string>
+    <string name="attack_summary_peak_not_recorded">Not recorded</string>
+    <string name="attack_summary_description">Migraine from %1$s to %2$s, peak %3$s. Opens its details.</string>
+    <string name="attack_summary_peak_spoken">%1$d out of 10</string>
+    <string name="attack_details">Details</string>
+    <string name="attack_details_description">Details of this migraine</string>
     <string name="message_undone">Undone.</string>
     <string name="message_undo_not_possible">This can no longer be undone.</string>
     <string name="message_storage_full">Couldn\'t save. Your phone\'s storage is full.</string>

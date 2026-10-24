@@ -29,6 +29,10 @@ class HomeNotificationUiMapperTest(
             ),
             arrayOf<Any>(HomePresentationNotification.Undone, HomeMessageUiModel.Undone),
             arrayOf<Any>(
+                HomePresentationNotification.AttackDeleted("a", Instant.ofEpochMilli(9_000L)),
+                HomeMessageUiModel.AttackDeleted("a", 9_000L)
+            ),
+            arrayOf<Any>(
                 HomePresentationNotification.UndoNotPossible,
                 HomeMessageUiModel.UndoNotPossible
             ),

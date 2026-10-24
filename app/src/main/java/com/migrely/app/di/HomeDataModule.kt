@@ -14,6 +14,7 @@ import com.migrely.app.home.domain.repository.GetPreviousAttackEndRepository
 import com.migrely.app.home.domain.repository.GetTodayRepository
 import com.migrely.app.home.domain.repository.ReopenAttackRepository
 import com.migrely.app.home.domain.repository.ReplaceLatestIntensityPointRepository
+import com.migrely.app.home.domain.repository.RestoreDeletedAttackRepository
 import com.migrely.app.home.domain.repository.StartAttackRepository
 import com.migrely.app.home.domain.repository.UpdateAttackStartRepository
 import com.migrely.app.home.domain.repository.UpdateLongAttackCheckRepository
@@ -87,4 +88,9 @@ internal object HomeDataModule {
     fun providesUpdateLongAttackCheckRepository(
         repository: HomeRepository
     ): UpdateLongAttackCheckRepository = repository
+
+    @Provides
+    fun providesRestoreDeletedAttackRepository(
+        repository: HomeRepository
+    ): RestoreDeletedAttackRepository = repository
 }

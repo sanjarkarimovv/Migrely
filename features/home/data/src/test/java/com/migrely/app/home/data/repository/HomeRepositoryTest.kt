@@ -3,13 +3,16 @@ package com.migrely.app.home.data.repository
 import com.migrely.app.datasource.attack.datasource.AttackDataSource
 import com.migrely.app.datasource.attack.model.AttackDataModel
 import com.migrely.app.datasource.attack.model.AttackStartDataModel
+import com.migrely.app.datasource.attack.model.DeletedAttackDataModel
 import com.migrely.app.datasource.attack.model.ReopenDataModel
+import com.migrely.app.datasource.attack.model.RestoreDataModel
 import com.migrely.app.datasource.clock.datasource.ClockDataSource
 import com.migrely.app.datasource.exception.DatabaseDataException
 import com.migrely.app.datasource.exception.StorageFullDataException
 import com.migrely.app.home.data.mapper.AttackDomainMapper
 import com.migrely.app.home.data.mapper.IntensityPointDomainMapper
 import com.migrely.app.home.domain.model.AttackLookupResultDomainModel
+import com.migrely.app.home.domain.model.DeletedAttackDomainModel
 import com.migrely.app.home.domain.model.IntensityPointDomainModel
 import com.migrely.app.home.domain.model.LongAttackCheckDomainModel
 import com.migrely.app.home.domain.model.PreviousEndResultDomainModel
@@ -17,6 +20,7 @@ import com.migrely.app.home.domain.model.ReopenResultDomainModel
 import com.migrely.app.home.domain.model.StartAttackResultDomainModel
 import com.migrely.app.home.domain.model.TodaySnapshotDomainModel
 import com.migrely.app.home.domain.model.TodaySnapshotResultDomainModel
+import com.migrely.app.home.domain.model.UndoResultDomainModel
 import com.migrely.app.home.domain.model.WriteResultDomainModel
 import java.time.Instant
 import java.time.ZoneId
@@ -246,4 +250,38 @@ class HomeRepositoryTest {
         longCheckConfirmedAt = null,
         longCheckDisabled = false
     )
+
+    @Test
+    fun `Given a recent deletion when today then passes it on`() {
+        given(attackDataSource.recentlyDeleted(Instant.EPOCH))
+            .willReturn(DeletedAttackDataModel("gone", NOW.minusSeconds(2)))
+
+        val actual = classUnderTest.today()
+
+        assertEquals(
+            DeletedAttackDomainModel("gone", NOW.minusSeconds(2)),
+            (actual as TodaySnapshotResultDomainModel.Loaded).snapshot.recentlyDeleted
+        )
+    }
+
+    @Test
+    fun `Given restoring is possible when restoring then undone`() {
+        given(attackDataSource.restore("a")).willReturn(RestoreDataModel.Restored)
+
+        assertEquals(UndoResultDomainModel.Undone, classUnderTest.restoreDeletedAttack("a"))
+    }
+
+    @Test
+    fun `Given restoring would overlap when restoring then not possible`() {
+        given(attackDataSource.restore("a")).willReturn(RestoreDataModel.NotPossible)
+
+        assertEquals(UndoResultDomainModel.NotPossible, classUnderTest.restoreDeletedAttack("a"))
+    }
+
+    @Test
+    fun `Given a database failure when restoring then failed`() {
+        whenever(attackDataSource.restore("a")).doThrow(DatabaseDataException(RuntimeException()))
+
+        assertEquals(UndoResultDomainModel.Failed, classUnderTest.restoreDeletedAttack("a"))
+    }
 }
