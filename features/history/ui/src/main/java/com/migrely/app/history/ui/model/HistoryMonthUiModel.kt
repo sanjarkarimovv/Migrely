@@ -12,5 +12,6 @@ data class HistoryMonthUiModel(
     val hasPreviousMonth: Boolean,
     val hasNextMonth: Boolean,
     val days: List<HistoryDayUiModel>,
-    val attacks: List<HistoryAttackUiModel>
+    val attacks: List<HistoryAttackUiModel>,
+    val stats: MonthStatsUiModel
 ) : Parcelable

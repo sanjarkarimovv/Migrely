@@ -108,6 +108,10 @@ fun MonthSkyContents(
             onDay = onDay,
             modifier = Modifier.padding(top = 8.dp)
         )
+        // The current month's progress, by History's rule; home's attack mode has no month card (BRD D55, EC-UX-13).
+        month.stats.progress?.let {
+            ProgressLine(it, mappers.historyTimeUiFormatter, Modifier.padding(top = 8.dp))
+        }
     }
 }
 

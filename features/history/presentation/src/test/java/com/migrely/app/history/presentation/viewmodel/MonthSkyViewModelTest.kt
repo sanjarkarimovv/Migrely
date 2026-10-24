@@ -8,6 +8,8 @@ import com.migrely.app.history.domain.usecase.GetHistoryMonthUseCase
 import com.migrely.app.history.presentation.mapper.HistoryAttackPresentationMapper
 import com.migrely.app.history.presentation.mapper.HistoryMonthPresentationMapper
 import com.migrely.app.history.presentation.mapper.IntensityLevelPresentationMapper
+import com.migrely.app.history.presentation.mapper.MonthStatsPresentationMapper
+import com.migrely.app.history.presentation.mapper.PainLevelPresentationMapper
 import com.migrely.app.history.presentation.model.MonthSkyPresentationNotification
 import com.migrely.app.history.presentation.model.MonthSkyViewState
 import com.migrely.app.history.presentation.navigation.MonthSkyPresentationNavigationEvent
@@ -42,7 +44,8 @@ class MonthSkyViewModelTest :
 
     private val historyMonthPresentationMapper = HistoryMonthPresentationMapper(
         HistoryAttackPresentationMapper(),
-        IntensityLevelPresentationMapper()
+        IntensityLevelPresentationMapper(PainLevelPresentationMapper()),
+        MonthStatsPresentationMapper(PainLevelPresentationMapper())
     )
 
     @Before

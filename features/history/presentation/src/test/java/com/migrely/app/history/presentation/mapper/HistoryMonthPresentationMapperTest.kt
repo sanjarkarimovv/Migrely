@@ -4,6 +4,8 @@ import com.migrely.app.history.domain.model.HistoryAttackDomainModel
 import com.migrely.app.history.domain.model.HistoryDayDomainModel
 import com.migrely.app.history.domain.model.HistoryMonthDomainModel
 import com.migrely.app.history.domain.model.MonthStatsDomainModel
+import com.migrely.app.history.presentation.mapper.MonthStatsPresentationMapper
+import com.migrely.app.history.presentation.mapper.PainLevelPresentationMapper
 import com.migrely.app.history.presentation.model.DaySkyPresentationModel
 import com.migrely.app.history.presentation.model.HistoryAttackPresentationModel
 import com.migrely.app.history.presentation.model.PeakPresentationModel
@@ -27,7 +29,8 @@ private fun attack(peak: Int?, end: Instant? = END) =
 
 private val classUnderTest = HistoryMonthPresentationMapper(
     HistoryAttackPresentationMapper(),
-    IntensityLevelPresentationMapper()
+    IntensityLevelPresentationMapper(PainLevelPresentationMapper()),
+    MonthStatsPresentationMapper(PainLevelPresentationMapper())
 )
 
 private fun month(

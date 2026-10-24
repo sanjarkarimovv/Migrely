@@ -17,6 +17,8 @@ import com.migrely.app.history.domain.usecase.SetDayMarkUseCase
 import com.migrely.app.history.presentation.mapper.HistoryAttackPresentationMapper
 import com.migrely.app.history.presentation.mapper.HistoryMonthPresentationMapper
 import com.migrely.app.history.presentation.mapper.IntensityLevelPresentationMapper
+import com.migrely.app.history.presentation.mapper.MonthStatsPresentationMapper
+import com.migrely.app.history.presentation.mapper.PainLevelPresentationMapper
 import com.migrely.app.history.presentation.viewmodel.HistoryViewModel
 import com.migrely.app.history.presentation.viewmodel.MonthSkyViewModel
 import dagger.Module
@@ -70,7 +72,8 @@ internal object HistoryModule {
     @Provides
     fun providesHistoryMonthPresentationMapper() = HistoryMonthPresentationMapper(
         HistoryAttackPresentationMapper(),
-        IntensityLevelPresentationMapper()
+        IntensityLevelPresentationMapper(PainLevelPresentationMapper()),
+        MonthStatsPresentationMapper(PainLevelPresentationMapper())
     )
 
     @Provides

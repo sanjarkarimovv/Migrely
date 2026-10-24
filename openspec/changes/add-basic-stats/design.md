@@ -56,8 +56,11 @@
   example "Migraine days: 6".
 - **Home:** the month card shows the progress line under the calendar. Home's attack mode has no month card, so it
   never shows there (EC-UX-13).
-- **Colours:** the warm tone is used only for "fewer", and the neutral tone is `onSurfaceVariant`. The chronic card
-  uses the information surface of the messages, not an error colour.
+- **Colours:** "fewer" uses `MigrelyColors.Positive`, the design system's colour for progress messages; more or as
+  many use the neutral `onSurfaceVariant`. The amber `tertiary` stays reserved for warnings such as overuse. The
+  chronic card is a `surfaceContainerHigh` notice with the information icon, not an error colour.
+- **Pain levels:** `PainLevelDomainModel.of` is the one place for the 1–3 / 4–6 / 7–10 split (EC-UX-09). History's
+  `IntensityLevelPresentationMapper` now maps through it, so the skies and the average peak cannot disagree.
 - **Copy:** plurals come from string resources ("1 fewer migraine day", "3 fewer migraine days").
 
 ## Risks

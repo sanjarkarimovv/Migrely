@@ -19,8 +19,8 @@
 
 ## 4. Presentation and UI (design D4)
 
-- [ ] 4.1 Presentation models and mappers; ViewModels unchanged apart from mapping.
-- [ ] 4.2 History's `MonthSummary` and home's progress line; strings with plurals.
+- [x] 4.1 Presentation models and mappers; ViewModels unchanged apart from mapping.
+- [x] 4.2 History's `MonthSummary` and home's progress line; strings with plurals.
   Verify: `./gradlew :features:history:presentation:test :features:history:ui:test`
 
 ## 5. Verify
