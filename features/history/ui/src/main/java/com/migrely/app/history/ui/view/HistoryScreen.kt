@@ -235,7 +235,7 @@ fun HistoryContents(
                     IconButton(onClick = actions.onBack) {
                         Icon(
                             MigrelyIcons.Back,
-                            contentDescription = stringResource(R.string.navigate_back)
+                            contentDescription = stringResource(R.string.history_navigate_back)
                         )
                     }
                 },
@@ -464,7 +464,10 @@ private fun DaySection(
             .fillMaxWidth()
             .heightIn(min = 48.dp)
     ) {
-        Text(stringResource(R.string.add_past_attack), style = MaterialTheme.typography.labelLarge)
+        Text(
+            stringResource(R.string.history_add_past_attack),
+            style = MaterialTheme.typography.labelLarge
+        )
     }
     TextButton(
         onClick = actions.onShowAllMonth,

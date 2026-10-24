@@ -294,7 +294,7 @@ private fun CustomTagDialog(kind: TagKindUiModel, onAdd: (String) -> Unit, onDis
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.picker_cancel)) }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.attack_picker_cancel)) }
         }
     )
 }

@@ -127,7 +127,7 @@ fun MedicationsContents(
                     IconButton(onClick = actions.onBack) {
                         Icon(
                             MigrelyIcons.Back,
-                            contentDescription = stringResource(R.string.navigate_back)
+                            contentDescription = stringResource(R.string.medication_navigate_back)
                         )
                     }
                 },

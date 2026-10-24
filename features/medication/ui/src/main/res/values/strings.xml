@@ -1,5 +1,5 @@
 <resources>
-    <string name="navigate_back">Back</string>
+    <string name="medication_navigate_back">Back</string>
 
     <!-- Medication taken (BRD D34). -->
     <string name="log_title">Medication taken</string>
@@ -14,9 +14,9 @@
     <string name="log_add_and_log">Add and log</string>
     <string name="picker_title">When did you take it?</string>
     <string name="picker_out_of_range">Pick a time up to now.</string>
-    <string name="picker_next">Next</string>
-    <string name="picker_cancel">Cancel</string>
-    <string name="picker_confirm">OK</string>
+    <string name="medication_picker_next">Next</string>
+    <string name="medication_picker_cancel">Cancel</string>
+    <string name="medication_picker_confirm">OK</string>
 
     <!-- My medications (BRD MED-F1, EC-MED-01). -->
     <string name="list_title">My medications</string>
@@ -56,14 +56,14 @@
     <!-- Messages (BRD EC-UX-16). -->
     <string name="message_archived">Medication removed</string>
     <string name="message_undo_archive_description">Undo removing the medication</string>
-    <string name="message_undone">Undone.</string>
+    <string name="medication_message_undone">Undone.</string>
     <string name="message_intake_undone">Removed. Nothing was logged.</string>
     <string name="message_in_future">Pick a time up to now.</string>
     <string name="message_limit_reached">You can keep up to 50 medications. Remove one you no longer take.</string>
-    <string name="message_storage_full">Couldn\'t save. Your phone\'s storage is full.</string>
-    <string name="message_generic">Something went wrong. Please try again.</string>
-    <string name="snackbar_undo">Undo</string>
-    <string name="snackbar_dismiss">Dismiss</string>
+    <string name="medication_message_storage_full">Couldn\'t save. Your phone\'s storage is full.</string>
+    <string name="medication_message_generic">Something went wrong. Please try again.</string>
+    <string name="medication_snackbar_undo">Undo</string>
+    <string name="medication_snackbar_dismiss">Dismiss</string>
     <!-- Home's medication card (BRD D39, D45, D46) -->
     <string name="prompt_effect_title">How much did %1$s help?</string>
     <string name="prompt_effect_taken">Taken at %1$s</string>

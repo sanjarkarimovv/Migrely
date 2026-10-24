@@ -317,7 +317,7 @@ fun AttackDetailsContents(
                 IconButton(onClick = actions.onBack) {
                     Icon(
                         MigrelyIcons.Back,
-                        contentDescription = stringResource(R.string.navigate_back)
+                        contentDescription = stringResource(R.string.attack_navigate_back)
                     )
                 }
             },
