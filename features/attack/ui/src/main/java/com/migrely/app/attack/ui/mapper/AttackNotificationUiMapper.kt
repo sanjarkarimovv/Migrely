@@ -16,7 +16,8 @@ import com.migrely.app.attack.ui.notification.AttackDetailsEventPresenter
 class AttackNotificationUiMapper(
     private val attackDetailsEventPresenter: AttackDetailsEventPresenter,
     private val timeFieldUiMapper: TimeFieldUiMapper,
-    private val attackRangeUiMapper: AttackRangeUiMapper
+    private val attackRangeUiMapper: AttackRangeUiMapper,
+    private val attackIntakeUiMapper: AttackIntakeUiMapper
 ) : NotificationUiMapper<AttackDetailsPresentationNotification> {
     override fun toUi(notification: AttackDetailsPresentationNotification): UiNotification {
         val event = when (notification) {
@@ -50,6 +51,14 @@ class AttackNotificationUiMapper(
                     AttackMessageUiModel.PointRemoved(
                         notification.attackId,
                         pointOf(notification.point)
+                    )
+                )
+
+            is AttackDetailsPresentationNotification.IntakeRemoved ->
+                AttackDetailsEventUiModel.Message(
+                    AttackMessageUiModel.IntakeRemoved(
+                        notification.attackId,
+                        attackIntakeUiMapper.toUi(notification.intake)
                     )
                 )
 

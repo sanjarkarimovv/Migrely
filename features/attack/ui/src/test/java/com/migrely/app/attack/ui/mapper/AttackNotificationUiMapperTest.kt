@@ -118,7 +118,8 @@ class AttackNotificationUiMapperTest(
         val classUnderTest = AttackNotificationUiMapper(
             presenter,
             TimeFieldUiMapper(),
-            AttackRangeUiMapper()
+            AttackRangeUiMapper(),
+            AttackIntakeUiMapper()
         )
 
         // When

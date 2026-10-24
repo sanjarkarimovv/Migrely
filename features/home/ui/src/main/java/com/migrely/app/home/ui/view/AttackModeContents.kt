@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
@@ -22,7 +23,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -42,6 +45,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.migrely.app.designsystem.icon.MigrelyIcons
 import com.migrely.app.designsystem.picker.DateTimePickerLabels
 import com.migrely.app.designsystem.picker.MigrelyDateTimePicker
 import com.migrely.app.designsystem.sky.SkyAppearance
@@ -167,6 +171,24 @@ private fun SideBySideAttackLayout(
 @Composable
 private fun AttackControls(attack: AttackInProgressUiModel, actions: HomeActions) {
     IntensityChoices(selected = attack.currentLevel, onIntensity = actions.onIntensity)
+    Spacer(Modifier.height(12.dp))
+    // A large, dim control for the dark room (BRD 18.3 B, D34, EC-UX-02).
+    OutlinedButton(
+        onClick = { actions.onLogMedication(attack.id) },
+        shape = RoundedCornerShape(32.dp),
+        colors = ButtonDefaults.outlinedButtonColors(contentColor = MigrelyColors.AttackModeText),
+        border = BorderStroke(1.dp, MigrelyColors.AttackModeOutline),
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 64.dp)
+    ) {
+        Icon(MigrelyIcons.Add, contentDescription = null, modifier = Modifier.size(20.dp))
+        Text(
+            text = stringResource(R.string.medication_taken),
+            style = MaterialTheme.typography.labelLarge,
+            modifier = Modifier.padding(start = 8.dp)
+        )
+    }
     Spacer(Modifier.height(16.dp))
     Button(
         onClick = actions.onEndAttack,
@@ -454,7 +476,7 @@ internal val previewFormatter = TimeUiFormatter(
     }
 )
 
-internal val previewActions = HomeActions({}, {}, {}, {}, {}, {}, {}, {}, {})
+internal val previewActions = HomeActions({}, {}, {}, {}, {}, {}, {}, {}, {}, {})
 
 private fun previewMillis(hour: Int, minute: Int): Long =
     LocalDate.of(2026, 10, 23).atTime(hour, minute).atZone(PREVIEW_ZONE).toInstant().toEpochMilli()

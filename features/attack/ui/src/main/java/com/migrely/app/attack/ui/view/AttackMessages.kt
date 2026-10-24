@@ -38,6 +38,7 @@ internal fun AttackMessages(
     onClear: (ShownAttackMessageUiModel) -> Unit,
     onUndoTimes: (TimesUndoUiModel) -> Unit,
     onUndoPoint: (AttackMessageUiModel.PointRemoved) -> Unit,
+    onUndoIntake: (AttackMessageUiModel.IntakeRemoved) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val accessibilityManager = LocalAccessibilityManager.current
@@ -95,6 +96,17 @@ internal fun AttackMessages(
                 }
             )
 
+            is AttackMessageUiModel.IntakeRemoved -> SnackbarAction(
+                label = stringResource(R.string.snackbar_undo),
+                spokenLabel = stringResource(R.string.snackbar_undo_intake_description),
+                onClick = {
+                    if (currentIsShown(visible)) {
+                        currentOnClear(visible)
+                        onUndoIntake(message)
+                    }
+                }
+            )
+
             else -> null
         }
         MigrelySnackbar(
@@ -134,6 +146,7 @@ private fun messageText(message: AttackMessageUiModel): String = when (message) 
     )
 
     is AttackMessageUiModel.PointRemoved -> stringResource(R.string.message_point_removed)
+    is AttackMessageUiModel.IntakeRemoved -> stringResource(R.string.message_intake_removed)
     AttackMessageUiModel.PointOutsideAttack -> stringResource(R.string.message_point_outside)
     AttackMessageUiModel.TagLimitReached -> stringResource(R.string.message_tag_limit)
     AttackMessageUiModel.AttacksMerged -> stringResource(R.string.message_attacks_merged)

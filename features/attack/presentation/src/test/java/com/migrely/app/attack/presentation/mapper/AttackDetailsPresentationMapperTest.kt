@@ -32,7 +32,8 @@ class AttackDetailsPresentationMapperTest {
         BuiltInTriggerPresentationMapper(),
         CustomTagPresentationMapper(TagKindPresentationMapper()),
         FunctionalImpactPresentationMapper(),
-        IntensityPointPresentationMapper()
+        IntensityPointPresentationMapper(),
+        AttackIntakePresentationMapper()
     )
     private val active = CustomTagDomainModel(
         "active",

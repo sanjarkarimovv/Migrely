@@ -177,7 +177,7 @@ abstract class AttackDao {
     )
     abstract fun recentlyDeleted(sinceEpochMillis: Long): AttackLocalModel?
 
-    /** Removes deleted attacks for good; their points and tags go with them (foreign keys cascade). */
+    /** Removes deleted attacks for good; their points, tags and intakes go with them (foreign keys cascade). */
     @Query(
         "DELETE FROM attack WHERE deleted_epoch_millis IS NOT NULL AND deleted_epoch_millis < :cutoffEpochMillis"
     )
@@ -352,6 +352,7 @@ abstract class AttackDao {
     ) {
         if (absorbedIds.isNotEmpty()) {
             moveIntensityPoints(absorbedIds, survivorId)
+            moveIntakes(absorbedIds, survivorId)
             tagsOf(absorbedIds).forEach { tag -> insertTag(tag.copy(attackId = survivorId)) }
             mergeLongCheck(survivorId, absorbedIds + survivorId)
         }
@@ -365,6 +366,23 @@ abstract class AttackDao {
             nowEpochMillis
         )
         if (absorbedIds.isNotEmpty()) deleteAll(absorbedIds)
+    }
+
+    /** Intakes of merged attacks move to the remaining one (BRD EC-MED-10, D27). */
+    @Query("UPDATE medication_intake SET attack_id = :survivorId WHERE attack_id IN (:absorbedIds)")
+    abstract fun moveIntakes(absorbedIds: List<String>, survivorId: String)
+
+    @Query("UPDATE medication_intake SET attack_id = NULL WHERE attack_id = :attackId")
+    abstract fun detachIntakes(attackId: String)
+
+    /**
+     * Removes an attack started by mistake for good. Its points and tags go with it; a medication logged meanwhile was
+     * really taken, so its intake stays, on its own.
+     */
+    @Transaction
+    open fun discard(attackId: String) {
+        detachIntakes(attackId)
+        delete(attackId)
     }
 
     data class StartOutcome(val attack: AttackWithPointsLocalModel, val created: Boolean)

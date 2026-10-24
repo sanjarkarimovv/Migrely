@@ -53,6 +53,7 @@ import com.migrely.app.attack.ui.mapper.AttackTimeUiFormatter
 import com.migrely.app.attack.ui.model.AttackDetailsEventUiModel
 import com.migrely.app.attack.ui.model.AttackDetailsUiModel
 import com.migrely.app.attack.ui.model.AttackDetailsViewStateUiModel
+import com.migrely.app.attack.ui.model.AttackIntakeUiModel
 import com.migrely.app.attack.ui.model.AttackTagUiModel
 import com.migrely.app.attack.ui.model.FunctionalImpactUiModel
 import com.migrely.app.attack.ui.model.IntensityPointUiModel
@@ -80,7 +81,9 @@ data class AttackDetailsActions(
     val onNote: (note: String) -> Unit,
     val onAddCustomTag: (kind: TagKindUiModel, name: String) -> Unit,
     val onArchiveCustomTag: (tagId: String) -> Unit,
-    val onDelete: () -> Unit
+    val onDelete: () -> Unit,
+    val onAddMedication: () -> Unit = {},
+    val onRemoveIntake: (intake: AttackIntakeUiModel) -> Unit = {}
 )
 
 /**
@@ -212,7 +215,14 @@ fun AttackDetailsDependencies.AttackDetails(
             )
         },
         onArchiveCustomTag = { tagId -> viewModel.onArchiveCustomTagAction(attackId, tagId) },
-        onDelete = { viewModel.onDeleteAction(attackId) }
+        onDelete = { viewModel.onDeleteAction(attackId) },
+        onAddMedication = { viewModel.onLogMedicationAction(attackId) },
+        onRemoveIntake = { intake ->
+            viewModel.onRemoveIntakeAction(
+                attackId,
+                attackIntakeUiToPresentationMapper.toPresentation(intake)
+            )
+        }
     )
 
     Box(modifier = modifier.fillMaxSize()) {
@@ -246,6 +256,12 @@ fun AttackDetailsDependencies.AttackDetails(
                 viewModel.onUndoPointRemovalAction(
                     message.attackId,
                     intensityPointUiToPresentationMapper.toPresentation(message.point)
+                )
+            },
+            onUndoIntake = { message ->
+                viewModel.onUndoIntakeRemovalAction(
+                    message.attackId,
+                    attackIntakeUiToPresentationMapper.toPresentation(message.intake)
                 )
             }
         )
@@ -332,6 +348,7 @@ private fun ReadyContents(
             if (localState.safetyCardVisible) SafetyCard(onDismiss = localState.onDismissSafetyCard)
             TimeSection(details, timeUiFormatter, localState.timeError, actions)
             PainSection(details, timeUiFormatter, actions)
+            MedicationsSection(details, timeUiFormatter, actions)
             ChoiceSections(details, labels, actions)
             ImpactSection(details.functionalImpact, labels, actions.onImpact)
             NoteSection(

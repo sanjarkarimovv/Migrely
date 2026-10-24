@@ -11,6 +11,8 @@ import com.migrely.app.attack.ui.di.AddPastAttackDependencies
 import com.migrely.app.attack.ui.di.AttackDetailsDependencies
 import com.migrely.app.attack.ui.mapper.AddPastAttackNotificationUiMapper
 import com.migrely.app.attack.ui.mapper.AttackDetailsViewStateUiMapper
+import com.migrely.app.attack.ui.mapper.AttackIntakeUiMapper
+import com.migrely.app.attack.ui.mapper.AttackIntakeUiToPresentationMapper
 import com.migrely.app.attack.ui.mapper.AttackMessageBehaviourUiMapper
 import com.migrely.app.attack.ui.mapper.AttackNotificationUiMapper
 import com.migrely.app.attack.ui.mapper.AttackRangeUiMapper
@@ -83,6 +85,7 @@ internal object AttackUiModule {
         val tagKindUiMapper = TagKindUiMapper()
         val tagKindUiToPresentationMapper = TagKindUiToPresentationMapper()
         val intensityPointUiToPresentationMapper = IntensityPointUiToPresentationMapper()
+        val attackIntakeUiMapper = AttackIntakeUiMapper()
         return AttackDetailsDependencies(
             attackDetailsViewModel = attackDetailsViewModel,
             attackDetailsViewStateUiMapper = AttackDetailsViewStateUiMapper(
@@ -90,7 +93,8 @@ internal object AttackUiModule {
                 BuiltInSymptomUiMapper(),
                 BuiltInTriggerUiMapper(),
                 CustomTagUiMapper(tagKindUiMapper),
-                FunctionalImpactUiMapper()
+                FunctionalImpactUiMapper(),
+                attackIntakeUiMapper
             ),
             attackTimeUiFormatter = attackTimeUiFormatter,
             attackDetailsEventPresenter = eventPresenter,
@@ -108,11 +112,13 @@ internal object AttackUiModule {
             timesUndoUiToPresentationMapper = TimesUndoUiToPresentationMapper(
                 intensityPointUiToPresentationMapper
             ),
+            attackIntakeUiToPresentationMapper = AttackIntakeUiToPresentationMapper(),
             attackDetailsNavigationMapper = attackDetailsNavigationMapper,
             attackNotificationMapper = AttackNotificationUiMapper(
                 eventPresenter,
                 TimeFieldUiMapper(),
-                AttackRangeUiMapper()
+                AttackRangeUiMapper(),
+                attackIntakeUiMapper
             )
         )
     }

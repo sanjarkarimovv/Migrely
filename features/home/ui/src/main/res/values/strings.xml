@@ -68,4 +68,6 @@
     <string name="message_move_rejected">Your previous migraine ended at %1$s.</string>
     <string name="message_end_out_of_range">Pick a time between the start and now.</string>
     <string name="message_generic">Something went wrong. Please try again.</string>
+    <string name="medication_taken">Medication taken</string>
+    <string name="log_medication">Log medication</string>
 </resources>

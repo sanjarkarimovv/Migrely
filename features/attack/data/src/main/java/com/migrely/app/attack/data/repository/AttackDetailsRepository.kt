@@ -1,9 +1,11 @@
 package com.migrely.app.attack.data.repository
 
 import com.migrely.app.attack.data.mapper.AttackDetailsDomainResolver
+import com.migrely.app.attack.data.mapper.AttackIntakeDomainMapper
 import com.migrely.app.attack.data.mapper.AttackTagDataMapper
 import com.migrely.app.attack.domain.model.AttackDetailsDomainModel
 import com.migrely.app.attack.domain.model.AttackDetailsLookupResultDomainModel
+import com.migrely.app.attack.domain.model.AttackIntakeDomainModel
 import com.migrely.app.attack.domain.model.AttackMergeDomainModel
 import com.migrely.app.attack.domain.model.AttackTagDomainModel
 import com.migrely.app.attack.domain.model.CurrentTimeDomainModel
@@ -20,8 +22,10 @@ import com.migrely.app.attack.domain.repository.GetAttackDetailsRepository
 import com.migrely.app.attack.domain.repository.GetCurrentTimeRepository
 import com.migrely.app.attack.domain.repository.GetMaximumRecordedRepository
 import com.migrely.app.attack.domain.repository.MergeAttacksRepository
+import com.migrely.app.attack.domain.repository.RemoveIntakeRepository
 import com.migrely.app.attack.domain.repository.RemoveIntensityPointRepository
 import com.migrely.app.attack.domain.repository.RestoreAttackTimesRepository
+import com.migrely.app.attack.domain.repository.RestoreIntakeRepository
 import com.migrely.app.attack.domain.repository.SelectAttackTagRepository
 import com.migrely.app.attack.domain.repository.SetFunctionalImpactRepository
 import com.migrely.app.attack.domain.repository.StorePastAttackRepository
@@ -35,6 +39,8 @@ import com.migrely.app.datasource.attack.model.IntensityPointDataModel
 import com.migrely.app.datasource.clock.datasource.ClockDataSource
 import com.migrely.app.datasource.exception.DataException
 import com.migrely.app.datasource.exception.StorageFullDataException
+import com.migrely.app.datasource.medication.datasource.MedicationDataSource
+import com.migrely.app.datasource.medication.model.IntakeDataModel
 import com.migrely.app.datasource.tag.datasource.TagDataSource
 import java.time.Instant
 import java.time.ZoneId
@@ -49,7 +55,9 @@ class AttackDetailsRepository(
     private val tagDataSource: TagDataSource,
     private val clockDataSource: ClockDataSource,
     private val attackDetailsDomainResolver: AttackDetailsDomainResolver,
-    private val attackTagDataMapper: AttackTagDataMapper
+    private val attackTagDataMapper: AttackTagDataMapper,
+    private val medicationDataSource: MedicationDataSource,
+    private val attackIntakeDomainMapper: AttackIntakeDomainMapper
 ) : GetAttackDetailsRepository,
     GetCurrentTimeRepository,
     FindOverlappingAttacksRepository,
@@ -63,13 +71,20 @@ class AttackDetailsRepository(
     SelectAttackTagRepository,
     SetFunctionalImpactRepository,
     UpdateAttackNoteRepository,
-    DeleteAttackRepository {
+    DeleteAttackRepository,
+    RemoveIntakeRepository,
+    RestoreIntakeRepository {
     override fun attackDetails(attackId: String): AttackDetailsLookupResultDomainModel = try {
         val attack = attackDataSource.byId(attackId)
         if (attack == null) {
             AttackDetailsLookupResultDomainModel.NotFound
         } else {
-            AttackDetailsLookupResultDomainModel.Found(withCustomTags(listOf(attack)).single())
+            AttackDetailsLookupResultDomainModel.Found(
+                withCustomTags(listOf(attack)).single().copy(
+                    intakes = medicationDataSource.intakesOfAttack(attackId)
+                        .map(attackIntakeDomainMapper::toDomain)
+                )
+            )
         }
     } catch (_: DataException) {
         AttackDetailsLookupResultDomainModel.Failed
@@ -188,6 +203,24 @@ class AttackDetailsRepository(
         val customTags = tagDataSource.customTags(customIds)
         return attacks.map { attack -> attackDetailsDomainResolver.toDomain(attack, customTags) }
     }
+
+    override fun removeIntake(intakeId: String) = write {
+        medicationDataSource.deleteIntake(intakeId)
+    }
+
+    override fun restoreIntake(attackId: String, intake: AttackIntakeDomainModel) = write {
+        medicationDataSource.restoreIntake(toData(attackId, intake))
+    }
+
+    private fun toData(attackId: String, intake: AttackIntakeDomainModel) = IntakeDataModel(
+        id = intake.id,
+        medicationId = intake.medicationId,
+        medicationName = intake.medicationName,
+        attackId = attackId,
+        takenAt = intake.takenAt,
+        takenZoneId = intake.zone.id,
+        dose = intake.dose
+    )
 
     private fun toData(point: IntensityPointDomainModel) = IntensityPointDataModel(
         point.at,

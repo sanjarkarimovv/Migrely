@@ -52,11 +52,15 @@ target API 37, whichever comes first. Until then, do not mix AGP 9 idioms into b
 | `:features:<feature>:data` | JVM | `com.migrely.app.<feature>.data` | `repository/` (implementations), `mapper/` |
 | `:features:<feature>:ui` | Android | `com.migrely.app.<feature>.ui` | `view/`, `model/`, `mapper/`, `di/` (`*Dependencies`, plain classes, no Hilt) |
 
-- Datasources share one `source`/`implementation` pair, one package per resource (`database`, `attack`, `tag`,
+- Datasources share one `source`/`implementation` pair, one package per resource (`database`, `attack`, `tag`, `medication`,
   `preferences`, `billing`, `scheduler`, `pdf`, `file`, `analytics`, `clock`), as in the sample. The pair may be split later only for build-time
   reasons.
-- Features: `home` (today's sky, attack mode, quick actions), `attack` and `history`. All three read the same
-  `AttackDataSource` through their own models and repositories.
+- Features: `home` (today's sky, attack mode, quick actions), `attack`, `history` and `medication`. They read the
+  shared `AttackDataSource` and `MedicationDataSource` through their own models and repositories.
+- `medication` (change `add-medication-tracking`) has three screens: Medication taken, My medications and the editor.
+  - Home and `attack` open Medication taken only through navigation events, which `:app` maps to
+    `LogMedication(attackId, darkRoom)`.
+  - The details screen reads its intakes through the attack feature's own repository and models.
 - `attack` has two screens, each with its own ViewModel, view state, notifications, navigation events and
   `Dependencies`: one attack's details, and adding a past attack (change `add-past-attacks`). They share the feature's
   domain, models and UI pieces such as `TimeRow`.
@@ -132,6 +136,14 @@ Health data must never be passed to either SDK.
     4. the survivor takes the new fields;
     5. the absorbed rows are deleted for good (no undo, BRD D28).
   - The schema did not change for this.
+- **Medications (version 3, change `add-medication-tracking`).**
+  - `medication` rows are never deleted, only archived (BRD EC-MED-01). Their unique `name_key` is the trimmed,
+    lower-case name.
+  - `medication_intake` points to its medication with RESTRICT, and to its attack, if any, with CASCADE. A purged
+    attack therefore takes its intakes with it; a soft-deleted one hides them (EC-MED-10).
+  - `mergeInto` moves intakes to the survivor in the same transaction. `discard`, which undoes a mistaken start,
+    detaches them first, so a medication logged meanwhile stays on its own.
+  - Version 3 is an additive `AutoMigration(2, 3)`, covered by `MigrationTest`.
 - **Range reads (History).** A month is read with `overlapping(null, from, to)`, which returns every attack touching
   the range, the one in progress included, with a margin of two days on each side so that attacks logged in other
   zones are found. The first month that can be shown comes from `earliestStart()`. Both use the start index; the

@@ -10,6 +10,7 @@ import com.migrely.app.attack.domain.model.AttackDetailsResultDomainModel
 import com.migrely.app.attack.domain.model.MergeAttacksRequestDomainModel
 import com.migrely.app.attack.domain.model.MergeAttacksResultDomainModel
 import com.migrely.app.attack.domain.model.RemoveIntensityPointRequestDomainModel
+import com.migrely.app.attack.domain.model.RestoreIntakeRequestDomainModel
 import com.migrely.app.attack.domain.model.SelectAttackTagRequestDomainModel
 import com.migrely.app.attack.domain.model.SetFunctionalImpactRequestDomainModel
 import com.migrely.app.attack.domain.model.UndoTimesChangeRequestDomainModel
@@ -25,13 +26,16 @@ import com.migrely.app.attack.domain.usecase.ArchiveCustomTagUseCase
 import com.migrely.app.attack.domain.usecase.DeleteAttackUseCase
 import com.migrely.app.attack.domain.usecase.GetAttackDetailsUseCase
 import com.migrely.app.attack.domain.usecase.MergeAttacksUseCase
+import com.migrely.app.attack.domain.usecase.RemoveIntakeUseCase
 import com.migrely.app.attack.domain.usecase.RemoveIntensityPointUseCase
+import com.migrely.app.attack.domain.usecase.RestoreIntakeUseCase
 import com.migrely.app.attack.domain.usecase.SelectAttackTagUseCase
 import com.migrely.app.attack.domain.usecase.SetFunctionalImpactUseCase
 import com.migrely.app.attack.domain.usecase.UndoTimesChangeUseCase
 import com.migrely.app.attack.domain.usecase.UpdateAttackNoteUseCase
 import com.migrely.app.attack.domain.usecase.UpdateAttackTimesUseCase
 import com.migrely.app.attack.presentation.mapper.AttackDetailsPresentationMapper
+import com.migrely.app.attack.presentation.mapper.AttackIntakeDomainMapper
 import com.migrely.app.attack.presentation.mapper.AttackRangePresentationMapper
 import com.migrely.app.attack.presentation.mapper.AttackTagDomainMapper
 import com.migrely.app.attack.presentation.mapper.FunctionalImpactDomainMapper
@@ -52,6 +56,7 @@ import com.migrely.app.attack.presentation.model.AttackDetailsPresentationNotifi
 import com.migrely.app.attack.presentation.model.AttackDetailsPresentationNotification.UndoNotPossible
 import com.migrely.app.attack.presentation.model.AttackDetailsPresentationNotification.Undone
 import com.migrely.app.attack.presentation.model.AttackDetailsViewState
+import com.migrely.app.attack.presentation.model.AttackIntakePresentationModel
 import com.migrely.app.attack.presentation.model.AttackTagPresentationModel
 import com.migrely.app.attack.presentation.model.FunctionalImpactPresentationModel
 import com.migrely.app.attack.presentation.model.IntensityPointPresentationModel
@@ -89,6 +94,9 @@ class AttackDetailsViewModel(
     private val tagKindDomainMapper: TagKindDomainMapper,
     private val attackRangePresentationMapper: AttackRangePresentationMapper,
     private val timeFieldPresentationMapper: TimeFieldPresentationMapper,
+    private val removeIntakeUseCase: RemoveIntakeUseCase,
+    private val restoreIntakeUseCase: RestoreIntakeUseCase,
+    private val attackIntakeDomainMapper: AttackIntakeDomainMapper,
     useCaseExecutor: UseCaseExecutor
 ) : BaseViewModel<AttackDetailsViewState, AttackDetailsPresentationNotification>(useCaseExecutor) {
     /** [attacksMerged] is true when the screen opens on the result of a merge from the add screen. */
@@ -229,6 +237,32 @@ class AttackDetailsViewModel(
                     AddIntensityPointResultDomainModel.Failed -> notify(SomethingWentWrong)
                 }
             }
+        )
+    }
+
+    fun onLogMedicationAction(attackId: String) =
+        emitNavigationEvent(AttackDetailsPresentationNavigationEvent.OnLogMedication(attackId))
+
+    fun onRemoveIntakeAction(attackId: String, intake: AttackIntakePresentationModel) {
+        removeIntakeUseCase(
+            value = intake.id,
+            onResult = { result ->
+                presentWrite(
+                    attackId,
+                    result,
+                    AttackDetailsPresentationNotification.IntakeRemoved(attackId, intake)
+                )
+            }
+        )
+    }
+
+    fun onUndoIntakeRemovalAction(attackId: String, intake: AttackIntakePresentationModel) {
+        restoreIntakeUseCase(
+            value = RestoreIntakeRequestDomainModel(
+                attackId,
+                attackIntakeDomainMapper.toDomain(intake)
+            ),
+            onResult = { result -> presentWrite(attackId, result, Undone) }
         )
     }
 
