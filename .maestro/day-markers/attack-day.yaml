@@ -7,22 +7,36 @@ name: An attack day cannot be pain-free but can be a period day; a later attack 
 tags: [regression, day-markers]
 ---
 - runFlow: ../subflows/launch-clean.yaml
-- runFlow: ../subflows/log-attack-today.yaml
+- runFlow: ../subflows/start-attack.yaml
+- tapOn: "Severe"
+- runFlow: ../subflows/end-attack.yaml
 - tapOn: ".*\\. Opens History\\."
-- tapOn: "Today, .*: cloudy\\. 1 migraine\\. Peak: not recorded\\."
+- tapOn: "Today, .*: storm\\. 1 migraine\\. Peak: severe\\."
 - scrollUntilVisible:
     element: "Pain-free day"
     direction: DOWN
 - assertVisible: "A migraine is logged on this day\\."
-# The disabled switch ignores a tap; Period works on the same day (EC-DAY-01, EC-DAY-02).
+# Period works on an attack day (EC-DAY-02); the disabled "Pain-free day" ignores a tap (EC-DAY-01). The attack's sky
+# would hide a pain-free mark, so the attack is deleted below to show that the tap stored nothing.
 - tapOn: "Pain-free day"
 - tapOn:
     text: "Period"
     below: ".*Opens its details\\."
 - scrollUntilVisible:
-    element: "Today, .*: cloudy\\. 1 migraine\\. Peak: not recorded\\. Period\\."
+    element: "Today, .*: storm\\. 1 migraine\\. Peak: severe\\. Period\\."
     direction: UP
-- assertNotVisible: "Today, .*: pain-free.*"
+- scrollUntilVisible:
+    element: ".*, peak 9 of 10\\. Opens its details\\."
+    direction: DOWN
+- tapOn: ".*, peak 9 of 10\\. Opens its details\\."
+- scrollUntilVisible:
+    element: "Delete migraine"
+    direction: DOWN
+# The result is checked, not the 5 s "Undo" message, which a slow step can miss.
+- tapOn: "Delete migraine"
+- scrollUntilVisible:
+    element: "Today, .*: nothing logged\\. Period\\."
+    direction: UP
 # A pain-free past day, then a migraine added for it: the attack's sky wins, and deleting it brings the mark back.
 - runFlow: ../subflows/choose-empty-past-day.yaml
 - tapOn: "Pain-free day"
@@ -51,10 +65,8 @@ tags: [regression, day-markers]
 - scrollUntilVisible:
     element: "Delete migraine"
     direction: DOWN
+# The result is checked, not the 5 s "Undo" message, which a slow step can miss.
 - tapOn: "Delete migraine"
-- extendedWaitUntil:
-    visible: "Undo the deletion"
-    timeout: 5000
 - scrollUntilVisible:
     element: "${output.day}: pain-free\\."
     direction: UP

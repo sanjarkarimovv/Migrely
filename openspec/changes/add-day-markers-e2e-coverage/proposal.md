@@ -49,8 +49,7 @@ None.
 - **Files:**
   - `.maestro/`: new `day-markers/` and `month-sky/` folders, plus changes in `in-app-messages/`, `attack-history/`
     and `device/`;
-  - `qa/device_scenarios.sh`;
-  - `qa/a11y_audit.sh` and `qa/a11y_audit.py`;
+  - `qa/device_scenarios.sh` and `qa/e2e_coverage.py`;
   - `docs/QA.md` and `docs/BRD.md`.
 - **BRD IDs:** DAY-F1, DAY-F2, EC-DAY-01…05, EC-UX-03, EC-UX-04, D38, D47–D52 and D62.
 

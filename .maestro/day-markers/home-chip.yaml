@@ -1,6 +1,9 @@
 # Covers: day-markers › Period today from home › Mark today from home
 # Covers: day-markers › Period today from home › Attack mode
 # Covers: today-sky › Today's sky reflects today's data only › Marked pain-free
+# Covers: today-sky › Today's sky reflects today's data only › Pain-free mark and an attack
+# Covers: today-sky › This month under today's sky › Not in attack mode
+# Covers: today-sky › Add a past migraine from home › Not in attack mode
 appId: com.migrely.app
 name: Home's Period chip marks today, attack mode has no chip, and a pain-free today shows on home
 tags: [regression, day-markers]
@@ -26,6 +29,14 @@ tags: [regression, day-markers]
 - extendedWaitUntil:
     visible: "Today: clear\\. Pain-free today\\. Marked by you\\."
     timeout: 5000
-# Attack mode has no chip.
+# Attack mode has no chip, no month and no "Add a past migraine".
 - runFlow: ../subflows/start-attack.yaml
 - assertNotVisible: "Period today"
+- assertNotVisible: ".*\\. Opens History\\."
+- assertNotVisible: "Add a past migraine"
+# After the attack, the card shows the attack's sky, not the clear one.
+- runFlow: ../subflows/end-attack.yaml
+- extendedWaitUntil:
+    visible: "Today: cloudy\\..*"
+    timeout: 5000
+- assertNotVisible: "Today: clear\\..*"

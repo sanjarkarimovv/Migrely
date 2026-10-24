@@ -28,4 +28,3 @@ onFlowComplete:
 - scrollUntilVisible:
     element: ".*, [A-Za-z]+ 12: cloudy\\. 1 migraine\\. Peak: not recorded\\..*"
     direction: UP
-

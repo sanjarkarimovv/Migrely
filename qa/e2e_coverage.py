@@ -6,6 +6,9 @@ Reads every scenario from openspec/specs/*/spec.md and from the delta specs of o
 (exit 1) on a "Covers" line that names a scenario that no longer exists (renamed or removed) and on a "Covers" line
 that is not in that three-part form.
 
+Limits while a change is open: the old name of a RENAMED requirement still counts, and a scenario that a MODIFIED
+delta drops stays in the main spec until the change is archived, so a Covers line on it is not reported as stale yet.
+
     python3 qa/e2e_coverage.py            # summary
     python3 qa/e2e_coverage.py --missing  # also list the scenarios without a flow
 """

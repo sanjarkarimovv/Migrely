@@ -29,16 +29,16 @@ changes.
 | Option | Verdict |
 |---|---|
 | Read `focusable` in the hierarchy only (today's audit) | Rejected: D38 makes day cells reachable only by the arrows, which a hierarchy cannot show |
-| Maestro `pressKey` (Tab, the D-pad keys, Enter) with `focused: true` assertions | **Chosen** for Tab, the arrows and Enter |
-| adb `input keycombination` for Shift+Tab, with the focused node read from uiautomator | **Chosen** for Shift+Tab, which Maestro cannot send. It runs as a device scenario |
+| Maestro `pressKey` (Tab, the D-pad keys, Enter) with `focused: true` assertions | Planned, then rejected by task 2.1: `focused` misses labels on a child of the focused node |
+| adb `input keyevent` and `input keycombination` (Shift+Tab), with the focused node read from uiautomator | **Chosen** for every key, in device scenarios |
 
 If Maestro cannot check the focus, every key goes through adb in a device scenario. Task 2.1 found exactly that: the
 `focused` selector does not see a label that Compose keeps on a child of the focused node, so adb is used throughout.
 
 ### D2. Reduce motion is the animator scale
 
-The app reads `Settings.Global.ANIMATOR_DURATION_SCALE == 0` ("Remove animations"). The audit and the scenarios set
-`global animator_duration_scale 0`. They save the value they found and restore it on exit, like the font scale and
+The app reads `Settings.Global.ANIMATOR_DURATION_SCALE == 0` ("Remove animations"). `landscape_band` sets
+`global animator_duration_scale` to 1 and then 0, reading each value back. They save the value they found and restore it on exit, like the font scale and
 rotation.
 
 ### D3. The audit's keyboard rule stays

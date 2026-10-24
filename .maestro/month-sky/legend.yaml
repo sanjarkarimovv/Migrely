@@ -13,4 +13,4 @@ tags: [regression, month-sky]
 - assertVisible: "Not logged"
 - assertVisible:
     text: "Period"
-    index: 0
+    above: "Migraines started: .*"

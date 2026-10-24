@@ -1,4 +1,5 @@
-# Covers: in-app-messages › Landscape attack mode keeps messages beside the controls › Message during landscape attack mode
+# Partly checks: in-app-messages › Landscape attack mode keeps messages beside the controls › Message during landscape
+# attack mode (see docs: the timing with Reduce motion and tapping under the message are not checked).
 # The controls stay visible here; `qa/device_scenarios.sh landscape_band` checks that the guidance starts below the
 # message and comes back, with and without Reduce motion (#26, D52).
 # Regression guard for https://github.com/sanjarkarimovv/Migrely/issues/20 (fixed in PR #24): in landscape the start

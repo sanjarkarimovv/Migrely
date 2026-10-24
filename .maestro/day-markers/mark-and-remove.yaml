@@ -3,6 +3,7 @@
 # Covers: day-markers › Mark a chosen day › Mark a pain-free day
 # Covers: day-markers › Mark a chosen day › Future day
 # Covers: month-sky › Accessible days › Screen reader on a pain-free period day
+# Covers: month-sky › Accessible days › Screen reader on an empty day
 # The cells are checked by their spoken labels; the sky and the drop themselves are in the screenshot.
 appId: com.migrely.app
 name: A past day takes a period and a pain-free mark and loses them again; a future day cannot be chosen
@@ -38,16 +39,21 @@ tags: [regression, day-markers]
 - scrollUntilVisible:
     element: "${output.day}: nothing logged\\."
     direction: UP
-# A future day cannot be chosen: its cell is only a date, and tapping it keeps the past day chosen (EC-DAY-03).
+# A future day cannot be chosen: its cell is only a date (the legend's "Pain-free" is right under the grid, so the
+# chosen day's heading below it is never picked), and tapping it keeps the past day chosen (EC-DAY-03).
 - runFlow:
     when:
-      visible: "[A-Za-z]+, [A-Za-z]+ [0-9]+"
+      notVisible:
+        text: "[A-Za-z]+, [A-Za-z]+ [0-9]+"
+        above: "Pain-free"
     commands:
-      - tapOn:
-          text: "[A-Za-z]+, [A-Za-z]+ [0-9]+"
-          index: 0
-      - scrollUntilVisible:
-          element: "Pain-free day"
-          direction: DOWN
-      - assertVisible: "${output.day}"
-      - assertVisible: "No migraine logged on this day\\."
+      - assertVisible: "QA: this flow needs a future day of the current month, so it cannot run on the last day"
+- tapOn:
+    text: "[A-Za-z]+, [A-Za-z]+ [0-9]+"
+    above: "Pain-free"
+    index: 0
+- scrollUntilVisible:
+    element: "Pain-free day"
+    direction: DOWN
+- assertVisible: "${output.day}"
+- assertVisible: "No migraine logged on this day\\."

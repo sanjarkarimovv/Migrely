@@ -48,7 +48,7 @@
 - [x] 4.3 `day-markers/home-chip.yaml`: "Period today" checked and not checked, today's cell shows the mark, no chip in
   attack mode, "Pain-free today" / "Marked by you". Verify: passes 3 times
 - [x] 4.4 `month-sky/legend.yaml`: 6 entries. Verify: passes 3 times
-- [x] 4.5 Device scenarios `mark_travel` (EC-DAY-04) and `mark_earliest_month` (D51). Verify: each passes twice (done 2026-10-24 22:35). D51 has no spec scenario yet; reported to the dev session
+- [x] 4.5 Device scenarios `mark_travel` (EC-DAY-04) and `mark_earliest_month` (D51). Verify: each passes twice (done 2026-10-24 22:35). `mark_earliest_month` traces to `attack-history` › "A mark before any attack"
 
 ## 5. Audit
 
@@ -61,6 +61,18 @@
 
 - [x] 6.1 `docs/QA.md`: key-event checks (D62), Reduce motion, the new scenarios; `.maestro/README.md` timing rules
   for keys. Verify: `grep -n "D62" docs/QA.md`
+
+- [x] 6.2 Review fixes (`superpowers:code-reviewer`: 4 important and 6 minor findings, plus 5 suspicions):
+  - the future-day check is unconditional and limited to the grid;
+  - "Attack day" is proven by behaviour: after the attack is deleted, the day has no pain-free mark;
+  - a severe attack is used for "Period and migraine";
+  - `mark_travel` runs at noon in Tashkent, so it does not depend on the host's zone;
+  - `landscape_band` also checks the start line and the message's right edge, and is marked "Partly checks";
+  - the home chip's checked state is read through the keyboard;
+  - attack mode and the card after an attack are checked;
+  - dumps are removed before reading, the animator scale is read back, and the locale parse is safe;
+  - the docs were aligned.
+  Verify: each changed flow passes 3 times, and each changed scenario passes
 
 ## 7. Verify
 

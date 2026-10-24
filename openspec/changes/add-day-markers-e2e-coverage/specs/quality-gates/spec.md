@@ -25,8 +25,8 @@ the audit (BRD §10, EC-UX-03, EC-UX-04, D42, D62).
   services fails the audit
 
 ### Requirement: Device settings are always restored
-Every QA script that changes a device setting (font size, rotation, accessibility timeout, animator scale, clock,
-automatic time or time zone) SHALL restore the value it found when it exits, including when a check fails or the run is interrupted
+Every QA script that changes a device setting (font size, rotation, accessibility timeout, animator scale, app language,
+clock, automatic time or time zone) SHALL restore the value it found when it exits, including when a check fails or the run is interrupted
 (D42, D43).
 
 #### Scenario: Failure in the middle
