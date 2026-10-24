@@ -59,7 +59,7 @@
 
 ## 6. Documents
 
-- [ ] 6.1 `docs/QA.md`: key-event checks (D62), Reduce motion, the new scenarios; `.maestro/README.md` timing rules
+- [x] 6.1 `docs/QA.md`: key-event checks (D62), Reduce motion, the new scenarios; `.maestro/README.md` timing rules
   for keys. Verify: `grep -n "D62" docs/QA.md`
 
 ## 7. Verify
