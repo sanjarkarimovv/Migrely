@@ -52,6 +52,10 @@ if [[ "$(adbq shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" != "1"
   exit 2
 fi
 
+source "$ROOT/qa/lib.sh"
+qa_lock_device
+trap qa_unlock_device EXIT
+
 if $install; then
   [[ -f "$APK" ]] || (cd "$ROOT" && ./gradlew :app:assembleDebug --console=plain -q)
   adbq install -r "$APK" >/dev/null
@@ -96,13 +100,13 @@ if [[ ${#long_flows[@]} -gt 0 ]]; then
       adbq shell settings put secure accessibility_interactive_ui_timeout_ms "$original"
     fi
   }
-  trap restore EXIT
+  trap 'restore; qa_unlock_device' EXIT
   adbq shell settings put secure accessibility_interactive_ui_timeout_ms "$LONG_TIMEOUT_MS"
   echo "Pass 2: ${#long_flows[@]} flow(s) with a $((LONG_TIMEOUT_MS / 1000)) s accessibility timeout"
   maestro --device "$QA_SERIAL" test "${long_flows[@]}" --format junit --output "$out/report-$LONG_TIMEOUT_TAG.xml" \
     --test-output-dir "$out/$LONG_TIMEOUT_TAG" || status=$?
   restore
-  trap - EXIT
+  trap qa_unlock_device EXIT
 fi
 
 echo "Reports: $out/report*.xml"

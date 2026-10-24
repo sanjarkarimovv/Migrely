@@ -24,6 +24,9 @@ if [[ "$(adbq shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" != "1"
   exit 2
 fi
 
+source "$ROOT/qa/lib.sh"
+qa_lock_device
+trap qa_unlock_device EXIT
 out="$ROOT/build/qa/monkey/$(date +%Y%m%d-%H%M%S)"
 mkdir -p "$out"
 adbq shell pm clear "$APP" >/dev/null

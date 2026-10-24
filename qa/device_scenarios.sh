@@ -22,6 +22,8 @@ if [[ "$(adbq shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" != "1"
   exit 2
 fi
 
+source "$ROOT/qa/lib.sh"
+qa_lock_device
 ORIGINAL_AUTO_TIME="$(adbq shell settings get global auto_time | tr -d '\r')"
 ORIGINAL_ZONE="$(adbq shell getprop persist.sys.timezone | tr -d '\r')"
 restore() {
@@ -30,7 +32,7 @@ restore() {
   adbq shell settings put global auto_time "$ORIGINAL_AUTO_TIME"
   echo "Restored: clock $(adbq shell date | tr -d '\r'), zone $ORIGINAL_ZONE, auto_time $ORIGINAL_AUTO_TIME"
 }
-trap restore EXIT
+trap 'restore; qa_unlock_device' EXIT
 adbq shell settings put global auto_time 0
 
 device_seconds() { adbq shell date +%s | tr -d '\r'; }

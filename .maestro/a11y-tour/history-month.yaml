@@ -4,6 +4,10 @@ appId: com.migrely.app
 - runFlow: ../subflows/launch-clean.yaml
 - runFlow: ../subflows/start-attack.yaml
 - runFlow: ../subflows/end-attack.yaml
+# In landscape the month card is below the fold.
+- scrollUntilVisible:
+    element: ".*\\. Opens History\\."
+    direction: DOWN
 - tapOn: ".*\\. Opens History\\."
 - extendedWaitUntil:
     visible: "1 migraine in .*"

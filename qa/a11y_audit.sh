@@ -35,7 +35,9 @@ restore() {
     fi
   done
 }
-trap restore EXIT
+source "$ROOT/qa/lib.sh"
+qa_lock_device
+trap 'restore; qa_unlock_device' EXIT
 
 # Messages with Undo stay 5 s by default; a 30 s accessibility timeout keeps them on screen until the capture.
 adbq shell settings put secure accessibility_interactive_ui_timeout_ms 30000
@@ -61,6 +63,7 @@ configure() { # $1 font scale, $2 rotation (0 portrait, 1 landscape)
   echo "Warning: the display did not reach $want" >&2
 }
 
+skipped=()
 for config in "font100:1.0:0" "font200:2.0:0" "landscape:1.0:1"; do
   IFS=: read -r label scale rotation <<<"$config"
   configure "$scale" "$rotation"
@@ -68,6 +71,7 @@ for config in "font100:1.0:0" "font200:2.0:0" "landscape:1.0:1"; do
     name="$state.$label"
     if ! maestro --device "$QA_SERIAL" test "$ROOT/.maestro/a11y-tour/$state.yaml" >"$out/$name.log" 2>&1; then
       echo "[skip] $name: the tour flow failed (see $out/$name.log)"
+      skipped+=("$name")
       continue
     fi
     adbq shell uiautomator dump /sdcard/a11y.xml >/dev/null
@@ -77,4 +81,12 @@ for config in "font100:1.0:0" "font200:2.0:0" "landscape:1.0:1"; do
 done
 
 echo "Captures: $out"
-python3 -I "$ROOT/qa/a11y_audit.py" "$out" --density "$(adbq shell wm density | awk '{print $NF}' | tr -d '\r')"
+status=0
+python3 -I "$ROOT/qa/a11y_audit.py" "$out" --density "$(adbq shell wm density | awk '{print $NF}' | tr -d '\r')" || status=1
+# A state that could not be reached was not checked: that is a failure, not a pass. A tour flow that cannot find a
+# control by its label usually means the control is hidden or covered (#20).
+if [[ ${#skipped[@]} -gt 0 ]]; then
+  echo "${#skipped[@]} state(s) could not be captured: ${skipped[*]}"
+  status=1
+fi
+exit $status
