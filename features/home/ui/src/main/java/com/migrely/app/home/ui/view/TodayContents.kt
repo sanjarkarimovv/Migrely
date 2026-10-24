@@ -279,8 +279,13 @@ private fun PeriodToday(marked: Boolean, onPeriodToday: (Boolean) -> Unit) {
     FilterChip(
         selected = marked,
         onClick = { onPeriodToday(!marked) },
+        // The label's description merges into the chip, so it is read once, with its checked state.
         label = {
-            Text(stringResource(R.string.period_today), style = MaterialTheme.typography.labelLarge)
+            Text(
+                text = stringResource(R.string.period_today),
+                style = MaterialTheme.typography.labelLarge,
+                modifier = Modifier.semantics { contentDescription = description }
+            )
         },
         leadingIcon = if (marked) {
             { Icon(MigrelyIcons.Check, contentDescription = null, modifier = Modifier.size(18.dp)) }
@@ -290,7 +295,6 @@ private fun PeriodToday(marked: Boolean, onPeriodToday: (Boolean) -> Unit) {
         modifier = Modifier
             .padding(top = 12.dp)
             .heightIn(min = 48.dp)
-            .semantics { contentDescription = description }
     )
 }
 
