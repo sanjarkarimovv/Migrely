@@ -5,6 +5,7 @@ import com.migrely.app.datasource.reminder.dao.ReminderSettingsDao
 import com.migrely.app.datasource.reminder.mapper.ReminderSettingsLocalMapper
 import com.migrely.app.datasource.reminder.model.ReminderSettingsDataModel
 import java.time.Instant
+import java.time.LocalDate
 
 class ReminderSettingsDataSourceImpl(
     private val reminderSettingsDao: ReminderSettingsDao,
@@ -26,5 +27,11 @@ class ReminderSettingsDataSourceImpl(
 
     override fun setPermissionAsked(at: Instant) = database {
         reminderSettingsDao.update { it.copy(permissionAskedEpochMillis = at.toEpochMilli()) }
+    }
+
+    override fun setDailyShown(date: LocalDate) = database {
+        reminderSettingsDao.update {
+            it.copy(dailyLastShownDate = reminderSettingsLocalMapper.toLocal(date))
+        }
     }
 }

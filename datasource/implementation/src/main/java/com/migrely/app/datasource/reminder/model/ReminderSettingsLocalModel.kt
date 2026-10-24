@@ -14,5 +14,7 @@ data class ReminderSettingsLocalModel(
     @ColumnInfo(name = "daily_enabled", defaultValue = "0") val dailyEnabled: Boolean,
     @ColumnInfo(name = "daily_minute_of_day", defaultValue = "1200") val dailyMinuteOfDay: Int,
     @ColumnInfo(name = "effect_enabled", defaultValue = "1") val effectEnabled: Boolean,
-    @ColumnInfo(name = "permission_asked_epoch_millis") val permissionAskedEpochMillis: Long?
+    @ColumnInfo(name = "permission_asked_epoch_millis") val permissionAskedEpochMillis: Long?,
+    /** ISO `yyyy-MM-dd`. */
+    @ColumnInfo(name = "daily_last_shown_date") val dailyLastShownDate: String?
 )

@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 6,
-    "identityHash": "632fc29742c1efe52ff08a379f13e7ca",
+    "identityHash": "3600d5c34a8821bc9f11e97cb6f9a32b",
     "entities": [
       {
         "tableName": "attack",
@@ -537,7 +537,7 @@
       },
       {
         "tableName": "reminder_settings",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `daily_enabled` INTEGER NOT NULL DEFAULT 0, `daily_minute_of_day` INTEGER NOT NULL DEFAULT 1200, `effect_enabled` INTEGER NOT NULL DEFAULT 1, `permission_asked_epoch_millis` INTEGER, PRIMARY KEY(`id`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `daily_enabled` INTEGER NOT NULL DEFAULT 0, `daily_minute_of_day` INTEGER NOT NULL DEFAULT 1200, `effect_enabled` INTEGER NOT NULL DEFAULT 1, `permission_asked_epoch_millis` INTEGER, `daily_last_shown_date` TEXT, PRIMARY KEY(`id`))",
         "fields": [
           {
             "fieldPath": "id",
@@ -570,6 +570,11 @@
             "fieldPath": "permissionAskedEpochMillis",
             "columnName": "permission_asked_epoch_millis",
             "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "dailyLastShownDate",
+            "columnName": "daily_last_shown_date",
+            "affinity": "TEXT"
           }
         ],
         "primaryKey": {
@@ -582,7 +587,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '632fc29742c1efe52ff08a379f13e7ca')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '3600d5c34a8821bc9f11e97cb6f9a32b')"
     ]
   }
 }

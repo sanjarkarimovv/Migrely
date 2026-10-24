@@ -4,7 +4,7 @@
 
 - [x] 1.1 `reminder_settings` (DB v6) with `ReminderSettingsDataSource`; migration tests 5→6 and 1→6, DAO and
   datasource tests.
-- [ ] 1.1b Add `daily_last_shown_date` (ISO date, null) to `reminder_settings` and `setDailyShown(date)`, so an early
+- [x] 1.1b Add `daily_last_shown_date` (ISO date, null) to `reminder_settings` and `setDailyShown(date)`, so an early
   run followed by a reschedule never reminds twice in one day. v6 is not pushed yet, so `6.json` is regenerated.
 - [x] 1.2 Interfaces `ReminderScheduleDataSource` and `NotificationDataSource` in `:datasource:source`. Their
   implementations live in `:app` (task 4.1): they need `MainActivity`, the receivers and the notification copy. This

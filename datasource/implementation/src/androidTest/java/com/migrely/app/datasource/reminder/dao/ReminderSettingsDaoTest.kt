@@ -43,11 +43,12 @@ class ReminderSettingsDaoTest {
 
         assertEquals(
             ReminderSettingsLocalModel(
-                1,
+                id = 1,
                 dailyEnabled = true,
                 dailyMinuteOfDay = 1200,
                 effectEnabled = true,
-                null
+                permissionAskedEpochMillis = null,
+                dailyLastShownDate = null
             ),
             classUnderTest.settings()
         )
@@ -58,14 +59,16 @@ class ReminderSettingsDaoTest {
         classUnderTest.update { it.copy(dailyEnabled = true, dailyMinuteOfDay = 1290) }
 
         classUnderTest.update { it.copy(effectEnabled = false, permissionAskedEpochMillis = 5000) }
+        classUnderTest.update { it.copy(dailyLastShownDate = "2026-10-24") }
 
         assertEquals(
             ReminderSettingsLocalModel(
-                1,
+                id = 1,
                 dailyEnabled = true,
                 dailyMinuteOfDay = 1290,
                 effectEnabled = false,
-                5000
+                permissionAskedEpochMillis = 5000,
+                dailyLastShownDate = "2026-10-24"
             ),
             classUnderTest.settings()
         )

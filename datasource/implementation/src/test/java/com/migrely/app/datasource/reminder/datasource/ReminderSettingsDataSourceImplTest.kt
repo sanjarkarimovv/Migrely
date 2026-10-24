@@ -7,6 +7,7 @@ import com.migrely.app.datasource.reminder.mapper.ReminderSettingsLocalMapper
 import com.migrely.app.datasource.reminder.model.ReminderSettingsDataModel
 import com.migrely.app.datasource.reminder.model.ReminderSettingsLocalModel
 import java.time.Instant
+import java.time.LocalDate
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.mockito.kotlin.given
@@ -24,9 +25,10 @@ class ReminderSettingsDataSourceImplTest {
         assertEquals(
             ReminderSettingsDataModel(
                 dailyEnabled = false,
-                1200,
+                dailyMinuteOfDay = 1200,
                 effectEnabled = true,
-                permissionAskedAt = null
+                permissionAskedAt = null,
+                dailyLastShownOn = null
             ),
             classUnderTest.settings()
         )
@@ -34,19 +36,25 @@ class ReminderSettingsDataSourceImplTest {
 
     @Test
     fun `Given saved settings when reading then them`() {
-        given(reminderSettingsDao.settings())
-            .willReturn(
-                ReminderSettingsLocalModel(
-                    1,
-                    dailyEnabled = true,
-                    1290,
-                    effectEnabled = false,
-                    5000
-                )
+        given(reminderSettingsDao.settings()).willReturn(
+            ReminderSettingsLocalModel(
+                id = 1,
+                dailyEnabled = true,
+                dailyMinuteOfDay = 1290,
+                effectEnabled = false,
+                permissionAskedEpochMillis = 5000,
+                dailyLastShownDate = "2026-10-24"
             )
+        )
 
         assertEquals(
-            ReminderSettingsDataModel(true, 1290, false, Instant.ofEpochMilli(5000)),
+            ReminderSettingsDataModel(
+                dailyEnabled = true,
+                dailyMinuteOfDay = 1290,
+                effectEnabled = false,
+                permissionAskedAt = Instant.ofEpochMilli(5000),
+                dailyLastShownOn = LocalDate.of(2026, 10, 24)
+            ),
             classUnderTest.settings()
         )
     }

@@ -28,7 +28,8 @@ abstract class ReminderSettingsDao {
             dailyEnabled = false,
             dailyMinuteOfDay = DEFAULT_DAILY_MINUTE_OF_DAY,
             effectEnabled = true,
-            permissionAskedEpochMillis = null
+            permissionAskedEpochMillis = null,
+            dailyLastShownDate = null
         )
     }
 }
