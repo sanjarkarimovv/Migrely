@@ -52,7 +52,7 @@ starts passing is reported as "NOW PASSES".
 
 `python3 -I qa/e2e_coverage.py --missing` shows the spec scenarios that have no flow yet. Before the QA of a change
 that adds a capability is closed, each user-visible scenario of that capability has a flow or a device scenario. A
-scenario left to unit tests is listed with its reason in the change's tasks (D61).
+scenario without one is listed in the change's tasks with the reason and the follow-up (D61).
 
 Behaviour that depends on time is checked by moving the device clock and logging through the UI (D60). Examples are
 "Did it help?" 2–24 h after an intake, overuse over the last 30 days, and intakes that join an attack. The base time is

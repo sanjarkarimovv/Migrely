@@ -31,10 +31,12 @@ appId: com.migrely.app
     text: "Remove Ibuprofen.*"
     waitToSettleTimeoutMs: 0
     retryTapIfNoChange: false
+- assertNotVisible: ".*Did not help.*"
 - tapOn:
     text: "Undo.*"
     waitToSettleTimeoutMs: 0
     retryTapIfNoChange: false
 - extendedWaitUntil:
-    visible: ".*Did not help.*"
+    visible: "Undone\\."
     timeout: 5000
+- assertVisible: ".*Did not help.*"

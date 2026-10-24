@@ -29,21 +29,22 @@ over an older build, and medication timing (BRD EC-ATK-02, EC-ATK-10, EC-TIM-02,
 - **THEN** the scenario checks that every attack, pain level and symptom is still there
 
 #### Scenario: Medication timing
-- **WHEN** an intake is logged and the clock moves forward 1 hour, then 3 hours, then 25 hours
-- **THEN** the scenario checks that "Did it help?" is absent, then shown, then absent again
+- **WHEN** one intake is checked 1 hour and 3 hours after it is logged, and another one 23 hours and 25 hours after it
+  is logged
+- **THEN** the scenario checks that "Did it help?" is absent at 1 hour, shown at 3 and 23 hours, and absent at 25 hours
 
 #### Scenario: Overuse days
-- **WHEN** painkillers are logged on 13 distinct days by moving the clock back a day at a time
+- **WHEN** painkillers are logged through the UI on 13 distinct days, with the clock set to each day in turn
 - **THEN** the scenario checks that the soft warning names 13 days, and after 2 more days the doctor warning names 15
 
 ## ADDED Requirements
 
 ### Requirement: New capabilities get end-to-end coverage
 Before the QA of a change that adds a capability is closed, every user-visible scenario of that capability SHALL have
-an end-to-end flow or a device scenario, or SHALL be listed by the coverage report with the reason it is left to unit
-tests (BRD D61).
+an end-to-end flow or a device scenario, or SHALL be listed in that QA change's tasks with the reason it has none and
+the follow-up (BRD D61).
 
 #### Scenario: Coverage of a new capability
 - **WHEN** the QA of a change that adds a capability is about to be closed
-- **THEN** the coverage report lists that capability, and each of its scenarios without a flow has a reason in the
-  change's tasks
+- **THEN** the coverage report lists that capability, and each of its scenarios without a flow is listed in the
+  change's tasks with a reason and a follow-up

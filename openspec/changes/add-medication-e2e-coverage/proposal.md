@@ -32,8 +32,8 @@ These can only be seen on a device by letting time pass.
 **Out of scope:**
 - Product code. Issues found are filed for the dev session.
 - Overuse across several categories, "Thirty days back", and dose and zone display on later entries. They are listed
-  as gaps in the coverage report for a later QA change.
-- Change 4 (day markers), which is not merged yet.
+  in tasks.md with a reason and a follow-up QA change (D61).
+- Change 4 (day markers, PR #28): its flows come in their own QA change; here only its changed copy is followed.
 
 ## Capabilities
 

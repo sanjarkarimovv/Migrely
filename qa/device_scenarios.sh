@@ -29,11 +29,16 @@ source "$ROOT/qa/lib.sh"
 qa_lock_device
 ORIGINAL_AUTO_TIME="$(adbq shell settings get global auto_time | tr -d '\r')"
 ORIGINAL_ZONE="$(adbq shell getprop persist.sys.timezone | tr -d '\r')"
+ORIGINAL_TIMEOUT="$(adbq shell settings get secure accessibility_interactive_ui_timeout_ms | tr -d '\r')"
+put_or_delete() { # $1 namespace, $2 key, $3 value or "null"
+  if [[ "$3" == "null" ]]; then adbq shell settings delete "$1" "$2" >/dev/null; else adbq shell settings put "$1" "$2" "$3"; fi
+}
 restore() {
   set +e # restore everything even if one command fails
   adbq shell cmd alarm set-timezone "$ORIGINAL_ZONE" >/dev/null 2>&1
   adbq shell cmd alarm set-time "$(($(date +%s) * 1000))" >/dev/null 2>&1
   adbq shell settings put global auto_time "$ORIGINAL_AUTO_TIME" >/dev/null 2>&1
+  put_or_delete secure accessibility_interactive_ui_timeout_ms "$ORIGINAL_TIMEOUT" >/dev/null 2>&1
   echo "Restored: clock $(adbq shell date | tr -d '\r'), zone $ORIGINAL_ZONE, auto_time $ORIGINAL_AUTO_TIME"
   qa_unlock_device
 }
@@ -41,12 +46,24 @@ trap restore EXIT
 adbq shell settings put global auto_time 0
 
 device_seconds() { adbq shell date +%s | tr -d '\r'; }
-set_clock_millis() { adbq shell cmd alarm set-time "$1" >/dev/null; }
+# A clock or zone move that silently fails would let the "absence" checks pass without testing anything, so every move
+# is read back and fails the step when the device does not follow.
+set_clock_millis() { # $1 epoch millis
+  [[ "$1" =~ ^[0-9]{12,}$ ]] || { echo "  FAILED: bad clock target '$1'"; return 1; }
+  adbq shell cmd alarm set-time "$1" >/dev/null
+  local now=$(( $(device_seconds) * 1000 )) diff
+  diff=$(( now - $1 )); diff=${diff#-}
+  [[ $diff -le 60000 ]] || { echo "  FAILED: the device clock did not move (wanted $1, has $now)"; return 1; }
+}
 shift_clock_hours() { # $1 hours
-  set_clock_millis $((($(device_seconds) + $1 * 3600) * 1000))
+  set_clock_millis $((($(device_seconds) + $1 * 3600) * 1000)) || return 1
   echo "    clock moved $1 h -> $(adbq shell date | tr -d '\r')"
 }
-set_zone() { adbq shell cmd alarm set-timezone "$1" >/dev/null; echo "    time zone -> $1"; }
+set_zone() {
+  adbq shell cmd alarm set-timezone "$1" >/dev/null
+  [[ "$(adbq shell getprop persist.sys.timezone | tr -d '\r')" == "$1" ]] || { echo "  FAILED: zone did not change to $1"; return 1; }
+  echo "    time zone -> $1"
+}
 # The 15th of the current month at HH:MM in a zone. A fixed mid-month day keeps "yesterday" and "tomorrow" inside the
 # month that home's calendar shows, whatever the real date is.
 mid_month_millis() { # $1 zone, $2 HH:MM
@@ -80,10 +97,14 @@ open_from_launcher() { # like tapping the app icon: brings back the existing tas
   adbq shell monkey -p "$APP" -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1
   sleep 3
 }
+STEP=0
 run_flow() {
+  STEP=$((STEP + 1))
+  local name
+  name="$(printf '%03d' "$STEP")-${CURRENT:-x}-$1"
   echo "  flow $1"
-  maestro --device "$QA_SERIAL" test "$FLOWS/$1.yaml" --test-output-dir "$out/$1" >"$out/$1.log" 2>&1 || {
-    echo "  FAILED: $1 (log: $out/$1.log)"
+  maestro --device "$QA_SERIAL" test "$FLOWS/$1.yaml" --test-output-dir "$out/$name" >"$out/$name.log" 2>&1 || {
+    echo "  FAILED: $1 (log: $out/$name.log)"
     return 1
   }
 }
@@ -104,17 +125,23 @@ run_flow_env() { # $1 flow, then KEY=VALUE pairs passed to Maestro with -e
   shift
   local args=()
   for kv in "$@"; do args+=(-e "$kv"); done
+  STEP=$((STEP + 1))
+  local name
+  name="$(printf '%03d' "$STEP")-${CURRENT:-x}-$flow"
   echo "  flow $flow ($*)"
-  maestro --device "$QA_SERIAL" test "${args[@]}" "$FLOWS/$flow.yaml" --test-output-dir "$out/$flow" >"$out/$flow.log" 2>&1 || {
-    echo "  FAILED: $flow (log: $out/$flow.log)"
+  maestro --device "$QA_SERIAL" test "${args[@]}" "$FLOWS/$flow.yaml" --test-output-dir "$out/$name" >"$out/$name.log" 2>&1 || {
+    echo "  FAILED: $flow (log: $out/$name.log)"
     return 1
   }
 }
-day_millis() { # $1 days before the 15th of this month, at 10:00 in the device's zone (negative: after)
-  echo $(( $(mid_month_millis "$ORIGINAL_ZONE" 10:00) - $1 * 86400000 ))
+# Computed once, so a host clock crossing a month end during a long scenario cannot split its days across two months.
+MED_BASE_MILLIS="$(mid_month_millis "$ORIGINAL_ZONE" 10:00)"
+[[ "$MED_BASE_MILLIS" =~ ^[0-9]{12,}$ ]] || { echo "Could not compute the base time" >&2; exit 2; }
+day_millis() { # $1 days before 10:00 on the 15th of this month in the device's zone (negative: after)
+  echo $(( MED_BASE_MILLIS - $1 * 86400000 ))
 }
 long_undo_window() { adbq shell settings put secure accessibility_interactive_ui_timeout_ms 20000; }
-default_undo_window() { adbq shell settings delete secure accessibility_interactive_ui_timeout_ms >/dev/null; }
+default_undo_window() { put_or_delete secure accessibility_interactive_ui_timeout_ms "$ORIGINAL_TIMEOUT"; }
 
 # Each step ends the scenario on failure: a scenario runs inside "||", where set -e does not apply.
 scenario_long() {
@@ -155,7 +182,7 @@ scenario_details_kill() {
 
 scenario_midnight() {
   echo "Scenario midnight: home open across local midnight (today-sky)"
-  set_clock_millis "$(mid_month_millis "$ORIGINAL_ZONE" 23:55)"
+  set_clock_millis "$(mid_month_millis "$ORIGINAL_ZONE" 23:55)" || return 1
   run_flow midnight-before || return 1
   local now_local
   now_local="$(adbq shell date +%H:%M | tr -d '\r')"
@@ -170,54 +197,54 @@ scenario_midnight() {
 
 scenario_travel() {
   echo "Scenario travel: logged late in Berlin, opened the next morning in Tashkent (EC-TIM-02)"
-  set_zone Europe/Berlin
-  set_clock_millis "$(mid_month_millis Europe/Berlin 23:15)"
+  set_zone Europe/Berlin || return 1
+  set_clock_millis "$(mid_month_millis Europe/Berlin 23:15)" || return 1
   run_flow travel-before || return 1
-  set_zone Asia/Tashkent
+  set_zone Asia/Tashkent || return 1
   run_flow travel-after || return 1
 }
 
 scenario_travel_west() {
   echo "Scenario travel_west: logged at 01:00 in Tashkent, opened the evening before in Berlin (EC-TIM-02)"
-  set_zone Asia/Tashkent
-  set_clock_millis "$(mid_month_millis Asia/Tashkent 01:00)"
+  set_zone Asia/Tashkent || return 1
+  set_clock_millis "$(mid_month_millis Asia/Tashkent 01:00)" || return 1
   run_flow log-and-close || return 1
-  set_zone Europe/Berlin
+  set_zone Europe/Berlin || return 1
   run_flow travel-west-after || return 1
 }
 
 scenario_same_date() {
   echo "Scenario same_date: logged at 08:00 in Tashkent, opened the same date in Dubai (EC-TIM-02)"
-  set_zone Asia/Tashkent
-  set_clock_millis "$(mid_month_millis Asia/Tashkent 08:00)"
+  set_zone Asia/Tashkent || return 1
+  set_clock_millis "$(mid_month_millis Asia/Tashkent 08:00)" || return 1
   run_flow log-and-close || return 1
-  set_zone Asia/Dubai
+  set_zone Asia/Dubai || return 1
   run_flow same-date-after || return 1
 }
 
 scenario_zone_attack() {
   echo "Scenario zone_attack: the zone changes while an attack is in progress and the app is in the background"
-  set_zone Asia/Dubai
+  set_zone Asia/Dubai || return 1
   run_flow zone-attack-setup || return 1
   adbq shell input keyevent KEYCODE_HOME
   sleep 2
-  set_zone Asia/Tashkent
+  set_zone Asia/Tashkent || return 1
   open_from_launcher
   run_flow zone-attack-after || return 1
 }
 
 scenario_zone_history() {
   echo "Scenario zone_history: the zone changes while History is on screen"
-  set_zone Asia/Dubai
+  set_zone Asia/Dubai || return 1
   run_flow zone-history-setup || return 1
-  set_zone Asia/Tashkent
+  set_zone Asia/Tashkent || return 1
   sleep 2
   run_flow zone-history-after || return 1
 }
 
 scenario_med_effect() {
   echo "Scenario med_effect: \"Did it help?\" 2 h after an intake, answered, changed and kept by Undo (MED-F4)"
-  set_clock_millis "$(day_millis 0)"
+  set_clock_millis "$(day_millis 0)" || return 1
   run_flow med-attack-intake-setup || return 1
   shift_clock_hours 1 || return 1
   run_flow med-no-question || return 1
@@ -229,7 +256,7 @@ scenario_med_effect() {
 
 scenario_med_effect_attack() {
   echo "Scenario med_effect_attack: no question while an attack is in progress (G4)"
-  set_clock_millis "$(day_millis 0)"
+  set_clock_millis "$(day_millis 0)" || return 1
   run_flow med-attack-open-setup || return 1
   shift_clock_hours 3 || return 1
   run_flow med-attack-no-question || return 1
@@ -237,7 +264,7 @@ scenario_med_effect_attack() {
 
 scenario_med_effect_skip() {
   echo "Scenario med_effect_skip: a skipped question never comes back"
-  set_clock_millis "$(day_millis 0)"
+  set_clock_millis "$(day_millis 0)" || return 1
   run_flow med-attack-intake-setup || return 1
   shift_clock_hours 3 || return 1
   run_flow med-skip || return 1
@@ -246,16 +273,18 @@ scenario_med_effect_skip() {
 }
 
 scenario_med_effect_late() {
-  echo "Scenario med_effect_late: no question 25 h after the intake"
-  set_clock_millis "$(day_millis 0)"
+  echo "Scenario med_effect_late: the question is still due at 23 h and gone at 25 h"
+  set_clock_millis "$(day_millis 0)" || return 1
   run_flow med-attack-intake-setup || return 1
-  shift_clock_hours 25 || return 1
+  shift_clock_hours 23 || return 1
+  run_flow med-question-due || return 1
+  shift_clock_hours 2 || return 1
   run_flow med-no-question || return 1
 }
 
 scenario_med_preventive() {
   echo "Scenario med_preventive: a preventive medication is never asked about"
-  set_clock_millis "$(day_millis 0)"
+  set_clock_millis "$(day_millis 0)" || return 1
   run_flow med-add-preventive || return 1
   shift_clock_hours 3 || return 1
   run_flow med-no-question || return 1
@@ -263,18 +292,18 @@ scenario_med_preventive() {
 
 scenario_med_two_waiting() {
   echo "Scenario med_two_waiting: with two intakes waiting, the older one is asked first"
-  set_clock_millis "$(day_millis 0)"
+  set_clock_millis "$(day_millis 0)" || return 1
   run_flow clean || return 1
   run_flow_env med-first-log-home NAME=Sumatriptan TYPE=Triptan || return 1
   shift_clock_hours 1 || return 1
   run_flow_env med-add-and-log-home NAME=Ibuprofen "TYPE=Simple painkiller" || return 1
-  shift_clock_hours 2 || return 1
+  shift_clock_hours 3 || return 1
   run_flow med-two-waiting || return 1
 }
 
 scenario_med_link_home() {
   echo "Scenario med_link_home: an intake logged from home inside a past attack's time joins that attack (EC-MED-09)"
-  set_clock_millis "$(day_millis 0)"
+  set_clock_millis "$(day_millis 0)" || return 1
   run_flow med-link-setup || return 1
   shift_clock_hours -1 || return 1
   run_flow_env med-first-log-home NAME=Ibuprofen "TYPE=Simple painkiller" || return 1
@@ -285,19 +314,19 @@ scenario_med_link_home() {
 scenario_med_overuse() {
   echo "Scenario med_overuse: painkillers on 13 days warn softly, \"Got it\" hides it, 15 days warn about the doctor"
   local d
-  set_clock_millis "$(day_millis 12)"
+  set_clock_millis "$(day_millis 12)" || return 1
   run_flow clean || return 1
   run_flow_env med-first-log-home NAME=Ibuprofen "TYPE=Simple painkiller" || return 1
   for d in 11 10 9 8 7 6 5 4 3 2 1 0 0; do
-    set_clock_millis "$(day_millis "$d")"
+    set_clock_millis "$(day_millis "$d")" || return 1
     run_flow_env med-log-home NAME=Ibuprofen || return 1
   done
   run_flow med-overuse-soft || return 1
   for d in 13 14; do
-    set_clock_millis "$(day_millis "$d")"
+    set_clock_millis "$(day_millis "$d")" || return 1
     run_flow_env med-log-home NAME=Ibuprofen || return 1
   done
-  set_clock_millis "$(( $(day_millis 0) + 3600000 ))"
+  set_clock_millis "$(( $(day_millis 0) + 3600000 ))" || return 1
   run_flow med-overuse-doctor || return 1
 }
 
@@ -356,6 +385,7 @@ if [[ $# -eq 0 ]]; then
 fi
 failed=()
 for s in "$@"; do
+  CURRENT="$s"
   "scenario_$s" || failed+=("$s")
   # Each scenario starts from the real time, so one scenario's clock never leaks into the next.
   adbq shell cmd alarm set-timezone "$ORIGINAL_ZONE" >/dev/null

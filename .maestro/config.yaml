@@ -12,3 +12,5 @@ flows:
   - "attack-history/*"
   - "attack-details/*"
   - "custom-tags/*"
+  - "medication-list/*"
+  - "medication-intakes/*"

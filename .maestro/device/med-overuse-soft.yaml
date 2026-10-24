@@ -1,4 +1,5 @@
 # Covers: medication-overuse › Soft and doctor warnings › Soft warning
+# Covers: medication-intakes › Intakes link to their attack › Logged from home outside any attack
 # Covers: medication-overuse › Count overuse days › Several intakes in one day
 # Ibuprofen on 13 distinct days of the last 30 (twice on one of them).
 appId: com.migrely.app
@@ -12,4 +13,12 @@ appId: com.migrely.app
 - extendedWaitUntil:
     notVisible: "Painkillers on 13 of the last 30 days"
     timeout: 5000
+# Still hidden after the app is opened again.
+- stopApp
+- launchApp
+- extendedWaitUntil:
+    visible: "Painkillers on 13 of the last 30 days"
+    timeout: 4000
+    optional: true
+- assertNotVisible: "Painkillers on 13 of the last 30 days"
 - stopApp

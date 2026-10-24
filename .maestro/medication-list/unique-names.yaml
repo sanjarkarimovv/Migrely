@@ -1,7 +1,6 @@
 # Covers: medication-list › Names are unique › Duplicate name
-# Covers: medication-list › Archive instead of delete › Archive
 # Covers: medication-list › Names are unique › Renaming to an archived name
-# Covers: medication-list › Names are unique › Archived name
+# Also checks: archiving undone from the message, and the archived name coming back as it was
 appId: com.migrely.app
 name: Names are unique, archiving can be undone, an archived name comes back as it was
 tags: [regression, medication-list, a11y-timeout]
@@ -41,13 +40,15 @@ tags: [regression, medication-list, a11y-timeout]
     text: "Remove Sumatriptan"
     waitToSettleTimeoutMs: 0
     retryTapIfNoChange: false
+- assertNotVisible: "Sumatriptan · 50 mg, .*"
 - tapOn:
     text: "Undo.*"
     waitToSettleTimeoutMs: 0
     retryTapIfNoChange: false
 - extendedWaitUntil:
-    visible: "Sumatriptan · 50 mg, .*"
+    visible: "Undone\\."
     timeout: 5000
+- assertVisible: "Sumatriptan · 50 mg, .*"
 # Archive for good, then try to rename Ibuprofen to the archived name.
 - tapOn: "Remove Sumatriptan"
 - extendedWaitUntil:

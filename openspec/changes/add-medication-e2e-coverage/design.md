@@ -3,14 +3,14 @@
 ## Context
 
 The QA tooling from `add-quality-automation` (`qa/maestro.sh`, `qa/device_scenarios.sh`, the audit) is in develop. See
-proposal.md for why this change exists. Changes 3, 3a and PR #24 are merged; change 4 is not.
+proposal.md for why this change exists. Changes 3, 3a, 4 and PR #24 are merged.
 
 ## Goals / Non-Goals
 
 **Goals:** check the time-dependent medication rules and the zone fixes black-box, and close PR #24's retest.
 
-**Non-Goals:** overuse with several categories, the 30-day edge and per-zone dose display. They go to the coverage gap
-list (D61).
+**Non-Goals:** overuse with several categories, the 30-day edge and per-zone dose display. They are listed in tasks.md with a
+reason and a follow-up (D61).
 
 ## Decisions
 

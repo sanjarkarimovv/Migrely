@@ -9,6 +9,9 @@ appId: com.migrely.app
       NAME: "Paracetamol"
       TYPE: "Simple painkiller"
 - tapOn: "Undo"
+- extendedWaitUntil:
+    visible: "Removed\\. Nothing was logged\\."
+    timeout: 5000
 - tapOn: "Manage medications"
 - runFlow:
     file: ../subflows/add-medication.yaml

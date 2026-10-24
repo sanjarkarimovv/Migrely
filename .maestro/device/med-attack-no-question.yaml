@@ -11,3 +11,10 @@ appId: com.migrely.app
     timeout: 4000
     optional: true
 - assertNotVisible: "How much did .* help\\?"
+# Once the attack ends, home asks.
+- tapOn:
+    text: "Migraine ended"
+    index: 0
+- extendedWaitUntil:
+    visible: "How much did Ibuprofen help\\?"
+    timeout: 10000
