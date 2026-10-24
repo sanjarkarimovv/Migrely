@@ -44,7 +44,7 @@
 
 ## 7. Docs
 
-- [ ] 7.1 Update ARCHITECTURE §3 (the medication feature) and §6a (version 3, intakes in merge and purge); verify it matches the code
+- [x] 7.1 Update ARCHITECTURE §3 (the medication feature) and §6a (version 3, intakes in merge and purge); verify it matches the code
 
 ## 8. Verify
 
