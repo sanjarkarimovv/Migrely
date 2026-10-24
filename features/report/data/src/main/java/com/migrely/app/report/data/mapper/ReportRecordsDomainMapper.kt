@@ -32,6 +32,7 @@ class ReportRecordsDomainMapper {
                 ReportAttackDomainModel(
                     start = attack.start,
                     zone = zoneOf(attack.startZoneId),
+                    unknownZoneName = attack.startZoneId.takeIf { !knows(it) }.orEmpty(),
                     end = attack.end,
                     peakIntensity = attack.intensityPoints.maxOfOrNull { it.value },
                     functionalImpact = attack.functionalImpact,
@@ -93,6 +94,14 @@ class ReportRecordsDomainMapper {
         ZoneId.of(zoneId)
     } catch (exception: DateTimeException) {
         ZoneOffset.UTC
+    }
+
+    @Suppress("SwallowedException")
+    private fun knows(zoneId: String): Boolean = try {
+        ZoneId.of(zoneId)
+        true
+    } catch (exception: DateTimeException) {
+        false
     }
 
     private fun symptomOf(tag: AttackTagDataModel, tagNames: Map<String, String>): String? =

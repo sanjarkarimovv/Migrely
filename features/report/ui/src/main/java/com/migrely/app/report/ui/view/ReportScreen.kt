@@ -294,7 +294,9 @@ fun ReportContents(
                         )
                     }
                     // The dates stay while a report is made, so the screen does not jump (walk B1).
-                    var shownOptions by remember { mutableStateOf<ReportOptionsUiModel?>(null) }
+                    var shownOptions by rememberSaveable {
+                        mutableStateOf<ReportOptionsUiModel?>(null)
+                    }
                     val options = (viewState as? ReportViewStateUiModel.Ready)?.options
                     if (options != null) shownOptions = options
                     shownOptions?.let { Covers(it) }

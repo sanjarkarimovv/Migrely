@@ -18,6 +18,7 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId
+import java.time.ZoneOffset
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -210,8 +211,11 @@ class ReportDocumentMapperTest {
 
         val facts = blocks(short).filterIsInstance<ReportBlockDataModel.Facts>().single().facts
 
-        assertEquals("18 days in all", facts[0].value)
-        assertEquals("9 days in all", facts[2].value)
+        assertEquals("Migraine days" to "18 days in all", facts[0].label to facts[0].value)
+        assertEquals(
+            "Days with attack medication" to "9 days in all",
+            facts[2].label to facts[2].value
+        )
     }
 
     @Test
@@ -240,5 +244,16 @@ class ReportDocumentMapperTest {
         ).filterIsInstance<ReportBlockDataModel.Table>().first().rows
 
         assertEquals("25 Jul 2026, 23:00, began before the period", rows.single().first())
+    }
+
+    @Test
+    fun `Given a zone this phone does not know then the row names it as stored, in UTC`() {
+        val unknown = attack(ZoneOffset.UTC, null).copy(unknownZoneName = "Mars/Olympus")
+
+        val rows = blocks(
+            report(attacks = listOf(unknown))
+        ).filterIsInstance<ReportBlockDataModel.Table>().first().rows
+
+        assertEquals("20 Oct 2026, 04:00 (Mars/Olympus, shown in UTC)", rows.single().first())
     }
 }
