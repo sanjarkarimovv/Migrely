@@ -59,3 +59,6 @@ The exit status comes from passes 1 and 2 only.
 | A fixed wait | `extendedWaitUntil` on a text that never appears, with `optional: true`; `waitForAnimationToEnd` returns early once the screen settles |
 | Copying a label | `copyTextFrom` the element, then `evalScript` to cut it, for example the day of a calendar cell |
 | Turning the screen | Put `setOrientation: PORTRAIT` in `onFlowComplete`, so a failed flow never leaves the device in landscape |
+| Keyboard focus | `pressKey: Tab` works, but `focused: true` misses labels on a child of the focused node. Check keys in `qa/device_scenarios.sh` (`expect_focus`, `tab_until`) |
+| Below the month | History's chosen day, its marks and "Show all of …" sit below the month summary: `scrollUntilVisible` before tapping or asserting them |
+| Home's today card | It is one label, "Today: <sky>. <title>. <subtitle>."; assert the whole label, not "Pain-free today" alone |

@@ -26,6 +26,9 @@ tags: [regression, attack-history, past-attacks]
 - extendedWaitUntil:
     visible: "No migraine logged on this day\\."
     timeout: 3000
+- scrollUntilVisible:
+    element: "Add a past migraine"
+    direction: DOWN
 - tapOn: "Add a past migraine"
 - extendedWaitUntil:
     visible: "Past migraine"
@@ -35,8 +38,11 @@ tags: [regression, attack-history, past-attacks]
     visible: "Not recorded"
     timeout: 5000
 - back
-- extendedWaitUntil:
-    visible: "${output.day}: cloudy\\. 1 migraine\\. Peak: not recorded\\..*"
-    timeout: 5000
-- assertVisible: "Show all of .*"
+# History keeps its scroll position, so the cell may be above the screen.
+- scrollUntilVisible:
+    element: "${output.day}: cloudy\\. 1 migraine\\. Peak: not recorded\\..*"
+    direction: UP
+- scrollUntilVisible:
+    element: "Show all of .*"
+    direction: DOWN
 - assertNotVisible: "No migraine logged on this day\\."

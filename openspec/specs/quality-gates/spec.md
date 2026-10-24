@@ -53,8 +53,8 @@ longer exists in the specs (D41).
 ### Requirement: Accessibility audit on real screens
 The accessibility audit SHALL capture every listed screen state on the QA emulator at 100% font, at 200% font and in
 landscape, and SHALL fail on any enabled text below WCAG 2.1 AA contrast (4.5:1, or 3:1 for large text), any control
-smaller than 48 × 48 dp, any control without a label, and any control a keyboard cannot reach (BRD §10, EC-UX-03,
-EC-UX-04, D42).
+smaller than 48 × 48 dp, any control without a label, and any control that accessibility services cannot focus. The
+Tab order is checked by key events instead (BRD §10, EC-UX-03, EC-UX-04, D42, D62).
 
 #### Scenario: Low contrast
 - **WHEN** a 15 sp line is drawn at 4.05:1 against its background
@@ -68,9 +68,14 @@ EC-UX-04, D42).
 - **WHEN** the audit runs at 200% font
 - **THEN** every state is captured again at that size and checked by the same rules
 
+#### Scenario: Month grid as one stop
+- **WHEN** the audit captures home or History with the month grid
+- **THEN** it checks each day cell like any other control, so a day cell that is not focusable for accessibility
+  services fails the audit
+
 ### Requirement: Device settings are always restored
-Every QA script that changes a device setting (font size, rotation, accessibility timeout, clock, automatic time or
-time zone) SHALL restore the value it found when it exits, including when a check fails or the run is interrupted
+Every QA script that changes a device setting (font size, rotation, accessibility timeout, animator scale, app language,
+clock, automatic time or time zone) SHALL restore the value it found when it exits, including when a check fails or the run is interrupted
 (D42, D43).
 
 #### Scenario: Failure in the middle
@@ -80,6 +85,20 @@ time zone) SHALL restore the value it found when it exits, including when a chec
 #### Scenario: Audit stopped
 - **WHEN** the accessibility audit is stopped while the font is at 200%
 - **THEN** the font scale, rotation and accessibility timeout are back to their original values
+
+#### Scenario: Reduce motion stopped
+- **WHEN** a check is stopped while the animator scale is 0
+- **THEN** the animator scale is back to its original value
+
+#### Scenario: A restore that does not take
+- **WHEN** a script restores a setting but the device keeps another value, for example because the emulator stopped
+  answering
+- **THEN** the script reads the value back and reports the setting, the value it wanted and the value it found
+
+#### Scenario: Leftover setting at the start
+- **WHEN** a script starts while a setting differs from the QA emulator's baseline, for example auto-rotate off after a
+  crashed run
+- **THEN** it warns about that setting, and `qa/reset_device.sh` puts the baseline back
 
 ### Requirement: Device scenarios without test code
 Behaviour that depends on the clock, the time zone, exact tap timing, the system ending the app or an app update
@@ -117,6 +136,10 @@ over an older build, and medication timing (BRD EC-ATK-02, EC-ATK-10, EC-TIM-02,
 #### Scenario: Overuse days
 - **WHEN** painkillers are logged through the UI on 13 distinct days, with the clock set to each day in turn
 - **THEN** the scenario checks that the soft warning names 13 days, and after 2 more days the doctor warning names 15
+
+#### Scenario: Day mark after travel
+- **WHEN** a period day is marked in Tashkent and the phone then moves to Berlin and to Pago Pago
+- **THEN** the scenario checks that the same calendar date is still marked as a period day in each zone (EC-DAY-04)
 
 ### Requirement: Robustness and privacy checks
 A seeded random-input run of at least 5,000 events SHALL finish with no crash and no "app not responding" in the app's
@@ -171,3 +194,21 @@ the follow-up (BRD D61).
 - **WHEN** the QA of a change that adds a capability is about to be closed
 - **THEN** the coverage report lists that capability, and each of its scenarios without a flow is listed in the
   change's tasks with a reason and a follow-up
+
+### Requirement: Keyboard paths are checked with key events
+Keyboard behaviour SHALL be checked end to end with real key events (Tab, Shift+Tab, the arrow keys and Enter) sent to
+the QA emulator, not only by reading which nodes are focusable (BRD D62).
+
+#### Scenario: One Tab stop for the month
+- **WHEN** home is open with no attack in progress and Tab is pressed from launch
+- **THEN** the check confirms that focus goes "Period", the month title, today's cell, then "Migraine started", and
+  that Shift+Tab goes back the same way
+
+#### Scenario: Arrows inside the month
+- **WHEN** a day of the month has focus and the arrow keys are pressed
+- **THEN** the check confirms that focus moves by one day and by one week, and stays on today when the next day is in
+  the future
+
+#### Scenario: Enter on a day
+- **WHEN** a past day has keyboard focus on home and Enter is pressed
+- **THEN** the check confirms that History opens with that day chosen, as a tap does

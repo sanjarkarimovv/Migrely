@@ -40,3 +40,37 @@ qa_unlock_device() {
   fi
   return 0
 }
+
+# The QA emulators' baseline: what a fresh QA AVD has and what every QA script must leave behind. Scripts save the
+# values they find and restore those, so a value left over by a crashed run would be "restored" again; it is reported
+# when a script starts. qa/reset_device.sh puts the baseline back.
+QA_BASELINE=("system accelerometer_rotation=1" "system user_rotation=0" "system font_scale=1.0"
+  "secure accessibility_interactive_ui_timeout_ms=null" "global animator_duration_scale=null" "global auto_time=1")
+
+qa_adb() { "${ADB:-${ANDROID_HOME:-$HOME/Library/Android/sdk}/platform-tools/adb}" -s "$QA_SERIAL" "$@"; }
+
+qa_check_baseline() {
+  local entry key want have
+  for entry in "${QA_BASELINE[@]}"; do
+    key="${entry%=*}"
+    want="${entry##*=}"
+    have="$(qa_adb shell settings get $key 2>/dev/null | tr -d '\r')"
+    if [[ "$have" != "$want" ]]; then
+      echo "Warning: $QA_SERIAL starts with $key=$have, not the baseline $want; this run restores $have." \
+        "Run qa/reset_device.sh first if that value is left over." >&2
+    fi
+  done
+}
+
+qa_restore_setting() { # $1 namespace, $2 key, $3 value or "null": put it back and read it back
+  local have
+  if [[ "$3" == "null" ]]; then
+    qa_adb shell settings delete "$1" "$2" >/dev/null 2>&1
+  else
+    qa_adb shell settings put "$1" "$2" "$3" >/dev/null 2>&1
+  fi
+  have="$(qa_adb shell settings get "$1" "$2" 2>/dev/null | tr -d '\r')"
+  if [[ "$have" != "$3" ]]; then
+    echo "Warning: could not restore $1 $2 to $3 (it is '${have:-unreadable}'); run qa/reset_device.sh." >&2
+  fi
+}

@@ -1,0 +1,19 @@
+# In History, choose the first past day of the shown month with nothing logged, and keep its date in output.day
+# (for example "Wednesday, October 14"). The flow fails on the 1st, when the month has no past day.
+appId: com.migrely.app
+---
+- runFlow:
+    when:
+      notVisible: ".*: nothing logged\\."
+    commands:
+      - assertVisible: "QA: this flow needs a past day of the current month, so it cannot run on the 1st"
+- copyTextFrom:
+    text: ".*: nothing logged\\."
+    index: 0
+- evalScript: ${output.day = maestro.copiedText.split(':')[0]}
+- tapOn:
+    text: ".*: nothing logged\\."
+    index: 0
+- scrollUntilVisible:
+    element: "Pain-free day"
+    direction: DOWN

@@ -23,6 +23,7 @@ fi
 # Take the device first, then read the settings: another QA run may have a temporary value in place until it ends.
 source "$ROOT/qa/lib.sh"
 qa_lock_device
+qa_check_baseline
 trap qa_unlock_device EXIT
 SETTINGS=("system font_scale" "system user_rotation" "system accelerometer_rotation"
   "secure accessibility_interactive_ui_timeout_ms")
@@ -33,11 +34,7 @@ done
 restore() {
   set +e # restore everything even if one command fails
   for i in "${!SETTINGS[@]}"; do
-    if [[ "${ORIGINAL[$i]}" == "null" ]]; then
-      adbq shell settings delete ${SETTINGS[$i]} >/dev/null 2>&1
-    else
-      adbq shell settings put ${SETTINGS[$i]} "${ORIGINAL[$i]}" >/dev/null 2>&1
-    fi
+    qa_restore_setting ${SETTINGS[$i]} "${ORIGINAL[$i]}"
   done
   qa_unlock_device
 }
