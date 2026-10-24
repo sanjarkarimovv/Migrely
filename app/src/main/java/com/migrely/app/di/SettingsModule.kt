@@ -5,6 +5,7 @@ import com.migrely.app.coroutine.CoroutineContextProvider
 import com.migrely.app.navigation.mapper.SettingsNavigationEventDestinationMapper
 import com.migrely.app.settings.data.repository.SettingsRepository
 import com.migrely.app.settings.domain.usecase.GetSettingsUseCase
+import com.migrely.app.settings.domain.usecase.GetThemeUseCase
 import com.migrely.app.settings.domain.usecase.SetPeriodTrackingUseCase
 import com.migrely.app.settings.presentation.mapper.SettingsPresentationMapper
 import com.migrely.app.settings.presentation.viewmodel.SettingsViewModel
@@ -21,6 +22,13 @@ import dagger.hilt.components.SingletonComponent
 @Module
 @InstallIn(SingletonComponent::class)
 internal object SettingsModule {
+    /** For the app itself, which draws every screen in the chosen theme (BRD D94). */
+    @Provides
+    fun providesGetThemeUseCase(
+        repository: SettingsRepository,
+        coroutines: CoroutineContextProvider
+    ) = GetThemeUseCase(repository, coroutines)
+
     @Provides
     fun providesSettingsViewModel(
         repository: SettingsRepository,

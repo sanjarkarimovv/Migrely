@@ -10,9 +10,16 @@ import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
@@ -21,7 +28,10 @@ import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.migrely.app.datasource.notification.datasource.NotificationDataSourceImpl
+import com.migrely.app.designsystem.theme.DarkScreens
+import com.migrely.app.designsystem.theme.LocalDarkScreens
 import com.migrely.app.designsystem.theme.MigrelyTheme
+import com.migrely.app.settings.domain.model.ThemeDomainModel
 import com.migrely.app.start.StartEntryPoint
 import com.migrely.app.ui.main.AppNavHost
 import com.migrely.app.ui.main.di.AppNavHostDependencies
@@ -33,6 +43,12 @@ import java.time.ZoneId
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
@@ -41,6 +57,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 const val ACTION_START_ATTACK = "com.migrely.app.action.START_ATTACK"
 
 private const val STARTS_WITH_ONBOARDING = "starts_with_onboarding"
+private const val THEME = "theme"
 private const val START_DECISION_MILLIS = 2_000L
 
 @AndroidEntryPoint
@@ -57,6 +74,21 @@ class MainActivity : ComponentActivity() {
     private var pendingStartAttack = false
 
     /**
+     * The theme drawn last (BRD D94). It is read behind the splash and kept across a recreation, so the first frame is
+     * always in the right theme; the screens then follow each change at once.
+     */
+    private var theme = ThemeDomainModel.Dark
+
+    private val themeChanges: Flow<ThemeDomainModel> by lazy {
+        EntryPointAccessors.fromApplication(applicationContext, StartEntryPoint::class.java)
+            .getThemeUseCase()
+            .executeInBackground(Unit)
+            .flowOn(Dispatchers.IO)
+            // A store that cannot be read keeps the theme shown.
+            .catch { }
+    }
+
+    /**
      * Every screen shows a time with its city when its zone differs from the device's (BRD EC-TIM-02). A new device zone,
      * set while the app is open or away, is applied like a configuration change: the activity is recreated, so every
      * time is drawn again and the saved state is kept (BRD D36).
@@ -69,26 +101,33 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()
         renderedZone = ZoneId.systemDefault()
-        enableEdgeToEdge(
-            statusBarStyle = SystemBarStyle.dark(Color.TRANSPARENT),
-            navigationBarStyle = SystemBarStyle.dark(Color.TRANSPARENT)
-        )
+        // Dark like the splash; the chosen theme's bars follow with the first frame.
+        applySystemBars(dark = true)
         super.onCreate(savedInstanceState)
         dismissDailyReminderIfAsked(intent)
         startsWithOnboarding = savedInstanceState
             ?.takeIf { it.containsKey(STARTS_WITH_ONBOARDING) }
             ?.getBoolean(STARTS_WITH_ONBOARDING)
+        savedInstanceState?.getString(THEME)
+            ?.let { saved -> ThemeDomainModel.entries.firstOrNull { it.name == saved } }
+            ?.let { theme = it }
         // Honour the shortcut only until the start is decided; a recreated activity restores its back stack instead.
         // A recreation while the splash still waits has decided nothing yet, so it keeps the shortcut (review I2).
         val startAttack = startsWithOnboarding == null && intent?.action == ACTION_START_ATTACK
         // Opened to log a migraine, by the shortcut or the daily reminder: nothing holds that up (BRD D76).
         val openedToLog = startAttack ||
             intent?.getBooleanExtra(NotificationDataSourceImpl.EXTRA_DISMISS_DAILY, false) == true
-        // The splash stays until the app knows where it starts, so home never shows for a moment first.
+        // The splash stays until the app knows where it starts and in which theme, so home never shows for a moment
+        // first, and no frame shows in the other theme.
         splashScreen.setKeepOnScreenCondition { startsWithOnboarding == null }
         if (startsWithOnboarding == null) {
             lifecycleScope.launch {
-                startsWithOnboarding = shouldShowOnboarding(openedToLog)
+                coroutineScope {
+                    val chosenTheme = async { readTheme() }
+                    val onboarding = shouldShowOnboarding(openedToLog)
+                    theme = chosenTheme.await()
+                    startsWithOnboarding = onboarding
+                }
                 showContent(startAttack || pendingStartAttack)
             }
         } else {
@@ -115,9 +154,19 @@ class MainActivity : ComponentActivity() {
         false
     }
 
+    /** The chosen theme, or the one shown when it cannot be read in time, like the start decision. */
+    @Suppress("TooGenericExceptionCaught")
+    private suspend fun readTheme(): ThemeDomainModel = try {
+        withTimeoutOrNull(START_DECISION_MILLIS) { themeChanges.first() } ?: theme
+    } catch (exception: Exception) {
+        if (exception is CancellationException) throw exception
+        theme
+    }
+
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         startsWithOnboarding?.let { outState.putBoolean(STARTS_WITH_ONBOARDING, it) }
+        outState.putString(THEME, theme.name)
     }
 
     private fun showContent(startAttack: Boolean) {
@@ -129,19 +178,46 @@ class MainActivity : ComponentActivity() {
             Home(startAttack = startAttack)
         }
         setContent {
-            MigrelyTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    val controller = rememberNavController().also { navController = it }
-                    appNavHostDependencies.AppNavHost(
-                        navController = controller,
-                        startDestination = start
-                    )
+            val chosen by themeChanges.collectAsState(initial = theme)
+            SideEffect { theme = chosen }
+            val dark = when (chosen) {
+                ThemeDomainModel.Dark -> true
+                ThemeDomainModel.Light -> false
+                ThemeDomainModel.System -> isSystemInDarkTheme()
+            }
+            // Attack mode and the dark room stay dark in the light theme, and the bars with them.
+            val darkScreens = remember { DarkScreens() }
+            val barsDark = dark || darkScreens.shown > 0
+            // Applied with the composition, before the frame it belongs to is drawn.
+            DisposableEffect(barsDark) {
+                applySystemBars(dark = barsDark)
+                onDispose { }
+            }
+            CompositionLocalProvider(LocalDarkScreens provides darkScreens) {
+                MigrelyTheme(dark = dark) {
+                    Surface(
+                        modifier = Modifier.fillMaxSize(),
+                        color = MaterialTheme.colorScheme.background
+                    ) {
+                        val controller = rememberNavController().also { navController = it }
+                        appNavHostDependencies.AppNavHost(
+                            navController = controller,
+                            startDestination = start
+                        )
+                    }
                 }
             }
         }
+    }
+
+    /** Light bar icons over a dark screen, dark ones over a light screen; the bars themselves stay see-through. */
+    private fun applySystemBars(dark: Boolean) {
+        val style = if (dark) {
+            SystemBarStyle.dark(Color.TRANSPARENT)
+        } else {
+            SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT)
+        }
+        enableEdgeToEdge(statusBarStyle = style, navigationBarStyle = style)
     }
 
     override fun onStart() {

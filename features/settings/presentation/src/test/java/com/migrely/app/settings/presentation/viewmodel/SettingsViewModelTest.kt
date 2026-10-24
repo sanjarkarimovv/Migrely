@@ -41,7 +41,9 @@ class SettingsViewModelTest :
 
     @Test
     fun `When entering then the settings`() = runTest {
-        getSettingsUseCase.givenSuccessfulExecution(SettingsDomainModel(false, ThemeDomainModel.Dark, "1.0"))
+        getSettingsUseCase.givenSuccessfulExecution(
+            SettingsDomainModel(false, ThemeDomainModel.Dark, "1.0")
+        )
         val state = async(start = UNDISPATCHED) { classUnderTest.viewState.first() }
 
         classUnderTest.onEnter()
@@ -54,7 +56,9 @@ class SettingsViewModelTest :
 
     @Test
     fun `Given Track periods is not saved when turning it off then the user is told`() = runTest {
-        getSettingsUseCase.givenSuccessfulExecution(SettingsDomainModel(true, ThemeDomainModel.Dark, "1.0"))
+        getSettingsUseCase.givenSuccessfulExecution(
+            SettingsDomainModel(true, ThemeDomainModel.Dark, "1.0")
+        )
         setPeriodTrackingUseCase.givenSuccessfulExecution(
             false,
             SettingsWriteResultDomainModel.Failed
@@ -68,7 +72,9 @@ class SettingsViewModelTest :
 
     @Test
     fun `When Track periods is saved then the settings are read again`() = runTest {
-        getSettingsUseCase.givenSuccessfulExecution(SettingsDomainModel(false, ThemeDomainModel.Dark, "1.0"))
+        getSettingsUseCase.givenSuccessfulExecution(
+            SettingsDomainModel(false, ThemeDomainModel.Dark, "1.0")
+        )
         setPeriodTrackingUseCase.givenSuccessfulExecution(
             false,
             SettingsWriteResultDomainModel.Done
