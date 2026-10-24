@@ -1,0 +1,15 @@
+# Covers: in-app-messages › Newest message wins › End right after start
+appId: com.migrely.app
+name: Ending inside the undo window replaces the start message
+tags: [regression, in-app-messages]
+---
+- runFlow: ../subflows/launch-clean.yaml
+- runFlow: ../subflows/start-attack.yaml
+- assertVisible: "Undo the start"
+- runFlow: ../subflows/end-attack.yaml
+- assertVisible: "Undo the end"
+- assertNotVisible: "Undo the start"
+- tapOn: "Undo the end"
+- extendedWaitUntil:
+    visible: "Rest now. We'll keep time."
+    timeout: 5000

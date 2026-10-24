@@ -1,0 +1,17 @@
+# Covers: today-sky › Today's attacks open their details › Open from the list
+# Covers: attack-details › Open an attack's details › Open an ended attack
+appId: com.migrely.app
+name: Tapping today's attack opens its details
+tags: [smoke, regression, today-sky, attack-details]
+---
+- runFlow: ../subflows/launch-clean.yaml
+- runFlow: ../subflows/start-attack.yaml
+- runFlow: ../subflows/end-attack.yaml
+- tapOn: "Migraine from .*Opens its details."
+- extendedWaitUntil:
+    visible: "Ended"
+    timeout: 5000
+- assertVisible: "Duration .*"
+- assertNotVisible: "In progress"
+- back
+- assertVisible: "Logged today"

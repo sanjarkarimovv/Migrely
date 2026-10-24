@@ -1,0 +1,28 @@
+# Covers: attack-details › Where it hurts, symptoms and triggers › Select symptoms
+# Covers: attack-details › Every change saves itself (leaving with back)
+appId: com.migrely.app
+name: Selected symptoms are kept when the details screen is reopened
+tags: [regression, attack-details]
+---
+- runFlow: ../subflows/launch-clean.yaml
+- runFlow: ../subflows/start-attack.yaml
+- tapOn: "Details of this migraine"
+- scrollUntilVisible:
+    element: "Aura"
+    direction: DOWN
+- tapOn: "Aura"
+- tapOn: "Nausea"
+- back
+- tapOn: "Details of this migraine"
+- scrollUntilVisible:
+    element: "Aura"
+    direction: DOWN
+- assertVisible:
+    containsChild: "Aura"
+    checked: true
+- assertVisible:
+    containsChild: "Nausea"
+    checked: true
+- assertNotVisible:
+    containsChild: "Vomiting"
+    checked: true

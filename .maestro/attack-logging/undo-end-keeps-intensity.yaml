@@ -1,0 +1,19 @@
+# Covers: attack-logging › End an attack in one tap › Undo an end
+# Covers: in-app-messages › Accessible messages › Spoken undo label ("Undo the end")
+appId: com.migrely.app
+name: Undoing the end restores the attack with its intensity
+tags: [smoke, regression, attack-logging, in-app-messages]
+---
+- runFlow: ../subflows/launch-clean.yaml
+- runFlow: ../subflows/start-attack.yaml
+- tapOn: "Moderate"
+- runFlow: ../subflows/wait-message-gone.yaml
+- runFlow: ../subflows/end-attack.yaml
+- tapOn: "Undo the end"
+- extendedWaitUntil:
+    visible: "Rest now. We'll keep time."
+    timeout: 5000
+- assertVisible: "Undone."
+- assertVisible:
+    containsChild: "Moderate"
+    checked: true

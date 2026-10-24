@@ -1,0 +1,14 @@
+# Covers: in-app-messages › Messages can be dismissed › Swipe away
+appId: com.migrely.app
+name: Swiping the message away does not undo the start
+tags: [regression, in-app-messages]
+---
+- runFlow: ../subflows/launch-clean.yaml
+- runFlow: ../subflows/start-attack.yaml
+- swipe:
+    from: "Migraine started"
+    direction: RIGHT
+- extendedWaitUntil:
+    notVisible: "Undo the start"
+    timeout: 3000
+- assertVisible: "Rest now. We'll keep time."

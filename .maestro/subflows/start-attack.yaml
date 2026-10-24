@@ -1,0 +1,7 @@
+# From the home screen with no attack in progress, start one and wait for attack mode.
+appId: com.migrely.app
+---
+- tapOn: "Migraine started"
+- extendedWaitUntil:
+    visible: "Rest now. We'll keep time."
+    timeout: 5000

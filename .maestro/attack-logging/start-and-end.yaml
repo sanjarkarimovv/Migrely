@@ -1,0 +1,16 @@
+# Covers: attack-logging › Start an attack in one tap › Start from the home screen
+# Covers: attack-logging › End an attack in one tap › End an attack
+# Covers: attack-logging › Record pain intensity during an attack › No intensity recorded
+# Covers: today-sky › Sky by peak intensity after attacks end › Intensity never recorded
+appId: com.migrely.app
+name: Start and end an attack without intensity
+tags: [smoke, regression, attack-logging, today-sky]
+---
+- runFlow: ../subflows/launch-clean.yaml
+- runFlow: ../subflows/start-attack.yaml
+- assertVisible: "Started .* · 0 min"
+- runFlow: ../subflows/end-attack.yaml
+- assertVisible: "Today: cloudy. 1 migraine today. Peak: not recorded."
+- assertVisible: "Logged today"
+- assertVisible: "Migraine from .*, peak Not recorded. Opens its details."
+- takeScreenshot: attack-logging-start-and-end

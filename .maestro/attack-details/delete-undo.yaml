@@ -1,0 +1,23 @@
+# Covers: attack-details › Delete with undo › Delete and undo
+# Covers: today-sky › Deleted attack can be undone from home › Undo from home
+appId: com.migrely.app
+name: A deleted attack comes back with Undo on the home screen
+tags: [smoke, regression, attack-details, today-sky]
+---
+- runFlow: ../subflows/launch-clean.yaml
+- runFlow: ../subflows/start-attack.yaml
+- tapOn: "Moderate"
+- runFlow: ../subflows/end-attack.yaml
+- tapOn: "Migraine from .*Opens its details."
+- scrollUntilVisible:
+    element: "Delete migraine"
+    direction: DOWN
+- tapOn: "Delete migraine"
+- extendedWaitUntil:
+    visible: "Migraine deleted"
+    timeout: 5000
+- assertVisible: ".*Calm so far today.*"
+- tapOn: "Undo the deletion"
+- extendedWaitUntil:
+    visible: "Today: cloudy. 1 migraine today. Peak: moderate."
+    timeout: 5000

@@ -1,0 +1,9 @@
+# From attack mode, end the attack and wait for the home screen.
+appId: com.migrely.app
+---
+- tapOn:
+    text: "Migraine ended"
+    index: 0
+- extendedWaitUntil:
+    notVisible: "Rest now. We'll keep time."
+    timeout: 5000

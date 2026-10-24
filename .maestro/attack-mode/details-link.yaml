@@ -1,0 +1,16 @@
+# Covers: attack-details › Open an attack's details › Open the attack in progress
+# Covers: attack-mode › Dark room while an attack is in progress › Describe a long attack (opening part)
+appId: com.migrely.app
+name: The Details link opens the attack in progress
+tags: [regression, attack-mode, attack-details]
+---
+- runFlow: ../subflows/launch-clean.yaml
+- runFlow: ../subflows/start-attack.yaml
+- tapOn: "Details of this migraine"
+- extendedWaitUntil:
+    visible: "In progress"
+    timeout: 5000
+- assertVisible: "Migraine"
+- assertVisible: "So far .*"
+- back
+- assertVisible: "Rest now. We'll keep time."

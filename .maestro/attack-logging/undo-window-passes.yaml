@@ -1,0 +1,11 @@
+# Covers: attack-logging › Start an attack in one tap › Undo window passes
+# Covers: in-app-messages › Undo window follows the accessibility timeout › Default undo window
+appId: com.migrely.app
+name: The undo offer disappears and the attack stays in progress
+tags: [regression, attack-logging, in-app-messages]
+---
+- runFlow: ../subflows/launch-clean.yaml
+- runFlow: ../subflows/start-attack.yaml
+- assertVisible: "Undo the start"
+- runFlow: ../subflows/wait-message-gone.yaml
+- assertVisible: "Rest now. We'll keep time."

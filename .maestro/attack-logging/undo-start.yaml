@@ -1,0 +1,16 @@
+# Covers: attack-logging › Start an attack in one tap › Undo a start
+# Covers: in-app-messages › Undo outcomes are confirmed › Undo succeeds
+# Covers: in-app-messages › Accessible messages (spoken undo label "Undo the start")
+appId: com.migrely.app
+name: Undo a start removes the attack and confirms it
+tags: [smoke, regression, attack-logging, in-app-messages]
+---
+- runFlow: ../subflows/launch-clean.yaml
+- runFlow: ../subflows/start-attack.yaml
+- tapOn: "Undo the start"
+- extendedWaitUntil:
+    visible: "Undone."
+    timeout: 3000
+- assertVisible: ".*Calm so far today.*"
+- assertNotVisible: "Rest now. We'll keep time."
+- assertNotVisible: "Logged today"

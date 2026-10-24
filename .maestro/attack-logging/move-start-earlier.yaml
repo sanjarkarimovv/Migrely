@@ -1,0 +1,13 @@
+# Covers: attack-logging › Move the start of an attack earlier › Pain began before logging
+appId: com.migrely.app
+name: Move the start one hour earlier
+tags: [regression, attack-logging]
+---
+- runFlow: ../subflows/launch-clean.yaml
+- runFlow: ../subflows/start-attack.yaml
+- tapOn: "Move the start 1 h earlier"
+# The elapsed clock ticks every 30 s and is not refreshed when the start moves, so for up to 30 s it can still read
+# "59 min" (https://github.com/sanjarkarimovv/Migrely/issues/15). The spec only asks for the start to move.
+- extendedWaitUntil:
+    visible: "Started .* · (59 min|1 h [01] min)"
+    timeout: 5000
