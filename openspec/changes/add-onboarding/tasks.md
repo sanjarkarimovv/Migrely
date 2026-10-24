@@ -14,7 +14,7 @@
 
 ## 3. Reminders offer
 
-- [ ] 3.1 `DailyReminderOfferViewModel` and `DailyReminderOffer`, with tests.
+- [x] 3.1 `DailyReminderOfferViewModel` and `DailyReminderOffer`, with tests.
 
 ## 4. Track periods
 
