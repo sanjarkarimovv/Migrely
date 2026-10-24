@@ -7,4 +7,7 @@ sealed interface AttackDetailsPresentationNavigationEvent : PresentationNavigati
 
     /** The attack was deleted; home offers the undo (BRD D23). */
     data object OnAttackDeleted : AttackDetailsPresentationNavigationEvent
+
+    /** Log a medication taken during [attackId] (BRD D34). */
+    data class OnLogMedication(val attackId: String) : AttackDetailsPresentationNavigationEvent
 }

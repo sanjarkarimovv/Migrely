@@ -21,8 +21,8 @@
 
 ## 2. Presentation
 
-- [ ] 2.1 Add the medication presentation models, the `MedicationsViewModel`, `EditMedicationViewModel` and `LogMedicationViewModel`, their view states, notifications and navigation events, and the mappers, with `BaseViewModelTest` tests; verify `./gradlew :features:medication:presentation:test`
-- [ ] 2.2 Add the intakes, the remove/undo actions and `OnLogMedication(attackId)` to `AttackDetailsViewModel`, and `onMedicationTakenAction` and `onLogMedicationAction` to `HomeViewModel`, with tests; verify the attack and home presentation tests
+- [x] 2.1 Add the medication presentation models, the `MedicationsViewModel`, `EditMedicationViewModel` and `LogMedicationViewModel`, their view states, notifications and navigation events, and the mappers, with `BaseViewModelTest` tests; verify `./gradlew :features:medication:presentation:test`
+- [x] 2.2 Add the intakes, the remove/undo actions and `OnLogMedication(attackId)` to `AttackDetailsViewModel`, and `onMedicationTakenAction` and `onLogMedicationAction` to `HomeViewModel`, with tests; verify the attack and home presentation tests
 
 ## 3. Datasource
 

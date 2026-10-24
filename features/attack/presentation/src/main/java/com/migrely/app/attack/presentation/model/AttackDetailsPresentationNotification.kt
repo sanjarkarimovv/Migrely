@@ -19,6 +19,11 @@ sealed interface AttackDetailsPresentationNotification : PresentationNotificatio
         AttackDetailsPresentationNotification
 
     /** The first 10 the user ever recorded (BRD SAF-F2). */
+
+    /** A medication was removed from the attack and can come back with "Undo" (BRD D34). */
+    data class IntakeRemoved(val attackId: String, val intake: AttackIntakePresentationModel) :
+        AttackDetailsPresentationNotification
+
     data object FirstMaximumRecorded : AttackDetailsPresentationNotification
 
     data object TagLimitReached : AttackDetailsPresentationNotification

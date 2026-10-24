@@ -246,6 +246,8 @@ internal object AttackModule {
         archiveCustomTagUseCase: ArchiveCustomTagUseCase,
         deleteAttackUseCase: DeleteAttackUseCase,
         mergeAttacksUseCase: MergeAttacksUseCase,
+        removeIntakeUseCase: RemoveIntakeUseCase,
+        restoreIntakeUseCase: RestoreIntakeUseCase,
         useCaseExecutor: UseCaseExecutor
     ): AttackDetailsViewModel {
         val tagKindDomainMapper = TagKindDomainMapper()
@@ -268,7 +270,8 @@ internal object AttackModule {
                 BuiltInTriggerPresentationMapper(),
                 CustomTagPresentationMapper(TagKindPresentationMapper()),
                 FunctionalImpactPresentationMapper(),
-                IntensityPointPresentationMapper()
+                IntensityPointPresentationMapper(),
+                AttackIntakePresentationMapper()
             ),
             attackTagDomainMapper = AttackTagDomainMapper(
                 HeadLocationDomainMapper(),
@@ -282,6 +285,9 @@ internal object AttackModule {
             tagKindDomainMapper = tagKindDomainMapper,
             attackRangePresentationMapper = AttackRangePresentationMapper(),
             timeFieldPresentationMapper = TimeFieldPresentationMapper(),
+            removeIntakeUseCase = removeIntakeUseCase,
+            restoreIntakeUseCase = restoreIntakeUseCase,
+            attackIntakeDomainMapper = AttackIntakeDomainMapper(),
             useCaseExecutor = useCaseExecutor
         )
     }

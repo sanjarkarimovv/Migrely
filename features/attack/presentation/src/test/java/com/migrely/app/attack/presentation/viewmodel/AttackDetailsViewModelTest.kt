@@ -8,6 +8,7 @@ import com.migrely.app.attack.domain.model.AddIntensityPointResultDomainModel
 import com.migrely.app.attack.domain.model.AttackDetailsDomainModel
 import com.migrely.app.attack.domain.model.AttackDetailsResultDomainModel
 import com.migrely.app.attack.domain.model.AttackDetailsScreenDomainModel
+import com.migrely.app.attack.domain.model.AttackIntakeDomainModel
 import com.migrely.app.attack.domain.model.AttackRangeDomainModel
 import com.migrely.app.attack.domain.model.AttackTagDomainModel
 import com.migrely.app.attack.domain.model.HeadLocationDomainModel
@@ -15,6 +16,7 @@ import com.migrely.app.attack.domain.model.IntensityPointDomainModel
 import com.migrely.app.attack.domain.model.MergeAttacksRequestDomainModel
 import com.migrely.app.attack.domain.model.MergeAttacksResultDomainModel
 import com.migrely.app.attack.domain.model.RemoveIntensityPointRequestDomainModel
+import com.migrely.app.attack.domain.model.RestoreIntakeRequestDomainModel
 import com.migrely.app.attack.domain.model.SelectAttackTagRequestDomainModel
 import com.migrely.app.attack.domain.model.TagKindDomainModel
 import com.migrely.app.attack.domain.model.TimeFieldDomainModel
@@ -31,13 +33,17 @@ import com.migrely.app.attack.domain.usecase.ArchiveCustomTagUseCase
 import com.migrely.app.attack.domain.usecase.DeleteAttackUseCase
 import com.migrely.app.attack.domain.usecase.GetAttackDetailsUseCase
 import com.migrely.app.attack.domain.usecase.MergeAttacksUseCase
+import com.migrely.app.attack.domain.usecase.RemoveIntakeUseCase
 import com.migrely.app.attack.domain.usecase.RemoveIntensityPointUseCase
+import com.migrely.app.attack.domain.usecase.RestoreIntakeUseCase
 import com.migrely.app.attack.domain.usecase.SelectAttackTagUseCase
 import com.migrely.app.attack.domain.usecase.SetFunctionalImpactUseCase
 import com.migrely.app.attack.domain.usecase.UndoTimesChangeUseCase
 import com.migrely.app.attack.domain.usecase.UpdateAttackNoteUseCase
 import com.migrely.app.attack.domain.usecase.UpdateAttackTimesUseCase
 import com.migrely.app.attack.presentation.mapper.AttackDetailsPresentationMapper
+import com.migrely.app.attack.presentation.mapper.AttackIntakeDomainMapper
+import com.migrely.app.attack.presentation.mapper.AttackIntakePresentationMapper
 import com.migrely.app.attack.presentation.mapper.AttackRangePresentationMapper
 import com.migrely.app.attack.presentation.mapper.AttackTagDomainMapper
 import com.migrely.app.attack.presentation.mapper.BuiltInSymptomDomainMapper
@@ -57,6 +63,7 @@ import com.migrely.app.attack.presentation.mapper.TagKindPresentationMapper
 import com.migrely.app.attack.presentation.mapper.TimeFieldPresentationMapper
 import com.migrely.app.attack.presentation.model.AttackDetailsPresentationNotification
 import com.migrely.app.attack.presentation.model.AttackDetailsViewState
+import com.migrely.app.attack.presentation.model.AttackIntakePresentationModel
 import com.migrely.app.attack.presentation.model.AttackRangePresentationModel
 import com.migrely.app.attack.presentation.model.AttackTagPresentationModel
 import com.migrely.app.attack.presentation.model.HeadLocationPresentationModel
@@ -131,13 +138,18 @@ class AttackDetailsViewModelTest :
 
     @Mock private lateinit var mergeAttacksUseCase: MergeAttacksUseCase
 
+    @Mock private lateinit var removeIntakeUseCase: RemoveIntakeUseCase
+
+    @Mock private lateinit var restoreIntakeUseCase: RestoreIntakeUseCase
+
     private val presentationMapper = AttackDetailsPresentationMapper(
         HeadLocationPresentationMapper(),
         BuiltInSymptomPresentationMapper(),
         BuiltInTriggerPresentationMapper(),
         CustomTagPresentationMapper(TagKindPresentationMapper()),
         FunctionalImpactPresentationMapper(),
-        IntensityPointPresentationMapper()
+        IntensityPointPresentationMapper(),
+        AttackIntakePresentationMapper()
     )
     private val ready = AttackDetailsViewState.Ready(presentationMapper.toPresentation(SCREEN))
 
@@ -169,6 +181,9 @@ class AttackDetailsViewModelTest :
             TagKindDomainMapper(),
             AttackRangePresentationMapper(),
             TimeFieldPresentationMapper(),
+            removeIntakeUseCase,
+            restoreIntakeUseCase,
+            AttackIntakeDomainMapper(),
             useCaseExecutor
         )
     }
@@ -581,5 +596,59 @@ class AttackDetailsViewModelTest :
 
     private fun TestScope.nextNotification() = async(start = UNDISPATCHED) {
         classUnderTest.notification.first()
+    }
+
+    private val intake = AttackIntakePresentationModel(
+        "i",
+        "m",
+        "Ibuprofen",
+        "400 mg",
+        Instant.parse("2026-10-24T09:20:00Z"),
+        ZoneId.of("Asia/Tashkent")
+    )
+
+    @Test
+    fun `When logging a medication then opens Medication taken for the attack`() = runTest {
+        val event = async(start = UNDISPATCHED) { classUnderTest.navigationEvent.first() }
+
+        classUnderTest.onLogMedicationAction("a")
+
+        assertEquals(AttackDetailsPresentationNavigationEvent.OnLogMedication("a"), event.await())
+    }
+
+    @Test
+    fun `When removing an intake then offers its undo`() = runTest {
+        removeIntakeUseCase.givenSuccessfulExecution("i", WriteResultDomainModel.Written)
+        val notification = async(start = UNDISPATCHED) { classUnderTest.notification.first() }
+
+        classUnderTest.onRemoveIntakeAction("a", intake)
+
+        assertEquals(
+            AttackDetailsPresentationNotification.IntakeRemoved("a", intake),
+            notification.await()
+        )
+    }
+
+    @Test
+    fun `When undoing an intake removal then stores the same intake again`() = runTest {
+        restoreIntakeUseCase.givenSuccessfulExecution(
+            RestoreIntakeRequestDomainModel(
+                "a",
+                AttackIntakeDomainModel(
+                    "i",
+                    "m",
+                    "Ibuprofen",
+                    "400 mg",
+                    intake.takenAt,
+                    intake.zone
+                )
+            ),
+            WriteResultDomainModel.Written
+        )
+        val notification = async(start = UNDISPATCHED) { classUnderTest.notification.first() }
+
+        classUnderTest.onUndoIntakeRemovalAction("a", intake)
+
+        assertEquals(AttackDetailsPresentationNotification.Undone, notification.await())
     }
 }

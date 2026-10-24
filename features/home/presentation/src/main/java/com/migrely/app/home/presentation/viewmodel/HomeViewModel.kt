@@ -123,6 +123,10 @@ class HomeViewModel(
     fun onAddPastAttackAction() =
         emitNavigationEvent(HomePresentationNavigationEvent.OnAddPastAttack)
 
+    /** [attackId] is the attack in progress when called from attack mode, or null from the normal mode (BRD D34). */
+    fun onLogMedicationAction(attackId: String?) =
+        emitNavigationEvent(HomePresentationNavigationEvent.OnLogMedication(attackId))
+
     fun onStillGoingAction(attackId: String) =
         answerLongAttackCheck(attackId, LongAttackAnswerDomainModel.StillGoing)
 

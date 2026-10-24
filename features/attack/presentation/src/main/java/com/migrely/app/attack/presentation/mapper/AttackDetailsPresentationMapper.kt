@@ -22,7 +22,8 @@ class AttackDetailsPresentationMapper(
     private val builtInTriggerPresentationMapper: BuiltInTriggerPresentationMapper,
     private val customTagPresentationMapper: CustomTagPresentationMapper,
     private val functionalImpactPresentationMapper: FunctionalImpactPresentationMapper,
-    private val intensityPointPresentationMapper: IntensityPointPresentationMapper
+    private val intensityPointPresentationMapper: IntensityPointPresentationMapper,
+    private val attackIntakePresentationMapper: AttackIntakePresentationMapper
 ) {
     fun toPresentation(screen: AttackDetailsScreenDomainModel): AttackDetailsPresentationModel {
         val details = screen.details
@@ -61,7 +62,8 @@ class AttackDetailsPresentationMapper(
             selectedTriggers = details.triggers.map(::toPresentation).toSet(),
             functionalImpact = details.functionalImpact
                 ?.let(functionalImpactPresentationMapper::toPresentation),
-            note = details.note
+            note = details.note,
+            intakes = details.intakes.map(attackIntakePresentationMapper::toPresentation)
         )
     }
 
