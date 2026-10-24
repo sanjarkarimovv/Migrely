@@ -15,7 +15,8 @@ class AttackIntakeUiToPresentationMapper {
         dose = intake.dose,
         takenAt = Instant.ofEpochMilli(intake.takenAtEpochMillis),
         zone = ZoneId.of(intake.zoneId),
-        effect = intake.effect?.let(::toPresentation)
+        effect = intake.effect?.let(::toPresentation),
+        effectQuestionClosed = intake.effectQuestionClosed
     )
 
     fun toPresentation(effect: AttackIntakeEffectUiModel): AttackIntakeEffectPresentationModel =

@@ -17,9 +17,9 @@ import com.migrely.app.medication.presentation.model.OveruseCategoryPresentation
 import com.migrely.app.medication.presentation.model.OveruseLevelPresentationModel
 
 /**
- * Home's one medication card (BRD D46): an overuse warning or "Did it help?" (MED-F4, MED-F5). It enters again every time
- * home loads, and loads again after every answer, skip or "Got it", so the next card follows at once. A failed write
- * loads the same card again, so the user can retry.
+ * Home's one medication card (BRD D46): an overuse warning or "Did it help?" (MED-F4, MED-F5). It enters again every
+ * time home loads, and loads again after every answer, skip or "Got it", so the next card follows at once. A failed
+ * write loads the same card again, so the user can retry.
  */
 class MedicationPromptViewModel(
     private val getMedicationPromptUseCase: GetMedicationPromptUseCase,

@@ -389,7 +389,8 @@ class AttackDetailsRepositoryTest {
                     "400 mg",
                     at,
                     ZoneOffset.UTC,
-                    AttackIntakeEffectDomainModel.ALittle
+                    AttackIntakeEffectDomainModel.ALittle,
+                    effectQuestionClosed = true
                 )
             ),
             actual.details.intakes
@@ -436,6 +437,36 @@ class AttackDetailsRepositoryTest {
                 "Asia/Tashkent",
                 null,
                 IntakeEffectDataModel.ALot,
+                effectClosed = true
+            )
+        )
+    }
+
+    @Test
+    fun `When restoring a skipped intake then its question stays closed`() {
+        val at = Instant.parse("2026-10-24T09:20:00Z")
+        val intake = AttackIntakeDomainModel(
+            "i",
+            "m",
+            "Ibuprofen",
+            null,
+            at,
+            ZoneId.of("Asia/Tashkent"),
+            effect = null,
+            effectQuestionClosed = true
+        )
+
+        classUnderTest.restoreIntake("a", intake)
+
+        verify(medicationDataSource).restoreIntake(
+            IntakeDataModel(
+                "i",
+                "m",
+                "Ibuprofen",
+                "a",
+                at,
+                "Asia/Tashkent",
+                null,
                 effectClosed = true
             )
         )

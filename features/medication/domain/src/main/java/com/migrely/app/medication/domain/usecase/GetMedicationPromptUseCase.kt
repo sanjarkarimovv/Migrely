@@ -44,10 +44,11 @@ private val SINGLE_CATEGORIES = listOf(
  *
  * Overuse (BRD MED-F5, D45, ICHD-3 8.2): the days of the last 30, today included, with an acute intake, each day taken
  * in the zone of its intake (EC-TIM-02), counted per category (EC-MED-02 to EC-MED-04). All acute days together count
- * when two or more categories were used (8.2.6), shown only above every single category's level. Only the highest level
- * shows, and a "Got it" hides that category at that level or lower for 30 days (EC-MED-06).
+ * when two or more categories were used (8.2.6), shown only above every single category's level. A "Got it" hides that
+ * category at that level or lower for 30 days (EC-MED-06); of the warnings left, the highest level shows.
  *
- * "Did it help?" (BRD MED-F4, EC-MED-05, EC-MED-11): the oldest open acute intake taken 2 to 24 hours ago.
+ * "Did it help?" (BRD MED-F4, EC-MED-05, EC-MED-11): the oldest open acute intake taken more than 2 and at most 24
+ * hours ago.
  */
 class GetMedicationPromptUseCase(
     private val getCurrentTimeRepository: GetCurrentTimeRepository,
@@ -77,10 +78,12 @@ class GetMedicationPromptUseCase(
             is OveruseNoticesResultDomainModel.Loaded -> result.notices
             OveruseNoticesResultDomainModel.Failed -> return null
         }
-        val candidates = candidates(datesByCategory(intakes, firstDay..today))
-        val topLevel = candidates.maxOfOrNull { it.level } ?: return null
-        return candidates
-            .filter { it.level == topLevel && !it.isQuiet(notices, now) }
+        // Quiet categories go first, so a "Got it" on one category never hides another's warning (EC-MED-06).
+        val shown = candidates(datesByCategory(intakes, firstDay..today))
+            .filterNot { it.isQuiet(notices, now) }
+        val topLevel = shown.maxOfOrNull { it.level } ?: return null
+        return shown
+            .filter { it.level == topLevel }
             .maxWithOrNull(MOST_DAYS_FIRST)
             ?.let { MedicationPromptDomainModel.Overuse(it.category, it.level, it.days) }
     }

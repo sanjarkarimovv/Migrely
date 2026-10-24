@@ -5,7 +5,10 @@ import com.migrely.app.coroutine.CoroutineContextProvider
 import com.migrely.app.medication.domain.model.WriteResultDomainModel
 import com.migrely.app.medication.domain.repository.CloseEffectQuestionRepository
 
-/** Closes "Did it help?" for an intake without an answer, so it is never asked again (BRD D39). The request is the id. */
+/**
+ * Closes "Did it help?" for an intake without an answer, so it is never asked again (BRD D39). The request is the
+ * intake id.
+ */
 class SkipEffectQuestionUseCase(
     private val closeEffectQuestionRepository: CloseEffectQuestionRepository,
     coroutineContextProvider: CoroutineContextProvider

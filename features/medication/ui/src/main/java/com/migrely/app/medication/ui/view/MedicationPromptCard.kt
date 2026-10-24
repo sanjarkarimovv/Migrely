@@ -33,7 +33,9 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.isTraversalGroup
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.traversalIndex
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.migrely.app.designsystem.icon.MigrelyIcons
@@ -56,17 +58,20 @@ private const val ONE_ANSWER_A_ROW_FONT_SCALE = 1.5f
 private const val NO_BREAK_SPACE = '\u00A0'
 
 /**
- * Home's one medication card under today's card (BRD D46): an overuse warning (MED-F5, D45) or "Did it help?" (MED-F4,
- * D39). It loads whenever [refreshKey] changes, which home does every time it loads.
+ * Home's one medication card under today's card (BRD D46): an overuse warning (MED-F5, D45) or "Did it help?"
+ * (MED-F4, D39). It loads whenever [refreshKey] changes, which home does every time it loads.
  */
 @Composable
 fun MedicationPromptDependencies.MedicationPrompt(refreshKey: Int, modifier: Modifier = Modifier) {
     LaunchedEffect(refreshKey) { medicationPromptViewModel.onEnter() }
-    val viewState by medicationPromptViewModel.viewState.collectAsState(
-        MedicationPromptViewState.Hidden
-    )
+    // Null until the first load, a value the ViewModel never emits: a card restored with the screen is always replaced
+    // by the first real state, even when that is "no card" (review C1).
+    val viewState by medicationPromptViewModel.viewState
+        .collectAsState<MedicationPromptViewState, MedicationPromptViewState?>(null)
     val prompt by rememberSaveable(viewState) {
-        mutableStateOf(medicationPromptUiMapper.toUi(viewState))
+        mutableStateOf(
+            viewState?.let(medicationPromptUiMapper::toUi) ?: MedicationPromptUiModel.Hidden
+        )
     }
     val toPresentation = medicationPromptUiToPresentationMapper
     MedicationPromptContents(
@@ -164,7 +169,12 @@ private fun EffectQuestion(
     val spokenTaken = question.dose
         ?.let { stringResource(R.string.prompt_effect_taken_dose_spoken, time, it) }
         ?: taken
-    Column(modifier = Modifier.padding(start = 16.dp, top = 8.dp, end = 4.dp, bottom = 16.dp)) {
+    // A traversal group, so screen readers read the question and the answers before "Don't ask about this one".
+    Column(
+        modifier = Modifier
+            .semantics { isTraversalGroup = true }
+            .padding(start = 16.dp, top = 8.dp, end = 4.dp, bottom = 16.dp)
+    ) {
         Row(verticalAlignment = Alignment.Top) {
             Column(
                 modifier = Modifier
@@ -186,7 +196,10 @@ private fun EffectQuestion(
                         .semantics { contentDescription = spokenTaken }
                 )
             }
-            IconButton(onClick = { actions.onSkip(question.intakeId) }) {
+            IconButton(
+                onClick = { actions.onSkip(question.intakeId) },
+                modifier = Modifier.semantics { traversalIndex = 1f }
+            ) {
                 Icon(
                     MigrelyIcons.Close,
                     contentDescription = stringResource(R.string.prompt_effect_skip)

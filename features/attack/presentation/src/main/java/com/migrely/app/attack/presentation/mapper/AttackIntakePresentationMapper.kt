@@ -20,6 +20,7 @@ class AttackIntakePresentationMapper {
             AttackIntakeEffectDomainModel.Completely ->
                 AttackIntakeEffectPresentationModel.Completely
             null -> null
-        }
+        },
+        effectQuestionClosed = intake.effectQuestionClosed
     )
 }

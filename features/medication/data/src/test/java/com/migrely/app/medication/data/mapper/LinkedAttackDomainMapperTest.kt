@@ -11,7 +11,7 @@ import org.junit.Test
 private val START: Instant = Instant.parse("2026-10-24T05:00:00Z")
 
 class LinkedAttackDomainMapperTest {
-    private val classUnderTest = LinkedAttackDomainMapper()
+    private val classUnderTest = LinkedAttackDomainMapper(ZoneDomainMapper())
 
     private fun attack(zoneId: String) =
         AttackDataModel("a", START, zoneId, null, emptyList(), null, false)

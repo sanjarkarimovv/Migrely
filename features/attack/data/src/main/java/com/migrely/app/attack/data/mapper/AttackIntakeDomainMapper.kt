@@ -22,7 +22,8 @@ class AttackIntakeDomainMapper {
             IntakeEffectDataModel.ALot -> AttackIntakeEffectDomainModel.ALot
             IntakeEffectDataModel.Completely -> AttackIntakeEffectDomainModel.Completely
             null -> null
-        }
+        },
+        effectQuestionClosed = intake.effectClosed
     )
 
     // A zone id saved on another device may be unknown here; UTC keeps the instant correct.

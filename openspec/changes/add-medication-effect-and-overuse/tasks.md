@@ -21,7 +21,8 @@
 
 - [x] 3.1 `MedicationPromptViewModel` and its presentation models and mappers, with tests.
   Verify: `./gradlew :features:medication:presentation:test`
-- [x] 3.2 `MedicationRepository` implements the new repositories, with tests.
+- [x] 3.2 A separate `MedicationPromptRepository` implements the new repositories, so `MedicationRepository` does not
+  grow; with tests.
   Verify: `./gradlew :features:medication:data:test`
 
 ## 4. Attack feature (design D4)
@@ -54,7 +55,7 @@
 - [x] 8.2 Upgrade from v3 with data; emulator walk of every scenario on emulator-5570 (intakes seeded with past times
   through the app's own screens or the database). Cover the question, skip, order, attack mode, details answer,
   Undo, soft, doctor, multiple, "Got it" and 30 days. Also 200% font, landscape and TalkBack labels. Record below.
-- [ ] 8.3 Independent review; fix and record.
+- [x] 8.3 Independent review; fix and record.
 
 ## Verification record
 
@@ -107,3 +108,30 @@ userdebug image, unrooted after):
 - font 1.0, rotation 0, accelerometer 1, the accessibility timeout deleted, adbd unrooted;
 - the walk medications, intakes and notices deleted;
 - one attack started by the walk removed.
+
+## Review (8.3)
+
+An independent `superpowers:code-reviewer` pass read all 121 changed files. It confirmed:
+- the window, counting, MULTIPLE rule, quiet period and ties;
+- the SQL, `4.json` and the migration;
+- Undo with an answer, the dialog across rotation, accessibility, DI, copy and the architecture rules.
+
+Each finding was checked against the code:
+
+| Finding | Outcome |
+|---|---|
+| **C1** home's card stayed stale after a restore: `collectAsState` started at `Hidden`, a real state, so a fresh "no card" never replaced a restored card | fixed: the initial value is null, which the ViewModel never emits, so the first real state always replaces a restored card. Walked: home asked about Sumatriptan, it was answered in the attack's details, and back on home the card was gone |
+| **I1** Undo after removing a skipped intake opened its question again | fixed: `effectQuestionClosed` goes through the attack domain, presentation and UI models into `restoreIntake`; tests for a skipped intake and the UI round trip |
+| **I2** a "Got it" on one category's doctor card hid another category's soft card for 30 days | fixed as a product decision, since EC-MED-06 is per category: quiet warnings are removed first, then the highest level of the rest shows; MULTIPLE is still judged against every single category before notices. BRD D45, design D2 and the spec ("Another category's Got it") updated; the test inverted |
+| M1 the 2 h / 24 h bounds | documented: more than 2 and at most 24 hours (KDoc, design D2) |
+| M2 no tap guard when the card disappears and the content below moves up | accepted: the second tap of a double tap can open an attack or a day, which Back undoes; nothing is written |
+| M3 a double tap on a details row can choose an answer in the dialog | accepted: the answer shows on the row and can be changed |
+| M4 preventive intakes can be answered in details | accepted and documented (design D4): the user opens it, and home never asks |
+| M5 accessibility | "Don't ask about this one" is now read after the answers (traversal group); the row keeps the app's "Opens …" wording, as home's rows do |
+| M6 overlapping loads, M7 a notice acknowledged in the future, M8 the "Taken at" text over midnight | accepted: they correct themselves on the next load (no special protection for a moved clock, EC-TIM-04) |
+| M9 zone parsing repeated | fixed: `LinkedAttackDomainMapper` uses `ZoneDomainMapper` |
+| M10 doc comments over 120 columns | rewrapped |
+| M11 use case test gaps | added: ties, MULTIPLE at soft, MULTIPLE doctor above a single soft, MULTIPLE equal to a single soft, a quiet MULTIPLE, an intake dated tomorrow in its zone, a quiet doctor category hiding nothing else; the failed-write ViewModel test asserts the reloaded card |
+| M12 docs | task 3.2 and design D1 corrected |
+
+**After the review:** gate BUILD SUCCESSFUL; `GetMedicationPromptUseCaseTest` 34.

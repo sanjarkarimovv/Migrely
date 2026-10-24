@@ -8,8 +8,8 @@ import androidx.room.PrimaryKey
 import com.migrely.app.datasource.attack.model.AttackLocalModel
 
 /**
- * A medication taken (database version 3; [effect] and [effectClosed] since version 4). Medications are never deleted, so the medication key restricts; an attack
- * removed for good takes its intakes with it (BRD EC-MED-10).
+ * A medication taken (database version 3; [effect] and [effectClosed] since version 4). Medications are never deleted,
+ * so the medication key restricts; an attack removed for good takes its intakes with it (BRD EC-MED-10).
  */
 @Entity(
     tableName = "medication_intake",

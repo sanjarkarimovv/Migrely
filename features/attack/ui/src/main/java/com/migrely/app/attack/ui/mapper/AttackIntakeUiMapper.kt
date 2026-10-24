@@ -19,6 +19,7 @@ class AttackIntakeUiMapper {
             AttackIntakeEffectPresentationModel.ALot -> AttackIntakeEffectUiModel.ALot
             AttackIntakeEffectPresentationModel.Completely -> AttackIntakeEffectUiModel.Completely
             null -> null
-        }
+        },
+        effectQuestionClosed = intake.effectQuestionClosed
     )
 }

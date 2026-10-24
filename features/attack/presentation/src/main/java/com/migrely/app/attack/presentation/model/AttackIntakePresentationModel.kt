@@ -10,5 +10,6 @@ data class AttackIntakePresentationModel(
     val dose: String?,
     val takenAt: Instant,
     val zone: ZoneId,
-    val effect: AttackIntakeEffectPresentationModel? = null
+    val effect: AttackIntakeEffectPresentationModel? = null,
+    val effectQuestionClosed: Boolean = false
 )

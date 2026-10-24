@@ -324,15 +324,106 @@ class GetMedicationPromptUseCaseTest {
     }
 
     @Test
-    fun `Given the doctor level is quiet when a soft level applies elsewhere then nothing`() {
-        // Only the highest level shows, even when it was acknowledged (BRD D45).
+    fun `Given another category is quiet at doctor when painkillers reach soft then soft`() {
+        // A "Got it" is per category (BRD EC-MED-06, review I2).
         givenIntakes(
             days(10, MedicationCategoryDomainModel.Triptan) +
                 days(13, MedicationCategoryDomainModel.SimplePainkiller)
         )
         givenNotices(notice(OveruseCategoryDomainModel.Triptan, OveruseLevelDomainModel.Doctor, 3))
 
+        assertEquals(
+            overuse(OveruseCategoryDomainModel.SimplePainkiller, soft = true, days = 13),
+            execute()
+        )
+    }
+
+    @Test
+    fun `Given painkillers quiet at doctor then all together never shows instead`() {
+        // All acute days together (17) are not higher than the painkillers' own doctor level.
+        givenIntakes(
+            days(15, MedicationCategoryDomainModel.SimplePainkiller) +
+                days(2, MedicationCategoryDomainModel.Triptan, firstDaysAgo = 20)
+        )
+        givenNotices(
+            notice(OveruseCategoryDomainModel.SimplePainkiller, OveruseLevelDomainModel.Doctor, 1)
+        )
+
         assertEquals(MedicationPromptDomainModel.None, execute())
+    }
+
+    @Test
+    fun `Given triptans and combination at 10 days each then ties go to triptans`() {
+        givenIntakes(
+            days(10, MedicationCategoryDomainModel.Triptan) +
+                days(10, MedicationCategoryDomainModel.CombinationOrOther, firstDaysAgo = 10)
+        )
+
+        assertEquals(
+            overuse(OveruseCategoryDomainModel.Triptan, soft = false, days = 10),
+            execute()
+        )
+    }
+
+    @Test
+    fun `Given painkillers on 4 days and triptans on 4 others then all together at soft`() {
+        givenIntakes(
+            days(4, MedicationCategoryDomainModel.SimplePainkiller) +
+                days(4, MedicationCategoryDomainModel.Triptan, firstDaysAgo = 10)
+        )
+
+        assertEquals(overuse(OveruseCategoryDomainModel.Multiple, soft = true, days = 8), execute())
+    }
+
+    @Test
+    fun `Given triptans at soft and painkillers on 2 other days then all together at doctor`() {
+        givenIntakes(
+            days(8, MedicationCategoryDomainModel.Triptan) +
+                days(2, MedicationCategoryDomainModel.SimplePainkiller, firstDaysAgo = 10)
+        )
+
+        assertEquals(
+            overuse(OveruseCategoryDomainModel.Multiple, soft = false, days = 10),
+            execute()
+        )
+    }
+
+    @Test
+    fun `Given all together only equal to a single soft level then the single category`() {
+        // Triptans 8 (soft) on the same days as painkillers: all together are 8 days, soft as well.
+        givenIntakes(
+            days(8, MedicationCategoryDomainModel.Triptan) +
+                days(1, MedicationCategoryDomainModel.SimplePainkiller)
+        )
+
+        assertEquals(overuse(OveruseCategoryDomainModel.Triptan, soft = true, days = 8), execute())
+    }
+
+    @Test
+    fun `Given Got it on all together when executed then quiet`() {
+        givenIntakes(
+            days(6, MedicationCategoryDomainModel.SimplePainkiller) +
+                days(4, MedicationCategoryDomainModel.Triptan, firstDaysAgo = 10)
+        )
+        givenNotices(notice(OveruseCategoryDomainModel.Multiple, OveruseLevelDomainModel.Doctor, 5))
+
+        assertEquals(MedicationPromptDomainModel.None, execute())
+    }
+
+    @Test
+    fun `Given an intake already on tomorrow's date in its own zone then it does not count`() {
+        // 00:30 on 1 November in Tokyo is 20:30 on 31 October in Tashkent: it is not in the window ending today.
+        val tokyo = ZoneId.of("Asia/Tokyo")
+        givenIntakes(
+            days(9, MedicationCategoryDomainModel.Triptan, firstDaysAgo = 1) +
+                AcuteIntakeDomainModel(
+                    LocalDate.of(2026, 11, 1).atTime(0, 30).atZone(tokyo).toInstant(),
+                    tokyo,
+                    MedicationCategoryDomainModel.Triptan
+                )
+        )
+
+        assertEquals(overuse(OveruseCategoryDomainModel.Triptan, soft = true, days = 9), execute())
     }
 
     @Test

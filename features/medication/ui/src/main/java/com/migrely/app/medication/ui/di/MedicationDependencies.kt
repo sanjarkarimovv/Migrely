@@ -75,8 +75,8 @@ class EditMedicationDependencies(
 )
 
 /**
- * Home's medication card, which `:app` puts into home's slot under today's card (BRD D46). It neither navigates nor shows
- * messages, so it needs no observer.
+ * Home's medication card, which `:app` puts into home's slot under today's card (BRD D46). It neither navigates nor
+ * shows messages, so it needs no observer.
  */
 class MedicationPromptDependencies(
     val medicationPromptViewModel: MedicationPromptViewModel,

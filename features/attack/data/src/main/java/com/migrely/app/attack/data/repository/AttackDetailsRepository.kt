@@ -230,8 +230,7 @@ class AttackDetailsRepository(
         takenZoneId = intake.zone.id,
         dose = intake.dose,
         effect = intake.effect?.let(attackIntakeEffectDataMapper::toData),
-        // A skipped question is not kept through "Undo"; an answered one stays closed (design D4).
-        effectClosed = intake.effect != null
+        effectClosed = intake.effectQuestionClosed || intake.effect != null
     )
 
     private fun toData(point: IntensityPointDomainModel) = IntensityPointDataModel(

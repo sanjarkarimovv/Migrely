@@ -23,8 +23,6 @@ import com.migrely.app.medication.presentation.model.OveruseWarningPresentationM
 import kotlinx.coroutines.CoroutineStart.UNDISPATCHED
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.take
-import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -108,11 +106,21 @@ class MedicationPromptViewModelTest :
             WriteResultDomainModel.Failed
         )
         getMedicationPromptUseCase.givenSuccessfulExecution(warning)
-        val states = async(start = UNDISPATCHED) { classUnderTest.viewState.take(1).toList() }
+        val state = async(start = UNDISPATCHED) { classUnderTest.viewState.first() }
 
         classUnderTest.onEffectAction("i", IntakeEffectPresentationModel.NotAtAll)
 
-        assertEquals(1, states.await().size)
+        assertEquals(
+            MedicationPromptViewState.OveruseWarning(
+                OveruseWarningPresentationModel(
+                    OveruseCategoryPresentationModel.Triptan,
+                    OveruseLevelPresentationModel.Doctor,
+                    days = 11,
+                    thresholdDays = 10
+                )
+            ),
+            state.await()
+        )
     }
 
     @Test

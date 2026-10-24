@@ -54,7 +54,7 @@ internal object MedicationDataModule {
         medicationDomainMapper = MedicationDomainMapper(),
         medicationKindDataMapper = MedicationKindDataMapper(),
         medicationCategoryDataMapper = MedicationCategoryDataMapper(),
-        linkedAttackDomainMapper = LinkedAttackDomainMapper()
+        linkedAttackDomainMapper = LinkedAttackDomainMapper(ZoneDomainMapper())
     )
 
     @Provides

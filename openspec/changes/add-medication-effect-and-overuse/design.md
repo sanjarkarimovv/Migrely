@@ -27,7 +27,7 @@
 | `overuse_notice` | `category TEXT`, `level TEXT`, `acknowledged_epoch_millis INTEGER`, primary key `(category, level)` | the last "Got it"; `category` is `SIMPLE`, `TRIPTAN`, `COMBINATION_OTHER` or `MULTIPLE`, `level` is `SOFT` or `DOCTOR` |
 
 - Additive, so `AutoMigration(3, 4)`, with `MigrationTest` 3→4.
-- `MedicationDataSource` gains five functions:
+- `MedicationDataSource` gains six functions:
   - `pendingEffectQuestion(takenFrom, takenTo)`: the oldest intake of an acute medication with no effect, not closed,
     taken in the window, and not in an attack being deleted;
   - `setIntakeEffect(intakeId, effect)`: stores the effect and closes the question;
@@ -51,13 +51,13 @@
 3. Count distinct dates per category: SIMPLE (threshold 15), TRIPTAN (10), COMBINATION_OTHER (10, with null).
 4. MULTIPLE (threshold 10) counts all distinct acute dates when two or more categories have a day.
 5. Each category's level is DOCTOR when `days ≥ threshold`, and SOFT when `days ≥ threshold - 2`. MULTIPLE is kept
-   only when its level is higher than every single category's level.
-6. The top level wins: lower levels are not shown while a higher one applies.
-7. A candidate is hidden when a notice for its category at the same or a higher level is younger than 30 days.
-8. Among the shown candidates, the one with the most days wins. Ties go in the order SIMPLE, TRIPTAN,
-   COMBINATION_OTHER, MULTIPLE.
+   only when its level is higher than every single category's level, before any notice is considered.
+6. A candidate is hidden when a notice for its category at the same or a higher level is younger than 30 days. A "Got
+   it" is per category (EC-MED-06), so it never hides another category's warning.
+7. Of the candidates left, the top level wins.
+8. Among those, the one with the most days wins. Ties go in the order SIMPLE, TRIPTAN, COMBINATION_OTHER, MULTIPLE.
 
-**Question:** the pending intake taken between `now - 24 h` and `now - 2 h`.
+**Question:** the pending intake taken in `[now - 24 h, now - 2 h)`, that is more than 2 and at most 24 hours ago.
 
 **Order:** a DOCTOR overuse card, then a SOFT one, then the question (D46).
 
@@ -90,6 +90,9 @@ Failures are values (`WriteResultDomainModel`). A failed read gives `None`, beca
 - `AttackDetailsViewModel.onIntakeEffectAction(attackId, intakeId, effect)` writes the answer, then reloads.
 - Tapping a row opens a dialog with the four answers as radio rows and "Cancel". The row's second line shows "Helped a
   lot", or nothing when there is no answer.
+- The models also carry `effectQuestionClosed`, so "Undo" after removing a skipped intake keeps its question closed.
+- Any intake can be answered in details, a preventive one included. The user chose to open it, and home never asks
+  about preventives (EC-MED-11).
 
 ### D5. Copy
 

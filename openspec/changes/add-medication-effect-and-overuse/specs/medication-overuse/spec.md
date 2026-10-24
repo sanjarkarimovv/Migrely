@@ -34,8 +34,8 @@ being deleted SHALL NOT count (BRD MED-F5, EC-MED-02 to EC-MED-04, EC-TIM-02, D4
 ### Requirement: Soft and doctor warnings
 Home SHALL show a soft card when a category reaches 2 days below its threshold (simple 15, triptans 10, combination or
 other 10) and a "talk to your doctor" card at the threshold. With two or more categories, all acute days together count
-against 10, shown only when that is higher than every single category's level (ICHD-3 8.2.6). Only the highest level
-SHALL show (BRD MED-F5, D45).
+against 10, shown only when that is higher than every single category's level (ICHD-3 8.2.6). Of the warnings not
+hidden by a "Got it", only the highest level SHALL show (BRD MED-F5, D45).
 
 #### Scenario: Soft warning
 - **WHEN** simple painkillers were taken on 13 of the last 30 days
@@ -70,6 +70,10 @@ D45).
 #### Scenario: From soft to doctor
 - **WHEN** the user tapped "Got it" on the soft painkiller card at 13 days and the count reaches 15
 - **THEN** the painkiller doctor card is shown
+
+#### Scenario: Another category's Got it
+- **WHEN** the user tapped "Got it" on the triptan doctor card 3 days ago and painkillers reach 13 days
+- **THEN** the soft painkiller card is shown
 
 #### Scenario: After 30 days
 - **WHEN** 30 days have passed since "Got it" on the triptan doctor card and triptans are still at 10 days

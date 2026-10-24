@@ -48,12 +48,13 @@ class AttackIntakeUiMapperTest {
                     null,
                     takenAt,
                     ZoneId.of("Asia/Tokyo"),
-                    presentation
+                    presentation,
+                    effectQuestionClosed = true
                 )
 
                 val mapped = AttackIntakeUiMapper().toUi(intake)
 
-                assertEquals(ui, mapped.effect)
+                assertEquals(ui to true, mapped.effect to mapped.effectQuestionClosed)
                 assertEquals(intake, AttackIntakeUiToPresentationMapper().toPresentation(mapped))
             }
     }

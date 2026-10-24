@@ -13,6 +13,7 @@ import com.migrely.app.medication.data.mapper.LinkedAttackDomainMapper
 import com.migrely.app.medication.data.mapper.MedicationCategoryDataMapper
 import com.migrely.app.medication.data.mapper.MedicationDomainMapper
 import com.migrely.app.medication.data.mapper.MedicationKindDataMapper
+import com.migrely.app.medication.data.mapper.ZoneDomainMapper
 import com.migrely.app.medication.domain.model.ActiveCountResultDomainModel
 import com.migrely.app.medication.domain.model.AddIntakeResultDomainModel
 import com.migrely.app.medication.domain.model.AttackLookupResultDomainModel
@@ -64,7 +65,7 @@ class MedicationRepositoryTest {
         MedicationDomainMapper(),
         MedicationKindDataMapper(),
         MedicationCategoryDataMapper(),
-        LinkedAttackDomainMapper()
+        LinkedAttackDomainMapper(ZoneDomainMapper())
     )
 
     private fun attack(end: Instant?) =

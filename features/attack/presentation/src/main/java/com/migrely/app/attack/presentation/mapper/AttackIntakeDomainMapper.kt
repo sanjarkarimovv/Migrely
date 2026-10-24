@@ -14,7 +14,8 @@ class AttackIntakeDomainMapper {
         dose = intake.dose,
         takenAt = intake.takenAt,
         zone = intake.zone,
-        effect = intake.effect?.let(::toDomain)
+        effect = intake.effect?.let(::toDomain),
+        effectQuestionClosed = intake.effectQuestionClosed
     )
 
     fun toDomain(effect: AttackIntakeEffectPresentationModel): AttackIntakeEffectDomainModel =
