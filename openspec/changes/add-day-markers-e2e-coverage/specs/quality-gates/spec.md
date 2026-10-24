@@ -41,6 +41,16 @@ clock, automatic time or time zone) SHALL restore the value it found when it exi
 - **WHEN** a check is stopped while the animator scale is 0
 - **THEN** the animator scale is back to its original value
 
+#### Scenario: A restore that does not take
+- **WHEN** a script restores a setting but the device keeps another value, for example because the emulator stopped
+  answering
+- **THEN** the script reads the value back and reports the setting, the value it wanted and the value it found
+
+#### Scenario: Leftover setting at the start
+- **WHEN** a script starts while a setting differs from the QA emulator's baseline, for example auto-rotate off after a
+  crashed run
+- **THEN** it warns about that setting, and `qa/reset_device.sh` puts the baseline back
+
 ### Requirement: Device scenarios without test code
 Behaviour that depends on the clock, the time zone, exact tap timing, the system ending the app or an app update
 SHALL be checked by changing the QA emulator itself between end-to-end flows, with no test-only code in the app. This

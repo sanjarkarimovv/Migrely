@@ -28,6 +28,7 @@ fi
 
 source "$ROOT/qa/lib.sh"
 qa_lock_device
+qa_check_baseline
 ORIGINAL_AUTO_TIME="$(adbq shell settings get global auto_time | tr -d '\r')"
 ORIGINAL_ZONE="$(adbq shell getprop persist.sys.timezone | tr -d '\r')"
 ORIGINAL_TIMEOUT="$(adbq shell settings get secure accessibility_interactive_ui_timeout_ms | tr -d '\r')"
@@ -45,12 +46,12 @@ restore() {
   set +e # restore everything even if one command fails
   adbq shell cmd alarm set-timezone "$ORIGINAL_ZONE" >/dev/null 2>&1
   adbq shell cmd alarm set-time "$(($(date +%s) * 1000))" >/dev/null 2>&1
-  adbq shell settings put global auto_time "$ORIGINAL_AUTO_TIME" >/dev/null 2>&1
-  put_or_delete secure accessibility_interactive_ui_timeout_ms "$ORIGINAL_TIMEOUT" >/dev/null 2>&1
+  qa_restore_setting global auto_time "$ORIGINAL_AUTO_TIME"
+  qa_restore_setting secure accessibility_interactive_ui_timeout_ms "$ORIGINAL_TIMEOUT"
   adbq shell cmd locale set-app-locales "$APP" --locales "$ORIGINAL_APP_LOCALES" >/dev/null 2>&1
-  put_or_delete system user_rotation "$ORIGINAL_USER_ROTATION" >/dev/null 2>&1
-  put_or_delete system accelerometer_rotation "$ORIGINAL_AUTO_ROTATE" >/dev/null 2>&1
-  put_or_delete global animator_duration_scale "$ORIGINAL_ANIMATOR" >/dev/null 2>&1
+  qa_restore_setting system user_rotation "$ORIGINAL_USER_ROTATION"
+  qa_restore_setting system accelerometer_rotation "$ORIGINAL_AUTO_ROTATE"
+  qa_restore_setting global animator_duration_scale "$ORIGINAL_ANIMATOR"
   echo "Restored: clock $(adbq shell date | tr -d '\r'), zone $ORIGINAL_ZONE, auto_time $ORIGINAL_AUTO_TIME"
   qa_unlock_device
 }

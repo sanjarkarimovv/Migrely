@@ -31,7 +31,12 @@ Visual regression (Roborazzi screenshots of the `@Preview`s with pseudo-locales)
     -gpu swiftshader_indirect -no-snapshot-save -no-boot-anim -no-audio -no-window
   ```
 - **Restoring the device.** Scripts restore every device setting they change: font size, rotation, accessibility
-  timeout, animator scale, app language, clock, automatic time and time zone.
+  timeout, animator scale, app language, clock, automatic time and time zone. Each restored value is read back, and a
+  value that did not take is reported as a warning. This happened when the emulator stopped answering under a host load
+  of 56 and then crashed.
+- **Baseline.** A QA emulator's baseline is in `qa/lib.sh` (`QA_BASELINE`): auto-rotate on, portrait, font 1.0, no
+  accessibility timeout, default animations, automatic time on. A script warns when it starts away from the baseline,
+  because it would restore the leftover value. After a crash, run `qa/reset_device.sh`.
 
 ## 3. Writing a flow
 

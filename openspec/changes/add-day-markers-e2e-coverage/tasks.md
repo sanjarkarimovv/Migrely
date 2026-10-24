@@ -74,11 +74,79 @@
   - the docs were aligned.
   Verify: each changed flow passes 3 times, and each changed scenario passes
 
+- [x] 6.3 Found in verification: the audit's `history-month` state at 200% could not be captured, because the month
+  summary (change 5) pushes the list down; `history_death` and `travel_west` had the same stale History checks, and
+  `travel-west-after`'s absence check had become a false pass. Restores are read back (`qa_restore_setting`), each
+  script warns when it starts away from the baseline (`qa_check_baseline`), and `qa/reset_device.sh` resets it.
+  Cause: auto-rotate was left off after the emulator stopped answering under host load 56 and crashed. Verify:
+  `history_death` and `travel_west` pass twice; the audit captures every state; smoke, audit and monkey leave the
+  baseline
+
 ## 7. Verify
 
-- [ ] 7.1 Full regression, all device scenarios, the audit, `python3 -I qa/e2e_coverage.py` (exit 0), the permission
+- [x] 7.1 Full regression, all device scenarios, the audit, `python3 -I qa/e2e_coverage.py` (exit 0), the permission
   audit. Record the results, the coverage, and the day-markers and month-sky gaps with reasons (D61) in a
   "Verification record"
 - [ ] 7.2 Comment the #22 and #26 retests on PR #30 and close them when they pass
-- [ ] 7.3 Gate `./gradlew assembleDebug test ktlintCheck detekt` and `openspec validate add-day-markers-e2e-coverage
+- [x] 7.3 Gate `./gradlew assembleDebug test ktlintCheck detekt` and `openspec validate add-day-markers-e2e-coverage
   --strict`
+
+## Day-markers and month-sky scenarios without a flow (D61)
+
+| Scenario | Reason | Follow-up |
+|---|---|---|
+| day-markers › Accessible marks › Disabled switch | The explanation is asserted and the disabled tap is proven by behaviour (`attack-day`). The disabled state sits on the parent of the label, where Maestro cannot read it | Read the switch's `enabled` through the focused node, as `expect_checked` does for the chip |
+| month-sky › One sky per day from data: 8 scenarios (Worst attack decides, Pain level never recorded, Unrecorded and mild, Nothing logged, Future day, Attack in progress, Pain-free day, Period day) | They are about drawings (sky, drop, dashed outline). The spoken labels for the same days are asserted | Screenshot comparison in the visual-regression QA change (D42) |
+| month-sky › Days follow where the attack was logged › Past midnight, Ends at midnight | The `midnight` scenario checks the attack, not the month's cells | Add the cell check to `midnight` |
+| month-sky › Calendar follows the locale › Week starts on Monday, Week starts on Sunday | Needs another locale | App language through `cmd locale`, as `keyboard_rtl` does |
+| month-sky › Calendar follows the locale › Today outlined | A drawing | D42 |
+| month-sky › Accessible days › Screen reader on a storm day | Today's storm cell is asserted (`attack-day`), but not a past one | One more cell in `attack-day` |
+| month-sky › Accessible days › Screen reader on today during an attack | Not written yet | Next QA change |
+| month-sky › Accessible days › Large font | Checked by the audit at 200% (home and History), which has no Covers lines | — |
+| month-sky › Only the shown month is loaded › Ten years of history | Needs about 3,600 attacks: seeding (D60 sqlite fallback) and a performance budget | Release QA |
+| month-sky › Days reachable with a keyboard › Accessibility services | Measured on the device (each cell's node is focusable and clickable) and enforced by the audit's keyboard rule | — |
+| in-app-messages › Landscape attack mode › Message during landscape attack mode | Partly checked: the controls, the band, the start line, the message's right edge and the return. Not checked: "at once" with Reduce motion (timing) and tapping a control under the message | — |
+| in-app-messages › Landscape attack mode › A tap while the guidance moves | Cannot be timed black-box (design, task 3.2) | The dev session adds a Compose UI test with `mainClock` after change 6 |
+
+## Verification record (2026-10-25, emulator-5580, AVD `Migrely_QA_API_36`)
+
+Base: develop 399934a (changes 4, 4a, 5 and 5a) merged into the branch. The product code is the same as develop's.
+
+| Check | Result |
+|---|---|
+| Gate `./gradlew assembleDebug test ktlintCheck detekt` | ✅ exit 0 (016de21) |
+| New and changed flows (`day-markers`, `month-sky`, `attack-history`, `landscape-message-clear`) | ✅ 3/3 runs each |
+| `qa/maestro.sh` | ✅ pass 1: 33/33; pass 2: 9/9 |
+| `qa/device_scenarios.sh` (24 scenarios) | ✅ 23/24 at first. `history_death` failed: a stale History check, the same pattern as the 3 baseline flows. Fixed, then 2/2 together with `travel_west` |
+| Keyboard scenarios (`keyboard_home`, `keyboard_history`, `keyboard_rtl`) | ✅ 2/2 each |
+| `landscape_band` (animated and Reduce motion) | ✅ 2/2: message ends at y=215 and x=1147; guidance at y=263, start line at y=352, controls from x=1419; back to y=105 |
+| `mark_travel` and `mark_earliest_month` | ✅ 2/2 each |
+| `qa/a11y_audit.sh` | ✅ 0 failures and every state captured, after the `history-month` 200% fix |
+| Smoke (`--tags smoke`) | ✅ 14/14 + 3/3 |
+| `qa/monkey.sh 20261025 1500` | ✅ 0 crashes, 0 ANRs |
+| `qa/permission_audit.sh` | ✅ passed |
+| `python3 -I qa/e2e_coverage.py` | ✅ exit 0. 136 of 361 scenarios (38%); day-markers 12/13, month-sky 10/28, today-sky 18/34 |
+| Device settings after every step | ✅ baseline: auto-rotate 1, rotation 0, font 1.0, timeout null, animator null, auto_time 1 |
+| `openspec validate add-day-markers-e2e-coverage --strict` | ✅ valid |
+
+**Retests:**
+- **#22 passes.** Home and History are one Tab stop each, with arrows, Enter and Shift+Tab; right-to-left is mirrored.
+- **#26 passes**, animated and with Reduce motion.
+- Both are commented on PR #30 and closed (task 7.2).
+
+**Product bugs:** none found in changes 4, 4a, 5 and 5a within this scope.
+
+**Suspicions disproved by measurement:**
+- day cells were not focusable: the parent node is;
+- the home card did not show "Pain-free today": it does, as one card label;
+- the History controls were missing: they sit below the month summary.
+
+**Observations accepted by the dev session:**
+- DPAD_UP enters the grid on the nearest day;
+- "peak Not recorded" is capitalised on home.
+
+**QA tooling defects found and fixed:**
+- an emulator crash under host load 56 left auto-rotate off, with no warning. Restores are now read back, scripts check the baseline, and `qa/reset_device.sh` was added;
+- three History checks were stale, one of them a false pass.
+
+**Review** (`superpowers:code-reviewer`): 4 important and 6 minor findings, plus 5 suspicions. All handled (016de21), as task 6.2 lists.
