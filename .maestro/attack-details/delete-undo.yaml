@@ -2,7 +2,8 @@
 # Covers: today-sky › Deleted attack can be undone from home › Undo from home
 appId: com.migrely.app
 name: A deleted attack comes back with Undo on the home screen
-tags: [smoke, regression, attack-details, today-sky]
+tags: [smoke, regression, attack-details, today-sky, a11y-timeout]
+# Runs with a 20 s accessibility timeout (qa/maestro.sh pass 2): it checks what Undo does, not how long it lasts.
 ---
 - runFlow: ../subflows/launch-clean.yaml
 - runFlow: ../subflows/start-attack.yaml

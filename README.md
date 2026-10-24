@@ -21,6 +21,15 @@ Requirements: JDK 17 or 21 and the Android SDK (API 36).
 
 This is the same quality gate CI runs (`.github/workflows/ci.yml`). It includes the Konsist architecture tests.
 
+## Quality checks
+
+End-to-end flows (Maestro), the accessibility audit, device scenarios and the release Go/No-Go list run locally on
+the QA emulators. See [docs/QA.md](docs/QA.md).
+
+```bash
+qa/maestro.sh --tags smoke      # needs emulator-5580 (AVD Migrely_QA_API_36) and the Maestro CLI
+```
+
 ## Architecture
 
 Strict Clean Architecture after Eran Boudjnah's *Clean Architecture for Android* and its sample

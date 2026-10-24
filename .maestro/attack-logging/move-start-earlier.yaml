@@ -6,8 +6,8 @@ tags: [regression, attack-logging]
 - runFlow: ../subflows/launch-clean.yaml
 - runFlow: ../subflows/start-attack.yaml
 - tapOn: "Move the start 1 h earlier"
-# The elapsed clock ticks every 30 s and is not refreshed when the start moves, so for up to 30 s it can still read
-# "59 min" (https://github.com/sanjarkarimovv/Migrely/issues/15). The spec only asks for the start to move.
+# The elapsed time follows the new start at once (regression guard for
+# https://github.com/sanjarkarimovv/Migrely/issues/15); it may tick over a minute while the step runs.
 - extendedWaitUntil:
-    visible: "Started .* · (59 min|1 h [01] min)"
-    timeout: 5000
+    visible: "Started .* · 1 h [01] min"
+    timeout: 3000

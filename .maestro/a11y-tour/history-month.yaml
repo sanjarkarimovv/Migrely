@@ -1,0 +1,10 @@
+# Accessibility tour state: History on this month with one attack listed.
+appId: com.migrely.app
+---
+- runFlow: ../subflows/launch-clean.yaml
+- runFlow: ../subflows/start-attack.yaml
+- runFlow: ../subflows/end-attack.yaml
+- tapOn: ".*\\. Opens History\\."
+- extendedWaitUntil:
+    visible: "1 migraine in .*"
+    timeout: 5000

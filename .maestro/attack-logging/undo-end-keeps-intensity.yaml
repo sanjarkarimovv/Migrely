@@ -2,12 +2,12 @@
 # Covers: in-app-messages › Accessible messages › Spoken undo label ("Undo the end")
 appId: com.migrely.app
 name: Undoing the end restores the attack with its intensity
-tags: [smoke, regression, attack-logging, in-app-messages]
+tags: [smoke, regression, attack-logging, in-app-messages, a11y-timeout]
+# Runs with a 20 s accessibility timeout (qa/maestro.sh pass 2): it checks what Undo does, not how long it lasts.
 ---
 - runFlow: ../subflows/launch-clean.yaml
 - runFlow: ../subflows/start-attack.yaml
 - tapOn: "Moderate"
-- runFlow: ../subflows/wait-message-gone.yaml
 # Undo is tapped as the very next action after the end (see in-app-messages/newest-wins.yaml).
 - tapOn:
     text: "Migraine ended"

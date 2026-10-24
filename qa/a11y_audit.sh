@@ -52,6 +52,13 @@ configure() { # $1 font scale, $2 rotation (0 portrait, 1 landscape)
   adbq shell settings put system font_scale "$1"
   adbq shell settings put system accelerometer_rotation 0
   adbq shell settings put system user_rotation "$2"
+  # The display turns asynchronously; a flow started before it settles races the activity's recreation.
+  local want="ROTATION_$(($2 * 90))"
+  for _ in $(seq 1 20); do
+    adbq shell dumpsys window displays | grep -q "mCurrentRotation=$want" && return 0
+    sleep 0.5
+  done
+  echo "Warning: the display did not reach $want" >&2
 }
 
 for config in "font100:1.0:0" "font200:2.0:0" "landscape:1.0:1"; do

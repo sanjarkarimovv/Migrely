@@ -11,6 +11,10 @@ package are checked:
 - label: every clickable node has a text or a spoken label on itself or a descendant.
 - keyboard: every clickable node is focusable, so Tab and switch access can reach it (WCAG 2.1.1).
 
+A node that touches the edge of its scrolling container is cut off there, and uiautomator only reports the visible
+part, so its size, label and contrast cannot be judged on this capture. Such nodes are counted as "clipped" and left to
+a capture where they are scrolled fully into view.
+
     python3 qa/a11y_audit.py <folder> [--density 420]
 Exit code 1 when any failure is found.
 """
@@ -81,6 +85,20 @@ def bounds(node):
     return x1, y1, x2, y2
 
 
+def clipped(node, parents, width, height):
+    """True when the node touches an edge of its nearest scrollable ancestor (or of the screen) and may be cut off."""
+    x1, y1, x2, y2 = bounds(node)
+    container = (0, 0, width, height)
+    parent = parents.get(node)
+    while parent is not None and parent.tag == "node":
+        if parent.get("scrollable") == "true":
+            container = bounds(parent)
+            break
+        parent = parents.get(parent)
+    cx1, cy1, cx2, cy2 = container
+    return y1 <= cy1 + 1 or y2 >= cy2 - 1 or x1 <= cx1 + 1 or x2 >= cx2 - 1
+
+
 def has_label(node):
     return any((n.get("text") or n.get("content-desc")) for n in node.iter("node"))
 
@@ -96,11 +114,17 @@ def audit_state(xml_path, png_path, density):
     rows, bpp = read_png(png_path)
     height, width = len(rows), len(rows[0]) // bpp
     scale = density / 160
-    failures, warnings = [], []
+    failures, warnings, skipped = [], [], 0
     root = ET.parse(xml_path).getroot()
     parents = {child: parent for parent in root.iter() for child in parent}
     for node in root.iter("node"):
         if node.get("package") != APP_PACKAGE:
+            continue
+        judged = node.get("clickable") == "true" or bool(node.get("text"))
+        if not judged:
+            continue
+        if clipped(node, parents, width, height):
+            skipped += 1
             continue
         x1, y1, x2, y2 = bounds(node)
         x1, y1, x2, y2 = max(x1, 0), max(y1, 0), min(x2, width), min(y2, height)
@@ -135,7 +159,7 @@ def audit_state(xml_path, png_path, density):
             failures.append(detail)
         elif ratio < 4.5:
             (warnings if large else failures).append(detail + (" [large text]" if large else ""))
-    return failures, warnings
+    return failures, warnings, skipped
 
 
 def main():
@@ -146,10 +170,11 @@ def main():
         png_path = xml_path.with_suffix(".png")
         if not png_path.exists():
             continue
-        failures, warnings = audit_state(xml_path, png_path, density)
+        failures, warnings, skipped = audit_state(xml_path, png_path, density)
         total_failures += len(failures)
         status = "FAIL" if failures else ("WARN" if warnings else "ok")
-        print(f"[{status}] {xml_path.stem}")
+        note = f" ({skipped} clipped node(s) not judged)" if skipped else ""
+        print(f"[{status}] {xml_path.stem}{note}")
         for line in failures:
             print(f"    fail: {line}")
         for line in warnings:

@@ -4,10 +4,18 @@
 # attack; getting the attack back in progress proves that "Undo" belonged to the end.
 appId: com.migrely.app
 name: Ending inside the undo window replaces the start message
-tags: [regression, in-app-messages]
+tags: [regression, in-app-messages, a11y-timeout]
+# Runs with a 20 s accessibility timeout (qa/maestro.sh pass 2): it checks what Undo does, not how long it lasts.
 ---
 - runFlow: ../subflows/launch-clean.yaml
-- runFlow: ../subflows/start-attack.yaml
+- tapOn:
+    text: "Migraine started"
+    waitToSettleTimeoutMs: 0
+    retryTapIfNoChange: false
+# Past the 1–1.2 s TapGuard, still well inside the start message's 5 s window.
+- waitForAnimationToEnd:
+    timeout: 1500
+- assertVisible: "Undo the start"
 - tapOn:
     text: "Migraine ended"
     index: 0

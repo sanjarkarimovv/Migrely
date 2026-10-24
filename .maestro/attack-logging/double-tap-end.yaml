@@ -1,9 +1,9 @@
 # Covers: attack-logging › End an attack in one tap › End an attack
-# Known bug (https://github.com/sanjarkarimovv/Migrely/issues/12): on the home screen "Migraine started" lies under the upper part of "Migraine ended", so the second tap of
+# Regression guard for https://github.com/sanjarkarimovv/Migrely/issues/12 (fixed in PR #18): on the home screen "Migraine started" lies under the upper part of "Migraine ended", so the second tap of
 # a double tap on "Migraine ended" starts a new attack. Same overlap as double-tap-start.yaml (QA AVD pixel_6).
 appId: com.migrely.app
 name: A rapid double tap on "Migraine ended" ends the attack and starts nothing
-tags: [regression, attack-logging, known-bug]
+tags: [smoke, regression, attack-logging]
 ---
 - runFlow: ../subflows/launch-clean.yaml
 - runFlow: ../subflows/start-attack.yaml

@@ -1,10 +1,12 @@
 # Covers: attack-history › Undo a deletion on History › Undo from History
 appId: com.migrely.app
 name: An attack deleted from History comes back with Undo
-tags: [regression, attack-history]
+tags: [regression, attack-history, a11y-timeout]
+# Runs with a 20 s accessibility timeout (qa/maestro.sh pass 2): it checks what Undo does, not how long it lasts.
 ---
 - runFlow: ../subflows/launch-clean.yaml
-- runFlow: ../subflows/log-attack-today.yaml
+- runFlow: ../subflows/start-attack.yaml
+- runFlow: ../subflows/end-attack.yaml
 - tapOn: ".*\\. Opens History\\."
 - tapOn: ".*, peak not recorded\\. Opens its details\\."
 - scrollUntilVisible:

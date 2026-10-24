@@ -3,7 +3,8 @@
 # Covers: in-app-messages › Accessible messages (spoken undo label "Undo the start")
 appId: com.migrely.app
 name: Undo a start removes the attack and confirms it
-tags: [smoke, regression, attack-logging, in-app-messages]
+tags: [smoke, regression, attack-logging, in-app-messages, a11y-timeout]
+# Runs with a 20 s accessibility timeout (qa/maestro.sh pass 2): it checks what Undo does, not how long it lasts.
 ---
 - runFlow: ../subflows/launch-clean.yaml
 # Undo is tapped as the very next action (see in-app-messages/newest-wins.yaml).

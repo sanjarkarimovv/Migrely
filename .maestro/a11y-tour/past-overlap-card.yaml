@@ -10,6 +10,7 @@ appId: com.migrely.app
 - back
 - tapOn: "Add a past migraine"
 - tapOn: "Add migraine"
-- extendedWaitUntil:
-    visible: "Merge them"
-    timeout: 5000
+# In landscape the card is below the fold; the spec expects it to be reached by scrolling.
+- scrollUntilVisible:
+    element: "Merge them"
+    direction: DOWN

@@ -1,0 +1,17 @@
+# Covers: in-app-messages › Undo window follows the accessibility timeout › Longer accessibility timeout
+# Runs in qa/maestro.sh pass 2, where Android's "Time to take action" is 20 s: the Undo offer must outlive the
+# default 5 s window.
+appId: com.migrely.app
+name: A longer accessibility timeout keeps the Undo offer on screen
+tags: [regression, in-app-messages, a11y-timeout]
+---
+- runFlow: ../subflows/launch-clean.yaml
+- tapOn:
+    text: "Migraine started"
+    waitToSettleTimeoutMs: 0
+    retryTapIfNoChange: false
+# The rain keeps attack mode moving, so this waits the full 8 s: longer than the default 5 s window.
+- waitForAnimationToEnd:
+    timeout: 8000
+- assertVisible: "Undo the start"
+- takeScreenshot: in-app-messages-longer-timeout

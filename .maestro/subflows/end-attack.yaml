@@ -8,3 +8,7 @@ appId: com.migrely.app
 - extendedWaitUntil:
     notVisible: "Rest now. We'll keep time."
     timeout: 5000
+# Home ignores taps for 1–1.2 s after switching between normal and attack mode (TapGuard, fix for #12), and the
+# rain or the message countdown keeps the screen moving, so this waits out the switch.
+- waitForAnimationToEnd:
+    timeout: 1500
