@@ -9,6 +9,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
@@ -43,6 +44,7 @@ private const val MODE_FADE_IN_MILLIS = 1_200
 private const val MODE_FADE_OUT_MILLIS = 600
 private const val COMPACT_HEIGHT_DP = 480
 private const val MODE_TAP_GUARD_MILLIS = 1_000L
+private const val GUIDANCE_COLUMN_WIDTH_FRACTION = 0.5f
 
 /** Holds the mode shown last without being snapshot state, so reading it never recomposes. */
 private class ShownMode(var mode: HomeMode)
@@ -148,6 +150,13 @@ internal enum class HomeMode { Loading, Today, Attack }
 internal fun guardsTaps(previous: HomeMode, next: HomeMode): Boolean =
     previous != HomeMode.Loading && previous != next
 
+/**
+ * Whether messages keep to the guidance column (BRD EC-UX-20, D37): in a short window attack mode puts its controls in
+ * the right half, starting at the top, where a centred message would cover them (QA #20).
+ */
+internal fun messagesBesideControls(mode: HomeMode, compactHeight: Boolean): Boolean =
+    mode == HomeMode.Attack && compactHeight
+
 private val HomeViewStateUiModel.mode: HomeMode
     get() = when (this) {
         HomeViewStateUiModel.Loading -> HomeMode.Loading
@@ -228,7 +237,14 @@ fun HomeContents(
                 Modifier.matchParentSize()
             )
         }
-        messages()
+        // Half the width at the start edge always ends before the controls column of SideBySideAttackLayout, whatever
+        // the insets (design D4).
+        val messageArea = if (messagesBesideControls(mode, isCompactHeight())) {
+            Modifier.fillMaxWidth(GUIDANCE_COLUMN_WIDTH_FRACTION)
+        } else {
+            Modifier
+        }
+        Box(messageArea) { messages() }
     }
 }
 

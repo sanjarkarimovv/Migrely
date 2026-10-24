@@ -132,6 +132,8 @@ private fun StackedAttackLayout(
     }
 }
 
+// Two columns of equal weight: HomeContents keeps messages to the start half because the controls column begins just
+// past it (design D4 of fix-today-zone-and-landscape-message). Change the split and the message area together.
 @Composable
 private fun SideBySideAttackLayout(
     startedAt: String,

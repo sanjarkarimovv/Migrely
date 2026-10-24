@@ -466,12 +466,17 @@ private fun AttackRow(
     timeUiFormatter: HistoryTimeUiFormatter,
     onClick: () -> Unit
 ) {
-    val start = timeUiFormatter.formatStart(attack.startEpochMillis, attack.startZoneId)
-    val spokenStart =
-        timeUiFormatter.formatStart(attack.startEpochMillis, attack.startZoneId, spoken = true)
-    val end = attack.endEpochMillis?.let {
-        timeUiFormatter.formatEnd(it, attack.startEpochMillis, attack.startZoneId)
-    }
+    val (start, end) = timeUiFormatter.formatRange(
+        attack.startEpochMillis,
+        attack.endEpochMillis,
+        attack.startZoneId
+    )
+    val spokenStart = timeUiFormatter.formatRange(
+        attack.startEpochMillis,
+        attack.endEpochMillis,
+        attack.startZoneId,
+        spoken = true
+    ).start
     val peak = attack.peakIntensity
     val peakText = if (peak == null) {
         stringResource(R.string.attack_peak_not_recorded)

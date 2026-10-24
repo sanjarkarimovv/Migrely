@@ -53,25 +53,24 @@ class HomeRepositoryTest {
     }
 
     @Test
-    fun `When today then queries the local day in the device zone and maps the snapshot`() {
-        // Given: the Tashkent day 2026-10-23 runs from 22 Oct 19:00Z to 23 Oct 19:00Z
-        val from = Instant.parse("2026-10-22T19:00:00Z")
-        val to = Instant.parse("2026-10-23T19:00:00Z")
+    fun `When today then reads the given window and maps the snapshot`() {
+        // Given
+        val from = Instant.parse("2026-10-20T19:00:00Z")
+        val to = Instant.parse("2026-10-25T19:00:00Z")
         val inProgress = attackData("now")
         val ended = attackData("earlier", end = NOW.minusSeconds(3_600))
         given(attackDataSource.inProgress()).willReturn(inProgress)
         given(attackDataSource.endedTouching(from, to)).willReturn(listOf(ended))
 
         // When
-        val actual = classUnderTest.today()
+        val actual = classUnderTest.today(from, to)
 
         // Then
         assertEquals(
             TodaySnapshotResultDomainModel.Loaded(
                 TodaySnapshotDomainModel(
                     attackInProgress = mapper.toDomain(inProgress),
-                    endedAttacksTouchingToday = listOf(mapper.toDomain(ended)),
-                    now = NOW
+                    endedAttacks = listOf(mapper.toDomain(ended))
                 )
             ),
             actual
@@ -82,7 +81,7 @@ class HomeRepositoryTest {
     fun `Given the datasource fails when today then Failed`() {
         given(attackDataSource.inProgress()).willThrow(DatabaseDataException())
 
-        assertEquals(TodaySnapshotResultDomainModel.Failed, classUnderTest.today())
+        assertEquals(TodaySnapshotResultDomainModel.Failed, classUnderTest.today(NOW, NOW))
     }
 
     @Test
@@ -256,7 +255,7 @@ class HomeRepositoryTest {
         given(attackDataSource.recentlyDeleted(Instant.EPOCH))
             .willReturn(DeletedAttackDataModel("gone", NOW.minusSeconds(2)))
 
-        val actual = classUnderTest.today()
+        val actual = classUnderTest.today(NOW, NOW)
 
         assertEquals(
             DeletedAttackDomainModel("gone", NOW.minusSeconds(2)),

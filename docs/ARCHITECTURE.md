@@ -114,6 +114,9 @@ Health data must never be passed to either SDK.
 - Entities are `*LocalModel` classes, used only inside `:datasource:implementation`. `*LocalMapper` classes turn them
   into the `*DataModel`s exposed by `:datasource:source`.
 - Times are stored as epoch milliseconds plus the IANA zone id where the event started (BRD EC-TIM-01).
+  - The domain assigns days in that zone, and "today" is the device's date (D36).
+  - UI formatters read the device zone when called. `MainActivity` recreates itself when the device zone changes, so
+    every screen draws its times again (change fix-today-zone-and-landscape-message, design D5).
 - Every schema version is exported to `datasource/implementation/schemas` and committed. Migrations are written and
   tested; `fallbackToDestructiveMigration` is forbidden (BRD EC-STO-01).
 - Rules that must be atomic run in one DAO `@Transaction`: "only one attack in progress", "store a past attack only

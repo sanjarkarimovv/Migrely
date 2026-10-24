@@ -1,5 +1,6 @@
 package com.migrely.app.home.ui.mapper
 
+import com.migrely.app.home.ui.model.AttackTimeRangeUiModel
 import java.time.Instant
 import java.time.ZoneId
 import java.util.Locale
@@ -108,6 +109,56 @@ class TimeUiFormatterTest {
         ).formatStartTime(START_MILLIS, "Asia/Tashkent", now)
 
         assertEquals("23 Oct 14:05", actual)
+    }
+
+    @Test
+    fun `Given a range in the device zone then no city`() {
+        val actual = formatter(true, "Asia/Tashkent").formatRange(
+            START_MILLIS,
+            START_MILLIS + HOUR,
+            "Asia/Tashkent",
+            START_MILLIS + 2 * HOUR
+        )
+
+        assertEquals(AttackTimeRangeUiModel("14:05", "15:05"), actual)
+    }
+
+    @Test
+    fun `Given a range in another zone then the city once, after the end`() {
+        val actual = formatter(true, "Asia/Dubai").formatRange(
+            START_MILLIS,
+            START_MILLIS + HOUR,
+            "Asia/Tashkent",
+            START_MILLIS + 2 * HOUR
+        )
+
+        assertEquals(AttackTimeRangeUiModel("14:05", "15:05 (Tashkent)"), actual)
+    }
+
+    @Test
+    fun `Given a range that began days ago in another zone then the weekday and the city once`() {
+        val actual = formatter(true, "Europe/Berlin").formatRange(
+            START_MILLIS,
+            START_MILLIS + HOUR,
+            "Asia/Tashkent",
+            START_MILLIS + 3 * DAY
+        )
+
+        assertEquals(AttackTimeRangeUiModel("Fri 14:05", "15:05 (Tashkent)"), actual)
+    }
+
+    @Test
+    fun `Given the attack zone is a day ahead of the device then no weekday`() {
+        // 08:00-09:00 on Fri 23 Oct in Tashkent; it is 23:30 that Friday in Dubai, already Saturday in Tashkent.
+        val start = Instant.parse("2026-10-23T03:00:00Z").toEpochMilli()
+        val now = Instant.parse("2026-10-23T19:30:00Z").toEpochMilli()
+
+        val actual = formatter(
+            true,
+            "Asia/Dubai"
+        ).formatRange(start, start + HOUR, "Asia/Tashkent", now)
+
+        assertEquals(AttackTimeRangeUiModel("08:00", "09:00 (Tashkent)"), actual)
     }
 }
 
