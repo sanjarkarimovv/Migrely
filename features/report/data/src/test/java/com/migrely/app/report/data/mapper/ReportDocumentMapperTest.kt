@@ -30,7 +30,9 @@ private val SUMMARY = ReportSummaryDomainModel(
     attacksStarted = 4,
     attackMedicationDays = 9,
     attackMedicationDaysPerMonth = 2.9,
-    overuseMonths = listOf(YearMonth.of(2026, 8)),
+    overuseSpans = listOf(
+        ReportDatesDomainModel(LocalDate.of(2026, 7, 28), LocalDate.of(2026, 8, 26))
+    ),
     bedRestAttacks = 2,
     averagePeak = ReportPainLevelDomainModel.Moderate,
     chronic = false
@@ -97,7 +99,7 @@ class ReportDocumentMapperTest {
                 "5.9 (18 days in all)",
                 "4",
                 "2.9 (9 days in all)",
-                "August 2026",
+                "28 Jul 2026 to 26 Aug 2026",
                 "2",
                 "Moderate",
                 "No"
@@ -200,5 +202,43 @@ class ReportDocumentMapperTest {
             tables[1].rows
         )
         assertEquals(listOf(listOf("7 Oct 2026", "Stress at work")), tables[2].rows)
+    }
+
+    @Test
+    fun `Given a period under four weeks then totals, not a month's average`() {
+        val short = report().copy(summary = SUMMARY.copy(days = 10))
+
+        val facts = blocks(short).filterIsInstance<ReportBlockDataModel.Facts>().single().facts
+
+        assertEquals("18 days in all", facts[0].value)
+        assertEquals("9 days in all", facts[2].value)
+    }
+
+    @Test
+    fun `Given no migraine in the period then a line instead of an empty table`() {
+        val blocks = blocks(report(attacks = emptyList()))
+
+        assertTrue(
+            blocks.contains(
+                ReportBlockDataModel.Paragraph("No migraine was logged in this period.")
+            )
+        )
+        assertTrue(
+            blocks.none {
+                it is ReportBlockDataModel.Table &&
+                    it.columns.first().title == "Start"
+            }
+        )
+    }
+
+    @Test
+    fun `Given a migraine that began before the period then its row says so`() {
+        val before = attack(TASHKENT, null).copy(start = Instant.parse("2026-07-25T18:00:00Z"))
+
+        val rows = blocks(
+            report(attacks = listOf(before))
+        ).filterIsInstance<ReportBlockDataModel.Table>().first().rows
+
+        assertEquals("25 Jul 2026, 23:00, began before the period", rows.single().first())
     }
 }

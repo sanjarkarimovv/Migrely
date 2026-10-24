@@ -31,21 +31,23 @@
 - **`GetReportOptionsUseCase(period)`** returns the dates the period covers and whether anything was logged in them, so
   "Create report" can be off with its reason (EC-REP-01).
 - **`CreateReportUseCase(request: period, includeNotes)`:**
-  - reads the records and computes the summary with `ReportSummaryCalculator`, which is pure and unit-tested;
-  - builds the document model with `ReportDocumentBuilder`, which is pure and tested;
+  - reads the records and computes everything with `ReportCalculator`, which is pure and unit-tested;
+  - the repository turns the result into the document's words with `ReportDocumentMapper`, in data, as the CSV does;
   - writes it.
   - It returns `Created(uri)`, `NothingLogged`, `StorageFull` or `Failed`.
 - **The summary:**
   - migraine days = dates in the period that an attack touches, in its zone;
   - a month's average = count × 30 / days in the period, to one decimal;
   - attack-medication days by the intake's zone;
-  - overuse per calendar month in the period, by D40's limits (simple painkillers 15 days, triptans and combinations
-    10), listing the months over a limit;
+  - overuse by home's rule (D45): 30-day spans back from the period's last day, each counted whole from every record,
+    by the limits of 15 days for simple painkillers and 10 for triptans, combinations or two together;
   - bed rest = attacks whose functional impact is 3;
   - the average peak, by History's 1–3 split;
-  - chronic when any calendar month had 15 or more migraine days.
-- **The page budget** (EC-REP-02): the builder lays out rows by the page height. When the attacks would push past 50
-  pages, it keeps the latest that fit and adds the "Showing the latest N of M" line.
+  - chronic, by History's rule: a calendar month the period touches, counted whole, with 15 or more migraine days;
+  - a period under 28 days gives totals, not a month's average.
+- **The page budget** (EC-REP-02) is kept by the renderer, which alone can measure text. Each table marked
+  shortenable (migraines, then notes) keeps, in turn, as many latest rows as fit. Past that, the last pages are cut.
+  A custom range is at most 24 months.
 
 ### D3. Rendering
 
@@ -61,9 +63,11 @@
 ### D4. Presentation and UI
 
 - **`ReportViewModel`** is stateless:
-  - `onEnter`, `onPeriodAction(period)`, `onCustomRangeAction(from, to)` and `onIncludeNotesAction(on)` re-read the
-    options;
-  - `onCreateAction(period, includeNotes)` shows Working, then emits `Share(uri)` or a message.
+  - `onEnter(period)` and `onPeriodAction(period)` re-read the options, and only the latest read is shown;
+  - `onCreateAction(period, includeNotes)` shows Working, then emits `Share(uri)` or a message; a second tap while one
+    is made does nothing;
+  - it lives as long as the app and resends an outcome the screen missed, as Your data does. The notes switch and the
+    custom range stay in the UI.
 - **The UI:**
   - keeps the chosen period and the notes switch in `rememberSaveable`;
   - draws a row of period chips and a date-range picker for the custom range;
@@ -76,10 +80,20 @@
 - `MigrelyApplication` calls the clean-up on a background thread at start, next to the reminder reschedule.
 - Every new report cleans up first.
 
+### D6. After the review
+
+- An unknown zone (a restore from a phone with newer zone data) reads as UTC, as the rest of the app does.
+- Each report gets its own folder in `cache/reports`, so a second report the same day never takes the first one's URI.
+- Pieces are measured once, so the page cap's search does not lay the text out again.
+- Cells and paragraphs stop at 40 lines with an ellipsis, so no row is taller than a page.
+- Pain-free days carry a dot, so they differ from days with nothing logged in black and white.
+- Numbers in the page label and notes use English digits.
+- The share sheet opens only while the screen is started.
+
 ## Risks
 
 | Risk | Mitigation |
 |---|---|
-| A big year on an old phone | the layout is computed once, drawing runs on the background dispatcher, and the 50-page cap bounds the work |
+| A big year on an old phone | each piece is measured once, drawing runs on the background dispatcher, and the 50-page cap bounds the work |
 | The share target cannot read the file | `FLAG_GRANT_READ_URI_PERMISSION` and a FileProvider URI; the file stays until the next day's clean-up |
 | Fonts without a glyph | the platform's default typeface covers Latin, Cyrillic and Uzbek Latin letters, used in names and notes |

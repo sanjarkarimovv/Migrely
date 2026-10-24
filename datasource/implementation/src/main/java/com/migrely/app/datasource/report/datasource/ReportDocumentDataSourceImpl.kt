@@ -8,6 +8,8 @@ import java.io.File
 import java.io.IOException
 import java.time.Duration
 import java.time.Instant
+import java.util.Locale
+import java.util.UUID
 
 private const val DIRECTORY = "reports"
 private const val PARTIAL = ".partial"
@@ -22,13 +24,16 @@ class ReportDocumentDataSourceImpl(
     private val uriOf: (File) -> String
 ) : ReportDocumentDataSource {
     override fun write(document: ReportDocumentDataModel): String = file {
-        val directory = File(cacheDirectory, DIRECTORY).apply { mkdirs() }
+        // A folder of its own, so a second report the same day never takes over the first one's URI (review).
+        val directory = File(File(cacheDirectory, DIRECTORY), UUID.randomUUID().toString()).apply {
+            mkdirs()
+        }
         val target = File(directory, document.fileName)
         // Written aside first, so an interrupted report never passes for a whole one (EC-REP-03).
         val partial = File(directory, document.fileName + PARTIAL)
         try {
             val layout = ReportPageLayout(document)
-            val pdf = layout.render(fitted(document, layout))
+            val pdf = layout.render(fitted(document, layout), document.maxPages)
             try {
                 partial.outputStream().use(pdf::writeTo)
             } finally {
@@ -48,51 +53,62 @@ class ReportDocumentDataSourceImpl(
     }
 
     override fun cleanUp(now: Instant) = file {
-        File(cacheDirectory, DIRECTORY).listFiles().orEmpty()
+        File(cacheDirectory, DIRECTORY).walkBottomUp()
+            .filter { it.isFile }
             .filter {
                 it.name.endsWith(PARTIAL) ||
                     Instant.ofEpochMilli(it.lastModified()).isBefore(now.minus(KEPT_FOR))
             }
             .forEach(File::delete)
+        // Report folders left empty go too.
+        File(cacheDirectory, DIRECTORY).listFiles().orEmpty()
+            .filter { it.isDirectory && it.list().isNullOrEmpty() }
+            .forEach(File::delete)
     }
 
     /**
-     * Within its page limit (EC-REP-02): when it would be longer, the table that may be shortened keeps as many of its
-     * first rows (the latest) as fit, and says how many it shows.
+     * Within its page limit (EC-REP-02): while it would be longer, each table that may be shortened keeps, in turn, as
+     * many of its first rows (the latest) as fit, and says how many it shows. Past that, `render` cuts the last pages.
      */
     private fun fitted(
         document: ReportDocumentDataModel,
         layout: ReportPageLayout
     ): List<ReportBlockDataModel> {
-        if (layout.pageCount(document.blocks) <= document.maxPages) return document.blocks
-        val index = document.blocks.indexOfFirst {
-            it is ReportBlockDataModel.Table &&
-                it.shortenedNote != null
-        }
-        if (index < 0) return document.blocks
-        val table = document.blocks[index] as ReportBlockDataModel.Table
-        fun shortened(kept: Int): List<ReportBlockDataModel> =
-            document.blocks.toMutableList().apply {
-                set(index, table.copy(rows = table.rows.take(kept)))
-                add(
-                    index + 1,
-                    ReportBlockDataModel.Paragraph(
-                        table.shortenedNote!!.format(kept, table.rows.size)
-                    )
-                )
+        var blocks = document.blocks
+        document.blocks.filterIsInstance<ReportBlockDataModel.Table>()
+            .filter { it.shortenedNote != null }
+            .forEach { table ->
+                if (layout.pageCount(blocks) > document.maxPages) {
+                    blocks = shortened(blocks, table, document.maxPages, layout)
+                }
             }
+        return blocks
+    }
+
+    private fun shortened(
+        blocks: List<ReportBlockDataModel>,
+        table: ReportBlockDataModel.Table,
+        maxPages: Int,
+        layout: ReportPageLayout
+    ): List<ReportBlockDataModel> {
+        // Found by identity: a table shortened before this one added its note, so the positions moved.
+        val offset = blocks.indexOfFirst { it === table }
+        fun keeping(kept: Int): List<ReportBlockDataModel> = blocks.toMutableList().apply {
+            set(offset, table.copy(rows = table.rows.take(kept)))
+            // Before the table, where a reader starts it (walk B3).
+            add(
+                offset,
+                ReportBlockDataModel.Paragraph(
+                    String.format(Locale.ENGLISH, table.shortenedNote!!, kept, table.rows.size)
+                )
+            )
+        }
         var low = 0
         var high = table.rows.size
         while (low < high) {
             val middle = (low + high + 1) / 2
-            if (layout.pageCount(shortened(middle)) <=
-                document.maxPages
-            ) {
-                low = middle
-            } else {
-                high = middle - 1
-            }
+            if (layout.pageCount(keeping(middle)) <= maxPages) low = middle else high = middle - 1
         }
-        return shortened(low)
+        return keeping(low)
     }
 }

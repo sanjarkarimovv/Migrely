@@ -95,6 +95,7 @@ class ReportDocumentDataSourceImplTest {
 
         val file = written.single()
         assertEquals("content://test/migrely-report-2026-10-25.pdf", uri)
+        assertEquals("reports", file.parentFile!!.parentFile!!.name)
         assertTrue(file.length() > 0)
         assertEquals(2, pagesOf(file))
         assertFalse(File(file.parentFile, file.name + ".partial").exists())
@@ -135,5 +136,58 @@ class ReportDocumentDataSourceImplTest {
         classUnderTest.cleanUp(now)
 
         assertEquals(listOf(false, false, true), listOf(partial, old, fresh).map(File::exists))
+    }
+
+    @Test
+    fun givenTwoReportsTheSameDay_whenWritten_thenEachHasItsOwnFile() {
+        classUnderTest.write(document(rows = 1))
+        classUnderTest.write(document(rows = 2))
+
+        assertEquals(2, written.map { it.absolutePath }.toSet().size)
+        assertTrue(written.all(File::exists))
+    }
+
+    @Test
+    fun givenMoreMonthsThanPagesAllow_whenWritten_thenTheLastPagesAreCutAtTheLimit() {
+        val months = List(120) { month ->
+            ReportHeatMonthDataModel("Month $month", 0, List(30) { ReportDayLevelDataModel.Mild })
+        }
+        val long = document(rows = 0, maxPages = 3).copy(
+            blocks = listOf(ReportBlockDataModel.HeatMap(months, emptyList()))
+        )
+
+        classUnderTest.write(long)
+
+        assertEquals(3, pagesOf(written.single()))
+    }
+
+    @Test
+    fun givenAVeryLongNote_whenWritten_thenItsRowStillFitsOnAPage() {
+        val note = List(2_000) { "line $it" }.joinToString("\n")
+        val tall = document(rows = 0).copy(
+            blocks = listOf(
+                ReportBlockDataModel.Table(
+                    columns = listOf(ReportColumnDataModel("Note", 1f)),
+                    rows = listOf(listOf(note)),
+                    shortenedNote = null
+                )
+            )
+        )
+
+        classUnderTest.write(tall)
+
+        assertEquals(1, pagesOf(written.single()))
+    }
+
+    @Test
+    fun whenCleaningUp_thenOldReportsInTheirFoldersGoToo() {
+        classUnderTest.write(document(rows = 1))
+        val file = written.single()
+        file.setLastModified(Instant.parse("2026-10-20T10:00:00Z").toEpochMilli())
+
+        classUnderTest.cleanUp(Instant.parse("2026-10-25T10:00:00Z"))
+
+        assertFalse(file.exists())
+        assertFalse(file.parentFile!!.exists())
     }
 }

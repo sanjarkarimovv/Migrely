@@ -16,6 +16,7 @@ import com.migrely.app.report.domain.model.ReportMedicationDomainModel
 import com.migrely.app.report.domain.model.ReportMedicationKindDomainModel
 import com.migrely.app.report.domain.model.ReportPainLevelDomainModel
 import java.time.Duration
+import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -25,6 +26,8 @@ const val MAXIMUM_REPORT_PAGES = 50
 
 private const val SHORTENED_NOTE =
     "Showing the latest %1\$d of %2\$d migraines. The summary counts all of them."
+private const val SHORTENED_NOTES = "Showing the latest %1\$d of %2\$d notes."
+private const val AVERAGE_FROM_DAYS = 28
 private const val MILD_UNTIL = 3
 private const val MODERATE_UNTIL = 6
 private const val MINUTES_PER_HOUR = 60
@@ -72,17 +75,21 @@ class ReportDocumentMapper {
                 listOf(
                     ReportFactDataModel(
                         "Migraine days a month, on average",
-                        "${summary.migraineDaysPerMonth} (${summary.migraineDays} days in all)"
+                        averageOf(summary.migraineDaysPerMonth, summary.migraineDays, summary.days)
                     ),
                     ReportFactDataModel("Migraines started", summary.attacksStarted.toString()),
                     ReportFactDataModel(
                         "Days with attack medication a month, on average",
-                        "${summary.attackMedicationDaysPerMonth} (${summary.attackMedicationDays} days in all)"
+                        averageOf(
+                            summary.attackMedicationDaysPerMonth,
+                            summary.attackMedicationDays,
+                            summary.days
+                        )
                     ),
                     ReportFactDataModel(
-                        "Months at the medication-overuse limit",
-                        summary.overuseMonths.joinToString(", ") {
-                            MONTH.format(it)
+                        "30-day spans at the medication-overuse limit",
+                        summary.overuseSpans.joinToString(", ") {
+                            "${DATE.format(it.from)} to ${DATE.format(it.to)}"
                         }.ifEmpty { "None" }
                     ),
                     ReportFactDataModel(
@@ -101,6 +108,10 @@ class ReportDocumentMapper {
             )
         )
     }
+
+    /** A period under four weeks gives no fair month's average, so only its total (review). */
+    private fun averageOf(perMonth: Double, total: Int, days: Int) =
+        if (days < AVERAGE_FROM_DAYS) "$total days in all" else "$perMonth ($total days in all)"
 
     private fun calendar(report: ReportDomainModel): List<ReportBlockDataModel> = listOf(
         ReportBlockDataModel.Heading("Calendar"),
@@ -129,25 +140,39 @@ class ReportDocumentMapper {
         listOf(
             ReportBlockDataModel.PageBreak,
             ReportBlockDataModel.Heading("Migraines"),
-            ReportBlockDataModel.Table(
-                columns = listOf(
-                    ReportColumnDataModel("Start", 1.5f),
-                    ReportColumnDataModel("Duration", 1f),
-                    ReportColumnDataModel("Peak", 0.9f),
-                    ReportColumnDataModel("Impact", 1f),
-                    ReportColumnDataModel("Where it hurts", 1.3f),
-                    ReportColumnDataModel("Symptoms", 1.5f),
-                    ReportColumnDataModel("Triggers", 1.5f),
-                    ReportColumnDataModel("Medications", 1.5f)
-                ),
-                rows = report.attacks.map { row(it, deviceZone) },
-                shortenedNote = SHORTENED_NOTE
-            )
+            if (report.attacks.isEmpty()) {
+                ReportBlockDataModel.Paragraph("No migraine was logged in this period.")
+            } else {
+                attacksTable(report, deviceZone)
+            }
         )
 
-    private fun row(attack: ReportAttackDomainModel, deviceZone: ZoneId): List<String> {
-        val start = DATE_TIME.format(attack.start.atZone(attack.zone)) +
-            if (attack.zone != deviceZone) " (${attack.zone.id})" else ""
+    private fun attacksTable(report: ReportDomainModel, deviceZone: ZoneId) =
+        ReportBlockDataModel.Table(
+            columns = listOf(
+                ReportColumnDataModel("Start", 1.5f),
+                ReportColumnDataModel("Duration", 1f),
+                ReportColumnDataModel("Peak", 0.9f),
+                ReportColumnDataModel("Impact", 1f),
+                ReportColumnDataModel("Where it hurts", 1.3f),
+                ReportColumnDataModel("Symptoms", 1.5f),
+                ReportColumnDataModel("Triggers", 1.5f),
+                ReportColumnDataModel("Medications", 1.5f)
+            ),
+            rows = report.attacks.map { row(it, deviceZone, report.dates.from) },
+            shortenedNote = SHORTENED_NOTE
+        )
+
+    private fun row(
+        attack: ReportAttackDomainModel,
+        deviceZone: ZoneId,
+        from: LocalDate
+    ): List<String> {
+        val began = attack.start.atZone(attack.zone)
+        // Listed for its days in the period, but not counted as started in it (walk B4).
+        val start = DATE_TIME.format(began) +
+            (if (attack.zone != deviceZone) " (${attack.zone.id})" else "") +
+            if (began.toLocalDate().isBefore(from)) ", began before the period" else ""
         val duration =
             attack.end?.let { durationOf(Duration.between(attack.start, it)) } ?: "In progress"
         return listOf(
@@ -206,7 +231,8 @@ class ReportDocumentMapper {
                         ReportColumnDataModel("Date", 1f),
                         ReportColumnDataModel("Note", 5f)
                     ),
-                    rows = report.notes.map { listOf(DATE.format(it.date), it.note) }
+                    rows = report.notes.map { listOf(DATE.format(it.date), it.note) },
+                    shortenedNote = SHORTENED_NOTES
                 )
             )
         }

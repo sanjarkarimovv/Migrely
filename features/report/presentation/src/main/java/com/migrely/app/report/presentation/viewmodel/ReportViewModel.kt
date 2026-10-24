@@ -29,7 +29,14 @@ class ReportViewModel(
     private var working = false
     private var undelivered: ReportPresentationNotification? = null
 
-    fun onEnter(period: ReportPeriodPresentationModel) = load(period)
+    /** Only the latest read of the options is shown, so a quick change of period never shows stale dates. */
+    private var latestLoad = 0
+
+    /** A new visit: an outcome left from an earlier one is not shown again. */
+    fun onEnter(period: ReportPeriodPresentationModel) {
+        undelivered = null
+        load(period)
+    }
 
     /** The screen listens again, after a rotation for example: it gets the state and an outcome it missed. */
     fun onResume(period: ReportPeriodPresentationModel) {
@@ -46,6 +53,8 @@ class ReportViewModel(
     fun onBackAction() = emitNavigationEvent(ReportPresentationNavigationEvent.OnBack)
 
     fun onCreateAction(period: ReportPeriodPresentationModel, includeNotes: Boolean) {
+        // Two taps in one frame make one report: both would write the same file (review I4).
+        if (working) return
         working = true
         updateViewState(ReportViewState.Working)
         createReportUseCase(
