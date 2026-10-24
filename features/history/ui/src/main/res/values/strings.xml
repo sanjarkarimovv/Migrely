@@ -41,7 +41,7 @@
         <item quantity="other">%1$d migraines in %2$s</item>
     </plurals>
     <string name="month_no_attacks">No migraines logged in %1$s</string>
-    <string name="day_no_attacks">Nothing logged on this day.</string>
+    <string name="day_no_attacks">No migraine logged on this day.</string>
     <string name="show_all_month">Show all of %1$s</string>
     <string name="add_past_attack">Add a past migraine</string>
     <string name="attack_range">%1$s – %2$s</string>
