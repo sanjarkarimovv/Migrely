@@ -416,8 +416,11 @@ private fun DaySection(
         AttackRows(day.attacks, timeUiFormatter, actions.onAttack)
     }
     Spacer(Modifier.height(8.dp))
-    // With "Track periods" off, a marked day still offers the switch, so the mark can be removed (BRD D79).
-    if (day.periodOffered) {
+    // With "Track periods" off, a marked day still offers the switch, so the mark can be removed, and it stays while
+    // the day is chosen, so a mark removed by mistake can be put back (BRD D79).
+    var periodShown by rememberSaveable(day.epochDay) { mutableStateOf(false) }
+    if (day.periodOffered) periodShown = true
+    if (periodShown) {
         MarkSwitch(
             label = stringResource(R.string.mark_period),
             checked = day.period,

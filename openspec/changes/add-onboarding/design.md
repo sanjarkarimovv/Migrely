@@ -75,8 +75,10 @@
 ### D5. Track periods (BRD D79)
 
 - **Home:** `GetTodayUseCase`'s model gains `periodTracking`. The chip shows when it is true or today is marked.
-- **History:** the month model gains `periodTracking`. The day panel's "Period" switch shows when it is true or the
-  day is marked.
+- **History:** the month model gains `periodTracking`, and the presentation mapper gives each day `periodOffered`. The
+  day panel's "Period" switch shows when it is offered.
+- **Kept once shown:** with tracking off, a toggle once shown stays for the visit (home) or while the day is chosen
+  (History), so a mark removed by mistake can be put back.
 - **Settings:**
   - `SettingsViewState.Ready(periodTracking)`;
   - `onPeriodTrackingAction(on)` through `GetSettingsUseCase` and `SetPeriodTrackingUseCase`;
