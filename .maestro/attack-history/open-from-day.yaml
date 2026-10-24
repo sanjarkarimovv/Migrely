@@ -7,12 +7,13 @@ tags: [regression, attack-history]
 - runFlow: ../subflows/launch-clean.yaml
 - runFlow: ../subflows/log-attack-today.yaml
 - tapOn: "Today, .*: cloudy\\. 1 migraine\\. Peak: not recorded\\."
-- extendedWaitUntil:
-    visible: "Show all of .*"
-    timeout: 5000
+# The chosen day's controls sit below the month summary (change 5) and the day marks (change 4).
+- scrollUntilVisible:
+    element: "Show all of .*"
+    direction: DOWN
 - assertNotVisible: "1 migraine in .*"
 - tapOn: "Show all of .*"
-- extendedWaitUntil:
-    visible: "1 migraine in .*"
-    timeout: 3000
+- scrollUntilVisible:
+    element: "1 migraine in .*"
+    direction: DOWN
 - assertNotVisible: "Show all of .*"

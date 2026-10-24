@@ -1,8 +1,13 @@
 """Which OpenSpec scenarios have an end-to-end Maestro flow?
 
-Reads every scenario from openspec/specs/*/spec.md and every "# Covers: <capability> › <requirement> › <scenario>"
-line from .maestro/**/*.yaml, then prints the coverage per capability. It fails (exit 1) on a "Covers" line that names a
-scenario that no longer exists (renamed or removed) and on a "Covers" line that is not in that three-part form.
+Reads every scenario from openspec/specs/*/spec.md and from the delta specs of open changes, and every
+"# Covers: <capability> › <requirement> › <scenario>" line from .maestro/**/*.yaml and from qa/device_scenarios.sh
+(for checks the script makes itself, such as key events). Then it prints the coverage per capability. It fails
+(exit 1) on a "Covers" line that names a scenario that no longer exists (renamed or removed) and on a "Covers" line
+that is not in that three-part form.
+
+Limits while a change is open: the old name of a RENAMED requirement still counts, and a scenario that a MODIFIED
+delta drops stays in the main spec until the change is archived, so a Covers line on it is not reported as stale yet.
 
     python3 qa/e2e_coverage.py            # summary
     python3 qa/e2e_coverage.py --missing  # also list the scenarios without a flow
@@ -21,8 +26,12 @@ def norm(text):
 
 
 def read_specs():
+    # The main specs, plus the delta specs of changes still in progress (not the archive), so a flow can cover a scenario
+    # that its own change adds. A REMOVED requirement of an open change stays listed until the change is archived.
     scenarios = {}
-    for spec in sorted((ROOT / "openspec" / "specs").glob("*/spec.md")):
+    specs = sorted((ROOT / "openspec" / "specs").glob("*/spec.md"))
+    specs += sorted(p for p in (ROOT / "openspec" / "changes").glob("*/specs/*/spec.md") if "archive" not in p.parts)
+    for spec in specs:
         capability, requirement = spec.parent.name, None
         for line in spec.read_text(encoding="utf-8").splitlines():
             if line.startswith("### Requirement:"):
@@ -35,7 +44,7 @@ def read_specs():
 
 def read_flows():
     covered, malformed = {}, []
-    for flow in sorted((ROOT / ".maestro").rglob("*.yaml")):
+    for flow in sorted((ROOT / ".maestro").rglob("*.yaml")) + [ROOT / "qa" / "device_scenarios.sh"]:
         for line in flow.read_text(encoding="utf-8").splitlines():
             if not line.startswith("# Covers:"):
                 continue

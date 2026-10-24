@@ -1,0 +1,6 @@
+# Device scenario step: wait until the start message has gone (the undo window is 20 s in this scenario).
+appId: com.migrely.app
+---
+- extendedWaitUntil:
+    notVisible: "Undo the start"
+    timeout: 40000
