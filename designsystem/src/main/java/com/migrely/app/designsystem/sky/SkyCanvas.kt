@@ -60,6 +60,7 @@ fun SkyCanvas(
         val area = Size(size.width, minOf(size.height, limit))
         when (appearance) {
             SkyAppearance.Calm -> drawCalm(area)
+            SkyAppearance.Clear -> drawClear(area)
             SkyAppearance.Hazy -> drawHaze(area)
             SkyAppearance.Cloudy -> drawCloud(
                 area = area,
@@ -100,8 +101,12 @@ internal object SkyPalette {
     val Lightning = Color(0xFFB8975A)
     val Outline = Color(0xFF0B0D10)
 
+    /** The period drop: soft rose, never alarming, and told apart by its shape (BRD D49, EC-UX-15). */
+    val PeriodMark = Color(0xFFD9A3B5)
+
     fun gradient(appearance: SkyAppearance): List<Color> = when (appearance) {
         SkyAppearance.Calm -> listOf(Color(0xFF121A2E), Color(0xFF202945))
+        SkyAppearance.Clear -> listOf(Color(0xFF15203A), Color(0xFF27335A))
         SkyAppearance.Hazy -> listOf(Color(0xFF1A2132), Color(0xFF232A3A))
         SkyAppearance.Cloudy -> listOf(Color(0xFF1A1F2C), Color(0xFF20252F))
         SkyAppearance.Storm -> listOf(Color(0xFF11141B), Color(0xFF171A22))
@@ -141,6 +146,30 @@ private fun DrawScope.drawCalm(area: Size) {
         lerp(gradient.first(), gradient.last(), moonCenter.y / size.height),
         radius = moonRadius * 0.88f,
         center = moonCenter + Offset(moonRadius * 0.42f, -moonRadius * 0.3f)
+    )
+}
+
+private val CLEAR_EXTRA_STARS = listOf(
+    Triple(0.30f, 0.28f, 0.8f),
+    Triple(0.46f, 0.52f, 0.9f),
+    Triple(0.72f, 0.55f, 0.8f),
+    Triple(0.20f, 0.88f, 0.7f)
+)
+
+/** A pain-free day: more stars and a full moon, so it differs from the calm sky by shape as well as colour. */
+private fun DrawScope.drawClear(area: Size) {
+    val u = unit(area)
+    (STARS + CLEAR_EXTRA_STARS).forEach { (x, y, r) ->
+        drawCircle(
+            SkyPalette.Star,
+            radius = r * u,
+            center = Offset(area.width * x, area.height * y)
+        )
+    }
+    drawCircle(
+        SkyPalette.Moon,
+        radius = 14f * u,
+        center = Offset(area.width * 0.82f, area.height * 0.34f)
     )
 }
 

@@ -41,6 +41,7 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.migrely.app.designsystem.theme.MigrelyTheme
 
@@ -56,6 +57,9 @@ enum class DaySkyAppearance {
 
     /** A day that has not come yet: a faint outline, not selectable. */
     Future,
+
+    /** A day the user marked pain-free, with no attack: a clear, starry sky (BRD EC-UX-09, D49). */
+    Clear,
     Hazy,
     Cloudy,
     Storm,
@@ -66,7 +70,8 @@ enum class DaySkyAppearance {
 
 /**
  * One day of [MonthSkyCalendar]. [description] is what a screen reader says for it (BRD EC-UX-15). [isSelectable] is
- * false for days after today, even when an attack logged in a zone ahead gives such a day a sky.
+ * false for days after today, even when an attack logged in a zone ahead gives such a day a sky. [hasPeriodMark] draws
+ * the period drop in the bottom end corner (BRD D49).
  */
 @Immutable
 data class CalendarDay(
@@ -75,12 +80,17 @@ data class CalendarDay(
     val isToday: Boolean,
     val isSelected: Boolean,
     val isSelectable: Boolean,
-    val description: String
+    val description: String,
+    val hasPeriodMark: Boolean = false
 )
 
-/** One entry of [MonthSkyLegend]. */
+/** One entry of [MonthSkyLegend]; with [periodMark] it shows only the period drop. */
 @Immutable
-data class LegendEntry(val appearance: DaySkyAppearance, val label: String)
+data class LegendEntry(
+    val appearance: DaySkyAppearance,
+    val label: String,
+    val periodMark: Boolean = false
+)
 
 /**
  * A month of small skies (BRD 18.3 A, HIS-F1). [leadingEmptyDays] blank cells come before the first day so weeks start
@@ -173,7 +183,10 @@ private fun DayCell(
             )
             .then(ring)
     ) {
-        Canvas(Modifier.matchParentSize()) { drawDaySky(day.appearance, outline) }
+        Canvas(Modifier.matchParentSize()) {
+            drawDaySky(day.appearance, outline)
+            if (day.hasPeriodMark) drawPeriodMark()
+        }
         Text(
             text = day.dayOfMonth.toString(),
             style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"),
@@ -206,7 +219,16 @@ fun MonthSkyLegend(entries: List<LegendEntry>, modifier: Modifier = Modifier) {
                     Modifier
                         .size(18.dp)
                         .clip(RoundedCornerShape(5.dp))
-                ) { drawDaySky(entry.appearance, outline) }
+                ) {
+                    if (entry.periodMark) {
+                        drawPeriodMark()
+                    } else {
+                        drawDaySky(
+                            entry.appearance,
+                            outline
+                        )
+                    }
+                }
                 Text(
                     text = entry.label,
                     style = MaterialTheme.typography.bodySmall,
@@ -220,6 +242,13 @@ fun MonthSkyLegend(entries: List<LegendEntry>, modifier: Modifier = Modifier) {
 
 private fun DaySkyAppearance.hasSky() =
     this != DaySkyAppearance.NothingLogged && this != DaySkyAppearance.Future
+
+// The four-point stars of a pain-free day, as fractions of the cell; they sit below the day number.
+private val CLEAR_DAY_STARS = listOf(
+    Triple(0.38f, 0.60f, 9f),
+    Triple(0.66f, 0.50f, 6f),
+    Triple(0.60f, 0.80f, 5f)
+)
 
 /** Draws a day's sky in a small square. Glyphs sit in the lower part, below the day number. */
 private fun DrawScope.drawDaySky(appearance: DaySkyAppearance, outline: Color) {
@@ -242,6 +271,13 @@ private fun DrawScope.drawDaySky(appearance: DaySkyAppearance, outline: Color) {
             cornerRadius = CornerRadius(22f * u),
             style = Stroke(width = maxOf(1.5f * u, 1.dp.toPx()))
         )
+
+        DaySkyAppearance.Clear -> {
+            drawRect(Brush.verticalGradient(SkyPalette.gradient(SkyAppearance.Clear)))
+            CLEAR_DAY_STARS.forEach { (x, y, r) ->
+                dayStar(Offset(size.width * x, size.height * y), r * u)
+            }
+        }
 
         DaySkyAppearance.Hazy -> {
             drawRect(Brush.verticalGradient(SkyPalette.gradient(SkyAppearance.Hazy)))
@@ -280,6 +316,49 @@ private fun DrawScope.drawDaySky(appearance: DaySkyAppearance, outline: Color) {
             }
         }
     }
+}
+
+private fun DrawScope.dayStar(center: Offset, radius: Float) {
+    val waist = radius * 0.28f
+    val star = Path().apply {
+        moveTo(center.x, center.y - radius)
+        lineTo(center.x + waist, center.y - waist)
+        lineTo(center.x + radius, center.y)
+        lineTo(center.x + waist, center.y + waist)
+        lineTo(center.x, center.y + radius)
+        lineTo(center.x - waist, center.y + waist)
+        lineTo(center.x - radius, center.y)
+        lineTo(center.x - waist, center.y - waist)
+        close()
+    }
+    drawPath(star, SkyPalette.Moon)
+}
+
+/**
+ * The period drop in the bottom end corner: a rounded drop with a dark edge, so it reads on every sky and by shape alone
+ * (BRD D49, EC-UX-15). It mirrors in right-to-left layouts.
+ */
+private fun DrawScope.drawPeriodMark() {
+    val u = size.minDimension / 100f
+    val radius = maxOf(9f * u, 3.dp.toPx())
+    val end = if (layoutDirection ==
+        LayoutDirection.Rtl
+    ) {
+        radius * 2.2f
+    } else {
+        size.width - radius * 2.2f
+    }
+    val center = Offset(end, size.height - radius * 2f)
+    val drop = Path().apply {
+        moveTo(center.x, center.y - radius * 1.7f)
+        quadraticTo(center.x + radius, center.y - radius * 0.4f, center.x + radius, center.y)
+        quadraticTo(center.x + radius, center.y + radius, center.x, center.y + radius)
+        quadraticTo(center.x - radius, center.y + radius, center.x - radius, center.y)
+        quadraticTo(center.x - radius, center.y - radius * 0.4f, center.x, center.y - radius * 1.7f)
+        close()
+    }
+    drawPath(drop, SkyPalette.Outline, style = Stroke(width = maxOf(2f * u, 1.dp.toPx())))
+    drawPath(drop, SkyPalette.PeriodMark)
 }
 
 private fun DrawScope.dayCloud(center: Offset, color: Color) {
@@ -323,6 +402,7 @@ private fun DrawScope.dayBolt(x: Float, y: Float) {
 private fun MonthSkyCalendarPreview() {
     val skies = listOf(
         DaySkyAppearance.NothingLogged,
+        DaySkyAppearance.Clear,
         DaySkyAppearance.Hazy,
         DaySkyAppearance.Cloudy,
         DaySkyAppearance.Storm,
@@ -345,7 +425,8 @@ private fun MonthSkyCalendarPreview() {
                         isToday = day == 23,
                         isSelected = day == 14,
                         isSelectable = day <= 23,
-                        description = "$day October"
+                        description = "$day October",
+                        hasPeriodMark = day in 12..16
                     )
                 },
                 chosenStateDescription = "Chosen",
@@ -354,10 +435,12 @@ private fun MonthSkyCalendarPreview() {
             )
             MonthSkyLegend(
                 entries = listOf(
+                    LegendEntry(DaySkyAppearance.Clear, "Pain-free"),
                     LegendEntry(DaySkyAppearance.Hazy, "Mild"),
                     LegendEntry(DaySkyAppearance.Cloudy, "Moderate"),
                     LegendEntry(DaySkyAppearance.Storm, "Severe"),
-                    LegendEntry(DaySkyAppearance.NothingLogged, "Not logged")
+                    LegendEntry(DaySkyAppearance.NothingLogged, "Not logged"),
+                    LegendEntry(DaySkyAppearance.NothingLogged, "Period", periodMark = true)
                 ),
                 modifier = Modifier.padding(top = 16.dp)
             )

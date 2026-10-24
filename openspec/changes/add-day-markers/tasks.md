@@ -9,7 +9,7 @@
 
 ## 2. Design system (design D4)
 
-- [ ] 2.1 `DaySkyAppearance.Clear`, the period mark on `CalendarDay`, `LegendEntry.periodMark`, `SkyAppearance.Clear`.
+- [x] 2.1 `DaySkyAppearance.Clear`, the period mark on `CalendarDay`, `LegendEntry.periodMark`, `SkyAppearance.Clear`.
   Verify: `./gradlew :designsystem:assembleDebug`
 
 ## 3. History (design D2, D3)
