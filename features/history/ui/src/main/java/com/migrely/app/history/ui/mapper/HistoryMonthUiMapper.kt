@@ -93,7 +93,8 @@ class HistoryMonthUiMapper {
         attacks = attacks.map { it.toUi() },
         period = period,
         painFree = painFree,
-        painFreeAllowed = painFreeAllowed
+        painFreeAllowed = painFreeAllowed,
+        periodOffered = periodOffered
     )
 
     private fun HistoryAttackPresentationModel.toUi() = HistoryAttackUiModel(

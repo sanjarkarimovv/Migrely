@@ -9,5 +9,6 @@ data class TodayUiModel(
     val attackCount: Int,
     val peak: PeakUiModel?,
     val attacks: List<AttackSummaryUiModel> = emptyList(),
-    val periodToday: Boolean = false
+    val periodToday: Boolean = false,
+    val periodOffered: Boolean = true
 ) : Parcelable

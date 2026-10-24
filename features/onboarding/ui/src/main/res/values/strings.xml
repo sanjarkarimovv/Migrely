@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="onboarding_step">Step %1$d of %2$d</string>
+    <string name="onboarding_skip">Skip</string>
+    <string name="onboarding_skip_description">Skip this step</string>
+    <string name="onboarding_goal_title">What brings you to Migrely?</string>
+    <string name="onboarding_goal_doctor">Keep a record for my doctor</string>
+    <string name="onboarding_goal_triggers">Find what triggers my migraines</string>
+    <string name="onboarding_goal_painkillers">Take fewer painkillers</string>
+    <string name="onboarding_disclaimer">Migrely is a headache diary. It doesn\'t diagnose or treat.</string>
+    <string name="onboarding_restore">Restore from a backup file</string>
+    <string name="onboarding_frequency_title">How often do you get migraines?</string>
+    <string name="onboarding_frequency_under_four">Fewer than 4 a month</string>
+    <string name="onboarding_frequency_four_to_fourteen">4 to 14 a month</string>
+    <string name="onboarding_frequency_fifteen_or_more">15 or more a month</string>
+    <string name="onboarding_period_title">Track your period too?</string>
+    <string name="onboarding_period_body">Migraines often follow the cycle. You can change this in Settings.</string>
+    <string name="onboarding_period_yes">Yes</string>
+    <string name="onboarding_period_no">No</string>
+    <string name="onboarding_reminder_title">A daily check-in?</string>
+    <string name="onboarding_reminder_body">Each evening, Migrely asks how your day was, so pain-free days count too.</string>
+    <string name="onboarding_not_saved">Couldn\'t save that answer. Migrely works without it.</string>
+    <string name="onboarding_message_dismiss">Dismiss</string>
+</resources>

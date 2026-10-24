@@ -12,6 +12,7 @@ import com.migrely.app.datasource.exception.DatabaseDataException
 import com.migrely.app.datasource.exception.StorageFullDataException
 import com.migrely.app.datasource.medication.datasource.MedicationDataSource
 import com.migrely.app.datasource.medication.model.AcuteIntakeDataModel
+import com.migrely.app.datasource.preferences.datasource.PreferencesDataSource
 import com.migrely.app.history.data.mapper.AttackMedicationIntakeDomainMapper
 import com.migrely.app.history.data.mapper.DayMarkDomainMapper
 import com.migrely.app.history.data.mapper.HistoryAttackDomainMapper
@@ -51,11 +52,13 @@ class HistoryRepositoryTest {
     private val clockDataSource: ClockDataSource = mock()
     private val dayMarkDataSource: DayMarkDataSource = mock()
     private val medicationDataSource: MedicationDataSource = mock()
+    private val preferencesDataSource: PreferencesDataSource = mock()
     private val classUnderTest = HistoryRepository(
         attackDataSource,
         clockDataSource,
         dayMarkDataSource,
         medicationDataSource,
+        preferencesDataSource,
         HistoryAttackDomainMapper(ZoneDomainMapper()),
         ZoneDomainMapper(),
         DayMarkDomainMapper(),
@@ -255,5 +258,12 @@ class HistoryRepositoryTest {
             AttackMedicationIntakesResultDomainModel.Failed,
             classUnderTest.attackMedicationIntakes(from, to)
         )
+    }
+
+    @Test
+    fun `When reading Track periods then the preference`() {
+        given(preferencesDataSource.periodTracking()).willReturn(false)
+
+        assertEquals(false, classUnderTest.periodTracking())
     }
 }

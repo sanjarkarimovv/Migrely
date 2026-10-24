@@ -230,7 +230,11 @@ class HomeViewModel(
                 when (result) {
                     is TodayResultDomainModel.Loaded -> {
                         updateViewState(
-                            todayPresentationMapper.toPresentation(result.today, result.periodToday)
+                            todayPresentationMapper.toPresentation(
+                                result.today,
+                                result.periodToday,
+                                result.periodOffered
+                            )
                         )
                         val deleted = result.recentlyDeleted
                         if (announceDeletion && deleted != null) {

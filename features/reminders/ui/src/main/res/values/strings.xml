@@ -17,4 +17,6 @@
     <string name="reminders_message_storage_full">Couldn\'t save. Your phone\'s storage is full.</string>
     <string name="reminders_message_something_went_wrong">Something went wrong. Try again.</string>
     <string name="reminders_message_dismiss">Dismiss</string>
+    <string name="reminders_offer_turn_on">Turn on at %1$s</string>
+    <string name="reminders_offer_not_now">Not now</string>
 </resources>

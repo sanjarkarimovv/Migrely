@@ -21,6 +21,7 @@ import com.migrely.app.history.domain.repository.GetCurrentTimeRepository
 import com.migrely.app.history.domain.repository.GetDayMarksRepository
 import com.migrely.app.history.domain.repository.GetEarliestAttackRepository
 import com.migrely.app.history.domain.repository.GetEarliestDayMarkRepository
+import com.migrely.app.history.domain.repository.GetPeriodTrackingRepository
 import com.migrely.app.history.domain.repository.GetRecentlyDeletedAttackRepository
 import java.time.Instant
 import java.time.LocalDate
@@ -33,6 +34,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.given
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
@@ -52,6 +54,9 @@ class GetHistoryMonthUseCaseTest {
     private val getDayMarksRepository: GetDayMarksRepository = mock()
     private val getEarliestDayMarkRepository: GetEarliestDayMarkRepository = mock()
     private val getAttackMedicationIntakesRepository: GetAttackMedicationIntakesRepository = mock()
+    private val getPeriodTrackingRepository: GetPeriodTrackingRepository = mock {
+        on { periodTracking() } doReturn true
+    }
 
     @Before
     fun setUp() {
@@ -63,6 +68,7 @@ class GetHistoryMonthUseCaseTest {
             getDayMarksRepository,
             getEarliestDayMarkRepository,
             getAttackMedicationIntakesRepository,
+            getPeriodTrackingRepository,
             CoroutineContextProvider.Default
         )
         given(getAttackMedicationIntakesRepository.attackMedicationIntakes(any(), any()))
@@ -504,5 +510,24 @@ class GetHistoryMonthUseCaseTest {
             }
         }
         assertNull(loaded(OCTOBER).stats.progress)
+    }
+
+    @Test
+    fun `Given Track periods is off when executed then the month says so`() {
+        given(getPeriodTrackingRepository.periodTracking()).willReturn(false)
+        given(
+            getEarliestAttackRepository.earliestAttack()
+        ).willReturn(EarliestAttackResultDomainModel.None)
+        given(getAttacksTouchingRepository.attacksTouching(any(), any()))
+            .willReturn(AttacksTouchingResultDomainModel.Loaded(emptyList()))
+        given(getRecentlyDeletedAttackRepository.recentlyDeletedAttack()).willReturn(null)
+        given(getDayMarksRepository.dayMarks(any(), any()))
+            .willReturn(DayMarksResultDomainModel.Loaded(emptyList()))
+
+        val result = classUnderTest.executeInBackground(
+            null
+        ) as HistoryMonthResultDomainModel.Loaded
+
+        assertEquals(false, result.month.periodTracking)
     }
 }

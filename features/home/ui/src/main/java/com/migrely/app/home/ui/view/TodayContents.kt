@@ -27,6 +27,10 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -79,6 +83,9 @@ fun TodayContents(
         .safeDrawingPadding()
         .padding(horizontal = 16.dp)
     val appearance = skyAppearanceUiMapper.toAppearance(today.sky)
+    // Once shown, the toggle stays while home is open, so a mark removed by mistake can be put back (BRD D79).
+    var periodShown by rememberSaveable { mutableStateOf(false) }
+    if (today.periodOffered) periodShown = true
     if (isCompactHeight()) {
         Row(horizontalArrangement = Arrangement.spacedBy(24.dp), modifier = screenModifier) {
             Column(
@@ -88,7 +95,7 @@ fun TodayContents(
             ) {
                 DayHeader(dayTitle, onSettings)
                 TodaySkyCard(today = today, appearance = appearance)
-                PeriodToday(today.periodToday, onPeriodToday)
+                if (periodShown) PeriodToday(today.periodToday, onPeriodToday)
                 medicationPrompt()
                 TodayAttackList(today.attacks, nowMillis, timeUiFormatter, onAttackDetails)
                 monthCalendar()
@@ -115,7 +122,7 @@ fun TodayContents(
             ) {
                 DayHeader(dayTitle, onSettings)
                 TodaySkyCard(today = today, appearance = appearance)
-                PeriodToday(today.periodToday, onPeriodToday)
+                if (periodShown) PeriodToday(today.periodToday, onPeriodToday)
                 medicationPrompt()
                 TodayAttackList(today.attacks, nowMillis, timeUiFormatter, onAttackDetails)
                 monthCalendar()

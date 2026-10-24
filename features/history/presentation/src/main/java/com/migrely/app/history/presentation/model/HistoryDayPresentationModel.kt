@@ -13,5 +13,7 @@ data class HistoryDayPresentationModel(
     val attacks: List<HistoryAttackPresentationModel>,
     val period: Boolean = false,
     val painFree: Boolean = false,
-    val painFreeAllowed: Boolean = true
+    val painFreeAllowed: Boolean = true,
+    /** Whether the day offers "Period": "Track periods" is on, or the day is marked, so it can be removed (D79). */
+    val periodOffered: Boolean = true
 )

@@ -3,6 +3,7 @@ package com.migrely.app.di
 import com.migrely.app.datasource.attack.datasource.AttackDataSource
 import com.migrely.app.datasource.clock.datasource.ClockDataSource
 import com.migrely.app.datasource.daymark.datasource.DayMarkDataSource
+import com.migrely.app.datasource.preferences.datasource.PreferencesDataSource
 import com.migrely.app.home.data.mapper.AttackDomainMapper
 import com.migrely.app.home.data.mapper.IntensityPointDomainMapper
 import com.migrely.app.home.data.repository.HomeRepository
@@ -12,6 +13,7 @@ import com.migrely.app.home.domain.repository.EndAttackRepository
 import com.migrely.app.home.domain.repository.GetAttackInProgressRepository
 import com.migrely.app.home.domain.repository.GetCurrentTimeRepository
 import com.migrely.app.home.domain.repository.GetDayMarksRepository
+import com.migrely.app.home.domain.repository.GetPeriodTrackingRepository
 import com.migrely.app.home.domain.repository.GetPreviousAttackEndRepository
 import com.migrely.app.home.domain.repository.GetTodayRepository
 import com.migrely.app.home.domain.repository.ReopenAttackRepository
@@ -34,13 +36,20 @@ internal object HomeDataModule {
     fun providesHomeRepository(
         attackDataSource: AttackDataSource,
         clockDataSource: ClockDataSource,
-        dayMarkDataSource: DayMarkDataSource
+        dayMarkDataSource: DayMarkDataSource,
+        preferencesDataSource: PreferencesDataSource
     ): HomeRepository = HomeRepository(
         attackDataSource = attackDataSource,
         clockDataSource = clockDataSource,
         dayMarkDataSource = dayMarkDataSource,
+        preferencesDataSource = preferencesDataSource,
         attackDomainMapper = AttackDomainMapper(IntensityPointDomainMapper())
     )
+
+    @Provides
+    fun providesGetPeriodTrackingRepository(
+        repository: HomeRepository
+    ): GetPeriodTrackingRepository = repository
 
     @Provides
     fun providesGetDayMarksRepository(repository: HomeRepository): GetDayMarksRepository =

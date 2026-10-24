@@ -11,6 +11,8 @@ import com.migrely.app.medication.ui.di.LogMedicationDependencies
 import com.migrely.app.medication.ui.di.MedicationPromptDependencies
 import com.migrely.app.medication.ui.di.MedicationsDependencies
 import com.migrely.app.medication.ui.di.OveruseIndicatorDependencies
+import com.migrely.app.onboarding.ui.di.OnboardingDependencies
+import com.migrely.app.reminders.ui.di.DailyReminderOfferDependencies
 import com.migrely.app.reminders.ui.di.RemindersDependencies
 import com.migrely.app.settings.ui.di.SettingsDependencies
 import com.migrely.app.ui.main.di.AppNavHostDependencies
@@ -36,7 +38,9 @@ internal object AppNavHostModule {
         overuseIndicatorDependencies: OveruseIndicatorDependencies,
         remindersDependencies: RemindersDependencies,
         settingsDependencies: SettingsDependencies,
-        yourDataDependencies: YourDataDependencies
+        yourDataDependencies: YourDataDependencies,
+        onboardingDependencies: OnboardingDependencies,
+        dailyReminderOfferDependencies: DailyReminderOfferDependencies
     ): AppNavHostDependencies = AppNavHostDependencies(
         homeDependencies = homeDependencies,
         attackDetailsDependencies = attackDetailsDependencies,
@@ -50,6 +54,8 @@ internal object AppNavHostModule {
         overuseIndicatorDependencies = overuseIndicatorDependencies,
         remindersDependencies = remindersDependencies,
         settingsDependencies = settingsDependencies,
-        yourDataDependencies = yourDataDependencies
+        yourDataDependencies = yourDataDependencies,
+        onboardingDependencies = onboardingDependencies,
+        dailyReminderOfferDependencies = dailyReminderOfferDependencies
     )
 }

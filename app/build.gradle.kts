@@ -65,6 +65,7 @@ android {
 dependencies {
     implementation(libs.material)
     implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.core.splashscreen)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.hilt.android)
     ksp(libs.hilt.android.compiler)
@@ -119,6 +120,12 @@ dependencies {
     implementation(projects.features.backup.data)
     implementation(projects.features.settings.ui)
     implementation(projects.features.settings.presentation)
+    implementation(projects.features.settings.domain)
+    implementation(projects.features.settings.data)
+    implementation(projects.features.onboarding.ui)
+    implementation(projects.features.onboarding.presentation)
+    implementation(projects.features.onboarding.domain)
+    implementation(projects.features.onboarding.data)
     implementation(libs.androidx.work.runtime)
 }
 
