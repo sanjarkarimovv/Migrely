@@ -28,8 +28,7 @@ class HistoryMonthUiMapper {
         hasNextMonth = month.hasNextMonth,
         days = month.days.map { it.toUi() },
         attacks = month.attacks.map { it.toUi() },
-        stats = month.stats.toUi(),
-        periodTracking = month.periodTracking
+        stats = month.stats.toUi()
     )
 
     private fun MonthStatsPresentationModel.toUi() = MonthStatsUiModel(
@@ -94,7 +93,8 @@ class HistoryMonthUiMapper {
         attacks = attacks.map { it.toUi() },
         period = period,
         painFree = painFree,
-        painFreeAllowed = painFreeAllowed
+        painFreeAllowed = painFreeAllowed,
+        periodOffered = periodOffered
     )
 
     private fun HistoryAttackPresentationModel.toUi() = HistoryAttackUiModel(

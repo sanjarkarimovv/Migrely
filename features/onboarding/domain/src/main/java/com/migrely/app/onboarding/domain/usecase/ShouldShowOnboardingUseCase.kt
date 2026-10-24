@@ -8,8 +8,8 @@ import com.migrely.app.onboarding.domain.repository.GetOnboardingFinishedReposit
 import com.migrely.app.onboarding.domain.repository.GetPhoneRecordsRepository
 
 /**
- * Whether the app starts with onboarding (BRD ONB-F2, D76). The request is whether the app was opened to start an
- * attack, which is never held up. A phone that already holds records finishes onboarding without showing it, and a
+ * Whether the app starts with onboarding (BRD ONB-F2, D76). The request is whether the app was opened to log a
+ * migraine, by the "start attack" shortcut or the daily reminder's "Log a migraine"; that is never held up. A phone that already holds records finishes onboarding without showing it, and a
  * read that fails shows home, so a broken store never keeps the user out.
  */
 class ShouldShowOnboardingUseCase(

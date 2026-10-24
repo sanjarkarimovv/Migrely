@@ -15,7 +15,7 @@ private const val PREFERENCES = "migrely_preferences"
 /** The app's own settings that are not health records (change add-onboarding, BRD D78). */
 @Module
 @InstallIn(SingletonComponent::class)
-internal object PreferencesModule {
+internal object PreferencesDataSourceModule {
     @Provides
     @Singleton
     fun providesPreferencesDataSource(@ApplicationContext context: Context): PreferencesDataSource =

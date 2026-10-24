@@ -29,6 +29,8 @@ import com.migrely.app.reminders.presentation.viewmodel.DailyReminderOfferViewMo
 import com.migrely.app.reminders.presentation.viewmodel.RemindersViewModel
 import com.migrely.app.reminders.ui.di.DailyReminderOfferDependencies
 import com.migrely.app.reminders.ui.di.RemindersDependencies
+import com.migrely.app.reminders.ui.mapper.DailyReminderOfferEventUiMapper
+import com.migrely.app.reminders.ui.mapper.DailyReminderOfferUiMapper
 import com.migrely.app.reminders.ui.mapper.ReminderKindUiToPresentationMapper
 import com.migrely.app.reminders.ui.mapper.RemindersEventPresenter
 import com.migrely.app.reminders.ui.mapper.RemindersNotificationUiMapper
@@ -166,12 +168,14 @@ internal object RemindersModule {
         recordPermissionAskedUseCase: RecordPermissionAskedUseCase,
         useCaseExecutor: UseCaseExecutor
     ) = DailyReminderOfferDependencies(
-        DailyReminderOfferViewModel(
+        dailyReminderOfferViewModel = DailyReminderOfferViewModel(
             getRemindersUseCase,
             setDailyReminderUseCase,
             recordPermissionAskedUseCase,
             useCaseExecutor
-        )
+        ),
+        dailyReminderOfferUiMapper = DailyReminderOfferUiMapper(),
+        dailyReminderOfferEventUiMapper = DailyReminderOfferEventUiMapper()
     )
 
     @Provides

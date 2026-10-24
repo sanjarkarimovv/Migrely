@@ -44,8 +44,7 @@ class OnboardingViewModel(
     /** The last step is done or skipped. */
     fun onFinishAction() = finishOnboardingUseCase(
         value = Unit,
-        onResult = { emitNavigationEvent(OnboardingPresentationNavigationEvent.OnFinished) },
-        onException = { emitNavigationEvent(OnboardingPresentationNavigationEvent.OnFinished) }
+        onResult = { emitNavigationEvent(OnboardingPresentationNavigationEvent.OnFinished) }
     )
 
     fun onRestoreAction() =

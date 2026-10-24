@@ -1,6 +1,5 @@
 package com.migrely.app.onboarding.presentation.viewmodel
 
-import com.migrely.app.architecture.domain.exception.UnknownDomainException
 import com.migrely.app.architecture.presentation.viewmodel.BaseViewModelTest
 import com.migrely.app.onboarding.domain.model.AttackFrequencyDomainModel
 import com.migrely.app.onboarding.domain.model.OnboardingGoalDomainModel
@@ -115,11 +114,6 @@ class OnboardingViewModelTest :
         val first = async(start = UNDISPATCHED) { classUnderTest.navigationEvent.first() }
         classUnderTest.onFinishAction()
         assertEquals(OnboardingPresentationNavigationEvent.OnFinished, first.await())
-
-        finishOnboardingUseCase.givenFailedExecution(Unit, UnknownDomainException())
-        val second = async(start = UNDISPATCHED) { classUnderTest.navigationEvent.first() }
-        classUnderTest.onFinishAction()
-        assertEquals(OnboardingPresentationNavigationEvent.OnFinished, second.await())
     }
 
     @Test

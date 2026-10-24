@@ -32,8 +32,7 @@ class DailyReminderOfferViewModel(
             val time =
                 (result as? RemindersResultDomainModel.Loaded)?.reminders?.dailyTime ?: DEFAULT_TIME
             updateViewState(DailyReminderOfferViewState.Ready(time))
-        },
-        onException = { updateViewState(DailyReminderOfferViewState.Ready(DEFAULT_TIME)) }
+        }
     )
 
     fun onTurnOnAction(time: LocalTime) = getRemindersUseCase(
@@ -47,22 +46,19 @@ class DailyReminderOfferViewModel(
                 // Refused within 30 days: the reminder stays off, and the Reminders screen says why.
                 else -> done()
             }
-        },
-        onException = { done() }
+        }
     )
 
     /** The system's answer to the permission request. */
     fun onPermissionResultAction(granted: Boolean, time: LocalTime) = recordPermissionAskedUseCase(
-        onResult = { if (granted) turnOn(time) else done() },
-        onException = { if (granted) turnOn(time) else done() }
+        onResult = { if (granted) turnOn(time) else done() }
     )
 
     fun onNotNowAction() = done()
 
     private fun turnOn(time: LocalTime) = setDailyReminderUseCase(
         value = SetDailyReminderRequestDomainModel(true, time),
-        onResult = { done() },
-        onException = { done() }
+        onResult = { done() }
     )
 
     private fun done() = notify(DailyReminderOfferPresentationNotification.Done)

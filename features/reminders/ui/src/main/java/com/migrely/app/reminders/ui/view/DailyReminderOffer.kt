@@ -18,20 +18,16 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.migrely.app.designsystem.theme.MigrelyTheme
-import com.migrely.app.reminders.presentation.model.DailyReminderOfferPresentationNotification
 import com.migrely.app.reminders.presentation.model.DailyReminderOfferViewState
 import com.migrely.app.reminders.ui.R
 import com.migrely.app.reminders.ui.di.DailyReminderOfferDependencies
-import java.time.LocalTime
-import java.time.format.DateTimeFormatter
-import java.time.format.FormatStyle
+import com.migrely.app.reminders.ui.model.DailyReminderOfferEventUiModel
 
-private val DEFAULT_TIME: LocalTime = LocalTime.of(20, 0)
+private const val DEFAULT_MINUTE_OF_DAY = 20 * 60
 
 /**
  * The daily reminder offer (BRD REM-F1, D80), with "Turn on" and "Not now". Turning it on asks for notification
@@ -45,7 +41,11 @@ fun DailyReminderOfferDependencies.DailyReminderOffer(
     val viewModel = dailyReminderOfferViewModel
     LaunchedEffect(viewModel) { viewModel.onEnter() }
     val viewState by viewModel.viewState.collectAsState(DailyReminderOfferViewState.Loading)
-    val time = (viewState as? DailyReminderOfferViewState.Ready)?.time ?: DEFAULT_TIME
+    val time = (
+        dailyReminderOfferUiMapper.toUi(
+            viewState
+        )?.minuteOfDay ?: DEFAULT_MINUTE_OF_DAY
+        ).toReminderTime()
     val currentTime by rememberUpdatedState(time)
     val currentOnDone by rememberUpdatedState(onDone)
     val launcher =
@@ -54,20 +54,20 @@ fun DailyReminderOfferDependencies.DailyReminderOffer(
         }
     LaunchedEffect(viewModel) {
         viewModel.notification.collect { notification ->
-            when (notification) {
-                DailyReminderOfferPresentationNotification.AskForPermission ->
+            when (dailyReminderOfferEventUiMapper.toUi(notification)) {
+                DailyReminderOfferEventUiModel.AskForPermission ->
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                         launcher.launch(Manifest.permission.POST_NOTIFICATIONS)
                     } else {
                         // Android 12 and older have no such request: notifications are off in settings.
                         viewModel.onPermissionResultAction(false, currentTime)
                     }
-                DailyReminderOfferPresentationNotification.Done -> currentOnDone()
+                DailyReminderOfferEventUiModel.Done -> currentOnDone()
             }
         }
     }
     DailyReminderOfferContents(
-        time = time.format(timePattern()),
+        time = time.format(reminderTimePattern()),
         onTurnOn = { viewModel.onTurnOnAction(time) },
         onNotNow = viewModel::onNotNowAction,
         modifier = modifier
@@ -104,15 +104,6 @@ fun DailyReminderOfferContents(
         }
     }
 }
-
-/** The phone's own 12- or 24-hour choice, as the Reminders screen uses. */
-@Composable
-private fun timePattern(): DateTimeFormatter =
-    if (android.text.format.DateFormat.is24HourFormat(LocalContext.current)) {
-        DateTimeFormatter.ofPattern("HH:mm")
-    } else {
-        DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT)
-    }
 
 @Preview(name = "Daily reminder offer")
 @Composable

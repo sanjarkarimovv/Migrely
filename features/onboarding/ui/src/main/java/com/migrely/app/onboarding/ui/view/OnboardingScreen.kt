@@ -40,6 +40,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.migrely.app.architecture.ui.view.ScreenEnterObserver
+import com.migrely.app.designsystem.input.TapGuard
 import com.migrely.app.designsystem.motion.rememberReduceMotion
 import com.migrely.app.designsystem.snackbar.MigrelySnackbar
 import com.migrely.app.designsystem.snackbar.MigrelySnackbarHost
@@ -57,6 +58,7 @@ private const val FREQUENCY = 1
 private const val PERIOD = 2
 private const val REMINDER = 3
 private const val MESSAGE_MILLIS = 6_000L
+private const val STEP_GUARD_MILLIS = 800L
 private val CONTENT_MAX_WIDTH = 600.dp
 
 /** Callbacks from the onboarding steps. */
@@ -166,6 +168,13 @@ fun OnboardingContents(
                 }
             }
         }
+        // Each step draws its choices where the last step's were, so a double tap must not answer the next one
+        // (BRD EC-UX-18).
+        TapGuard(
+            key = step,
+            durationMillis = STEP_GUARD_MILLIS,
+            modifier = Modifier.matchParentSize()
+        )
         messages()
     }
 }
@@ -177,10 +186,7 @@ private fun StepHeader(step: Int, onSkip: () -> Unit) {
             text = stringResource(R.string.onboarding_step, step + 1, STEPS),
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            // Read out as each step appears.
-            modifier = Modifier
-                .weight(1f)
-                .semantics { liveRegion = LiveRegionMode.Polite }
+            modifier = Modifier.weight(1f)
         )
         val skip = stringResource(R.string.onboarding_skip_description)
         TextButton(
@@ -200,9 +206,13 @@ private fun Title(text: String) {
         text = text,
         style = MaterialTheme.typography.headlineSmall,
         color = MaterialTheme.colorScheme.onSurface,
+        // Read out as each step appears, so the new question is heard, not only its number.
         modifier = Modifier
             .padding(vertical = 8.dp)
-            .semantics { heading() }
+            .semantics {
+                heading()
+                liveRegion = LiveRegionMode.Polite
+            }
     )
 }
 

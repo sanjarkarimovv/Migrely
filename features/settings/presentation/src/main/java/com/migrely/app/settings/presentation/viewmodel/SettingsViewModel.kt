@@ -35,10 +35,6 @@ class SettingsViewModel(
                 )
             }
             load()
-        },
-        onException = {
-            notify(SettingsPresentationNotification.NotSaved)
-            load()
         }
     )
 

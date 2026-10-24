@@ -19,6 +19,6 @@
     <string name="onboarding_period_no">No</string>
     <string name="onboarding_reminder_title">A daily check-in?</string>
     <string name="onboarding_reminder_body">Each evening, Migrely asks how your day was, so pain-free days count too.</string>
-    <string name="onboarding_not_saved">Couldn\'t save that. You can change it later in Settings.</string>
+    <string name="onboarding_not_saved">Couldn\'t save that answer. Migrely works without it.</string>
     <string name="onboarding_message_dismiss">Dismiss</string>
 </resources>
