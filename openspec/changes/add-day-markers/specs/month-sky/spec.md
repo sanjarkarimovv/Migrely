@@ -38,6 +38,11 @@ SHALL show a small drop in its corner (BRD HIS-F1, EC-UX-09, EC-ATK-07, EC-ATK-0
 - **WHEN** 14 October is marked as a period day and has a storm
 - **THEN** 14 October shows the storm with the period drop in its corner
 
+#### Scenario: Logged ahead of the phone's date
+- **WHEN** an attack ran from 01:00 to 02:00 Tashkent time on 25 October and the phone is now in Berlin on 24 October
+- **THEN** 25 October shows the attack's sky, in the zone where it was logged
+- **AND** 25 October cannot be chosen until that date arrives on the phone (BRD D50)
+
 
 ### Requirement: Legend without a guess
 A legend under the calendar SHALL explain each state: pain-free (clear), mild (hazy), moderate (cloudy), severe (storm),
