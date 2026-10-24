@@ -45,7 +45,8 @@ internal fun HistoryCalendar(
             isToday = isToday,
             isSelected = day.epochDay == selectedEpochDay,
             isSelectable = day.epochDay <= month.todayEpochDay,
-            description = dayDescription(day, isToday, mappers.historyTimeUiFormatter)
+            description = dayDescription(day, isToday, mappers.historyTimeUiFormatter),
+            hasPeriodMark = day.period
         )
     }
     Column(modifier = modifier) {
@@ -59,12 +60,18 @@ internal fun HistoryCalendar(
         )
         MonthSkyLegend(
             entries = listOf(
+                LegendEntry(DaySkyAppearance.Clear, stringResource(R.string.legend_pain_free)),
                 LegendEntry(DaySkyAppearance.Hazy, stringResource(R.string.legend_mild)),
                 LegendEntry(DaySkyAppearance.Cloudy, stringResource(R.string.legend_moderate)),
                 LegendEntry(DaySkyAppearance.Storm, stringResource(R.string.legend_severe)),
                 LegendEntry(
                     DaySkyAppearance.NothingLogged,
                     stringResource(R.string.legend_not_logged)
+                ),
+                LegendEntry(
+                    DaySkyAppearance.NothingLogged,
+                    stringResource(R.string.legend_period),
+                    periodMark = true
                 )
             ),
             modifier = Modifier.padding(top = 14.dp, start = 2.dp)
@@ -72,9 +79,22 @@ internal fun HistoryCalendar(
     }
 }
 
-/** For example "Wednesday, 15 October: storm. 1 migraine. Peak: severe." (BRD EC-UX-15). */
+/**
+ * For example "Wednesday, 15 October: storm. 1 migraine. Peak: severe." (BRD EC-UX-15), followed by "Period." on a
+ * period day (D49).
+ */
 @Composable
 private fun dayDescription(
+    day: HistoryDayUiModel,
+    isToday: Boolean,
+    timeUiFormatter: HistoryTimeUiFormatter
+): String {
+    val sky = skyDescription(day, isToday, timeUiFormatter)
+    return if (day.period) stringResource(R.string.day_with_period, sky) else sky
+}
+
+@Composable
+private fun skyDescription(
     day: HistoryDayUiModel,
     isToday: Boolean,
     timeUiFormatter: HistoryTimeUiFormatter
@@ -84,6 +104,7 @@ private fun dayDescription(
     return when (day.sky) {
         DaySkyUiModel.Future -> named
         DaySkyUiModel.NothingLogged -> stringResource(R.string.day_nothing_logged, named)
+        DaySkyUiModel.Clear -> stringResource(R.string.day_pain_free, named)
         DaySkyUiModel.Rain -> stringResource(R.string.day_in_progress, named)
         DaySkyUiModel.Hazy,
         DaySkyUiModel.Cloudy,
@@ -104,6 +125,7 @@ private fun skyName(sky: DaySkyUiModel): String = when (sky) {
     DaySkyUiModel.Storm -> stringResource(R.string.sky_storm)
     DaySkyUiModel.NothingLogged,
     DaySkyUiModel.Future,
+    DaySkyUiModel.Clear,
     DaySkyUiModel.Rain -> ""
 }
 

@@ -20,7 +20,7 @@
   Verify: `./gradlew :features:history:data:test`
 - [x] 3.3 Presentation: clear sky, marks, `onPeriodAction`, `onPainFreeAction`; tests.
   Verify: `./gradlew :features:history:presentation:test`
-- [ ] 3.4 UI: the switches under the chosen day, the cell mark, descriptions and legend; tests.
+- [x] 3.4 UI: the switches under the chosen day, the cell mark, descriptions and legend; tests.
   Verify: `./gradlew :features:history:ui:test`
 
 ## 4. Home (design D5)

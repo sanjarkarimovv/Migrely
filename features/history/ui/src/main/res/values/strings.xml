@@ -12,11 +12,15 @@
     <string name="legend_moderate">Moderate</string>
     <string name="legend_severe">Severe</string>
     <string name="legend_not_logged">Not logged</string>
+    <string name="legend_pain_free">Pain-free</string>
+    <string name="legend_period">Period</string>
 
     <!-- What a screen reader says for a day (BRD EC-UX-15). -->
     <string name="day_today">Today, %1$s</string>
     <string name="day_chosen">Chosen</string>
     <string name="day_nothing_logged">%1$s: nothing logged.</string>
+    <string name="day_pain_free">%1$s: pain-free.</string>
+    <string name="day_with_period">%1$s Period.</string>
     <string name="day_in_progress">%1$s: rain. Migraine in progress.</string>
     <string name="day_attacks">%1$s: %2$s. %3$s. Peak: %4$s.</string>
     <plurals name="day_attack_count">
@@ -62,4 +66,10 @@
     <string name="message_undone">Undone.</string>
     <string name="message_undo_not_possible">This can no longer be undone.</string>
     <string name="message_generic">Something went wrong. Please try again.</string>
+    <!-- Day marks under the chosen day (BRD DAY-F1, DAY-F2, D48). -->
+    <string name="mark_period">Period</string>
+    <string name="mark_pain_free">Pain-free day</string>
+    <string name="mark_pain_free_blocked">A migraine is logged on this day.</string>
+    <string name="message_attack_logged_on_day">A migraine is logged on this day, so it can\'t be pain-free.</string>
+    <string name="message_storage_full">Couldn\'t save. Your phone\'s storage is full.</string>
 </resources>

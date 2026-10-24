@@ -14,8 +14,13 @@ class HistoryMessageBehaviourUiMapper {
             HistoryMessageBehaviourUiModel(SnackbarTone.Confirmation, true, UNDO_MILLIS)
 
         HistoryMessageUiModel.Undone,
-        HistoryMessageUiModel.UndoNotPossible ->
+        HistoryMessageUiModel.UndoNotPossible,
+        HistoryMessageUiModel.AttackLoggedOnDay ->
             HistoryMessageBehaviourUiModel(SnackbarTone.Information, false, READING_MILLIS)
+
+        // Stays until the user closes it (BRD EC-UX-16).
+        HistoryMessageUiModel.StorageFull ->
+            HistoryMessageBehaviourUiModel(SnackbarTone.Error, false, null)
 
         HistoryMessageUiModel.SomethingWentWrong ->
             HistoryMessageBehaviourUiModel(SnackbarTone.Error, false, READING_MILLIS)

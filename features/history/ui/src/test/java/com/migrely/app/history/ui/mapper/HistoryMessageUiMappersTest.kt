@@ -22,6 +22,9 @@ class HistoryMessageUiMappersTest {
             HistoryPresentationNotification.Undone to HistoryMessageUiModel.Undone,
             HistoryPresentationNotification.UndoNotPossible to
                 HistoryMessageUiModel.UndoNotPossible,
+            HistoryPresentationNotification.AttackLoggedOnDay to
+                HistoryMessageUiModel.AttackLoggedOnDay,
+            HistoryPresentationNotification.StorageFull to HistoryMessageUiModel.StorageFull,
             HistoryPresentationNotification.SomethingWentWrong to
                 HistoryMessageUiModel.SomethingWentWrong
         )
@@ -53,6 +56,15 @@ class HistoryMessageUiMappersTest {
         assertEquals(
             HistoryMessageBehaviourUiModel(SnackbarTone.Error, false, 8_000L),
             classUnderTest.toUi(HistoryMessageUiModel.SomethingWentWrong)
+        )
+        assertEquals(
+            HistoryMessageBehaviourUiModel(SnackbarTone.Information, false, 8_000L),
+            classUnderTest.toUi(HistoryMessageUiModel.AttackLoggedOnDay)
+        )
+        // Storage full stays until the user closes it (BRD EC-UX-16).
+        assertEquals(
+            HistoryMessageBehaviourUiModel(SnackbarTone.Error, false, null),
+            classUnderTest.toUi(HistoryMessageUiModel.StorageFull)
         )
     }
 

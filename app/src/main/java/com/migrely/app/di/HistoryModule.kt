@@ -4,11 +4,14 @@ import com.migrely.app.architecture.domain.UseCaseExecutor
 import com.migrely.app.coroutine.CoroutineContextProvider
 import com.migrely.app.history.domain.repository.GetAttacksTouchingRepository
 import com.migrely.app.history.domain.repository.GetCurrentTimeRepository
+import com.migrely.app.history.domain.repository.GetDayMarksRepository
 import com.migrely.app.history.domain.repository.GetEarliestAttackRepository
 import com.migrely.app.history.domain.repository.GetRecentlyDeletedAttackRepository
 import com.migrely.app.history.domain.repository.RestoreDeletedAttackRepository
+import com.migrely.app.history.domain.repository.SetDayMarkRepository
 import com.migrely.app.history.domain.usecase.GetHistoryMonthUseCase
 import com.migrely.app.history.domain.usecase.RestoreDeletedAttackUseCase
+import com.migrely.app.history.domain.usecase.SetDayMarkUseCase
 import com.migrely.app.history.presentation.mapper.HistoryAttackPresentationMapper
 import com.migrely.app.history.presentation.mapper.HistoryMonthPresentationMapper
 import com.migrely.app.history.presentation.mapper.IntensityLevelPresentationMapper
@@ -28,12 +31,27 @@ internal object HistoryModule {
         getEarliestAttackRepository: GetEarliestAttackRepository,
         getAttacksTouchingRepository: GetAttacksTouchingRepository,
         getRecentlyDeletedAttackRepository: GetRecentlyDeletedAttackRepository,
+        getDayMarksRepository: GetDayMarksRepository,
         coroutineContextProvider: CoroutineContextProvider
     ) = GetHistoryMonthUseCase(
         getCurrentTimeRepository,
         getEarliestAttackRepository,
         getAttacksTouchingRepository,
         getRecentlyDeletedAttackRepository,
+        getDayMarksRepository,
+        coroutineContextProvider
+    )
+
+    @Provides
+    fun providesSetDayMarkUseCase(
+        getCurrentTimeRepository: GetCurrentTimeRepository,
+        getAttacksTouchingRepository: GetAttacksTouchingRepository,
+        setDayMarkRepository: SetDayMarkRepository,
+        coroutineContextProvider: CoroutineContextProvider
+    ) = SetDayMarkUseCase(
+        getCurrentTimeRepository,
+        getAttacksTouchingRepository,
+        setDayMarkRepository,
         coroutineContextProvider
     )
 
@@ -53,11 +71,13 @@ internal object HistoryModule {
     fun providesHistoryViewModel(
         getHistoryMonthUseCase: GetHistoryMonthUseCase,
         restoreDeletedAttackUseCase: RestoreDeletedAttackUseCase,
+        setDayMarkUseCase: SetDayMarkUseCase,
         historyMonthPresentationMapper: HistoryMonthPresentationMapper,
         useCaseExecutor: UseCaseExecutor
     ) = HistoryViewModel(
         getHistoryMonthUseCase,
         restoreDeletedAttackUseCase,
+        setDayMarkUseCase,
         historyMonthPresentationMapper,
         useCaseExecutor
     )

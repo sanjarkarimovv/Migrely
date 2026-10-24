@@ -54,13 +54,15 @@ internal fun HistoryMessages(
     val accessibilityManager = LocalAccessibilityManager.current
     val currentOnUndoDelete by rememberUpdatedState(onUndoDelete)
 
-    fun timeoutMillis(behaviour: HistoryMessageBehaviourUiModel): Long =
-        accessibilityManager?.calculateRecommendedTimeoutMillis(
-            originalTimeoutMillis = behaviour.baseDurationMillis,
-            containsIcons = true,
-            containsText = true,
-            containsControls = behaviour.undoesDeletion
-        ) ?: behaviour.baseDurationMillis
+    fun timeoutMillis(behaviour: HistoryMessageBehaviourUiModel): Long? =
+        behaviour.baseDurationMillis?.let { base ->
+            accessibilityManager?.calculateRecommendedTimeoutMillis(
+                originalTimeoutMillis = base,
+                containsIcons = true,
+                containsText = true,
+                containsControls = behaviour.undoesDeletion
+            ) ?: base
+        }
 
     LaunchedEffect(presenter) {
         presenter.messages.collect { message ->
@@ -75,7 +77,9 @@ internal fun HistoryMessages(
                     offeredDeletions.takeLast(OFFERED_DELETIONS_KEPT - 1) + message
                 )
             }
-            if (message == HistoryMessageUiModel.SomethingWentWrong) {
+            if (message == HistoryMessageUiModel.SomethingWentWrong ||
+                message == HistoryMessageUiModel.StorageFull
+            ) {
                 haptics.performHapticFeedback(HapticFeedbackType.Reject)
             }
             shown = ShownHistoryMessageUiModel(message, System.currentTimeMillis())
@@ -120,7 +124,7 @@ internal fun HistoryMessages(
             },
             dismissLabel = stringResource(R.string.snackbar_dismiss),
             onDismiss = { if (shown == visible) shown = null },
-            timeLeft = if (!reduceMotion && behaviour.undoesDeletion) {
+            timeLeft = if (!reduceMotion && behaviour.undoesDeletion && timeout != null) {
                 rememberTimeLeft(visible, timeout)
             } else {
                 null
@@ -149,5 +153,7 @@ private fun messageText(message: HistoryMessageUiModel): String = when (message)
     is HistoryMessageUiModel.AttackDeleted -> stringResource(R.string.snackbar_attack_deleted)
     HistoryMessageUiModel.Undone -> stringResource(R.string.message_undone)
     HistoryMessageUiModel.UndoNotPossible -> stringResource(R.string.message_undo_not_possible)
+    HistoryMessageUiModel.AttackLoggedOnDay -> stringResource(R.string.message_attack_logged_on_day)
+    HistoryMessageUiModel.StorageFull -> stringResource(R.string.message_storage_full)
     HistoryMessageUiModel.SomethingWentWrong -> stringResource(R.string.message_generic)
 }

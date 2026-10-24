@@ -103,6 +103,7 @@ class HistoryViewStateUiMapperTest {
     fun `When mapping every sky and peak then each has its counterpart`() {
         val pairs = listOf(
             DaySkyPresentationModel.Future to DaySkyUiModel.Future,
+            DaySkyPresentationModel.Clear to DaySkyUiModel.Clear,
             DaySkyPresentationModel.Hazy to DaySkyUiModel.Hazy,
             DaySkyPresentationModel.Cloudy to DaySkyUiModel.Cloudy,
             DaySkyPresentationModel.Rain to DaySkyUiModel.Rain
@@ -112,7 +113,7 @@ class HistoryViewStateUiMapperTest {
             PeakPresentationModel.Moderate to PeakUiModel.Moderate,
             PeakPresentationModel.NotRecorded to PeakUiModel.NotRecorded
         )
-        pairs.zip(peaks + peaks.last()).forEach { (sky, peak) ->
+        pairs.zip(peaks + peaks.last() + peaks.last()).forEach { (sky, peak) ->
             assertEquals(
                 monthUi(sky.second, peak.second),
                 historyMonthUiMapper.toUi(month(sky.first, peak.first))
@@ -136,6 +137,28 @@ class HistoryViewStateUiMapperTest {
                     month(DaySkyPresentationModel.Storm, PeakPresentationModel.Severe)
                 )
             )
+        )
+    }
+
+    @Test
+    fun `When mapping a day's marks then each is kept`() {
+        val day = HistoryDayPresentationModel(
+            DAY,
+            DaySkyPresentationModel.Storm,
+            PeakPresentationModel.Severe,
+            listOf(ATTACK),
+            period = true,
+            painFree = false,
+            painFreeAllowed = false
+        )
+
+        val actual = historyMonthUiMapper.toUi(
+            month(DaySkyPresentationModel.Storm, null).copy(days = listOf(day))
+        )
+
+        assertEquals(
+            Triple(true, false, false),
+            actual.days.single().let { Triple(it.period, it.painFree, it.painFreeAllowed) }
         )
     }
 }

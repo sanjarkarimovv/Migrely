@@ -16,6 +16,9 @@ class HistoryNotificationUiMapper(private val historyMessagePresenter: HistoryMe
             )
             HistoryPresentationNotification.Undone -> HistoryMessageUiModel.Undone
             HistoryPresentationNotification.UndoNotPossible -> HistoryMessageUiModel.UndoNotPossible
+            HistoryPresentationNotification.AttackLoggedOnDay ->
+                HistoryMessageUiModel.AttackLoggedOnDay
+            HistoryPresentationNotification.StorageFull -> HistoryMessageUiModel.StorageFull
             HistoryPresentationNotification.SomethingWentWrong ->
                 HistoryMessageUiModel.SomethingWentWrong
         }
