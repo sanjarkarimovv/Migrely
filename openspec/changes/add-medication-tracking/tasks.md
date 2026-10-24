@@ -2,14 +2,14 @@
 
 ## 1. Domain
 
-- [ ] 1.1 Scaffold `:features:medication:*` with `cag` and home's build files; add the medication domain models, repository interfaces, and `GetMedicationsUseCase`, `SaveMedicationUseCase`, `ArchiveMedicationUseCase` and `RestoreMedicationUseCase`, with tests:
+- [x] 1.1 Scaffold `:features:medication:*` with `cag` and home's build files; add the medication domain models, repository interfaces, and `GetMedicationsUseCase`, `SaveMedicationUseCase`, `ArchiveMedicationUseCase` and `RestoreMedicationUseCase`, with tests:
   - name and dose limits and trimming;
   - duplicate, archived restore and the limit;
   - category cleared for preventive;
   - failures as values.
 
   Verify `./gradlew :features:medication:domain:test`
-- [ ] 1.2 Add `GetMedicationLogUseCase`, `LogIntakeUseCase` and `UndoIntakeUseCase`, with tests:
+- [x] 1.2 Add `GetMedicationLogUseCase`, `LogIntakeUseCase` and `UndoIntakeUseCase`, with tests:
   - the default time (now, or the start of an ended attack);
   - the 5-minute tolerance;
   - linking to the given attack or to the containing attack;
@@ -17,7 +17,7 @@
   - failures.
 
   Verify the domain tests
-- [ ] 1.3 In `:features:attack:domain`, add intakes to `AttackDetailsDomainModel`, and `RemoveIntakeUseCase` and `RestoreIntakeUseCase` with tests; verify `./gradlew :features:attack:domain:test`
+- [x] 1.3 In `:features:attack:domain`, add intakes to `AttackDetailsDomainModel`, and `RemoveIntakeUseCase` and `RestoreIntakeUseCase` with tests; verify `./gradlew :features:attack:domain:test`
 
 ## 2. Presentation
 

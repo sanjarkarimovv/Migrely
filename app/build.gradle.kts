@@ -104,4 +104,8 @@ dependencies {
     implementation(projects.features.history.presentation)
     implementation(projects.features.history.domain)
     implementation(projects.features.history.data)
+    implementation(projects.features.medication.ui)
+    implementation(projects.features.medication.presentation)
+    implementation(projects.features.medication.domain)
+    implementation(projects.features.medication.data)
 }
