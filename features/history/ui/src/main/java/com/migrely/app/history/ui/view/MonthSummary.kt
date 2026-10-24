@@ -27,7 +27,7 @@ import com.migrely.app.designsystem.theme.MigrelyColors
 import com.migrely.app.history.ui.R
 import com.migrely.app.history.ui.mapper.HistoryTimeUiFormatter
 import com.migrely.app.history.ui.model.HistoryMonthUiModel
-import com.migrely.app.history.ui.model.PeakUiModel
+import com.migrely.app.history.ui.model.PainLevelUiModel
 import com.migrely.app.history.ui.model.ProgressAgainstUiModel
 import com.migrely.app.history.ui.model.ProgressTrendUiModel
 import com.migrely.app.history.ui.model.ProgressUiModel
@@ -185,9 +185,8 @@ internal fun ProgressLine(
     )
 }
 
-private fun PeakUiModel.word() = when (this) {
-    PeakUiModel.Mild -> R.string.legend_mild
-    PeakUiModel.Moderate -> R.string.legend_moderate
-    PeakUiModel.Severe -> R.string.legend_severe
-    PeakUiModel.NotRecorded -> R.string.stat_no_peak
+private fun PainLevelUiModel.word() = when (this) {
+    PainLevelUiModel.Mild -> R.string.legend_mild
+    PainLevelUiModel.Moderate -> R.string.legend_moderate
+    PainLevelUiModel.Severe -> R.string.legend_severe
 }

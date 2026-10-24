@@ -9,7 +9,7 @@ data class MonthStatsUiModel(
     val migraines: Int,
     val migraineDays: Int,
     val painFreeDays: Int,
-    val averagePeak: PeakUiModel?,
+    val averagePeak: PainLevelUiModel?,
     val attackMedicationDays: Int,
     val chronic: Boolean,
     val progress: ProgressUiModel?

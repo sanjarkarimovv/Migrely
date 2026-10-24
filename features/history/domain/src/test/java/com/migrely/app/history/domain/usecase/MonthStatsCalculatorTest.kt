@@ -4,6 +4,7 @@ import com.migrely.app.history.domain.model.AttackMedicationIntakeDomainModel
 import com.migrely.app.history.domain.model.DayMarkDomainModel
 import com.migrely.app.history.domain.model.HistoryAttackDomainModel
 import com.migrely.app.history.domain.model.PainLevelDomainModel
+import com.migrely.app.history.domain.model.PeriodEntriesDomainModel
 import com.migrely.app.history.domain.model.ProgressDomainModel
 import java.time.Duration
 import java.time.Instant
@@ -20,6 +21,7 @@ private val NEW_YORK = ZoneId.of("America/New_York")
 private val SEPTEMBER = YearMonth.of(2026, 9)
 private val OCTOBER = YearMonth.of(2026, 10)
 private val NOW = Instant.parse("2026-10-24T07:00:00Z")
+private val TODAY = LocalDate.of(2026, 10, 24)
 private val MILD = 3
 private val MODERATE = 6
 
@@ -48,10 +50,12 @@ class MonthStatsCalculatorTest {
         attacks: List<HistoryAttackDomainModel> = emptyList(),
         marks: List<DayMarkDomainModel> = emptyList(),
         intakes: List<AttackMedicationIntakeDomainModel> = emptyList()
-    ) = PeriodEntries(attacks, marks, intakes)
+    ) = PeriodEntriesDomainModel(attacks, marks, intakes)
 
-    private fun september(current: PeriodEntries, previous: PeriodEntries? = null) =
-        classUnderTest.calculate(SEPTEMBER, SEPTEMBER.atEndOfMonth(), NOW, current, previous)
+    private fun september(
+        current: PeriodEntriesDomainModel,
+        previous: PeriodEntriesDomainModel? = null
+    ) = classUnderTest.calculate(SEPTEMBER, TODAY, NOW, current, previous)
 
     @Test
     fun `Given a past month when counted then its migraines and migraine days`() {
@@ -177,7 +181,7 @@ class MonthStatsCalculatorTest {
     fun `Given the current month when counted then compared with the same dates of last month`() {
         val actual = classUnderTest.calculate(
             month = OCTOBER,
-            last = LocalDate.of(2026, 10, 24),
+            today = TODAY,
             now = NOW,
             current = entries(
                 attacks = listOf(attack("2026-10-02T10:00")) +
@@ -217,5 +221,102 @@ class MonthStatsCalculatorTest {
             ).progress
         )
         assertNull(september(current, previous = null).progress)
+    }
+
+    private fun progress(
+        month: YearMonth,
+        today: LocalDate,
+        current: PeriodEntriesDomainModel,
+        previous: PeriodEntriesDomainModel
+    ) = classUnderTest.calculate(month, today, NOW, current, previous).progress
+
+    @Test
+    fun `Given the last day of the current month then compared with the same dates`() {
+        val actual = progress(
+            OCTOBER,
+            LocalDate.of(2026, 10, 31),
+            entries(marks = periodDays(OCTOBER, 1..10)),
+            entries(marks = periodDays(SEPTEMBER, 1..10))
+        )
+
+        assertEquals(
+            ProgressDomainModel(0, ProgressDomainModel.ComparedWith.SameDaysLastMonth),
+            actual
+        )
+    }
+
+    @Test
+    fun `Given 10 days with entries in each month then progress, and with 9 none`() {
+        val current = entries(marks = periodDays(SEPTEMBER, 1..10))
+        val august = YearMonth.of(2026, 8)
+
+        assertEquals(
+            0,
+            progress(
+                SEPTEMBER,
+                TODAY,
+                current,
+                entries(marks = periodDays(august, 1..10))
+            )?.difference
+        )
+        assertNull(progress(SEPTEMBER, TODAY, current, entries(marks = periodDays(august, 1..9))))
+        assertNull(
+            progress(SEPTEMBER, TODAY, entries(marks = periodDays(SEPTEMBER, 1..9)), current)
+        )
+    }
+
+    @Test
+    fun `Given entries on the same days when counted then each day counts once`() {
+        val current = entries(marks = periodDays(SEPTEMBER, 1..12))
+        // Nine days, each with an attack, a mark and an intake: nine days with entries, not twenty-seven.
+        val august = YearMonth.of(2026, 8)
+        val busy = entries(
+            attacks = (1..9).map { attack("2026-08-%02dT10:00".format(it)) },
+            marks = periodDays(august, 1..9),
+            intakes = (1..9).map {
+                AttackMedicationIntakeDomainModel(at("2026-08-%02dT11:00".format(it)), TASHKENT)
+            }
+        )
+
+        assertNull(progress(SEPTEMBER, TODAY, current, busy))
+    }
+
+    @Test
+    fun `Given 30 March then compared with the whole of February`() {
+        val march = YearMonth.of(2027, 3)
+        val february = YearMonth.of(2027, 2)
+
+        val actual = progress(
+            march,
+            LocalDate.of(2027, 3, 30),
+            entries(marks = periodDays(march, 1..10)),
+            entries(
+                attacks = listOf(attack("2027-02-28T10:00")),
+                marks = periodDays(february, 1..10)
+            )
+        )
+
+        assertEquals(
+            ProgressDomainModel(-1, ProgressDomainModel.ComparedWith.SameDaysLastMonth),
+            actual
+        )
+    }
+
+    @Test
+    fun `Given a past January then compared with the whole December before it`() {
+        val january = YearMonth.of(2027, 1)
+        val december = YearMonth.of(2026, 12)
+
+        val actual = progress(
+            january,
+            LocalDate.of(2027, 2, 10),
+            entries(marks = periodDays(january, 1..10)),
+            entries(marks = periodDays(december, 20..31))
+        )
+
+        assertEquals(
+            ProgressDomainModel(0, ProgressDomainModel.ComparedWith.WholeMonth(december)),
+            actual
+        )
     }
 }

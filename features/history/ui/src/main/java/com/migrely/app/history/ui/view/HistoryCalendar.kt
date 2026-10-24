@@ -22,6 +22,7 @@ import com.migrely.app.history.ui.model.DaySkyUiModel
 import com.migrely.app.history.ui.model.HistoryDayUiModel
 import com.migrely.app.history.ui.model.HistoryMonthUiModel
 import com.migrely.app.history.ui.model.MonthStatsUiModel
+import com.migrely.app.history.ui.model.PainLevelUiModel
 import com.migrely.app.history.ui.model.PeakUiModel
 import com.migrely.app.history.ui.model.ProgressAgainstUiModel
 import com.migrely.app.history.ui.model.ProgressTrendUiModel
@@ -206,7 +207,7 @@ internal fun previewMonth(): HistoryMonthUiModel {
             migraines = 4,
             migraineDays = 5,
             painFreeDays = 9,
-            averagePeak = PeakUiModel.Moderate,
+            averagePeak = PainLevelUiModel.Moderate,
             attackMedicationDays = 3,
             chronic = false,
             progress = ProgressUiModel(

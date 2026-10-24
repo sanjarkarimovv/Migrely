@@ -22,8 +22,6 @@ import java.time.LocalDate
 /** An attack open this long triggers the "Still going?" check (BRD EC-ATK-02, SAF-F3). */
 val LONG_ATTACK_THRESHOLD: Duration = Duration.ofHours(72)
 
-/** Zone offsets differ by at most 26 hours, so two days on each side cover any zone an attack was logged in. */
-
 /**
  * Today's card (BRD 18.3 A). An ended attack counts for today when the days it touches, in the zone where it started,
  * include the device's current date (BRD EC-TIM-02, EC-ATK-06, D36): the rule the calendar and History use.

@@ -38,7 +38,7 @@
     <string name="stat_average_peak">Average peak</string>
     <string name="stat_attack_medication_days">Days with attack medication</string>
     <string name="stat_description">%1$s: %2$s</string>
-    <string name="stat_no_peak">—</string>
+    <string name="stat_no_peak" translatable="false">—</string>
     <string name="stat_no_peak_description">no pain level logged</string>
     <string name="chronic_notice">15 or more migraine days in %1$s. That\'s a lot. Talk to your doctor about it.</string>
     <plurals name="progress_fewer_than_month">

@@ -424,6 +424,7 @@ class GetHistoryMonthUseCaseTest {
     @Test
     fun `Given both months have enough entries when executed then progress against last month`() {
         givenEntriesInEveryMonth()
+        givenEarliest(EarliestAttackResultDomainModel.Found(at("2026-08-02T10:00"), TASHKENT))
 
         assertEquals(
             ProgressDomainModel(0, ProgressDomainModel.ComparedWith.SameDaysLastMonth),
@@ -434,6 +435,7 @@ class GetHistoryMonthUseCaseTest {
     @Test
     fun `Given the month before cannot be read when executed then the month without progress`() {
         givenEntriesInEveryMonth()
+        givenEarliest(EarliestAttackResultDomainModel.Found(at("2026-08-02T10:00"), TASHKENT))
         val octoberWindowStart = at("2026-09-29T00:00")
         given(getAttackMedicationIntakesRepository.attackMedicationIntakes(any(), any()))
             .willAnswer { invocation ->
@@ -469,5 +471,38 @@ class GetHistoryMonthUseCaseTest {
         assertEquals(3, actual.migraineDays)
         assertEquals(1, actual.attackMedicationDays)
         assertEquals(PainLevelDomainModel.Moderate, actual.averagePeak)
+    }
+
+    @Test
+    fun `Given no attack was ever logged when executed then no progress`() {
+        givenEntriesInEveryMonth()
+
+        assertNull(loaded(OCTOBER).stats.progress)
+    }
+
+    @Test
+    fun `Given the attacks or the marks of the month before cannot be read then no progress`() {
+        givenEntriesInEveryMonth()
+        givenEarliest(EarliestAttackResultDomainModel.Found(at("2026-08-02T10:00"), TASHKENT))
+        val octoberWindowStart = at("2026-09-29T00:00")
+        given(getAttacksTouchingRepository.attacksTouching(any(), any())).willAnswer { invocation ->
+            if (invocation.getArgument<Instant>(0) == octoberWindowStart) {
+                AttacksTouchingResultDomainModel.Loaded(emptyList())
+            } else {
+                AttacksTouchingResultDomainModel.Failed
+            }
+        }
+        assertNull(loaded(OCTOBER).stats.progress)
+
+        givenAttacks()
+        given(getDayMarksRepository.dayMarks(any(), any())).willAnswer { invocation ->
+            val first = invocation.getArgument<LocalDate>(0)
+            if (first.monthValue == OCTOBER.monthValue) {
+                DayMarksResultDomainModel.Loaded(emptyList())
+            } else {
+                DayMarksResultDomainModel.Failed
+            }
+        }
+        assertNull(loaded(OCTOBER).stats.progress)
     }
 }

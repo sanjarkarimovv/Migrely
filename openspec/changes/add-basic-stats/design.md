@@ -37,6 +37,16 @@
 - **Failures:** a failed read for the month shown fails the month, as with marks today. A failed read for the previous
   period only drops the progress message.
 - Days are counted to today in the current month. Future dates never count.
+  - So an attack logged in a zone ahead of the phone, whose own date is still tomorrow, shows on that future cell
+    (D50) but enters the numbers only once that date arrives.
+- **The current month** is decided by the month, not by its last day. So on 31 October the message still reads
+  "… than this time last month" (review).
+- **Before any attack** there is no progress message, on home as in History, where the first-use card stands in
+  (EC-HIS-01). The use case passes no previous period then.
+- `PeriodEntriesDomainModel` is a domain model in `model/`. `MonthStatsCalculator` stays internal to the use case,
+  as a pure helper.
+- **Accepted:** the chronic copy names "15", because that is the clinical definition of chronic migraine (ICHD-3),
+  not a setting.
 
 ### D3. Data
 

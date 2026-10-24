@@ -27,7 +27,10 @@ object AttackDays {
         return first..maxOf(first, last)
     }
 
-    /** The start of [from] minus the margin, in [zone]: reading from here finds every attack that may touch [from]. */
+    /**
+     * The start of [from] minus the margin, in [zone]: reading from here finds every attack, or intake, logged in any
+     * zone that may fall on [from].
+     */
     fun windowStart(from: LocalDate, zone: ZoneId): Instant =
         from.minusDays(ZONE_MARGIN_DAYS).atStartOfDay(zone).toInstant()
 

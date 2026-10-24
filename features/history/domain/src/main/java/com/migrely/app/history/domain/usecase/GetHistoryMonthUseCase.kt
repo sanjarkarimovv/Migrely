@@ -13,6 +13,7 @@ import com.migrely.app.history.domain.model.HistoryAttackDomainModel
 import com.migrely.app.history.domain.model.HistoryDayDomainModel
 import com.migrely.app.history.domain.model.HistoryMonthDomainModel
 import com.migrely.app.history.domain.model.HistoryMonthResultDomainModel
+import com.migrely.app.history.domain.model.PeriodEntriesDomainModel
 import com.migrely.app.history.domain.repository.GetAttackMedicationIntakesRepository
 import com.migrely.app.history.domain.repository.GetAttacksTouchingRepository
 import com.migrely.app.history.domain.repository.GetCurrentTimeRepository
@@ -121,10 +122,15 @@ class GetHistoryMonthUseCase(
                     .sortedByDescending(HistoryAttackDomainModel::start),
                 stats = monthStatsCalculator.calculate(
                     month = month,
-                    last = minOf(month.atEndOfMonth(), today),
+                    today = today,
                     now = now.instant,
-                    current = PeriodEntries(attacks, monthMarks, intakes),
-                    previous = previousMonthEntries(month.minusMonths(1), now.zone)
+                    current = PeriodEntriesDomainModel(attacks, monthMarks, intakes),
+                    // Before any attack there is nothing to make progress on (BRD EC-HIS-01).
+                    previous = if (earliest is EarliestAttackResultDomainModel.Found) {
+                        previousMonthEntries(month.minusMonths(1), now.zone)
+                    } else {
+                        null
+                    }
                 )
             ),
             recentlyDeleted = getRecentlyDeletedAttackRepository.recentlyDeletedAttack()
@@ -132,7 +138,7 @@ class GetHistoryMonthUseCase(
     }
 
     /** The month before, for the progress message only: when any of it cannot be read, there is no message (D55). */
-    private fun previousMonthEntries(month: YearMonth, zone: ZoneId): PeriodEntries? {
+    private fun previousMonthEntries(month: YearMonth, zone: ZoneId): PeriodEntriesDomainModel? {
         val from = AttackDays.windowStart(month.atDay(1), zone)
         val to = AttackDays.windowEnd(month.atEndOfMonth(), zone)
         val attacks = getAttacksTouchingRepository.attacksTouching(from, to)
@@ -142,7 +148,7 @@ class GetHistoryMonthUseCase(
             marks is DayMarksResultDomainModel.Loaded &&
             intakes is AttackMedicationIntakesResultDomainModel.Loaded
         ) {
-            PeriodEntries(attacks.attacks, marks.marks, intakes.intakes)
+            PeriodEntriesDomainModel(attacks.attacks, marks.marks, intakes.intakes)
         } else {
             null
         }

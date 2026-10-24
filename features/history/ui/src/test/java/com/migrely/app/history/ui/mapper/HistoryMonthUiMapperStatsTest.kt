@@ -5,7 +5,7 @@ import com.migrely.app.history.presentation.model.IntensityLevelPresentationMode
 import com.migrely.app.history.presentation.model.MonthStatsPresentationModel
 import com.migrely.app.history.presentation.model.ProgressPresentationModel
 import com.migrely.app.history.ui.model.MonthStatsUiModel
-import com.migrely.app.history.ui.model.PeakUiModel
+import com.migrely.app.history.ui.model.PainLevelUiModel
 import com.migrely.app.history.ui.model.ProgressAgainstUiModel
 import com.migrely.app.history.ui.model.ProgressTrendUiModel
 import com.migrely.app.history.ui.model.ProgressUiModel
@@ -41,7 +41,7 @@ class HistoryMonthUiMapperStatsTest {
                 migraines = 4,
                 migraineDays = 6,
                 painFreeDays = 9,
-                averagePeak = PeakUiModel.Severe,
+                averagePeak = PainLevelUiModel.Severe,
                 attackMedicationDays = 5,
                 chronic = true,
                 progress = ProgressUiModel(
