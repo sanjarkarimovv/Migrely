@@ -6,7 +6,7 @@ import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 
 @RunWith(Parameterized::class)
-internal class ModeTapGuardTest(
+internal class GuardsTapsTest(
     private val previous: HomeMode,
     private val next: HomeMode,
     private val expected: Boolean
@@ -22,7 +22,9 @@ internal class ModeTapGuardTest(
             arrayOf(HomeMode.Loading, HomeMode.Today, false),
             arrayOf(HomeMode.Loading, HomeMode.Attack, false),
             arrayOf(HomeMode.Today, HomeMode.Today, false),
-            arrayOf(HomeMode.Attack, HomeMode.Attack, false)
+            arrayOf(HomeMode.Attack, HomeMode.Attack, false),
+            // Never reached in practice (home does not go back to Loading); guarding is harmless.
+            arrayOf(HomeMode.Today, HomeMode.Loading, true)
         )
     }
 

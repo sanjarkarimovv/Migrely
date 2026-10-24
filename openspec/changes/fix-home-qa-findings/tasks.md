@@ -21,7 +21,7 @@
   - #15 with "1 h".
 
   Record the results here
-- [ ] 3.3 Run an independent review of `git diff develop...feature/fix-home-qa-findings`, fix the real findings and validate strictly
+- [x] 3.3 Run an independent review of `git diff develop...feature/fix-home-qa-findings`, fix the real findings and validate strictly
 
 ## Verification record
 
@@ -51,4 +51,35 @@
 - **#15:** after "1 h", the line read "Started 10:00 AM · 1 h 0 min" 1.5 s later (before: "59 min" for up to 30 s).
 - **Settings:** unchanged throughout (font 1.0, rotation 0 with auto-rotate on, animations 1, auto time zone on).
   The walk's attacks were removed.
+
+## Independent review
+
+A `superpowers:code-reviewer` pass found no high-severity defects, one medium and five low.
+
+**Fixed:**
+- **M1:** the previous mode was written by a content's first `LaunchedEffect`. A quick switch back (Undo within the
+  1.2 s fade) reuses the old content, so `lastMode` stayed stale and a later double tap could pass unguarded. The guard
+  is now decided from the target mode in the same composition (`remember(mode)`, plus `SideEffect` into a plain
+  holder). Walked: end, Undo within about 1 s, then a later double tap on "Migraine ended" left the attack ended with
+  no new one.
+- **L1:** the leaving mode stays touchable until its 1.2 s fade ends, after a 1 s guard. The guard is now one overlay
+  above both modes and below the messages, and it lasts until the fade ends (1 s with reduce motion). BRD D32 and the
+  spec were updated.
+- **L2:** the guard became `TapGuard` in `:designsystem`, with a Compose UI test: taps within it do nothing, taps after
+  it work, and a new key arms it again, for a Button, a TextButton and a selectable.
+- **L4:** removed by the M1 fix.
+- **L5:** the calendar test now checks that the day number is not read twice.
+- **Nits:** the test class was renamed `GuardsTapsTest`, with a Today → Loading case.
+
+**Accepted:**
+- **L3:** a restart resets the date baseline of the midnight check. Every restart follows a fresh load, so the data is
+  already for the new date.
+- **Info:** the guard is pointer-only (TalkBack, switch access and Enter are not blocked) and also covers switches that
+  Undo causes. Both fit EC-UX-18.
+
+**After the fixes:**
+- gate: 576 unit tests;
+- designsystem 16/16 instrumented;
+- the #12 repros on emulator-5570 again: A 3/3 at 0.15, 0.4 and 0.7 s, and B 2/2 at 0.25 and 0.5 s;
+- `openspec validate fix-home-qa-findings --strict`: valid.
 

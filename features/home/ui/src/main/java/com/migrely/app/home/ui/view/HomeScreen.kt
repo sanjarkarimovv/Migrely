@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -21,12 +22,11 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.pointer.PointerEventPass
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.navigation.NavController
 import com.migrely.app.architecture.ui.view.ScreenEnterObserver
+import com.migrely.app.designsystem.input.TapGuard
 import com.migrely.app.designsystem.motion.rememberReduceMotion
 import com.migrely.app.home.presentation.model.HomeViewState
 import com.migrely.app.home.ui.di.HomeDependencies
@@ -43,6 +43,9 @@ private const val MODE_FADE_IN_MILLIS = 1_200
 private const val MODE_FADE_OUT_MILLIS = 600
 private const val COMPACT_HEIGHT_DP = 480
 private const val MODE_TAP_GUARD_MILLIS = 1_000L
+
+/** Holds the mode shown last without being snapshot state, so reading it never recomposes. */
+private class ShownMode(var mode: HomeMode)
 
 /** True in a short window (a phone in landscape), where the home layouts put text and controls side by side. */
 @Composable
@@ -163,8 +166,18 @@ fun HomeContents(
     modifier: Modifier = Modifier,
     monthCalendar: @Composable () -> Unit = {}
 ) {
-    // The mode shown last, so a mode that replaces the other one can guard its first second (BRD EC-UX-18).
-    val lastMode = remember { mutableStateOf(HomeMode.Loading) }
+    // Decided from the target mode in the same pass as the switch, so a quick switch back (for example Undo) can never
+    // leave a stale previous mode behind (BRD EC-UX-18, D32).
+    val shownMode = remember { ShownMode(HomeMode.Loading) }
+    val mode = viewState.mode
+    val guardTaps = remember(mode) { guardsTaps(shownMode.mode, mode) }
+    SideEffect { shownMode.mode = mode }
+    // The leaving mode stays touchable until its fade ends, so the guard lasts at least as long as the fade.
+    val guardMillis = if (reduceMotion) {
+        MODE_TAP_GUARD_MILLIS
+    } else {
+        maxOf(MODE_TAP_GUARD_MILLIS, MODE_FADE_IN_MILLIS.toLong())
+    }
     Box(modifier = modifier.fillMaxSize()) {
         AnimatedContent(
             targetState = viewState,
@@ -180,60 +193,40 @@ fun HomeContents(
             },
             label = "homeMode"
         ) { state ->
-            val guarded = remember { guardsTaps(lastMode.value, state.mode) }
-            LaunchedEffect(Unit) { lastMode.value = state.mode }
-            ModeTapGuard(active = guarded) {
-                when (state) {
-                    HomeViewStateUiModel.Loading -> Box(Modifier.fillMaxSize())
+            when (state) {
+                HomeViewStateUiModel.Loading -> Box(Modifier.fillMaxSize())
 
-                    is HomeViewStateUiModel.Today -> TodayContents(
-                        today = state.today,
-                        dayTitle = timeUiFormatter.formatDayTitle(nowMillis),
-                        nowMillis = nowMillis,
-                        skyAppearanceUiMapper = skyAppearanceUiMapper,
-                        timeUiFormatter = timeUiFormatter,
-                        onStartAttack = actions.onStartAttack,
-                        onAttackDetails = actions.onAttackDetails,
-                        onAddPastAttack = actions.onAddPastAttack,
-                        monthCalendar = monthCalendar
-                    )
+                is HomeViewStateUiModel.Today -> TodayContents(
+                    today = state.today,
+                    dayTitle = timeUiFormatter.formatDayTitle(nowMillis),
+                    nowMillis = nowMillis,
+                    skyAppearanceUiMapper = skyAppearanceUiMapper,
+                    timeUiFormatter = timeUiFormatter,
+                    onStartAttack = actions.onStartAttack,
+                    onAttackDetails = actions.onAttackDetails,
+                    onAddPastAttack = actions.onAddPastAttack,
+                    monthCalendar = monthCalendar
+                )
 
-                    is HomeViewStateUiModel.AttackInProgress -> AttackModeContents(
-                        attack = state.attack,
-                        nowMillis = nowMillis,
-                        reduceMotion = reduceMotion,
-                        timeUiFormatter = timeUiFormatter,
-                        actions = actions
-                    )
-                }
+                is HomeViewStateUiModel.AttackInProgress -> AttackModeContents(
+                    attack = state.attack,
+                    nowMillis = nowMillis,
+                    reduceMotion = reduceMotion,
+                    timeUiFormatter = timeUiFormatter,
+                    actions = actions
+                )
             }
+        }
+        // Above both modes and below the messages, so Undo always stays tappable.
+        if (guardTaps) {
+            TapGuard(
+                key = mode,
+                durationMillis = guardMillis,
+                Modifier.matchParentSize()
+            )
         }
         messages()
     }
-}
-
-/** While [active], consumes every pointer event for [MODE_TAP_GUARD_MILLIS] before any control of [content] sees it. */
-@Composable
-private fun ModeTapGuard(active: Boolean, content: @Composable () -> Unit) {
-    var armed by remember { mutableStateOf(active) }
-    if (armed) {
-        LaunchedEffect(Unit) {
-            delay(MODE_TAP_GUARD_MILLIS)
-            armed = false
-        }
-    }
-    val guard = if (armed) {
-        Modifier.pointerInput(Unit) {
-            awaitPointerEventScope {
-                while (true) {
-                    awaitPointerEvent(PointerEventPass.Initial).changes.forEach { it.consume() }
-                }
-            }
-        }
-    } else {
-        Modifier
-    }
-    Box(modifier = Modifier.fillMaxSize().then(guard)) { content() }
 }
 
 /**

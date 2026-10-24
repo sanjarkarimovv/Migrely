@@ -14,10 +14,16 @@ QA issues #12 to #15 (develop @ 50ce583), all in the home and calendar UI. No do
 | A ViewModel guard | It cannot tell a second tap of a double tap from a deliberate action, and the ViewModel is stateless. Rejected |
 | **Block pointer input to the new mode's content for 1 s after a switch** | Covers every control of the new mode, also under reduce motion, where there is no fade to rely on |
 
-`HomeContents` remembers the last mode shown. The content of a mode guards itself only when it replaces the other
-interactive mode, not after Loading, so launch and rotation (where `HomeContents` starts again) need no wait. While
-armed, a pointer-input modifier consumes every event in the initial pass, before any child sees it. The choice is a pure
-function, `guardsTaps(previous, next)`, covered by unit tests.
+`HomeContents` decides the guard from the target mode in the same composition as the switch:
+- `remember(mode) { guardsTaps(shown, mode) }`, then `SideEffect { shown = mode }` with a plain holder, so a quick switch
+  back, for example Undo within the fade, never leaves a stale previous mode behind (review M1);
+- one `TapGuard` from `:designsystem` (`input` package) lies above both modes and below the messages, so Undo stays
+  tappable. It swallows pointer events in the initial pass for 1 s, or until the 1.2 s fade ends when animations are on,
+  because the leaving mode stays touchable until then (review L1).
+
+There is no guard after Loading, so launch and rotation, where `HomeContents` starts again, need no wait. `guardsTaps` has
+unit tests, and `TapGuard` has a Compose UI test: taps within the guard do nothing, taps after it work, and a new key arms
+it again, for a Button, a TextButton and a selectable.
 
 ### D2. Merge semantics instead of clearing them (#14, EC-UX-19)
 

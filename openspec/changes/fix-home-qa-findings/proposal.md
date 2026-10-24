@@ -2,7 +2,7 @@
 
 ## Why
 
-The QA session tested `develop` with Maestro and found four defects on the home screen (GitHub issues #12 to #15). One
+The QA session tested `develop` with Maestro and found four defects on the home screen (GitHub issues #12 to #15, and #17). One
 of them stores wrong data in the core flow.
 - **#12 (S2):** "Migraine ended" in attack mode sits under the lower 32 dp of "Migraine started". A double tap there,
   common for a person in pain, starts an attack and ends it at once (a 0-minute attack). The mirror case ends an attack
@@ -10,7 +10,8 @@ of them stores wrong data in the core flow.
 - **#13 (S3):** the attack-mode line "Started … · N min" has 4.05:1 contrast. BRD §10 requires WCAG 2.1 AA (4.5:1).
 - **#14 (S3):** today's attack rows are not focusable for accessibility services. `clearAndSetSemantics` drops the
   clickable's focus semantics. Keyboard focus itself still reaches them, which was checked on the emulator. The
-  calendar days and the History rows of change 2 use the same pattern.
+  calendar days, the month card title and the History rows of change 2 use the same pattern. QA filed that as #17
+  (S3), and this change fixes it too.
 - **#15 (S4):** after "Started earlier? → 1 h", attack mode shows "59 min" for up to 30 s, because the clock behind the
   elapsed time ticks every 30 s and does not refresh when the start moves.
 
