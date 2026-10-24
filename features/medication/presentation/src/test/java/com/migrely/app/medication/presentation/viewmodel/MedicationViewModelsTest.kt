@@ -7,6 +7,7 @@ import com.migrely.app.medication.domain.model.MedicationLogDomainModel
 import com.migrely.app.medication.domain.model.MedicationLogResultDomainModel
 import com.migrely.app.medication.domain.model.MedicationLookupResultDomainModel
 import com.migrely.app.medication.domain.model.MedicationsResultDomainModel
+import com.migrely.app.medication.domain.model.RestoreMedicationResultDomainModel
 import com.migrely.app.medication.domain.model.SaveMedicationRequestDomainModel
 import com.migrely.app.medication.domain.model.SaveMedicationResultDomainModel
 import com.migrely.app.medication.domain.model.WriteResultDomainModel
@@ -26,6 +27,7 @@ import com.migrely.app.medication.presentation.INTAKE
 import com.migrely.app.medication.presentation.INTAKE_DOMAIN
 import com.migrely.app.medication.presentation.mapper.IntakePresentationMapper
 import com.migrely.app.medication.presentation.mapper.MedicationDomainMapper
+import com.migrely.app.medication.presentation.mapper.MedicationLogPresentationMapper
 import com.migrely.app.medication.presentation.mapper.MedicationPresentationMapper
 import com.migrely.app.medication.presentation.mapper.SaveProblemPresentationMapper
 import com.migrely.app.medication.presentation.model.EditMedicationPresentationNotification
@@ -115,7 +117,10 @@ class MedicationsViewModelTest :
 
     @Test
     fun `When undoing an archive then undone`() = runTest {
-        restoreMedicationUseCase.givenSuccessfulExecution("m", WriteResultDomainModel.Done)
+        restoreMedicationUseCase.givenSuccessfulExecution(
+            "m",
+            RestoreMedicationResultDomainModel.Restored
+        )
         getMedicationsUseCase.givenSuccessfulExecution(
             MedicationsResultDomainModel.Loaded(emptyList())
         )
@@ -124,6 +129,19 @@ class MedicationsViewModelTest :
         classUnderTest.onUndoArchiveAction("m")
 
         assertEquals(MedicationsPresentationNotification.Undone, notification.await())
+    }
+
+    @Test
+    fun `Given 50 active again when undoing an archive then limit reached`() = runTest {
+        restoreMedicationUseCase.givenSuccessfulExecution(
+            "m",
+            RestoreMedicationResultDomainModel.LimitReached
+        )
+        val notification = async(start = UNDISPATCHED) { classUnderTest.notification.first() }
+
+        classUnderTest.onUndoArchiveAction("m")
+
+        assertEquals(MedicationsPresentationNotification.LimitReached, notification.await())
     }
 
     @Test
@@ -294,7 +312,7 @@ class LogMedicationViewModelTest :
             logIntakeUseCase,
             undoIntakeUseCase,
             saveMedicationUseCase,
-            MedicationPresentationMapper(),
+            MedicationLogPresentationMapper(MedicationPresentationMapper()),
             MedicationDomainMapper(),
             IntakePresentationMapper(),
             SaveProblemPresentationMapper(),
@@ -376,6 +394,57 @@ class LogMedicationViewModelTest :
 
             assertEquals(LogMedicationPresentationNotification.Logged(INTAKE), notification.await())
         }
+
+    @Test
+    fun `Given the first medication is saved but not logged then the list is reloaded`() = runTest {
+        saveMedicationUseCase.givenSuccessfulExecution(
+            SaveMedicationRequestDomainModel(
+                null,
+                "Ibuprofen",
+                IBUPROFEN_DOMAIN.kind,
+                IBUPROFEN_DOMAIN.category,
+                null
+            ),
+            SaveMedicationResultDomainModel.Saved(IBUPROFEN_DOMAIN)
+        )
+        logIntakeUseCase.givenSuccessfulExecution(
+            logRequest,
+            LogIntakeResultDomainModel.StorageFull
+        )
+        getMedicationLogUseCase.givenSuccessfulExecution(
+            "a",
+            MedicationLogResultDomainModel.Loaded(
+                MedicationLogDomainModel(
+                    FIXTURE_TIME,
+                    FIXTURE_ZONE,
+                    "a",
+                    listOf(IBUPROFEN_DOMAIN)
+                )
+            )
+        )
+        val notification = async(start = UNDISPATCHED) { classUnderTest.notification.first() }
+        val state = async(start = UNDISPATCHED) { classUnderTest.viewState.first() }
+
+        classUnderTest.onAddAndLogAction(
+            "Ibuprofen",
+            MedicationCategoryPresentationModel.SimplePainkiller,
+            "a",
+            FIXTURE_TIME
+        )
+
+        assertEquals(LogMedicationPresentationNotification.StorageFull, notification.await())
+        assertEquals(
+            LogMedicationViewState.Ready(
+                MedicationLogPresentationModel(
+                    FIXTURE_TIME,
+                    FIXTURE_ZONE,
+                    "a",
+                    listOf(IBUPROFEN)
+                )
+            ),
+            state.await()
+        )
+    }
 
     @Test
     fun `Given an invalid first name when adding and logging then not saved`() = runTest {

@@ -3,12 +3,15 @@ package com.migrely.app.medication.ui.mapper
 import java.time.DateTimeException
 import java.time.Instant
 import java.time.ZoneId
+import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
+import java.time.format.TextStyle
 import java.util.Locale
 
 /**
  * Formats intake times in the zone where they were taken (BRD EC-TIM-02): the clock time today, with the short date
- * before it on another day. Inputs are functions so the locale, 24-hour setting and device zone are read at every call.
+ * before it on another day, and that zone's city when it differs from the device's. Inputs are functions so the
+ * locale, 24-hour setting and device zone are read at every call.
  */
 class MedicationTimeUiFormatter(
     private val locale: () -> Locale,
@@ -24,10 +27,28 @@ class MedicationTimeUiFormatter(
             bestDateTimePattern(locale(), if (is24HourFormat()) "Hm" else "hm"),
             locale()
         ).format(at)
-        if (at.toLocalDate() == today) return time
-        val day = DateTimeFormatter.ofPattern(bestDateTimePattern(locale(), "EEEdMMM"), locale())
-            .format(at)
-        return "$day, $time"
+        val text = if (at.toLocalDate() == today) {
+            time
+        } else {
+            val day = DateTimeFormatter.ofPattern(
+                bestDateTimePattern(locale(), "EEEdMMM"),
+                locale()
+            )
+                .format(at)
+            "$day, $time"
+        }
+        return if (zone.normalized() ==
+            deviceZone().normalized()
+        ) {
+            text
+        } else {
+            "$text (${zone.city()})"
+        }
+    }
+
+    private fun ZoneId.city(): String = when (this) {
+        is ZoneOffset -> getDisplayName(TextStyle.SHORT, locale())
+        else -> id.substringAfterLast('/').replace('_', ' ')
     }
 
     @Suppress("SwallowedException")

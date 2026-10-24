@@ -5,6 +5,7 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.migrely.app.datasource.attack.model.AttackLocalModel
 import com.migrely.app.datasource.attack.model.AttackTagLocalModel
+import com.migrely.app.datasource.attack.model.AttackWithPointsLocalModel
 import com.migrely.app.datasource.attack.model.IntensityPointLocalModel
 import com.migrely.app.datasource.database.MigrelyDatabase
 import org.junit.After
@@ -58,6 +59,22 @@ class AttackDaoDetailsTest {
 
         assertEquals("open", classUnderTest.overlapping("this", 5_000L, 6_000L)?.attack?.id)
     }
+
+    @Test
+    fun givenAnAttack_whenListingOverlapsOfAMinute_thenItsStartIsInsideAndItsEndOutside() {
+        // A medication's picked minute links to the attack it overlaps (EC-MED-09).
+        classUnderTest.insertAttack(attack(id = "a", start = 61_000L, end = 180_000L))
+        classUnderTest.insertAttack(attack(id = "open", start = 600_000L, end = null))
+
+        assertEquals(listOf("a"), classUnderTest.overlappingAll(null, 60_000L, 120_000L).ids())
+        assertEquals(
+            emptyList<String>(),
+            classUnderTest.overlappingAll(null, 180_000L, 240_000L).ids()
+        )
+        assertEquals(listOf("open"), classUnderTest.overlappingAll(null, 900_000L, 960_000L).ids())
+    }
+
+    private fun List<AttackWithPointsLocalModel>.ids() = map { it.attack.id }
 
     @Test
     fun givenADeletedAttack_whenCheckingOverlap_thenItIsIgnored() {

@@ -209,18 +209,18 @@ class AttackDetailsRepository(
     }
 
     override fun restoreIntake(attackId: String, intake: AttackIntakeDomainModel) = write {
-        medicationDataSource.restoreIntake(
-            IntakeDataModel(
-                id = intake.id,
-                medicationId = intake.medicationId,
-                medicationName = intake.medicationName,
-                attackId = attackId,
-                takenAt = intake.takenAt,
-                takenZoneId = intake.zone.id,
-                dose = intake.dose
-            )
-        )
+        medicationDataSource.restoreIntake(toData(attackId, intake))
     }
+
+    private fun toData(attackId: String, intake: AttackIntakeDomainModel) = IntakeDataModel(
+        id = intake.id,
+        medicationId = intake.medicationId,
+        medicationName = intake.medicationName,
+        attackId = attackId,
+        takenAt = intake.takenAt,
+        takenZoneId = intake.zone.id,
+        dose = intake.dose
+    )
 
     private fun toData(point: IntensityPointDomainModel) = IntensityPointDataModel(
         point.at,

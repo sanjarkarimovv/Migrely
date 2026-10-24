@@ -14,14 +14,13 @@ import com.migrely.app.medication.domain.usecase.SaveMedicationUseCase
 import com.migrely.app.medication.domain.usecase.UndoIntakeUseCase
 import com.migrely.app.medication.presentation.mapper.IntakePresentationMapper
 import com.migrely.app.medication.presentation.mapper.MedicationDomainMapper
-import com.migrely.app.medication.presentation.mapper.MedicationPresentationMapper
+import com.migrely.app.medication.presentation.mapper.MedicationLogPresentationMapper
 import com.migrely.app.medication.presentation.mapper.SaveProblemPresentationMapper
 import com.migrely.app.medication.presentation.model.LogMedicationPresentationNotification
 import com.migrely.app.medication.presentation.model.LogMedicationPresentationNotification.SomethingWentWrong
 import com.migrely.app.medication.presentation.model.LogMedicationViewState
 import com.migrely.app.medication.presentation.model.MedicationCategoryPresentationModel
 import com.migrely.app.medication.presentation.model.MedicationKindPresentationModel
-import com.migrely.app.medication.presentation.model.MedicationLogPresentationModel
 import com.migrely.app.medication.presentation.model.MedicationPresentationModel
 import com.migrely.app.medication.presentation.navigation.LogMedicationPresentationNavigationEvent
 import java.time.Instant
@@ -36,7 +35,7 @@ class LogMedicationViewModel(
     private val logIntakeUseCase: LogIntakeUseCase,
     private val undoIntakeUseCase: UndoIntakeUseCase,
     private val saveMedicationUseCase: SaveMedicationUseCase,
-    private val medicationPresentationMapper: MedicationPresentationMapper,
+    private val medicationLogPresentationMapper: MedicationLogPresentationMapper,
     private val medicationDomainMapper: MedicationDomainMapper,
     private val intakePresentationMapper: IntakePresentationMapper,
     private val saveProblemPresentationMapper: SaveProblemPresentationMapper,
@@ -50,14 +49,7 @@ class LogMedicationViewModel(
                 when (result) {
                     is MedicationLogResultDomainModel.Loaded -> updateViewState(
                         LogMedicationViewState.Ready(
-                            MedicationLogPresentationModel(
-                                defaultTime = result.log.defaultTime,
-                                zone = result.log.zone,
-                                attackId = result.log.attackId,
-                                medications = result.log.medications.map(
-                                    medicationPresentationMapper::toPresentation
-                                )
-                            )
+                            medicationLogPresentationMapper.toPresentation(result.log)
                         )
                     )
 
@@ -128,7 +120,14 @@ class LogMedicationViewModel(
     fun onDoneAction() = emitNavigationEvent(LogMedicationPresentationNavigationEvent.OnDone)
 
     private fun logSaved(medication: MedicationDomainModel, attackId: String?, takenAt: Instant) =
-        logIntake(medication.id, medication.name, medication.defaultDose, attackId, takenAt)
+        logIntake(
+            medication.id,
+            medication.name,
+            medication.defaultDose,
+            attackId,
+            takenAt,
+            afterSave = true
+        )
 
     private fun reportSaveProblem(result: SaveMedicationResultDomainModel) {
         val problem = saveProblemPresentationMapper.toPresentation(result)
@@ -147,7 +146,8 @@ class LogMedicationViewModel(
         medicationName: String,
         dose: String?,
         attackId: String?,
-        takenAt: Instant
+        takenAt: Instant,
+        afterSave: Boolean = false
     ) {
         logIntakeUseCase(
             value = LogIntakeRequestDomainModel(
@@ -174,6 +174,8 @@ class LogMedicationViewModel(
                         LogIntakeResultDomainModel.Failed -> SomethingWentWrong
                     }
                 )
+                // The medication saved just before stays: offer it as a choice, so a retry never adds it twice.
+                if (afterSave && result !is LogIntakeResultDomainModel.Logged) onEnter(attackId)
             }
         )
     }

@@ -8,6 +8,8 @@ class SaveProblemUiMapper {
         is SaveProblemPresentationModel.Duplicate -> SaveProblemUiModel.Duplicate(
             problem.existingName
         )
+        is SaveProblemPresentationModel.ArchivedName ->
+            SaveProblemUiModel.ArchivedName(problem.archivedName)
         SaveProblemPresentationModel.LimitReached -> SaveProblemUiModel.LimitReached
         SaveProblemPresentationModel.InvalidName -> SaveProblemUiModel.InvalidName
         SaveProblemPresentationModel.InvalidDose -> SaveProblemUiModel.InvalidDose

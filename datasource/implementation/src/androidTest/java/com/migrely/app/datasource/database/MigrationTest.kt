@@ -67,6 +67,30 @@ class MigrationTest {
     }
 
     @Test
+    fun migrating1To3_keepsAttacks_throughEveryStep() {
+        // Given a version 1 database with an ended attack
+        helper.createDatabase(TEST_DATABASE, 1).apply {
+            execSQL(
+                "INSERT INTO attack (id, start_epoch_millis, start_zone_id, end_epoch_millis, " +
+                    "long_check_confirmed_epoch_millis, long_check_disabled, " +
+                    "created_epoch_millis, updated_epoch_millis) " +
+                    "VALUES ('a', 1000, 'Asia/Tashkent', 5000, NULL, 0, 1000, 5000)"
+            )
+            close()
+        }
+
+        // When
+        val migrated = helper.runMigrationsAndValidate(TEST_DATABASE, 3, true)
+
+        // Then
+        migrated.query("SELECT end_epoch_millis FROM attack WHERE id = 'a'").use { cursor ->
+            cursor.moveToFirst()
+            assertEquals(5000L, cursor.getLong(0))
+        }
+        migrated.close()
+    }
+
+    @Test
     fun migrating2To3_keepsAttacks_andAddsEmptyMedicationTables() {
         // Given a version 2 database with an attack and a tag
         helper.createDatabase(TEST_DATABASE, 2).apply {

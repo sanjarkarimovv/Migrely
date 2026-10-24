@@ -9,6 +9,8 @@ class SaveProblemPresentationMapper {
         when (result) {
             is SaveMedicationResultDomainModel.Duplicate ->
                 SaveProblemPresentationModel.Duplicate(result.existingName)
+            is SaveMedicationResultDomainModel.ArchivedName ->
+                SaveProblemPresentationModel.ArchivedName(result.archivedName)
             SaveMedicationResultDomainModel.LimitReached ->
                 SaveProblemPresentationModel.LimitReached
             SaveMedicationResultDomainModel.InvalidName -> SaveProblemPresentationModel.InvalidName

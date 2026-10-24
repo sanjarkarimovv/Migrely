@@ -372,5 +372,18 @@ abstract class AttackDao {
     @Query("UPDATE medication_intake SET attack_id = :survivorId WHERE attack_id IN (:absorbedIds)")
     abstract fun moveIntakes(absorbedIds: List<String>, survivorId: String)
 
+    @Query("UPDATE medication_intake SET attack_id = NULL WHERE attack_id = :attackId")
+    abstract fun detachIntakes(attackId: String)
+
+    /**
+     * Removes an attack started by mistake for good. Its points and tags go with it; a medication logged meanwhile was
+     * really taken, so its intake stays, on its own.
+     */
+    @Transaction
+    open fun discard(attackId: String) {
+        detachIntakes(attackId)
+        delete(attackId)
+    }
+
     data class StartOutcome(val attack: AttackWithPointsLocalModel, val created: Boolean)
 }

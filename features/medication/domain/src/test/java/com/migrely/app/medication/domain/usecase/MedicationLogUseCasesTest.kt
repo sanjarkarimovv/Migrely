@@ -35,6 +35,7 @@ private val ZONE: ZoneId = ZoneId.of("Asia/Tashkent")
 private val NOW: Instant = Instant.parse("2026-10-24T09:20:42Z")
 private val START: Instant = Instant.parse("2026-10-24T05:10:00Z")
 private val END: Instant = Instant.parse("2026-10-24T07:00:00Z")
+private val TOKYO: ZoneId = ZoneId.of("Asia/Tokyo")
 
 private val PREVENTIVE = MedicationDomainModel(
     "p",
@@ -91,7 +92,7 @@ class GetMedicationLogUseCaseTest {
     fun `Given an attack in progress when loading then now and the attack`() {
         given(getAttackRepository.attack("x"))
             .willReturn(
-                AttackLookupResultDomainModel.Found(LinkedAttackDomainModel("x", START, null))
+                AttackLookupResultDomainModel.Found(LinkedAttackDomainModel("x", START, null, ZONE))
             )
 
         val actual = classUnderTest.executeInBackground(
@@ -103,10 +104,10 @@ class GetMedicationLogUseCaseTest {
     }
 
     @Test
-    fun `Given an ended attack when loading then its start`() {
+    fun `Given an ended attack recorded in Tokyo when loading then its start in Tokyo`() {
         given(getAttackRepository.attack("x"))
             .willReturn(
-                AttackLookupResultDomainModel.Found(LinkedAttackDomainModel("x", START, END))
+                AttackLookupResultDomainModel.Found(LinkedAttackDomainModel("x", START, END, TOKYO))
             )
 
         val actual = classUnderTest.executeInBackground(
@@ -114,6 +115,7 @@ class GetMedicationLogUseCaseTest {
         ) as MedicationLogResultDomainModel.Loaded
 
         assertEquals(START, actual.log.defaultTime)
+        assertEquals(TOKYO, actual.log.zone)
     }
 
     @Test
@@ -148,6 +150,7 @@ class GetMedicationLogUseCaseTest {
 
 class LogIntakeUseCaseTest {
     private val getCurrentTimeRepository: GetCurrentTimeRepository = mock()
+    private val getAttackRepository: GetAttackRepository = mock()
     private val findAttackAtRepository: FindAttackAtRepository = mock()
     private val addIntakeRepository: AddIntakeRepository = mock()
     private lateinit var classUnderTest: LogIntakeUseCase
@@ -156,12 +159,17 @@ class LogIntakeUseCaseTest {
     fun setUp() {
         classUnderTest = LogIntakeUseCase(
             getCurrentTimeRepository,
+            getAttackRepository,
             findAttackAtRepository,
             addIntakeRepository,
             CoroutineContextProvider.Default
         )
         given(getCurrentTimeRepository.currentTime()).willReturn(CurrentTimeDomainModel(NOW, ZONE))
-        given(findAttackAtRepository.attackAt(any())).willReturn(AttackLookupResultDomainModel.None)
+        given(findAttackAtRepository.attackDuring(any(), any()))
+            .willReturn(AttackLookupResultDomainModel.None)
+        given(getAttackRepository.attack("x")).willReturn(
+            AttackLookupResultDomainModel.Found(LinkedAttackDomainModel("x", START, null, ZONE))
+        )
     }
 
     private fun request(at: Instant, attackId: String? = null) =
@@ -184,19 +192,33 @@ class LogIntakeUseCaseTest {
             ),
             actual
         )
-        verify(findAttackAtRepository, never()).attackAt(any())
+        verify(findAttackAtRepository, never()).attackDuring(any(), any())
     }
 
     @Test
-    fun `Given no attack and a time inside one when logging then linked to it`() {
+    fun `Given an attack recorded in Tokyo when logging for it then stored in Tokyo`() {
         givenAdded()
-        given(findAttackAtRepository.attackAt(START))
+        given(getAttackRepository.attack("x")).willReturn(
+            AttackLookupResultDomainModel.Found(LinkedAttackDomainModel("x", START, END, TOKYO))
+        )
+
+        classUnderTest.executeInBackground(request(START, attackId = "x"))
+
+        verify(addIntakeRepository).addIntake("a", "x", START, TOKYO, "400 mg")
+    }
+
+    @Test
+    fun `Given no attack when logging then the attack overlapping the picked minute`() {
+        givenAdded()
+        val minute = START.plusSeconds(60)
+        given(findAttackAtRepository.attackDuring(START, minute))
             .willReturn(
-                AttackLookupResultDomainModel.Found(LinkedAttackDomainModel("y", START, END))
+                AttackLookupResultDomainModel.Found(LinkedAttackDomainModel("y", START, END, TOKYO))
             )
 
         classUnderTest.executeInBackground(request(START))
 
+        // Picked on home, in the device's zone, even when the attack started elsewhere.
         verify(addIntakeRepository).addIntake("a", "y", START, ZONE, "400 mg")
     }
 
@@ -230,7 +252,7 @@ class LogIntakeUseCaseTest {
     @Test
     fun `Given the attack lookup fails when logging then failed`() {
         given(
-            findAttackAtRepository.attackAt(any())
+            findAttackAtRepository.attackDuring(any(), any())
         ).willReturn(AttackLookupResultDomainModel.Failed)
 
         assertEquals(

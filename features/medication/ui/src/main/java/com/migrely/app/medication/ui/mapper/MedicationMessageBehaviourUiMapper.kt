@@ -11,8 +11,9 @@ private const val READING_MILLIS = 8_000L
 class MedicationMessageBehaviourUiMapper {
     fun toUi(message: MedicationMessageUiModel): MedicationMessageBehaviourUiModel =
         when (message) {
+            // Read like the other undoable removals ("Medication removed" on details).
             is MedicationMessageUiModel.Archived ->
-                MedicationMessageBehaviourUiModel(SnackbarTone.Confirmation, true, UNDO_MILLIS)
+                MedicationMessageBehaviourUiModel(SnackbarTone.Information, true, UNDO_MILLIS)
 
             MedicationMessageUiModel.Undone,
             MedicationMessageUiModel.IntakeUndone,

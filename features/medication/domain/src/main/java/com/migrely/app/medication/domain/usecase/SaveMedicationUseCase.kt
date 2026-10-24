@@ -64,6 +64,9 @@ class SaveMedicationUseCase(
         val clashes = existing != null && existing.id != editedId &&
             (editedId != null || !existing.archived)
         return when {
+            clashes && checkNotNull(existing).archived ->
+                SaveMedicationResultDomainModel.ArchivedName(existing.name)
+
             clashes -> SaveMedicationResultDomainModel.Duplicate(checkNotNull(existing).name)
 
             editedId != null -> updateMedicationRepository.updateMedication(

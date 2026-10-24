@@ -24,6 +24,7 @@ import com.migrely.app.medication.domain.usecase.SaveMedicationUseCase
 import com.migrely.app.medication.domain.usecase.UndoIntakeUseCase
 import com.migrely.app.medication.presentation.mapper.IntakePresentationMapper
 import com.migrely.app.medication.presentation.mapper.MedicationDomainMapper
+import com.migrely.app.medication.presentation.mapper.MedicationLogPresentationMapper
 import com.migrely.app.medication.presentation.mapper.MedicationPresentationMapper
 import com.migrely.app.medication.presentation.mapper.SaveProblemPresentationMapper
 import com.migrely.app.medication.presentation.viewmodel.EditMedicationViewModel
@@ -75,9 +76,14 @@ internal object MedicationModule {
 
     @Provides
     fun providesRestoreMedicationUseCase(
-        repository: SetMedicationArchivedRepository,
+        countActiveMedicationsRepository: CountActiveMedicationsRepository,
+        setMedicationArchivedRepository: SetMedicationArchivedRepository,
         coroutineContextProvider: CoroutineContextProvider
-    ) = RestoreMedicationUseCase(repository, coroutineContextProvider)
+    ) = RestoreMedicationUseCase(
+        countActiveMedicationsRepository,
+        setMedicationArchivedRepository,
+        coroutineContextProvider
+    )
 
     @Provides
     fun providesGetMedicationLogUseCase(
@@ -95,11 +101,13 @@ internal object MedicationModule {
     @Provides
     fun providesLogIntakeUseCase(
         getCurrentTimeRepository: GetCurrentTimeRepository,
+        getAttackRepository: GetAttackRepository,
         findAttackAtRepository: FindAttackAtRepository,
         addIntakeRepository: AddIntakeRepository,
         coroutineContextProvider: CoroutineContextProvider
     ) = LogIntakeUseCase(
         getCurrentTimeRepository,
+        getAttackRepository,
         findAttackAtRepository,
         addIntakeRepository,
         coroutineContextProvider
@@ -151,7 +159,7 @@ internal object MedicationModule {
         logIntakeUseCase,
         undoIntakeUseCase,
         saveMedicationUseCase,
-        MedicationPresentationMapper(),
+        MedicationLogPresentationMapper(MedicationPresentationMapper()),
         MedicationDomainMapper(),
         IntakePresentationMapper(),
         SaveProblemPresentationMapper(),

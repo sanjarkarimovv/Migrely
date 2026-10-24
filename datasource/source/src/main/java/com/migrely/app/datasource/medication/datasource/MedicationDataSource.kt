@@ -32,7 +32,7 @@ interface MedicationDataSource {
         defaultDose: String?
     ): MedicationDataModel
 
-    /** Replaces every field and makes the medication active; null when it does not exist. */
+    /** Replaces its fields, never its archived flag; null when it does not exist. */
     @Suppress("LongParameterList")
     fun updateMedication(
         medicationId: String,

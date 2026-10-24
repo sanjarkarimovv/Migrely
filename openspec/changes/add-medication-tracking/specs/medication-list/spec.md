@@ -33,6 +33,10 @@ with its history (BRD EC-MED-07).
 - **WHEN** "Ibuprofen" exists and the user adds " ibuprofen "
 - **THEN** nothing is added and "You already have Ibuprofen." is shown
 
+#### Scenario: Renaming to an archived name
+- **WHEN** "Sumatriptan" is archived and the user renames another medication to "Sumatriptan"
+- **THEN** nothing is saved and "Sumatriptan is in your archive. Add it as a new medication to bring it back." is shown
+
 #### Scenario: Archived name
 - **WHEN** "Sumatriptan" (Triptan, 50 mg) was archived and the user adds "sumatriptan" with "Not sure" and no dose
 - **THEN** Sumatriptan is active again as it was, Triptan with 50 mg, and keeps its past intakes
@@ -56,8 +60,9 @@ choices when logging, and SHALL stay in the history of every intake. Archiving S
   lists it
 
 ### Requirement: Order and limit
-My medications and the choices when logging SHALL list the most recently used medications first, then by name. At most
-50 medications SHALL be active at once; at the limit, adding SHALL be refused with an explanation (BRD D35).
+My medications SHALL list the most recently used medications first, then by name; the choices when logging put acute
+medications before preventive ones in that order (see medication-intakes). At most 50 medications SHALL be active at
+once; at the limit, adding, and "Undo" after archiving, SHALL be refused with an explanation (BRD D35).
 
 #### Scenario: Recently used first
 - **WHEN** Sumatriptan was taken yesterday and Ibuprofen last month

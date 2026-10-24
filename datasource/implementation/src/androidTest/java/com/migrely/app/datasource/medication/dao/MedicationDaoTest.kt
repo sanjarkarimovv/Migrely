@@ -1,5 +1,6 @@
 package com.migrely.app.datasource.medication.dao
 
+import android.database.sqlite.SQLiteConstraintException
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -87,7 +88,7 @@ class MedicationDaoTest {
     }
 
     @Test
-    fun givenAnArchivedMedication_whenUpdating_thenItIsActiveWithTheNewFields() {
+    fun givenAnArchivedMedication_whenUpdating_thenItStaysArchivedWithTheNewFields() {
         classUnderTest.insert(medication("p", "Paracetamol", archived = true))
 
         val changed = classUnderTest.update("p", "Panadol", "panadol", "ACUTE", null, "500 mg", 7L)
@@ -98,7 +99,8 @@ class MedicationDaoTest {
             listOf("Panadol", "panadol", null, "500 mg"),
             listOf(stored.name, stored.nameKey, stored.category, stored.defaultDose)
         )
-        assertEquals(false, stored.archived)
+        // Only "Undo" or adding the name again brings it back, after the limit check (D35).
+        assertEquals(true, stored.archived)
         assertEquals(0, classUnderTest.update("missing", "X", "x", "ACUTE", null, null, 7L))
     }
 
@@ -118,17 +120,60 @@ class MedicationDaoTest {
     }
 
     @Test
-    fun givenAnAttackWithIntakes_whenItIsRemovedForGood_thenItsIntakesGoWithIt() {
+    fun givenADeletedAttackWithIntakes_whenRestoredInTime_thenItsIntakesAreBack() {
+        attackDao.insertAttack(attack("a", 1_000L))
+        classUnderTest.insert(medication("i", "Ibuprofen"))
+        classUnderTest.insertIntake(intake("1", "i", "a", 2_000L))
+
+        attackDao.softDelete("a", 5_000L)
+        attackDao.clearDeleted("a", 6_000L)
+
+        assertEquals(listOf("1"), classUnderTest.intakesOfAttack("a").map { it.id })
+    }
+
+    @Test
+    fun givenADeletedAttackWithIntakes_whenPurged_thenItsIntakesGoAndOthersStay() {
         attackDao.insertAttack(attack("a", 1_000L))
         classUnderTest.insert(medication("i", "Ibuprofen"))
         classUnderTest.insertIntake(intake("1", "i", "a", 2_000L))
         classUnderTest.insertIntake(intake("2", "i", null, 3_000L))
 
-        attackDao.delete("a")
+        attackDao.softDelete("a", 5_000L)
+        attackDao.purgeDeletedBefore(6_000L)
 
-        assertEquals(emptyList<String>(), classUnderTest.intakesOfAttack("a").map { it.id })
+        assertEquals(listOf("2"), intakeAttackIds().keys.toList())
         assertEquals(listOf("i"), classUnderTest.activeByLastUse().map { it.id })
     }
+
+    @Test
+    fun givenAnAttackStartedByMistakeWithAnIntake_whenDiscarded_thenTheIntakeStaysOnItsOwn() {
+        attackDao.insertAttack(attack("a", 1_000L))
+        classUnderTest.insert(medication("i", "Ibuprofen"))
+        classUnderTest.insertIntake(intake("1", "i", "a", 2_000L))
+
+        attackDao.discard("a")
+
+        assertNull(attackDao.byId("a"))
+        assertEquals(mapOf<String, String?>("1" to null), intakeAttackIds())
+    }
+
+    @Test(expected = SQLiteConstraintException::class)
+    fun givenAMedication_whenInsertingTheSameNameKey_thenRefused() {
+        classUnderTest.insert(medication("i", "Ibuprofen"))
+        classUnderTest.insert(medication("j", "ibuprofen"))
+    }
+
+    private fun intakeAttackIds(): Map<String, String?> =
+        database.query("SELECT id, attack_id FROM medication_intake ORDER BY id", null).use {
+            buildMap {
+                while (it.moveToNext()) {
+                    put(
+                        it.getString(0),
+                        if (it.isNull(1)) null else it.getString(1)
+                    )
+                }
+            }
+        }
 
     @Test
     fun givenTwoAttacksWithIntakes_whenMerging_thenTheIntakesMoveToTheSurvivor() {

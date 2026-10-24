@@ -3,6 +3,7 @@ package com.migrely.app.di
 import com.migrely.app.datasource.attack.datasource.AttackDataSource
 import com.migrely.app.datasource.clock.datasource.ClockDataSource
 import com.migrely.app.datasource.medication.datasource.MedicationDataSource
+import com.migrely.app.medication.data.mapper.LinkedAttackDomainMapper
 import com.migrely.app.medication.data.mapper.MedicationCategoryDataMapper
 import com.migrely.app.medication.data.mapper.MedicationDomainMapper
 import com.migrely.app.medication.data.mapper.MedicationKindDataMapper
@@ -39,7 +40,8 @@ internal object MedicationDataModule {
         clockDataSource = clockDataSource,
         medicationDomainMapper = MedicationDomainMapper(),
         medicationKindDataMapper = MedicationKindDataMapper(),
-        medicationCategoryDataMapper = MedicationCategoryDataMapper()
+        medicationCategoryDataMapper = MedicationCategoryDataMapper(),
+        linkedAttackDomainMapper = LinkedAttackDomainMapper()
     )
 
     @Provides

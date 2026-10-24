@@ -3,6 +3,7 @@ package com.migrely.app.medication.presentation.viewmodel
 import com.migrely.app.architecture.domain.UseCaseExecutor
 import com.migrely.app.architecture.presentation.viewmodel.BaseViewModel
 import com.migrely.app.medication.domain.model.MedicationsResultDomainModel
+import com.migrely.app.medication.domain.model.RestoreMedicationResultDomainModel
 import com.migrely.app.medication.domain.model.WriteResultDomainModel
 import com.migrely.app.medication.domain.usecase.ArchiveMedicationUseCase
 import com.migrely.app.medication.domain.usecase.GetMedicationsUseCase
@@ -44,7 +45,21 @@ class MedicationsViewModel(
         restoreMedicationUseCase(
             value = medicationId,
             onResult = { result ->
-                reportWrite(result) { notify(MedicationsPresentationNotification.Undone) }
+                when (result) {
+                    RestoreMedicationResultDomainModel.Restored -> {
+                        notify(MedicationsPresentationNotification.Undone)
+                        loadMedications()
+                    }
+
+                    RestoreMedicationResultDomainModel.LimitReached ->
+                        notify(MedicationsPresentationNotification.LimitReached)
+
+                    RestoreMedicationResultDomainModel.StorageFull ->
+                        notify(MedicationsPresentationNotification.StorageFull)
+
+                    RestoreMedicationResultDomainModel.Failed ->
+                        notify(MedicationsPresentationNotification.SomethingWentWrong)
+                }
             }
         )
     }

@@ -4,6 +4,6 @@ import com.migrely.app.medication.domain.model.AttackLookupResultDomainModel
 import java.time.Instant
 
 interface FindAttackAtRepository {
-    /** The attack whose time contains [instant]; an attack in progress runs to now. */
-    fun attackAt(instant: Instant): AttackLookupResultDomainModel
+    /** An attack whose time overlaps [from, to); an attack in progress runs to now. */
+    fun attackDuring(from: Instant, to: Instant): AttackLookupResultDomainModel
 }

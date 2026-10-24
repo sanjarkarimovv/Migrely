@@ -8,6 +8,9 @@ sealed interface MedicationsPresentationNotification : PresentationNotification 
 
     data object Undone : MedicationsPresentationNotification
 
+    /** "Undo" came after the list reached 50 again, so the medication stays archived (BRD D35). */
+    data object LimitReached : MedicationsPresentationNotification
+
     data object StorageFull : MedicationsPresentationNotification
 
     data object SomethingWentWrong : MedicationsPresentationNotification

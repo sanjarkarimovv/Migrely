@@ -6,7 +6,6 @@ import com.migrely.app.attack.presentation.model.SymptomPresentationModel
 import com.migrely.app.attack.presentation.model.TriggerPresentationModel
 import com.migrely.app.attack.ui.model.AttackDetailsUiModel
 import com.migrely.app.attack.ui.model.AttackDetailsViewStateUiModel
-import com.migrely.app.attack.ui.model.AttackIntakeUiModel
 import com.migrely.app.attack.ui.model.IntensityPointUiModel
 import com.migrely.app.attack.ui.model.SymptomUiModel
 import com.migrely.app.attack.ui.model.TriggerUiModel
@@ -17,7 +16,8 @@ class AttackDetailsViewStateUiMapper(
     private val builtInSymptomUiMapper: BuiltInSymptomUiMapper,
     private val builtInTriggerUiMapper: BuiltInTriggerUiMapper,
     private val customTagUiMapper: CustomTagUiMapper,
-    private val functionalImpactUiMapper: FunctionalImpactUiMapper
+    private val functionalImpactUiMapper: FunctionalImpactUiMapper,
+    private val attackIntakeUiMapper: AttackIntakeUiMapper
 ) {
     fun toUi(viewState: AttackDetailsViewState): AttackDetailsViewStateUiModel = when (viewState) {
         AttackDetailsViewState.Loading -> AttackDetailsViewStateUiModel.Loading
@@ -43,16 +43,7 @@ class AttackDetailsViewStateUiMapper(
         selectedTriggers = details.selectedTriggers.map(::toUi).toSet(),
         functionalImpact = details.functionalImpact?.let(functionalImpactUiMapper::toUi),
         note = details.note,
-        intakes = details.intakes.map { intake ->
-            AttackIntakeUiModel(
-                id = intake.id,
-                medicationId = intake.medicationId,
-                medicationName = intake.medicationName,
-                dose = intake.dose,
-                takenAtEpochMillis = intake.takenAt.toEpochMilli(),
-                zoneId = intake.zone.id
-            )
-        }
+        intakes = details.intakes.map(attackIntakeUiMapper::toUi)
     )
 
     private fun toUi(symptom: SymptomPresentationModel): SymptomUiModel = when (symptom) {

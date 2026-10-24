@@ -49,6 +49,7 @@
 
     <!-- Problems (BRD EC-MED-07, D35). -->
     <string name="problem_duplicate">You already have %1$s.</string>
+    <string name="problem_archived_name">%1$s is in your archive. Add it as a new medication to bring it back.</string>
     <string name="problem_invalid_name">Enter a name.</string>
     <string name="problem_invalid_dose">Keep the dose to 20 characters.</string>
 

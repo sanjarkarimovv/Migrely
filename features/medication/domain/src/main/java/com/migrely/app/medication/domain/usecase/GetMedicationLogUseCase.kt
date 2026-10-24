@@ -38,7 +38,8 @@ class GetMedicationLogUseCase(
         return MedicationLogResultDomainModel.Loaded(
             MedicationLogDomainModel(
                 defaultTime = defaultTime.truncatedTo(ChronoUnit.MINUTES),
-                zone = now.zone,
+                // An attack's own zone, so a later entry shows and picks its times as details does (EC-TIM-02).
+                zone = attack?.zone ?: now.zone,
                 attackId = attack?.id,
                 medications = medications.sortedBy { it.kind != MedicationKindDomainModel.Acute }
             )

@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
@@ -28,11 +29,13 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextFieldColors
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -47,9 +50,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
@@ -109,14 +114,14 @@ fun LogMedicationDependencies.LogMedication(
     val uiState by rememberSaveable(viewState) {
         mutableStateOf(logMedicationViewStateUiMapper.toUi(viewState))
     }
+    // Null until the user picks a time, so the default follows every reload: "now" stays now (BRD D34).
     var pickedTime by rememberSaveable { mutableStateOf<Long?>(null) }
     var logged by rememberSaveable { mutableStateOf<IntakeUiModel?>(null) }
-    var pending by rememberSaveable { mutableStateOf(false) }
+    // Not saved: a write still running when the screen is recreated must not leave every button disabled.
+    var pending by remember { mutableStateOf(false) }
     var problem by rememberSaveable { mutableStateOf<SaveProblemUiModel?>(null) }
     val log = (uiState as? LogMedicationViewStateUiModel.Ready)?.log
-    LaunchedEffect(log?.defaultTimeEpochMillis) {
-        if (pickedTime == null && log != null) pickedTime = log.defaultTimeEpochMillis
-    }
+    val shownTime = pickedTime ?: log?.defaultTimeEpochMillis
     LaunchedEffect(medicationEventPresenter) {
         medicationEventPresenter.events.collect { event ->
             pending = false
@@ -135,7 +140,7 @@ fun LogMedicationDependencies.LogMedication(
 
     LogMedicationContents(
         log = log,
-        pickedTime = pickedTime,
+        shownTime = shownTime,
         logged = logged,
         problem = problem,
         pending = pending,
@@ -145,7 +150,7 @@ fun LogMedicationDependencies.LogMedication(
             onBack = logMedicationViewModel::onDoneAction,
             onTimePicked = { pickedTime = it },
             onMedication = { medication ->
-                val time = pickedTime
+                val time = shownTime
                 if (!pending && log != null && time != null) {
                     pending = true
                     logMedicationViewModel.onMedicationAction(
@@ -156,7 +161,7 @@ fun LogMedicationDependencies.LogMedication(
                 }
             },
             onAddAndLog = { name, category ->
-                val time = pickedTime
+                val time = shownTime
                 if (!pending && log != null && time != null) {
                     pending = true
                     logMedicationViewModel.onAddAndLogAction(
@@ -170,7 +175,8 @@ fun LogMedicationDependencies.LogMedication(
             onUndo = {
                 logged?.let { intake ->
                     logged = null
-                    logMedicationViewModel.onUndoAction(intake.id, intake.attackId)
+                    // The screen's own attack, not the one the intake joined, so a later time links afresh.
+                    logMedicationViewModel.onUndoAction(intake.id, attackId)
                 }
             },
             onDone = logMedicationViewModel::onDoneAction,
@@ -211,6 +217,7 @@ private data class LogPalette(
     val outline: Color,
     val quietContent: Color,
     val selection: Color,
+    val textField: TextFieldColors,
     val buttonHeight: Dp
 )
 
@@ -230,6 +237,18 @@ private fun palette(darkRoom: Boolean) = if (darkRoom) {
         outline = MigrelyColors.AttackModeOutline,
         quietContent = MigrelyColors.AttackModeText,
         selection = MigrelyColors.AttackModeSelectedOutline,
+        // Boundaries in the dim text colour keep 3:1 against the dark room (WCAG 1.4.11).
+        textField = OutlinedTextFieldDefaults.colors(
+            focusedTextColor = MigrelyColors.AttackModeEndText,
+            unfocusedTextColor = MigrelyColors.AttackModeEndText,
+            cursorColor = MigrelyColors.AttackModeSelectedOutline,
+            focusedBorderColor = MigrelyColors.AttackModeSelectedOutline,
+            unfocusedBorderColor = MigrelyColors.AttackModeText,
+            focusedLabelColor = MigrelyColors.AttackModeSelectedOutline,
+            unfocusedLabelColor = MigrelyColors.AttackModeText,
+            focusedSupportingTextColor = MigrelyColors.AttackModeText,
+            unfocusedSupportingTextColor = MigrelyColors.AttackModeText
+        ),
         buttonHeight = 64.dp
     )
 } else {
@@ -243,6 +262,7 @@ private fun palette(darkRoom: Boolean) = if (darkRoom) {
         outline = MaterialTheme.colorScheme.outline,
         quietContent = MaterialTheme.colorScheme.primary,
         selection = MaterialTheme.colorScheme.primary,
+        textField = OutlinedTextFieldDefaults.colors(),
         buttonHeight = 56.dp
     )
 }
@@ -252,7 +272,7 @@ private fun palette(darkRoom: Boolean) = if (darkRoom) {
 @Composable
 fun LogMedicationContents(
     log: MedicationLogUiModel?,
-    pickedTime: Long?,
+    shownTime: Long?,
     logged: IntakeUiModel?,
     problem: SaveProblemUiModel?,
     pending: Boolean,
@@ -307,9 +327,9 @@ fun LogMedicationContents(
                 ) {
                     when {
                         logged != null -> LoggedContents(logged, colors, timeUiFormatter, actions)
-                        log == null || pickedTime == null -> Unit
+                        log == null || shownTime == null -> Unit
                         else -> {
-                            TimeRow(pickedTime, log.zoneId, colors, timeUiFormatter, actions)
+                            TimeRow(shownTime, log.zoneId, colors, timeUiFormatter, actions)
                             if (log.medications.isEmpty()) {
                                 FirstMedicationForm(problem, pending, colors, actions)
                             } else {
@@ -325,7 +345,7 @@ fun LogMedicationContents(
                                     ),
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .heightIn(min = 48.dp)
+                                        .heightIn(min = colors.buttonHeight)
                                 ) {
                                     Text(stringResource(R.string.log_manage))
                                 }
@@ -341,7 +361,7 @@ fun LogMedicationContents(
 
 @Composable
 private fun TimeRow(
-    pickedTime: Long,
+    shownTime: Long,
     zoneId: String,
     colors: LogPalette,
     timeUiFormatter: MedicationTimeUiFormatter,
@@ -349,7 +369,7 @@ private fun TimeRow(
 ) {
     var picking by rememberSaveable { mutableStateOf(false) }
     val now = remember(picking) { System.currentTimeMillis() }
-    val time = timeUiFormatter.formatTime(pickedTime, zoneId, now)
+    val time = timeUiFormatter.formatTime(shownTime, zoneId, now)
     // Read as "Taken at, 14:20, button": the surface merges its two texts.
     Surface(
         onClick = { picking = true },
@@ -357,7 +377,7 @@ private fun TimeRow(
         color = colors.surface,
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(min = 56.dp)
+            .heightIn(min = colors.buttonHeight)
     ) {
         Column(Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
             Text(
@@ -374,7 +394,7 @@ private fun TimeRow(
     }
     if (picking) {
         MigrelyDateTimePicker(
-            initialEpochMillis = pickedTime,
+            initialEpochMillis = shownTime,
             minEpochMillis = EARLIEST_MILLIS,
             maxEpochMillis = now + CLOCK_TOLERANCE_MILLIS,
             zoneId = runCatching { ZoneId.of(zoneId) }.getOrDefault(ZoneId.systemDefault()),
@@ -459,7 +479,10 @@ private fun LoggedContents(
         ),
         style = MaterialTheme.typography.titleMedium,
         color = colors.content,
-        modifier = Modifier.padding(vertical = 16.dp)
+        // Announced, since the tapped button has just gone (EC-UX-19).
+        modifier = Modifier
+            .padding(vertical = 16.dp)
+            .semantics { liveRegion = LiveRegionMode.Polite }
     )
     Button(
         onClick = actions.onDone,
@@ -504,7 +527,9 @@ private fun FirstMedicationForm(
         color = colors.content
     )
     val nameProblem = problem.takeIf {
-        it is SaveProblemUiModel.Duplicate || it == SaveProblemUiModel.InvalidName
+        it is SaveProblemUiModel.Duplicate ||
+            it is SaveProblemUiModel.ArchivedName ||
+            it == SaveProblemUiModel.InvalidName
     }
     OutlinedTextField(
         value = name,
@@ -521,9 +546,12 @@ private fun FirstMedicationForm(
                 )
             )
         },
+        colors = colors.textField,
         modifier = Modifier.fillMaxWidth()
     )
-    CategoryChoices(category, colors.content, colors.selection) { category = it }
+    CategoryChoices(category, colors.content, colors.selection, colors.buttonHeight) {
+        category = it
+    }
     Button(
         onClick = { actions.onAddAndLog(name, category) },
         enabled = !pending,
@@ -542,6 +570,7 @@ internal fun CategoryChoices(
     selected: MedicationCategoryUiModel?,
     content: Color,
     selection: Color,
+    rowHeight: Dp,
     onSelect: (MedicationCategoryUiModel?) -> Unit
 ) {
     Text(
@@ -549,13 +578,13 @@ internal fun CategoryChoices(
         style = MaterialTheme.typography.labelLarge,
         color = content
     )
-    Column {
+    Column(Modifier.selectableGroup()) {
         CATEGORY_CHOICES.forEach { choice ->
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(min = 48.dp)
+                    .heightIn(min = rowHeight)
                     .selectable(
                         selected = choice == selected,
                         role = Role.RadioButton,
@@ -622,7 +651,7 @@ private fun LogMedicationDarkPreview() {
     MigrelyTheme {
         LogMedicationContents(
             log = previewLog,
-            pickedTime = previewLog.defaultTimeEpochMillis,
+            shownTime = previewLog.defaultTimeEpochMillis,
             logged = null,
             problem = null,
             pending = false,
@@ -640,7 +669,7 @@ private fun LogMedicationFirstUsePreview() {
     MigrelyTheme {
         LogMedicationContents(
             log = previewLog.copy(medications = emptyList()),
-            pickedTime = previewLog.defaultTimeEpochMillis,
+            shownTime = previewLog.defaultTimeEpochMillis,
             logged = null,
             problem = null,
             pending = false,
@@ -658,7 +687,7 @@ private fun LogMedicationLoggedPreview() {
     MigrelyTheme {
         LogMedicationContents(
             log = previewLog,
-            pickedTime = previewLog.defaultTimeEpochMillis,
+            shownTime = previewLog.defaultTimeEpochMillis,
             logged = IntakeUiModel(
                 "x",
                 "Ibuprofen",

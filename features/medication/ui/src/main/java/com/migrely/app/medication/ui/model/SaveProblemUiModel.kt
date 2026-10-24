@@ -8,6 +8,9 @@ sealed interface SaveProblemUiModel : Parcelable {
     data class Duplicate(val existingName: String) : SaveProblemUiModel
 
     @Parcelize
+    data class ArchivedName(val archivedName: String) : SaveProblemUiModel
+
+    @Parcelize
     data object LimitReached : SaveProblemUiModel
 
     @Parcelize

@@ -121,6 +121,10 @@ class MedicationUiMappersTest {
             problems.toUi(SaveProblemPresentationModel.Duplicate("Ibuprofen"))
         )
         assertEquals(
+            SaveProblemUiModel.ArchivedName("Sumatriptan"),
+            problems.toUi(SaveProblemPresentationModel.ArchivedName("Sumatriptan"))
+        )
+        assertEquals(
             SaveProblemUiModel.LimitReached,
             problems.toUi(SaveProblemPresentationModel.LimitReached)
         )
@@ -141,10 +145,13 @@ class MedicationUiMappersTest {
 
         mapper.toUi(MedicationsPresentationNotification.Archived("m")).present()
         mapper.toUi(MedicationsPresentationNotification.StorageFull).present()
+        mapper.toUi(MedicationsPresentationNotification.LimitReached).present()
 
         verify(
             presenter
         ).show(MedicationEventUiModel.Message(MedicationMessageUiModel.Archived("m")))
+        verify(presenter)
+            .show(MedicationEventUiModel.Message(MedicationMessageUiModel.LimitReached))
         verify(presenter).show(MedicationEventUiModel.Message(MedicationMessageUiModel.StorageFull))
     }
 
@@ -192,7 +199,7 @@ class MedicationUiMappersTest {
         val mapper = MedicationMessageBehaviourUiMapper()
 
         assertEquals(
-            MedicationMessageBehaviourUiModel(SnackbarTone.Confirmation, true, 5_000L),
+            MedicationMessageBehaviourUiModel(SnackbarTone.Information, true, 5_000L),
             mapper.toUi(MedicationMessageUiModel.Archived("m"))
         )
         assertEquals(
@@ -232,6 +239,11 @@ class MedicationUiMappersTest {
         assertEquals(
             "Thu 22 Oct, 09:05",
             formatter.formatTime(millis("2026-10-22T09:05"), "Asia/Tashkent", now)
+        )
+        // Taken where the attack started, away from the device: that zone's clock and city (EC-TIM-02).
+        assertEquals(
+            "18:20 (Tokyo)",
+            formatter.formatTime(millis("2026-10-24T14:20"), "Asia/Tokyo", now)
         )
     }
 }

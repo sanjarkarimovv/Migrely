@@ -42,6 +42,10 @@ internal fun problemText(problem: SaveProblemUiModel): String = when (problem) {
         R.string.problem_duplicate,
         problem.existingName
     )
+    is SaveProblemUiModel.ArchivedName -> stringResource(
+        R.string.problem_archived_name,
+        problem.archivedName
+    )
     SaveProblemUiModel.InvalidName -> stringResource(R.string.problem_invalid_name)
     SaveProblemUiModel.InvalidDose -> stringResource(R.string.problem_invalid_dose)
     SaveProblemUiModel.LimitReached -> stringResource(R.string.message_limit_reached)

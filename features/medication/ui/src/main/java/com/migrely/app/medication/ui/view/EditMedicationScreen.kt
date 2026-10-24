@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -33,6 +34,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -77,7 +79,8 @@ fun EditMedicationDependencies.EditMedication(
     }
     var form by rememberSaveable { mutableStateOf<MedicationFormUiModel?>(null) }
     var problem by rememberSaveable { mutableStateOf<SaveProblemUiModel?>(null) }
-    var pending by rememberSaveable { mutableStateOf(false) }
+    // Not saved: a write still running when the screen is recreated must not leave Save disabled.
+    var pending by remember { mutableStateOf(false) }
     LaunchedEffect(uiState) {
         val ready = uiState as? EditMedicationViewStateUiModel.Ready
         if (form == null && ready != null) {
@@ -210,7 +213,9 @@ private fun MedicationForm(
     onSave: () -> Unit
 ) {
     val nameProblem = problem.takeIf {
-        it is SaveProblemUiModel.Duplicate || it == SaveProblemUiModel.InvalidName
+        it is SaveProblemUiModel.Duplicate ||
+            it is SaveProblemUiModel.ArchivedName ||
+            it == SaveProblemUiModel.InvalidName
     }
     OutlinedTextField(
         value = form.name,
@@ -227,7 +232,7 @@ private fun MedicationForm(
         modifier = Modifier.fillMaxWidth()
     )
     Text(stringResource(R.string.edit_kind), style = MaterialTheme.typography.labelLarge)
-    Column {
+    Column(Modifier.selectableGroup()) {
         listOf(
             MedicationKindUiModel.Acute to R.string.kind_acute,
             MedicationKindUiModel.Preventive to R.string.kind_preventive
@@ -256,7 +261,8 @@ private fun MedicationForm(
         CategoryChoices(
             form.category,
             MaterialTheme.colorScheme.onSurface,
-            MaterialTheme.colorScheme.primary
+            MaterialTheme.colorScheme.primary,
+            48.dp
         ) {
             onFormChange(form.copy(category = it))
         }

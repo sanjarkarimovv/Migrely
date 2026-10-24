@@ -50,13 +50,14 @@
 
 - [x] 8.1 Run the gate and the instrumented tests (datasource, designsystem) on emulator-5570; verify all pass
 - [x] 8.2 Walk every scenario on emulator-5570: dark room, details, home, first use, duplicate and archived names, the limit, undo, merge and delete with intakes, 200% font, landscape, TalkBack and keyboard, rotation and process death. Restore the settings and record the results
-- [ ] 8.3 Run an independent review, fix the real findings, and validate strictly
+- [x] 8.3 Run an independent review, fix the real findings, and validate strictly
 
 ## Verification record (2026-10-24)
 
-- **Gate** `./gradlew assembleDebug test ktlintCheck detekt`: BUILD SUCCESSFUL, 679 unit tests, 0 failures.
-- **Instrumented** on emulator-5570: datasource 42/42 (with `MedicationDaoTest` and `MigrationTest` 2→3), designsystem
-  16/16.
+- **Gate** `./gradlew assembleDebug test ktlintCheck detekt`: BUILD SUCCESSFUL, 690 unit tests after the review fixes,
+  0 failures.
+- **Instrumented** on emulator-5570: datasource 47/47 after the review fixes (with `MedicationDaoTest`, `MigrationTest`
+  1→3 and 2→3), designsystem 16/16.
 - **Upgrade:** installed over the version 2 database with 16 attacks; `user_version` became 3 and all 16 attacks stayed.
 - **Emulator walk (emulator-5570, 1080×2400):**
 
@@ -98,4 +99,37 @@
   `fix-today-zone-and-landscape-message` with #19.
 - **Settings restored:** font_scale 1.0, user_rotation 0, accelerometer_rotation 1, animator 1, auto_time_zone 1,
   stylus handwriting back to default, adbd unrooted; walk medications removed.
+
+## Independent review (superpowers:code-reviewer)
+
+No critical findings. Every finding was checked against the code before it was fixed.
+
+- **Important, fixed:**
+  - Undo on "Medication taken" reloaded with the attack the intake had joined, so a later time from home was forced
+    onto that attack. Undo now reloads with the screen's own attack. Walked: 13:10 linked, Undo, 13:30 on its own.
+  - Logging later for an attack recorded in another zone showed, picked and stored the device zone. The attack's start
+    zone now carries through: the time shows its city and the intake stores that zone (EC-TIM-02). Walked with a Tokyo
+    attack: "Taken at 4:59 PM (Tokyo)", stored as Asia/Tokyo.
+- **Minor, fixed:**
+  - the untouched default time no longer goes stale: it follows every reload until the user picks one;
+  - undoing "Migraine started" kept-deleted the intakes by cascade. `AttackDao.discard` now leaves them on their own;
+  - a picked minute links to an attack that starts within it (an attack starting 12:20:40 contains 12:20). Walked;
+  - "Add and log" that saves but fails to log reloads the list, so a retry never says "You already have…";
+  - `pending` is no longer saved, so a write running during recreation cannot leave the buttons disabled;
+  - "Undo" after archiving checks the 50 limit;
+  - the specs and D35 agree on the order: acute first on the logging screen only;
+  - in the dark room, the time row, "Manage medications" and the type rows are 64 dp, and the text field uses
+    attack-mode colours;
+  - the logged confirmation is a polite live region, and the radio groups are selectable groups;
+  - the archive message draws the time-left line and reads as information, like "Medication removed" on details.
+    Walked;
+  - renaming to an archived medication's name now says it is in the archive;
+  - mapping moved to mapper classes (`MedicationLogPresentationMapper`, `LinkedAttackDomainMapper`,
+    `AttackIntakeUiMapper`), the orphaned KDoc and the merge KDoc are fixed, and `MedicationDao.update` no longer
+    unarchives;
+  - new tests cover every fix above, plus soft delete and restore, purge, the unique name key, the minute overlap and
+    1→3 migration.
+- **Accepted:** adding an archived name in the full editor brings it back as it was and returns to the list without a
+  message. The list then shows it with its stored values. "Add and log" stays two use cases called in sequence:
+  each result can be shown on its own, and the reload above covers the partial failure.
 

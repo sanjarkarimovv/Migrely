@@ -9,6 +9,7 @@ import com.migrely.app.datasource.medication.datasource.MedicationDataSource
 import com.migrely.app.datasource.medication.model.MedicationCategoryDataModel
 import com.migrely.app.datasource.medication.model.MedicationDataModel
 import com.migrely.app.datasource.medication.model.MedicationKindDataModel
+import com.migrely.app.medication.data.mapper.LinkedAttackDomainMapper
 import com.migrely.app.medication.data.mapper.MedicationCategoryDataMapper
 import com.migrely.app.medication.data.mapper.MedicationDomainMapper
 import com.migrely.app.medication.data.mapper.MedicationKindDataMapper
@@ -62,7 +63,8 @@ class MedicationRepositoryTest {
         clockDataSource,
         MedicationDomainMapper(),
         MedicationKindDataMapper(),
-        MedicationCategoryDataMapper()
+        MedicationCategoryDataMapper(),
+        LinkedAttackDomainMapper()
     )
 
     private fun attack(end: Instant?) =
@@ -208,31 +210,35 @@ class MedicationRepositoryTest {
         given(attackDataSource.byId("a")).willReturn(attack(end = null))
 
         assertEquals(
-            AttackLookupResultDomainModel.Found(LinkedAttackDomainModel("a", NOW, null)),
+            AttackLookupResultDomainModel.Found(LinkedAttackDomainModel("a", NOW, null, ZONE)),
             classUnderTest.attack("a")
         )
         assertEquals(AttackLookupResultDomainModel.None, classUnderTest.attack("other"))
     }
 
     @Test
-    fun `When finding the attack at an instant then the one overlapping that millisecond`() {
+    fun `When finding the attack during a minute then the one overlapping it`() {
+        val minuteLater = NOW.plusSeconds(60)
         given(
-            attackDataSource.overlapping(null, NOW, NOW.plusMillis(1))
+            attackDataSource.overlapping(null, NOW, minuteLater)
         ).willReturn(listOf(attack(NOW)))
 
         assertEquals(
-            AttackLookupResultDomainModel.Found(LinkedAttackDomainModel("a", NOW, NOW)),
-            classUnderTest.attackAt(NOW)
+            AttackLookupResultDomainModel.Found(LinkedAttackDomainModel("a", NOW, NOW, ZONE)),
+            classUnderTest.attackDuring(NOW, minuteLater)
         )
     }
 
     @Test
-    fun `Given the database fails when finding the attack at an instant then failed`() {
+    fun `Given the database fails when finding the attack during a minute then failed`() {
         whenever(
-            attackDataSource.overlapping(null, NOW, NOW.plusMillis(1))
+            attackDataSource.overlapping(null, NOW, NOW.plusSeconds(60))
         ).thenThrow(DatabaseDataException())
 
-        assertEquals(AttackLookupResultDomainModel.Failed, classUnderTest.attackAt(NOW))
+        assertEquals(
+            AttackLookupResultDomainModel.Failed,
+            classUnderTest.attackDuring(NOW, NOW.plusSeconds(60))
+        )
     }
 
     @Test

@@ -2,14 +2,18 @@ package com.migrely.app.medication.presentation.mapper
 
 import com.migrely.app.medication.domain.model.MedicationCategoryDomainModel
 import com.migrely.app.medication.domain.model.MedicationKindDomainModel
+import com.migrely.app.medication.domain.model.MedicationLogDomainModel
 import com.migrely.app.medication.domain.model.SaveMedicationRequestDomainModel
 import com.migrely.app.medication.domain.model.SaveMedicationResultDomainModel
+import com.migrely.app.medication.presentation.FIXTURE_TIME
+import com.migrely.app.medication.presentation.FIXTURE_ZONE
 import com.migrely.app.medication.presentation.IBUPROFEN
 import com.migrely.app.medication.presentation.IBUPROFEN_DOMAIN
 import com.migrely.app.medication.presentation.INTAKE
 import com.migrely.app.medication.presentation.INTAKE_DOMAIN
 import com.migrely.app.medication.presentation.model.MedicationCategoryPresentationModel
 import com.migrely.app.medication.presentation.model.MedicationKindPresentationModel
+import com.migrely.app.medication.presentation.model.MedicationLogPresentationModel
 import com.migrely.app.medication.presentation.model.SaveProblemPresentationModel
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -88,6 +92,10 @@ class MedicationMappersTest {
             mapper.toPresentation(SaveMedicationResultDomainModel.Duplicate("Ibuprofen"))
         )
         assertEquals(
+            SaveProblemPresentationModel.ArchivedName("Sumatriptan"),
+            mapper.toPresentation(SaveMedicationResultDomainModel.ArchivedName("Sumatriptan"))
+        )
+        assertEquals(
             SaveProblemPresentationModel.LimitReached,
             mapper.toPresentation(SaveMedicationResultDomainModel.LimitReached)
         )
@@ -105,6 +113,16 @@ class MedicationMappersTest {
             SaveMedicationResultDomainModel.StorageFull,
             SaveMedicationResultDomainModel.Failed
         ).forEach { assertEquals(null, mapper.toPresentation(it)) }
+    }
+
+    @Test
+    fun `When mapping a log then its time, zone, attack and medications`() {
+        assertEquals(
+            MedicationLogPresentationModel(FIXTURE_TIME, FIXTURE_ZONE, "a", listOf(IBUPROFEN)),
+            MedicationLogPresentationMapper(MedicationPresentationMapper()).toPresentation(
+                MedicationLogDomainModel(FIXTURE_TIME, FIXTURE_ZONE, "a", listOf(IBUPROFEN_DOMAIN))
+            )
+        )
     }
 
     @Test

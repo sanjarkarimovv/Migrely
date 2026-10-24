@@ -39,20 +39,13 @@ class PassThroughUseCasesTest {
     }
 
     @Test
-    fun `When archiving and restoring then the archived flag is set and cleared`() {
+    fun `When archiving then the archived flag is set`() {
         val repository: SetMedicationArchivedRepository = mock()
         given(repository.setMedicationArchived("m", true)).willReturn(WriteResultDomainModel.Done)
-        given(
-            repository.setMedicationArchived("m", false)
-        ).willReturn(WriteResultDomainModel.StorageFull)
 
         assertEquals(
             WriteResultDomainModel.Done,
             ArchiveMedicationUseCase(repository, context).executeInBackground("m")
-        )
-        assertEquals(
-            WriteResultDomainModel.StorageFull,
-            RestoreMedicationUseCase(repository, context).executeInBackground("m")
         )
     }
 

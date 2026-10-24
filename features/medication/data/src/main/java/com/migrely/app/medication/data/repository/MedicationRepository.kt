@@ -7,6 +7,7 @@ import com.migrely.app.datasource.exception.DataException
 import com.migrely.app.datasource.exception.StorageFullDataException
 import com.migrely.app.datasource.medication.datasource.MedicationDataSource
 import com.migrely.app.datasource.medication.model.MedicationDataModel
+import com.migrely.app.medication.data.mapper.LinkedAttackDomainMapper
 import com.migrely.app.medication.data.mapper.MedicationCategoryDataMapper
 import com.migrely.app.medication.data.mapper.MedicationDomainMapper
 import com.migrely.app.medication.data.mapper.MedicationKindDataMapper
@@ -14,7 +15,6 @@ import com.migrely.app.medication.domain.model.ActiveCountResultDomainModel
 import com.migrely.app.medication.domain.model.AddIntakeResultDomainModel
 import com.migrely.app.medication.domain.model.AttackLookupResultDomainModel
 import com.migrely.app.medication.domain.model.CurrentTimeDomainModel
-import com.migrely.app.medication.domain.model.LinkedAttackDomainModel
 import com.migrely.app.medication.domain.model.MedicationCategoryDomainModel
 import com.migrely.app.medication.domain.model.MedicationKindDomainModel
 import com.migrely.app.medication.domain.model.MedicationLookupResultDomainModel
@@ -47,7 +47,8 @@ class MedicationRepository(
     private val clockDataSource: ClockDataSource,
     private val medicationDomainMapper: MedicationDomainMapper,
     private val medicationKindDataMapper: MedicationKindDataMapper,
-    private val medicationCategoryDataMapper: MedicationCategoryDataMapper
+    private val medicationCategoryDataMapper: MedicationCategoryDataMapper,
+    private val linkedAttackDomainMapper: LinkedAttackDomainMapper
 ) : GetCurrentTimeRepository,
     GetActiveMedicationsRepository,
     GetMedicationRepository,
@@ -124,10 +125,9 @@ class MedicationRepository(
         attackDataSource.byId(attackId)
     }
 
-    // An instant inside an attack overlaps the millisecond that starts there; an attack in progress is open-ended.
-    override fun attackAt(instant: Instant): AttackLookupResultDomainModel = lookUpAttack {
-        attackDataSource.overlapping(null, instant, instant.plusMillis(1)).firstOrNull()
-    }
+    // An attack in progress is open-ended in the overlap query.
+    override fun attackDuring(from: Instant, to: Instant): AttackLookupResultDomainModel =
+        lookUpAttack { attackDataSource.overlapping(null, from, to).firstOrNull() }
 
     override fun addIntake(
         medicationId: String,
@@ -162,9 +162,7 @@ class MedicationRepository(
     private inline fun lookUpAttack(read: () -> AttackDataModel?): AttackLookupResultDomainModel =
         try {
             read()?.let { attack ->
-                AttackLookupResultDomainModel.Found(
-                    LinkedAttackDomainModel(attack.id, attack.start, attack.end)
-                )
+                AttackLookupResultDomainModel.Found(linkedAttackDomainMapper.toDomain(attack))
             } ?: AttackLookupResultDomainModel.None
         } catch (_: DataException) {
             AttackLookupResultDomainModel.Failed

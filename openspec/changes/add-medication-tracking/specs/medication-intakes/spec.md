@@ -35,22 +35,36 @@ log it at once (BRD EC-MED-08).
 - **THEN** the screen asks for the name and category, and after "Add and log" the intake is logged
 
 ### Requirement: Intakes link to their attack
-An intake logged from attack mode or from an attack's details SHALL be linked to that attack. An intake logged from
-home SHALL be linked to the attack whose time contains the intake's time, if any. Changing an attack's times later
-SHALL NOT change its intakes (BRD EC-MED-09, D34).
+An intake logged from attack mode or from an attack's details SHALL be linked to that attack, and its time SHALL be
+shown, picked and stored in the zone where that attack started. An intake logged from home SHALL be linked to the
+attack whose time overlaps the intake's minute, if any, in the device's zone. Undo on the screen SHALL keep it for the
+attack it was opened for, or for none. Changing an attack's times later SHALL NOT change its intakes (BRD EC-MED-09,
+D34, EC-TIM-02).
 
 #### Scenario: Logged from home during a past attack's time
 - **WHEN** an attack ran 09:00–11:00 and the user logs Ibuprofen from home at 10:15
 - **THEN** that attack's details list Ibuprofen at 10:15
 
+#### Scenario: Logged from home in an attack's first minute
+- **WHEN** an attack started at 12:20:40 and the user logs Ibuprofen from home at 12:20
+- **THEN** that attack's details list Ibuprofen
+
 #### Scenario: Logged from home outside any attack
 - **WHEN** no attack contains 16:00 and the user logs Ibuprofen at 16:00
 - **THEN** the intake is stored on its own
 
+#### Scenario: Undo, then a new time from home
+- **WHEN** from home the user logs Ibuprofen at 10:15 inside an attack, taps "Undo", picks 16:00 and logs it again
+- **THEN** the 16:00 intake is stored on its own
+
+#### Scenario: Later, for an attack recorded in another zone
+- **WHEN** an attack started at 14:00 in Tokyo and the user, now in London, adds a medication from its details
+- **THEN** the time shows "14:00 (Tokyo)", and picking 14:30 stores 14:30 Tokyo time with the Tokyo zone
+
 ### Requirement: Intakes follow their attack
 When an attack is deleted, its intakes SHALL be hidden with it, Undo SHALL bring them back, and they SHALL be removed
-for good with the attack. When attacks are merged, their intakes SHALL move to the remaining attack (BRD EC-MED-10, D27,
-D23).
+for good with the attack. When attacks are merged, their intakes SHALL move to the remaining attack. When "Undo" removes
+an attack that was started by mistake, a medication logged meanwhile SHALL stay, on its own (BRD EC-MED-10, D27, D23).
 
 #### Scenario: Delete and undo
 - **WHEN** an attack with two intakes is deleted and the user taps "Undo"
@@ -59,6 +73,10 @@ D23).
 #### Scenario: Merge
 - **WHEN** an attack with Ibuprofen is merged into an attack with Sumatriptan
 - **THEN** the remaining attack lists both
+
+#### Scenario: Undo a start after logging a medication
+- **WHEN** the user starts an attack, logs Ibuprofen, and taps "Undo" on "Migraine started"
+- **THEN** the attack is gone and Ibuprofen stays as an intake on its own
 
 ### Requirement: Usable in the dark room
 Opened from attack mode, the screen SHALL keep attack mode's dim colours, use controls at least 64 dp tall and show no

@@ -18,6 +18,8 @@ class MedicationsNotificationUiMapper(private val presenter: MedicationEventPres
             is MedicationsPresentationNotification.Archived ->
                 MedicationMessageUiModel.Archived(notification.medicationId)
             MedicationsPresentationNotification.Undone -> MedicationMessageUiModel.Undone
+            MedicationsPresentationNotification.LimitReached ->
+                MedicationMessageUiModel.LimitReached
             MedicationsPresentationNotification.StorageFull -> MedicationMessageUiModel.StorageFull
             MedicationsPresentationNotification.SomethingWentWrong ->
                 MedicationMessageUiModel.SomethingWentWrong
@@ -72,6 +74,7 @@ class LogMedicationNotificationUiMapper(
 private fun SaveProblemUiModel.toEvent(): MedicationEventUiModel = when (this) {
     SaveProblemUiModel.LimitReached -> Message(MedicationMessageUiModel.LimitReached)
     is SaveProblemUiModel.Duplicate,
+    is SaveProblemUiModel.ArchivedName,
     SaveProblemUiModel.InvalidName,
     SaveProblemUiModel.InvalidDose -> MedicationEventUiModel.NotSaved(this)
 }

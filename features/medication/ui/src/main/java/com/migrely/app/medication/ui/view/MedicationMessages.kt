@@ -1,9 +1,13 @@
 package com.migrely.app.medication.ui.view
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -97,9 +101,30 @@ internal fun MedicationMessages(
             },
             dismissLabel = stringResource(R.string.snackbar_dismiss),
             onDismiss = { if (shown == visible) shown = null },
-            timeLeft = null
+            timeLeft = if (!reduceMotion && archived != null && currentTimeout != null) {
+                rememberTimeLeft(visible, currentTimeout)
+            } else {
+                null
+            }
         )
     }
+}
+
+// The line under an undoable message runs down with its time (BRD EC-UX-16).
+@Composable
+private fun rememberTimeLeft(
+    shown: ShownMedicationMessageUiModel,
+    timeoutMillis: Long
+): () -> Float {
+    val remaining = remember(shown, timeoutMillis) {
+        shown.remainingMillis(System.currentTimeMillis(), timeoutMillis)
+    }
+    val fraction =
+        remember(shown, timeoutMillis) { Animatable(remaining.toFloat() / timeoutMillis) }
+    LaunchedEffect(fraction) {
+        fraction.animateTo(0f, tween(durationMillis = remaining.toInt(), easing = LinearEasing))
+    }
+    return { fraction.value }
 }
 
 @Composable

@@ -37,7 +37,7 @@ interface MedicationDao {
     @Suppress("LongParameterList")
     @Query(
         "UPDATE medication SET name = :name, name_key = :nameKey, kind = :kind, " +
-            "category = :category, default_dose = :defaultDose, archived = 0, " +
+            "category = :category, default_dose = :defaultDose, " +
             "updated_epoch_millis = :nowEpochMillis " +
             "WHERE id = :medicationId"
     )

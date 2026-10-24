@@ -229,16 +229,29 @@ class SaveMedicationUseCaseTest {
     }
 
     @Test
-    fun `Given another medication's name when editing then duplicate, archived or not`() {
+    fun `Given another medication's name when editing then duplicate`() {
+        given(findMedicationByNameRepository.medicationByNameKey("ibuprofen"))
+            .willReturn(MedicationLookupResultDomainModel.Found(medication(id = "other")))
+
+        assertEquals(
+            SaveMedicationResultDomainModel.Duplicate("Ibuprofen"),
+            classUnderTest.executeInBackground(request(id = "m"))
+        )
+    }
+
+    @Test
+    fun `Given an archived medication's name when editing then archived name, nothing saved`() {
         given(findMedicationByNameRepository.medicationByNameKey("ibuprofen"))
             .willReturn(
                 MedicationLookupResultDomainModel.Found(medication(id = "other", archived = true))
             )
 
         assertEquals(
-            SaveMedicationResultDomainModel.Duplicate("Ibuprofen"),
+            SaveMedicationResultDomainModel.ArchivedName("Ibuprofen"),
             classUnderTest.executeInBackground(request(id = "m"))
         )
+        verify(updateMedicationRepository, never())
+            .updateMedication(any(), any(), any(), any(), anyOrNull(), anyOrNull())
     }
 
     @Test
