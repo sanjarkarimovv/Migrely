@@ -73,3 +73,10 @@ An independent `superpowers:code-reviewer` pass. It found nothing critical, and 
 - **Exit:** the guidance moves up only after the message has faded (also checked at 5× slower animations).
 - **Accepted:** with Reduce motion, the guidance follows the message one frame later, because the position is
   measured after layout. The frame leaves an empty gap and covers nothing.
+
+**Archive:** the sync made two requirements longer than strict validation allows (500 characters). So the main specs
+split them, each into a requirement that states one behaviour:
+- `month-sky` › *Arrow keys move between days*;
+- `in-app-messages` › *Landscape attack mode keeps messages beside the controls*.
+
+All 17 specs then pass `openspec validate --specs --strict`.
