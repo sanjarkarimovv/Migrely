@@ -32,7 +32,8 @@
 - **Reads:** `GetHistoryMonthUseCase` reads the month as now, plus:
   - the month's attack-medication intakes, through a new single-function `GetAttackMedicationIntakesRepository`
     (`Loaded` or `Failed`);
-  - for the previous month's first N days: its attacks, marks and intakes.
+  - for the previous period, its attacks, marks and intakes. For a past month the period is the whole previous month;
+    for the current month it is the previous month's same dates, up to today's date or its last day.
 - **Failures:** a failed read for the month shown fails the month, as with marks today. A failed read for the previous
   period only drops the progress message.
 - Days are counted to today in the current month. Future dates never count.

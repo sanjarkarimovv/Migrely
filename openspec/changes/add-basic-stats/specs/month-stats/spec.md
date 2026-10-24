@@ -68,8 +68,8 @@ to a doctor, without warning colours or blame (BRD STA-F2, G1, D54).
 - **THEN** no such card shows
 
 ### Requirement: The progress message
-The summary SHALL compare the month's migraine days, from its first day to its N-th, with the previous month's first N
-days, where N is the month's length for a past month and today's date for the current month. It SHALL show only when
+The summary SHALL compare a past month's migraine days with the whole previous month's, and the current month's, up to
+today's date, with the same dates of the previous month, up to its last day. It SHALL show only when
 both periods have at least 10 days with an entry: a day an attack touches, a marked day, or a day with attack
 medication. Fewer days SHALL read warm, and more or as many SHALL read neutral (BRD EC-UX-14, G3, D55).
 
