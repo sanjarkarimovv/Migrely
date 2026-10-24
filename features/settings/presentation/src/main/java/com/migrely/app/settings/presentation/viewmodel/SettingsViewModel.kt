@@ -18,9 +18,9 @@ import com.migrely.app.settings.presentation.navigation.SettingsPresentationNavi
 /**
  * Settings (BRD SET-F1, D70, D79, D93–D97), reached from home's header.
  *
- * Deleting all data can outlast a rotation, so this view model lives as long as the app and keeps two things, only for
- * delivery: whether the deletion is going on, and whether it finished. A screen that comes back sees the progress, or
- * is sent on to the restart it missed (ARCHITECTURE section 13).
+ * Deleting all data can outlast a rotation, so this view model lives as long as the app and keeps, only for delivery,
+ * whether the deletion is going on and how it ended: finished, or failed and not yet shown. A screen that comes back
+ * sees the progress, is told of the failure it missed, or is sent on to the restart (ARCHITECTURE section 13).
  */
 @Suppress("TooManyFunctions")
 class SettingsViewModel(
@@ -34,11 +34,17 @@ class SettingsViewModel(
 ) : BaseViewModel<SettingsViewState, SettingsPresentationNotification>(useCaseExecutor) {
     private var deleting = false
     private var allDeleted = false
+    private var failureNotShown = false
 
     fun onEnter() = load()
 
-    /** The screen shows again, after a rotation for example: the settings as they are, and a restart it missed. */
+    /** The screen shows again, after a rotation for example: the settings as they are, and an outcome it missed. */
     fun onResume() = load()
+
+    /** The screen showed that deleting failed, so it is not told again. */
+    fun onDeleteFailureShownAction() {
+        failureNotShown = false
+    }
 
     fun onBackAction() = emitNavigationEvent(SettingsPresentationNavigationEvent.OnBack)
 
@@ -71,6 +77,7 @@ class SettingsViewModel(
     fun onDeleteAllDataAction() {
         if (deleting || allDeleted) return
         deleting = true
+        failureNotShown = false
         load()
         deleteAllDataUseCase(
             onResult = { result ->
@@ -88,9 +95,10 @@ class SettingsViewModel(
         )
     }
 
+    /** Kept until the screen takes it, so a rotation never loses it. */
     private fun notDeleted() {
         deleting = false
-        notify(SettingsPresentationNotification.NotDeleted)
+        failureNotShown = true
         load()
     }
 
@@ -109,6 +117,7 @@ class SettingsViewModel(
             updateViewState(
                 SettingsViewState.Ready(settingsPresentationMapper.toPresentation(it), deleting)
             )
+            if (failureNotShown) notify(SettingsPresentationNotification.NotDeleted)
             if (allDeleted) {
                 emitNavigationEvent(
                     SettingsPresentationNavigationEvent.OnAllDataDeleted

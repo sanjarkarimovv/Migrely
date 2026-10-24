@@ -23,6 +23,8 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -204,6 +206,28 @@ class SettingsViewModelTest :
             states.await()
         )
     }
+
+    @Test
+    fun `Given a deletion failure not taken when the screen comes back then it is told again`() =
+        runTest {
+            getSettingsUseCase.givenSuccessfulExecution(SETTINGS)
+            deleteAllDataUseCase.givenSuccessfulExecution(DeleteAllDataResultDomainModel.Failed)
+            // Nobody listens: the screen is being rebuilt.
+            classUnderTest.onDeleteAllDataAction()
+
+            val again = async(start = UNDISPATCHED) { classUnderTest.notification.first() }
+            classUnderTest.onResume()
+            assertEquals(SettingsPresentationNotification.NotDeleted, again.await())
+
+            classUnderTest.onDeleteFailureShownAction()
+            val notifications = mutableListOf<SettingsPresentationNotification>()
+            val listening = launch(UnconfinedTestDispatcher(testScheduler)) {
+                classUnderTest.notification.toList(notifications)
+            }
+            classUnderTest.onResume()
+            listening.cancel()
+            assertEquals(emptyList<SettingsPresentationNotification>(), notifications)
+        }
 
     @Test
     fun `Given an unexpected failure while deleting then the user is told`() = runTest {

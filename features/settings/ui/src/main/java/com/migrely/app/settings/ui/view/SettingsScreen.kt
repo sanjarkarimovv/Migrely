@@ -100,7 +100,10 @@ fun SettingsDependencies.Settings(navController: NavController, modifier: Modifi
     var deleteFailed by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(settingsEventPresenter) {
         launch { settingsEventPresenter.notSaved.collect { notSaved = true } }
-        settingsEventPresenter.notDeleted.collect { deleteFailed = true }
+        settingsEventPresenter.notDeleted.collect {
+            deleteFailed = true
+            settingsViewModel.onDeleteFailureShownAction()
+        }
     }
     LaunchedEffect(notSaved) {
         if (notSaved) {
