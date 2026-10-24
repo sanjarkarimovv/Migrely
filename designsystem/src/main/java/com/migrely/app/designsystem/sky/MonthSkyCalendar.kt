@@ -1,0 +1,345 @@
+package com.migrely.app.designsystem.sky
+
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import com.migrely.app.designsystem.theme.MigrelyTheme
+
+private const val DAYS_PER_WEEK = 7
+private val CellSpacing = 6.dp
+private val CellShape = RoundedCornerShape(10.dp)
+private val DayNumberOnSky = Color(0xFFC8CCD2)
+
+/** What one calendar day shows (BRD EC-UX-09). Each differs by shape as well as colour (BRD EC-UX-15). */
+enum class DaySkyAppearance {
+    /** A past day with nothing logged: a dashed outline, never a clear sky (BRD G6). */
+    NothingLogged,
+
+    /** A day that has not come yet: a faint outline, not selectable. */
+    Future,
+    Hazy,
+    Cloudy,
+    Storm,
+
+    /** An attack in progress, drawn still (BRD HIS-F1, EC-UX-07). */
+    Rain
+}
+
+/** One day of [MonthSkyCalendar]. [description] is what a screen reader says for it (BRD EC-UX-15). */
+@Immutable
+data class CalendarDay(
+    val dayOfMonth: Int,
+    val appearance: DaySkyAppearance,
+    val isToday: Boolean,
+    val isSelected: Boolean,
+    val description: String
+)
+
+/** One entry of [MonthSkyLegend]. */
+@Immutable
+data class LegendEntry(val appearance: DaySkyAppearance, val label: String)
+
+/**
+ * A month of small skies (BRD 18.3 A, HIS-F1). [leadingEmptyDays] blank cells come before the first day so weeks start
+ * on the locale's first day (BRD EC-TIM-05). Future days are never selectable. The weekday initials are hidden from
+ * screen readers, because every day says its own weekday.
+ */
+@Composable
+fun MonthSkyCalendar(
+    weekdayInitials: List<String>,
+    leadingEmptyDays: Int,
+    days: List<CalendarDay>,
+    onDayClick: (dayOfMonth: Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(CellSpacing), modifier = modifier) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(CellSpacing),
+            modifier = Modifier.clearAndSetSemantics { }
+        ) {
+            weekdayInitials.forEach { initial ->
+                Text(
+                    text = initial,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.weight(1f),
+                    textAlign = TextAlign.Center
+                )
+            }
+        }
+        val cells: List<CalendarDay?> = List(leadingEmptyDays) { null } + days
+        cells.chunked(DAYS_PER_WEEK).forEach { week ->
+            Row(horizontalArrangement = Arrangement.spacedBy(CellSpacing)) {
+                week.forEach { day ->
+                    if (day == null) {
+                        Spacer(Modifier.weight(1f))
+                    } else {
+                        DayCell(
+                            day = day,
+                            onClick = { onDayClick(day.dayOfMonth) },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+                repeat(DAYS_PER_WEEK - week.size) { Spacer(Modifier.weight(1f)) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DayCell(day: CalendarDay, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val selectable = day.appearance != DaySkyAppearance.Future
+    val ring = when {
+        day.isSelected -> Modifier.border(2.5.dp, MaterialTheme.colorScheme.primary, CellShape)
+        day.isToday -> Modifier.border(
+            1.5.dp,
+            MaterialTheme.colorScheme.onSurfaceVariant,
+            CellShape
+        )
+        else -> Modifier
+    }
+    val outline = MaterialTheme.colorScheme.outlineVariant
+    Box(
+        // The semantics come before clickable, so they replace its own instead of adding a second action.
+        modifier = modifier
+            .aspectRatio(1f)
+            .clip(CellShape)
+            .clearAndSetSemantics {
+                contentDescription = day.description
+                if (selectable) {
+                    role = Role.Button
+                    selected = day.isSelected
+                    onClick {
+                        onClick()
+                        true
+                    }
+                }
+            }
+            .then(if (selectable) Modifier.clickable(onClick = onClick) else Modifier)
+            .then(ring)
+    ) {
+        Canvas(Modifier.matchParentSize()) { drawDaySky(day.appearance, outline) }
+        Text(
+            text = day.dayOfMonth.toString(),
+            style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"),
+            fontWeight = if (day.isToday) FontWeight.Bold else null,
+            color = if (day.appearance.hasSky()) {
+                DayNumberOnSky
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            },
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding(start = 5.dp, top = 3.dp)
+        )
+    }
+}
+
+/** The legend under a calendar: one small sky and a label per entry, wrapping at large font sizes (BRD EC-UX-03). */
+@Composable
+fun MonthSkyLegend(entries: List<LegendEntry>, modifier: Modifier = Modifier) {
+    val outline = MaterialTheme.colorScheme.outlineVariant
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = modifier
+    ) {
+        entries.forEach { entry ->
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Canvas(
+                    Modifier
+                        .size(18.dp)
+                        .clip(RoundedCornerShape(5.dp))
+                ) { drawDaySky(entry.appearance, outline) }
+                Text(
+                    text = entry.label,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(start = 6.dp)
+                )
+            }
+        }
+    }
+}
+
+private fun DaySkyAppearance.hasSky() =
+    this != DaySkyAppearance.NothingLogged && this != DaySkyAppearance.Future
+
+/** Draws a day's sky in a small square. Glyphs sit in the lower part, below the day number. */
+private fun DrawScope.drawDaySky(appearance: DaySkyAppearance, outline: Color) {
+    val u = size.minDimension / 100f
+    when (appearance) {
+        DaySkyAppearance.NothingLogged -> drawRoundRect(
+            color = outline,
+            cornerRadius = CornerRadius(22f * u),
+            style = Stroke(
+                width = 2.5f * u,
+                pathEffect = PathEffect.dashPathEffect(floatArrayOf(7f * u, 5f * u))
+            )
+        )
+
+        DaySkyAppearance.Future -> drawRoundRect(
+            color = outline.copy(alpha = 0.45f),
+            cornerRadius = CornerRadius(22f * u),
+            style = Stroke(width = 1.5f * u)
+        )
+
+        DaySkyAppearance.Hazy -> {
+            drawRect(Brush.verticalGradient(SkyPalette.gradient(SkyAppearance.Hazy)))
+            dayWave(y = 0.60f, from = 0.20f, to = 0.82f, color = SkyPalette.Wave)
+            dayWave(y = 0.78f, from = 0.32f, to = 0.74f, color = SkyPalette.WaveFaint)
+        }
+
+        DaySkyAppearance.Cloudy -> {
+            drawRect(Brush.verticalGradient(SkyPalette.gradient(SkyAppearance.Cloudy)))
+            dayCloud(center = Offset(size.width * 0.55f, size.height * 0.64f), SkyPalette.Cloud)
+        }
+
+        DaySkyAppearance.Storm -> {
+            drawRect(Brush.verticalGradient(SkyPalette.gradient(SkyAppearance.Storm)))
+            dayCloud(
+                center = Offset(size.width * 0.56f, size.height * 0.54f),
+                SkyPalette.StormCloud
+            )
+            dayBolt(x = size.width * 0.56f, y = size.height * 0.68f)
+        }
+
+        DaySkyAppearance.Rain -> {
+            drawRect(Brush.verticalGradient(SkyPalette.gradient(SkyAppearance.Rain)))
+            dayCloud(
+                center = Offset(size.width * 0.56f, size.height * 0.52f),
+                SkyPalette.RainCloudFront
+            )
+            listOf(0.40f, 0.56f, 0.72f).forEach { x ->
+                drawLine(
+                    SkyPalette.Wave,
+                    start = Offset(size.width * x, size.height * 0.74f),
+                    end = Offset(size.width * x - 4f * u, size.height * 0.88f),
+                    strokeWidth = 3.5f * u,
+                    cap = StrokeCap.Round
+                )
+            }
+        }
+    }
+}
+
+private fun DrawScope.dayCloud(center: Offset, color: Color) {
+    // drawCloud scales with the area it is given; 70% of the cell keeps the cloud clear of the day number.
+    drawCloud(area = Size(size.width * 0.7f, size.height * 0.7f), center = center, color = color)
+}
+
+private fun DrawScope.dayWave(y: Float, from: Float, to: Float, color: Color) {
+    val u = size.minDimension / 100f
+    val top = size.height * y
+    val start = size.width * from
+    val end = size.width * to
+    val step = (end - start) / 3f
+    val amplitude = 5f * u
+    val path = Path().apply {
+        moveTo(start, top)
+        quadraticTo(start + step * 0.5f, top - amplitude, start + step, top)
+        quadraticTo(start + step * 1.5f, top + amplitude, start + step * 2f, top)
+        quadraticTo(start + step * 2.5f, top - amplitude, end, top)
+    }
+    drawPath(path, color, style = Stroke(width = 5f * u, cap = StrokeCap.Round))
+}
+
+private fun DrawScope.dayBolt(x: Float, y: Float) {
+    val u = size.minDimension / 100f
+    val bolt = Path().apply {
+        moveTo(x, y)
+        lineTo(x - 7f * u, y + 11f * u)
+        lineTo(x, y + 11f * u)
+        lineTo(x - 5f * u, y + 21f * u)
+    }
+    drawPath(
+        bolt,
+        SkyPalette.Lightning,
+        style = Stroke(width = 4f * u, cap = StrokeCap.Round, join = StrokeJoin.Round)
+    )
+}
+
+@Preview(name = "Month sky calendar", widthDp = 360)
+@Composable
+private fun MonthSkyCalendarPreview() {
+    val skies = listOf(
+        DaySkyAppearance.NothingLogged,
+        DaySkyAppearance.Hazy,
+        DaySkyAppearance.Cloudy,
+        DaySkyAppearance.Storm,
+        DaySkyAppearance.NothingLogged,
+        DaySkyAppearance.Rain
+    )
+    MigrelyTheme {
+        Column(Modifier.padding(16.dp)) {
+            MonthSkyCalendar(
+                weekdayInitials = listOf("M", "T", "W", "T", "F", "S", "S"),
+                leadingEmptyDays = 3,
+                days = (1..31).map { day ->
+                    CalendarDay(
+                        dayOfMonth = day,
+                        appearance = if (day > 23) {
+                            DaySkyAppearance.Future
+                        } else {
+                            skies[day % skies.size]
+                        },
+                        isToday = day == 23,
+                        isSelected = day == 14,
+                        description = "$day October"
+                    )
+                },
+                onDayClick = {},
+                modifier = Modifier.fillMaxWidth()
+            )
+            MonthSkyLegend(
+                entries = listOf(
+                    LegendEntry(DaySkyAppearance.Hazy, "Mild"),
+                    LegendEntry(DaySkyAppearance.Cloudy, "Moderate"),
+                    LegendEntry(DaySkyAppearance.Storm, "Severe"),
+                    LegendEntry(DaySkyAppearance.NothingLogged, "Not logged")
+                ),
+                modifier = Modifier.padding(top = 16.dp)
+            )
+        }
+    }
+}

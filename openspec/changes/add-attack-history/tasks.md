@@ -51,7 +51,7 @@
 
 ## 5. Design system (`:designsystem`)
 
-- [ ] 5.1 Add `DaySkyAppearance`, `CalendarDay`, `MonthSkyCalendar` and `MonthSkyLegend` (design D7) with previews, and a Compose UI test for:
+- [x] 5.1 Add `DaySkyAppearance`, `CalendarDay`, `MonthSkyCalendar` and `MonthSkyLegend` (design D7) with previews, and a Compose UI test for:
   - descriptions;
   - future days not clickable;
   - the selected state;
