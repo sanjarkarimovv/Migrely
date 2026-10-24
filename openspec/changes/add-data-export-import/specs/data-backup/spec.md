@@ -34,6 +34,14 @@ UTF-8 with a byte-order mark, named `migrely-attacks-YYYY-MM-DD.csv` (BRD BAK-F2
 - **WHEN** the CSV is opened in a spreadsheet
 - **THEN** each attack is one row, and names with non-Latin letters read correctly
 
+#### Scenario: A phone in Uzbek or Russian
+- **WHEN** the phone's language writes decimals with a comma
+- **THEN** the columns are separated by semicolons, as a spreadsheet there expects
+
+#### Scenario: A note that looks like a formula
+- **WHEN** a note starts with "="
+- **THEN** the cell shows the note as text and runs nothing
+
 ### Requirement: Import shows what it brings
 "Import a backup" SHALL first read the file and show how many attacks, medications and day marks it holds, before
 anything on the phone changes. The import SHALL then be applied in one transaction, so either all of it is saved or
@@ -55,6 +63,14 @@ exists to that one (BRD BAK-F3, EC-BAK-04, EC-MED-07, D73).
 #### Scenario: Add
 - **WHEN** the user adds a backup that shares 4 attacks with the phone
 - **THEN** those 4 are skipped and the others are added
+
+#### Scenario: The same attack logged on two phones
+- **WHEN** the user adds a backup holding an attack that overlaps one on the phone, under another ID
+- **THEN** it is skipped, so attacks never overlap
+
+#### Scenario: A medication by the same name
+- **WHEN** the user adds a backup whose "ibuprofen" has another ID than the phone's "Ibuprofen"
+- **THEN** no second medication is added, and the backup's intakes count as the phone's Ibuprofen
 
 ### Requirement: Files that cannot be imported
 A broken file, or a file of another format, SHALL change nothing and say "This file isn't a Migrely backup." A file

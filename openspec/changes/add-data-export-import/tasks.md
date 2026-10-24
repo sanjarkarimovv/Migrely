@@ -13,15 +13,15 @@
 - [x] 2.1 Domain: models, single-function repositories, use cases, tests.
 - [x] 2.2 Data: `BackupRepository`, CSV mapper (RFC 4180, BOM), tests.
 - [x] 2.3 Presentation: `YourDataViewModel`, tests.
-- [ ] 2.4 UI: the Your data screen, SAF launchers, the import dialog.
+- [x] 2.4 UI: the Your data screen, SAF launchers, the import dialog.
 
 ## 3. Settings
 
-- [ ] 3.1 `:features:settings:{presentation,ui}`; home's header shows "Settings" in place of the bell; routes and DI.
+- [x] 3.1 `:features:settings:{presentation,ui}`; home's header shows "Settings" in place of the bell; routes and DI.
 
 ## 4. Auto Backup
 
-- [ ] 4.1 `backup_rules.xml` and `data_extraction_rules.xml`.
+- [x] 4.1 `backup_rules.xml` and `data_extraction_rules.xml`.
 
 ## 5. Verify
 

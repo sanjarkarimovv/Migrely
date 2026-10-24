@@ -40,6 +40,10 @@
 - Fields are quoted when they hold a comma, a quote or a newline, with quotes doubled (RFC 4180).
 - Times are written in the attack's own zone as `yyyy-MM-dd HH:mm`.
 - Medications are listed as "name dose", and tags as their English labels, both joined by "; ".
+- The separator is ";" when the phone's language writes decimals with a comma (Uzbek, Russian, German and others),
+  since Excel there splits columns at semicolons; elsewhere it is ",". Every number in the file is whole.
+- A cell starting with "=", "+", "-", "@", a tab or a return gets a leading "'", so a spreadsheet shows it as text
+  instead of running it as a formula.
 
 ### D4. Domain (`:features:backup:domain`)
 
@@ -53,10 +57,15 @@
 - **Single-function repositories:** write backup, write CSV, read backup, phone has records, save automatic backup,
   replace with backup, and add backup. All are implemented by `BackupRepository`.
 
-### D5. Import of medications by name (EC-MED-07)
+### D5. "Add" (BRD D73, EC-MED-07)
 
-- In "Add", a medication whose `name_key` exists under another ID is not inserted. Its intakes are written with the
-  existing medication's ID. The mapping is built inside the transaction.
+- A medication or custom tag whose name key exists under another ID is not inserted; the backup's records point at
+  the one on the phone. The mapping is built inside the transaction, and custom tag keys in `attack_tag` are rewritten.
+- An attack is skipped when its ID is on the phone, or when it overlaps an attack there, by the same rule as logging
+  one (an attack in progress reaches into the future). The same attack logged on two phones has two IDs.
+- An intake is skipped when its ID is on the phone, or when the same medication was taken at the same moment. An
+  intake of an attack skipped for overlapping is kept without the link.
+- A date already marked keeps its marks.
 
 ### D6. UI (`:features:backup:ui`, `:features:settings:ui`)
 
@@ -76,6 +85,16 @@
   and device transfer, both include `database`, `sharedpref` and `file` `backups/`.
 - The cache is excluded by Android itself.
 
+### D8. Checking a file (BRD EC-BAK-01–03)
+
+- The header is read first, so a newer file is told apart from a file that is not a backup at all.
+- Kinds, keys, zones and dates are read strictly: anything this version does not know makes the file `NotABackup`.
+- `BackupRecordsValidator` checks what the database and the app rely on: unique IDs and names, intakes pointing at a
+  medication and an attack in the file, intensity 1–10, impact 0–3, and at most one attack in progress. A backup the
+  app wrote always passes. Overlaps inside a file are not refused: "Add" skips them, and a backup of a phone that once
+  held them restores what it had.
+- A file is read up to 16 MB; ten years are a few megabytes.
+
 ## Risks
 
 | Risk | Mitigation |
@@ -83,3 +102,6 @@
 | A large file and the transaction time | records are written in batches inside one transaction on the background dispatcher; 10 years is about 4,000 attacks, a few MB |
 | Room WAL files and Auto Backup | Android backs up the database with its `-wal`, and Room recovers on open |
 | A file edited by hand | strict decoding of types; any error is `NotABackup` and nothing changes |
+| A file provider that refuses the "wt" mode | the write falls back to "w"; the picker has just created the file, so it is empty |
+| No file picker on the phone | the launch fails with `ActivityNotFoundException`, and the screen says so |
+| The automatic backup cannot be restored from the app yet | it is in Android's backup; change 12 adds "Restore" (BRD D75) |

@@ -71,7 +71,7 @@ fun TodayContents(
     monthCalendar: @Composable () -> Unit = {},
     medicationPrompt: @Composable () -> Unit = {},
     onPeriodToday: (marked: Boolean) -> Unit = {},
-    onReminders: () -> Unit = {}
+    onSettings: () -> Unit = {}
 ) {
     val screenModifier = modifier
         .fillMaxSize()
@@ -86,7 +86,7 @@ fun TodayContents(
                     .weight(1f)
                     .verticalScroll(rememberScrollState())
             ) {
-                DayHeader(dayTitle, onReminders)
+                DayHeader(dayTitle, onSettings)
                 TodaySkyCard(today = today, appearance = appearance)
                 PeriodToday(today.periodToday, onPeriodToday)
                 medicationPrompt()
@@ -113,7 +113,7 @@ fun TodayContents(
                     .weight(1f)
                     .verticalScroll(rememberScrollState())
             ) {
-                DayHeader(dayTitle, onReminders)
+                DayHeader(dayTitle, onSettings)
                 TodaySkyCard(today = today, appearance = appearance)
                 PeriodToday(today.periodToday, onPeriodToday)
                 medicationPrompt()
@@ -216,7 +216,7 @@ private fun AttackSummaryRow(
 
 /** The date, with "Reminders" at the end; attack mode has its own screen, so the button is normal mode only (D65). */
 @Composable
-private fun DayHeader(dayTitle: String, onReminders: () -> Unit) {
+private fun DayHeader(dayTitle: String, onSettings: () -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
         Text(
             text = dayTitle,
@@ -226,10 +226,10 @@ private fun DayHeader(dayTitle: String, onReminders: () -> Unit) {
                 .weight(1f)
                 .padding(start = 8.dp, top = 16.dp, bottom = 16.dp)
         )
-        IconButton(onClick = onReminders) {
+        IconButton(onClick = onSettings) {
             Icon(
-                MigrelyIcons.Notifications,
-                contentDescription = stringResource(R.string.reminders),
+                MigrelyIcons.Settings,
+                contentDescription = stringResource(R.string.home_settings),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }

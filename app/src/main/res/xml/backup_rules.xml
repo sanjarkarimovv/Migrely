@@ -1,13 +1,10 @@
-<?xml version="1.0" encoding="utf-8"?><!--
-   Sample backup rules file; uncomment and customize as necessary.
-   See https://developer.android.com/guide/topics/data/autobackup
-   for details.
-   Note: This file is ignored for devices older that API 23 even if they have auto
-   backup available.
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Android 11 and older (BRD BAK-F4, D74): the diary, the settings kept in shared preferences, and the automatic
+    backups taken before an import. The cache, where PDF reports go, is never backed up.
 -->
 <full-backup-content>
-    <!--
-   <include domain="sharedpref" path="."/>
-   <exclude domain="sharedpref" path="device.xml"/>
--->
+    <include domain="database" path="." />
+    <include domain="sharedpref" path="." />
+    <include domain="file" path="backups/" />
 </full-backup-content>
