@@ -297,4 +297,26 @@ class HistoryViewModelTest :
 
         assertEquals(HistoryPresentationNotification.StorageFull, notification.await())
     }
+
+    @Test
+    fun `Given marking fails or the day is in the future when marking then something went wrong`() =
+        runTest {
+            val day = LocalDate.parse("2026-09-14")
+            listOf(SetDayMarkResultDomainModel.Failed, SetDayMarkResultDomainModel.FutureDay)
+                .forEach { result ->
+                    setDayMarkUseCase.givenSuccessfulExecution(
+                        SetDayMarkRequestDomainModel(day, DayMarkKindDomainModel.Period, true),
+                        result
+                    )
+                    val notification =
+                        async(start = UNDISPATCHED) { classUnderTest.notification.first() }
+
+                    classUnderTest.onPeriodAction(SEPTEMBER, day, marked = true)
+
+                    assertEquals(
+                        HistoryPresentationNotification.SomethingWentWrong,
+                        notification.await()
+                    )
+                }
+        }
 }

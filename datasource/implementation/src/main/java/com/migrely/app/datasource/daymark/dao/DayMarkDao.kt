@@ -12,6 +12,9 @@ abstract class DayMarkDao {
     @Query("SELECT * FROM day_mark WHERE date BETWEEN :from AND :to ORDER BY date")
     abstract fun between(from: String, to: String): List<DayMarkLocalModel>
 
+    @Query("SELECT MIN(date) FROM day_mark")
+    abstract fun earliestDate(): String?
+
     @Query("SELECT * FROM day_mark WHERE date = :date")
     abstract fun byDate(date: String): DayMarkLocalModel?
 

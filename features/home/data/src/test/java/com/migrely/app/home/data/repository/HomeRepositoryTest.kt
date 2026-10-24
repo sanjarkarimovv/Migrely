@@ -15,6 +15,7 @@ import com.migrely.app.home.data.mapper.AttackDomainMapper
 import com.migrely.app.home.data.mapper.IntensityPointDomainMapper
 import com.migrely.app.home.domain.model.AttackLookupResultDomainModel
 import com.migrely.app.home.domain.model.DayMarksDomainModel
+import com.migrely.app.home.domain.model.DayMarksResultDomainModel
 import com.migrely.app.home.domain.model.DeletedAttackDomainModel
 import com.migrely.app.home.domain.model.IntensityPointDomainModel
 import com.migrely.app.home.domain.model.LongAttackCheckDomainModel
@@ -297,25 +298,22 @@ class HomeRepositoryTest {
             .willReturn(listOf(DayMarkDataModel(date, period = true, painFree = true)))
 
         assertEquals(
-            DayMarksDomainModel(period = true, painFree = true),
+            DayMarksResultDomainModel.Loaded(DayMarksDomainModel(period = true, painFree = true)),
             classUnderTest.dayMarks(date)
         )
     }
 
     @Test
-    fun `Given no marks or a failed read when reading them then none`() {
+    fun `Given no marks or a failed read when reading them then none or failed`() {
         val date = LocalDate.parse("2026-10-23")
         given(dayMarkDataSource.marksBetween(date, date)).willReturn(emptyList())
         assertEquals(
-            DayMarksDomainModel(period = false, painFree = false),
+            DayMarksResultDomainModel.Loaded(DayMarksDomainModel(period = false, painFree = false)),
             classUnderTest.dayMarks(date)
         )
 
         given(dayMarkDataSource.marksBetween(date, date)).willThrow(DatabaseDataException())
-        assertEquals(
-            DayMarksDomainModel(period = false, painFree = false),
-            classUnderTest.dayMarks(date)
-        )
+        assertEquals(DayMarksResultDomainModel.Failed, classUnderTest.dayMarks(date))
     }
 
     @Test

@@ -7,9 +7,12 @@ import java.time.format.DateTimeParseException
 
 /** Dates are stored as ISO `yyyy-MM-dd`; a row whose date cannot be read is skipped. */
 class DayMarkLocalMapper {
+    fun toData(local: DayMarkLocalModel): DayMarkDataModel? =
+        toDate(local.date)?.let { DayMarkDataModel(it, local.period, local.painFree) }
+
     @Suppress("SwallowedException")
-    fun toData(local: DayMarkLocalModel): DayMarkDataModel? = try {
-        DayMarkDataModel(LocalDate.parse(local.date), local.period, local.painFree)
+    fun toDate(local: String): LocalDate? = try {
+        LocalDate.parse(local)
     } catch (exception: DateTimeParseException) {
         null
     }

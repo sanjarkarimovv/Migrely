@@ -7,6 +7,7 @@ import com.migrely.app.history.domain.model.DayMarkDomainModel
 import com.migrely.app.history.domain.model.DayMarksResultDomainModel
 import com.migrely.app.history.domain.model.DeletedAttackDomainModel
 import com.migrely.app.history.domain.model.EarliestAttackResultDomainModel
+import com.migrely.app.history.domain.model.EarliestDayMarkResultDomainModel
 import com.migrely.app.history.domain.model.HistoryAttackDomainModel
 import com.migrely.app.history.domain.model.HistoryMonthDomainModel
 import com.migrely.app.history.domain.model.HistoryMonthResultDomainModel
@@ -14,6 +15,7 @@ import com.migrely.app.history.domain.repository.GetAttacksTouchingRepository
 import com.migrely.app.history.domain.repository.GetCurrentTimeRepository
 import com.migrely.app.history.domain.repository.GetDayMarksRepository
 import com.migrely.app.history.domain.repository.GetEarliestAttackRepository
+import com.migrely.app.history.domain.repository.GetEarliestDayMarkRepository
 import com.migrely.app.history.domain.repository.GetRecentlyDeletedAttackRepository
 import java.time.Instant
 import java.time.LocalDate
@@ -42,6 +44,7 @@ class GetHistoryMonthUseCaseTest {
     private val getAttacksTouchingRepository: GetAttacksTouchingRepository = mock()
     private val getRecentlyDeletedAttackRepository: GetRecentlyDeletedAttackRepository = mock()
     private val getDayMarksRepository: GetDayMarksRepository = mock()
+    private val getEarliestDayMarkRepository: GetEarliestDayMarkRepository = mock()
 
     @Before
     fun setUp() {
@@ -51,8 +54,11 @@ class GetHistoryMonthUseCaseTest {
             getAttacksTouchingRepository,
             getRecentlyDeletedAttackRepository,
             getDayMarksRepository,
+            getEarliestDayMarkRepository,
             CoroutineContextProvider.Default
         )
+        given(getEarliestDayMarkRepository.earliestDayMark())
+            .willReturn(EarliestDayMarkResultDomainModel.None)
         givenNow("2026-10-23T12:00")
         givenEarliest(EarliestAttackResultDomainModel.None)
         givenAttacks()
@@ -345,5 +351,43 @@ class GetHistoryMonthUseCaseTest {
         ).willReturn(DayMarksResultDomainModel.Failed)
 
         assertEquals(HistoryMonthResultDomainModel.Failed, classUnderTest.executeInBackground(null))
+    }
+
+    @Test
+    fun `Given no attack and a mark last month when executed then last month is the earliest`() {
+        // A period marked before any migraine keeps its month reachable (BRD D51).
+        given(getEarliestDayMarkRepository.earliestDayMark())
+            .willReturn(EarliestDayMarkResultDomainModel.Found(LocalDate.parse("2026-09-28")))
+
+        val actual = loaded(YearMonth.of(2026, 9))
+
+        assertEquals(YearMonth.of(2026, 9), actual.month)
+        assertEquals(YearMonth.of(2026, 9), actual.earliestMonth)
+        assertEquals(false, actual.anyAttackLogged)
+    }
+
+    @Test
+    fun `Given the first attack after the first mark then the mark's month is the earliest`() {
+        givenEarliest(EarliestAttackResultDomainModel.Found(at("2026-10-05T10:00"), TASHKENT))
+        given(getEarliestDayMarkRepository.earliestDayMark())
+            .willReturn(EarliestDayMarkResultDomainModel.Found(LocalDate.parse("2026-08-30")))
+
+        assertEquals(YearMonth.of(2026, 8), loaded(null).earliestMonth)
+    }
+
+    @Test
+    fun `Given the earliest mark cannot be read when executed then failed`() {
+        given(getEarliestDayMarkRepository.earliestDayMark())
+            .willReturn(EarliestDayMarkResultDomainModel.Failed)
+
+        assertEquals(HistoryMonthResultDomainModel.Failed, classUnderTest.executeInBackground(null))
+    }
+
+    @Test
+    fun `Given a pain-free mark on a day with an attack in progress then not pain-free`() {
+        givenAttacks(attack("a", "2026-10-23T09:00", end = null))
+        givenMarks(DayMarkDomainModel(TODAY, period = false, painFree = true))
+
+        assertEquals(false, loaded(OCTOBER).days[22].painFree)
     }
 }

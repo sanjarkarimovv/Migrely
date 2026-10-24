@@ -75,7 +75,7 @@ stay readable at 200% font (BRD EC-UX-03, EC-UX-04).
 
 #### Scenario: Screen reader
 - **WHEN** TalkBack focuses the home toggle while today is marked
-- **THEN** it reads "Period today", on
+- **THEN** it reads "Period today", checked
 
 #### Scenario: Disabled switch
 - **WHEN** TalkBack focuses "Pain-free day" on an attack day

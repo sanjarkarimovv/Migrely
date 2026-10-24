@@ -11,6 +11,7 @@ import com.migrely.app.history.domain.repository.GetAttacksTouchingRepository
 import com.migrely.app.history.domain.repository.GetCurrentTimeRepository
 import com.migrely.app.history.domain.repository.GetDayMarksRepository
 import com.migrely.app.history.domain.repository.GetEarliestAttackRepository
+import com.migrely.app.history.domain.repository.GetEarliestDayMarkRepository
 import com.migrely.app.history.domain.repository.GetRecentlyDeletedAttackRepository
 import com.migrely.app.history.domain.repository.RestoreDeletedAttackRepository
 import com.migrely.app.history.domain.repository.SetDayMarkRepository
@@ -43,6 +44,11 @@ internal object HistoryDataModule {
     @Provides
     fun providesSetDayMarkRepository(repository: HistoryRepository): SetDayMarkRepository =
         repository
+
+    @Provides
+    fun providesGetEarliestDayMarkRepository(
+        repository: HistoryRepository
+    ): GetEarliestDayMarkRepository = repository
 
     @Provides
     fun providesGetCurrentTimeRepository(repository: HistoryRepository): GetCurrentTimeRepository =

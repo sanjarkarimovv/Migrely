@@ -348,7 +348,7 @@ Boshqa davlatlarda narxni Play avtomatik konvertatsiya qiladi. Hindiston, Brazil
 |---|---|---|---|
 | EC-HIS-01 | Hali maʼlumot yoʻq | Kalendar va statistika ekranida "Birinchi xurujni yozing" tugmasi va qisqa tushuntirish chiqadi | ✅ |
 | EC-HIS-02 | Koʻp maʼlumot (10 yilda 3 600+ xuruj) | Roʻyxat sahifalab yuklanadi (paging), soʻrovlar indekslangan, kalendar faqat koʻrinayotgan oyni yuklaydi | ✅ |
-| EC-HIS-03 | Birinchi xurujdan oldingi yoki kelajakdagi oyga oʻtish | Ruxsat berilmaydi: oldingi oy tugmasi birinchi xuruj boshlangan oyda, keyingi oy tugmasi joriy oyda oʻchadi. Hech qanday xuruj boʻlmasa, faqat joriy oy koʻrinadi | ✅ |
+| EC-HIS-03 | Birinchi xurujdan oldingi yoki kelajakdagi oyga oʻtish | Ruxsat berilmaydi: oldingi oy tugmasi birinchi xuruj yoki birinchi kun belgisi qaysi oyda boʻlsa, oʻsha oyda, keyingi oy tugmasi joriy oyda oʻchadi. Hech qanday xuruj va belgi boʻlmasa, faqat joriy oy koʻrinadi (D51) | ✅ |
 | EC-HIS-04 | Tarixdan ochilgan xuruj tafsilotlar ekranida oʻchirildi | Foydalanuvchi tarix ekraniga qaytadi va u yerda "Migraine deleted" va "Undo" chiqadi (bosh ekrandagidek, EC-ATK-14). Kalendar va roʻyxat darhol yangilanadi | ✅ |
 | EC-DAY-01 | Xuruj yozilgan kunni "ogʻriqsiz" deb belgilash | Ruxsat berilmaydi: tugma oʻchiq va "Bu kunda migren yozilgan" deb tushuntiriladi. Belgidan keyin oʻsha kunga xuruj yozilsa, xuruj ustun: kun ogʻriqsiz koʻrinmaydi va sanalmaydi. Xuruj oʻchirilsa, belgi yana kuchga kiradi | ✅ |
 | EC-DAY-02 | Bir kunda hayz va ogʻriqsiz kun, yoki hayz va xuruj | Ikkalasi ham mumkin: hayz ogʻriq emas. Hayz va migren bir kunda boʻlishi aynan kuzatiladigan bogʻliqlik (INS-F3) | ✅ |
@@ -554,7 +554,7 @@ Ish sikli: `/opsx:explore` (ixtiyoriy) → `/opsx:propose <nom>` → review → 
 | 2c | `fix-today-zone-and-landscape-message` — QA topilmalari #19 va #20: bugungi karta va "Logged today" xurujni oʻzi yozilgan zonadagi kunlari boʻyicha oladi, vaqt oraligʻida shahar bir marta yoziladi; landscape xuruj rejimida xabar faqat chap ustun ustida chiqadi | EC-TIM-02, EC-UX-16, EC-UX-20, D36–D38 |
 | 3 | `add-medication-tracking` — dorilar roʻyxati (qoʻshish, tahrirlash, arxivlash), dorini xuruj paytida, tafsilotlarda va bosh ekrandan yozish (D33–D35) | MED-F1, F2, F3, EC-MED-01, 07…10, ATK-F5 (dorilar) |
 | 3a | `add-medication-effect-and-overuse` — "Yordam berdimi?" savoli bosh ekranda va xuruj tafsilotlarida, overuse ogohlantirishi (D39, D45, D46) | MED-F4, F5, EC-MED-02…06, 11, 12, ATK-F2 |
-| 4 | `add-day-markers` — hayz va ogʻriqsiz kun belgilari (History'da tanlangan kun, bosh ekranda "Period" tugmasi), kalendarda va bugungi kartada "ochiq" osmon (D29, D47–D50) | DAY-F1, F2, HIS-F1 va F3 ning belgilar qismi, EC-UX-09, 10, EC-DAY-01…05 |
+| 4 | `add-day-markers` — hayz va ogʻriqsiz kun belgilari (History'da tanlangan kun, bosh ekranda "Period" tugmasi), kalendarda va bugungi kartada "ochiq" osmon (D29, D47–D51) | DAY-F1, F2, HIS-F1 va F3 ning belgilar qismi, EC-UX-09, 10, EC-DAY-01…05 |
 | 4a | `add-calendar-keyboard-grid` — oylik kalendar klaviatura bilan bitta Tab toʻxtash joyi, kunlar orasida strelkalar (QA #22, D38); landscape xuruj rejimida xabar ostidan matn yarim koʻrinmasligi (QA #26) | EC-UX-19, EC-UX-20, D38 |
 | 5 | `add-basic-stats` — oylik statistika va taraqqiyot xabari (D29) | STA-F*, EC-UX-14 |
 | 6 | `add-reminders` | REM-F*, EC-REM-* |
@@ -690,6 +690,7 @@ Ilova 2023-yil 13-noyabrdan oldin ochilgan akkauntda chiqadi, shuning uchun 12 t
 | D48 | Belgilar qayerda qoʻyiladi. History'da tanlangan kun ostida ikkita kalit bor: "Period" va "Pain-free day". Bosh ekranda, oddiy rejimda, bugungi karta ostida bitta "Period" tugmasi turadi: bir bosish bugungi hayzni yoqadi yoki oʻchiradi (DAY-F1 "tez tugma"). "Ogʻriqsiz kun" bosh ekranda tugma sifatida berilmaydi, chunki bu kun oxirida beriladigan baho. U kalendardan va 6-change'dagi kunlik eslatma tugmasidan qoʻyiladi (DAY-F2, REM-F1) | PO | 2026-10-24 |
 | D49 | "Ochiq" osmon (EC-UX-09). Kalendarda ogʻriqsiz kun yulduzli tiniq osmon boʻladi (shakl: yulduz, EC-UX-15). Bugungi karta ogʻriqsiz deb belgilansa, oʻroq oy oʻrniga toʻlin oy va "Pain-free today" chiqadi. Hayz kuni hujayraning pastki burchagida kichik tomchi shakli bilan, rangdan tashqari shakl bilan ham belgilanadi. Legend'da "Pain-free" va "Period" qoʻshiladi. TalkBack kunni "pain-free" yoki "period" deb oʻqiydi | PO | 2026-10-24 |
 | D50 | Zona tufayli qurilmaning hali kelmagan sanasiga tushgan xuruj (masalan, ertalab Toshkentda yozilib, gʻarbga uchilgandan keyin) kalendarda oʻz sanasida, yozilgan zonasi boʻyicha koʻrsatiladi (EC-TIM-02, D36). Bu kun oʻsha sana kelguncha tanlanmaydi va belgilanmaydi (EC-DAY-03). QA #27 | PO | 2026-10-24 |
+| D51 | History'dagi eng birinchi oy birinchi xuruj va birinchi kun belgisi (hayz yoki ogʻriqsiz kun) oylaridan oldingisi boʻladi (EC-HIS-03 oʻzgartirildi). Aks holda xurujdan oldin belgilangan oy, masalan migren yozilmasdan belgilangan hayz, oy almashgach History'da koʻrinmay qoladi (review C1) | PO | 2026-10-24 |
 
 ---
 

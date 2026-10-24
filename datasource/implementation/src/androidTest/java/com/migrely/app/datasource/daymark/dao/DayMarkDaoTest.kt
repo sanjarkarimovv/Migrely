@@ -81,4 +81,14 @@ class DayMarkDaoTest {
             classUnderTest.between("2026-10-01", "2026-10-31").map { it.date }
         )
     }
+
+    @Test
+    fun givenMarks_whenReadingTheEarliest_thenTheFirstDate_andNullWhenEmpty() {
+        assertNull(classUnderTest.earliestDate())
+        listOf("2026-10-14", "2026-09-28", "2026-10-01").forEach { date ->
+            classUnderTest.update(date, 1L) { it.copy(period = true) }
+        }
+
+        assertEquals("2026-09-28", classUnderTest.earliestDate())
+    }
 }

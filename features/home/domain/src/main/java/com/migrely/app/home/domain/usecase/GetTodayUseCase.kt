@@ -5,6 +5,8 @@ import com.migrely.app.coroutine.CoroutineContextProvider
 import com.migrely.app.home.domain.model.AttackDomainModel
 import com.migrely.app.home.domain.model.AttackSummaryDomainModel
 import com.migrely.app.home.domain.model.CurrentTimeDomainModel
+import com.migrely.app.home.domain.model.DayMarksDomainModel
+import com.migrely.app.home.domain.model.DayMarksResultDomainModel
 import com.migrely.app.home.domain.model.TodayDomainModel
 import com.migrely.app.home.domain.model.TodayResultDomainModel
 import com.migrely.app.home.domain.model.TodaySnapshotDomainModel
@@ -39,7 +41,12 @@ class GetTodayUseCase(
         val to = today.plusDays(1 + ZONE_MARGIN_DAYS).atStartOfDay(now.zone).toInstant()
         return when (val result = getTodayRepository.today(from, to)) {
             is TodaySnapshotResultDomainModel.Loaded -> {
-                val marks = getDayMarksRepository.dayMarks(today)
+                // Marks that cannot be read never hide today's attacks: the card shows no mark.
+                val marks = when (val read = getDayMarksRepository.dayMarks(today)) {
+                    is DayMarksResultDomainModel.Loaded -> read.marks
+                    DayMarksResultDomainModel.Failed ->
+                        DayMarksDomainModel(period = false, painFree = false)
+                }
                 TodayResultDomainModel.Loaded(
                     today = result.snapshot.toToday(now, today, marks.painFree),
                     recentlyDeleted = result.snapshot.recentlyDeleted,

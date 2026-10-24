@@ -16,3 +16,24 @@ chosen day again, or changing the month, SHALL clear the choice (BRD HIS-F3).
 #### Scenario: Back to the month
 - **WHEN** a day is chosen and the user taps "Show all of October"
 - **THEN** the list shows all of October's attacks again
+
+### Requirement: Month by month
+History SHALL show one month at a time with "Previous month" and "Next month" buttons. It SHALL NOT go before the
+earlier of the month in which the first attack started, in that attack's zone, and the month of the first day mark, nor
+past the current month. With nothing logged or marked, only the current month SHALL be shown (BRD EC-HIS-03, D51).
+
+#### Scenario: Previous month
+- **WHEN** History shows October 2026 and the first attack was in August 2026, and the user taps "Previous month"
+- **THEN** September 2026 is shown
+
+#### Scenario: Not before the first attack
+- **WHEN** History shows August 2026, the month of the first attack
+- **THEN** "Previous month" is disabled
+
+#### Scenario: Not past this month
+- **WHEN** History shows the current month
+- **THEN** "Next month" is disabled
+
+#### Scenario: A mark before any attack
+- **WHEN** no migraine was ever logged, 30 September is marked as a period day, and today is 2 October
+- **THEN** History can go back to September 2026, where 30 September shows its period mark

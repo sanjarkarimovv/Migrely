@@ -12,6 +12,7 @@ import com.migrely.app.home.data.mapper.AttackDomainMapper
 import com.migrely.app.home.domain.model.AttackLookupResultDomainModel
 import com.migrely.app.home.domain.model.CurrentTimeDomainModel
 import com.migrely.app.home.domain.model.DayMarksDomainModel
+import com.migrely.app.home.domain.model.DayMarksResultDomainModel
 import com.migrely.app.home.domain.model.DeletedAttackDomainModel
 import com.migrely.app.home.domain.model.IntensityPointDomainModel
 import com.migrely.app.home.domain.model.LongAttackCheckDomainModel
@@ -84,12 +85,14 @@ class HomeRepository(
         TodaySnapshotResultDomainModel.Failed
     }
 
-    override fun dayMarks(date: LocalDate): DayMarksDomainModel = try {
-        dayMarkDataSource.marksBetween(date, date).firstOrNull()
-            ?.let { DayMarksDomainModel(it.period, it.painFree) }
-            ?: DayMarksDomainModel(period = false, painFree = false)
+    override fun dayMarks(date: LocalDate): DayMarksResultDomainModel = try {
+        DayMarksResultDomainModel.Loaded(
+            dayMarkDataSource.marksBetween(date, date).firstOrNull()
+                ?.let { DayMarksDomainModel(it.period, it.painFree) }
+                ?: DayMarksDomainModel(period = false, painFree = false)
+        )
     } catch (_: DataException) {
-        DayMarksDomainModel(period = false, painFree = false)
+        DayMarksResultDomainModel.Failed
     }
 
     override fun setPeriod(date: LocalDate, marked: Boolean) = write {

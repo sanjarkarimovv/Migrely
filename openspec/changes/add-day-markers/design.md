@@ -60,7 +60,7 @@
   touches the day).
 - `HistoryViewModel` has two new actions, `onPeriodAction(month, date, marked)` and `onPainFreeAction(month, date,
   marked)`. Each writes the mark and loads the month again, so the chosen day stays. `AttackLogged` shows "A migraine is
-  logged on this day." The UI prevents that case, so the message is only a fallback.
+  logged on this day, so it can't be pain-free." The UI prevents that case, so the message is only a fallback.
 - Under the chosen day, after its attacks and before "Add a past migraine", two rows each hold a label and a `Switch`.
   Each row is `toggleable`, 56 dp high. When pain-free is not allowed, its row is disabled and its supporting line says
   why.
@@ -78,15 +78,24 @@
 ### D5. Home
 
 - **Domain:**
-  - `GetTodayUseCase` reads today's mark through `GetDayMarkRepository`;
-  - `TodayDomainModel.Calm` gains `markedPainFree`, and `TodayResultDomainModel.Loaded` gains `periodToday`;
+  - `GetTodayUseCase` reads today's marks through `GetDayMarksRepository`, which returns `Loaded` or `Failed`.
+    Marks that cannot be read count as none, so today's attacks always show;
+  - a new `TodayDomainModel.PainFree` covers a day marked pain-free with no attack, and
+    `TodayResultDomainModel.Loaded` gains `periodToday`;
   - a pain-free mark matters only when the card is calm. With an ended attack today, the attacks show.
 - **Writing:** `SetPeriodTodayUseCase(marked)` writes today's date through `SetPeriodRepository`, then home loads again.
   Only the period mark is written from home (D48).
 - **UI:**
   - the calm card reads "Pain-free today" and "Marked by you" with `SkyAppearance.Clear`;
-  - under today's card, a `FilterChip` "Period" with a check when on, 48 dp, spoken as "Period today";
+  - under today's card, a `FilterChip` "Period" with a check when on, 48 dp. Its label carries the description
+    "Period today", which merges into the checkable chip;
   - the chip sits before the medication card and only in the normal mode.
+
+### D6. The first marked month is reachable (review C1, D51)
+
+- History's earliest month is the earlier of the first attack's month and the first marked date's month
+  (`GetEarliestDayMarkRepository`, `DayMarkDao.earliestDate`).
+- `anyAttackLogged` still drives the first-use card.
 
 ## Risks
 

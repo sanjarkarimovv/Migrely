@@ -90,7 +90,12 @@ private fun dayDescription(
     timeUiFormatter: HistoryTimeUiFormatter
 ): String {
     val sky = skyDescription(day, isToday, timeUiFormatter)
-    return if (day.period) stringResource(R.string.day_with_period, sky) else sky
+    return when {
+        !day.period -> sky
+        // A future date has no sky to describe, so the mark takes its place: "Sunday, 25 October: period." (D50).
+        day.sky == DaySkyUiModel.Future -> stringResource(R.string.day_future_with_period, sky)
+        else -> stringResource(R.string.day_with_period, sky)
+    }
 }
 
 @Composable

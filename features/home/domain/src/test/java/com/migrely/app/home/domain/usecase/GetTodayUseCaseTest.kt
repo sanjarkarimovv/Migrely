@@ -5,6 +5,7 @@ import com.migrely.app.home.domain.model.AttackDomainModel
 import com.migrely.app.home.domain.model.AttackSummaryDomainModel
 import com.migrely.app.home.domain.model.CurrentTimeDomainModel
 import com.migrely.app.home.domain.model.DayMarksDomainModel
+import com.migrely.app.home.domain.model.DayMarksResultDomainModel
 import com.migrely.app.home.domain.model.DeletedAttackDomainModel
 import com.migrely.app.home.domain.model.IntensityPointDomainModel
 import com.migrely.app.home.domain.model.LongAttackCheckDomainModel
@@ -406,9 +407,8 @@ class GetTodayUseCaseTest {
         ((result as TodayResultDomainModel.Loaded).today as TodayDomainModel.AttacksEnded).count
 
     private fun givenMarks(period: Boolean, painFree: Boolean) {
-        given(
-            getDayMarksRepository.dayMarks(any())
-        ).willReturn(DayMarksDomainModel(period, painFree))
+        given(getDayMarksRepository.dayMarks(any()))
+            .willReturn(DayMarksResultDomainModel.Loaded(DayMarksDomainModel(period, painFree)))
     }
 
     private fun givenClock(instant: Instant, zone: ZoneId) {
@@ -479,6 +479,17 @@ class GetTodayUseCaseTest {
 
         assertEquals(
             TodayResultDomainModel.Loaded(TodayDomainModel.Calm, periodToday = true),
+            classUnderTest.executeInBackground(Unit)
+        )
+    }
+
+    @Test
+    fun `Given the marks cannot be read when executed then today without marks`() {
+        given(getDayMarksRepository.dayMarks(any())).willReturn(DayMarksResultDomainModel.Failed)
+        givenSnapshot(inProgress = null)
+
+        assertEquals(
+            TodayResultDomainModel.Loaded(TodayDomainModel.Calm, periodToday = false),
             classUnderTest.executeInBackground(Unit)
         )
     }

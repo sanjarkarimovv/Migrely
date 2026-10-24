@@ -221,7 +221,7 @@ fun MonthSkyLegend(entries: List<LegendEntry>, modifier: Modifier = Modifier) {
                         .clip(RoundedCornerShape(5.dp))
                 ) {
                     if (entry.periodMark) {
-                        drawPeriodMark()
+                        drawPeriodMark(centered = true)
                     } else {
                         drawDaySky(
                             entry.appearance,
@@ -275,8 +275,14 @@ private fun DrawScope.drawDaySky(appearance: DaySkyAppearance, outline: Color) {
 
         DaySkyAppearance.Clear -> {
             drawRect(Brush.verticalGradient(SkyPalette.gradient(SkyAppearance.Clear)))
+            // Mirrored in right-to-left layouts, like the day number and the period drop; a minimum size keeps the
+            // stars visible in the small legend square too (BRD EC-UX-15).
             CLEAR_DAY_STARS.forEach { (x, y, r) ->
-                dayStar(Offset(size.width * x, size.height * y), r * u)
+                val startX = if (layoutDirection == LayoutDirection.Rtl) 1f - x else x
+                dayStar(
+                    Offset(size.width * startX, size.height * y),
+                    maxOf(r * u, 1.5.dp.toPx())
+                )
             }
         }
 
@@ -336,20 +342,17 @@ private fun DrawScope.dayStar(center: Offset, radius: Float) {
 }
 
 /**
- * The period drop in the bottom end corner: a rounded drop with a dark edge, so it reads on every sky and by shape alone
- * (BRD D49, EC-UX-15). It mirrors in right-to-left layouts.
+ * The period drop in the bottom end corner, or in the middle with [centered] (the legend): a rounded drop with a dark
+ * edge, so it reads on every sky and by shape alone (BRD D49, EC-UX-15). It mirrors in right-to-left layouts.
  */
-private fun DrawScope.drawPeriodMark() {
+private fun DrawScope.drawPeriodMark(centered: Boolean = false) {
     val u = size.minDimension / 100f
     val radius = maxOf(9f * u, 3.dp.toPx())
-    val end = if (layoutDirection ==
-        LayoutDirection.Rtl
-    ) {
-        radius * 2.2f
-    } else {
-        size.width - radius * 2.2f
+    val center = when {
+        centered -> Offset(size.width / 2f, size.height / 2f + radius * 0.35f)
+        layoutDirection == LayoutDirection.Rtl -> Offset(radius * 2.2f, size.height - radius * 2f)
+        else -> Offset(size.width - radius * 2.2f, size.height - radius * 2f)
     }
-    val center = Offset(end, size.height - radius * 2f)
     val drop = Path().apply {
         moveTo(center.x, center.y - radius * 1.7f)
         quadraticTo(center.x + radius, center.y - radius * 0.4f, center.x + radius, center.y)
@@ -358,8 +361,9 @@ private fun DrawScope.drawPeriodMark() {
         quadraticTo(center.x - radius, center.y - radius * 0.4f, center.x, center.y - radius * 1.7f)
         close()
     }
-    drawPath(drop, SkyPalette.Outline, style = Stroke(width = maxOf(2f * u, 1.dp.toPx())))
+    // The edge goes over the fill, so its whole width shows.
     drawPath(drop, SkyPalette.PeriodMark)
+    drawPath(drop, SkyPalette.Outline, style = Stroke(width = maxOf(1.5f * u, 1.dp.toPx())))
 }
 
 private fun DrawScope.dayCloud(center: Offset, color: Color) {

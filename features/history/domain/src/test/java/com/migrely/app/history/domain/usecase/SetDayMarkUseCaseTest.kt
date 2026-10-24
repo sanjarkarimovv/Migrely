@@ -158,4 +158,48 @@ class SetDayMarkUseCaseTest {
         given(getAttacksTouchingRepository.attacksTouching(any(), any()))
             .willReturn(AttacksTouchingResultDomainModel.Loaded(attacks.toList()))
     }
+
+    @Test
+    fun `Given an attack in progress today when marking today pain-free then refused`() {
+        givenAttacks(
+            HistoryAttackDomainModel(
+                "a",
+                at("2026-10-23T09:00"),
+                TASHKENT,
+                end = null,
+                peakIntensity = null
+            )
+        )
+
+        assertEquals(
+            SetDayMarkResultDomainModel.AttackLogged,
+            execute(LocalDate.parse("2026-10-23"), painFree = true)
+        )
+    }
+
+    @Test
+    fun `When marking pain-free then reads two days around the date in the device zone`() {
+        execute(OCTOBER_6, painFree = true)
+
+        // From 4 October 00:00 to 9 October 00:00 in Tashkent (UTC+5).
+        verify(getAttacksTouchingRepository).attacksTouching(
+            Instant.parse("2026-10-03T19:00:00Z"),
+            Instant.parse("2026-10-08T19:00:00Z")
+        )
+    }
+
+    @Test
+    fun `Given a future day when marking then nothing is written`() {
+        execute(LocalDate.parse("2026-10-24"), painFree = true)
+
+        verify(setDayMarkRepository, never()).setDayMark(any(), any(), any())
+    }
+
+    @Test
+    fun `Given a future day when removing a mark then done`() {
+        assertEquals(
+            SetDayMarkResultDomainModel.Done,
+            execute(LocalDate.parse("2026-10-25"), painFree = false, marked = false)
+        )
+    }
 }

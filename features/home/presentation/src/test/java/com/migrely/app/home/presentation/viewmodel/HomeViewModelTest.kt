@@ -427,4 +427,14 @@ class HomeViewModelTest :
 
         assertEquals(HomePresentationNotification.StorageFull, notification.await())
     }
+
+    @Test
+    fun `Given the write fails when marking today's period then something went wrong`() = runTest {
+        setPeriodTodayUseCase.givenSuccessfulExecution(true, WriteResultDomainModel.Failed)
+        val notification = async(start = UNDISPATCHED) { classUnderTest.notification.first() }
+
+        classUnderTest.onPeriodTodayAction(marked = true)
+
+        assertEquals(HomePresentationNotification.SomethingWentWrong, notification.await())
+    }
 }

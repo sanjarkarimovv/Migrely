@@ -21,6 +21,7 @@ import com.migrely.app.history.domain.model.DayMarkWriteResultDomainModel
 import com.migrely.app.history.domain.model.DayMarksResultDomainModel
 import com.migrely.app.history.domain.model.DeletedAttackDomainModel
 import com.migrely.app.history.domain.model.EarliestAttackResultDomainModel
+import com.migrely.app.history.domain.model.EarliestDayMarkResultDomainModel
 import com.migrely.app.history.domain.model.HistoryAttackDomainModel
 import com.migrely.app.history.domain.model.UndoResultDomainModel
 import java.time.Instant
@@ -207,5 +208,20 @@ class HistoryRepositoryTest {
             DayMarkWriteResultDomainModel.StorageFull,
             classUnderTest.setDayMark(date, DayMarkKindDomainModel.Period, true)
         )
+    }
+
+    @Test
+    fun `When reading the earliest mark then found, none or failed`() {
+        given(dayMarkDataSource.earliestMark()).willReturn(LocalDate.parse("2026-09-28"))
+        assertEquals(
+            EarliestDayMarkResultDomainModel.Found(LocalDate.parse("2026-09-28")),
+            classUnderTest.earliestDayMark()
+        )
+
+        given(dayMarkDataSource.earliestMark()).willReturn(null)
+        assertEquals(EarliestDayMarkResultDomainModel.None, classUnderTest.earliestDayMark())
+
+        given(dayMarkDataSource.earliestMark()).willThrow(DatabaseDataException())
+        assertEquals(EarliestDayMarkResultDomainModel.Failed, classUnderTest.earliestDayMark())
     }
 }

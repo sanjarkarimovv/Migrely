@@ -49,7 +49,7 @@
   - home's toggle and the clear today card;
   - the legend and screen reader descriptions;
   - 200% font, landscape and rotation with a day chosen.
-- [ ] 7.3 Independent review; fix and record.
+- [x] 7.3 Independent review; fix and record.
 
 ## Verification record
 
@@ -92,3 +92,27 @@ by `layoutDirection`.
 **Settings restored:** zone Asia/Tashkent, auto_time_zone 1, font 1.0, rotation 0, accelerometer 1, the timeout
 deleted, adbd unrooted. Walk marks and attacks deleted. emulator-5570 was restarted once, after the shared netsim
 daemon went away at 18:17 (reported by QA); its data was intact.
+
+## Review (7.3)
+
+An independent `superpowers:code-reviewer` pass read every changed file and the generated DAO. It confirmed:
+- the day rule and its margin, the home/History agreement, and future dates refused only when marking;
+- the `requestedMonth` gating, double taps (the target value is sent), the SQL, `5.json` and the migration, the
+  `@Transaction`, DI, the accessibility of the switch rows, copy and the architecture rules.
+
+| Finding | Outcome |
+|---|---|
+| **C1** marks before the first attack's month could not be reached in History (a period marked in October, no migraine, gone from History on 1 November) | fixed: the earliest month is the earlier of the first attack and the first mark (`DayMarkDao.earliestDate`, `GetEarliestDayMarkRepository`); BRD D51 amends EC-HIS-03; attack-history delta › *Month by month* › *A mark before any attack*; tests in the DAO, the datasource, the repository and the use case |
+| **I1** the chip fix was not committed; the spec said "on" while the chip is a checkbox | committed (eb4634d); the spec reads "checked" |
+| **I2** home turned a failed mark read into "no marks" inside the data layer | `GetDayMarksRepository` returns `Loaded` or `Failed`; `GetTodayUseCase` decides (no marks, so today's attacks always show), tested |
+| **I3** missing tests | added: pain-free during an attack in progress (refused, and not pain-free in the month), the read window, nothing written for a future day, removing a future mark, `Failed`/`FutureDay` on History, `Failed` on home's toggle. Compose tests for the switch rows and the chip are not added: the walk checked them through `uiautomator dump` |
+| M1 the stars did not mirror in RTL | mirrored by `layoutDirection` |
+| M2 tiny legend stars, the legend drop off-centre | stars have a 1.5 dp minimum; the legend drop is centred |
+| M3 the drop's edge half hidden | the edge is drawn over the fill |
+| M4 a stale load could finish after a newer one | accepted: as with undo elsewhere, the next load corrects it; ordering of loads belongs to `upgrade-toolchain` (scoped ViewModels) |
+| M5 "Sunday, 25 October Period." | a future date with a period reads "…: period." |
+| M6 design drift | design D3, D5 and D6 updated |
+| M7 default values on models | accepted: every mapper sets the fields explicitly and the mapper tests cover them |
+| M8 nits | accepted |
+
+**After the review:** gate BUILD SUCCESSFUL, 844 unit tests; datasource instrumented 60/60.

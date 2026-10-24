@@ -12,6 +12,9 @@ interface DayMarkDataSource {
     /** The marked dates from [from] to [to], both included. */
     fun marksBetween(from: LocalDate, to: LocalDate): List<DayMarkDataModel>
 
+    /** The first marked date, or null when nothing is marked. */
+    fun earliestMark(): LocalDate?
+
     fun setPeriod(date: LocalDate, marked: Boolean)
 
     fun setPainFree(date: LocalDate, marked: Boolean)

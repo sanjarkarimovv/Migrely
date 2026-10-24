@@ -17,6 +17,10 @@ class DayMarkDataSourceImpl(
             .mapNotNull(dayMarkLocalMapper::toData)
     }
 
+    override fun earliestMark(): LocalDate? = database {
+        dayMarkDao.earliestDate()?.let(dayMarkLocalMapper::toDate)
+    }
+
     override fun setPeriod(date: LocalDate, marked: Boolean) = database {
         dayMarkDao.update(dayMarkLocalMapper.toLocal(date), clock.millis()) {
             it.copy(period = marked)

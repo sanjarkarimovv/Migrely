@@ -74,4 +74,16 @@ class DayMarkDataSourceImplTest {
 
         classUnderTest.setPeriod(LocalDate.of(2026, 10, 14), marked = true)
     }
+
+    @Test
+    fun `When reading the earliest mark then its date, or null when none or unreadable`() {
+        given(dayMarkDao.earliestDate()).willReturn("2026-09-28")
+        assertEquals(LocalDate.of(2026, 9, 28), classUnderTest.earliestMark())
+
+        given(dayMarkDao.earliestDate()).willReturn(null)
+        assertEquals(null, classUnderTest.earliestMark())
+
+        given(dayMarkDao.earliestDate()).willReturn("not a date")
+        assertEquals(null, classUnderTest.earliestMark())
+    }
 }

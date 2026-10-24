@@ -6,6 +6,7 @@ import com.migrely.app.history.domain.model.AttacksTouchingResultDomainModel
 import com.migrely.app.history.domain.model.DayMarkDomainModel
 import com.migrely.app.history.domain.model.DayMarksResultDomainModel
 import com.migrely.app.history.domain.model.EarliestAttackResultDomainModel
+import com.migrely.app.history.domain.model.EarliestDayMarkResultDomainModel
 import com.migrely.app.history.domain.model.HistoryAttackDomainModel
 import com.migrely.app.history.domain.model.HistoryDayDomainModel
 import com.migrely.app.history.domain.model.HistoryMonthDomainModel
@@ -14,6 +15,7 @@ import com.migrely.app.history.domain.repository.GetAttacksTouchingRepository
 import com.migrely.app.history.domain.repository.GetCurrentTimeRepository
 import com.migrely.app.history.domain.repository.GetDayMarksRepository
 import com.migrely.app.history.domain.repository.GetEarliestAttackRepository
+import com.migrely.app.history.domain.repository.GetEarliestDayMarkRepository
 import com.migrely.app.history.domain.repository.GetRecentlyDeletedAttackRepository
 import java.time.Instant
 import java.time.LocalDate
@@ -21,7 +23,8 @@ import java.time.YearMonth
 
 /**
  * One month of History (BRD HIS-F1, HIS-F2, D29). The request is the month asked for, or null for the current one; the
- * month shown never precedes the month of the first attack nor follows the current month (BRD EC-HIS-03).
+ * month shown never precedes the month of the first attack or the first day mark, nor follows the current month
+ * (BRD EC-HIS-03, D51).
  *
  * An attack belongs to every day it touches in the zone where it started (BRD EC-ATK-06, EC-TIM-02): from its start
  * date to the date just before its end, or to today while it is in progress. Each day carries its period mark, and is
@@ -33,6 +36,7 @@ class GetHistoryMonthUseCase(
     private val getAttacksTouchingRepository: GetAttacksTouchingRepository,
     private val getRecentlyDeletedAttackRepository: GetRecentlyDeletedAttackRepository,
     private val getDayMarksRepository: GetDayMarksRepository,
+    private val getEarliestDayMarkRepository: GetEarliestDayMarkRepository,
     coroutineContextProvider: CoroutineContextProvider
 ) : BackgroundExecutingUseCase<YearMonth?, HistoryMonthResultDomainModel>(
     coroutineContextProvider
@@ -42,15 +46,23 @@ class GetHistoryMonthUseCase(
         val today = now.instant.atZone(now.zone).toLocalDate()
         val currentMonth = YearMonth.from(today)
         val earliest = getEarliestAttackRepository.earliestAttack()
-        val earliestMonth = when (earliest) {
-            is EarliestAttackResultDomainModel.Found -> minOf(
-                YearMonth.from(earliest.start.atZone(earliest.zone)),
-                currentMonth
-            )
-
-            EarliestAttackResultDomainModel.None -> currentMonth
+        val earliestAttackMonth = when (earliest) {
+            is EarliestAttackResultDomainModel.Found ->
+                YearMonth.from(earliest.start.atZone(earliest.zone))
+            EarliestAttackResultDomainModel.None -> null
             EarliestAttackResultDomainModel.Failed -> return HistoryMonthResultDomainModel.Failed
         }
+        // A day marked before the first attack keeps its month reachable (BRD D51).
+        val earliestMarkMonth = when (val mark = getEarliestDayMarkRepository.earliestDayMark()) {
+            is EarliestDayMarkResultDomainModel.Found -> YearMonth.from(mark.date)
+            EarliestDayMarkResultDomainModel.None -> null
+            EarliestDayMarkResultDomainModel.Failed -> return HistoryMonthResultDomainModel.Failed
+        }
+        val earliestMonth = listOfNotNull(
+            earliestAttackMonth,
+            earliestMarkMonth,
+            currentMonth
+        ).min()
         val month = (request ?: currentMonth).coerceIn(earliestMonth, currentMonth)
         val from = windowStart(month.atDay(1), now.zone)
         val to = windowEnd(month.atEndOfMonth(), now.zone)

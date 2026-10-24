@@ -16,11 +16,13 @@ import com.migrely.app.history.domain.model.DayMarkWriteResultDomainModel
 import com.migrely.app.history.domain.model.DayMarksResultDomainModel
 import com.migrely.app.history.domain.model.DeletedAttackDomainModel
 import com.migrely.app.history.domain.model.EarliestAttackResultDomainModel
+import com.migrely.app.history.domain.model.EarliestDayMarkResultDomainModel
 import com.migrely.app.history.domain.model.UndoResultDomainModel
 import com.migrely.app.history.domain.repository.GetAttacksTouchingRepository
 import com.migrely.app.history.domain.repository.GetCurrentTimeRepository
 import com.migrely.app.history.domain.repository.GetDayMarksRepository
 import com.migrely.app.history.domain.repository.GetEarliestAttackRepository
+import com.migrely.app.history.domain.repository.GetEarliestDayMarkRepository
 import com.migrely.app.history.domain.repository.GetRecentlyDeletedAttackRepository
 import com.migrely.app.history.domain.repository.RestoreDeletedAttackRepository
 import com.migrely.app.history.domain.repository.SetDayMarkRepository
@@ -45,7 +47,8 @@ class HistoryRepository(
     GetRecentlyDeletedAttackRepository,
     RestoreDeletedAttackRepository,
     GetDayMarksRepository,
-    SetDayMarkRepository {
+    SetDayMarkRepository,
+    GetEarliestDayMarkRepository {
     override fun currentTime() =
         CurrentTimeDomainModel(instant = clockDataSource.now(), zone = clockDataSource.zone())
 
@@ -95,6 +98,14 @@ class HistoryRepository(
         )
     } catch (_: DataException) {
         DayMarksResultDomainModel.Failed
+    }
+
+    override fun earliestDayMark(): EarliestDayMarkResultDomainModel = try {
+        dayMarkDataSource.earliestMark()
+            ?.let(EarliestDayMarkResultDomainModel::Found)
+            ?: EarliestDayMarkResultDomainModel.None
+    } catch (_: DataException) {
+        EarliestDayMarkResultDomainModel.Failed
     }
 
     override fun setDayMark(
