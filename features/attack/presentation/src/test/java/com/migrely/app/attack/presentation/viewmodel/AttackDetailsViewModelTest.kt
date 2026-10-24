@@ -9,6 +9,7 @@ import com.migrely.app.attack.domain.model.AttackDetailsDomainModel
 import com.migrely.app.attack.domain.model.AttackDetailsResultDomainModel
 import com.migrely.app.attack.domain.model.AttackDetailsScreenDomainModel
 import com.migrely.app.attack.domain.model.AttackIntakeDomainModel
+import com.migrely.app.attack.domain.model.AttackIntakeEffectDomainModel
 import com.migrely.app.attack.domain.model.AttackRangeDomainModel
 import com.migrely.app.attack.domain.model.AttackTagDomainModel
 import com.migrely.app.attack.domain.model.HeadLocationDomainModel
@@ -18,6 +19,7 @@ import com.migrely.app.attack.domain.model.MergeAttacksResultDomainModel
 import com.migrely.app.attack.domain.model.RemoveIntensityPointRequestDomainModel
 import com.migrely.app.attack.domain.model.RestoreIntakeRequestDomainModel
 import com.migrely.app.attack.domain.model.SelectAttackTagRequestDomainModel
+import com.migrely.app.attack.domain.model.SetIntakeEffectRequestDomainModel
 import com.migrely.app.attack.domain.model.TagKindDomainModel
 import com.migrely.app.attack.domain.model.TimeFieldDomainModel
 import com.migrely.app.attack.domain.model.UndoTimesChangeRequestDomainModel
@@ -38,6 +40,7 @@ import com.migrely.app.attack.domain.usecase.RemoveIntensityPointUseCase
 import com.migrely.app.attack.domain.usecase.RestoreIntakeUseCase
 import com.migrely.app.attack.domain.usecase.SelectAttackTagUseCase
 import com.migrely.app.attack.domain.usecase.SetFunctionalImpactUseCase
+import com.migrely.app.attack.domain.usecase.SetIntakeEffectUseCase
 import com.migrely.app.attack.domain.usecase.UndoTimesChangeUseCase
 import com.migrely.app.attack.domain.usecase.UpdateAttackNoteUseCase
 import com.migrely.app.attack.domain.usecase.UpdateAttackTimesUseCase
@@ -63,6 +66,7 @@ import com.migrely.app.attack.presentation.mapper.TagKindPresentationMapper
 import com.migrely.app.attack.presentation.mapper.TimeFieldPresentationMapper
 import com.migrely.app.attack.presentation.model.AttackDetailsPresentationNotification
 import com.migrely.app.attack.presentation.model.AttackDetailsViewState
+import com.migrely.app.attack.presentation.model.AttackIntakeEffectPresentationModel
 import com.migrely.app.attack.presentation.model.AttackIntakePresentationModel
 import com.migrely.app.attack.presentation.model.AttackRangePresentationModel
 import com.migrely.app.attack.presentation.model.AttackTagPresentationModel
@@ -142,6 +146,8 @@ class AttackDetailsViewModelTest :
 
     @Mock private lateinit var restoreIntakeUseCase: RestoreIntakeUseCase
 
+    @Mock private lateinit var setIntakeEffectUseCase: SetIntakeEffectUseCase
+
     private val presentationMapper = AttackDetailsPresentationMapper(
         HeadLocationPresentationMapper(),
         BuiltInSymptomPresentationMapper(),
@@ -184,6 +190,7 @@ class AttackDetailsViewModelTest :
             removeIntakeUseCase,
             restoreIntakeUseCase,
             AttackIntakeDomainMapper(),
+            setIntakeEffectUseCase,
             useCaseExecutor
         )
     }
@@ -651,4 +658,57 @@ class AttackDetailsViewModelTest :
 
         assertEquals(AttackDetailsPresentationNotification.Undone, notification.await())
     }
+
+    @Test
+    fun `When answering about an intake then stores it and reloads the details`() = runTest {
+        setIntakeEffectUseCase.givenSuccessfulExecution(
+            SetIntakeEffectRequestDomainModel("i", AttackIntakeEffectDomainModel.ALot),
+            WriteResultDomainModel.Written
+        )
+        givenDetails()
+        val state = async(start = UNDISPATCHED) { classUnderTest.viewState.first() }
+
+        classUnderTest.onIntakeEffectAction("a", "i", AttackIntakeEffectPresentationModel.ALot)
+
+        assertEquals(ready, state.await())
+    }
+
+    @Test
+    fun `Given storage is full when answering about an intake then says so`() = runTest {
+        setIntakeEffectUseCase.givenSuccessfulExecution(
+            SetIntakeEffectRequestDomainModel("i", AttackIntakeEffectDomainModel.NotAtAll),
+            WriteResultDomainModel.StorageFull
+        )
+        val notification = async(start = UNDISPATCHED) { classUnderTest.notification.first() }
+
+        classUnderTest.onIntakeEffectAction("a", "i", AttackIntakeEffectPresentationModel.NotAtAll)
+
+        assertEquals(AttackDetailsPresentationNotification.StorageFull, notification.await())
+    }
+
+    @Test
+    fun `When undoing the removal of an answered intake then its answer is stored again`() =
+        runTest {
+            val answered = intake.copy(effect = AttackIntakeEffectPresentationModel.ALittle)
+            restoreIntakeUseCase.givenSuccessfulExecution(
+                RestoreIntakeRequestDomainModel(
+                    "a",
+                    AttackIntakeDomainModel(
+                        "i",
+                        "m",
+                        "Ibuprofen",
+                        "400 mg",
+                        intake.takenAt,
+                        intake.zone,
+                        AttackIntakeEffectDomainModel.ALittle
+                    )
+                ),
+                WriteResultDomainModel.Written
+            )
+            val notification = async(start = UNDISPATCHED) { classUnderTest.notification.first() }
+
+            classUnderTest.onUndoIntakeRemovalAction("a", answered)
+
+            assertEquals(AttackDetailsPresentationNotification.Undone, notification.await())
+        }
 }

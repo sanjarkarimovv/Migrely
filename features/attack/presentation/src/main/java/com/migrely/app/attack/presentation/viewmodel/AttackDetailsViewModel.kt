@@ -13,6 +13,7 @@ import com.migrely.app.attack.domain.model.RemoveIntensityPointRequestDomainMode
 import com.migrely.app.attack.domain.model.RestoreIntakeRequestDomainModel
 import com.migrely.app.attack.domain.model.SelectAttackTagRequestDomainModel
 import com.migrely.app.attack.domain.model.SetFunctionalImpactRequestDomainModel
+import com.migrely.app.attack.domain.model.SetIntakeEffectRequestDomainModel
 import com.migrely.app.attack.domain.model.UndoTimesChangeRequestDomainModel
 import com.migrely.app.attack.domain.model.UndoTimesChangeResultDomainModel
 import com.migrely.app.attack.domain.model.UpdateAttackNoteRequestDomainModel
@@ -31,6 +32,7 @@ import com.migrely.app.attack.domain.usecase.RemoveIntensityPointUseCase
 import com.migrely.app.attack.domain.usecase.RestoreIntakeUseCase
 import com.migrely.app.attack.domain.usecase.SelectAttackTagUseCase
 import com.migrely.app.attack.domain.usecase.SetFunctionalImpactUseCase
+import com.migrely.app.attack.domain.usecase.SetIntakeEffectUseCase
 import com.migrely.app.attack.domain.usecase.UndoTimesChangeUseCase
 import com.migrely.app.attack.domain.usecase.UpdateAttackNoteUseCase
 import com.migrely.app.attack.domain.usecase.UpdateAttackTimesUseCase
@@ -56,6 +58,7 @@ import com.migrely.app.attack.presentation.model.AttackDetailsPresentationNotifi
 import com.migrely.app.attack.presentation.model.AttackDetailsPresentationNotification.UndoNotPossible
 import com.migrely.app.attack.presentation.model.AttackDetailsPresentationNotification.Undone
 import com.migrely.app.attack.presentation.model.AttackDetailsViewState
+import com.migrely.app.attack.presentation.model.AttackIntakeEffectPresentationModel
 import com.migrely.app.attack.presentation.model.AttackIntakePresentationModel
 import com.migrely.app.attack.presentation.model.AttackTagPresentationModel
 import com.migrely.app.attack.presentation.model.FunctionalImpactPresentationModel
@@ -97,6 +100,7 @@ class AttackDetailsViewModel(
     private val removeIntakeUseCase: RemoveIntakeUseCase,
     private val restoreIntakeUseCase: RestoreIntakeUseCase,
     private val attackIntakeDomainMapper: AttackIntakeDomainMapper,
+    private val setIntakeEffectUseCase: SetIntakeEffectUseCase,
     useCaseExecutor: UseCaseExecutor
 ) : BaseViewModel<AttackDetailsViewState, AttackDetailsPresentationNotification>(useCaseExecutor) {
     /** [attacksMerged] is true when the screen opens on the result of a merge from the add screen. */
@@ -263,6 +267,21 @@ class AttackDetailsViewModel(
                 attackIntakeDomainMapper.toDomain(intake)
             ),
             onResult = { result -> presentWrite(attackId, result, Undone) }
+        )
+    }
+
+    /** Sets or changes how much a medication helped (BRD ATK-F2, EC-MED-12, D39). */
+    fun onIntakeEffectAction(
+        attackId: String,
+        intakeId: String,
+        effect: AttackIntakeEffectPresentationModel
+    ) {
+        setIntakeEffectUseCase(
+            value = SetIntakeEffectRequestDomainModel(
+                intakeId,
+                attackIntakeDomainMapper.toDomain(effect)
+            ),
+            onResult = { result -> presentWrite(attackId, result) }
         )
     }
 

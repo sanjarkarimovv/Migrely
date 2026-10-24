@@ -2,6 +2,7 @@ package com.migrely.app.di
 
 import com.migrely.app.attack.data.mapper.AttackDetailsDomainResolver
 import com.migrely.app.attack.data.mapper.AttackIntakeDomainMapper
+import com.migrely.app.attack.data.mapper.AttackIntakeEffectDataMapper
 import com.migrely.app.attack.data.mapper.AttackTagDataMapper
 import com.migrely.app.attack.data.mapper.BuiltInSymptomDataMapper
 import com.migrely.app.attack.data.mapper.BuiltInSymptomDomainMapper
@@ -32,6 +33,7 @@ import com.migrely.app.attack.domain.repository.RestoreIntakeRepository
 import com.migrely.app.attack.domain.repository.SelectAttackTagRepository
 import com.migrely.app.attack.domain.repository.SetCustomTagArchivedRepository
 import com.migrely.app.attack.domain.repository.SetFunctionalImpactRepository
+import com.migrely.app.attack.domain.repository.SetIntakeEffectRepository
 import com.migrely.app.attack.domain.repository.StorePastAttackRepository
 import com.migrely.app.attack.domain.repository.UpdateAttackNoteRepository
 import com.migrely.app.attack.domain.repository.UpdateAttackTimesRepository
@@ -71,7 +73,8 @@ internal object AttackDataModule {
             BuiltInTriggerDataMapper()
         ),
         medicationDataSource = medicationDataSource,
-        attackIntakeDomainMapper = AttackIntakeDomainMapper()
+        attackIntakeDomainMapper = AttackIntakeDomainMapper(),
+        attackIntakeEffectDataMapper = AttackIntakeEffectDataMapper()
     )
 
     @Provides
@@ -137,6 +140,11 @@ internal object AttackDataModule {
     fun providesRestoreIntakeRepository(
         repository: AttackDetailsRepository
     ): RestoreIntakeRepository = repository
+
+    @Provides
+    fun providesSetIntakeEffectRepository(
+        repository: AttackDetailsRepository
+    ): SetIntakeEffectRepository = repository
 
     @Provides
     fun providesSelectAttackTagRepository(

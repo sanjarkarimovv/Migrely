@@ -26,7 +26,7 @@
 
 ## 4. Attack feature (design D4)
 
-- [ ] 4.1 The effect on attack intakes through domain, data, presentation and UI models; `SetIntakeEffectUseCase`;
+- [x] 4.1 The effect on attack intakes through domain, data, presentation and UI models; `SetIntakeEffectUseCase`;
   `onIntakeEffectAction`; tests.
   Verify: `./gradlew :features:attack:domain:test :features:attack:data:test :features:attack:presentation:test`
 

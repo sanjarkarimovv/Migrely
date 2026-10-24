@@ -9,5 +9,6 @@ data class AttackIntakePresentationModel(
     val medicationName: String,
     val dose: String?,
     val takenAt: Instant,
-    val zone: ZoneId
+    val zone: ZoneId,
+    val effect: AttackIntakeEffectPresentationModel? = null
 )
