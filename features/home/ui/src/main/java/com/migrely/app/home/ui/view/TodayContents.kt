@@ -32,8 +32,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.migrely.app.designsystem.sky.SkyAppearance
@@ -171,15 +171,18 @@ private fun AttackSummaryRow(
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = 56.dp)
-            .clearAndSetSemantics {
+            // Merged into the clickable, not replacing it, so the row stays focusable for keyboards and switch access
+            // (QA #14, BRD EC-UX-19); only the texts inside are cleared so the description is read once.
+            .semantics {
                 contentDescription = description
                 role = Role.Button
-                onClick { onClick().let { true } }
             }
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+            modifier = Modifier
+                .padding(horizontal = 16.dp, vertical = 12.dp)
+                .clearAndSetSemantics { }
         ) {
             Text(
                 text = stringResource(R.string.attack_summary_range, start, end),

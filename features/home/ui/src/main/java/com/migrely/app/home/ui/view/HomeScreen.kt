@@ -10,18 +10,23 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.navigation.NavController
 import com.migrely.app.architecture.ui.view.ScreenEnterObserver
+import com.migrely.app.designsystem.input.TapGuard
 import com.migrely.app.designsystem.motion.rememberReduceMotion
 import com.migrely.app.home.presentation.model.HomeViewState
 import com.migrely.app.home.ui.di.HomeDependencies
@@ -37,6 +42,10 @@ private const val TICK_MILLIS = 30_000L
 private const val MODE_FADE_IN_MILLIS = 1_200
 private const val MODE_FADE_OUT_MILLIS = 600
 private const val COMPACT_HEIGHT_DP = 480
+private const val MODE_TAP_GUARD_MILLIS = 1_000L
+
+/** Holds the mode shown last without being snapshot state, so reading it never recomposes. */
+private class ShownMode(var mode: HomeMode)
 
 /** True in a short window (a phone in landscape), where the home layouts put text and controls side by side. */
 @Composable
@@ -69,7 +78,10 @@ fun HomeDependencies.Home(
     val uiState by rememberSaveable(viewState) {
         mutableStateOf(homeViewStateUiMapper.toUi(viewState))
     }
-    val nowMillis by rememberNowMillis(onDateChanged = homeViewModel::onDateChanged)
+    val nowMillis by rememberNowMillis(
+        onDateChanged = homeViewModel::onDateChanged,
+        restartKey = (uiState as? HomeViewStateUiModel.AttackInProgress)?.attack?.startEpochMillis
+    )
     val reduceMotion = rememberReduceMotion()
 
     HomeContents(
@@ -124,7 +136,15 @@ data class HomeActions(
     val onAddPastAttack: () -> Unit
 )
 
-private enum class HomeMode { Loading, Today, Attack }
+internal enum class HomeMode { Loading, Today, Attack }
+
+/**
+ * Whether the content of [next] ignores taps for its first second (BRD EC-UX-18, D32): only when it replaces the other
+ * interactive mode, where the second tap of a double tap would land on a different control. Never after Loading, so the
+ * app opens and rotates without a wait.
+ */
+internal fun guardsTaps(previous: HomeMode, next: HomeMode): Boolean =
+    previous != HomeMode.Loading && previous != next
 
 private val HomeViewStateUiModel.mode: HomeMode
     get() = when (this) {
@@ -146,6 +166,18 @@ fun HomeContents(
     modifier: Modifier = Modifier,
     monthCalendar: @Composable () -> Unit = {}
 ) {
+    // Decided from the target mode in the same pass as the switch, so a quick switch back (for example Undo) can never
+    // leave a stale previous mode behind (BRD EC-UX-18, D32).
+    val shownMode = remember { ShownMode(HomeMode.Loading) }
+    val mode = viewState.mode
+    val guardTaps = remember(mode) { guardsTaps(shownMode.mode, mode) }
+    SideEffect { shownMode.mode = mode }
+    // The leaving mode stays touchable until its fade ends, so the guard lasts at least as long as the fade.
+    val guardMillis = if (reduceMotion) {
+        MODE_TAP_GUARD_MILLIS
+    } else {
+        maxOf(MODE_TAP_GUARD_MILLIS, MODE_FADE_IN_MILLIS.toLong())
+    }
     Box(modifier = modifier.fillMaxSize()) {
         AnimatedContent(
             targetState = viewState,
@@ -185,15 +217,28 @@ fun HomeContents(
                 )
             }
         }
+        // Above both modes and below the messages, so Undo always stays tappable.
+        if (guardTaps) {
+            TapGuard(
+                key = mode,
+                durationMillis = guardMillis,
+                Modifier.matchParentSize()
+            )
+        }
         messages()
     }
 }
 
-/** Current time for the elapsed timer, ticking every 30 seconds; reports when the local date changes (design D11). */
+/**
+ * Current time for the elapsed timer, ticking every 30 seconds; reports when the local date changes (design D11). A new
+ * [restartKey], the start of the attack in progress, reads the clock at once, so a moved start never shows a stale
+ * elapsed time (QA #15).
+ */
 @Composable
-private fun rememberNowMillis(onDateChanged: () -> Unit): State<Long> {
+private fun rememberNowMillis(onDateChanged: () -> Unit, restartKey: Long?): State<Long> {
     val currentOnDateChanged by rememberUpdatedState(onDateChanged)
-    return produceState(initialValue = System.currentTimeMillis()) {
+    return produceState(initialValue = System.currentTimeMillis(), restartKey) {
+        value = System.currentTimeMillis()
         var date = LocalDate.now()
         while (true) {
             delay(TICK_MILLIS)

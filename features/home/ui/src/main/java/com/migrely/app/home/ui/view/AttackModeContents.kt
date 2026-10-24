@@ -228,7 +228,8 @@ private fun AttackGuidance(startedAt: String, textAlign: TextAlign, onDetails: (
     Text(
         text = startedAt,
         style = MaterialTheme.typography.bodyMedium.copy(fontFeatureSettings = "tnum"),
-        color = MigrelyColors.AttackModeText.copy(alpha = 0.8f),
+        // Full strength: 0.8 alpha measured 4.05:1, under WCAG AA (QA #13).
+        color = MigrelyColors.AttackModeText,
         textAlign = textAlign,
         modifier = Modifier.padding(top = 4.dp)
     )

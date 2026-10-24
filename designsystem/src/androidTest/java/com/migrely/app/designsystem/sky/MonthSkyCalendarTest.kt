@@ -2,6 +2,7 @@ package com.migrely.app.designsystem.sky
 
 import androidx.compose.foundation.layout.width
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
@@ -9,6 +10,7 @@ import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -76,6 +78,17 @@ class MonthSkyCalendarTest {
     fun aFutureDayHasNoClickAction() {
         composeTestRule.onNodeWithContentDescription("Day 4")
             .assert(SemanticsMatcher.keyNotDefined(SemanticsActions.OnClick))
+            .assert(SemanticsMatcher.keyNotDefined(SemanticsProperties.Focused))
+    }
+
+    @Test
+    fun aSelectableDayIsAFocusableButtonForKeyboardsAndSwitchAccess() {
+        composeTestRule.onNodeWithContentDescription("Day 2")
+            .assert(SemanticsMatcher.keyIsDefined(SemanticsActions.OnClick))
+            .assert(SemanticsMatcher.keyIsDefined(SemanticsProperties.Focused))
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button))
+        // The day number is part of the description, so it is not read a second time.
+        composeTestRule.onNodeWithText("2").assertDoesNotExist()
     }
 
     @Test
