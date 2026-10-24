@@ -63,6 +63,48 @@
 
 ## 5. Verify
 
-- [ ] 5.1 Gate, and instrumented datasource tests.
-- [ ] 5.2 Emulator walk: permission, daily reminder (advance the clock), actions, skip rules, travel, effect question.
-- [ ] 5.3 Independent review; fix and record.
+- [x] 5.1 Gate (948 unit tests), and instrumented datasource tests (66/66).
+- [x] 5.2 Emulator walk: permission, daily reminder (advance the clock), actions, skip rules, travel, effect question.
+- [x] 5.3 Independent review; fix and record.
+
+## Verification record
+
+**Emulator walk** on emulator-5570, by a walk agent. It ran first on 3773d83, then scenarios 3–8 again on 3f15aad. At
+the end the database dump was byte-identical to the baseline, the permission and the settings were back as before, and
+no jobs or notifications were left.
+
+| Scenario | Result |
+|---|---|
+| The bell | in normal mode only |
+| Permission | the dialog shows only when a switch is turned on. After "Don't allow", the switch stays off with the notice and no second dialog; "Allow" turns it on at 8:00 PM |
+| The daily reminder | arrived on time unforced, with both actions, and the next run was planned 24 h on. "Pain-free day" marked the day, and History shows it |
+| Skips | no reminder on a day with an attack. "Pain-free day" with an attack added after posting reads "A migraine is logged today." and marks nothing |
+| Travel and the clock | Berlin, a clock 1 h ahead, and back to Tashkent each moved the run to the new local time |
+| "Did it help?" | planned 2 h after the intake. Undo, an answer and "Don't ask about this one" each cancel it. It arrives and opens home |
+| Switch off; "Open settings" | nothing is sent; Migrely's notification settings open |
+| Accessibility | each switch row is one node with Role switch. The time row reads "Reminder time, 11:45 PM. Change it." and is clickable at 3f15aad. Nothing is clipped at 200% font, in portrait or landscape |
+
+**Found in the walk, and fixed in e74055e:**
+- **B1:** two modules named a string `picker_title`, so the medication time picker read "Reminder time". Reminders' strings now carry a `reminders_` prefix.
+- **B2:** "Did it help?" during an attack opened a home with no card. Nothing is sent while an attack is in progress (BRD D69); the card asks once it ends.
+- **B3:** "Log a migraine" left the reminder in the shade. The app now clears it as it opens.
+- The time row now shows while the reminder is off too.
+
+**Accepted:** home does not refresh when "Pain-free day" is tapped while home is on screen (B4). It shows the mark on its next load.
+
+## Review (5.3)
+
+An independent `superpowers:code-reviewer` pass found nothing critical. It confirmed:
+- next and DST, the shown-today guard, the broadcasts reaching non-exported receivers, `goAsync`, and work surviving a
+  reboot;
+- the PendingIntent flags and request codes, the Android 13 permission semantics, the permission flow across rotation
+  and process death, the layer rules, and the migration.
+
+| Finding | Outcome |
+|---|---|
+| **I1** a run after midnight asked about the wrong day and lost the next one, and a late tap marked the wrong day | fixed: the work and the action carry their date. A run past its day asks nothing and plans the next one |
+| **I2** the daily chain could end: a failed run, a backup restore, or planning cancelled while notifications were off | fixed: a failed run retries, the reminder stays planned while it is on, and the app plans it again at start |
+| **I3** "Did it help?" asked about the oldest open question instead of its own intake, re-asked after a preventive intake, and fired at once for late logs | fixed: `pendingEffectQuestionOf(intakeId)` with a DAO test; late-logged intakes are left to the card |
+| **I4** the time row lost its click action for TalkBack and Switch Access | fixed: the semantics are merged into the clickable |
+| **I5** the docs disagreed with the code | ARCHITECTURE §3 and §13, design D1 and D2, and the KDoc updated |
+| Minor | fixed: `setOnlyAlertOnce`, the settings fallback, the 12/24-hour format, the summary copy, a comment on REPLACE inside the worker, and `LocalTime` in the domain instead of a minute count. Accepted: channels are created on the first post, and an answer from attack details leaves an already shown notification (its planned run checks the question) |
