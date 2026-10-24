@@ -9,7 +9,7 @@
 # Scenarios: long (72-hour check), history_death, past_death, details_kill, midnight, travel, travel_west, same_date,
 # zone_attack, zone_history, double_tap, med_effect, med_effect_attack, med_effect_skip, med_effect_late,
 # med_preventive, med_two_waiting, med_link_home, med_overuse, keyboard_home, keyboard_history, keyboard_rtl,
-# upgrade.
+# landscape_band, upgrade.
 # upgrade needs QA_OLD_APK=<older debug APK of com.migrely.app>; without it, it is reported as not run.
 set -euo pipefail
 
@@ -31,6 +31,9 @@ qa_lock_device
 ORIGINAL_AUTO_TIME="$(adbq shell settings get global auto_time | tr -d '\r')"
 ORIGINAL_ZONE="$(adbq shell getprop persist.sys.timezone | tr -d '\r')"
 ORIGINAL_TIMEOUT="$(adbq shell settings get secure accessibility_interactive_ui_timeout_ms | tr -d '\r')"
+ORIGINAL_USER_ROTATION="$(adbq shell settings get system user_rotation | tr -d '\r')"
+ORIGINAL_AUTO_ROTATE="$(adbq shell settings get system accelerometer_rotation | tr -d '\r')"
+ORIGINAL_ANIMATOR="$(adbq shell settings get global animator_duration_scale | tr -d '\r')"
 # "Locales for <app> for user 0 are [iw]" -> "iw"; empty means the app follows the system language.
 ORIGINAL_APP_LOCALES="$(adbq shell cmd locale get-app-locales "$APP" | tr -d '\r' | sed 's/.*\[\(.*\)\].*/\1/')"
 put_or_delete() { # $1 namespace, $2 key, $3 value or "null"
@@ -43,6 +46,9 @@ restore() {
   adbq shell settings put global auto_time "$ORIGINAL_AUTO_TIME" >/dev/null 2>&1
   put_or_delete secure accessibility_interactive_ui_timeout_ms "$ORIGINAL_TIMEOUT" >/dev/null 2>&1
   adbq shell cmd locale set-app-locales "$APP" --locales "$ORIGINAL_APP_LOCALES" >/dev/null 2>&1
+  put_or_delete system user_rotation "$ORIGINAL_USER_ROTATION" >/dev/null 2>&1
+  put_or_delete system accelerometer_rotation "$ORIGINAL_AUTO_ROTATE" >/dev/null 2>&1
+  put_or_delete global animator_duration_scale "$ORIGINAL_ANIMATOR" >/dev/null 2>&1
   echo "Restored: clock $(adbq shell date | tr -d '\r'), zone $ORIGINAL_ZONE, auto_time $ORIGINAL_AUTO_TIME"
   qa_unlock_device
 }
@@ -148,6 +154,32 @@ expect_focus() { # $1 key, $2 extended regex the focused label must match after 
   echo "  FAILED: after $1 the focus is on '${label:-nothing}', expected /$2/"
   return 1
 }
+# Landscape message band (D52): the top of "Rest now." against the bottom of the message, read from uiautomator.
+# $1 "below": the message shows and the guidance starts at or below its bottom; the guidance top is kept in $out.
+# $1 "back": the message is gone and the guidance has moved back up.
+band_check() {
+  adbq shell uiautomator dump /sdcard/qa-band.xml >/dev/null
+  adbq exec-out cat /sdcard/qa-band.xml | python3 -I -c "import re, sys, xml.etree.ElementTree as ET
+mode, kept = sys.argv[1], sys.argv[2]
+def box(n): return list(map(int, re.findall(r'\d+', n.get('bounds'))))
+nodes = [(n.get('content-desc') or n.get('text') or '', box(n)) for n in ET.fromstring(sys.stdin.read()).iter('node')]
+guidance = [b for label, b in nodes if label.startswith('Rest now.')]
+message = [b for label, b in nodes if label in ('Undo the start', 'Migraine started')]
+if not guidance: sys.exit('  FAILED: \"Rest now.\" is not on screen')
+top = guidance[0][1]
+if mode == 'below':
+    if not message: sys.exit('  FAILED: the start message is not on screen')
+    bottom = max(b[3] for b in message)
+    if top < bottom: sys.exit(f'  FAILED: the guidance starts at y={top}, under the message, which ends at y={bottom}')
+    open(kept, 'w').write(str(top)); print(f'    message ends at y={bottom}, guidance starts at y={top}')
+else:
+    if message: sys.exit('  FAILED: the message is still on screen')
+    before = int(open(kept).read())
+    if top >= before: sys.exit(f'  FAILED: the guidance stayed at y={top} (y={before} with the message)')
+    print(f'    message gone, guidance back up at y={top} (y={before} with the message)')
+" "$1" "$out/band-top.txt"
+}
+
 tab_until() { # $1 extended regex, $2 most Tabs: press Tab until the focused label matches
   local label="" n
   for ((n = 1; n <= $2; n++)); do
@@ -448,6 +480,24 @@ scenario_keyboard_rtl() {
   return $ok
 }
 
+# Covers: in-app-messages › Landscape attack mode keeps messages beside the controls › Message during landscape attack mode
+scenario_landscape_band() {
+  echo "Scenario landscape_band: in landscape attack mode the guidance starts below the message and comes back (#26, D52)"
+  local motion ok=0
+  for motion in animated reduced; do
+    echo "  motion: $motion"
+    if [[ "$motion" == reduced ]]; then adbq shell settings put global animator_duration_scale 0; fi
+    long_undo_window
+    { run_flow landscape-attack-message && band_check below && run_flow landscape-message-gone && band_check back; } ||
+      ok=1
+    # Portrait and the default settings again, also after a failure, so the next scenario starts as usual.
+    run_flow portrait
+    put_or_delete global animator_duration_scale "$ORIGINAL_ANIMATOR"
+    default_undo_window
+    [[ $ok -eq 0 ]] || return 1
+  done
+}
+
 scenario_double_tap() {
   echo "Scenario double_tap: double taps never cross a mode switch (EC-UX-18, D32), with exact gaps between the taps"
   local gap point
@@ -494,7 +544,7 @@ mkdir -p "$out"
 if [[ $# -eq 0 ]]; then
   set -- long history_death past_death details_kill midnight travel travel_west same_date zone_attack zone_history \
     double_tap med_effect med_effect_attack med_effect_skip med_effect_late med_preventive med_two_waiting \
-    med_link_home med_overuse keyboard_home keyboard_history keyboard_rtl
+    med_link_home med_overuse keyboard_home keyboard_history keyboard_rtl landscape_band
   if [[ -n "${QA_OLD_APK:-}" ]]; then
     set -- "$@" upgrade
   else

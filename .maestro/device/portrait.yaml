@@ -1,0 +1,4 @@
+# Device scenario step: back to portrait.
+appId: com.migrely.app
+---
+- setOrientation: PORTRAIT
