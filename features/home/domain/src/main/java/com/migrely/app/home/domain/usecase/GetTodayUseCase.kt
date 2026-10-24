@@ -14,6 +14,7 @@ import com.migrely.app.home.domain.model.TodaySnapshotDomainModel
 import com.migrely.app.home.domain.model.TodaySnapshotResultDomainModel
 import com.migrely.app.home.domain.repository.GetCurrentTimeRepository
 import com.migrely.app.home.domain.repository.GetDayMarksRepository
+import com.migrely.app.home.domain.repository.GetPeriodTrackingRepository
 import com.migrely.app.home.domain.repository.GetTodayRepository
 import java.time.Duration
 import java.time.Instant
@@ -30,6 +31,7 @@ class GetTodayUseCase(
     private val getCurrentTimeRepository: GetCurrentTimeRepository,
     private val getTodayRepository: GetTodayRepository,
     private val getDayMarksRepository: GetDayMarksRepository,
+    private val getPeriodTrackingRepository: GetPeriodTrackingRepository,
     coroutineContextProvider: CoroutineContextProvider
 ) : BackgroundExecutingUseCase<Unit, TodayResultDomainModel>(coroutineContextProvider) {
     override fun executeInBackground(request: Unit): TodayResultDomainModel {
@@ -48,7 +50,8 @@ class GetTodayUseCase(
                 TodayResultDomainModel.Loaded(
                     today = result.snapshot.toToday(now, today, marks.painFree),
                     recentlyDeleted = result.snapshot.recentlyDeleted,
-                    periodToday = marks.period
+                    periodToday = marks.period,
+                    periodOffered = marks.period || getPeriodTrackingRepository.periodTracking()
                 )
             }
             TodaySnapshotResultDomainModel.Failed -> TodayResultDomainModel.Failed

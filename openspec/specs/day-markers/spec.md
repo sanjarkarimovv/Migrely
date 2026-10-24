@@ -8,9 +8,10 @@ period days can later be related to migraines (BRD DAY-F1, DAY-F2, HIS-F3, D47, 
 ## Requirements
 
 ### Requirement: Mark a chosen day
-Under a chosen day, History SHALL show two switches, "Period" and "Pain-free day", with the day's marks. Turning one on
+Under a chosen day, History SHALL show two switches, "Period" and "Pain-free day", with the day's marks; "Period" shows
+while "Track periods" is on, or while the day has a period mark. Turning one on
 SHALL mark the day at once, and turning it off SHALL remove the mark. Only today and past days can be chosen and marked
-(BRD DAY-F1, DAY-F2, HIS-F3, EC-DAY-03, EC-DAY-05, D47, D48).
+(BRD DAY-F1, DAY-F2, HIS-F3, EC-DAY-03, EC-DAY-05, D47, D48, D79).
 
 #### Scenario: Mark a period day
 - **WHEN** the user chooses 14 October and turns on "Period"
@@ -27,6 +28,14 @@ SHALL mark the day at once, and turning it off SHALL remove the mark. Only today
 #### Scenario: Future day
 - **WHEN** today is 23 October
 - **THEN** 25 October cannot be chosen, so it cannot be marked
+
+#### Scenario: Period tracking off
+- **WHEN** "Track periods" is off and the user chooses 14 October, which has no period mark
+- **THEN** only "Pain-free day" shows
+
+#### Scenario: Removing a mark with tracking off
+- **WHEN** "Track periods" is off and 12 October has a period mark
+- **THEN** "Period" shows as on for 12 October, so the mark can be removed
 
 ### Requirement: Pain-free only without attacks
 A day that an attack touches SHALL NOT be marked pain-free: its "Pain-free day" switch SHALL be off and disabled, with
@@ -58,8 +67,9 @@ mark. Marks SHALL belong to the calendar date, without a time zone (BRD EC-DAY-0
 - **THEN** 14 October still shows the period mark
 
 ### Requirement: Period today from home
-In the normal mode, home SHALL show a "Period" toggle under today's card with today's period mark. One tap SHALL mark or
-unmark today. Attack mode SHALL NOT show it (BRD DAY-F1, D48, G4).
+In the normal mode, home SHALL show a "Period" toggle under today's card with today's period mark, while "Track periods"
+is on or today has a period mark. One tap SHALL mark or
+unmark today. Attack mode SHALL NOT show it (BRD DAY-F1, D48, D79, G4).
 
 #### Scenario: Mark today from home
 - **WHEN** no attack is in progress and the user taps "Period" on home
@@ -68,6 +78,10 @@ unmark today. Attack mode SHALL NOT show it (BRD DAY-F1, D48, G4).
 
 #### Scenario: Attack mode
 - **WHEN** an attack is in progress
+- **THEN** home shows no "Period" toggle
+
+#### Scenario: Period tracking off
+- **WHEN** "Track periods" is off and today has no period mark
 - **THEN** home shows no "Period" toggle
 
 ### Requirement: Accessible marks
@@ -81,3 +95,11 @@ stay readable at 200% font (BRD EC-UX-03, EC-UX-04).
 #### Scenario: Disabled switch
 - **WHEN** TalkBack focuses "Pain-free day" on an attack day
 - **THEN** it reads it as disabled, followed by "A migraine is logged on this day."
+
+### Requirement: Track periods
+Settings SHALL show a "Track periods" switch, on by default, which onboarding's third step also sets. Turning it off
+SHALL keep every period mark already saved and shown (BRD DAY-F1, D79).
+
+#### Scenario: Turning it off
+- **WHEN** the user turns "Track periods" off in Settings
+- **THEN** home and History stop offering new period marks, and October's saved marks still show

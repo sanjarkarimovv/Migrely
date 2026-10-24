@@ -17,6 +17,8 @@ import com.migrely.app.medication.ui.view.LogMedication
 import com.migrely.app.medication.ui.view.MedicationPrompt
 import com.migrely.app.medication.ui.view.Medications
 import com.migrely.app.medication.ui.view.OveruseIndicator
+import com.migrely.app.onboarding.ui.view.Onboarding
+import com.migrely.app.reminders.ui.view.DailyReminderOffer
 import com.migrely.app.reminders.ui.view.Reminders
 import com.migrely.app.settings.ui.view.Settings
 import com.migrely.app.ui.main.di.AppNavHostDependencies
@@ -27,6 +29,7 @@ import com.migrely.app.ui.main.route.History
 import com.migrely.app.ui.main.route.Home
 import com.migrely.app.ui.main.route.LogMedication
 import com.migrely.app.ui.main.route.Medications
+import com.migrely.app.ui.main.route.Onboarding
 import com.migrely.app.ui.main.route.Reminders
 import com.migrely.app.ui.main.route.Settings
 import com.migrely.app.ui.main.route.YourData
@@ -90,6 +93,15 @@ fun AppNavHostDependencies.AppNavHost(
         }
         composable<Reminders> {
             remindersDependencies.Reminders(navController)
+        }
+        composable<Onboarding> {
+            onboardingDependencies.Onboarding(
+                navController,
+                // Onboarding offers the reminders feature's daily reminder without knowing it (BRD D80).
+                reminderOffer = { onDone ->
+                    dailyReminderOfferDependencies.DailyReminderOffer(onDone)
+                }
+            )
         }
         composable<Settings> {
             settingsDependencies.Settings(navController)

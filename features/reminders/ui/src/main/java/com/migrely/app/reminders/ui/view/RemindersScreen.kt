@@ -278,13 +278,7 @@ private fun ReminderRows(reminders: RemindersUiModel, actions: RemindersActions)
     )
     // Shown while off too, so the time can be chosen before the reminder is turned on.
     run {
-        // The phone's own 12- or 24-hour choice, as the picker uses.
-        val pattern = if (android.text.format.DateFormat.is24HourFormat(LocalContext.current)) {
-            DateTimeFormatter.ofPattern("HH:mm")
-        } else {
-            DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT)
-        }
-        val time = reminders.dailyMinuteOfDay.toLocalTime().format(pattern)
+        val time = reminders.dailyMinuteOfDay.toLocalTime().format(reminderTimePattern())
         val description = stringResource(R.string.reminders_daily_time_description, time)
         Row(
             verticalAlignment = Alignment.CenterVertically,

@@ -26,13 +26,14 @@ class HistoryMonthPresentationMapper(
         today = month.today,
         hasPreviousMonth = month.month > month.earliestMonth,
         hasNextMonth = month.month < YearMonth.from(month.today),
-        days = month.days.map { day -> day.toPresentation(month.today) },
+        days = month.days.map { day -> day.toPresentation(month.today, month.periodTracking) },
         attacks = month.attacks.map(historyAttackPresentationMapper::toPresentation),
         stats = monthStatsPresentationMapper.toPresentation(month.stats)
     )
 
     private fun HistoryDayDomainModel.toPresentation(
-        today: LocalDate
+        today: LocalDate,
+        periodTracking: Boolean
     ): HistoryDayPresentationModel {
         val recordedLevel = attacks.mapNotNull { it.peakIntensity }
             .maxOrNull()
@@ -57,7 +58,8 @@ class HistoryMonthPresentationMapper(
             attacks = attacks.map(historyAttackPresentationMapper::toPresentation),
             period = period,
             painFree = painFree,
-            painFreeAllowed = attacks.isEmpty()
+            painFreeAllowed = attacks.isEmpty(),
+            periodOffered = period || periodTracking
         )
     }
 

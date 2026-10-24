@@ -16,5 +16,7 @@ data class HistoryMonthDomainModel(
     val anyAttackLogged: Boolean,
     val days: List<HistoryDayDomainModel>,
     val attacks: List<HistoryAttackDomainModel>,
-    val stats: MonthStatsDomainModel
+    val stats: MonthStatsDomainModel,
+    /** "Track periods" (BRD D79): while off, a day offers "Period" only to remove its mark. */
+    val periodTracking: Boolean = true
 )

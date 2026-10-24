@@ -11,6 +11,7 @@ import com.migrely.app.datasource.daymark.datasource.DayMarkDataSource
 import com.migrely.app.datasource.daymark.model.DayMarkDataModel
 import com.migrely.app.datasource.exception.DatabaseDataException
 import com.migrely.app.datasource.exception.StorageFullDataException
+import com.migrely.app.datasource.preferences.datasource.PreferencesDataSource
 import com.migrely.app.home.data.mapper.AttackDomainMapper
 import com.migrely.app.home.data.mapper.IntensityPointDomainMapper
 import com.migrely.app.home.domain.model.AttackLookupResultDomainModel
@@ -49,12 +50,19 @@ class HomeRepositoryTest {
     private val attackDataSource: AttackDataSource = mock()
     private val clockDataSource: ClockDataSource = mock()
     private val dayMarkDataSource: DayMarkDataSource = mock()
+    private val preferencesDataSource: PreferencesDataSource = mock()
     private val mapper = AttackDomainMapper(IntensityPointDomainMapper())
 
     @Before
     fun setUp() {
         classUnderTest =
-            HomeRepository(attackDataSource, clockDataSource, dayMarkDataSource, mapper)
+            HomeRepository(
+                attackDataSource,
+                clockDataSource,
+                dayMarkDataSource,
+                preferencesDataSource,
+                mapper
+            )
         given(clockDataSource.now()).willReturn(NOW)
         given(clockDataSource.zone()).willReturn(TASHKENT)
     }
@@ -322,5 +330,12 @@ class HomeRepositoryTest {
 
         assertEquals(WriteResultDomainModel.Written, classUnderTest.setPeriod(date, true))
         verify(dayMarkDataSource).setPeriod(date, true)
+    }
+
+    @Test
+    fun `When reading Track periods then the preference`() {
+        given(preferencesDataSource.periodTracking()).willReturn(false)
+
+        assertEquals(false, classUnderTest.periodTracking())
     }
 }

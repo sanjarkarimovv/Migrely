@@ -17,40 +17,47 @@ import com.migrely.app.home.presentation.model.TodayPresentationModel
 class TodayPresentationMapper(
     private val intensityLevelPresentationMapper: IntensityLevelPresentationMapper
 ) {
-    fun toPresentation(today: TodayDomainModel, periodToday: Boolean = false): HomeViewState =
-        when (today) {
-            TodayDomainModel.Calm -> HomeViewState.Today(
-                TodayPresentationModel(
-                    sky = SkyPresentationModel.Calm,
-                    attackCount = 0,
-                    peak = null,
-                    periodToday = periodToday
-                )
+    fun toPresentation(
+        today: TodayDomainModel,
+        periodToday: Boolean = false,
+        periodOffered: Boolean = true
+    ): HomeViewState = when (today) {
+        TodayDomainModel.Calm -> HomeViewState.Today(
+            TodayPresentationModel(
+                sky = SkyPresentationModel.Calm,
+                attackCount = 0,
+                peak = null,
+                periodToday = periodToday,
+                periodOffered = periodOffered
             )
+        )
 
-            TodayDomainModel.PainFree -> HomeViewState.Today(
-                TodayPresentationModel(
-                    sky = SkyPresentationModel.Clear,
-                    attackCount = 0,
-                    peak = null,
-                    periodToday = periodToday
-                )
+        TodayDomainModel.PainFree -> HomeViewState.Today(
+            TodayPresentationModel(
+                sky = SkyPresentationModel.Clear,
+                attackCount = 0,
+                peak = null,
+                periodToday = periodToday,
+                periodOffered = periodOffered
             )
+        )
 
-            is TodayDomainModel.AttackInProgress -> HomeViewState.AttackInProgress(
-                AttackInProgressPresentationModel(
-                    id = today.attack.id,
-                    start = today.attack.start,
-                    startZone = today.attack.startZone,
-                    currentLevel = today.attack.latestIntensityPoint?.value
-                        ?.let(intensityLevelPresentationMapper::toPresentation),
-                    longAttackCheckDue = today.longAttackCheckDue
-                )
+        is TodayDomainModel.AttackInProgress -> HomeViewState.AttackInProgress(
+            AttackInProgressPresentationModel(
+                id = today.attack.id,
+                start = today.attack.start,
+                startZone = today.attack.startZone,
+                currentLevel = today.attack.latestIntensityPoint?.value
+                    ?.let(intensityLevelPresentationMapper::toPresentation),
+                longAttackCheckDue = today.longAttackCheckDue
             )
+        )
 
-            is TodayDomainModel.AttacksEnded ->
-                HomeViewState.Today(endedToday(today).copy(periodToday = periodToday))
-        }
+        is TodayDomainModel.AttacksEnded ->
+            HomeViewState.Today(
+                endedToday(today).copy(periodToday = periodToday, periodOffered = periodOffered)
+            )
+    }
 
     private fun endedToday(today: TodayDomainModel.AttacksEnded): TodayPresentationModel {
         val recordedLevel = today.highestRecordedIntensity?.let(

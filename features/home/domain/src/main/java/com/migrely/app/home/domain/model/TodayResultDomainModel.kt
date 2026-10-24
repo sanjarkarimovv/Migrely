@@ -8,7 +8,9 @@ sealed interface TodayResultDomainModel {
     data class Loaded(
         val today: TodayDomainModel,
         val recentlyDeleted: DeletedAttackDomainModel? = null,
-        val periodToday: Boolean = false
+        val periodToday: Boolean = false,
+        /** Whether home offers the "Period" toggle: "Track periods" is on, or today is marked (BRD D79). */
+        val periodOffered: Boolean = true
     ) : TodayResultDomainModel
 
     data object Failed : TodayResultDomainModel

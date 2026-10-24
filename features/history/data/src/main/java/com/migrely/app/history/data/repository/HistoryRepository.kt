@@ -7,6 +7,7 @@ import com.migrely.app.datasource.daymark.datasource.DayMarkDataSource
 import com.migrely.app.datasource.exception.DataException
 import com.migrely.app.datasource.exception.StorageFullDataException
 import com.migrely.app.datasource.medication.datasource.MedicationDataSource
+import com.migrely.app.datasource.preferences.datasource.PreferencesDataSource
 import com.migrely.app.history.data.mapper.AttackMedicationIntakeDomainMapper
 import com.migrely.app.history.data.mapper.DayMarkDomainMapper
 import com.migrely.app.history.data.mapper.HistoryAttackDomainMapper
@@ -27,6 +28,7 @@ import com.migrely.app.history.domain.repository.GetCurrentTimeRepository
 import com.migrely.app.history.domain.repository.GetDayMarksRepository
 import com.migrely.app.history.domain.repository.GetEarliestAttackRepository
 import com.migrely.app.history.domain.repository.GetEarliestDayMarkRepository
+import com.migrely.app.history.domain.repository.GetPeriodTrackingRepository
 import com.migrely.app.history.domain.repository.GetRecentlyDeletedAttackRepository
 import com.migrely.app.history.domain.repository.RestoreDeletedAttackRepository
 import com.migrely.app.history.domain.repository.SetDayMarkRepository
@@ -43,11 +45,13 @@ class HistoryRepository(
     private val clockDataSource: ClockDataSource,
     private val dayMarkDataSource: DayMarkDataSource,
     private val medicationDataSource: MedicationDataSource,
+    private val preferencesDataSource: PreferencesDataSource,
     private val historyAttackDomainMapper: HistoryAttackDomainMapper,
     private val zoneDomainMapper: ZoneDomainMapper,
     private val dayMarkDomainMapper: DayMarkDomainMapper,
     private val attackMedicationIntakeDomainMapper: AttackMedicationIntakeDomainMapper
 ) : GetCurrentTimeRepository,
+    GetPeriodTrackingRepository,
     GetEarliestAttackRepository,
     GetAttacksTouchingRepository,
     GetRecentlyDeletedAttackRepository,
@@ -142,4 +146,6 @@ class HistoryRepository(
     } catch (_: DataException) {
         DayMarkWriteResultDomainModel.Failed
     }
+
+    override fun periodTracking(): Boolean = preferencesDataSource.periodTracking()
 }

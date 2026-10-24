@@ -15,5 +15,6 @@ data class HistoryDayUiModel(
     val attacks: List<HistoryAttackUiModel>,
     val period: Boolean = false,
     val painFree: Boolean = false,
-    val painFreeAllowed: Boolean = true
+    val painFreeAllowed: Boolean = true,
+    val periodOffered: Boolean = true
 ) : Parcelable

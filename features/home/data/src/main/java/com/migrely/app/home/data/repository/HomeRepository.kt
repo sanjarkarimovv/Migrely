@@ -8,6 +8,7 @@ import com.migrely.app.datasource.clock.datasource.ClockDataSource
 import com.migrely.app.datasource.daymark.datasource.DayMarkDataSource
 import com.migrely.app.datasource.exception.DataException
 import com.migrely.app.datasource.exception.StorageFullDataException
+import com.migrely.app.datasource.preferences.datasource.PreferencesDataSource
 import com.migrely.app.home.data.mapper.AttackDomainMapper
 import com.migrely.app.home.domain.model.AttackLookupResultDomainModel
 import com.migrely.app.home.domain.model.CurrentTimeDomainModel
@@ -29,6 +30,7 @@ import com.migrely.app.home.domain.repository.EndAttackRepository
 import com.migrely.app.home.domain.repository.GetAttackInProgressRepository
 import com.migrely.app.home.domain.repository.GetCurrentTimeRepository
 import com.migrely.app.home.domain.repository.GetDayMarksRepository
+import com.migrely.app.home.domain.repository.GetPeriodTrackingRepository
 import com.migrely.app.home.domain.repository.GetPreviousAttackEndRepository
 import com.migrely.app.home.domain.repository.GetTodayRepository
 import com.migrely.app.home.domain.repository.ReopenAttackRepository
@@ -51,10 +53,12 @@ class HomeRepository(
     private val attackDataSource: AttackDataSource,
     private val clockDataSource: ClockDataSource,
     private val dayMarkDataSource: DayMarkDataSource,
+    private val preferencesDataSource: PreferencesDataSource,
     private val attackDomainMapper: AttackDomainMapper
 ) : GetTodayRepository,
     GetDayMarksRepository,
     SetPeriodRepository,
+    GetPeriodTrackingRepository,
     GetCurrentTimeRepository,
     StartAttackRepository,
     GetAttackInProgressRepository,
@@ -94,6 +98,8 @@ class HomeRepository(
     } catch (_: DataException) {
         DayMarksResultDomainModel.Failed
     }
+
+    override fun periodTracking(): Boolean = preferencesDataSource.periodTracking()
 
     override fun setPeriod(date: LocalDate, marked: Boolean) = write {
         dayMarkDataSource.setPeriod(date, marked)

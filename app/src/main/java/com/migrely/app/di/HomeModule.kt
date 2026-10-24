@@ -8,6 +8,7 @@ import com.migrely.app.home.domain.repository.EndAttackRepository
 import com.migrely.app.home.domain.repository.GetAttackInProgressRepository
 import com.migrely.app.home.domain.repository.GetCurrentTimeRepository
 import com.migrely.app.home.domain.repository.GetDayMarksRepository
+import com.migrely.app.home.domain.repository.GetPeriodTrackingRepository
 import com.migrely.app.home.domain.repository.GetPreviousAttackEndRepository
 import com.migrely.app.home.domain.repository.GetTodayRepository
 import com.migrely.app.home.domain.repository.ReopenAttackRepository
@@ -45,11 +46,13 @@ internal object HomeModule {
         getCurrentTimeRepository: GetCurrentTimeRepository,
         repository: GetTodayRepository,
         getDayMarksRepository: GetDayMarksRepository,
+        getPeriodTrackingRepository: GetPeriodTrackingRepository,
         coroutineContextProvider: CoroutineContextProvider
     ) = GetTodayUseCase(
         getCurrentTimeRepository,
         repository,
         getDayMarksRepository,
+        getPeriodTrackingRepository,
         coroutineContextProvider
     )
 

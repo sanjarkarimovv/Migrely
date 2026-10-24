@@ -6,4 +6,8 @@
     <string name="settings_reminders_summary">A daily check-in, and asking if a medication helped</string>
     <string name="settings_your_data">Your data</string>
     <string name="settings_your_data_summary">Back up, export for Excel, and import</string>
+    <string name="settings_track_periods">Track periods</string>
+    <string name="settings_track_periods_summary">Mark period days on home and in History. Marks you saved stay either way.</string>
+    <string name="settings_not_saved">Couldn\'t save that. Try again.</string>
+    <string name="settings_message_dismiss">Dismiss</string>
 </resources>
