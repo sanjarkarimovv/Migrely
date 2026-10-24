@@ -214,7 +214,7 @@ private fun AttackSummaryRow(
     }
 }
 
-/** The date, with "Reminders" at the end; attack mode has its own screen, so the button is normal mode only (D65). */
+/** The date, with "Settings" at the end; attack mode has its own screen, so the button is normal mode only (D70). */
 @Composable
 private fun DayHeader(dayTitle: String, onSettings: () -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {

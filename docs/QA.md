@@ -31,7 +31,12 @@ Visual regression (Roborazzi screenshots of the `@Preview`s with pseudo-locales)
     -gpu swiftshader_indirect -no-snapshot-save -no-boot-anim -no-audio -no-window
   ```
 - **Restoring the device.** Scripts restore every device setting they change: font size, rotation, accessibility
-  timeout, clock, automatic time and time zone.
+  timeout, animator scale, app language, clock, automatic time and time zone. Each restored value is read back, and a
+  value that did not take is reported as a warning. This happened when the emulator stopped answering under a host load
+  of 56 and then crashed.
+- **Baseline.** A QA emulator's baseline is in `qa/lib.sh` (`QA_BASELINE`): auto-rotate on, portrait, font 1.0, no
+  accessibility timeout, default animations, automatic time on. A script warns when it starts away from the baseline,
+  because it would restore the leftover value. After a crash, run `qa/reset_device.sh`.
 
 ## 3. Writing a flow
 
@@ -59,6 +64,20 @@ Behaviour that depends on time is checked by moving the device clock and logging
 10:00 on the 15th of the current month (`day_millis` in `qa/device_scenarios.sh`). Writing to the debug database with
 `run-as … sqlite3` is a fallback for data the UI cannot create in a reasonable time. Do it only with the app stopped
 and on the matching schema version.
+
+Keyboard behaviour is checked with real key events (D62). `qa/device_scenarios.sh` sends Tab, Shift+Tab
+(`input keycombination 59 61`), the arrows and Enter through adb, and reads the labels under the focused node from
+uiautomator. Maestro's `focused` selector cannot do this, because Compose keeps a control's label on a child of the
+focused node. The scenarios are `keyboard_home`, `keyboard_history` and `keyboard_rtl`; the last one sets the app
+language to Hebrew for right-to-left. The audit's keyboard rule still checks that every clickable, including each day
+cell, is focusable for accessibility services. The Tab order is checked only by key events.
+
+Reduce motion is the animator scale (`global animator_duration_scale 0`). `landscape_band` checks the landscape message
+band with and without it. Like the rotation, the accessibility timeout and the app language, the scripts save the
+scale and restore it on exit.
+
+`# Covers:` lines may also sit above a scenario in `qa/device_scenarios.sh`, when the script itself makes the check. The
+coverage report also reads the delta specs of open changes, so a change can cover the scenarios it adds.
 
 ## 4. Bugs
 

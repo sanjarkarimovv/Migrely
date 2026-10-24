@@ -14,8 +14,16 @@ SDK="${ANDROID_HOME:-$HOME/Library/Android/sdk}"
 ALLOWED=(
   # Added by AndroidX for receivers registered at runtime; not a user-facing permission.
   "com.migrely.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+  # Reminders (change 6): asked for only when a reminder is turned on (EC-REM-01, D65).
+  "android.permission.POST_NOTIFICATIONS"
+  # WorkManager reschedules the reminder work after a reboot (EC-REM-04).
+  "android.permission.RECEIVE_BOOT_COMPLETED"
+  # WorkManager holds a wake lock while the reminder work runs (D66).
+  "android.permission.WAKE_LOCK"
 )
-NEVER=("android.permission.INTERNET" "android.permission.ACCESS_NETWORK_STATE")
+# No network at all (BRD privacy constraints, D43) and no exact alarms (EC-REM-03).
+NEVER=("android.permission.INTERNET" "android.permission.ACCESS_NETWORK_STATE" "android.permission.SCHEDULE_EXACT_ALARM"
+  "android.permission.USE_EXACT_ALARM")
 
 if [[ "${1:-}" == "--list" ]]; then
   permissions="$(cat "$2")"

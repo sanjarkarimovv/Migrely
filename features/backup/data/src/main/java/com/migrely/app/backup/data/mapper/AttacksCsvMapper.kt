@@ -6,9 +6,11 @@ import com.migrely.app.datasource.attack.model.BuiltInTriggerDataModel
 import com.migrely.app.datasource.attack.model.HeadLocationDataModel
 import com.migrely.app.datasource.backup.model.BackupAttackDataModel
 import com.migrely.app.datasource.backup.model.BackupRecordsDataModel
+import java.time.DateTimeException
 import java.time.Duration
 import java.time.Instant
 import java.time.ZoneId
+import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 
 private const val LINE_END = "\r\n"
@@ -54,7 +56,7 @@ class AttacksCsvMapper {
         val medicationNames = records.medications.associate { it.id to it.name }
         val intakesByAttack = records.intakes.filter { it.attackId != null }.groupBy { it.attackId }
         val rows = records.attacks.sortedByDescending(BackupAttackDataModel::start).map { attack ->
-            val zone = ZoneId.of(attack.startZoneId)
+            val zone = zoneOf(attack.startZoneId)
             val peak = attack.intensityPoints.maxOfOrNull { it.value }
             listOf(
                 time(attack.start, zone),
@@ -87,6 +89,17 @@ class AttacksCsvMapper {
     }
 
     private fun time(instant: Instant, zone: ZoneId) = TIME.format(instant.atZone(zone))
+
+    /**
+     * A database restored from a phone with newer time-zone data can hold a zone this phone does not know; its times
+     * are then written in UTC, and the zone column still names it.
+     */
+    @Suppress("SwallowedException")
+    private fun zoneOf(zoneId: String): ZoneId = try {
+        ZoneId.of(zoneId)
+    } catch (exception: DateTimeException) {
+        ZoneOffset.UTC
+    }
 
     private fun field(value: String, separator: Char): String {
         val text = if (value.firstOrNull() in FORMULA_STARTS) "'$value" else value

@@ -3,7 +3,12 @@
 appId: com.migrely.app
 ---
 - extendedWaitUntil:
-    visible: "Show all of .*"
+    visible: "History"
     timeout: 10000
-- assertVisible: "History"
-- assertVisible: "1 migraine in .*|.*, [A-Za-z]+ 12: cloudy\\. 1 migraine\\. Peak: not recorded\\..*"
+# The chosen day survived (its controls sit below the month summary), and so did the month with the 12th.
+- scrollUntilVisible:
+    element: "Show all of .*"
+    direction: DOWN
+- scrollUntilVisible:
+    element: ".*, [A-Za-z]+ 12: cloudy\\. 1 migraine\\. Peak: not recorded\\..*"
+    direction: UP

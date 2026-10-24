@@ -27,6 +27,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.given
+import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
@@ -143,17 +144,44 @@ class BackupRepositoryTest {
     }
 
     @Test
-    fun `When saving the automatic backup then the phone's records, stamped now`() {
+    fun `Given records on the phone when replacing then a copy first, only for a backup`() {
+        given(documentDataSource.read(eq(URI), any())).willReturn("text")
         given(backupDataSource.records()).willReturn(EMPTY)
         given(backupFileDataSource.encode(EMPTY, NOW)).willReturn("{json}")
 
-        assertEquals(BackupWriteResultDomainModel.Saved, classUnderTest.saveAutomaticBackup())
-        verify(backupFileDataSource).saveAutomatic("{json}", NOW)
+        given(backupFileDataSource.decode("text")).willReturn(BackupDecodedDataModel.NotABackup)
+        assertEquals(
+            ImportResultDomainModel.NotABackup,
+            classUnderTest.replaceWithBackup(URI, saveCopyFirst = true)
+        )
+        verify(backupFileDataSource, never()).saveAutomatic(any(), any())
 
+        given(
+            backupFileDataSource.decode("text")
+        ).willReturn(BackupDecodedDataModel.Records(EMPTY, 6))
+        classUnderTest.replaceWithBackup(URI, saveCopyFirst = true)
+        val order = inOrder(backupFileDataSource, backupDataSource)
+        order.verify(backupFileDataSource).saveAutomatic("{json}", NOW)
+        order.verify(backupDataSource).replaceAll(EMPTY)
+    }
+
+    @Test
+    fun `Given the copy cannot be saved when replacing then nothing is replaced`() {
+        given(documentDataSource.read(eq(URI), any())).willReturn("text")
+        given(
+            backupFileDataSource.decode("text")
+        ).willReturn(BackupDecodedDataModel.Records(EMPTY, 6))
+        given(backupDataSource.records()).willReturn(EMPTY)
+        given(backupFileDataSource.encode(any(), any())).willReturn("{json}")
         whenever(
             backupFileDataSource.saveAutomatic(any(), any())
         ).doThrow(StorageFullDataException())
-        assertEquals(BackupWriteResultDomainModel.StorageFull, classUnderTest.saveAutomaticBackup())
+
+        assertEquals(
+            ImportResultDomainModel.StorageFull,
+            classUnderTest.replaceWithBackup(URI, saveCopyFirst = true)
+        )
+        verify(backupDataSource, never()).replaceAll(any())
     }
 
     @Test
@@ -164,13 +192,13 @@ class BackupRepositoryTest {
         ).willReturn(BackupDecodedDataModel.Records(EMPTY, 5))
         given(
             backupDataSource.add(EMPTY)
-        ).willReturn(AddedRecordsDataModel(addedAttacks = 3, skippedAttacks = 1))
+        ).willReturn(AddedRecordsDataModel(addedAttacks = 3, skippedAttacks = 1, addedOthers = 2))
 
         assertEquals(
             ImportResultDomainModel.Replaced(BackupSummaryDomainModel(0, 0, 0)),
-            classUnderTest.replaceWithBackup(URI)
+            classUnderTest.replaceWithBackup(URI, saveCopyFirst = false)
         )
-        assertEquals(ImportResultDomainModel.Added(3, 1), classUnderTest.addBackup(URI))
+        assertEquals(ImportResultDomainModel.Added(3, 1, 2), classUnderTest.addBackup(URI))
         verify(backupDataSource).replaceAll(EMPTY)
     }
 
@@ -179,7 +207,10 @@ class BackupRepositoryTest {
         given(documentDataSource.read(eq(URI), any())).willReturn("text")
 
         given(backupFileDataSource.decode("text")).willReturn(BackupDecodedDataModel.Newer)
-        assertEquals(ImportResultDomainModel.Newer, classUnderTest.replaceWithBackup(URI))
+        assertEquals(
+            ImportResultDomainModel.Newer,
+            classUnderTest.replaceWithBackup(URI, saveCopyFirst = false)
+        )
         given(backupFileDataSource.decode("text")).willReturn(BackupDecodedDataModel.NotABackup)
         assertEquals(ImportResultDomainModel.NotABackup, classUnderTest.addBackup(URI))
         verify(backupDataSource, never()).replaceAll(any())
@@ -188,7 +219,10 @@ class BackupRepositoryTest {
             backupFileDataSource.decode("text")
         ).willReturn(BackupDecodedDataModel.Records(EMPTY, 6))
         whenever(backupDataSource.replaceAll(any())).doThrow(StorageFullDataException())
-        assertEquals(ImportResultDomainModel.StorageFull, classUnderTest.replaceWithBackup(URI))
+        assertEquals(
+            ImportResultDomainModel.StorageFull,
+            classUnderTest.replaceWithBackup(URI, saveCopyFirst = false)
+        )
         given(backupDataSource.add(any())).willThrow(DatabaseDataException())
         assertEquals(ImportResultDomainModel.Failed, classUnderTest.addBackup(URI))
     }

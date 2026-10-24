@@ -2,6 +2,8 @@ package com.migrely.app.datasource.document.datasource
 
 import android.content.ContentResolver
 import android.net.Uri
+import android.provider.DocumentsContract
+import com.migrely.app.datasource.exception.DataException
 import com.migrely.app.datasource.exception.FileDataException
 import com.migrely.app.datasource.file.file
 import java.io.ByteArrayOutputStream
@@ -13,8 +15,15 @@ private const val WRITE = "w"
 private const val BUFFER_BYTES = 8 * 1024
 
 class DocumentDataSourceImpl(private val contentResolver: ContentResolver) : DocumentDataSource {
-    override fun write(uri: String, text: String) = file {
-        open(Uri.parse(uri)).use { it.write(text.toByteArray(Charsets.UTF_8)) }
+    override fun write(uri: String, text: String) {
+        val document = Uri.parse(uri)
+        try {
+            file { open(document).use { it.write(text.toByteArray(Charsets.UTF_8)) } }
+        } catch (failure: DataException) {
+            // The picker created this file for the export; a half-written one must not pass for a backup.
+            deleteQuietly(document)
+            throw failure
+        }
     }
 
     override fun read(uri: String, limitBytes: Long): String = file {
@@ -34,6 +43,15 @@ class DocumentDataSourceImpl(private val contentResolver: ContentResolver) : Doc
                 read = stream.read(buffer)
             }
             bytes.toString(Charsets.UTF_8.name())
+        }
+    }
+
+    @Suppress("SwallowedException", "TooGenericExceptionCaught")
+    private fun deleteQuietly(document: Uri) {
+        try {
+            DocumentsContract.deleteDocument(contentResolver, document)
+        } catch (exception: Exception) {
+            // Best effort: some providers cannot delete, and the failure is already being reported.
         }
     }
 

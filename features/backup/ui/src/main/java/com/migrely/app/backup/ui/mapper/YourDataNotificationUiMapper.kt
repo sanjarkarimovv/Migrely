@@ -29,7 +29,11 @@ class YourDataNotificationUiMapper(private val presenter: YourDataEventPresenter
                 message(YourDataMessageUiModel.Replaced(notification.summary.attacks))
 
             is YourDataPresentationNotification.Added -> message(
-                YourDataMessageUiModel.Added(notification.addedAttacks, notification.skippedAttacks)
+                YourDataMessageUiModel.Added(
+                    notification.addedAttacks,
+                    notification.skippedAttacks,
+                    notification.addedOthers
+                )
             )
 
             YourDataPresentationNotification.NotABackup -> message(

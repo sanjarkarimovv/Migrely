@@ -108,8 +108,9 @@ abstract class BackupDao {
     @Insert
     abstract fun insertDayMarks(marks: List<DayMarkLocalModel>)
 
+    /** The new row's ID, or -1 when the date was already marked. */
     @Insert(onConflict = OnConflictStrategy.IGNORE)
-    abstract fun insertDayMarkIfAbsent(mark: DayMarkLocalModel)
+    abstract fun insertDayMarkIfAbsent(mark: DayMarkLocalModel): Long
 
     @Query("SELECT EXISTS(SELECT 1 FROM custom_tag WHERE id = :tagId)")
     abstract fun hasCustomTag(tagId: String): Boolean
@@ -126,6 +127,11 @@ abstract class BackupDao {
     /** Any attack with this ID, even one being deleted. */
     @Query("SELECT EXISTS(SELECT 1 FROM attack WHERE id = :attackId)")
     abstract fun hasAttack(attackId: String): Boolean
+
+    @Query(
+        "SELECT EXISTS(SELECT 1 FROM attack WHERE id = :attackId AND deleted_epoch_millis IS NULL)"
+    )
+    abstract fun hasLiveAttack(attackId: String): Boolean
 
     /** The same rule as logging an attack: an attack in progress reaches into the future. */
     @Query(
@@ -161,15 +167,32 @@ abstract class BackupDao {
     /** Writes what the phone does not have yet (BRD D73 "Add"); the rules are on `BackupDataSource.add`. */
     @Transaction
     open fun add(records: BackupLocalModel): AddedLocalModel {
-        val tagIds = records.customTags.associate { it.id to customTagIdOnPhone(it) }
-        val medicationIds = records.medications.associate { it.id to medicationIdOnPhone(it) }
+        var addedOthers = 0
+        val tagIds = records.customTags.associate { tag ->
+            val onPhone = customTagIdOnPhone(tag)
+            if (onPhone == null) {
+                insertCustomTags(listOf(tag))
+                addedOthers++
+            }
+            tag.id to (onPhone ?: tag.id)
+        }
+        val medicationIds = records.medications.associate { medication ->
+            val onPhone = medicationIdOnPhone(medication)
+            if (onPhone == null) {
+                insertMedications(listOf(medication))
+                addedOthers++
+            }
+            medication.id to (onPhone ?: medication.id)
+        }
         val pointsByAttack = records.intensityPoints.groupBy(IntensityPointLocalModel::attackId)
         val tagsByAttack = records.attackTags.groupBy(AttackTagLocalModel::attackId)
-        val onPhone = mutableSetOf<String>()
+        // Attacks the backup's intakes may stay linked to. One being deleted is left out, so its purge never takes the
+        // backup's intakes with it.
+        val linkable = mutableSetOf<String>()
         var added = 0
         records.attacks.sortedBy(AttackLocalModel::startEpochMillis).forEach { attack ->
             when {
-                hasAttack(attack.id) -> onPhone += attack.id
+                hasAttack(attack.id) -> if (hasLiveAttack(attack.id)) linkable += attack.id
                 anyOverlapping(
                     attack.startEpochMillis,
                     attack.endEpochMillis ?: Long.MAX_VALUE
@@ -177,43 +200,49 @@ abstract class BackupDao {
                 else -> {
                     insertAttacks(listOf(attack))
                     insertIntensityPoints(pointsByAttack[attack.id].orEmpty())
+                    // Two backup tags can stand for one tag on the phone, so the rewritten keys are made unique.
                     insertAttackTags(
                         tagsByAttack[attack.id].orEmpty().map {
                             it.withTagIds(tagIds)
-                        }
+                        }.distinct()
                     )
-                    onPhone += attack.id
+                    linkable += attack.id
                     added++
                 }
             }
         }
         records.intakes.forEach { intake ->
-            val medicationId = medicationIds.getValue(intake.medicationId)
+            // A medication missing from the file fails the foreign key, which rolls the whole import back.
+            val medicationId = medicationIds[intake.medicationId] ?: intake.medicationId
             if (!hasIntake(intake.id, medicationId, intake.takenEpochMillis)) {
                 insertIntakes(
                     listOf(
                         intake.copy(
                             medicationId = medicationId,
-                            attackId = intake.attackId?.takeIf(onPhone::contains)
+                            attackId = intake.attackId?.takeIf(linkable::contains)
                         )
                     )
                 )
+                addedOthers++
             }
         }
-        records.dayMarks.forEach(::insertDayMarkIfAbsent)
-        return AddedLocalModel(addedAttacks = added, skippedAttacks = records.attacks.size - added)
+        addedOthers += records.dayMarks.count { insertDayMarkIfAbsent(it) != -1L }
+        return AddedLocalModel(
+            addedAttacks = added,
+            skippedAttacks = records.attacks.size - added,
+            addedOthers = addedOthers
+        )
     }
 
-    private fun customTagIdOnPhone(tag: CustomTagLocalModel): String = when {
+    /** The phone's tag this one stands for, by ID or by name, or null when the phone has none. */
+    private fun customTagIdOnPhone(tag: CustomTagLocalModel): String? = when {
         hasCustomTag(tag.id) -> tag.id
         else -> customTagIdByName(tag.kind, tag.nameKey)
-            ?: tag.id.also { insertCustomTags(listOf(tag)) }
     }
 
-    private fun medicationIdOnPhone(medication: MedicationLocalModel): String = when {
+    private fun medicationIdOnPhone(medication: MedicationLocalModel): String? = when {
         hasMedication(medication.id) -> medication.id
         else -> medicationIdByName(medication.nameKey)
-            ?: medication.id.also { insertMedications(listOf(medication)) }
     }
 
     private fun AttackTagLocalModel.withTagIds(tagIds: Map<String, String>): AttackTagLocalModel {

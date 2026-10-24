@@ -38,6 +38,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import javax.inject.Singleton
 
 /**
  * Backups, exports and imports (change add-data-export-import, BRD D70–D74). One repository serves every
@@ -89,7 +90,9 @@ internal object BackupModule {
         BackupSummaryDomainMapper()
     )
 
+    /** One for the app, so a file being written or read survives a rotation (ARCHITECTURE section 13). */
     @Provides
+    @Singleton
     fun providesYourDataViewModel(
         repository: BackupRepository,
         coroutines: CoroutineContextProvider,
@@ -98,13 +101,14 @@ internal object BackupModule {
         ExportBackupUseCase(repository, coroutines),
         ExportCsvUseCase(repository, coroutines),
         ReadBackupUseCase(repository, repository, coroutines),
-        ImportBackupUseCase(repository, repository, repository, repository, coroutines),
+        ImportBackupUseCase(repository, repository, repository, coroutines),
         BackupSummaryPresentationMapper(),
         ImportModeDomainMapper(),
         useCaseExecutor
     )
 
     @Provides
+    @Singleton
     fun providesYourDataDependencies(yourDataViewModel: YourDataViewModel): YourDataDependencies {
         val presenter = YourDataEventPresenter()
         return YourDataDependencies(

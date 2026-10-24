@@ -213,8 +213,9 @@ class BackupDaoTest {
             )
         )
 
+        // Added besides the attack: Naproxen, the intakes "oi" and "ni", and 19 October's mark.
         assertEquals(
-            AddedLocalModel(addedAttacks = 1, skippedAttacks = 2),
+            AddedLocalModel(addedAttacks = 1, skippedAttacks = 2, addedOthers = 4),
             classUnderTest.add(backup)
         )
 
@@ -264,7 +265,123 @@ class BackupDaoTest {
             )
         )
 
-        assertEquals(AddedLocalModel(addedAttacks = 1, skippedAttacks = 1), added)
+        assertEquals(AddedLocalModel(addedAttacks = 1, skippedAttacks = 1, addedOthers = 0), added)
         assertEquals(listOf("before", "now"), classUnderTest.records().attacks.map { it.id })
+    }
+
+    @Test
+    fun givenAnAttackInProgressInTheBackup_whenAdding_thenItReachesIntoTheFuture() {
+        classUnderTest.replaceAll(records(attacks = listOf(attack("later", 50 * HOUR, 51 * HOUR))))
+
+        val added = classUnderTest.add(records(attacks = listOf(attack("now", 10 * HOUR, null))))
+
+        assertEquals(AddedLocalModel(addedAttacks = 0, skippedAttacks = 1, addedOthers = 0), added)
+    }
+
+    @Test
+    fun givenOverlapsInsideTheBackup_whenAdding_thenOnlyTheFirstIsAdded() {
+        val added = classUnderTest.add(
+            records(
+                attacks = listOf(
+                    attack("a", 10 * HOUR, 12 * HOUR),
+                    attack(
+                        "b",
+                        11 * HOUR,
+                        13 * HOUR
+                    )
+                )
+            )
+        )
+
+        assertEquals(AddedLocalModel(addedAttacks = 1, skippedAttacks = 1, addedOthers = 0), added)
+        assertEquals(listOf("a"), classUnderTest.records().attacks.map { it.id })
+    }
+
+    @Test
+    fun givenAnAttackBeingDeletedWithTheSameId_whenAdding_thenTheBackupsIntakeIsNotLinkedToIt() {
+        classUnderTest.replaceAll(
+            records(
+                attacks = listOf(attack("gone", 10 * HOUR, 12 * HOUR, deleted = 13 * HOUR)),
+                medications = listOf(medication("pm", "Ibuprofen"))
+            )
+        )
+
+        classUnderTest.add(
+            records(
+                attacks = listOf(attack("gone", 10 * HOUR, 12 * HOUR)),
+                medications = listOf(medication("pm", "Ibuprofen")),
+                intakes = listOf(intake("i", "pm", "gone", 11 * HOUR))
+            )
+        )
+
+        assertEquals(listOf(intake("i", "pm", null, 11 * HOUR)), classUnderTest.records().intakes)
+    }
+
+    @Test
+    fun givenAnAttackBeingDeleted_whenReplacing_thenItGoesToo() {
+        classUnderTest.replaceAll(
+            records(
+                attacks = listOf(
+                    attack(
+                        "gone",
+                        10 * HOUR,
+                        12 * HOUR,
+                        deleted =
+                        13 * HOUR
+                    )
+                )
+            )
+        )
+
+        classUnderTest.replaceAll(records(attacks = listOf(attack("gone", 20 * HOUR, 21 * HOUR))))
+
+        assertEquals(
+            listOf(20 * HOUR),
+            classUnderTest.records().attacks.map {
+                it.startEpochMillis
+            }
+        )
+    }
+
+    @Test
+    fun givenTwoBackupTagsForOnePhoneTag_whenAdding_thenTheAttackGetsItOnce() {
+        classUnderTest.replaceAll(records(customTags = listOf(customTag("pt", "Exams"))))
+
+        classUnderTest.add(
+            records(
+                attacks = listOf(attack("new", 10 * HOUR, 11 * HOUR)),
+                tags = listOf(
+                    AttackTagLocalModel("new", "TRIGGER", "custom:pt"),
+                    AttackTagLocalModel("new", "TRIGGER", "custom:bt")
+                ),
+                // One stands for the phone's tag by its ID, the other by its name.
+                customTags = listOf(customTag("pt", "Other"), customTag("bt", "Exams"))
+            )
+        )
+
+        assertEquals(
+            listOf(AttackTagLocalModel("new", "TRIGGER", "custom:pt")),
+            classUnderTest.records().attackTags
+        )
+    }
+
+    @Test
+    fun givenABackupTheDatabaseRefuses_whenAdding_thenNothingChanges() {
+        classUnderTest.replaceAll(phone)
+        val before = classUnderTest.records()
+
+        try {
+            classUnderTest.add(
+                records(
+                    attacks = listOf(attack("new", 40 * HOUR, 41 * HOUR)),
+                    intakes = listOf(intake("x", "no-such-medication", null, 40 * HOUR))
+                )
+            )
+            fail("An intake of no medication must be refused")
+        } catch (expected: android.database.sqlite.SQLiteConstraintException) {
+            // The whole transaction is rolled back, the new attack with it.
+        }
+
+        assertEquals(before, classUnderTest.records())
     }
 }

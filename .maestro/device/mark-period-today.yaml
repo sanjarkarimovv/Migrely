@@ -1,0 +1,9 @@
+# Device scenario step: a clean install marks today as a period day from home, then the app is closed.
+appId: com.migrely.app
+---
+- runFlow: ../subflows/launch-clean.yaml
+- tapOn: "Period today"
+- extendedWaitUntil:
+    visible: "Today, .*: nothing logged\\. Period\\."
+    timeout: 5000
+- stopApp

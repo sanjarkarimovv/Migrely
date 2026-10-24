@@ -44,8 +44,8 @@ class YourDataUiMappersTest {
             YourDataPresentationNotification.CsvSaved to message(YourDataMessageUiModel.CsvSaved),
             YourDataPresentationNotification.Replaced(SUMMARY) to
                 message(YourDataMessageUiModel.Replaced(10)),
-            YourDataPresentationNotification.Added(6, 4) to
-                message(YourDataMessageUiModel.Added(6, 4)),
+            YourDataPresentationNotification.Added(6, 4, 1) to
+                message(YourDataMessageUiModel.Added(6, 4, 1)),
             YourDataPresentationNotification.NotABackup to
                 message(YourDataMessageUiModel.NotABackup),
             YourDataPresentationNotification.Newer to message(YourDataMessageUiModel.Newer),

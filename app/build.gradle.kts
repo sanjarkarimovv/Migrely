@@ -1,3 +1,4 @@
+import com.android.build.api.artifact.SingleArtifact
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -126,4 +127,66 @@ dependencies {
     implementation(projects.features.onboarding.domain)
     implementation(projects.features.onboarding.data)
     implementation(libs.androidx.work.runtime)
+}
+
+/**
+ * Permissions Migrely must never ship, whichever library declares them (issue #36): no network of any kind, no exact
+ * alarms (BRD EC-REM-03), no foreground work, no storage, location, contacts, camera, microphone or advertising ID.
+ */
+val forbiddenPermissions = listOf(
+    "android.permission.INTERNET",
+    "android.permission.ACCESS_NETWORK_STATE",
+    "android.permission.ACCESS_WIFI_STATE",
+    "android.permission.CHANGE_NETWORK_STATE",
+    "android.permission.FOREGROUND_SERVICE",
+    "android.permission.SCHEDULE_EXACT_ALARM",
+    "android.permission.USE_EXACT_ALARM",
+    "android.permission.READ_EXTERNAL_STORAGE",
+    "android.permission.WRITE_EXTERNAL_STORAGE",
+    "android.permission.MANAGE_EXTERNAL_STORAGE",
+    "android.permission.ACCESS_FINE_LOCATION",
+    "android.permission.ACCESS_COARSE_LOCATION",
+    "android.permission.READ_CONTACTS",
+    "android.permission.CAMERA",
+    "android.permission.RECORD_AUDIO",
+    "com.google.android.gms.permission.AD_ID"
+)
+
+/** Fails the build when the merged manifest asks for a forbidden permission. */
+abstract class CheckPermissionsTask : DefaultTask() {
+    @get:InputFile
+    abstract val mergedManifest: RegularFileProperty
+
+    @get:Input
+    abstract val forbidden: ListProperty<String>
+
+    @get:OutputFile
+    abstract val report: RegularFileProperty
+
+    @TaskAction
+    fun check() {
+        val requested = Regex("""<uses-permission(?:-sdk-23)?\s[^>]*android:name="([^"]+)"""")
+            .findAll(mergedManifest.get().asFile.readText())
+            .map { it.groupValues[1] }
+            .toSet()
+        val found = forbidden.get().filter { it in requested }
+        if (found.isNotEmpty()) {
+            throw GradleException(
+                "The merged manifest asks for forbidden permissions: $found. Remove them with tools:node=\"remove\"."
+            )
+        }
+        report.get().asFile.writeText(requested.sorted().joinToString("\n"))
+    }
+}
+
+androidComponents {
+    onVariants { variant ->
+        val name = variant.name.replaceFirstChar(Char::uppercase)
+        val check = tasks.register<CheckPermissionsTask>("check${name}Permissions") {
+            mergedManifest.set(variant.artifacts.get(SingleArtifact.MERGED_MANIFEST))
+            forbidden.set(forbiddenPermissions)
+            report.set(layout.buildDirectory.file("reports/permissions/${variant.name}.txt"))
+        }
+        tasks.matching { it.name == "assemble$name" }.configureEach { dependsOn(check) }
+    }
 }

@@ -12,7 +12,6 @@ import com.migrely.app.backup.domain.repository.ExportCsvRepository
 import com.migrely.app.backup.domain.repository.GetPhoneRecordsRepository
 import com.migrely.app.backup.domain.repository.ReadBackupRepository
 import com.migrely.app.backup.domain.repository.ReplaceWithBackupRepository
-import com.migrely.app.backup.domain.repository.SaveAutomaticBackupRepository
 import com.migrely.app.datasource.backup.datasource.BackupDataSource
 import com.migrely.app.datasource.backup.model.BackupRecordsDataModel
 import com.migrely.app.datasource.backupfile.datasource.BackupFileDataSource
@@ -43,7 +42,6 @@ class BackupRepository(
     ExportCsvRepository,
     ReadBackupRepository,
     GetPhoneRecordsRepository,
-    SaveAutomaticBackupRepository,
     ReplaceWithBackupRepository,
     AddBackupRepository {
     override fun exportBackup(uri: String) = write {
@@ -82,18 +80,21 @@ class BackupRepository(
         PhoneRecordsDomainModel.Failed
     }
 
-    override fun saveAutomaticBackup() = write {
-        backupFileDataSource.saveAutomatic(encodedRecords(), clockDataSource.now())
-    }
-
-    override fun replaceWithBackup(uri: String) = import(uri) { records ->
+    override fun replaceWithBackup(uri: String, saveCopyFirst: Boolean) = import(uri) { records ->
+        // Only a file that read as a backup earns a copy, so failed attempts never push older copies out.
+        if (saveCopyFirst) {
+            backupFileDataSource.saveAutomatic(
+                encodedRecords(),
+                clockDataSource.now()
+            )
+        }
         backupDataSource.replaceAll(records)
         ImportResultDomainModel.Replaced(backupSummaryDomainMapper.toDomain(records))
     }
 
     override fun addBackup(uri: String) = import(uri) { records ->
         val added = backupDataSource.add(records)
-        ImportResultDomainModel.Added(added.addedAttacks, added.skippedAttacks)
+        ImportResultDomainModel.Added(added.addedAttacks, added.skippedAttacks, added.addedOthers)
     }
 
     private fun encodedRecords() =
