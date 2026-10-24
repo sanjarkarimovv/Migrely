@@ -10,6 +10,7 @@ import com.migrely.app.datasource.attack.model.AttackStartDataModel
 import com.migrely.app.datasource.attack.model.AttackTagDataModel
 import com.migrely.app.datasource.attack.model.CreateEndedDataModel
 import com.migrely.app.datasource.attack.model.DeletedAttackDataModel
+import com.migrely.app.datasource.attack.model.EarliestAttackDataModel
 import com.migrely.app.datasource.attack.model.IntensityPointDataModel
 import com.migrely.app.datasource.attack.model.IntensityPointLocalModel
 import com.migrely.app.datasource.attack.model.ReopenDataModel
@@ -49,6 +50,12 @@ class AttackDataSourceImpl(
             from.toEpochMilli(),
             to.toEpochMilli()
         ).map(attackLocalMapper::toData)
+    }
+
+    override fun earliestStart(): EarliestAttackDataModel? = database {
+        attackDao.earliestStart()?.let { local ->
+            EarliestAttackDataModel(Instant.ofEpochMilli(local.startEpochMillis), local.startZoneId)
+        }
     }
 
     override fun overlapping(

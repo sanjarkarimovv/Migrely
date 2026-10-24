@@ -60,7 +60,8 @@ fun TodayContents(
     onStartAttack: () -> Unit,
     onAttackDetails: (attackId: String) -> Unit,
     onAddPastAttack: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    monthCalendar: @Composable () -> Unit = {}
 ) {
     val screenModifier = modifier
         .fillMaxSize()
@@ -78,6 +79,7 @@ fun TodayContents(
                 DayTitle(dayTitle)
                 TodaySkyCard(today = today, appearance = appearance)
                 TodayAttackList(today.attacks, nowMillis, timeUiFormatter, onAttackDetails)
+                monthCalendar()
                 Spacer(Modifier.height(24.dp))
             }
             Column(
@@ -102,6 +104,8 @@ fun TodayContents(
                 DayTitle(dayTitle)
                 TodaySkyCard(today = today, appearance = appearance)
                 TodayAttackList(today.attacks, nowMillis, timeUiFormatter, onAttackDetails)
+                monthCalendar()
+                Spacer(Modifier.height(8.dp))
             }
             Spacer(Modifier.height(16.dp))
             StartAttackButton(onStartAttack)

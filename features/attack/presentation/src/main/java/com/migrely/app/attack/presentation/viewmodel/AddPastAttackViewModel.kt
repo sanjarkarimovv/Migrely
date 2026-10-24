@@ -16,6 +16,7 @@ import com.migrely.app.attack.presentation.model.AddPastAttackPresentationNotifi
 import com.migrely.app.attack.presentation.model.AddPastAttackViewState
 import com.migrely.app.attack.presentation.navigation.AddPastAttackPresentationNavigationEvent
 import java.time.Instant
+import java.time.LocalDate
 
 /**
  * Adds an attack that has already ended (BRD ATK-F3). Stateless (skill rule 4): the picked times live in the screen and
@@ -33,9 +34,10 @@ class AddPastAttackViewModel(
 ) : BaseViewModel<AddPastAttackViewState, AddPastAttackPresentationNotification>(
     useCaseExecutor
 ) {
-    fun onEnter() {
+    /** [day] is the day chosen in History, or null for the usual defaults (BRD D30). */
+    fun onEnter(day: LocalDate?) {
         updateViewState(AddPastAttackViewState.Loading)
-        getPastAttackDraftUseCase(onResult = { draft ->
+        getPastAttackDraftUseCase(day, onResult = { draft ->
             val ready = pastAttackDraftPresentationMapper.toPresentation(draft)
             updateViewState(AddPastAttackViewState.Ready(ready))
         })

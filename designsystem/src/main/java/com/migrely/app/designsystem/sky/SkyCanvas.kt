@@ -87,7 +87,7 @@ private fun rainPhase(animate: Boolean): State<Float> {
     )
 }
 
-private object SkyPalette {
+internal object SkyPalette {
     val Star = Color(0xFF9AA0A9)
     val Moon = Color(0xFFC8CCD2).copy(alpha = 0.82f)
     val Wave = Color(0xFF4A5468)
@@ -187,7 +187,7 @@ private fun DrawScope.wave(
 }
 
 /** A cloud made of overlapping circles, outlined first so the outline only shows on the outer edge. */
-private fun DrawScope.drawCloud(area: Size, center: Offset, color: Color) {
+internal fun DrawScope.drawCloud(area: Size, center: Offset, color: Color) {
     val u = unit(area) * 0.9f
     // (dx, dy, r) with slightly uneven radii for a hand-drawn look.
     val puffs =
