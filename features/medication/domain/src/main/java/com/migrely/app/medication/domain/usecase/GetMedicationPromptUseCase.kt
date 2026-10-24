@@ -2,7 +2,6 @@ package com.migrely.app.medication.domain.usecase
 
 import com.migrely.app.architecture.domain.usecase.BackgroundExecutingUseCase
 import com.migrely.app.coroutine.CoroutineContextProvider
-import com.migrely.app.medication.domain.model.AcuteIntakesResultDomainModel
 import com.migrely.app.medication.domain.model.CurrentTimeDomainModel
 import com.migrely.app.medication.domain.model.MedicationPromptDomainModel
 import com.migrely.app.medication.domain.model.OveruseCategoryDomainModel
@@ -25,11 +24,6 @@ private val QUESTION_UNTIL: Duration = Duration.ofHours(24)
 private val MOST_DAYS_FIRST: Comparator<GetMedicationPromptUseCase.Candidate> =
     compareBy<GetMedicationPromptUseCase.Candidate> { it.days }
         .thenByDescending { it.category.ordinal }
-private val SINGLE_CATEGORIES = listOf(
-    OveruseCategoryDomainModel.SimplePainkiller,
-    OveruseCategoryDomainModel.Triptan,
-    OveruseCategoryDomainModel.CombinationOrOther
-)
 
 /**
  * The one medication card for home (BRD D46): an overuse warning, the highest level first, then "Did it help?". A read
@@ -50,7 +44,7 @@ class GetMedicationPromptUseCase(
     private val getPendingEffectQuestionRepository: GetPendingEffectQuestionRepository,
     coroutineContextProvider: CoroutineContextProvider
 ) : BackgroundExecutingUseCase<Unit, MedicationPromptDomainModel>(coroutineContextProvider) {
-    private val overuseDayCounter = OveruseDayCounter()
+    private val overuseDayCounter = OveruseDayCounter(getAcuteIntakesRepository)
 
     override fun executeInBackground(request: Unit): MedicationPromptDomainModel {
         val now = getCurrentTimeRepository.currentTime()
@@ -58,21 +52,13 @@ class GetMedicationPromptUseCase(
     }
 
     private fun overuseWarning(now: CurrentTimeDomainModel): MedicationPromptDomainModel.Overuse? {
-        val intakes = when (
-            val result = getAcuteIntakesRepository.acuteIntakesTakenBetween(
-                overuseDayCounter.readFrom(now),
-                overuseDayCounter.readTo(now)
-            )
-        ) {
-            is AcuteIntakesResultDomainModel.Loaded -> result.intakes
-            AcuteIntakesResultDomainModel.Failed -> return null
-        }
+        val days = overuseDayCounter.days(now) ?: return null
         val notices = when (val result = getOveruseNoticesRepository.overuseNotices()) {
             is OveruseNoticesResultDomainModel.Loaded -> result.notices
             OveruseNoticesResultDomainModel.Failed -> return null
         }
         // Quiet categories go first, so a "Got it" on one category never hides another's warning (EC-MED-06).
-        val shown = candidates(overuseDayCounter.days(intakes, now))
+        val shown = candidates(days)
             .filterNot { it.isQuiet(notices, now) }
         val topLevel = shown.maxOfOrNull { it.level } ?: return null
         return shown

@@ -2,7 +2,6 @@ package com.migrely.app.medication.domain.usecase
 
 import com.migrely.app.architecture.domain.usecase.BackgroundExecutingUseCase
 import com.migrely.app.coroutine.CoroutineContextProvider
-import com.migrely.app.medication.domain.model.AcuteIntakesResultDomainModel
 import com.migrely.app.medication.domain.model.OveruseCategoryDomainModel
 import com.migrely.app.medication.domain.model.OveruseStatusResultDomainModel
 import com.migrely.app.medication.domain.model.OveruseStatusRowDomainModel
@@ -18,20 +17,11 @@ class GetOveruseStatusUseCase(
     private val getAcuteIntakesRepository: GetAcuteIntakesRepository,
     coroutineContextProvider: CoroutineContextProvider
 ) : BackgroundExecutingUseCase<Unit, OveruseStatusResultDomainModel>(coroutineContextProvider) {
-    private val overuseDayCounter = OveruseDayCounter()
+    private val overuseDayCounter = OveruseDayCounter(getAcuteIntakesRepository)
 
     override fun executeInBackground(request: Unit): OveruseStatusResultDomainModel {
         val now = getCurrentTimeRepository.currentTime()
-        val intakes = when (
-            val result = getAcuteIntakesRepository.acuteIntakesTakenBetween(
-                overuseDayCounter.readFrom(now),
-                overuseDayCounter.readTo(now)
-            )
-        ) {
-            is AcuteIntakesResultDomainModel.Loaded -> result.intakes
-            AcuteIntakesResultDomainModel.Failed -> return OveruseStatusResultDomainModel.Failed
-        }
-        val days = overuseDayCounter.days(intakes, now)
+        val days = overuseDayCounter.days(now) ?: return OveruseStatusResultDomainModel.Failed
         return OveruseStatusResultDomainModel.Loaded(
             OveruseCategoryDomainModel.entries.mapNotNull { category ->
                 days[category]?.let {

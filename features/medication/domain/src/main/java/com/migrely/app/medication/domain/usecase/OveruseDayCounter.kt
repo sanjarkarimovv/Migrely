@@ -2,15 +2,17 @@ package com.migrely.app.medication.domain.usecase
 
 import com.migrely.app.attackdays.domain.AttackDays
 import com.migrely.app.medication.domain.model.AcuteIntakeDomainModel
+import com.migrely.app.medication.domain.model.AcuteIntakesResultDomainModel
 import com.migrely.app.medication.domain.model.CurrentTimeDomainModel
 import com.migrely.app.medication.domain.model.MedicationCategoryDomainModel
 import com.migrely.app.medication.domain.model.OveruseCategoryDomainModel
-import java.time.Instant
+import com.migrely.app.medication.domain.repository.GetAcuteIntakesRepository
 import java.time.LocalDate
 
 private const val WINDOW_DAYS = 30L
 
-private val SINGLE_CATEGORIES = listOf(
+/** The categories counted on their own, in the order ties are decided. */
+internal val SINGLE_CATEGORIES = listOf(
     OveruseCategoryDomainModel.SimplePainkiller,
     OveruseCategoryDomainModel.Triptan,
     OveruseCategoryDomainModel.CombinationOrOther
@@ -23,19 +25,25 @@ private val SINGLE_CATEGORIES = listOf(
  * has an intake; [OveruseCategoryDomainModel.Multiple] counts every attack-medication day when two or more categories
  * were used (ICHD-3 8.2.6).
  */
-internal class OveruseDayCounter {
-    /** Where to start reading intakes, with the zone margin before the window. */
-    fun readFrom(now: CurrentTimeDomainModel): Instant =
-        AttackDays.windowStart(firstDay(now), now.zone)
+internal class OveruseDayCounter(private val getAcuteIntakesRepository: GetAcuteIntakesRepository) {
+    /** Each counted category's days at [now], or null when the intakes cannot be read. */
+    fun days(now: CurrentTimeDomainModel): Map<OveruseCategoryDomainModel, Int>? {
+        val today = now.instant.atZone(now.zone).toLocalDate()
+        val firstDay = today.minusDays(WINDOW_DAYS - 1)
+        val result = getAcuteIntakesRepository.acuteIntakesTakenBetween(
+            AttackDays.windowStart(firstDay, now.zone),
+            AttackDays.windowEnd(today, now.zone)
+        )
+        return when (result) {
+            is AcuteIntakesResultDomainModel.Loaded -> count(result.intakes, firstDay..today)
+            AcuteIntakesResultDomainModel.Failed -> null
+        }
+    }
 
-    /** Where to stop reading intakes, with the zone margin after today. */
-    fun readTo(now: CurrentTimeDomainModel): Instant = AttackDays.windowEnd(today(now), now.zone)
-
-    fun days(
+    private fun count(
         intakes: List<AcuteIntakeDomainModel>,
-        now: CurrentTimeDomainModel
+        window: ClosedRange<LocalDate>
     ): Map<OveruseCategoryDomainModel, Int> {
-        val window = firstDay(now)..today(now)
         val dates = intakes
             .map { it.overuseCategory() to it.takenAt.atZone(it.zone).toLocalDate() }
             .filter { (_, date) -> date in window }
@@ -50,12 +58,6 @@ internal class OveruseDayCounter {
         }
         return (singles + multiple).toMap()
     }
-
-    private fun today(now: CurrentTimeDomainModel): LocalDate =
-        now.instant.atZone(now.zone).toLocalDate()
-
-    private fun firstDay(now: CurrentTimeDomainModel): LocalDate =
-        today(now).minusDays(WINDOW_DAYS - 1)
 
     private fun AcuteIntakeDomainModel.overuseCategory() = when (category) {
         MedicationCategoryDomainModel.SimplePainkiller ->

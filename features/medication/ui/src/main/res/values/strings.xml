@@ -98,5 +98,7 @@
     <string name="indicator_row_triptan">Triptans: %1$d of %2$d days</string>
     <string name="indicator_row_other">Combination or other: %1$d of %2$d days</string>
     <string name="indicator_row_multiple">All attack medication: %1$d of %2$d days</string>
+    <string name="indicator_at_limit">%1$s, at the limit</string>
+    <string name="indicator_over_limit">%1$s, over the limit</string>
     <string name="indicator_reached">At this many days, medication can make headaches more frequent. Talk to your doctor about it.</string>
 </resources>

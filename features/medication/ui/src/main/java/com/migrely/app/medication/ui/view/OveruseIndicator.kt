@@ -26,19 +26,20 @@ import com.migrely.app.medication.ui.model.OveruseIndicatorUiModel
 
 /**
  * The standing overuse indicator in History's month summary (BRD EC-MED-06, D59): each category's attack-medication
- * days in the last 30 days against its limit. `:app` places it; it loads once each time it appears.
+ * days in the last 30 days against its limit. `:app` places it, and it loads whenever [refreshKey] changes, which
+ * History does every time it loads.
  */
 @Composable
-fun OveruseIndicatorDependencies.OveruseIndicator(modifier: Modifier = Modifier) {
-    LaunchedEffect(Unit) { overuseIndicatorViewModel.onEnter() }
+fun OveruseIndicatorDependencies.OveruseIndicator(refreshKey: Int, modifier: Modifier = Modifier) {
+    LaunchedEffect(refreshKey) { overuseIndicatorViewModel.onEnter() }
     val viewState by overuseIndicatorViewModel.viewState
         .collectAsState<OveruseIndicatorViewState, OveruseIndicatorViewState?>(null)
     viewState?.let { OveruseIndicatorContents(overuseIndicatorUiMapper.toUi(it), modifier) }
 }
 
 /**
- * Rows at or past their limit read in amber, the colour kept for overuse, with one calm line after them; the others
- * read neutral. Nothing shows without a row.
+ * Rows at or past their limit read in amber, the colour kept for overuse, and say "at the limit" or "over the limit";
+ * one calm line follows them. The others read neutral. Nothing shows without a row.
  */
 @Composable
 internal fun OveruseIndicatorContents(
@@ -59,8 +60,14 @@ internal fun OveruseIndicatorContents(
             modifier = Modifier.semantics { heading() }
         )
         indicator.rows.forEach { row ->
+            val counted = stringResource(row.category.indicatorRow(), row.days, row.limit)
+            // Said in words too, not by colour alone (WCAG 1.4.1).
             Text(
-                text = stringResource(row.category.indicatorRow(), row.days, row.limit),
+                text = when {
+                    !row.reached -> counted
+                    row.days == row.limit -> stringResource(R.string.indicator_at_limit, counted)
+                    else -> stringResource(R.string.indicator_over_limit, counted)
+                },
                 style = MaterialTheme.typography.bodyMedium.copy(fontFeatureSettings = "tnum"),
                 color = if (row.reached) {
                     MaterialTheme.colorScheme.tertiary

@@ -20,7 +20,7 @@ class OveruseIndicatorPresentationMapper(
                             ),
                             days = row.days,
                             limit = row.limit,
-                            reached = row.days >= row.limit
+                            reached = row.reached
                         )
                     }
                 )

@@ -12,12 +12,16 @@ it SHALL not be quieted by "Got it", and it SHALL not show without such an intak
 
 #### Scenario: At the limit
 - **WHEN** a triptan was taken on 10 of the last 30 days
-- **THEN** "Triptans: 10 of 10 days" reads in amber, followed by "At this many days, medication can make headaches
-  more frequent. Talk to your doctor about it."
+- **THEN** "Triptans: 10 of 10 days, at the limit" reads in amber, followed by "At this many days, medication can
+  make headaches more frequent. Talk to your doctor about it."
 
 #### Scenario: Two categories
 - **WHEN** simple painkillers were taken on 7 days and triptans on 5 other days
-- **THEN** the section also reads "All attack medication: 12 of 10 days", in amber
+- **THEN** the section also reads "All attack medication: 12 of 10 days, over the limit", in amber
+
+#### Scenario: After an undo
+- **WHEN** an attack whose intakes reach a limit is deleted and then restored with "Undo" in History
+- **THEN** the section counts those intakes again, as History's numbers do
 
 #### Scenario: A past month
 - **WHEN** History shows September

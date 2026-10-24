@@ -87,7 +87,9 @@ fun AppNavHostDependencies.AppNavHost(
                 navController,
                 initialDay = entry.toRoute<History>().epochDay?.let(LocalDate::ofEpochDay),
                 // History hosts the medication feature's standing overuse indicator without knowing it (BRD D59).
-                overuseIndicator = { overuseIndicatorDependencies.OveruseIndicator() }
+                overuseIndicator = { refreshKey ->
+                    overuseIndicatorDependencies.OveruseIndicator(refreshKey)
+                }
             )
         }
     }
