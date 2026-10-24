@@ -31,7 +31,7 @@
 
 ## 4. Data
 
-- [ ] 4.1 Add `MedicationRepository` (medication feature), and intake reads and writes in `AttackDetailsRepository`, with tests for every interface and failures as values; verify the data tests
+- [x] 4.1 Add `MedicationRepository` (medication feature), and intake reads and writes in `AttackDetailsRepository`, with tests for every interface and failures as values; verify the data tests
 
 ## 5. UI
 
