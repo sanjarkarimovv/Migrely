@@ -10,7 +10,7 @@
 - [x] 2.1 Domain: `ShouldShowOnboardingUseCase`, the save use cases, `FinishOnboardingUseCase`, tests.
 - [x] 2.2 Data: `OnboardingRepository`, tests.
 - [x] 2.3 Presentation: `OnboardingViewModel`, tests.
-- [ ] 2.4 UI: the four steps, Back, the reminder slot, and the restore link.
+- [x] 2.4 UI: the four steps, Back, the reminder slot, and the restore link.
 
 ## 3. Reminders offer
 
