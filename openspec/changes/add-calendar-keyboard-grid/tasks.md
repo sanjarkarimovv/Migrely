@@ -65,3 +65,11 @@ An independent `superpowers:code-reviewer` pass. It found nothing critical, and 
 | M5 the arrows used 2D search, which jumped weeks next to the last selectable day | fixed: day and week steps, mirrored in RTL, doing nothing off the selectable days; a spec scenario |
 | M6 test gaps | added `GuidanceTopPaddingTest`, and keyboard tests for the edge, RTL, a chosen day that cannot be chosen, and an empty month |
 | M7 docs and naming | design uses the right test name and "root coordinates"; the spec says "start column"; `ChosenRingWidth` named; the padding formula lost its 8 dp gap, because the viewport now starts at the message's bottom (a scrolled line could hide under those 8 dp) |
+
+**Re-walk after the fixes** (0c824c2): every check passed.
+- **Arrows:** they stay on today at the edge; left goes to 23, up to 16.
+- **First frame:** no first-frame jump, with normal motion or with Reduce motion.
+- **Final position:** "Rest now" sits 16 dp below the message.
+- **Exit:** the guidance moves up only after the message has faded (also checked at 5× slower animations).
+- **Accepted:** with Reduce motion, the guidance follows the message one frame later, because the position is
+  measured after layout. The frame leaves an empty gap and covers nothing.
