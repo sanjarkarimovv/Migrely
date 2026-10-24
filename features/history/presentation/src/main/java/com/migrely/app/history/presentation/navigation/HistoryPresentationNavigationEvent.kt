@@ -10,4 +10,7 @@ sealed interface HistoryPresentationNavigationEvent : PresentationNavigationEven
     data class OnAddPastAttack(val day: LocalDate?) : HistoryPresentationNavigationEvent
 
     data object OnLeave : HistoryPresentationNavigationEvent
+
+    /** The user wants a report for their doctor (BRD REP-F1, D81). */
+    data object OnOpenReport : HistoryPresentationNavigationEvent
 }

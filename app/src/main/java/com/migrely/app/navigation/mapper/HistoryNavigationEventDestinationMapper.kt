@@ -7,6 +7,7 @@ import com.migrely.app.history.presentation.navigation.HistoryPresentationNaviga
 import com.migrely.app.ui.main.route.AddPastAttack
 import com.migrely.app.ui.main.route.AttackDetails
 import com.migrely.app.ui.main.route.History
+import com.migrely.app.ui.main.route.Report
 
 /**
  * History opens an attack's details or the add screen on top of itself, so back returns to History (BRD D26, D30). A
@@ -30,6 +31,10 @@ class HistoryNavigationEventDestinationMapper :
 
             HistoryPresentationNavigationEvent.OnLeave -> UiDestination { navController ->
                 navController.popBackStack(History::class, inclusive = true)
+            }
+
+            HistoryPresentationNavigationEvent.OnOpenReport -> UiDestination { navController ->
+                navController.navigate(Report, navOptions { launchSingleTop = true })
             }
         }
 }

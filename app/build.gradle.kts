@@ -126,6 +126,10 @@ dependencies {
     implementation(projects.features.onboarding.presentation)
     implementation(projects.features.onboarding.domain)
     implementation(projects.features.onboarding.data)
+    implementation(projects.features.report.ui)
+    implementation(projects.features.report.presentation)
+    implementation(projects.features.report.domain)
+    implementation(projects.features.report.data)
     implementation(libs.androidx.work.runtime)
 }
 

@@ -56,6 +56,16 @@
                 <action android:name="android.intent.action.TIME_SET" />
             </intent-filter>
         </receiver>
+        <!-- Doctor reports in the cache, shared through the share sheet with a one-off read grant (BRD REP-F4, D85). -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.reports"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/report_paths" />
+        </provider>
     </application>
 
 </manifest>
