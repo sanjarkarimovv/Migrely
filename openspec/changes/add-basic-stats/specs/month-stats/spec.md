@@ -8,13 +8,14 @@ STA-F2, EC-UX-14, D53–D56).
 
 ### Requirement: A month summary
 Under the calendar, History SHALL show a summary of the month shown, titled with the month's name, and "<month> so
-far" for the current month. It SHALL show the month's migraines, migraine days, pain-free days, average peak and days
+far" for the current month. It SHALL show the migraines started, migraine days, pain-free days, average peak and days
 with attack medication, counted to today in the current month. With no attack ever logged, History's first-use card
 SHALL show instead (BRD STA-F1, EC-HIS-01, D53).
 
 #### Scenario: A past month
 - **WHEN** History shows September 2026, with 3 attacks started in September, one of them from 29 to 30 September
-- **THEN** the summary is titled "September" and shows 3 migraines and 4 migraine days
+- **THEN** the summary is titled "September" and shows 3 migraines started and 4 migraine days
+
 
 #### Scenario: The current month
 - **WHEN** History shows October 2026 on 24 October
@@ -23,6 +24,14 @@ SHALL show instead (BRD STA-F1, EC-HIS-01, D53).
 #### Scenario: Nothing logged yet
 - **WHEN** no attack was ever logged
 - **THEN** History shows its first-use card and no summary
+
+### Requirement: Migraines started
+The summary's first number SHALL be labelled "Migraines started", because it counts the attacks that started in the
+month, while the list under it holds every attack that touches the month (BRD EC-ATK-06, D58).
+
+#### Scenario: An attack from the month before
+- **WHEN** History shows October, and the month's list includes an attack from 30 September to 1 October
+- **THEN** that attack is in the list but not in "Migraines started", and 1 October counts as a migraine day
 
 ### Requirement: How the numbers are counted
 An attack SHALL count once, in the month in which it started, in the zone where it started. A migraine day SHALL be a
@@ -90,12 +99,13 @@ medication. Fewer days SHALL read warm, and more or as many SHALL read neutral (
 - **THEN** September's summary shows no progress message
 
 ### Requirement: Progress on home
-Under the calendar in normal mode, home SHALL show the current month's progress message, by the same rule, and SHALL
-show nothing in its place when there is none. Attack mode SHALL show no progress message (BRD 18.3 A, EC-UX-13, D55).
+In normal mode, home's month card SHALL show the current month's progress message under its title, above the
+calendar, so it shows without scrolling, by the same rule, and SHALL show nothing in its place when there is none.
+Attack mode SHALL show no progress message (BRD 18.3 A, EC-UX-13, D55, D58).
 
 #### Scenario: Home in normal mode
 - **WHEN** the current month has a progress message
-- **THEN** home shows it under the month calendar
+- **THEN** home shows it under the month card's title, above the calendar
 
 #### Scenario: Attack mode
 - **WHEN** an attack is in progress

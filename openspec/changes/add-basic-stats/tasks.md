@@ -26,7 +26,7 @@
 ## 5. Verify
 
 - [x] 5.1 Gate.
-- [ ] 5.2 Emulator walk on emulator-5570 with seeded data: a past month, the current month, the chronic card, the
+- [x] 5.2 Emulator walk on emulator-5570 with seeded data: a past month, the current month, the chronic card, the
   progress message (better, worse, too few entries), screen readers, 200% font, landscape.
 - [x] 5.3 Independent review; fix and record.
 
@@ -50,3 +50,26 @@ An independent `superpowers:code-reviewer` pass found nothing critical. It confi
 | The orphaned KDoc in `GetTodayUseCase`; "—" was translatable; `progress`'s KDoc | fixed |
 | A zone-ahead attack shows on a future cell but is not counted | accepted and documented (design D2): future dates never count |
 | The chronic copy hard-codes 15 | accepted: it is the clinical definition (ICHD-3) |
+
+## Verification record
+
+**Emulator walk** (a walk agent on emulator-5570, seeded through SQL and removed afterwards; the database dump was
+byte-identical to the baseline at the end). All 7 scenarios passed.
+
+| Scenario | Result |
+|---|---|
+| October as is | 12 started, 12 migraine days, Moderate, as counted by hand from the database; an attack ending at midnight leaves the next day out; the 30 September–1 October attack is only a day |
+| Pain-free and medication | a mark under an attack is not counted; a preventive intake is not counted; an intake at 23:30 Tashkent recorded in Tokyo counts on Tokyo's date |
+| A past month | titled "September", without "so far" |
+| Progress | "11 more migraine days than this time last month" in neutral grey, on History and home; it shows with exactly 10 entry days and goes with 9; "1 more migraine day than August" (singular); "As many migraine days as August"; "14 fewer migraine days than July" in the progress colour |
+| Chronic | the calm card at 15 days in July; none at 14 |
+| Average peak | "—" and "no pain level logged"; 1.5 → Moderate; 2.5 → Severe; 1 and 3 → Mild |
+| Accessibility | one node per row; 200% font in portrait and landscape with nothing clipped |
+| Attack mode | no month card and no progress line |
+
+**Changed after the walk** (BRD D58):
+- The summary showed "Migraines: 12" above a list headed "13 migraines in October". The difference was an attack from
+  30 September. The first number now reads "Migraines started", and a scenario covers it.
+- On home the progress line sat under the legend, below the fold. It now sits under the month card's title.
+
+**Gate after the fixes:** see the PR.

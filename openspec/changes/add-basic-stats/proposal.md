@@ -10,7 +10,7 @@ last. The chronic-migraine indicator (≥15 migraine days) is a safety prompt to
 
 - **A month summary in History** (D53), under the calendar, for the month shown, titled "October so far" or
   "September". It shows five numbers:
-  - "Migraines": attacks started in the month;
+  - "Migraines started": attacks started in the month;
   - "Migraine days": days an attack touches;
   - "Pain-free days";
   - "Average peak", as a word (D56);
@@ -22,7 +22,7 @@ last. The chronic-migraine indicator (≥15 migraine days) is a safety prompt to
     a whole month;
   - better is warm, worse or equal is neutral, and nothing blames;
   - it shows only when both periods have at least 10 days with entries;
-  - it appears in the summary, and on home under the calendar for the current month.
+  - it appears in the summary, and on home's month card under its title for the current month.
 - **One rule for an attack's days** (D57): the rule moves from History's domain, and from home's copy, into a shared
   domain module, `:features:attackdays:domain`.
 

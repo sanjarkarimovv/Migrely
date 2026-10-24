@@ -32,7 +32,7 @@
     <string name="sky_cloudy">cloudy</string>
     <string name="sky_storm">storm</string>
     <string name="summary_title_so_far">%1$s so far</string>
-    <string name="stat_migraines">Migraines</string>
+    <string name="stat_migraines">Migraines started</string>
     <string name="stat_migraine_days">Migraine days</string>
     <string name="stat_pain_free_days">Pain-free days</string>
     <string name="stat_average_peak">Average peak</string>

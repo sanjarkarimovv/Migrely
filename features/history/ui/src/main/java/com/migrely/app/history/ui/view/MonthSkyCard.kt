@@ -101,6 +101,11 @@ fun MonthSkyContents(
                 modifier = Modifier.padding(start = 4.dp)
             )
         }
+        // The current month's progress, by History's rule, under the title so it shows without scrolling; home's
+        // attack mode has no month card (BRD D55, D58, EC-UX-13).
+        month.stats.progress?.let {
+            ProgressLine(it, mappers.historyTimeUiFormatter, Modifier.padding(top = 4.dp))
+        }
         HistoryCalendar(
             month = month,
             selectedEpochDay = null,
@@ -108,10 +113,6 @@ fun MonthSkyContents(
             onDay = onDay,
             modifier = Modifier.padding(top = 8.dp)
         )
-        // The current month's progress, by History's rule; home's attack mode has no month card (BRD D55, EC-UX-13).
-        month.stats.progress?.let {
-            ProgressLine(it, mappers.historyTimeUiFormatter, Modifier.padding(top = 8.dp))
-        }
     }
 }
 
