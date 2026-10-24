@@ -11,6 +11,7 @@ import com.migrely.app.medication.domain.repository.AddIntakeRepository
 import com.migrely.app.medication.domain.repository.FindAttackAtRepository
 import com.migrely.app.medication.domain.repository.GetAttackRepository
 import com.migrely.app.medication.domain.repository.GetCurrentTimeRepository
+import com.migrely.app.medication.domain.repository.ScheduleEffectQuestionRepository
 import java.time.Duration
 
 /** Clock tolerance for "now" on another device or a slightly fast clock (BRD EC-ATK-03). */
@@ -29,6 +30,7 @@ class LogIntakeUseCase(
     private val getAttackRepository: GetAttackRepository,
     private val findAttackAtRepository: FindAttackAtRepository,
     private val addIntakeRepository: AddIntakeRepository,
+    private val scheduleEffectQuestionRepository: ScheduleEffectQuestionRepository,
     coroutineContextProvider: CoroutineContextProvider
 ) : BackgroundExecutingUseCase<LogIntakeRequestDomainModel, LogIntakeResultDomainModel>(
     coroutineContextProvider
@@ -62,17 +64,25 @@ class LogIntakeUseCase(
                 dose = request.dose
             )
         ) {
-            is AddIntakeResultDomainModel.Added -> LogIntakeResultDomainModel.Logged(
-                IntakeDomainModel(
-                    id = added.intakeId,
-                    medicationId = request.medicationId,
-                    medicationName = request.medicationName,
-                    dose = request.dose,
-                    takenAt = request.takenAt,
-                    zone = zone,
-                    attackId = attackId
+            is AddIntakeResultDomainModel.Added -> {
+                // An intake logged after its two hours have passed is asked by home's card, not by a notification that
+                // would arrive while the user is still on this screen (D67). The run checks that the question is open.
+                val askAt = request.takenAt.plus(QUESTION_FROM)
+                if (askAt.isAfter(now.instant)) {
+                    scheduleEffectQuestionRepository.scheduleEffectQuestion(added.intakeId, askAt)
+                }
+                LogIntakeResultDomainModel.Logged(
+                    IntakeDomainModel(
+                        id = added.intakeId,
+                        medicationId = request.medicationId,
+                        medicationName = request.medicationName,
+                        dose = request.dose,
+                        takenAt = request.takenAt,
+                        zone = zone,
+                        attackId = attackId
+                    )
                 )
-            )
+            }
 
             AddIntakeResultDomainModel.StorageFull -> LogIntakeResultDomainModel.StorageFull
             AddIntakeResultDomainModel.Failed -> LogIntakeResultDomainModel.Failed

@@ -14,9 +14,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
+import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
+import com.migrely.app.datasource.notification.datasource.NotificationDataSourceImpl
 import com.migrely.app.designsystem.theme.MigrelyTheme
 import com.migrely.app.ui.main.AppNavHost
 import com.migrely.app.ui.main.di.AppNavHostDependencies
@@ -52,6 +54,7 @@ class MainActivity : ComponentActivity() {
             navigationBarStyle = SystemBarStyle.dark(Color.TRANSPARENT)
         )
         super.onCreate(savedInstanceState)
+        dismissDailyReminderIfAsked(intent)
         // Honour the shortcut only on a fresh launch; a recreated activity restores its back stack instead.
         val startAttack = savedInstanceState == null && intent?.action == ACTION_START_ATTACK
         setContent {
@@ -92,10 +95,20 @@ class MainActivity : ComponentActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
+        dismissDailyReminderIfAsked(intent)
         if (intent.action == ACTION_START_ATTACK) {
             navController?.navigate(Home(startAttack = true)) {
                 popUpTo<Home> { inclusive = true }
             }
+        }
+    }
+
+    // "Log a migraine" on the daily reminder opens the app; an action button does not clear its own notification.
+    private fun dismissDailyReminderIfAsked(intent: Intent?) {
+        if (intent?.getBooleanExtra(NotificationDataSourceImpl.EXTRA_DISMISS_DAILY, false) ==
+            true
+        ) {
+            NotificationManagerCompat.from(this).cancel(NotificationDataSourceImpl.DAILY_ID)
         }
     }
 }

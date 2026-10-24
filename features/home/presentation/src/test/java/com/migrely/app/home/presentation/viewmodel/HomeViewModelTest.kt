@@ -437,4 +437,13 @@ class HomeViewModelTest :
 
         assertEquals(HomePresentationNotification.SomethingWentWrong, notification.await())
     }
+
+    @Test
+    fun `When choosing reminders then opens them`() = runTest {
+        val event = async(start = UNDISPATCHED) { classUnderTest.navigationEvent.first() }
+
+        classUnderTest.onRemindersAction()
+
+        assertEquals(HomePresentationNavigationEvent.OnOpenReminders, event.await())
+    }
 }

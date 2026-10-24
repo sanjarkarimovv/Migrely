@@ -72,6 +72,38 @@ class MedicationPromptRepositoryTest {
     }
 
     @Test
+    fun `Given one intake's question when reading it then found, none or failed`() {
+        given(medicationDataSource.pendingEffectQuestionOf("i", FROM, TO)).willReturn(
+            PendingEffectQuestionDataModel("i", "Ibuprofen", null, FROM, "Asia/Tashkent")
+        )
+        assertEquals(
+            PendingEffectQuestionResultDomainModel.Found(
+                PendingEffectQuestionDomainModel(
+                    "i",
+                    "Ibuprofen",
+                    null,
+                    FROM,
+                    ZoneId.of("Asia/Tashkent")
+                )
+            ),
+            classUnderTest.pendingEffectQuestionOf("i", FROM, TO)
+        )
+
+        assertEquals(
+            PendingEffectQuestionResultDomainModel.None,
+            classUnderTest.pendingEffectQuestionOf("j", FROM, TO)
+        )
+
+        given(
+            medicationDataSource.pendingEffectQuestionOf("k", FROM, TO)
+        ).willThrow(DatabaseDataException())
+        assertEquals(
+            PendingEffectQuestionResultDomainModel.Failed,
+            classUnderTest.pendingEffectQuestionOf("k", FROM, TO)
+        )
+    }
+
+    @Test
     fun `Given no pending question when reading then None`() {
         assertEquals(
             PendingEffectQuestionResultDomainModel.None,

@@ -13,6 +13,8 @@ import com.migrely.app.datasource.medication.dao.MedicationDao
 import com.migrely.app.datasource.medication.model.MedicationIntakeLocalModel
 import com.migrely.app.datasource.medication.model.MedicationLocalModel
 import com.migrely.app.datasource.medication.model.OveruseNoticeLocalModel
+import com.migrely.app.datasource.reminder.dao.ReminderSettingsDao
+import com.migrely.app.datasource.reminder.model.ReminderSettingsLocalModel
 import com.migrely.app.datasource.tag.dao.TagDao
 import com.migrely.app.datasource.tag.model.CustomTagLocalModel
 
@@ -23,6 +25,7 @@ import com.migrely.app.datasource.tag.model.CustomTagLocalModel
  * 3. the `medication` and `medication_intake` tables (change add-medication-tracking);
  * 4. `effect` and `effect_closed` on intakes, the `overuse_notice` table (change add-medication-effect-and-overuse);
  * 5. the `day_mark` table (change add-day-markers).
+ * 6. the `reminder_settings` table (change add-reminders).
  */
 @Database(
     entities = [
@@ -33,15 +36,17 @@ import com.migrely.app.datasource.tag.model.CustomTagLocalModel
         MedicationLocalModel::class,
         MedicationIntakeLocalModel::class,
         OveruseNoticeLocalModel::class,
-        DayMarkLocalModel::class
+        DayMarkLocalModel::class,
+        ReminderSettingsLocalModel::class
     ],
-    version = 5,
+    version = 6,
     exportSchema = true,
     autoMigrations = [
         AutoMigration(from = 1, to = 2),
         AutoMigration(from = 2, to = 3),
         AutoMigration(from = 3, to = 4),
-        AutoMigration(from = 4, to = 5)
+        AutoMigration(from = 4, to = 5),
+        AutoMigration(from = 5, to = 6)
     ]
 )
 abstract class MigrelyDatabase : RoomDatabase() {
@@ -52,6 +57,8 @@ abstract class MigrelyDatabase : RoomDatabase() {
     abstract fun medicationDao(): MedicationDao
 
     abstract fun dayMarkDao(): DayMarkDao
+
+    abstract fun reminderSettingsDao(): ReminderSettingsDao
 
     companion object {
         const val NAME = "migrely.db"

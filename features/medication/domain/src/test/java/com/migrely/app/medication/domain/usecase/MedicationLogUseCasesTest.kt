@@ -19,6 +19,7 @@ import com.migrely.app.medication.domain.repository.FindAttackAtRepository
 import com.migrely.app.medication.domain.repository.GetActiveMedicationsRepository
 import com.migrely.app.medication.domain.repository.GetAttackRepository
 import com.migrely.app.medication.domain.repository.GetCurrentTimeRepository
+import com.migrely.app.medication.domain.repository.ScheduleEffectQuestionRepository
 import java.time.Instant
 import java.time.ZoneId
 import org.junit.Assert.assertEquals
@@ -153,6 +154,7 @@ class LogIntakeUseCaseTest {
     private val getAttackRepository: GetAttackRepository = mock()
     private val findAttackAtRepository: FindAttackAtRepository = mock()
     private val addIntakeRepository: AddIntakeRepository = mock()
+    private val scheduleEffectQuestionRepository: ScheduleEffectQuestionRepository = mock()
     private lateinit var classUnderTest: LogIntakeUseCase
 
     @Before
@@ -162,6 +164,7 @@ class LogIntakeUseCaseTest {
             getAttackRepository,
             findAttackAtRepository,
             addIntakeRepository,
+            scheduleEffectQuestionRepository,
             CoroutineContextProvider.Default
         )
         given(getCurrentTimeRepository.currentTime()).willReturn(CurrentTimeDomainModel(NOW, ZONE))
@@ -193,6 +196,25 @@ class LogIntakeUseCaseTest {
             actual
         )
         verify(findAttackAtRepository, never()).attackDuring(any(), any())
+    }
+
+    @Test
+    fun `When an intake is logged then its question is planned two hours after it`() {
+        givenAdded()
+
+        classUnderTest.executeInBackground(request(NOW))
+
+        verify(scheduleEffectQuestionRepository)
+            .scheduleEffectQuestion("i", NOW.plus(java.time.Duration.ofHours(2)))
+    }
+
+    @Test
+    fun `When an intake is logged more than two hours late then no notification is planned`() {
+        givenAdded()
+
+        classUnderTest.executeInBackground(request(NOW.minus(java.time.Duration.ofHours(3))))
+
+        verify(scheduleEffectQuestionRepository, never()).scheduleEffectQuestion(any(), any())
     }
 
     @Test

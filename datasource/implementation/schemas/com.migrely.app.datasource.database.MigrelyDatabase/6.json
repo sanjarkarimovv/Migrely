@@ -1,0 +1,593 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 6,
+    "identityHash": "3600d5c34a8821bc9f11e97cb6f9a32b",
+    "entities": [
+      {
+        "tableName": "attack",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `start_epoch_millis` INTEGER NOT NULL, `start_zone_id` TEXT NOT NULL, `end_epoch_millis` INTEGER, `long_check_confirmed_epoch_millis` INTEGER, `long_check_disabled` INTEGER NOT NULL, `created_epoch_millis` INTEGER NOT NULL, `updated_epoch_millis` INTEGER NOT NULL, `functional_impact` INTEGER, `note` TEXT, `deleted_epoch_millis` INTEGER, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "startEpochMillis",
+            "columnName": "start_epoch_millis",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "startZoneId",
+            "columnName": "start_zone_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "endEpochMillis",
+            "columnName": "end_epoch_millis",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "longCheckConfirmedEpochMillis",
+            "columnName": "long_check_confirmed_epoch_millis",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "longCheckDisabled",
+            "columnName": "long_check_disabled",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdEpochMillis",
+            "columnName": "created_epoch_millis",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedEpochMillis",
+            "columnName": "updated_epoch_millis",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "functionalImpact",
+            "columnName": "functional_impact",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "note",
+            "columnName": "note",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "deletedEpochMillis",
+            "columnName": "deleted_epoch_millis",
+            "affinity": "INTEGER"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_attack_start_epoch_millis",
+            "unique": false,
+            "columnNames": [
+              "start_epoch_millis"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_attack_start_epoch_millis` ON `${TABLE_NAME}` (`start_epoch_millis`)"
+          },
+          {
+            "name": "index_attack_end_epoch_millis",
+            "unique": false,
+            "columnNames": [
+              "end_epoch_millis"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_attack_end_epoch_millis` ON `${TABLE_NAME}` (`end_epoch_millis`)"
+          }
+        ]
+      },
+      {
+        "tableName": "intensity_point",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `attack_id` TEXT NOT NULL, `at_epoch_millis` INTEGER NOT NULL, `value` INTEGER NOT NULL, FOREIGN KEY(`attack_id`) REFERENCES `attack`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "attackId",
+            "columnName": "attack_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "atEpochMillis",
+            "columnName": "at_epoch_millis",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "value",
+            "columnName": "value",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_intensity_point_attack_id",
+            "unique": false,
+            "columnNames": [
+              "attack_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_intensity_point_attack_id` ON `${TABLE_NAME}` (`attack_id`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "attack",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "attack_id"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "attack_tag",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`attack_id` TEXT NOT NULL, `kind` TEXT NOT NULL, `tag_key` TEXT NOT NULL, PRIMARY KEY(`attack_id`, `kind`, `tag_key`), FOREIGN KEY(`attack_id`) REFERENCES `attack`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "attackId",
+            "columnName": "attack_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "kind",
+            "columnName": "kind",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tagKey",
+            "columnName": "tag_key",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "attack_id",
+            "kind",
+            "tag_key"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_attack_tag_kind_tag_key",
+            "unique": false,
+            "columnNames": [
+              "kind",
+              "tag_key"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_attack_tag_kind_tag_key` ON `${TABLE_NAME}` (`kind`, `tag_key`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "attack",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "attack_id"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "custom_tag",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `kind` TEXT NOT NULL, `name` TEXT NOT NULL, `name_key` TEXT NOT NULL, `archived` INTEGER NOT NULL, `created_epoch_millis` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "kind",
+            "columnName": "kind",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nameKey",
+            "columnName": "name_key",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "archived",
+            "columnName": "archived",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdEpochMillis",
+            "columnName": "created_epoch_millis",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_custom_tag_kind_name_key",
+            "unique": true,
+            "columnNames": [
+              "kind",
+              "name_key"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_custom_tag_kind_name_key` ON `${TABLE_NAME}` (`kind`, `name_key`)"
+          }
+        ]
+      },
+      {
+        "tableName": "medication",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `name_key` TEXT NOT NULL, `kind` TEXT NOT NULL, `category` TEXT, `default_dose` TEXT, `archived` INTEGER NOT NULL, `created_epoch_millis` INTEGER NOT NULL, `updated_epoch_millis` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nameKey",
+            "columnName": "name_key",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "kind",
+            "columnName": "kind",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "category",
+            "columnName": "category",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "defaultDose",
+            "columnName": "default_dose",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "archived",
+            "columnName": "archived",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdEpochMillis",
+            "columnName": "created_epoch_millis",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedEpochMillis",
+            "columnName": "updated_epoch_millis",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_medication_name_key",
+            "unique": true,
+            "columnNames": [
+              "name_key"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_medication_name_key` ON `${TABLE_NAME}` (`name_key`)"
+          }
+        ]
+      },
+      {
+        "tableName": "medication_intake",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `medication_id` TEXT NOT NULL, `attack_id` TEXT, `taken_epoch_millis` INTEGER NOT NULL, `taken_zone_id` TEXT NOT NULL, `dose` TEXT, `created_epoch_millis` INTEGER NOT NULL, `effect` TEXT, `effect_closed` INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(`id`), FOREIGN KEY(`medication_id`) REFERENCES `medication`(`id`) ON UPDATE NO ACTION ON DELETE RESTRICT , FOREIGN KEY(`attack_id`) REFERENCES `attack`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "medicationId",
+            "columnName": "medication_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "attackId",
+            "columnName": "attack_id",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "takenEpochMillis",
+            "columnName": "taken_epoch_millis",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "takenZoneId",
+            "columnName": "taken_zone_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dose",
+            "columnName": "dose",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "createdEpochMillis",
+            "columnName": "created_epoch_millis",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "effect",
+            "columnName": "effect",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "effectClosed",
+            "columnName": "effect_closed",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_medication_intake_medication_id",
+            "unique": false,
+            "columnNames": [
+              "medication_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_medication_intake_medication_id` ON `${TABLE_NAME}` (`medication_id`)"
+          },
+          {
+            "name": "index_medication_intake_attack_id",
+            "unique": false,
+            "columnNames": [
+              "attack_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_medication_intake_attack_id` ON `${TABLE_NAME}` (`attack_id`)"
+          },
+          {
+            "name": "index_medication_intake_taken_epoch_millis",
+            "unique": false,
+            "columnNames": [
+              "taken_epoch_millis"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_medication_intake_taken_epoch_millis` ON `${TABLE_NAME}` (`taken_epoch_millis`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "medication",
+            "onDelete": "RESTRICT",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "medication_id"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          },
+          {
+            "table": "attack",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "attack_id"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "overuse_notice",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`category` TEXT NOT NULL, `level` TEXT NOT NULL, `acknowledged_epoch_millis` INTEGER NOT NULL, PRIMARY KEY(`category`, `level`))",
+        "fields": [
+          {
+            "fieldPath": "category",
+            "columnName": "category",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "level",
+            "columnName": "level",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "acknowledgedEpochMillis",
+            "columnName": "acknowledged_epoch_millis",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "category",
+            "level"
+          ]
+        }
+      },
+      {
+        "tableName": "day_mark",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`date` TEXT NOT NULL, `period` INTEGER NOT NULL DEFAULT 0, `pain_free` INTEGER NOT NULL DEFAULT 0, `updated_epoch_millis` INTEGER NOT NULL, PRIMARY KEY(`date`))",
+        "fields": [
+          {
+            "fieldPath": "date",
+            "columnName": "date",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "period",
+            "columnName": "period",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "painFree",
+            "columnName": "pain_free",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "updatedEpochMillis",
+            "columnName": "updated_epoch_millis",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "date"
+          ]
+        }
+      },
+      {
+        "tableName": "reminder_settings",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `daily_enabled` INTEGER NOT NULL DEFAULT 0, `daily_minute_of_day` INTEGER NOT NULL DEFAULT 1200, `effect_enabled` INTEGER NOT NULL DEFAULT 1, `permission_asked_epoch_millis` INTEGER, `daily_last_shown_date` TEXT, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dailyEnabled",
+            "columnName": "daily_enabled",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "dailyMinuteOfDay",
+            "columnName": "daily_minute_of_day",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "1200"
+          },
+          {
+            "fieldPath": "effectEnabled",
+            "columnName": "effect_enabled",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "1"
+          },
+          {
+            "fieldPath": "permissionAskedEpochMillis",
+            "columnName": "permission_asked_epoch_millis",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "dailyLastShownDate",
+            "columnName": "daily_last_shown_date",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '3600d5c34a8821bc9f11e97cb6f9a32b')"
+    ]
+  }
+}
