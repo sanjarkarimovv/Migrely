@@ -4,6 +4,7 @@
 # Covers: medication-intakes › No medication yet › First medication during an attack
 # Covers: medication-list › Archive instead of delete › Archive
 # Covers: medication-list › Names are unique › Archived name
+# Covers: medication-list › Accessible medication screens › Screen reader on a medication
 appId: com.migrely.app
 name: Medications are added with a type and dose, preventive has no category, names stop at 60
 tags: [smoke, regression, medication-list]
@@ -30,7 +31,7 @@ tags: [smoke, regression, medication-list]
       TYPE: "Simple painkiller"
       DOSE: "400 mg"
 - extendedWaitUntil:
-    visible: "Ibuprofen · 400 mg, Simple painkiller\\. Opens it to edit\\."
+    visible: "Ibuprofen, 400 mg, Simple painkiller\\. Opens it to edit\\."
     timeout: 5000
 - tapOn: "Add medication"
 - assertVisible: "Simple painkiller"

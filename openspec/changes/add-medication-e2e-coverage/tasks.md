@@ -32,6 +32,9 @@
   question and expects the second; `med_effect_late` checks 23 h before 25 h; `med_effect_attack` ends the attack and
   expects the question; the soft card stays hidden after a relaunch; `travel_west` checks the D50 future day (#27).
   Verify: all `med_*` scenarios pass (done 2026-10-24 19:34)
+- [x] 4.4 Retest of #29 (PR #31): the spoken labels say "Ibuprofen, 400 mg"; `add-and-limits` and `unique-names`
+  assert the comma, and `add-and-limits` covers "Screen reader on a medication". Verify: `qa/maestro.sh
+  .maestro/medication-list` passes on develop df2fe7d merged in
 
 ## 5. Documents
 
@@ -66,5 +69,4 @@ overuse counting).
 | medication-list › Edit a medication › Rename | Not written yet; renaming to an archived name is covered | Next QA change |
 | medication-list › Order and limit › Recently used first | Not written yet | Next QA change |
 | medication-list › Order and limit › Limit reached | 50 medications through the UI take about 25 min; unit (restore checks the limit) | Device scenario, release runs only |
-| medication-list › Accessible medication screens › Screen reader on a medication | Open issue #29 (S4): the label says " · " instead of ", " | The flow's regex follows the fix |
 | medication-overuse › 11 scenarios (two categories in one day, Not sure, Preventive, Thirty days back, Doctor warning for triptans, Below the soft level, Several categories together, A single category already warned, Got it, Another category's Got it, After 30 days) | Unit (3a counting rules). Each needs 10–15 logged days through the UI, about 9 min each; the simple-painkiller path is covered end to end by `med_overuse` | One multi-category device scenario in the next QA change |

@@ -33,14 +33,14 @@ tags: [regression, medication-list, a11y-timeout]
       TYPE: "Triptan"
       DOSE: "50 mg"
 - extendedWaitUntil:
-    visible: "Sumatriptan · 50 mg, .*"
+    visible: "Sumatriptan, 50 mg, .*"
     timeout: 5000
 # Archive, then Undo.
 - tapOn:
     text: "Remove Sumatriptan"
     waitToSettleTimeoutMs: 0
     retryTapIfNoChange: false
-- assertNotVisible: "Sumatriptan · 50 mg, .*"
+- assertNotVisible: "Sumatriptan, 50 mg, .*"
 - tapOn:
     text: "Undo.*"
     waitToSettleTimeoutMs: 0
@@ -48,13 +48,13 @@ tags: [regression, medication-list, a11y-timeout]
 - extendedWaitUntil:
     visible: "Undone\\."
     timeout: 5000
-- assertVisible: "Sumatriptan · 50 mg, .*"
+- assertVisible: "Sumatriptan, 50 mg, .*"
 # Archive for good, then try to rename Ibuprofen to the archived name.
 - tapOn: "Remove Sumatriptan"
 - extendedWaitUntil:
     visible: "Medication removed"
     timeout: 5000
-- assertNotVisible: "Sumatriptan · 50 mg, .*"
+- assertNotVisible: "Sumatriptan, 50 mg, .*"
 - tapOn: "Ibuprofen.*Opens it to edit\\."
 - tapOn: "Ibuprofen"
 - eraseText: 20
@@ -77,5 +77,5 @@ tags: [regression, medication-list, a11y-timeout]
       TYPE: "Not sure"
       DOSE: ""
 - extendedWaitUntil:
-    visible: "Sumatriptan · 50 mg, Triptan.*"
+    visible: "Sumatriptan, 50 mg, Triptan.*"
     timeout: 5000
