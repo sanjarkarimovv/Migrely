@@ -28,6 +28,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -51,6 +52,8 @@ import java.util.Locale
 
 /** A new card ignores taps this long, so the second tap of a double tap never answers the next question. */
 private const val NEW_CARD_TAP_GUARD_MILLIS = 1_000L
+private const val ONE_ANSWER_A_ROW_FONT_SCALE = 1.5f
+private const val NO_BREAK_SPACE = '\u00A0'
 
 /**
  * Home's one medication card under today's card (BRD D46): an overuse warning (MED-F5, D45) or "Did it help?" (MED-F4,
@@ -152,7 +155,11 @@ private fun EffectQuestion(
         question.zoneId,
         System.currentTimeMillis()
     )
-    val taken = question.dose?.let { stringResource(R.string.prompt_effect_taken_dose, time, it) }
+    // "50 mg" never breaks between the number and its unit at large font sizes.
+    val taken = question.dose
+        ?.let {
+            stringResource(R.string.prompt_effect_taken_dose, time, it.replace(' ', NO_BREAK_SPACE))
+        }
         ?: stringResource(R.string.prompt_effect_taken, time)
     val spokenTaken = question.dose
         ?.let { stringResource(R.string.prompt_effect_taken_dose_spoken, time, it) }
@@ -186,16 +193,23 @@ private fun EffectQuestion(
                 )
             }
         }
-        // The answers wrap at large font sizes instead of being cut off (BRD EC-UX-03).
+        // Two equal answers a row, or one a row at large font sizes, so no label is cut off (BRD EC-UX-03).
+        val largeFont = LocalDensity.current.fontScale >= ONE_ANSWER_A_ROW_FONT_SCALE
+        val answersPerRow = if (largeFont) 1 else 2
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.padding(top = 12.dp, end = 12.dp)
+            maxItemsInEachRow = answersPerRow,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 12.dp, end = 12.dp)
         ) {
             IntakeEffectUiModel.entries.forEach { effect ->
                 OutlinedButton(
                     onClick = { actions.onEffect(question.intakeId, effect) },
-                    modifier = Modifier.heightIn(min = 48.dp)
+                    modifier = Modifier
+                        .weight(1f)
+                        .heightIn(min = 48.dp)
                 ) {
                     Text(
                         stringResource(effect.label()),
