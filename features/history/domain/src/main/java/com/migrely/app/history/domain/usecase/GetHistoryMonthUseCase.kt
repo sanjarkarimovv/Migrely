@@ -39,7 +39,8 @@ class GetHistoryMonthUseCase(
         val now = getCurrentTimeRepository.currentTime()
         val today = now.instant.atZone(now.zone).toLocalDate()
         val currentMonth = YearMonth.from(today)
-        val earliestMonth = when (val earliest = getEarliestAttackRepository.earliestAttack()) {
+        val earliest = getEarliestAttackRepository.earliestAttack()
+        val earliestMonth = when (earliest) {
             is EarliestAttackResultDomainModel.Found -> minOf(
                 YearMonth.from(earliest.start.atZone(earliest.zone)),
                 currentMonth
@@ -68,6 +69,7 @@ class GetHistoryMonthUseCase(
                 month = month,
                 today = today,
                 earliestMonth = earliestMonth,
+                anyAttackLogged = earliest is EarliestAttackResultDomainModel.Found,
                 days = (1..month.lengthOfMonth()).map { dayOfMonth ->
                     val date = month.atDay(dayOfMonth)
                     HistoryDayDomainModel(

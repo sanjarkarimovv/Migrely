@@ -109,6 +109,7 @@ class GetHistoryMonthUseCaseTest {
 
         assertEquals(OCTOBER, actual.month)
         assertEquals(OCTOBER, actual.earliestMonth)
+        assertEquals(false, actual.anyAttackLogged)
     }
 
     @Test
@@ -119,6 +120,7 @@ class GetHistoryMonthUseCaseTest {
 
         assertEquals(YearMonth.of(2026, 8), actual.month)
         assertEquals(YearMonth.of(2026, 8), actual.earliestMonth)
+        assertEquals(true, actual.anyAttackLogged)
     }
 
     @Test
