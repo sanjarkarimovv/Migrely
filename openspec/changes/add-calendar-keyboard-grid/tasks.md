@@ -2,10 +2,12 @@
 
 ## 1. Calendar keyboard (design D1)
 
-- [ ] 1.1 `MonthSkyCalendar`: Tab leaves the grid, entering focuses `focusAnchorDay`; Compose instrumented tests.
+- [x] 1.1 `MonthSkyCalendar`: Tab leaves the grid, entering focuses the anchor day, a visible focus ring; Compose
+  instrumented tests (`MonthSkyCalendarKeyboardTest`, 6 tests; 5 of them fail without the grid's handling, and the
+  sixth was made to as well).
   Verify: `ANDROID_SERIAL=emulator-5570 ./gradlew :designsystem:connectedDebugAndroidTest`
-- [ ] 1.2 History and the month card pass the anchor day.
-  Verify: `./gradlew :features:history:ui:assembleDebug`
+- [x] 1.2 History and the month card pass the anchor day. Not needed: the anchor comes from `CalendarDay`'s own
+  flags (design D1).
 
 ## 2. Landscape message (design D2)
 

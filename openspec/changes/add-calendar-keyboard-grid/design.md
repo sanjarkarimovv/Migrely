@@ -11,11 +11,14 @@
 
 ### D1. One Tab stop for the month
 
-- **Leaving:** the grid tracks whether one of its cells has focus, through `onFocusChanged` on the grid. On Tab, or
-  Shift+Tab, a key handler on the grid (`onPreviewKeyEvent`) moves focus Next, or Previous, until focus leaves the
-  grid, at most once per cell. The key event is consumed.
-- **Entering:** when the grid gains focus from outside, focus moves to the anchor day's `FocusRequester`.
-  `MonthSkyCalendar` takes a new `focusAnchorDay: Int?`; History passes the chosen day, otherwise today, otherwise 1.
+- The grid is a `focusGroup()`, and each selectable day has a `FocusRequester`.
+- **Leaving:** on Tab, or Shift+Tab, a key handler on the grid (`onPreviewKeyEvent`) focuses the last, or first,
+  selectable day and moves focus Next, or Previous. That one move leaves the grid. The key event is consumed.
+- **Entering:** the group's `focusProperties { onEnter }` redirects a Next or Previous entry to the anchor day.
+- **The anchor** comes from the days themselves: the chosen day, otherwise today, otherwise the first selectable day.
+  So `MonthSkyCalendar`'s callers, History and home's month card, do not change.
+- **A visible focus ring (WCAG 2.4.7):** the focused day gets a two-tone ring, `onSurface` outside and `surface` inside,
+  or `primary` inside on the chosen day. Compose's own focus layer is too faint on the skies.
 - **Arrow keys:** they keep Compose's 2D focus search between cells. At the edge they may leave the grid, as with any
   2D focus.
 - Cells stay `clickable` and focusable, so accessibility services still reach every day (EC-UX-19). TalkBack and
@@ -38,5 +41,5 @@
 
 | Risk | Mitigation |
 |---|---|
-| The Tab loop meets a focus that never leaves (a grid alone on screen) | at most one move per cell |
+| The calendar is the last focusable item on screen | Compose's Next wraps to the first item, as without the grid |
 | The guidance moves while the user reads | it moves once, at the same time as the message, softly, or not at all with "Reduce motion" |
