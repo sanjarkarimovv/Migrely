@@ -6,6 +6,10 @@ tags: [regression, attack-history]
 ---
 - runFlow: ../subflows/launch-clean.yaml
 - runFlow: ../subflows/log-attack-today.yaml
+# Late in the month, today's row sits below the screen on home.
+- scrollUntilVisible:
+    element: "Today, .*: cloudy\\. 1 migraine\\. Peak: not recorded\\."
+    direction: DOWN
 - tapOn: "Today, .*: cloudy\\. 1 migraine\\. Peak: not recorded\\."
 # The chosen day's controls sit below the month summary (change 5) and the day marks (change 4).
 - scrollUntilVisible:
