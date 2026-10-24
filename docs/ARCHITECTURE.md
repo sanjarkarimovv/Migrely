@@ -141,7 +141,8 @@ Health data must never be passed to either SDK.
     lower-case name.
   - `medication_intake` points to its medication with RESTRICT, and to its attack, if any, with CASCADE. A purged
     attack therefore takes its intakes with it; a soft-deleted one hides them (EC-MED-10).
-  - `mergeInto` moves intakes to the survivor in the same transaction.
+  - `mergeInto` moves intakes to the survivor in the same transaction. `discard`, which undoes a mistaken start,
+    detaches them first, so a medication logged meanwhile stays on its own.
   - Version 3 is an additive `AutoMigration(2, 3)`, covered by `MigrationTest`.
 - **Range reads (History).** A month is read with `overlapping(null, from, to)`, which returns every attack touching
   the range, the one in progress included, with a margin of two days on each side so that attacks logged in other

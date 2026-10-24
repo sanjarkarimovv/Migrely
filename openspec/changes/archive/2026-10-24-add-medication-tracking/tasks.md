@@ -112,7 +112,7 @@ No critical findings. Every finding was checked against the code before it was f
     attack: "Taken at 4:59 PM (Tokyo)", stored as Asia/Tokyo.
 - **Minor, fixed:**
   - the untouched default time no longer goes stale: it follows every reload until the user picks one;
-  - undoing "Migraine started" kept-deleted the intakes by cascade. `AttackDao.discard` now leaves them on their own;
+  - undoing "Migraine started" deleted the intakes by cascade. `AttackDao.discard` now leaves them on their own;
   - a picked minute links to an attack that starts within it (an attack starting 12:20:40 contains 12:20). Walked;
   - "Add and log" that saves but fails to log reloads the list, so a retry never says "You already have…";
   - `pending` is no longer saved, so a write running during recreation cannot leave the buttons disabled;
