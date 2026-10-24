@@ -11,7 +11,8 @@ private const val READING_MILLIS = 8_000L
 class AttackMessageBehaviourUiMapper {
     fun toUi(message: AttackMessageUiModel): AttackMessageBehaviourUiModel = when (message) {
         is AttackMessageUiModel.PointsRemovedByTimeChange,
-        is AttackMessageUiModel.PointRemoved ->
+        is AttackMessageUiModel.PointRemoved,
+        is AttackMessageUiModel.IntakeRemoved ->
             AttackMessageBehaviourUiModel(
                 SnackbarTone.Information,
                 hasUndo = true,

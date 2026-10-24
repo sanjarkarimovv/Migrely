@@ -1,6 +1,7 @@
 package com.migrely.app.attack.data.repository
 
 import com.migrely.app.attack.data.mapper.AttackDetailsDomainResolver
+import com.migrely.app.attack.data.mapper.AttackIntakeDomainMapper
 import com.migrely.app.attack.data.mapper.AttackTagDataMapper
 import com.migrely.app.attack.data.mapper.BuiltInSymptomDataMapper
 import com.migrely.app.attack.data.mapper.BuiltInSymptomDomainMapper
@@ -11,6 +12,7 @@ import com.migrely.app.attack.data.mapper.FunctionalImpactDomainMapper
 import com.migrely.app.attack.data.mapper.HeadLocationDataMapper
 import com.migrely.app.attack.data.mapper.HeadLocationDomainMapper
 import com.migrely.app.attack.domain.model.AttackDetailsLookupResultDomainModel
+import com.migrely.app.attack.domain.model.AttackIntakeDomainModel
 import com.migrely.app.attack.domain.model.AttackMergeDomainModel
 import com.migrely.app.attack.domain.model.AttackTagDomainModel
 import com.migrely.app.attack.domain.model.FunctionalImpactDomainModel
@@ -29,9 +31,12 @@ import com.migrely.app.datasource.attack.model.IntensityPointDataModel
 import com.migrely.app.datasource.clock.datasource.ClockDataSource
 import com.migrely.app.datasource.exception.DatabaseDataException
 import com.migrely.app.datasource.exception.StorageFullDataException
+import com.migrely.app.datasource.medication.datasource.MedicationDataSource
+import com.migrely.app.datasource.medication.model.IntakeDataModel
 import com.migrely.app.datasource.tag.datasource.TagDataSource
 import java.time.Instant
 import java.time.ZoneId
+import java.time.ZoneOffset
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -51,6 +56,7 @@ class AttackDetailsRepositoryTest {
     private lateinit var classUnderTest: AttackDetailsRepository
     private val attackDataSource: AttackDataSource = mock()
     private val tagDataSource: TagDataSource = mock()
+    private val medicationDataSource: MedicationDataSource = mock()
     private val clockDataSource: ClockDataSource = mock()
 
     @Before
@@ -70,7 +76,9 @@ class AttackDetailsRepositoryTest {
                 HeadLocationDataMapper(),
                 BuiltInSymptomDataMapper(),
                 BuiltInTriggerDataMapper()
-            )
+            ),
+            medicationDataSource,
+            AttackIntakeDomainMapper()
         )
     }
 
@@ -332,6 +340,59 @@ class AttackDetailsRepositoryTest {
             classUnderTest.mergeAttacks(
                 AttackMergeDomainModel("a", emptyList(), START, ZoneId.of("UTC"), END, null, "")
             )
+        )
+    }
+
+    @Test
+    fun `Given intakes when reading details then they come with the attack, oldest first`() {
+        val at = Instant.parse("2026-10-24T09:20:00Z")
+        given(attackDataSource.byId("intake-attack")).willReturn(
+            AttackDataModel(
+                "intake-attack",
+                at,
+                "Asia/Tashkent",
+                null,
+                emptyList(),
+                null,
+                false
+            )
+        )
+        given(medicationDataSource.intakesOfAttack("intake-attack")).willReturn(
+            listOf(
+                IntakeDataModel("i", "m", "Ibuprofen", "intake-attack", at, "Mars/Base", "400 mg")
+            )
+        )
+
+        val actual = classUnderTest.attackDetails("intake-attack")
+            as AttackDetailsLookupResultDomainModel.Found
+
+        assertEquals(
+            listOf(
+                AttackIntakeDomainModel(
+                    "i",
+                    "m",
+                    "Ibuprofen",
+                    "400 mg",
+                    at,
+                    ZoneOffset.UTC
+                )
+            ),
+            actual.details.intakes
+        )
+    }
+
+    @Test
+    fun `When removing and restoring an intake then deleted and stored again for the attack`() {
+        val at = Instant.parse("2026-10-24T09:20:00Z")
+        val intake =
+            AttackIntakeDomainModel("i", "m", "Ibuprofen", null, at, ZoneId.of("Asia/Tashkent"))
+
+        assertEquals(WriteResultDomainModel.Written, classUnderTest.removeIntake("i"))
+        assertEquals(WriteResultDomainModel.Written, classUnderTest.restoreIntake("a", intake))
+
+        verify(medicationDataSource).deleteIntake("i")
+        verify(medicationDataSource).restoreIntake(
+            IntakeDataModel("i", "m", "Ibuprofen", "a", at, "Asia/Tashkent", null)
         )
     }
 }

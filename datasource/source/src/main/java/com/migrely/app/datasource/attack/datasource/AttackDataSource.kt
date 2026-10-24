@@ -41,8 +41,8 @@ interface AttackDataSource {
     fun createEnded(start: Instant, zoneId: String, end: Instant): CreateEndedDataModel
 
     /**
-     * Atomic (BRD D27): [survivorId] takes the given fields and the intensity points and tags of [absorbedIds], keeps
-     * the strictest long-attack check of them all, and [absorbedIds] are removed for good. [functionalImpact] is 0 to 3
+     * Atomic (BRD D27): [survivorId] takes the given fields and the intensity points, tags and intakes of [absorbedIds],
+     * keeps the strictest long-attack check of them all, and [absorbedIds] are removed for good. [functionalImpact] is 0 to 3
      * or null; [note] holds at most 1,000 characters.
      */
     @Suppress("LongParameterList")
@@ -95,7 +95,10 @@ interface AttackDataSource {
     /** Atomic: reopens only when no other attack is in progress. */
     fun reopen(attackId: String): ReopenDataModel
 
-    /** Removes the attack for good; used to undo a start, when it should never have existed. */
+    /**
+     * Removes the attack for good; used to undo a start, when it should never have existed. Intakes logged meanwhile
+     * stay, on their own.
+     */
     fun delete(attackId: String)
 
     fun softDelete(attackId: String)

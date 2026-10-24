@@ -34,6 +34,7 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.migrely.app.designsystem.sky.SkyAppearance
@@ -61,6 +62,7 @@ fun TodayContents(
     onAttackDetails: (attackId: String) -> Unit,
     onAddPastAttack: () -> Unit,
     modifier: Modifier = Modifier,
+    onLogMedication: () -> Unit = {},
     monthCalendar: @Composable () -> Unit = {}
 ) {
     val screenModifier = modifier
@@ -91,7 +93,7 @@ fun TodayContents(
             ) {
                 StartAttackButton(onStartAttack)
                 Spacer(Modifier.height(8.dp))
-                AddPastAttackLink(onAddPastAttack)
+                QuietLinks(onAddPastAttack, onLogMedication)
             }
         }
     } else {
@@ -110,7 +112,7 @@ fun TodayContents(
             Spacer(Modifier.height(16.dp))
             StartAttackButton(onStartAttack)
             Spacer(Modifier.height(4.dp))
-            AddPastAttackLink(onAddPastAttack)
+            QuietLinks(onAddPastAttack, onLogMedication)
             Spacer(Modifier.height(12.dp))
         }
     }
@@ -230,19 +232,30 @@ private fun StartAttackButton(onStartAttack: () -> Unit) {
     }
 }
 
-/** The quiet way to log an attack that has already ended, under the big button (BRD 18.3 A, D26). */
+/**
+ * The quiet ways to log what has already happened, under the big button: a past attack (BRD 18.3 A, D26) and a
+ * medication taken (D34). Side by side, each wraps its text at large font sizes instead of being cut.
+ */
 @Composable
-private fun AddPastAttackLink(onAddPastAttack: () -> Unit) {
-    TextButton(
-        onClick = onAddPastAttack,
-        modifier = Modifier
-            .fillMaxWidth()
-            .heightIn(min = 48.dp)
-    ) {
-        Text(
-            text = stringResource(R.string.add_past_attack),
-            style = MaterialTheme.typography.labelLarge
-        )
+private fun QuietLinks(onAddPastAttack: () -> Unit, onLogMedication: () -> Unit) {
+    Row(modifier = Modifier.fillMaxWidth()) {
+        listOf(
+            R.string.add_past_attack to onAddPastAttack,
+            R.string.log_medication to onLogMedication
+        ).forEach { (label, onClick) ->
+            TextButton(
+                onClick = onClick,
+                modifier = Modifier
+                    .weight(1f)
+                    .heightIn(min = 48.dp)
+            ) {
+                Text(
+                    text = stringResource(label),
+                    style = MaterialTheme.typography.labelLarge,
+                    textAlign = TextAlign.Center
+                )
+            }
+        }
     }
 }
 

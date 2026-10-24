@@ -1,6 +1,7 @@
 package com.migrely.app.di
 
 import com.migrely.app.attack.data.mapper.AttackDetailsDomainResolver
+import com.migrely.app.attack.data.mapper.AttackIntakeDomainMapper
 import com.migrely.app.attack.data.mapper.AttackTagDataMapper
 import com.migrely.app.attack.data.mapper.BuiltInSymptomDataMapper
 import com.migrely.app.attack.data.mapper.BuiltInSymptomDomainMapper
@@ -24,8 +25,10 @@ import com.migrely.app.attack.domain.repository.GetAttackDetailsRepository
 import com.migrely.app.attack.domain.repository.GetCurrentTimeRepository
 import com.migrely.app.attack.domain.repository.GetMaximumRecordedRepository
 import com.migrely.app.attack.domain.repository.MergeAttacksRepository
+import com.migrely.app.attack.domain.repository.RemoveIntakeRepository
 import com.migrely.app.attack.domain.repository.RemoveIntensityPointRepository
 import com.migrely.app.attack.domain.repository.RestoreAttackTimesRepository
+import com.migrely.app.attack.domain.repository.RestoreIntakeRepository
 import com.migrely.app.attack.domain.repository.SelectAttackTagRepository
 import com.migrely.app.attack.domain.repository.SetCustomTagArchivedRepository
 import com.migrely.app.attack.domain.repository.SetFunctionalImpactRepository
@@ -34,6 +37,7 @@ import com.migrely.app.attack.domain.repository.UpdateAttackNoteRepository
 import com.migrely.app.attack.domain.repository.UpdateAttackTimesRepository
 import com.migrely.app.datasource.attack.datasource.AttackDataSource
 import com.migrely.app.datasource.clock.datasource.ClockDataSource
+import com.migrely.app.datasource.medication.datasource.MedicationDataSource
 import com.migrely.app.datasource.tag.datasource.TagDataSource
 import dagger.Module
 import dagger.Provides
@@ -48,7 +52,8 @@ internal object AttackDataModule {
     fun providesAttackDetailsRepository(
         attackDataSource: AttackDataSource,
         tagDataSource: TagDataSource,
-        clockDataSource: ClockDataSource
+        clockDataSource: ClockDataSource,
+        medicationDataSource: MedicationDataSource
     ) = AttackDetailsRepository(
         attackDataSource = attackDataSource,
         tagDataSource = tagDataSource,
@@ -64,7 +69,9 @@ internal object AttackDataModule {
             HeadLocationDataMapper(),
             BuiltInSymptomDataMapper(),
             BuiltInTriggerDataMapper()
-        )
+        ),
+        medicationDataSource = medicationDataSource,
+        attackIntakeDomainMapper = AttackIntakeDomainMapper()
     )
 
     @Provides
@@ -120,6 +127,16 @@ internal object AttackDataModule {
     fun providesRemoveIntensityPointRepository(
         repository: AttackDetailsRepository
     ): RemoveIntensityPointRepository = repository
+
+    @Provides
+    fun providesRemoveIntakeRepository(
+        repository: AttackDetailsRepository
+    ): RemoveIntakeRepository = repository
+
+    @Provides
+    fun providesRestoreIntakeRepository(
+        repository: AttackDetailsRepository
+    ): RestoreIntakeRepository = repository
 
     @Provides
     fun providesSelectAttackTagRepository(

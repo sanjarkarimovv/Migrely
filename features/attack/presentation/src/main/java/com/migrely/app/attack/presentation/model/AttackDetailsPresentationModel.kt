@@ -21,5 +21,6 @@ data class AttackDetailsPresentationModel(
     val triggerChoices: List<TriggerPresentationModel>,
     val selectedTriggers: Set<TriggerPresentationModel>,
     val functionalImpact: FunctionalImpactPresentationModel?,
-    val note: String
+    val note: String,
+    val intakes: List<AttackIntakePresentationModel> = emptyList()
 )

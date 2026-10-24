@@ -216,7 +216,7 @@ class AttackDataSourceImpl(
         }
     }
 
-    override fun delete(attackId: String) = database { attackDao.delete(attackId) }
+    override fun delete(attackId: String) = database { attackDao.discard(attackId) }
 
     override fun softDelete(attackId: String) = database {
         val now = clock.millis()

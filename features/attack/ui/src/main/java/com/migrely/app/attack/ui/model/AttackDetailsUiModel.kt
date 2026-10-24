@@ -19,5 +19,6 @@ data class AttackDetailsUiModel(
     val triggerChoices: List<TriggerUiModel>,
     val selectedTriggers: Set<TriggerUiModel>,
     val functionalImpact: FunctionalImpactUiModel?,
-    val note: String
+    val note: String,
+    val intakes: List<AttackIntakeUiModel> = emptyList()
 ) : Parcelable

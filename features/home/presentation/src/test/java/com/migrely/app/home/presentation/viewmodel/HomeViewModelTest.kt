@@ -371,4 +371,22 @@ class HomeViewModelTest :
     private fun TestScope.nextNotification() = async(start = UNDISPATCHED) {
         classUnderTest.notification.first()
     }
+
+    @Test
+    fun `When logging a medication from attack mode then opens it for the attack`() = runTest {
+        val event = async(start = UNDISPATCHED) { classUnderTest.navigationEvent.first() }
+
+        classUnderTest.onLogMedicationAction("a")
+
+        assertEquals(HomePresentationNavigationEvent.OnLogMedication("a"), event.await())
+    }
+
+    @Test
+    fun `When logging a medication from the normal mode then opens it on its own`() = runTest {
+        val event = async(start = UNDISPATCHED) { classUnderTest.navigationEvent.first() }
+
+        classUnderTest.onLogMedicationAction(null)
+
+        assertEquals(HomePresentationNavigationEvent.OnLogMedication(null), event.await())
+    }
 }

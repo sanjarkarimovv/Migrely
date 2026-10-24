@@ -6,6 +6,7 @@ import com.migrely.app.architecture.ui.navigation.model.UiDestination
 import com.migrely.app.home.presentation.navigation.HomePresentationNavigationEvent
 import com.migrely.app.ui.main.route.AddPastAttack
 import com.migrely.app.ui.main.route.AttackDetails
+import com.migrely.app.ui.main.route.LogMedication
 
 class HomeNavigationEventDestinationMapper :
     NavigationEventDestinationMapper<HomePresentationNavigationEvent>(
@@ -21,6 +22,15 @@ class HomeNavigationEventDestinationMapper :
             // A double tap on the link opens the add screen once.
             HomePresentationNavigationEvent.OnAddPastAttack -> UiDestination { navController ->
                 navController.navigate(AddPastAttack(), navOptions { launchSingleTop = true })
+            }
+
+            // From attack mode the screen keeps the dark room (BRD D34, 18.3 B).
+            is HomePresentationNavigationEvent.OnLogMedication -> {
+                val route = LogMedication(
+                    navigationEvent.attackId,
+                    darkRoom = navigationEvent.attackId != null
+                )
+                UiDestination { it.navigate(route, navOptions { launchSingleTop = true }) }
             }
         }
 }

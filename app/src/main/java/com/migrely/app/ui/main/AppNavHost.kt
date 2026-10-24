@@ -11,11 +11,17 @@ import com.migrely.app.attack.ui.view.AttackDetails
 import com.migrely.app.history.ui.view.History
 import com.migrely.app.history.ui.view.MonthSky
 import com.migrely.app.home.ui.view.Home
+import com.migrely.app.medication.ui.view.EditMedication
+import com.migrely.app.medication.ui.view.LogMedication
+import com.migrely.app.medication.ui.view.Medications
 import com.migrely.app.ui.main.di.AppNavHostDependencies
 import com.migrely.app.ui.main.route.AddPastAttack
 import com.migrely.app.ui.main.route.AttackDetails
+import com.migrely.app.ui.main.route.EditMedication
 import com.migrely.app.ui.main.route.History
 import com.migrely.app.ui.main.route.Home
+import com.migrely.app.ui.main.route.LogMedication
+import com.migrely.app.ui.main.route.Medications
 import java.time.LocalDate
 
 @Composable
@@ -51,6 +57,23 @@ fun AppNavHostDependencies.AppNavHost(
             addPastAttackDependencies.AddPastAttack(
                 navController,
                 day = entry.toRoute<AddPastAttack>().epochDay?.let(LocalDate::ofEpochDay)
+            )
+        }
+        composable<LogMedication> { entry ->
+            val route = entry.toRoute<LogMedication>()
+            logMedicationDependencies.LogMedication(
+                navController,
+                attackId = route.attackId,
+                darkRoom = route.darkRoom
+            )
+        }
+        composable<Medications> {
+            medicationsDependencies.Medications(navController)
+        }
+        composable<EditMedication> { entry ->
+            editMedicationDependencies.EditMedication(
+                navController,
+                medicationId = entry.toRoute<EditMedication>().medicationId
             )
         }
         composable<History> { entry ->

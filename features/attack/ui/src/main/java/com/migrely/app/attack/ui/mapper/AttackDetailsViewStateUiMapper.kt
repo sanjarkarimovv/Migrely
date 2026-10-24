@@ -16,7 +16,8 @@ class AttackDetailsViewStateUiMapper(
     private val builtInSymptomUiMapper: BuiltInSymptomUiMapper,
     private val builtInTriggerUiMapper: BuiltInTriggerUiMapper,
     private val customTagUiMapper: CustomTagUiMapper,
-    private val functionalImpactUiMapper: FunctionalImpactUiMapper
+    private val functionalImpactUiMapper: FunctionalImpactUiMapper,
+    private val attackIntakeUiMapper: AttackIntakeUiMapper
 ) {
     fun toUi(viewState: AttackDetailsViewState): AttackDetailsViewStateUiModel = when (viewState) {
         AttackDetailsViewState.Loading -> AttackDetailsViewStateUiModel.Loading
@@ -41,7 +42,8 @@ class AttackDetailsViewStateUiMapper(
         triggerChoices = details.triggerChoices.map(::toUi),
         selectedTriggers = details.selectedTriggers.map(::toUi).toSet(),
         functionalImpact = details.functionalImpact?.let(functionalImpactUiMapper::toUi),
-        note = details.note
+        note = details.note,
+        intakes = details.intakes.map(attackIntakeUiMapper::toUi)
     )
 
     private fun toUi(symptom: SymptomPresentationModel): SymptomUiModel = when (symptom) {

@@ -8,6 +8,7 @@ import com.migrely.app.attack.presentation.model.AttackDetailsViewState
 import com.migrely.app.attack.presentation.navigation.AttackDetailsPresentationNavigationEvent
 import com.migrely.app.attack.presentation.viewmodel.AttackDetailsViewModel
 import com.migrely.app.attack.ui.mapper.AttackDetailsViewStateUiMapper
+import com.migrely.app.attack.ui.mapper.AttackIntakeUiToPresentationMapper
 import com.migrely.app.attack.ui.mapper.AttackMessageBehaviourUiMapper
 import com.migrely.app.attack.ui.mapper.AttackTagUiToPresentationMapper
 import com.migrely.app.attack.ui.mapper.AttackTimeUiFormatter
@@ -31,6 +32,7 @@ class AttackDetailsDependencies(
     val tagKindUiToPresentationMapper: TagKindUiToPresentationMapper,
     val intensityPointUiToPresentationMapper: IntensityPointUiToPresentationMapper,
     val timesUndoUiToPresentationMapper: TimesUndoUiToPresentationMapper,
+    val attackIntakeUiToPresentationMapper: AttackIntakeUiToPresentationMapper,
     attackDetailsNavigationMapper:
     NavigationEventDestinationMapper<AttackDetailsPresentationNavigationEvent>,
     attackNotificationMapper: NotificationUiMapper<AttackDetailsPresentationNotification>

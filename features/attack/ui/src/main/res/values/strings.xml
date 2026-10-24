@@ -125,4 +125,12 @@
         <item quantity="one">%1$d pain level outside the new time was removed</item>
         <item quantity="other">%1$d pain levels outside the new time were removed</item>
     </plurals>
+    <!-- Medications on the details screen (BRD ATK-F5, D34). -->
+    <string name="section_medications">Medications</string>
+    <string name="medication_add">Add medication</string>
+    <string name="medication_none">None logged yet.</string>
+    <string name="medication_row">%1$s · %2$s</string>
+    <string name="medication_remove">Remove %1$s</string>
+    <string name="message_intake_removed">Medication removed</string>
+    <string name="snackbar_undo_intake_description">Undo removing the medication</string>
 </resources>
