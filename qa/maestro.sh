@@ -61,6 +61,7 @@ fi
 
 source "$ROOT/qa/lib.sh"
 qa_lock_device
+qa_check_baseline
 
 SDK_LEVEL="$(adbq shell getprop ro.build.version.sdk | tr -d '\r')"
 ORIGINAL_TIMEOUT="$(adbq shell settings get secure accessibility_interactive_ui_timeout_ms | tr -d '\r')"
@@ -71,10 +72,10 @@ put_or_delete() { # $1 namespace, $2 key, $3 value or "null"
 }
 restore() {
   set +e # restore everything even if one command fails
-  put_or_delete secure accessibility_interactive_ui_timeout_ms "$ORIGINAL_TIMEOUT"
+  qa_restore_setting secure accessibility_interactive_ui_timeout_ms "$ORIGINAL_TIMEOUT"
   # Flows that turn the screen use Maestro's setOrientation, which can leave auto-rotate off.
-  put_or_delete system user_rotation "$ORIGINAL_ROTATION"
-  put_or_delete system accelerometer_rotation "$ORIGINAL_AUTO_ROTATE"
+  qa_restore_setting system user_rotation "$ORIGINAL_ROTATION"
+  qa_restore_setting system accelerometer_rotation "$ORIGINAL_AUTO_ROTATE"
   qa_unlock_device
 }
 trap restore EXIT

@@ -14,6 +14,6 @@ sealed interface HomePresentationNavigationEvent : PresentationNavigationEvent {
      */
     data class OnLogMedication(val attackId: String?) : HomePresentationNavigationEvent
 
-    /** The user wants to set their reminders (BRD D65). */
-    data object OnOpenReminders : HomePresentationNavigationEvent
+    /** The user wants the app's settings, reminders among them (BRD D65, D70). */
+    data object OnOpenSettings : HomePresentationNavigationEvent
 }

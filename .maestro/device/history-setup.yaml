@@ -6,6 +6,7 @@ appId: com.migrely.app
 - tapOn: ".*\\. Opens History\\."
 - tapOn: "Previous month"
 - tapOn: ".*, [A-Za-z]+ 12: cloudy\\. 1 migraine\\. Peak: not recorded\\."
-- extendedWaitUntil:
-    visible: "Show all of .*"
-    timeout: 3000
+# The chosen day's controls sit below the month summary (change 5).
+- scrollUntilVisible:
+    element: "Show all of .*"
+    direction: DOWN

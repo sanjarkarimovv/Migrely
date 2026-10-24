@@ -1,0 +1,72 @@
+# Covers: day-markers › Pain-free only without attacks › Attack day
+# Covers: day-markers › Pain-free only without attacks › Attack added later
+# Covers: day-markers › Pain-free only without attacks › Attack deleted again
+# Covers: day-markers › Period on any day › Period and migraine
+appId: com.migrely.app
+name: An attack day cannot be pain-free but can be a period day; a later attack wins over a pain-free mark
+tags: [regression, day-markers]
+---
+- runFlow: ../subflows/launch-clean.yaml
+- runFlow: ../subflows/start-attack.yaml
+- tapOn: "Severe"
+- runFlow: ../subflows/end-attack.yaml
+- tapOn: ".*\\. Opens History\\."
+- tapOn: "Today, .*: storm\\. 1 migraine\\. Peak: severe\\."
+- scrollUntilVisible:
+    element: "Pain-free day"
+    direction: DOWN
+- assertVisible: "A migraine is logged on this day\\."
+# Period works on an attack day (EC-DAY-02); the disabled "Pain-free day" ignores a tap (EC-DAY-01). The attack's sky
+# would hide a pain-free mark, so the attack is deleted below to show that the tap stored nothing.
+- tapOn: "Pain-free day"
+- tapOn:
+    text: "Period"
+    below: ".*Opens its details\\."
+- scrollUntilVisible:
+    element: "Today, .*: storm\\. 1 migraine\\. Peak: severe\\. Period\\."
+    direction: UP
+- scrollUntilVisible:
+    element: ".*, peak 9 of 10\\. Opens its details\\."
+    direction: DOWN
+- tapOn: ".*, peak 9 of 10\\. Opens its details\\."
+- scrollUntilVisible:
+    element: "Delete migraine"
+    direction: DOWN
+# The result is checked, not the 5 s "Undo" message, which a slow step can miss.
+- tapOn: "Delete migraine"
+- scrollUntilVisible:
+    element: "Today, .*: nothing logged\\. Period\\."
+    direction: UP
+# A pain-free past day, then a migraine added for it: the attack's sky wins, and deleting it brings the mark back.
+- runFlow: ../subflows/choose-empty-past-day.yaml
+- tapOn: "Pain-free day"
+- scrollUntilVisible:
+    element: "${output.day}: pain-free\\."
+    direction: UP
+- scrollUntilVisible:
+    element: "Add a past migraine"
+    direction: DOWN
+- tapOn: "Add a past migraine"
+- extendedWaitUntil:
+    visible: "Past migraine"
+    timeout: 5000
+- tapOn: "Add migraine"
+- extendedWaitUntil:
+    visible: "Not recorded"
+    timeout: 5000
+- back
+- scrollUntilVisible:
+    element: "${output.day}: cloudy\\. 1 migraine\\. Peak: not recorded\\."
+    direction: UP
+- scrollUntilVisible:
+    element: "${output.day}, .*Opens its details\\."
+    direction: DOWN
+- tapOn: "${output.day}, .*Opens its details\\."
+- scrollUntilVisible:
+    element: "Delete migraine"
+    direction: DOWN
+# The result is checked, not the 5 s "Undo" message, which a slow step can miss.
+- tapOn: "Delete migraine"
+- scrollUntilVisible:
+    element: "${output.day}: pain-free\\."
+    direction: UP

@@ -9,7 +9,7 @@ import com.migrely.app.datasource.attack.model.HeadLocationDataModel
 private const val LOCATION = "LOCATION"
 private const val SYMPTOM = "SYMPTOM"
 private const val TRIGGER = "TRIGGER"
-private const val CUSTOM_PREFIX = "custom:"
+private const val CUSTOM_PREFIX = AttackTagLocalModel.CUSTOM_KEY_PREFIX
 
 /** Turns stored `attack_tag` rows into tags and back. Keys this version does not know are skipped. */
 class AttackTagLocalMapper {

@@ -439,11 +439,11 @@ class HomeViewModelTest :
     }
 
     @Test
-    fun `When choosing reminders then opens them`() = runTest {
+    fun `When choosing settings then opens them`() = runTest {
         val event = async(start = UNDISPATCHED) { classUnderTest.navigationEvent.first() }
 
-        classUnderTest.onRemindersAction()
+        classUnderTest.onSettingsAction()
 
-        assertEquals(HomePresentationNavigationEvent.OnOpenReminders, event.await())
+        assertEquals(HomePresentationNavigationEvent.OnOpenSettings, event.await())
     }
 }

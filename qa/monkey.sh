@@ -26,6 +26,7 @@ fi
 
 source "$ROOT/qa/lib.sh"
 qa_lock_device
+qa_check_baseline
 out="$ROOT/build/qa/monkey/$(date +%Y%m%d-%H%M%S)"
 mkdir -p "$out"
 # Random swipes can open the notification shade and flip quick settings; compare and restore them afterwards.
@@ -40,8 +41,7 @@ restore() {
     now="$(adbq shell settings get ${WATCHED[$i]} | tr -d '\r')"
     if [[ "$now" != "${BEFORE[$i]}" ]]; then
       echo "monkey changed ${WATCHED[$i]}: ${BEFORE[$i]} -> $now (restored)"
-      if [[ "${BEFORE[$i]}" == "null" ]]; then adbq shell settings delete ${WATCHED[$i]} >/dev/null
-      else adbq shell settings put ${WATCHED[$i]} "${BEFORE[$i]}"; fi
+      qa_restore_setting ${WATCHED[$i]} "${BEFORE[$i]}"
     fi
   done
   qa_unlock_device

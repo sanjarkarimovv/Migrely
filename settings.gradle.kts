@@ -82,3 +82,19 @@ setOf(
 ).forEach { module ->
     include(":features:reminders:$module")
 }
+
+setOf(
+    "ui",
+    "presentation",
+    "domain",
+    "data"
+).forEach { module ->
+    include(":features:backup:$module")
+}
+
+setOf(
+    "ui",
+    "presentation"
+).forEach { module ->
+    include(":features:settings:$module")
+}

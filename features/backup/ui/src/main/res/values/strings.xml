@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="your_data_title">Your data</string>
+    <string name="your_data_back">Back</string>
+    <string name="your_data_export_backup">Export a backup (JSON)</string>
+    <string name="your_data_export_backup_summary">Everything you logged, to restore on this phone or a new one</string>
+    <string name="your_data_export_csv">Export for Excel (CSV)</string>
+    <string name="your_data_export_csv_summary">One row per migraine, to read or share</string>
+    <string name="your_data_import">Import a backup</string>
+    <string name="your_data_import_summary">From a Migrely backup file</string>
+    <string name="your_data_note">Migrely has no internet access. Your entries stay on this phone, in Android\'s own backup, and in the files you save.</string>
+    <string name="your_data_working">Working on your file</string>
+    <string name="your_data_confirm_title">Import this backup?</string>
+    <string name="your_data_confirm_holds">It holds %1$s, %2$s and %3$s.</string>
+    <plurals name="your_data_migraines">
+        <item quantity="one">%d migraine</item>
+        <item quantity="other">%d migraines</item>
+    </plurals>
+    <plurals name="your_data_medications">
+        <item quantity="one">%d medication</item>
+        <item quantity="other">%d medications</item>
+    </plurals>
+    <plurals name="your_data_marked_days">
+        <item quantity="one">%d marked day</item>
+        <item quantity="other">%d marked days</item>
+    </plurals>
+    <string name="your_data_confirm_choice">This phone already has entries.\n\nAdd keeps them and adds what\'s new.\n\nReplace swaps them for the backup. A copy of what\'s here is saved first.</string>
+    <string name="your_data_add">Add</string>
+    <string name="your_data_replace">Replace</string>
+    <string name="your_data_import_confirm">Import</string>
+    <string name="your_data_cancel">Cancel</string>
+    <string name="your_data_backup_saved">Backup saved.</string>
+    <string name="your_data_csv_saved">Saved for Excel.</string>
+    <plurals name="your_data_replaced">
+        <item quantity="one">Backup imported: %d migraine.</item>
+        <item quantity="other">Backup imported: %d migraines.</item>
+    </plurals>
+    <plurals name="your_data_added">
+        <item quantity="one">Added %d migraine.</item>
+        <item quantity="other">Added %d migraines.</item>
+    </plurals>
+    <plurals name="your_data_already_here">
+        <item quantity="one">%d was already here.</item>
+        <item quantity="other">%d were already here.</item>
+    </plurals>
+    <string name="your_data_added_others">Added the other entries. Every migraine in it was already here.</string>
+    <string name="your_data_nothing_new">Nothing new: everything in it is already here.</string>
+    <string name="your_data_not_a_backup">This file isn\'t a Migrely backup. Nothing was changed.</string>
+    <string name="your_data_newer">Update Migrely to open this file.</string>
+    <string name="your_data_storage_full">Your phone is full. Free up some space and try again.</string>
+    <string name="your_data_something_went_wrong">Something went wrong. Nothing was changed.</string>
+    <string name="your_data_no_file_picker">This phone has no app to choose a file with.</string>
+    <string name="your_data_message_dismiss">Dismiss</string>
+</resources>

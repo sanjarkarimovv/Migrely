@@ -11,8 +11,10 @@ appId: com.migrely.app
 # The 15th shows the attack's sky in the zone where it was logged, and cannot be chosen before that date (D50, #27).
 - assertVisible: ".*, [A-Za-z]+ 15: cloudy\\. 1 migraine\\. Peak: not recorded\\."
 - tapOn: ".*, [A-Za-z]+ 15: cloudy\\. 1 migraine\\. Peak: not recorded\\."
+# History would show "Previous month" at its top; home stays with "Migraine started".
 - extendedWaitUntil:
-    visible: "Show all of .*"
+    visible: "Previous month"
     timeout: 4000
     optional: true
-- assertNotVisible: "Show all of .*"
+- assertNotVisible: "Previous month"
+- assertVisible: "Migraine started"

@@ -1,0 +1,6 @@
+# Device scenario step: wait until History is open (it keeps the keyboard focus where it is).
+appId: com.migrely.app
+---
+- extendedWaitUntil:
+    visible: "Previous month"
+    timeout: 10000

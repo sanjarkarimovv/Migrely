@@ -42,3 +42,11 @@ data class EditMedication(val medicationId: String? = null)
 /** Reminders (change add-reminders). */
 @Serializable
 data object Reminders
+
+/** Settings (change add-data-export-import, BRD D70). */
+@Serializable
+data object Settings
+
+/** Your data: backups, exports and imports (change add-data-export-import). */
+@Serializable
+data object YourData

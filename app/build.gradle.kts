@@ -113,6 +113,12 @@ dependencies {
     implementation(projects.features.reminders.presentation)
     implementation(projects.features.reminders.domain)
     implementation(projects.features.reminders.data)
+    implementation(projects.features.backup.ui)
+    implementation(projects.features.backup.presentation)
+    implementation(projects.features.backup.domain)
+    implementation(projects.features.backup.data)
+    implementation(projects.features.settings.ui)
+    implementation(projects.features.settings.presentation)
     implementation(libs.androidx.work.runtime)
 }
 
