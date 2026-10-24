@@ -31,6 +31,34 @@
     <string name="sky_hazy">hazy</string>
     <string name="sky_cloudy">cloudy</string>
     <string name="sky_storm">storm</string>
+    <string name="summary_title_so_far">%1$s so far</string>
+    <string name="stat_migraines">Migraines started</string>
+    <string name="stat_migraine_days">Migraine days</string>
+    <string name="stat_pain_free_days">Pain-free days</string>
+    <string name="stat_average_peak">Average peak</string>
+    <string name="stat_attack_medication_days">Days with attack medication</string>
+    <string name="stat_description">%1$s: %2$s</string>
+    <string name="stat_no_peak" translatable="false">—</string>
+    <string name="stat_no_peak_description">no pain level logged</string>
+    <string name="chronic_notice">15 or more migraine days in %1$s. That\'s a lot. Talk to your doctor about it.</string>
+    <plurals name="progress_fewer_than_month">
+        <item quantity="one">%1$d fewer migraine day than %2$s</item>
+        <item quantity="other">%1$d fewer migraine days than %2$s</item>
+    </plurals>
+    <plurals name="progress_fewer_this_time">
+        <item quantity="one">%1$d fewer migraine day than this time last month</item>
+        <item quantity="other">%1$d fewer migraine days than this time last month</item>
+    </plurals>
+    <plurals name="progress_more_than_month">
+        <item quantity="one">%1$d more migraine day than %2$s</item>
+        <item quantity="other">%1$d more migraine days than %2$s</item>
+    </plurals>
+    <plurals name="progress_more_this_time">
+        <item quantity="one">%1$d more migraine day than this time last month</item>
+        <item quantity="other">%1$d more migraine days than this time last month</item>
+    </plurals>
+    <string name="progress_same_month">As many migraine days as %1$s</string>
+    <string name="progress_same_this_time">As many migraine days as this time last month</string>
     <string name="peak_mild">mild</string>
     <string name="peak_moderate">moderate</string>
     <string name="peak_severe">severe</string>

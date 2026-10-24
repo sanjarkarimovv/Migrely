@@ -1,7 +1,9 @@
 package com.migrely.app.history.domain.usecase
 
 import com.migrely.app.architecture.domain.usecase.BackgroundExecutingUseCase
+import com.migrely.app.attackdays.domain.AttackDays
 import com.migrely.app.coroutine.CoroutineContextProvider
+import com.migrely.app.history.domain.model.AttackMedicationIntakesResultDomainModel
 import com.migrely.app.history.domain.model.AttacksTouchingResultDomainModel
 import com.migrely.app.history.domain.model.DayMarkDomainModel
 import com.migrely.app.history.domain.model.DayMarksResultDomainModel
@@ -11,6 +13,8 @@ import com.migrely.app.history.domain.model.HistoryAttackDomainModel
 import com.migrely.app.history.domain.model.HistoryDayDomainModel
 import com.migrely.app.history.domain.model.HistoryMonthDomainModel
 import com.migrely.app.history.domain.model.HistoryMonthResultDomainModel
+import com.migrely.app.history.domain.model.PeriodEntriesDomainModel
+import com.migrely.app.history.domain.repository.GetAttackMedicationIntakesRepository
 import com.migrely.app.history.domain.repository.GetAttacksTouchingRepository
 import com.migrely.app.history.domain.repository.GetCurrentTimeRepository
 import com.migrely.app.history.domain.repository.GetDayMarksRepository
@@ -20,6 +24,7 @@ import com.migrely.app.history.domain.repository.GetRecentlyDeletedAttackReposit
 import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
+import java.time.ZoneId
 
 /**
  * One month of History (BRD HIS-F1, HIS-F2, D29). The request is the month asked for, or null for the current one; the
@@ -28,7 +33,8 @@ import java.time.YearMonth
  *
  * An attack belongs to every day it touches in the zone where it started (BRD EC-ATK-06, EC-TIM-02): from its start
  * date to the date just before its end, or to today while it is in progress. Each day carries its period mark, and is
- * pain-free only when marked so and no attack touches it (BRD EC-DAY-01, D47).
+ * pain-free only when marked so and no attack touches it (BRD EC-DAY-01, D47). The month's numbers come from
+ * [MonthStatsCalculator], with the month before for the progress message (BRD D53–D56).
  */
 class GetHistoryMonthUseCase(
     private val getCurrentTimeRepository: GetCurrentTimeRepository,
@@ -37,10 +43,13 @@ class GetHistoryMonthUseCase(
     private val getRecentlyDeletedAttackRepository: GetRecentlyDeletedAttackRepository,
     private val getDayMarksRepository: GetDayMarksRepository,
     private val getEarliestDayMarkRepository: GetEarliestDayMarkRepository,
+    private val getAttackMedicationIntakesRepository: GetAttackMedicationIntakesRepository,
     coroutineContextProvider: CoroutineContextProvider
 ) : BackgroundExecutingUseCase<YearMonth?, HistoryMonthResultDomainModel>(
     coroutineContextProvider
 ) {
+    private val monthStatsCalculator = MonthStatsCalculator()
+
     override fun executeInBackground(request: YearMonth?): HistoryMonthResultDomainModel {
         val now = getCurrentTimeRepository.currentTime()
         val today = now.instant.atZone(now.zone).toLocalDate()
@@ -64,19 +73,28 @@ class GetHistoryMonthUseCase(
             currentMonth
         ).min()
         val month = (request ?: currentMonth).coerceIn(earliestMonth, currentMonth)
-        val from = windowStart(month.atDay(1), now.zone)
-        val to = windowEnd(month.atEndOfMonth(), now.zone)
+        val from = AttackDays.windowStart(month.atDay(1), now.zone)
+        val to = AttackDays.windowEnd(month.atEndOfMonth(), now.zone)
         val attacks = when (val result = getAttacksTouchingRepository.attacksTouching(from, to)) {
             is AttacksTouchingResultDomainModel.Loaded -> result.attacks
             AttacksTouchingResultDomainModel.Failed -> return HistoryMonthResultDomainModel.Failed
         }
-        val marks = when (
+        val monthMarks = when (
             val result = getDayMarksRepository.dayMarks(month.atDay(1), month.atEndOfMonth())
         ) {
-            is DayMarksResultDomainModel.Loaded -> result.marks.associateBy(
-                DayMarkDomainModel::date
-            )
+            is DayMarksResultDomainModel.Loaded -> result.marks
             DayMarksResultDomainModel.Failed -> return HistoryMonthResultDomainModel.Failed
+        }
+        val marks = monthMarks.associateBy(DayMarkDomainModel::date)
+        val intakes = when (
+            val result = getAttackMedicationIntakesRepository.attackMedicationIntakes(
+                from,
+                to
+            )
+        ) {
+            is AttackMedicationIntakesResultDomainModel.Loaded -> result.intakes
+            AttackMedicationIntakesResultDomainModel.Failed ->
+                return HistoryMonthResultDomainModel.Failed
         }
         val datesOfAttacks = attacks.associateWith { it.datesTouched(now.instant) }
         val monthDates = month.atDay(1)..month.atEndOfMonth()
@@ -101,10 +119,39 @@ class GetHistoryMonthUseCase(
                 },
                 attacks = attacks
                     .filter { datesOfAttacks.getValue(it).overlaps(monthDates) }
-                    .sortedByDescending(HistoryAttackDomainModel::start)
+                    .sortedByDescending(HistoryAttackDomainModel::start),
+                stats = monthStatsCalculator.calculate(
+                    month = month,
+                    today = today,
+                    now = now.instant,
+                    current = PeriodEntriesDomainModel(attacks, monthMarks, intakes),
+                    // Before any attack there is nothing to make progress on (BRD EC-HIS-01).
+                    previous = if (earliest is EarliestAttackResultDomainModel.Found) {
+                        previousMonthEntries(month.minusMonths(1), now.zone)
+                    } else {
+                        null
+                    }
+                )
             ),
             recentlyDeleted = getRecentlyDeletedAttackRepository.recentlyDeletedAttack()
         )
+    }
+
+    /** The month before, for the progress message only: when any of it cannot be read, there is no message (D55). */
+    private fun previousMonthEntries(month: YearMonth, zone: ZoneId): PeriodEntriesDomainModel? {
+        val from = AttackDays.windowStart(month.atDay(1), zone)
+        val to = AttackDays.windowEnd(month.atEndOfMonth(), zone)
+        val attacks = getAttacksTouchingRepository.attacksTouching(from, to)
+        val marks = getDayMarksRepository.dayMarks(month.atDay(1), month.atEndOfMonth())
+        val intakes = getAttackMedicationIntakesRepository.attackMedicationIntakes(from, to)
+        return if (attacks is AttacksTouchingResultDomainModel.Loaded &&
+            marks is DayMarksResultDomainModel.Loaded &&
+            intakes is AttackMedicationIntakesResultDomainModel.Loaded
+        ) {
+            PeriodEntriesDomainModel(attacks.attacks, marks.marks, intakes.intakes)
+        } else {
+            null
+        }
     }
 
     private fun ClosedRange<LocalDate>.overlaps(other: ClosedRange<LocalDate>) =
