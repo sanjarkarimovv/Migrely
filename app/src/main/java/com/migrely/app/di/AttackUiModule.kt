@@ -11,6 +11,7 @@ import com.migrely.app.attack.ui.di.AddPastAttackDependencies
 import com.migrely.app.attack.ui.di.AttackDetailsDependencies
 import com.migrely.app.attack.ui.mapper.AddPastAttackNotificationUiMapper
 import com.migrely.app.attack.ui.mapper.AttackDetailsViewStateUiMapper
+import com.migrely.app.attack.ui.mapper.AttackIntakeUiToPresentationMapper
 import com.migrely.app.attack.ui.mapper.AttackMessageBehaviourUiMapper
 import com.migrely.app.attack.ui.mapper.AttackNotificationUiMapper
 import com.migrely.app.attack.ui.mapper.AttackRangeUiMapper
@@ -108,6 +109,7 @@ internal object AttackUiModule {
             timesUndoUiToPresentationMapper = TimesUndoUiToPresentationMapper(
                 intensityPointUiToPresentationMapper
             ),
+            attackIntakeUiToPresentationMapper = AttackIntakeUiToPresentationMapper(),
             attackDetailsNavigationMapper = attackDetailsNavigationMapper,
             attackNotificationMapper = AttackNotificationUiMapper(
                 eventPresenter,

@@ -40,7 +40,7 @@
 
 ## 6. App
 
-- [ ] 6.1 Add the routes, nav host entries, Hilt modules (`MedicationModule`, `MedicationDataModule`, `MedicationUiModule`, `MedicationDataSourceModule`) and navigation mappers with tests; verify `./gradlew :app:test`
+- [x] 6.1 Add the routes, nav host entries, Hilt modules (`MedicationModule`, `MedicationDataModule`, `MedicationUiModule`, `MedicationDataSourceModule`) and navigation mappers with tests; verify `./gradlew :app:test`
 
 ## 7. Docs
 

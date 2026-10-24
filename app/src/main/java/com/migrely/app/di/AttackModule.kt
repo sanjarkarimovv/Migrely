@@ -12,8 +12,10 @@ import com.migrely.app.attack.domain.repository.GetAttackDetailsRepository
 import com.migrely.app.attack.domain.repository.GetCurrentTimeRepository
 import com.migrely.app.attack.domain.repository.GetMaximumRecordedRepository
 import com.migrely.app.attack.domain.repository.MergeAttacksRepository
+import com.migrely.app.attack.domain.repository.RemoveIntakeRepository
 import com.migrely.app.attack.domain.repository.RemoveIntensityPointRepository
 import com.migrely.app.attack.domain.repository.RestoreAttackTimesRepository
+import com.migrely.app.attack.domain.repository.RestoreIntakeRepository
 import com.migrely.app.attack.domain.repository.SelectAttackTagRepository
 import com.migrely.app.attack.domain.repository.SetCustomTagArchivedRepository
 import com.migrely.app.attack.domain.repository.SetFunctionalImpactRepository
@@ -28,13 +30,17 @@ import com.migrely.app.attack.domain.usecase.DeleteAttackUseCase
 import com.migrely.app.attack.domain.usecase.GetAttackDetailsUseCase
 import com.migrely.app.attack.domain.usecase.GetPastAttackDraftUseCase
 import com.migrely.app.attack.domain.usecase.MergeAttacksUseCase
+import com.migrely.app.attack.domain.usecase.RemoveIntakeUseCase
 import com.migrely.app.attack.domain.usecase.RemoveIntensityPointUseCase
+import com.migrely.app.attack.domain.usecase.RestoreIntakeUseCase
 import com.migrely.app.attack.domain.usecase.SelectAttackTagUseCase
 import com.migrely.app.attack.domain.usecase.SetFunctionalImpactUseCase
 import com.migrely.app.attack.domain.usecase.UndoTimesChangeUseCase
 import com.migrely.app.attack.domain.usecase.UpdateAttackNoteUseCase
 import com.migrely.app.attack.domain.usecase.UpdateAttackTimesUseCase
 import com.migrely.app.attack.presentation.mapper.AttackDetailsPresentationMapper
+import com.migrely.app.attack.presentation.mapper.AttackIntakeDomainMapper
+import com.migrely.app.attack.presentation.mapper.AttackIntakePresentationMapper
 import com.migrely.app.attack.presentation.mapper.AttackRangePresentationMapper
 import com.migrely.app.attack.presentation.mapper.AttackTagDomainMapper
 import com.migrely.app.attack.presentation.mapper.BuiltInSymptomDomainMapper
@@ -128,6 +134,18 @@ internal object AttackModule {
         removeIntensityPointRepository: RemoveIntensityPointRepository,
         coroutineContextProvider: CoroutineContextProvider
     ) = RemoveIntensityPointUseCase(removeIntensityPointRepository, coroutineContextProvider)
+
+    @Provides
+    fun providesRemoveIntakeUseCase(
+        removeIntakeRepository: RemoveIntakeRepository,
+        coroutineContextProvider: CoroutineContextProvider
+    ) = RemoveIntakeUseCase(removeIntakeRepository, coroutineContextProvider)
+
+    @Provides
+    fun providesRestoreIntakeUseCase(
+        restoreIntakeRepository: RestoreIntakeRepository,
+        coroutineContextProvider: CoroutineContextProvider
+    ) = RestoreIntakeUseCase(restoreIntakeRepository, coroutineContextProvider)
 
     @Provides
     fun providesSelectAttackTagUseCase(
