@@ -10,8 +10,8 @@
 
 ## 2. Backup feature
 
-- [ ] 2.1 Domain: models, single-function repositories, use cases, tests.
-- [ ] 2.2 Data: `BackupRepository`, CSV mapper (RFC 4180, BOM), tests.
+- [x] 2.1 Domain: models, single-function repositories, use cases, tests.
+- [x] 2.2 Data: `BackupRepository`, CSV mapper (RFC 4180, BOM), tests.
 - [ ] 2.3 Presentation: `YourDataViewModel`, tests.
 - [ ] 2.4 UI: the Your data screen, SAF launchers, the import dialog.
 
