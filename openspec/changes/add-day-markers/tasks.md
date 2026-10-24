@@ -27,12 +27,12 @@
 
 - [x] 4.1 Domain and data: today's marks, `SetPeriodTodayUseCase`; tests.
   Verify: `./gradlew :features:home:domain:test :features:home:data:test`
-- [ ] 4.2 Presentation and UI: the clear calm card and the "Period" toggle; tests.
+- [x] 4.2 Presentation and UI: the clear calm card and the "Period" toggle; tests.
   Verify: `./gradlew :features:home:presentation:test :features:home:ui:test`
 
 ## 5. App wiring
 
-- [ ] 5.1 DI for the day mark datasource, repositories and use cases.
+- [x] 5.1 DI for the day mark datasource, repositories and use cases.
   Verify: `./gradlew :app:assembleDebug`
 
 ## 6. Docs

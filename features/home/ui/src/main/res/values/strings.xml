@@ -2,6 +2,10 @@
 <resources>
     <string name="today_calm_title">Calm so far today</string>
     <string name="today_calm_subtitle">No migraine logged</string>
+    <string name="today_pain_free_title">Pain-free today</string>
+    <string name="today_pain_free_subtitle">Marked by you</string>
+    <string name="period_today">Period</string>
+    <string name="period_today_description">Period today</string>
     <plurals name="today_attack_count">
         <item quantity="one">%d migraine today</item>
         <item quantity="other">%d migraines today</item>
@@ -11,6 +15,7 @@
     <string name="today_peak_severe">Peak: severe</string>
     <string name="today_peak_not_recorded">Peak: not recorded</string>
     <string name="sky_calm">calm</string>
+    <string name="sky_clear">clear</string>
     <string name="sky_hazy">hazy</string>
     <string name="sky_cloudy">cloudy</string>
     <string name="sky_storm">storm</string>

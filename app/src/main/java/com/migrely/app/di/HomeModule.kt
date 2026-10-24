@@ -166,6 +166,7 @@ internal object HomeModule {
         undoAttackEndUseCase: UndoAttackEndUseCase,
         answerLongAttackCheckUseCase: AnswerLongAttackCheckUseCase,
         restoreDeletedAttackUseCase: RestoreDeletedAttackUseCase,
+        setPeriodTodayUseCase: SetPeriodTodayUseCase,
         todayPresentationMapper: TodayPresentationMapper,
         intensityLevelDomainMapper: IntensityLevelDomainMapper,
         useCaseExecutor: UseCaseExecutor
@@ -179,6 +180,7 @@ internal object HomeModule {
         undoAttackEndUseCase = undoAttackEndUseCase,
         answerLongAttackCheckUseCase = answerLongAttackCheckUseCase,
         restoreDeletedAttackUseCase = restoreDeletedAttackUseCase,
+        setPeriodTodayUseCase = setPeriodTodayUseCase,
         todayPresentationMapper = todayPresentationMapper,
         intensityLevelDomainMapper = intensityLevelDomainMapper,
         useCaseExecutor = useCaseExecutor

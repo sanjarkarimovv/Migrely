@@ -39,6 +39,19 @@ class HomeViewStateUiMapperTest(
             ),
             arrayOf<Any>(
                 HomeViewState.Today(
+                    TodayPresentationModel(
+                        SkyPresentationModel.Clear,
+                        0,
+                        null,
+                        periodToday = true
+                    )
+                ),
+                HomeViewStateUiModel.Today(
+                    TodayUiModel(SkyUiModel.Clear, 0, null, periodToday = true)
+                )
+            ),
+            arrayOf<Any>(
+                HomeViewState.Today(
                     TodayPresentationModel(SkyPresentationModel.Hazy, 1, PeakPresentationModel.Mild)
                 ),
                 HomeViewStateUiModel.Today(TodayUiModel(SkyUiModel.Hazy, 1, PeakUiModel.Mild))

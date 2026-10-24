@@ -13,11 +13,14 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -37,6 +40,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.migrely.app.designsystem.icon.MigrelyIcons
 import com.migrely.app.designsystem.sky.SkyAppearance
 import com.migrely.app.designsystem.sky.SkyCanvas
 import com.migrely.app.designsystem.theme.MigrelyTheme
@@ -64,7 +68,8 @@ fun TodayContents(
     modifier: Modifier = Modifier,
     onLogMedication: () -> Unit = {},
     monthCalendar: @Composable () -> Unit = {},
-    medicationPrompt: @Composable () -> Unit = {}
+    medicationPrompt: @Composable () -> Unit = {},
+    onPeriodToday: (marked: Boolean) -> Unit = {}
 ) {
     val screenModifier = modifier
         .fillMaxSize()
@@ -81,6 +86,7 @@ fun TodayContents(
             ) {
                 DayTitle(dayTitle)
                 TodaySkyCard(today = today, appearance = appearance)
+                PeriodToday(today.periodToday, onPeriodToday)
                 medicationPrompt()
                 TodayAttackList(today.attacks, nowMillis, timeUiFormatter, onAttackDetails)
                 monthCalendar()
@@ -107,6 +113,7 @@ fun TodayContents(
             ) {
                 DayTitle(dayTitle)
                 TodaySkyCard(today = today, appearance = appearance)
+                PeriodToday(today.periodToday, onPeriodToday)
                 medicationPrompt()
                 TodayAttackList(today.attacks, nowMillis, timeUiFormatter, onAttackDetails)
                 monthCalendar()
@@ -262,15 +269,49 @@ private fun QuietLinks(onAddPastAttack: () -> Unit, onLogMedication: () -> Unit)
     }
 }
 
+/**
+ * Home's one-tap period mark for today (BRD DAY-F1, D48): a filter chip with a check when on, read as "Period today" with
+ * its state.
+ */
+@Composable
+private fun PeriodToday(marked: Boolean, onPeriodToday: (Boolean) -> Unit) {
+    val description = stringResource(R.string.period_today_description)
+    FilterChip(
+        selected = marked,
+        onClick = { onPeriodToday(!marked) },
+        label = {
+            Text(stringResource(R.string.period_today), style = MaterialTheme.typography.labelLarge)
+        },
+        leadingIcon = if (marked) {
+            { Icon(MigrelyIcons.Check, contentDescription = null, modifier = Modifier.size(18.dp)) }
+        } else {
+            null
+        },
+        modifier = Modifier
+            .padding(top = 12.dp)
+            .heightIn(min = 48.dp)
+            .semantics { contentDescription = description }
+    )
+}
+
 @Composable
 private fun TodaySkyCard(today: TodayUiModel, appearance: SkyAppearance) {
-    val title = if (today.attackCount == 0) {
-        stringResource(R.string.today_calm_title)
-    } else {
-        pluralStringResource(R.plurals.today_attack_count, today.attackCount, today.attackCount)
+    val painFree = today.sky == SkyUiModel.Clear
+    val title = when {
+        painFree -> stringResource(R.string.today_pain_free_title)
+        today.attackCount == 0 -> stringResource(R.string.today_calm_title)
+        else -> pluralStringResource(
+            R.plurals.today_attack_count,
+            today.attackCount,
+            today.attackCount
+        )
     }
     val subtitle = when (today.peak) {
-        null -> stringResource(R.string.today_calm_subtitle)
+        null -> if (painFree) {
+            stringResource(R.string.today_pain_free_subtitle)
+        } else {
+            stringResource(R.string.today_calm_subtitle)
+        }
         PeakUiModel.Mild -> stringResource(R.string.today_peak_mild)
         PeakUiModel.Moderate -> stringResource(R.string.today_peak_moderate)
         PeakUiModel.Severe -> stringResource(R.string.today_peak_severe)
@@ -278,6 +319,7 @@ private fun TodaySkyCard(today: TodayUiModel, appearance: SkyAppearance) {
     }
     val skyName = when (today.sky) {
         SkyUiModel.Calm -> stringResource(R.string.sky_calm)
+        SkyUiModel.Clear -> stringResource(R.string.sky_clear)
         SkyUiModel.Hazy -> stringResource(R.string.sky_hazy)
         SkyUiModel.Cloudy -> stringResource(R.string.sky_cloudy)
         SkyUiModel.Storm -> stringResource(R.string.sky_storm)

@@ -26,6 +26,7 @@ class HomeViewStateUiMapper {
     private fun TodayPresentationModel.toUi() = TodayUiModel(
         sky = when (sky) {
             SkyPresentationModel.Calm -> SkyUiModel.Calm
+            SkyPresentationModel.Clear -> SkyUiModel.Clear
             SkyPresentationModel.Hazy -> SkyUiModel.Hazy
             SkyPresentationModel.Cloudy -> SkyUiModel.Cloudy
             SkyPresentationModel.Storm -> SkyUiModel.Storm
@@ -46,7 +47,8 @@ class HomeViewStateUiMapper {
                 endEpochMillis = attack.end.toEpochMilli(),
                 peakIntensity = attack.peakIntensity
             )
-        }
+        },
+        periodToday = periodToday
     )
 
     private fun AttackInProgressPresentationModel.toUi() = AttackInProgressUiModel(
