@@ -5,6 +5,7 @@ import com.migrely.app.datasource.attack.model.AttackStartDataModel
 import com.migrely.app.datasource.attack.model.AttackTagDataModel
 import com.migrely.app.datasource.attack.model.CreateEndedDataModel
 import com.migrely.app.datasource.attack.model.DeletedAttackDataModel
+import com.migrely.app.datasource.attack.model.EarliestAttackDataModel
 import com.migrely.app.datasource.attack.model.IntensityPointDataModel
 import com.migrely.app.datasource.attack.model.ReopenDataModel
 import com.migrely.app.datasource.attack.model.RestoreDataModel
@@ -26,6 +27,9 @@ interface AttackDataSource {
 
     /** Ended attacks that overlap `[from, to)`. */
     fun endedTouching(from: Instant, to: Instant): List<AttackDataModel>
+
+    /** When and where the earliest attack started, or null when none is stored. */
+    fun earliestStart(): EarliestAttackDataModel?
 
     /**
      * Every attack other than [excludingId] that overlaps `(start, end)`, oldest first. An attack in progress counts as

@@ -76,8 +76,8 @@ The `History(epochDay)` route argument seeds the chosen day and its month.
 
 | Function | Query |
 |---|---|
-| `touching(from, to)` | Undeleted attacks with `start < to AND (end IS NULL OR end > from)`, oldest first, with their points |
-| `earliestStart()` | `start` and `start_zone_id` of the undeleted attack with the smallest start (`ORDER BY start LIMIT 1`, which uses the start index) |
+| Month read: the existing `overlapping(null, from, to)` | Undeleted attacks with `start < to AND (end IS NULL OR end > from)`, oldest first, with their points. It is exactly "every attack touching the range, the one in progress included", so no new query is needed |
+| `earliestStart()` (new) | `start` and `start_zone_id` of the undeleted attack with the smallest start (`ORDER BY start LIMIT 1`, which uses the start index) |
 
 The database stays at version 2.
 
@@ -126,7 +126,7 @@ Returning home within 30 s offers it once more there, which BRD D31 accepts.
    - `HistoryViewModel` and `MonthSkyViewModel`;
    - view states, notifications and navigation events;
    - `HistoryMonthPresentationMapper`.
-3. `:datasource:*`: `touching`, `earliestStart`, DAO queries and tests.
+3. `:datasource:*`: `earliestStart` with its DAO query and tests; the month read reuses `overlapping`.
 4. `:features:history:data`: `HistoryRepository` and `HistoryAttackDomainMapper`.
 5. `:designsystem`: `MonthSkyCalendar`, `MonthSkyLegend` and a Compose UI test.
 6. `:features:history:ui`:

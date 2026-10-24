@@ -2,8 +2,8 @@
 
 ## 1. Domain (`:features:history:domain`, `:features:attack:domain`)
 
-- [ ] 1.1 Scaffold `:features:history:*` with `cag --new-feature --name=History --package=com.migrely.app.history --ktlint --detekt`, copy the build files from `features/home/*` and delete the stubs; verify `./gradlew :features:history:domain:build`
-- [ ] 1.2 Add the history domain models and the repository interfaces of design D2:
+- [x] 1.1 Scaffold `:features:history:*` with `cag --new-feature --name=History --package=com.migrely.app.history --ktlint --detekt`, copy the build files from `features/home/*` and delete the stubs; verify `./gradlew :features:history:domain:build`
+- [x] 1.2 Add the history domain models and the repository interfaces of design D2:
   - `GetCurrentTimeRepository`;
   - `GetEarliestAttackRepository`;
   - `GetAttacksTouchingRepository`;
@@ -11,7 +11,7 @@
   - `RestoreDeletedAttackRepository`.
 
   Verify the domain module builds
-- [ ] 1.3 Implement `GetHistoryMonthUseCase` with tests for:
+- [x] 1.3 Implement `GetHistoryMonthUseCase` with tests for:
   - the current month for a null request;
   - clamping to the earliest and the current month, and no attacks;
   - the read range with its 2-day margin;
@@ -23,7 +23,7 @@
   - each failure as a value, and the recent deletion.
 
   Verify `./gradlew :features:history:domain:test`
-- [ ] 1.4 Implement `RestoreDeletedAttackUseCase` (history) with tests, and give `GetPastAttackDraftUseCase` a `LocalDate?` request (design D6) with tests for:
+- [x] 1.4 Implement `RestoreDeletedAttackUseCase` (history) with tests, and give `GetPastAttackDraftUseCase` a `LocalDate?` request (design D6) with tests for:
   - null, today and a future day;
   - a past day;
   - yesterday late at night, where the end is capped at now.
@@ -32,23 +32,18 @@
 
 ## 2. Presentation (`:features:history:presentation`, `:features:attack:presentation`)
 
-- [ ] 2.1 Add the presentation models, `HistoryViewState`, `MonthSkyViewState`, the notifications and navigation events, and `HistoryMonthPresentationMapper`, with tests for:
+- [x] 2.1 Add the presentation models, `HistoryViewState`, `MonthSkyViewState`, the notifications and navigation events, and `HistoryMonthPresentationMapper`, with tests for:
   - the sky rule, including rain, a missing level counting as moderate, nothing logged and future days;
   - the peak;
   - the month arrows.
 
   Verify `./gradlew :features:history:presentation:test`
-- [ ] 2.2 Implement `HistoryViewModel` (enter, resume, month, attack, add, undo, leave) and `MonthSkyViewModel` (enter, month, day) with `BaseViewModelTest` tests, and pass the day through `AddPastAttackViewModel.onEnter(day)`; verify presentation tests pass
+- [x] 2.2 Implement `HistoryViewModel` (enter, resume, month, attack, add, undo, leave) and `MonthSkyViewModel` (enter, month, day) with `BaseViewModelTest` tests, and pass the day through `AddPastAttackViewModel.onEnter(day)`; verify presentation tests pass
 
 ## 3. Datasources (`:datasource:source`, `:datasource:implementation`)
 
-- [ ] 3.1 Add the `touching` and `earliestStart` DAO queries (design D5) with instrumented tests for:
-  - ended and in-progress attacks;
-  - touching edges, hidden deleted rows, and oldest first;
-  - the earliest start, with and without attacks.
-
-  Verify `ANDROID_SERIAL=emulator-5570 ./gradlew :datasource:implementation:connectedDebugAndroidTest`
-- [ ] 3.2 Add `AttackDataSource.touching` and `earliestStart` with `EarliestAttackDataModel`, and unit tests with a mocked DAO, including the failure mapping; verify `./gradlew :datasource:implementation:test`
+- [x] 3.1 Add the `earliestStart` DAO query (design D5) with instrumented tests for no attacks, several attacks with their zones, and a deleted first attack; the month read reuses `overlappingAll`, already covered for in-progress, touching and deleted attacks; verify `ANDROID_SERIAL=emulator-5570 ./gradlew :datasource:implementation:connectedDebugAndroidTest`
+- [x] 3.2 Add `AttackDataSource.earliestStart` with `EarliestAttackDataModel`, and unit tests with a mocked DAO, including the failure mapping; verify `./gradlew :datasource:implementation:test`
 
 ## 4. Data (`:features:history:data`)
 

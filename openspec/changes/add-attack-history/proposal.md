@@ -62,8 +62,9 @@ days hurt, how badly, and how often (BRD 6.1 item 2, HIS-F1 to HIS-F3).
   that home shows.
 - **Changed modules:**
   - `:designsystem`: the month calendar grid with its day skies and legend (`sky` package).
-  - `:datasource:*`: every attack touching a time range, including the one in progress, and the earliest start. The
-    queries use the existing start and end indices, so there is no schema change and the database stays at version 2.
+  - `:datasource:*`: the earliest start. The month reuses the existing overlap read, which returns every attack touching
+    a range, the one in progress included. Both use the start index, so there is no schema change and the database
+    stays at version 2.
   - `:features:home:ui`: a slot under today's list that `:app` fills with the month card.
   - `:features:attack:*`: the add screen's draft for a chosen day.
   - `:app`:

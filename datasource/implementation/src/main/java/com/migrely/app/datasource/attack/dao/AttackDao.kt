@@ -9,6 +9,7 @@ import androidx.room.Update
 import com.migrely.app.datasource.attack.model.AttackLocalModel
 import com.migrely.app.datasource.attack.model.AttackTagLocalModel
 import com.migrely.app.datasource.attack.model.AttackWithPointsLocalModel
+import com.migrely.app.datasource.attack.model.EarliestStartLocalModel
 import com.migrely.app.datasource.attack.model.IntensityPointLocalModel
 
 /**
@@ -42,6 +43,13 @@ abstract class AttackDao {
         fromEpochMillis: Long,
         toEpochMillis: Long
     ): List<AttackWithPointsLocalModel>
+
+    /** The undeleted attack that started first; the start index serves the order (BRD EC-HIS-03). */
+    @Query(
+        "SELECT start_epoch_millis, start_zone_id FROM attack WHERE deleted_epoch_millis IS NULL " +
+            "ORDER BY start_epoch_millis LIMIT 1"
+    )
+    abstract fun earliestStart(): EarliestStartLocalModel?
 
     /** An attack in progress is open-ended; attacks that only touch at one instant do not overlap. */
     @Transaction
