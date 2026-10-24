@@ -65,7 +65,7 @@ month, SHALL clear the choice (BRD HIS-F3).
 
 #### Scenario: Choose a day
 - **WHEN** the user taps 14 October, which had attacks at 09:10 and at 18:00
-- **THEN** "Tuesday, 14 October" lists the 09:10 attack first and then the 18:00 attack
+- **THEN** "Wednesday, 14 October" lists the 09:10 attack first and then the 18:00 attack
 
 #### Scenario: Day with nothing logged
 - **WHEN** the user taps 6 October, when nothing was logged
@@ -130,7 +130,7 @@ be read as "Previous month" and "Next month". Each listed attack SHALL be read a
 
 #### Scenario: Screen reader on a listed attack
 - **WHEN** TalkBack focuses the attack of 14 October from 09:10 to 10:00 that peaked at 4
-- **THEN** it reads "Tuesday, 14 October, 09:10 to 10:00, peak 4 of 10"
+- **THEN** it reads "Wednesday, 14 October, 09:10 to 10:00, peak 4 of 10. Opens its details."
 
 #### Scenario: Landscape at 200% font
 - **WHEN** the phone is in landscape with the font at 200%

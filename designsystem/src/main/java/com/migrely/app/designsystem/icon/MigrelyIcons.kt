@@ -8,6 +8,8 @@ import androidx.compose.ui.unit.dp
 
 /** Icons drawn in code from path data (BRD D19); the shapes follow Material Symbols (Apache 2.0) on a 24-unit grid. */
 object MigrelyIcons {
+    private val MIRRORED = setOf("Back", "ChevronStart", "ChevronEnd")
+
     val Back: ImageVector =
         icon("Back", "M20,11H7.83l5.59,-5.59L12,4l-8,8 8,8 1.41,-1.41L7.83,13H20v-2z")
 
@@ -21,13 +23,20 @@ object MigrelyIcons {
     val Warning: ImageVector =
         icon("Warning", "M1,21h22L12,2 1,21zM13,18h-2v-2h2v2zM13,14h-2v-4h2v4z")
 
+    val ChevronStart: ImageVector =
+        icon("ChevronStart", "M15.41,7.41L14,6l-6,6 6,6 1.41,-1.41L10.83,12z")
+
+    val ChevronEnd: ImageVector =
+        icon("ChevronEnd", "M10,6L8.59,7.41 13.17,12l-4.58,4.59L10,18l6,-6z")
+
     private fun icon(name: String, pathData: String): ImageVector = ImageVector.Builder(
         name = name,
         defaultWidth = 24.dp,
         defaultHeight = 24.dp,
         viewportWidth = 24f,
         viewportHeight = 24f,
-        autoMirror = name == "Back"
+        // Direction icons point the other way in right-to-left layouts (BRD EC-UX-05).
+        autoMirror = name in MIRRORED
     ).addPath(
         pathData = PathParser().parsePathString(pathData).toNodes(),
         fill = SolidColor(Color.Black)

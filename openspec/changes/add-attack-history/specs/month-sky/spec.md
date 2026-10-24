@@ -86,15 +86,15 @@ EC-UX-03).
 
 #### Scenario: Screen reader on a storm day
 - **WHEN** TalkBack focuses 15 October, when one attack peaked at 9
-- **THEN** it reads "Wednesday, 15 October: storm. 1 migraine. Peak: severe."
+- **THEN** it reads "Thursday, 15 October: storm. 1 migraine. Peak: severe."
 
 #### Scenario: Screen reader on an empty day
 - **WHEN** TalkBack focuses 6 October, when nothing was logged
-- **THEN** it reads "Monday, 6 October: nothing logged."
+- **THEN** it reads "Tuesday, 6 October: nothing logged."
 
 #### Scenario: Screen reader on today during an attack
 - **WHEN** TalkBack focuses today, 23 October, while an attack is in progress
-- **THEN** it reads "Today, Thursday, 23 October: rain. Migraine in progress."
+- **THEN** it reads "Today, Friday, 23 October: rain. Migraine in progress."
 
 #### Scenario: Large font
 - **WHEN** the font size is 200%

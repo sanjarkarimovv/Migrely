@@ -1,0 +1,64 @@
+<resources>
+    <string name="history_title">History</string>
+    <string name="navigate_back">Back</string>
+    <string name="previous_month">Previous month</string>
+    <string name="next_month">Next month</string>
+
+    <!-- Month card on home (BRD 18.3 A, D29). -->
+    <string name="month_card_open">%1$s. Opens History.</string>
+
+    <!-- Legend (BRD G6: no clear sky until days can be marked pain-free). -->
+    <string name="legend_mild">Mild</string>
+    <string name="legend_moderate">Moderate</string>
+    <string name="legend_severe">Severe</string>
+    <string name="legend_not_logged">Not logged</string>
+
+    <!-- What a screen reader says for a day (BRD EC-UX-15). -->
+    <string name="day_today">Today, %1$s</string>
+    <string name="day_nothing_logged">%1$s: nothing logged.</string>
+    <string name="day_in_progress">%1$s: rain. Migraine in progress.</string>
+    <string name="day_attacks">%1$s: %2$s. %3$s. Peak: %4$s.</string>
+    <plurals name="day_attack_count">
+        <item quantity="one">%d migraine</item>
+        <item quantity="other">%d migraines</item>
+    </plurals>
+    <string name="sky_hazy">hazy</string>
+    <string name="sky_cloudy">cloudy</string>
+    <string name="sky_storm">storm</string>
+    <string name="peak_mild">mild</string>
+    <string name="peak_moderate">moderate</string>
+    <string name="peak_severe">severe</string>
+    <string name="peak_not_recorded">not recorded</string>
+
+    <!-- Lists under the calendar (BRD HIS-F2, HIS-F3). -->
+    <plurals name="month_attack_count">
+        <item quantity="one">%1$d migraine in %2$s</item>
+        <item quantity="other">%1$d migraines in %2$s</item>
+    </plurals>
+    <string name="month_no_attacks">No migraines logged in %1$s</string>
+    <string name="day_no_attacks">Nothing logged on this day.</string>
+    <string name="show_all_month">Show all of %1$s</string>
+    <string name="add_past_attack">Add a past migraine</string>
+    <string name="attack_range">%1$s – %2$s</string>
+    <string name="attack_in_progress">In progress</string>
+    <string name="attack_peak">%1$d/10</string>
+    <string name="attack_peak_not_recorded">Not recorded</string>
+    <string name="attack_description">%1$s to %2$s, %3$s. Opens its details.</string>
+    <string name="attack_in_progress_description">%1$s, in progress, %2$s. Opens its details.</string>
+    <string name="attack_peak_spoken">peak %1$d of 10</string>
+    <string name="attack_peak_not_recorded_spoken">peak not recorded</string>
+
+    <!-- First use (BRD EC-HIS-01). -->
+    <string name="empty_title">No migraines logged yet</string>
+    <string name="empty_body">Each day you log becomes a small sky: hazy, cloudy or a storm, by its worst pain. Your month at a glance, for you and your doctor.</string>
+    <string name="log_first_attack">Log your first migraine</string>
+
+    <!-- Messages (BRD EC-UX-16, EC-HIS-04). -->
+    <string name="snackbar_attack_deleted">Migraine deleted</string>
+    <string name="snackbar_undo">Undo</string>
+    <string name="snackbar_undo_delete_description">Undo the deletion</string>
+    <string name="snackbar_dismiss">Dismiss</string>
+    <string name="message_undone">Undone.</string>
+    <string name="message_undo_not_possible">This can no longer be undone.</string>
+    <string name="message_generic">Something went wrong. Please try again.</string>
+</resources>

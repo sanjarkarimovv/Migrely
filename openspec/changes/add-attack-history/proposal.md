@@ -20,7 +20,7 @@ days hurt, how badly, and how often (BRD 6.1 item 2, HIS-F1 to HIS-F3).
   - Days follow the zone each attack was logged in, and an attack past midnight marks every day it touches (EC-TIM-02,
     EC-ATK-06, EC-ATK-07).
   - Weeks start on the locale's first day (EC-TIM-05).
-  - TalkBack reads each day, for example "Wednesday, 15 October: storm. 1 migraine. Peak: severe."
+  - TalkBack reads each day, for example "Thursday, 15 October: storm. 1 migraine. Peak: severe."
 - **Home (BRD 18.3 A, D29):** this month's calendar sits under today's card and list. The month name and every day
   open History.
 - **History screen (BRD HIS-F2, HIS-F3, D29),** a new `history` feature:
