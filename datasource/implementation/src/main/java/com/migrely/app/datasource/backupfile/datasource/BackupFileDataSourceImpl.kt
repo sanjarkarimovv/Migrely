@@ -22,7 +22,9 @@ private const val AUTOMATIC_DIRECTORY = "backups"
 private const val AUTOMATIC_PREFIX = "migrely-auto-"
 private const val AUTOMATIC_SUFFIX = ".json"
 private const val AUTOMATIC_KEPT = 3
-private const val BYTE_ORDER_MARK = ''
+
+/** Written by some editors at the start of a UTF-8 file. An escape here would be stripped by the formatter. */
+private val BYTE_ORDER_MARK = Char(0xFEFF)
 
 /** Automatic backups go to [filesDirectory]`/backups`, which Android's backup includes (BRD D74). */
 class BackupFileDataSourceImpl(

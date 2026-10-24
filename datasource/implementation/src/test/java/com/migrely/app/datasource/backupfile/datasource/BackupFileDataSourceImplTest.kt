@@ -46,7 +46,7 @@ class BackupFileDataSourceImplTest {
 
     @Test
     fun `Given a byte-order mark when reading then it is ignored`() {
-        val text = "" + classUnderTest.encode(RECORDS, EXPORTED_AT)
+        val text = Char(0xFEFF) + classUnderTest.encode(RECORDS, EXPORTED_AT)
 
         assertEquals(BackupDecodedDataModel.Records(RECORDS, 6), classUnderTest.decode(text))
     }
