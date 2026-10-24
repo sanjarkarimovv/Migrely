@@ -12,7 +12,7 @@
 
 ## 2. Reminders feature (`:features:reminders:{domain,presentation,ui,data}`)
 
-- [ ] 2.1 Domain.
+- [x] 2.1 Domain.
   - Models: `ReminderSettingsDomainModel` (daily on, daily time, effect on, notifications allowed, may ask), and a
     write result.
   - Single-function repositories: settings, notifications allowed, set daily, set effect, set permission asked, set

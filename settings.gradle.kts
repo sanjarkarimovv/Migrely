@@ -73,3 +73,9 @@ setOf(
 ).forEach { module ->
     include(":features:medication:$module")
 }
+
+setOf(
+    "domain"
+).forEach { module ->
+    include(":features:reminders:$module")
+}
