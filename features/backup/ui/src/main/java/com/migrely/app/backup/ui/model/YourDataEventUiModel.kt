@@ -14,7 +14,8 @@ sealed interface YourDataMessageUiModel {
 
     data class Replaced(val attacks: Int) : YourDataMessageUiModel
 
-    data class Added(val addedAttacks: Int, val skippedAttacks: Int) : YourDataMessageUiModel
+    data class Added(val addedAttacks: Int, val skippedAttacks: Int, val addedOthers: Int) :
+        YourDataMessageUiModel
 
     data object NotABackup : YourDataMessageUiModel
 

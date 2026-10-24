@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -35,6 +36,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -70,12 +72,16 @@ import com.migrely.app.designsystem.snackbar.SnackbarTone
 import com.migrely.app.designsystem.theme.MigrelyTheme
 import java.time.LocalDate
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.onSubscription
 
 private const val MESSAGE_MILLIS = 6_000L
 private val CONTENT_MAX_WIDTH = 600.dp
 
 /** Some file apps label a .json file as text or as plain bytes, so those are offered too; the file is checked anyway. */
 private val BACKUP_TYPES = arrayOf("application/json", "text/*", "application/octet-stream")
+
+/** A message as shown, with its place in the order shown. */
+private data class ShownMessage(val message: YourDataMessageUiModel, val number: Int)
 
 /** Callbacks from the Your data screen. */
 data class YourDataActions(
@@ -97,13 +103,23 @@ fun YourDataDependencies.YourData(navController: NavController, modifier: Modifi
     val working = yourDataViewStateUiMapper.toUi(viewState) == YourDataViewStateUiModel.Working
     // Kept across a rotation, so the question is not lost while the user decides.
     var pending by rememberSaveable { mutableStateOf<PendingImportUiModel?>(null) }
-    var message by remember { mutableStateOf<YourDataMessageUiModel?>(null) }
+    // Numbered, so the same message twice in a row shows and is announced again.
+    var message by remember { mutableStateOf<ShownMessage?>(null) }
+    var shownCount by remember { mutableIntStateOf(0) }
+    val show: (YourDataMessageUiModel) -> Unit = {
+        shownCount++
+        message = ShownMessage(it, shownCount)
+    }
     LaunchedEffect(yourDataEventPresenter) {
-        yourDataEventPresenter.events.collect { event ->
+        // Asked once this screen listens, so an outcome that arrived during a rotation is not lost.
+        yourDataEventPresenter.events.onSubscription {
+            yourDataViewModel.onResume()
+        }.collect { event ->
             when (event) {
                 is YourDataEventUiModel.Confirm -> pending = event.pending
-                is YourDataEventUiModel.Message -> message = event.message
+                is YourDataEventUiModel.Message -> show(event.message)
             }
+            yourDataViewModel.onOutcomeShownAction()
         }
     }
     LaunchedEffect(message) {
@@ -132,7 +148,7 @@ fun YourDataDependencies.YourData(navController: NavController, modifier: Modifi
         try {
             launch()
         } catch (_: ActivityNotFoundException) {
-            message = YourDataMessageUiModel.NoFilePicker
+            show(YourDataMessageUiModel.NoFilePicker)
         }
     }
     YourDataContents(
@@ -150,8 +166,8 @@ fun YourDataDependencies.YourData(navController: NavController, modifier: Modifi
         messages = {
             MigrelySnackbarHost(message = message, reduceMotion = rememberReduceMotion()) { shown ->
                 MigrelySnackbar(
-                    text = shown.text(),
-                    tone = shown.tone(),
+                    text = shown.message.text(),
+                    tone = shown.message.tone(),
                     action = null,
                     dismissLabel = stringResource(R.string.your_data_message_dismiss),
                     onDismiss = { message = null }
@@ -318,7 +334,13 @@ private fun ImportDialog(
                     TextButton(onClick = { onImport(ImportModePresentationModel.Add) }) {
                         Text(stringResource(R.string.your_data_add))
                     }
-                    TextButton(onClick = { onImport(ImportModePresentationModel.Replace) }) {
+                    // Replace swaps everything on the phone, so it reads as the destructive choice.
+                    TextButton(
+                        onClick = { onImport(ImportModePresentationModel.Replace) },
+                        colors = ButtonDefaults.textButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error
+                        )
+                    ) {
                         Text(stringResource(R.string.your_data_replace))
                     }
                 }
@@ -350,11 +372,20 @@ private fun YourDataMessageUiModel.text(): String = when (this) {
     is YourDataMessageUiModel.Replaced ->
         pluralStringResource(R.plurals.your_data_replaced, attacks, attacks)
     is YourDataMessageUiModel.Added -> when {
-        addedAttacks == 0 -> stringResource(R.string.your_data_nothing_new)
-        skippedAttacks == 0 ->
-            pluralStringResource(R.plurals.your_data_added, addedAttacks, addedAttacks)
-        else -> pluralStringResource(R.plurals.your_data_added, addedAttacks, addedAttacks) + " " +
-            pluralStringResource(R.plurals.your_data_already_here, skippedAttacks, skippedAttacks)
+        addedAttacks > 0 && skippedAttacks > 0 ->
+            pluralStringResource(R.plurals.your_data_added, addedAttacks, addedAttacks) + " " +
+                pluralStringResource(
+                    R.plurals.your_data_already_here,
+                    skippedAttacks,
+                    skippedAttacks
+                )
+        addedAttacks > 0 -> pluralStringResource(
+            R.plurals.your_data_added,
+            addedAttacks,
+            addedAttacks
+        )
+        addedOthers > 0 -> stringResource(R.string.your_data_added_others)
+        else -> stringResource(R.string.your_data_nothing_new)
     }
     YourDataMessageUiModel.NotABackup -> stringResource(R.string.your_data_not_a_backup)
     YourDataMessageUiModel.Newer -> stringResource(R.string.your_data_newer)
@@ -370,7 +401,13 @@ private fun YourDataMessageUiModel.tone() = when (this) {
     YourDataMessageUiModel.CsvSaved,
     is YourDataMessageUiModel.Replaced -> SnackbarTone.Confirmation
     is YourDataMessageUiModel.Added ->
-        if (addedAttacks == 0) SnackbarTone.Information else SnackbarTone.Confirmation
+        if (addedAttacks == 0 &&
+            addedOthers == 0
+        ) {
+            SnackbarTone.Information
+        } else {
+            SnackbarTone.Confirmation
+        }
     YourDataMessageUiModel.NotABackup,
     YourDataMessageUiModel.Newer,
     YourDataMessageUiModel.StorageFull,

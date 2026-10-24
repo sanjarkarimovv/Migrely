@@ -26,7 +26,10 @@ class FileFailuresTest {
         listOf(
             FileNotFoundException("gone"),
             SecurityException("permission revoked"),
-            IllegalArgumentException("bad uri")
+            IllegalArgumentException("bad uri"),
+            IllegalStateException("provider gone"),
+            UnsupportedOperationException("no writes"),
+            NullPointerException("across Binder")
         ).forEach { failure ->
             assertThrows(FileDataException::class.java) { file { throw failure } }
         }

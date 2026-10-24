@@ -20,7 +20,8 @@ sealed interface YourDataPresentationNotification : PresentationNotification {
     data class Replaced(val summary: BackupSummaryPresentationModel) :
         YourDataPresentationNotification
 
-    data class Added(val addedAttacks: Int, val skippedAttacks: Int) :
+    /** [addedOthers] counts the medications, custom tags, intakes and marked days added. */
+    data class Added(val addedAttacks: Int, val skippedAttacks: Int, val addedOthers: Int) :
         YourDataPresentationNotification
 
     data object NotABackup : YourDataPresentationNotification

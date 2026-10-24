@@ -24,7 +24,8 @@ class BackupDataSourceImpl(
         val added = backupDao.add(backupLocalMapper.toLocal(records))
         AddedRecordsDataModel(
             addedAttacks = added.addedAttacks,
-            skippedAttacks = added.skippedAttacks
+            skippedAttacks = added.skippedAttacks,
+            addedOthers = added.addedOthers
         )
     }
 }

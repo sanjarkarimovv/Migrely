@@ -239,6 +239,18 @@ class AttacksCsvMapperTest {
     }
 
     @Test
+    fun `Given a zone this phone does not know then the times in UTC, and the zone named`() {
+        val csv = classUnderTest.toCsv(
+            records(
+                listOf(attack("a", START, START.plusSeconds(60)).copy(startZoneId = "Mars/Olympus"))
+            ),
+            ','
+        )
+
+        assertTrue(lines(csv)[1].startsWith("2026-10-20 04:00,2026-10-20 04:01,1,Mars/Olympus,"))
+    }
+
+    @Test
     fun `Given no attacks then only the header`() {
         assertEquals(1, lines(classUnderTest.toCsv(records(emptyList()), ',')).size)
     }

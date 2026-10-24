@@ -16,8 +16,8 @@
 - **`:features:backup:{domain,data,presentation,ui}`.**
 - **Datasources, all implemented in `:datasource:implementation`, which has a `Context`:**
   - `backup` (`BackupDataSource`): `records()` reads every health record; `replaceAll(records)` and
-    `add(records): AddedDataModel` write in one Room transaction. New DAO queries read every row and delete them all,
-    and inserts ignore a conflicting ID (`OnConflictStrategy.IGNORE`).
+    `add(records): AddedRecordsDataModel` write in one Room transaction. New DAO queries read every row and delete them
+    all. "Add" checks that a row is absent before inserting it; only day marks use `OnConflictStrategy.IGNORE`.
   - `backupfile` (`BackupFileDataSource`): `encode(records): String` and `decode(text): BackupDecodedDataModel`
     (`Records(records, schemaVersion)` | `NotABackup` | `Newer`), with kotlinx.serialization JSON.
     - `ignoreUnknownKeys`, and defaults for every field, so older files import (EC-BAK-03).
@@ -50,12 +50,13 @@
 - **Use cases:**
   - `ExportBackupUseCase(uri)` and `ExportCsvUseCase(uri)` return `Saved`, `StorageFull` or `Failed`;
   - `ReadBackupUseCase(uri)` returns `Readable(summary, phoneHasRecords)`, `NotABackup`, `Newer` or `Failed`;
-  - `ImportBackupUseCase(uri, Replace|Add)` reads the file again. It refuses a file that is not readable. For
-    `Replace` it first saves an automatic backup; if that fails, it stops and changes nothing. It then writes the
-    records and returns `Imported(summary)`, `Added(added, skipped)`, `StorageFull` or `Failed`.
+  - `ImportBackupUseCase(uri, Replace|Add)`. The repository reads the file again and refuses one that is not readable.
+    For `Replace` over records on the phone, the copy is saved only once the file has been read as a backup, so a
+    failed attempt never pushes an older copy out. If the copy fails, nothing changes. It returns `Replaced(summary)`,
+    `Added(addedAttacks, skippedAttacks, addedOthers)`, `NotABackup`, `Newer`, `StorageFull` or `Failed`.
 - **The view model stays stateless:** the UI keeps the chosen URI across the dialog.
-- **Single-function repositories:** write backup, write CSV, read backup, phone has records, save automatic backup,
-  replace with backup, and add backup. All are implemented by `BackupRepository`.
+- **Single-function repositories:** write backup, write CSV, read backup, phone has records, replace with backup (with
+  or without the copy first), and add backup. All are implemented by `BackupRepository`.
 
 ### D5. "Add" (BRD D73, EC-MED-07)
 
@@ -66,6 +67,12 @@
 - An intake is skipped when its ID is on the phone, or when the same medication was taken at the same moment. An
   intake of an attack skipped for overlapping is kept without the link.
 - A date already marked keeps its marks.
+- An attack being deleted with the same ID counts as on the phone, but the backup's intakes are not linked to it, so its
+  purge never takes them along. Two backup tags that stand for one phone tag give one `attack_tag` row.
+- **Accepted:** an intake of an attack skipped for overlapping is kept unlinked, and the same dose logged on both
+  phones seconds apart stays twice. Overuse and the stats count days, so neither number changes. Add can also take the
+  active medications or custom tags past the app's own limits; those limits guard the add forms, and every list
+  scrolls.
 
 ### D6. UI (`:features:backup:ui`, `:features:settings:ui`)
 
@@ -73,7 +80,8 @@
 - **Your data:**
   - three rows: "Export a backup (JSON)", "Export for Excel (CSV)" and "Import a backup";
   - SAF launchers: `CreateDocument("application/json")` with the name `migrely-YYYY-MM-DD.json`,
-    `CreateDocument("text/csv")`, and `OpenDocument(["application/json", "application/octet-stream", "text/plain"])`;
+    `CreateDocument("text/csv")`, and `OpenDocument(["application/json", "text/*", "application/octet-stream"])`, since some file apps
+    label a `.json` file as text or plain bytes;
   - a dialog that shows the file's numbers, with "Replace" and "Add", or "Import" when the phone is empty;
   - a progress indicator while a file is written or read;
   - messages: "Backup saved.", "Saved for Excel.", "Imported." / "Added N attacks. M were already here.", "This file
@@ -94,6 +102,20 @@
   app wrote always passes. Overlaps inside a file are not refused: "Add" skips them, and a backup of a phone that once
   held them restores what it had.
 - A file is read up to 16 MB; ten years are a few megabytes.
+- **Not checked:** that a `custom:<id>` key names a tag of that kind in the file (readers drop unknown tags), and the
+  length of names, doses and notes (the screens wrap long text).
+
+### D9. Delivery across a rotation
+
+- `YourDataViewModel` is app-wide. It counts the files being worked on and keeps the last outcome until the screen
+  acknowledges it. The screen asks for both once it listens (ARCHITECTURE section 13).
+
+### D10. Failures
+
+- A document provider is another app, and its failures cross Binder as any runtime exception; `file {}` maps them all
+  to `FileDataException`, since nothing catches an exception thrown inside a background use case.
+- A failed export deletes the file the picker created, so a half-written file never passes for a backup.
+- The CSV writes an attack whose zone this phone does not know in UTC, and names the zone.
 
 ## Risks
 
@@ -104,4 +126,5 @@
 | A file edited by hand | strict decoding of types; any error is `NotABackup` and nothing changes |
 | A file provider that refuses the "wt" mode | the write falls back to "w"; the picker has just created the file, so it is empty |
 | No file picker on the phone | the launch fails with `ActivityNotFoundException`, and the screen says so |
+| A phone with no screen lock | cloud backup is off (`disableIfNoEncryptionCapabilities`); the JSON export still works |
 | The automatic backup cannot be restored from the app yet | it is in Android's backup; change 12 adds "Restore" (BRD D75) |

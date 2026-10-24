@@ -84,7 +84,10 @@ class BackupFileDataSourceImpl(
         } finally {
             partial.delete()
         }
-        automaticBackups(directory).drop(AUTOMATIC_KEPT).forEach(File::delete)
+        // The copy just written always stays, even when the clock moved back since the others were made.
+        automaticBackups(directory).filter {
+            it.name != name
+        }.drop(AUTOMATIC_KEPT - 1).forEach(File::delete)
     }
 
     /** Newest first. */

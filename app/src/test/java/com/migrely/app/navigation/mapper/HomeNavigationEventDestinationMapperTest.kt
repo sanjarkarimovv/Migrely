@@ -8,6 +8,7 @@ import com.migrely.app.architecture.ui.navigation.exception.UnhandledNavigationE
 import com.migrely.app.home.presentation.navigation.HomePresentationNavigationEvent
 import com.migrely.app.ui.main.route.AddPastAttack
 import com.migrely.app.ui.main.route.AttackDetails
+import com.migrely.app.ui.main.route.Settings
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -57,6 +58,22 @@ class HomeNavigationEventDestinationMapperTest {
             options.capture(),
             anyOrNull<Navigator.Extras>()
         )
+        assertTrue(options.firstValue.shouldLaunchSingleTop())
+    }
+
+    @Test
+    fun `Given opening settings when toUi then opens Settings once`() {
+        // Given
+        val navController: NavController = mock()
+
+        // When
+        classUnderTest.toUi(HomePresentationNavigationEvent.OnOpenSettings).navigate(navController)
+
+        // Then
+        val options = argumentCaptor<NavOptions>()
+        verify(
+            navController
+        ).navigate(eq(Settings), options.capture(), anyOrNull<Navigator.Extras>())
         assertTrue(options.firstValue.shouldLaunchSingleTop())
     }
 

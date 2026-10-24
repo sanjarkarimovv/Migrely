@@ -44,11 +44,11 @@ class BackupDataSourceImplTest {
     fun `When replacing or adding then the rows go to the database in one call`() {
         given(
             backupDao.add(any())
-        ).willReturn(AddedLocalModel(addedAttacks = 1, skippedAttacks = 1))
+        ).willReturn(AddedLocalModel(addedAttacks = 1, skippedAttacks = 1, addedOthers = 2))
 
         classUnderTest.replaceAll(RECORDS)
         assertEquals(
-            AddedRecordsDataModel(addedAttacks = 1, skippedAttacks = 1),
+            AddedRecordsDataModel(addedAttacks = 1, skippedAttacks = 1, addedOthers = 2),
             classUnderTest.add(RECORDS)
         )
 

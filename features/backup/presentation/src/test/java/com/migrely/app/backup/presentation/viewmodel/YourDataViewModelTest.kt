@@ -146,7 +146,8 @@ class YourDataViewModelTest :
             )
 
             mapOf(
-                ImportResultDomainModel.Added(6, 4) to YourDataPresentationNotification.Added(6, 4),
+                ImportResultDomainModel.Added(6, 4, 1) to
+                    YourDataPresentationNotification.Added(6, 4, 1),
                 ImportResultDomainModel.NotABackup to YourDataPresentationNotification.NotABackup,
                 ImportResultDomainModel.Newer to YourDataPresentationNotification.Newer,
                 ImportResultDomainModel.StorageFull to YourDataPresentationNotification.StorageFull,
@@ -174,6 +175,42 @@ class YourDataViewModelTest :
         )
         assertEquals(listOf(YourDataViewState.Working, YourDataViewState.Idle), states.await())
     }
+
+    @Test
+    fun `Given an outcome not taken when the screen listens again then it is sent again`() =
+        runTest {
+            exportCsvUseCase.givenSuccessfulExecution(URI, BackupWriteResultDomainModel.Saved)
+            classUnderTest.onExportCsvAction(URI)
+
+            assertEquals(
+                YourDataPresentationNotification.CsvSaved,
+                notificationOf {
+                    classUnderTest.onResume()
+                }
+            )
+
+            classUnderTest.onOutcomeShownAction()
+            val states = async(start = UNDISPATCHED) { classUnderTest.viewState.first() }
+            classUnderTest.onResume()
+            assertEquals(YourDataViewState.Idle, states.await())
+            verify(useCaseExecutor).execute(
+                useCase = eq(exportCsvUseCase),
+                value = eq(URI),
+                onResult = any(),
+                onException = any()
+            )
+        }
+
+    @Test
+    fun `Given a file is still being worked on when the screen comes back then working`() =
+        runTest {
+            classUnderTest.onExportBackupAction(URI)
+            val state = async(start = UNDISPATCHED) { classUnderTest.viewState.first() }
+
+            classUnderTest.onEnter()
+
+            assertEquals(YourDataViewState.Working, state.await())
+        }
 
     @Test
     fun `When going back then back`() = runTest {

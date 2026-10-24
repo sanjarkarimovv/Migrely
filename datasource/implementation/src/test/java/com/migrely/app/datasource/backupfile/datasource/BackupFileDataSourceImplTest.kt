@@ -138,6 +138,20 @@ class BackupFileDataSourceImplTest {
     }
 
     @Test
+    fun `Given the clock moved back when a copy is saved then that copy stays`() {
+        (3..5).forEach {
+            classUnderTest.saveAutomatic("backup $it", Instant.ofEpochMilli(it * 1_000L))
+        }
+
+        classUnderTest.saveAutomatic("after the clock moved back", Instant.ofEpochMilli(1_000L))
+
+        assertEquals(
+            listOf("migrely-auto-1000.json", "migrely-auto-4000.json", "migrely-auto-5000.json"),
+            File(folder.root, "backups").list().orEmpty().sorted()
+        )
+    }
+
+    @Test
     fun `The schema version is the database's latest`() {
         val latest = File(
             "schemas/com.migrely.app.datasource.database.MigrelyDatabase"

@@ -19,8 +19,11 @@ import com.migrely.app.backup.presentation.model.YourDataViewState
 import com.migrely.app.backup.presentation.navigation.YourDataPresentationNavigationEvent
 
 /**
- * "Your data" (BRD BAK-F1–F3, D71–D73). Each event carries the file the user picked through the system's picker, so the
- * view model keeps nothing: it shows the work in progress and reports how it went.
+ * "Your data" (BRD BAK-F1–F3, D71–D73). Each event carries the file the user picked through the system's picker.
+ *
+ * Writing or reading a file can outlast a rotation, so this view model lives as long as the app and keeps two things,
+ * only for delivery: how many files are being worked on, and an outcome the screen has not taken yet. On returning, the
+ * screen sees the work still going and gets the outcome it missed (ARCHITECTURE section 13).
  */
 class YourDataViewModel(
     private val exportBackupUseCase: ExportBackupUseCase,
@@ -31,7 +34,26 @@ class YourDataViewModel(
     private val importModeDomainMapper: ImportModeDomainMapper,
     useCaseExecutor: UseCaseExecutor
 ) : BaseViewModel<YourDataViewState, YourDataPresentationNotification>(useCaseExecutor) {
-    fun onEnter() = updateViewState(YourDataViewState.Idle)
+    private var working = 0
+    private var undelivered: YourDataPresentationNotification? = null
+
+    fun onEnter() = updateViewState(
+        if (working >
+            0
+        ) {
+            YourDataViewState.Working
+        } else {
+            YourDataViewState.Idle
+        }
+    )
+
+    /** The screen listens again, after a rotation for example: it gets the state and an outcome it missed. */
+    fun onResume() = show()
+
+    /** The screen showed the last outcome, so it is not shown again. */
+    fun onOutcomeShownAction() {
+        undelivered = null
+    }
 
     fun onBackAction() = emitNavigationEvent(YourDataPresentationNavigationEvent.OnBack)
 
@@ -72,8 +94,11 @@ class YourDataViewModel(
                 backupSummaryPresentationMapper.toPresentation(result.summary)
             )
 
-            is ImportResultDomainModel.Added ->
-                YourDataPresentationNotification.Added(result.addedAttacks, result.skippedAttacks)
+            is ImportResultDomainModel.Added -> YourDataPresentationNotification.Added(
+                result.addedAttacks,
+                result.skippedAttacks,
+                result.addedOthers
+            )
 
             ImportResultDomainModel.NotABackup -> YourDataPresentationNotification.NotABackup
             ImportResultDomainModel.Newer -> YourDataPresentationNotification.Newer
@@ -91,23 +116,32 @@ class YourDataViewModel(
         BackupWriteResultDomainModel.Failed -> YourDataPresentationNotification.SomethingWentWrong
     }
 
-    /** Shows the work going on, then its outcome; an unexpected failure is reported as one. */
+    private fun show() {
+        updateViewState(if (working > 0) YourDataViewState.Working else YourDataViewState.Idle)
+        undelivered?.let(::notify)
+    }
+
+    /**
+     * Shows the work going on, then its outcome. Expected failures arrive as results; a `DomainException` routed to
+     * `onException` is reported as something going wrong.
+     */
     private fun <INPUT, OUTPUT> work(
         useCase: UseCase<INPUT, OUTPUT>,
         value: INPUT,
         outcome: (OUTPUT) -> YourDataPresentationNotification
     ) {
+        working++
         updateViewState(YourDataViewState.Working)
         useCase(
             value = value,
-            onResult = { result ->
-                updateViewState(YourDataViewState.Idle)
-                notify(outcome(result))
-            },
-            onException = {
-                updateViewState(YourDataViewState.Idle)
-                notify(YourDataPresentationNotification.SomethingWentWrong)
-            }
+            onResult = { result -> finish(outcome(result)) },
+            onException = { finish(YourDataPresentationNotification.SomethingWentWrong) }
         )
+    }
+
+    private fun finish(outcome: YourDataPresentationNotification) {
+        working = (working - 1).coerceAtLeast(0)
+        undelivered = outcome
+        show()
     }
 }
