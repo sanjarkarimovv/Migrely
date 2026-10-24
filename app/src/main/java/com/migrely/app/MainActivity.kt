@@ -32,12 +32,13 @@ import com.migrely.app.designsystem.theme.DarkScreens
 import com.migrely.app.designsystem.theme.LocalDarkScreens
 import com.migrely.app.designsystem.theme.MigrelyColors
 import com.migrely.app.designsystem.theme.MigrelyTheme
-import com.migrely.app.settings.domain.model.ThemeDomainModel
 import com.migrely.app.start.StartEntryPoint
 import com.migrely.app.ui.main.AppNavHost
 import com.migrely.app.ui.main.di.AppNavHostDependencies
 import com.migrely.app.ui.main.route.Home
 import com.migrely.app.ui.main.route.Onboarding
+import com.migrely.app.ui.theme.mapper.AppThemeUiMapper
+import com.migrely.app.ui.theme.model.AppThemeUiModel
 import dagger.hilt.android.AndroidEntryPoint
 import dagger.hilt.android.EntryPointAccessors
 import java.time.ZoneId
@@ -50,6 +51,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
@@ -78,12 +80,14 @@ class MainActivity : ComponentActivity() {
      * The theme drawn last (BRD D94). It is read behind the splash and kept across a recreation, so the first frame is
      * always in the right theme; the screens then follow each change at once.
      */
-    private var theme = ThemeDomainModel.Dark
+    private var theme = AppThemeUiModel.Dark
 
-    private val themeChanges: Flow<ThemeDomainModel> by lazy {
+    private val themeChanges: Flow<AppThemeUiModel> by lazy {
+        val appThemeUiMapper = AppThemeUiMapper()
         EntryPointAccessors.fromApplication(applicationContext, StartEntryPoint::class.java)
             .getThemeUseCase()
             .executeInBackground(Unit)
+            .map(appThemeUiMapper::toUi)
             .flowOn(Dispatchers.IO)
             // A store that cannot be read keeps the theme shown.
             .catch { }
@@ -110,7 +114,7 @@ class MainActivity : ComponentActivity() {
             ?.takeIf { it.containsKey(STARTS_WITH_ONBOARDING) }
             ?.getBoolean(STARTS_WITH_ONBOARDING)
         savedInstanceState?.getString(THEME)
-            ?.let { saved -> ThemeDomainModel.entries.firstOrNull { it.name == saved } }
+            ?.let { saved -> AppThemeUiModel.entries.firstOrNull { it.name == saved } }
             ?.let { theme = it }
         // Honour the shortcut only until the start is decided; a recreated activity restores its back stack instead.
         // A recreation while the splash still waits has decided nothing yet, so it keeps the shortcut (review I2).
@@ -157,7 +161,7 @@ class MainActivity : ComponentActivity() {
 
     /** The chosen theme, or the one shown when it cannot be read in time, like the start decision. */
     @Suppress("TooGenericExceptionCaught")
-    private suspend fun readTheme(): ThemeDomainModel = try {
+    private suspend fun readTheme(): AppThemeUiModel = try {
         withTimeoutOrNull(START_DECISION_MILLIS) { themeChanges.first() } ?: theme
     } catch (exception: Exception) {
         if (exception is CancellationException) throw exception
@@ -182,9 +186,9 @@ class MainActivity : ComponentActivity() {
             val chosen by themeChanges.collectAsState(initial = theme)
             SideEffect { theme = chosen }
             val dark = when (chosen) {
-                ThemeDomainModel.Dark -> true
-                ThemeDomainModel.Light -> false
-                ThemeDomainModel.System -> isSystemInDarkTheme()
+                AppThemeUiModel.Dark -> true
+                AppThemeUiModel.Light -> false
+                AppThemeUiModel.System -> isSystemInDarkTheme()
             }
             // Attack mode and the dark room stay dark in the light theme, and the bars with them.
             val darkScreens = remember { DarkScreens() }
