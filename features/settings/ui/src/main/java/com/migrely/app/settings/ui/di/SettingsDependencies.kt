@@ -3,6 +3,7 @@ package com.migrely.app.settings.ui.di
 import com.migrely.app.architecture.ui.navigation.mapper.NavigationEventDestinationMapper
 import com.migrely.app.architecture.ui.notification.mapper.NotificationUiMapper
 import com.migrely.app.architecture.ui.view.BaseComposeHolder
+import com.migrely.app.settings.presentation.mapper.DeleteConfirmationResolver
 import com.migrely.app.settings.presentation.model.SettingsPresentationNotification
 import com.migrely.app.settings.presentation.model.SettingsViewState
 import com.migrely.app.settings.presentation.navigation.SettingsPresentationNavigationEvent
@@ -15,6 +16,7 @@ class SettingsDependencies(
     val settingsViewModel: SettingsViewModel,
     val settingsViewStateUiMapper: SettingsViewStateUiMapper,
     val themeUiToPresentationMapper: ThemeUiToPresentationMapper,
+    val deleteConfirmationResolver: DeleteConfirmationResolver,
     val settingsEventPresenter: SettingsEventPresenter,
     navigationMapper: NavigationEventDestinationMapper<SettingsPresentationNavigationEvent>,
     notificationMapper: NotificationUiMapper<SettingsPresentationNotification>

@@ -8,6 +8,7 @@ import com.migrely.app.settings.domain.usecase.DeleteAllDataUseCase
 import com.migrely.app.settings.domain.usecase.GetSettingsUseCase
 import com.migrely.app.settings.domain.usecase.SetPeriodTrackingUseCase
 import com.migrely.app.settings.domain.usecase.SetThemeUseCase
+import com.migrely.app.settings.presentation.mapper.DeleteConfirmationResolver
 import com.migrely.app.settings.presentation.mapper.SettingsPresentationMapper
 import com.migrely.app.settings.presentation.mapper.ThemeDomainMapper
 import com.migrely.app.settings.presentation.model.SettingsPresentationNotification
@@ -30,6 +31,7 @@ class SettingsViewModel(
     private val deleteAllDataUseCase: DeleteAllDataUseCase,
     private val settingsPresentationMapper: SettingsPresentationMapper,
     private val themeDomainMapper: ThemeDomainMapper,
+    private val deleteConfirmationResolver: DeleteConfirmationResolver,
     useCaseExecutor: UseCaseExecutor
 ) : BaseViewModel<SettingsViewState, SettingsPresentationNotification>(useCaseExecutor) {
     private var deleting = false
@@ -73,9 +75,9 @@ class SettingsViewModel(
         onResult = ::saved
     )
 
-    /** The user typed the confirmation word and confirmed (BRD D96). */
-    fun onDeleteAllDataAction() {
-        if (deleting || allDeleted) return
+    /** The user confirmed after typing [typed]; only the confirmation word, exactly, deletes (BRD D96). */
+    fun onDeleteAllDataAction(typed: String) {
+        if (!deleteConfirmationResolver.resolve(typed) || deleting || allDeleted) return
         deleting = true
         failureNotShown = false
         load()

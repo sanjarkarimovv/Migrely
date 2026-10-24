@@ -86,20 +86,22 @@ internal fun ThemeDialog(
 }
 
 /**
- * "Delete all data" (BRD EC-STO-03, D96). The button turns on only once [typed] is the confirmation word exactly:
- * capitals, no spaces. While [deleting], the dialog shows its progress and cannot be closed; [failed] says the
- * deletion stopped partway, and the user can try again.
+ * "Delete all data" (BRD EC-STO-03, D96). The button turns on only once [typed] is [word] exactly, which [confirmed]
+ * says. While [deleting], the dialog shows its progress and cannot be closed; [failed] says the deletion stopped
+ * partway, and the user can try again.
  */
+@Suppress("LongParameterList")
 @Composable
 internal fun DeleteAllDataDialog(
     typed: String,
+    word: String,
+    confirmed: Boolean,
     deleting: Boolean,
     failed: Boolean,
     onTyped: (String) -> Unit,
     onDelete: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    val word = stringResource(R.string.settings_delete_word)
     AlertDialog(
         onDismissRequest = { if (!deleting) onDismiss() },
         properties = DialogProperties(
@@ -150,7 +152,7 @@ internal fun DeleteAllDataDialog(
         confirmButton = {
             TextButton(
                 onClick = onDelete,
-                enabled = typed == word && !deleting,
+                enabled = confirmed && !deleting,
                 colors = ButtonDefaults.textButtonColors(
                     contentColor = MaterialTheme.colorScheme.error
                 )
@@ -180,6 +182,8 @@ private fun DeleteAllDataDialogPreview() {
     MigrelyTheme {
         DeleteAllDataDialog(
             typed = "DELETE",
+            word = "DELETE",
+            confirmed = true,
             deleting = false,
             failed = false,
             onTyped = {},
@@ -195,6 +199,8 @@ private fun DeleteAllDataDeletingPreview() {
     MigrelyTheme(dark = false) {
         DeleteAllDataDialog(
             typed = "DELETE",
+            word = "DELETE",
+            confirmed = true,
             deleting = true,
             failed = false,
             onTyped = {},
@@ -210,6 +216,8 @@ private fun DeleteAllDataFailedPreview() {
     MigrelyTheme {
         DeleteAllDataDialog(
             typed = "DELETE",
+            word = "DELETE",
+            confirmed = true,
             deleting = false,
             failed = true,
             onTyped = {},

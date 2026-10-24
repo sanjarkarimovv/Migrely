@@ -154,6 +154,8 @@ fun SettingsDependencies.Settings(navController: NavController, modifier: Modifi
     if (confirmingDelete) {
         DeleteAllDataDialog(
             typed = typed,
+            word = deleteConfirmationResolver.word,
+            confirmed = deleteConfirmationResolver.resolve(typed),
             deleting = settings?.deleting == true,
             failed = deleteFailed,
             onTyped = {
@@ -162,7 +164,7 @@ fun SettingsDependencies.Settings(navController: NavController, modifier: Modifi
             },
             onDelete = {
                 deleteFailed = false
-                settingsViewModel.onDeleteAllDataAction()
+                settingsViewModel.onDeleteAllDataAction(typed)
             },
             onDismiss = {
                 confirmingDelete = false

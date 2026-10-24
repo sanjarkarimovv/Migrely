@@ -10,6 +10,7 @@ import com.migrely.app.settings.domain.usecase.DeleteAllDataUseCase
 import com.migrely.app.settings.domain.usecase.GetSettingsUseCase
 import com.migrely.app.settings.domain.usecase.SetPeriodTrackingUseCase
 import com.migrely.app.settings.domain.usecase.SetThemeUseCase
+import com.migrely.app.settings.presentation.mapper.DeleteConfirmationResolver
 import com.migrely.app.settings.presentation.mapper.SettingsPresentationMapper
 import com.migrely.app.settings.presentation.mapper.ThemeDomainMapper
 import com.migrely.app.settings.presentation.mapper.ThemePresentationMapper
@@ -34,6 +35,7 @@ import org.mockito.Mock
 import org.mockito.junit.MockitoJUnitRunner
 import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 
@@ -60,6 +62,7 @@ class SettingsViewModelTest :
             deleteAllDataUseCase,
             SettingsPresentationMapper(ThemePresentationMapper()),
             ThemeDomainMapper(),
+            DeleteConfirmationResolver(),
             useCaseExecutor
         )
     }
@@ -160,7 +163,7 @@ class SettingsViewModelTest :
         val state = async(start = UNDISPATCHED) { classUnderTest.viewState.first() }
         val event = async(start = UNDISPATCHED) { classUnderTest.navigationEvent.first() }
 
-        classUnderTest.onDeleteAllDataAction()
+        classUnderTest.onDeleteAllDataAction("DELETE")
 
         assertEquals(SettingsViewState.Ready(SHOWN, deleting = true), state.await())
         assertEquals(SettingsPresentationNavigationEvent.OnAllDataDeleted, event.await())
@@ -171,13 +174,13 @@ class SettingsViewModelTest :
         runTest {
             getSettingsUseCase.givenSuccessfulExecution(SETTINGS)
             deleteAllDataUseCase.givenSuccessfulExecution(DeleteAllDataResultDomainModel.Deleted)
-            classUnderTest.onDeleteAllDataAction()
+            classUnderTest.onDeleteAllDataAction("DELETE")
             val state = async(start = UNDISPATCHED) { classUnderTest.viewState.first() }
             val event = async(start = UNDISPATCHED) { classUnderTest.navigationEvent.first() }
 
             classUnderTest.onResume()
             // Deleting again is never asked for.
-            classUnderTest.onDeleteAllDataAction()
+            classUnderTest.onDeleteAllDataAction("DELETE")
 
             assertEquals(SettingsViewState.Ready(SHOWN, deleting = true), state.await())
             assertEquals(SettingsPresentationNavigationEvent.OnAllDataDeleted, event.await())
@@ -189,13 +192,24 @@ class SettingsViewModelTest :
         }
 
     @Test
+    fun `Given the word is not typed exactly when confirming then nothing is deleted`() {
+        listOf("delete", "DELETE ", "").forEach(classUnderTest::onDeleteAllDataAction)
+
+        verify(useCaseExecutor, never()).execute(
+            useCase = eq(deleteAllDataUseCase),
+            onResult = any(),
+            onException = any()
+        )
+    }
+
+    @Test
     fun `Given deleting fails then the user is told and can try again`() = runTest {
         getSettingsUseCase.givenSuccessfulExecution(SETTINGS)
         deleteAllDataUseCase.givenSuccessfulExecution(DeleteAllDataResultDomainModel.Failed)
         val states = async(start = UNDISPATCHED) { classUnderTest.viewState.take(2).toList() }
         val notification = async(start = UNDISPATCHED) { classUnderTest.notification.first() }
 
-        classUnderTest.onDeleteAllDataAction()
+        classUnderTest.onDeleteAllDataAction("DELETE")
 
         assertEquals(SettingsPresentationNotification.NotDeleted, notification.await())
         assertEquals(
@@ -213,7 +227,7 @@ class SettingsViewModelTest :
             getSettingsUseCase.givenSuccessfulExecution(SETTINGS)
             deleteAllDataUseCase.givenSuccessfulExecution(DeleteAllDataResultDomainModel.Failed)
             // Nobody listens: the screen is being rebuilt.
-            classUnderTest.onDeleteAllDataAction()
+            classUnderTest.onDeleteAllDataAction("DELETE")
 
             val again = async(start = UNDISPATCHED) { classUnderTest.notification.first() }
             classUnderTest.onResume()
@@ -235,7 +249,7 @@ class SettingsViewModelTest :
         deleteAllDataUseCase.givenFailedExecution(UnknownDomainException())
         val notification = async(start = UNDISPATCHED) { classUnderTest.notification.first() }
 
-        classUnderTest.onDeleteAllDataAction()
+        classUnderTest.onDeleteAllDataAction("DELETE")
 
         assertEquals(SettingsPresentationNotification.NotDeleted, notification.await())
     }

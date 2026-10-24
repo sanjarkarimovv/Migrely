@@ -14,6 +14,7 @@ import com.migrely.app.settings.domain.usecase.GetSettingsUseCase
 import com.migrely.app.settings.domain.usecase.GetThemeUseCase
 import com.migrely.app.settings.domain.usecase.SetPeriodTrackingUseCase
 import com.migrely.app.settings.domain.usecase.SetThemeUseCase
+import com.migrely.app.settings.presentation.mapper.DeleteConfirmationResolver
 import com.migrely.app.settings.presentation.mapper.SettingsPresentationMapper
 import com.migrely.app.settings.presentation.mapper.ThemeDomainMapper
 import com.migrely.app.settings.presentation.mapper.ThemePresentationMapper
@@ -66,6 +67,7 @@ internal object SettingsModule {
         ),
         SettingsPresentationMapper(ThemePresentationMapper()),
         ThemeDomainMapper(),
+        DeleteConfirmationResolver(),
         useCaseExecutor
     )
 
@@ -81,6 +83,7 @@ internal object SettingsModule {
             settingsViewModel = settingsViewModel,
             settingsViewStateUiMapper = SettingsViewStateUiMapper(ThemeUiMapper()),
             themeUiToPresentationMapper = ThemeUiToPresentationMapper(),
+            deleteConfirmationResolver = DeleteConfirmationResolver(),
             settingsEventPresenter = presenter,
             navigationMapper = SettingsNavigationEventDestinationMapper {
                 // A reminder that ran while everything was deleted may have posted after the cancel step.
