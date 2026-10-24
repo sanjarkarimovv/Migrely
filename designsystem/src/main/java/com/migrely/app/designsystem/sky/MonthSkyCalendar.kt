@@ -3,6 +3,7 @@ package com.migrely.app.designsystem.sky
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,9 +19,19 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.focus.FocusManager
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -32,6 +43,15 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEvent
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.isShiftPressed
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -48,6 +68,8 @@ import com.migrely.app.designsystem.theme.MigrelyTheme
 private const val DAYS_PER_WEEK = 7
 private val CellSpacing = 6.dp
 private val CellShape = RoundedCornerShape(10.dp)
+private val ChosenRingWidth = 2.5.dp
+private val FocusRingWidth = 2.5.dp
 private val DayNumberOnSky = Color(0xFFC8CCD2)
 
 /** What one calendar day shows (BRD EC-UX-09). Each differs by shape as well as colour (BRD EC-UX-15). */
@@ -97,6 +119,9 @@ data class LegendEntry(
  * on the locale's first day (BRD EC-TIM-05). Days that are not selectable have no action. The weekday initials are
  * hidden from screen readers, because every day says its own weekday. Screen readers hear [chosenStateDescription]
  * after the chosen day only: the `selected` property would make every day a "not checked" checkbox.
+ *
+ * With a keyboard the month is one Tab stop (BRD D38, EC-UX-19), as [MonthKeyboard] describes; Enter chooses the
+ * focused day. Accessibility services still reach every day.
  */
 @Composable
 fun MonthSkyCalendar(
@@ -107,7 +132,29 @@ fun MonthSkyCalendar(
     onDayClick: (dayOfMonth: Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(CellSpacing), modifier = modifier) {
+    val requesters = remember(days.map(CalendarDay::dayOfMonth)) {
+        days.associate { it.dayOfMonth to FocusRequester() }
+    }
+    val focusedDay = remember { FocusedDay() }
+    val selectable = days.filter(CalendarDay::isSelectable)
+    val anchor = selectable.firstOrNull(CalendarDay::isSelected)
+        ?: selectable.firstOrNull(CalendarDay::isToday)
+        ?: selectable.firstOrNull()
+    val keyboard = MonthKeyboard(
+        requesters = requesters,
+        selectable = selectable.map(CalendarDay::dayOfMonth),
+        anchor = anchor?.dayOfMonth,
+        focusedDay = focusedDay,
+        rightToLeft = LocalLayoutDirection.current == LayoutDirection.Rtl,
+        focusManager = LocalFocusManager.current
+    )
+    Column(
+        verticalArrangement = Arrangement.spacedBy(CellSpacing),
+        modifier = modifier
+            .onPreviewKeyEvent(keyboard::onKey)
+            .focusProperties { onEnter = { keyboard.onEnter(requestedFocusDirection) } }
+            .focusGroup()
+    ) {
         Row(
             horizontalArrangement = Arrangement.spacedBy(CellSpacing),
             modifier = Modifier.clearAndSetSemantics { }
@@ -132,6 +179,8 @@ fun MonthSkyCalendar(
                         DayCell(
                             day = day,
                             chosenStateDescription = chosenStateDescription,
+                            focusRequester = requesters.getValue(day.dayOfMonth),
+                            onFocused = { focusedDay.day = day.dayOfMonth },
                             onClick = { onDayClick(day.dayOfMonth) },
                             modifier = Modifier.weight(1f)
                         )
@@ -143,16 +192,90 @@ fun MonthSkyCalendar(
     }
 }
 
+/**
+ * The month's keyboard (BRD D38, EC-UX-19), made on each composition.
+ * - Tab or Shift+Tab entering the grid lands on [anchor]: the chosen day, otherwise today, otherwise the first
+ *   selectable day.
+ * - Leaving, they go from the last or first selectable day straight past the grid, so the other days are skipped.
+ * - The arrow keys go a day or a week on or back, with left and right mirrored in right-to-left layouts. Off the
+ *   selectable days they do nothing, so focus stays in the month, as in a date picker.
+ */
+private class MonthKeyboard(
+    private val requesters: Map<Int, FocusRequester>,
+    private val selectable: List<Int>,
+    private val anchor: Int?,
+    private val focusedDay: FocusedDay,
+    private val rightToLeft: Boolean,
+    private val focusManager: FocusManager
+) {
+    fun onKey(event: KeyEvent): Boolean = event.type == KeyEventType.KeyDown &&
+        if (event.key == Key.Tab) leave(backwards = event.isShiftPressed) else move(event.key)
+
+    fun onEnter(direction: FocusDirection) {
+        if (direction == FocusDirection.Next || direction == FocusDirection.Previous) {
+            anchor?.let { requesters.getValue(it).requestFocus() }
+        }
+    }
+
+    private fun leave(backwards: Boolean): Boolean {
+        val edge = if (backwards) selectable.firstOrNull() else selectable.lastOrNull()
+        edge?.let {
+            requesters.getValue(it).requestFocus()
+            focusManager.moveFocus(if (backwards) FocusDirection.Previous else FocusDirection.Next)
+        }
+        return edge != null
+    }
+
+    private fun move(key: Key): Boolean {
+        val step = when (key) {
+            Key.DirectionRight -> if (rightToLeft) -1 else 1
+            Key.DirectionLeft -> if (rightToLeft) 1 else -1
+            Key.DirectionDown -> DAYS_PER_WEEK
+            Key.DirectionUp -> -DAYS_PER_WEEK
+            else -> return false
+        }
+        focusedDay.day?.plus(step)
+            ?.takeIf { it in selectable }
+            ?.let { requesters.getValue(it).requestFocus() }
+        return true
+    }
+}
+
+/** The day with keyboard focus. It is read when a key is pressed, not at composition, so quick presses never lag. */
+private class FocusedDay {
+    var day: Int? = null
+}
+
 @Composable
 private fun DayCell(
     day: CalendarDay,
     chosenStateDescription: String,
+    focusRequester: FocusRequester,
+    onFocused: () -> Unit,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val selectable = day.isSelectable
+    var focused by remember { mutableStateOf(false) }
     val ring = when {
-        day.isSelected -> Modifier.border(2.5.dp, MaterialTheme.colorScheme.primary, CellShape)
+        // A two-tone ring shows on every sky (WCAG 2.4.7); inside it, the chosen day keeps its colour.
+        focused ->
+            Modifier
+                .border(FocusRingWidth, MaterialTheme.colorScheme.onSurface, CellShape)
+                .border(
+                    FocusRingWidth * 2,
+                    if (day.isSelected) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.surface
+                    },
+                    CellShape
+                )
+        day.isSelected -> Modifier.border(
+            ChosenRingWidth,
+            MaterialTheme.colorScheme.primary,
+            CellShape
+        )
         day.isToday -> Modifier.border(
             1.5.dp,
             MaterialTheme.colorScheme.onSurfaceVariant,
@@ -173,10 +296,16 @@ private fun DayCell(
             }
             .then(
                 if (selectable) {
-                    Modifier.clickable(
-                        role = Role.Button,
-                        onClick = onClick
-                    )
+                    Modifier
+                        .focusRequester(focusRequester)
+                        .onFocusChanged {
+                            focused = it.isFocused
+                            if (it.isFocused) onFocused()
+                        }
+                        .clickable(
+                            role = Role.Button,
+                            onClick = onClick
+                        )
                 } else {
                     Modifier
                 }

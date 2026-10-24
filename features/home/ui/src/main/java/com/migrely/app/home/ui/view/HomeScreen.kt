@@ -24,6 +24,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.navigation.NavController
 import com.migrely.app.architecture.ui.view.ScreenEnterObserver
@@ -88,6 +90,9 @@ fun HomeDependencies.Home(
     )
     val reduceMotion = rememberReduceMotion()
 
+    // Where the message ends, so landscape attack mode keeps its guidance below it (BRD D52). It is read only in the
+    // layout phase, so a moving message never recomposes the screen.
+    val messageBottom = remember { mutableStateOf(0.dp) }
     HomeContents(
         viewState = uiState,
         nowMillis = nowMillis,
@@ -123,9 +128,11 @@ fun HomeDependencies.Home(
                 reduceMotion = reduceMotion,
                 onUndoStart = homeViewModel::onUndoStartAction,
                 onUndoEnd = homeViewModel::onUndoEndAction,
-                onUndoDelete = homeViewModel::onUndoDeleteAction
+                onUndoDelete = homeViewModel::onUndoDeleteAction,
+                onMessageBottomChanged = { messageBottom.value = it }
             )
         },
+        messageBottom = messageBottom::value,
         modifier = modifier
     )
 }
@@ -169,7 +176,10 @@ private val HomeViewStateUiModel.mode: HomeMode
         is HomeViewStateUiModel.AttackInProgress -> HomeMode.Attack
     }
 
-/** The home screen for [viewState], with [messages] drawn on top so a message stays while the mode changes. */
+/**
+ * The home screen for [viewState], with [messages] drawn on top so a message stays while the mode changes.
+ * [messageBottom] reads where the message shown ends, in root coordinates, or 0 dp.
+ */
 @Composable
 fun HomeContents(
     viewState: HomeViewStateUiModel,
@@ -179,6 +189,7 @@ fun HomeContents(
     timeUiFormatter: TimeUiFormatter,
     actions: HomeActions,
     messages: @Composable () -> Unit,
+    messageBottom: () -> Dp,
     modifier: Modifier = Modifier,
     monthCalendar: @Composable () -> Unit = {},
     medicationPrompt: @Composable () -> Unit = {}
@@ -232,6 +243,7 @@ fun HomeContents(
                     attack = state.attack,
                     nowMillis = nowMillis,
                     reduceMotion = reduceMotion,
+                    messageBottom = messageBottom,
                     timeUiFormatter = timeUiFormatter,
                     actions = actions
                 )
