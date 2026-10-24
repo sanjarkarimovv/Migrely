@@ -75,6 +75,7 @@ setOf(
 }
 
 setOf(
+    "ui",
     "presentation",
     "domain",
     "data"

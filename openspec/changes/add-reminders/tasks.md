@@ -33,7 +33,7 @@
 - [x] 2.3 Presentation: `RemindersViewModel` with `onEnter`, `onDailyReminderAction(on)`, `onDailyTimeAction(time)`,
   `onEffectReminderAction(on)`, `onPermissionResultAction(granted)` and `onOpenSettingsAction`; view state and
   notifications; tests.
-- [ ] 2.4 UI: the Reminders screen (switch rows, time row with `MigrelyDateTimePicker`'s time picker, a notice when
+- [x] 2.4 UI: the Reminders screen (switch rows, time row with `MigrelyDateTimePicker`'s time picker, a notice when
   notifications are off with "Open settings", the runtime permission launcher).
 - [ ] 2.5 Home: the header bell "Reminders" (normal mode only) emits `OnOpenReminders`; `:app` navigates.
 
