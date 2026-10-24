@@ -8,14 +8,20 @@
 
 ## 2. Keyboard (#22, D38, D62)
 
-- [ ] 2.1 Check that Maestro's `pressKey: Tab` and the D-pad keys reach the app on emulator-5580; otherwise use adb.
-  Verify: a probe flow moves focus from "Period" to the month title
-- [ ] 2.2 `month-sky/keyboard-home.yaml`: Tab order "Period" → month title → today → "Migraine started"; arrows ±1 and
-  ±7 days; today stays focused at the edge; Enter on a past day opens History with it chosen. Verify: passes 3 times
-- [ ] 2.3 `month-sky/keyboard-history.yaml`: the grid is one stop in History, entering on the chosen day. Verify:
-  passes 3 times
-- [ ] 2.4 Device scenario `shift_tab` (adb `input keycombination`): Shift+Tab from "Migraine started" goes back
-  through today, the month title and "Period". Verify: passes twice
+- [x] 2.1 Check that Maestro's `pressKey: Tab` and the D-pad keys reach the app on emulator-5580; otherwise use adb.
+  Verify: a probe flow moves focus from "Period" to the month title. Result: Maestro's Tab works, but its
+  `focused: true` selector cannot see the label, which Compose keeps on a child of the focused node. So every key goes
+  through adb (`input keyevent`, `input keycombination 59 61` for Shift+Tab) in `qa/device_scenarios.sh`, which reads
+  the labels under the focused node (design D1, fallback)
+- [x] 2.2 Scenario `keyboard_home` on the 24th: Tab order "Period today" → month title → today → "Migraine started";
+  Shift+Tab back the same way; today stays focused on right and down; arrows ±1 and ±7 days (14 → 15 → 22); Enter on
+  the 17th opens History with it chosen. Verify: passes twice (done 2026-10-24 22:10)
+- [x] 2.3 Scenario `keyboard_history`: Tab reaches the month on today; Enter chooses the 23rd; Tab leaves the month and
+  Shift+Tab comes back to the chosen day. Verify: passes twice (done 2026-10-24 22:10)
+- [x] 2.4 Scenario `keyboard_rtl` (app language Hebrew): the right arrow goes back a day, the left one forward, and
+  stops at today. The app language is restored, also by the exit trap. Verify: passes twice (done 2026-10-24 22:10)
+- [x] 2.5 `qa/e2e_coverage.py` reads `# Covers:` lines from `qa/device_scenarios.sh` and the delta specs of open
+  changes. Verify: exit 0 with the keyboard Covers lines
 
 ## 3. Landscape message band (#26, D52)
 

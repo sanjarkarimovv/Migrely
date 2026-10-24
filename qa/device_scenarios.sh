@@ -8,7 +8,8 @@
 #
 # Scenarios: long (72-hour check), history_death, past_death, details_kill, midnight, travel, travel_west, same_date,
 # zone_attack, zone_history, double_tap, med_effect, med_effect_attack, med_effect_skip, med_effect_late,
-# med_preventive, med_two_waiting, med_link_home, med_overuse, upgrade.
+# med_preventive, med_two_waiting, med_link_home, med_overuse, keyboard_home, keyboard_history, keyboard_rtl,
+# upgrade.
 # upgrade needs QA_OLD_APK=<older debug APK of com.migrely.app>; without it, it is reported as not run.
 set -euo pipefail
 
@@ -30,6 +31,8 @@ qa_lock_device
 ORIGINAL_AUTO_TIME="$(adbq shell settings get global auto_time | tr -d '\r')"
 ORIGINAL_ZONE="$(adbq shell getprop persist.sys.timezone | tr -d '\r')"
 ORIGINAL_TIMEOUT="$(adbq shell settings get secure accessibility_interactive_ui_timeout_ms | tr -d '\r')"
+# "Locales for <app> for user 0 are [iw]" -> "iw"; empty means the app follows the system language.
+ORIGINAL_APP_LOCALES="$(adbq shell cmd locale get-app-locales "$APP" | tr -d '\r' | sed 's/.*\[\(.*\)\].*/\1/')"
 put_or_delete() { # $1 namespace, $2 key, $3 value or "null"
   if [[ "$3" == "null" ]]; then adbq shell settings delete "$1" "$2" >/dev/null; else adbq shell settings put "$1" "$2" "$3"; fi
 }
@@ -39,6 +42,7 @@ restore() {
   adbq shell cmd alarm set-time "$(($(date +%s) * 1000))" >/dev/null 2>&1
   adbq shell settings put global auto_time "$ORIGINAL_AUTO_TIME" >/dev/null 2>&1
   put_or_delete secure accessibility_interactive_ui_timeout_ms "$ORIGINAL_TIMEOUT" >/dev/null 2>&1
+  adbq shell cmd locale set-app-locales "$APP" --locales "$ORIGINAL_APP_LOCALES" >/dev/null 2>&1
   echo "Restored: clock $(adbq shell date | tr -d '\r'), zone $ORIGINAL_ZONE, auto_time $ORIGINAL_AUTO_TIME"
   qa_unlock_device
 }
@@ -119,6 +123,44 @@ for n in root.iter('node'):
         x1, y1, x2, y2 = map(int, n.get('bounds').replace('][', ',').strip('[]').split(','))
         print((x1 + x2) // 2, int(y1 + (y2 - y1) * float(sys.argv[2]))); break" "$1" "$2"
 }
+
+# Keyboard checks (D62): keys go through adb, and the focused node is read from uiautomator. Compose keeps a control's
+# label on a child of the focusable node, so the labels under the focused node are joined.
+focused_label() {
+  adbq shell uiautomator dump /sdcard/qa-focus.xml >/dev/null
+  adbq exec-out cat /sdcard/qa-focus.xml | python3 -I -c "import sys, xml.etree.ElementTree as ET
+for n in ET.fromstring(sys.stdin.read()).iter('node'):
+    if n.get('focused') == 'true':
+        print(' | '.join(m.get('content-desc') or m.get('text') for m in n.iter('node') if m.get('content-desc') or m.get('text')))
+        break"
+}
+key() { # $1 an Android key name (TAB, DPAD_LEFT, ENTER) or SHIFT_TAB
+  if [[ "$1" == "SHIFT_TAB" ]]; then adbq shell input keycombination 59 61; else adbq shell input keyevent "$1"; fi
+}
+expect_focus() { # $1 key, $2 extended regex the focused label must match after it
+  local label="" try
+  key "$1"
+  for try in 1 2 3; do
+    sleep 1
+    label="$(focused_label)"
+    if [[ "$label" =~ $2 ]]; then echo "    $1 -> $label"; return 0; fi
+  done
+  echo "  FAILED: after $1 the focus is on '${label:-nothing}', expected /$2/"
+  return 1
+}
+tab_until() { # $1 extended regex, $2 most Tabs: press Tab until the focused label matches
+  local label="" n
+  for ((n = 1; n <= $2; n++)); do
+    key TAB
+    sleep 1
+    label="$(focused_label)"
+    if [[ "$label" =~ $1 ]]; then echo "    TAB x$n -> $label"; return 0; fi
+  done
+  echo "  FAILED: $2 Tabs never reached /$1/ (last: '${label:-nothing}')"
+  return 1
+}
+day_re() { echo "(^|[^0-9])$1([^0-9]|\$)"; } # a day label for day $1 of the month, in any language
+DAY_CELL=": (nothing logged|calm|hazy|cloudy|storm|rain|pain-free|period)" # what follows the date in a cell's label
 
 run_flow_env() { # $1 flow, then KEY=VALUE pairs passed to Maestro with -e
   local flow="$1"
@@ -330,6 +372,82 @@ scenario_med_overuse() {
   run_flow med-overuse-doctor || return 1
 }
 
+# Covers: month-sky › Days reachable with a keyboard › One Tab stop
+# Covers: month-sky › Days reachable with a keyboard › Entering on today
+# Covers: month-sky › Arrow keys move between days › Arrow keys
+# Covers: month-sky › Arrow keys move between days › Arrow keys stay on selectable days
+# Covers: quality-gates › Keyboard paths are checked with key events › One Tab stop for the month
+# Covers: quality-gates › Keyboard paths are checked with key events › Arrows inside the month
+# Covers: quality-gates › Keyboard paths are checked with key events › Enter on a day
+scenario_keyboard_home() {
+  echo "Scenario keyboard_home: home's month is one Tab stop with arrows, on the 24th (#22, D38, D62)"
+  set_clock_millis "$(day_millis -9)" || return 1
+  run_flow clean || return 1
+  run_flow home-ready || return 1
+  expect_focus TAB "^Period today" || return 1
+  expect_focus TAB "Opens History\.$" || return 1
+  expect_focus TAB "^Today, .*$(day_re 24)" || return 1
+  expect_focus TAB "^Migraine started" || return 1
+  expect_focus SHIFT_TAB "^Today, " || return 1
+  expect_focus DPAD_RIGHT "^Today, " || return 1
+  expect_focus DPAD_DOWN "^Today, " || return 1
+  expect_focus DPAD_UP "$(day_re 17)" || return 1
+  expect_focus DPAD_LEFT "$(day_re 16)" || return 1
+  expect_focus DPAD_LEFT "$(day_re 15)" || return 1
+  expect_focus DPAD_LEFT "$(day_re 14)" || return 1
+  expect_focus DPAD_RIGHT "$(day_re 15)" || return 1
+  expect_focus DPAD_DOWN "$(day_re 22)" || return 1
+  expect_focus TAB "^Migraine started" || return 1
+  expect_focus SHIFT_TAB "^Today, " || return 1
+  expect_focus SHIFT_TAB "Opens History\.$" || return 1
+  expect_focus SHIFT_TAB "^Period today" || return 1
+  expect_focus TAB "Opens History\.$" || return 1
+  expect_focus TAB "^Today, " || return 1
+  expect_focus DPAD_UP "$(day_re 17)" || return 1
+  key ENTER
+  run_flow_env keyboard-day-chosen DAY=17 || return 1
+}
+
+# Covers: month-sky › Days reachable with a keyboard › Tab through the days
+scenario_keyboard_history() {
+  echo "Scenario keyboard_history: History's month is one Tab stop; Enter chooses a day and Tab comes back to it (#22)"
+  set_clock_millis "$(day_millis -9)" || return 1
+  run_flow log-and-close || return 1
+  run_flow home-ready || return 1
+  # With today's attack, its row comes between the "Period" chip and the month.
+  tab_until "Opens History\.$" 4 || return 1
+  key ENTER
+  run_flow history-ready || return 1
+  tab_until "^Today, .*$(day_re 24)" 4 || return 1
+  expect_focus DPAD_LEFT "$(day_re 23)" || return 1
+  key ENTER
+  run_flow_env keyboard-day-chosen DAY=23 || return 1
+  # Maestro does not move the focus, so it is still on the 23rd. The next Tab leaves the month, and Shift+Tab comes back
+  # to the chosen day, not to today.
+  local label
+  key TAB
+  sleep 1
+  label="$(focused_label)"
+  if [[ "$label" =~ $DAY_CELL ]]; then echo "  FAILED: Tab stayed in the month ('$label')"; return 1; fi
+  echo "    TAB -> $label"
+  expect_focus SHIFT_TAB "[^0-9]23$DAY_CELL" || return 1
+}
+
+# Covers: month-sky › Arrow keys move between days › Arrow keys
+scenario_keyboard_rtl() {
+  echo "Scenario keyboard_rtl: the arrows are mirrored in a right-to-left language (Hebrew), on the 24th (D38)"
+  set_clock_millis "$(day_millis -9)" || return 1
+  run_flow clean || return 1
+  adbq shell cmd locale set-app-locales "$APP" --locales iw >/dev/null
+  run_flow home-ready || { adbq shell cmd locale set-app-locales "$APP" --locales "$ORIGINAL_APP_LOCALES"; return 1; }
+  local ok=0
+  expect_focus TAB "^Period today" && expect_focus TAB "Opens History\.$" && expect_focus TAB "^Today, .*$(day_re 24)" &&
+    expect_focus DPAD_RIGHT "$(day_re 23)" && expect_focus DPAD_LEFT "$(day_re 24)" &&
+    expect_focus DPAD_LEFT "$(day_re 24)" || ok=1
+  adbq shell cmd locale set-app-locales "$APP" --locales "$ORIGINAL_APP_LOCALES" >/dev/null
+  return $ok
+}
+
 scenario_double_tap() {
   echo "Scenario double_tap: double taps never cross a mode switch (EC-UX-18, D32), with exact gaps between the taps"
   local gap point
@@ -376,7 +494,7 @@ mkdir -p "$out"
 if [[ $# -eq 0 ]]; then
   set -- long history_death past_death details_kill midnight travel travel_west same_date zone_attack zone_history \
     double_tap med_effect med_effect_attack med_effect_skip med_effect_late med_preventive med_two_waiting \
-    med_link_home med_overuse
+    med_link_home med_overuse keyboard_home keyboard_history keyboard_rtl
   if [[ -n "${QA_OLD_APK:-}" ]]; then
     set -- "$@" upgrade
   else

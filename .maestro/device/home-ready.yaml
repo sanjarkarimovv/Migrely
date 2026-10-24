@@ -1,0 +1,7 @@
+# Device scenario step: the app is opened on home, with no control focused yet.
+appId: com.migrely.app
+---
+- launchApp
+- extendedWaitUntil:
+    visible: "Migraine started"
+    timeout: 10000

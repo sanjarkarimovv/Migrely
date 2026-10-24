@@ -32,8 +32,8 @@ changes.
 | Maestro `pressKey` (Tab, the D-pad keys, Enter) with `focused: true` assertions | **Chosen** for Tab, the arrows and Enter |
 | adb `input keycombination` for Shift+Tab, with the focused node read from uiautomator | **Chosen** for Shift+Tab, which Maestro cannot send. It runs as a device scenario |
 
-If Maestro on this emulator sends no Tab key, every key goes through adb in a device scenario (task 2.1 checks this
-first).
+If Maestro cannot check the focus, every key goes through adb in a device scenario. Task 2.1 found exactly that: the
+`focused` selector does not see a label that Compose keeps on a child of the focused node, so adb is used throughout.
 
 ### D2. Reduce motion is the animator scale
 
