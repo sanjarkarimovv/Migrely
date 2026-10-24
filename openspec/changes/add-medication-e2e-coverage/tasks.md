@@ -43,9 +43,9 @@
 
 ## 6. Verify
 
-- [ ] 6.1 Full regression (`qa/maestro.sh`), all device scenarios, `python3 -I qa/e2e_coverage.py` exit 0. Record the
+- [x] 6.1 Full regression (`qa/maestro.sh`), all device scenarios, `python3 -I qa/e2e_coverage.py` exit 0. Record the
   results, the coverage and the remaining medication gaps with reasons in a "Verification record" below
-- [ ] 6.2 Gate `./gradlew assembleDebug test ktlintCheck detekt` and `openspec validate add-medication-e2e-coverage
+- [x] 6.2 Gate `./gradlew assembleDebug test ktlintCheck detekt` and `openspec validate add-medication-e2e-coverage
   --strict`
 
 ## Medication scenarios without a flow (D61)
@@ -70,3 +70,36 @@ overuse counting).
 | medication-list › Order and limit › Recently used first | Not written yet | Next QA change |
 | medication-list › Order and limit › Limit reached | 50 medications through the UI take about 25 min; unit (restore checks the limit) | Device scenario, release runs only |
 | medication-overuse › 11 scenarios (two categories in one day, Not sure, Preventive, Thirty days back, Doctor warning for triptans, Below the soft level, Several categories together, A single category already warned, Got it, Another category's Got it, After 30 days) | Unit (3a counting rules). Each needs 10–15 logged days through the UI, about 9 min each; the simple-painkiller path is covered end to end by `med_overuse` | One multi-category device scenario in the next QA change |
+
+## Verification record (2026-10-24, emulator-5580, AVD `Migrely_QA_API_36`)
+
+The final base is develop df2fe7d (changes 4, 4a and the #29 fix) merged into the branch at 83fa5ae. Before that, the
+same checks passed on develop 9034054 (71d7f9e).
+
+| Check | Result |
+|---|---|
+| Gate `./gradlew assembleDebug test ktlintCheck detekt` | ✅ exit 0, BUILD SUCCESSFUL (795 tasks) |
+| `qa/maestro.sh --install` | ✅ pass 1: 29/29; pass 2: 9/9; no `known-bug` flow left |
+| New and changed flows (`medication-list`, `medication-intakes`, `add-for-empty-day`) | ✅ 3/3 runs each |
+| `qa/device_scenarios.sh` (all scenarios) | ✅ on 9034054. On df2fe7d every scenario passed except one `med_overuse` run: Maestro's device server died before the flow's first step (`DeviceServerDiedException ... UNAVAILABLE`, host load 24), with no app crash or ANR in the logs. The rerun passed 2/2 |
+| `med_*` scenarios after the review fixes | ✅ all 8 |
+| `python3 -I qa/e2e_coverage.py` | ✅ exit 0. 108 of 329 scenarios covered (33%); medication capabilities 25 of 52 |
+| `qa/permission_audit.sh` | ✅ passed, no INTERNET |
+| Device settings after the runs | ✅ accessibility timeout null, automatic time on, rotation 0, font 1.0, zone Asia/Tashkent |
+| `openspec validate add-medication-e2e-coverage --strict` | ✅ valid |
+
+**Retests:**
+- #19 and #20 (PR #24) pass and were commented on the PR;
+- #29 (PR #31) passes and is closed;
+- #27 (D50) passes `travel_west` and is closed.
+
+**Review** (`superpowers:code-reviewer`): 1 critical, 5 important and 6 minor findings, all fixed (71d7f9e). The
+critical one: the medication folders were missing from `.maestro/config.yaml`, so their flows never ran in the
+regression or the smoke run.
+
+**Product bugs found:** #29 (S4, accessibility), fixed. Nothing else: every "Did it help?" and overuse rule checked on
+the device behaved as the specs say.
+
+**Follow-ups:**
+- `landscape-message-clear` covers the controls part only, until the #26 retest in `add-day-markers-e2e-coverage`;
+- the scenarios without a flow are listed above (D61).
