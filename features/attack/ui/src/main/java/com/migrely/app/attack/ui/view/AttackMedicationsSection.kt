@@ -32,12 +32,7 @@ internal fun MedicationsSection(
     actions: AttackDetailsActions
 ) {
     Column {
-        Text(
-            text = stringResource(R.string.section_medications),
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.padding(start = 4.dp, bottom = 4.dp)
-        )
+        SectionTitle(stringResource(R.string.section_medications))
         if (details.intakes.isEmpty()) {
             Text(
                 text = stringResource(R.string.medication_none),

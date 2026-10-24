@@ -56,12 +56,14 @@ internal object MedicationModule {
         countActiveMedicationsRepository: CountActiveMedicationsRepository,
         createMedicationRepository: CreateMedicationRepository,
         updateMedicationRepository: UpdateMedicationRepository,
+        setMedicationArchivedRepository: SetMedicationArchivedRepository,
         coroutineContextProvider: CoroutineContextProvider
     ) = SaveMedicationUseCase(
         findMedicationByNameRepository,
         countActiveMedicationsRepository,
         createMedicationRepository,
         updateMedicationRepository,
+        setMedicationArchivedRepository,
         coroutineContextProvider
     )
 

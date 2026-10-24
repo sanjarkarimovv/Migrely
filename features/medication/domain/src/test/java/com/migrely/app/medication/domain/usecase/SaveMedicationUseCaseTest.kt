@@ -9,9 +9,11 @@ import com.migrely.app.medication.domain.model.MedicationLookupResultDomainModel
 import com.migrely.app.medication.domain.model.MedicationWriteResultDomainModel
 import com.migrely.app.medication.domain.model.SaveMedicationRequestDomainModel
 import com.migrely.app.medication.domain.model.SaveMedicationResultDomainModel
+import com.migrely.app.medication.domain.model.WriteResultDomainModel
 import com.migrely.app.medication.domain.repository.CountActiveMedicationsRepository
 import com.migrely.app.medication.domain.repository.CreateMedicationRepository
 import com.migrely.app.medication.domain.repository.FindMedicationByNameRepository
+import com.migrely.app.medication.domain.repository.SetMedicationArchivedRepository
 import com.migrely.app.medication.domain.repository.UpdateMedicationRepository
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -34,6 +36,7 @@ class SaveMedicationUseCaseTest {
     private val countActiveMedicationsRepository: CountActiveMedicationsRepository = mock()
     private val createMedicationRepository: CreateMedicationRepository = mock()
     private val updateMedicationRepository: UpdateMedicationRepository = mock()
+    private val setMedicationArchivedRepository: SetMedicationArchivedRepository = mock()
     private lateinit var classUnderTest: SaveMedicationUseCase
 
     @Before
@@ -43,6 +46,7 @@ class SaveMedicationUseCaseTest {
             countActiveMedicationsRepository,
             createMedicationRepository,
             updateMedicationRepository,
+            setMedicationArchivedRepository,
             CoroutineContextProvider.Default
         )
         given(findMedicationByNameRepository.medicationByNameKey(any()))
@@ -151,17 +155,37 @@ class SaveMedicationUseCaseTest {
     }
 
     @Test
-    fun `Given an archived medication with the name when adding then it is restored`() {
+    fun `Given an archived medication with the name when adding then it comes back as it was`() {
         given(findMedicationByNameRepository.medicationByNameKey("ibuprofen"))
             .willReturn(
                 MedicationLookupResultDomainModel.Found(medication(id = "old", archived = true))
             )
+        given(setMedicationArchivedRepository.setMedicationArchived("old", false))
+            .willReturn(WriteResultDomainModel.Done)
 
-        val actual = classUnderTest.executeInBackground(request())
+        // The quick form's "Not sure" and empty dose never erase what was stored (EC-MED-07).
+        val actual = classUnderTest.executeInBackground(
+            request(name = "ibuprofen", category = null, dose = null)
+        )
 
-        assertEquals(SaveMedicationResultDomainModel.Restored(medication()), actual)
-        verify(updateMedicationRepository)
-            .updateMedication("old", "Ibuprofen", "ibuprofen", ACUTE, SIMPLE, "400 mg")
+        assertEquals(SaveMedicationResultDomainModel.Restored(medication(id = "old")), actual)
+        verify(updateMedicationRepository, never())
+            .updateMedication(any(), any(), any(), any(), anyOrNull(), anyOrNull())
+    }
+
+    @Test
+    fun `Given storage is full when restoring then storage full`() {
+        given(findMedicationByNameRepository.medicationByNameKey("ibuprofen"))
+            .willReturn(
+                MedicationLookupResultDomainModel.Found(medication(id = "old", archived = true))
+            )
+        given(setMedicationArchivedRepository.setMedicationArchived("old", false))
+            .willReturn(WriteResultDomainModel.StorageFull)
+
+        assertEquals(
+            SaveMedicationResultDomainModel.StorageFull,
+            classUnderTest.executeInBackground(request())
+        )
     }
 
     @Test

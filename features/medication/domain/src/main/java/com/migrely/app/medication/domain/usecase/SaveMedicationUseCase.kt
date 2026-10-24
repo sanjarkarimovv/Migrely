@@ -3,14 +3,17 @@ package com.migrely.app.medication.domain.usecase
 import com.migrely.app.architecture.domain.usecase.BackgroundExecutingUseCase
 import com.migrely.app.coroutine.CoroutineContextProvider
 import com.migrely.app.medication.domain.model.ActiveCountResultDomainModel
+import com.migrely.app.medication.domain.model.MedicationDomainModel
 import com.migrely.app.medication.domain.model.MedicationKindDomainModel
 import com.migrely.app.medication.domain.model.MedicationLookupResultDomainModel
 import com.migrely.app.medication.domain.model.MedicationWriteResultDomainModel
 import com.migrely.app.medication.domain.model.SaveMedicationRequestDomainModel
 import com.migrely.app.medication.domain.model.SaveMedicationResultDomainModel
+import com.migrely.app.medication.domain.model.WriteResultDomainModel
 import com.migrely.app.medication.domain.repository.CountActiveMedicationsRepository
 import com.migrely.app.medication.domain.repository.CreateMedicationRepository
 import com.migrely.app.medication.domain.repository.FindMedicationByNameRepository
+import com.migrely.app.medication.domain.repository.SetMedicationArchivedRepository
 import com.migrely.app.medication.domain.repository.UpdateMedicationRepository
 import java.util.Locale
 
@@ -20,13 +23,15 @@ const val MAXIMUM_ACTIVE_MEDICATIONS = 50
 
 /**
  * Adds or edits a medication (BRD MED-F1, MED-F2, D35). Names are trimmed and unique ignoring case; adding the name of
- * an archived medication brings it back with its history (EC-MED-07). Preventive medications have no category.
+ * an archived medication brings that medication back as it was, with its history, so the quick form's "Not sure" and
+ * empty dose never erase what was stored (EC-MED-07). Preventive medications have no category.
  */
 class SaveMedicationUseCase(
     private val findMedicationByNameRepository: FindMedicationByNameRepository,
     private val countActiveMedicationsRepository: CountActiveMedicationsRepository,
     private val createMedicationRepository: CreateMedicationRepository,
     private val updateMedicationRepository: UpdateMedicationRepository,
+    private val setMedicationArchivedRepository: SetMedicationArchivedRepository,
     coroutineContextProvider: CoroutineContextProvider
 ) : BackgroundExecutingUseCase<SaveMedicationRequestDomainModel, SaveMedicationResultDomainModel>(
     coroutineContextProvider
@@ -68,18 +73,9 @@ class SaveMedicationUseCase(
                 request.kind,
                 category,
                 dose
-            ).toSaveResult(restored = false)
+            ).toSaveResult()
 
-            existing != null -> whenUnderLimit {
-                updateMedicationRepository.updateMedication(
-                    existing.id,
-                    name,
-                    nameKey,
-                    request.kind,
-                    category,
-                    dose
-                ).toSaveResult(restored = true)
-            }
+            existing != null -> whenUnderLimit { restore(existing) }
 
             else -> whenUnderLimit {
                 createMedicationRepository.createMedication(
@@ -88,10 +84,19 @@ class SaveMedicationUseCase(
                     request.kind,
                     category,
                     dose
-                ).toSaveResult(restored = false)
+                ).toSaveResult()
             }
         }
     }
+
+    private fun restore(archived: MedicationDomainModel): SaveMedicationResultDomainModel =
+        when (setMedicationArchivedRepository.setMedicationArchived(archived.id, false)) {
+            WriteResultDomainModel.Done ->
+                SaveMedicationResultDomainModel.Restored(archived.copy(archived = false))
+
+            WriteResultDomainModel.StorageFull -> SaveMedicationResultDomainModel.StorageFull
+            WriteResultDomainModel.Failed -> SaveMedicationResultDomainModel.Failed
+        }
 
     private fun whenUnderLimit(
         save: () -> SaveMedicationResultDomainModel
@@ -107,16 +112,13 @@ class SaveMedicationUseCase(
             ActiveCountResultDomainModel.Failed -> SaveMedicationResultDomainModel.Failed
         }
 
-    private fun MedicationWriteResultDomainModel.toSaveResult(
-        restored: Boolean
-    ): SaveMedicationResultDomainModel = when (this) {
-        is MedicationWriteResultDomainModel.Done -> if (restored) {
-            SaveMedicationResultDomainModel.Restored(medication)
-        } else {
-            SaveMedicationResultDomainModel.Saved(medication)
-        }
+    private fun MedicationWriteResultDomainModel.toSaveResult(): SaveMedicationResultDomainModel =
+        when (this) {
+            is MedicationWriteResultDomainModel.Done ->
+                SaveMedicationResultDomainModel.Saved(medication)
 
-        MedicationWriteResultDomainModel.StorageFull -> SaveMedicationResultDomainModel.StorageFull
-        MedicationWriteResultDomainModel.Failed -> SaveMedicationResultDomainModel.Failed
-    }
+            MedicationWriteResultDomainModel.StorageFull ->
+                SaveMedicationResultDomainModel.StorageFull
+            MedicationWriteResultDomainModel.Failed -> SaveMedicationResultDomainModel.Failed
+        }
 }

@@ -48,6 +48,54 @@
 
 ## 8. Verify
 
-- [ ] 8.1 Run the gate and the instrumented tests (datasource, designsystem) on emulator-5570; verify all pass
-- [ ] 8.2 Walk every scenario on emulator-5570: dark room, details, home, first use, duplicate and archived names, the limit, undo, merge and delete with intakes, 200% font, landscape, TalkBack and keyboard, rotation and process death. Restore the settings and record the results
+- [x] 8.1 Run the gate and the instrumented tests (datasource, designsystem) on emulator-5570; verify all pass
+- [x] 8.2 Walk every scenario on emulator-5570: dark room, details, home, first use, duplicate and archived names, the limit, undo, merge and delete with intakes, 200% font, landscape, TalkBack and keyboard, rotation and process death. Restore the settings and record the results
 - [ ] 8.3 Run an independent review, fix the real findings, and validate strictly
+
+## Verification record (2026-10-24)
+
+- **Gate** `./gradlew assembleDebug test ktlintCheck detekt`: BUILD SUCCESSFUL, 679 unit tests, 0 failures.
+- **Instrumented** on emulator-5570: datasource 42/42 (with `MedicationDaoTest` and `MigrationTest` 2→3), designsystem
+  16/16.
+- **Upgrade:** installed over the version 2 database with 16 attacks; `user_version` became 3 and all 16 attacks stayed.
+- **Emulator walk (emulator-5570, 1080×2400):**
+
+| Scenario | Result |
+|---|---|
+| First use from home | Name, type, "Add and log"; an empty name shows "Enter a name." |
+| First use in the dark room (EC-MED-08) | Dim form; zolmitriptan, Triptan, logged and linked to the attack in progress |
+| Attack mode "+ Medication taken" | Dark room screen; active medications by last use, archived hidden, "preventive" shown |
+| Log in the dark room | Linked to the attack, dose copied, zone recorded; "Done" returns to attack mode |
+| Details | "Medications" lists the intake; "Add medication" opens the normal screen for the attack |
+| Remove on details + Undo | "Medication removed · Undo"; Undo brings it back |
+| Home, time inside an ended attack (EC-MED-09) | 12:25 inside 12:20–12:32: linked to that attack |
+| Duplicate name | "You already have Ibu."; nothing added |
+| Archived name (EC-MED-07) | Comes back as it was, Simple painkiller with 500 mg, same id |
+| Archive + Undo | Hidden, then back |
+| 50 active, add one more | "You can keep up to 50 medications. Remove one you no longer take."; still 50 |
+| 65 characters typed | Stops at 60, "60/60" |
+| Delete an attack with intakes (EC-MED-10) | Intakes hidden with it; after the undo window the purge removes them, medications stay |
+| Merge with intakes | Covered by `MedicationDaoTest` (intakes move to the survivor); not walked |
+| Landscape | The button fits the controls column; the screen keeps the dark room |
+| 200% font | Attack mode, Medication taken, My medications fit; home links wrap side by side |
+| Keyboard | Tab reaches the time and each row; Enter logs |
+| TalkBack labels | "Log Ibuprofen · 400 mg", "Log Topiramate · 25 mg, preventive", "Remove Ibuprofen 400 mg", "Sumatriptan · 50 mg, Triptan. Opens it to edit." |
+| Rotation | The logged state and Undo survive |
+| Process death | `am kill` in the background: the logged state comes back and Undo works |
+
+- **Found and fixed during the walk:**
+  - An archived name took the form's values: the quick form's "Not sure" and empty dose erased the stored type and dose.
+    `SaveMedicationUseCase` now only unarchives it (EC-MED-07; design and spec scenario made explicit, new tests).
+  - In the dark room, "Add and log", "Done" and the selected type were bright primary. They now use the attack-mode
+    colours ("Migraine ended", "+ Medication taken"), never white (18.3 B, EC-UX-01).
+  - Medication rows were read twice by screen readers (description and inner text). The texts inside are now cleared,
+    as on home (EC-UX-19).
+  - "Taken at" did not look changeable: its time now uses the accent colour, as on the details screen.
+  - The "Medications" heading on details was indented and not a heading; it now uses the shared section title.
+- **Not app defects:** Gboard's stylus onboarding swallowed adb text (handwriting turned off for the walk and turned
+  back on); adb drops some shifted letters under load.
+- **Known, tracked elsewhere:** QA #20, the landscape undo message over the attack-mode controls, is fixed next in
+  `fix-today-zone-and-landscape-message` with #19.
+- **Settings restored:** font_scale 1.0, user_rotation 0, accelerometer_rotation 1, animator 1, auto_time_zone 1,
+  stylus handwriting back to default, adbd unrooted; walk medications removed.
+

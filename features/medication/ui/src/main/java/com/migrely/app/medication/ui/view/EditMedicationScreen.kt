@@ -253,7 +253,11 @@ private fun MedicationForm(
         }
     }
     if (form.kind == MedicationKindUiModel.Acute) {
-        CategoryChoices(form.category, MaterialTheme.colorScheme.onSurface) {
+        CategoryChoices(
+            form.category,
+            MaterialTheme.colorScheme.onSurface,
+            MaterialTheme.colorScheme.primary
+        ) {
             onFormChange(form.copy(category = it))
         }
     }

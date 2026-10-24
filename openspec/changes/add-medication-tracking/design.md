@@ -50,7 +50,7 @@ details screen reads its intakes from the shared datasource through its own mode
 | Rule | Where |
 |---|---|
 | Name 1–60 characters after trimming, dose at most 20 characters; the key is the trimmed lower-case name | `SaveMedicationUseCase` |
-| A duplicate active name is refused (`Duplicate(name)`); an archived name is restored and updated (`Restored`); more than 50 active is refused (`LimitReached`) | `SaveMedicationUseCase` |
+| A duplicate active name is refused (`Duplicate(name)`); an archived name brings that medication back as it was, without the form's values (`Restored`, EC-MED-07); more than 50 active is refused (`LimitReached`) | `SaveMedicationUseCase` |
 | Category only for acute; it is cleared for preventive | `SaveMedicationUseCase` |
 | Default time: now, or the start of the given attack when it has ended; never more than 5 minutes ahead | `GetMedicationLogUseCase`, `LogIntakeUseCase` |
 | Link: the given attack, or else the attack containing the time (in progress included) | `LogIntakeUseCase` |

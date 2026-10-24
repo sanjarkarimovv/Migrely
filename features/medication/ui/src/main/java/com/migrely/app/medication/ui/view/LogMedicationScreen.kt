@@ -1,5 +1,6 @@
 package com.migrely.app.medication.ui.view
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -28,6 +29,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -46,6 +48,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
@@ -200,8 +203,20 @@ private data class LogPalette(
     val background: Color,
     val surface: Color,
     val content: Color,
+    // The colour of a value that can be changed, as on the details screen; never white in the dark room (EC-UX-01).
+    val accent: Color,
+    // The main action and the quiet one, dim in the dark room like "Migraine ended" and "+ Medication taken".
+    val actionContainer: Color,
+    val actionContent: Color,
+    val outline: Color,
+    val quietContent: Color,
+    val selection: Color,
     val buttonHeight: Dp
 )
+
+@Composable
+private fun LogPalette.actionColors() =
+    ButtonDefaults.buttonColors(containerColor = actionContainer, contentColor = actionContent)
 
 @Composable
 private fun palette(darkRoom: Boolean) = if (darkRoom) {
@@ -209,6 +224,12 @@ private fun palette(darkRoom: Boolean) = if (darkRoom) {
         background = MigrelyColors.AttackModeBackground,
         surface = MigrelyColors.AttackModeSurface,
         content = MigrelyColors.AttackModeText,
+        accent = MigrelyColors.AttackModeSelectedText,
+        actionContainer = MigrelyColors.AttackModeEndContainer,
+        actionContent = MigrelyColors.AttackModeEndText,
+        outline = MigrelyColors.AttackModeOutline,
+        quietContent = MigrelyColors.AttackModeText,
+        selection = MigrelyColors.AttackModeSelectedOutline,
         buttonHeight = 64.dp
     )
 } else {
@@ -216,6 +237,12 @@ private fun palette(darkRoom: Boolean) = if (darkRoom) {
         background = MaterialTheme.colorScheme.background,
         surface = MaterialTheme.colorScheme.surfaceContainer,
         content = MaterialTheme.colorScheme.onSurface,
+        accent = MaterialTheme.colorScheme.primary,
+        actionContainer = MaterialTheme.colorScheme.primary,
+        actionContent = MaterialTheme.colorScheme.onPrimary,
+        outline = MaterialTheme.colorScheme.outline,
+        quietContent = MaterialTheme.colorScheme.primary,
+        selection = MaterialTheme.colorScheme.primary,
         buttonHeight = 56.dp
     )
 }
@@ -293,6 +320,9 @@ fun LogMedicationContents(
                                 }
                                 TextButton(
                                     onClick = actions.onManage,
+                                    colors = ButtonDefaults.textButtonColors(
+                                        contentColor = colors.accent
+                                    ),
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .heightIn(min = 48.dp)
@@ -338,7 +368,7 @@ private fun TimeRow(
             Text(
                 text = time,
                 style = MaterialTheme.typography.bodyLarge.copy(fontFeatureSettings = "tnum"),
-                color = colors.content
+                color = colors.accent
             )
         }
     }
@@ -371,7 +401,10 @@ private fun MedicationButton(
     colors: LogPalette,
     onClick: () -> Unit
 ) {
-    val description = stringResource(R.string.log_medication_description, medication.title())
+    val preventive = medication.kind == MedicationKindUiModel.Preventive
+    val title = medication.title()
+    val what = if (preventive) "$title, ${medication.typeLabel()}" else title
+    val description = stringResource(R.string.log_medication_description, what)
     Surface(
         onClick = onClick,
         enabled = !pending,
@@ -380,13 +413,16 @@ private fun MedicationButton(
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = colors.buttonHeight)
+            // Merged into the clickable (EC-UX-19); the texts inside are cleared so it is read once.
             .semantics {
                 contentDescription = description
             }
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)
+            modifier = Modifier
+                .padding(horizontal = 20.dp, vertical = 12.dp)
+                .clearAndSetSemantics { }
         ) {
             Column(Modifier.weight(1f)) {
                 Text(
@@ -394,7 +430,7 @@ private fun MedicationButton(
                     style = MaterialTheme.typography.titleMedium,
                     color = colors.content
                 )
-                if (medication.kind == MedicationKindUiModel.Preventive) {
+                if (preventive) {
                     Text(
                         text = medication.typeLabel(),
                         style = MaterialTheme.typography.bodySmall,
@@ -427,6 +463,7 @@ private fun LoggedContents(
     )
     Button(
         onClick = actions.onDone,
+        colors = colors.actionColors(),
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = colors.buttonHeight)
@@ -435,6 +472,8 @@ private fun LoggedContents(
     }
     OutlinedButton(
         onClick = actions.onUndo,
+        colors = ButtonDefaults.outlinedButtonColors(contentColor = colors.quietContent),
+        border = BorderStroke(1.dp, colors.outline),
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = colors.buttonHeight)
@@ -484,11 +523,11 @@ private fun FirstMedicationForm(
         },
         modifier = Modifier.fillMaxWidth()
     )
-    CategoryChoices(category, colors.content) { category = it }
+    CategoryChoices(category, colors.content, colors.selection) { category = it }
     Button(
         onClick = { actions.onAddAndLog(name, category) },
         enabled = !pending,
-        colors = ButtonDefaults.buttonColors(),
+        colors = colors.actionColors(),
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = colors.buttonHeight)
@@ -502,6 +541,7 @@ private fun FirstMedicationForm(
 internal fun CategoryChoices(
     selected: MedicationCategoryUiModel?,
     content: Color,
+    selection: Color,
     onSelect: (MedicationCategoryUiModel?) -> Unit
 ) {
     Text(
@@ -522,7 +562,14 @@ internal fun CategoryChoices(
                         onClick = { onSelect(choice) }
                     )
             ) {
-                RadioButton(selected = choice == selected, onClick = null)
+                RadioButton(
+                    selected = choice == selected,
+                    onClick = null,
+                    colors = RadioButtonDefaults.colors(
+                        selectedColor = selection,
+                        unselectedColor = content
+                    )
+                )
                 Column(Modifier.padding(start = 12.dp)) {
                     Text(
                         text = categoryLabel(choice),

@@ -34,8 +34,8 @@ with its history (BRD EC-MED-07).
 - **THEN** nothing is added and "You already have Ibuprofen." is shown
 
 #### Scenario: Archived name
-- **WHEN** "Sumatriptan" was archived and the user adds "sumatriptan"
-- **THEN** Sumatriptan is active again and keeps its past intakes
+- **WHEN** "Sumatriptan" (Triptan, 50 mg) was archived and the user adds "sumatriptan" with "Not sure" and no dose
+- **THEN** Sumatriptan is active again as it was, Triptan with 50 mg, and keeps its past intakes
 
 ### Requirement: Edit a medication
 The user SHALL be able to change a medication's name, kind, category and default dose under the same rules. Past

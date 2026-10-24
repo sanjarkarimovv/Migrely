@@ -177,7 +177,7 @@ abstract class AttackDao {
     )
     abstract fun recentlyDeleted(sinceEpochMillis: Long): AttackLocalModel?
 
-    /** Removes deleted attacks for good; their points and tags go with them (foreign keys cascade). */
+    /** Removes deleted attacks for good; their points, tags and intakes go with them (foreign keys cascade). */
     @Query(
         "DELETE FROM attack WHERE deleted_epoch_millis IS NOT NULL AND deleted_epoch_millis < :cutoffEpochMillis"
     )
