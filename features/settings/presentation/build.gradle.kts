@@ -15,6 +15,7 @@ detekt {
 }
 
 dependencies {
+    implementation(projects.features.settings.domain)
     implementation(projects.architecture.presentation)
     implementation(projects.architecture.domain)
 

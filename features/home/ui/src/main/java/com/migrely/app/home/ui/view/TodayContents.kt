@@ -88,7 +88,7 @@ fun TodayContents(
             ) {
                 DayHeader(dayTitle, onSettings)
                 TodaySkyCard(today = today, appearance = appearance)
-                PeriodToday(today.periodToday, onPeriodToday)
+                if (today.periodOffered) PeriodToday(today.periodToday, onPeriodToday)
                 medicationPrompt()
                 TodayAttackList(today.attacks, nowMillis, timeUiFormatter, onAttackDetails)
                 monthCalendar()
@@ -115,7 +115,7 @@ fun TodayContents(
             ) {
                 DayHeader(dayTitle, onSettings)
                 TodaySkyCard(today = today, appearance = appearance)
-                PeriodToday(today.periodToday, onPeriodToday)
+                if (today.periodOffered) PeriodToday(today.periodToday, onPeriodToday)
                 medicationPrompt()
                 TodayAttackList(today.attacks, nowMillis, timeUiFormatter, onAttackDetails)
                 monthCalendar()

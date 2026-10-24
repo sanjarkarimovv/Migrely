@@ -94,7 +94,9 @@ setOf(
 
 setOf(
     "ui",
-    "presentation"
+    "presentation",
+    "domain",
+    "data"
 ).forEach { module ->
     include(":features:settings:$module")
 }

@@ -20,6 +20,7 @@ import com.migrely.app.history.domain.repository.GetCurrentTimeRepository
 import com.migrely.app.history.domain.repository.GetDayMarksRepository
 import com.migrely.app.history.domain.repository.GetEarliestAttackRepository
 import com.migrely.app.history.domain.repository.GetEarliestDayMarkRepository
+import com.migrely.app.history.domain.repository.GetPeriodTrackingRepository
 import com.migrely.app.history.domain.repository.GetRecentlyDeletedAttackRepository
 import java.time.Instant
 import java.time.LocalDate
@@ -44,6 +45,7 @@ class GetHistoryMonthUseCase(
     private val getDayMarksRepository: GetDayMarksRepository,
     private val getEarliestDayMarkRepository: GetEarliestDayMarkRepository,
     private val getAttackMedicationIntakesRepository: GetAttackMedicationIntakesRepository,
+    private val getPeriodTrackingRepository: GetPeriodTrackingRepository,
     coroutineContextProvider: CoroutineContextProvider
 ) : BackgroundExecutingUseCase<YearMonth?, HistoryMonthResultDomainModel>(
     coroutineContextProvider
@@ -131,7 +133,8 @@ class GetHistoryMonthUseCase(
                     } else {
                         null
                     }
-                )
+                ),
+                periodTracking = getPeriodTrackingRepository.periodTracking()
             ),
             recentlyDeleted = getRecentlyDeletedAttackRepository.recentlyDeletedAttack()
         )

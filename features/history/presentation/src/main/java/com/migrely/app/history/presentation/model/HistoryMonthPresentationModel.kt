@@ -11,5 +11,6 @@ data class HistoryMonthPresentationModel(
     val hasNextMonth: Boolean,
     val days: List<HistoryDayPresentationModel>,
     val attacks: List<HistoryAttackPresentationModel>,
-    val stats: MonthStatsPresentationModel
+    val stats: MonthStatsPresentationModel,
+    val periodTracking: Boolean = true
 )

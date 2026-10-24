@@ -376,7 +376,8 @@ private fun ListSection(
     val monthName = timeUiFormatter.formatMonthName(month.year, month.month)
     val selectedDay = month.days.firstOrNull { it.epochDay == selectedEpochDay }
     when {
-        selectedDay != null -> DaySection(selectedDay, monthName, timeUiFormatter, actions)
+        selectedDay != null ->
+            DaySection(selectedDay, monthName, month.periodTracking, timeUiFormatter, actions)
         noAttacks -> EmptyHistory(actions)
         else -> {
             SectionTitle(
@@ -401,6 +402,7 @@ private fun ListSection(
 private fun DaySection(
     day: HistoryDayUiModel,
     monthName: String,
+    periodTracking: Boolean,
     timeUiFormatter: HistoryTimeUiFormatter,
     actions: HistoryActions
 ) {
@@ -416,11 +418,14 @@ private fun DaySection(
         AttackRows(day.attacks, timeUiFormatter, actions.onAttack)
     }
     Spacer(Modifier.height(8.dp))
-    MarkSwitch(
-        label = stringResource(R.string.mark_period),
-        checked = day.period,
-        onChange = { actions.onPeriod(day.epochDay, it) }
-    )
+    // With "Track periods" off, a marked day still offers the switch, so the mark can be removed (BRD D79).
+    if (periodTracking || day.period) {
+        MarkSwitch(
+            label = stringResource(R.string.mark_period),
+            checked = day.period,
+            onChange = { actions.onPeriod(day.epochDay, it) }
+        )
+    }
     MarkSwitch(
         label = stringResource(R.string.mark_pain_free),
         checked = day.painFree,

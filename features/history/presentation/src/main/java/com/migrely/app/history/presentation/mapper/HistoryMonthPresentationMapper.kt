@@ -28,7 +28,8 @@ class HistoryMonthPresentationMapper(
         hasNextMonth = month.month < YearMonth.from(month.today),
         days = month.days.map { day -> day.toPresentation(month.today) },
         attacks = month.attacks.map(historyAttackPresentationMapper::toPresentation),
-        stats = monthStatsPresentationMapper.toPresentation(month.stats)
+        stats = monthStatsPresentationMapper.toPresentation(month.stats),
+        periodTracking = month.periodTracking
     )
 
     private fun HistoryDayDomainModel.toPresentation(

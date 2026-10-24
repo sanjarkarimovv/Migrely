@@ -17,6 +17,7 @@ import com.migrely.app.home.domain.model.TodaySnapshotResultDomainModel
 import com.migrely.app.home.domain.model.attack
 import com.migrely.app.home.domain.repository.GetCurrentTimeRepository
 import com.migrely.app.home.domain.repository.GetDayMarksRepository
+import com.migrely.app.home.domain.repository.GetPeriodTrackingRepository
 import com.migrely.app.home.domain.repository.GetTodayRepository
 import java.time.Duration
 import java.time.Instant
@@ -40,6 +41,7 @@ class GetTodayUseCaseTest {
     private val getCurrentTimeRepository: GetCurrentTimeRepository = mock()
     private val getTodayRepository: GetTodayRepository = mock()
     private val getDayMarksRepository: GetDayMarksRepository = mock()
+    private val getPeriodTrackingRepository: GetPeriodTrackingRepository = mock()
 
     @Before
     fun setUp() {
@@ -49,8 +51,10 @@ class GetTodayUseCaseTest {
             getCurrentTimeRepository,
             getTodayRepository,
             getDayMarksRepository,
+            getPeriodTrackingRepository,
             CoroutineContextProvider.Default
         )
+        given(getPeriodTrackingRepository.periodTracking()).willReturn(true)
     }
 
     @Test
@@ -479,6 +483,28 @@ class GetTodayUseCaseTest {
 
         assertEquals(
             TodayResultDomainModel.Loaded(TodayDomainModel.Calm, periodToday = true),
+            classUnderTest.executeInBackground(Unit)
+        )
+    }
+
+    @Test
+    fun `Given Track periods is off when executed then the toggle only for a marked day`() {
+        given(getPeriodTrackingRepository.periodTracking()).willReturn(false)
+        givenSnapshot(inProgress = null)
+
+        givenMarks(period = false, painFree = false)
+        assertEquals(
+            TodayResultDomainModel.Loaded(TodayDomainModel.Calm, periodOffered = false),
+            classUnderTest.executeInBackground(Unit)
+        )
+
+        givenMarks(period = true, painFree = false)
+        assertEquals(
+            TodayResultDomainModel.Loaded(
+                TodayDomainModel.Calm,
+                periodToday = true,
+                periodOffered = true
+            ),
             classUnderTest.executeInBackground(Unit)
         )
     }

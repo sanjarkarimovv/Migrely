@@ -48,7 +48,8 @@ class HomeViewStateUiMapper {
                 peakIntensity = attack.peakIntensity
             )
         },
-        periodToday = periodToday
+        periodToday = periodToday,
+        periodOffered = periodOffered
     )
 
     private fun AttackInProgressPresentationModel.toUi() = AttackInProgressUiModel(

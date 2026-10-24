@@ -9,5 +9,7 @@ data class TodayPresentationModel(
     val attackCount: Int,
     val peak: PeakPresentationModel?,
     val attacks: List<AttackSummaryPresentationModel> = emptyList(),
-    val periodToday: Boolean = false
+    val periodToday: Boolean = false,
+    /** Whether the "Period" toggle shows (BRD D79). */
+    val periodOffered: Boolean = true
 )

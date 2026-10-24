@@ -18,8 +18,8 @@
 
 ## 4. Track periods
 
-- [ ] 4.1 Settings domain and data, the switch, and tests.
-- [ ] 4.2 Home and History read it: the chip and the switch show when it is on or the day is marked.
+- [x] 4.1 Settings domain and data, the switch, and tests.
+- [x] 4.2 Home and History read it: the chip and the switch show when it is on or the day is marked.
 
 ## 5. App
 

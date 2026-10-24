@@ -28,7 +28,8 @@ class HistoryMonthUiMapper {
         hasNextMonth = month.hasNextMonth,
         days = month.days.map { it.toUi() },
         attacks = month.attacks.map { it.toUi() },
-        stats = month.stats.toUi()
+        stats = month.stats.toUi(),
+        periodTracking = month.periodTracking
     )
 
     private fun MonthStatsPresentationModel.toUi() = MonthStatsUiModel(
