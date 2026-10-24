@@ -115,6 +115,7 @@ internal fun DeleteAllDataDialog(
                 modifier = Modifier.verticalScroll(rememberScrollState())
             ) {
                 Text(stringResource(R.string.settings_delete_what))
+                Text(stringResource(R.string.settings_android_backup))
                 Text(stringResource(R.string.settings_delete_type, word))
                 OutlinedTextField(
                     value = typed,
