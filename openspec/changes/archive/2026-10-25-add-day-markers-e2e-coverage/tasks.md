@@ -150,3 +150,14 @@ Base: develop 399934a (changes 4, 4a, 5 and 5a) merged into the branch. The prod
 - three History checks were stale, one of them a false pass.
 
 **Review** (`superpowers:code-reviewer`): 4 important and 6 minor findings, plus 5 suspicions. All handled (016de21), as task 6.2 lists.
+
+### Addendum: develop f7db1b7 (change 6) merged in before the PR
+
+- `keyboard_home`, `keyboard_history` and `keyboard_rtl` expect the header's "Reminders" bell as the first Tab stop;
+  each passes 2/2 on f7db1b7. Smoke passes 14/14 + 3/3.
+- `qa/permission_audit.sh`:
+  - the allowlist takes POST_NOTIFICATIONS (EC-REM-01), RECEIVE_BOOT_COMPLETED (EC-REM-04) and WAKE_LOCK (D66);
+  - SCHEDULE_EXACT_ALARM and USE_EXACT_ALARM are never allowed (EC-REM-03);
+  - it fails on ACCESS_NETWORK_STATE and FOREGROUND_SERVICE, which WorkManager's merged manifest adds and the app
+    does not use. Filed as #36 (S2, release blocker).
+- The rest of change 6 is checked in the next QA cycle (5b and 6b).

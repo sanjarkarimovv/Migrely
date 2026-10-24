@@ -445,6 +445,8 @@ scenario_keyboard_home() {
   set_clock_millis "$(day_millis -9)" || return 1
   run_flow clean || return 1
   run_flow home-ready || return 1
+  # The header's "Reminders" bell is the first stop (change 6).
+  expect_focus TAB "^Reminders" || return 1
   expect_focus TAB "^Period today" || return 1
   # Enter toggles the chip; accessibility services read it as "Period today", checked (day-markers › Screen reader).
   key ENTER
@@ -467,6 +469,8 @@ scenario_keyboard_home() {
   expect_focus SHIFT_TAB "^Today, " || return 1
   expect_focus SHIFT_TAB "Opens History\.$" || return 1
   expect_focus SHIFT_TAB "^Period today" || return 1
+  expect_focus SHIFT_TAB "^Reminders" || return 1
+  expect_focus TAB "^Period today" || return 1
   expect_focus TAB "Opens History\.$" || return 1
   expect_focus TAB "^Today, " || return 1
   expect_focus DPAD_UP "$(day_re 17)" || return 1
@@ -480,8 +484,8 @@ scenario_keyboard_history() {
   set_clock_millis "$(day_millis -9)" || return 1
   run_flow log-and-close || return 1
   run_flow home-ready || return 1
-  # With today's attack, its row comes between the "Period" chip and the month.
-  tab_until "Opens History\.$" 4 || return 1
+  # The bell, the "Period" chip and today's attack row come before the month.
+  tab_until "Opens History\.$" 5 || return 1
   key ENTER
   run_flow history-ready || return 1
   tab_until "^Today, .*$(day_re 24)" 4 || return 1
@@ -507,7 +511,8 @@ scenario_keyboard_rtl() {
   adbq shell cmd locale set-app-locales "$APP" --locales iw >/dev/null
   run_flow home-ready || { adbq shell cmd locale set-app-locales "$APP" --locales "$ORIGINAL_APP_LOCALES"; return 1; }
   local ok=0
-  expect_focus TAB "^Period today" && expect_focus TAB "Opens History\.$" && expect_focus TAB "^Today, .*$(day_re 24)" &&
+  expect_focus TAB "^Reminders" && expect_focus TAB "^Period today" && expect_focus TAB "Opens History\.$" &&
+    expect_focus TAB "^Today, .*$(day_re 24)" &&
     expect_focus DPAD_RIGHT "$(day_re 23)" && expect_focus DPAD_LEFT "$(day_re 24)" &&
     expect_focus DPAD_LEFT "$(day_re 24)" || ok=1
   adbq shell cmd locale set-app-locales "$APP" --locales "$ORIGINAL_APP_LOCALES" >/dev/null
