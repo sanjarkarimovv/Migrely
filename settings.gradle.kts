@@ -75,7 +75,8 @@ setOf(
 }
 
 setOf(
-    "domain"
+    "domain",
+    "data"
 ).forEach { module ->
     include(":features:reminders:$module")
 }

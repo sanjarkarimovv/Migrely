@@ -28,7 +28,7 @@
       pain-free mark or an attack (the `AttackDays` rule); it then schedules tomorrow's occurrence;
     - `ShowAttackLoggedTodayUseCase` and `DismissDailyReminderUseCase` for `:app`'s action receiver.
   - Tests.
-- [ ] 2.2 Data: `RemindersRepository` over `ReminderSettingsDataSource`, `ReminderScheduleDataSource`,
+- [x] 2.2 Data: `RemindersRepository` over `ReminderSettingsDataSource`, `ReminderScheduleDataSource`,
   `NotificationDataSource`, `AttackDataSource`, `DayMarkDataSource` and `ClockDataSource`, with tests.
 - [ ] 2.3 Presentation: `RemindersViewModel` with `onEnter`, `onDailyReminderAction(on)`, `onDailyTimeAction(time)`,
   `onEffectReminderAction(on)`, `onPermissionResultAction(granted)` and `onOpenSettingsAction`; view state and
