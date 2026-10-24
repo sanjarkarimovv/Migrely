@@ -75,7 +75,7 @@ internal fun AttackMessages(
         val message = visible.message
         val action = when (message) {
             is AttackMessageUiModel.PointsRemovedByTimeChange -> SnackbarAction(
-                label = stringResource(R.string.snackbar_undo),
+                label = stringResource(R.string.attack_snackbar_undo),
                 spokenLabel = stringResource(R.string.snackbar_undo_times_description),
                 onClick = {
                     if (currentIsShown(visible)) {
@@ -86,7 +86,7 @@ internal fun AttackMessages(
             )
 
             is AttackMessageUiModel.PointRemoved -> SnackbarAction(
-                label = stringResource(R.string.snackbar_undo),
+                label = stringResource(R.string.attack_snackbar_undo),
                 spokenLabel = stringResource(R.string.snackbar_undo_point_description),
                 onClick = {
                     if (currentIsShown(visible)) {
@@ -97,7 +97,7 @@ internal fun AttackMessages(
             )
 
             is AttackMessageUiModel.IntakeRemoved -> SnackbarAction(
-                label = stringResource(R.string.snackbar_undo),
+                label = stringResource(R.string.attack_snackbar_undo),
                 spokenLabel = stringResource(R.string.snackbar_undo_intake_description),
                 onClick = {
                     if (currentIsShown(visible)) {
@@ -113,7 +113,7 @@ internal fun AttackMessages(
             text = messageText(message),
             tone = behaviour.tone,
             action = action,
-            dismissLabel = stringResource(R.string.snackbar_dismiss),
+            dismissLabel = stringResource(R.string.attack_snackbar_dismiss),
             onDismiss = { currentOnClear(visible) },
             timeLeft = if (!reduceMotion && behaviour.hasUndo && visibleTimeout != null) {
                 rememberTimeLeft(visible, visibleTimeout)
@@ -150,8 +150,10 @@ private fun messageText(message: AttackMessageUiModel): String = when (message) 
     AttackMessageUiModel.PointOutsideAttack -> stringResource(R.string.message_point_outside)
     AttackMessageUiModel.TagLimitReached -> stringResource(R.string.message_tag_limit)
     AttackMessageUiModel.AttacksMerged -> stringResource(R.string.message_attacks_merged)
-    AttackMessageUiModel.Undone -> stringResource(R.string.message_undone)
-    AttackMessageUiModel.UndoNotPossible -> stringResource(R.string.message_undo_not_possible)
-    AttackMessageUiModel.StorageFull -> stringResource(R.string.message_storage_full)
-    AttackMessageUiModel.SomethingWentWrong -> stringResource(R.string.message_generic)
+    AttackMessageUiModel.Undone -> stringResource(R.string.attack_message_undone)
+    AttackMessageUiModel.UndoNotPossible -> stringResource(
+        R.string.attack_message_undo_not_possible
+    )
+    AttackMessageUiModel.StorageFull -> stringResource(R.string.attack_message_storage_full)
+    AttackMessageUiModel.SomethingWentWrong -> stringResource(R.string.attack_message_generic)
 }

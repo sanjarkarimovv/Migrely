@@ -165,7 +165,7 @@ fun EditMedicationContents(
                     IconButton(onClick = onBack) {
                         Icon(
                             MigrelyIcons.Back,
-                            contentDescription = stringResource(R.string.navigate_back)
+                            contentDescription = stringResource(R.string.medication_navigate_back)
                         )
                     }
                 },

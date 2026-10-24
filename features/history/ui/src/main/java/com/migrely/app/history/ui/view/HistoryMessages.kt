@@ -107,8 +107,8 @@ internal fun HistoryMessages(
             tone = behaviour.tone,
             action = if (behaviour.undoesDeletion) {
                 SnackbarAction(
-                    label = stringResource(R.string.snackbar_undo),
-                    spokenLabel = stringResource(R.string.snackbar_undo_delete_description),
+                    label = stringResource(R.string.history_snackbar_undo),
+                    spokenLabel = stringResource(R.string.history_snackbar_undo_delete_description),
                     // Acts only while this is still the message on screen, so a fading or replaced message
                     // never undoes twice.
                     onClick = {
@@ -122,7 +122,7 @@ internal fun HistoryMessages(
             } else {
                 null
             },
-            dismissLabel = stringResource(R.string.snackbar_dismiss),
+            dismissLabel = stringResource(R.string.history_snackbar_dismiss),
             onDismiss = { if (shown == visible) shown = null },
             timeLeft = if (!reduceMotion && behaviour.undoesDeletion && timeout != null) {
                 rememberTimeLeft(visible, timeout)
@@ -150,10 +150,14 @@ private fun rememberTimeLeft(shown: ShownHistoryMessageUiModel, timeoutMillis: L
 
 @Composable
 private fun messageText(message: HistoryMessageUiModel): String = when (message) {
-    is HistoryMessageUiModel.AttackDeleted -> stringResource(R.string.snackbar_attack_deleted)
-    HistoryMessageUiModel.Undone -> stringResource(R.string.message_undone)
-    HistoryMessageUiModel.UndoNotPossible -> stringResource(R.string.message_undo_not_possible)
+    is HistoryMessageUiModel.AttackDeleted -> stringResource(
+        R.string.history_snackbar_attack_deleted
+    )
+    HistoryMessageUiModel.Undone -> stringResource(R.string.history_message_undone)
+    HistoryMessageUiModel.UndoNotPossible -> stringResource(
+        R.string.history_message_undo_not_possible
+    )
     HistoryMessageUiModel.AttackLoggedOnDay -> stringResource(R.string.message_attack_logged_on_day)
-    HistoryMessageUiModel.StorageFull -> stringResource(R.string.message_storage_full)
-    HistoryMessageUiModel.SomethingWentWrong -> stringResource(R.string.message_generic)
+    HistoryMessageUiModel.StorageFull -> stringResource(R.string.history_message_storage_full)
+    HistoryMessageUiModel.SomethingWentWrong -> stringResource(R.string.history_message_generic)
 }

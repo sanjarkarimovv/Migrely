@@ -271,7 +271,7 @@ private fun StartAttackButton(onStartAttack: () -> Unit) {
 private fun QuietLinks(onAddPastAttack: () -> Unit, onLogMedication: () -> Unit) {
     Row(modifier = Modifier.fillMaxWidth()) {
         listOf(
-            R.string.add_past_attack to onAddPastAttack,
+            R.string.home_add_past_attack to onAddPastAttack,
             R.string.log_medication to onLogMedication
         ).forEach { (label, onClick) ->
             TextButton(
@@ -345,9 +345,9 @@ private fun TodaySkyCard(today: TodayUiModel, appearance: SkyAppearance) {
     val skyName = when (today.sky) {
         SkyUiModel.Calm -> stringResource(R.string.sky_calm)
         SkyUiModel.Clear -> stringResource(R.string.sky_clear)
-        SkyUiModel.Hazy -> stringResource(R.string.sky_hazy)
-        SkyUiModel.Cloudy -> stringResource(R.string.sky_cloudy)
-        SkyUiModel.Storm -> stringResource(R.string.sky_storm)
+        SkyUiModel.Hazy -> stringResource(R.string.home_sky_hazy)
+        SkyUiModel.Cloudy -> stringResource(R.string.home_sky_cloudy)
+        SkyUiModel.Storm -> stringResource(R.string.home_sky_storm)
     }
     val description = stringResource(R.string.today_card_description, skyName, title, subtitle)
     Box(

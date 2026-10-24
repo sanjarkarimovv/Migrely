@@ -158,12 +158,12 @@ private fun HomeSnackbar(
     val undoTarget = behaviour.undoTarget
     val action = undoTarget?.let { target ->
         SnackbarAction(
-            label = stringResource(R.string.snackbar_undo),
+            label = stringResource(R.string.home_snackbar_undo),
             spokenLabel = stringResource(
                 when (target) {
                     HomeUndoTargetUiModel.Start -> R.string.snackbar_undo_start_description
                     HomeUndoTargetUiModel.End -> R.string.snackbar_undo_end_description
-                    HomeUndoTargetUiModel.Delete -> R.string.snackbar_undo_delete_description
+                    HomeUndoTargetUiModel.Delete -> R.string.home_snackbar_undo_delete_description
                 }
             ),
             onClick = onUndo
@@ -173,7 +173,7 @@ private fun HomeSnackbar(
         text = messageText(shown.message, timeUiFormatter),
         tone = behaviour.tone,
         action = action,
-        dismissLabel = stringResource(R.string.snackbar_dismiss),
+        dismissLabel = stringResource(R.string.home_snackbar_dismiss),
         onDismiss = onDismiss,
         timeLeft = if (showTimeLeft && undoTarget != null && timeoutMillis != null) {
             rememberTimeLeft(shown, timeoutMillis)
@@ -203,10 +203,12 @@ private fun messageText(message: HomeMessageUiModel, timeUiFormatter: TimeUiForm
     when (message) {
         is HomeMessageUiModel.AttackStarted -> stringResource(R.string.snackbar_attack_started)
         is HomeMessageUiModel.AttackEnded -> stringResource(R.string.snackbar_attack_ended)
-        is HomeMessageUiModel.AttackDeleted -> stringResource(R.string.snackbar_attack_deleted)
-        HomeMessageUiModel.Undone -> stringResource(R.string.message_undone)
-        HomeMessageUiModel.UndoNotPossible -> stringResource(R.string.message_undo_not_possible)
-        HomeMessageUiModel.StorageFull -> stringResource(R.string.message_storage_full)
+        is HomeMessageUiModel.AttackDeleted -> stringResource(R.string.home_snackbar_attack_deleted)
+        HomeMessageUiModel.Undone -> stringResource(R.string.home_message_undone)
+        HomeMessageUiModel.UndoNotPossible -> stringResource(
+            R.string.home_message_undo_not_possible
+        )
+        HomeMessageUiModel.StorageFull -> stringResource(R.string.home_message_storage_full)
         is HomeMessageUiModel.StartMoveRejected -> stringResource(
             R.string.message_move_rejected,
             timeUiFormatter.formatClockTime(
@@ -216,5 +218,5 @@ private fun messageText(message: HomeMessageUiModel, timeUiFormatter: TimeUiForm
         )
 
         HomeMessageUiModel.EndTimeOutOfRange -> stringResource(R.string.message_end_out_of_range)
-        HomeMessageUiModel.SomethingWentWrong -> stringResource(R.string.message_generic)
+        HomeMessageUiModel.SomethingWentWrong -> stringResource(R.string.home_message_generic)
     }
