@@ -9,7 +9,7 @@
 ## 2. Report feature
 
 - [x] 2.1 Domain: `ReportSummaryCalculator`, `ReportDocumentBuilder` (the page budget), use cases, tests.
-- [ ] 2.2 Data: `ReportRepository`, mappers, tests.
+- [x] 2.2 Data: `ReportRepository`, mappers, tests.
 - [ ] 2.3 Presentation: `ReportViewModel`, tests.
 - [ ] 2.4 UI: the report screen, the period chips and range picker, share.
 
