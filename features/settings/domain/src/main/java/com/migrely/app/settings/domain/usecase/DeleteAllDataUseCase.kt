@@ -11,13 +11,14 @@ import com.migrely.app.settings.domain.repository.DeleteRecordsRepository
 
 /**
  * "Delete all data" (BRD EC-STO-03, D96), in this order, stopping at the first step that fails:
- * 1. reminders and notifications, so a reminder that runs meanwhile finds nothing to remind of;
- * 2. the records and the device's state, in one transaction, so a failure there loses nothing;
- * 3. the settings, onboarding's answers included, so the app starts again with onboarding;
- * 4. the automatic backups, then the reports.
+ * 1. the records and the device's state, in one transaction, so a failure there has changed nothing, not even a planned
+ *    reminder;
+ * 2. the automatic backups, then the reports;
+ * 3. planned reminders and notifications. A reminder that runs before this finds nothing to remind of: the daily one is
+ *    off without its settings, and "Did it help?" finds no intake;
+ * 4. the settings last, onboarding's answers included, so the reset that brings onboarding back marks the end.
  *
- * A step that already ran is safe to run again, so trying again after a failure finishes the job. A daily reminder
- * cancelled before a failure is planned again when the app next starts.
+ * A step that already ran is safe to run again, so trying again after a failure finishes the job.
  */
 class DeleteAllDataUseCase(
     private val cancelRemindersRepository: CancelRemindersRepository,
@@ -28,10 +29,10 @@ class DeleteAllDataUseCase(
 ) : BackgroundExecutingUseCase<Unit, DeleteAllDataResultDomainModel>(coroutineContextProvider) {
     override fun executeInBackground(request: Unit): DeleteAllDataResultDomainModel {
         val steps = listOf(
-            cancelRemindersRepository::cancelReminders,
             deleteRecordsRepository::deleteRecords,
-            deletePreferencesRepository::deletePreferences,
-            deleteFilesRepository::deleteFiles
+            deleteFilesRepository::deleteFiles,
+            cancelRemindersRepository::cancelReminders,
+            deletePreferencesRepository::deletePreferences
         )
         return if (steps.all { step -> step() == SettingsWriteResultDomainModel.Done }) {
             DeleteAllDataResultDomainModel.Deleted

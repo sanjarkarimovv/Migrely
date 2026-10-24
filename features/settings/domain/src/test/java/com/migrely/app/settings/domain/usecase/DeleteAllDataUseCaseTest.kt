@@ -37,64 +37,53 @@ class DeleteAllDataUseCaseTest {
         given(deleteFilesRepository.deleteFiles()).willReturn(Done)
     }
 
+    private fun deleteAll() = classUnderTest.executeInBackground(Unit)
+
     @Test
-    fun `When deleting all data then reminders first, then records, settings and files`() {
-        assertEquals(
-            DeleteAllDataResultDomainModel.Deleted,
-            classUnderTest.executeInBackground(Unit)
-        )
+    fun `When deleting all data then records, files, reminders, and the settings last`() {
+        assertEquals(DeleteAllDataResultDomainModel.Deleted, deleteAll())
 
         inOrder(
-            cancelRemindersRepository,
             deleteRecordsRepository,
-            deletePreferencesRepository,
-            deleteFilesRepository
+            deleteFilesRepository,
+            cancelRemindersRepository,
+            deletePreferencesRepository
         ) {
-            verify(cancelRemindersRepository).cancelReminders()
             verify(deleteRecordsRepository).deleteRecords()
-            verify(deletePreferencesRepository).deletePreferences()
             verify(deleteFilesRepository).deleteFiles()
+            verify(cancelRemindersRepository).cancelReminders()
+            verify(deletePreferencesRepository).deletePreferences()
         }
     }
 
     @Test
-    fun `Given reminders cannot be cancelled then nothing is deleted`() {
-        given(cancelRemindersRepository.cancelReminders()).willReturn(Failed)
+    fun `Given the records cannot be deleted then nothing else changes, reminders included`() {
+        given(deleteRecordsRepository.deleteRecords()).willReturn(Failed)
 
-        assertEquals(
-            DeleteAllDataResultDomainModel.Failed,
-            classUnderTest.executeInBackground(Unit)
-        )
-        verify(deleteRecordsRepository, never()).deleteRecords()
+        assertEquals(DeleteAllDataResultDomainModel.Failed, deleteAll())
+        verify(deleteFilesRepository, never()).deleteFiles()
+        verify(cancelRemindersRepository, never()).cancelReminders()
+        verify(deletePreferencesRepository, never()).deletePreferences()
     }
 
     @Test
-    fun `Given the records cannot be deleted then the settings and files stay`() {
-        given(deleteRecordsRepository.deleteRecords()).willReturn(Failed)
+    fun `Given the files cannot be deleted then reminders and settings stay`() {
+        given(deleteFilesRepository.deleteFiles()).willReturn(Failed)
 
-        assertEquals(
-            DeleteAllDataResultDomainModel.Failed,
-            classUnderTest.executeInBackground(Unit)
-        )
+        assertEquals(DeleteAllDataResultDomainModel.Failed, deleteAll())
+        verify(cancelRemindersRepository, never()).cancelReminders()
         verify(deletePreferencesRepository, never()).deletePreferences()
-        verify(deleteFilesRepository, never()).deleteFiles()
     }
 
     @Test
     fun `Given a later step fails then failed, so the user can try again`() {
-        given(deletePreferencesRepository.deletePreferences()).willReturn(Failed)
-        assertEquals(
-            DeleteAllDataResultDomainModel.Failed,
-            classUnderTest.executeInBackground(Unit)
-        )
-        verify(deleteFilesRepository, never()).deleteFiles()
+        given(cancelRemindersRepository.cancelReminders()).willReturn(Failed)
+        assertEquals(DeleteAllDataResultDomainModel.Failed, deleteAll())
+        verify(deletePreferencesRepository, never()).deletePreferences()
 
-        given(deletePreferencesRepository.deletePreferences()).willReturn(Done)
-        given(deleteFilesRepository.deleteFiles()).willReturn(Failed)
-        assertEquals(
-            DeleteAllDataResultDomainModel.Failed,
-            classUnderTest.executeInBackground(Unit)
-        )
+        given(cancelRemindersRepository.cancelReminders()).willReturn(Done)
+        given(deletePreferencesRepository.deletePreferences()).willReturn(Failed)
+        assertEquals(DeleteAllDataResultDomainModel.Failed, deleteAll())
     }
 
     private companion object {

@@ -33,14 +33,20 @@
 
 ### D3. Delete all data
 
-- **`DeleteAllDataUseCase`** runs these steps, and returns Deleted or Failed:
-  - `BackupDataSource.deleteAll()`: every table in one transaction;
-  - `PreferencesDataSource.clear()`;
-  - `BackupFileDataSource.deleteAll()`: `files/backups`;
-  - `ReportDocumentDataSource.deleteAll()`: `cache/reports`;
-  - `ReminderScheduleDataSource.cancelAll()` and `NotificationDataSource.cancelAll()`.
-- **Order:** the reminders are cancelled before anything is deleted, so a worker that runs mid-way finds no settings and
-  does nothing.
+- **`DeleteAllDataUseCase`** runs these steps in this order, stops at the first that fails, and returns Deleted or
+  Failed:
+  1. `BackupDataSource.deleteAll()`: every table in one transaction;
+  2. `BackupFileDataSource.deleteAll()`: `files/backups`, then `ReportDocumentDataSource.deleteAll()`: `cache/reports`;
+  3. `ReminderScheduleDataSource.cancelAll()` and `NotificationDataSource.cancelAll()`;
+  4. `PreferencesDataSource.clear()`.
+- **Order:**
+  - the records go first, so a failure there has changed nothing, and no planned "Did it help?" is lost;
+  - a worker that runs between the steps finds no reminder settings (the daily reminder is off without them) or no
+    intake, and does nothing;
+  - the preferences go last, so the reset that brings onboarding back marks the end;
+  - every step is safe to run again, so trying again finishes the job.
+- **Before the restart**, `:app` removes every notification once more, in case a worker that was already running posted
+  after step 3.
 - **The restart:** on Deleted, the ViewModel emits `OnAllDataDeleted`, and `:app` restarts the process
   (`Intent.makeRestartActivityTask` and then `exitProcess(0)`). App-wide singletons, such as Your data's and the
   report's ViewModels, can hold nothing from before. The app then finds no records and no finished onboarding, and

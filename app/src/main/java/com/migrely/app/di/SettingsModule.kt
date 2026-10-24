@@ -4,6 +4,7 @@ import android.content.Context
 import com.migrely.app.architecture.domain.UseCaseExecutor
 import com.migrely.app.architecture.ui.notification.mapper.NoNotificationUiMapper
 import com.migrely.app.coroutine.CoroutineContextProvider
+import com.migrely.app.datasource.notification.datasource.NotificationDataSource
 import com.migrely.app.navigation.mapper.SettingsNavigationEventDestinationMapper
 import com.migrely.app.navigation.mapper.SettingsPageNavigationEventDestinationMapper
 import com.migrely.app.settings.data.repository.DeleteAllDataRepository
@@ -72,6 +73,7 @@ internal object SettingsModule {
     @Singleton
     fun providesSettingsDependencies(
         settingsViewModel: SettingsViewModel,
+        notificationDataSource: NotificationDataSource,
         @ApplicationContext context: Context
     ): SettingsDependencies {
         val presenter = SettingsEventPresenter()
@@ -80,7 +82,11 @@ internal object SettingsModule {
             settingsViewStateUiMapper = SettingsViewStateUiMapper(ThemeUiMapper()),
             themeUiToPresentationMapper = ThemeUiToPresentationMapper(),
             settingsEventPresenter = presenter,
-            navigationMapper = SettingsNavigationEventDestinationMapper { restartApp(context) },
+            navigationMapper = SettingsNavigationEventDestinationMapper {
+                // A reminder that ran while everything was deleted may have posted after the cancel step.
+                notificationDataSource.cancelAll()
+                restartApp(context)
+            },
             notificationMapper = SettingsNotificationUiMapper(presenter)
         )
     }
