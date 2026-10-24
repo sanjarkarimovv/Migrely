@@ -14,11 +14,11 @@
 
 ## 3. History (design D2, D3)
 
-- [ ] 3.1 Domain: marks on days, the effective pain-free rule, `SetDayMarkUseCase`, the shared day rule; tests.
+- [x] 3.1 Domain: marks on days, the effective pain-free rule, `SetDayMarkUseCase`, the shared day rule; tests.
   Verify: `./gradlew :features:history:domain:test`
-- [ ] 3.2 Data: `HistoryRepository` reads and writes marks; tests.
+- [x] 3.2 Data: `HistoryRepository` reads and writes marks; tests.
   Verify: `./gradlew :features:history:data:test`
-- [ ] 3.3 Presentation: clear sky, marks, `onPeriodAction`, `onPainFreeAction`; tests.
+- [x] 3.3 Presentation: clear sky, marks, `onPeriodAction`, `onPainFreeAction`; tests.
   Verify: `./gradlew :features:history:presentation:test`
 - [ ] 3.4 UI: the switches under the chosen day, the cell mark, descriptions and legend; tests.
   Verify: `./gradlew :features:history:ui:test`

@@ -116,6 +116,41 @@ class HistoryMonthPresentationMapperDayTest(
 
 class HistoryMonthPresentationMapperTest {
     @Test
+    fun `Given a pain-free period day when mapping then a clear sky with both marks`() {
+        val day = HistoryDayDomainModel(
+            LocalDate.parse("2026-10-06"),
+            emptyList(),
+            period = true,
+            painFree = true
+        )
+
+        val actual = classUnderTest.toPresentation(month(days = listOf(day))).days.single()
+
+        assertEquals(DaySkyPresentationModel.Clear, actual.sky)
+        assertEquals(
+            Triple(true, true, true),
+            Triple(actual.period, actual.painFree, actual.painFreeAllowed)
+        )
+    }
+
+    @Test
+    fun `Given a period day with a storm when mapping then the storm, and pain-free not allowed`() {
+        val day = HistoryDayDomainModel(
+            LocalDate.parse("2026-10-14"),
+            listOf(attack(9)),
+            period = true
+        )
+
+        val actual = classUnderTest.toPresentation(month(days = listOf(day))).days.single()
+
+        assertEquals(DaySkyPresentationModel.Storm, actual.sky)
+        assertEquals(
+            Triple(true, false, false),
+            Triple(actual.period, actual.painFree, actual.painFreeAllowed)
+        )
+    }
+
+    @Test
     fun `Given a month between the first and the current when mapping then both arrows`() {
         val actual = classUnderTest.toPresentation(month(shown = YearMonth.of(2026, 9)))
 

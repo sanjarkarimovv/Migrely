@@ -12,5 +12,10 @@ sealed interface HistoryPresentationNotification : PresentationNotification {
 
     data object UndoNotPossible : HistoryPresentationNotification
 
+    /** Only a fallback: the screen never offers a pain-free mark on a day with an attack (BRD EC-DAY-01). */
+    data object AttackLoggedOnDay : HistoryPresentationNotification
+
+    data object StorageFull : HistoryPresentationNotification
+
     data object SomethingWentWrong : HistoryPresentationNotification
 }

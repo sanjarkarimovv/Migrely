@@ -2,14 +2,20 @@ package com.migrely.app.history.presentation.viewmodel
 
 import com.migrely.app.architecture.domain.UseCaseExecutor
 import com.migrely.app.architecture.presentation.viewmodel.BaseViewModel
+import com.migrely.app.history.domain.model.DayMarkKindDomainModel
 import com.migrely.app.history.domain.model.HistoryMonthResultDomainModel
+import com.migrely.app.history.domain.model.SetDayMarkRequestDomainModel
+import com.migrely.app.history.domain.model.SetDayMarkResultDomainModel
 import com.migrely.app.history.domain.model.UndoResultDomainModel
 import com.migrely.app.history.domain.usecase.GetHistoryMonthUseCase
 import com.migrely.app.history.domain.usecase.RestoreDeletedAttackUseCase
+import com.migrely.app.history.domain.usecase.SetDayMarkUseCase
 import com.migrely.app.history.presentation.mapper.HistoryMonthPresentationMapper
 import com.migrely.app.history.presentation.model.HistoryPresentationNotification
 import com.migrely.app.history.presentation.model.HistoryPresentationNotification.AttackDeleted
+import com.migrely.app.history.presentation.model.HistoryPresentationNotification.AttackLoggedOnDay
 import com.migrely.app.history.presentation.model.HistoryPresentationNotification.SomethingWentWrong
+import com.migrely.app.history.presentation.model.HistoryPresentationNotification.StorageFull
 import com.migrely.app.history.presentation.model.HistoryPresentationNotification.UndoNotPossible
 import com.migrely.app.history.presentation.model.HistoryPresentationNotification.Undone
 import com.migrely.app.history.presentation.model.HistoryViewState
@@ -25,6 +31,7 @@ import java.time.YearMonth
 class HistoryViewModel(
     private val getHistoryMonthUseCase: GetHistoryMonthUseCase,
     private val restoreDeletedAttackUseCase: RestoreDeletedAttackUseCase,
+    private val setDayMarkUseCase: SetDayMarkUseCase,
     private val historyMonthPresentationMapper: HistoryMonthPresentationMapper,
     useCaseExecutor: UseCaseExecutor
 ) : BaseViewModel<HistoryViewState, HistoryPresentationNotification>(useCaseExecutor) {
@@ -62,7 +69,36 @@ class HistoryViewModel(
         )
     }
 
+    /** Marks or unmarks [day] as a period day, then loads [month] again (BRD DAY-F1, D48). */
+    fun onPeriodAction(month: YearMonth?, day: LocalDate, marked: Boolean) =
+        setMark(month, SetDayMarkRequestDomainModel(day, DayMarkKindDomainModel.Period, marked))
+
+    /** Marks or unmarks [day] as pain-free, then loads [month] again (BRD DAY-F2, EC-DAY-01). */
+    fun onPainFreeAction(month: YearMonth?, day: LocalDate, marked: Boolean) =
+        setMark(month, SetDayMarkRequestDomainModel(day, DayMarkKindDomainModel.PainFree, marked))
+
     fun onLeaveAction() = emitNavigationEvent(HistoryPresentationNavigationEvent.OnLeave)
+
+    private fun setMark(month: YearMonth?, request: SetDayMarkRequestDomainModel) {
+        setDayMarkUseCase(
+            value = request,
+            onResult = { result ->
+                when (result) {
+                    SetDayMarkResultDomainModel.Done -> loadMonth(month)
+
+                    SetDayMarkResultDomainModel.AttackLogged -> {
+                        notify(AttackLoggedOnDay)
+                        loadMonth(month)
+                    }
+
+                    SetDayMarkResultDomainModel.StorageFull -> notify(StorageFull)
+
+                    SetDayMarkResultDomainModel.FutureDay,
+                    SetDayMarkResultDomainModel.Failed -> notify(SomethingWentWrong)
+                }
+            }
+        )
+    }
 
     /**
      * Only a load on entering or returning to the screen announces a recent deletion, so the result of an undo is never

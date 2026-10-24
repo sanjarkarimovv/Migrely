@@ -3,6 +3,8 @@ package com.migrely.app.history.domain.usecase
 import com.migrely.app.coroutine.CoroutineContextProvider
 import com.migrely.app.history.domain.model.AttacksTouchingResultDomainModel
 import com.migrely.app.history.domain.model.CurrentTimeDomainModel
+import com.migrely.app.history.domain.model.DayMarkDomainModel
+import com.migrely.app.history.domain.model.DayMarksResultDomainModel
 import com.migrely.app.history.domain.model.DeletedAttackDomainModel
 import com.migrely.app.history.domain.model.EarliestAttackResultDomainModel
 import com.migrely.app.history.domain.model.HistoryAttackDomainModel
@@ -10,6 +12,7 @@ import com.migrely.app.history.domain.model.HistoryMonthDomainModel
 import com.migrely.app.history.domain.model.HistoryMonthResultDomainModel
 import com.migrely.app.history.domain.repository.GetAttacksTouchingRepository
 import com.migrely.app.history.domain.repository.GetCurrentTimeRepository
+import com.migrely.app.history.domain.repository.GetDayMarksRepository
 import com.migrely.app.history.domain.repository.GetEarliestAttackRepository
 import com.migrely.app.history.domain.repository.GetRecentlyDeletedAttackRepository
 import java.time.Instant
@@ -38,6 +41,7 @@ class GetHistoryMonthUseCaseTest {
     private val getEarliestAttackRepository: GetEarliestAttackRepository = mock()
     private val getAttacksTouchingRepository: GetAttacksTouchingRepository = mock()
     private val getRecentlyDeletedAttackRepository: GetRecentlyDeletedAttackRepository = mock()
+    private val getDayMarksRepository: GetDayMarksRepository = mock()
 
     @Before
     fun setUp() {
@@ -46,11 +50,18 @@ class GetHistoryMonthUseCaseTest {
             getEarliestAttackRepository,
             getAttacksTouchingRepository,
             getRecentlyDeletedAttackRepository,
+            getDayMarksRepository,
             CoroutineContextProvider.Default
         )
         givenNow("2026-10-23T12:00")
         givenEarliest(EarliestAttackResultDomainModel.None)
         givenAttacks()
+        givenMarks()
+    }
+
+    private fun givenMarks(vararg marks: DayMarkDomainModel) {
+        given(getDayMarksRepository.dayMarks(any(), any()))
+            .willReturn(DayMarksResultDomainModel.Loaded(marks.toList()))
     }
 
     private fun at(local: String, zone: ZoneId = TASHKENT): Instant =
@@ -280,6 +291,58 @@ class GetHistoryMonthUseCaseTest {
     fun `Given the attacks cannot be read when executed then failed`() {
         given(getAttacksTouchingRepository.attacksTouching(any(), any()))
             .willReturn(AttacksTouchingResultDomainModel.Failed)
+
+        assertEquals(HistoryMonthResultDomainModel.Failed, classUnderTest.executeInBackground(null))
+    }
+
+    @Test
+    fun `When executed then reads the marks of the month's first to last day`() {
+        loaded(OCTOBER)
+
+        verify(getDayMarksRepository).dayMarks(
+            LocalDate.parse("2026-10-01"),
+            LocalDate.parse("2026-10-31")
+        )
+    }
+
+    @Test
+    fun `Given a period mark on a storm day when executed then the day keeps both`() {
+        givenAttacks(attack("a", "2026-10-14T09:00", "2026-10-14T12:00", peak = 9))
+        givenMarks(
+            DayMarkDomainModel(LocalDate.parse("2026-10-14"), period = true, painFree = false)
+        )
+
+        val day = loaded(OCTOBER).days[13]
+
+        assertEquals(listOf("a"), day.attacks.map(HistoryAttackDomainModel::id))
+        assertEquals(true to false, day.period to day.painFree)
+    }
+
+    @Test
+    fun `Given a pain-free mark on a day without attacks when executed then pain-free`() {
+        givenMarks(
+            DayMarkDomainModel(LocalDate.parse("2026-10-06"), period = false, painFree = true)
+        )
+
+        assertTrue(loaded(OCTOBER).days[5].painFree)
+    }
+
+    @Test
+    fun `Given a pain-free mark on a day an attack touches when executed then not pain-free`() {
+        // The attack wins, and the stored mark is kept for when the attack is deleted (BRD EC-DAY-01).
+        givenAttacks(attack("a", "2026-10-05T23:30", "2026-10-06T01:00"))
+        givenMarks(
+            DayMarkDomainModel(LocalDate.parse("2026-10-06"), period = false, painFree = true)
+        )
+
+        assertEquals(false, loaded(OCTOBER).days[5].painFree)
+    }
+
+    @Test
+    fun `Given the marks cannot be read when executed then failed`() {
+        given(
+            getDayMarksRepository.dayMarks(any(), any())
+        ).willReturn(DayMarksResultDomainModel.Failed)
 
         assertEquals(HistoryMonthResultDomainModel.Failed, classUnderTest.executeInBackground(null))
     }
