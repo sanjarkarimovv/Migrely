@@ -130,6 +130,10 @@ dependencies {
     implementation(projects.features.report.presentation)
     implementation(projects.features.report.domain)
     implementation(projects.features.report.data)
+    implementation(projects.features.insights.ui)
+    implementation(projects.features.insights.presentation)
+    implementation(projects.features.insights.domain)
+    implementation(projects.features.insights.data)
     implementation(libs.androidx.work.runtime)
 }
 

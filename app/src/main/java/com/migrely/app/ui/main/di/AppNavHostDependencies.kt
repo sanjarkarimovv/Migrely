@@ -6,6 +6,7 @@ import com.migrely.app.backup.ui.di.YourDataDependencies
 import com.migrely.app.history.ui.di.HistoryDependencies
 import com.migrely.app.history.ui.di.MonthSkyDependencies
 import com.migrely.app.home.ui.di.HomeDependencies
+import com.migrely.app.insights.ui.di.InsightsDependencies
 import com.migrely.app.medication.ui.di.EditMedicationDependencies
 import com.migrely.app.medication.ui.di.LogMedicationDependencies
 import com.migrely.app.medication.ui.di.MedicationPromptDependencies
@@ -33,5 +34,6 @@ data class AppNavHostDependencies(
     val yourDataDependencies: YourDataDependencies,
     val onboardingDependencies: OnboardingDependencies,
     val dailyReminderOfferDependencies: DailyReminderOfferDependencies,
-    val reportDependencies: ReportDependencies
+    val reportDependencies: ReportDependencies,
+    val insightsDependencies: InsightsDependencies
 )

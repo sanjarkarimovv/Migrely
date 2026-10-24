@@ -6,6 +6,7 @@ import com.migrely.app.backup.ui.di.YourDataDependencies
 import com.migrely.app.history.ui.di.HistoryDependencies
 import com.migrely.app.history.ui.di.MonthSkyDependencies
 import com.migrely.app.home.ui.di.HomeDependencies
+import com.migrely.app.insights.ui.di.InsightsDependencies
 import com.migrely.app.medication.ui.di.EditMedicationDependencies
 import com.migrely.app.medication.ui.di.LogMedicationDependencies
 import com.migrely.app.medication.ui.di.MedicationPromptDependencies
@@ -42,7 +43,8 @@ internal object AppNavHostModule {
         yourDataDependencies: YourDataDependencies,
         onboardingDependencies: OnboardingDependencies,
         dailyReminderOfferDependencies: DailyReminderOfferDependencies,
-        reportDependencies: ReportDependencies
+        reportDependencies: ReportDependencies,
+        insightsDependencies: InsightsDependencies
     ): AppNavHostDependencies = AppNavHostDependencies(
         homeDependencies = homeDependencies,
         attackDetailsDependencies = attackDetailsDependencies,
@@ -59,6 +61,7 @@ internal object AppNavHostModule {
         yourDataDependencies = yourDataDependencies,
         onboardingDependencies = onboardingDependencies,
         dailyReminderOfferDependencies = dailyReminderOfferDependencies,
-        reportDependencies = reportDependencies
+        reportDependencies = reportDependencies,
+        insightsDependencies = insightsDependencies
     )
 }
