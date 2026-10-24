@@ -7,6 +7,7 @@ import com.migrely.app.datasource.attack.dao.AttackDao
 import com.migrely.app.datasource.attack.model.AttackLocalModel
 import com.migrely.app.datasource.attack.model.AttackTagLocalModel
 import com.migrely.app.datasource.attack.model.IntensityPointLocalModel
+import com.migrely.app.datasource.backup.dao.BackupDao
 import com.migrely.app.datasource.daymark.dao.DayMarkDao
 import com.migrely.app.datasource.daymark.model.DayMarkLocalModel
 import com.migrely.app.datasource.medication.dao.MedicationDao
@@ -59,6 +60,8 @@ abstract class MigrelyDatabase : RoomDatabase() {
     abstract fun dayMarkDao(): DayMarkDao
 
     abstract fun reminderSettingsDao(): ReminderSettingsDao
+
+    abstract fun backupDao(): BackupDao
 
     companion object {
         const val NAME = "migrely.db"

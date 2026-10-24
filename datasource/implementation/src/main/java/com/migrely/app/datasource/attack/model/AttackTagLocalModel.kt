@@ -26,4 +26,9 @@ data class AttackTagLocalModel(
     @ColumnInfo(name = "attack_id") val attackId: String,
     @ColumnInfo(name = "kind") val kind: String,
     @ColumnInfo(name = "tag_key") val tagKey: String
-)
+) {
+    companion object {
+        /** Starts [tagKey] for a custom tag, followed by its ID. */
+        const val CUSTOM_KEY_PREFIX = "custom:"
+    }
+}

@@ -8,6 +8,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
 import com.migrely.app.attack.ui.view.AddPastAttack
 import com.migrely.app.attack.ui.view.AttackDetails
+import com.migrely.app.backup.ui.view.YourData
 import com.migrely.app.history.ui.view.History
 import com.migrely.app.history.ui.view.MonthSky
 import com.migrely.app.home.ui.view.Home
@@ -17,6 +18,7 @@ import com.migrely.app.medication.ui.view.MedicationPrompt
 import com.migrely.app.medication.ui.view.Medications
 import com.migrely.app.medication.ui.view.OveruseIndicator
 import com.migrely.app.reminders.ui.view.Reminders
+import com.migrely.app.settings.ui.view.Settings
 import com.migrely.app.ui.main.di.AppNavHostDependencies
 import com.migrely.app.ui.main.route.AddPastAttack
 import com.migrely.app.ui.main.route.AttackDetails
@@ -26,6 +28,8 @@ import com.migrely.app.ui.main.route.Home
 import com.migrely.app.ui.main.route.LogMedication
 import com.migrely.app.ui.main.route.Medications
 import com.migrely.app.ui.main.route.Reminders
+import com.migrely.app.ui.main.route.Settings
+import com.migrely.app.ui.main.route.YourData
 import java.time.LocalDate
 
 @Composable
@@ -86,6 +90,12 @@ fun AppNavHostDependencies.AppNavHost(
         }
         composable<Reminders> {
             remindersDependencies.Reminders(navController)
+        }
+        composable<Settings> {
+            settingsDependencies.Settings(navController)
+        }
+        composable<YourData> {
+            yourDataDependencies.YourData(navController)
         }
         composable<History> { entry ->
             historyDependencies.History(

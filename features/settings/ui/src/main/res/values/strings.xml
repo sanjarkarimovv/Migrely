@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_title">Settings</string>
+    <string name="settings_back">Back</string>
+    <string name="settings_reminders">Reminders</string>
+    <string name="settings_reminders_summary">A daily check-in, and asking if a medication helped</string>
+    <string name="settings_your_data">Your data</string>
+    <string name="settings_your_data_summary">Back up, export for Excel, and import</string>
+</resources>
