@@ -47,7 +47,7 @@
 
 ## 4. Data (`:features:history:data`)
 
-- [ ] 4.1 Implement `HistoryRepository` and `HistoryAttackDomainMapper` with tests for every interface, each happy path and each failure as a value; verify `./gradlew :features:history:data:test`
+- [x] 4.1 Implement `HistoryRepository` and `HistoryAttackDomainMapper` with tests for every interface, each happy path and each failure as a value; verify `./gradlew :features:history:data:test`
 
 ## 5. Design system (`:designsystem`)
 
