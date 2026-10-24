@@ -33,17 +33,21 @@ import androidx.compose.material3.TimePicker
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.migrely.app.designsystem.icon.MigrelyIcons
 import com.migrely.app.designsystem.picker.DateTimePickerLabels
@@ -78,6 +82,7 @@ fun AttackModeContents(
     attack: AttackInProgressUiModel,
     nowMillis: Long,
     reduceMotion: Boolean,
+    messageBottom: Dp,
     timeUiFormatter: TimeUiFormatter,
     actions: HomeActions,
     modifier: Modifier = Modifier
@@ -95,7 +100,7 @@ fun AttackModeContents(
     // In a short window (landscape) the controls alone fill the height and hide the guidance,
     // so the two sit side by side.
     if (isCompactHeight()) {
-        SideBySideAttackLayout(startedAt, attack, nowMillis, actions, screenModifier)
+        SideBySideAttackLayout(startedAt, attack, nowMillis, messageBottom, actions, screenModifier)
     } else {
         StackedAttackLayout(startedAt, attack, nowMillis, reduceMotion, actions, screenModifier)
     }
@@ -139,13 +144,22 @@ private fun SideBySideAttackLayout(
     startedAt: String,
     attack: AttackInProgressUiModel,
     nowMillis: Long,
+    messageBottom: Dp,
     actions: HomeActions,
     modifier: Modifier
 ) {
+    val density = LocalDensity.current
+    var columnTop by remember { mutableStateOf(0.dp) }
     Row(horizontalArrangement = Arrangement.spacedBy(24.dp), modifier = modifier) {
+        // While a message shows over this column, the column's visible part starts below it, so no line is covered,
+        // scrolled or not (BRD D52). It follows the message as it slides in and out.
         Column(
             modifier = Modifier
                 .weight(1f)
+                .onGloballyPositioned {
+                    columnTop = with(density) { it.positionInRoot().y.toDp() }
+                }
+                .padding(top = (messageBottom - columnTop - 8.dp).coerceAtLeast(0.dp))
                 .verticalScroll(rememberScrollState())
         ) {
             Spacer(Modifier.height(16.dp))
@@ -497,6 +511,7 @@ private fun AttackModePreview() {
             ),
             nowMillis = previewMillis(14, 47),
             reduceMotion = true,
+            messageBottom = 0.dp,
             timeUiFormatter = previewFormatter,
             actions = previewActions
         )
@@ -517,6 +532,7 @@ private fun AttackModeLongCheckPreview() {
             ),
             nowMillis = previewMillis(14, 5),
             reduceMotion = true,
+            messageBottom = 0.dp,
             timeUiFormatter = previewFormatter,
             actions = previewActions
         )

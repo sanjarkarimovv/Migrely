@@ -38,6 +38,7 @@ None.
 
 - **`:designsystem`:** `MonthSkyCalendar` handles Tab, the focus anchor and a visible focus ring, with Compose
   instrumented tests. Its callers do not change.
-- **`:features:home:ui`:** the message height reaches `AttackModeContents`, whose guidance column moves below it.
+- **`:designsystem`:** `MigrelySnackbarHost` reports where its message ends.
+- **`:features:home:ui`:** that bottom reaches `AttackModeContents`, whose guidance column moves below it.
 - **Docs:** BRD 13 (row 4a) and 17 (D38 detailed, D52).
 - **QA retest:** the a11y keyboard order on home and History (#22), and the landscape message state (#26).

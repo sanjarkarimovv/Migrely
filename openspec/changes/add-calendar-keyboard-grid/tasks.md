@@ -11,8 +11,9 @@
 
 ## 2. Landscape message (design D2)
 
-- [ ] 2.1 `HomeContents` measures the message area; `SideBySideAttackLayout` moves the guidance below it.
-  Verify: `./gradlew :features:home:ui:test`
+- [x] 2.1 `MigrelySnackbarHost` reports the message's bottom; `SideBySideAttackLayout` keeps the guidance column below
+  it (`MigrelySnackbarHostTest`, 2 tests).
+  Verify: `./gradlew :features:home:ui:test` and the designsystem instrumented tests
 
 ## 3. Verify
 

@@ -16,6 +16,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalAccessibilityManager
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
 import com.migrely.app.designsystem.snackbar.MigrelySnackbar
 import com.migrely.app.designsystem.snackbar.MigrelySnackbarHost
 import com.migrely.app.designsystem.snackbar.SnackbarAction
@@ -47,6 +48,7 @@ internal fun HomeMessages(
     onUndoStart: (attackId: String) -> Unit,
     onUndoEnd: (attackId: String) -> Unit,
     onUndoDelete: (attackId: String) -> Unit,
+    onMessageBottomChanged: (Dp) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var shown by rememberSaveable { mutableStateOf<ShownHomeMessageUiModel?>(null) }
@@ -114,7 +116,8 @@ internal fun HomeMessages(
     MigrelySnackbarHost(
         message = current,
         reduceMotion = reduceMotion,
-        modifier = modifier
+        modifier = modifier,
+        onMessageBottomChanged = onMessageBottomChanged
     ) { visible ->
         val behaviour = behaviourMapper.toUi(visible.message)
         HomeSnackbar(
