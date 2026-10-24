@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- "Migraine started" from the launcher icon's menu (BRD 6.1 item 13). Handled by MainActivity. -->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_start_attack"
+        android:shortcutId="start_attack"
+        android:shortcutLongLabel="@string/shortcut_start_attack_long"
+        android:shortcutShortLabel="@string/shortcut_start_attack">
+        <intent
+            android:action="com.migrely.app.action.START_ATTACK"
+            android:targetClass="com.migrely.app.MainActivity"
+            android:targetPackage="com.migrely.app" />
+    </shortcut>
+</shortcuts>

@@ -1,4 +1,4 @@
-package com.migrely.app.ui.theme
+package com.migrely.app.designsystem.theme
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme

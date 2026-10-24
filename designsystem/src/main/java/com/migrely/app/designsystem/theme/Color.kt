@@ -1,4 +1,4 @@
-package com.migrely.app.ui.theme
+package com.migrely.app.designsystem.theme
 
 import androidx.compose.ui.graphics.Color
 
@@ -47,3 +47,17 @@ internal val InverseOnSurface = Color(0xFF1A1D22)
 internal val InversePrimary = Color(0xFF4A5290)
 
 internal val Scrim = Color(0xFF000000)
+
+/** Colours outside the Material 3 scheme, used by the attack mode ("dark room", BRD 18.3 B) and progress messages. */
+object MigrelyColors {
+    val AttackModeBackground = Color(0xFF08090C)
+    val AttackModeSurface = Color(0xFF12151A)
+    val AttackModeOutline = Color(0xFF22272F)
+    val AttackModeText = Color(0xFF8A909A)
+    val AttackModeSelectedContainer = Color(0xFF252A4C)
+    val AttackModeSelectedOutline = Color(0xFF7F86BC)
+    val AttackModeSelectedText = Color(0xFFC9CDEA)
+    val AttackModeEndContainer = Color(0xFF1F2A34)
+    val AttackModeEndText = Color(0xFFBCC8D3)
+    val Positive = Color(0xFF8FB8A0)
+}

@@ -28,7 +28,8 @@ class ArchitectureDataSourceTest {
 
     @Test
     fun `DataSource models are suffixed with Data-Api-Local Model`() {
-        Konsist.scopeFromProject()
+        // Production only: tests for a model live in the model's package (docs/ARCHITECTURE.md section 13).
+        Konsist.scopeFromProduction()
             .classes()
             .withPackage("..datasource..model")
             .withTopLevel()

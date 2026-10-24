@@ -52,6 +52,7 @@ detekt {
 
 dependencies {
     implementation(projects.features.home.presentation)
+    implementation(projects.designsystem)
     implementation(projects.architecture.ui)
     implementation(projects.architecture.presentation)
 
@@ -62,6 +63,8 @@ dependencies {
     implementation(libs.compose.ui.tooling)
     implementation(libs.compose.navigation)
     implementation(libs.compose.ui.tooling.preview)
+    implementation(libs.androidx.lifecycle.runtime.compose)
 
     testImplementation(libs.test.junit)
+    testImplementation(libs.test.mockito.kotlin)
 }

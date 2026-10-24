@@ -74,9 +74,13 @@ dependencies {
     implementation(libs.compose.material3)
     implementation(libs.compose.navigation)
     implementation(libs.kotlinx.serialization.core)
+    implementation(libs.room.runtime)
+    implementation(libs.androidx.lifecycle.runtime.compose)
     debugImplementation(libs.compose.ui.tooling)
     debugImplementation(libs.compose.ui.test.manifest)
 
+    implementation(projects.designsystem)
+    implementation(projects.coroutine)
     implementation(projects.architecture.ui)
     implementation(projects.architecture.presentation)
     implementation(projects.architecture.domain)

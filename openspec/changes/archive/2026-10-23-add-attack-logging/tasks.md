@@ -1,0 +1,81 @@
+# Tasks
+
+## 1. Foundations
+
+- [x] 1.1 Create the `:designsystem` Android library (Compose, ktlint, detekt) and move `MigrelyTheme`, `Color.kt` and `Type.kt` from `:app/ui/theme` into it; make `:app` and `:features:home:ui` depend on it; verify `./gradlew :designsystem:build :app:assembleDebug` succeeds and the app still opens with the dark theme on the emulator
+- [x] 1.2 Convert `:datasource:implementation` to an Android library with KSP, Room 2.8.5 (`room-runtime`, `room-ktx`, `room-compiler`) and the Room Gradle plugin writing schemas to `datasource/implementation/schemas`; verify `./gradlew :datasource:implementation:build` succeeds
+- [x] 1.3 Update `docs/ARCHITECTURE.md` for `:designsystem` (§3, §10), the Room binding and schema policy, `rememberReduceMotion()` and the `attack` and `clock` datasource packages; verify each item has a section and §13 lists the designsystem deviation from the sample
+
+## 2. Domain (`:features:home:domain`)
+
+- [x] 2.1 Add `AttackDomainModel`, `IntensityPointDomainModel`, `LongAttackCheckDomainModel`, `IntensityLevelDomainModel` (Mild 3, Moderate 6, Severe 9), `TodayDomainModel` and the result models from design D2 (including `EndOutOfRange` for ends outside `[start, now]`); verify `./gradlew :features:home:domain:build`
+- [x] 2.2 Add one single-function repository interface per use case plus `CurrentTimeRepository`; verify the module builds and Konsist `ArchitectureDomainTest` passes
+- [x] 2.3 Implement `GetTodayUseCase` (one-shot, design D11) with tests for calm, in progress, ended (count, peak, unknown intensity), an attack crossing midnight, and the 72-hour due rule with `confirmedAt` and `disabled`; verify `./gradlew :features:home:domain:test` passes
+- [x] 2.4 Implement `StartAttackUseCase` and `UndoAttackStartUseCase` with tests for started, already in progress, storage full, and the undo guard (only an attack still in progress is removed); verify domain tests pass
+- [x] 2.5 Implement `RecordIntensityUseCase` with tests for level mapping, replacement within 2 minutes, a new point after 2 minutes, and no attack in progress; verify domain tests pass
+- [x] 2.6 Implement `MoveAttackStartEarlierUseCase` with tests for a move, a rejection that reports the previous attack's end, and no attack in progress; verify domain tests pass
+- [x] 2.7 Implement `EndAttackUseCase` (now or a picked time) and `UndoAttackEndUseCase` with tests for ending now, a picked time inside and outside `[start, now]`, and the reopen guard when another attack is in progress; verify domain tests pass
+- [x] 2.8 Implement `AnswerLongAttackCheckUseCase` with tests for "Still going" (sets `confirmedAt`) and "Don't ask again" (sets `disabled`); verify domain tests pass
+
+## 3. Datasources (`:datasource:source`, `:datasource:implementation`)
+
+- [x] 3.1 Add `AttackDataSource`, `ClockDataSource`, `AttackDataModel`, `IntensityPointDataModel`, `AttackStartDataModel`, `StorageFullDataException` and `DatabaseDataException` in `com.migrely.app.datasource.{attack,clock}`; verify `./gradlew :datasource:source:build` and Konsist `ArchitectureDataSourceTest` pass
+- [x] 3.2 Add `AttackLocalModel`, `IntensityPointLocalModel` (cascade delete; the 1–10 value range is enforced in `AttackDataSourceImpl` because Room cannot declare CHECK constraints), `AttackDao` (in-progress, touching-range and previous-end queries; transactional start-if-none) and `MigrelyDatabase` version 1 with `exportSchema = true`; verify the build writes `schemas/.../1.json` and the file is committed
+- [x] 3.3 Implement `AttackDataSourceImpl` and `AttackLocalMapper` with unit tests for mapping both ways, `SQLiteFullException` to `StorageFullDataException`, and other `SQLiteException`s to `DatabaseDataException`; verify `./gradlew :datasource:implementation:testDebugUnitTest` passes
+- [x] 3.4 Implement `ClockDataSourceImpl` with an injected `java.time.Clock` and tests for `now()` and `zone()`; verify datasource unit tests pass
+- [x] 3.5 Add the instrumented `AttackDaoTest` covering single in-progress start under concurrent calls, cascade delete of intensity points, the touching-range query across midnight, and the previous-end query; verify `./gradlew :datasource:implementation:connectedDebugAndroidTest` passes on the `Medium_Phone_API_36.0` emulator
+
+## 4. Data (`:features:home:data`)
+
+- [x] 4.1 Add data-to-domain and domain-to-data mappers with parameterized tests; verify `./gradlew :features:home:data:test` passes
+- [x] 4.2 Implement `HomeRepository` for every home repository interface, with `today()` returning a one-shot snapshot of the attack in progress, the ended attacks touching today and the current time, and with every failure returned as a value; add a test for each function's success and failure path; verify `./gradlew :features:home:data:test` passes
+
+## 5. Presentation (`:features:home:presentation`)
+
+- [x] 5.1 Replace `HomeViewState` with `Loading`, `Today` and `AttackInProgress` (design D7), and add the presentation models, `HomePresentationNotification` and the domain-to-presentation mappers with parameterized tests; verify `./gradlew :features:home:presentation:test` passes
+- [x] 5.2 Implement every `HomeViewModel` action from design D7 with `BaseViewModelTest` tests covering each view state and notification (including the shortcut start in `onEnter`, `onResume()` and `onDateChanged()` reloading today, and a reload after every successful action); verify presentation tests and Konsist `ArchitecturePresentationTest` pass
+
+## 6. Design system and UI
+
+- [x] 6.1 Implement `SkyCanvas` in `:designsystem` for `Calm`, `Hazy`, `Cloudy`, `Storm` and `Rain`, with deterministic outline jitter, a still dim lightning line and rain that stays still when `animate = false`, and a `@Preview` for each appearance; verify `./gradlew :designsystem:build` and compare the previews with `docs/design/style-frames`
+- [x] 6.2 Implement `rememberReduceMotion()` in `:designsystem`, refreshed on resume; verify it returns true on the emulator after `adb shell settings put global animator_duration_scale 0`
+- [x] 6.3 Add the home UI models (Parcelable), `HomeViewStateUiMapper`, the UI-model-to-`SkyAppearance` mapper and `TimeUiFormatter` (locale, 24-hour setting, start-zone city when it differs) with tests; verify `./gradlew :features:home:ui:testDebugUnitTest` passes
+- [x] 6.4 Build `TodayContents`: the sky card with the spec's texts per state, its spoken description, and "Migraine started"; add a preview per state; verify `./gradlew :features:home:ui:build`
+- [x] 6.5 Build `AttackModeContents`: darker background, one guidance line, "Started HH:MM · N min" ticking every 30 seconds (the same ticker calls `onDateChanged()` when the local date changes), intensity chips at least 64 dp with selected semantics, "Started earlier" options and "Migraine ended" in the lower half; add previews; verify `./gradlew :features:home:ui:build`
+- [x] 6.6 Add the 1,200 ms transitions that snap with reduce motion and never animate the first frame, plus haptic confirmation after start and end; verify on the emulator with animations on and off
+- [x] 6.7 Add the 5-second undo snackbars for start and end, and the messages for storage full, a rejected start move (showing the previous end time) and a generic failure; verify on the emulator that undo works within 5 seconds and the snackbar disappears after it
+- [x] 6.8 Add the 72-hour inline card with "Still going", "It has ended" (Material 3 date and time pickers limited to `[start, now]`) and "Don't ask again for this attack", including the doctor note; verify the UI builds and the pickers reject out-of-range values
+
+## 7. App wiring
+
+- [x] 7.1 Add `DatabaseModule` (singleton Room database, DAO, datasource bindings), `HomeModule`, `HomeDataModule` and `HomeUiModule`; verify `./gradlew :app:assembleDebug` succeeds (the Hilt graph compiles)
+- [x] 7.2 Change the route to `Home(startAttack: Boolean = false)`, make `MainActivity` `singleTop`, map the `START_ATTACK` launch intent and `onNewIntent` to `Home(startAttack = true)`, and update the navigation mapper test; verify `./gradlew :app:testDebugUnitTest` passes
+- [x] 7.3 Add the static launcher shortcut "Migraine started" (`res/xml/shortcuts.xml`, a vector icon, manifest meta-data); verify `adb shell dumpsys shortcut com.migrely.app` lists it and long-pressing the icon on the emulator shows it
+- [x] 7.4 Confirm the release surface: verify `aapt dump permissions` on the debug APK still lists no `INTERNET` and no runtime permission
+
+## 8. Integration verification
+
+- [x] 8.1 Run `./gradlew assembleDebug test ktlintCheck detekt` (the gate now uses `test`, because `testDebugUnitTest` skipped the JVM modules' tests); verify it ends with BUILD SUCCESSFUL and record the test count
+- [x] 8.2 Run `./gradlew :datasource:implementation:connectedDebugAndroidTest` on the emulator; verify all instrumented tests pass
+- [x] 8.3 Walk the `attack-logging`, `attack-mode`, `today-sky` and `app-shell` scenarios on the API 36 emulator: start, undo start, double tap, shortcut cold and during an attack, intensity and the 2-minute replacement, moving the start earlier and the overlap rejection, end and undo end, app kill during an attack (`adb shell am kill`), rotation, reduce motion, font scale 2.0, and spoken labels in a `uiautomator dump`; record each result. The 72-hour, midnight, daylight-saving and storage-full scenarios are covered by unit tests, because the Play Store emulator image cannot change the system clock or fill storage safely
+- [x] 8.4 Run `openspec validate add-attack-logging --strict`; verify it reports the change as valid
+
+## Verification record (2026-10-23)
+
+- 8.1 Gate: BUILD SUCCESSFUL; 153 unit tests, 0 failures (domain 48, presentation 26, data 22, UI 23, datasource 18, app with Konsist 16). The old gate (`testDebugUnitTest`) ran only 57 of them, which is why it changed to `test`.
+- 8.2 `AttackDaoTest`: 7 of 7 passed. Run on the dedicated `Migrely_API_36` emulator (`ANDROID_SERIAL=emulator-5570`) instead of `Medium_Phone_API_36.0`, which other work on this machine uses.
+- 8.3 Emulator walk, all as specified:
+  - start; undo start; a double tap creates one attack; the shortcut from a cold start and during an attack (no second attack);
+  - intensity, with the 2-minute replacement; moving the start 30 min earlier; the overlap rejection ("Your previous migraine ended at 3:56 PM.");
+  - end and undo end; `am kill` during an attack resumes the attack; rotation keeps the state; reduce motion snaps the transition;
+  - 72-hour card: "Still going", asking again, "Don't ask again", and "It has ended" with bounded pickers.
+  - Font scale 2.0 found three defects, now fixed: split words in "Started earlier?" and the intensity chips (the options now wrap and the chips stack), and landscape hiding the guidance (short windows now show text and controls side by side). After the fix the portrait and landscape layouts at 1.0 and 2.0 show every control.
+  - Spoken labels in `uiautomator dump`: the sky card ("Today: cloudy. 6 migraines today. Peak: mild."), "Move the start 15 min earlier" and the others, and the selected intensity chip as `checkable=true checked=true`.
+- 7.4 `aapt dump permissions`: only `DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION` (added by AndroidX, signature level); no `INTERNET`, no runtime permission.
+- 8.4 `openspec validate add-attack-logging --strict`: valid.
+- Not checked on the emulator: haptics (the emulator has no vibration motor); midnight, daylight saving and storage full (unit tests only).
+
+## Workflow follow-up
+
+- Commit after each task group with the session's attribution, push `feat/add-attack-logging` and open a PR stacked on PR #1.
+- Archive with `/opsx:archive` after review, so the four specs merge into `openspec/specs/`.

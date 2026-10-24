@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A dim storm cloud on the app's lavender, matching the "Your sky" style. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <path
+        android:fillColor="#FFA9B1E8"
+        android:pathData="M24,0a24,24 0,1 1,0 48a24,24 0,1 1,0 -48z" />
+    <path
+        android:fillColor="#FF1B1F3A"
+        android:pathData="M15,29a6,6 0,0 1,1 -11.9a8.5,8.5 0,0 1,16.3 1.4a5.3,5.3 0,0 1,0.7 10.5z" />
+    <path
+        android:fillColor="@android:color/transparent"
+        android:pathData="M24.5,31l-3,5h3.5l-2.5,5"
+        android:strokeWidth="2"
+        android:strokeColor="#FF1B1F3A"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+</vector>

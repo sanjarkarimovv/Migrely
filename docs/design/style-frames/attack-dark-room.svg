@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 800" width="360" height="800">
+  <!-- Migrely style frame: attack mode, "the dark room". The app itself goes dark: one line of text, large targets,
+       nothing to read, no rewards, no paywall (BRD G4). Rain is static when Reduce motion is on. -->
+  <defs>
+    <linearGradient id="gClear" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#16203A"/><stop offset="1" stop-color="#1E2843"/></linearGradient>
+    <linearGradient id="gHaze" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1A2132"/><stop offset="1" stop-color="#232A3A"/></linearGradient>
+    <linearGradient id="gCloud" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1A1F2C"/><stop offset="1" stop-color="#20252F"/></linearGradient>
+    <linearGradient id="gStorm" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#11141B"/><stop offset="1" stop-color="#171A22"/></linearGradient>
+    <linearGradient id="gNight" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#121A2E"/><stop offset="1" stop-color="#202945"/></linearGradient>
+    <linearGradient id="gRain" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0C0F17"/><stop offset="1" stop-color="#131823"/></linearGradient>
+    <filter id="wobble"><feTurbulence type="turbulence" baseFrequency="0.05" numOctaves="2" seed="5" result="t"/><feDisplacementMap in="SourceGraphic" in2="t" scale="1.6"/></filter>
+    <filter id="grain" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="7"/>
+      <feColorMatrix type="saturate" values="0"/>
+      <feComponentTransfer><feFuncA type="linear" slope="0.06"/></feComponentTransfer>
+    </filter>
+  </defs>
+  <rect width="360" height="800" fill="#08090C"/>
+  <rect x="16" y="78" width="328" height="206" rx="28" fill="url(#gRain)"/>
+  <g filter="url(#wobble)">
+    <path d="M16 128 C40 96 80 92 104 108 C120 80 168 78 188 102 C212 84 256 86 272 110 C296 100 330 108 344 126 L344 146 C320 154 300 146 280 152 C250 160 220 148 190 154 C160 160 130 148 100 154 C70 160 44 150 16 154 Z" fill="#1C2130"/>
+    <path d="M16 146 C48 126 90 128 120 140 C150 122 200 124 226 140 C258 128 304 130 344 142 C330 160 306 166 284 160 C258 172 230 164 206 170 C180 176 150 164 124 170 C96 176 70 162 46 168 C34 170 22 166 16 162 Z" fill="#222838"/>
+  </g>
+  <path d="M40 170 l-4 10" stroke="#2E3546" stroke-width="1.4" stroke-linecap="round"/><path d="M77 193 l-4 10" stroke="#2E3546" stroke-width="1.4" stroke-linecap="round"/><path d="M114 182 l-4 10" stroke="#2E3546" stroke-width="1.4" stroke-linecap="round"/><path d="M151 171 l-4 10" stroke="#2E3546" stroke-width="1.4" stroke-linecap="round"/><path d="M188 194 l-4 10" stroke="#2E3546" stroke-width="1.4" stroke-linecap="round"/><path d="M225 183 l-4 10" stroke="#2E3546" stroke-width="1.4" stroke-linecap="round"/><path d="M262 172 l-4 10" stroke="#2E3546" stroke-width="1.4" stroke-linecap="round"/><path d="M299 195 l-4 10" stroke="#2E3546" stroke-width="1.4" stroke-linecap="round"/><path d="M336 184 l-4 10" stroke="#2E3546" stroke-width="1.4" stroke-linecap="round"/><path d="M73 173 l-4 10" stroke="#2E3546" stroke-width="1.4" stroke-linecap="round"/><path d="M110 196 l-4 10" stroke="#2E3546" stroke-width="1.4" stroke-linecap="round"/><path d="M147 185 l-4 10" stroke="#2E3546" stroke-width="1.4" stroke-linecap="round"/><path d="M184 174 l-4 10" stroke="#2E3546" stroke-width="1.4" stroke-linecap="round"/><path d="M221 197 l-4 10" stroke="#2E3546" stroke-width="1.4" stroke-linecap="round"/><path d="M258 186 l-4 10" stroke="#2E3546" stroke-width="1.4" stroke-linecap="round"/><path d="M295 175 l-4 10" stroke="#2E3546" stroke-width="1.4" stroke-linecap="round"/><path d="M332 198 l-4 10" stroke="#2E3546" stroke-width="1.4" stroke-linecap="round"/><path d="M69 187 l-4 10" stroke="#2E3546" stroke-width="1.4" stroke-linecap="round"/>
+  <text x="180" y="236" font-size="16" text-anchor="middle" fill="#9AA0A9" font-family="Roboto, 'Helvetica Neue', Arial, sans-serif">Rest now. We'll keep time.</text>
+  <text x="180" y="259" font-size="12" text-anchor="middle" fill="#6B7280" font-family="Roboto, 'Helvetica Neue', Arial, sans-serif">Started 14:05 · 42 min</text>
+
+  <rect width="360" height="800" filter="url(#grain)"/>
+  <g font-family="Roboto, 'Helvetica Neue', Arial, sans-serif">
+    <rect x="24" y="552" width="96" height="52" rx="26" fill="#12151A" stroke="#22272F"/>
+    <text x="72" y="583" font-size="15" text-anchor="middle" fill="#8A909A">Mild</text>
+    <rect x="132" y="552" width="96" height="52" rx="26" fill="#252A4C" stroke="#7F86BC" stroke-width="1.5"/>
+    <text x="180" y="583" font-size="15" text-anchor="middle" fill="#C9CDEA">Moderate</text>
+    <rect x="240" y="552" width="96" height="52" rx="26" fill="#12151A" stroke="#22272F"/>
+    <text x="288" y="583" font-size="15" text-anchor="middle" fill="#8A909A">Severe</text>
+    <rect x="24" y="620" width="312" height="56" rx="28" fill="#0F1115" stroke="#22272F"/>
+    <text x="180" y="654" font-size="16" text-anchor="middle" fill="#8A909A">+ Medication taken</text>
+    <rect x="24" y="696" width="312" height="72" rx="36" fill="#1F2A34"/>
+    <text x="180" y="739" font-size="20" font-weight="600" text-anchor="middle" fill="#BCC8D3">Migraine ended</text>
+  </g>
+</svg>

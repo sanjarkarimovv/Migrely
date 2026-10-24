@@ -16,7 +16,7 @@ doctor-ready report to appointments.
 Requirements: JDK 17 or 21 and the Android SDK (API 36).
 
 ```bash
-./gradlew assembleDebug testDebugUnitTest ktlintCheck detekt
+./gradlew assembleDebug test ktlintCheck detekt
 ```
 
 This is the same quality gate CI runs (`.github/workflows/ci.yml`). It includes the Konsist architecture tests.

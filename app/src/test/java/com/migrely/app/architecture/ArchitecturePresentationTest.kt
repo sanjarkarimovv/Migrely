@@ -32,7 +32,8 @@ class ArchitecturePresentationTest {
 
     @Test
     fun `Presentation models are suffixed with PresentationModel`() {
-        Konsist.scopeFromProject()
+        // Production only: tests for a model live in the model's package (docs/ARCHITECTURE.md section 13).
+        Konsist.scopeFromProduction()
             .classes()
             .withPackage("..presentation..model")
             .withTopLevel()

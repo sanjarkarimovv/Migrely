@@ -1,0 +1,62 @@
+# today-sky Specification
+
+## Purpose
+Defines the sky card for today on the home screen: how today's migraine data becomes a sky (calm, rain, haze, cloud or
+storm), and the rule that the app never shows more than the data says.
+
+## Requirements
+
+### Requirement: Today's sky reflects today's data only
+The home screen SHALL show a sky card for today derived only from attacks that touch today, using the device's current
+day. The card SHALL NOT claim today is pain-free unless the user has marked it so (marking arrives in a later change),
+and SHALL never show a clear sky as a guess (BRD EC-UX-09, EC-UX-10, G6).
+
+#### Scenario: Nothing logged today
+- **WHEN** no attack touches today
+- **THEN** the card shows a calm night sky with "Calm so far today" and "No migraine logged"
+
+#### Scenario: Attack in progress
+- **WHEN** an attack is in progress
+- **THEN** the card shows a rain sky as part of attack mode
+
+#### Scenario: Attack from last night
+- **WHEN** an attack started yesterday at 23:30 and ended today at 02:00
+- **THEN** today's card reflects that attack
+
+### Requirement: Sky by peak intensity after attacks end
+When every attack touching today has ended, the card SHALL show the sky for the highest peak intensity among them:
+1–3 hazy, 4–6 cloudy, 7–10 storm. Attacks with unknown intensity SHALL count as cloudy. The card SHALL state how many
+attacks touched today and their highest intensity (BRD EC-UX-09, EC-ATK-07, EC-ATK-08).
+
+#### Scenario: One moderate attack
+- **WHEN** one attack today ended with a peak intensity of 6
+- **THEN** the card shows a cloudy sky with "1 migraine today" and "Peak: moderate"
+
+#### Scenario: Several attacks
+- **WHEN** two attacks today ended with peak intensities 3 and 9
+- **THEN** the card shows a storm sky with "2 migraines today" and "Peak: severe"
+
+#### Scenario: Intensity never recorded
+- **WHEN** the only attack today ended without any intensity recorded
+- **THEN** the card shows a cloudy sky with "1 migraine today" and "Peak: not recorded"
+
+### Requirement: Sky readable without colour
+Each sky state SHALL be distinguishable by shape as well as colour (stars, waves, cloud, lightning, rain) and SHALL have
+a spoken description for screen readers. Lightning SHALL be drawn as a still, dim line and never flash
+(BRD EC-UX-15, EC-UX-07).
+
+#### Scenario: Screen reader on the card
+- **WHEN** TalkBack focuses today's card after a severe attack
+- **THEN** it reads the sky and the summary, for example "Today: storm. 1 migraine today. Peak: severe."
+
+### Requirement: Card stays current
+The card SHALL update as soon as today's data changes and when the day changes at local midnight while the app is open,
+without restarting the app.
+
+#### Scenario: Attack ends
+- **WHEN** the user ends an attack that peaked at 9
+- **THEN** the card changes from rain to storm without leaving the screen
+
+#### Scenario: Midnight passes
+- **WHEN** the home screen is open across local midnight and nothing touches the new day
+- **THEN** the card changes to "Calm so far today" for the new day

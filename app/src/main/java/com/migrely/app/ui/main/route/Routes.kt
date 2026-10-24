@@ -7,5 +7,6 @@ package com.migrely.app.ui.main.route
 
 import kotlinx.serialization.Serializable
 
+/** [startAttack] is true when the app was opened from the "Migraine started" launcher shortcut. */
 @Serializable
-object Home
+data class Home(val startAttack: Boolean = false)

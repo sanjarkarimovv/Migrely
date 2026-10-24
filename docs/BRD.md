@@ -98,6 +98,7 @@ Launch'dan keyingi 90 kun uchun:
 11. Trigger va patternlar tahlili (premium)
 12. Sozlamalar, maxfiylik, xavfsizlik maʼlumotlari
 13. App shortcut: ilova belgisini bosib turib "Xuruj boshlandi"
+14. "Sizning osmoningiz" bosh ekrani va xuruj paytidagi "qorongʻi xona" rejimi (18-boʻlim)
 
 ### 6.2 Keyinroq (v1.1+, bozor maʼlumotiga qarab)
 
@@ -110,6 +111,8 @@ Launch'dan keyingi 90 kun uchun:
 - Health Connect (uyqu maʼlumoti)
 - Profilaktik dorilarni muntazam ichishni kuzatish
 - Wear OS
+- Yillik osmon koʻrinishi (12 oy bir ekranda)
+- Foydalanuvchi oʻzi xohlasa, oylik osmon rasmini ulashish (share sheet orqali)
 
 ### 6.3 MVP doirasidan tashqari
 
@@ -399,6 +402,15 @@ Boshqa davlatlarda narxni Play avtomatik konvertatsiya qiladi. Hindiston, Brazil
 | EC-UX-04 | TalkBack | Barcha elementlarda tavsif bor. Ogʻriq slider'i accessibility action'lari bilan ishlaydi | ✅ |
 | EC-UX-05 | RTL tillar | Layout oʻngdan chapga aks etishga tayyor (RTL tillar MVP'da yoʻq) | ✅ |
 | EC-UX-06 | Planshet va katta ekran | Ishlaydi, lekin maxsus layout v1.1+ da | ✅ |
+| EC-UX-07 | Xuruj rejimiga oʻtish animatsiyasi | Koʻpi bilan 1,5 soniya, sekin. Soniyasiga 3 tadan ortiq yorugʻlik oʻzgarishi (miltillash) yoʻq (WCAG 2.3.1). Chaqmoq hech qachon miltillamaydi, faqat xira chiziq | ✅ |
+| EC-UX-08 | Tizimda "Reduce motion" yoqilgan | Animatsiyalar (yomgʻir, oʻtish) oʻynalmaydi, darhol yakuniy holat koʻrsatiladi | ✅ |
+| EC-UX-09 | Kunning osmoni qanday aniqlanadi | Faqat maʼlumotdan: ogʻriqsiz deb belgilangan → ochiq; eng kuchli ogʻriq 1–3 → tumanli, 4–6 → bulutli, 7–10 → boʻron; ogʻriq kuchi nomaʼlum xuruj (EC-ATK-08) → bulutli. Hech narsa yozilmagan kun → punktir chegara, hech qachon "ochiq" deb taxmin qilinmaydi. Kelajak kunlar → boʻsh | ✅ |
+| EC-UX-10 | Bir kunda bir nechta xuruj yoki davom etayotgan xuruj | Kun eng kuchli xuruj boʻyicha chiziladi (EC-ATK-07 bilan mos). Davom etayotgan xuruj bugungi kartada yomgʻir bilan koʻrinadi. Bugun hali belgilanmagan boʻlsa: "Calm so far today", "ochiq" emas | ✅ |
+| EC-UX-11 | Maʼlumot import qilindi yoki oʻchirildi | Osmon va taraqqiyot xabari har safar maʼlumotlardan qayta hisoblanadi, alohida saqlanmaydi | ✅ |
+| EC-UX-12 | Xuruj davom etayotganda ilova ochildi | Ilova darhol "qorongʻi xona" rejimida, animatsiyasiz ochiladi | ✅ |
+| EC-UX-13 | Xuruj rejimi | Mukofot, paywall, baho soʻrash va taraqqiyot xabarlari koʻrsatilmaydi. Ekranda bir qator matn va katta tugmalar | ✅ |
+| EC-UX-14 | Taraqqiyot xabari ("3 fewer migraine days than September") | Faqat yaxshilanish boʻlsa iliq rangda koʻrsatiladi. Yomonlashsa, neytral raqam beriladi, ayblov yoʻq. Oldingi oyda 10 kundan kam yozuv boʻlsa, taqqoslash koʻrsatilmaydi (ishonchsiz) | ✅ |
+| EC-UX-15 | Rang koʻrlik va TalkBack | Holat faqat rang bilan emas, shakl bilan ham ajraladi: yulduz, toʻlqin, bulut, chaqmoq. TalkBack har bir kunni oʻqiydi, masalan "15 October, storm, severe migraine" | ✅ |
 
 ### 9.10 Lokalizatsiya
 
@@ -510,7 +522,8 @@ Ish sikli: `/opsx:explore` (ixtiyoriy) → `/opsx:propose <nom>` → review → 
 | # | Change | BRD |
 |---|---|---|
 | 0 | `setup-project-foundation` — modullar skeleti, `docs/ARCHITECTURE.md`, dizayn tizimi (qorongʻi tema), Konsist, CI | ADR-01…12, NFR |
-| 1 | `add-attack-logging` | ATK-F*, EC-ATK-*, EC-TIM-*, SAF-F2, SAF-F3 |
+| 1 | `add-attack-logging` — tez boshlash/tugatish, ogʻriq kuchi, "qorongʻi xona", bugungi osmon, app shortcut, Room asosi | ATK-F1, F2, F4, F6, EC-ATK-01, 02, 03, 06, 07, 08, 10, EC-TIM-01…03, SAF-F3, EC-UX-07, 08, 10, 12, 13 |
+| 1b | `add-attack-details` — xuruj tafsilotlari, oʻtgan xurujni qoʻshish, teglar, ustma-ust tushish va birlashtirish, oʻchirish va Undo | ATK-F3, F5, F7, EC-ATK-03, 04, 05, 09, 11…14, EC-TIM-04, 05, SAF-F2 |
 | 2 | `add-attack-history` | HIS-F*, EC-HIS-* |
 | 3 | `add-medication-tracking` | MED-F*, EC-MED-* |
 | 4 | `add-day-markers` | DAY-F* |
@@ -612,3 +625,103 @@ Ilova 2023-yil 13-noyabrdan oldin ochilgan akkauntda chiqadi, shuning uchun 12 t
 | D12 | Ilova doʻstning eski Play Console akkauntida chiqadi. Closed testing talabi yoʻq, internal testing ixtiyoriy | Owner | 2026-10-23 |
 | D13 | Faqat toza Clean Architecture: sample repo, kitob, skill va CleanArchitectureGenerator | Owner | 2026-10-23 |
 | D14 | Hozircha `cag` toolchain'i (AGP 8.13, Kotlin 2.2.20, SDK 36) va Nav2. Sample'ga (AGP 9, Nav3) `upgrade-toolchain` change'ida oʻtiladi | PO | 2026-10-23 |
+| D15 | ~~"Tinch xona" va mushuk~~ → "Sizning osmoningiz" va "qorongʻi xona". Manbadan tamoyil olindi, tashqi koʻrinish emas (18-boʻlim) | PO | 2026-10-23 |
+| D16 | Hissiy dizayn qoidalari G1–G6: maskot yoʻq, streak yoʻq, xurujlar jazolanmaydi va mukofotlanmaydi | PO | 2026-10-23 |
+| D18 | Owner barcha mahsulot va dizayn qarorlarini PO'ga topshirdi. Ulashilgan manbalardan tamoyil olinadi, nusxa koʻchirilmaydi | Owner | 2026-10-23 |
+| D19 | Illustratsiya va ikonkalar protsedurali vektor sifatida (kod bilan) chiziladi, tashqi illustrator kerak emas | PO | 2026-10-23 |
+| D17 | Launch'dan oldin 20–40 nafar migrenli bemor bilan 3–4 haftalik beta | PO | 2026-10-23 |
+
+---
+
+## 18. Tajriba va dizayn
+
+**Manba:** Starter Story'dagi ikki video: "This Simple App Makes $18K/Month" (V_4kiR3R4QU) va "The Design Process Behind This $18K/Month App" (iL3D57bncE8). Ulardan **tamoyillar** olindi, tashqi koʻrinish (mushuk, xona) emas. Tafsilot D15 va D18 da.
+
+### 18.1 Cat on Chair'dan olingan dalillar
+
+| Nima | Ular qilgan ish |
+|---|---|
+| Natija | Jami 127K yuklab olish. 8–9 oyda ~$80K, oxirgi 30 kunda $18K+ (muallif soʻzlari, Stripe skrinshotlari bilan) |
+| Monetizatsiya | Ilova bepul, premium funksiyalar pullik. Lifetime $29.99, yillik $19.99. **Sotuvlarning koʻpi lifetime'dan** |
+| Asosiy gʻoya | Foydalanuvchining real hayotdagi tajribasini ("mushuk yonimda") ilovaga aylantirish. Oddiy Pomodoro taymerni hissiy mahsulotga aylantirgan |
+| Dizayn | Insoniy, qoʻlda chizilgan, ataylab "mukammal emas". Rasm koʻp, matn kam |
+| Jarayon | Launch'dan oldin oʻnlab odam bilan 1 oylik beta. Launch'dan keyin feedback doskasi orqali foydalanuvchilar soʻragan funksiyalar qoʻshilgan |
+| Oʻsish | Pullik reklama yoʻq. Odamlar chiroyli dizaynni oʻzlari ulashgan, "app collection" postlari tarqalgan |
+
+**Ehtiyot boʻlish kerak boʻlgan jihatlar:** muvaffaqiyat qisman omadga bogʻliq, bozori va platformasi boshqa, kanal bootcamp sotadi.
+
+### 18.2 Migrely'ga koʻchirilgan tamoyillar
+
+| Cat on Chair tamoyili | Migrely'dagi koʻrinishi |
+|---|---|
+| Real tajribani raqamlashtirish | Migrenli odam xuruj paytida qorongʻi va jim xonaga kiradi, oʻqiy olmaydi → **ilovaning oʻzi "qorongʻi xona"ga aylanadi** |
+| Hissiy yadro | Migrenli odamlarning tilida migren — "boʻron". Ularning eng katta ehtiyoji — tushunilish va umid → **"Sizning osmoningiz"** va taraqqiyot xabari |
+| Insoniy, oʻziga xos dizayn | Qoʻlda chizilgandek, notekis chiziqli osmonlar. Ular maʼlumotdan chiziladi, shuning uchun har kimniki oʻziga xos |
+| Rasm koʻp, matn kam | Oyni bir qarashda oʻqish mumkin. Xuruj paytida esa bir qator matn |
+| Real foydalanuvchilar bilan beta | 18.6 |
+| Lifetime koʻp sotiladi | D4 dagi $59.99 lifetime tasdiqlandi |
+
+### 18.3 Konsepsiya
+
+**A. "Sizning osmoningiz" (bosh ekran)**
+
+- Yuqorida bugungi osmon kartasi bor. Bugun hali belgilanmagan boʻlsa: "Calm so far today".
+- Ostida oylik kalendar. Har bir kun kichik osmon: ochiq, tumanli, bulutli yoki boʻron (EC-UX-09).
+- Taraqqiyot xabari: "3 fewer migraine days than September" (EC-UX-14).
+- Pastda bitta katta tugma: "Migraine started" va kichik havola "Add a past attack".
+- Shifokor uchun bu aslida ogʻirlik boʻyicha issiqlik xaritasi, faqat insoniy koʻrinishda. PDF hisobotda ham xuddi shu osmonlar ishlatiladi.
+
+**B. "Qorongʻi xona" (xuruj rejimi)**
+
+- Butun ekran yanada qorongʻi boʻladi (fon `#08090C`). Bugungi kartada sekin yomgʻir yogʻadi (Reduce motion yoqilgan boʻlsa, statik).
+- Ekranda bitta qator matn qoladi: "Rest now. We'll keep time." va xuruj boshlangan vaqt.
+- Faqat katta tugmalar: ogʻriq kuchi (Mild / Moderate / Severe), "+ Medication taken", "Migraine ended".
+- Tugmalar oddiy kundagidan xiraroq, barchasi barmoq bilan oson bosiladigan pastki qismda.
+
+**Style frame'lar:** `docs/design/style-frames/home-your-sky.svg` va `attack-dark-room.svg`.
+
+### 18.4 Hissiy dizayn qoidalari
+
+| Qoida | Mazmuni |
+|---|---|
+| G1 | Xurujlar hech qachon jazolanmaydi va mukofotlanmaydi. Boʻron — maʼlumot, ayb emas |
+| G2 | Streak (ketma-ket kunlar) yoʻq. Zanjir uzilishi bemorni aybdor his qildiradi |
+| G3 | Taraqqiyot faqat taqqoslash orqali koʻrsatiladi va ayblovsiz boʻladi (EC-UX-14) |
+| G4 | Xuruj rejimida mukofot, paywall, baho soʻrash va taraqqiyot xabarlari yoʻq (EC-UX-13) |
+| G5 | Maskot yoki multfilm qahramoni yoʻq. Migren jiddiy kasallik, ilova shifokor oldida ham ishonchli koʻrinishi kerak |
+| G6 | Ekrandagi har bir holat faqat maʼlumotdan hisoblanadi va hech narsa taxmin qilinmaydi (EC-UX-09, EC-UX-11) |
+
+### 18.5 Vizual til
+
+- **Palitra.** Tungi osmon tonlari D7 palitrasiga mos. Eng yorugʻ element (oy) `#C8CCD2` dan oshmaydi. Chaqmoq xira amber rangda (`#B8975A`).
+- **Holat ranglari.**
+  - ochiq: koʻk tun va yulduzlar;
+  - tumanli: toʻlqin chiziqlar;
+  - bulutli: bulut;
+  - boʻron: qorongʻi bulut va chaqmoq.
+
+  Har bir holat rangdan tashqari shakl bilan ham ajraladi (EC-UX-15).
+- **"Qoʻlda chizilgan" his.** Bulut va toʻlqin konturlari ataylab biroz notekis, ustida past kontrastli tekstura bor.
+- **Shrift.** Barcha matnlarda oʻqilishi oson sans-serif.
+- **Texnik ijro.** Osmon kartochkalari Compose Canvas'da kod bilan chiziladi. Rastr rasm va illustrator kerak emas (D19), APK hajmi kichik qoladi.
+
+### 18.6 Bemorlar bilan beta
+
+- **Ishtirokchilar:** 20–40 nafar migrenli tester. Ular migren hamjamiyatlari (qoidalari doirasida), tanishlar va shifokorlar orqali topiladi.
+- **Muddat:** Internal testing track'ida 3–4 hafta.
+- **Fikr-mulohaza:** Ilova ichida "Fikr bildirish" tugmasi (bepul feedback doskasiga havola). Har hafta 3–5 bemor bilan 15 daqiqalik suhbat.
+- **Mezon:** Testerlarning ≥70% i 2 hafta ichida kamida 3 ta yozuv qiladi. Testerlar bergan oʻrtacha baho ≥4.5.
+
+### 18.7 Oʻsish (pullik reklamasiz)
+
+- **Store skrinshotlari:** osmon kalendari asosiy vizual. U oʻziga xos va bir qarashda tushuniladi.
+- **Hamkorlik:** chronic illness va migren mavzusidagi creator'lar hamda "app collection" postlari (#migrainewarrior, #spoonie).
+- **Ulashish (v1.1):** foydalanuvchi oʻzi xohlasa, oylik osmon rasmini ulashadi. Bu sogʻliq maʼlumoti, shuning uchun faqat foydalanuvchining oʻz harakati bilan va share sheet orqali.
+
+### 18.8 Rad etilgan variantlar
+
+| Variant | Nega rad etildi |
+|---|---|
+| Mushuk yoki boshqa hamroh qahramon | Migrenga aloqasi yoʻq, kasallikni yengillashtirib koʻrsatadi, shifokor oldida ishonchni pasaytiradi, hammaga yoqmaydi |
+| Oʻsuvchi oʻsimlik | Boshqa ilovalardan olingan metafora, migrenga xos emas. Surunkali bemorlarda deyarli oʻsmaydi |
+| Faqat "qorongʻi xona" (osmonsiz) | Dark Logger (2026-yilning eng tez oʻsgan yangi ilovasi) shu yoʻlda. Faqat shu bilan ajralib turib boʻlmaydi |
