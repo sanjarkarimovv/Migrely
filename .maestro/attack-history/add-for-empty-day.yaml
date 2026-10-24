@@ -24,7 +24,7 @@ tags: [regression, attack-history, past-attacks]
     text: ".*: nothing logged\\."
     index: 0
 - extendedWaitUntil:
-    visible: "Nothing logged on this day\\."
+    visible: "No migraine logged on this day\\."
     timeout: 3000
 - tapOn: "Add a past migraine"
 - extendedWaitUntil:
@@ -39,4 +39,4 @@ tags: [regression, attack-history, past-attacks]
     visible: "${output.day}: cloudy\\. 1 migraine\\. Peak: not recorded\\..*"
     timeout: 5000
 - assertVisible: "Show all of .*"
-- assertNotVisible: "Nothing logged on this day\\."
+- assertNotVisible: "No migraine logged on this day\\."
