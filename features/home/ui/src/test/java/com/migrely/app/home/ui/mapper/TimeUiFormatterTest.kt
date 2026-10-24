@@ -109,6 +109,30 @@ class TimeUiFormatterTest {
 
         assertEquals("23 Oct 14:05", actual)
     }
+
+    @Test
+    fun `Given another zone without the city then only the time`() {
+        val actual = formatter(
+            is24Hour = true,
+            deviceZone = "Europe/Berlin"
+        ).formatClockTime(START_MILLIS, "Asia/Tashkent", withCity = false)
+
+        assertEquals("14:05", actual)
+    }
+
+    @Test
+    fun `Given a start in another zone days ago without the city then weekday and time`() {
+        val now = START_MILLIS + 3 * DAY
+
+        val actual = formatter(true, "Europe/Berlin").formatStartTime(
+            START_MILLIS,
+            "Asia/Tashkent",
+            now,
+            withCity = false
+        )
+
+        assertEquals("Fri 14:05", actual)
+    }
 }
 
 private const val HOUR = 3_600_000L

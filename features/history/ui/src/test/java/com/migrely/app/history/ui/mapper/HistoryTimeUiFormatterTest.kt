@@ -106,4 +106,29 @@ class HistoryTimeUiFormatterTest {
             )
         )
     }
+
+    @Test
+    fun `Given another zone when formatting a start without the city then day and time`() {
+        assertEquals(
+            "Thu 15 Oct, 08:00",
+            formatter().formatStart(
+                millis("2026-10-15T08:00", ZoneId.of("Asia/Tokyo")),
+                "Asia/Tokyo",
+                withCity = false
+            )
+        )
+    }
+
+    @Test
+    fun `Given another zone when formatting an end then its city once`() {
+        val tokyo = ZoneId.of("Asia/Tokyo")
+        assertEquals(
+            "09:00 (Tokyo)",
+            formatter().formatEnd(
+                millis("2026-10-15T09:00", tokyo),
+                millis("2026-10-15T08:00", tokyo),
+                "Asia/Tokyo"
+            )
+        )
+    }
 }

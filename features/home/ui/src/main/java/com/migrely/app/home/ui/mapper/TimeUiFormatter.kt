@@ -17,14 +17,16 @@ class TimeUiFormatter(
     private val deviceZone: () -> ZoneId,
     private val bestDateTimePattern: (Locale, String) -> String
 ) {
-    fun formatClockTime(epochMillis: Long, zoneId: String): String {
+    /**
+     * [withCity] false leaves the city out, for the start of a range whose end names it once (BRD D36):
+     * "23:15 – 23:45 (Berlin)".
+     */
+    fun formatClockTime(epochMillis: Long, zoneId: String, withCity: Boolean = true): String {
         val zone = zoneOf(zoneId)
         val skeleton = if (is24HourFormat()) "Hm" else "hm"
         val time = DateTimeFormatter.ofPattern(bestDateTimePattern(locale(), skeleton), locale())
             .format(Instant.ofEpochMilli(epochMillis).atZone(zone))
-        return if (zone.normalized() ==
-            deviceZone().normalized()
-        ) {
+        return if (!withCity || zone.normalized() == deviceZone().normalized()) {
             time
         } else {
             "$time (${zone.city()})"
@@ -35,11 +37,16 @@ class TimeUiFormatter(
      * The start of an attack: the clock time when it started today, prefixed with the weekday within the last week
      * ("Tue 14:42") and with the date before that ("12 Oct 14:42"), so a long attack is never ambiguous.
      */
-    fun formatStartTime(epochMillis: Long, zoneId: String, nowEpochMillis: Long): String {
+    fun formatStartTime(
+        epochMillis: Long,
+        zoneId: String,
+        nowEpochMillis: Long,
+        withCity: Boolean = true
+    ): String {
         val zone = zoneOf(zoneId)
         val startDate = Instant.ofEpochMilli(epochMillis).atZone(zone).toLocalDate()
         val today = Instant.ofEpochMilli(nowEpochMillis).atZone(zone).toLocalDate()
-        val time = formatClockTime(epochMillis, zoneId)
+        val time = formatClockTime(epochMillis, zoneId, withCity)
         if (startDate == today) return time
         val daySkeleton = if (startDate.isAfter(
                 today.minusDays(DAYS_SHOWN_AS_WEEKDAY)

@@ -32,12 +32,18 @@ class HistoryTimeUiFormatter(
 
     /**
      * The start of a listed attack: "Tue 14 Oct, 09:10". [spoken] gives the full weekday and month for screen readers.
+     * [withCity] false leaves the city out when the end that follows names it (BRD D36).
      */
-    fun formatStart(epochMillis: Long, zoneId: String, spoken: Boolean = false): String {
+    fun formatStart(
+        epochMillis: Long,
+        zoneId: String,
+        spoken: Boolean = false,
+        withCity: Boolean = true
+    ): String {
         val zone = zoneOf(zoneId)
         val date = Instant.ofEpochMilli(epochMillis).atZone(zone).toLocalDate()
         val day = format(if (spoken) "EEEEdMMMM" else "EEEdMMM", date)
-        return "$day, ${formatClockTime(epochMillis, zoneId)}"
+        return "$day, ${formatClockTime(epochMillis, zoneId, withCity)}"
     }
 
     /** The end of a listed attack: its clock time, with the weekday when it ended on another day than it started. */
@@ -49,12 +55,12 @@ class HistoryTimeUiFormatter(
         return if (endDate == startDate) time else "${format("EEE", endDate)} $time"
     }
 
-    fun formatClockTime(epochMillis: Long, zoneId: String): String {
+    fun formatClockTime(epochMillis: Long, zoneId: String, withCity: Boolean = true): String {
         val zone = zoneOf(zoneId)
         val skeleton = if (is24HourFormat()) "Hm" else "hm"
         val time = DateTimeFormatter.ofPattern(bestDateTimePattern(locale(), skeleton), locale())
             .format(Instant.ofEpochMilli(epochMillis).atZone(zone))
-        return if (zone.normalized() == deviceZone().normalized()) {
+        return if (!withCity || zone.normalized() == deviceZone().normalized()) {
             time
         } else {
             "$time (${zone.id.substringAfterLast('/').replace('_', ' ')})"
