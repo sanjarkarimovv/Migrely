@@ -19,30 +19,43 @@
   So `MonthSkyCalendar`'s callers, History and home's month card, do not change.
 - **A visible focus ring (WCAG 2.4.7):** the focused day gets a two-tone ring, `onSurface` outside and `surface` inside,
   or `primary` inside on the chosen day. Compose's own focus layer is too faint on the skies.
-- **Arrow keys:** they keep Compose's 2D focus search between cells. At the edge they may leave the grid, as with any
-  2D focus.
+- **Arrow keys:** the same handler moves focus a day (left, right) or a week (up, down), mirrored in RTL. A move off the
+  selectable days does nothing, so focus stays in the month, as in a date picker. Compose's 2D search is not used: next
+  to the last selectable day it jumped to another week (review).
+- The focused day is kept in a plain holder (`FocusedDay`), read when a key is pressed, so quick presses never act on
+  a day from an older composition.
 - Cells stay `clickable` and focusable, so accessibility services still reach every day (EC-UX-19). TalkBack and
   Switch Access do not use Tab.
-- **Tests:** Compose instrumented tests in `:designsystem` (`MonthSkyCalendarTest`), with a button before and after
-  the calendar. They cover Tab in and out, Shift+Tab, the anchor, and arrow moves.
+- **Tests:** Compose instrumented tests in `:designsystem` (`MonthSkyCalendarKeyboardTest`), with a button before and
+  after the calendar. They cover Tab in and out, Shift+Tab, the anchor (chosen, today, first day, a chosen day that
+  cannot be chosen), arrow moves, the edge of the selectable days, RTL, and a month with no selectable day.
 
 ### D2. The guidance moves below the message (D52)
 
 - **Where the message ends:** `MigrelySnackbarHost` gains `onMessageBottomChanged: (Dp) -> Unit`, measured on its
-  `AnimatedContent`. It reports the bottom of the message from the top of the window, or 0 dp while none shows.
-  Window coordinates spare any inset arithmetic.
-- **The state:** `HomeScreen` keeps the value and passes it as `messageBottom` through `HomeContents` to
-  `AttackModeContents`.
-- **The column:** `SideBySideAttackLayout` measures its guidance column's own top. The column gets a top padding of
-  `messageBottom - columnTop - 8 dp`, at least 0, outside its scroll. So the visible part of the column starts below
-  the message, whether it is scrolled or not, and no line is ever covered.
-- **Motion:** the padding follows the message area's own size animation (`SizeTransform`), so both move together.
-  With `reduceMotion` the host now turns off its size animation too (`using null`), so the column moves at once.
-- The messages stay above the tap guard, so Undo is always tappable. Moving them into the column's layout would put
-  them under the guard.
+  `AnimatedContent` in root coordinates (`positionInRoot`). It reports the bottom of the message, or 0 dp while none
+  shows. Root coordinates on both sides spare any inset arithmetic.
+- **The state:** `HomeScreen` keeps the value in a state and passes a reader, `messageBottom: () -> Dp`, through
+  `HomeContents` to `AttackModeContents`. Only the layout phase reads it, so a moving message never recomposes the
+  screen (review).
+- **The column:** `SideBySideAttackLayout` measures its guidance column's own top, in root coordinates. A layout
+  modifier outside the scroll pads the column by `guidanceTopPadding(messageBottom, columnTop)`: from the column's
+  top to the message's bottom, at least 0, and 0 before the column is placed (no first-frame jump). So the visible
+  part of the column starts at the message's bottom, scrolled or not, and its own 16 dp top space separates the first
+  line from the message.
+- **Taps while it moves:** the column holds "Details", the long-attack check and the start-time buttons, which move
+  with it. A `TapGuard` over the column, keyed on the message's bottom in whole dp, swallows taps while it moves and
+  for 500 ms after. So a quick second "2 h earlier" after a rejected move cannot land on another button (review).
+- **Motion:** the host grows with the message's 250 ms slide in, and shrinks only after its 200 ms fade out, over
+  250 ms. So the guidance never slides under a message still on screen. With `reduceMotion` the host turns off its size
+  animation (`using null`), so the column moves at once.
+- The messages stay above the mode tap guard, so Undo is always tappable. Moving them into the column's layout would
+  put them under the guard.
 - The controls column is untouched, and the stacked (portrait) layout ignores the value.
-- **Tests:** `MigrelySnackbarHostTest` checks the reported bottom against the message's bounds, 0 dp once the message
-  goes, and at once with "Reduce motion".
+- **Tests:**
+  - `MigrelySnackbarHostTest` checks the reported bottom against the message's bounds, 0 dp once it goes, and at once
+    with "Reduce motion";
+  - `GuidanceTopPaddingTest` covers the padding rule.
 
 ## Risks
 

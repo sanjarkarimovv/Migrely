@@ -90,8 +90,9 @@ fun HomeDependencies.Home(
     )
     val reduceMotion = rememberReduceMotion()
 
-    // Where the message ends, so landscape attack mode keeps its guidance below it (BRD D52).
-    var messageBottom by remember { mutableStateOf(0.dp) }
+    // Where the message ends, so landscape attack mode keeps its guidance below it (BRD D52). It is read only in the
+    // layout phase, so a moving message never recomposes the screen.
+    val messageBottom = remember { mutableStateOf(0.dp) }
     HomeContents(
         viewState = uiState,
         nowMillis = nowMillis,
@@ -128,10 +129,10 @@ fun HomeDependencies.Home(
                 onUndoStart = homeViewModel::onUndoStartAction,
                 onUndoEnd = homeViewModel::onUndoEndAction,
                 onUndoDelete = homeViewModel::onUndoDeleteAction,
-                onMessageBottomChanged = { messageBottom = it }
+                onMessageBottomChanged = { messageBottom.value = it }
             )
         },
-        messageBottom = messageBottom,
+        messageBottom = messageBottom::value,
         modifier = modifier
     )
 }
@@ -177,7 +178,7 @@ private val HomeViewStateUiModel.mode: HomeMode
 
 /**
  * The home screen for [viewState], with [messages] drawn on top so a message stays while the mode changes.
- * [messageBottom] is where the message shown ends, from the top of the window, or 0 dp.
+ * [messageBottom] reads where the message shown ends, in root coordinates, or 0 dp.
  */
 @Composable
 fun HomeContents(
@@ -188,7 +189,7 @@ fun HomeContents(
     timeUiFormatter: TimeUiFormatter,
     actions: HomeActions,
     messages: @Composable () -> Unit,
-    messageBottom: Dp,
+    messageBottom: () -> Dp,
     modifier: Modifier = Modifier,
     monthCalendar: @Composable () -> Unit = {},
     medicationPrompt: @Composable () -> Unit = {}

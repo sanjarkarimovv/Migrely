@@ -255,8 +255,10 @@ private fun SnackbarLayout(
  * message replaces the old one. Messages slide and fade in over 250 ms and fade out over 200 ms, or switch at once with
  * [reduceMotion] (BRD EC-UX-07, EC-UX-08).
  *
- * [onMessageBottomChanged] gets the bottom of the message from the top of the window, or 0 dp while none shows, as it
- * moves; a screen uses it to keep its own text clear of the message (BRD D52).
+ * [onMessageBottomChanged] gets the bottom of the message in root coordinates (`positionInRoot`), or 0 dp while none
+ * shows, as it moves; a screen measures its own content the same way to keep it clear of the message (BRD D52). The
+ * area grows with the message's slide in and shrinks only once its fade out ends, so what follows it never slides under
+ * a message still on screen.
  */
 @Composable
 fun <T : Any> MigrelySnackbarHost(
@@ -287,7 +289,14 @@ fun <T : Any> MigrelySnackbarHost(
                         slideInVertically(tween(ENTER_MILLIS)) { -it / 2 } +
                             fadeIn(tween(ENTER_MILLIS))
                         ) togetherWith
-                        fadeOut(tween(EXIT_MILLIS)) using SizeTransform(clip = false)
+                        fadeOut(tween(EXIT_MILLIS)) using
+                        SizeTransform(clip = false) { initial, target ->
+                            if (target.height < initial.height) {
+                                tween(ENTER_MILLIS, delayMillis = EXIT_MILLIS)
+                            } else {
+                                tween(ENTER_MILLIS)
+                            }
+                        }
                 }
             },
             contentAlignment = Alignment.TopCenter,

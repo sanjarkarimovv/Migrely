@@ -2,8 +2,9 @@
 
 ### Requirement: Messages appear at the top and stay dim
 Short messages SHALL appear at the top of the screen, inside the system bars and display cutouts, and never cover the
-large controls. In landscape attack mode, where the controls fill the right column, messages SHALL stay over the left
-column, whose content SHALL move below the message while it shows. A message SHALL never be the brightest element on screen: text no brighter than `#C8CCD2`, on a dark surface
+large controls. In landscape attack mode, where the controls fill the end column, messages SHALL stay over the start
+column, whose content SHALL move below the message while it shows and SHALL ignore taps while it moves. A message SHALL
+never be the brightest element on screen: text no brighter than `#C8CCD2`, on a dark surface
 with a thin outline (BRD EC-UX-01, EC-UX-16, EC-UX-20, D37, D52).
 
 #### Scenario: Message during attack mode
@@ -13,11 +14,17 @@ with a thin outline (BRD EC-UX-01, EC-UX-16, EC-UX-20, D37, D52).
 
 #### Scenario: Message during landscape attack mode
 - **WHEN** the phone is in landscape and the user taps "Migraine started"
-- **THEN** the "Migraine started" message with "Undo" appears over the left column, under the status bar
+- **THEN** the "Migraine started" message with "Undo" appears over the start column (the left one in left-to-right
+  languages), under the status bar
 - **AND** "Mild", "Moderate", "Severe", "+ Medication taken" and "Migraine ended" stay fully visible and usable for
   as long as the message shows, including a longer "Time to take action"
 - **AND** "Rest now. We'll keep time." and the start time move below the message, no line is cut, and they move back
   when the message goes; with "Reduce motion" they move at once
+
+#### Scenario: A tap while the guidance moves
+- **WHEN** in landscape attack mode a message appears over the start column and the user taps a control in that
+  column, such as "2 h earlier", within half a second of the column moving
+- **THEN** the tap does nothing, so it cannot land on a control that has just moved
 
 #### Scenario: Landscape with a display cutout
 - **WHEN** a message appears while the phone is in landscape

@@ -31,6 +31,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -39,6 +40,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalDensity
@@ -48,8 +50,12 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.constrainHeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.isUnspecified
+import androidx.compose.ui.unit.offset
 import com.migrely.app.designsystem.icon.MigrelyIcons
+import com.migrely.app.designsystem.input.TapGuard
 import com.migrely.app.designsystem.picker.DateTimePickerLabels
 import com.migrely.app.designsystem.picker.MigrelyDateTimePicker
 import com.migrely.app.designsystem.sky.SkyAppearance
@@ -64,11 +70,13 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.util.Locale
+import kotlin.math.roundToInt
 
 private const val MINUTES_PER_HOUR = 60L
 private const val MINUTES_PER_DAY = 24 * 60L
 private const val MILLIS_PER_MINUTE = 60_000L
 private const val STACKED_FONT_SCALE = 1.3f
+private const val GUIDANCE_MOVE_GUARD_MILLIS = 500L
 private val MOVE_START_OPTIONS = listOf(
     15 to R.string.move_start_15,
     30 to R.string.move_start_30,
@@ -82,7 +90,7 @@ fun AttackModeContents(
     attack: AttackInProgressUiModel,
     nowMillis: Long,
     reduceMotion: Boolean,
-    messageBottom: Dp,
+    messageBottom: () -> Dp,
     timeUiFormatter: TimeUiFormatter,
     actions: HomeActions,
     modifier: Modifier = Modifier
@@ -137,6 +145,14 @@ private fun StackedAttackLayout(
     }
 }
 
+/**
+ * The space kept above the guidance column in landscape attack mode, so a message shown over it never covers a line
+ * (BRD D52): from the column's top to the message's bottom, both in root coordinates. None with no message, or before
+ * the column is placed. The column's own top space then separates its first line from the message.
+ */
+internal fun guidanceTopPadding(messageBottom: Dp, columnTop: Dp): Dp =
+    if (columnTop.isUnspecified) 0.dp else (messageBottom - columnTop).coerceAtLeast(0.dp)
+
 // Two columns of equal weight: HomeContents keeps messages to the start half because the controls column begins just
 // past it (design D4 of fix-today-zone-and-landscape-message). Change the split and the message area together.
 @Composable
@@ -144,34 +160,54 @@ private fun SideBySideAttackLayout(
     startedAt: String,
     attack: AttackInProgressUiModel,
     nowMillis: Long,
-    messageBottom: Dp,
+    messageBottom: () -> Dp,
     actions: HomeActions,
     modifier: Modifier
 ) {
     val density = LocalDensity.current
-    var columnTop by remember { mutableStateOf(0.dp) }
+    var columnTop by remember { mutableStateOf(Dp.Unspecified) }
+    // Whole dp, so it changes only while the message moves (BRD D52).
+    val messageMove by remember { derivedStateOf { messageBottom().value.roundToInt() } }
     Row(horizontalArrangement = Arrangement.spacedBy(24.dp), modifier = modifier) {
-        // While a message shows over this column, the column's visible part starts below it, so no line is covered,
-        // scrolled or not (BRD D52). It follows the message as it slides in and out.
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .onGloballyPositioned {
-                    columnTop = with(density) { it.positionInRoot().y.toDp() }
-                }
-                .padding(top = (messageBottom - columnTop - 8.dp).coerceAtLeast(0.dp))
-                .verticalScroll(rememberScrollState())
-        ) {
-            Spacer(Modifier.height(16.dp))
-            AttackGuidance(startedAt = startedAt, textAlign = TextAlign.Start) {
-                actions.onAttackDetails(attack.id)
-            }
-            if (attack.longAttackCheckDue) {
+        Box(modifier = Modifier.weight(1f)) {
+            // While a message shows over this column, the column's visible part starts below it, so no line is
+            // covered, scrolled or not (BRD D52). Read in the layout phase, so it follows the message frame by frame
+            // without recomposing.
+            Column(
+                modifier = Modifier
+                    .onGloballyPositioned {
+                        columnTop = with(density) { it.positionInRoot().y.toDp() }
+                    }
+                    .layout { measurable, constraints ->
+                        val top = guidanceTopPadding(messageBottom(), columnTop).roundToPx()
+                        val placeable = measurable.measure(constraints.offset(vertical = -top))
+                        layout(
+                            placeable.width,
+                            constraints.constrainHeight(placeable.height + top)
+                        ) {
+                            placeable.place(0, top)
+                        }
+                    }
+                    .verticalScroll(rememberScrollState())
+            ) {
                 Spacer(Modifier.height(16.dp))
-                LongAttackCheckCard(attack = attack, nowMillis = nowMillis, actions = actions)
+                AttackGuidance(startedAt = startedAt, textAlign = TextAlign.Start) {
+                    actions.onAttackDetails(attack.id)
+                }
+                if (attack.longAttackCheckDue) {
+                    Spacer(Modifier.height(16.dp))
+                    LongAttackCheckCard(attack = attack, nowMillis = nowMillis, actions = actions)
+                }
+                Spacer(Modifier.height(16.dp))
+                MoveStartOptions(onMoveStartEarlier = actions.onMoveStartEarlier)
             }
-            Spacer(Modifier.height(16.dp))
-            MoveStartOptions(onMoveStartEarlier = actions.onMoveStartEarlier)
+            // The column's controls move with it, so a tap while it moves could land on a different one: a quick
+            // second "2 h earlier" after a rejected move, say (review of D52).
+            TapGuard(
+                key = messageMove,
+                durationMillis = GUIDANCE_MOVE_GUARD_MILLIS,
+                modifier = Modifier.matchParentSize()
+            )
         }
         Column(
             modifier = Modifier
@@ -511,7 +547,7 @@ private fun AttackModePreview() {
             ),
             nowMillis = previewMillis(14, 47),
             reduceMotion = true,
-            messageBottom = 0.dp,
+            messageBottom = { 0.dp },
             timeUiFormatter = previewFormatter,
             actions = previewActions
         )
@@ -532,7 +568,7 @@ private fun AttackModeLongCheckPreview() {
             ),
             nowMillis = previewMillis(14, 5),
             reduceMotion = true,
-            messageBottom = 0.dp,
+            messageBottom = { 0.dp },
             timeUiFormatter = previewFormatter,
             actions = previewActions
         )

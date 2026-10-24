@@ -44,12 +44,14 @@ import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEvent
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.isShiftPressed
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -66,6 +68,7 @@ import com.migrely.app.designsystem.theme.MigrelyTheme
 private const val DAYS_PER_WEEK = 7
 private val CellSpacing = 6.dp
 private val CellShape = RoundedCornerShape(10.dp)
+private val ChosenRingWidth = 2.5.dp
 private val FocusRingWidth = 2.5.dp
 private val DayNumberOnSky = Color(0xFFC8CCD2)
 
@@ -117,9 +120,8 @@ data class LegendEntry(
  * hidden from screen readers, because every day says its own weekday. Screen readers hear [chosenStateDescription]
  * after the chosen day only: the `selected` property would make every day a "not checked" checkbox.
  *
- * With a keyboard the month is one Tab stop (BRD D38, EC-UX-19): Tab or Shift+Tab lands on the chosen day, otherwise
- * today, otherwise the first selectable day; the arrow keys move between days, Enter chooses one, and the next Tab
- * leaves the month. Accessibility services still reach every day.
+ * With a keyboard the month is one Tab stop (BRD D38, EC-UX-19), as [MonthKeyboard] describes; Enter chooses the
+ * focused day. Accessibility services still reach every day.
  */
 @Composable
 fun MonthSkyCalendar(
@@ -133,18 +135,25 @@ fun MonthSkyCalendar(
     val requesters = remember(days.map(CalendarDay::dayOfMonth)) {
         days.associate { it.dayOfMonth to FocusRequester() }
     }
+    val focusedDay = remember { FocusedDay() }
     val selectable = days.filter(CalendarDay::isSelectable)
     val anchor = selectable.firstOrNull(CalendarDay::isSelected)
         ?: selectable.firstOrNull(CalendarDay::isToday)
         ?: selectable.firstOrNull()
+    val keyboard = MonthKeyboard(
+        requesters = requesters,
+        selectable = selectable.map(CalendarDay::dayOfMonth),
+        anchor = anchor?.dayOfMonth,
+        focusedDay = focusedDay,
+        rightToLeft = LocalLayoutDirection.current == LayoutDirection.Rtl,
+        focusManager = LocalFocusManager.current
+    )
     Column(
         verticalArrangement = Arrangement.spacedBy(CellSpacing),
-        modifier = modifier.oneTabStop(
-            anchor = anchor?.let { requesters.getValue(it.dayOfMonth) },
-            first = selectable.firstOrNull()?.let { requesters.getValue(it.dayOfMonth) },
-            last = selectable.lastOrNull()?.let { requesters.getValue(it.dayOfMonth) },
-            focusManager = LocalFocusManager.current
-        )
+        modifier = modifier
+            .onPreviewKeyEvent(keyboard::onKey)
+            .focusProperties { onEnter = { keyboard.onEnter(requestedFocusDirection) } }
+            .focusGroup()
     ) {
         Row(
             horizontalArrangement = Arrangement.spacedBy(CellSpacing),
@@ -171,6 +180,7 @@ fun MonthSkyCalendar(
                             day = day,
                             chosenStateDescription = chosenStateDescription,
                             focusRequester = requesters.getValue(day.dayOfMonth),
+                            onFocused = { focusedDay.day = day.dayOfMonth },
                             onClick = { onDayClick(day.dayOfMonth) },
                             modifier = Modifier.weight(1f)
                         )
@@ -183,41 +193,65 @@ fun MonthSkyCalendar(
 }
 
 /**
- * Tab and Shift+Tab entering the grid land on [anchor]; leaving it, they go from the [first] or [last] day straight past
- * the grid, so the other days are skipped (BRD D38). The arrow keys keep Compose's 2D focus search between days.
+ * The month's keyboard (BRD D38, EC-UX-19), made on each composition.
+ * - Tab or Shift+Tab entering the grid lands on [anchor]: the chosen day, otherwise today, otherwise the first
+ *   selectable day.
+ * - Leaving, they go from the last or first selectable day straight past the grid, so the other days are skipped.
+ * - The arrow keys go a day or a week on or back, with left and right mirrored in right-to-left layouts. Off the
+ *   selectable days they do nothing, so focus stays in the month, as in a date picker.
  */
-private fun Modifier.oneTabStop(
-    anchor: FocusRequester?,
-    first: FocusRequester?,
-    last: FocusRequester?,
-    focusManager: FocusManager
-): Modifier = this
-    .onPreviewKeyEvent { event ->
-        val backwards = event.isShiftPressed
-        val edge = if (backwards) first else last
-        if (event.key != Key.Tab || event.type != KeyEventType.KeyDown || edge == null) {
-            return@onPreviewKeyEvent false
-        }
-        edge.requestFocus()
-        focusManager.moveFocus(if (backwards) FocusDirection.Previous else FocusDirection.Next)
-        true
-    }
-    .focusProperties {
-        onEnter = {
-            if (requestedFocusDirection == FocusDirection.Next ||
-                requestedFocusDirection == FocusDirection.Previous
-            ) {
-                anchor?.requestFocus()
-            }
+private class MonthKeyboard(
+    private val requesters: Map<Int, FocusRequester>,
+    private val selectable: List<Int>,
+    private val anchor: Int?,
+    private val focusedDay: FocusedDay,
+    private val rightToLeft: Boolean,
+    private val focusManager: FocusManager
+) {
+    fun onKey(event: KeyEvent): Boolean = event.type == KeyEventType.KeyDown &&
+        if (event.key == Key.Tab) leave(backwards = event.isShiftPressed) else move(event.key)
+
+    fun onEnter(direction: FocusDirection) {
+        if (direction == FocusDirection.Next || direction == FocusDirection.Previous) {
+            anchor?.let { requesters.getValue(it).requestFocus() }
         }
     }
-    .focusGroup()
+
+    private fun leave(backwards: Boolean): Boolean {
+        val edge = if (backwards) selectable.firstOrNull() else selectable.lastOrNull()
+        edge?.let {
+            requesters.getValue(it).requestFocus()
+            focusManager.moveFocus(if (backwards) FocusDirection.Previous else FocusDirection.Next)
+        }
+        return edge != null
+    }
+
+    private fun move(key: Key): Boolean {
+        val step = when (key) {
+            Key.DirectionRight -> if (rightToLeft) -1 else 1
+            Key.DirectionLeft -> if (rightToLeft) 1 else -1
+            Key.DirectionDown -> DAYS_PER_WEEK
+            Key.DirectionUp -> -DAYS_PER_WEEK
+            else -> return false
+        }
+        focusedDay.day?.plus(step)
+            ?.takeIf { it in selectable }
+            ?.let { requesters.getValue(it).requestFocus() }
+        return true
+    }
+}
+
+/** The day with keyboard focus. It is read when a key is pressed, not at composition, so quick presses never lag. */
+private class FocusedDay {
+    var day: Int? = null
+}
 
 @Composable
 private fun DayCell(
     day: CalendarDay,
     chosenStateDescription: String,
     focusRequester: FocusRequester,
+    onFocused: () -> Unit,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -237,7 +271,11 @@ private fun DayCell(
                     },
                     CellShape
                 )
-        day.isSelected -> Modifier.border(2.5.dp, MaterialTheme.colorScheme.primary, CellShape)
+        day.isSelected -> Modifier.border(
+            ChosenRingWidth,
+            MaterialTheme.colorScheme.primary,
+            CellShape
+        )
         day.isToday -> Modifier.border(
             1.5.dp,
             MaterialTheme.colorScheme.onSurfaceVariant,
@@ -260,7 +298,10 @@ private fun DayCell(
                 if (selectable) {
                     Modifier
                         .focusRequester(focusRequester)
-                        .onFocusChanged { focused = it.isFocused }
+                        .onFocusChanged {
+                            focused = it.isFocused
+                            if (it.isFocused) onFocused()
+                        }
                         .clickable(
                             role = Role.Button,
                             onClick = onClick

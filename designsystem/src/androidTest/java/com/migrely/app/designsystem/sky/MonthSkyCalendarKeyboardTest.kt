@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -11,6 +12,7 @@ import androidx.compose.ui.input.InputMode
 import androidx.compose.ui.input.InputModeManager
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.platform.LocalInputModeManager
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -20,6 +22,7 @@ import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.pressKey
 import androidx.compose.ui.test.withKeyDown
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.migrely.app.designsystem.theme.MigrelyTheme
@@ -40,32 +43,39 @@ class MonthSkyCalendarKeyboardTest {
     private lateinit var inputModeManager: InputModeManager
 
     // October 2026 starts on a Thursday: three blank cells before it in a week starting on Monday.
-    private fun show(today: Int?, chosen: Int? = null) {
+    private fun show(
+        today: Int?,
+        chosen: Int? = null,
+        lastSelectable: Int = today ?: 31,
+        layoutDirection: LayoutDirection = LayoutDirection.Ltr
+    ) {
         composeTestRule.setContent {
             inputModeManager = LocalInputModeManager.current
             MigrelyTheme {
-                Column {
-                    Button(onClick = {}, modifier = Modifier.focusRequester(before)) {
-                        Text("Before")
+                CompositionLocalProvider(LocalLayoutDirection provides layoutDirection) {
+                    Column {
+                        Button(onClick = {}, modifier = Modifier.focusRequester(before)) {
+                            Text("Before")
+                        }
+                        MonthSkyCalendar(
+                            weekdayInitials = listOf("M", "T", "W", "T", "F", "S", "S"),
+                            leadingEmptyDays = 3,
+                            days = (1..31).map { number ->
+                                CalendarDay(
+                                    dayOfMonth = number,
+                                    appearance = DaySkyAppearance.NothingLogged,
+                                    isToday = number == today,
+                                    isSelected = number == chosen,
+                                    isSelectable = number <= lastSelectable,
+                                    description = "Day $number"
+                                )
+                            },
+                            chosenStateDescription = "Chosen",
+                            onDayClick = { clicked += it },
+                            modifier = Modifier.width(350.dp)
+                        )
+                        Button(onClick = {}) { Text("After") }
                     }
-                    MonthSkyCalendar(
-                        weekdayInitials = listOf("M", "T", "W", "T", "F", "S", "S"),
-                        leadingEmptyDays = 3,
-                        days = (1..31).map { number ->
-                            CalendarDay(
-                                dayOfMonth = number,
-                                appearance = DaySkyAppearance.NothingLogged,
-                                isToday = number == today,
-                                isSelected = number == chosen,
-                                isSelectable = today == null || number <= today,
-                                description = "Day $number"
-                            )
-                        },
-                        chosenStateDescription = "Chosen",
-                        onDayClick = { clicked += it },
-                        modifier = Modifier.width(350.dp)
-                    )
-                    Button(onClick = {}) { Text("After") }
                 }
             }
         }
@@ -150,5 +160,46 @@ class MonthSkyCalendarKeyboardTest {
         press(Key.Enter)
 
         composeTestRule.runOnIdle { assertEquals(listOf(22), clicked) }
+    }
+
+    @Test
+    fun anArrowOffTheSelectableDaysKeepsFocus() {
+        show(today = 24)
+        press(Key.Tab)
+
+        // The 25th is not selectable yet, and no other day is to the right of today in its week.
+        press(Key.DirectionRight)
+        assertDayFocused(24)
+
+        press(Key.DirectionDown)
+        assertDayFocused(24)
+    }
+
+    @Test
+    fun rightToLeftMirrorsTheArrows() {
+        show(today = 23, chosen = 14, layoutDirection = LayoutDirection.Rtl)
+        press(Key.Tab)
+
+        press(Key.DirectionLeft)
+
+        assertDayFocused(15)
+    }
+
+    @Test
+    fun aChosenDayThatCannotBeChosenIsSkipped() {
+        show(today = 10, chosen = 20)
+
+        press(Key.Tab)
+
+        assertDayFocused(10)
+    }
+
+    @Test
+    fun aMonthWithNoSelectableDayIsPassedOver() {
+        show(today = null, lastSelectable = 0)
+
+        press(Key.Tab)
+
+        composeTestRule.onNodeWithText("After").assertIsFocused()
     }
 }
