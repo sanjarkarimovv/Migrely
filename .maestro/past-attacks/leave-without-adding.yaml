@@ -1,0 +1,18 @@
+# Covers: today-sky › Add a past migraine from home › Open from home
+# Covers: past-attacks › Add an attack that has ended › Leave without adding
+appId: com.migrely.app
+name: Leaving the add screen stores nothing
+tags: [smoke, regression, past-attacks]
+---
+- runFlow: ../subflows/launch-clean.yaml
+- tapOn: "Add a past migraine"
+- extendedWaitUntil:
+    visible: "Past migraine"
+    timeout: 5000
+- assertVisible: "Change when it started, now .*"
+- assertVisible: "Change when it ended, now .*"
+- assertVisible: "Duration 2 h 0 min"
+- assertVisible: "Add migraine"
+- back
+- assertVisible: ".*Calm so far today.*"
+- assertNotVisible: "Logged today"

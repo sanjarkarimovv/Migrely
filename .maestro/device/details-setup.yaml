@@ -1,0 +1,12 @@
+# Device scenario step: details of the attack in progress with "Nausea" just selected; the app is killed a second later.
+appId: com.migrely.app
+---
+- runFlow: ../subflows/launch-clean.yaml
+- runFlow: ../subflows/start-attack.yaml
+- tapOn: "Details of this migraine"
+- scrollUntilVisible:
+    element: "Nausea"
+    direction: DOWN
+- tapOn:
+    text: "Nausea"
+    waitToSettleTimeoutMs: 0

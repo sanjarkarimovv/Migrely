@@ -1,0 +1,16 @@
+# Covers: attack-logging › Durable logging › App killed during an attack
+appId: com.migrely.app
+name: An attack and its intensity survive the app being stopped
+tags: [smoke, regression, attack-logging]
+---
+- runFlow: ../subflows/launch-clean.yaml
+- runFlow: ../subflows/start-attack.yaml
+- tapOn: "Severe"
+- stopApp
+- launchApp
+- extendedWaitUntil:
+    visible: "Rest now. We'll keep time."
+    timeout: 10000
+- assertVisible:
+    containsChild: "Severe"
+    checked: true

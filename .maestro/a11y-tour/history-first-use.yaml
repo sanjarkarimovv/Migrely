@@ -1,0 +1,8 @@
+# Accessibility tour state: History before any attack (explanation and "Log your first migraine").
+appId: com.migrely.app
+---
+- runFlow: ../subflows/launch-clean.yaml
+- tapOn: ".*\\. Opens History\\."
+- extendedWaitUntil:
+    visible: "No migraines logged yet"
+    timeout: 5000

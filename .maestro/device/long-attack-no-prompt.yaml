@@ -1,0 +1,10 @@
+# Covers: attack-logging › Check attacks open for 72 hours › Don't ask again (never asked again)
+# Runs another 73 h after "Don't ask again": the attack is still in progress and nothing asks.
+appId: com.migrely.app
+---
+- launchApp
+- extendedWaitUntil:
+    visible: "Rest now. We'll keep time."
+    timeout: 10000
+- assertNotVisible: "Still going?"
+- stopApp

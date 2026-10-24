@@ -1,0 +1,24 @@
+# Covers: attack-logging › Start an attack in one tap › Undo a start
+# Covers: in-app-messages › Undo outcomes are confirmed › Undo succeeds
+# Also checks: in-app-messages › Accessible messages: the spoken undo label "Undo the start"
+appId: com.migrely.app
+name: Undo a start removes the attack and confirms it
+tags: [smoke, regression, attack-logging, in-app-messages, a11y-timeout]
+# Runs with a 20 s accessibility timeout (qa/maestro.sh pass 2): it checks what Undo does, not how long it lasts.
+---
+- runFlow: ../subflows/launch-clean.yaml
+# Undo is tapped as the very next action (see in-app-messages/newest-wins.yaml).
+- tapOn:
+    text: "Migraine started"
+    waitToSettleTimeoutMs: 0
+    retryTapIfNoChange: false
+- tapOn:
+    text: "Undo the start"
+    waitToSettleTimeoutMs: 0
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible: "Undone."
+    timeout: 3000
+- assertVisible: ".*Calm so far today.*"
+- assertNotVisible: "Rest now. We'll keep time."
+- assertNotVisible: "Logged today"

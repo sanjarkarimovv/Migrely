@@ -1,0 +1,17 @@
+# Covers: past-attacks › Picked times survive interruptions › Process death
+appId: com.migrely.app
+---
+- extendedWaitUntil:
+    visible: "Add migraine"
+    timeout: 10000
+- assertVisible: "Change when it started, now [A-Za-z]+, [A-Za-z]+ 12, .*"
+- assertVisible: "Duration 2 h 0 min"
+- back
+- extendedWaitUntil:
+    visible: "Today: calm\\. Calm so far today\\. No migraine logged\\."
+    timeout: 5000
+# Nothing was stored: History has no attack at all.
+- tapOn: ".*\\. Opens History\\."
+- extendedWaitUntil:
+    visible: "No migraines logged yet"
+    timeout: 5000

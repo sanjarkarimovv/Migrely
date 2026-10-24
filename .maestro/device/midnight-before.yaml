@@ -1,0 +1,6 @@
+# Device scenario step: a few minutes before local midnight, one attack is logged today and home stays open.
+appId: com.migrely.app
+---
+- runFlow: ../subflows/launch-clean.yaml
+- runFlow: ../subflows/log-attack-today.yaml
+- assertVisible: "Today: cloudy\\. 1 migraine today\\. Peak: not recorded\\."

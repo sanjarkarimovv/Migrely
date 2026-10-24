@@ -230,6 +230,9 @@ Health data must never be passed to either SDK.
 | Architecture rules | `:app` unit tests, `com.migrely.app.architecture` | Konsist 0.17.3 (skill templates) |
 | Design-system components | `:designsystem` instrumented tests (`connectedDebugAndroidTest`) | Compose UI test (`createComposeRule`) |
 
+End-to-end flows, the device accessibility audit, device scenarios and the release Go/No-Go list are not part of the
+gate. They run on the QA emulators and are described in `docs/QA.md` (BRD D40–D44).
+
 ## 12. Quality gate and Definition of Done
 
 ```bash

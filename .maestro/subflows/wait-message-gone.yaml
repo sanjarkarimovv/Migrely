@@ -1,0 +1,6 @@
+# Wait until the snackbar with "Undo" has timed out (5 s undo window, 8 s for information messages).
+appId: com.migrely.app
+---
+- extendedWaitUntil:
+    notVisible: "Undo"
+    timeout: 12000

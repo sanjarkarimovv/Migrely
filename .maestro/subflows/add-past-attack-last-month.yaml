@@ -1,0 +1,19 @@
+# From home with no attack in progress: add a 2-hour past migraine on the 12th of last month, then return home.
+# The date is picked in the Material date picker (previous month, then the 12th), so the flow works on any date.
+appId: com.migrely.app
+---
+- tapOn: "Add a past migraine"
+- tapOn: "Change when it started, now .*"
+- tapOn: "Change to previous month"
+- tapOn: "[A-Za-z]+, [A-Za-z]+ 12, [0-9]{4}"
+- tapOn: "Next"
+- tapOn: "OK"
+- assertVisible: "Duration 2 h 0 min"
+- tapOn: "Add migraine"
+- extendedWaitUntil:
+    visible: "Not recorded"
+    timeout: 5000
+- back
+- extendedWaitUntil:
+    visible: "Migraine started"
+    timeout: 5000

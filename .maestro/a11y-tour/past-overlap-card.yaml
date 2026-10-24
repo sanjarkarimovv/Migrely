@@ -1,0 +1,16 @@
+# Accessibility tour state: the overlap card with "Merge them" and "Change the times".
+appId: com.migrely.app
+---
+- runFlow: ../subflows/launch-clean.yaml
+- tapOn: "Add a past migraine"
+- tapOn: "Add migraine"
+- extendedWaitUntil:
+    visible: "Not recorded"
+    timeout: 5000
+- back
+- tapOn: "Add a past migraine"
+- tapOn: "Add migraine"
+# In landscape the card is below the fold; the spec expects it to be reached by scrolling.
+- scrollUntilVisible:
+    element: "Merge them"
+    direction: DOWN

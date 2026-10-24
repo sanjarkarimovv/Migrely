@@ -1,0 +1,16 @@
+# Covers: app-shell › Launch opens the home screen › Cold start during an attack
+# Covers: attack-mode › Opening the app during an attack › Reopening during an attack
+appId: com.migrely.app
+name: Cold start during an attack opens attack mode
+tags: [smoke, regression, app-shell, attack-mode]
+---
+- runFlow: ../subflows/launch-clean.yaml
+- runFlow: ../subflows/start-attack.yaml
+- runFlow: ../subflows/wait-message-gone.yaml
+- stopApp
+- launchApp
+- extendedWaitUntil:
+    visible: "Rest now. We'll keep time."
+    timeout: 10000
+- assertNotVisible: ".*Calm so far today.*"
+- takeScreenshot: app-shell-cold-start-during-attack

@@ -1,0 +1,17 @@
+# Covers: app-shell › Launch opens the home screen › Cold start from the launcher
+# Covers: app-shell › No permission prompts on launch › First launch after install
+# Covers: today-sky › Today's sky reflects today's data only › Nothing logged today
+appId: com.migrely.app
+name: Cold start opens home with a calm sky and no permission prompt
+tags: [smoke, regression, app-shell]
+---
+- runFlow: ../subflows/launch-clean.yaml
+- assertVisible: "Today: calm. Calm so far today. No migraine logged."
+- assertVisible: ".*No migraine logged.*"
+- assertVisible: "Migraine started"
+- assertVisible: "Add a past migraine"
+- assertNotVisible: "Rest now. We'll keep time."
+# A runtime permission dialog would be drawn by the permission controller and hide the home screen.
+- assertNotVisible: "Allow"
+- assertNotVisible: "Don't allow"
+- takeScreenshot: app-shell-cold-start-home

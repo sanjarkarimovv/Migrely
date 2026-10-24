@@ -1,0 +1,19 @@
+# Covers: attack-logging › Record pain intensity during an attack › Correction within two minutes
+# Covers: today-sky › Sky by peak intensity after attacks end › One moderate attack
+appId: com.migrely.app
+name: A correction within two minutes replaces the earlier intensity
+tags: [regression, attack-logging, today-sky]
+---
+- runFlow: ../subflows/launch-clean.yaml
+- runFlow: ../subflows/start-attack.yaml
+- tapOn: "Severe"
+- tapOn: "Moderate"
+- assertVisible:
+    containsChild: "Moderate"
+    checked: true
+- assertNotVisible:
+    containsChild: "Severe"
+    checked: true
+- runFlow: ../subflows/end-attack.yaml
+- assertVisible: "Today: cloudy. 1 migraine today. Peak: moderate."
+- assertVisible: "Migraine from .*, peak 6 out of 10. Opens its details."

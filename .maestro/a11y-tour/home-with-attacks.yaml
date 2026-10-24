@@ -1,0 +1,16 @@
+# Accessibility tour state: home with two ended attacks listed under "Logged today".
+appId: com.migrely.app
+---
+- runFlow: ../subflows/launch-clean.yaml
+- runFlow: ../subflows/start-attack.yaml
+- tapOn: "Mild"
+- runFlow: ../subflows/end-attack.yaml
+- runFlow: ../subflows/start-attack.yaml
+- tapOn: "Severe"
+- runFlow: ../subflows/end-attack.yaml
+- swipe:
+    from: "Migraine ended"
+    direction: RIGHT
+- extendedWaitUntil:
+    notVisible: "Undo"
+    timeout: 5000

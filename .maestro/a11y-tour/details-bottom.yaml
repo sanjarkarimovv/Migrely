@@ -1,0 +1,11 @@
+# Accessibility tour state: details of an ended attack, scrolled to the note and "Delete migraine".
+appId: com.migrely.app
+---
+- runFlow: ../subflows/launch-clean.yaml
+- runFlow: ../subflows/start-attack.yaml
+- tapOn: "Moderate"
+- runFlow: ../subflows/end-attack.yaml
+- tapOn: "Migraine from .*Opens its details."
+- scrollUntilVisible:
+    element: "Delete migraine"
+    direction: DOWN

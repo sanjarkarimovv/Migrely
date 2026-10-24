@@ -1,0 +1,8 @@
+# Accessibility tour state: "Past migraine" add screen with its default times.
+appId: com.migrely.app
+---
+- runFlow: ../subflows/launch-clean.yaml
+- tapOn: "Add a past migraine"
+- extendedWaitUntil:
+    visible: "Add migraine"
+    timeout: 5000

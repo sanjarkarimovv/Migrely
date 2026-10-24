@@ -1,0 +1,7 @@
+# Device scenario step: late in the evening in Berlin, one attack is logged, then the app is closed.
+appId: com.migrely.app
+---
+- runFlow: ../subflows/launch-clean.yaml
+- runFlow: ../subflows/log-attack-today.yaml
+- assertVisible: "Today: cloudy\\. 1 migraine today\\. Peak: not recorded\\."
+- stopApp

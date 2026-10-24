@@ -1,0 +1,28 @@
+# Covers: past-attacks › Overlapping attacks are named › One overlap
+# Covers: past-attacks › Merge overlapping attacks › Merge a new attack
+appId: com.migrely.app
+name: An overlapping past migraine is named and can be merged
+tags: [regression, past-attacks]
+---
+- runFlow: ../subflows/launch-clean.yaml
+- tapOn: "Add a past migraine"
+- tapOn: "Add migraine"
+- extendedWaitUntil:
+    visible: "Not recorded"
+    timeout: 5000
+- back
+- tapOn: "Add a past migraine"
+- tapOn: "Add migraine"
+- extendedWaitUntil:
+    visible: "This would overlap the migraine from .*"
+    timeout: 5000
+- assertVisible: "Merge them"
+- assertVisible: "Change the times"
+- assertNotVisible: "Add migraine"
+- takeScreenshot: past-attacks-overlap-card
+- tapOn: "Merge them"
+- extendedWaitUntil:
+    visible: "Migraines merged."
+    timeout: 5000
+- back
+- assertVisible: "Today: cloudy. 1 migraine today. Peak: not recorded."
