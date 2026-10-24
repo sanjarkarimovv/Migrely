@@ -2,7 +2,7 @@
 
 ## 1. Datasources
 
-- [ ] 1.1 `reminder_settings` (DB v6) with `ReminderSettingsDataSource`; migration test 5→6 and DAO test.
+- [x] 1.1 `reminder_settings` (DB v6) with `ReminderSettingsDataSource`; migration test 5→6 and DAO test.
 - [ ] 1.2 `ReminderScheduleDataSource` (WorkManager) and `NotificationDataSource` (NotificationManagerCompat), with
   channels.
 

@@ -18,6 +18,10 @@ import com.migrely.app.datasource.medication.datasource.MedicationDataSource
 import com.migrely.app.datasource.medication.datasource.MedicationDataSourceImpl
 import com.migrely.app.datasource.medication.mapper.MedicationLocalMapper
 import com.migrely.app.datasource.medication.mapper.OveruseNoticeLocalMapper
+import com.migrely.app.datasource.reminder.dao.ReminderSettingsDao
+import com.migrely.app.datasource.reminder.datasource.ReminderSettingsDataSource
+import com.migrely.app.datasource.reminder.datasource.ReminderSettingsDataSourceImpl
+import com.migrely.app.datasource.reminder.mapper.ReminderSettingsLocalMapper
 import com.migrely.app.datasource.tag.dao.TagDao
 import com.migrely.app.datasource.tag.datasource.TagDataSource
 import com.migrely.app.datasource.tag.datasource.TagDataSourceImpl
@@ -67,6 +71,16 @@ internal object DatabaseModule {
     @Provides
     fun providesDayMarkDataSource(dayMarkDao: DayMarkDao): DayMarkDataSource =
         DayMarkDataSourceImpl(dayMarkDao, DayMarkLocalMapper())
+
+    @Provides
+    fun providesReminderSettingsDao(database: MigrelyDatabase): ReminderSettingsDao =
+        database.reminderSettingsDao()
+
+    @Provides
+    fun providesReminderSettingsDataSource(
+        reminderSettingsDao: ReminderSettingsDao
+    ): ReminderSettingsDataSource =
+        ReminderSettingsDataSourceImpl(reminderSettingsDao, ReminderSettingsLocalMapper())
 
     @Provides
     fun providesClockDataSource(): ClockDataSource = ClockDataSourceImpl()

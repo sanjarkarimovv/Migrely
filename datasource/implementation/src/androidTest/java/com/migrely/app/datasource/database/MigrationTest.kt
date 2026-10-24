@@ -229,4 +229,54 @@ class MigrationTest {
         }
         migrated.close()
     }
+
+    @Test
+    fun migrating5To6_keepsDayMarks_andAddsAnEmptyReminderSettingsTable() {
+        // Given a version 5 database with a pain-free day
+        helper.createDatabase(TEST_DATABASE, 5).apply {
+            execSQL(
+                "INSERT INTO day_mark (date, period, pain_free, updated_epoch_millis) " +
+                    "VALUES ('2026-10-20', 0, 1, 1000)"
+            )
+            close()
+        }
+
+        // When
+        val migrated = helper.runMigrationsAndValidate(TEST_DATABASE, 6, true)
+
+        // Then
+        migrated.query("SELECT pain_free FROM day_mark WHERE date = '2026-10-20'").use { cursor ->
+            cursor.moveToFirst()
+            assertEquals(1, cursor.getInt(0))
+        }
+        migrated.query("SELECT COUNT(*) FROM reminder_settings").use { cursor ->
+            cursor.moveToFirst()
+            assertEquals(0, cursor.getInt(0))
+        }
+        migrated.close()
+    }
+
+    @Test
+    fun migrating1To6_keepsAttacks_throughEveryStep() {
+        // Given a version 1 database with an ended attack
+        helper.createDatabase(TEST_DATABASE, 1).apply {
+            execSQL(
+                "INSERT INTO attack (id, start_epoch_millis, start_zone_id, end_epoch_millis, " +
+                    "long_check_confirmed_epoch_millis, long_check_disabled, " +
+                    "created_epoch_millis, updated_epoch_millis) " +
+                    "VALUES ('a', 1000, 'Asia/Tashkent', 5000, NULL, 0, 1000, 5000)"
+            )
+            close()
+        }
+
+        // When
+        val migrated = helper.runMigrationsAndValidate(TEST_DATABASE, 6, true)
+
+        // Then
+        migrated.query("SELECT end_epoch_millis FROM attack WHERE id = 'a'").use { cursor ->
+            cursor.moveToFirst()
+            assertEquals(5000L, cursor.getLong(0))
+        }
+        migrated.close()
+    }
 }
