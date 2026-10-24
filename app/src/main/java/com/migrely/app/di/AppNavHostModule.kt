@@ -7,6 +7,7 @@ import com.migrely.app.history.ui.di.MonthSkyDependencies
 import com.migrely.app.home.ui.di.HomeDependencies
 import com.migrely.app.medication.ui.di.EditMedicationDependencies
 import com.migrely.app.medication.ui.di.LogMedicationDependencies
+import com.migrely.app.medication.ui.di.MedicationPromptDependencies
 import com.migrely.app.medication.ui.di.MedicationsDependencies
 import com.migrely.app.ui.main.di.AppNavHostDependencies
 import dagger.Module
@@ -26,7 +27,8 @@ internal object AppNavHostModule {
         monthSkyDependencies: MonthSkyDependencies,
         logMedicationDependencies: LogMedicationDependencies,
         medicationsDependencies: MedicationsDependencies,
-        editMedicationDependencies: EditMedicationDependencies
+        editMedicationDependencies: EditMedicationDependencies,
+        medicationPromptDependencies: MedicationPromptDependencies
     ): AppNavHostDependencies = AppNavHostDependencies(
         homeDependencies = homeDependencies,
         attackDetailsDependencies = attackDetailsDependencies,
@@ -35,6 +37,7 @@ internal object AppNavHostModule {
         monthSkyDependencies = monthSkyDependencies,
         logMedicationDependencies = logMedicationDependencies,
         medicationsDependencies = medicationsDependencies,
-        editMedicationDependencies = editMedicationDependencies
+        editMedicationDependencies = editMedicationDependencies,
+        medicationPromptDependencies = medicationPromptDependencies
     )
 }

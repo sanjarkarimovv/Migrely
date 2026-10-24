@@ -13,6 +13,7 @@ import com.migrely.app.datasource.medication.dao.MedicationDao
 import com.migrely.app.datasource.medication.datasource.MedicationDataSource
 import com.migrely.app.datasource.medication.datasource.MedicationDataSourceImpl
 import com.migrely.app.datasource.medication.mapper.MedicationLocalMapper
+import com.migrely.app.datasource.medication.mapper.OveruseNoticeLocalMapper
 import com.migrely.app.datasource.tag.dao.TagDao
 import com.migrely.app.datasource.tag.datasource.TagDataSource
 import com.migrely.app.datasource.tag.datasource.TagDataSourceImpl
@@ -54,7 +55,7 @@ internal object DatabaseModule {
 
     @Provides
     fun providesMedicationDataSource(medicationDao: MedicationDao): MedicationDataSource =
-        MedicationDataSourceImpl(medicationDao, MedicationLocalMapper())
+        MedicationDataSourceImpl(medicationDao, MedicationLocalMapper(), OveruseNoticeLocalMapper())
 
     @Provides
     fun providesClockDataSource(): ClockDataSource = ClockDataSourceImpl()

@@ -5,6 +5,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.PathParser
 import androidx.compose.ui.unit.dp
+import com.migrely.app.designsystem.icon.MigrelyIcons
 
 // Icons are drawn in code from path data (BRD D19); the shapes follow Material Symbols (Apache 2.0) on a 24-unit grid.
 internal object SnackbarIcons {
@@ -14,7 +15,7 @@ internal object SnackbarIcons {
 
     val Confirmation: ImageVector =
         icon("Confirmation", "M16.59,7.58L10,14.17l-3.59,-3.58L5,12l5,5 8,-8z$CIRCLE")
-    val Information: ImageVector = icon("Information", "M11,7h2v2h-2zM11,11h2v6h-2z$CIRCLE")
+    val Information: ImageVector = MigrelyIcons.Information
     val Error: ImageVector = icon("Error", "M11,15h2v2h-2zM11,7h2v6h-2z$CIRCLE")
     val Close: ImageVector = icon(
         "Close",

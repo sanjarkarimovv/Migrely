@@ -5,6 +5,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -126,6 +127,66 @@ class MigrationTest {
                 cursor.moveToFirst()
                 assertEquals(0, cursor.getInt(0))
             }
+        }
+        migrated.close()
+    }
+
+    @Test
+    fun migrating3To4_keepsIntakes_unanswered_andAddsAnEmptyNoticeTable() {
+        // Given a version 3 database with a medication and an intake
+        helper.createDatabase(TEST_DATABASE, 3).apply {
+            execSQL(
+                "INSERT INTO medication (id, name, name_key, kind, category, default_dose, " +
+                    "archived, created_epoch_millis, updated_epoch_millis) " +
+                    "VALUES ('m', 'Ibuprofen', 'ibuprofen', 'ACUTE', 'SIMPLE', '400 mg', 0, 1, 1)"
+            )
+            execSQL(
+                "INSERT INTO medication_intake (id, medication_id, attack_id, " +
+                    "taken_epoch_millis, taken_zone_id, dose, created_epoch_millis) " +
+                    "VALUES ('i', 'm', NULL, 2000, 'Asia/Tashkent', '400 mg', 2000)"
+            )
+            close()
+        }
+
+        // When
+        val migrated = helper.runMigrationsAndValidate(TEST_DATABASE, 4, true)
+
+        // Then the intake is kept, has no answer and its question is still open
+        migrated.query(
+            "SELECT dose, effect, effect_closed FROM medication_intake WHERE id = 'i'"
+        ).use { cursor ->
+            cursor.moveToFirst()
+            assertEquals("400 mg", cursor.getString(0))
+            assertTrue(cursor.isNull(1))
+            assertEquals(0, cursor.getInt(2))
+        }
+        migrated.query("SELECT COUNT(*) FROM overuse_notice").use { cursor ->
+            cursor.moveToFirst()
+            assertEquals(0, cursor.getInt(0))
+        }
+        migrated.close()
+    }
+
+    @Test
+    fun migrating1To4_keepsAttacks_throughEveryStep() {
+        // Given a version 1 database with an ended attack
+        helper.createDatabase(TEST_DATABASE, 1).apply {
+            execSQL(
+                "INSERT INTO attack (id, start_epoch_millis, start_zone_id, end_epoch_millis, " +
+                    "long_check_confirmed_epoch_millis, long_check_disabled, " +
+                    "created_epoch_millis, updated_epoch_millis) " +
+                    "VALUES ('a', 1000, 'Asia/Tashkent', 5000, NULL, 0, 1000, 5000)"
+            )
+            close()
+        }
+
+        // When
+        val migrated = helper.runMigrationsAndValidate(TEST_DATABASE, 4, true)
+
+        // Then
+        migrated.query("SELECT end_epoch_millis FROM attack WHERE id = 'a'").use { cursor ->
+            cursor.moveToFirst()
+            assertEquals(5000L, cursor.getLong(0))
         }
         migrated.close()
     }

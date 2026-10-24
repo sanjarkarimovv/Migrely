@@ -2,10 +2,12 @@ package com.migrely.app.attack.data.repository
 
 import com.migrely.app.attack.data.mapper.AttackDetailsDomainResolver
 import com.migrely.app.attack.data.mapper.AttackIntakeDomainMapper
+import com.migrely.app.attack.data.mapper.AttackIntakeEffectDataMapper
 import com.migrely.app.attack.data.mapper.AttackTagDataMapper
 import com.migrely.app.attack.domain.model.AttackDetailsDomainModel
 import com.migrely.app.attack.domain.model.AttackDetailsLookupResultDomainModel
 import com.migrely.app.attack.domain.model.AttackIntakeDomainModel
+import com.migrely.app.attack.domain.model.AttackIntakeEffectDomainModel
 import com.migrely.app.attack.domain.model.AttackMergeDomainModel
 import com.migrely.app.attack.domain.model.AttackTagDomainModel
 import com.migrely.app.attack.domain.model.CurrentTimeDomainModel
@@ -28,6 +30,7 @@ import com.migrely.app.attack.domain.repository.RestoreAttackTimesRepository
 import com.migrely.app.attack.domain.repository.RestoreIntakeRepository
 import com.migrely.app.attack.domain.repository.SelectAttackTagRepository
 import com.migrely.app.attack.domain.repository.SetFunctionalImpactRepository
+import com.migrely.app.attack.domain.repository.SetIntakeEffectRepository
 import com.migrely.app.attack.domain.repository.StorePastAttackRepository
 import com.migrely.app.attack.domain.repository.UpdateAttackNoteRepository
 import com.migrely.app.attack.domain.repository.UpdateAttackTimesRepository
@@ -57,7 +60,8 @@ class AttackDetailsRepository(
     private val attackDetailsDomainResolver: AttackDetailsDomainResolver,
     private val attackTagDataMapper: AttackTagDataMapper,
     private val medicationDataSource: MedicationDataSource,
-    private val attackIntakeDomainMapper: AttackIntakeDomainMapper
+    private val attackIntakeDomainMapper: AttackIntakeDomainMapper,
+    private val attackIntakeEffectDataMapper: AttackIntakeEffectDataMapper
 ) : GetAttackDetailsRepository,
     GetCurrentTimeRepository,
     FindOverlappingAttacksRepository,
@@ -73,7 +77,8 @@ class AttackDetailsRepository(
     UpdateAttackNoteRepository,
     DeleteAttackRepository,
     RemoveIntakeRepository,
-    RestoreIntakeRepository {
+    RestoreIntakeRepository,
+    SetIntakeEffectRepository {
     override fun attackDetails(attackId: String): AttackDetailsLookupResultDomainModel = try {
         val attack = attackDataSource.byId(attackId)
         if (attack == null) {
@@ -212,6 +217,10 @@ class AttackDetailsRepository(
         medicationDataSource.restoreIntake(toData(attackId, intake))
     }
 
+    override fun setIntakeEffect(intakeId: String, effect: AttackIntakeEffectDomainModel) = write {
+        medicationDataSource.setIntakeEffect(intakeId, attackIntakeEffectDataMapper.toData(effect))
+    }
+
     private fun toData(attackId: String, intake: AttackIntakeDomainModel) = IntakeDataModel(
         id = intake.id,
         medicationId = intake.medicationId,
@@ -219,7 +228,9 @@ class AttackDetailsRepository(
         attackId = attackId,
         takenAt = intake.takenAt,
         takenZoneId = intake.zone.id,
-        dose = intake.dose
+        dose = intake.dose,
+        effect = intake.effect?.let(attackIntakeEffectDataMapper::toData),
+        effectClosed = intake.effectQuestionClosed || intake.effect != null
     )
 
     private fun toData(point: IntensityPointDomainModel) = IntensityPointDataModel(

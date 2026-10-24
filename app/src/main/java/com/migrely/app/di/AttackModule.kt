@@ -19,6 +19,7 @@ import com.migrely.app.attack.domain.repository.RestoreIntakeRepository
 import com.migrely.app.attack.domain.repository.SelectAttackTagRepository
 import com.migrely.app.attack.domain.repository.SetCustomTagArchivedRepository
 import com.migrely.app.attack.domain.repository.SetFunctionalImpactRepository
+import com.migrely.app.attack.domain.repository.SetIntakeEffectRepository
 import com.migrely.app.attack.domain.repository.StorePastAttackRepository
 import com.migrely.app.attack.domain.repository.UpdateAttackNoteRepository
 import com.migrely.app.attack.domain.repository.UpdateAttackTimesRepository
@@ -35,6 +36,7 @@ import com.migrely.app.attack.domain.usecase.RemoveIntensityPointUseCase
 import com.migrely.app.attack.domain.usecase.RestoreIntakeUseCase
 import com.migrely.app.attack.domain.usecase.SelectAttackTagUseCase
 import com.migrely.app.attack.domain.usecase.SetFunctionalImpactUseCase
+import com.migrely.app.attack.domain.usecase.SetIntakeEffectUseCase
 import com.migrely.app.attack.domain.usecase.UndoTimesChangeUseCase
 import com.migrely.app.attack.domain.usecase.UpdateAttackNoteUseCase
 import com.migrely.app.attack.domain.usecase.UpdateAttackTimesUseCase
@@ -146,6 +148,12 @@ internal object AttackModule {
         restoreIntakeRepository: RestoreIntakeRepository,
         coroutineContextProvider: CoroutineContextProvider
     ) = RestoreIntakeUseCase(restoreIntakeRepository, coroutineContextProvider)
+
+    @Provides
+    fun providesSetIntakeEffectUseCase(
+        setIntakeEffectRepository: SetIntakeEffectRepository,
+        coroutineContextProvider: CoroutineContextProvider
+    ) = SetIntakeEffectUseCase(setIntakeEffectRepository, coroutineContextProvider)
 
     @Provides
     fun providesSelectAttackTagUseCase(
@@ -266,6 +274,7 @@ internal object AttackModule {
         mergeAttacksUseCase: MergeAttacksUseCase,
         removeIntakeUseCase: RemoveIntakeUseCase,
         restoreIntakeUseCase: RestoreIntakeUseCase,
+        setIntakeEffectUseCase: SetIntakeEffectUseCase,
         useCaseExecutor: UseCaseExecutor
     ): AttackDetailsViewModel {
         val tagKindDomainMapper = TagKindDomainMapper()
@@ -306,6 +315,7 @@ internal object AttackModule {
             removeIntakeUseCase = removeIntakeUseCase,
             restoreIntakeUseCase = restoreIntakeUseCase,
             attackIntakeDomainMapper = AttackIntakeDomainMapper(),
+            setIntakeEffectUseCase = setIntakeEffectUseCase,
             useCaseExecutor = useCaseExecutor
         )
     }

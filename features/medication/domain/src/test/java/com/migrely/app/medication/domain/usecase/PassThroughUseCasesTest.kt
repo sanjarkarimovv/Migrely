@@ -1,13 +1,25 @@
 package com.migrely.app.medication.domain.usecase
 
 import com.migrely.app.coroutine.CoroutineContextProvider
+import com.migrely.app.medication.domain.model.AcknowledgeOveruseRequestDomainModel
+import com.migrely.app.medication.domain.model.AnswerEffectRequestDomainModel
+import com.migrely.app.medication.domain.model.CurrentTimeDomainModel
+import com.migrely.app.medication.domain.model.IntakeEffectDomainModel
 import com.migrely.app.medication.domain.model.MedicationLookupResultDomainModel
 import com.migrely.app.medication.domain.model.MedicationsResultDomainModel
+import com.migrely.app.medication.domain.model.OveruseCategoryDomainModel
+import com.migrely.app.medication.domain.model.OveruseLevelDomainModel
 import com.migrely.app.medication.domain.model.WriteResultDomainModel
+import com.migrely.app.medication.domain.repository.AcknowledgeOveruseRepository
+import com.migrely.app.medication.domain.repository.CloseEffectQuestionRepository
 import com.migrely.app.medication.domain.repository.DeleteIntakeRepository
 import com.migrely.app.medication.domain.repository.GetActiveMedicationsRepository
+import com.migrely.app.medication.domain.repository.GetCurrentTimeRepository
 import com.migrely.app.medication.domain.repository.GetMedicationRepository
+import com.migrely.app.medication.domain.repository.SetIntakeEffectRepository
 import com.migrely.app.medication.domain.repository.SetMedicationArchivedRepository
+import java.time.Instant
+import java.time.ZoneId
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.mockito.kotlin.given
@@ -57,6 +69,57 @@ class PassThroughUseCasesTest {
         assertEquals(
             WriteResultDomainModel.Failed,
             UndoIntakeUseCase(repository, context).executeInBackground("i")
+        )
+    }
+
+    @Test
+    fun `When answering then the answer is stored`() {
+        val repository: SetIntakeEffectRepository = mock()
+        given(repository.setIntakeEffect("i", IntakeEffectDomainModel.ALot))
+            .willReturn(WriteResultDomainModel.Done)
+
+        assertEquals(
+            WriteResultDomainModel.Done,
+            AnswerEffectUseCase(repository, context).executeInBackground(
+                AnswerEffectRequestDomainModel("i", IntakeEffectDomainModel.ALot)
+            )
+        )
+    }
+
+    @Test
+    fun `When skipping a question then it is closed`() {
+        val repository: CloseEffectQuestionRepository = mock()
+        given(repository.closeEffectQuestion("i")).willReturn(WriteResultDomainModel.StorageFull)
+
+        assertEquals(
+            WriteResultDomainModel.StorageFull,
+            SkipEffectQuestionUseCase(repository, context).executeInBackground("i")
+        )
+    }
+
+    @Test
+    fun `When acknowledging a warning then it is stored at the current time`() {
+        val now = Instant.parse("2026-10-31T11:00:00Z")
+        val timeRepository: GetCurrentTimeRepository = mock()
+        given(timeRepository.currentTime())
+            .willReturn(CurrentTimeDomainModel(now, ZoneId.of("Asia/Tashkent")))
+        val repository: AcknowledgeOveruseRepository = mock()
+        given(
+            repository.acknowledgeOveruse(
+                OveruseCategoryDomainModel.Triptan,
+                OveruseLevelDomainModel.Doctor,
+                now
+            )
+        ).willReturn(WriteResultDomainModel.Done)
+
+        assertEquals(
+            WriteResultDomainModel.Done,
+            AcknowledgeOveruseUseCase(timeRepository, repository, context).executeInBackground(
+                AcknowledgeOveruseRequestDomainModel(
+                    OveruseCategoryDomainModel.Triptan,
+                    OveruseLevelDomainModel.Doctor
+                )
+            )
         )
     }
 }

@@ -13,6 +13,7 @@ import com.migrely.app.history.ui.view.MonthSky
 import com.migrely.app.home.ui.view.Home
 import com.migrely.app.medication.ui.view.EditMedication
 import com.migrely.app.medication.ui.view.LogMedication
+import com.migrely.app.medication.ui.view.MedicationPrompt
 import com.migrely.app.medication.ui.view.Medications
 import com.migrely.app.ui.main.di.AppNavHostDependencies
 import com.migrely.app.ui.main.route.AddPastAttack
@@ -39,9 +40,13 @@ fun AppNavHostDependencies.AppNavHost(
             homeDependencies.Home(
                 navController,
                 startAttackRequested = entry.toRoute<Home>().startAttack,
-                // Home hosts History's month card without knowing the history feature (design D1).
+                // Home hosts History's month card and the medication card without knowing either feature
+                // (change add-attack-history design D1, BRD D46).
                 monthCalendar = { refreshKey ->
                     monthSkyDependencies.MonthSky(navController, refreshKey)
+                },
+                medicationPrompt = { refreshKey ->
+                    medicationPromptDependencies.MedicationPrompt(refreshKey)
                 }
             )
         }

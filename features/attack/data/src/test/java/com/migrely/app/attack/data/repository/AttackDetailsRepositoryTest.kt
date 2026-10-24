@@ -2,6 +2,7 @@ package com.migrely.app.attack.data.repository
 
 import com.migrely.app.attack.data.mapper.AttackDetailsDomainResolver
 import com.migrely.app.attack.data.mapper.AttackIntakeDomainMapper
+import com.migrely.app.attack.data.mapper.AttackIntakeEffectDataMapper
 import com.migrely.app.attack.data.mapper.AttackTagDataMapper
 import com.migrely.app.attack.data.mapper.BuiltInSymptomDataMapper
 import com.migrely.app.attack.data.mapper.BuiltInSymptomDomainMapper
@@ -13,6 +14,7 @@ import com.migrely.app.attack.data.mapper.HeadLocationDataMapper
 import com.migrely.app.attack.data.mapper.HeadLocationDomainMapper
 import com.migrely.app.attack.domain.model.AttackDetailsLookupResultDomainModel
 import com.migrely.app.attack.domain.model.AttackIntakeDomainModel
+import com.migrely.app.attack.domain.model.AttackIntakeEffectDomainModel
 import com.migrely.app.attack.domain.model.AttackMergeDomainModel
 import com.migrely.app.attack.domain.model.AttackTagDomainModel
 import com.migrely.app.attack.domain.model.FunctionalImpactDomainModel
@@ -33,6 +35,7 @@ import com.migrely.app.datasource.exception.DatabaseDataException
 import com.migrely.app.datasource.exception.StorageFullDataException
 import com.migrely.app.datasource.medication.datasource.MedicationDataSource
 import com.migrely.app.datasource.medication.model.IntakeDataModel
+import com.migrely.app.datasource.medication.model.IntakeEffectDataModel
 import com.migrely.app.datasource.tag.datasource.TagDataSource
 import java.time.Instant
 import java.time.ZoneId
@@ -78,7 +81,8 @@ class AttackDetailsRepositoryTest {
                 BuiltInTriggerDataMapper()
             ),
             medicationDataSource,
-            AttackIntakeDomainMapper()
+            AttackIntakeDomainMapper(),
+            AttackIntakeEffectDataMapper()
         )
     }
 
@@ -359,7 +363,17 @@ class AttackDetailsRepositoryTest {
         )
         given(medicationDataSource.intakesOfAttack("intake-attack")).willReturn(
             listOf(
-                IntakeDataModel("i", "m", "Ibuprofen", "intake-attack", at, "Mars/Base", "400 mg")
+                IntakeDataModel(
+                    "i",
+                    "m",
+                    "Ibuprofen",
+                    "intake-attack",
+                    at,
+                    "Mars/Base",
+                    "400 mg",
+                    IntakeEffectDataModel.ALittle,
+                    effectClosed = true
+                )
             )
         )
 
@@ -374,7 +388,9 @@ class AttackDetailsRepositoryTest {
                     "Ibuprofen",
                     "400 mg",
                     at,
-                    ZoneOffset.UTC
+                    ZoneOffset.UTC,
+                    AttackIntakeEffectDomainModel.ALittle,
+                    effectQuestionClosed = true
                 )
             ),
             actual.details.intakes
@@ -393,6 +409,87 @@ class AttackDetailsRepositoryTest {
         verify(medicationDataSource).deleteIntake("i")
         verify(medicationDataSource).restoreIntake(
             IntakeDataModel("i", "m", "Ibuprofen", "a", at, "Asia/Tashkent", null)
+        )
+    }
+
+    @Test
+    fun `When restoring an answered intake then its answer stays and the question closed`() {
+        val at = Instant.parse("2026-10-24T09:20:00Z")
+        val intake = AttackIntakeDomainModel(
+            "i",
+            "m",
+            "Ibuprofen",
+            null,
+            at,
+            ZoneId.of("Asia/Tashkent"),
+            AttackIntakeEffectDomainModel.ALot
+        )
+
+        classUnderTest.restoreIntake("a", intake)
+
+        verify(medicationDataSource).restoreIntake(
+            IntakeDataModel(
+                "i",
+                "m",
+                "Ibuprofen",
+                "a",
+                at,
+                "Asia/Tashkent",
+                null,
+                IntakeEffectDataModel.ALot,
+                effectClosed = true
+            )
+        )
+    }
+
+    @Test
+    fun `When restoring a skipped intake then its question stays closed`() {
+        val at = Instant.parse("2026-10-24T09:20:00Z")
+        val intake = AttackIntakeDomainModel(
+            "i",
+            "m",
+            "Ibuprofen",
+            null,
+            at,
+            ZoneId.of("Asia/Tashkent"),
+            effect = null,
+            effectQuestionClosed = true
+        )
+
+        classUnderTest.restoreIntake("a", intake)
+
+        verify(medicationDataSource).restoreIntake(
+            IntakeDataModel(
+                "i",
+                "m",
+                "Ibuprofen",
+                "a",
+                at,
+                "Asia/Tashkent",
+                null,
+                effectClosed = true
+            )
+        )
+    }
+
+    @Test
+    fun `When setting an intake's answer then stores it`() {
+        assertEquals(
+            WriteResultDomainModel.Written,
+            classUnderTest.setIntakeEffect("i", AttackIntakeEffectDomainModel.NotAtAll)
+        )
+
+        verify(medicationDataSource).setIntakeEffect("i", IntakeEffectDataModel.NotAtAll)
+    }
+
+    @Test
+    fun `Given storage is full when setting an answer then StorageFull`() {
+        given(medicationDataSource.setIntakeEffect("i", IntakeEffectDataModel.Completely))
+            .willThrow(StorageFullDataException())
+
+        assertEquals(
+            WriteResultDomainModel.StorageFull,
+            classUnderTest.setIntakeEffect("i", AttackIntakeEffectDomainModel.Completely)
         )
     }
 }

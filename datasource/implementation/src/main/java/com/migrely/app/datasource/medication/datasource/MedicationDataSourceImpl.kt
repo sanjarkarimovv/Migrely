@@ -3,12 +3,19 @@ package com.migrely.app.datasource.medication.datasource
 import com.migrely.app.datasource.database.database
 import com.migrely.app.datasource.medication.dao.MedicationDao
 import com.migrely.app.datasource.medication.mapper.MedicationLocalMapper
+import com.migrely.app.datasource.medication.mapper.OveruseNoticeLocalMapper
+import com.migrely.app.datasource.medication.model.AcuteIntakeDataModel
 import com.migrely.app.datasource.medication.model.IntakeDataModel
+import com.migrely.app.datasource.medication.model.IntakeEffectDataModel
 import com.migrely.app.datasource.medication.model.MedicationCategoryDataModel
 import com.migrely.app.datasource.medication.model.MedicationDataModel
 import com.migrely.app.datasource.medication.model.MedicationIntakeLocalModel
 import com.migrely.app.datasource.medication.model.MedicationKindDataModel
 import com.migrely.app.datasource.medication.model.MedicationLocalModel
+import com.migrely.app.datasource.medication.model.OveruseCategoryDataModel
+import com.migrely.app.datasource.medication.model.OveruseLevelDataModel
+import com.migrely.app.datasource.medication.model.OveruseNoticeDataModel
+import com.migrely.app.datasource.medication.model.PendingEffectQuestionDataModel
 import java.time.Clock
 import java.time.Instant
 import java.util.UUID
@@ -20,6 +27,7 @@ private const val MAXIMUM_DOSE_LENGTH = 20
 class MedicationDataSourceImpl(
     private val medicationDao: MedicationDao,
     private val medicationLocalMapper: MedicationLocalMapper,
+    private val overuseNoticeLocalMapper: OveruseNoticeLocalMapper,
     private val clock: Clock = Clock.systemUTC(),
     private val generateId: () -> String = { UUID.randomUUID().toString() }
 ) : MedicationDataSource {
@@ -127,7 +135,9 @@ class MedicationDataSourceImpl(
                 takenEpochMillis = intake.takenAt.toEpochMilli(),
                 takenZoneId = intake.takenZoneId,
                 dose = intake.dose,
-                createdEpochMillis = clock.millis()
+                createdEpochMillis = clock.millis(),
+                effect = medicationLocalMapper.toLocalEffect(intake.effect),
+                effectClosed = intake.effectClosed
             )
         )
     }
@@ -136,6 +146,44 @@ class MedicationDataSourceImpl(
 
     override fun intakesOfAttack(attackId: String): List<IntakeDataModel> = database {
         medicationDao.intakesOfAttack(attackId).map(medicationLocalMapper::toData)
+    }
+
+    override fun pendingEffectQuestion(
+        takenFrom: Instant,
+        takenTo: Instant
+    ): PendingEffectQuestionDataModel? = database {
+        medicationDao.pendingEffectQuestion(takenFrom.toEpochMilli(), takenTo.toEpochMilli())
+            ?.let(medicationLocalMapper::toData)
+    }
+
+    override fun setIntakeEffect(intakeId: String, effect: IntakeEffectDataModel?) = database {
+        medicationDao.setEffect(intakeId, medicationLocalMapper.toLocalEffect(effect))
+    }
+
+    override fun closeEffectQuestion(intakeId: String) = database {
+        medicationDao.closeEffectQuestion(intakeId)
+    }
+
+    override fun acuteIntakesTakenBetween(from: Instant, to: Instant): List<AcuteIntakeDataModel> =
+        database {
+            medicationDao.acuteIntakesBetween(from.toEpochMilli(), to.toEpochMilli())
+                .map(medicationLocalMapper::toData)
+        }
+
+    override fun overuseNotices(): List<OveruseNoticeDataModel> = database {
+        medicationDao.overuseNotices().mapNotNull(overuseNoticeLocalMapper::toData)
+    }
+
+    override fun acknowledgeOveruse(
+        category: OveruseCategoryDataModel,
+        level: OveruseLevelDataModel,
+        acknowledgedAt: Instant
+    ) = database {
+        medicationDao.upsertOveruseNotice(
+            overuseNoticeLocalMapper.toLocal(
+                OveruseNoticeDataModel(category, level, acknowledgedAt)
+            )
+        )
     }
 
     // Out-of-range text is a programming error (BRD D35), not a storage failure.

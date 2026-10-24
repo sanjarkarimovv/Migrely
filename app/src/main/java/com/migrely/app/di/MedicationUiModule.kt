@@ -8,9 +8,11 @@ import com.migrely.app.medication.presentation.navigation.LogMedicationPresentat
 import com.migrely.app.medication.presentation.navigation.MedicationsPresentationNavigationEvent
 import com.migrely.app.medication.presentation.viewmodel.EditMedicationViewModel
 import com.migrely.app.medication.presentation.viewmodel.LogMedicationViewModel
+import com.migrely.app.medication.presentation.viewmodel.MedicationPromptViewModel
 import com.migrely.app.medication.presentation.viewmodel.MedicationsViewModel
 import com.migrely.app.medication.ui.di.EditMedicationDependencies
 import com.migrely.app.medication.ui.di.LogMedicationDependencies
+import com.migrely.app.medication.ui.di.MedicationPromptDependencies
 import com.migrely.app.medication.ui.di.MedicationsDependencies
 import com.migrely.app.medication.ui.mapper.EditMedicationNotificationUiMapper
 import com.migrely.app.medication.ui.mapper.EditMedicationViewStateUiMapper
@@ -20,6 +22,8 @@ import com.migrely.app.medication.ui.mapper.LogMedicationViewStateUiMapper
 import com.migrely.app.medication.ui.mapper.MedicationCategoryUiToPresentationMapper
 import com.migrely.app.medication.ui.mapper.MedicationKindUiToPresentationMapper
 import com.migrely.app.medication.ui.mapper.MedicationMessageBehaviourUiMapper
+import com.migrely.app.medication.ui.mapper.MedicationPromptUiMapper
+import com.migrely.app.medication.ui.mapper.MedicationPromptUiToPresentationMapper
 import com.migrely.app.medication.ui.mapper.MedicationTimeUiFormatter
 import com.migrely.app.medication.ui.mapper.MedicationUiMapper
 import com.migrely.app.medication.ui.mapper.MedicationUiToPresentationMapper
@@ -100,6 +104,17 @@ internal object MedicationUiModule {
             )
         )
     }
+
+    @Provides
+    fun providesMedicationPromptDependencies(
+        medicationPromptViewModel: MedicationPromptViewModel,
+        medicationTimeUiFormatter: MedicationTimeUiFormatter
+    ) = MedicationPromptDependencies(
+        medicationPromptViewModel = medicationPromptViewModel,
+        medicationPromptUiMapper = MedicationPromptUiMapper(),
+        medicationPromptUiToPresentationMapper = MedicationPromptUiToPresentationMapper(),
+        medicationTimeUiFormatter = medicationTimeUiFormatter
+    )
 
     @Provides
     fun providesMedicationsDependencies(

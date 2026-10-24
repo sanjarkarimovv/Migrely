@@ -11,5 +11,7 @@ data class AttackIntakeUiModel(
     val medicationName: String,
     val dose: String?,
     val takenAtEpochMillis: Long,
-    val zoneId: String
+    val zoneId: String,
+    val effect: AttackIntakeEffectUiModel? = null,
+    val effectQuestionClosed: Boolean = false
 ) : Parcelable

@@ -20,6 +20,14 @@ object MigrelyIcons {
 
     val Add: ImageVector = icon("Add", "M19,13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z")
 
+    /** The letter i in a circle, for calm information such as the medication cards (BRD 18.4). */
+    val Information: ImageVector = icon(
+        "Information",
+        "M11,7h2v2h-2zM11,11h2v6h-2z" +
+            "M12,2C6.48,2 2,6.48 2,12s4.48,10 10,10 10,-4.48 10,-10S17.52,2 12,2z" +
+            "M12,20c-4.41,0 -8,-3.59 -8,-8s3.59,-8 8,-8 8,3.59 8,8 -3.59,8 -8,8z"
+    )
+
     val Warning: ImageVector =
         icon("Warning", "M1,21h22L12,2 1,21zM13,18h-2v-2h2v2zM13,14h-2v-4h2v4z")
 
