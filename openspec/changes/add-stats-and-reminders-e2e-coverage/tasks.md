@@ -5,9 +5,15 @@
 - [x] 1.1 BRD §13 row 6b and §17 D63 and D64. Verify: `grep -n "| 6b |\|| D63 \|| D64 " docs/BRD.md`
 - [x] 1.2 Retest #36 on d0e0214: `qa/permission_audit.sh` passes, and a mutation test (INTERNET added locally and
   reverted) fails `:app:checkDebugPermissions`. Verify: commented on PR #39
-- [ ] 1.3 Baseline on d0e0214: full `qa/maestro.sh --install` and all device scenarios. Triage each failure as a stale
+- [x] 1.3 Baseline on d0e0214: full `qa/maestro.sh --install` and all device scenarios. Triage each failure as a stale
   test or an app defect; fix the stale checks (the "Settings" gear is the first Tab stop); file defects. Verify: the
-  stale fixes pass 3 times or twice
+  stale fixes pass 3 times or twice. Result:
+  - on d0e0214: pass 1 32/33 and pass 2 9/9; the device scenarios all passed except `keyboard_home` and
+    `keyboard_rtl`, because the "Settings" gear is now first;
+  - `open-from-day` could not reach today's cell on the 25th: it sits below the screen late in the month, so the
+    flow now scrolls to it;
+  - develop 7df86c6 (change 8) added onboarding: `launch-clean` skips its 4 steps through "Skip this step";
+  - on 7df86c6: 33/33, 9/9 and all device scenarios pass
 
 ## 2. Month summary and progress (STA-F*, EC-UX-14, D53–D58)
 
