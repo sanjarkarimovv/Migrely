@@ -312,8 +312,10 @@ class PlayBillingDataSourceImpl(
      * Google Play does not answer in time is dropped, so the next call tries afresh.
      */
     private suspend fun connected(): BillingConnectionDataModel {
-        if (client.isReady) return BillingConnectionDataModel.Available
+        // First: with auto-reconnection on, Billing 8 says isReady even when there is no service to
+        // bind to, so readiness alone would hide a phone without Google Play billing (walk B-1).
         if (!billingServiceExists()) return BillingConnectionDataModel.Unavailable
+        if (client.isReady) return BillingConnectionDataModel.Available
         val setup = synchronized(connectionLock) {
             pendingSetup ?: CompletableDeferred<Int>().also { started ->
                 pendingSetup = started

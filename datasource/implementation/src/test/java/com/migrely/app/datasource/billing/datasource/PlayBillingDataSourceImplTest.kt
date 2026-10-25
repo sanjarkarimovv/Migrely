@@ -188,6 +188,16 @@ class PlayBillingDataSourceImplTest {
     }
 
     @Test
+    fun `Given auto-reconnection makes the client always ready then no service still means none`() {
+        // With enableAutoServiceReconnection, Billing 8 says isReady even with nothing to bind to.
+        ready = true
+        serviceExists = false
+
+        assertEquals(BillingConnectionDataModel.Unavailable, classUnderTest.connect())
+        assertEquals(0, connections)
+    }
+
+    @Test
     fun `Given the phone has no billing service when connecting then it is unavailable at once`() {
         serviceExists = false
 
