@@ -76,6 +76,7 @@ class HistoryMonthUiMapper {
         epochDay = date.toEpochDay(),
         sky = when (sky) {
             DaySkyPresentationModel.NothingLogged -> DaySkyUiModel.NothingLogged
+            DaySkyPresentationModel.MedicationOnly -> DaySkyUiModel.MedicationOnly
             DaySkyPresentationModel.Future -> DaySkyUiModel.Future
             DaySkyPresentationModel.Clear -> DaySkyUiModel.Clear
             DaySkyPresentationModel.Hazy -> DaySkyUiModel.Hazy
@@ -94,7 +95,8 @@ class HistoryMonthUiMapper {
         period = period,
         painFree = painFree,
         painFreeAllowed = painFreeAllowed,
-        periodOffered = periodOffered
+        periodOffered = periodOffered,
+        attackMedication = attackMedication
     )
 
     private fun HistoryAttackPresentationModel.toUi() = HistoryAttackUiModel(

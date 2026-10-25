@@ -70,6 +70,10 @@ internal fun HistoryCalendar(
                 LegendEntry(DaySkyAppearance.Cloudy, stringResource(R.string.legend_moderate)),
                 LegendEntry(DaySkyAppearance.Storm, stringResource(R.string.legend_severe)),
                 LegendEntry(
+                    DaySkyAppearance.MedicationOnly,
+                    stringResource(R.string.history_legend_medication_only)
+                ),
+                LegendEntry(
                     DaySkyAppearance.NothingLogged,
                     stringResource(R.string.legend_not_logged)
                 ),
@@ -86,7 +90,8 @@ internal fun HistoryCalendar(
 
 /**
  * For example "Wednesday, 15 October: storm. 1 migraine. Peak: severe." (BRD EC-UX-15), followed by "Period." on a
- * period day (D49).
+ * period day (D49). A pain-free day with attack medication adds "Attack medication taken." before
+ * it (D100).
  */
 @Composable
 private fun dayDescription(
@@ -94,7 +99,13 @@ private fun dayDescription(
     isToday: Boolean,
     timeUiFormatter: HistoryTimeUiFormatter
 ): String {
-    val sky = skyDescription(day, isToday, timeUiFormatter)
+    val sky = skyDescription(day, isToday, timeUiFormatter).let { described ->
+        if (day.sky == DaySkyUiModel.Clear && day.attackMedication) {
+            stringResource(R.string.history_day_with_attack_medication, described)
+        } else {
+            described
+        }
+    }
     return when {
         !day.period -> sky
         // A future date has no sky to describe, so the mark takes its place: "Sunday, 25 October: period." (D50).
@@ -114,6 +125,7 @@ private fun skyDescription(
     return when (day.sky) {
         DaySkyUiModel.Future -> named
         DaySkyUiModel.NothingLogged -> stringResource(R.string.day_nothing_logged, named)
+        DaySkyUiModel.MedicationOnly -> stringResource(R.string.history_day_medication_only, named)
         DaySkyUiModel.Clear -> stringResource(R.string.day_pain_free, named)
         DaySkyUiModel.Rain -> stringResource(R.string.day_in_progress, named)
         DaySkyUiModel.Hazy,
@@ -134,6 +146,7 @@ private fun skyName(sky: DaySkyUiModel): String = when (sky) {
     DaySkyUiModel.Cloudy -> stringResource(R.string.history_sky_cloudy)
     DaySkyUiModel.Storm -> stringResource(R.string.history_sky_storm)
     DaySkyUiModel.NothingLogged,
+    DaySkyUiModel.MedicationOnly,
     DaySkyUiModel.Future,
     DaySkyUiModel.Clear,
     DaySkyUiModel.Rain -> ""
@@ -172,7 +185,9 @@ internal val previewMappers = HistoryCalendarMappers(
     historyTimeUiFormatter = previewFormatter
 )
 
-/** October 2026 seen on the 23rd, with a few attacks, for previews. */
+private const val MEDICATION_ONLY_DAY = 18
+
+/** October 2026 seen on the 23rd, with a few attacks and a day with medication only, for previews. */
 internal fun previewMonth(): HistoryMonthUiModel {
     val october = YearMonth.of(2026, 10)
     val today = october.atDay(23)
@@ -181,6 +196,7 @@ internal fun previewMonth(): HistoryMonthUiModel {
         8 to DaySkyUiModel.Cloudy,
         12 to DaySkyUiModel.Hazy,
         15 to DaySkyUiModel.Storm,
+        MEDICATION_ONLY_DAY to DaySkyUiModel.MedicationOnly,
         20 to DaySkyUiModel.Cloudy
     )
     return HistoryMonthUiModel(
@@ -198,8 +214,13 @@ internal fun previewMonth(): HistoryMonthUiModel {
                 } else {
                     DaySkyUiModel.NothingLogged
                 },
-                peak = if (dayOfMonth in skies) PeakUiModel.Severe else null,
-                attacks = emptyList()
+                peak = if (dayOfMonth in skies && dayOfMonth != MEDICATION_ONLY_DAY) {
+                    PeakUiModel.Severe
+                } else {
+                    null
+                },
+                attacks = emptyList(),
+                attackMedication = dayOfMonth == MEDICATION_ONLY_DAY
             )
         },
         attacks = emptyList(),

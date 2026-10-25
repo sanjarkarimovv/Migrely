@@ -77,6 +77,12 @@ enum class DaySkyAppearance {
     /** A past day with nothing logged: a dashed outline, never a clear sky (BRD G6). */
     NothingLogged,
 
+    /**
+     * A past day with attack medication but no migraine: logged, so a solid outline of the same
+     * width as the dashed one, with no sky (BRD D100).
+     */
+    MedicationOnly,
+
     /** A day that has not come yet: a faint outline, not selectable. */
     Future,
 
@@ -283,7 +289,10 @@ private fun DayCell(
         )
         else -> Modifier
     }
-    val outline = MaterialTheme.colorScheme.outlineVariant
+    val outlines = DayOutlines(
+        notLogged = MaterialTheme.colorScheme.outlineVariant,
+        logged = MaterialTheme.colorScheme.outline
+    )
     Box(
         // Merged into the clickable rather than replacing it, so a day stays focusable for keyboards and switch
         // access (BRD EC-UX-19); the day number inside is cleared so the description is read once.
@@ -313,7 +322,7 @@ private fun DayCell(
             .then(ring)
     ) {
         Canvas(Modifier.matchParentSize()) {
-            drawDaySky(day.appearance, outline)
+            drawDaySky(day.appearance, outlines)
             if (day.hasPeriodMark) drawPeriodMark()
         }
         Text(
@@ -336,7 +345,10 @@ private fun DayCell(
 /** The legend under a calendar: one small sky and a label per entry, wrapping at large font sizes (BRD EC-UX-03). */
 @Composable
 fun MonthSkyLegend(entries: List<LegendEntry>, modifier: Modifier = Modifier) {
-    val outline = MaterialTheme.colorScheme.outlineVariant
+    val outlines = DayOutlines(
+        notLogged = MaterialTheme.colorScheme.outlineVariant,
+        logged = MaterialTheme.colorScheme.outline
+    )
     FlowRow(
         horizontalArrangement = Arrangement.spacedBy(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -352,10 +364,7 @@ fun MonthSkyLegend(entries: List<LegendEntry>, modifier: Modifier = Modifier) {
                     if (entry.periodMark) {
                         drawPeriodMark(centered = true)
                     } else {
-                        drawDaySky(
-                            entry.appearance,
-                            outline
-                        )
+                        drawDaySky(entry.appearance, outlines)
                     }
                 }
                 Text(
@@ -369,8 +378,15 @@ fun MonthSkyLegend(entries: List<LegendEntry>, modifier: Modifier = Modifier) {
     }
 }
 
-private fun DaySkyAppearance.hasSky() =
-    this != DaySkyAppearance.NothingLogged && this != DaySkyAppearance.Future
+private fun DaySkyAppearance.hasSky() = this != DaySkyAppearance.NothingLogged &&
+    this != DaySkyAppearance.MedicationOnly &&
+    this != DaySkyAppearance.Future
+
+/**
+ * The outline colours of days without a sky: [notLogged] for the dashed and future outlines, and
+ * the slightly brighter [logged] for a day with attack medication only (BRD D100).
+ */
+private class DayOutlines(val notLogged: Color, val logged: Color)
 
 // The four-point stars of a pain-free day, as fractions of the cell: below the day number and clear of the period drop
 // in the bottom end corner.
@@ -381,12 +397,12 @@ private val CLEAR_DAY_STARS = listOf(
 )
 
 /** Draws a day's sky in a small square. Glyphs sit in the lower part, below the day number. */
-private fun DrawScope.drawDaySky(appearance: DaySkyAppearance, outline: Color) {
+private fun DrawScope.drawDaySky(appearance: DaySkyAppearance, outlines: DayOutlines) {
     val u = size.minDimension / 100f
     when (appearance) {
         // Outlines keep a minimum width and dash length, so they stay visible in the small legend squares too.
         DaySkyAppearance.NothingLogged -> drawRoundRect(
-            color = outline,
+            color = outlines.notLogged,
             cornerRadius = CornerRadius(22f * u),
             style = Stroke(
                 width = maxOf(2.5f * u, 1.dp.toPx()),
@@ -396,8 +412,15 @@ private fun DrawScope.drawDaySky(appearance: DaySkyAppearance, outline: Color) {
             )
         )
 
+        // The same width as the dashed outline, but solid: logged, with no migraine (BRD D100).
+        DaySkyAppearance.MedicationOnly -> drawRoundRect(
+            color = outlines.logged,
+            cornerRadius = CornerRadius(22f * u),
+            style = Stroke(width = maxOf(2.5f * u, 1.dp.toPx()))
+        )
+
         DaySkyAppearance.Future -> drawRoundRect(
-            color = outline.copy(alpha = 0.45f),
+            color = outlines.notLogged.copy(alpha = 0.45f),
             cornerRadius = CornerRadius(22f * u),
             style = Stroke(width = maxOf(1.5f * u, 1.dp.toPx()))
         )
@@ -536,6 +559,7 @@ private fun DrawScope.dayBolt(x: Float, y: Float) {
 private fun MonthSkyCalendarPreview() {
     val skies = listOf(
         DaySkyAppearance.NothingLogged,
+        DaySkyAppearance.MedicationOnly,
         DaySkyAppearance.Clear,
         DaySkyAppearance.Hazy,
         DaySkyAppearance.Cloudy,
@@ -573,6 +597,7 @@ private fun MonthSkyCalendarPreview() {
                     LegendEntry(DaySkyAppearance.Hazy, "Mild"),
                     LegendEntry(DaySkyAppearance.Cloudy, "Moderate"),
                     LegendEntry(DaySkyAppearance.Storm, "Severe"),
+                    LegendEntry(DaySkyAppearance.MedicationOnly, "Attack medication only"),
                     LegendEntry(DaySkyAppearance.NothingLogged, "Not logged"),
                     LegendEntry(DaySkyAppearance.NothingLogged, "Period", periodMark = true)
                 ),

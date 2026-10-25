@@ -117,6 +117,8 @@ class GetHistoryMonthUseCase(
                 return HistoryMonthResultDomainModel.Failed
         }
         val datesOfAttacks = attacks.associateWith { it.datesTouched(now.instant) }
+        // Each intake falls on its date in the zone it was taken in, as the counts do (BRD D45, D100).
+        val intakeDates = intakes.mapTo(mutableSetOf()) { it.takenAt.atZone(it.zone).toLocalDate() }
         val monthDates = month.atDay(1)..month.atEndOfMonth()
         return HistoryMonthResultDomainModel.Loaded(
             month = HistoryMonthDomainModel(
@@ -136,7 +138,8 @@ class GetHistoryMonthUseCase(
                         date = date,
                         attacks = dayAttacks,
                         period = mark?.period == true,
-                        painFree = mark?.painFree == true && dayAttacks.isEmpty()
+                        painFree = mark?.painFree == true && dayAttacks.isEmpty(),
+                        attackMedication = date in intakeDates
                     )
                 },
                 attacks = attacks

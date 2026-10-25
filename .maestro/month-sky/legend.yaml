@@ -1,6 +1,6 @@
 # Covers: month-sky › Legend without a guess › Legend
 appId: com.migrely.app
-name: The month legend lists the six kinds of day
+name: The month legend lists the seven kinds of day
 tags: [regression, month-sky]
 ---
 - runFlow: ../subflows/launch-clean.yaml
@@ -10,6 +10,7 @@ tags: [regression, month-sky]
 - assertVisible: "Mild"
 - assertVisible: "Moderate"
 - assertVisible: "Severe"
+- assertVisible: "Attack medication only"
 - assertVisible: "Not logged"
 - assertVisible:
     text: "Period"

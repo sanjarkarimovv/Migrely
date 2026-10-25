@@ -518,6 +518,44 @@ class GetHistoryMonthUseCaseTest {
     }
 
     @Test
+    fun `Given attack-medication intakes when executed then their days, each in its own zone`() {
+        // 15 October 01:00 in Tokyo is 14 October 21:00 in Tashkent: the intake's zone decides (D100).
+        given(getAttackMedicationIntakesRepository.attackMedicationIntakes(any(), any()))
+            .willReturn(
+                AttackMedicationIntakesResultDomainModel.Loaded(
+                    listOf(
+                        AttackMedicationIntakeDomainModel(at("2026-10-15T01:00", TOKYO), TOKYO),
+                        AttackMedicationIntakeDomainModel(at("2026-10-20T09:00"), TASHKENT),
+                        AttackMedicationIntakeDomainModel(at("2026-10-20T18:00"), TASHKENT)
+                    )
+                )
+            )
+
+        val actual = loaded(OCTOBER).days
+
+        assertEquals(
+            listOf(15, 20),
+            actual.filter { it.attackMedication }.map { it.date.dayOfMonth }
+        )
+    }
+
+    @Test
+    fun `Given an intake on a migraine day when executed then the day keeps both`() {
+        givenAttacks(attack("a", "2026-10-14T09:00", "2026-10-14T12:00", peak = 8))
+        given(getAttackMedicationIntakesRepository.attackMedicationIntakes(any(), any()))
+            .willReturn(
+                AttackMedicationIntakesResultDomainModel.Loaded(
+                    listOf(AttackMedicationIntakeDomainModel(at("2026-10-14T10:00"), TASHKENT))
+                )
+            )
+
+        val day = loaded(OCTOBER).days[13]
+
+        assertEquals(listOf("a"), day.attacks.map(HistoryAttackDomainModel::id))
+        assertTrue(day.attackMedication)
+    }
+
+    @Test
     fun `Given the month's intakes cannot be read when executed then failed`() {
         given(getAttackMedicationIntakesRepository.attackMedicationIntakes(any(), any()))
             .willReturn(AttackMedicationIntakesResultDomainModel.Failed)
