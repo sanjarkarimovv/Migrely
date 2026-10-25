@@ -491,9 +491,9 @@ private fun LongAttackCheckCard(
             zoneId = ZoneId.systemDefault(),
             labels = DateTimePickerLabels(
                 title = stringResource(R.string.end_time_title),
-                next = stringResource(R.string.picker_next),
-                cancel = stringResource(R.string.picker_cancel),
-                confirm = stringResource(R.string.picker_confirm),
+                next = stringResource(R.string.home_picker_next),
+                cancel = stringResource(R.string.home_picker_cancel),
+                confirm = stringResource(R.string.home_picker_confirm),
                 outOfRange = stringResource(R.string.message_end_out_of_range)
             ),
             onConfirm = { endEpochMillis ->

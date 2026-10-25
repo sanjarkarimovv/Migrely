@@ -7,6 +7,7 @@ import com.migrely.app.history.presentation.navigation.HistoryPresentationNaviga
 import com.migrely.app.ui.main.route.AddPastAttack
 import com.migrely.app.ui.main.route.AttackDetails
 import com.migrely.app.ui.main.route.History
+import com.migrely.app.ui.main.route.Insights
 import com.migrely.app.ui.main.route.Report
 
 /**
@@ -35,6 +36,10 @@ class HistoryNavigationEventDestinationMapper :
 
             HistoryPresentationNavigationEvent.OnOpenReport -> UiDestination { navController ->
                 navController.navigate(Report, navOptions { launchSingleTop = true })
+            }
+
+            HistoryPresentationNavigationEvent.OnOpenInsights -> UiDestination { navController ->
+                navController.navigate(Insights, navOptions { launchSingleTop = true })
             }
         }
 }

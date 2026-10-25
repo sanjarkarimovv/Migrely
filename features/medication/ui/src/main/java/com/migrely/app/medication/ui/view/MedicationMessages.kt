@@ -88,7 +88,7 @@ internal fun MedicationMessages(
             tone = behaviour.tone,
             action = archived?.let {
                 SnackbarAction(
-                    label = stringResource(R.string.snackbar_undo),
+                    label = stringResource(R.string.medication_snackbar_undo),
                     spokenLabel = stringResource(R.string.message_undo_archive_description),
                     onClick = {
                         // Acts only while this is still the message on screen, so it never undoes twice.
@@ -99,7 +99,7 @@ internal fun MedicationMessages(
                     }
                 )
             },
-            dismissLabel = stringResource(R.string.snackbar_dismiss),
+            dismissLabel = stringResource(R.string.medication_snackbar_dismiss),
             onDismiss = { if (shown == visible) shown = null },
             timeLeft = if (!reduceMotion && archived != null && currentTimeout != null) {
                 rememberTimeLeft(visible, currentTimeout)
@@ -130,10 +130,12 @@ private fun rememberTimeLeft(
 @Composable
 private fun messageText(message: MedicationMessageUiModel): String = when (message) {
     is MedicationMessageUiModel.Archived -> stringResource(R.string.message_archived)
-    MedicationMessageUiModel.Undone -> stringResource(R.string.message_undone)
+    MedicationMessageUiModel.Undone -> stringResource(R.string.medication_message_undone)
     MedicationMessageUiModel.IntakeUndone -> stringResource(R.string.message_intake_undone)
     MedicationMessageUiModel.InFuture -> stringResource(R.string.message_in_future)
     MedicationMessageUiModel.LimitReached -> stringResource(R.string.message_limit_reached)
-    MedicationMessageUiModel.StorageFull -> stringResource(R.string.message_storage_full)
-    MedicationMessageUiModel.SomethingWentWrong -> stringResource(R.string.message_generic)
+    MedicationMessageUiModel.StorageFull -> stringResource(R.string.medication_message_storage_full)
+    MedicationMessageUiModel.SomethingWentWrong -> stringResource(
+        R.string.medication_message_generic
+    )
 }

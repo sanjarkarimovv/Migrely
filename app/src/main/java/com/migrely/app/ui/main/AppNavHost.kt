@@ -12,6 +12,7 @@ import com.migrely.app.backup.ui.view.YourData
 import com.migrely.app.history.ui.view.History
 import com.migrely.app.history.ui.view.MonthSky
 import com.migrely.app.home.ui.view.Home
+import com.migrely.app.insights.ui.view.Insights
 import com.migrely.app.medication.ui.view.EditMedication
 import com.migrely.app.medication.ui.view.LogMedication
 import com.migrely.app.medication.ui.view.MedicationPrompt
@@ -28,6 +29,7 @@ import com.migrely.app.ui.main.route.AttackDetails
 import com.migrely.app.ui.main.route.EditMedication
 import com.migrely.app.ui.main.route.History
 import com.migrely.app.ui.main.route.Home
+import com.migrely.app.ui.main.route.Insights
 import com.migrely.app.ui.main.route.LogMedication
 import com.migrely.app.ui.main.route.Medications
 import com.migrely.app.ui.main.route.Onboarding
@@ -107,6 +109,9 @@ fun AppNavHostDependencies.AppNavHost(
         }
         composable<Report> {
             reportDependencies.Report(navController)
+        }
+        composable<Insights> {
+            insightsDependencies.Insights(navController)
         }
         composable<Settings> {
             settingsDependencies.Settings(navController)

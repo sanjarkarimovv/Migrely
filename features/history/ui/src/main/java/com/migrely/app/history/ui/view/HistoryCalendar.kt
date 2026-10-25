@@ -130,9 +130,9 @@ private fun skyDescription(
 
 @Composable
 private fun skyName(sky: DaySkyUiModel): String = when (sky) {
-    DaySkyUiModel.Hazy -> stringResource(R.string.sky_hazy)
-    DaySkyUiModel.Cloudy -> stringResource(R.string.sky_cloudy)
-    DaySkyUiModel.Storm -> stringResource(R.string.sky_storm)
+    DaySkyUiModel.Hazy -> stringResource(R.string.history_sky_hazy)
+    DaySkyUiModel.Cloudy -> stringResource(R.string.history_sky_cloudy)
+    DaySkyUiModel.Storm -> stringResource(R.string.history_sky_storm)
     DaySkyUiModel.NothingLogged,
     DaySkyUiModel.Future,
     DaySkyUiModel.Clear,

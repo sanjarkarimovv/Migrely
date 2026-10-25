@@ -11,6 +11,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -60,7 +61,8 @@ internal fun OveruseIndicatorContents(
             modifier = Modifier.semantics { heading() }
         )
         indicator.rows.forEach { row ->
-            val counted = stringResource(row.category.indicatorRow(), row.days, row.limit)
+            val counted =
+                pluralStringResource(row.category.indicatorRow(), row.days, row.days, row.limit)
             // Said in words too, not by colour alone (WCAG 1.4.1).
             Text(
                 text = when {
@@ -87,10 +89,10 @@ internal fun OveruseIndicatorContents(
 }
 
 private fun OveruseCategoryUiModel.indicatorRow() = when (this) {
-    OveruseCategoryUiModel.SimplePainkiller -> R.string.indicator_row_simple
-    OveruseCategoryUiModel.Triptan -> R.string.indicator_row_triptan
-    OveruseCategoryUiModel.CombinationOrOther -> R.string.indicator_row_other
-    OveruseCategoryUiModel.Multiple -> R.string.indicator_row_multiple
+    OveruseCategoryUiModel.SimplePainkiller -> R.plurals.indicator_row_simple
+    OveruseCategoryUiModel.Triptan -> R.plurals.indicator_row_triptan
+    OveruseCategoryUiModel.CombinationOrOther -> R.plurals.indicator_row_other
+    OveruseCategoryUiModel.Multiple -> R.plurals.indicator_row_multiple
 }
 
 @Preview(name = "Overuse indicator")

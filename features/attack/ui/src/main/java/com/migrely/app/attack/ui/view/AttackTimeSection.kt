@@ -302,9 +302,9 @@ internal fun overlapText(
 @Composable
 internal fun pickerLabels(title: Int, outOfRange: Int) = DateTimePickerLabels(
     title = stringResource(title),
-    next = stringResource(R.string.picker_next),
-    cancel = stringResource(R.string.picker_cancel),
-    confirm = stringResource(R.string.picker_confirm),
+    next = stringResource(R.string.attack_picker_next),
+    cancel = stringResource(R.string.attack_picker_cancel),
+    confirm = stringResource(R.string.attack_picker_confirm),
     outOfRange = stringResource(outOfRange)
 )
 
