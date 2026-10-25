@@ -26,7 +26,6 @@ private const val DOT_X = 0.78f
 private const val DOT_Y = 0.78f
 private const val DOT_RADIUS = 0.1f
 private const val WEEK_DAYS = 7
-private const val WEEK_ROWS = 6
 private const val SWATCH = 9f
 private const val LINE_SPACING = 1.1f
 
@@ -223,7 +222,8 @@ internal class ReportPageLayout(private val document: ReportDocumentDataModel) {
         val boxWidth = (contentWidth - (MONTHS_PER_ROW - 1) * GAP * 2) / MONTHS_PER_ROW
         val cell = boxWidth / WEEK_DAYS
         val titleHeight = layout("M", headingPaint, boxWidth).height.toFloat()
-        val boxHeight = titleHeight + (WEEK_ROWS + 1) * cell + GAP
+        // The weekday initials, then only the weeks the row draws.
+        val boxHeight = titleHeight + (weekRowsOf(months) + 1) * cell + GAP
         return Piece(boxHeight) { canvas, top ->
             months.forEachIndexed { index, month ->
                 val left = MARGIN + index * (boxWidth + GAP * 2)
