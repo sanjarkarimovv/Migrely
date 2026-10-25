@@ -68,6 +68,7 @@ class PlayBillingDataSourceImplTest {
     private var ready = false
     private var setupAnswer: Int? = BillingResponseCode.OK
     private var connections = 0
+    private var serviceExists = true
 
     private val classUnderTest by lazy {
         PlayBillingDataSourceImpl(
@@ -86,7 +87,8 @@ class PlayBillingDataSourceImplTest {
                 acknowledgeBackoffMillis = listOf(1_000L, 2_000L, 4_000L)
             ),
             mainContext = Dispatchers.Unconfined,
-            pause = { pauses += it }
+            pause = { pauses += it },
+            billingServiceExists = { serviceExists }
         )
     }
 
@@ -183,6 +185,14 @@ class PlayBillingDataSourceImplTest {
         assertEquals(BillingConnectionDataModel.Available, classUnderTest.connect())
         assertEquals(BillingConnectionDataModel.Available, classUnderTest.connect())
         assertEquals(3, connections)
+    }
+
+    @Test
+    fun `Given the phone has no billing service when connecting then it is unavailable at once`() {
+        serviceExists = false
+
+        assertEquals(BillingConnectionDataModel.Unavailable, classUnderTest.connect())
+        assertEquals(0, connections)
     }
 
     @Test

@@ -25,7 +25,8 @@ internal val SELF_SHOWN_GAP: Duration = Duration.ofDays(7)
  * - the trigger has not shown one before, and no paywall showed itself in the last 7 days;
  * - for the 5th migraine, Insights have enough to show the patterns the paywall promises: the
  *   rule Insights use (BRD D88), for the months they open on;
- * - Google Play billing is not known to be unavailable;
+ * - Google Play billing is known to be available: a paywall that could only show an error or "not
+ *   available" is no reason to interrupt (walk B-1);
  * - no attack is in progress, or it cannot be told. Asked last, after Google Play, which may take
  *   a moment, so an attack started meanwhile is seen.
  */
@@ -50,8 +51,8 @@ class ShouldShowPaywallUseCase(
             request !in marks.shown &&
             (lastShown == null || Duration.between(lastShown, now) >= SELF_SHOWN_GAP) &&
             (request != PaywallTriggerDomainModel.FifthMigraine || patternsReady(now)) &&
-            getBillingAvailabilityRepository.billingAvailability() !=
-            BillingAvailabilityDomainModel.Unavailable &&
+            getBillingAvailabilityRepository.billingAvailability() ==
+            BillingAvailabilityDomainModel.Available &&
             getAttackInProgressRepository.attackInProgress() == false
     }
 

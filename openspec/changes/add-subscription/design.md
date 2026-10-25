@@ -82,7 +82,7 @@ trigger into home, so no feature depends on another.
 
 - **`ShouldShowPaywallUseCase`:** true only when:
   - the user is free;
-  - billing is not known to be unavailable;
+  - billing is known to be available, so a paywall that could only show an error never interrupts (walk B-1);
   - no attack is in progress;
   - the trigger has not fired before;
   - no self-shown paywall appeared in the last 7 days.

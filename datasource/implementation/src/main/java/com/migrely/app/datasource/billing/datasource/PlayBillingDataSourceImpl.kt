@@ -4,7 +4,9 @@ import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import com.android.billingclient.api.AcknowledgePurchaseParams
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClient.BillingResponseCode
@@ -78,6 +80,9 @@ class PlayBillingTimings(
  * - An update Google Play sends while no sheet waits, such as a pending payment completed later,
  *   goes to [purchaseUpdates].
  * - [newClient] builds the client; tests pass their own.
+ * - [billingServiceExists] says whether the phone has Google Play's billing service at all. Without
+ *   it billing is unavailable at once, instead of after the client's own reconnection attempts,
+ *   which take longer than a connection may wait and read as no answer (walk B-1).
  */
 @Suppress("LongParameterList", "TooManyFunctions")
 class PlayBillingDataSourceImpl(
@@ -88,7 +93,8 @@ class PlayBillingDataSourceImpl(
     newClient: (Context, PurchasesUpdatedListener) -> BillingClient = ::playBillingClient,
     private val timings: PlayBillingTimings = PlayBillingTimings(),
     private val mainContext: CoroutineContext = Dispatchers.Main,
-    private val pause: suspend (Long) -> Unit = { delay(it) }
+    private val pause: suspend (Long) -> Unit = { delay(it) },
+    private val billingServiceExists: () -> Boolean = { playBillingServiceExists(context) }
 ) : BillingDataSource {
     /** The purchase sheet that is open, which the next update from Google Play closes. */
     private val openSheet = AtomicReference<CompletableDeferred<BillingPurchaseResultDataModel>?>()
@@ -307,6 +313,7 @@ class PlayBillingDataSourceImpl(
      */
     private suspend fun connected(): BillingConnectionDataModel {
         if (client.isReady) return BillingConnectionDataModel.Available
+        if (!billingServiceExists()) return BillingConnectionDataModel.Unavailable
         val setup = synchronized(connectionLock) {
             pendingSetup ?: CompletableDeferred<Int>().also { started ->
                 pendingSetup = started
@@ -340,6 +347,32 @@ class PlayBillingDataSourceImpl(
         }
     }
 }
+
+/**
+ * Whether a Google Play billing service is installed: the Play Store's own, or the Play Billing Lab
+ * that testers use. The library declares queries for both, so they are visible on Android 11 and
+ * later.
+ */
+private fun playBillingServiceExists(context: Context): Boolean {
+    fun resolves(action: String, packageName: String?): Boolean {
+        val intent = Intent(action).apply { packageName?.let(::setPackage) }
+        val packageManager = context.packageManager
+        val services = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            packageManager.queryIntentServices(intent, PackageManager.ResolveInfoFlags.of(0))
+        } else {
+            @Suppress("DEPRECATION")
+            packageManager.queryIntentServices(intent, 0)
+        }
+        return services.isNotEmpty()
+    }
+    return resolves(BILLING_SERVICE_ACTION, PLAY_STORE_PACKAGE) ||
+        resolves(BILLING_LAB_SERVICE_ACTION, null)
+}
+
+private const val BILLING_SERVICE_ACTION = "com.android.vending.billing.InAppBillingService.BIND"
+private const val PLAY_STORE_PACKAGE = "com.android.vending"
+private const val BILLING_LAB_SERVICE_ACTION =
+    "com.google.android.apps.play.billingtestcompanion.BillingOverrideService.BIND"
 
 /** The app's one client: pending purchases accepted, and it reconnects by itself. */
 private fun playBillingClient(context: Context, listener: PurchasesUpdatedListener): BillingClient =

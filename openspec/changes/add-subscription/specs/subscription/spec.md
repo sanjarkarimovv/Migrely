@@ -75,6 +75,10 @@ free feature SHALL work (BRD EC-BIL-11, D107).
 - **WHEN** Google Play reports billing unavailable
 - **THEN** the paywall shows that line and no buy button
 
+#### Scenario: No Google Play billing service on the phone
+- **WHEN** the phone has no Google Play billing service at all
+- **THEN** the paywall shows that line at once, without waiting on Google Play, and no paywall shows itself
+
 ### Requirement: Payment problems
 At start, the app SHALL ask Google Play to show its own messages about a payment that failed, during a grace period or
 an account hold (BRD EC-BIL-03, EC-BIL-04, D107).
@@ -102,12 +106,10 @@ The paywall SHALL show:
 ### Requirement: When the paywall shows itself
 Without a tap, the paywall SHALL show only:
 - once after the last onboarding step;
-- once when the user returns to home after logging their 5th migraine, and only once Insights have enough to show
-  patterns by their own rule (D88: at least 5 migraines started in the last 6 months, the first at least 30 days
-  ago).
+- once on returning home after the 5th migraine, when Insights can show patterns by their own rule (D88).
 
-It SHALL show at most once in any 7 days, and never during attack mode or in the dark room. A tap on a premium feature
-SHALL always open it (BRD §7.3, D110).
+It SHALL show at most once in any 7 days, only once Google Play billing is known to be available, and never during attack
+mode or in the dark room. A tap on a premium feature SHALL always open it (BRD §7.3, D110).
 
 #### Scenario: The 5th migraine
 - **WHEN** a free user logs their 5th migraine in the last 6 months, the first was logged at least 30 days ago, and no

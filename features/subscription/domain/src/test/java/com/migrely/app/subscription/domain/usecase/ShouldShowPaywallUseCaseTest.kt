@@ -162,13 +162,14 @@ class ShouldShowPaywallUseCaseTest {
     }
 
     @Test
-    fun `Given billing is unavailable here then no paywall shows, but unknown does not stop it`() {
+    fun `Given billing is unavailable or cannot be told then no paywall shows by itself`() {
         given(getBillingAvailabilityRepository.billingAvailability())
             .willReturn(BillingAvailabilityDomainModel.Unavailable)
         assertFalse(classUnderTest.executeInBackground(PaywallTriggerDomainModel.Onboarding))
 
+        // A paywall that could show only an error is no reason to interrupt (walk B-1).
         given(getBillingAvailabilityRepository.billingAvailability())
             .willReturn(BillingAvailabilityDomainModel.Unknown)
-        assertTrue(classUnderTest.executeInBackground(PaywallTriggerDomainModel.Onboarding))
+        assertFalse(classUnderTest.executeInBackground(PaywallTriggerDomainModel.Onboarding))
     }
 }
