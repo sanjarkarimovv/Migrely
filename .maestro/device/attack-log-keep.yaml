@@ -1,0 +1,12 @@
+# Device scenario step: log a migraine now (start and end) without stopping the app first or afterwards. A force stop
+# would also remove the app's notifications and planned jobs, which the reminder scenarios check.
+appId: com.migrely.app
+---
+- launchApp:
+    stopApp: false
+- extendedWaitUntil:
+    visible: "Migraine started"
+    timeout: 10000
+- runFlow: ../subflows/start-attack.yaml
+- runFlow: ../subflows/end-attack.yaml
+- pressKey: Home

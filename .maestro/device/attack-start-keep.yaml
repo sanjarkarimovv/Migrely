@@ -1,0 +1,11 @@
+# Device scenario step: start a migraine now without stopping the app (no force stop, so planned jobs stay), then go
+# to the home screen.
+appId: com.migrely.app
+---
+- launchApp:
+    stopApp: false
+- extendedWaitUntil:
+    visible: "Migraine started"
+    timeout: 10000
+- runFlow: ../subflows/start-attack.yaml
+- pressKey: Home

@@ -1,0 +1,20 @@
+# Covers: reminders › The Reminders screen › Attack mode
+# Partly checks: reminders › The Reminders screen › Opening Reminders (the switches' off state is read by
+# `qa/device_scenarios.sh reminder_permission`, where turning one on asks for the permission).
+appId: com.migrely.app
+name: Settings opens Reminders with a daily reminder at 8:00 PM; attack mode has no Settings
+tags: [regression, reminders]
+---
+- runFlow: ../subflows/launch-clean.yaml
+- tapOn: "Settings"
+- tapOn: "Reminders"
+- extendedWaitUntil:
+    visible: "Daily reminder"
+    timeout: 5000
+# The time has a narrow no-break space before "PM".
+- assertVisible: "Reminder time, 8:00.PM\\. Change it\\."
+- assertVisible: "Ask if a medication helped"
+- back
+- back
+- runFlow: ../subflows/start-attack.yaml
+- assertNotVisible: "Settings"

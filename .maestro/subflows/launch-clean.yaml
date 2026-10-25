@@ -5,6 +5,7 @@ appId: com.migrely.app
 ---
 - launchApp:
     clearState: true
+- runFlow: skip-onboarding.yaml
 - extendedWaitUntil:
     visible: "Today: calm. Calm so far today. No migraine logged."
     timeout: 15000

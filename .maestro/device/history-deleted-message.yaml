@@ -1,0 +1,15 @@
+# Device scenario step: delete today's migraine from History; the "Migraine deleted" message with Undo is on screen.
+appId: com.migrely.app
+---
+- runFlow: ../subflows/launch-clean.yaml
+- runFlow: ../subflows/start-attack.yaml
+- runFlow: ../subflows/end-attack.yaml
+- tapOn: ".*\\. Opens History\\."
+- tapOn: ".*, peak not recorded\\. Opens its details\\."
+- scrollUntilVisible:
+    element: "Delete migraine"
+    direction: DOWN
+- tapOn: "Delete migraine"
+- extendedWaitUntil:
+    visible: "Undo the deletion"
+    timeout: 5000

@@ -1,0 +1,10 @@
+# Device scenario step: open History on today and show its marks; the app stays open for the script.
+appId: com.migrely.app
+---
+- launchApp:
+    stopApp: false
+- tapOn: ".*\\. Opens History\\."
+- tapOn: "Today, .*"
+- scrollUntilVisible:
+    element: "Pain-free day"
+    direction: DOWN

@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
@@ -35,7 +36,10 @@ import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
@@ -43,6 +47,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -53,12 +58,17 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.migrely.app.designsystem.input.TapGuard
 import com.migrely.app.designsystem.theme.MigrelyColors
 import com.migrely.app.designsystem.theme.MigrelyTheme
 import kotlin.math.roundToInt
 
 private const val ENTER_MILLIS = 250
 private const val EXIT_MILLIS = 200
+
+// How long a message's place keeps swallowing touches after it changes: past the slide in or fade out, plus the time a
+// finger already on its way takes to land (QA #52).
+private const val GUARD_MILLIS = 800L
 private const val TIME_LEFT_ALPHA = 0.45f
 private const val INLINE_MAX_LINES = 2
 private val MAX_WIDTH = 560.dp
@@ -269,6 +279,8 @@ fun <T : Any> MigrelySnackbarHost(
     content: @Composable (T) -> Unit
 ) {
     val density = LocalDensity.current
+    // The height of the last message shown, kept after it goes, so its place stays guarded while the fade ends.
+    var guardHeight by remember { mutableStateOf(0.dp) }
     Box(
         contentAlignment = Alignment.TopCenter,
         modifier = modifier
@@ -278,6 +290,17 @@ fun <T : Any> MigrelySnackbarHost(
             )
             .padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
+        // Below the message, so the message itself stays tappable at once, but above what the screen draws under it:
+        // a tap aimed at a message that has just gone, or is still arriving, never reaches a top bar's action
+        // underneath (QA #52).
+        TapGuard(
+            key = message ?: NoMessage,
+            durationMillis = GUARD_MILLIS,
+            modifier = Modifier
+                .widthIn(max = MAX_WIDTH)
+                .fillMaxWidth()
+                .height(guardHeight)
+        )
         AnimatedContent(
             targetState = message,
             transitionSpec = {
@@ -308,7 +331,14 @@ fun <T : Any> MigrelySnackbarHost(
             }
         ) { shown ->
             if (shown != null) {
-                Box(modifier = Modifier.widthIn(max = MAX_WIDTH)) { content(shown) }
+                Box(
+                    modifier = Modifier
+                        .widthIn(max = MAX_WIDTH)
+                        // Measured at full size from the first frame, while the slide only moves it.
+                        .onSizeChanged { size ->
+                            if (size.height > 0) guardHeight = with(density) { size.height.toDp() }
+                        }
+                ) { content(shown) }
             }
         }
     }
@@ -364,3 +394,6 @@ private fun SnackbarTonesPreview() = SnackbarPreviewColumn()
 )
 @Composable
 private fun SnackbarLargeFontPreview() = SnackbarPreviewColumn()
+
+/** The guard's key while no message shows, so a message leaving re-arms it like one arriving. */
+private object NoMessage

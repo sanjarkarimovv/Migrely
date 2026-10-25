@@ -1,0 +1,71 @@
+# Covers: attack-history › No attacks yet › Only preventive medication
+# Covers: attack-history › No attacks yet › Only medication logged
+# Covers: month-stats › A month summary › Only medication logged
+# Covers: medication-overuse › A standing indicator in History › Below the limit (medication only)
+# Covers: month-sky › Accessible days › Screen reader on a day with medication only (today's cell)
+# Covers: month-sky › Accessible days › Screen reader on a pain-free day with medication (today's cell)
+# Retest of #47 (D99, D100): with attack medication but no migraine, History shows the summary and "Last 30 days".
+appId: com.migrely.app
+name: With attack medication but no migraine, History shows the summary, the indicator and the day's medication
+tags: [regression, medication-overuse]
+---
+- runFlow: ../subflows/launch-clean.yaml
+# A preventive medication only: History stays at its first-use state.
+- tapOn: "Log medication"
+- runFlow:
+    file: ../subflows/add-first-medication.yaml
+    env:
+      NAME: "Ibuprofen"
+      TYPE: "Simple painkiller"
+- tapOn: "Undo"
+- extendedWaitUntil:
+    visible: "Removed\\. Nothing was logged\\."
+    timeout: 5000
+- tapOn: "Manage medications"
+- runFlow:
+    file: ../subflows/add-medication.yaml
+    env:
+      NAME: "Topiramate"
+      KIND: "Preventive"
+      TYPE: ""
+      DOSE: ""
+- back
+- tapOn: "Log Topiramate.*"
+- extendedWaitUntil:
+    visible: "Topiramate.* logged at .*"
+    timeout: 5000
+- tapOn: "Done"
+- tapOn: ".*\\. Opens History\\."
+- extendedWaitUntil:
+    visible: "Log your first migraine"
+    timeout: 5000
+- back
+# An attack medication: the summary, 0 migraine days, and "Last 30 days".
+- runFlow:
+    file: ../subflows/log-from-home.yaml
+    env:
+      NAME: "Ibuprofen"
+- tapOn: ".*\\. Opens History\\."
+- assertVisible: "Today, .*: attack medication taken, no migraine logged\\."
+- assertNotVisible: "Log your first migraine"
+- scrollUntilVisible:
+    element: "Days with attack medication: 1"
+    direction: DOWN
+    centerElement: true
+- assertVisible: "Migraine days: 0"
+- scrollUntilVisible:
+    element: "Simple painkillers: 1 day \\(limit 15\\)"
+    direction: DOWN
+- assertVisible: "Last 30 days"
+# Marked pain-free, the day reads both.
+- scrollUntilVisible:
+    element: "Today, .*: attack medication taken, no migraine logged\\."
+    direction: UP
+- tapOn: "Today, .*: attack medication taken, no migraine logged\\."
+- scrollUntilVisible:
+    element: "Pain-free day"
+    direction: DOWN
+- tapOn: "Pain-free day"
+- scrollUntilVisible:
+    element: "Today, .*: pain-free\\. Attack medication taken\\."
+    direction: UP

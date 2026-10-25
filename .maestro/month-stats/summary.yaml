@@ -1,0 +1,51 @@
+# Covers: month-stats › A month summary › Nothing logged yet
+# Covers: month-stats › A month summary › A past month
+# Covers: month-stats › Average peak › No pain level
+# Covers: month-stats › Average peak › Rounded to a level
+# Not checked here: "The current month" counting an attack still in progress (History is not reachable in attack
+# mode); the title "<Month> so far" is checked.
+appId: com.migrely.app
+name: History's month summary is absent before the first migraine and counts this month and last month
+tags: [regression, month-stats]
+---
+- runFlow: ../subflows/launch-clean.yaml
+- tapOn: ".*\\. Opens History\\."
+- extendedWaitUntil:
+    visible: "Log your first migraine"
+    timeout: 5000
+- assertNotVisible: "Migraines started: .*"
+- assertNotVisible: "[A-Z][a-z]+ so far"
+- back
+# One migraine without a pain level today: "—", heard as "no pain level logged".
+- runFlow: ../subflows/log-attack-today.yaml
+- tapOn: ".*\\. Opens History\\."
+- scrollUntilVisible:
+    element: "Average peak: no pain level logged"
+    direction: DOWN
+- assertVisible: "[A-Z][a-z]+ so far"
+- assertVisible: "Migraines started: 1"
+- assertVisible: "Migraine days: 1"
+- back
+# A Mild and a Moderate migraine: the average of the logged levels, rounded up, is Moderate.
+- runFlow: ../subflows/start-attack.yaml
+- tapOn: "Mild"
+- runFlow: ../subflows/end-attack.yaml
+- runFlow: ../subflows/start-attack.yaml
+- tapOn: "Moderate"
+- runFlow: ../subflows/end-attack.yaml
+- tapOn: ".*\\. Opens History\\."
+- scrollUntilVisible:
+    element: "Average peak: Moderate"
+    direction: DOWN
+- assertVisible: "Migraines started: 3"
+- assertVisible: "Migraine days: 1"
+- back
+# Last month: titled by its name, with its own counts.
+- runFlow: ../subflows/add-past-attack-last-month.yaml
+- tapOn: ".*\\. Opens History\\."
+- tapOn: "Previous month"
+- scrollUntilVisible:
+    element: "Migraines started: 1"
+    direction: DOWN
+- assertVisible: "Migraine days: 1"
+- assertNotVisible: "[A-Z][a-z]+ so far"

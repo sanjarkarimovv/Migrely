@@ -62,3 +62,7 @@ The exit status comes from passes 1 and 2 only.
 | Keyboard focus | `pressKey: Tab` works, but `focused: true` misses labels on a child of the focused node. Check keys in `qa/device_scenarios.sh` (`expect_focus`, `tab_until`) |
 | Below the month | History's chosen day, its marks and "Show all of …" sit below the month summary: `scrollUntilVisible` before tapping or asserting them |
 | Home's today card | It is one label, "Today: <sky>. <title>. <subtitle>."; assert the whole label, not "Pain-free today" alone |
+| Keeping the app alive | `stopApp` and a plain `launchApp` force-stop the app, which cancels its WorkManager jobs and removes its notifications. Reminder steps use `launchApp: stopApp: false` and end with `pressKey: Home` |
+| Permissions | `launchApp` grants every permission by default; use `permissions: {all: unset}` or open the app from the script when a permission dialog must appear |
+| Typographic text | Some system and app texts use a curly apostrophe ("Don’t allow", "That’s") or a narrow no-break space before "PM". Match them with `.` in the regex |
+| Onboarding | A fresh install shows four onboarding steps; `subflows/launch-clean.yaml` skips them |

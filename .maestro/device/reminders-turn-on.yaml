@@ -1,0 +1,41 @@
+# Device scenario step, on an app already open (no launchApp, which would grant every permission): Settings →
+# Reminders → turn "Daily reminder" on. CHOICE "Allow" or "Don.t allow" (the button has a curly apostrophe) answers
+# the system dialog; "none" expects no
+# dialog. The step ends on the Reminders screen, where the script reads the switch.
+appId: com.migrely.app
+---
+# The app may come back on the Reminders screen, where the user left it.
+- extendedWaitUntil:
+    visible: "Settings|Daily reminder"
+    timeout: 10000
+- runFlow:
+    when:
+      notVisible: "Daily reminder"
+    commands:
+      - tapOn: "Settings"
+      - tapOn: "Reminders"
+- tapOn: "Daily reminder"
+- runFlow:
+    when:
+      true: ${CHOICE != "none"}
+    commands:
+      - extendedWaitUntil:
+          visible: "Don.t allow"
+          timeout: 10000
+      - tapOn: "${CHOICE}"
+- runFlow:
+    when:
+      true: ${CHOICE == "none"}
+    commands:
+      - extendedWaitUntil:
+          visible: "Don.t allow"
+          timeout: 4000
+          optional: true
+      - assertNotVisible: "Don.t allow"
+- runFlow:
+    when:
+      true: ${CHOICE != "Allow"}
+    commands:
+      - extendedWaitUntil:
+          visible: "Open settings"
+          timeout: 5000
