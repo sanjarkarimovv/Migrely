@@ -2,7 +2,6 @@ package com.migrely.app.subscription.domain.usecase
 
 import com.migrely.app.architecture.domain.usecase.BackgroundExecutingUseCase
 import com.migrely.app.coroutine.CoroutineContextProvider
-import com.migrely.app.subscription.domain.model.BoughtDomainModel
 import com.migrely.app.subscription.domain.model.BuyPremiumResultDomainModel
 import com.migrely.app.subscription.domain.model.EntitlementKindDomainModel
 import com.migrely.app.subscription.domain.model.LaunchedPurchaseDomainModel
@@ -52,27 +51,34 @@ class BuyPremiumUseCase(
                 request.plan != PremiumPlanDomainModel.Lifetime &&
                 request.plan != entitlement.plan
         }
-        saveLaunchedPurchaseRepository.saveLaunchedPurchase(
-            LaunchedPurchaseDomainModel(
-                plan = request.plan,
-                freeTrial = request.freeTrial,
-                at = getCurrentTimeRepository.now()
-            )
+        val launched = LaunchedPurchaseDomainModel(
+            plan = request.plan,
+            freeTrial = request.freeTrial,
+            at = getCurrentTimeRepository.now()
         )
+        saveLaunchedPurchaseRepository.saveLaunchedPurchase(launched)
         val sheet = launchPurchaseRepository.launchPurchase(
             PurchaseLaunchDomainModel(request, replaced)
         )
-        val bought = (sheet as? PurchaseSheetResultDomainModel.Completed)?.purchases
-            ?.firstOrNull { it.product == entitlementRules.productOf(request.plan) }
-        val status = premiumChecker.check(
-            bought?.let { BoughtDomainModel(it.purchaseToken, request.plan, request.freeTrial) }
-        ).status
+        val returned = (sheet as? PurchaseSheetResultDomainModel.Completed)?.purchases.orEmpty()
+        // Only a purchase made by this sheet takes its plan and trial: one already pending, or an
+        // older one of the same product the sheet hands back, keeps what it had (walk B1).
+        val bought = entitlementRules.boughtFrom(
+            launched,
+            returned,
+            entitlement,
+            getCurrentTimeRepository.now()
+        )
+        val status = premiumChecker.check(bought).status
         // The sheet answered, so the check above had what it needs; a late answer reads Play.
         saveLaunchedPurchaseRepository.saveLaunchedPurchase(null)
         val outcome = when (sheet) {
             is PurchaseSheetResultDomainModel.Completed -> when {
                 status.unlocks() -> PurchaseOutcomeDomainModel.Unlocked
-                bought?.state == PurchaseStateDomainModel.Pending ||
+                returned.any {
+                    it.product == entitlementRules.productOf(request.plan) &&
+                        it.state == PurchaseStateDomainModel.Pending
+                } ||
                     status == PremiumStatusDomainModel.Pending -> PurchaseOutcomeDomainModel.Pending
                 else -> PurchaseOutcomeDomainModel.Failed
             }

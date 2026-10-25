@@ -5,6 +5,7 @@ import com.migrely.app.subscription.domain.model.BillingAvailabilityDomainModel
 import com.migrely.app.subscription.domain.model.BoughtDomainModel
 import com.migrely.app.subscription.domain.model.BuyPremiumResultDomainModel
 import com.migrely.app.subscription.domain.model.EntitlementDomainModel
+import com.migrely.app.subscription.domain.model.EntitlementKindDomainModel
 import com.migrely.app.subscription.domain.model.LaunchedPurchaseDomainModel
 import com.migrely.app.subscription.domain.model.PremiumCheckDomainModel
 import com.migrely.app.subscription.domain.model.PremiumPlanDomainModel
@@ -59,7 +60,9 @@ class BuyPremiumUseCaseTest {
         given(
             launchPurchaseRepository.launchPurchase(PurchaseLaunchDomainModel(YEARLY_TRIAL, null))
         )
-            .willReturn(PurchaseSheetResultDomainModel.Completed(listOf(purchase(token = "new"))))
+            .willReturn(
+                PurchaseSheetResultDomainModel.Completed(listOf(purchase(token = "new", at = NOW)))
+            )
 
         val result = classUnderTest.executeInBackground(YEARLY_TRIAL)
 
@@ -200,5 +203,38 @@ class BuyPremiumUseCaseTest {
         classUnderTest.executeInBackground(MONTHLY)
 
         verify(launchPurchaseRepository).launchPurchase(PurchaseLaunchDomainModel(MONTHLY, null))
+    }
+
+    @Test
+    fun `Given a pending payment settles from another plan's sheet then that plan is not given to it`() {
+        given(getEntitlementRepository.entitlement()).willReturn(
+            EntitlementDomainModel.NONE.copy(
+                kind = EntitlementKindDomainModel.Pending,
+                purchaseToken = "pending-monthly",
+                purchaseTime = BOUGHT_AT
+            )
+        )
+        given(launchPurchaseRepository.launchPurchase(any())).willReturn(
+            PurchaseSheetResultDomainModel.Completed(
+                listOf(purchase(token = "pending-monthly", at = BOUGHT_AT))
+            )
+        )
+
+        classUnderTest.executeInBackground(YEARLY_TRIAL)
+
+        verify(premiumChecker).check(null)
+    }
+
+    @Test
+    fun `Given the sheet returns an older purchase of the product then the request's plan is not given to it`() {
+        given(launchPurchaseRepository.launchPurchase(any())).willReturn(
+            PurchaseSheetResultDomainModel.Completed(
+                listOf(purchase(token = "older", at = BOUGHT_AT))
+            )
+        )
+
+        classUnderTest.executeInBackground(MONTHLY)
+
+        verify(premiumChecker).check(null)
     }
 }

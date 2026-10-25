@@ -8,8 +8,11 @@ import android.content.Intent
  * Lets QA set the simulated store from adb, in debug builds only (BRD D113). It takes broadcasts
  * only from holders of android.permission.DUMP, which adb's shell has:
  *
- *     adb shell am broadcast -p com.migrely.app \
+ *     adb shell am broadcast -p com.migrely.app -f 0x20 \
  *         -a com.migrely.app.debug.SIMULATED_STORE --es command unavailable
+ *
+ * The -f 0x20 flag (include stopped packages) lets it reach the app after a force-stop too;
+ * without it Android drops the broadcast silently.
  *
  * The commands are "available", the default; "unavailable", a country without Google Play billing;
  * "unreachable", a Play Store that does not answer; "complete-pending" and "decline-pending",

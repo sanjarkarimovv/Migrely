@@ -220,9 +220,8 @@ class SimulatedBillingDataSourceImpl(
         )
         // A replaced subscription ends as the new one starts (BRD EC-BIL-10).
         save(stored().filterNot { it.purchaseToken == request.oldPurchaseToken } + purchase)
-        if (request.offerToken ==
-            YEARLY_TRIAL_TOKEN
-        ) {
+        // Like Google Play, the trial is only for new subscribers: any subscription uses it up.
+        if (request.productId == PREMIUM) {
             store.edit().putBoolean(TRIAL_USED, true).apply()
         }
         return BillingPurchaseResultDataModel.Completed(listOf(purchase))
