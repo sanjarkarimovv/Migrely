@@ -72,7 +72,7 @@ import com.migrely.app.designsystem.icon.MigrelyIcons
 import com.migrely.app.designsystem.motion.rememberReduceMotion
 import com.migrely.app.designsystem.snackbar.MigrelySnackbar
 import com.migrely.app.designsystem.snackbar.MigrelySnackbarHost
-import com.migrely.app.designsystem.snackbar.SnackbarTone
+import com.migrely.app.designsystem.snackbar.messageTimeoutMillis
 import com.migrely.app.designsystem.theme.MigrelyTheme
 import java.time.Instant
 import java.time.LocalDate
@@ -82,7 +82,6 @@ import java.time.format.FormatStyle
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.onSubscription
 
-private const val MESSAGE_MILLIS = 6_000L
 private val CONTENT_MAX_WIDTH = 600.dp
 
 /** Some file apps label a .json file as text or as plain bytes, so those are offered too; the file is checked anyway. */
@@ -136,9 +135,13 @@ fun YourDataDependencies.YourData(navController: NavController, modifier: Modifi
             }
         }
     }
-    LaunchedEffect(message) {
-        if (message != null) {
-            delay(MESSAGE_MILLIS)
+    // Each kind stays its own time, stretched to the accessibility timeout (BRD EC-UX-16; QA #56).
+    val messageTimeout = messageTimeoutMillis(
+        message?.let { yourDataMessageBehaviourUiMapper.toUi(it.message).baseDurationMillis }
+    )
+    LaunchedEffect(message, messageTimeout) {
+        if (message != null && messageTimeout != null) {
+            delay(messageTimeout)
             message = null
         }
     }
@@ -183,7 +186,7 @@ fun YourDataDependencies.YourData(navController: NavController, modifier: Modifi
             MigrelySnackbarHost(message = message, reduceMotion = rememberReduceMotion()) { shown ->
                 MigrelySnackbar(
                     text = shown.message.text(),
-                    tone = shown.message.tone(),
+                    tone = yourDataMessageBehaviourUiMapper.toUi(shown.message).tone,
                     action = null,
                     dismissLabel = stringResource(R.string.your_data_message_dismiss),
                     onDismiss = { message = null }
@@ -485,26 +488,6 @@ private fun YourDataMessageUiModel.text(): String = when (this) {
         R.string.your_data_something_went_wrong
     )
     YourDataMessageUiModel.NoFilePicker -> stringResource(R.string.your_data_no_file_picker)
-}
-
-private fun YourDataMessageUiModel.tone() = when (this) {
-    YourDataMessageUiModel.BackupSaved,
-    YourDataMessageUiModel.CsvSaved,
-    is YourDataMessageUiModel.Replaced,
-    is YourDataMessageUiModel.Restored -> SnackbarTone.Confirmation
-    is YourDataMessageUiModel.Added ->
-        if (addedAttacks == 0 &&
-            addedOthers == 0
-        ) {
-            SnackbarTone.Information
-        } else {
-            SnackbarTone.Confirmation
-        }
-    YourDataMessageUiModel.NotABackup,
-    YourDataMessageUiModel.Newer,
-    YourDataMessageUiModel.StorageFull,
-    YourDataMessageUiModel.SomethingWentWrong,
-    YourDataMessageUiModel.NoFilePicker -> SnackbarTone.Error
 }
 
 private val PREVIEW_ACTIONS = YourDataActions({}, {}, {}, {}, {})

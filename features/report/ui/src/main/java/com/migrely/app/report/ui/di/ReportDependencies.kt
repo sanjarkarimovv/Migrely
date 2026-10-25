@@ -8,6 +8,7 @@ import com.migrely.app.report.presentation.model.ReportViewState
 import com.migrely.app.report.presentation.navigation.ReportPresentationNavigationEvent
 import com.migrely.app.report.presentation.viewmodel.ReportViewModel
 import com.migrely.app.report.ui.mapper.ReportEventPresenter
+import com.migrely.app.report.ui.mapper.ReportMessageBehaviourUiMapper
 import com.migrely.app.report.ui.mapper.ReportPeriodPresentationMapper
 import com.migrely.app.report.ui.mapper.ReportViewStateUiMapper
 
@@ -16,6 +17,7 @@ class ReportDependencies(
     val reportViewStateUiMapper: ReportViewStateUiMapper,
     val reportPeriodPresentationMapper: ReportPeriodPresentationMapper,
     val reportEventPresenter: ReportEventPresenter,
+    val reportMessageBehaviourUiMapper: ReportMessageBehaviourUiMapper,
     navigationMapper: NavigationEventDestinationMapper<ReportPresentationNavigationEvent>,
     notificationMapper: NotificationUiMapper<ReportPresentationNotification>
 ) : BaseComposeHolder<ReportViewState, ReportPresentationNotification>(

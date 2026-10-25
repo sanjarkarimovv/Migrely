@@ -1,5 +1,6 @@
 package com.migrely.app.subscription.ui.mapper
 
+import com.migrely.app.designsystem.snackbar.SnackbarTone
 import com.migrely.app.subscription.presentation.model.PaywallContextPresentationModel
 import com.migrely.app.subscription.presentation.model.PaywallPresentationNotification
 import com.migrely.app.subscription.presentation.model.PaywallProductPresentationModel
@@ -11,6 +12,7 @@ import com.migrely.app.subscription.presentation.model.RestoreNotePresentationMo
 import com.migrely.app.subscription.presentation.model.TrialBannerViewState
 import com.migrely.app.subscription.ui.model.PaywallContextUiModel
 import com.migrely.app.subscription.ui.model.PaywallEventUiModel
+import com.migrely.app.subscription.ui.model.PaywallMessageBehaviourUiModel
 import com.migrely.app.subscription.ui.model.PaywallMessageUiModel
 import com.migrely.app.subscription.ui.model.PaywallOffersUiModel
 import com.migrely.app.subscription.ui.model.PaywallProductUiModel
@@ -186,6 +188,24 @@ class SubscriptionUiMappersTest {
         assertEquals(
             PremiumSectionViewStateUiModel.Checking,
             mapper.toUi(PremiumSectionViewState.Checking)
+        )
+    }
+
+    @Test
+    fun `When mapping a paywall message then no purchase found is information, the rest errors`() {
+        val mapper = PaywallMessageBehaviourUiMapper()
+
+        assertEquals(
+            PaywallMessageBehaviourUiModel(SnackbarTone.Information, 8_000L),
+            mapper.toUi(PaywallMessageUiModel.NothingToRestore)
+        )
+        assertEquals(
+            PaywallMessageBehaviourUiModel(SnackbarTone.Error, 8_000L),
+            mapper.toUi(PaywallMessageUiModel.PlayUnreachable)
+        )
+        assertEquals(
+            PaywallMessageBehaviourUiModel(SnackbarTone.Error, 8_000L),
+            mapper.toUi(PaywallMessageUiModel.SomethingWentWrong)
         )
     }
 

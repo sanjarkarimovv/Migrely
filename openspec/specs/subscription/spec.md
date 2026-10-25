@@ -114,7 +114,7 @@ offers Migrely's products, and never during attack mode or in the dark room. A t
 open it (BRD §7.3, EC-BIL-11, D110).
 
 #### Scenario: The 5th migraine
-- **WHEN** a free user logs their 5th migraine in the last 6 months, the first was logged at least 30 days ago, and no
+- **WHEN** a free user logs their 5th migraine in the last 6 months, the first started at least 30 days ago, and no
   paywall showed itself in the last 7 days
 - **THEN** the paywall opens once on returning to home, with a patterns headline that names no number
 

@@ -36,10 +36,11 @@ class MigrelyApplication : Application() {
             EntryPointAccessors.fromApplication(this, ReminderEntryPoint::class.java)
                 .rescheduleRemindersUseCase()
                 .executeInBackground(Unit)
+            val start = EntryPointAccessors.fromApplication(this, StartEntryPoint::class.java)
             // A report cut off by the app closing leaves a partial file; it goes now (BRD EC-REP-03).
-            EntryPointAccessors.fromApplication(this, StartEntryPoint::class.java)
-                .cleanUpReportsUseCase()
-                .executeInBackground(Unit)
+            start.cleanUpReportsUseCase().executeInBackground(Unit)
+            // A deleted attack whose undo has run out goes for good now, not with the next deletion (BRD D23, D118).
+            start.purgeExpiredDeletionsUseCase().executeInBackground(Unit)
         }
     }
 

@@ -81,4 +81,22 @@ class ImportBackupUseCaseTest {
         verify(replaceWithBackupRepository, never()).replaceWithBackup(any(), any())
         verify(getPhoneRecordsRepository, never()).phoneRecords()
     }
+
+    /** QA #58, BRD D118: a migraine deleted on the phone is not there any more, so "Add" brings it back. */
+    @Test
+    fun `Given a migraine deleted on the phone when adding then the backup brings it back`() {
+        val back = ImportResultDomainModel.Added(
+            addedAttacks = 1,
+            skippedAttacks = 1,
+            addedOthers = 0
+        )
+        given(addBackupRepository.addBackup(URI)).willReturn(back)
+
+        assertEquals(
+            back,
+            classUnderTest.executeInBackground(
+                ImportBackupRequestDomainModel(URI, ImportModeDomainModel.Add)
+            )
+        )
+    }
 }

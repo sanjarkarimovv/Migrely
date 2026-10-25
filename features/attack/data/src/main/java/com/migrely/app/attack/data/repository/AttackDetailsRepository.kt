@@ -24,6 +24,7 @@ import com.migrely.app.attack.domain.repository.GetAttackDetailsRepository
 import com.migrely.app.attack.domain.repository.GetCurrentTimeRepository
 import com.migrely.app.attack.domain.repository.GetMaximumRecordedRepository
 import com.migrely.app.attack.domain.repository.MergeAttacksRepository
+import com.migrely.app.attack.domain.repository.PurgeExpiredDeletionsRepository
 import com.migrely.app.attack.domain.repository.RemoveIntakeRepository
 import com.migrely.app.attack.domain.repository.RemoveIntensityPointRepository
 import com.migrely.app.attack.domain.repository.RestoreAttackTimesRepository
@@ -76,6 +77,7 @@ class AttackDetailsRepository(
     SetFunctionalImpactRepository,
     UpdateAttackNoteRepository,
     DeleteAttackRepository,
+    PurgeExpiredDeletionsRepository,
     RemoveIntakeRepository,
     RestoreIntakeRepository,
     SetIntakeEffectRepository {
@@ -191,6 +193,14 @@ class AttackDetailsRepository(
     }
 
     override fun deleteAttack(attackId: String) = write { attackDataSource.softDelete(attackId) }
+
+    override fun purgeExpiredDeletions() {
+        try {
+            attackDataSource.purgeExpiredDeletions()
+        } catch (_: DataException) {
+            // Nothing to report: the attacks stay hidden and go with the next deletion or the next start.
+        }
+    }
 
     /** Resolves the custom tags of [attacks] with one lookup. */
     private fun withCustomTags(attacks: List<AttackDataModel>): List<AttackDetailsDomainModel> {
