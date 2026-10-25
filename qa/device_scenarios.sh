@@ -11,7 +11,7 @@
 # med_preventive, med_two_waiting, med_link_home, med_overuse, keyboard_home, keyboard_history, keyboard_rtl,
 # landscape_band, mark_travel, mark_earliest_month, stats_counting, stats_chronic, stats_progress, reminder_daily,
 # reminder_permission, reminder_effect, reminder_replan (restarts the emulator), med_only_history,
-# message_overlap (known bug #52), upgrade.
+# message_tap_guard (#52), upgrade.
 # upgrade needs QA_OLD_APK=<older debug APK of com.migrely.app>; without it, it is reported as not run.
 set -euo pipefail
 
@@ -1015,31 +1015,37 @@ for n in ET.fromstring(sys.stdin.read()).iter('node'):
         print(*re.findall(r'\d+', n.get('bounds'))); break" "$1"
 }
 
-# Known bug #52: the message's Undo sits on top of History's top-bar actions, so a tap meant for Undo can open them.
-# It reports "KNOWN BUG #52 still reproduces" without failing the run, and "NOW PASSES" once the boxes stop overlapping.
-scenario_message_overlap() {
-  echo "Scenario message_overlap: History's Undo must not sit on top of its top-bar actions (#52)"
-  local undo action overlap="" i
-  long_undo_window
-  run_flow history-deleted-message || { default_undo_window; return 1; }
-  undo="$(node_bounds "Undo the deletion")"
-  default_undo_window
-  [[ -n "$undo" ]] || { echo "  FAILED: no Undo on screen"; return 1; }
-  for i in $(seq 1 15); do [[ -z "$(node_bounds "Undo the deletion")" ]] && break; sleep 3; done
-  for action in "Insights" "Doctor report"; do
-    local box
-    box="$(node_bounds "$action")"
-    [[ -n "$box" ]] || continue
-    if python3 -I -c "import sys; a = list(map(int, sys.argv[1].split())); b = list(map(int, sys.argv[2].split()))
-sys.exit(0 if a[0] < b[2] and b[0] < a[2] and a[1] < b[3] and b[1] < a[3] else 1)" "$undo" "$box"; then
-      overlap+=" $action [$box]"
+# Covers: in-app-messages › A message never passes taps to what lies under it › Undo just as the message goes
+# Covers: in-app-messages › A message never passes taps to what lies under it › Afterwards
+# History's Undo sits on top of the top-bar actions (#52). A tap there just after the message leaves must reach nothing
+# (a guard under the message, 800 ms); a tap later must open Doctor report as usual. Taps go through adb, timed from
+# the tap on "Delete migraine" (the undo message lasts 5 s).
+scenario_message_tap_guard() {
+  echo "Scenario message_tap_guard: a tap where Undo was, just after the message leaves, opens nothing (#52, D114)"
+  local delete offset screen
+  for offset in 5.2 5.5 5.8 7.5; do
+    run_flow history-delete-ready || return 1
+    delete="$(point_in 'Delete migraine' 0.5)"
+    [[ -n "$delete" ]] || { echo "  FAILED: \"Delete migraine\" not found"; return 1; }
+    adbq shell "input tap $delete; sleep $offset; input tap 1000 212"
+    sleep 2
+    screen="$(focused_screen)"
+    echo "    tap ${offset} s after the delete: $screen"
+    if [[ "$offset" == "7.5" ]]; then
+      [[ "$screen" == "doctor report" ]] || { echo "  FAILED: the late tap did not open Doctor report (control)"; return 1; }
+    else
+      [[ "$screen" != "doctor report" ]] || { echo "  FAILED: the tap reached Doctor report under the message (#52)"; return 1; }
     fi
   done
-  if [[ -n "$overlap" ]]; then
-    echo "  KNOWN BUG #52 still reproduces: Undo [$undo] overlaps$overlap"
-  else
-    echo "  NOW PASSES: Undo [$undo] overlaps no top-bar action; remove the known-bug note for #52"
-  fi
+}
+focused_screen() { # "doctor report", "history (undone)" or "history (deleted)", from what is on screen
+  local xml
+  adbq shell rm -f /sdcard/qa-screen.xml
+  adbq shell uiautomator dump /sdcard/qa-screen.xml >/dev/null
+  xml="$(adbq exec-out cat /sdcard/qa-screen.xml)"
+  if grep -q 'text="Create report"' <<<"$xml"; then echo "doctor report"
+  elif grep -q 'Opens its details' <<<"$xml"; then echo "history (undone)"
+  else echo "history (deleted)"; fi
 }
 
 scenario_double_tap() {
@@ -1090,7 +1096,7 @@ if [[ $# -eq 0 ]]; then
     double_tap med_effect med_effect_attack med_effect_skip med_effect_late med_preventive med_two_waiting \
     med_link_home med_overuse keyboard_home keyboard_history keyboard_rtl landscape_band mark_travel mark_earliest_month \
     stats_counting stats_chronic stats_progress reminder_daily reminder_permission reminder_effect reminder_replan \
-    med_only_history message_overlap
+    med_only_history message_tap_guard
   if [[ -n "${QA_OLD_APK:-}" ]]; then
     set -- "$@" upgrade
   else
