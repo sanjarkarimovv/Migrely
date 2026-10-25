@@ -1,0 +1,13 @@
+# Device scenario step: with notifications allowed, turn the daily reminder on. It stays on the Reminders screen, where
+# the script reads the switch.
+appId: com.migrely.app
+---
+- launchApp:
+    stopApp: false
+- tapOn: "Settings"
+- tapOn: "Reminders.*"
+- tapOn: "Daily reminder"
+- extendedWaitUntil:
+    visible: "QA: never shown, a pause for the setting to be saved"
+    timeout: 2000
+    optional: true

@@ -1,0 +1,44 @@
+# Device scenario step: a clean install answers every onboarding step: triggers, 4 to 14 a month, no period
+# tracking, and the daily check-in turned on (notifications allowed by launchApp). Home shows no "Period" chip; the
+# script then checks the planned reminder. Ends on the home screen without a force stop.
+appId: com.migrely.app
+---
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: "Step 1 of 4.*"
+    timeout: 15000
+- extendedWaitUntil:
+    visible: "QA: never shown, a pause for the 0.8 s tap guard"
+    timeout: 1000
+    optional: true
+- tapOn: "Find what triggers my migraines"
+- extendedWaitUntil:
+    visible: "Step 2 of 4.*"
+    timeout: 5000
+- extendedWaitUntil:
+    visible: "QA: never shown, a pause for the 0.8 s tap guard"
+    timeout: 1000
+    optional: true
+- tapOn: "4 to 14 a month"
+- extendedWaitUntil:
+    visible: "Step 3 of 4.*"
+    timeout: 5000
+- extendedWaitUntil:
+    visible: "QA: never shown, a pause for the 0.8 s tap guard"
+    timeout: 1000
+    optional: true
+- tapOn: "No"
+- extendedWaitUntil:
+    visible: "Step 4 of 4.*"
+    timeout: 5000
+- extendedWaitUntil:
+    visible: "QA: never shown, a pause for the 0.8 s tap guard"
+    timeout: 1000
+    optional: true
+- tapOn: "Turn on at 8:00.*"
+- extendedWaitUntil:
+    visible: "Migraine started"
+    timeout: 10000
+- assertNotVisible: "Period today"
+- pressKey: Home

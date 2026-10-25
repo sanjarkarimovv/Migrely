@@ -11,7 +11,7 @@
 # med_preventive, med_two_waiting, med_link_home, med_overuse, keyboard_home, keyboard_history, keyboard_rtl,
 # landscape_band, mark_travel, mark_earliest_month, stats_counting, stats_chronic, stats_progress, reminder_daily,
 # reminder_permission, reminder_effect, reminder_replan (restarts the emulator), med_only_history,
-# message_tap_guard (#52), upgrade.
+# message_tap_guard (#52), theme_check, onboarding_states, delete_all_data, upgrade.
 # upgrade needs QA_OLD_APK=<older debug APK of com.migrely.app>; without it, it is reported as not run.
 set -euo pipefail
 
@@ -37,6 +37,7 @@ ORIGINAL_TIMEOUT="$(adbq shell settings get secure accessibility_interactive_ui_
 ORIGINAL_USER_ROTATION="$(adbq shell settings get system user_rotation | tr -d '\r')"
 ORIGINAL_AUTO_ROTATE="$(adbq shell settings get system accelerometer_rotation | tr -d '\r')"
 ORIGINAL_ANIMATOR="$(adbq shell settings get global animator_duration_scale | tr -d '\r')"
+ORIGINAL_NIGHT="$(adbq shell cmd uimode night 2>/dev/null | tr -d '\r' | sed 's/.*: //')"
 ORIGINAL_NOTIFICATIONS="$(adbq shell dumpsys package "$APP" | grep -q "POST_NOTIFICATIONS: granted=true" && echo grant || echo reset)"
 # "Locales for <app> for user 0 are [iw]" -> "iw"; empty means the app follows the system language.
 ORIGINAL_APP_LOCALES=""
@@ -59,6 +60,7 @@ restore() {
   qa_restore_setting system accelerometer_rotation "$ORIGINAL_AUTO_ROTATE"
   qa_restore_setting global animator_duration_scale "$ORIGINAL_ANIMATOR"
   notifications_permission "$ORIGINAL_NOTIFICATIONS" >/dev/null 2>&1
+  [[ -n "$ORIGINAL_NIGHT" ]] && adbq shell cmd uimode night "$ORIGINAL_NIGHT" >/dev/null 2>&1
   echo "Restored: clock $(adbq shell date | tr -d '\r'), zone $ORIGINAL_ZONE, auto_time $ORIGINAL_AUTO_TIME"
   qa_unlock_device
 }
@@ -299,26 +301,37 @@ expect_planned() { # $1 zone, $2 HH:MM: the app's daily job runs at the next $2 
   local got want
   got="$(adbq shell dumpsys jobscheduler | python3 -I -c "import re, sys
 t = sys.stdin.read()
-m = re.search(r'JOB [^\n]*@androidx\.work\.systemjobscheduler@$APP/[^\n]*\n(.*?)\n  JOB ', t + '\n  JOB ', re.S)
-e = m and re.search(r'Run time: earliest=([-+])(?:(\d+)d)?(?:(\d+)h)?(?:(\d+)m)?', m.group(1))
-print('' if not e else (1 if e.group(1) == '+' else -1) * (int(e.group(2) or 0) * 1440 + int(e.group(3) or 0) * 60 + int(e.group(4) or 0)))")"
+t = t + '\n  JOB '
+for m in re.finditer(r'JOB [^\n]*@androidx\.work\.systemjobscheduler@$APP/[^\n]*\n(.*?)(?=\n  JOB )', t, re.S):
+    e = re.search(r'Run time: earliest=([-+])(?:(\d+)d)?(?:(\d+)h)?(?:(\d+)m)?', m.group(1))
+    if e: print((1 if e.group(1) == '+' else -1) * (int(e.group(2) or 0) * 1440 + int(e.group(3) or 0) * 60 + int(e.group(4) or 0)))")"
   want="$(python3 -I -c "import sys, datetime as d, zoneinfo as z
 zone = z.ZoneInfo(sys.argv[1]); now = d.datetime.fromtimestamp(int(sys.argv[3]), zone)
 h, m = map(int, sys.argv[2].split(':')); t = now.replace(hour=h, minute=m, second=0, microsecond=0)
 t = t if t > now else t + d.timedelta(days=1)
 print(int((t - now).total_seconds() // 60))" "$1" "$2" "$(device_seconds)")"
   if [[ -z "$got" ]]; then echo "  FAILED: no planned daily job"; return 1; fi
-  if (( got - want > 5 || want - got > 5 )); then
-    echo "  FAILED: the daily job runs in $got min, expected about $want min (the next $2 in $1)"
-    return 1
-  fi
-  echo "    daily job planned in $got min (the next $2 in $1: $want min)"
+  # Other jobs ("Did it help?") may be planned too: one of them must be the daily one.
+  local minutes
+  for minutes in $got; do
+    if (( minutes - want <= 5 && want - minutes <= 5 )); then
+      echo "    daily job planned in $minutes min (the next $2 in $1: $want min)"
+      return 0
+    fi
+  done
+  echo "  FAILED: no job runs at the next $2 in $1 (about $want min); planned: $(echo $got)"
+  # WorkManager's own view (debug build), to tell a missing plan from a job not yet handed to JobScheduler.
+  adbq shell "run-as $APP sqlite3 no_backup/androidx.work.workdb 'select n.name, s.state, s.initial_delay / 60000, s.last_enqueue_time from workname n join workspec s on s.id = n.work_spec_id;'" 2>/dev/null |
+    while IFS='|' read -r name state delay enqueued; do
+      echo "    WorkManager: $name state $state, ${delay} min after $(date -r $((enqueued / 1000)) +%H:%M) (device $(adbq shell date +%H:%M | tr -d '\r'))"
+    done
+  return 1
 }
 expect_job_in() { # $1 minutes: one of the app's jobs is planned to run in about that many minutes (within 5)
   local got
   got="$(adbq shell dumpsys jobscheduler | python3 -I -c "import re, sys
 t = sys.stdin.read() + '\n  JOB '
-for m in re.finditer(r'JOB [^\n]*@androidx\.work\.systemjobscheduler@$APP/[^\n]*\n(.*?)\n  JOB ', t, re.S):
+for m in re.finditer(r'JOB [^\n]*@androidx\.work\.systemjobscheduler@$APP/[^\n]*\n(.*?)(?=\n  JOB )', t, re.S):
     e = re.search(r'Run time: earliest=([-+])(?:(\d+)d)?(?:(\d+)h)?(?:(\d+)m)?', m.group(1))
     if e: print((1 if e.group(1) == '+' else -1) * (int(e.group(2) or 0) * 1440 + int(e.group(3) or 0) * 60 + int(e.group(4) or 0)))")"
   local minutes
@@ -357,6 +370,25 @@ for n in ET.fromstring(sys.stdin.read()).iter('node'):
   return 1
 }
 open_app() { adbq shell monkey -p "$APP" -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1; sleep 4; }
+
+screen_luminance() { # the average luminance (0-255) of the screen's left margin, where only the background shows
+  adbq exec-out screencap -p >"$out/screen-$STEP.png"
+  python3 -I -c "import sys
+from pathlib import Path
+sys.path.insert(0, sys.argv[2])
+from a11y_audit import read_png
+rows, bpp = read_png(Path(sys.argv[1]))
+px = [rows[y][x * bpp:x * bpp + 3] for y in range(400, 2000, 20) for x in range(5, 30, 5)]
+print(int(sum(0.2126 * p[0] + 0.7152 * p[1] + 0.0722 * p[2] for p in px) / len(px)))" "$out/screen-$STEP.png" "$ROOT/qa"
+}
+expect_theme() { # $1 light or dark: the screen in front, measured on its background
+  local l
+  sleep 2
+  l="$(screen_luminance)"
+  if [[ "$1" == light && $l -gt 150 ]] || [[ "$1" == dark && $l -lt 100 ]]; then echo "    $1 (background luminance $l)"; return 0; fi
+  echo "  FAILED: expected $1, background luminance $l"
+  return 1
+}
 
 tab_until() { # $1 extended regex, $2 most Tabs: press Tab until the focused label matches
   local label="" n
@@ -1048,6 +1080,77 @@ focused_screen() { # "doctor report", "history (undone)" or "history (deleted)",
   else echo "history (deleted)"; fi
 }
 
+# Covers: app-settings › Theme › Light
+# Covers: app-settings › Theme › An attack in progress
+scenario_theme_check() {
+  echo "Scenario theme_check: Light and \"Match the phone\" change the app; attack mode stays dark (D94)"
+  set_clock_millis "$(when_millis 0 15 12:00)" || return 1
+  run_flow clean || return 1
+  open_app
+  expect_theme dark || return 1
+  run_flow_env theme-set THEME=Light || return 1
+  expect_theme light || return 1
+  run_flow attack-start-keep || return 1
+  open_app
+  expect_theme dark || return 1
+  run_flow attack-end || return 1
+  run_flow_env theme-set "THEME=Match the phone" || return 1
+  adbq shell cmd uimode night no >/dev/null
+  open_app
+  expect_theme light || return 1
+  adbq shell cmd uimode night yes >/dev/null
+  open_app
+  expect_theme dark || return 1
+  adbq shell cmd uimode night "$ORIGINAL_NIGHT" >/dev/null
+}
+
+# Covers: onboarding › Four skippable steps › Answering
+# Covers: onboarding › The daily reminder offer › Turning it on
+# Covers: onboarding › Shown once, to a new user › Starting an attack from the shortcut
+# Covers: onboarding › Shown once, to a new user › An update
+scenario_onboarding_states() {
+  echo "Scenario onboarding_states: answers stored, the reminder offer, the attack shortcut and an update (D76-D80)"
+  set_clock_millis "$(when_millis 0 15 12:00)" || return 1
+  run_flow onboarding-answer || return 1
+  expect_planned Asia/Tashkent 20:00 || return 1
+  # The attack shortcut on a fresh install goes straight to attack mode.
+  adbq shell pm clear "$APP" >/dev/null
+  # The launcher shortcut (res/xml/shortcuts.xml) names the activity, so the intent does too.
+  adbq shell am start -a com.migrely.app.action.START_ATTACK -n "$(adbq shell cmd package resolve-activity --brief "$APP" | tail -1 | tr -d '\r')" >/dev/null
+  run_flow onboarding-shortcut || return 1
+  # An update with entries already logged (no onboarding answer saved yet) opens home.
+  run_flow clean || return 1
+  run_flow_env attack-start LEVEL= || return 1
+  run_flow attack-end || return 1
+  adbq shell run-as "$APP" rm -f shared_prefs/migrely_preferences.xml
+  "$ADB" -s "$QA_SERIAL" install -r "$ROOT/app/build/outputs/apk/debug/app-debug.apk" >/dev/null
+  run_flow update-no-onboarding || return 1
+}
+
+# Covers: app-settings › Delete all data › Deleted
+scenario_delete_all_data() {
+  echo "Scenario delete_all_data: DELETE empties every kind of entry and restarts into onboarding, dark (D96)"
+  notifications_permission grant
+  set_clock_millis "$(when_millis 0 15 12:00)" || return 1
+  run_flow clean || return 1
+  run_flow attack-log-keep || return 1
+  run_flow_env med-first-log-home NAME=Ibuprofen "TYPE=Simple painkiller" || return 1
+  run_flow period-today || return 1
+  run_flow_env theme-set THEME=Light || return 1
+  run_flow reminder-on-granted || return 1
+  expect_switch "Daily reminder" true || return 1
+  key BACK; key BACK
+  adbq shell input keyevent HOME
+  expect_planned Asia/Tashkent 20:00 || return 1
+  run_flow delete-everything || return 1
+  expect_theme dark || return 1
+  if adbq shell dumpsys jobscheduler | grep -q "@androidx.work.systemjobscheduler@$APP/"; then
+    echo "  FAILED: a reminder job is still planned after Delete all data"; return 1
+  fi
+  echo "    no planned job"
+  run_flow after-delete-check || return 1
+}
+
 scenario_double_tap() {
   echo "Scenario double_tap: double taps never cross a mode switch (EC-UX-18, D32), with exact gaps between the taps"
   local gap point
@@ -1096,7 +1199,8 @@ if [[ $# -eq 0 ]]; then
     double_tap med_effect med_effect_attack med_effect_skip med_effect_late med_preventive med_two_waiting \
     med_link_home med_overuse keyboard_home keyboard_history keyboard_rtl landscape_band mark_travel mark_earliest_month \
     stats_counting stats_chronic stats_progress reminder_daily reminder_permission reminder_effect reminder_replan \
-    med_only_history message_tap_guard
+    med_only_history message_tap_guard \
+    theme_check onboarding_states delete_all_data
   if [[ -n "${QA_OLD_APK:-}" ]]; then
     set -- "$@" upgrade
   else
