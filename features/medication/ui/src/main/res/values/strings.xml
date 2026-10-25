@@ -45,7 +45,6 @@
     <string name="category_combination">Combination or other</string>
     <string name="category_combination_examples">Mixed tablets, other prescriptions</string>
     <string name="category_not_sure">Not sure</string>
-    <string name="kind_preventive_label">preventive</string>
 
     <!-- Problems (BRD EC-MED-07, D35). -->
     <string name="problem_duplicate">You already have %1$s.</string>
