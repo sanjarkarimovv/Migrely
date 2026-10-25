@@ -418,8 +418,8 @@ class GetHistoryMonthUseCaseTest {
     }
 
     @Test
-    fun `Given no attack, mark or attack-medication intake when executed then nothing logged`() {
-        // Preventive intakes never reach History: the datasource leaves them out (BRD D99).
+    fun `Given no attack, mark or intake found when September is asked then nothing logged`() {
+        // Only preventive intakes read the same: the datasource leaves them out (BRD D99).
         givenEarliestIntake(EarliestAttackMedicationIntakeResultDomainModel.None)
 
         val actual = loaded(YearMonth.of(2026, 9))
@@ -474,6 +474,24 @@ class GetHistoryMonthUseCaseTest {
         )
 
         assertEquals(YearMonth.of(2026, 9), loaded(request = null).earliestMonth)
+    }
+
+    @Test
+    fun `Given the first intake is on 1 November in Tokyo when executed then this month`() {
+        // 1 November 06:00 in Tokyo is still 31 October in Tashkent.
+        givenNow("2026-10-31T23:30")
+        givenEarliestIntake(
+            EarliestAttackMedicationIntakeResultDomainModel.Found(
+                at("2026-11-01T06:00", TOKYO),
+                TOKYO
+            )
+        )
+
+        val actual = loaded(request = null)
+
+        assertEquals(OCTOBER, actual.earliestMonth)
+        assertEquals(OCTOBER, actual.month)
+        assertEquals(true, actual.anythingLogged)
     }
 
     @Test

@@ -262,14 +262,25 @@ class MedicationDaoTest {
         classUnderTest.insert(medication("t", "Topiramate", kind = "PREVENTIVE", category = null))
         classUnderTest.insertIntake(intake("preventive", "t", null, 1_000L))
         classUnderTest.insertIntake(intake("deleted", "i", "gone", 1_100L))
+        // The earliest one has no attack, so only the LEFT JOIN on attack finds it.
         classUnderTest.insertIntake(
-            intake("first", "i", "kept", 1_200L).copy(takenZoneId = "Asia/Tokyo")
+            intake("alone", "i", null, 1_200L).copy(takenZoneId = "Asia/Tokyo")
         )
-        classUnderTest.insertIntake(intake("alone", "i", null, 1_300L))
+        classUnderTest.insertIntake(intake("inAttack", "i", "kept", 1_300L))
 
         val actual = checkNotNull(classUnderTest.earliestAcuteIntake())
 
         assertEquals(1_200L to "Asia/Tokyo", actual.takenEpochMillis to actual.takenZoneId)
+    }
+
+    @Test
+    fun givenOnlyAnIntakeOutsideAnyAttack_whenReadingTheEarliestAcuteOne_thenThatIntake() {
+        classUnderTest.insert(medication("i", "Ibuprofen"))
+        classUnderTest.insertIntake(intake("alone", "i", null, 1_500L))
+
+        val actual = checkNotNull(classUnderTest.earliestAcuteIntake())
+
+        assertEquals(1_500L to "Asia/Tashkent", actual.takenEpochMillis to actual.takenZoneId)
     }
 
     @Test
