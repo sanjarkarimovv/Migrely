@@ -166,17 +166,21 @@ class ReportDocumentMapper(private val reportDateTimeFormatter: ReportDateTimeFo
             }
         )
 
+    /**
+     * Peak is wide enough for "4 · Moderate" and "Not logged" on one line on A4, taken from the three lists, which wrap
+     * anyway; the other columns keep their widths.
+     */
     private fun attacksTable(report: ReportDomainModel, deviceZone: ZoneId) =
         ReportBlockDataModel.Table(
             columns = listOf(
                 ReportColumnDataModel("Start", 1.5f),
                 ReportColumnDataModel("Duration", 1f),
-                ReportColumnDataModel("Peak", 0.9f),
+                ReportColumnDataModel("Peak", 1.2f),
                 ReportColumnDataModel("Impact", 1f),
                 ReportColumnDataModel("Where it hurts", 1.3f),
-                ReportColumnDataModel("Symptoms", 1.5f),
-                ReportColumnDataModel("Triggers", 1.5f),
-                ReportColumnDataModel("Medications", 1.5f)
+                ReportColumnDataModel("Symptoms", 1.4f),
+                ReportColumnDataModel("Triggers", 1.4f),
+                ReportColumnDataModel("Medications", 1.4f)
             ),
             rows = report.attacks.map { row(it, deviceZone, report.dates.from) },
             shortenedNote = SHORTENED_NOTE

@@ -265,6 +265,26 @@ class ReportDocumentMapperTest {
     }
 
     @Test
+    fun `When mapping migraines then Peak has room for its level beside the number`() {
+        val table = blocks(report()).filterIsInstance<ReportBlockDataModel.Table>().first()
+
+        // Peak's 1.2 of 10.2 is 60.6 pt of A4's 515; "4 · Moderate" takes about 48 pt at 8.5 pt in Roboto.
+        assertEquals(
+            listOf(
+                "Start" to 1.5f,
+                "Duration" to 1f,
+                "Peak" to 1.2f,
+                "Impact" to 1f,
+                "Where it hurts" to 1.3f,
+                "Symptoms" to 1.4f,
+                "Triggers" to 1.4f,
+                "Medications" to 1.4f
+            ),
+            table.columns.map { it.title to it.weight }
+        )
+    }
+
+    @Test
     fun `Given a 12-hour phone in the US then the migraine's time as the app shows it`() {
         locale = Locale.US
         is24Hour = false
