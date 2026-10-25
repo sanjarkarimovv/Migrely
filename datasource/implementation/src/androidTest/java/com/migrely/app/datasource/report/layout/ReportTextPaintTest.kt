@@ -1,6 +1,7 @@
 package com.migrely.app.datasource.report.layout
 
 import android.graphics.Color
+import android.text.TextPaint
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -14,9 +15,13 @@ class ReportTextPaintTest {
         val body = reportTextPaint(10f, bold = false, color = Color.BLACK)
         val large = reportTextPaint(100f, bold = false, color = Color.BLACK)
 
-        // Hinted, a 10 pt space in Roboto measured 2 against 2.5 from 100 pt.
+        // Text is drawn by its glyph advances. Hinted, a 10 pt space advanced 2 against 2.48 from 100 pt. Not
+        // measureText(), which rounds its total up to a whole unit whatever the paint.
         listOf(" ", "a month", "at the").forEach {
-            assertEquals(it, large.measureText(it) / 10, body.measureText(it), 0.02f)
+            assertEquals(it, large.advance(it) / 10, body.advance(it), 0.01f)
         }
     }
+
+    private fun TextPaint.advance(text: String) =
+        getRunAdvance(text, 0, text.length, 0, text.length, false, text.length)
 }
