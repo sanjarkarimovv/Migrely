@@ -35,6 +35,16 @@ val keystoreProperties = rootProject.file("keystore.properties").takeIf {
     Properties().apply { file.inputStream().use(::load) }
 }
 
+/**
+ * Google Play's licence public key, which checks the signature on every purchase (BRD D107): the
+ * base64 key Play Console shows under Monetization setup, passed as `-Pmigrely.playLicenseKey=…`
+ * or set in `~/.gradle/gradle.properties`. Empty by default: a debug build then skips the check, a
+ * release build unlocks nothing, and the bundle for Play refuses to build.
+ */
+val playLicenseKey: String = providers.gradleProperty(
+    "migrely.playLicenseKey"
+).orElse("").get().trim()
+
 android {
     namespace = "com.migrely.app"
     compileSdk = libs.versions.compileSdk.get().toInt()
@@ -47,6 +57,7 @@ android {
         versionName = "0.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField("String", "PLAY_LICENSE_KEY", "\"$playLicenseKey\"")
     }
 
     signingConfigs {
@@ -81,6 +92,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     packaging {
         resources.pickFirsts += "META-INF/versions/9/OSGI-INF/MANIFEST.MF"
@@ -225,6 +237,21 @@ androidComponents {
             .configureEach { dependsOn(check) }
     }
 }
+
+/** The bundle for Play must check purchase signatures, so it needs the licence key (BRD D107). */
+val checkPlayLicenseKey by tasks.registering {
+    val key = playLicenseKey
+    doLast {
+        if (key.isEmpty()) {
+            throw GradleException(
+                "migrely.playLicenseKey is empty, so the bundle could not check purchases. " +
+                    "Pass Play Console's licence key (Monetization setup) with " +
+                    "-Pmigrely.playLicenseKey=… or in ~/.gradle/gradle.properties."
+            )
+        }
+    }
+}
+tasks.matching { it.name == "bundleRelease" }.configureEach { dependsOn(checkPlayLicenseKey) }
 
 if (keystoreProperties == null) {
     tasks.matching { it.name in setOf("packageRelease", "signReleaseBundle") }.configureEach {

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <application>
+        <!-- Debug builds only: QA sets the simulated store from adb (BRD D113). -->
+        <receiver
+            android:name=".datasource.billing.datasource.SimulatedBillingReceiver"
+            android:exported="true"
+            tools:ignore="ExportedReceiver">
+            <intent-filter>
+                <action android:name="com.migrely.app.debug.SIMULATED_STORE" />
+            </intent-filter>
+        </receiver>
+    </application>
+
+</manifest>
