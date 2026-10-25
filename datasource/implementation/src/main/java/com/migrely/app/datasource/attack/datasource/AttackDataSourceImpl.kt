@@ -226,7 +226,7 @@ class AttackDataSourceImpl(
 
     override fun softDelete(attackId: String) = database {
         val now = clock.millis()
-        purgeExpiredDeletions(now)
+        purgeExpiredDeletionsQuietly(now)
         attackDao.softDelete(attackId, now)
     }
 
@@ -240,12 +240,16 @@ class AttackDataSourceImpl(
 
     override fun recentlyDeleted(since: Instant): DeletedAttackDataModel? = database {
         val cutoff = clock.millis() - DELETED_RETENTION.toMillis()
-        purgeExpiredDeletions(clock.millis())
+        purgeExpiredDeletionsQuietly(clock.millis())
         attackDao.recentlyDeleted(maxOf(since.toEpochMilli(), cutoff))?.let { local ->
             local.deletedEpochMillis?.let { deletedAt ->
                 DeletedAttackDataModel(local.id, Instant.ofEpochMilli(deletedAt))
             }
         }
+    }
+
+    override fun purgeExpiredDeletions() = database {
+        attackDao.purgeDeletedBefore(clock.millis() - DELETED_RETENTION.toMillis())
     }
 
     override fun updateLongAttackCheck(attackId: String, confirmedAt: Instant?, disabled: Boolean) =
@@ -288,7 +292,7 @@ class AttackDataSourceImpl(
      * it runs before. Rows it leaves behind are hidden anyway and are purged on a later call.
      */
     @Suppress("SwallowedException")
-    private fun purgeExpiredDeletions(nowEpochMillis: Long) {
+    private fun purgeExpiredDeletionsQuietly(nowEpochMillis: Long) {
         try {
             attackDao.purgeDeletedBefore(nowEpochMillis - DELETED_RETENTION.toMillis())
         } catch (exception: SQLiteException) {

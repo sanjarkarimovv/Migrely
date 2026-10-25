@@ -124,14 +124,30 @@ abstract class BackupDao {
     @Query("SELECT id FROM medication WHERE name_key = :nameKey LIMIT 1")
     abstract fun medicationIdByName(nameKey: String): String?
 
-    /** Any attack with this ID, even one being deleted. */
     @Query("SELECT EXISTS(SELECT 1 FROM attack WHERE id = :attackId)")
     abstract fun hasAttack(attackId: String): Boolean
 
+    /**
+     * Removes the attack with this ID for good when it is being deleted, however long ago; its points, tags and intakes
+     * go with it (foreign keys cascade). A live attack stays.
+     */
+    @Query("DELETE FROM attack WHERE id = :attackId AND deleted_epoch_millis IS NOT NULL")
+    abstract fun deleteAttackBeingDeleted(attackId: String)
+
+    /**
+     * Removes for good the intakes hidden with an attack being deleted that match this one, by ID or by medication and
+     * time.
+     */
     @Query(
-        "SELECT EXISTS(SELECT 1 FROM attack WHERE id = :attackId AND deleted_epoch_millis IS NULL)"
+        "DELETE FROM medication_intake WHERE (id = :intakeId " +
+            "OR (medication_id = :medicationId AND taken_epoch_millis = :takenEpochMillis)) " +
+            "AND attack_id IN (SELECT id FROM attack WHERE deleted_epoch_millis IS NOT NULL)"
     )
-    abstract fun hasLiveAttack(attackId: String): Boolean
+    abstract fun deleteIntakesBeingDeleted(
+        intakeId: String,
+        medicationId: String,
+        takenEpochMillis: Long
+    )
 
     /** The same rule as logging an attack: an attack in progress reaches into the future. */
     @Query(
@@ -186,13 +202,15 @@ abstract class BackupDao {
         }
         val pointsByAttack = records.intensityPoints.groupBy(IntensityPointLocalModel::attackId)
         val tagsByAttack = records.attackTags.groupBy(AttackTagLocalModel::attackId)
-        // Attacks the backup's intakes may stay linked to. One being deleted is left out, so its purge never takes the
-        // backup's intakes with it.
+        // Attacks the backup's intakes may stay linked to.
         val linkable = mutableSetOf<String>()
         var added = 0
         records.attacks.sortedBy(AttackLocalModel::startEpochMillis).forEach { attack ->
+            // An attack being deleted is not on the phone any more: it goes for good, and the backup's copy is added by
+            // the same rules as any other (BRD D118).
+            deleteAttackBeingDeleted(attack.id)
             when {
-                hasAttack(attack.id) -> if (hasLiveAttack(attack.id)) linkable += attack.id
+                hasAttack(attack.id) -> linkable += attack.id
                 anyOverlapping(
                     attack.startEpochMillis,
                     attack.endEpochMillis ?: Long.MAX_VALUE
@@ -214,6 +232,8 @@ abstract class BackupDao {
         records.intakes.forEach { intake ->
             // A medication missing from the file fails the foreign key, which rolls the whole import back.
             val medicationId = medicationIds[intake.medicationId] ?: intake.medicationId
+            // An intake hidden with an attack being deleted is not on the phone any more either (BRD D118).
+            deleteIntakesBeingDeleted(intake.id, medicationId, intake.takenEpochMillis)
             if (!hasIntake(intake.id, medicationId, intake.takenEpochMillis)) {
                 insertIntakes(
                     listOf(

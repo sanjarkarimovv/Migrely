@@ -26,6 +26,7 @@ import com.migrely.app.attack.domain.repository.GetAttackDetailsRepository
 import com.migrely.app.attack.domain.repository.GetCurrentTimeRepository
 import com.migrely.app.attack.domain.repository.GetMaximumRecordedRepository
 import com.migrely.app.attack.domain.repository.MergeAttacksRepository
+import com.migrely.app.attack.domain.repository.PurgeExpiredDeletionsRepository
 import com.migrely.app.attack.domain.repository.RemoveIntakeRepository
 import com.migrely.app.attack.domain.repository.RemoveIntensityPointRepository
 import com.migrely.app.attack.domain.repository.RestoreAttackTimesRepository
@@ -165,6 +166,11 @@ internal object AttackDataModule {
     fun providesDeleteAttackRepository(
         repository: AttackDetailsRepository
     ): DeleteAttackRepository = repository
+
+    @Provides
+    fun providesPurgeExpiredDeletionsRepository(
+        repository: AttackDetailsRepository
+    ): PurgeExpiredDeletionsRepository = repository
 
     @Provides
     fun providesGetActiveCustomTagsRepository(
