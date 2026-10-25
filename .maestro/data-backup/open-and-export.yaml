@@ -1,0 +1,22 @@
+# Covers: data-backup › Your data › Opening Your data
+appId: com.migrely.app
+name: Your data offers export and import; a JSON backup and a CSV export save to Download
+tags: [regression, data-backup]
+---
+- runFlow: ../subflows/launch-clean.yaml
+- runFlow: ../subflows/log-attack-today.yaml
+- tapOn: "Settings"
+- tapOn: "Your data.*"
+- assertVisible: "Export a backup \\(JSON\\).*"
+- assertVisible: "Export for Excel \\(CSV\\).*"
+- assertVisible: "Import a backup.*"
+- runFlow:
+    file: ../subflows/export-file.yaml
+    env:
+      ROW: "Export a backup \\(JSON\\)"
+      MESSAGE: "Backup saved\\."
+- runFlow:
+    file: ../subflows/export-file.yaml
+    env:
+      ROW: "Export for Excel \\(CSV\\)"
+      MESSAGE: "Saved for Excel\\."

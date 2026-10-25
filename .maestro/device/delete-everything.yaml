@@ -1,0 +1,20 @@
+# Device scenario step: Settings → Delete all data → type DELETE → "Delete everything". The app restarts into
+# onboarding.
+appId: com.migrely.app
+---
+- launchApp:
+    stopApp: false
+- tapOn: "Settings"
+- scrollUntilVisible:
+    element: "Delete all data.*"
+    direction: DOWN
+    # Centred: at the screen's bottom edge a tap can land in the system gesture area.
+    centerElement: true
+- tapOn: "Delete all data.*"
+- tapOn: "Type DELETE to confirm"
+- inputText: "DELETE"
+- hideKeyboard
+- tapOn: "Delete everything"
+- extendedWaitUntil:
+    visible: "Step 1 of 4.*"
+    timeout: 20000

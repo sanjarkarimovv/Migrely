@@ -11,7 +11,8 @@
 # med_preventive, med_two_waiting, med_link_home, med_overuse, keyboard_home, keyboard_history, keyboard_rtl,
 # landscape_band, mark_travel, mark_earliest_month, stats_counting, stats_chronic, stats_progress, reminder_daily,
 # reminder_permission, reminder_effect, reminder_replan (restarts the emulator), med_only_history,
-# message_overlap (known bug #52), upgrade.
+# message_tap_guard (#52), theme_check, onboarding_states, delete_all_data, backup_export, backup_import, upgrade.
+# On demand only: backup_android (bmgr).
 # upgrade needs QA_OLD_APK=<older debug APK of com.migrely.app>; without it, it is reported as not run.
 set -euo pipefail
 
@@ -37,6 +38,7 @@ ORIGINAL_TIMEOUT="$(adbq shell settings get secure accessibility_interactive_ui_
 ORIGINAL_USER_ROTATION="$(adbq shell settings get system user_rotation | tr -d '\r')"
 ORIGINAL_AUTO_ROTATE="$(adbq shell settings get system accelerometer_rotation | tr -d '\r')"
 ORIGINAL_ANIMATOR="$(adbq shell settings get global animator_duration_scale | tr -d '\r')"
+ORIGINAL_NIGHT="$(adbq shell cmd uimode night 2>/dev/null | tr -d '\r' | sed 's/.*: //')"
 ORIGINAL_NOTIFICATIONS="$(adbq shell dumpsys package "$APP" | grep -q "POST_NOTIFICATIONS: granted=true" && echo grant || echo reset)"
 # "Locales for <app> for user 0 are [iw]" -> "iw"; empty means the app follows the system language.
 ORIGINAL_APP_LOCALES=""
@@ -59,6 +61,16 @@ restore() {
   qa_restore_setting system accelerometer_rotation "$ORIGINAL_AUTO_ROTATE"
   qa_restore_setting global animator_duration_scale "$ORIGINAL_ANIMATOR"
   notifications_permission "$ORIGINAL_NOTIFICATIONS" >/dev/null 2>&1
+  [[ -n "$ORIGINAL_NIGHT" ]] && adbq shell cmd uimode night "$ORIGINAL_NIGHT" >/dev/null 2>&1
+  # The screen dumps this script writes to shared storage would show in the phone's Files app.
+  adbq shell "rm -f /sdcard/qa-*.xml" >/dev/null 2>&1
+  # Files the backup scenarios put in Download.
+  adbq shell "rm -f /sdcard/Download/migrely-* /sdcard/Download/broken.json /sdcard/Download/newer.json /sdcard/Download/older.json /sdcard/Download/add.json" >/dev/null 2>&1
+  if [[ -n "${BMGR_TRANSPORT:-}" ]]; then
+    adbq shell bmgr transport "$BMGR_TRANSPORT" >/dev/null 2>&1
+    [[ "$BMGR_ENABLED" == *disabled* ]] && adbq shell bmgr enable false >/dev/null 2>&1
+    adbq shell settings delete secure backup_local_transport_parameters >/dev/null 2>&1
+  fi
   echo "Restored: clock $(adbq shell date | tr -d '\r'), zone $ORIGINAL_ZONE, auto_time $ORIGINAL_AUTO_TIME"
   qa_unlock_device
 }
@@ -299,26 +311,37 @@ expect_planned() { # $1 zone, $2 HH:MM: the app's daily job runs at the next $2 
   local got want
   got="$(adbq shell dumpsys jobscheduler | python3 -I -c "import re, sys
 t = sys.stdin.read()
-m = re.search(r'JOB [^\n]*@androidx\.work\.systemjobscheduler@$APP/[^\n]*\n(.*?)\n  JOB ', t + '\n  JOB ', re.S)
-e = m and re.search(r'Run time: earliest=([-+])(?:(\d+)d)?(?:(\d+)h)?(?:(\d+)m)?', m.group(1))
-print('' if not e else (1 if e.group(1) == '+' else -1) * (int(e.group(2) or 0) * 1440 + int(e.group(3) or 0) * 60 + int(e.group(4) or 0)))")"
+t = t + '\n  JOB '
+for m in re.finditer(r'JOB [^\n]*@androidx\.work\.systemjobscheduler@$APP/[^\n]*\n(.*?)(?=\n  JOB )', t, re.S):
+    e = re.search(r'Run time: earliest=([-+])(?:(\d+)d)?(?:(\d+)h)?(?:(\d+)m)?', m.group(1))
+    if e: print((1 if e.group(1) == '+' else -1) * (int(e.group(2) or 0) * 1440 + int(e.group(3) or 0) * 60 + int(e.group(4) or 0)))")"
   want="$(python3 -I -c "import sys, datetime as d, zoneinfo as z
 zone = z.ZoneInfo(sys.argv[1]); now = d.datetime.fromtimestamp(int(sys.argv[3]), zone)
 h, m = map(int, sys.argv[2].split(':')); t = now.replace(hour=h, minute=m, second=0, microsecond=0)
 t = t if t > now else t + d.timedelta(days=1)
 print(int((t - now).total_seconds() // 60))" "$1" "$2" "$(device_seconds)")"
   if [[ -z "$got" ]]; then echo "  FAILED: no planned daily job"; return 1; fi
-  if (( got - want > 5 || want - got > 5 )); then
-    echo "  FAILED: the daily job runs in $got min, expected about $want min (the next $2 in $1)"
-    return 1
-  fi
-  echo "    daily job planned in $got min (the next $2 in $1: $want min)"
+  # Other jobs ("Did it help?") may be planned too: one of them must be the daily one.
+  local minutes
+  for minutes in $got; do
+    if (( minutes - want <= 5 && want - minutes <= 5 )); then
+      echo "    daily job planned in $minutes min (the next $2 in $1: $want min)"
+      return 0
+    fi
+  done
+  echo "  FAILED: no job runs at the next $2 in $1 (about $want min); planned: $(echo $got)"
+  # WorkManager's own view (debug build), to tell a missing plan from a job not yet handed to JobScheduler.
+  adbq shell "run-as $APP sqlite3 no_backup/androidx.work.workdb 'select n.name, s.state, s.initial_delay / 60000, s.last_enqueue_time from workname n join workspec s on s.id = n.work_spec_id;'" 2>/dev/null |
+    while IFS='|' read -r name state delay enqueued; do
+      echo "    WorkManager: $name state $state, ${delay} min after $(date -r $((enqueued / 1000)) +%H:%M) (device $(adbq shell date +%H:%M </dev/null | tr -d '\r'))"
+    done
+  return 1
 }
 expect_job_in() { # $1 minutes: one of the app's jobs is planned to run in about that many minutes (within 5)
   local got
   got="$(adbq shell dumpsys jobscheduler | python3 -I -c "import re, sys
 t = sys.stdin.read() + '\n  JOB '
-for m in re.finditer(r'JOB [^\n]*@androidx\.work\.systemjobscheduler@$APP/[^\n]*\n(.*?)\n  JOB ', t, re.S):
+for m in re.finditer(r'JOB [^\n]*@androidx\.work\.systemjobscheduler@$APP/[^\n]*\n(.*?)(?=\n  JOB )', t, re.S):
     e = re.search(r'Run time: earliest=([-+])(?:(\d+)d)?(?:(\d+)h)?(?:(\d+)m)?', m.group(1))
     if e: print((1 if e.group(1) == '+' else -1) * (int(e.group(2) or 0) * 1440 + int(e.group(3) or 0) * 60 + int(e.group(4) or 0)))")"
   local minutes
@@ -357,6 +380,35 @@ for n in ET.fromstring(sys.stdin.read()).iter('node'):
   return 1
 }
 open_app() { adbq shell monkey -p "$APP" -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1; sleep 4; }
+
+screen_luminance() { # the average luminance (0-255) of the screen's left margin, where only the background shows
+  adbq exec-out screencap -p >"$out/screen-$STEP.png"
+  python3 -I -c "import sys
+from pathlib import Path
+sys.path.insert(0, sys.argv[2])
+from a11y_audit import read_png
+rows, bpp = read_png(Path(sys.argv[1]))
+px = [rows[y][x * bpp:x * bpp + 3] for y in range(400, 2000, 20) for x in range(5, 30, 5)]
+print(int(sum(0.2126 * p[0] + 0.7152 * p[1] + 0.0722 * p[2] for p in px) / len(px)))" "$out/screen-$STEP.png" "$ROOT/qa"
+}
+expect_theme() { # $1 light or dark: the screen in front, measured on its background; the app must be in front
+  local l focus
+  sleep 2
+  focus="$(adbq shell dumpsys window | grep -m1 mCurrentFocus | tr -d '\r')"
+  [[ "$focus" == *"$APP"* ]] || { echo "  FAILED: the app is not in front ($focus)"; return 1; }
+  l="$(screen_luminance)"
+  [[ "$l" =~ ^[0-9]+$ ]] || { echo "  FAILED: the screen could not be measured ('$l')"; return 1; }
+  if [[ "$1" == light && $l -gt 150 ]] || [[ "$1" == dark && $l -lt 100 ]]; then echo "    $1 (background luminance $l)"; return 0; fi
+  echo "  FAILED: expected $1, background luminance $l"
+  return 1
+}
+
+app_job_count() { # how many jobs the app has registered with JobScheduler (WorkManager's namespace)
+  local dump
+  dump="$(adbq shell dumpsys jobscheduler)"
+  python3 -I -c "import re, sys
+print(len(set(re.findall(r'JOB [^\n]*:u0a\d+/(\d+): \S+ @androidx\.work\.systemjobscheduler@' + re.escape(sys.argv[1]) + '/', sys.stdin.read()))))" "$APP" <<<"$dump"
+}
 
 tab_until() { # $1 extended regex, $2 most Tabs: press Tab until the focused label matches
   local label="" n
@@ -1015,30 +1067,318 @@ for n in ET.fromstring(sys.stdin.read()).iter('node'):
         print(*re.findall(r'\d+', n.get('bounds'))); break" "$1"
 }
 
-# Known bug #52: the message's Undo sits on top of History's top-bar actions, so a tap meant for Undo can open them.
-# It reports "KNOWN BUG #52 still reproduces" without failing the run, and "NOW PASSES" once the boxes stop overlapping.
-scenario_message_overlap() {
-  echo "Scenario message_overlap: History's Undo must not sit on top of its top-bar actions (#52)"
-  local undo action overlap="" i
-  long_undo_window
-  run_flow history-deleted-message || { default_undo_window; return 1; }
-  undo="$(node_bounds "Undo the deletion")"
-  default_undo_window
-  [[ -n "$undo" ]] || { echo "  FAILED: no Undo on screen"; return 1; }
-  for i in $(seq 1 15); do [[ -z "$(node_bounds "Undo the deletion")" ]] && break; sleep 3; done
-  for action in "Insights" "Doctor report"; do
-    local box
-    box="$(node_bounds "$action")"
-    [[ -n "$box" ]] || continue
-    if python3 -I -c "import sys; a = list(map(int, sys.argv[1].split())); b = list(map(int, sys.argv[2].split()))
-sys.exit(0 if a[0] < b[2] and b[0] < a[2] and a[1] < b[3] and b[1] < a[3] else 1)" "$undo" "$box"; then
-      overlap+=" $action [$box]"
-    fi
+# Covers: in-app-messages › A message never passes taps to what lies under it › Undo just as the message goes
+# Covers: in-app-messages › A message never passes taps to what lies under it › Afterwards
+# History's Undo sits on top of the top-bar actions (#52). A tap there just after the message leaves must reach nothing
+# (a guard under the message, 800 ms); a tap later must open Doctor report as usual. Taps go through adb, timed from
+# the tap on "Delete migraine" (the undo message lasts 5 s), at the centre of "Doctor report" where Undo overlaps it.
+scenario_message_tap_guard() {
+  echo "Scenario message_tap_guard: a tap where Undo was, just after the message leaves, opens nothing (#52, D114)"
+  local delete offset screen box point guarded=0
+  run_flow history-open || return 1
+  box="$(node_bounds "Doctor report")"
+  [[ -n "$box" ]] || { echo "  FAILED: no \"Doctor report\" in History's top bar"; return 1; }
+  set -- $box
+  point="$((($1 + $3) / 2)) $((($2 + $4) / 2))"
+  for offset in 5.2 5.5 5.8 7.5; do
+    run_flow history-delete-ready || return 1
+    delete="$(point_in 'Delete migraine' 0.5)"
+    [[ -n "$delete" ]] || { echo "  FAILED: \"Delete migraine\" not found"; return 1; }
+    adbq shell "input tap $delete; sleep $offset; input tap $point"
+    sleep 2
+    screen="$(focused_screen)"
+    echo "    tap at ($point) ${offset} s after the delete: $screen"
+    case "$screen" in
+      "doctor report") [[ "$offset" == "7.5" ]] || { echo "  FAILED: the tap reached Doctor report under the message (#52)"; return 1; } ;;
+      "history (deleted)") [[ "$offset" != "7.5" ]] && guarded=$((guarded + 1)) ;;
+      "history (undone)") ;;
+      *) echo "  FAILED: an unexpected screen after the tap"; return 1 ;;
+    esac
+    [[ "$offset" != "7.5" || "$screen" == "doctor report" ]] || { echo "  FAILED: the late tap did not open Doctor report (control)"; return 1; }
   done
-  if [[ -n "$overlap" ]]; then
-    echo "  KNOWN BUG #52 still reproduces: Undo [$undo] overlaps$overlap"
+  [[ $guarded -ge 1 ]] || { echo "  FAILED: every early tap landed on Undo, so the guard was never reached"; return 1; }
+}
+
+focused_screen() { # "doctor report", "history (undone)", "history (deleted)" or "unknown", from what is on screen
+  local xml
+  adbq shell rm -f /sdcard/qa-screen.xml
+  adbq shell uiautomator dump /sdcard/qa-screen.xml >/dev/null
+  xml="$(adbq exec-out cat /sdcard/qa-screen.xml)"
+  if grep -q 'text="Create report"' <<<"$xml"; then echo "doctor report"
+  elif grep -q 'Opens its details' <<<"$xml"; then echo "history (undone)"
+  elif grep -q 'text="Log your first migraine"' <<<"$xml"; then echo "history (deleted)"
+  else echo "unknown"; fi
+}
+
+# Covers: app-settings › Theme › Light
+# Covers: app-settings › Theme › An attack in progress
+scenario_theme_check() {
+  echo "Scenario theme_check: Light at once and at the next start; attack mode and its screens dark; Match the phone (D94)"
+  set_clock_millis "$(when_millis 0 15 12:00)" || return 1
+  run_flow clean || return 1
+  open_app
+  expect_theme dark || return 1
+  run_flow_env theme-choose THEME=Light || return 1
+  echo "    Settings, right after choosing Light:"; expect_theme light || return 1
+  adbq shell am force-stop "$APP"; open_app
+  echo "    home at the next start:"; expect_theme light || return 1
+  run_flow attack-start-keep || return 1
+  open_app
+  echo "    attack mode:"; expect_theme dark || return 1
+  run_flow attack-details-open || return 1
+  echo "    details opened from attack mode:"; expect_theme dark || return 1
+  adbq shell input keyevent BACK
+  run_flow attack-end || return 1
+  open_app
+  echo "    home after the attack:"; expect_theme light || return 1
+  run_flow_env theme-choose "THEME=Match the phone" || return 1
+  adbq shell cmd uimode night no >/dev/null
+  open_app
+  expect_theme light || return 1
+  adbq shell cmd uimode night yes >/dev/null
+  open_app
+  expect_theme dark || return 1
+  adbq shell cmd uimode night "$ORIGINAL_NIGHT" >/dev/null
+}
+
+# Covers: onboarding › Four skippable steps › Answering
+# Covers: onboarding › The daily reminder offer › Turning it on
+# Covers: onboarding › Shown once, to a new user › Starting an attack from the shortcut
+# Covers: onboarding › Shown once, to a new user › An update
+scenario_onboarding_states() {
+  echo "Scenario onboarding_states: answers stored, the reminder offer, the attack shortcut and an update (D76-D80)"
+  local prefs
+  set_clock_millis "$(when_millis 0 15 12:00)" || return 1
+  run_flow onboarding-answer || return 1
+  expect_planned Asia/Tashkent 20:00 || return 1
+  # The answers, as the debug build stores them (read only).
+  prefs="$(adbq shell run-as "$APP" cat shared_prefs/migrely_preferences.xml 2>/dev/null | tr -d '\r')"
+  local want
+  for want in 'name="goal">find_triggers<' 'name="attack_frequency">4_to_14<' 'name="period_tracking" value="false"' 'name="onboarding_finished" value="true"'; do
+    [[ "$prefs" == *"$want"* ]] || { echo "  FAILED: the saved answers lack $want"; return 1; }
+  done
+  echo "    answers saved: triggers, 4 to 14 a month, no period tracking, onboarding finished"
+  # The launcher shortcut (res/xml/shortcuts.xml) names the activity, so the intent does too.
+  adbq shell pm clear "$APP" >/dev/null
+  adbq shell am start -a com.migrely.app.action.START_ATTACK -n "$(adbq shell cmd package resolve-activity --brief "$APP" | tail -1 | tr -d '\r')" >/dev/null
+  run_flow onboarding-shortcut || return 1
+  # An update over a version with entries and no onboarding answer saved yet opens home.
+  run_flow clean || return 1
+  run_flow_env attack-start LEVEL= || return 1
+  run_flow attack-end || return 1
+  adbq shell run-as "$APP" ls shared_prefs/migrely_preferences.xml >/dev/null 2>&1 || { echo "  FAILED: no preferences to remove"; return 1; }
+  adbq shell run-as "$APP" rm -f shared_prefs/migrely_preferences.xml
+  ! adbq shell run-as "$APP" ls shared_prefs/migrely_preferences.xml >/dev/null 2>&1 || { echo "  FAILED: the preferences are still there"; return 1; }
+  "$ADB" -s "$QA_SERIAL" install -r "$ROOT/app/build/outputs/apk/debug/app-debug.apk" 2>&1 | grep -q Success || { echo "  FAILED: the update did not install"; return 1; }
+  run_flow update-no-onboarding || return 1
+}
+
+# Covers: app-settings › Delete all data › Deleted
+scenario_delete_all_data() {
+  echo "Scenario delete_all_data: DELETE empties records, copies and reminders and restarts into onboarding, dark (D96)"
+  notifications_permission grant
+  adbq shell "rm -f /sdcard/Download/migrely-*" >/dev/null
+  set_clock_millis "$(when_millis 0 15 12:00)" || return 1
+  run_flow backup-data || return 1
+  run_flow backup-export || return 1
+  local name
+  name="$(basename "$(adbq shell 'ls -t /sdcard/Download/migrely-2*.json | head -1' | tr -d '\r')")"
+  # A Replace leaves an automatic copy behind.
+  import_and_expect "$name" "2 migraines, 1 medication and 1 marked day" Replace "Backup imported: 2 migraines\." || return 1
+  run_flow_env copy-row-check SHOWN=true || return 1
+  run_flow_env theme-set THEME=Light || return 1
+  run_flow reminder-on-granted || return 1
+  expect_switch "Daily reminder" true || return 1
+  key BACK; key BACK
+  adbq shell input keyevent HOME
+  expect_planned Asia/Tashkent 20:00 || return 1
+  run_flow delete-everything || return 1
+  expect_theme dark || return 1
+  local jobs
+  jobs="$(app_job_count)"
+  [[ "$jobs" == 0 ]] || { echo "  FAILED: $jobs job(s) still planned after Delete all data"; return 1; }
+  echo "    no planned job"
+  run_flow after-delete-check || return 1
+  run_flow_env copy-row-check SHOWN=false || return 1
+  # Nothing comes back at the next start.
+  run_flow after-delete-relaunch || return 1
+}
+
+pull_newest() { # $1 glob in /sdcard/Download (for example "migrely-*.json"), $2 local path: pull the newest match
+  local name
+  name="$(adbq shell "ls -t /sdcard/Download/$1 2>/dev/null | head -1" | tr -d '\r')"
+  [[ -n "$name" ]] || { echo "  FAILED: no $1 in Download"; return 1; }
+  adbq pull "$name" "$2" >/dev/null || { echo "  FAILED: could not pull $name"; return 1; }
+  echo "    pulled ${name##*/}"
+}
+
+# Covers: data-backup › JSON backup › Exporting (2 attacks, 1 medication, 1 day mark rather than 16, 2 and 5)
+# Covers: data-backup › CSV export › Opening in Excel
+# Covers: data-backup › CSV export › A phone in Uzbek or Russian
+# Covers: data-backup › CSV export › A note that looks like a formula
+# Covers: quality-gates › Files through the system picker are checked by their bytes › An exported CSV
+scenario_backup_export() {
+  echo "Scenario backup_export: the JSON backup and the CSV, checked by their bytes, in English, Uzbek and Russian (D71, D72)"
+  local language separator result
+  adbq shell "rm -f /sdcard/Download/migrely-*" >/dev/null
+  set_clock_millis "$(when_millis 0 15 12:00)" || return 1
+  run_flow backup-data || return 1
+  run_flow backup-export || return 1
+  pull_newest "migrely-2*.json" "$out/backup.json" || return 1
+  result="$(python3 -I "$ROOT/qa/backup_files.py" json "$out/backup.json" 2 1 1)"
+  echo "    $result"
+  [[ "$result" == "JSON ok"* ]] || return 1
+  for language in en uz ru; do
+    separator=","
+    if [[ "$language" != "en" ]]; then
+      separator=";"
+      adbq shell cmd locale set-app-locales "$APP" --locales "$language" >/dev/null
+      sleep 2
+      run_flow backup-export-csv || return 1
+    fi
+    pull_newest "migrely-attacks-*.csv" "$out/attacks-$language.csv" || return 1
+    result="$(python3 -I "$ROOT/qa/backup_files.py" csv "$out/attacks-$language.csv" "$separator" --rows 2 --formula "=SUM(1)" --text "Голова")"
+    echo "    $language: $result"
+    [[ "$result" == "CSV ok"* ]] || return 1
+  done
+  adbq shell cmd locale set-app-locales "$APP" --locales "$ORIGINAL_APP_LOCALES" >/dev/null
+}
+
+screen_text_matching() { # $1 Python regex: prints the first text or label on screen that matches it in full
+  adbq exec-out uiautomator dump /dev/tty 2>/dev/null | python3 -I -c "import re, sys, xml.etree.ElementTree as ET
+raw = sys.stdin.read(); raw = raw[raw.find('<?xml'):raw.rfind('>') + 1]
+try:
+    nodes = list(ET.fromstring(raw).iter('node'))
+except ET.ParseError:
+    nodes = []
+for n in nodes:
+    for label in (n.get('text') or '', n.get('content-desc') or ''):
+        if label and re.fullmatch(sys.argv[1], label, re.S):
+            print(label); sys.exit(0)" "$1"
+}
+expect_text_soon() { # $1 Python regex, $2 seconds: some text or label on screen matches it in full within that time
+  local end=$((SECONDS + $2)) found
+  while ((SECONDS < end)); do
+    found="$(screen_text_matching "$1")"
+    if [[ -n "$found" ]]; then echo "    message: $found"; return 0; fi
+  done
+  echo "  FAILED: no \"$1\" on screen within $2 s"
+  return 1
+}
+import_and_expect() { # $1 file in Download, $2 HOLDS regex or "", $3 choice or "", $4 extended regex of the result message
+  # Run without a report folder: writing it takes seconds, and the result message lasts only about 4 s (#56).
+  local attempt seen log others="This file isn.t a Migrely backup.*|Update Migrely to open this file.*|Backup imported:.*|Added [0-9]+ migraines?.*|Added the other entries.*|Nothing new.*|Couldn.t.*"
+  for attempt in 1 2; do
+    STEP=$((STEP + 1))
+    log="$out/$(printf '%03d' "$STEP")-${CURRENT:-x}-import-step.log"
+    echo "  flow import-step ($1, ${3:-no choice})"
+    maestro --device "$QA_SERIAL" test -e "FILE=$1" -e "HOLDS=$2" -e "CHOICE=$3" "$FLOWS/import-step.yaml" >"$log" 2>&1 || {
+      echo "  FAILED: import-step (log: $log)"
+      return 1
+    }
+    if seen="$(expect_text_soon "$4" 10)"; then echo "$seen"; break; fi
+    # Not the expected message: another result or a crash is a failure, not #56.
+    local other
+    other="$(screen_text_matching "$others")"
+    [[ -z "$other" ]] || { echo "  FAILED: the import said \"$other\", expected /$4/"; return 1; }
+    adbq shell pidof "$APP" >/dev/null || { echo "  FAILED: the app is not running after the import"; return 1; }
+    # A refused file changes nothing, so it is tried once more to read its message; a real import is not repeated.
+    if [[ -z "$3" && $attempt == 1 ]]; then echo "    the message was missed; trying the refused file again"; continue; fi
+    echo "    KNOWN BUG #56 still reproduces: \"$4\" was gone before it could be read"
+    [[ -n "$3" ]] || { echo "  FAILED: the refused file's message was never read"; return 1; }
+    break
+  done
+}
+
+history_count_now() { # prints how many migraines History lists this month (1 to 5)
+  local c
+  for c in 1 2 3 4 5; do
+    if run_flow_env history-count "COUNT=$c" >/dev/null 2>&1; then echo "$c"; return 0; fi
+  done
+  echo "?"
+  return 1
+}
+
+# Covers: data-backup › Import shows what it brings › Before importing
+# Covers: data-backup › Replace or add › Add
+# Covers: data-backup › Replace or add › The same attack logged on two phones
+# Covers: data-backup › Replace or add › A medication by the same name
+# Covers: data-backup › Replace or add › Replace
+# Covers: data-backup › Restore the automatic copy › Undoing a Replace
+# Covers: data-backup › Files that cannot be imported › A broken file
+# Covers: data-backup › Files that cannot be imported › A newer file
+# Covers: onboarding › Restore from a backup › A new phone without Android's backup
+# Covers: quality-gates › Files through the system picker are checked by their bytes › A prepared broken file
+# Also checks: an older schemaVersion with optional fields left out is imported (EC-BAK-03)
+scenario_backup_import() {
+  echo "Scenario backup_import: refused files, an older file, Add, Replace and its copy, and onboarding's restore (D73-D75, EC-BAK-01-05)"
+  adbq shell "rm -f /sdcard/Download/migrely-* /sdcard/Download/broken.json /sdcard/Download/newer.json /sdcard/Download/older.json /sdcard/Download/add.json" >/dev/null
+  set_clock_millis "$(when_millis 0 15 12:00)" || return 1
+  # The phone: migraines A and B, Ibuprofen with one intake, a period mark. Its backup E is the source of the fixtures.
+  run_flow backup-data || return 1
+  run_flow backup-export || return 1
+  pull_newest "migrely-2*.json" "$out/import-source.json" || return 1
+  python3 -I "$ROOT/qa/backup_files.py" fixtures "$out/import-source.json" "$out/fixtures" | sed 's/^/    /'
+  local f name
+  for f in broken newer older add; do adbq push "$out/fixtures/$f.json" "/sdcard/Download/$f.json" >/dev/null; done
+  name="$(basename "$(adbq shell 'ls -t /sdcard/Download/migrely-2*.json | head -1' | tr -d '\r')")"
+  # Refused files change nothing (EC-BAK-01, 02).
+  import_and_expect broken.json "" "" "This file isn.t a Migrely backup\. Nothing was changed\." || return 1
+  import_and_expect newer.json "" "" "Update Migrely to open this file\." || return 1
+  run_flow_env history-count COUNT=2 || return 1
+  # An older file, its optional fields left out, is offered and adds nothing new (EC-BAK-03).
+  import_and_expect older.json "2 migraines, 1 medication and 1 marked day" Add "Nothing new: everything in it is already here\." || return 1
+  run_flow_env history-count COUNT=2 || return 1
+  # Add: A again under another ID overlaps and is skipped; a new migraine three days earlier is added; "ibuprofen"
+  # under another ID maps to the phone's Ibuprofen, and its intake counts as Ibuprofen on that new day.
+  import_and_expect add.json "2 migraines, 1 medication and 0 marked days" Add "Added 1 migraine\. 1 was already here\." || return 1
+  run_flow_env history-count COUNT=3 || return 1
+  run_flow_env med-list-count NAME=Ibuprofen || return 1
+  run_flow_env days-medication-check DAYS=2 || return 1
+  # Known bug #58: a deleted migraine stays a hidden row until a purge, so Add of E may count it "already here".
+  run_flow delete-first-attack || return 1
+  run_flow_env history-count COUNT=2 || return 1
+  import_and_expect "$name" "2 migraines, 1 medication and 1 marked day" Add "(Added 1 migraine\. 1 was already here\.|Nothing new: everything in it is already here\.)" || return 1
+  if run_flow_env history-count COUNT=3 >/dev/null 2>&1; then
+    echo "    NOW PASSES (#58): Add brought the deleted migraine back"
   else
-    echo "  NOW PASSES: Undo [$undo] overlaps no top-bar action; remove the known-bug note for #52"
+    run_flow_env history-count COUNT=2 || { echo "  FAILED: after Add History lists neither 2 (#58) nor 3"; return 1; }
+    echo "    KNOWN BUG #58 still reproduces: Add left the deleted migraine out"
+  fi
+  # Replace with E keeps a copy of what was here; restoring it brings that back and keeps a copy of E's state.
+  local before
+  before="$(history_count_now)" || { echo "  FAILED: History's count could not be read"; return 1; }
+  import_and_expect "$name" "2 migraines, 1 medication and 1 marked day" Replace "Backup imported: 2 migraines\." || return 1
+  run_flow_env history-count COUNT=2 || return 1
+  run_flow restore-copy || return 1
+  run_flow_env history-count "COUNT=$before" || return 1
+  run_flow_env copy-row-check SHOWN=true || return 1
+  # A new phone without Android's backup: onboarding's "Restore from a backup file" imports E, and Back returns there.
+  adbq shell pm clear "$APP" >/dev/null
+  run_flow_env onboarding-restore "FILE=$name" || return 1
+  run_flow_env history-count-after-onboarding COUNT=2 || return 1
+}
+
+# On demand (not in the default run). Android's own backup through the local transport. The app turns cloud backup off
+# without end-to-end encryption; the local transport can claim encryption (fake_encryption_flag), so a backup and a
+# restore after "pm clear" can be tried. The outcome is printed as observed; "A new phone" itself needs a real Google
+# account backup (a D61 gap).
+scenario_backup_android() {
+  echo "Scenario backup_android: bmgr with the local transport claiming encryption; the outcome is recorded (D74)"
+  BMGR_ENABLED="$(adbq shell bmgr enabled | tr -d '\r')"
+  BMGR_TRANSPORT="$(adbq shell bmgr list transports | tr -d '\r' | sed -n 's/^ *\* //p')"
+  adbq shell settings put secure backup_local_transport_parameters fake_encryption_flag=true
+  adbq shell bmgr enable true >/dev/null
+  adbq shell bmgr transport com.android.localtransport/.LocalTransport >/dev/null
+  set_clock_millis "$(when_millis 0 15 12:00)" || return 1
+  run_flow log-and-close || return 1
+  echo "    backupnow: $(adbq shell bmgr backupnow "$APP" 2>&1 | tr -d '\r' | grep -E "$APP|Backup finished" | tr '\n' ' ')"
+  adbq shell pm clear "$APP" >/dev/null
+  echo "    restore: $(adbq shell bmgr restore "$APP" 2>&1 | tr -d '\r' | tail -2 | tr '\n' ' ')"
+  if run_flow_env history-count-after-onboarding COUNT=1 >/dev/null 2>&1; then
+    echo "    OBSERVED: the migraine came back after pm clear and a restore"
+  else
+    echo "    OBSERVED: nothing came back (the app's backup rules or the transport kept it out)"
   fi
 }
 
@@ -1090,7 +1430,8 @@ if [[ $# -eq 0 ]]; then
     double_tap med_effect med_effect_attack med_effect_skip med_effect_late med_preventive med_two_waiting \
     med_link_home med_overuse keyboard_home keyboard_history keyboard_rtl landscape_band mark_travel mark_earliest_month \
     stats_counting stats_chronic stats_progress reminder_daily reminder_permission reminder_effect reminder_replan \
-    med_only_history message_overlap
+    med_only_history message_tap_guard \
+    theme_check onboarding_states delete_all_data backup_export backup_import
   if [[ -n "${QA_OLD_APK:-}" ]]; then
     set -- "$@" upgrade
   else
@@ -1101,6 +1442,9 @@ failed=()
 for s in "$@"; do
   CURRENT="$s"
   "scenario_$s" || failed+=("$s")
+  # Language and night mode back after every scenario, so a failure mid-way cannot leak into the next one.
+  adbq shell cmd locale set-app-locales "$APP" --locales "$ORIGINAL_APP_LOCALES" >/dev/null 2>&1
+  [[ -n "$ORIGINAL_NIGHT" ]] && adbq shell cmd uimode night "$ORIGINAL_NIGHT" >/dev/null 2>&1
   # Each scenario starts from the real time, so one scenario's clock never leaks into the next.
   adbq shell cmd alarm set-timezone "$ORIGINAL_ZONE" >/dev/null
   set_clock_millis $(($(date +%s) * 1000))

@@ -1,0 +1,8 @@
+# Device scenario step: after an update over a version with entries (no onboarding answer saved), home opens.
+appId: com.migrely.app
+---
+- launchApp
+- extendedWaitUntil:
+    visible: "Migraine started"
+    timeout: 15000
+- assertNotVisible: "Step 1 of 4.*"

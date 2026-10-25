@@ -1,0 +1,8 @@
+# Device scenario step: after the script started the app through its "start an attack" shortcut on a clean install,
+# attack mode is on screen and onboarding is not.
+appId: com.migrely.app
+---
+- extendedWaitUntil:
+    visible: "Details of this migraine"
+    timeout: 15000
+- assertNotVisible: "Step 1 of 4.*"

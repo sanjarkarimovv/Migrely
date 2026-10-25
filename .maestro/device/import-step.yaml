@@ -1,0 +1,33 @@
+# Device scenario step: open Your data (the app may already be there) and import FILE from Download. HOLDS (a regex)
+# is the confirmation's summary or "" when no confirmation is expected; CHOICE is "Add", "Replace", "Import" or "";
+# The script checks the result message. The app stays open.
+appId: com.migrely.app
+---
+- launchApp:
+    stopApp: false
+- extendedWaitUntil:
+    visible: "Settings|Import a backup.*"
+    timeout: 10000
+- runFlow:
+    when:
+      notVisible: "Import a backup.*"
+    commands:
+      - tapOn: "Settings"
+      - tapOn: "Your data.*"
+- runFlow:
+    file: ../subflows/import-file.yaml
+    env:
+      FILE: "${FILE}"
+- runFlow:
+    when:
+      true: ${HOLDS != ""}
+    commands:
+      - extendedWaitUntil:
+          visible: "It holds ${HOLDS}\\."
+          timeout: 10000
+      # No settle wait: the result message is short until #56 is fixed.
+      - tapOn:
+          text: "${CHOICE}"
+          waitToSettleTimeoutMs: 0
+          retryTapIfNoChange: false
+# The script reads the result message right away with uiautomator: it is short until #56 is fixed.

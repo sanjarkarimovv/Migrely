@@ -1,0 +1,7 @@
+# Device scenario step: mark today as a period day from home's chip (no force stop).
+appId: com.migrely.app
+---
+- launchApp:
+    stopApp: false
+- tapOn: "Period today"
+- pressKey: Home

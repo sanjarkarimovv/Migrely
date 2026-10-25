@@ -1,0 +1,13 @@
+# Device scenario step, on Your data: export the JSON backup and the CSV to Download. The app stays open.
+appId: com.migrely.app
+---
+- runFlow:
+    file: ../subflows/export-file.yaml
+    env:
+      ROW: "Export a backup \\(JSON\\)"
+      MESSAGE: "Backup saved\\."
+- runFlow:
+    file: ../subflows/export-file.yaml
+    env:
+      ROW: "Export for Excel \\(CSV\\)"
+      MESSAGE: "Saved for Excel\\."

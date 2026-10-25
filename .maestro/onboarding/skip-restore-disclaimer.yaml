@@ -1,0 +1,35 @@
+# Covers: onboarding › Shown once, to a new user › A new user
+# Covers: onboarding › Four skippable steps › Skipping everything
+# Covers: onboarding › The disclaimer › Seeing it
+# Covers: onboarding › Restore from a backup › A new phone without Android's backup
+appId: com.migrely.app
+name: A new user sees onboarding once, with the disclaimer and a way to restore a backup; Skip passes every step
+tags: [regression, onboarding]
+---
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: "Step 1 of 4.*"
+    timeout: 15000
+- assertVisible: "What brings you to Migrely\\?"
+- assertVisible: "Migrely is a headache diary\\. It doesn.t diagnose or treat\\."
+# Restore opens Your data (EC-BAK-05); Back returns to the same step.
+- extendedWaitUntil:
+    visible: "QA: never shown, a pause for the 0.8 s tap guard"
+    timeout: 1000
+    optional: true
+- tapOn: "Restore from a backup file"
+- extendedWaitUntil:
+    visible: "Import a backup.*"
+    timeout: 5000
+- back
+- runFlow: ../subflows/skip-onboarding.yaml
+- extendedWaitUntil:
+    visible: "Today: calm\\. Calm so far today\\. No migraine logged\\."
+    timeout: 10000
+# Once only: the next start opens home.
+- launchApp
+- extendedWaitUntil:
+    visible: "Today: calm\\. Calm so far today\\. No migraine logged\\."
+    timeout: 10000
+- assertNotVisible: "Step 1 of 4.*"

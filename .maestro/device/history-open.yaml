@@ -1,0 +1,9 @@
+# Device scenario step: a clean install with one migraine today, History open (the script reads its top bar).
+appId: com.migrely.app
+---
+- runFlow: ../subflows/launch-clean.yaml
+- runFlow: ../subflows/log-attack-today.yaml
+- tapOn: ".*\\. Opens History\\."
+- extendedWaitUntil:
+    visible: "Doctor report"
+    timeout: 5000

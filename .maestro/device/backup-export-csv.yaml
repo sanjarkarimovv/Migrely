@@ -1,0 +1,20 @@
+# Device scenario step: open Settings → Your data (the app is open, maybe after a language change) and export the CSV.
+appId: com.migrely.app
+---
+- launchApp:
+    stopApp: false
+# After a language change the app comes back on the screen it was on.
+- extendedWaitUntil:
+    visible: "Settings|Export for Excel \\(CSV\\).*"
+    timeout: 10000
+- runFlow:
+    when:
+      notVisible: "Export for Excel \\(CSV\\).*"
+    commands:
+      - tapOn: "Settings"
+      - tapOn: "Your data.*"
+- runFlow:
+    file: ../subflows/export-file.yaml
+    env:
+      ROW: "Export for Excel \\(CSV\\)"
+      MESSAGE: "Saved for Excel\\."

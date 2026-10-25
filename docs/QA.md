@@ -106,6 +106,20 @@ title.
 A fresh install opens onboarding (change 8). `subflows/launch-clean.yaml` skips its four steps with "Skip this step",
 waiting out its 0.8 s tap guard.
 
+Files through the system picker are checked by their bytes (D200).
+- **Exports:** `backup_export` saves the JSON backup and the CSV to Download, pulls them with adb and checks them with
+  `qa/backup_files.py`:
+  - the format and schema version, epoch millis and the counts;
+  - the BOM, CRLF and the header;
+  - the separator per app language: "," in English, ";" in Uzbek and Russian;
+  - a `'` before a note that starts with `=+-@`.
+- **Imports:** `backup_import` writes broken, newer and older files from a real export and pushes them to Download. The
+  picker opens on "Recent", so the flows find a file with the picker's search and pick it under its "Files…" heading.
+- **Result messages:** they are read with uiautomator right after the step, because they last only about 4 s (#56).
+  The outcome is also checked on the data.
+- **Debug database:** when a result needs explaining, the debug build's database is read with `run-as … sqlite3`, read
+  only. That is how #58 (a soft-deleted migraine blocking its own restore) was found.
+
 ## 4. Bugs
 
 | Severity | Meaning | Release |

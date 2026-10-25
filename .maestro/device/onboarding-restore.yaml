@@ -1,0 +1,31 @@
+# Device scenario step: a fresh install (the script cleared it) restores FILE from onboarding's "Restore from a backup
+# file". The confirmation offers Import and Cancel only (an empty phone); Back then returns to onboarding.
+appId: com.migrely.app
+---
+- launchApp
+- extendedWaitUntil:
+    visible: "Step 1 of 4.*"
+    timeout: 15000
+- extendedWaitUntil:
+    visible: "QA: never shown, a pause for the 0.8 s tap guard"
+    timeout: 1000
+    optional: true
+- tapOn: "Restore from a backup file"
+- runFlow:
+    file: ../subflows/import-file.yaml
+    env:
+      FILE: "${FILE}"
+- extendedWaitUntil:
+    visible: "It holds .*"
+    timeout: 10000
+- assertNotVisible: "Add"
+- assertNotVisible: "Replace"
+- tapOn: "Import"
+- extendedWaitUntil:
+    visible: "QA: never shown, a pause for the import"
+    timeout: 3000
+    optional: true
+- back
+- extendedWaitUntil:
+    visible: "Step 1 of 4.*"
+    timeout: 5000
