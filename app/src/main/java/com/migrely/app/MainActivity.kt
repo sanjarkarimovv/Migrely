@@ -33,6 +33,7 @@ import com.migrely.app.designsystem.theme.DarkScreens
 import com.migrely.app.designsystem.theme.LocalDarkScreens
 import com.migrely.app.designsystem.theme.MigrelyColors
 import com.migrely.app.designsystem.theme.MigrelyTheme
+import com.migrely.app.premium.PremiumStartChecks
 import com.migrely.app.start.StartEntryPoint
 import com.migrely.app.subscription.domain.model.RefreshPremiumRequestDomainModel
 import com.migrely.app.ui.main.AppNavHost
@@ -92,8 +93,19 @@ class MainActivity : ComponentActivity() {
 
     private val darkThemeUiResolver = DarkThemeUiResolver()
 
-    /** Google Play's messages about a failed payment are asked for once, as the app starts. */
-    private var paymentMessagesAsked = false
+    private val premiumStartChecks = PremiumStartChecks(
+        refresh = {
+            inBackground {
+                startEntryPoint().refreshPremiumUseCase()
+                    .executeInBackground(RefreshPremiumRequestDomainModel(force = false))
+            }
+        },
+        showPaymentMessages = {
+            inBackground {
+                startEntryPoint().showPaymentMessagesUseCase().executeInBackground(Unit)
+            }
+        }
+    )
 
     private val appearanceChanges: Flow<AppearanceUiModel> by lazy {
         val appearanceUiMapper = AppearanceUiMapper(AppThemeUiMapper())
@@ -123,7 +135,8 @@ class MainActivity : ComponentActivity() {
         applySystemBars(dark = true)
         super.onCreate(savedInstanceState)
         dismissDailyReminderIfAsked(intent)
-        paymentMessagesAsked = savedInstanceState?.getBoolean(PAYMENT_MESSAGES_ASKED) == true
+        premiumStartChecks.paymentMessagesAsked =
+            savedInstanceState?.getBoolean(PAYMENT_MESSAGES_ASKED) == true
         startsWithOnboarding = savedInstanceState
             ?.takeIf { it.containsKey(STARTS_WITH_ONBOARDING) }
             ?.getBoolean(STARTS_WITH_ONBOARDING)
@@ -192,14 +205,14 @@ class MainActivity : ComponentActivity() {
         startsWithOnboarding?.let { outState.putBoolean(STARTS_WITH_ONBOARDING, it) }
         outState.putString(THEME, appearance.theme.name)
         outState.putBoolean(ATTACK_IN_PROGRESS, appearance.attackInProgress)
-        outState.putBoolean(PAYMENT_MESSAGES_ASKED, paymentMessagesAsked)
+        outState.putBoolean(PAYMENT_MESSAGES_ASKED, premiumStartChecks.paymentMessagesAsked)
     }
 
     private fun showContent(startAttack: Boolean) {
         // Starting an attack wins over onboarding, and the saved start must match the graph that is shown.
         if (startAttack) startsWithOnboarding = false
-        // Over the first screen, never the splash, and never during an attack (the use case checks).
-        lifecycleScope.launch { withResumed { askForPaymentMessages() } }
+        // Over the first screen, never the splash, and not when the app opened to start an attack.
+        lifecycleScope.launch { withResumed { premiumStartChecks.onFirstScreen(startAttack) } }
         val start: Any = if (startsWithOnboarding == true) {
             Onboarding
         } else {
@@ -252,22 +265,10 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge(statusBarStyle = style, navigationBarStyle = style)
     }
 
-    /**
-     * Premium is checked with Google Play as the app starts and every time it comes back, at most
-     * every 15 minutes (BRD D106). A check that cannot finish leaves the last one's answer.
-     */
+    /** Premium is checked with Google Play as the app starts and every time it comes back. */
     override fun onResume() {
         super.onResume()
-        inBackground {
-            startEntryPoint().refreshPremiumUseCase()
-                .executeInBackground(RefreshPremiumRequestDomainModel(force = false))
-        }
-    }
-
-    private fun askForPaymentMessages() {
-        if (paymentMessagesAsked) return
-        paymentMessagesAsked = true
-        inBackground { startEntryPoint().showPaymentMessagesUseCase().executeInBackground(Unit) }
+        premiumStartChecks.onResume()
     }
 
     private fun startEntryPoint() =

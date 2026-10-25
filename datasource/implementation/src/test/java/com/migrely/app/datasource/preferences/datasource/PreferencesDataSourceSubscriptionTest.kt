@@ -4,6 +4,7 @@ import android.content.SharedPreferences
 import com.migrely.app.datasource.exception.FileDataException
 import com.migrely.app.datasource.preferences.model.EntitlementDataModel
 import com.migrely.app.datasource.preferences.model.EntitlementKindDataModel
+import com.migrely.app.datasource.preferences.model.LaunchedPurchaseDataModel
 import com.migrely.app.datasource.preferences.model.PaywallTriggerDataModel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -170,5 +171,38 @@ class PreferencesDataSourceSubscriptionTest {
 
         assertThrows(FileDataException::class.java) { classUnderTest.clear() }
         verifyNoInteractions(settingsEditor)
+    }
+
+    @Test
+    fun `When keeping and forgetting a launched purchase then it is in the entitlement file`() {
+        classUnderTest.setLaunchedPurchase(
+            LaunchedPurchaseDataModel("migrely_premium", "yearly", "P7D", 5_000L)
+        )
+        classUnderTest.setLaunchedPurchase(null)
+
+        inOrder(entitlementEditor) {
+            verify(entitlementEditor).putString("launched_product", "migrely_premium")
+            verify(entitlementEditor).putString("launched_base_plan", "yearly")
+            verify(entitlementEditor).putString("launched_trial", "P7D")
+            verify(entitlementEditor).putLong("launched_at", 5_000L)
+            verify(entitlementEditor).remove("launched_product")
+            verify(entitlementEditor).remove("launched_at")
+        }
+        verifyNoInteractions(settingsEditor)
+    }
+
+    @Test
+    fun `Given a launched purchase kept then it reads back`() {
+        val stored: SharedPreferences = mock {
+            on { getString("launched_product", null) } doReturn "migrely_lifetime"
+            on { contains("launched_at") } doReturn true
+            on { getLong("launched_at", 0L) } doReturn 5_000L
+        }
+
+        assertEquals(
+            LaunchedPurchaseDataModel("migrely_lifetime", null, null, 5_000L),
+            PreferencesDataSourceImpl(settings, stored).launchedPurchase()
+        )
+        assertNull(classUnderTest.launchedPurchase())
     }
 }

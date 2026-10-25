@@ -45,7 +45,13 @@ class PaywallViewModel(
     private val paywallTriggerDomainMapper: PaywallTriggerDomainMapper,
     useCaseExecutor: UseCaseExecutor
 ) : BaseViewModel<PaywallViewState, PaywallPresentationNotification>(useCaseExecutor) {
-    private var working = false
+    /**
+     * Purchases and restores that have not answered yet. The paywall is working only while one is
+     * out, so it never stays on "Waiting": each answers, as a result or a failure, and Google
+     * Play's sheet gives up after a while (review M11).
+     */
+    private var inFlight = 0
+    private val working get() = inFlight > 0
     private var undelivered: PaywallPresentationNotification? = null
 
     /**
@@ -86,28 +92,30 @@ class PaywallViewModel(
     ) {
         // Two taps in one frame open one sheet.
         if (working) return
-        working = true
+        inFlight++
         updateViewState(PaywallViewState.Working)
         useCases.buyPremiumUseCase(
             value = paywallProductDomainMapper.toDomain(product),
             onResult = { result ->
-                working = false
+                inFlight--
                 outcomeOf(result)?.let(::deliver)
                 load(context)
-            }
+            },
+            onException = { answered(context) }
         )
     }
 
     fun onRestoreAction(context: PaywallContextPresentationModel) {
         if (working) return
-        working = true
+        inFlight++
         updateViewState(PaywallViewState.Working)
         useCases.restorePurchasesUseCase(
             onResult = { check ->
-                working = false
+                inFlight--
                 deliver(restoredOf(check))
                 load(context)
-            }
+            },
+            onException = { answered(context) }
         )
     }
 
@@ -151,6 +159,13 @@ class PaywallViewModel(
         check.billing == BillingAvailabilityDomainModel.Unknown ->
             PaywallPresentationNotification.PlayUnreachable
         else -> PaywallPresentationNotification.NothingToRestore
+    }
+
+    /** A call that failed before it could answer: the paywall leaves "Waiting" and says so. */
+    private fun answered(context: PaywallContextPresentationModel) {
+        inFlight--
+        deliver(PaywallPresentationNotification.SomethingWentWrong)
+        load(context)
     }
 
     private fun deliver(notification: PaywallPresentationNotification) {

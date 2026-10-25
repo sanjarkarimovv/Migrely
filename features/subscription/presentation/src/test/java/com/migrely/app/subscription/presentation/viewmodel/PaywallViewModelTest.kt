@@ -334,4 +334,22 @@ class PaywallViewModelTest :
                 }
             )
         }
+
+    @Test
+    fun `Given buying fails before it starts then the paywall leaves Waiting and says so`() =
+        runTest {
+            getPaywallUseCase.givenSuccessfulExecution(FREE_PAYWALL)
+            buyPremiumUseCase.givenFailedExecution(
+                YEARLY,
+                com.migrely.app.architecture.domain.exception.UnknownDomainException(
+                    IllegalStateException("no sheet")
+                )
+            )
+            val states = async(start = UNDISPATCHED) { classUnderTest.viewState.take(2).toList() }
+
+            val notification = notificationOf { classUnderTest.onBuyAction(REPORT, YEARLY_CARD) }
+
+            assertEquals(PaywallPresentationNotification.SomethingWentWrong, notification)
+            assertEquals(listOf(PaywallViewState.Working, READY), states.await())
+        }
 }
