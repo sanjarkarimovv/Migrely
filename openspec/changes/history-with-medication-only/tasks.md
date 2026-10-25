@@ -9,6 +9,8 @@
 - [x] 2.1 Domain: the earliest-intake repository and its use in `GetHistoryMonthUseCase`, `anythingLogged`; tests.
 - [x] 2.2 Data: the repository implementation and mapping; tests.
 - [x] 2.3 Presentation: Ready or NothingLogged by `anythingLogged`; tests.
+- [ ] 2.4 Calendar: a past day with attack medication only (D100): domain flag, sky, drawing, spoken text, legend;
+  tests.
 
 ## 3. Verify
 
@@ -17,4 +19,5 @@
   - medication only: summary and indicator, previous month reachable;
   - marks only;
   - nothing logged;
-  - preventive only.
+  - preventive only;
+  - a day with medication only, on History and home, with TalkBack.

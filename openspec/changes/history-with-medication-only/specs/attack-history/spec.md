@@ -42,6 +42,10 @@ not count (BRD EC-HIS-01, D99).
 - **THEN** History shows the current month with its summary, "0" migraine days, its days with attack medication, and
   the "Last 30 days" indicator, without "Log your first migraine"
 
+#### Scenario: A day with medication only
+- **WHEN** no migraine was ever logged, ibuprofen was taken on 20 October, and today is 23 October
+- **THEN** History's calendar shows 20 October with a solid outline and no sky, as `month-sky` describes (BRD D100)
+
 #### Scenario: Only preventive medication
 - **WHEN** no migraine and no day mark was ever logged, topiramate (a preventive medication) was taken on
   20 September, and today is 2 October
