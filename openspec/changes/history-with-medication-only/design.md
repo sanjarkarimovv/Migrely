@@ -31,9 +31,9 @@
   past day with attack medication comes next, as `MedicationOnly`, before "nothing logged". A day with an attack keeps
   its sky, and a pain-free mark keeps the clear sky, since the mark is the user's word.
 - **The drawing:** `DaySkyAppearance.MedicationOnly` is a solid outline in `colorScheme.outline`, the same width as
-  the dashed one, with no sky. The app is always dark (BRD EC-UX-01): `outline` (#3A414B) is a little brighter than
-  the dashed `outlineVariant` (#2A3038), both dim by design, so the two differ by shape (solid or dashed) and by
-  TalkBack text rather than by contrast.
+  the dashed one, with no sky. Since change 12 the nothing-logged dash uses `outline` too: 3.8:1 on the light theme,
+  and dim by design on the dark one. So the two differ by shape (solid or dashed) and by TalkBack text rather than by
+  colour.
 - **Spoken text:** "<day>: attack medication taken, no migraine logged." A pain-free day with an intake adds "Attack
   medication taken.", before "Period." on a period day.
 - **Home:** the month card draws the same `HistoryCalendar` from the same view model output, so it follows without

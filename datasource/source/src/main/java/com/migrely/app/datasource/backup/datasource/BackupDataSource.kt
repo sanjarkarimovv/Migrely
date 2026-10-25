@@ -26,4 +26,10 @@ interface BackupDataSource {
      * - A date already marked keeps its marks.
      */
     fun add(records: BackupRecordsDataModel): AddedRecordsDataModel
+
+    /**
+     * Deletes every row of every table at once: the health records and the device's own state, such as the reminder
+     * settings and the overuse notices (BRD D96).
+     */
+    fun deleteAll()
 }

@@ -11,6 +11,7 @@ import com.migrely.app.datasource.attack.model.AttackTagLocalModel
 import com.migrely.app.datasource.attack.model.AttackWithPointsLocalModel
 import com.migrely.app.datasource.attack.model.EarliestStartLocalModel
 import com.migrely.app.datasource.attack.model.IntensityPointLocalModel
+import kotlinx.coroutines.flow.Flow
 
 /**
  * Attack queries. Every read except [deletedById] and [recentlyDeleted] skips deleted attacks
@@ -24,6 +25,13 @@ abstract class AttackDao {
         "SELECT * FROM attack WHERE end_epoch_millis IS NULL AND deleted_epoch_millis IS NULL LIMIT 1"
     )
     abstract fun inProgress(): AttackWithPointsLocalModel?
+
+    /** Read again by Room whenever the attack table changes. */
+    @Query(
+        "SELECT EXISTS(SELECT 1 FROM attack " +
+            "WHERE end_epoch_millis IS NULL AND deleted_epoch_millis IS NULL)"
+    )
+    abstract fun inProgressChanges(): Flow<Boolean>
 
     @Transaction
     @Query("SELECT * FROM attack WHERE id = :attackId AND deleted_epoch_millis IS NULL")

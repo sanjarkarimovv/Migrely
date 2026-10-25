@@ -15,4 +15,6 @@ detekt {
 }
 
 dependencies {
+    // Flow is part of the datasources' API (PreferencesDataSource.themeChanges).
+    api(libs.kotlinx.coroutines.core)
 }

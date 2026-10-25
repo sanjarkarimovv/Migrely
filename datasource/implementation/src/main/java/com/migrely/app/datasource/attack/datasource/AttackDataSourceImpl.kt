@@ -16,10 +16,13 @@ import com.migrely.app.datasource.attack.model.IntensityPointLocalModel
 import com.migrely.app.datasource.attack.model.ReopenDataModel
 import com.migrely.app.datasource.attack.model.RestoreDataModel
 import com.migrely.app.datasource.database.database
+import com.migrely.app.datasource.database.databaseFailures
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
 import java.util.UUID
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
 
 private val VALID_INTENSITY = 1..10
 private val VALID_IMPACT = 0..3
@@ -40,6 +43,9 @@ class AttackDataSourceImpl(
     override fun inProgress(): AttackDataModel? = database {
         attackDao.inProgress()?.let(attackLocalMapper::toData)
     }
+
+    override fun inProgressChanges(): Flow<Boolean> =
+        attackDao.inProgressChanges().distinctUntilChanged().databaseFailures()
 
     override fun byId(attackId: String): AttackDataModel? = database {
         attackDao.byId(attackId)?.let(attackLocalMapper::toData)

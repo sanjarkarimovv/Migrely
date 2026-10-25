@@ -16,7 +16,9 @@ import com.migrely.app.onboarding.ui.di.OnboardingDependencies
 import com.migrely.app.reminders.ui.di.DailyReminderOfferDependencies
 import com.migrely.app.reminders.ui.di.RemindersDependencies
 import com.migrely.app.report.ui.di.ReportDependencies
+import com.migrely.app.settings.ui.di.DeleteAllDataDependencies
 import com.migrely.app.settings.ui.di.SettingsDependencies
+import com.migrely.app.settings.ui.di.SettingsPageDependencies
 import com.migrely.app.ui.main.di.AppNavHostDependencies
 import dagger.Module
 import dagger.Provides
@@ -40,6 +42,8 @@ internal object AppNavHostModule {
         overuseIndicatorDependencies: OveruseIndicatorDependencies,
         remindersDependencies: RemindersDependencies,
         settingsDependencies: SettingsDependencies,
+        settingsPageDependencies: SettingsPageDependencies,
+        deleteAllDataDependencies: DeleteAllDataDependencies,
         yourDataDependencies: YourDataDependencies,
         onboardingDependencies: OnboardingDependencies,
         dailyReminderOfferDependencies: DailyReminderOfferDependencies,
@@ -58,6 +62,8 @@ internal object AppNavHostModule {
         overuseIndicatorDependencies = overuseIndicatorDependencies,
         remindersDependencies = remindersDependencies,
         settingsDependencies = settingsDependencies,
+        settingsPageDependencies = settingsPageDependencies,
+        deleteAllDataDependencies = deleteAllDataDependencies,
         yourDataDependencies = yourDataDependencies,
         onboardingDependencies = onboardingDependencies,
         dailyReminderOfferDependencies = dailyReminderOfferDependencies,

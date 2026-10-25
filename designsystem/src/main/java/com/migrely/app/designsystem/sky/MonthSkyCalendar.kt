@@ -64,13 +64,47 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.migrely.app.designsystem.theme.MigrelyTheme
+import com.migrely.app.designsystem.theme.OnSurface
+import com.migrely.app.designsystem.theme.OnSurfaceVariant
+import com.migrely.app.designsystem.theme.Primary
+import com.migrely.app.designsystem.theme.Surface
 
 private const val DAYS_PER_WEEK = 7
 private val CellSpacing = 6.dp
 private val CellShape = RoundedCornerShape(10.dp)
 private val ChosenRingWidth = 2.5.dp
 private val FocusRingWidth = 2.5.dp
-private val DayNumberOnSky = Color(0xFFC8CCD2)
+
+/** The colours drawn on a day cell: its rings and its number. */
+private data class DayCellColors(
+    val focusOuter: Color,
+    val focusInner: Color,
+    val chosen: Color,
+    val today: Color,
+    val number: Color
+)
+
+/** A sky is dark in every theme (BRD D94), so what is drawn on one takes the dark theme's colours. */
+private val OnSkyColors = DayCellColors(
+    focusOuter = OnSurface,
+    focusInner = Surface,
+    chosen = Primary,
+    today = OnSurfaceVariant,
+    number = OnSurface
+)
+
+@Composable
+private fun dayCellColors(hasSky: Boolean) = if (hasSky) {
+    OnSkyColors
+} else {
+    DayCellColors(
+        focusOuter = MaterialTheme.colorScheme.onSurface,
+        focusInner = MaterialTheme.colorScheme.surface,
+        chosen = MaterialTheme.colorScheme.primary,
+        today = MaterialTheme.colorScheme.onSurfaceVariant,
+        number = MaterialTheme.colorScheme.onSurfaceVariant
+    )
+}
 
 /** What one calendar day shows (BRD EC-UX-09). Each differs by shape as well as colour (BRD EC-UX-15). */
 enum class DaySkyAppearance {
@@ -263,34 +297,24 @@ private fun DayCell(
 ) {
     val selectable = day.isSelectable
     var focused by remember { mutableStateOf(false) }
+    val colors = dayCellColors(day.appearance.hasSky())
     val ring = when {
         // A two-tone ring shows on every sky (WCAG 2.4.7); inside it, the chosen day keeps its colour.
         focused ->
             Modifier
-                .border(FocusRingWidth, MaterialTheme.colorScheme.onSurface, CellShape)
+                .border(FocusRingWidth, colors.focusOuter, CellShape)
                 .border(
                     FocusRingWidth * 2,
-                    if (day.isSelected) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.surface
-                    },
+                    if (day.isSelected) colors.chosen else colors.focusInner,
                     CellShape
                 )
-        day.isSelected -> Modifier.border(
-            ChosenRingWidth,
-            MaterialTheme.colorScheme.primary,
-            CellShape
-        )
-        day.isToday -> Modifier.border(
-            1.5.dp,
-            MaterialTheme.colorScheme.onSurfaceVariant,
-            CellShape
-        )
+        day.isSelected -> Modifier.border(ChosenRingWidth, colors.chosen, CellShape)
+        day.isToday -> Modifier.border(1.5.dp, colors.today, CellShape)
         else -> Modifier
     }
+    // Both outlines stand apart from the page at 3:1 or more on light (WCAG 1.4.11); the nothing-logged one is dashed.
     val outlines = DayOutlines(
-        notLogged = MaterialTheme.colorScheme.outlineVariant,
+        notLogged = MaterialTheme.colorScheme.outline,
         logged = MaterialTheme.colorScheme.outline
     )
     Box(
@@ -329,11 +353,7 @@ private fun DayCell(
             text = day.dayOfMonth.toString(),
             style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"),
             fontWeight = if (day.isToday) FontWeight.Bold else null,
-            color = if (day.appearance.hasSky()) {
-                DayNumberOnSky
-            } else {
-                MaterialTheme.colorScheme.onSurfaceVariant
-            },
+            color = colors.number,
             modifier = Modifier
                 .align(Alignment.TopStart)
                 .padding(start = 5.dp, top = 3.dp)
@@ -345,8 +365,9 @@ private fun DayCell(
 /** The legend under a calendar: one small sky and a label per entry, wrapping at large font sizes (BRD EC-UX-03). */
 @Composable
 fun MonthSkyLegend(entries: List<LegendEntry>, modifier: Modifier = Modifier) {
+    // Both outlines stand apart from the page at 3:1 or more on light (WCAG 1.4.11); the nothing-logged one is dashed.
     val outlines = DayOutlines(
-        notLogged = MaterialTheme.colorScheme.outlineVariant,
+        notLogged = MaterialTheme.colorScheme.outline,
         logged = MaterialTheme.colorScheme.outline
     )
     FlowRow(

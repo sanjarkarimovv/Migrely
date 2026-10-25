@@ -66,6 +66,11 @@ class ReportDocumentDataSourceImpl(
             .forEach(File::delete)
     }
 
+    override fun deleteAll() = file {
+        val directory = File(cacheDirectory, DIRECTORY)
+        if (!directory.deleteRecursively()) throw IOException("Could not delete ${directory.name}")
+    }
+
     /**
      * Within its page limit (EC-REP-02): while it would be longer, each table that may be shortened keeps, in turn, as
      * many of its first rows (the latest) as fit, and says how many it shows. Past that, `render` cuts the last pages.

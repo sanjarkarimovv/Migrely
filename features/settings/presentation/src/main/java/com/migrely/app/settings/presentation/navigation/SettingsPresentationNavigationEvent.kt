@@ -8,4 +8,15 @@ sealed interface SettingsPresentationNavigationEvent : PresentationNavigationEve
     data object OnReminders : SettingsPresentationNavigationEvent
 
     data object OnYourData : SettingsPresentationNavigationEvent
+
+    data object OnWarningSigns : SettingsPresentationNavigationEvent
+
+    data object OnAboutMigrely : SettingsPresentationNavigationEvent
+
+    data object OnPrivacy : SettingsPresentationNavigationEvent
+
+    data object OnLicences : SettingsPresentationNavigationEvent
+
+    /** The confirmation of "Delete all data" (BRD D96). */
+    data object OnDeleteAllData : SettingsPresentationNavigationEvent
 }
