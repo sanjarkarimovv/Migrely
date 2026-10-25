@@ -10,7 +10,8 @@
 # zone_attack, zone_history, double_tap, med_effect, med_effect_attack, med_effect_skip, med_effect_late,
 # med_preventive, med_two_waiting, med_link_home, med_overuse, keyboard_home, keyboard_history, keyboard_rtl,
 # landscape_band, mark_travel, mark_earliest_month, stats_counting, stats_chronic, stats_progress, reminder_daily,
-# reminder_permission, reminder_effect, reminder_replan (restarts the emulator), med_only_history, upgrade.
+# reminder_permission, reminder_effect, reminder_replan (restarts the emulator), med_only_history,
+# message_overlap (known bug #52), upgrade.
 # upgrade needs QA_OLD_APK=<older debug APK of com.migrely.app>; without it, it is reported as not run.
 set -euo pipefail
 
@@ -582,6 +583,7 @@ scenario_med_link_home() {
 # Covers: medication-overuse › A standing indicator in History › Two categories
 # Covers: medication-overuse › A standing indicator in History › After an undo
 # Covers: medication-overuse › A standing indicator in History › A past month
+# Covers: medication-overuse › A standing indicator in History › No migraine logged
 scenario_med_overuse() {
   echo "Scenario med_overuse: painkillers on 13 days warn softly, \"Got it\" hides it, 15 days warn about the doctor; History's \"Last 30 days\" (D59)"
   local d
@@ -599,9 +601,8 @@ scenario_med_overuse() {
   done
   set_clock_millis "$(( $(day_millis 0) + 3600000 ))" || return 1
   run_flow med-overuse-doctor || return 1
-  # History's "Last 30 days" (D59). History shows its month summary, and so the section, once a migraine is logged.
-  run_flow attack-log-keep || return 1
-  # At the limit with 15 days; a day 30 days back does not count, a day 29 back does.
+  # History's "Last 30 days" (D59), with no migraine logged yet (D99): at the limit with 15 days; a day 30 days back does
+  # not count, a day 29 back does; over the limit reads amber.
   run_flow_env indicator-check MONTHS_BACK=0 "ROW=Simple painkillers: 15 days \(limit 15\), at the limit" DOCTOR=true || return 1
   set_clock_millis "$(day_millis 30)" || return 1
   run_flow_env med-log-home NAME=Ibuprofen || return 1
@@ -611,6 +612,7 @@ scenario_med_overuse() {
   run_flow_env med-log-home NAME=Ibuprofen || return 1
   set_clock_millis "$(( $(day_millis 0) + 7200000 ))" || return 1
   run_flow_env indicator-check MONTHS_BACK=0 "ROW=Simple painkillers: 16 days \(limit 15\), over the limit" DOCTOR=true || return 1
+  expect_colour "Simple painkillers: 16 days \(limit 15\), over the limit" amber || return 1
   # A triptan in an attack today: two categories, and the union of days over its limit.
   run_flow med-add-triptan-in-attack || return 1
   run_flow_env indicator-check MONTHS_BACK=0 "ROW=Triptans: 1 day \(limit 10\)" DOCTOR=true || return 1
@@ -1004,6 +1006,42 @@ scenario_med_only_history() {
   run_flow med-only-past-check || return 1
 }
 
+node_bounds() { # $1 regex of a label on screen: prints "x1 y1 x2 y2" of the first match
+  adbq shell rm -f /sdcard/qa-bounds.xml
+  adbq shell uiautomator dump /sdcard/qa-bounds.xml >/dev/null
+  adbq exec-out cat /sdcard/qa-bounds.xml | python3 -I -c "import re, sys, xml.etree.ElementTree as ET
+for n in ET.fromstring(sys.stdin.read()).iter('node'):
+    if re.fullmatch(sys.argv[1], n.get('content-desc') or n.get('text') or ''):
+        print(*re.findall(r'\d+', n.get('bounds'))); break" "$1"
+}
+
+# Known bug #52: the message's Undo sits on top of History's top-bar actions, so a tap meant for Undo can open them.
+# It reports "KNOWN BUG #52 still reproduces" without failing the run, and "NOW PASSES" once the boxes stop overlapping.
+scenario_message_overlap() {
+  echo "Scenario message_overlap: History's Undo must not sit on top of its top-bar actions (#52)"
+  local undo action overlap="" i
+  long_undo_window
+  run_flow history-deleted-message || { default_undo_window; return 1; }
+  undo="$(node_bounds "Undo the deletion")"
+  default_undo_window
+  [[ -n "$undo" ]] || { echo "  FAILED: no Undo on screen"; return 1; }
+  for i in $(seq 1 15); do [[ -z "$(node_bounds "Undo the deletion")" ]] && break; sleep 3; done
+  for action in "Insights" "Doctor report"; do
+    local box
+    box="$(node_bounds "$action")"
+    [[ -n "$box" ]] || continue
+    if python3 -I -c "import sys; a = list(map(int, sys.argv[1].split())); b = list(map(int, sys.argv[2].split()))
+sys.exit(0 if a[0] < b[2] and b[0] < a[2] and a[1] < b[3] and b[1] < a[3] else 1)" "$undo" "$box"; then
+      overlap+=" $action [$box]"
+    fi
+  done
+  if [[ -n "$overlap" ]]; then
+    echo "  KNOWN BUG #52 still reproduces: Undo [$undo] overlaps$overlap"
+  else
+    echo "  NOW PASSES: Undo [$undo] overlaps no top-bar action; remove the known-bug note for #52"
+  fi
+}
+
 scenario_double_tap() {
   echo "Scenario double_tap: double taps never cross a mode switch (EC-UX-18, D32), with exact gaps between the taps"
   local gap point
@@ -1052,7 +1090,7 @@ if [[ $# -eq 0 ]]; then
     double_tap med_effect med_effect_attack med_effect_skip med_effect_late med_preventive med_two_waiting \
     med_link_home med_overuse keyboard_home keyboard_history keyboard_rtl landscape_band mark_travel mark_earliest_month \
     stats_counting stats_chronic stats_progress reminder_daily reminder_permission reminder_effect reminder_replan \
-    med_only_history
+    med_only_history message_overlap
   if [[ -n "${QA_OLD_APK:-}" ]]; then
     set -- "$@" upgrade
   else

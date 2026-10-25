@@ -1,5 +1,6 @@
 # Device scenario step: History's "Last 30 days" section for this month (MONTHS_BACK "0") or last month ("1").
 # ROW (a regex) is a row that must show; "" means no section. DOCTOR "true" expects the doctor line, "false" not.
+# It leaves History open.
 appId: com.migrely.app
 ---
 - launchApp
@@ -43,4 +44,4 @@ appId: com.migrely.app
       true: ${DOCTOR == "false"}
     commands:
       - assertNotVisible: "At this many days.*"
-- stopApp
+# The app stays open, so the script can read a row's colour.
