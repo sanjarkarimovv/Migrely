@@ -38,4 +38,4 @@ offers deletion: Settings → Delete all data removes everything on the phone, a
   of our own, Google Play processes purchases and the app keeps only the entitlement on the phone, so the answer stays
   "No". A service such as RevenueCat would collect purchase history and device identifiers, and this form would change.
 - **Data deletion URL:** Play asks for one only from apps that let users create an account; Migrely has none. If that
-  changes, the privacy policy's "Deleting your information" section serves, at its hosted URL (TODO(user)).
+  changes, the privacy policy's "Deleting your information" section serves, at https://migrely.health/delete-data/.

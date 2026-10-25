@@ -1,8 +1,8 @@
 # Migrely privacy policy
 
-Effective date: TODO(user), the day the policy is published.
+Effective date: 26 October 2026.
 
-Migrely is a headache diary for Android, made by TODO(user: developer name) ("we"). This policy explains what
+Migrely is a headache diary for Android, published on Google Play by Sulton UzDev ("we"). This policy explains what
 happens to the information you enter. In short: **Migrely has no internet access, and we never receive your entries.**
 
 ## What Migrely keeps, and where
@@ -86,4 +86,5 @@ lets Migrely collect information would need a new app version, and we would say 
 
 ## Contact
 
-TODO(user: developer name), TODO(user: contact email).
+Sulton UzDev, the publisher of Migrely. Write to support@migrely.health, or privacy@migrely.health for anything about
+your data.
