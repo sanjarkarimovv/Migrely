@@ -2,6 +2,7 @@ package com.migrely.app.subscription.ui.mapper
 
 import com.migrely.app.architecture.ui.notification.mapper.NotificationUiMapper
 import com.migrely.app.architecture.ui.notification.model.UiNotification
+import com.migrely.app.designsystem.snackbar.SnackbarTone
 import com.migrely.app.subscription.presentation.model.PaywallContextPresentationModel
 import com.migrely.app.subscription.presentation.model.PaywallPresentationNotification
 import com.migrely.app.subscription.presentation.model.PaywallProductPresentationModel
@@ -14,6 +15,7 @@ import com.migrely.app.subscription.presentation.model.RestoreNotePresentationMo
 import com.migrely.app.subscription.presentation.model.TrialBannerViewState
 import com.migrely.app.subscription.ui.model.PaywallContextUiModel
 import com.migrely.app.subscription.ui.model.PaywallEventUiModel
+import com.migrely.app.subscription.ui.model.PaywallMessageBehaviourUiModel
 import com.migrely.app.subscription.ui.model.PaywallMessageUiModel
 import com.migrely.app.subscription.ui.model.PaywallOffersUiModel
 import com.migrely.app.subscription.ui.model.PaywallProductUiModel
@@ -105,6 +107,25 @@ class PaywallContextPresentationMapper {
             PaywallContextUiModel.Insights -> PaywallContextPresentationModel.Insights
             PaywallContextUiModel.Settings -> PaywallContextPresentationModel.Settings
         }
+}
+
+/**
+ * Tone and timing of each paywall message (BRD EC-UX-16; QA #56): 8 s each, stretched to the
+ * accessibility timeout. Finding no purchase is information; the others are errors.
+ */
+class PaywallMessageBehaviourUiMapper {
+    fun toUi(message: PaywallMessageUiModel): PaywallMessageBehaviourUiModel = when (message) {
+        PaywallMessageUiModel.NothingToRestore ->
+            PaywallMessageBehaviourUiModel(SnackbarTone.Information, READING_MILLIS)
+
+        PaywallMessageUiModel.PlayUnreachable,
+        PaywallMessageUiModel.SomethingWentWrong ->
+            PaywallMessageBehaviourUiModel(SnackbarTone.Error, READING_MILLIS)
+    }
+
+    private companion object {
+        const val READING_MILLIS = 8_000L
+    }
 }
 
 /** Carries the paywall's outcomes to the screen, which takes them only while it is shown. */

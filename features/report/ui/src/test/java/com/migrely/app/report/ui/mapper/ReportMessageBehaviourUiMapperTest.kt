@@ -14,14 +14,17 @@ class ReportMessageBehaviourUiMapperTest(
     private val expected: ReportMessageBehaviourUiModel
 ) {
     companion object {
-        private val reading = ReportMessageBehaviourUiModel(SnackbarTone.Error, 8_000L)
+        private val error = ReportMessageBehaviourUiModel(SnackbarTone.Error, 8_000L)
 
         @JvmStatic
         @Parameterized.Parameters(name = "{index}: {0}")
         fun data(): Collection<Array<*>> = listOf(
-            arrayOf<Any>(ReportMessageUiModel.NothingLogged, reading),
-            arrayOf<Any>(ReportMessageUiModel.SomethingWentWrong, reading),
-            arrayOf<Any>(ReportMessageUiModel.NoAppToShare, reading),
+            arrayOf<Any>(
+                ReportMessageUiModel.NothingLogged,
+                ReportMessageBehaviourUiModel(SnackbarTone.Information, 8_000L)
+            ),
+            arrayOf<Any>(ReportMessageUiModel.SomethingWentWrong, error),
+            arrayOf<Any>(ReportMessageUiModel.NoAppToShare, error),
             arrayOf<Any>(
                 ReportMessageUiModel.StorageFull,
                 ReportMessageBehaviourUiModel(SnackbarTone.Error, null)

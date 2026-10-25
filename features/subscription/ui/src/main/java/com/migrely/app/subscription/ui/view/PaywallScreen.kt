@@ -68,7 +68,6 @@ import com.migrely.app.designsystem.icon.MigrelyIcons
 import com.migrely.app.designsystem.motion.rememberReduceMotion
 import com.migrely.app.designsystem.snackbar.MigrelySnackbar
 import com.migrely.app.designsystem.snackbar.MigrelySnackbarHost
-import com.migrely.app.designsystem.snackbar.SnackbarTone
 import com.migrely.app.designsystem.snackbar.messageTimeoutMillis
 import com.migrely.app.designsystem.theme.MigrelyTheme
 import com.migrely.app.subscription.presentation.model.PaywallViewState
@@ -85,9 +84,6 @@ import com.migrely.app.subscription.ui.model.PremiumStatusUiModel
 import com.migrely.app.subscription.ui.model.TrialLengthUiModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.onSubscription
-
-/** Every paywall message is an error: 8 s, stretched to the accessibility timeout (BRD EC-UX-16; QA #56). */
-private const val READING_MILLIS = 8_000L
 
 /** Only for a trial Google Play gives in months and days at once, which it does not today. */
 private const val DAYS_PER_MONTH = 30
@@ -150,7 +146,10 @@ fun PaywallDependencies.Paywall(
     LaunchedEffect(purchaseUpdates) {
         purchaseUpdates.collect { paywallViewModel.onPurchaseUpdatedAction(presentationContext) }
     }
-    val messageTimeout = messageTimeoutMillis(READING_MILLIS)
+    // Stretched to the accessibility timeout (BRD EC-UX-16; QA #56).
+    val messageTimeout = messageTimeoutMillis(
+        message?.let { paywallMessageBehaviourUiMapper.toUi(it.message).baseDurationMillis }
+    )
     LaunchedEffect(message, messageTimeout) {
         if (message != null && messageTimeout != null) {
             delay(messageTimeout)
@@ -182,7 +181,7 @@ fun PaywallDependencies.Paywall(
             MigrelySnackbarHost(message = message, reduceMotion = rememberReduceMotion()) { shown ->
                 MigrelySnackbar(
                     text = stringResource(shown.message.text()),
-                    tone = SnackbarTone.Error,
+                    tone = paywallMessageBehaviourUiMapper.toUi(shown.message).tone,
                     action = null,
                     dismissLabel = stringResource(R.string.subscription_message_dismiss),
                     onDismiss = { message = null }

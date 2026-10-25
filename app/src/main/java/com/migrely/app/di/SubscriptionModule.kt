@@ -45,6 +45,7 @@ import com.migrely.app.subscription.ui.di.PremiumSectionDependencies
 import com.migrely.app.subscription.ui.di.TrialBannerDependencies
 import com.migrely.app.subscription.ui.mapper.PaywallContextPresentationMapper
 import com.migrely.app.subscription.ui.mapper.PaywallEventPresenter
+import com.migrely.app.subscription.ui.mapper.PaywallMessageBehaviourUiMapper
 import com.migrely.app.subscription.ui.mapper.PaywallNotificationUiMapper
 import com.migrely.app.subscription.ui.mapper.PaywallProductPresentationMapper
 import com.migrely.app.subscription.ui.mapper.PaywallTriggerNotificationUiMapper
@@ -214,6 +215,7 @@ internal object SubscriptionModule {
             paywallContextPresentationMapper = PaywallContextPresentationMapper(),
             paywallProductPresentationMapper = PaywallProductPresentationMapper(),
             paywallEventPresenter = presenter,
+            paywallMessageBehaviourUiMapper = PaywallMessageBehaviourUiMapper(),
             navigationMapper = PaywallNavigationEventDestinationMapper(),
             notificationMapper = PaywallNotificationUiMapper(presenter, premiumStatusUiMapper)
         )

@@ -9,7 +9,9 @@ private const val READING_MILLIS = 8_000L
 /** Tone and timing of each report message (BRD EC-UX-16, EC-STO-01; QA #56). */
 class ReportMessageBehaviourUiMapper {
     fun toUi(message: ReportMessageUiModel): ReportMessageBehaviourUiModel = when (message) {
-        ReportMessageUiModel.NothingLogged,
+        ReportMessageUiModel.NothingLogged ->
+            ReportMessageBehaviourUiModel(SnackbarTone.Information, READING_MILLIS)
+
         ReportMessageUiModel.SomethingWentWrong,
         ReportMessageUiModel.NoAppToShare ->
             ReportMessageBehaviourUiModel(SnackbarTone.Error, READING_MILLIS)
