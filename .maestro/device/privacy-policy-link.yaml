@@ -1,0 +1,16 @@
+# Device scenario step: Settings › Privacy ends with "Read the full privacy policy", and a tap hands the link to the
+# browser (D119); the scenario reads the intent from the activity log.
+appId: com.migrely.app
+---
+- launchApp
+- tapOn: "Settings"
+- scrollUntilVisible:
+    element: "What Migrely keeps, and where"
+    direction: DOWN
+    centerElement: true
+- tapOn: "What Migrely keeps, and where"
+- scrollUntilVisible:
+    element: "Read the full privacy policy.*"
+    direction: DOWN
+    centerElement: true
+- tapOn: "Read the full privacy policy.*"
