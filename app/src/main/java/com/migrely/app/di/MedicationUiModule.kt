@@ -44,6 +44,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import java.time.ZoneId
+import java.util.Locale
 
 private typealias LogMedicationNavigationMapper =
     NavigationEventDestinationMapper<LogMedicationPresentationNavigationEvent>
@@ -73,7 +74,7 @@ internal object MedicationUiModule {
     @Provides
     fun providesMedicationTimeUiFormatter(@ApplicationContext context: Context) =
         MedicationTimeUiFormatter(
-            locale = { context.resources.configuration.locales[0] },
+            locale = { Locale.getDefault() },
             is24HourFormat = { DateFormat.is24HourFormat(context) },
             deviceZone = { ZoneId.systemDefault() },
             bestDateTimePattern = { locale, skeleton ->

@@ -45,6 +45,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import java.time.ZoneId
+import java.util.Locale
 
 private typealias AttackDetailsNavigationMapper =
     NavigationEventDestinationMapper<AttackDetailsPresentationNavigationEvent>
@@ -66,7 +67,7 @@ internal object AttackUiModule {
 
     @Provides
     fun providesAttackTimeUiFormatter(@ApplicationContext context: Context) = AttackTimeUiFormatter(
-        locale = { context.resources.configuration.locales[0] },
+        locale = { Locale.getDefault() },
         is24HourFormat = { DateFormat.is24HourFormat(context) },
         deviceZone = { ZoneId.systemDefault() },
         bestDateTimePattern = { locale, skeleton ->

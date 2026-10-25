@@ -323,7 +323,7 @@ Boshqa davlatlarda narxni Play avtomatik konvertatsiya qiladi. Hindiston, Brazil
 | EC-TIM-02 | Foydalanuvchi sayohatda, vaqt zonasi oʻzgardi | Xuruj qaysi kunga tegishli ekani u yozilgan joyning zonasi boʻyicha aniqlanadi, shuning uchun tarix "siljimaydi". Vaqtlar yozilgan zonada, zona belgisi bilan koʻrsatiladi | ✅ |
 | EC-TIM-03 | Yozgi vaqtga oʻtish (DST) | Davomiylik Instant'lar orqali hisoblanadi, shuning uchun toʻgʻri chiqadi | ✅ |
 | EC-TIM-04 | Telefon soati notoʻgʻri yoki qoʻlda oʻzgartirilgan | Maxsus himoya yoʻq, faqat EC-ATK-03 tolerantligi. Server vaqti ishlatilmaydi | ✅ |
-| EC-TIM-05 | 12/24 soat formati, sana formati, hafta qaysi kundan boshlanishi | Tizim locale'idan olinadi | ✅ |
+| EC-TIM-05 | 12/24 soat formati, sana formati, hafta qaysi kundan boshlanishi | Tizim locale'idan olinadi (D117 ga qarang) | ✅ |
 
 ### 9.3 Dorilar
 
@@ -440,7 +440,7 @@ Boshqa davlatlarda narxni Play avtomatik konvertatsiya qiladi. Hindiston, Brazil
 |---|---|---|---|
 | EC-L10N-01 | Matnlar | Hammasi string resource'larda, koʻplik shakllari plurals bilan. Ingliz tili 100% | ✅ |
 | EC-L10N-02 | Nemis tilida matn uzunroq | Layout matn 40% ga uzayishiga moʻljallab quriladi | ✅ |
-| EC-L10N-03 | Raqam va sana formatlari | Locale boʻyicha formatlanadi | ✅ |
+| EC-L10N-03 | Raqam va sana formatlari | Locale boʻyicha formatlanadi (D117 ga qarang) | ✅ |
 
 ---
 
@@ -761,6 +761,7 @@ Ilova 2023-yil 13-noyabrdan oldin ochilgan akkauntda chiqadi, shuning uchun 12 t
 | D114 | Xabar ostidagi tugmalar himoyasi (QA #52, EC-UX-16 toʻldirildi). Ekran yuqorisidagi xabar paydo boʻlayotganda, yoʻqolayotganda va undan keyin 0,8 soniya davomida uning joyiga tushgan teginish ostidagi tugmalarga (masalan, yuqori paneldagi "Doctor report" yoki "Insights") yetib bormaydi; xabarning oʻzi, jumladan "Undo", darhol bosiladi. Himoya umumiy xabar komponentida, shuning uchun xabar chiqadigan har bir ekranga tegishli; ekran oʻqigichlar, klaviatura va switch access'ga taʼsir qilmaydi | PO | 2026-10-25 |
 | D115 | Premium keshi (`migrely_entitlement` fayli) Android backup'iga ham, yangi telefonga koʻchirishga ham kirmaydi: `backup_rules.xml` va `data_extraction_rules.xml` uni har bir sharedpref include yonida chiqarib tashlaydi. Xarid Google akkauntga tegishli, shuning uchun yangi oʻrnatishda yoki yangi telefonda premium har doim Google Play'dan, telefondagi Google akkaunt uchun olinadi (EC-BIL-07). Tiklangan backup yoki boshqa akkauntli telefon eski keshdan premium olmaydi. Paywall belgilari va trial banneri yopilgani `migrely_preferences`'da qoladi va backup qilinadi. "Delete all data" ikkala faylni ham tozalaydi | PO | 2026-10-25 |
 | D116 | Ilova ikonkasi va brend rangi (D103 ni almashtiradi). Birinchi variant (toʻq koʻk osmon, oy va yulduzlar) Play'da xira va mayda detalli boʻlib, ikonkadan koʻra illyustratsiyaga oʻxshardi. Kuchli store ikonkalari kabi: bitta tekis brend rangi va bitta qalin, oddiy oq belgi. Rang — Migrely violet (#5B50D6): migren xabardorligining rangi, sogʻliq ilovalarining koʻk va yashil rangidan ajralib turadi, ilovadagi lavanda rangga mos. Belgi — oq kalendar varagʻi, toʻq koʻk tasma va toʻq koʻk yarim oy: "kunlaringiz kundaligi" va tinchlik; faqat oydan iborat belgi uyqu ilovalariga oʻxshaydi. Splash qorongʻi fonda binafsha doira ichidagi shu belgini koʻrsatadi. Feature graphic va skrinshotlar ham shu tizimda boʻladi. Launch'dan keyin Play'ning store listing experiments vositasida sinab koʻriladi | PO | 2026-10-25 |
+| D117 | Sana va vaqt nomlari bitta tilda (EC-L10N-03 va EC-TIM-05 ni aniqlashtiradi). Migrely hozircha faqat ingliz tilida (EC-L10N-01), shuning uchun sana yoki vaqt hosil qiladigan har bir nom — oylar, hafta kunlari, AM/PM — ham inglizcha boʻladi: rus tilidagi telefonda bosh ekran "воскресенье, 25 октября" emas, "Sunday" va "October" bilan yozadi; tanlagichlar, History, Insights va Doctor report ham shunday. Telefondan faqat mintaqa odatlari olinadi: hafta qaysi kundan boshlanishi va 12/24 soat formati (tizim sozlamasi, avvalgidek). Formatlash locale'i: telefon tili ingliz boʻlsa — telefonning oʻz locale'i; aks holda ingliz tili va telefon mamlakati (ru-RU → en-RU, uz-UZ → en-UZ); mamlakat boʻlmasa — oddiy ingliz tili. Hafta har doim telefondagi kundan boshlanadi: ingliz locale'i boshqa kun bersa (masalan, mamlakatsiz telefonda) yoki foydalanuvchi Android'ning mintaqaviy sozlamalarida boshqa kunni tanlagan boʻlsa, telefonning kuni saqlanadi. Matndagi raqamlar va koʻplik shakllari ham ingliz qoidasi bilan. Qoida `:app` da bitta joyda qoʻllanadi: ilova ishga tushganda va tizim tili oʻzgarganda standart locale, hamda activity konfiguratsiyasi (Compose, Material'ning sana va vaqt tanlagichlari, resurslar); har bir ekran, PDF va bildirishnomalar shunga amal qiladi. CSV eksporti esa ustun ajratgichini telefonning oʻz tilidan olishda davom etadi (kasr vergul bilan yoziladigan tilda nuqta-vergul), chunki fayl telefon mintaqasidagi jadval dasturida ochiladi (D72). Ilovaning birinchi tarjimasida qayta koʻrib chiqiladi | PO | 2026-10-25 |
 
 ---
 

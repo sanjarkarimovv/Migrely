@@ -30,6 +30,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import java.util.Locale
 import javax.inject.Singleton
 
 /** The doctor report (change add-doctor-report, BRD D81–D85). One repository serves every repository interface. */
@@ -57,7 +58,7 @@ internal object ReportModule {
         ReportRecordsDomainMapper(),
         ReportDocumentMapper(
             ReportDateTimeFormatter(
-                locale = { context.resources.configuration.locales[0] },
+                locale = { Locale.getDefault() },
                 is24HourFormat = { DateFormat.is24HourFormat(context) },
                 bestDateTimePattern = { locale, skeleton ->
                     DateFormat.getBestDateTimePattern(locale, skeleton)

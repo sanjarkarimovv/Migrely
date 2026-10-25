@@ -20,6 +20,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import java.time.ZoneId
+import java.util.Locale
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -31,7 +32,7 @@ internal object HomeUiModule {
 
     @Provides
     fun providesTimeUiFormatter(@ApplicationContext context: Context) = TimeUiFormatter(
-        locale = { context.resources.configuration.locales[0] },
+        locale = { Locale.getDefault() },
         is24HourFormat = { DateFormat.is24HourFormat(context) },
         deviceZone = { ZoneId.systemDefault() },
         bestDateTimePattern = { locale, skeleton ->

@@ -301,7 +301,7 @@ private fun percentText(percent: InsightsPercentUiModel): String = when (percent
     InsightsPercentUiModel.AboveNinetyNine -> stringResource(R.string.insights_percent_above, 99)
 }
 
-/** "October 2026", in the order of the device's language. */
+/** "October 2026", in the formatting locale the app sets as the default (BRD D117). */
 private fun monthName(year: Int, month: Int): String {
     val locale = Locale.getDefault()
     return DateTimeFormatter.ofPattern(DateFormat.getBestDateTimePattern(locale, "MMMMy"), locale)

@@ -28,6 +28,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import java.time.ZoneId
+import java.util.Locale
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -46,11 +47,11 @@ internal object HistoryUiModule {
     fun providesHistoryCalendarMappers(@ApplicationContext context: Context) =
         HistoryCalendarMappers(
             calendarLayoutUiMapper = CalendarLayoutUiMapper {
-                context.resources.configuration.locales[0]
+                Locale.getDefault()
             },
             daySkyAppearanceUiMapper = DaySkyAppearanceUiMapper(),
             historyTimeUiFormatter = HistoryTimeUiFormatter(
-                locale = { context.resources.configuration.locales[0] },
+                locale = { Locale.getDefault() },
                 is24HourFormat = { DateFormat.is24HourFormat(context) },
                 deviceZone = { ZoneId.systemDefault() },
                 bestDateTimePattern = { locale, skeleton ->
