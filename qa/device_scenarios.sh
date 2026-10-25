@@ -10,7 +10,7 @@
 # zone_attack, zone_history, double_tap, med_effect, med_effect_attack, med_effect_skip, med_effect_late,
 # med_preventive, med_two_waiting, med_link_home, med_overuse, keyboard_home, keyboard_history, keyboard_rtl,
 # landscape_band, mark_travel, mark_earliest_month, stats_counting, stats_chronic, stats_progress, reminder_daily,
-# reminder_permission, reminder_effect, reminder_replan (restarts the emulator), upgrade.
+# reminder_permission, reminder_effect, reminder_replan (restarts the emulator), med_only_history, upgrade.
 # upgrade needs QA_OLD_APK=<older debug APK of com.migrely.app>; without it, it is reported as not run.
 set -euo pipefail
 
@@ -993,6 +993,17 @@ scenario_reminder_effect() {
   expect_no_notification || return 1
 }
 
+# Covers: attack-history › Month by month › Medication before any attack
+# Covers: month-sky › Accessible days › Screen reader on a day with medication only
+scenario_med_only_history() {
+  echo "Scenario med_only_history: ibuprofen last month and no migraine: History reaches that month (D99, D100, #47)"
+  set_clock_millis "$(when_millis 1 20 10:00)" || return 1
+  run_flow clean || return 1
+  run_flow_env med-first-log-home NAME=Ibuprofen "TYPE=Simple painkiller" || return 1
+  set_clock_millis "$(when_millis 0 15 12:00)" || return 1
+  run_flow med-only-past-check || return 1
+}
+
 scenario_double_tap() {
   echo "Scenario double_tap: double taps never cross a mode switch (EC-UX-18, D32), with exact gaps between the taps"
   local gap point
@@ -1040,7 +1051,8 @@ if [[ $# -eq 0 ]]; then
   set -- long history_death past_death details_kill midnight travel travel_west same_date zone_attack zone_history \
     double_tap med_effect med_effect_attack med_effect_skip med_effect_late med_preventive med_two_waiting \
     med_link_home med_overuse keyboard_home keyboard_history keyboard_rtl landscape_band mark_travel mark_earliest_month \
-    stats_counting stats_chronic stats_progress reminder_daily reminder_permission reminder_effect reminder_replan
+    stats_counting stats_chronic stats_progress reminder_daily reminder_permission reminder_effect reminder_replan \
+    med_only_history
   if [[ -n "${QA_OLD_APK:-}" ]]; then
     set -- "$@" upgrade
   else
