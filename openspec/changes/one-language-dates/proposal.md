@@ -14,9 +14,9 @@ region's conventions come from the phone.
   the phone's country (ru-RU gives en-RU, uz-UZ gives en-UZ), or plain English with no country.
 - The week still starts on the phone's first day, a first day chosen in Android's regional preferences included; the
   12- or 24-hour setting is still the system's.
-- `:app` applies it in one place: the process default at start and on every configuration change, and the activity's
-  configuration, so every screen, Material's date and time pickers, resources, the doctor report and notifications
-  follow it.
+- `:app` applies it in one place: the formatters it provides read it from the configuration at every call, the
+  activity's configuration carries it for Compose, Material's date and time pickers and resources, and the process
+  default is set too, so every screen, the doctor report and notifications follow it.
 - The CSV export keeps choosing its separator by the phone's own language (D72).
 - A paywall that shows itself also needs Google Play to return Migrely's products (D110): on the real Play track before
   the products are set up, billing connected, and the onboarding and patterns paywalls showed only "Premium isn't
@@ -35,8 +35,8 @@ region's conventions come from the phone.
 
 ## Impact
 
-- **`:app`:** `FormattingLocaleResolver` and `FormattingLocaleApplier` (`com.migrely.app.locale`), `MigrelyApplication`,
-  `MainActivity`, and the DI modules whose formatters read the locale.
+- **`:app`:** `FormattingLocaleResolver` and `FormattingLocales` (`com.migrely.app.locale`), `LocaleModule`,
+  `MigrelyApplication`, `MainActivity`, and the DI modules whose formatters read the locale.
 - **Backup:** the CSV repository is handed the phone's own locale.
 - **Subscription:** `SubscriptionRepository.billingAvailability()` asks for the products and remembers the answer; the
   repository is one for the app.

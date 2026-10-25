@@ -9,6 +9,7 @@ import com.migrely.app.datasource.backup.datasource.BackupDataSource
 import com.migrely.app.datasource.clock.datasource.ClockDataSource
 import com.migrely.app.datasource.report.datasource.ReportDocumentDataSource
 import com.migrely.app.datasource.report.datasource.ReportDocumentDataSourceImpl
+import com.migrely.app.locale.FormattingLocales
 import com.migrely.app.navigation.mapper.ReportNavigationEventDestinationMapper
 import com.migrely.app.report.data.mapper.ReportDateTimeFormatter
 import com.migrely.app.report.data.mapper.ReportDocumentMapper
@@ -30,7 +31,6 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import java.util.Locale
 import javax.inject.Singleton
 
 /** The doctor report (change add-doctor-report, BRD D81–D85). One repository serves every repository interface. */
@@ -48,6 +48,7 @@ internal object ReportModule {
     @Provides
     fun providesReportRepository(
         @ApplicationContext context: Context,
+        formattingLocales: FormattingLocales,
         backupDataSource: BackupDataSource,
         reportDocumentDataSource: ReportDocumentDataSource,
         clockDataSource: ClockDataSource
@@ -58,7 +59,7 @@ internal object ReportModule {
         ReportRecordsDomainMapper(),
         ReportDocumentMapper(
             ReportDateTimeFormatter(
-                locale = { Locale.getDefault() },
+                locale = { formattingLocales.of(context.resources.configuration) },
                 is24HourFormat = { DateFormat.is24HourFormat(context) },
                 bestDateTimePattern = { locale, skeleton ->
                     DateFormat.getBestDateTimePattern(locale, skeleton)

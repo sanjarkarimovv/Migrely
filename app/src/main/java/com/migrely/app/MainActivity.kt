@@ -33,7 +33,7 @@ import com.migrely.app.designsystem.theme.DarkScreens
 import com.migrely.app.designsystem.theme.LocalDarkScreens
 import com.migrely.app.designsystem.theme.MigrelyColors
 import com.migrely.app.designsystem.theme.MigrelyTheme
-import com.migrely.app.locale.FormattingLocaleApplier
+import com.migrely.app.locale.FormattingLocales
 import com.migrely.app.premium.PremiumStartChecks
 import com.migrely.app.start.StartEntryPoint
 import com.migrely.app.subscription.domain.model.RefreshPremiumRequestDomainModel
@@ -137,7 +137,7 @@ class MainActivity : ComponentActivity() {
     override fun attachBaseContext(newBase: Context) {
         super.attachBaseContext(newBase)
         applyOverrideConfiguration(
-            FormattingLocaleApplier().activityOverride(newBase.resources.configuration)
+            FormattingLocales().activityOverride(newBase.resources.configuration)
         )
     }
 

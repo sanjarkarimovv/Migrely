@@ -20,6 +20,7 @@ import com.migrely.app.history.ui.mapper.HistoryViewStateUiMapper
 import com.migrely.app.history.ui.mapper.MonthSkyNotificationUiMapper
 import com.migrely.app.history.ui.mapper.MonthSkyViewStateUiMapper
 import com.migrely.app.history.ui.notification.HistoryMessagePresenter
+import com.migrely.app.locale.FormattingLocales
 import com.migrely.app.navigation.mapper.HistoryNavigationEventDestinationMapper
 import com.migrely.app.navigation.mapper.MonthSkyNavigationEventDestinationMapper
 import dagger.Module
@@ -28,7 +29,6 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import java.time.ZoneId
-import java.util.Locale
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -44,21 +44,23 @@ internal object HistoryUiModule {
         MonthSkyNavigationEventDestinationMapper()
 
     @Provides
-    fun providesHistoryCalendarMappers(@ApplicationContext context: Context) =
-        HistoryCalendarMappers(
-            calendarLayoutUiMapper = CalendarLayoutUiMapper {
-                Locale.getDefault()
-            },
-            daySkyAppearanceUiMapper = DaySkyAppearanceUiMapper(),
-            historyTimeUiFormatter = HistoryTimeUiFormatter(
-                locale = { Locale.getDefault() },
-                is24HourFormat = { DateFormat.is24HourFormat(context) },
-                deviceZone = { ZoneId.systemDefault() },
-                bestDateTimePattern = { locale, skeleton ->
-                    DateFormat.getBestDateTimePattern(locale, skeleton)
-                }
-            )
+    fun providesHistoryCalendarMappers(
+        @ApplicationContext context: Context,
+        formattingLocales: FormattingLocales
+    ) = HistoryCalendarMappers(
+        calendarLayoutUiMapper = CalendarLayoutUiMapper {
+            formattingLocales.of(context.resources.configuration)
+        },
+        daySkyAppearanceUiMapper = DaySkyAppearanceUiMapper(),
+        historyTimeUiFormatter = HistoryTimeUiFormatter(
+            locale = { formattingLocales.of(context.resources.configuration) },
+            is24HourFormat = { DateFormat.is24HourFormat(context) },
+            deviceZone = { ZoneId.systemDefault() },
+            bestDateTimePattern = { locale, skeleton ->
+                DateFormat.getBestDateTimePattern(locale, skeleton)
+            }
         )
+    )
 
     @Provides
     fun providesHistoryDependencies(
