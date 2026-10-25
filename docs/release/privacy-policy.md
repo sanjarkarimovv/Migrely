@@ -14,10 +14,13 @@ Migrely keeps what you enter on your phone:
 - days you mark as period days or pain-free days;
 - your answers to the welcome questions, such as how often migraines come;
 - your settings, such as reminders, the theme and whether you track periods;
+- whether Migrely Premium is on (see Purchases below);
 - up to three automatic copies of your entries, made before an import replaces them.
 
 Migrely does not ask for your name, email, location, contacts, photos or any account. It has no internet permission,
-so it cannot send anything to us or to anyone else. It contains no analytics, advertising or tracking code.
+so it cannot send anything to us or to anyone else. It contains no analytics, advertising or tracking code of its own.
+The Google Play billing library it uses for Premium includes Google's usage logging, which cannot send anything
+either without the internet permission.
 
 ## Android's own backup
 
@@ -40,7 +43,12 @@ which you can refuse or withdraw at any time.
 
 ## Purchases
 
-TODO(change 9): Payments are handled by Google Play. We do not receive your payment details.
+Migrely Premium is bought through Google Play. Google Play handles the payment under Google's privacy policy, and we
+receive no payment details, name or email. Migrely asks the Google Play app on your phone whether Premium is active,
+without going on the internet, and keeps only that on your phone: the kind of purchase, its plan when bought on this
+phone, and when it was last checked. Settings → Delete all data removes this record too, but not the purchase: it stays
+with your Google account, and Migrely finds it again at its next check or when you tap "Restore purchases". To cancel a
+subscription, use Google Play; Migrely cannot cancel it for you.
 
 ## Deleting your information
 
