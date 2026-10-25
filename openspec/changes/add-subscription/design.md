@@ -34,12 +34,20 @@
   - The paywall marks and the trial banner's dismissal stay in `migrely_preferences`, which is backed up, so a
     restored user does not see the onboarding paywall again.
   - "Delete all data" clears both files.
-- **Checking:** `RefreshPremiumUseCase` asks Play at most every 15 minutes, unless forced after a purchase or on restore.
+- **Checking:** `RefreshPremiumUseCase` asks Play at most every 15 minutes, unless forced after a purchase or on restore,
+  and every time while a payment is pending or a purchase is not yet acknowledged. `PremiumChecker`, one for the app,
+  runs the checks one at a time.
 - **The rules:**
   - pending never unlocks;
-  - Unreachable keeps a subscription for 3 days after the last check, and lifetime until Play answers otherwise;
+  - Unreachable keeps a subscription for 3 days after the last check, but not when the clock reads earlier than that
+    check, and lifetime until Play answers otherwise;
   - an unverified signature never unlocks;
-  - an unacknowledged PURCHASED purchase is acknowledged.
+  - an unacknowledged PURCHASED purchase is acknowledged, with 3 retries after 1, 2 and 4 seconds. One that still fails
+    is marked in the cache; while it is, or while a payment is pending, a WorkManager periodic check runs about every
+    12 hours with no constraints (unique work `premium-check`), so the purchase is acknowledged within Play's 3 days
+    even if the app stays closed. The check cancels the work once neither holds, and "Delete all data" cancels it too;
+  - the plan and trial asked of Play's sheet are kept before it opens, so a purchase that completes while the app is
+    away still gets them at the next check.
 - **Observing:** built differently from the `ObservePremiumUseCase` first planned, since ARCHITECTURE §7 rule 6 allows
   a flow use case only in a scope that is cancelled, and view models are not:
   - screens read the status with one-shot use cases on enter, on resume and after every action;
@@ -78,14 +86,18 @@ trigger into home, so no feature depends on another.
   - no attack is in progress;
   - the trigger has not fired before;
   - no self-shown paywall appeared in the last 7 days.
-- **The 5th migraine:** counted from the attack datasource (started attacks, not deleted). The home trigger checks it on
-  resume.
+- **The 5th migraine:** the paywall shows itself only once Insights could show the patterns it promises, by Insights'
+  own rule (D88, `PatternsReadiness` in the shared `:features:patterns:domain`): at least 5 migraines started in the
+  6 months Insights open on, the first at least 30 days ago. The home trigger asks after every home load in today's
+  mode.
 - **Marking:** when one shows, its trigger and the time are recorded.
 
 ### D6. The trial banner
 
-Trial end = purchase time + 7 days, recorded only when the purchase used the trial offer on this phone. The banner shows
-on home from 24 hours before the end until dismissed; the dismissal is stored with that end date.
+Trial end = purchase time + the trial's length as Play gives it (`freeTrialPeriod`, P7D for the yearly offer),
+recorded only when the purchase used the trial offer on this phone. The banner shows on home from 24 hours before the
+end until dismissed; the dismissal is stored with that end date. It says "today" or "tomorrow" by the phone's date, and
+once the subscription is cancelled it says the trial and Premium end, with no advice to cancel.
 
 ### D7. Copy
 
