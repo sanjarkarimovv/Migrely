@@ -36,6 +36,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -145,30 +146,34 @@ fun DeleteAllDataContents(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        TopAppBar(
-            title = {
-                Text(
-                    stringResource(R.string.settings_delete_title),
-                    modifier = Modifier.semantics { heading() }
-                )
-            },
-            navigationIcon = {
-                if (!deleting) {
-                    IconButton(onClick = actions.onBack) {
-                        Icon(
-                            MigrelyIcons.Back,
-                            contentDescription = stringResource(R.string.settings_back)
-                        )
+        // A fresh bar when deleting starts: the bar animates a change of colour, which would fade it from light to
+        // dark over the already dark screen.
+        key(deleting) {
+            TopAppBar(
+                title = {
+                    Text(
+                        stringResource(R.string.settings_delete_title),
+                        modifier = Modifier.semantics { heading() }
+                    )
+                },
+                navigationIcon = {
+                    if (!deleting) {
+                        IconButton(onClick = actions.onBack) {
+                            Icon(
+                                MigrelyIcons.Back,
+                                contentDescription = stringResource(R.string.settings_back)
+                            )
+                        }
                     }
-                }
-            },
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = MaterialTheme.colorScheme.background
-            ),
-            windowInsets = WindowInsets.safeDrawing.only(
-                WindowInsetsSides.Top + WindowInsetsSides.Horizontal
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background
+                ),
+                windowInsets = WindowInsets.safeDrawing.only(
+                    WindowInsetsSides.Top + WindowInsetsSides.Horizontal
+                )
             )
-        )
+        }
         if (deleting) {
             Deleting()
         } else {
