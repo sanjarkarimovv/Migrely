@@ -1,0 +1,13 @@
+# Device scenario step: after Delete all data and onboarding, a fresh start brings nothing back: home is calm and
+# History is at its first-use state.
+appId: com.migrely.app
+---
+- launchApp
+- extendedWaitUntil:
+    visible: "Today: calm\\. Calm so far today\\. No migraine logged\\."
+    timeout: 10000
+- tapOn: ".*\\. Opens History\\."
+- extendedWaitUntil:
+    visible: "Log your first migraine"
+    timeout: 5000
+- stopApp

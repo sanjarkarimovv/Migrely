@@ -1,0 +1,20 @@
+# Device scenario step: Your data shows "Restore the copy from …" when SHOWN is "true", and not when "false".
+appId: com.migrely.app
+---
+- launchApp
+- tapOn: "Settings"
+- tapOn: "Your data.*"
+- extendedWaitUntil:
+    visible: "Import a backup.*"
+    timeout: 5000
+- runFlow:
+    when:
+      true: ${SHOWN == "true"}
+    commands:
+      - assertVisible: "Restore the copy from .*"
+- runFlow:
+    when:
+      true: ${SHOWN != "true"}
+    commands:
+      - assertNotVisible: "Restore the copy from .*"
+- stopApp

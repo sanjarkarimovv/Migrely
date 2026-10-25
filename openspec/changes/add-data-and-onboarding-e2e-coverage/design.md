@@ -42,21 +42,22 @@ exit.
 
 ### D3. Android backup
 
-| Step | Command |
-|---|---|
-| Use the local transport | `bmgr enable true`; `bmgr transport com.android.localtransport/.LocalTransport` |
-| Back up and restore | `bmgr backupnow com.migrely.app`, then `pm clear` and `bmgr restore` |
-
-The app disables cloud backup without client-side encryption. The local transport may therefore back up nothing. That
-is the correct behaviour, and it is recorded as a D61 gap with the reason, not as a pass. The transport is restored.
+`backup_android` runs on demand, not in the default run. It uses the local transport (`bmgr enable true`, `bmgr
+transport com.android.localtransport/.LocalTransport`). The app disables cloud backup without end-to-end encryption, so
+the transport is told to claim encryption (`backup_local_transport_parameters fake_encryption_flag=true`). Then the
+scenario backs up, runs `pm clear` and `bmgr restore`, and prints what came back. The transport, its enabled state and
+the parameter are restored, also by the exit trap. A real "new phone" restore needs a Google account backup, so it is
+a D61 gap.
 
 ### D4. Onboarding states
 
 - **New user:** a clean install.
-- **An update:** data is seeded through the UI first, then `pm clear` is *not* used; the app is reinstalled over itself
-  with `adb install -r` after the onboarding preference is removed. Only with the app stopped, in the D60 sqlite/prefs
-  fallback; otherwise the scenario uses "a record exists → no onboarding" directly.
-- **Shortcut:** `am start -a com.migrely.app.action.START_ATTACK` on a clean install.
+- **Answers:** the answers are read back from the debug build's preferences (`run-as … cat shared_prefs/…`, read only).
+- **An update:** an older version with entries and no onboarding answer is simulated. Entries are logged, the
+  preferences file is deleted, and the app is reinstalled over itself with `adb install -r`. Home must open, because a
+  record exists.
+- **Shortcut:** `am start -a com.migrely.app.action.START_ATTACK -n <launcher activity>` on a clean install. The
+  launcher shortcut names the activity too.
 
 ### D5. Delete all data
 

@@ -1,8 +1,7 @@
 # Covers: data-backup › Your data › Opening Your data
 appId: com.migrely.app
 name: Your data offers export and import; a JSON backup and a CSV export save to Download
-# The "saved" messages are short; pass 2 (a 20 s accessibility timeout) keeps them on screen for the check.
-tags: [regression, data-backup, a11y-timeout]
+tags: [regression, data-backup]
 ---
 - runFlow: ../subflows/launch-clean.yaml
 - runFlow: ../subflows/log-attack-today.yaml

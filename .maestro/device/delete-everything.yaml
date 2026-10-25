@@ -8,6 +8,8 @@ appId: com.migrely.app
 - scrollUntilVisible:
     element: "Delete all data.*"
     direction: DOWN
+    # Centred: at the screen's bottom edge a tap can land in the system gesture area.
+    centerElement: true
 - tapOn: "Delete all data.*"
 - tapOn: "Type DELETE to confirm"
 - inputText: "DELETE"

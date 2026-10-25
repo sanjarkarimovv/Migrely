@@ -1,0 +1,17 @@
+# Device scenario step: finish onboarding if it shows (Skip), then History's list for this month counts COUNT migraines.
+appId: com.migrely.app
+---
+- launchApp
+- extendedWaitUntil:
+    visible: "Step 1 of 4.*|Migraine started"
+    timeout: 15000
+- runFlow:
+    when:
+      visible: "Step 1 of 4.*"
+    commands:
+      - runFlow: ../subflows/skip-onboarding.yaml
+- tapOn: ".*\\. Opens History\\."
+- scrollUntilVisible:
+    element: "${COUNT} migraines? in .*"
+    direction: DOWN
+- stopApp

@@ -13,7 +13,11 @@ appId: com.migrely.app
     commands:
       - tapOn: "Show roots"
       - tapOn: "Downloads"
-- tapOn: "SAVE"
+- tapOn:
+    text: "SAVE"
+    waitToSettleTimeoutMs: 0
+# The saved message lasts about 4 s (#56), so it is looked for but not required; backup_export checks the file.
 - extendedWaitUntil:
     visible: "${MESSAGE}"
-    timeout: 10000
+    timeout: 6000
+    optional: true

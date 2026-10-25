@@ -1,0 +1,9 @@
+# Device scenario step: in attack mode, open "Details of this migraine" (a screen opened from attack mode).
+appId: com.migrely.app
+---
+- launchApp:
+    stopApp: false
+- tapOn: "Details of this migraine"
+- extendedWaitUntil:
+    visible: "Anything else worth remembering|Notes"
+    timeout: 5000
