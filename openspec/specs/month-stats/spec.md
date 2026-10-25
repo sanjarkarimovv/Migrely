@@ -83,10 +83,13 @@ to a doctor, without warning colours or blame (BRD STA-F2, G1, D54).
 
 ### Requirement: The progress message
 The summary SHALL compare a past month's migraine days with the whole previous month's, and the current month's, up to
-today's date, with the same dates of the previous month, up to its last day. It SHALL show only when
-both periods have at least 10 days with an entry: a day an attack touches, a marked day, or a day with attack
-medication. Fewer days SHALL read warm, and more or as many SHALL read neutral. It SHALL not show before any attack is
-logged, since a comparison of migraine days means nothing without one (BRD EC-UX-14, G3, D55, D99).
+today's date, with the same dates of the previous month, up to its last day. It SHALL show only when both periods have
+at least 10 days with an entry (an attack, a mark or attack medication) and an attack was ever logged. Fewer days
+SHALL read warm, and more or as many neutral (BRD EC-UX-14, G3, D55, D99).
+
+#### Scenario: Not before any attack
+- **WHEN** no migraine was ever logged, and simple painkillers were taken on 12 days of this month and 12 of the last
+- **THEN** the summary shows no progress message, since a comparison of migraine days means nothing without one
 
 #### Scenario: Better than last month
 - **WHEN** September 2026 had 6 migraine days and August 9, each with 10 or more days with entries

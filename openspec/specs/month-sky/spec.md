@@ -10,10 +10,14 @@ glance and nothing is shown that the data does not say (BRD HIS-F1, EC-UX-09, EC
 ### Requirement: One sky per day from data
 A month calendar SHALL show each day as a small sky made only from the attacks touching it. The worst attack decides:
 1–3 hazy, 4–6 cloudy, 7–10 storm, no pain level cloudy; an attack in progress shows rain. A day without attacks SHALL be
-clear and starry only when marked pain-free. A past day without attacks but with an attack-medication intake, in the
-zone where it was taken, SHALL have a solid outline and no sky; preventive intakes SHALL not count. Other past days
-have a dashed outline, future days are empty. A period day SHALL show a small drop in its corner (BRD HIS-F1,
-EC-UX-09, EC-ATK-07, EC-ATK-08, G6, D47, D49, D100).
+clear only when marked pain-free; a past one with only attack medication SHALL have a solid outline, other past days a
+dashed one, future days none. A period day SHALL show a drop in its corner (BRD HIS-F1, EC-UX-09, EC-ATK-07, EC-ATK-08,
+G6, D47, D49, D100).
+
+#### Scenario: Medication counts in its own zone, preventives never
+- **WHEN** an attack medication was taken at 23:30 on 9 October in Tokyo, a preventive one on 11 October, and no
+  attack touches either day
+- **THEN** 9 October has the solid outline and 11 October the dashed one
 
 #### Scenario: Worst attack decides
 - **WHEN** two attacks on 14 October peaked at 3 and 8
