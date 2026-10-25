@@ -32,7 +32,6 @@ private const val LINE_SPACING = 1.1f
 
 /** A cell or paragraph longer than this is cut with an ellipsis, so no row is ever taller than a page. */
 private const val MAXIMUM_LINES = 40
-private val WEEKDAY_LETTERS = listOf("M", "T", "W", "T", "F", "S", "S")
 
 /**
  * Lays a report out on pages and draws it with Android's `PdfDocument` (ADR-07). Pages are laid out first, so every
@@ -164,7 +163,7 @@ internal class ReportPageLayout(private val document: ReportDocumentDataModel) {
             }
             is ReportBlockDataModel.HeatMap ->
                 block.months.chunked(MONTHS_PER_ROW).map {
-                    Item.Draw(cached(it.first()) { monthRow(it) })
+                    Item.Draw(cached(it.first()) { monthRow(it, block.weekdays) })
                 } +
                     Item.Draw(cached(block.legend) { legend(block.legend) })
             ReportBlockDataModel.PageBreak -> listOf(Item.Break)
@@ -220,7 +219,7 @@ internal class ReportPageLayout(private val document: ReportDocumentDataModel) {
         }
     }
 
-    private fun monthRow(months: List<ReportHeatMonthDataModel>): Piece {
+    private fun monthRow(months: List<ReportHeatMonthDataModel>, weekdays: List<String>): Piece {
         val boxWidth = (contentWidth - (MONTHS_PER_ROW - 1) * GAP * 2) / MONTHS_PER_ROW
         val cell = boxWidth / WEEK_DAYS
         val titleHeight = layout("M", headingPaint, boxWidth).height.toFloat()
@@ -230,7 +229,7 @@ internal class ReportPageLayout(private val document: ReportDocumentDataModel) {
                 val left = MARGIN + index * (boxWidth + GAP * 2)
                 draw(canvas, layout(month.title, bodyPaint, boxWidth), left, top)
                 val gridTop = top + titleHeight
-                WEEKDAY_LETTERS.forEachIndexed { day, letter ->
+                weekdays.forEachIndexed { day, letter ->
                     draw(
                         canvas,
                         layout(letter, dayPaint, cell),
@@ -239,7 +238,7 @@ internal class ReportPageLayout(private val document: ReportDocumentDataModel) {
                     )
                 }
                 month.levels.forEachIndexed { dayIndex, level ->
-                    val slot = month.firstWeekday + dayIndex
+                    val slot = month.leadingEmptyDays + dayIndex
                     val x = left + (slot % WEEK_DAYS) * cell
                     val y = gridTop + (slot / WEEK_DAYS + 1) * cell
                     drawDay(canvas, x, y, cell, level, (dayIndex + 1).toString())

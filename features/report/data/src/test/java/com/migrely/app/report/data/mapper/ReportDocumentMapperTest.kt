@@ -19,6 +19,7 @@ import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId
 import java.time.ZoneOffset
+import java.util.Locale
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -75,7 +76,8 @@ private fun report(
 )
 
 class ReportDocumentMapperTest {
-    private val classUnderTest = ReportDocumentMapper()
+    private var locale: Locale = Locale.UK
+    private val classUnderTest = ReportDocumentMapper(ReportDateTimeFormatter { locale })
 
     private fun blocks(report: ReportDomainModel) =
         classUnderTest.toData(report, ReportPaperDataModel.A4, TASHKENT).blocks
@@ -165,6 +167,25 @@ class ReportDocumentMapperTest {
             blocks.filterIsInstance<ReportBlockDataModel.HeatMap>().single()
                 .months.single().levels.first()
         )
+    }
+
+    @Test
+    fun `Given a phone in the UK then the calendar's weeks start on Monday`() {
+        val heatMap = blocks(report()).filterIsInstance<ReportBlockDataModel.HeatMap>().single()
+
+        assertEquals(listOf("M", "T", "W", "T", "F", "S", "S"), heatMap.weekdays)
+        // 1 October 2026 is a Thursday.
+        assertEquals(3, heatMap.months.single().leadingEmptyDays)
+    }
+
+    @Test
+    fun `Given a phone in the US then the calendar's weeks start on Sunday, as the app's do`() {
+        locale = Locale.US
+
+        val heatMap = blocks(report()).filterIsInstance<ReportBlockDataModel.HeatMap>().single()
+
+        assertEquals(listOf("S", "M", "T", "W", "T", "F", "S"), heatMap.weekdays)
+        assertEquals(4, heatMap.months.single().leadingEmptyDays)
     }
 
     @Test

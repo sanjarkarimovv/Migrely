@@ -22,6 +22,8 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 
+private val WEEKDAYS = listOf("S", "M", "T", "W", "T", "F", "S")
+
 /** Reports drawn with `PdfDocument` into the cache (change add-doctor-report). */
 @RunWith(AndroidJUnit4::class)
 class ReportDocumentDataSourceImplTest {
@@ -58,10 +60,11 @@ class ReportDocumentDataSourceImplTest {
             ),
             ReportBlockDataModel.Heading("Calendar"),
             ReportBlockDataModel.HeatMap(
+                weekdays = WEEKDAYS,
                 months = List(3) { month ->
                     ReportHeatMonthDataModel(
                         "Month $month",
-                        firstWeekday = month,
+                        leadingEmptyDays = month,
                         levels = List(31) { ReportDayLevelDataModel.entries[it % 6] }
                     )
                 },
@@ -153,7 +156,7 @@ class ReportDocumentDataSourceImplTest {
             ReportHeatMonthDataModel("Month $month", 0, List(30) { ReportDayLevelDataModel.Mild })
         }
         val long = document(rows = 0, maxPages = 3).copy(
-            blocks = listOf(ReportBlockDataModel.HeatMap(months, emptyList()))
+            blocks = listOf(ReportBlockDataModel.HeatMap(WEEKDAYS, months, emptyList()))
         )
 
         classUnderTest.write(long)

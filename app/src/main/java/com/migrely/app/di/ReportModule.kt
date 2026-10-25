@@ -9,6 +9,7 @@ import com.migrely.app.datasource.clock.datasource.ClockDataSource
 import com.migrely.app.datasource.report.datasource.ReportDocumentDataSource
 import com.migrely.app.datasource.report.datasource.ReportDocumentDataSourceImpl
 import com.migrely.app.navigation.mapper.ReportNavigationEventDestinationMapper
+import com.migrely.app.report.data.mapper.ReportDateTimeFormatter
 import com.migrely.app.report.data.mapper.ReportDocumentMapper
 import com.migrely.app.report.data.mapper.ReportRecordsDomainMapper
 import com.migrely.app.report.data.repository.ReportRepository
@@ -41,8 +42,10 @@ internal object ReportModule {
         FileProvider.getUriForFile(context, "${context.packageName}.reports", file).toString()
     }
 
+    /** The report follows the phone as History's calendar does, reading its locale when a report is made. */
     @Provides
     fun providesReportRepository(
+        @ApplicationContext context: Context,
         backupDataSource: BackupDataSource,
         reportDocumentDataSource: ReportDocumentDataSource,
         clockDataSource: ClockDataSource
@@ -51,7 +54,9 @@ internal object ReportModule {
         reportDocumentDataSource,
         clockDataSource,
         ReportRecordsDomainMapper(),
-        ReportDocumentMapper()
+        ReportDocumentMapper(
+            ReportDateTimeFormatter(locale = { context.resources.configuration.locales[0] })
+        )
     )
 
     @Provides
