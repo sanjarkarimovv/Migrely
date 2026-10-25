@@ -405,7 +405,8 @@ private fun DaySkyAppearance.hasSky() = this != DaySkyAppearance.NothingLogged &
 
 /**
  * The outline colours of days without a sky: [notLogged] for the dashed and future outlines, and
- * the slightly brighter [logged] for a day with attack medication only (BRD D100).
+ * [logged] for the solid outline of a day with attack medication only (BRD D100). Both are
+ * `outline` today, so the two days differ by shape.
  */
 private class DayOutlines(val notLogged: Color, val logged: Color)
 
