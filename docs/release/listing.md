@@ -25,10 +25,10 @@ Migrely is a calm, private migraine diary. Log an attack in three taps, even in 
 quiet night sky: a clear day, a hazy one, a storm.
 
 LOG IN SECONDS
-• "Migraine started" in one tap, from the app or its home-screen shortcut
+• "Migraine started" in one tap, in the app or by long-pressing its icon
 • Pain level, where it hurts, symptoms, possible triggers and notes, all optional
 • Attack mode stays dark and simple while you are in pain
-• Add past migraines, and edit or undo anything
+• Add past migraines, edit any entry, and undo a deletion
 
 SEE YOUR MONTHS
 • A calendar where each day is a small sky, drawn only from what you logged
@@ -57,7 +57,7 @@ GENTLE ON YOUR EYES
 • Large text, TalkBack and keyboards work throughout
 
 SAFETY FIRST
-• The warning signs that need urgent care are one tap away
+• The warning signs that need urgent care are always at hand in Settings
 
 Migrely is a diary. It is not a medical device and does not diagnose, treat or prevent any condition. Talk to a
 doctor about your headaches, and before you start, stop or change a medication. If a headache comes with any of the

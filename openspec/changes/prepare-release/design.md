@@ -20,17 +20,18 @@
 
 ### D3. The icon
 
-- **The art:** one SVG source in `docs/release/icon/`, drawn on a 108-unit grid:
-  - the background is a vertical gradient from #202945 to #121A2E, the home sky's calm gradient;
+- **The art:** one generator, `docs/release/icon/make_icon.py`, draws on a 108-unit grid:
+  - the background is a vertical gradient from #121A2E at the top to #26305A, the home sky's calm night;
   - the crescent is #C8CCD2, made of two circle arcs;
-  - two small stars.
+  - two small sparkle stars.
+- **What it writes:** the SVG sources, the three launcher drawables in `app/src/main/res/drawable`, and the 512×512 Play
+  icon as a 32-bit PNG.
 - **The adaptive icon:**
-  - vector drawables for background and foreground;
-  - the monochrome layer is the foreground's shapes in one colour;
-  - legacy `mipmap-*` PNGs are rendered from the SVG with `rsvg-convert` for API 26 and older launchers that ignore
-    the adaptive one (minSdk is 26, so they are only a fallback);
+  - background, foreground and a monochrome layer of the same shapes in one colour;
   - `ic_launcher_round` uses the same layers.
-- **The Play icon:** 512×512 PNG, full-bleed, rendered from the SVG.
+- **The template PNGs:** the template's density PNGs are removed. minSdk is 26, so `mipmap-anydpi-v26` always wins and
+  they were never used.
+- **The splash** already shows the foreground, so it shows the moon too.
 
 ### D4. Store documents
 

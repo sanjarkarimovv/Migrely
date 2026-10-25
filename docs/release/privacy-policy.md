@@ -10,9 +10,11 @@ happens to the information you enter. In short: **Migrely has no internet access
 Migrely keeps what you enter on your phone:
 - migraines, with their times, pain levels, where it hurt, symptoms, possible triggers, how they affected you and your
   notes;
-- medications and when you took them, and whether they helped;
+- medications, their doses and when you took them, and whether they helped;
 - days you mark as period days or pain-free days;
-- your settings, such as reminders, the theme and whether you track periods.
+- your answers to the welcome questions, such as how often migraines come;
+- your settings, such as reminders, the theme and whether you track periods;
+- up to three automatic copies of your entries, made before an import replaces them.
 
 Migrely does not ask for your name, email, location, contacts, photos or any account. It has no internet permission,
 so it cannot send anything to us or to anyone else. It contains no analytics, advertising or tracking code.
@@ -42,10 +44,12 @@ TODO(change 9): Payments are handled by Google Play. We do not receive your paym
 
 ## Deleting your information
 
-- **Settings → Delete all data** removes every entry, setting and copy Migrely keeps on your phone.
-- Uninstalling Migrely removes them too.
-- Android's own backup of Migrely is replaced the next time your phone backs up, usually within a day. You can also
-  delete it in your Google account's backup settings.
+- **Settings → Delete all data** removes every entry, setting and copy Migrely keeps on your phone. Android's own backup
+  of Migrely is then replaced the next time your phone backs up, which Android usually does about once a day while the
+  phone is idle, charging and on Wi-Fi.
+- Uninstalling Migrely removes everything from your phone, but Android's own backup of it stays in your Google account
+  and is restored if you install Migrely again. To remove it, delete all data in Migrely before uninstalling, or delete
+  your phone's backup in your Google account (Google deletes a whole phone's backup, not a single app's).
 
 ## Children
 

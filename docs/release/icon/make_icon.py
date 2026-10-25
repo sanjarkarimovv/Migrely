@@ -1,4 +1,16 @@
-import math, sys
+"""Draws Migrely's icon (BRD D103) and writes every file made from it.
+
+Run from the repo root: python3 docs/release/icon/make_icon.py
+It writes the three launcher drawables into app/src/main/res/drawable, the SVG sources next to this script, and the
+512×512 Play icon as a 32-bit PNG (rendered with rsvg-convert, then given an alpha channel with Pillow).
+"""
+import subprocess
+from pathlib import Path
+from PIL import Image
+
+ICON = Path(__file__).parent
+RES = ICON.parents[2] / 'app' / 'src' / 'main' / 'res' / 'drawable'
+import math
 # 108-unit adaptive-icon grid; safe zone is a circle of radius 33 around (54, 54).
 C1 = (50.0, 57.0); R = 19.0          # the moon's disc
 C2 = (59.5, 48.5); r = 16.0          # the circle that bites it
@@ -32,10 +44,10 @@ svg_full = f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 108" wid
   {''.join(f'<path d="{s}" fill="{STAR}"/>' for s in stars)}
 </svg>
 '''
-open('migrely-icon.svg', 'w').write(svg_full)
+open(ICON / 'migrely-icon.svg', 'w').write(svg_full)
 # Play icon: the same art scaled so the moon fills more of the square (Play masks it to a rounded square itself).
 svg_play = svg_full.replace('viewBox="0 0 108 108"', 'viewBox="18 18 72 72"').replace('<rect width="108" height="108"', '<rect x="18" y="18" width="72" height="72"')
-open('migrely-play-icon.svg', 'w').write(svg_play)
+open(ICON / 'migrely-play-icon.svg', 'w').write(svg_play)
 fg = f'''<?xml version="1.0" encoding="utf-8"?>
 <!-- Migrely's icon: a crescent moon and two stars on the home screen's night sky (BRD D103). Source:
      docs/release/icon/migrely-icon.svg. -->
@@ -51,9 +63,9 @@ fg = f'''<?xml version="1.0" encoding="utf-8"?>
         android:fillColor="{STAR}"
         android:pathData="{s}" />
 ''' for s in stars) + '</vector>\n'
-open('ic_launcher_foreground.xml', 'w').write(fg)
+open(RES / 'ic_launcher_foreground.xml', 'w').write(fg)
 mono = fg.replace(MOON, '#FFFFFFFF').replace("Migrely's icon: a crescent moon and two stars on the home screen's night sky", "The icon's shapes in one colour, for themed icons")
-open('ic_launcher_monochrome.xml', 'w').write(mono)
+open(RES / 'ic_launcher_monochrome.xml', 'w').write(mono)
 bg = f'''<?xml version="1.0" encoding="utf-8"?>
 <!-- The home screen's calm night sky, darker at the top (BRD D103). -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
@@ -81,4 +93,7 @@ bg = f'''<?xml version="1.0" encoding="utf-8"?>
     </path>
 </vector>
 '''
-open('ic_launcher_background.xml', 'w').write(bg)
+open(RES / 'ic_launcher_background.xml', 'w').write(bg)
+play = ICON / 'migrely-play-icon-512.png'
+subprocess.run(['rsvg-convert', '-w', '512', '-h', '512', str(ICON / 'migrely-play-icon.svg'), '-o', str(play)], check=True)
+Image.open(play).convert('RGBA').save(play)

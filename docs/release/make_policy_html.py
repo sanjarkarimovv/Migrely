@@ -11,7 +11,10 @@ HERE = Path(__file__).parent
 
 def inline(text):
     text = html.escape(text, quote=False)
-    return re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', text)
+    text = re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', text)
+    # Email addresses and web addresses become links.
+    text = re.sub(r'(?<![\w@/])([\w.+-]+@[\w-]+(?:\.[\w-]+)+)', r'<a href="mailto:\1">\1</a>', text)
+    return re.sub(r'(?<![">])(https://[^\s<]+[^\s<.,;:)])', r'<a href="\1">\1</a>', text)
 
 
 def to_html(source):
@@ -59,6 +62,7 @@ PAGE = '''<!doctype html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
 <title>Migrely privacy policy</title>
 <!-- Generated from privacy-policy.md by make_policy_html.py; edit the Markdown and regenerate. -->
 <style>

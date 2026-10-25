@@ -32,4 +32,6 @@ This change prepares everything that does not need the user's accounts or names 
 - **`app/build.gradle.kts`:** release minify, shrinking, signing, and `proguard-rules.pro`.
 - **`app/src/main/res`:** the icon.
 - **New docs:** `docs/release/*.md` and `docs/release/privacy-policy.html`.
-- **BRD:** §11.3 is updated. No feature code changes.
+- **BRD:** §11.3 is updated; ADR-09 and D9's analytics are marked superseded.
+- **Settings:** one string, the Privacy page's backup line, now says the encryption holds from Android 9.
+- **Build:** the permission check now also runs before the bundle.

@@ -52,10 +52,13 @@ android {
     signingConfigs {
         if (keystoreProperties != null) {
             create("release") {
-                storeFile = rootProject.file(keystoreProperties.getProperty("storeFile"))
-                storePassword = keystoreProperties.getProperty("storePassword")
-                keyAlias = keystoreProperties.getProperty("keyAlias")
-                keyPassword = keystoreProperties.getProperty("keyPassword")
+                fun key(name: String) = requireNotNull(keystoreProperties.getProperty(name)) {
+                    "keystore.properties lacks $name"
+                }
+                storeFile = rootProject.file(key("storeFile"))
+                storePassword = key("storePassword")
+                keyAlias = key("keyAlias")
+                keyPassword = key("keyPassword")
             }
         }
     }
@@ -217,7 +220,9 @@ androidComponents {
             forbidden.set(forbiddenPermissions)
             report.set(layout.buildDirectory.file("reports/permissions/${variant.name}.txt"))
         }
-        tasks.matching { it.name == "assemble$name" }.configureEach { dependsOn(check) }
+        // The bundle that goes to Play does not depend on assemble, so it gets the check too (BRD D44).
+        tasks.matching { it.name == "assemble$name" || it.name == "bundle$name" }
+            .configureEach { dependsOn(check) }
     }
 }
 

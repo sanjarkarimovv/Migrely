@@ -63,7 +63,7 @@
 
     <!-- Privacy (BRD D97). -->
     <string name="settings_privacy_offline">Migrely has no internet access, so it sends nothing anywhere. There\'s no account to make and nothing to sign in to.</string>
-    <string name="settings_privacy_phone">Your entries stay on this phone and in Android\'s own backup, which is end-to-end encrypted on Android 9 and later when your phone has a screen lock.</string>
+    <string name="settings_privacy_phone">Your entries stay on this phone. On Android 9 and later, Android\'s own backup keeps a copy in your Google account only when it can encrypt it end to end, which needs a screen lock.</string>
     <string name="settings_privacy_files">A file leaves the phone only when you export it yourself: a backup, a spreadsheet or a report for your doctor.</string>
     <string name="settings_privacy_delete">Delete all data, at the end of Settings, removes everything Migrely keeps on this phone.</string>
 
