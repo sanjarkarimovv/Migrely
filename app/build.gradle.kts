@@ -1,4 +1,8 @@
 import com.android.build.api.artifact.SingleArtifact
+import java.security.GeneralSecurityException
+import java.security.KeyFactory
+import java.security.spec.X509EncodedKeySpec
+import java.util.Base64
 import java.util.Properties
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
@@ -253,8 +257,25 @@ val checkPlayLicenseKey by tasks.registering {
                     "-Pmigrely.playLicenseKey=… or in ~/.gradle/gradle.properties."
             )
         }
+        // The key must be Play's base64 X.509 RSA public key, or every purchase would fail its
+        // check and nothing would ever unlock (review M13).
+        try {
+            KeyFactory.getInstance("RSA")
+                .generatePublic(X509EncodedKeySpec(Base64.getDecoder().decode(key)))
+        } catch (exception: GeneralSecurityException) {
+            throw malformedKey(exception)
+        } catch (exception: IllegalArgumentException) {
+            throw malformedKey(exception)
+        }
     }
 }
+
+fun malformedKey(cause: Exception) = GradleException(
+    "migrely.playLicenseKey is not an RSA public key in base64 (${cause.message}). " +
+        "Copy the whole licence key from Play Console → Monetization setup → Licensing.",
+    cause
+)
+
 tasks.matching { it.name == "bundleRelease" }.configureEach { dependsOn(checkPlayLicenseKey) }
 
 if (keystoreProperties == null) {

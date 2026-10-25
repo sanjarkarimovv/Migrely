@@ -10,9 +10,11 @@ whenever a permission, a library or the billing changes.
 - **No SDKs that collect:** no analytics, advertising or crash reporting.
 - **Purchases (Migrely Premium):** the Play Billing Library talks only to the Google Play app on the phone, and Google
   Play processes every purchase under its own policy, so purchase data is Google's, not the app's (D105). The app keeps
-  on the phone only whether Premium is on: the kind of purchase, its plan when bought there, and when it was last
-  checked. The library bundles Google's own usage logging, which needs the INTERNET permission; the app removes that
-  permission, so nothing is sent.
+  on the phone only what it needs to know whether Premium is on: the kind of purchase and its plan, the purchase time,
+  whether it renews, the trial's end, the last time Play answered, whether the purchase still has to be acknowledged,
+  Play's purchase token, and, while Play's sheet is open, the plan and trial asked for. None of it leaves the phone,
+  and none of it is in Android's backup (D115). The library bundles Google's own usage logging, which needs the
+  INTERNET permission; the app removes that permission and leaves the logs out of backups, so nothing is sent.
 - **Android's own backup** is an operating-system service that the user controls, not the app. From Android 9 the app
   allows only end-to-end encrypted cloud backup, which Play's guidance exempts from "collection" when no one but the
   user can read it. On Android 8 the system, not the app, sends the backup.

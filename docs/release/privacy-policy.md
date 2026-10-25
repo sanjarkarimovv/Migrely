@@ -45,12 +45,18 @@ which you can refuse or withdraw at any time.
 
 Migrely Premium is bought through Google Play. Google Play handles the payment under Google's privacy policy, and we
 receive no payment details, name or email. Migrely asks the Google Play app on your phone whether Premium is active,
-without going on the internet, and keeps only that on your phone: the kind of purchase, its plan when bought on this
-phone, and when it was last checked. This record is not part of Android's backup, so on a new phone Migrely asks
-Google Play again for the Google account signed in there. Settings → Delete all data removes this record too, but not
-the purchase: it stays
-with your Google account, and Migrely finds it again at its next check or when you tap "Restore purchases". To cancel a
-subscription, use Google Play; Migrely cannot cancel it for you.
+without going on the internet, and keeps only this on your phone:
+- the kind of purchase (none, subscription, lifetime or a pending payment) and its plan, when bought on this phone;
+- when it was bought, and whether the subscription renews;
+- when the free trial ends, when it started on this phone;
+- when Google Play last answered, and whether the purchase still has to be confirmed to Google Play;
+- Google Play's purchase token, the reference Google Play gives the purchase;
+- while Google Play's purchase screen is open, the plan and trial you chose and when.
+
+This record is not part of Android's backup, so on a new phone Migrely asks Google Play again for the Google account
+signed in there. Settings → Delete all data removes this record too, but not the purchase: it stays with your Google
+account, and Migrely finds it again at its next check or when you tap "Restore purchases". To cancel a subscription,
+use Google Play; Migrely cannot cancel it for you.
 
 ## Deleting your information
 

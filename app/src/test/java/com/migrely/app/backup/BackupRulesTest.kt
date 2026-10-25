@@ -9,6 +9,11 @@ import org.junit.Test
 import org.w3c.dom.Element
 
 private const val SHARED_PREFERENCES = "sharedpref"
+private const val DATABASE = "database"
+
+/** Google datatransport's database of the Play Billing library's usage logs (review M12). */
+private val BILLING_LOGS = listOf("", "-journal", "-wal", "-shm")
+    .map { "com.google.android.datatransport.events$it" }
 
 /**
  * The premium entitlement is never backed up or moved to a new phone (BRD D115): a purchase belongs
@@ -52,6 +57,34 @@ class BackupRulesTest {
         listOf("cloud-backup", "device-transfer").forEach { section ->
             val element = rules.children(section).single()
             assertTrue(section, element.excludesEntitlement())
+        }
+    }
+
+    private fun Element.excludedDatabases() = children("exclude")
+        .filter { it.getAttribute("domain") == DATABASE }
+        .map { it.getAttribute("path") }
+
+    @Test
+    fun `Given Android 11 and older then billing logs are left out beside each database include`() {
+        val content = rules("backup_rules.xml")
+        val includes = content.children("include").count { it.getAttribute("domain") == DATABASE }
+
+        assertEquals(2, includes)
+        BILLING_LOGS.forEach { file ->
+            assertEquals(file, includes, content.excludedDatabases().count { it == file })
+        }
+    }
+
+    @Test
+    fun `Given Android 12 and later then both sections leave the billing logs out`() {
+        val rules = rules("data_extraction_rules.xml")
+
+        listOf("cloud-backup", "device-transfer").forEach { section ->
+            assertEquals(
+                section,
+                BILLING_LOGS,
+                rules.children(section).single().excludedDatabases()
+            )
         }
     }
 }
