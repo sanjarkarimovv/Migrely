@@ -92,8 +92,8 @@ interface MedicationDataSource {
     fun acuteIntakesTakenBetween(from: Instant, to: Instant): List<AcuteIntakeDataModel>
 
     /**
-     * The first acute intake, by the same rules: preventive medications and attacks being deleted are left out, or null
-     * when there is none (BRD D99).
+     * The first acute intake, by the same rules: preventive medications and attacks being deleted
+     * are left out. Null when there is none (BRD D99).
      */
     fun earliestAcuteIntake(): EarliestAcuteIntakeDataModel?
 

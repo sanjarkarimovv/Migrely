@@ -141,7 +141,10 @@ interface MedicationDao {
     )
     fun acuteIntakesBetween(fromEpochMillis: Long, toEpochMillis: Long): List<AcuteIntakeLocalModel>
 
-    /** The first intake [acuteIntakesBetween] would count at any time; the taken index serves the order (D99). */
+    /**
+     * The first intake [acuteIntakesBetween] would count at any time; the taken index serves the
+     * order (BRD D99).
+     */
     @Query(
         "SELECT medication_intake.taken_epoch_millis, medication_intake.taken_zone_id " +
             "FROM medication_intake " +

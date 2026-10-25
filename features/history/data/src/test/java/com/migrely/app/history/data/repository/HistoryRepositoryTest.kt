@@ -287,7 +287,7 @@ class HistoryRepositoryTest {
 
     @Test
     fun `Given no attack-medication intake when reading the earliest then none`() {
-        // The datasource leaves preventive medications out, so only preventive intakes read as none.
+        // The datasource leaves preventive medications out, so preventive intakes read as none.
         assertEquals(
             EarliestAttackMedicationIntakeResultDomainModel.None,
             classUnderTest.earliestAttackMedicationIntake()

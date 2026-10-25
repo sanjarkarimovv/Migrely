@@ -149,7 +149,7 @@ class HistoryViewModelTest :
     @Test
     fun `Given only preventive intakes when entering then no attacks without a month before`() =
         runTest {
-            // The domain leaves preventive intakes out: nothing logged, and no month before this one.
+            // The domain leaves preventive intakes out: nothing logged, no month before this one.
             val empty = month(anythingLogged = false, earliestMonth = SEPTEMBER)
             givenMonth(HistoryMonthResultDomainModel.Loaded(empty))
             val state = nextViewState()

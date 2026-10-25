@@ -300,7 +300,7 @@ private fun MonthContents(
             mappers = mappers,
             onDay = actions.onDay
         )
-        // Before anything is logged, History's first-use card stands in for the numbers (BRD EC-HIS-01, D99).
+        // Before anything is logged, the first-use card replaces the numbers (BRD EC-HIS-01, D99).
         if (!noAttacks) {
             MonthSummary(
                 month = month,

@@ -31,14 +31,16 @@ import java.time.ZoneId
 
 /**
  * One month of History (BRD HIS-F1, HIS-F2, D29). The request is the month asked for, or null for the current one; the
- * month shown never precedes the month of the first attack, the first day mark or the first attack-medication intake,
- * nor follows the current month (BRD EC-HIS-03, D51, D99).
+ * month shown never precedes the month of the first attack, the first day mark or the first
+ * attack-medication intake, nor follows the current month (BRD EC-HIS-03, D51, D99).
  *
  * An attack belongs to every day it touches in the zone where it started (BRD EC-ATK-06, EC-TIM-02): from its start
  * date to the date just before its end, or to today while it is in progress. Each day carries its period mark, and is
  * pain-free only when marked so and no attack touches it (BRD EC-DAY-01, D47). The month's numbers come from
- * [MonthStatsCalculator], with the month before for the progress message (BRD D53–D56). The month and its numbers
- * show once anything is logged, even with no migraine: an attack, a day mark or an attack-medication intake (BRD D99).
+ * [MonthStatsCalculator], with the month before for the progress message (BRD D53–D56).
+ *
+ * The month and its numbers show once anything is logged, even with no migraine: an attack, a
+ * day mark or an attack-medication intake (BRD D99).
  */
 class GetHistoryMonthUseCase(
     private val getCurrentTimeRepository: GetCurrentTimeRepository,
@@ -73,8 +75,8 @@ class GetHistoryMonthUseCase(
             EarliestDayMarkResultDomainModel.None -> null
             EarliestDayMarkResultDomainModel.Failed -> return HistoryMonthResultDomainModel.Failed
         }
-        // So does a medication for attacks taken before either, in the zone it was taken in; preventive ones never
-        // count (BRD D99).
+        // So does an attack-medication intake before either, in the zone it was taken in;
+        // preventive ones never count (BRD D99).
         val earliestIntakeMonth = when (
             val intake = getEarliestIntakeRepository.earliestAttackMedicationIntake()
         ) {
