@@ -18,12 +18,16 @@ region's conventions come from the phone.
   configuration, so every screen, Material's date and time pickers, resources, the doctor report and notifications
   follow it.
 - The CSV export keeps choosing its separator by the phone's own language (D72).
+- A paywall that shows itself also needs Google Play to return Migrely's products (D110): on the real Play track before
+  the products are set up, billing connected, and the onboarding and patterns paywalls showed only "Premium isn't
+  available in your region yet". Play's answer is remembered for an hour; a tapped paywall still reads it afresh.
 
 ## Capabilities
 
 ### Modified Capabilities
 
 - `month-sky`: weekday initials are English; weeks start on the phone's first day.
+- `subscription`: a paywall shows itself only when Google Play offers Migrely's products.
 
 ### Added Requirements
 
@@ -34,7 +38,9 @@ region's conventions come from the phone.
 - **`:app`:** `FormattingLocaleResolver` and `FormattingLocaleApplier` (`com.migrely.app.locale`), `MigrelyApplication`,
   `MainActivity`, and the DI modules whose formatters read the locale.
 - **Backup:** the CSV repository is handed the phone's own locale.
-- **Docs:** BRD D117, EC-L10N-03 and EC-TIM-05; ARCHITECTURE.
+- **Subscription:** `SubscriptionRepository.billingAvailability()` asks for the products and remembers the answer; the
+  repository is one for the app.
+- **Docs:** BRD D117, EC-L10N-03, EC-TIM-05 and D110; ARCHITECTURE.
 
 ## Out of scope
 

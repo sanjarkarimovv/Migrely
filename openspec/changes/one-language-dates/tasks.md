@@ -9,8 +9,14 @@
 - [x] 1.4 Locale audit of features, `:app`, `:designsystem` and the datasources.
 - [x] 1.5 BRD D117, EC-L10N-03, EC-TIM-05; ARCHITECTURE.
 
-## 2. Verify
+## 2. A paywall that shows itself needs Play's products (D110)
 
-- [ ] 2.1 Gate: `./gradlew assembleDebug test ktlintCheck detekt`, `openspec validate one-language-dates --strict`.
-- [ ] 2.2 Emulator check in ru-RU and en-US: home, History, the day sheet, the doctor report and its PDF, Insights, the
+- [x] 2.1 `SubscriptionRepository.billingAvailability()`: available only when billing connects and Play offers the
+  products; the answer kept an hour, an unanswered one asked again; the repository one for the app; tests.
+- [x] 2.2 BRD D110.
+
+## 3. Verify
+
+- [ ] 3.1 Gate: `./gradlew assembleDebug test ktlintCheck detekt`, `openspec validate one-language-dates --strict`.
+- [ ] 3.2 Emulator check in ru-RU and en-US: home, History, the day sheet, the doctor report and its PDF, Insights, the
   attack time pickers and the reminder time.
