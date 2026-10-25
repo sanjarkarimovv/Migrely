@@ -83,6 +83,7 @@ internal object BackupModule {
 
     @Provides
     fun providesBackupRepository(
+        @ApplicationContext context: Context,
         backupDataSource: BackupDataSource,
         backupFileDataSource: BackupFileDataSource,
         documentDataSource: DocumentDataSource,
@@ -93,7 +94,10 @@ internal object BackupModule {
         documentDataSource,
         clockDataSource,
         AttacksCsvMapper(),
-        BackupSummaryDomainMapper()
+        BackupSummaryDomainMapper(),
+        // The phone's own language, not the formatting locale (BRD D117): the CSV opens in a spreadsheet of the
+        // phone's region, which expects semicolons where decimals take a comma (D72).
+        locale = { context.resources.configuration.locales[0] }
     )
 
     /** One for the app, so a file being written or read survives a rotation (ARCHITECTURE section 13). */

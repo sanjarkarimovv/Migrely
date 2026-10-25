@@ -69,7 +69,9 @@ import kotlinx.coroutines.Dispatchers
 @Module
 @InstallIn(SingletonComponent::class)
 internal object SubscriptionModule {
+    /** One for the app, so what Google Play said about the products is remembered (BRD D110). */
     @Provides
+    @Singleton
     fun providesSubscriptionRepository(
         billingDataSource: BillingDataSource,
         preferencesDataSource: PreferencesDataSource,

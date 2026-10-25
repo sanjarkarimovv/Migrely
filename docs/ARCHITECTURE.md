@@ -37,7 +37,7 @@ target API 37, whichever comes first. Until then, do not mix AGP 9 idioms into b
 
 | Module | Kind | Package | Contents |
 |---|---|---|---|
-| `:app` | Android app | `com.migrely.app` | `MainActivity`, `MigrelyApplication`, `di/` (all Hilt modules), `navigation/mapper/`, `ui/main/` (nav host, routes), `ui/theme/` |
+| `:app` | Android app | `com.migrely.app` | `MainActivity`, `MigrelyApplication`, `di/` (all Hilt modules), `navigation/mapper/`, `ui/main/` (nav host, routes), `ui/theme/`, `locale/` (the formatting locale, BRD D117) |
 | `:architecture:domain` | JVM | `com.migrely.app.architecture.domain` | `UseCase`, `BackgroundExecutingUseCase`, `ContinuousExecutingUseCase`, `UseCaseExecutor`, `DomainException` |
 | `:architecture:presentation` | JVM | `com.migrely.app.architecture.presentation` | `BaseViewModel`, `PresentationNavigationEvent`, `PresentationNotification` |
 | `:architecture:presentation-test` | JVM | same | `BaseViewModelTest` |
@@ -255,6 +255,17 @@ data must never be passed to any SDK.
 - Motion: every animation checks `rememberReduceMotion()` (true when the system animator scale is 0) and snaps
   instead of animating (BRD EC-UX-08). Animations never flash more than three times per second (EC-UX-07).
 - User-facing strings live in the owning feature's `ui` module resources. Screens never hard-code strings.
+- Dates and times (BRD D117): every formatter uses the formatting locale, English with the phone's region, which
+  `:app`'s `FormattingLocaleResolver` decides and `FormattingLocales` applies in one place:
+  - `:app/di` formatters read `FormattingLocales.of` the application context's configuration at every call;
+  - `MainActivity` overrides its configuration in `attachBaseContext`, so composables read it from
+    `LocalConfiguration`, as Material's pickers and resources do;
+  - `MigrelyApplication` also sets it as the process default, at start and on every configuration change, for code that
+    formats with the default. Android sets the default back to the phone's language on configuration updates it does
+    not report to the application, so the app's formatters never read `Locale.getDefault()`.
+  - Features never choose a locale. The first day of the week is the phone's; the 12- or 24-hour setting is read where
+    a time is formatted. Only the CSV export is handed the phone's own locale, for its separator (D72). The PDF's fixed
+    English formats stay (section 13).
 - Type (BRD D20): Fraunces (soft serif) for display, headline and `titleLarge`, and Figtree for every other style.
   - Both are bundled variable fonts in `designsystem/src/main/res/font`, and their OFL texts are in
     `designsystem/src/main/assets/licenses/fonts`. Fonts are never downloaded.

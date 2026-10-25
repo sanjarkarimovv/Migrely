@@ -9,6 +9,7 @@ import com.migrely.app.datasource.backup.datasource.BackupDataSource
 import com.migrely.app.datasource.clock.datasource.ClockDataSource
 import com.migrely.app.datasource.report.datasource.ReportDocumentDataSource
 import com.migrely.app.datasource.report.datasource.ReportDocumentDataSourceImpl
+import com.migrely.app.locale.FormattingLocales
 import com.migrely.app.navigation.mapper.ReportNavigationEventDestinationMapper
 import com.migrely.app.report.data.mapper.ReportDateTimeFormatter
 import com.migrely.app.report.data.mapper.ReportDocumentMapper
@@ -47,6 +48,7 @@ internal object ReportModule {
     @Provides
     fun providesReportRepository(
         @ApplicationContext context: Context,
+        formattingLocales: FormattingLocales,
         backupDataSource: BackupDataSource,
         reportDocumentDataSource: ReportDocumentDataSource,
         clockDataSource: ClockDataSource
@@ -57,7 +59,7 @@ internal object ReportModule {
         ReportRecordsDomainMapper(),
         ReportDocumentMapper(
             ReportDateTimeFormatter(
-                locale = { context.resources.configuration.locales[0] },
+                locale = { formattingLocales.of(context.resources.configuration) },
                 is24HourFormat = { DateFormat.is24HourFormat(context) },
                 bestDateTimePattern = { locale, skeleton ->
                     DateFormat.getBestDateTimePattern(locale, skeleton)

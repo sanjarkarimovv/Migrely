@@ -91,8 +91,8 @@ SHALL mark every day from its start to today. An attack that ends exactly at mid
 - **THEN** the attack marks 15 October, not 14 October
 
 ### Requirement: Calendar follows the locale
-Weeks SHALL start on the locale's first day of the week, with the weekday initials in the locale's language. Today
-SHALL be outlined (BRD EC-TIM-05).
+Weeks SHALL start on the phone's first day of the week, with the weekday initials in English, the language of the
+app's words, whatever the phone's language. Today SHALL be outlined (BRD EC-TIM-05, D117).
 
 #### Scenario: Week starts on Monday
 - **WHEN** the phone's locale is English (United Kingdom)
@@ -101,6 +101,10 @@ SHALL be outlined (BRD EC-TIM-05).
 #### Scenario: Week starts on Sunday
 - **WHEN** the phone's locale is English (United States)
 - **THEN** the weeks start on Sunday
+
+#### Scenario: A phone in Russian
+- **WHEN** the phone's locale is Russian (Russia)
+- **THEN** the weeks start on Monday, and the weekday initials read "M T W T F S S"
 
 #### Scenario: Today outlined
 - **WHEN** the calendar shows the current month
