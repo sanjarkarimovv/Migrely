@@ -39,16 +39,12 @@ private const val IMPACT_HAD_TO_STOP = 2
 private const val IMPACT_BED_REST = 3
 private const val DAYS_PER_WEEK = 7
 private val DATE: DateTimeFormatter = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.ENGLISH)
-private val DATE_TIME: DateTimeFormatter = DateTimeFormatter.ofPattern(
-    "d MMM yyyy, HH:mm",
-    Locale.ENGLISH
-)
 private val MONTH: DateTimeFormatter = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ENGLISH)
 
 /**
  * The words of the report (BRD REP-F2, REP-F3, D82). It is a document for a doctor, so its words are fixed English,
  * the app's language, and the user's own words stay as typed. A time is shown in the zone it was logged in, which is
- * named when it is not the phone's [deviceZone]. Weeks follow the phone, as in the app (EC-TIM-05).
+ * named when it is not the phone's [deviceZone]. Weeks and times follow the phone, as in the app (EC-TIM-05).
  */
 class ReportDocumentMapper(private val reportDateTimeFormatter: ReportDateTimeFormatter) {
     fun toData(report: ReportDomainModel, paper: ReportPaperDataModel, deviceZone: ZoneId) =
@@ -193,7 +189,7 @@ class ReportDocumentMapper(private val reportDateTimeFormatter: ReportDateTimeFo
     ): List<String> {
         val began = attack.start.atZone(attack.zone)
         // Listed for its days in the period, but not counted as started in it (walk B4).
-        val start = DATE_TIME.format(began) +
+        val start = "${DATE.format(began)}, ${reportDateTimeFormatter.formatTime(began)}" +
             zoneLabel(attack, deviceZone) +
             if (began.toLocalDate().isBefore(from)) ", began before the period" else ""
         val duration =

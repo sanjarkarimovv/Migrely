@@ -58,7 +58,7 @@ class ReportRepositoryTest {
         reportDocumentDataSource,
         clockDataSource,
         ReportRecordsDomainMapper(),
-        ReportDocumentMapper(ReportDateTimeFormatter { locale })
+        ReportDocumentMapper(ReportDateTimeFormatter({ locale }, { true }) { _, _ -> "HH:mm" })
     ) { locale }
 
     @Test

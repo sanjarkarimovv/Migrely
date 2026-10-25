@@ -77,7 +77,15 @@ private fun report(
 
 class ReportDocumentMapperTest {
     private var locale: Locale = Locale.UK
-    private val classUnderTest = ReportDocumentMapper(ReportDateTimeFormatter { locale })
+    private var is24Hour = true
+    private val classUnderTest = ReportDocumentMapper(
+        ReportDateTimeFormatter(
+            locale = { locale },
+            is24HourFormat = { is24Hour },
+            // What Android's DateFormat.getBestDateTimePattern gives in English.
+            bestDateTimePattern = { _, skeleton -> if (skeleton == "Hm") "HH:mm" else "h:mm a" }
+        )
+    )
 
     private fun blocks(report: ReportDomainModel) =
         classUnderTest.toData(report, ReportPaperDataModel.A4, TASHKENT).blocks
@@ -254,6 +262,16 @@ class ReportDocumentMapperTest {
                     it.columns.first().title == "Start"
             }
         )
+    }
+
+    @Test
+    fun `Given a 12-hour phone in the US then the migraine's time as the app shows it`() {
+        locale = Locale.US
+        is24Hour = false
+
+        val rows = blocks(report()).filterIsInstance<ReportBlockDataModel.Table>().first().rows
+
+        assertEquals("20 Oct 2026, 9:00\u00A0AM", rows.single().first())
     }
 
     @Test
