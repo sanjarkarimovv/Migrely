@@ -76,11 +76,8 @@ fun TodayContents(
     medicationPrompt: @Composable () -> Unit = {},
     onPeriodToday: (marked: Boolean) -> Unit = {},
     onSettings: () -> Unit = {},
-    trialBanner: @Composable () -> Unit = {},
-    paywallTrigger: @Composable () -> Unit = {}
+    trialBanner: @Composable () -> Unit = {}
 ) {
-    // Today's mode only: the paywall after the 5th migraine never shows itself during an attack.
-    paywallTrigger()
     val screenModifier = modifier
         .fillMaxSize()
         .background(MaterialTheme.colorScheme.background)

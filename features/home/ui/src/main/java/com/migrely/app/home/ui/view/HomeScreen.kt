@@ -261,8 +261,7 @@ fun HomeContents(
                     onSettings = actions.onSettings,
                     monthCalendar = monthCalendar,
                     medicationPrompt = medicationPrompt,
-                    trialBanner = trialBanner,
-                    paywallTrigger = paywallTrigger
+                    trialBanner = trialBanner
                 )
 
                 is HomeViewStateUiModel.AttackInProgress -> AttackModeContents(
@@ -275,6 +274,9 @@ fun HomeContents(
                 )
             }
         }
+        // Only while today's mode is the one shown or coming, never while it fades out into attack
+        // mode: a paywall the trigger asks for after that is dropped with it (BRD D110).
+        if (mode == HomeMode.Today) paywallTrigger()
         // Above both modes and below the messages, so Undo always stays tappable.
         if (guardTaps) {
             TapGuard(

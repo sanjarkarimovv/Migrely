@@ -23,9 +23,10 @@ internal val SELF_SHOWN_GAP: Duration = Duration.ofDays(7)
  * Whether a paywall shows itself for the trigger (BRD §7.3, D110, design D5). Only when all hold:
  * - the user is free, so neither premium nor waiting for a payment;
  * - the trigger has not shown one before, and no paywall showed itself in the last 7 days;
- * - no attack is in progress, or it cannot be told;
  * - for the 5th migraine, at least 5 are logged;
- * - Google Play billing is not known to be unavailable. Asked last, since it may wait for Play.
+ * - Google Play billing is not known to be unavailable;
+ * - no attack is in progress, or it cannot be told. Asked last, after Google Play, which may take
+ *   a moment, so an attack started meanwhile is seen.
  */
 class ShouldShowPaywallUseCase(
     private val getEntitlementRepository: GetEntitlementRepository,
@@ -45,12 +46,12 @@ class ShouldShowPaywallUseCase(
         return status == PremiumStatusDomainModel.Free &&
             request !in marks.shown &&
             (lastShown == null || Duration.between(lastShown, now) >= SELF_SHOWN_GAP) &&
-            getAttackInProgressRepository.attackInProgress() == false &&
             (
                 request != PaywallTriggerDomainModel.FifthMigraine ||
                     (getMigraineCountRepository.migraineCount() ?: 0) >= MIGRAINES_FOR_PATTERNS
                 ) &&
             getBillingAvailabilityRepository.billingAvailability() !=
-            BillingAvailabilityDomainModel.Unavailable
+            BillingAvailabilityDomainModel.Unavailable &&
+            getAttackInProgressRepository.attackInProgress() == false
     }
 }
