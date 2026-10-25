@@ -10,9 +10,9 @@ The listing text for Google Play (BRD §14.2, D104). `TODO(user)` marks what the
 | Short description (≤ 80) | Log migraines in 3 taps. Private headache diary & doctor-ready reports. |
 | Category | Health & Fitness. Migrely is a diary, not a medical device (D104). |
 | Tags | Health & Fitness, Medical diary (choose the closest Play offers) |
-| Contact email | TODO(user) |
-| Website | none, or TODO(user) |
-| Privacy policy URL | TODO(user), where `privacy-policy.html` is hosted |
+| Contact email | support@migrely.health |
+| Website | https://migrely.health |
+| Privacy policy URL | https://migrely.health/privacy/ |
 | Ads | No |
 | In-app purchases | Yes: Migrely Premium, a yearly or monthly subscription or a one-time lifetime purchase (`play-products.md`) |
 | Target audience | 18 and over (BRD §11.5) |
