@@ -54,6 +54,9 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavController
 import com.migrely.app.architecture.ui.view.ScreenEnterObserver
 import com.migrely.app.backup.presentation.model.ImportModePresentationModel
@@ -117,16 +120,20 @@ fun YourDataDependencies.YourData(navController: NavController, modifier: Modifi
         shownCount++
         message = ShownMessage(it, shownCount)
     }
-    LaunchedEffect(yourDataEventPresenter) {
-        // Asked once this screen listens, so an outcome that arrived during a rotation is not lost.
-        yourDataEventPresenter.events.onSubscription {
-            yourDataViewModel.onResume()
-        }.collect { event ->
-            when (event) {
-                is YourDataEventUiModel.Confirm -> pending = event.pending
-                is YourDataEventUiModel.Message -> show(event.message)
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    LaunchedEffect(yourDataEventPresenter, lifecycle) {
+        // Only while the screen shows, so a message is not timed out unseen while the app is away. An outcome that
+        // arrives meanwhile, or during a rotation, is asked for again when the screen listens.
+        lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            yourDataEventPresenter.events.onSubscription {
+                yourDataViewModel.onResume()
+            }.collect { event ->
+                when (event) {
+                    is YourDataEventUiModel.Confirm -> pending = event.pending
+                    is YourDataEventUiModel.Message -> show(event.message)
+                }
+                yourDataViewModel.onOutcomeShownAction()
             }
-            yourDataViewModel.onOutcomeShownAction()
         }
     }
     LaunchedEffect(message) {
