@@ -2,6 +2,7 @@ package com.migrely.app.subscription.domain.usecase
 
 import com.migrely.app.subscription.domain.model.BillingAvailabilityDomainModel
 import com.migrely.app.subscription.domain.model.BoughtDomainModel
+import com.migrely.app.subscription.domain.model.OwnedPurchaseDomainModel
 import com.migrely.app.subscription.domain.model.OwnedPurchasesResultDomainModel
 import com.migrely.app.subscription.domain.model.PremiumCheckDomainModel
 import com.migrely.app.subscription.domain.model.PremiumStatusDomainModel
@@ -11,6 +12,7 @@ import com.migrely.app.subscription.domain.repository.GetCurrentTimeRepository
 import com.migrely.app.subscription.domain.repository.GetEntitlementRepository
 import com.migrely.app.subscription.domain.repository.GetOwnedPurchasesRepository
 import com.migrely.app.subscription.domain.repository.SaveEntitlementRepository
+import com.migrely.app.subscription.domain.repository.SchedulePremiumChecksRepository
 
 /**
  * Asks Google Play what this account owns, applies [EntitlementRules] and keeps the result (BRD
@@ -26,6 +28,7 @@ class PremiumChecker(
     private val getOwnedPurchasesRepository: GetOwnedPurchasesRepository,
     private val acknowledgePurchaseRepository: AcknowledgePurchaseRepository,
     private val getCurrentTimeRepository: GetCurrentTimeRepository,
+    private val schedulePremiumChecksRepository: SchedulePremiumChecksRepository,
     private val entitlementRules: EntitlementRules
 ) {
     private val lock = Any()
@@ -49,16 +52,12 @@ class PremiumChecker(
         val now = getCurrentTimeRepository.now()
         val owned = getOwnedPurchasesRepository.ownedPurchases()
         val entitlement = when (owned) {
-            is OwnedPurchasesResultDomainModel.Owned -> {
-                owned.purchases
-                    .filter {
-                        it.state == PurchaseStateDomainModel.Purchased &&
-                            it.signatureValid &&
-                            !it.acknowledged
-                    }
-                    .forEach { acknowledgePurchaseRepository.acknowledgePurchase(it.purchaseToken) }
-                entitlementRules.answered(previous, owned.purchases, now, bought)
-            }
+            is OwnedPurchasesResultDomainModel.Owned -> entitlementRules.answered(
+                previous,
+                acknowledged(owned.purchases),
+                now,
+                bought
+            )
 
             OwnedPurchasesResultDomainModel.Unavailable,
             OwnedPurchasesResultDomainModel.Unreachable ->
@@ -66,6 +65,9 @@ class PremiumChecker(
         }
         // A write that fails leaves the last entitlement, and the next check tries again.
         if (entitlement != previous) saveEntitlementRepository.saveEntitlement(entitlement)
+        schedulePremiumChecksRepository.schedulePremiumChecks(
+            entitlementRules.needsBackgroundChecks(entitlement)
+        )
         PremiumCheckDomainModel(
             status = entitlementRules.status(entitlement, now),
             billing = when (owned) {
@@ -76,5 +78,16 @@ class PremiumChecker(
                     BillingAvailabilityDomainModel.Unknown
             }
         )
+    }
+
+    /** The purchases, with those that unlock acknowledged now where Google Play took it. */
+    private fun acknowledged(purchases: List<OwnedPurchaseDomainModel>) = purchases.map {
+        val due = it.state == PurchaseStateDomainModel.Purchased && it.signatureValid &&
+            !it.acknowledged
+        if (due && acknowledgePurchaseRepository.acknowledgePurchase(it.purchaseToken)) {
+            it.copy(acknowledged = true)
+        } else {
+            it
+        }
     }
 }

@@ -8,6 +8,7 @@ import com.migrely.app.datasource.exception.BillingDataException
 import com.migrely.app.datasource.exception.BillingUnavailableDataException
 import com.migrely.app.datasource.exception.DataException
 import com.migrely.app.datasource.preferences.datasource.PreferencesDataSource
+import com.migrely.app.datasource.schedule.datasource.PremiumCheckScheduleDataSource
 import com.migrely.app.subscription.data.mapper.SubscriptionDataMappers
 import com.migrely.app.subscription.data.mapper.SubscriptionProducts
 import com.migrely.app.subscription.domain.model.BillingAvailabilityDomainModel
@@ -35,6 +36,7 @@ import com.migrely.app.subscription.domain.repository.LaunchPurchaseRepository
 import com.migrely.app.subscription.domain.repository.ManageSubscriptionRepository
 import com.migrely.app.subscription.domain.repository.MarkPaywallShownRepository
 import com.migrely.app.subscription.domain.repository.SaveEntitlementRepository
+import com.migrely.app.subscription.domain.repository.SchedulePremiumChecksRepository
 import com.migrely.app.subscription.domain.repository.ShowPaymentMessagesRepository
 import java.time.Instant
 import kotlinx.coroutines.flow.Flow
@@ -44,12 +46,13 @@ import kotlinx.coroutines.flow.Flow
  * attacks the paywall rules look at (change add-subscription). Every datasource failure comes back
  * as a value (ARCHITECTURE section 7).
  */
-@Suppress("TooManyFunctions")
+@Suppress("TooManyFunctions", "LongParameterList")
 class SubscriptionRepository(
     private val billingDataSource: BillingDataSource,
     private val preferencesDataSource: PreferencesDataSource,
     private val attackDataSource: AttackDataSource,
     private val clockDataSource: ClockDataSource,
+    private val premiumCheckScheduleDataSource: PremiumCheckScheduleDataSource,
     private val mappers: SubscriptionDataMappers
 ) : GetEntitlementRepository,
     SaveEntitlementRepository,
@@ -67,7 +70,8 @@ class SubscriptionRepository(
     DismissTrialBannerRepository,
     ShowPaymentMessagesRepository,
     ManageSubscriptionRepository,
-    GetPurchaseUpdatesRepository {
+    GetPurchaseUpdatesRepository,
+    SchedulePremiumChecksRepository {
     override fun entitlement(): EntitlementDomainModel =
         mappers.entitlementDomainMapper.toDomain(preferencesDataSource.entitlement())
 
@@ -115,6 +119,18 @@ class SubscriptionRepository(
         )
 
     override fun now(): Instant = clockDataSource.now()
+
+    override fun schedulePremiumChecks(needed: Boolean) {
+        try {
+            if (needed) {
+                premiumCheckScheduleDataSource.schedule()
+            } else {
+                premiumCheckScheduleDataSource.cancel()
+            }
+        } catch (_: DataException) {
+            // Planned again at the next check.
+        }
+    }
 
     override fun billingAvailability(): BillingAvailabilityDomainModel =
         when (billingDataSource.connect()) {

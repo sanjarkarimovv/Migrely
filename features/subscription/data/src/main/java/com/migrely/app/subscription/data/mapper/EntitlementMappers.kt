@@ -24,7 +24,8 @@ class EntitlementDomainMapper {
             autoRenewing = entitlement.autoRenewing,
             trialEnd = entitlement.trialEndMillis?.let(Instant::ofEpochMilli),
             lastCheck = entitlement.lastCheckMillis?.let(Instant::ofEpochMilli),
-            subscriptionRenewsToo = entitlement.subscriptionRenewsToo
+            subscriptionRenewsToo = entitlement.subscriptionRenewsToo,
+            acknowledgementPending = entitlement.acknowledgementPending
         )
     }
 
@@ -63,6 +64,7 @@ class EntitlementDataMapper {
         autoRenewing = entitlement.autoRenewing,
         trialEndMillis = entitlement.trialEnd?.toEpochMilli(),
         lastCheckMillis = entitlement.lastCheck?.toEpochMilli(),
-        subscriptionRenewsToo = entitlement.subscriptionRenewsToo
+        subscriptionRenewsToo = entitlement.subscriptionRenewsToo,
+        acknowledgementPending = entitlement.acknowledgementPending
     )
 }

@@ -108,6 +108,7 @@ class PreferencesDataSourceSubscriptionTest {
             verify(entitlementEditor).remove("entitlement_trial_end")
             verify(entitlementEditor).putLong("entitlement_last_check", 3_000L)
             verify(entitlementEditor).putBoolean("entitlement_subscription_too", true)
+            verify(entitlementEditor).putBoolean("entitlement_acknowledgement_pending", false)
             verify(entitlementEditor).commit()
         }
         verifyNoInteractions(settingsEditor)

@@ -17,8 +17,8 @@ private const val UPDATES_BUFFER = 8
  * such as a pending payment completed at a shop (change add-subscription, review I1). Each one is
  * checked by [watch], which acknowledges the purchase and keeps the entitlement, and then
  * [updates] tells the screens that show the status, the paywall and Settings, to read it again.
- * Started once by `MigrelyApplication`; a failure ends the watch quietly, and the next start, return
- * or check reads Play anyway.
+ * Started once by `MigrelyApplication`; a failure ends the watch quietly, and the next start,
+ * return or check reads Play anyway.
  */
 class PurchaseUpdatesWatcher(
     private val watch: () -> Flow<PremiumStatusDomainModel>,

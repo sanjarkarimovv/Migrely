@@ -13,6 +13,7 @@ import com.migrely.app.subscription.domain.repository.GetCurrentTimeRepository
 import com.migrely.app.subscription.domain.repository.GetEntitlementRepository
 import com.migrely.app.subscription.domain.repository.GetOwnedPurchasesRepository
 import com.migrely.app.subscription.domain.repository.SaveEntitlementRepository
+import com.migrely.app.subscription.domain.repository.SchedulePremiumChecksRepository
 import java.time.Duration
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -33,15 +34,16 @@ class PremiumCheckerTest {
     private val getOwnedPurchasesRepository: GetOwnedPurchasesRepository = mock()
     private val acknowledgePurchaseRepository: AcknowledgePurchaseRepository = mock()
     private val getCurrentTimeRepository: GetCurrentTimeRepository = mock {
-        on { now() } doReturn
-            NOW
+        on { now() } doReturn NOW
     }
+    private val schedulePremiumChecksRepository: SchedulePremiumChecksRepository = mock()
     private val classUnderTest = PremiumChecker(
         getEntitlementRepository,
         saveEntitlementRepository,
         getOwnedPurchasesRepository,
         acknowledgePurchaseRepository,
         getCurrentTimeRepository,
+        schedulePremiumChecksRepository,
         EntitlementRules()
     )
 
@@ -179,5 +181,53 @@ class PremiumCheckerTest {
         threads.forEach { it.join(5_000L) }
 
         assertEquals(1, most)
+    }
+
+    @Test
+    fun `Given acknowledging fails then it is marked and checks run in the background`() {
+        given(getOwnedPurchasesRepository.ownedPurchases()).willReturn(
+            OwnedPurchasesResultDomainModel.Owned(
+                listOf(purchase(PurchaseProductDomainModel.Lifetime, acknowledged = false))
+            )
+        )
+        given(acknowledgePurchaseRepository.acknowledgePurchase(any())).willReturn(false)
+
+        classUnderTest.check()
+
+        val saved = argumentCaptor<EntitlementDomainModel>()
+        verify(saveEntitlementRepository).saveEntitlement(saved.capture())
+        assertEquals(true, saved.firstValue.acknowledgementPending)
+        assertEquals(true, EntitlementRules().isDue(saved.firstValue, NOW))
+        verify(schedulePremiumChecksRepository).schedulePremiumChecks(true)
+    }
+
+    @Test
+    fun `Given the acknowledgement goes through then no background checks are planned`() {
+        given(getOwnedPurchasesRepository.ownedPurchases()).willReturn(
+            OwnedPurchasesResultDomainModel.Owned(
+                listOf(purchase(PurchaseProductDomainModel.Lifetime, acknowledged = false))
+            )
+        )
+        given(acknowledgePurchaseRepository.acknowledgePurchase(any())).willReturn(true)
+
+        classUnderTest.check()
+
+        val saved = argumentCaptor<EntitlementDomainModel>()
+        verify(saveEntitlementRepository).saveEntitlement(saved.capture())
+        assertEquals(false, saved.firstValue.acknowledgementPending)
+        verify(schedulePremiumChecksRepository).schedulePremiumChecks(false)
+    }
+
+    @Test
+    fun `Given a pending payment then background checks are planned`() {
+        given(getOwnedPurchasesRepository.ownedPurchases()).willReturn(
+            OwnedPurchasesResultDomainModel.Owned(
+                listOf(purchase(state = PurchaseStateDomainModel.Pending))
+            )
+        )
+
+        classUnderTest.check()
+
+        verify(schedulePremiumChecksRepository).schedulePremiumChecks(true)
     }
 }

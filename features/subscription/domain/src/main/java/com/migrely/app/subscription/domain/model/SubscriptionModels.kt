@@ -37,6 +37,8 @@ enum class EntitlementKindDomainModel {
 /**
  * The entitlement as the last check decided it (BRD D106). [plan] and [trialEnd] are known only for
  * a purchase made on this phone; [lastCheck] is the last time Google Play answered.
+ * [acknowledgementPending] is true while a purchase that unlocks is not yet acknowledged: Google
+ * Play is then asked at every chance, and in the background, until it is (review I2).
  */
 data class EntitlementDomainModel(
     val kind: EntitlementKindDomainModel,
@@ -46,7 +48,8 @@ data class EntitlementDomainModel(
     val autoRenewing: Boolean,
     val trialEnd: Instant?,
     val lastCheck: Instant?,
-    val subscriptionRenewsToo: Boolean
+    val subscriptionRenewsToo: Boolean,
+    val acknowledgementPending: Boolean = false
 ) {
     companion object {
         /** Before the first check, or after "Delete all data" (BRD D112). */

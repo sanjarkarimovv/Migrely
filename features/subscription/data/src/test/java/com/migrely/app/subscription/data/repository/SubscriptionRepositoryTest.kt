@@ -12,6 +12,7 @@ import com.migrely.app.datasource.exception.DatabaseDataException
 import com.migrely.app.datasource.exception.FileDataException
 import com.migrely.app.datasource.preferences.datasource.PreferencesDataSource
 import com.migrely.app.datasource.preferences.model.PaywallTriggerDataModel
+import com.migrely.app.datasource.schedule.datasource.PremiumCheckScheduleDataSource
 import com.migrely.app.subscription.data.mapper.SubscriptionDataMappers
 import com.migrely.app.subscription.domain.model.BillingAvailabilityDomainModel
 import com.migrely.app.subscription.domain.model.EntitlementDomainModel
@@ -39,11 +40,13 @@ class SubscriptionRepositoryTest {
     private val preferencesDataSource: PreferencesDataSource = mock()
     private val attackDataSource: AttackDataSource = mock()
     private val clockDataSource: ClockDataSource = mock { on { now() } doReturn NOW }
+    private val premiumCheckScheduleDataSource: PremiumCheckScheduleDataSource = mock()
     private val classUnderTest = SubscriptionRepository(
         billingDataSource,
         preferencesDataSource,
         attackDataSource,
         clockDataSource,
+        premiumCheckScheduleDataSource,
         SubscriptionDataMappers.create()
     )
 
@@ -126,6 +129,7 @@ class SubscriptionRepositoryTest {
             preferencesDataSource,
             failing,
             clockDataSource,
+            premiumCheckScheduleDataSource,
             SubscriptionDataMappers.create()
         )
 
@@ -171,5 +175,15 @@ class SubscriptionRepositoryTest {
         given(billingDataSource.purchaseUpdates()).willReturn(updates)
 
         assertEquals(updates, classUnderTest.purchaseUpdates())
+    }
+
+    @Test
+    fun `Given checks are needed or not then they are planned or cancelled, quietly`() {
+        classUnderTest.schedulePremiumChecks(needed = true)
+        verify(premiumCheckScheduleDataSource).schedule()
+
+        given(premiumCheckScheduleDataSource.cancel()).willThrow(DatabaseDataException())
+        classUnderTest.schedulePremiumChecks(needed = false)
+        verify(premiumCheckScheduleDataSource).cancel()
     }
 }

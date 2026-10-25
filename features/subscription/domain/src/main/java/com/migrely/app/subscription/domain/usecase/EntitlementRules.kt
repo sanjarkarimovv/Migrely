@@ -23,6 +23,8 @@ internal val TRIAL_LENGTH: Duration = Duration.ofDays(7)
 /**
  * The rules of the premium entitlement (BRD D106, design D2):
  * - an active subscription or the lifetime purchase unlocks Premium; lifetime wins over both;
+ * - a purchase that unlocks but is not yet acknowledged is marked, so it is acknowledged before
+ *   Google Play's 3 days are up;
  * - a pending purchase never unlocks;
  * - a purchase whose signature does not hold never unlocks;
  * - when Google Play cannot be reached, a subscription stays on for 3 days after the last answer,
@@ -47,7 +49,8 @@ class EntitlementRules {
             .filter { it.product == PurchaseProductDomainModel.Subscription }
             .maxByOrNull { it.purchaseTime }
         val pending = trusted.firstOrNull { it.state == PurchaseStateDomainModel.Pending }
-        return when {
+        val unacknowledged = purchased.any { !it.acknowledged }
+        val entitlement = when {
             lifetime != null -> EntitlementDomainModel(
                 kind = EntitlementKindDomainModel.Lifetime,
                 plan = PremiumPlanDomainModel.Lifetime,
@@ -67,7 +70,12 @@ class EntitlementRules {
 
             else -> EntitlementDomainModel.NONE.copy(lastCheck = now)
         }
+        return entitlement.copy(acknowledgementPending = unacknowledged)
     }
+
+    /** Whether background checks are needed: a payment is pending, or one is not acknowledged. */
+    fun needsBackgroundChecks(entitlement: EntitlementDomainModel): Boolean =
+        entitlement.kind == EntitlementKindDomainModel.Pending || entitlement.acknowledgementPending
 
     /** The entitlement when Google Play did not answer at [now]. */
     fun unanswered(previous: EntitlementDomainModel, now: Instant): EntitlementDomainModel {
@@ -78,14 +86,16 @@ class EntitlementRules {
     }
 
     /**
-     * Whether Google Play is due to be asked again: a pending payment is asked about every time.
+     * Whether Google Play is due to be asked again: a pending payment, and a purchase not yet
+     * acknowledged, are asked about every time, and so after a clock that went back before the
+     * last answer.
      */
     fun isDue(entitlement: EntitlementDomainModel, now: Instant): Boolean {
         val lastCheck = entitlement.lastCheck
         return lastCheck == null ||
-            entitlement.kind == EntitlementKindDomainModel.Pending ||
-            Duration.between(lastCheck, now) >= CHECK_INTERVAL ||
-            now < lastCheck
+            needsBackgroundChecks(entitlement) ||
+            now < lastCheck ||
+            Duration.between(lastCheck, now) >= CHECK_INTERVAL
     }
 
     fun status(entitlement: EntitlementDomainModel, now: Instant): PremiumStatusDomainModel =

@@ -5,7 +5,8 @@ package com.migrely.app.datasource.preferences.model
  * [basePlanId] and [trialEndMillis] are known only when the purchase was made on this phone, since
  * Google Play does not report them. [lastCheckMillis] is the last time Google Play answered.
  * [subscriptionRenewsToo] is true when lifetime was bought while a subscription still renews
- * (BRD EC-BIL-09).
+ * (BRD EC-BIL-09). [acknowledgementPending] is true while a purchase that unlocks is not yet
+ * acknowledged (review I2).
  */
 data class EntitlementDataModel(
     val kind: EntitlementKindDataModel,
@@ -16,7 +17,8 @@ data class EntitlementDataModel(
     val autoRenewing: Boolean,
     val trialEndMillis: Long?,
     val lastCheckMillis: Long?,
-    val subscriptionRenewsToo: Boolean
+    val subscriptionRenewsToo: Boolean,
+    val acknowledgementPending: Boolean = false
 )
 
 /** [key] is what is stored and must never change. */

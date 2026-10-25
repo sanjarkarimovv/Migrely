@@ -26,8 +26,8 @@ import com.migrely.app.subscription.ui.mapper.TrialBannerViewStateUiMapper
 import kotlinx.coroutines.flow.Flow
 
 /**
- * The paywall screen (BRD D109). [purchaseUpdates] signals each purchase change Google Play reported
- * outside a sheet, once the app has checked it (review I1).
+ * The paywall screen (BRD D109). [purchaseUpdates] signals each purchase change Google Play
+ * reported outside a sheet, once the app has checked it (review I1).
  */
 class PaywallDependencies(
     val paywallViewModel: PaywallViewModel,

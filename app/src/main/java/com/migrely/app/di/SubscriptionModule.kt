@@ -6,6 +6,7 @@ import com.migrely.app.datasource.attack.datasource.AttackDataSource
 import com.migrely.app.datasource.billing.datasource.BillingDataSource
 import com.migrely.app.datasource.clock.datasource.ClockDataSource
 import com.migrely.app.datasource.preferences.datasource.PreferencesDataSource
+import com.migrely.app.datasource.schedule.datasource.PremiumCheckScheduleDataSource
 import com.migrely.app.navigation.mapper.PaywallGateNavigationEventDestinationMapper
 import com.migrely.app.navigation.mapper.PaywallNavigationEventDestinationMapper
 import com.migrely.app.navigation.mapper.PaywallTriggerNavigationEventDestinationMapper
@@ -73,12 +74,14 @@ internal object SubscriptionModule {
         billingDataSource: BillingDataSource,
         preferencesDataSource: PreferencesDataSource,
         attackDataSource: AttackDataSource,
-        clockDataSource: ClockDataSource
+        clockDataSource: ClockDataSource,
+        premiumCheckScheduleDataSource: PremiumCheckScheduleDataSource
     ) = SubscriptionRepository(
         billingDataSource,
         preferencesDataSource,
         attackDataSource,
         clockDataSource,
+        premiumCheckScheduleDataSource,
         SubscriptionDataMappers.create()
     )
 
@@ -91,6 +94,7 @@ internal object SubscriptionModule {
         getOwnedPurchasesRepository = repository,
         acknowledgePurchaseRepository = repository,
         getCurrentTimeRepository = repository,
+        schedulePremiumChecksRepository = repository,
         entitlementRules = EntitlementRules()
     )
 

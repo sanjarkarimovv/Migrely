@@ -79,6 +79,12 @@ class EntitlementMappersTest(
             arrayOf(
                 data(EntitlementKindDataModel.None, null, null),
                 domain(EntitlementKindDomainModel.None, null)
+            ),
+            arrayOf(
+                data(EntitlementKindDataModel.Lifetime, "migrely_lifetime", null)
+                    .copy(acknowledgementPending = true),
+                domain(EntitlementKindDomainModel.Lifetime, PremiumPlanDomainModel.Lifetime)
+                    .copy(acknowledgementPending = true)
             )
         )
     }

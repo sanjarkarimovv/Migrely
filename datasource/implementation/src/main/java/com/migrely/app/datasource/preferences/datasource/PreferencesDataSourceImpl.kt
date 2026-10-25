@@ -27,6 +27,7 @@ private const val ENTITLEMENT_AUTO_RENEWING = "entitlement_auto_renewing"
 private const val ENTITLEMENT_TRIAL_END = "entitlement_trial_end"
 private const val ENTITLEMENT_LAST_CHECK = "entitlement_last_check"
 private const val ENTITLEMENT_SUBSCRIPTION_TOO = "entitlement_subscription_too"
+private const val ENTITLEMENT_ACKNOWLEDGEMENT_PENDING = "entitlement_acknowledgement_pending"
 private const val PAYWALL_SHOWN_PREFIX = "paywall_shown_"
 private const val PAYWALL_LAST_SHOWN = "paywall_last_shown"
 private const val TRIAL_BANNER_DISMISSED = "trial_banner_dismissed"
@@ -97,7 +98,8 @@ class PreferencesDataSourceImpl(
             autoRenewing = stored.getBoolean(ENTITLEMENT_AUTO_RENEWING, false),
             trialEndMillis = stored.longOrNull(ENTITLEMENT_TRIAL_END),
             lastCheckMillis = stored.longOrNull(ENTITLEMENT_LAST_CHECK),
-            subscriptionRenewsToo = stored.getBoolean(ENTITLEMENT_SUBSCRIPTION_TOO, false)
+            subscriptionRenewsToo = stored.getBoolean(ENTITLEMENT_SUBSCRIPTION_TOO, false),
+            acknowledgementPending = stored.getBoolean(ENTITLEMENT_ACKNOWLEDGEMENT_PENDING, false)
         )
     }
 
@@ -112,6 +114,7 @@ class PreferencesDataSourceImpl(
         putLongOrRemove(ENTITLEMENT_TRIAL_END, entitlement.trialEndMillis)
         putLongOrRemove(ENTITLEMENT_LAST_CHECK, entitlement.lastCheckMillis)
         putBoolean(ENTITLEMENT_SUBSCRIPTION_TOO, entitlement.subscriptionRenewsToo)
+        putBoolean(ENTITLEMENT_ACKNOWLEDGEMENT_PENDING, entitlement.acknowledgementPending)
     }
 
     override fun paywallShown(trigger: PaywallTriggerDataModel): Boolean =
