@@ -206,7 +206,7 @@ class BuyPremiumUseCaseTest {
     }
 
     @Test
-    fun `Given a pending payment settles from another plan's sheet then that plan is not given to it`() {
+    fun `Given a pending payment settles from another plan's sheet then that plan stays off it`() {
         given(getEntitlementRepository.entitlement()).willReturn(
             EntitlementDomainModel.NONE.copy(
                 kind = EntitlementKindDomainModel.Pending,
@@ -226,7 +226,7 @@ class BuyPremiumUseCaseTest {
     }
 
     @Test
-    fun `Given the sheet returns an older purchase of the product then the request's plan is not given to it`() {
+    fun `Given the sheet returns an older purchase then the request's plan stays off it`() {
         given(launchPurchaseRepository.launchPurchase(any())).willReturn(
             PurchaseSheetResultDomainModel.Completed(
                 listOf(purchase(token = "older", at = BOUGHT_AT))
