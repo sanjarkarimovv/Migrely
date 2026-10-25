@@ -10,6 +10,7 @@ import com.migrely.app.history.domain.model.SetDayMarkRequestDomainModel
 import com.migrely.app.history.domain.model.SetDayMarkResultDomainModel
 import com.migrely.app.history.domain.model.UndoResultDomainModel
 import com.migrely.app.history.domain.usecase.GetHistoryMonthUseCase
+import com.migrely.app.history.domain.usecase.HasPremiumUseCase
 import com.migrely.app.history.domain.usecase.RestoreDeletedAttackUseCase
 import com.migrely.app.history.domain.usecase.SetDayMarkUseCase
 import com.migrely.app.history.presentation.mapper.HistoryAttackPresentationMapper
@@ -19,6 +20,7 @@ import com.migrely.app.history.presentation.mapper.MonthStatsPresentationMapper
 import com.migrely.app.history.presentation.mapper.PainLevelPresentationMapper
 import com.migrely.app.history.presentation.model.HistoryPresentationNotification
 import com.migrely.app.history.presentation.model.HistoryViewState
+import com.migrely.app.history.presentation.model.PremiumFeaturePresentationModel
 import com.migrely.app.history.presentation.navigation.HistoryPresentationNavigationEvent
 import java.time.Instant
 import java.time.LocalDate
@@ -72,6 +74,8 @@ class HistoryViewModelTest :
 
     @Mock private lateinit var setDayMarkUseCase: SetDayMarkUseCase
 
+    @Mock private lateinit var hasPremiumUseCase: HasPremiumUseCase
+
     private val historyMonthPresentationMapper = HistoryMonthPresentationMapper(
         HistoryAttackPresentationMapper(),
         IntensityLevelPresentationMapper(PainLevelPresentationMapper()),
@@ -84,6 +88,7 @@ class HistoryViewModelTest :
             getHistoryMonthUseCase,
             restoreDeletedAttackUseCase,
             setDayMarkUseCase,
+            hasPremiumUseCase,
             historyMonthPresentationMapper,
             useCaseExecutor
         )
@@ -290,7 +295,8 @@ class HistoryViewModelTest :
     }
 
     @Test
-    fun `When asking for the doctor report then emits its event`() = runTest {
+    fun `Given Premium when asking for the doctor report then emits its event`() = runTest {
+        hasPremiumUseCase.givenSuccessfulExecution(true)
         val event = nextNavigationEvent()
 
         classUnderTest.onReportAction()
@@ -299,12 +305,43 @@ class HistoryViewModelTest :
     }
 
     @Test
-    fun `When asking for insights then emits their event`() = runTest {
+    fun `Given Premium when asking for insights then emits their event`() = runTest {
+        hasPremiumUseCase.givenSuccessfulExecution(true)
         val event = nextNavigationEvent()
 
         classUnderTest.onInsightsAction()
 
         assertEquals(HistoryPresentationNavigationEvent.OnOpenInsights, event.await())
+    }
+
+    @Test
+    fun `Given a free user when asking for the doctor report then its paywall opens`() = runTest {
+        hasPremiumUseCase.givenSuccessfulExecution(false)
+        val event = nextNavigationEvent()
+
+        classUnderTest.onReportAction()
+
+        assertEquals(
+            HistoryPresentationNavigationEvent.OnOpenPaywall(
+                PremiumFeaturePresentationModel.Report
+            ),
+            event.await()
+        )
+    }
+
+    @Test
+    fun `Given a free user when asking for insights then their paywall opens`() = runTest {
+        hasPremiumUseCase.givenSuccessfulExecution(false)
+        val event = nextNavigationEvent()
+
+        classUnderTest.onInsightsAction()
+
+        assertEquals(
+            HistoryPresentationNavigationEvent.OnOpenPaywall(
+                PremiumFeaturePresentationModel.Insights
+            ),
+            event.await()
+        )
     }
 
     private fun TestScope.nextViewState() = async(start = UNDISPATCHED) {
