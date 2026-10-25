@@ -206,7 +206,7 @@ class ReportDocumentMapper(private val reportDateTimeFormatter: ReportDateTimeFo
             attack.locations.joinToString(", "),
             attack.symptoms.joinToString(", "),
             attack.triggers.joinToString(", "),
-            attack.medications.joinToString(", ")
+            attack.medications.joinToString(", ") { it.replace(DOSE_SPACE, DOSE_JOIN) }
         )
     }
 
@@ -312,3 +312,7 @@ class ReportDocumentMapper(private val reportDateTimeFormatter: ReportDateTimeFo
         ReportDayLevelDomainModel.Severe -> ReportDayLevelDataModel.Severe
     }
 }
+
+/** The space between a dose's number and its unit ("50 mg"), which a line break must not split. */
+private val DOSE_SPACE = Regex("(?<=\\d) (?=\\p{L})")
+private val DOSE_JOIN = Char(0x00A0).toString()

@@ -148,7 +148,8 @@ class ReportDocumentMapperTest {
                 "Left side",
                 "Nausea, Ko‘ngil aynishi",
                 "Stress",
-                "Ibuprofen 400 mg"
+                // A dose's number and unit stay on one line (store polish).
+                "Ibuprofen 400${Char(0x00A0)}mg"
             ),
             rows[1]
         )

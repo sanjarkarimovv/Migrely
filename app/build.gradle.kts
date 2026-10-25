@@ -57,7 +57,7 @@ android {
         applicationId = "com.migrely.app"
         minSdk = libs.versions.minSdk.get().toInt()
         targetSdk = libs.versions.targetSdk.get().toInt()
-        versionCode = 1
+        versionCode = 2
         versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -88,6 +88,9 @@ android {
             )
             signingConfig =
                 signingConfigs.getByName(if (keystoreProperties != null) "release" else "debug")
+            // Play warns that the bundle has native code without debug symbols. The only native
+            // code is androidx.graphics.path, which ships its libraries already stripped, so there
+            // are no symbols to upload; the warning is expected and harmless.
         }
     }
     compileOptions {
