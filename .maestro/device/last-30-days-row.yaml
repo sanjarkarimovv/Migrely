@@ -1,0 +1,12 @@
+# Device scenario step: History's "Last 30 days" section shows the row ROW (a regex).
+appId: com.migrely.app
+---
+- launchApp
+- tapOn: ".*\\. Opens History\\."
+- scrollUntilVisible:
+    element: "Last 30 days"
+    direction: DOWN
+- scrollUntilVisible:
+    element: "${ROW}"
+    direction: DOWN
+- stopApp

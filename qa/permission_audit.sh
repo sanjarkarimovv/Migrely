@@ -20,6 +20,8 @@ ALLOWED=(
   "android.permission.RECEIVE_BOOT_COMPLETED"
   # WorkManager holds a wake lock while the reminder work runs (D66).
   "android.permission.WAKE_LOCK"
+  # Google Play Billing Library for Premium (change 9, D107); it talks to the Play Store app, not to the network.
+  "com.android.vending.BILLING"
 )
 # No network at all (BRD privacy constraints, D43) and no exact alarms (EC-REM-03).
 NEVER=("android.permission.INTERNET" "android.permission.ACCESS_NETWORK_STATE" "android.permission.SCHEDULE_EXACT_ALARM"

@@ -1234,6 +1234,54 @@ pull_newest() { # $1 glob in /sdcard/Download (for example "migrely-*.json"), $2
   echo "    pulled ${name##*/}"
 }
 
+# Covers: medication-overuse › A standing indicator in History › One day
+# Retest of #45: the indicator rows are plurals now.
+scenario_one_day_row() {
+  echo "Scenario one_day_row: a triptan on 1 of the last 30 days reads \"1 day\" (#45)"
+  set_clock_millis "$(when_millis 0 15 12:00)" || return 1
+  run_flow clean || return 1
+  run_flow med-add-triptan-in-attack || return 1
+  run_flow_env last-30-days-row "ROW=Triptans: 1 day \\(limit 10\\).*" || return 1
+  echo "    History: \"Triptans: 1 day (limit 10)\""
+}
+
+message_seconds() { # $1 Python regex of a message already on screen or about to be: prints how long it stays, in seconds
+  local first="" last="" now
+  local end=$(( $(date +%s) + 40 ))
+  while (( $(date +%s) < end )); do
+    now="$(perl -MTime::HiRes=time -e 'printf "%.1f", time')"
+    if [[ -n "$(screen_text_matching "$1")" ]]; then
+      [[ -n "$first" ]] || first="$now"
+      last="$now"
+    elif [[ -n "$first" ]]; then
+      break
+    fi
+  done
+  [[ -n "$first" ]] || { echo "none"; return 1; }
+  perl -e "printf '%.1f', $last - $first"
+}
+
+# Also checks: in-app-messages › Message durations by kind (Your data's information message; retest of #56)
+# The message is first seen up to ~2 s after it appears (Maestro hands over, then a screen dump), so the measured time
+# is a lower bound: at least 5.5 s for 8 s, and at least 16 s with a 20 s accessibility timeout. It must also go: under
+# 11 s and 23 s.
+scenario_message_duration() {
+  echo "Scenario message_duration: a Your data message stays 8 s, or the accessibility timeout when longer (#56, EC-UX-16)"
+  local seconds want_min want_max timeout
+  run_flow clean || return 1
+  adbq shell "echo 'This is a shopping list, not a backup.' > /sdcard/Download/broken.json"
+  for timeout in default 20; do
+    if [[ "$timeout" == 20 ]]; then long_undo_window; want_min=16; want_max=23; else default_undo_window; want_min=5.5; want_max=11; fi
+    maestro --device "$QA_SERIAL" test -e FILE=broken.json -e HOLDS= -e CHOICE= "$FLOWS/import-step.yaml" \
+      >"$out/message-duration-$timeout.log" 2>&1 || { echo "  FAILED: import-step (log: $out/message-duration-$timeout.log)"; return 1; }
+    seconds="$(message_seconds "This file isn.t a Migrely backup\. Nothing was changed\.")" || { echo "  FAILED: the message was never seen"; return 1; }
+    echo "    accessibility timeout $timeout: seen for $seconds s"
+    perl -e "exit !($seconds >= $want_min && $seconds <= $want_max)" ||
+      { echo "  FAILED: expected between $want_min and $want_max s (#56)"; default_undo_window; return 1; }
+  done
+  default_undo_window
+}
+
 # Covers: data-backup › JSON backup › Exporting (2 attacks, 1 medication, 1 day mark rather than 16, 2 and 5)
 # Covers: data-backup › CSV export › Opening in Excel
 # Covers: data-backup › CSV export › A phone in Uzbek or Russian
@@ -1453,7 +1501,7 @@ if [[ $# -eq 0 ]]; then
     med_link_home med_overuse keyboard_home keyboard_history keyboard_rtl landscape_band mark_travel mark_earliest_month \
     stats_counting stats_chronic stats_progress reminder_daily reminder_permission reminder_effect reminder_replan \
     med_only_history message_tap_guard \
-    theme_check onboarding_states delete_all_data backup_export backup_import
+    theme_check onboarding_states delete_all_data backup_export backup_import one_day_row message_duration
   if [[ -n "${QA_OLD_APK:-}" ]]; then
     set -- "$@" upgrade
   else
