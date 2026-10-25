@@ -142,7 +142,7 @@ class BackupRoundTripTest {
 
     @Test
     fun whenExportedReadAndRestored_thenTheSameRecords_andAddingThemBackChangesNothing() {
-        val source = BackupDataSourceImpl(phone.backupDao(), localMapper, phone::clearAllTables)
+        val source = BackupDataSourceImpl(phone.backupDao(), localMapper, phone::deleteEverything)
         val exported = source.records()
         assertEquals(listOf("ended", "now"), exported.attacks.map { it.id })
         assertEquals(listOf("i2", "i1"), exported.intakes.map { it.id })
@@ -151,7 +151,7 @@ class BackupRoundTripTest {
         assertEquals(BackupDecodedDataModel.Records(exported, 6), decoded)
 
         val restored =
-            BackupDataSourceImpl(newPhone.backupDao(), localMapper, newPhone::clearAllTables)
+            BackupDataSourceImpl(newPhone.backupDao(), localMapper, newPhone::deleteEverything)
         restored.replaceAll((decoded as BackupDecodedDataModel.Records).records)
         assertEquals(exported, restored.records())
 
@@ -167,7 +167,11 @@ class BackupRoundTripTest {
     fun whenEverythingIsDeleted_thenNoTableKeepsARow() {
         phone.reminderSettingsDao().update { it.copy(dailyEnabled = true) }
         phone.medicationDao().upsertOveruseNotice(OveruseNoticeLocalModel("SIMPLE", "SOFT", 1L))
-        val source = BackupDataSourceImpl(phone.backupDao(), localMapper, phone::clearAllTables)
+        val source = BackupDataSourceImpl(phone.backupDao(), localMapper, phone::deleteEverything)
+        phone.query("SELECT COUNT(*) FROM sqlite_sequence", null).use { cursor ->
+            cursor.moveToFirst()
+            assertEquals(1, cursor.getInt(0))
+        }
 
         source.deleteAll()
 
@@ -181,7 +185,9 @@ class BackupRoundTripTest {
             "medication_intake",
             "overuse_notice",
             "day_mark",
-            "reminder_settings"
+            "reminder_settings",
+            // The intensity points' AUTOINCREMENT counter, which would tell how many were ever logged.
+            "sqlite_sequence"
         ).forEach { table ->
             phone.query("SELECT COUNT(*) FROM $table", null).use { cursor ->
                 cursor.moveToFirst()

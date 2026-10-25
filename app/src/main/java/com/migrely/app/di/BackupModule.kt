@@ -62,7 +62,7 @@ internal object BackupModule {
                 MedicationLocalMapper(),
                 DayMarkLocalMapper()
             ),
-            database::clearAllTables
+            database::deleteEverything
         )
 
     @Provides
