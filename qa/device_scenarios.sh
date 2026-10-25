@@ -253,19 +253,25 @@ expect_no_notification() {
   return 1
 }
 tap_notification_action() { # $1 the action's label, $2 the notification's title (regex); tapped in the open shade
-  local point title
-  adbq shell cmd statusbar expand-notifications
-  sleep 2
-  point="$(point_in "$1" 0.5)"
-  if [[ -z "$point" ]]; then
-    # Collapsed under another notification: a swipe down on its title shows the actions.
-    title="$(point_in "$2" 0.5)"
-    if [[ -n "$title" ]]; then
-      adbq shell input swipe $title ${title% *} $((${title#* } + 400)) 300
-      sleep 2
-      point="$(point_in "$1" 0.5)"
+  local point title attempt
+  # The shade is sometimes still drawing (for example right after a boot), so it is opened up to twice.
+  for attempt in 1 2; do
+    adbq shell cmd statusbar expand-notifications
+    sleep 3
+    point="$(point_in "$1" 0.5)"
+    if [[ -z "$point" ]]; then
+      # Collapsed under another notification: a swipe down on its title shows the actions.
+      title="$(point_in "$2" 0.5)"
+      if [[ -n "$title" ]]; then
+        adbq shell input swipe $title ${title% *} $((${title#* } + 400)) 300
+        sleep 2
+        point="$(point_in "$1" 0.5)"
+      fi
     fi
-  fi
+    [[ -n "$point" ]] && break
+    adbq shell cmd statusbar collapse
+    sleep 2
+  done
   if [[ -z "$point" ]]; then
     adbq exec-out uiautomator dump /dev/tty 2>/dev/null | python3 -I -c "import re, sys
 labels = [l for l in re.findall(r'(?:text|content-desc)=\"([^\"]+)\"', sys.stdin.read()) if l.strip()]
