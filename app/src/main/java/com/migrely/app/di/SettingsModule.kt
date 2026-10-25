@@ -10,8 +10,8 @@ import com.migrely.app.navigation.mapper.SettingsPageNavigationEventDestinationM
 import com.migrely.app.settings.data.repository.DeleteAllDataRepository
 import com.migrely.app.settings.data.repository.SettingsRepository
 import com.migrely.app.settings.domain.usecase.DeleteAllDataUseCase
+import com.migrely.app.settings.domain.usecase.GetAppearanceUseCase
 import com.migrely.app.settings.domain.usecase.GetSettingsUseCase
-import com.migrely.app.settings.domain.usecase.GetThemeUseCase
 import com.migrely.app.settings.domain.usecase.SetPeriodTrackingUseCase
 import com.migrely.app.settings.domain.usecase.SetThemeUseCase
 import com.migrely.app.settings.presentation.mapper.DeleteConfirmationResolver
@@ -40,12 +40,12 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 internal object SettingsModule {
-    /** For the app itself, which draws every screen in the chosen theme (BRD D94). */
+    /** For the app itself, which draws every screen in the chosen theme, or dark during an attack (BRD D94). */
     @Provides
-    fun providesGetThemeUseCase(
+    fun providesGetAppearanceUseCase(
         repository: SettingsRepository,
         coroutines: CoroutineContextProvider
-    ) = GetThemeUseCase(repository, coroutines)
+    ): GetAppearanceUseCase = GetAppearanceUseCase(repository, repository, coroutines)
 
     /** One for the app, so deleting all data survives a rotation (ARCHITECTURE section 13). */
     @Provides

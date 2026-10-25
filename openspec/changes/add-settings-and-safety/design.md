@@ -23,11 +23,18 @@
   - `MigrelyColors` (attack mode) stays dark;
   - attack mode and the dark room keep their own dark colours, so they are dark in either theme. Screens built only
     from `MaterialTheme.colorScheme` follow the theme.
+- **During an attack** every screen is dark, whatever the theme (walk B2):
+  - `AttackDataSource.inProgressChanges(): Flow<Boolean>` is a Room query that Room reads again whenever the attack
+    table changes, so an attack started or ended anywhere (home, the shortcut, a notification, History) is followed;
+  - the settings domain's `GetAppearanceUseCase` combines it with the theme into `AppearanceDomainModel`;
+  - `:app` maps it to its own `AppearanceUiModel`, and `DarkThemeUiResolver` picks the dark scheme when an attack is in
+    progress or the theme is dark; once the attack ends, the chosen theme returns.
 - **`:app`:**
   - `PreferencesDataSource.themeChanges(): Flow<ThemeDataModel>` starts with the current value and follows every change
     (a SharedPreferences listener);
-  - `MainActivity` reads the theme in the same splash wait as the start decision, through `StartEntryPoint`, then
-    collects the flow into Compose state, so a change in Settings redraws every screen at once with no restart;
+  - `MainActivity` reads the appearance in the same splash wait as the start decision, through `StartEntryPoint`, keeps
+    it across a recreation, then collects the flow into Compose state, so a change redraws every screen at once with no
+    restart;
   - the status and navigation bars follow the theme: light icons on dark, dark icons on light;
   - "Match the phone" follows `isSystemInDarkTheme()`.
 

@@ -1,6 +1,7 @@
 package com.migrely.app.settings.data.repository
 
 import com.migrely.app.datasource.appinfo.datasource.AppInfoDataSource
+import com.migrely.app.datasource.attack.datasource.AttackDataSource
 import com.migrely.app.datasource.exception.DataException
 import com.migrely.app.datasource.preferences.datasource.PreferencesDataSource
 import com.migrely.app.settings.data.mapper.ThemeDataMapper
@@ -8,22 +9,26 @@ import com.migrely.app.settings.data.mapper.ThemeDomainMapper
 import com.migrely.app.settings.domain.model.SettingsDomainModel
 import com.migrely.app.settings.domain.model.SettingsWriteResultDomainModel
 import com.migrely.app.settings.domain.model.ThemeDomainModel
+import com.migrely.app.settings.domain.repository.GetAttackInProgressRepository
 import com.migrely.app.settings.domain.repository.GetSettingsRepository
 import com.migrely.app.settings.domain.repository.GetThemeRepository
 import com.migrely.app.settings.domain.repository.SetPeriodTrackingRepository
 import com.migrely.app.settings.domain.repository.SetThemeRepository
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 
 class SettingsRepository(
     private val preferencesDataSource: PreferencesDataSource,
     private val appInfoDataSource: AppInfoDataSource,
+    private val attackDataSource: AttackDataSource,
     private val themeDomainMapper: ThemeDomainMapper,
     private val themeDataMapper: ThemeDataMapper
 ) : GetSettingsRepository,
     SetPeriodTrackingRepository,
     SetThemeRepository,
-    GetThemeRepository {
+    GetThemeRepository,
+    GetAttackInProgressRepository {
     override fun settings() = SettingsDomainModel(
         periodTracking = preferencesDataSource.periodTracking(),
         theme = themeDomainMapper.toDomain(preferencesDataSource.theme()),
@@ -40,6 +45,12 @@ class SettingsRepository(
 
     override fun theme(): Flow<ThemeDomainModel> =
         preferencesDataSource.themeChanges().map(themeDomainMapper::toDomain)
+
+    /** A storage failure reads as no attack, so the chosen theme stays; the flow then ends. */
+    override fun attackInProgress(): Flow<Boolean> =
+        attackDataSource.inProgressChanges().catch { exception ->
+            if (exception is DataException) emit(false) else throw exception
+        }
 
     private inline fun write(block: () -> Unit) = try {
         block()

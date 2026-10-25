@@ -240,6 +240,8 @@ Health data must never be passed to either SDK.
     `isSystemInDarkTheme()`. Screens take every colour from `MaterialTheme.colorScheme`.
   - Attack mode and the dark room wrap themselves in `MigrelyDarkRoom`, which keeps them, their dialogs and their
     messages in the dark scheme in either theme, and counts itself in `DarkScreens` so the system bars stay dark too.
+  - While an attack is in progress every screen is dark: `MainActivity` follows `GetAppearanceUseCase` (the theme and
+    `AttackDataSource.inProgressChanges()`) and `DarkThemeUiResolver` picks the scheme.
   - Skies are dark in every theme; what is drawn on a sky takes the dark scheme's colours.
 - Feature previews wrap content in `MigrelyTheme`, with a light preview for new screens.
 - Feature UI mappers convert their own UI models into design-system parameters (for example `SkyAppearance`). No

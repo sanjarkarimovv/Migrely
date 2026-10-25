@@ -11,13 +11,13 @@ class DeleteConfirmationResolverTest(private val typed: String, private val conf
         @JvmStatic
         @Parameterized.Parameters(name = "\"{0}\" confirms: {1}")
         fun parameters() = listOf(
-            arrayOf("DELETE", true),
-            arrayOf("delete", false),
-            arrayOf("Delete", false),
-            arrayOf("DELETE ", false),
-            arrayOf(" DELETE", false),
-            arrayOf("DELET", false),
-            arrayOf("", false)
+            arrayOf<Any?>("DELETE", true),
+            arrayOf<Any?>("delete", false),
+            arrayOf<Any?>("Delete", false),
+            arrayOf<Any?>("DELETE ", false),
+            arrayOf<Any?>(" DELETE", false),
+            arrayOf<Any?>("DELET", false),
+            arrayOf<Any?>("", false)
         )
     }
 

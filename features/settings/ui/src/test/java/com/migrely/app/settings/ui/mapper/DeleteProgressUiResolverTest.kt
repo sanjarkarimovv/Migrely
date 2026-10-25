@@ -25,12 +25,12 @@ class DeleteProgressUiResolverTest(
         @JvmStatic
         @Parameterized.Parameters(name = "{0}")
         fun parameters() = listOf(
-            arrayOf("not started", false, settings(deleting = false), false),
-            arrayOf("confirmed, before the state arrives", true, null, true),
-            arrayOf("confirmed, before the state says deleting", true, settings(false), true),
-            arrayOf("rebuilt while deleting", false, settings(deleting = true), true),
-            arrayOf("rebuilt with the screen's flag kept", true, null, true),
-            arrayOf("deleted, until the restart", true, settings(deleting = true), true)
+            arrayOf<Any?>("not started", false, settings(deleting = false), false),
+            arrayOf<Any?>("confirmed, before the state arrives", true, null, true),
+            arrayOf<Any?>("confirmed, before the state says deleting", true, settings(false), true),
+            arrayOf<Any?>("rebuilt while deleting", false, settings(deleting = true), true),
+            arrayOf<Any?>("rebuilt with the screen's flag kept", true, null, true),
+            arrayOf<Any?>("deleted, until the restart", true, settings(deleting = true), true)
         )
     }
 

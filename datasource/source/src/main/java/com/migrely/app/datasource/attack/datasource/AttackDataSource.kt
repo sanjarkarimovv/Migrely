@@ -10,9 +10,10 @@ import com.migrely.app.datasource.attack.model.IntensityPointDataModel
 import com.migrely.app.datasource.attack.model.ReopenDataModel
 import com.migrely.app.datasource.attack.model.RestoreDataModel
 import java.time.Instant
+import kotlinx.coroutines.flow.Flow
 
 /**
- * Attacks stored on the device. Every function blocks and must be called off the main thread.
+ * Attacks stored on the device. Every function but [inProgressChanges] blocks and must be called off the main thread.
  * Writes throw [com.migrely.app.datasource.exception.StorageFullDataException] when the device is full and
  * [com.migrely.app.datasource.exception.DatabaseDataException] for other storage failures.
  *
@@ -22,6 +23,12 @@ import java.time.Instant
 @Suppress("TooManyFunctions")
 interface AttackDataSource {
     fun inProgress(): AttackDataModel?
+
+    /**
+     * Whether an attack is in progress, then again each time that changes, whoever changed it. A storage failure ends
+     * the flow with the exceptions above.
+     */
+    fun inProgressChanges(): Flow<Boolean>
 
     fun byId(attackId: String): AttackDataModel?
 

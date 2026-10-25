@@ -6,7 +6,7 @@ import com.migrely.app.settings.domain.model.SettingsWriteResultDomainModel
 import com.migrely.app.settings.domain.model.ThemeDomainModel
 import com.migrely.app.settings.domain.repository.SetThemeRepository
 
-/** Chooses the app's theme (BRD SET-F1, D94); every screen follows at once through [GetThemeUseCase]. */
+/** Chooses the app's theme (BRD SET-F1, D94); every screen follows at once through [GetAppearanceUseCase]. */
 class SetThemeUseCase(
     private val setThemeRepository: SetThemeRepository,
     coroutineContextProvider: CoroutineContextProvider

@@ -38,7 +38,10 @@ import com.migrely.app.ui.main.di.AppNavHostDependencies
 import com.migrely.app.ui.main.route.Home
 import com.migrely.app.ui.main.route.Onboarding
 import com.migrely.app.ui.theme.mapper.AppThemeUiMapper
+import com.migrely.app.ui.theme.mapper.AppearanceUiMapper
+import com.migrely.app.ui.theme.mapper.DarkThemeUiResolver
 import com.migrely.app.ui.theme.model.AppThemeUiModel
+import com.migrely.app.ui.theme.model.AppearanceUiModel
 import dagger.hilt.android.AndroidEntryPoint
 import dagger.hilt.android.EntryPointAccessors
 import java.time.ZoneId
@@ -61,6 +64,7 @@ const val ACTION_START_ATTACK = "com.migrely.app.action.START_ATTACK"
 
 private const val STARTS_WITH_ONBOARDING = "starts_with_onboarding"
 private const val THEME = "theme"
+private const val ATTACK_IN_PROGRESS = "attack_in_progress"
 private const val START_DECISION_MILLIS = 2_000L
 
 @AndroidEntryPoint
@@ -77,19 +81,22 @@ class MainActivity : ComponentActivity() {
     private var pendingStartAttack = false
 
     /**
-     * The theme drawn last (BRD D94). It is read behind the splash and kept across a recreation, so the first frame is
-     * always in the right theme; the screens then follow each change at once.
+     * How the app was drawn last (BRD D94): the chosen theme, and whether an attack is in progress, which makes every
+     * screen dark. It is read behind the splash and kept across a recreation, so the first frame is always right; the
+     * screens then follow each change at once.
      */
-    private var theme = AppThemeUiModel.Dark
+    private var appearance = AppearanceUiModel(AppThemeUiModel.Dark, attackInProgress = false)
 
-    private val themeChanges: Flow<AppThemeUiModel> by lazy {
-        val appThemeUiMapper = AppThemeUiMapper()
+    private val darkThemeUiResolver = DarkThemeUiResolver()
+
+    private val appearanceChanges: Flow<AppearanceUiModel> by lazy {
+        val appearanceUiMapper = AppearanceUiMapper(AppThemeUiMapper())
         EntryPointAccessors.fromApplication(applicationContext, StartEntryPoint::class.java)
-            .getThemeUseCase()
+            .getAppearanceUseCase()
             .executeInBackground(Unit)
-            .map(appThemeUiMapper::toUi)
+            .map(appearanceUiMapper::toUi)
             .flowOn(Dispatchers.IO)
-            // A store that cannot be read keeps the theme shown.
+            // A store that cannot be read keeps the appearance shown.
             .catch { }
     }
 
@@ -115,7 +122,12 @@ class MainActivity : ComponentActivity() {
             ?.getBoolean(STARTS_WITH_ONBOARDING)
         savedInstanceState?.getString(THEME)
             ?.let { saved -> AppThemeUiModel.entries.firstOrNull { it.name == saved } }
-            ?.let { theme = it }
+            ?.let { theme ->
+                appearance = AppearanceUiModel(
+                    theme,
+                    attackInProgress = savedInstanceState.getBoolean(ATTACK_IN_PROGRESS)
+                )
+            }
         // Honour the shortcut only until the start is decided; a recreated activity restores its back stack instead.
         // A recreation while the splash still waits has decided nothing yet, so it keeps the shortcut (review I2).
         val startAttack = startsWithOnboarding == null && intent?.action == ACTION_START_ATTACK
@@ -128,9 +140,9 @@ class MainActivity : ComponentActivity() {
         if (startsWithOnboarding == null) {
             lifecycleScope.launch {
                 coroutineScope {
-                    val chosenTheme = async { readTheme() }
+                    val chosenAppearance = async { readAppearance() }
                     val onboarding = shouldShowOnboarding(openedToLog)
-                    theme = chosenTheme.await()
+                    appearance = chosenAppearance.await()
                     startsWithOnboarding = onboarding
                 }
                 showContent(startAttack || pendingStartAttack)
@@ -159,19 +171,20 @@ class MainActivity : ComponentActivity() {
         false
     }
 
-    /** The chosen theme, or the one shown when it cannot be read in time, like the start decision. */
+    /** The appearance, or the one shown when it cannot be read in time, like the start decision. */
     @Suppress("TooGenericExceptionCaught")
-    private suspend fun readTheme(): AppThemeUiModel = try {
-        withTimeoutOrNull(START_DECISION_MILLIS) { themeChanges.first() } ?: theme
+    private suspend fun readAppearance(): AppearanceUiModel = try {
+        withTimeoutOrNull(START_DECISION_MILLIS) { appearanceChanges.first() } ?: appearance
     } catch (exception: Exception) {
         if (exception is CancellationException) throw exception
-        theme
+        appearance
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         startsWithOnboarding?.let { outState.putBoolean(STARTS_WITH_ONBOARDING, it) }
-        outState.putString(THEME, theme.name)
+        outState.putString(THEME, appearance.theme.name)
+        outState.putBoolean(ATTACK_IN_PROGRESS, appearance.attackInProgress)
     }
 
     private fun showContent(startAttack: Boolean) {
@@ -183,13 +196,10 @@ class MainActivity : ComponentActivity() {
             Home(startAttack = startAttack)
         }
         setContent {
-            val chosen by themeChanges.collectAsState(initial = theme)
-            SideEffect { theme = chosen }
-            val dark = when (chosen) {
-                AppThemeUiModel.Dark -> true
-                AppThemeUiModel.Light -> false
-                AppThemeUiModel.System -> isSystemInDarkTheme()
-            }
+            val shown by appearanceChanges.collectAsState(initial = appearance)
+            SideEffect { appearance = shown }
+            // During an attack every screen is dark, those opened from attack mode included (BRD D94).
+            val dark = darkThemeUiResolver.resolve(shown, isSystemInDarkTheme())
             // Attack mode and the dark room stay dark in the light theme, and the bars with them.
             val darkScreens = remember { DarkScreens() }
             val barsDark = dark || darkScreens.shown > 0

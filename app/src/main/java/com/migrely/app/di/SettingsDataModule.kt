@@ -1,6 +1,7 @@
 package com.migrely.app.di
 
 import com.migrely.app.datasource.appinfo.datasource.AppInfoDataSource
+import com.migrely.app.datasource.attack.datasource.AttackDataSource
 import com.migrely.app.datasource.backup.datasource.BackupDataSource
 import com.migrely.app.datasource.backupfile.datasource.BackupFileDataSource
 import com.migrely.app.datasource.notification.datasource.NotificationDataSource
@@ -26,10 +27,12 @@ internal object SettingsDataModule {
     @Provides
     fun providesSettingsRepository(
         preferencesDataSource: PreferencesDataSource,
-        appInfoDataSource: AppInfoDataSource
+        appInfoDataSource: AppInfoDataSource,
+        attackDataSource: AttackDataSource
     ) = SettingsRepository(
         preferencesDataSource,
         appInfoDataSource,
+        attackDataSource,
         ThemeDomainMapper(),
         ThemeDataMapper()
     )

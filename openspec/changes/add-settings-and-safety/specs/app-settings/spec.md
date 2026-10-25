@@ -21,8 +21,9 @@ It SHALL offer no analytics switch, since Migrely sends nothing (BRD SET-F1, D93
 
 ### Requirement: Theme
 Theme SHALL offer "Dark", the default, "Light" and "Match the phone". The light theme SHALL use no pure white. Attack
-mode and the dark room SHALL stay dark in every theme. The choice SHALL apply at once and at every start, with no frame
-in the other theme (BRD SET-F1, EC-UX-01, D94).
+mode and the dark room SHALL stay dark in every theme, and while an attack is in progress every screen SHALL be dark,
+because light hurts during an attack. The choice SHALL apply at once and at every start, with no frame in the other
+theme (BRD SET-F1, EC-UX-01, D94).
 
 #### Scenario: Light
 - **WHEN** the user chooses "Light"
@@ -30,7 +31,8 @@ in the other theme (BRD SET-F1, EC-UX-01, D94).
 
 #### Scenario: An attack in progress
 - **WHEN** the theme is Light and an attack is in progress
-- **THEN** home's attack mode is dark
+- **THEN** every screen is dark, attack mode and the screens opened from it included
+- **AND** once the attack ends, the screens are light again
 
 ### Requirement: Warning signs
 Help SHALL show the warning signs that need urgent care: sudden pain that is the worst of one's life, pain after a head
