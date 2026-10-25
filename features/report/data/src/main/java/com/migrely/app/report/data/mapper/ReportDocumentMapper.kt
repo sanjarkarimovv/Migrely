@@ -15,10 +15,12 @@ import com.migrely.app.report.domain.model.ReportMedicationCategoryDomainModel
 import com.migrely.app.report.domain.model.ReportMedicationDomainModel
 import com.migrely.app.report.domain.model.ReportMedicationKindDomainModel
 import com.migrely.app.report.domain.model.ReportPainLevelDomainModel
+import java.time.DayOfWeek
 import java.time.Duration
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.time.format.TextStyle
 import java.util.Locale
 
 /** At most this many pages; a longer attacks table keeps its latest rows (BRD EC-REP-02, D84). */
@@ -35,19 +37,16 @@ private const val IMPACT_NONE = 0
 private const val IMPACT_LESS_ACTIVE = 1
 private const val IMPACT_HAD_TO_STOP = 2
 private const val IMPACT_BED_REST = 3
+private const val DAYS_PER_WEEK = 7
 private val DATE: DateTimeFormatter = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.ENGLISH)
-private val DATE_TIME: DateTimeFormatter = DateTimeFormatter.ofPattern(
-    "d MMM yyyy, HH:mm",
-    Locale.ENGLISH
-)
 private val MONTH: DateTimeFormatter = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ENGLISH)
 
 /**
  * The words of the report (BRD REP-F2, REP-F3, D82). It is a document for a doctor, so its words are fixed English,
  * the app's language, and the user's own words stay as typed. A time is shown in the zone it was logged in, which is
- * named when it is not the phone's [deviceZone].
+ * named when it is not the phone's [deviceZone]. Weeks and times follow the phone, as in the app (EC-TIM-05).
  */
-class ReportDocumentMapper {
+class ReportDocumentMapper(private val reportDateTimeFormatter: ReportDateTimeFormatter) {
     fun toData(report: ReportDomainModel, paper: ReportPaperDataModel, deviceZone: ZoneId) =
         ReportDocumentDataModel(
             fileName = "migrely-report-${report.madeOn}.pdf",
@@ -125,11 +124,22 @@ class ReportDocumentMapper {
 
     private fun calendar(report: ReportDomainModel): List<ReportBlockDataModel> = listOf(
         ReportBlockDataModel.Heading("Calendar"),
+        heatMap(report, reportDateTimeFormatter.firstDayOfWeek())
+    )
+
+    /** Weeks start on the phone's first day, as the app's month calendar does, under English initials. */
+    private fun heatMap(report: ReportDomainModel, firstDay: DayOfWeek) =
         ReportBlockDataModel.HeatMap(
+            weekdays = (0 until DAYS_PER_WEEK).map {
+                firstDay.plus(it.toLong()).getDisplayName(TextStyle.NARROW, Locale.ENGLISH)
+            },
             months = report.months.map { month ->
                 ReportHeatMonthDataModel(
                     title = MONTH.format(month.month),
-                    firstWeekday = month.month.atDay(1).dayOfWeek.value - 1,
+                    leadingEmptyDays = Math.floorMod(
+                        month.month.atDay(1).dayOfWeek.value - firstDay.value,
+                        DAYS_PER_WEEK
+                    ),
                     levels = month.levels.map(::levelOf)
                 )
             },
@@ -144,7 +154,6 @@ class ReportDocumentMapper {
                 ReportLegendDataModel(ReportDayLevelDataModel.Severe, "Severe, 7–10")
             )
         )
-    )
 
     private fun attacks(report: ReportDomainModel, deviceZone: ZoneId): List<ReportBlockDataModel> =
         listOf(
@@ -157,17 +166,21 @@ class ReportDocumentMapper {
             }
         )
 
+    /**
+     * Peak is wide enough for "4 · Moderate" and "Not logged" on one line on A4, taken from the three lists, which wrap
+     * anyway; the other columns keep their widths.
+     */
     private fun attacksTable(report: ReportDomainModel, deviceZone: ZoneId) =
         ReportBlockDataModel.Table(
             columns = listOf(
                 ReportColumnDataModel("Start", 1.5f),
                 ReportColumnDataModel("Duration", 1f),
-                ReportColumnDataModel("Peak", 0.9f),
+                ReportColumnDataModel("Peak", 1.2f),
                 ReportColumnDataModel("Impact", 1f),
                 ReportColumnDataModel("Where it hurts", 1.3f),
-                ReportColumnDataModel("Symptoms", 1.5f),
-                ReportColumnDataModel("Triggers", 1.5f),
-                ReportColumnDataModel("Medications", 1.5f)
+                ReportColumnDataModel("Symptoms", 1.4f),
+                ReportColumnDataModel("Triggers", 1.4f),
+                ReportColumnDataModel("Medications", 1.4f)
             ),
             rows = report.attacks.map { row(it, deviceZone, report.dates.from) },
             shortenedNote = SHORTENED_NOTE
@@ -180,7 +193,7 @@ class ReportDocumentMapper {
     ): List<String> {
         val began = attack.start.atZone(attack.zone)
         // Listed for its days in the period, but not counted as started in it (walk B4).
-        val start = DATE_TIME.format(began) +
+        val start = "${DATE.format(began)}, ${reportDateTimeFormatter.formatTime(began)}" +
             zoneLabel(attack, deviceZone) +
             if (began.toLocalDate().isBefore(from)) ", began before the period" else ""
         val duration =

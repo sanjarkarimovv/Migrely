@@ -80,9 +80,14 @@
         <item quantity="one">%1$d of %2$d migraine (%3$s) started in the days around your period.</item>
         <item quantity="other">%1$d of %2$d migraines (%3$s) started in the days around your period.</item>
     </plurals>
+    <!-- The range is named by its months: "period" would read as the menstrual period here (store polish). -->
+    <plurals name="insights_cycle_months">
+        <item quantity="one">this %d month</item>
+        <item quantity="other">these %d months</item>
+    </plurals>
     <plurals name="insights_cycle_base">
-        <item quantity="one">Those days are %1$s of this period (%2$d of %3$d day).</item>
-        <item quantity="other">Those days are %1$s of this period (%2$d of %3$d days).</item>
+        <item quantity="one">Those days are %1$s of %4$s (%2$d of %3$d day).</item>
+        <item quantity="other">Those days are %1$s of %4$s (%2$d of %3$d days).</item>
     </plurals>
     <string name="insights_cycle_text">%1$s %2$s</string>
     <string name="insights_cycle_window">The days around your period run from 2 days before it starts through its third day.</string>

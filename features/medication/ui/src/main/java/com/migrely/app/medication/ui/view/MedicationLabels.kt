@@ -3,18 +3,18 @@ package com.migrely.app.medication.ui.view
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.migrely.app.medication.ui.R
+import com.migrely.app.medication.ui.mapper.MedicationCategoryLabelUiMapper
+import com.migrely.app.medication.ui.mapper.MedicationTypeLabelUiMapper
 import com.migrely.app.medication.ui.model.MedicationCategoryUiModel
-import com.migrely.app.medication.ui.model.MedicationKindUiModel
 import com.migrely.app.medication.ui.model.MedicationUiModel
 import com.migrely.app.medication.ui.model.SaveProblemUiModel
 
+private val categoryLabels = MedicationCategoryLabelUiMapper()
+private val typeLabels = MedicationTypeLabelUiMapper(categoryLabels)
+
 @Composable
-internal fun categoryLabel(category: MedicationCategoryUiModel?): String = when (category) {
-    MedicationCategoryUiModel.SimplePainkiller -> stringResource(R.string.category_simple)
-    MedicationCategoryUiModel.Triptan -> stringResource(R.string.category_triptan)
-    MedicationCategoryUiModel.CombinationOrOther -> stringResource(R.string.category_combination)
-    null -> stringResource(R.string.category_not_sure)
-}
+internal fun categoryLabel(category: MedicationCategoryUiModel?): String =
+    stringResource(categoryLabels.toUi(category))
 
 @Composable
 internal fun categoryExamples(category: MedicationCategoryUiModel?): String? = when (category) {
@@ -36,12 +36,9 @@ internal fun MedicationUiModel.title(): String =
 internal fun MedicationUiModel.spokenTitle(): String =
     listOfNotNull(name, defaultDose).joinToString(", ")
 
-/** What a medication is, for lists and screen readers: its type, or "preventive". */
+/** What a medication is, for lists and screen readers: its type, or "Preventive". */
 @Composable
-internal fun MedicationUiModel.typeLabel(): String = when (kind) {
-    MedicationKindUiModel.Acute -> categoryLabel(category)
-    MedicationKindUiModel.Preventive -> stringResource(R.string.kind_preventive_label)
-}
+internal fun MedicationUiModel.typeLabel(): String = stringResource(typeLabels.toUi(this))
 
 @Composable
 internal fun problemText(problem: SaveProblemUiModel): String = when (problem) {

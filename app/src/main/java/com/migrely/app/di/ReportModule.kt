@@ -1,6 +1,7 @@
 package com.migrely.app.di
 
 import android.content.Context
+import android.text.format.DateFormat
 import androidx.core.content.FileProvider
 import com.migrely.app.architecture.domain.UseCaseExecutor
 import com.migrely.app.coroutine.CoroutineContextProvider
@@ -9,6 +10,7 @@ import com.migrely.app.datasource.clock.datasource.ClockDataSource
 import com.migrely.app.datasource.report.datasource.ReportDocumentDataSource
 import com.migrely.app.datasource.report.datasource.ReportDocumentDataSourceImpl
 import com.migrely.app.navigation.mapper.ReportNavigationEventDestinationMapper
+import com.migrely.app.report.data.mapper.ReportDateTimeFormatter
 import com.migrely.app.report.data.mapper.ReportDocumentMapper
 import com.migrely.app.report.data.mapper.ReportRecordsDomainMapper
 import com.migrely.app.report.data.repository.ReportRepository
@@ -41,8 +43,10 @@ internal object ReportModule {
         FileProvider.getUriForFile(context, "${context.packageName}.reports", file).toString()
     }
 
+    /** The report follows the phone as History does, reading its settings when a report is made (EC-TIM-05). */
     @Provides
     fun providesReportRepository(
+        @ApplicationContext context: Context,
         backupDataSource: BackupDataSource,
         reportDocumentDataSource: ReportDocumentDataSource,
         clockDataSource: ClockDataSource
@@ -51,7 +55,15 @@ internal object ReportModule {
         reportDocumentDataSource,
         clockDataSource,
         ReportRecordsDomainMapper(),
-        ReportDocumentMapper()
+        ReportDocumentMapper(
+            ReportDateTimeFormatter(
+                locale = { context.resources.configuration.locales[0] },
+                is24HourFormat = { DateFormat.is24HourFormat(context) },
+                bestDateTimePattern = { locale, skeleton ->
+                    DateFormat.getBestDateTimePattern(locale, skeleton)
+                }
+            )
+        )
     )
 
     @Provides

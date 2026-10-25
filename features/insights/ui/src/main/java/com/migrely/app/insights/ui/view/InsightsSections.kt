@@ -191,9 +191,12 @@ private fun CountBar(label: String, migraines: Int, total: Int, fraction: Float)
     )
 }
 
-/** The share of migraines around a period, always beside the share of days those are (BRD D91). */
+/**
+ * The share of migraines around a period, always beside the share of days those are (BRD D91). The days are counted
+ * out of the chosen [months], named as such, since "period" would read as the menstrual period here.
+ */
 @Composable
-internal fun CycleSection(cycle: InsightsCycleUiModel, migraines: Int) {
+internal fun CycleSection(cycle: InsightsCycleUiModel, migraines: Int, months: Int) {
     Section(stringResource(R.string.insights_cycle_title)) {
         val share = pluralStringResource(
             R.plurals.insights_cycle_share,
@@ -207,7 +210,8 @@ internal fun CycleSection(cycle: InsightsCycleUiModel, migraines: Int) {
             cycle.periodDays,
             percentText(cycle.daysPercent),
             cycle.days,
-            cycle.periodDays
+            cycle.periodDays,
+            pluralStringResource(R.plurals.insights_cycle_months, months, months)
         )
         BodyText(stringResource(R.string.insights_cycle_text, share, base))
         BodyText(stringResource(R.string.insights_cycle_window), muted = true)

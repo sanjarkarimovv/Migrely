@@ -216,7 +216,7 @@ private fun InsightsBody(insights: InsightsUiModel) {
         is InsightsPatternsUiModel.Enough -> {
             TriggersSection(patterns)
             WhenSection(patterns)
-            patterns.cycle?.let { CycleSection(it, patterns.migraines) }
+            patterns.cycle?.let { CycleSection(it, patterns.migraines, insights.months) }
             MedicationsSection(patterns.medications)
         }
     }

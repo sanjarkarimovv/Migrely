@@ -19,6 +19,7 @@ import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId
 import java.time.ZoneOffset
+import java.util.Locale
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -75,7 +76,16 @@ private fun report(
 )
 
 class ReportDocumentMapperTest {
-    private val classUnderTest = ReportDocumentMapper()
+    private var locale: Locale = Locale.UK
+    private var is24Hour = true
+    private val classUnderTest = ReportDocumentMapper(
+        ReportDateTimeFormatter(
+            locale = { locale },
+            is24HourFormat = { is24Hour },
+            // What Android's DateFormat.getBestDateTimePattern gives in English.
+            bestDateTimePattern = { _, skeleton -> if (skeleton == "Hm") "HH:mm" else "h:mm a" }
+        )
+    )
 
     private fun blocks(report: ReportDomainModel) =
         classUnderTest.toData(report, ReportPaperDataModel.A4, TASHKENT).blocks
@@ -168,6 +178,25 @@ class ReportDocumentMapperTest {
     }
 
     @Test
+    fun `Given a phone in the UK then the calendar's weeks start on Monday`() {
+        val heatMap = blocks(report()).filterIsInstance<ReportBlockDataModel.HeatMap>().single()
+
+        assertEquals(listOf("M", "T", "W", "T", "F", "S", "S"), heatMap.weekdays)
+        // 1 October 2026 is a Thursday.
+        assertEquals(3, heatMap.months.single().leadingEmptyDays)
+    }
+
+    @Test
+    fun `Given a phone in the US then the calendar's weeks start on Sunday, as the app's do`() {
+        locale = Locale.US
+
+        val heatMap = blocks(report()).filterIsInstance<ReportBlockDataModel.HeatMap>().single()
+
+        assertEquals(listOf("S", "M", "T", "W", "T", "F", "S"), heatMap.weekdays)
+        assertEquals(4, heatMap.months.single().leadingEmptyDays)
+    }
+
+    @Test
     fun `Given medications and notes then their tables`() {
         val tables = blocks(
             report(
@@ -233,6 +262,36 @@ class ReportDocumentMapperTest {
                     it.columns.first().title == "Start"
             }
         )
+    }
+
+    @Test
+    fun `When mapping migraines then Peak has room for its level beside the number`() {
+        val table = blocks(report()).filterIsInstance<ReportBlockDataModel.Table>().first()
+
+        // Peak's 1.2 of 10.2 is 60.6 pt of A4's 515; "4 · Moderate" takes about 48 pt at 8.5 pt in Roboto.
+        assertEquals(
+            listOf(
+                "Start" to 1.5f,
+                "Duration" to 1f,
+                "Peak" to 1.2f,
+                "Impact" to 1f,
+                "Where it hurts" to 1.3f,
+                "Symptoms" to 1.4f,
+                "Triggers" to 1.4f,
+                "Medications" to 1.4f
+            ),
+            table.columns.map { it.title to it.weight }
+        )
+    }
+
+    @Test
+    fun `Given a 12-hour phone in the US then the migraine's time as the app shows it`() {
+        locale = Locale.US
+        is24Hour = false
+
+        val rows = blocks(report()).filterIsInstance<ReportBlockDataModel.Table>().first().rows
+
+        assertEquals("20 Oct 2026, 9:00\u00A0AM", rows.single().first())
     }
 
     @Test
