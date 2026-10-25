@@ -37,7 +37,8 @@ import java.time.ZoneId
  * An attack belongs to every day it touches in the zone where it started (BRD EC-ATK-06, EC-TIM-02): from its start
  * date to the date just before its end, or to today while it is in progress. Each day carries its period mark, and is
  * pain-free only when marked so and no attack touches it (BRD EC-DAY-01, D47). The month's numbers come from
- * [MonthStatsCalculator], with the month before for the progress message (BRD D53–D56).
+ * [MonthStatsCalculator], with the month before for the progress message (BRD D53–D56). The month and its numbers
+ * show once anything is logged, even with no migraine: an attack, a day mark or an attack-medication intake (BRD D99).
  */
 class GetHistoryMonthUseCase(
     private val getCurrentTimeRepository: GetCurrentTimeRepository,
@@ -120,7 +121,9 @@ class GetHistoryMonthUseCase(
                 month = month,
                 today = today,
                 earliestMonth = earliestMonth,
-                anyAttackLogged = earliest is EarliestAttackResultDomainModel.Found,
+                anythingLogged = earliestAttackMonth != null ||
+                    earliestMarkMonth != null ||
+                    earliestIntakeMonth != null,
                 days = (1..month.lengthOfMonth()).map { dayOfMonth ->
                     val date = month.atDay(dayOfMonth)
                     val dayAttacks = attacks

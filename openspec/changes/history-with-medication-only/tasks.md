@@ -6,9 +6,9 @@
 
 ## 2. History
 
-- [ ] 2.1 Domain: the earliest-intake repository and its use in `GetHistoryMonthUseCase`, `anythingLogged`; tests.
-- [ ] 2.2 Data: the repository implementation and mapping; tests.
-- [ ] 2.3 Presentation: Ready or NoAttacks by `anythingLogged`; tests.
+- [x] 2.1 Domain: the earliest-intake repository and its use in `GetHistoryMonthUseCase`, `anythingLogged`; tests.
+- [x] 2.2 Data: the repository implementation and mapping; tests.
+- [x] 2.3 Presentation: Ready or NoAttacks by `anythingLogged`; tests.
 
 ## 3. Verify
 

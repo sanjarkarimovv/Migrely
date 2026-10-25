@@ -153,7 +153,7 @@ class GetHistoryMonthUseCaseTest {
 
         assertEquals(OCTOBER, actual.month)
         assertEquals(OCTOBER, actual.earliestMonth)
-        assertEquals(false, actual.anyAttackLogged)
+        assertEquals(false, actual.anythingLogged)
     }
 
     @Test
@@ -164,7 +164,7 @@ class GetHistoryMonthUseCaseTest {
 
         assertEquals(YearMonth.of(2026, 8), actual.month)
         assertEquals(YearMonth.of(2026, 8), actual.earliestMonth)
-        assertEquals(true, actual.anyAttackLogged)
+        assertEquals(true, actual.anythingLogged)
     }
 
     @Test
@@ -390,7 +390,8 @@ class GetHistoryMonthUseCaseTest {
 
         assertEquals(YearMonth.of(2026, 9), actual.month)
         assertEquals(YearMonth.of(2026, 9), actual.earliestMonth)
-        assertEquals(false, actual.anyAttackLogged)
+        // A mark alone is something logged, so the month and its numbers show (BRD D99).
+        assertEquals(true, actual.anythingLogged)
     }
 
     @Test
@@ -413,6 +414,41 @@ class GetHistoryMonthUseCaseTest {
 
         assertEquals(YearMonth.of(2026, 9), actual.month)
         assertEquals(YearMonth.of(2026, 9), actual.earliestMonth)
+        assertEquals(true, actual.anythingLogged)
+    }
+
+    @Test
+    fun `Given no attack, mark or attack-medication intake when executed then nothing logged`() {
+        // Preventive intakes never reach History: the datasource leaves them out (BRD D99).
+        givenEarliestIntake(EarliestAttackMedicationIntakeResultDomainModel.None)
+
+        val actual = loaded(YearMonth.of(2026, 9))
+
+        assertEquals(false, actual.anythingLogged)
+        assertEquals(OCTOBER, actual.earliestMonth)
+        assertEquals(OCTOBER, actual.month)
+    }
+
+    @Test
+    fun `Given only attack-medication intakes this month when executed then counted as logged`() {
+        givenEarliestIntake(
+            EarliestAttackMedicationIntakeResultDomainModel.Found(at("2026-10-04T09:00"), TASHKENT)
+        )
+        given(getAttackMedicationIntakesRepository.attackMedicationIntakes(any(), any()))
+            .willReturn(
+                AttackMedicationIntakesResultDomainModel.Loaded(
+                    listOf(
+                        AttackMedicationIntakeDomainModel(at("2026-10-04T09:00"), TASHKENT),
+                        AttackMedicationIntakeDomainModel(at("2026-10-05T09:00"), TASHKENT)
+                    )
+                )
+            )
+
+        val actual = loaded(request = null)
+
+        assertEquals(true, actual.anythingLogged)
+        assertEquals(0, actual.stats.migraineDays)
+        assertEquals(2, actual.stats.attackMedicationDays)
     }
 
     @Test

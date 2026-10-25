@@ -41,14 +41,26 @@ private val SEPTEMBER: YearMonth = YearMonth.of(2026, 9)
 private val TODAY: LocalDate = LocalDate.parse("2026-10-23")
 private val DELETED_AT: Instant = Instant.parse("2026-10-23T07:00:00Z")
 
-private fun month(anyAttackLogged: Boolean = true) = HistoryMonthDomainModel(
+private fun month(
+    anythingLogged: Boolean = true,
+    earliestMonth: YearMonth = YearMonth.of(2026, 8),
+    attackMedicationDays: Int = 0
+) = HistoryMonthDomainModel(
     month = SEPTEMBER,
     today = TODAY,
-    earliestMonth = YearMonth.of(2026, 8),
-    anyAttackLogged = anyAttackLogged,
+    earliestMonth = earliestMonth,
+    anythingLogged = anythingLogged,
     days = emptyList(),
     attacks = emptyList(),
-    stats = MonthStatsDomainModel(0, 0, 0, null, 0, chronic = false, progress = null)
+    stats = MonthStatsDomainModel(
+        0,
+        0,
+        0,
+        null,
+        attackMedicationDays,
+        chronic = false,
+        progress = null
+    )
 )
 
 @RunWith(MockitoJUnitRunner::class)
@@ -99,19 +111,55 @@ class HistoryViewModelTest :
 
     @Test
     fun `Given nothing logged yet when entering then no attacks`() = runTest {
-        givenMonth(HistoryMonthResultDomainModel.Loaded(month(anyAttackLogged = false)), null)
+        givenMonth(HistoryMonthResultDomainModel.Loaded(month(anythingLogged = false)), null)
         val state = nextViewState()
 
         classUnderTest.onEnter(null)
 
         assertEquals(
             HistoryViewState.NoAttacks(
-                historyMonthPresentationMapper.toPresentation(month(anyAttackLogged = false)),
+                historyMonthPresentationMapper.toPresentation(month(anythingLogged = false)),
                 requestedMonth = null
             ),
             state.await()
         )
     }
+
+    @Test
+    fun `Given medication but no migraine logged when entering then ready with the month before`() =
+        runTest {
+            // Medication alone shows the month and its numbers, and its earlier months (BRD D99).
+            val logged = month(attackMedicationDays = 16)
+            givenMonth(HistoryMonthResultDomainModel.Loaded(logged))
+            val state = nextViewState()
+
+            classUnderTest.onEnter(SEPTEMBER)
+
+            val actual = state.await()
+            assertEquals(
+                HistoryViewState.Ready(
+                    historyMonthPresentationMapper.toPresentation(logged),
+                    requestedMonth = SEPTEMBER
+                ),
+                actual
+            )
+            assertTrue((actual as HistoryViewState.Ready).month.hasPreviousMonth)
+        }
+
+    @Test
+    fun `Given only preventive intakes when entering then no attacks without a month before`() =
+        runTest {
+            // The domain leaves preventive intakes out: nothing logged, and no month before this one.
+            val empty = month(anythingLogged = false, earliestMonth = SEPTEMBER)
+            givenMonth(HistoryMonthResultDomainModel.Loaded(empty))
+            val state = nextViewState()
+
+            classUnderTest.onEnter(SEPTEMBER)
+
+            val actual = state.await()
+            assertTrue(actual is HistoryViewState.NoAttacks)
+            assertEquals(false, (actual as HistoryViewState.NoAttacks).month.hasPreviousMonth)
+        }
 
     @Test
     fun `Given a recent deletion when changing month then it is not announced again`() = runTest {

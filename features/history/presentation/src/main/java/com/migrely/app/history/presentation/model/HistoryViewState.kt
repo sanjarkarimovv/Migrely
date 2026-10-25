@@ -9,7 +9,7 @@ import java.time.YearMonth
 sealed interface HistoryViewState {
     data object Loading : HistoryViewState
 
-    /** Nothing has been logged yet (BRD EC-HIS-01). */
+    /** No attack, day mark or attack-medication intake has been logged yet (BRD EC-HIS-01, D99). */
     data class NoAttacks(val month: HistoryMonthPresentationModel, val requestedMonth: YearMonth?) :
         HistoryViewState
 
