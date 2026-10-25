@@ -1,4 +1,5 @@
 import com.android.build.api.artifact.SingleArtifact
+import java.util.Properties
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -27,6 +28,13 @@ kotlin {
     }
 }
 
+/** The upload key, from the git-ignored `keystore.properties` at the root; null when the file is absent (BRD D102). */
+val keystoreProperties = rootProject.file("keystore.properties").takeIf {
+    it.exists()
+}?.let { file ->
+    Properties().apply { file.inputStream().use(::load) }
+}
+
 android {
     namespace = "com.migrely.app"
     compileSdk = libs.versions.compileSdk.get().toInt()
@@ -41,13 +49,27 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        if (keystoreProperties != null) {
+            create("release") {
+                storeFile = rootProject.file(keystoreProperties.getProperty("storeFile"))
+                storePassword = keystoreProperties.getProperty("storePassword")
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfig =
+                signingConfigs.getByName(if (keystoreProperties != null) "release" else "debug")
         }
     }
     compileOptions {
@@ -196,5 +218,11 @@ androidComponents {
             report.set(layout.buildDirectory.file("reports/permissions/${variant.name}.txt"))
         }
         tasks.matching { it.name == "assemble$name" }.configureEach { dependsOn(check) }
+    }
+}
+
+if (keystoreProperties == null) {
+    tasks.matching { it.name in setOf("packageRelease", "signReleaseBundle") }.configureEach {
+        doFirst { logger.warn("Release signed with the debug key: for local smoke only") }
     }
 }
