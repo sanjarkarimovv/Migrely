@@ -8,16 +8,16 @@ bilan oʻzgaradi: nom boshqacha boʻlsa, eng yaqin maʼnodagi boʻlimni tanlang.
 
 | Nima | Qayerda |
 |---|---|
-| Ilova (AAB) | Desktop: `Migrely-1.0.0-<versionCode>.aab` (har yangi build'da versionCode oshadi) |
-| Ikonka 512×512 | `docs/release/icon/migrely-play-icon-512.png` |
-| Feature graphic 1024×500 | `docs/release/store/feature-graphic-1024x500.png` |
-| 8 ta skrinshot 1080×1920 | `docs/release/store/screenshots/01…08` (shu tartibda) |
+| Ilova (AAB) | Desktop: `Migrely-1.0.0-<versionCode>.aab` (har yangi build'da versionCode bittaga oshadi) |
+| Ikonka 512×512 | Desktop: `Migrely-Play-Assets/app-icon-512.png` (repo: `docs/release/icon/migrely-play-icon-512.png`) |
+| Feature graphic 1024×500 | Desktop: `Migrely-Play-Assets/feature-graphic-1024x500.png` |
+| 8 ta skrinshot 1080×1920 | Desktop: `Migrely-Play-Assets/screenshots/01…08` (shu tartibda) |
 | Listing matni | `docs/release/listing.md` |
 | Data safety javoblari | `docs/release/data-safety.md` |
 | Content rating javoblari | `docs/release/content-rating.md` |
 | Health apps javoblari | `docs/release/health-declaration.md` |
 | Mahsulotlar | `docs/release/play-products.md` |
-| Sayt va privacy policy | `website/` (`https://migrely.health/privacy/`) |
+| Sayt va privacy policy | `develop` branch'dagi `website/` va uning `README.md` yoʻriqnomasi (`https://migrely.health/privacy/`) |
 
 ## 1. Mahsulotlar (Monetize with Play → Products)
 

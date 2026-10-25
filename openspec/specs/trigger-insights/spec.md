@@ -16,8 +16,9 @@ calendar months (BRD D87, D92).
 
 ### Requirement: Enough to go on
 The sections other than trends SHALL show only when at least 5 migraines started in the period and the first migraine
-was logged at least 30 days ago. Until then a card SHALL say how many more migraines, or how many more days, are needed
-(BRD EC-INS-01, D88).
+started at least 30 days ago. The days count from when that migraine started, not from when it was entered, so past
+migraines added later and a restored backup count in full. Until then a card SHALL say how many more migraines, or
+how many more days, are needed (BRD EC-INS-01, D88).
 
 #### Scenario: Three migraines so far
 - **WHEN** 3 migraines started in the period
