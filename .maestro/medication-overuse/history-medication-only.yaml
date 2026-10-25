@@ -1,0 +1,25 @@
+# Covers: medication-overuse › A standing indicator in History › Below the limit (medication only)
+# Known bug (https://github.com/sanjarkarimovv/Migrely/issues/47, D99): with attack medication but no migraine, History
+# shows "No migraines logged yet" and no summary, so "Last 30 days" never shows. Remove the tag with the fix.
+appId: com.migrely.app
+name: With attack medication but no migraine, History shows the summary and "Last 30 days"
+tags: [regression, medication-overuse, known-bug]
+---
+- runFlow: ../subflows/launch-clean.yaml
+- tapOn: "Log medication"
+- runFlow:
+    file: ../subflows/add-first-medication.yaml
+    env:
+      NAME: "Ibuprofen"
+      TYPE: "Simple painkiller"
+- tapOn: "Done"
+- tapOn: ".*\\. Opens History\\."
+- scrollUntilVisible:
+    element: "Days with attack medication: 1"
+    direction: DOWN
+    centerElement: true
+- assertVisible: "Migraine days: 0"
+- scrollUntilVisible:
+    element: "Simple painkillers: 1 days? \\(limit 15\\)"
+    direction: DOWN
+- assertNotVisible: "No migraines logged yet"

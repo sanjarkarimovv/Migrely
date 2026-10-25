@@ -1,0 +1,25 @@
+# Device scenario step: delete today's migraine from History, see the triptan row go, then restore it with "Undo"
+# (the scenario sets a 20 s undo window). The check of the restored count is indicator-check.
+appId: com.migrely.app
+---
+- launchApp
+- tapOn: ".*\\. Opens History\\."
+- scrollUntilVisible:
+    element: ".*Opens its details\\."
+    direction: DOWN
+- tapOn: ".*Opens its details\\."
+- scrollUntilVisible:
+    element: "Delete migraine"
+    direction: DOWN
+- tapOn:
+    text: "Delete migraine"
+    waitToSettleTimeoutMs: 0
+    retryTapIfNoChange: false
+- tapOn:
+    text: "Undo the deletion"
+    waitToSettleTimeoutMs: 0
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible: "Undone\\."
+    timeout: 5000
+- stopApp

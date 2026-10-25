@@ -1,4 +1,6 @@
 # Covers: month-stats › How the numbers are counted › Preventive medication
+# Covers: medication-overuse › A standing indicator in History › No attack medication
+# Covers: medication-overuse › A standing indicator in History › Below the limit
 appId: com.migrely.app
 name: Only attack medication counts as a day with attack medication
 tags: [regression, month-stats]
@@ -34,6 +36,9 @@ tags: [regression, month-stats]
 - scrollUntilVisible:
     element: "Days with attack medication: 0"
     direction: DOWN
+    centerElement: true
+# A preventive medication only: no "Last 30 days" section, right where it would follow.
+- assertNotVisible: "Last 30 days"
 - back
 # An attack medication on the same day counts.
 - runFlow:
@@ -44,3 +49,10 @@ tags: [regression, month-stats]
 - scrollUntilVisible:
     element: "Days with attack medication: 1"
     direction: DOWN
+# One day of a simple painkiller: below its limit, with no doctor line.
+- scrollUntilVisible:
+    element: "Simple painkillers: 1 days? \\(limit 15\\)"
+    direction: DOWN
+    centerElement: true
+- assertVisible: "Last 30 days"
+- assertNotVisible: "At this many days.*"

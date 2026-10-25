@@ -9,7 +9,8 @@
 # Scenarios: long (72-hour check), history_death, past_death, details_kill, midnight, travel, travel_west, same_date,
 # zone_attack, zone_history, double_tap, med_effect, med_effect_attack, med_effect_skip, med_effect_late,
 # med_preventive, med_two_waiting, med_link_home, med_overuse, keyboard_home, keyboard_history, keyboard_rtl,
-# landscape_band, mark_travel, mark_earliest_month, upgrade.
+# landscape_band, mark_travel, mark_earliest_month, stats_counting, stats_chronic, stats_progress, reminder_daily,
+# reminder_permission, reminder_effect, reminder_replan (restarts the emulator), upgrade.
 # upgrade needs QA_OLD_APK=<older debug APK of com.migrely.app>; without it, it is reported as not run.
 set -euo pipefail
 
@@ -207,6 +208,106 @@ else:
     print(f'    message gone, guidance back up at y={top} (y={before} with the message)')
 " "$1" "$out/band-top.txt"
 }
+
+# Notifications (D64). WorkManager runs the app's reminders as JobScheduler jobs in its own namespace; a job is run on
+# demand, and the notifications are read from "dumpsys notification".
+run_app_jobs() { # run every job the app has planned, now; prints how many ran
+  local ids id n=0
+  ids="$(adbq shell dumpsys jobscheduler | python3 -I -c "import re, sys
+print(' '.join(sorted(set(re.findall(r'systemjobscheduler:u0a\d+/(\d+) @androidx\.work\.systemjobscheduler@$APP/', sys.stdin.read())))))")"
+  for id in $ids; do
+    adbq shell cmd jobscheduler run -f -n androidx.work.systemjobscheduler "$APP" "$id" >/dev/null
+    n=$((n + 1))
+  done
+  sleep 5
+  echo "    ran $n planned job(s)"
+}
+app_notifications() { # one line per notification of the app: "title | text | action, action"
+  adbq shell dumpsys notification --noredact | python3 -I -c "import re, sys
+for block in re.split(r'\n\s*NotificationRecord\(', sys.stdin.read())[1:]:
+    if 'pkg=$APP' not in block[:400]:
+        continue
+    title = re.search(r'android\.title=\S+ \((.*?)\)\n', block)
+    text = re.search(r'android\.text=\S+ \((.*?)\)\n', block)
+    actions = re.findall(r'\[\d+\] \"(.*?)\" ->', block)
+    print((title.group(1) if title else ''), '|', (text.group(1) if text else ''), '|', ', '.join(actions))"
+}
+expect_notification() { # $1 extended regex for "title | text | actions"
+  local found
+  found="$(app_notifications)"
+  if grep -Eq "$1" <<<"$found"; then echo "    notification: $(grep -E "$1" <<<"$found" | head -1)"; return 0; fi
+  echo "  FAILED: no notification matching /$1/ (found: '${found:-none}')"
+  return 1
+}
+expect_no_notification() {
+  local found
+  found="$(app_notifications)"
+  if [[ -z "$found" ]]; then echo "    no notification"; return 0; fi
+  echo "  FAILED: unexpected notification '$found'"
+  return 1
+}
+tap_notification_action() { # $1 the action's label, $2 the notification's title (regex); tapped in the open shade
+  local point title
+  adbq shell cmd statusbar expand-notifications
+  sleep 2
+  point="$(point_in "$1" 0.5)"
+  if [[ -z "$point" ]]; then
+    # Collapsed under another notification: a swipe down on its title shows the actions.
+    title="$(point_in "$2" 0.5)"
+    if [[ -n "$title" ]]; then
+      adbq shell input swipe $title ${title% *} $((${title#* } + 400)) 300
+      sleep 2
+      point="$(point_in "$1" 0.5)"
+    fi
+  fi
+  [[ -n "$point" ]] || { adbq shell cmd statusbar collapse; echo "  FAILED: no \"$1\" in the shade"; return 1; }
+  adbq shell input tap $point
+  sleep 3
+  adbq shell cmd statusbar collapse
+  echo "    tapped \"$1\" in the notification"
+}
+notifications_permission() { # $1 grant or reset (revoked and asked as if for the first time)
+  if [[ "$1" == "grant" ]]; then
+    adbq shell pm grant "$APP" android.permission.POST_NOTIFICATIONS
+  else
+    adbq shell pm revoke "$APP" android.permission.POST_NOTIFICATIONS
+    adbq shell pm clear-permission-flags "$APP" android.permission.POST_NOTIFICATIONS user-set user-fixed
+  fi
+}
+
+expect_planned() { # $1 zone, $2 HH:MM: the app's daily job runs at the next $2 in $1 (within 5 min)
+  local got want
+  got="$(adbq shell dumpsys jobscheduler | python3 -I -c "import re, sys
+t = sys.stdin.read()
+m = re.search(r'JOB [^\n]*@androidx\.work\.systemjobscheduler@$APP/[^\n]*\n(.*?)\n  JOB ', t + '\n  JOB ', re.S)
+e = m and re.search(r'Run time: earliest=([-+])(?:(\d+)d)?(?:(\d+)h)?(?:(\d+)m)?', m.group(1))
+print('' if not e else (1 if e.group(1) == '+' else -1) * (int(e.group(2) or 0) * 1440 + int(e.group(3) or 0) * 60 + int(e.group(4) or 0)))")"
+  want="$(python3 -I -c "import sys, datetime as d, zoneinfo as z
+zone = z.ZoneInfo(sys.argv[1]); now = d.datetime.fromtimestamp(int(sys.argv[3]), zone)
+h, m = map(int, sys.argv[2].split(':')); t = now.replace(hour=h, minute=m, second=0, microsecond=0)
+t = t if t > now else t + d.timedelta(days=1)
+print(int((t - now).total_seconds() // 60))" "$1" "$2" "$(device_seconds)")"
+  if [[ -z "$got" ]]; then echo "  FAILED: no planned daily job"; return 1; fi
+  if (( got - want > 5 || want - got > 5 )); then
+    echo "  FAILED: the daily job runs in $got min, expected about $want min (the next $2 in $1)"
+    return 1
+  fi
+  echo "    daily job planned in $got min (the next $2 in $1: $want min)"
+}
+expect_switch() { # $1 the switch's label (regex), $2 true or false: its checked state on screen
+  local state
+  adbq shell rm -f /sdcard/qa-switch.xml
+  adbq shell uiautomator dump /sdcard/qa-switch.xml >/dev/null
+  state="$(adbq exec-out cat /sdcard/qa-switch.xml | python3 -I -c "import re, sys, xml.etree.ElementTree as ET
+for n in ET.fromstring(sys.stdin.read()).iter('node'):
+    labels = ' '.join(m.get('content-desc') or m.get('text') or '' for m in n.iter('node'))
+    if n.get('checkable') == 'true' and re.search(sys.argv[1], labels):
+        print(n.get('checked')); break" "$1")"
+  if [[ "$state" == "$2" ]]; then echo "    \"$1\" checked: $state"; return 0; fi
+  echo "  FAILED: \"$1\" is checked=${state:-not found}, expected $2"
+  return 1
+}
+open_app() { adbq shell monkey -p "$APP" -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1; sleep 4; }
 
 tab_until() { # $1 extended regex, $2 most Tabs: press Tab until the focused label matches
   local label="" n
@@ -429,8 +530,12 @@ scenario_med_link_home() {
   run_flow med-link-after || return 1
 }
 
+# Covers: medication-overuse › A standing indicator in History › At the limit
+# Covers: medication-overuse › A standing indicator in History › Two categories
+# Covers: medication-overuse › A standing indicator in History › After an undo
+# Covers: medication-overuse › A standing indicator in History › A past month
 scenario_med_overuse() {
-  echo "Scenario med_overuse: painkillers on 13 days warn softly, \"Got it\" hides it, 15 days warn about the doctor"
+  echo "Scenario med_overuse: painkillers on 13 days warn softly, \"Got it\" hides it, 15 days warn about the doctor; History's \"Last 30 days\" (D59)"
   local d
   set_clock_millis "$(day_millis 12)" || return 1
   run_flow clean || return 1
@@ -446,6 +551,30 @@ scenario_med_overuse() {
   done
   set_clock_millis "$(( $(day_millis 0) + 3600000 ))" || return 1
   run_flow med-overuse-doctor || return 1
+  # History's "Last 30 days" (D59). History shows its month summary, and so the section, once a migraine is logged.
+  run_flow attack-log-keep || return 1
+  # At the limit with 15 days; a day 30 days back does not count, a day 29 back does.
+  run_flow_env indicator-check MONTHS_BACK=0 "ROW=Simple painkillers: 15 days \(limit 15\), at the limit" DOCTOR=true || return 1
+  set_clock_millis "$(day_millis 30)" || return 1
+  run_flow_env med-log-home NAME=Ibuprofen || return 1
+  set_clock_millis "$(( $(day_millis 0) + 7200000 ))" || return 1
+  run_flow_env indicator-check MONTHS_BACK=0 "ROW=Simple painkillers: 15 days \(limit 15\), at the limit" DOCTOR=true || return 1
+  set_clock_millis "$(day_millis 29)" || return 1
+  run_flow_env med-log-home NAME=Ibuprofen || return 1
+  set_clock_millis "$(( $(day_millis 0) + 7200000 ))" || return 1
+  run_flow_env indicator-check MONTHS_BACK=0 "ROW=Simple painkillers: 16 days \(limit 15\), over the limit" DOCTOR=true || return 1
+  # A triptan in an attack today: two categories, and the union of days over its limit.
+  run_flow med-add-triptan-in-attack || return 1
+  run_flow_env indicator-check MONTHS_BACK=0 "ROW=Triptans: 1 days? \(limit 10\)" DOCTOR=true || return 1
+  run_flow_env indicator-check MONTHS_BACK=0 "ROW=All attack medication: 16 days \(limit 10\), over the limit" DOCTOR=true || return 1
+  # Deleting that attack and restoring it with Undo counts its triptan again.
+  long_undo_window
+  run_flow delete-attack-undo || { default_undo_window; return 1; }
+  default_undo_window
+  run_flow_env indicator-check MONTHS_BACK=0 "ROW=Triptans: 1 days? \(limit 10\)" DOCTOR=true || return 1
+  # Last month (with a migraine of its own, so History reaches it) has no "Last 30 days" section.
+  run_flow past-attack-last-month || return 1
+  run_flow_env indicator-check MONTHS_BACK=1 ROW= DOCTOR=false || return 1
 }
 
 # Covers: day-markers › Accessible marks › Screen reader
@@ -646,6 +775,151 @@ scenario_stats_progress() {
   run_flow_env progress-home "TEXT=1 fewer migraine day than this time last month" ATTACK=true || return 1
 }
 
+# Covers: reminders › The daily reminder › A calm day
+# Covers: reminders › The daily reminder › Already answered
+# Covers: reminders › Answering from the notification › Pain-free day
+# Covers: reminders › Answering from the notification › An attack today
+# Covers: quality-gates › Notifications are checked black-box › Daily reminder on demand
+scenario_reminder_daily() {
+  echo "Scenario reminder_daily: \"How was today?\" at 8:00 PM, its actions, and the days it stays away (D66, EC-REM-06)"
+  notifications_permission grant
+  # The 15th: a calm day. The reminder comes, and "Pain-free day" marks the day and clears it.
+  set_clock_millis "$(when_millis 0 15 19:58)" || return 1
+  run_flow daily-reminder-on || return 1
+  run_app_jobs
+  expect_notification "^How was today\? \|.*\| Pain-free day, Log a migraine$" || return 1
+  tap_notification_action "Pain-free day" "How was today\?" || return 1
+  expect_no_notification || return 1
+  run_flow_env today-check "LABEL=Today: clear\. Pain-free today\. Marked by you\." || return 1
+  # The 16th: a migraine today, so no reminder. The 17th: already marked pain-free, so no reminder.
+  set_clock_millis "$(when_millis 0 16 19:50)" || return 1
+  run_flow_env attack-start LEVEL= || return 1
+  run_flow attack-end || return 1
+  set_clock_millis "$(when_millis 0 16 19:58)" || return 1
+  run_flow app-open || return 1
+  run_app_jobs
+  expect_no_notification || return 1
+  set_clock_millis "$(when_millis 0 17 19:50)" || return 1
+  run_flow mark-pain-free-today || return 1
+  set_clock_millis "$(when_millis 0 17 19:58)" || return 1
+  run_flow app-open || return 1
+  run_app_jobs
+  expect_no_notification || return 1
+  # The 18th: the reminder comes, then a migraine is logged; "Pain-free day" then sets no mark (EC-REM-06).
+  set_clock_millis "$(when_millis 0 18 19:58)" || return 1
+  run_flow app-open || return 1
+  run_app_jobs
+  expect_notification "^How was today\?" || return 1
+  run_flow attack-log-keep || return 1
+  tap_notification_action "Pain-free day" "How was today\?" || return 1
+  expect_notification "A migraine is logged today\." || return 1
+  run_flow_env today-check "LABEL=Today: cloudy\..*" || return 1
+  # The 19th: "Log a migraine" opens home and clears the notification.
+  adbq shell cmd notification cancel_all >/dev/null 2>&1 || true
+  set_clock_millis "$(when_millis 0 19 19:58)" || return 1
+  run_flow app-open || return 1
+  run_app_jobs
+  expect_notification "^How was today\?" || return 1
+  tap_notification_action "Log a migraine" "How was today\?" || return 1
+  expect_no_notification || return 1
+  run_flow home-ready || return 1
+}
+
+# Covers: reminders › Notification permission › Turning the daily reminder on
+# Covers: reminders › Notification permission › Refused
+# Covers: reminders › The Reminders screen › Opening Reminders
+# Covers: quality-gates › Notifications are checked black-box › Refused permission
+scenario_reminder_permission() {
+  echo "Scenario reminder_permission: asked only when turned on; after a refusal, asked again only after 30 days (D68)"
+  local start
+  start="$(when_millis 0 1 12:00)"
+  set_clock_millis "$start" || return 1
+  run_flow clean || return 1
+  notifications_permission reset
+  open_app
+  run_flow_env reminders-turn-on "CHOICE=Don.t allow" || return 1
+  expect_switch "Daily reminder" false || return 1
+  key BACK; key BACK
+  # Asked again neither the same day nor 29 days later.
+  run_flow_env reminders-turn-on CHOICE=none || return 1
+  expect_switch "Daily reminder" false || return 1
+  adbq shell input keyevent HOME
+  set_clock_millis $((start + 29 * 86400000)) || return 1
+  open_app
+  run_flow_env reminders-turn-on CHOICE=none || return 1
+  adbq shell input keyevent HOME
+  # 31 days later it asks again; allowed, the reminder is on.
+  set_clock_millis $((start + 31 * 86400000)) || return 1
+  open_app
+  run_flow_env reminders-turn-on CHOICE=Allow || return 1
+  expect_switch "Daily reminder" true || return 1
+  adbq shell dumpsys package "$APP" | grep -q "POST_NOTIFICATIONS: granted=true" || {
+    echo "  FAILED: the permission is not granted"; return 1; }
+  adbq shell input keyevent HOME
+  notifications_permission reset
+}
+
+# Covers: reminders › The daily reminder › Travel
+# Covers: quality-gates › Notifications are checked black-box › After a reboot
+scenario_reminder_replan() {
+  echo "Scenario reminder_replan: the daily reminder follows the local time after travel, and survives a reboot (EC-REM-04, 05)"
+  notifications_permission grant
+  set_zone Asia/Tashkent || return 1
+  set_clock_millis "$(mid_month_millis Asia/Tashkent 12:00)" || return 1
+  run_flow daily-reminder-on || return 1
+  expect_planned Asia/Tashkent 20:00 || return 1
+  set_zone Europe/Berlin || return 1
+  run_flow app-open || return 1
+  expect_planned Europe/Berlin 20:00 || return 1
+  echo "    rebooting the emulator"
+  adbq reboot
+  adbq wait-for-device
+  local i
+  for i in $(seq 1 60); do [[ "$(adbq shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" == "1" ]] && break; sleep 3; done
+  [[ "$(adbq shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" == "1" ]] || { echo "  FAILED: no boot after 3 min"; return 1; }
+  sleep 15
+  adbq shell dumpsys jobscheduler | grep -q "@androidx.work.systemjobscheduler@$APP/" || {
+    echo "  FAILED: no planned job after the reboot (the app was not opened)"; return 1; }
+  echo "    the daily job is planned again after the reboot, before the app is opened"
+}
+
+# Covers: reminders › "Did it help?" notification › Two hours later
+# Covers: reminders › "Did it help?" notification › During an attack
+# Covers: reminders › "Did it help?" notification › Answered first
+scenario_reminder_effect() {
+  echo "Scenario reminder_effect: \"Did it help?\" 2 h after an intake, never during an attack, and not after answering (D67, D69)"
+  notifications_permission grant
+  set_clock_millis "$(when_millis 0 14 09:00)" || return 1
+  run_flow clean || return 1
+  run_flow_env med-first-log-home NAME=Ibuprofen "TYPE=Simple painkiller" || return 1
+  # The 15th: logged at 14:00, asked at 16:00.
+  set_clock_millis "$(when_millis 0 15 14:00)" || return 1
+  run_flow_env med-log-keep NAME=Ibuprofen || return 1
+  set_clock_millis "$(when_millis 0 15 16:01)" || return 1
+  run_app_jobs
+  expect_notification "^Did Ibuprofen help\?" || return 1
+  adbq shell am force-stop "$APP"
+  # The 16th: an attack starts after the intake; nothing is sent, and home asks once it ends.
+  set_clock_millis "$(when_millis 0 16 14:00)" || return 1
+  run_flow_env med-log-keep NAME=Ibuprofen || return 1
+  set_clock_millis "$(when_millis 0 16 14:30)" || return 1
+  run_flow_env attack-start LEVEL= || return 1
+  run_flow app-open || return 1
+  set_clock_millis "$(when_millis 0 16 16:01)" || return 1
+  run_app_jobs
+  expect_no_notification || return 1
+  run_flow attack-end || return 1
+  run_flow med-question-due || return 1
+  # The 17th: answered on home before the notification would come; nothing is sent.
+  set_clock_millis "$(when_millis 0 17 14:00)" || return 1
+  run_flow_env med-log-keep NAME=Ibuprofen || return 1
+  set_clock_millis "$(when_millis 0 17 16:00)" || return 1
+  run_flow_env effect-answer-card NAME=Ibuprofen || return 1
+  set_clock_millis "$(when_millis 0 17 16:01)" || return 1
+  run_app_jobs
+  expect_no_notification || return 1
+}
+
 scenario_double_tap() {
   echo "Scenario double_tap: double taps never cross a mode switch (EC-UX-18, D32), with exact gaps between the taps"
   local gap point
@@ -692,7 +966,8 @@ mkdir -p "$out"
 if [[ $# -eq 0 ]]; then
   set -- long history_death past_death details_kill midnight travel travel_west same_date zone_attack zone_history \
     double_tap med_effect med_effect_attack med_effect_skip med_effect_late med_preventive med_two_waiting \
-    med_link_home med_overuse keyboard_home keyboard_history keyboard_rtl landscape_band mark_travel mark_earliest_month
+    med_link_home med_overuse keyboard_home keyboard_history keyboard_rtl landscape_band mark_travel mark_earliest_month \
+    stats_counting stats_chronic stats_progress reminder_daily reminder_permission reminder_effect reminder_replan
   if [[ -n "${QA_OLD_APK:-}" ]]; then
     set -- "$@" upgrade
   else

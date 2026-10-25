@@ -18,3 +18,4 @@ flows:
   - "month-sky/*"
   - "month-stats/*"
   - "reminders/*"
+  - "medication-overuse/*"
