@@ -181,8 +181,10 @@ Health data must never be passed to either SDK.
   - Version 5 is an additive `AutoMigration(4, 5)`, covered by `MigrationTest` 4→5 and 1→5.
 - **Range reads (History).** A month is read with `overlapping(null, from, to)`, which returns every attack touching
   the range, the one in progress included, with a margin of two days on each side so that attacks logged in other
-  zones are found. The first month that can be shown comes from `earliestStart()`. Both use the start index; the
-  domain assigns days in each attack's zone (BRD EC-TIM-02).
+  zones are found. The first month that can be shown is the earliest of the months of `earliestStart()`,
+  `DayMarkDataSource.earliestMark()` and `MedicationDataSource.earliestAcuteIntake()`, the last read in its intake's
+  zone and leaving preventive medications out (BRD D51, D99). The attack reads use the start index and the intake read
+  the taken index; the domain assigns days in each attack's zone (BRD EC-TIM-02).
 - `SQLiteFullException` becomes `StorageFullDataException`. Any other `SQLiteException` becomes
   `DatabaseDataException`. Repositories turn both into failure values (section 7).
 - DAO SQL is covered by instrumented tests (`connectedDebugAndroidTest` on the `Migrely_API_36` emulator). Datasource

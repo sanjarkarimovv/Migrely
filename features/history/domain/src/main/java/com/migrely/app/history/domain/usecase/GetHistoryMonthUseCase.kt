@@ -147,7 +147,8 @@ class GetHistoryMonthUseCase(
                     today = today,
                     now = now.instant,
                     current = PeriodEntriesDomainModel(attacks, monthMarks, intakes),
-                    // Before any attack there is nothing to make progress on (BRD EC-HIS-01).
+                    // Migraine days compared before any attack mean nothing, so no progress until one is
+                    // logged, even with marks or medication (BRD D55, spec: month-stats).
                     previous = if (earliest is EarliestAttackResultDomainModel.Found) {
                         previousMonthEntries(month.minusMonths(1), now.zone)
                     } else {

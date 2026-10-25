@@ -4,7 +4,8 @@
 For the current month, History's summary SHALL show a "Last 30 days" section after "Days with attack medication". It
 SHALL have one row per category with an attack-medication intake in the last 30 days, giving its days against its
 limit, and a row for all attack medication when two or more categories were used. It SHALL count as the warning does,
-it SHALL not be quieted by "Got it", and it SHALL not show without such an intake. It SHALL show whether or not a migraine was ever logged (BRD EC-MED-06, D45, D59, D99).
+it SHALL not be quieted by "Got it", and it SHALL not show without such an intake. It SHALL show whether or not a
+migraine was ever logged (BRD EC-MED-06, D45, D59, D99).
 
 #### Scenario: Below the limit
 - **WHEN** simple painkillers were taken on 6 of the last 30 days

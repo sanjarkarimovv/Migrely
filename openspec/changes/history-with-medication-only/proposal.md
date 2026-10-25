@@ -20,6 +20,8 @@ migraine (BRD D99).
 
 - `attack-history`: the first month, and when the empty state shows.
 - `medication-overuse`: the standing indicator does not need a logged migraine.
+- `month-stats`: the summary shows with nothing logged but a day mark or an attack-medication intake; the progress
+  message still needs a logged attack.
 
 ## Impact
 
