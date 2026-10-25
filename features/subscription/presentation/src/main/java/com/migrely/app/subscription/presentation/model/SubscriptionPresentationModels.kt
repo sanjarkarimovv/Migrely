@@ -2,6 +2,7 @@ package com.migrely.app.subscription.presentation.model
 
 import com.migrely.app.architecture.presentation.notification.PresentationNotification
 import java.time.Instant
+import java.time.Period
 
 /** Where the paywall was opened from, which picks its headline and where it leads (BRD D109). */
 enum class PaywallContextPresentationModel {
@@ -37,7 +38,7 @@ sealed interface PremiumStatusPresentationModel {
 data class PaywallProductPresentationModel(
     val plan: PremiumPlanPresentationModel,
     val price: String,
-    val freeTrial: Boolean,
+    val freeTrial: Period?,
     val offerToken: String?,
     val current: Boolean,
     val choosable: Boolean
@@ -102,7 +103,9 @@ sealed interface PremiumSectionPresentationNotification : PresentationNotificati
 sealed interface TrialBannerViewState {
     data object Hidden : TrialBannerViewState
 
-    data class Shown(val trialEnd: Instant) : TrialBannerViewState
+    /** [renews] is false once the subscription is cancelled: Premium then ends with the trial. */
+    data class Shown(val trialEnd: Instant, val endsToday: Boolean, val renews: Boolean) :
+        TrialBannerViewState
 }
 
 /** The trial banner shows no messages of its own. */

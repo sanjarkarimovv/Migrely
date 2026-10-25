@@ -21,7 +21,9 @@ import com.migrely.app.subscription.ui.model.PremiumSectionViewStateUiModel
 import com.migrely.app.subscription.ui.model.PremiumStatusUiModel
 import com.migrely.app.subscription.ui.model.RestoreNoteUiModel
 import com.migrely.app.subscription.ui.model.TrialBannerViewStateUiModel
+import com.migrely.app.subscription.ui.model.TrialLengthUiModel
 import java.time.Instant
+import java.time.Period
 import kotlinx.coroutines.CoroutineStart.UNDISPATCHED
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
@@ -76,7 +78,7 @@ class SubscriptionUiMappersTest {
     private val card = PaywallProductPresentationModel(
         PremiumPlanPresentationModel.Lifetime,
         "€59.99",
-        freeTrial = false,
+        freeTrial = Period.ofWeeks(2),
         offerToken = "t",
         current = false,
         choosable = true
@@ -84,7 +86,7 @@ class SubscriptionUiMappersTest {
     private val cardUi = PaywallProductUiModel(
         PremiumPlanUiModel.Lifetime,
         "€59.99",
-        freeTrial = false,
+        trial = TrialLengthUiModel(months = 0, days = 14),
         offerToken = "t",
         current = false,
         choosable = true
@@ -192,8 +194,8 @@ class SubscriptionUiMappersTest {
         val mapper = TrialBannerViewStateUiMapper()
 
         assertEquals(
-            TrialBannerViewStateUiModel.Shown(TRIAL_END.toEpochMilli()),
-            mapper.toUi(TrialBannerViewState.Shown(TRIAL_END))
+            TrialBannerViewStateUiModel.Shown(TRIAL_END.toEpochMilli(), true, false),
+            mapper.toUi(TrialBannerViewState.Shown(TRIAL_END, endsToday = true, renews = false))
         )
         assertEquals(TrialBannerViewStateUiModel.Hidden, mapper.toUi(TrialBannerViewState.Hidden))
     }

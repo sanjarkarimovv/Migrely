@@ -45,6 +45,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
@@ -80,10 +81,14 @@ import com.migrely.app.subscription.ui.model.PaywallProductUiModel
 import com.migrely.app.subscription.ui.model.PaywallViewStateUiModel
 import com.migrely.app.subscription.ui.model.PremiumPlanUiModel
 import com.migrely.app.subscription.ui.model.PremiumStatusUiModel
+import com.migrely.app.subscription.ui.model.TrialLengthUiModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.onSubscription
 
 private const val MESSAGE_MILLIS = 6_000L
+
+/** Only for a trial Google Play gives in months and days at once, which it does not today. */
+private const val DAYS_PER_MONTH = 30
 private val CONTENT_MAX_WIDTH = 600.dp
 private val CARD_SHAPE = RoundedCornerShape(16.dp)
 
@@ -402,6 +407,17 @@ private fun Plans(
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
+    // A subscription is changed or cancelled in Google Play, and is the only way when its plan is
+    // unknown on this phone (review M9).
+    if (offers.status is PremiumStatusUiModel.Subscribed) {
+        OutlinedButton(
+            onClick = actions.onManage,
+            enabled = !working,
+            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
+        ) {
+            Text(stringResource(R.string.subscription_manage))
+        }
+    }
 }
 
 /** The card chosen: the one tapped, else yearly, else the first that can be bought (BRD D109). */
@@ -566,11 +582,25 @@ internal fun Notice(title: String?, text: String, modifier: Modifier = Modifier)
 
 @Composable
 private fun price(product: PaywallProductUiModel): String = when (product.plan) {
-    PremiumPlanUiModel.Yearly -> if (product.freeTrial) {
-        stringResource(R.string.subscription_price_yearly_trial, product.price)
-    } else {
-        stringResource(R.string.subscription_price_yearly, product.price)
-    }
+    PremiumPlanUiModel.Yearly -> product.trial?.let { trial ->
+        // As long as Google Play's trial lasts, never a length of the app's own (review M8).
+        if (trial.months > 0 && trial.days == 0) {
+            pluralStringResource(
+                R.plurals.subscription_price_yearly_trial_months,
+                trial.months,
+                trial.months,
+                product.price
+            )
+        } else {
+            val days = trial.days + trial.months * DAYS_PER_MONTH
+            pluralStringResource(
+                R.plurals.subscription_price_yearly_trial_days,
+                days,
+                days,
+                product.price
+            )
+        }
+    } ?: stringResource(R.string.subscription_price_yearly, product.price)
     PremiumPlanUiModel.Monthly -> stringResource(R.string.subscription_price_monthly, product.price)
     PremiumPlanUiModel.Lifetime -> stringResource(
         R.string.subscription_price_lifetime,
@@ -582,7 +612,7 @@ private fun price(product: PaywallProductUiModel): String = when (product.plan) 
 private fun terms(product: PaywallProductUiModel): String = when (product.plan) {
     PremiumPlanUiModel.Yearly, PremiumPlanUiModel.Monthly -> {
         val renews = stringResource(R.string.subscription_terms_renews)
-        if (product.freeTrial) {
+        if (product.trial != null) {
             renews + " " + stringResource(R.string.subscription_terms_trial)
         } else {
             renews
@@ -592,7 +622,7 @@ private fun terms(product: PaywallProductUiModel): String = when (product.plan) 
 }
 
 private fun PaywallProductUiModel.buyLabel() = when {
-    freeTrial -> R.string.subscription_start_trial
+    trial != null -> R.string.subscription_start_trial
     plan == PremiumPlanUiModel.Lifetime -> R.string.subscription_buy_once
     else -> R.string.subscription_subscribe
 }
@@ -628,9 +658,16 @@ private fun PaywallMessageUiModel.text() = when (this) {
 private val PREVIEW_OFFERS = PaywallOffersUiModel(
     status = PremiumStatusUiModel.Free,
     products = listOf(
-        PaywallProductUiModel(PremiumPlanUiModel.Yearly, "$29.99", true, null, false, true),
-        PaywallProductUiModel(PremiumPlanUiModel.Monthly, "$4.99", false, null, false, true),
-        PaywallProductUiModel(PremiumPlanUiModel.Lifetime, "$59.99", false, null, false, true)
+        PaywallProductUiModel(
+            PremiumPlanUiModel.Yearly,
+            "$29.99",
+            TrialLengthUiModel(months = 0, days = 7),
+            null,
+            false,
+            true
+        ),
+        PaywallProductUiModel(PremiumPlanUiModel.Monthly, "$4.99", null, null, false, true),
+        PaywallProductUiModel(PremiumPlanUiModel.Lifetime, "$59.99", null, null, false, true)
     )
 )
 private val PREVIEW_ACTIONS = PaywallActions({}, {}, {}, {}, {}, {}, {})

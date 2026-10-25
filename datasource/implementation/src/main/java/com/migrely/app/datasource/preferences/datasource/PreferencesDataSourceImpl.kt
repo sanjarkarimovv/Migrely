@@ -6,6 +6,7 @@ import com.migrely.app.datasource.preferences.model.AttackFrequencyDataModel
 import com.migrely.app.datasource.preferences.model.EntitlementDataModel
 import com.migrely.app.datasource.preferences.model.EntitlementKindDataModel
 import com.migrely.app.datasource.preferences.model.GoalDataModel
+import com.migrely.app.datasource.preferences.model.LaunchedPurchaseDataModel
 import com.migrely.app.datasource.preferences.model.PaywallTriggerDataModel
 import com.migrely.app.datasource.preferences.model.ThemeDataModel
 import kotlinx.coroutines.channels.awaitClose
@@ -28,6 +29,10 @@ private const val ENTITLEMENT_TRIAL_END = "entitlement_trial_end"
 private const val ENTITLEMENT_LAST_CHECK = "entitlement_last_check"
 private const val ENTITLEMENT_SUBSCRIPTION_TOO = "entitlement_subscription_too"
 private const val ENTITLEMENT_ACKNOWLEDGEMENT_PENDING = "entitlement_acknowledgement_pending"
+private const val LAUNCHED_PRODUCT = "launched_product"
+private const val LAUNCHED_BASE_PLAN = "launched_base_plan"
+private const val LAUNCHED_TRIAL = "launched_trial"
+private const val LAUNCHED_AT = "launched_at"
 private const val PAYWALL_SHOWN_PREFIX = "paywall_shown_"
 private const val PAYWALL_LAST_SHOWN = "paywall_last_shown"
 private const val TRIAL_BANNER_DISMISSED = "trial_banner_dismissed"
@@ -116,6 +121,33 @@ class PreferencesDataSourceImpl(
         putBoolean(ENTITLEMENT_SUBSCRIPTION_TOO, entitlement.subscriptionRenewsToo)
         putBoolean(ENTITLEMENT_ACKNOWLEDGEMENT_PENDING, entitlement.acknowledgementPending)
     }
+
+    override fun launchedPurchase(): LaunchedPurchaseDataModel? {
+        val stored = entitlementPreferences
+        val productId = stored.getString(LAUNCHED_PRODUCT, null) ?: return null
+        val at = stored.longOrNull(LAUNCHED_AT) ?: return null
+        return LaunchedPurchaseDataModel(
+            productId = productId,
+            basePlanId = stored.getString(LAUNCHED_BASE_PLAN, null),
+            freeTrialPeriod = stored.getString(LAUNCHED_TRIAL, null),
+            launchedAtMillis = at
+        )
+    }
+
+    override fun setLaunchedPurchase(launched: LaunchedPurchaseDataModel?) =
+        entitlementPreferences.write {
+            if (launched == null) {
+                remove(LAUNCHED_PRODUCT)
+                remove(LAUNCHED_BASE_PLAN)
+                remove(LAUNCHED_TRIAL)
+                remove(LAUNCHED_AT)
+            } else {
+                putString(LAUNCHED_PRODUCT, launched.productId)
+                putString(LAUNCHED_BASE_PLAN, launched.basePlanId)
+                putString(LAUNCHED_TRIAL, launched.freeTrialPeriod)
+                putLong(LAUNCHED_AT, launched.launchedAtMillis)
+            }
+        }
 
     override fun paywallShown(trigger: PaywallTriggerDataModel): Boolean =
         preferences.getBoolean(PAYWALL_SHOWN_PREFIX + trigger.key, false)

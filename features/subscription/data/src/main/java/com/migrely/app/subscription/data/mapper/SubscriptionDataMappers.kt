@@ -8,7 +8,9 @@ class SubscriptionDataMappers(
     val premiumProductsDomainMapper: PremiumProductsDomainMapper,
     val purchaseRequestDataMapper: PurchaseRequestDataMapper,
     val purchaseSheetResultDomainMapper: PurchaseSheetResultDomainMapper,
-    val paywallTriggerDataMapper: PaywallTriggerDataMapper
+    val paywallTriggerDataMapper: PaywallTriggerDataMapper,
+    val launchedPurchaseDomainMapper: LaunchedPurchaseDomainMapper,
+    val launchedPurchaseDataMapper: LaunchedPurchaseDataMapper
 ) {
     companion object {
         fun create(): SubscriptionDataMappers {
@@ -21,7 +23,9 @@ class SubscriptionDataMappers(
                 purchaseRequestDataMapper = PurchaseRequestDataMapper(),
                 purchaseSheetResultDomainMapper =
                 PurchaseSheetResultDomainMapper(ownedPurchaseDomainMapper),
-                paywallTriggerDataMapper = PaywallTriggerDataMapper()
+                paywallTriggerDataMapper = PaywallTriggerDataMapper(),
+                launchedPurchaseDomainMapper = LaunchedPurchaseDomainMapper(),
+                launchedPurchaseDataMapper = LaunchedPurchaseDataMapper()
             )
         }
     }

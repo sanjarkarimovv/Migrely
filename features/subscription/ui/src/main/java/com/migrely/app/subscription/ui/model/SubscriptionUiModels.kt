@@ -34,12 +34,16 @@ sealed interface PremiumStatusUiModel : Parcelable {
     data class Lifetime(val subscriptionRenewsToo: Boolean) : PremiumStatusUiModel
 }
 
+/** A free trial's length as Google Play gives it: whole months, or days (weeks are days). */
+@Parcelize
+data class TrialLengthUiModel(val months: Int, val days: Int) : Parcelable
+
 /** A product card; kept across a rotation, so the cards stay while Google Play's sheet is open. */
 @Parcelize
 data class PaywallProductUiModel(
     val plan: PremiumPlanUiModel,
     val price: String,
-    val freeTrial: Boolean,
+    val trial: TrialLengthUiModel?,
     val offerToken: String?,
     val current: Boolean,
     val choosable: Boolean
@@ -99,5 +103,6 @@ sealed interface PremiumSectionViewStateUiModel {
 sealed interface TrialBannerViewStateUiModel {
     data object Hidden : TrialBannerViewStateUiModel
 
-    data class Shown(val trialEndMillis: Long) : TrialBannerViewStateUiModel
+    data class Shown(val trialEndMillis: Long, val endsToday: Boolean, val renews: Boolean) :
+        TrialBannerViewStateUiModel
 }

@@ -8,9 +8,11 @@ import com.migrely.app.subscription.domain.model.TrialReminderDomainModel
 import com.migrely.app.subscription.domain.repository.DismissTrialBannerRepository
 import com.migrely.app.subscription.domain.repository.GetCurrentTimeRepository
 import com.migrely.app.subscription.domain.repository.GetEntitlementRepository
+import com.migrely.app.subscription.domain.repository.GetTimeZoneRepository
 import com.migrely.app.subscription.domain.repository.GetTrialBannerDismissalRepository
 import java.time.Duration
 import java.time.Instant
+import java.time.ZoneOffset
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.mockito.kotlin.doReturn
@@ -22,13 +24,16 @@ class TrialReminderUseCasesTest {
     private val getEntitlementRepository: GetEntitlementRepository = mock()
     private val getTrialBannerDismissalRepository: GetTrialBannerDismissalRepository = mock()
     private val getCurrentTimeRepository: GetCurrentTimeRepository = mock {
-        on { now() } doReturn
-            NOW
+        on { now() } doReturn NOW
+    }
+    private val getTimeZoneRepository: GetTimeZoneRepository = mock {
+        on { zone() } doReturn ZoneOffset.UTC
     }
     private val classUnderTest = GetTrialReminderUseCase(
         getEntitlementRepository,
         getTrialBannerDismissalRepository,
         getCurrentTimeRepository,
+        getTimeZoneRepository,
         CoroutineContextProvider.Default
     )
 
@@ -43,8 +48,22 @@ class TrialReminderUseCasesTest {
     fun `Given the trial started 6 days ago then home reminds of it`() {
         val end = givenTrialEndingIn(Duration.ofHours(23))
 
+        // NOW is 09:00 UTC, so 23 hours on is tomorrow.
         assertEquals(
-            TrialReminderDomainModel.EndsSoon(end),
+            TrialReminderDomainModel.EndsSoon(end, endsToday = false, renews = true),
+            classUnderTest.executeInBackground(Unit)
+        )
+    }
+
+    @Test
+    fun `Given the trial ends tonight and was cancelled then it ends today, with Premium`() {
+        val end = NOW.plus(Duration.ofHours(10))
+        given(getEntitlementRepository.entitlement()).willReturn(
+            subscription(PremiumPlanDomainModel.Yearly, trialEnd = end).copy(autoRenewing = false)
+        )
+
+        assertEquals(
+            TrialReminderDomainModel.EndsSoon(end, endsToday = true, renews = false),
             classUnderTest.executeInBackground(Unit)
         )
     }

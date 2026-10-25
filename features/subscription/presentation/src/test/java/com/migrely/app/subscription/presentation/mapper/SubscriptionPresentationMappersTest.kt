@@ -63,11 +63,11 @@ class PaywallPresentationMappersTest {
     private val classUnderTest =
         PaywallPresentationMapper(PremiumStatusPresentationMapper(planMapper), planMapper)
     private val monthly =
-        PremiumProductDomainModel(PremiumPlanDomainModel.Monthly, "€4.99", false, "t-monthly")
+        PremiumProductDomainModel(PremiumPlanDomainModel.Monthly, "€4.99", null, "t-monthly")
     private val monthlyCard = PaywallProductPresentationModel(
         PremiumPlanPresentationModel.Monthly,
         "€4.99",
-        freeTrial = false,
+        freeTrial = null,
         offerToken = "t-monthly",
         current = true,
         choosable = false

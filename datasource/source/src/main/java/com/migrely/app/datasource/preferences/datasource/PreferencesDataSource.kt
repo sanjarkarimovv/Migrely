@@ -3,6 +3,7 @@ package com.migrely.app.datasource.preferences.datasource
 import com.migrely.app.datasource.preferences.model.AttackFrequencyDataModel
 import com.migrely.app.datasource.preferences.model.EntitlementDataModel
 import com.migrely.app.datasource.preferences.model.GoalDataModel
+import com.migrely.app.datasource.preferences.model.LaunchedPurchaseDataModel
 import com.migrely.app.datasource.preferences.model.PaywallTriggerDataModel
 import com.migrely.app.datasource.preferences.model.ThemeDataModel
 import kotlinx.coroutines.flow.Flow
@@ -47,6 +48,12 @@ interface PreferencesDataSource {
     fun entitlement(): EntitlementDataModel?
 
     fun setEntitlement(entitlement: EntitlementDataModel)
+
+    /** The purchase last asked of Google Play's sheet, kept with the entitlement, or null. */
+    fun launchedPurchase(): LaunchedPurchaseDataModel?
+
+    /** Keeps [launched] before the sheet opens; null forgets it. */
+    fun setLaunchedPurchase(launched: LaunchedPurchaseDataModel?)
 
     /** Whether a paywall has shown itself for [trigger] (BRD D110). */
     fun paywallShown(trigger: PaywallTriggerDataModel): Boolean

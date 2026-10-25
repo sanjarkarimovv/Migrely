@@ -26,8 +26,11 @@ class TrialBannerViewModel(
                 updateViewState(
                     when (reminder) {
                         TrialReminderDomainModel.None -> TrialBannerViewState.Hidden
-                        is TrialReminderDomainModel.EndsSoon ->
-                            TrialBannerViewState.Shown(reminder.trialEnd)
+                        is TrialReminderDomainModel.EndsSoon -> TrialBannerViewState.Shown(
+                            trialEnd = reminder.trialEnd,
+                            endsToday = reminder.endsToday,
+                            renews = reminder.renews
+                        )
                     }
                 )
             }

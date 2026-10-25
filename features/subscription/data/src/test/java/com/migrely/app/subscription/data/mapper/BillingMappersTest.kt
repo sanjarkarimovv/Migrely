@@ -17,6 +17,7 @@ import com.migrely.app.subscription.domain.model.PurchaseProductDomainModel
 import com.migrely.app.subscription.domain.model.PurchaseSheetResultDomainModel
 import com.migrely.app.subscription.domain.model.PurchaseStateDomainModel
 import java.time.Instant
+import java.time.Period
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -50,17 +51,22 @@ class BillingMappersTest {
 
         assertEquals(
             listOf(
-                PremiumProductDomainModel(PremiumPlanDomainModel.Yearly, "€29.99", true, "t-trial"),
+                PremiumProductDomainModel(
+                    PremiumPlanDomainModel.Yearly,
+                    "€29.99",
+                    Period.ofDays(7),
+                    "t-trial"
+                ),
                 PremiumProductDomainModel(
                     PremiumPlanDomainModel.Monthly,
                     "€4.99",
-                    false,
+                    null,
                     "t-monthly"
                 ),
                 PremiumProductDomainModel(
                     PremiumPlanDomainModel.Lifetime,
                     "€59.99",
-                    false,
+                    null,
                     "t-lifetime"
                 )
             ),
@@ -73,7 +79,7 @@ class BillingMappersTest {
         val products = productsMapper.toDomain(listOf(premium(YEARLY_BASE, MONTHLY)))
 
         assertEquals(
-            PremiumProductDomainModel(PremiumPlanDomainModel.Yearly, "€29.99", false, "t-yearly"),
+            PremiumProductDomainModel(PremiumPlanDomainModel.Yearly, "€29.99", null, "t-yearly"),
             products.first()
         )
     }
@@ -118,7 +124,7 @@ class BillingMappersTest {
 
     @Test
     fun `When asking to buy then the product, offer and replaced purchase go to Play`() {
-        val yearly = PremiumProductDomainModel(PremiumPlanDomainModel.Yearly, "€29.99", false, "t")
+        val yearly = PremiumProductDomainModel(PremiumPlanDomainModel.Yearly, "€29.99", null, "t")
 
         assertEquals(
             BillingPurchaseRequestDataModel("migrely_premium", "t", "old"),
@@ -163,6 +169,41 @@ class BillingMappersTest {
         assertEquals(
             listOf(PaywallTriggerDataModel.Onboarding, PaywallTriggerDataModel.FifthMigraine),
             PaywallTriggerDomainModel.entries.map(PaywallTriggerDataMapper()::toData)
+        )
+    }
+
+    @Test
+    fun `Given Play's trial periods then they read as periods, and an odd one as no trial`() {
+        assertEquals(Period.ofDays(7), trialPeriodOf("P7D"))
+        assertEquals(Period.ofDays(14), trialPeriodOf("P2W"))
+        assertEquals(Period.ofMonths(1), trialPeriodOf("P1M"))
+        assertEquals(null, trialPeriodOf("seven days"))
+        assertEquals(null, trialPeriodOf("P0D"))
+        assertEquals(null, trialPeriodOf(null))
+    }
+
+    @Test
+    fun `When keeping a launched purchase then it reads back the same`() {
+        val launched = com.migrely.app.subscription.domain.model.LaunchedPurchaseDomainModel(
+            PremiumPlanDomainModel.Yearly,
+            Period.ofDays(7),
+            Instant.ofEpochMilli(5_000L)
+        )
+        val data = LaunchedPurchaseDataMapper().toData(launched)
+
+        assertEquals(
+            com.migrely.app.datasource.preferences.model.LaunchedPurchaseDataModel(
+                "migrely_premium",
+                "yearly",
+                "P7D",
+                5_000L
+            ),
+            data
+        )
+        assertEquals(launched, LaunchedPurchaseDomainMapper().toDomain(data))
+        assertEquals(
+            null,
+            LaunchedPurchaseDomainMapper().toDomain(data.copy(productId = "something_else"))
         )
     }
 }

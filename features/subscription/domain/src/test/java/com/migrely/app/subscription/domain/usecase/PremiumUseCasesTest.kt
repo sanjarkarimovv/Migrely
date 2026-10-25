@@ -169,4 +169,20 @@ class PremiumUseCasesTest {
             GetPaywallUseCase(premiumChecker, products, coroutines).executeInBackground(Unit)
         )
     }
+
+    @Test
+    fun `Given a subscription bought on another phone then only lifetime can be chosen`() {
+        given(premiumChecker.current())
+            .willReturn(PremiumStatusDomainModel.Subscribed(plan = null, trialEnd = null))
+        val products: GetPremiumProductsRepository = mock {
+            on { premiumProducts() } doReturn
+                PremiumProductsResultDomainModel.Loaded(listOf(YEARLY_TRIAL, MONTHLY, LIFETIME))
+        }
+
+        val offers = GetPaywallUseCase(premiumChecker, products, coroutines)
+            .executeInBackground(Unit).offers as PaywallOffersDomainModel.Loaded
+
+        assertEquals(listOf(false, false, true), offers.offers.map { it.choosable })
+        assertEquals(listOf(false, false, false), offers.offers.map { it.current })
+    }
 }

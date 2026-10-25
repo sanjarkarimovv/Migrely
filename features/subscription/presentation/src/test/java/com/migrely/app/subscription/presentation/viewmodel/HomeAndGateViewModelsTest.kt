@@ -56,13 +56,16 @@ class TrialBannerViewModelTest :
     fun `Given the trial ends tomorrow when entering then the banner shows`() = runTest {
         create()
         getTrialReminderUseCase.givenSuccessfulExecution(
-            TrialReminderDomainModel.EndsSoon(TRIAL_END)
+            TrialReminderDomainModel.EndsSoon(TRIAL_END, endsToday = false, renews = false)
         )
         val state = async(start = UNDISPATCHED) { classUnderTest.viewState.first() }
 
         classUnderTest.onEnter()
 
-        assertEquals(TrialBannerViewState.Shown(TRIAL_END), state.await())
+        assertEquals(
+            TrialBannerViewState.Shown(TRIAL_END, endsToday = false, renews = false),
+            state.await()
+        )
     }
 
     @Test

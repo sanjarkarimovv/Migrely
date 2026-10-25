@@ -29,6 +29,7 @@ import com.migrely.app.subscription.presentation.model.PaywallViewState
 import com.migrely.app.subscription.presentation.model.PremiumPlanPresentationModel
 import com.migrely.app.subscription.presentation.model.PremiumStatusPresentationModel
 import com.migrely.app.subscription.presentation.navigation.PaywallPresentationNavigationEvent
+import java.time.Period
 import kotlinx.coroutines.CoroutineStart.UNDISPATCHED
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -48,11 +49,12 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 
-private val YEARLY = PremiumProductDomainModel(PremiumPlanDomainModel.Yearly, "€29.99", true, "t")
+private val YEARLY =
+    PremiumProductDomainModel(PremiumPlanDomainModel.Yearly, "€29.99", Period.ofDays(7), "t")
 private val YEARLY_CARD = PaywallProductPresentationModel(
     PremiumPlanPresentationModel.Yearly,
     "€29.99",
-    freeTrial = true,
+    freeTrial = Period.ofDays(7),
     offerToken = "t",
     current = false,
     choosable = true

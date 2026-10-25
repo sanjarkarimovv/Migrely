@@ -43,7 +43,8 @@ fun TrialBannerDependencies.TrialBanner(refreshKey: Int, modifier: Modifier = Mo
     val shown = trialBannerViewStateUiMapper.toUi(viewState) as? TrialBannerViewStateUiModel.Shown
         ?: return
     TrialBannerContents(
-        endsToday = isToday(shown.trialEndMillis),
+        endsToday = shown.endsToday,
+        renews = shown.renews,
         onManage = trialBannerViewModel::onManageAction,
         onDismiss = {
             trialBannerViewModel.onDismissAction(Instant.ofEpochMilli(shown.trialEndMillis))
@@ -56,6 +57,7 @@ fun TrialBannerDependencies.TrialBanner(refreshKey: Int, modifier: Modifier = Mo
 @Composable
 fun TrialBannerContents(
     endsToday: Boolean,
+    renews: Boolean,
     onManage: () -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier
@@ -76,17 +78,18 @@ fun TrialBannerContents(
                         .semantics(mergeDescendants = true) { }
                 ) {
                     Text(
-                        stringResource(
-                            if (endsToday) {
-                                R.string.subscription_trial_ends_today
-                            } else {
-                                R.string.subscription_trial_ends_tomorrow
-                            }
-                        ),
+                        stringResource(titleOf(endsToday, renews)),
                         style = MaterialTheme.typography.titleMedium
                     )
+                    // Once cancelled, nothing is charged and nothing is left to cancel (M15).
                     Text(
-                        stringResource(R.string.subscription_trial_banner_text),
+                        stringResource(
+                            if (renews) {
+                                R.string.subscription_trial_banner_text
+                            } else {
+                                R.string.subscription_trial_banner_cancelled
+                            }
+                        ),
                         style = MaterialTheme.typography.bodyMedium
                     )
                 }
@@ -104,11 +107,18 @@ fun TrialBannerContents(
     }
 }
 
+private fun titleOf(endsToday: Boolean, renews: Boolean) = when {
+    renews && endsToday -> R.string.subscription_trial_ends_today
+    renews -> R.string.subscription_trial_ends_tomorrow
+    endsToday -> R.string.subscription_trial_and_premium_end_today
+    else -> R.string.subscription_trial_and_premium_end_tomorrow
+}
+
 @Preview(name = "Trial banner")
 @Composable
 private fun TrialBannerPreview() {
     MigrelyTheme {
-        TrialBannerContents(endsToday = false, onManage = {}, onDismiss = {})
+        TrialBannerContents(endsToday = false, renews = true, onManage = {}, onDismiss = {})
     }
 }
 
@@ -116,6 +126,6 @@ private fun TrialBannerPreview() {
 @Composable
 private fun TrialBannerLightPreview() {
     MigrelyTheme(dark = false) {
-        TrialBannerContents(endsToday = true, onManage = {}, onDismiss = {})
+        TrialBannerContents(endsToday = true, renews = false, onManage = {}, onDismiss = {})
     }
 }

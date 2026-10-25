@@ -26,7 +26,14 @@
     <string name="subscription_plan_yearly">Yearly</string>
     <string name="subscription_plan_monthly">Monthly</string>
     <string name="subscription_plan_lifetime">Lifetime</string>
-    <string name="subscription_price_yearly_trial">7 days free, then %1$s/year</string>
+    <plurals name="subscription_price_yearly_trial_days">
+        <item quantity="one">%1$d day free, then %2$s/year</item>
+        <item quantity="other">%1$d days free, then %2$s/year</item>
+    </plurals>
+    <plurals name="subscription_price_yearly_trial_months">
+        <item quantity="one">%1$d month free, then %2$s/year</item>
+        <item quantity="other">%1$d months free, then %2$s/year</item>
+    </plurals>
     <string name="subscription_price_yearly">%1$s/year</string>
     <string name="subscription_price_monthly">%1$s/month</string>
     <string name="subscription_price_lifetime">%1$s · one payment</string>
@@ -89,6 +96,9 @@
     <string name="subscription_trial_ends_tomorrow">Your free trial ends tomorrow</string>
     <string name="subscription_trial_ends_today">Your free trial ends today</string>
     <string name="subscription_trial_banner_text">Cancel in Google Play before it ends and you won\'t be charged.</string>
+    <string name="subscription_trial_and_premium_end_tomorrow">Your free trial and Premium end tomorrow</string>
+    <string name="subscription_trial_and_premium_end_today">Your free trial and Premium end today</string>
+    <string name="subscription_trial_banner_cancelled">Your subscription is cancelled, so you won\'t be charged.</string>
     <string name="subscription_trial_manage">Manage</string>
     <string name="subscription_trial_dismiss">Dismiss the reminder</string>
 

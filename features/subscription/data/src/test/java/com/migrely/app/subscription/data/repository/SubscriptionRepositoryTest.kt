@@ -212,4 +212,13 @@ class SubscriptionRepositoryTest {
         classUnderTest.schedulePremiumChecks(needed = false)
         verify(premiumCheckScheduleDataSource).cancel()
     }
+
+    @Test
+    fun `Given the disk refuses when keeping a launched purchase then it is quietly dropped`() {
+        given(preferencesDataSource.setLaunchedPurchase(any())).willThrow(FileDataException())
+
+        classUnderTest.saveLaunchedPurchase(null)
+
+        verify(preferencesDataSource).setLaunchedPurchase(null)
+    }
 }

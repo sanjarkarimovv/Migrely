@@ -5,6 +5,7 @@ import com.migrely.app.subscription.domain.model.BillingAvailabilityDomainModel
 import com.migrely.app.subscription.domain.model.BoughtDomainModel
 import com.migrely.app.subscription.domain.model.BuyPremiumResultDomainModel
 import com.migrely.app.subscription.domain.model.EntitlementDomainModel
+import com.migrely.app.subscription.domain.model.LaunchedPurchaseDomainModel
 import com.migrely.app.subscription.domain.model.PremiumCheckDomainModel
 import com.migrely.app.subscription.domain.model.PremiumPlanDomainModel
 import com.migrely.app.subscription.domain.model.PremiumStatusDomainModel
@@ -13,8 +14,11 @@ import com.migrely.app.subscription.domain.model.PurchaseOutcomeDomainModel
 import com.migrely.app.subscription.domain.model.PurchaseProductDomainModel
 import com.migrely.app.subscription.domain.model.PurchaseSheetResultDomainModel
 import com.migrely.app.subscription.domain.model.PurchaseStateDomainModel
+import com.migrely.app.subscription.domain.repository.GetCurrentTimeRepository
 import com.migrely.app.subscription.domain.repository.GetEntitlementRepository
 import com.migrely.app.subscription.domain.repository.LaunchPurchaseRepository
+import com.migrely.app.subscription.domain.repository.SaveLaunchedPurchaseRepository
+import java.time.Period
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.mockito.kotlin.any
@@ -35,10 +39,18 @@ class BuyPremiumUseCaseTest {
         on { check(anyOrNull()) } doReturn
             PremiumCheckDomainModel(YEARLY_STATUS, BillingAvailabilityDomainModel.Available)
     }
+    private val saveLaunchedPurchaseRepository: SaveLaunchedPurchaseRepository = mock()
+    private val getCurrentTimeRepository: GetCurrentTimeRepository = mock {
+        on { now() } doReturn
+            NOW
+    }
     private val classUnderTest = BuyPremiumUseCase(
         getEntitlementRepository,
+        saveLaunchedPurchaseRepository,
+        getCurrentTimeRepository,
         launchPurchaseRepository,
         premiumChecker,
+        EntitlementRules(),
         CoroutineContextProvider.Default
     )
 
@@ -52,7 +64,7 @@ class BuyPremiumUseCaseTest {
         val result = classUnderTest.executeInBackground(YEARLY_TRIAL)
 
         verify(premiumChecker).check(
-            BoughtDomainModel("new", PremiumPlanDomainModel.Yearly, freeTrial = true)
+            BoughtDomainModel("new", PremiumPlanDomainModel.Yearly, freeTrial = Period.ofDays(7))
         )
         assertEquals(
             BuyPremiumResultDomainModel(PurchaseOutcomeDomainModel.Unlocked, YEARLY_STATUS),
@@ -161,5 +173,32 @@ class BuyPremiumUseCaseTest {
             PurchaseOutcomeDomainModel.Unavailable,
             classUnderTest.executeInBackground(MONTHLY).outcome
         )
+    }
+
+    @Test
+    fun `When buying then what is asked is kept before the sheet opens, and forgotten after`() {
+        given(launchPurchaseRepository.launchPurchase(any()))
+            .willReturn(PurchaseSheetResultDomainModel.Cancelled)
+
+        classUnderTest.executeInBackground(YEARLY_TRIAL)
+
+        org.mockito.kotlin.inOrder(saveLaunchedPurchaseRepository, launchPurchaseRepository) {
+            verify(saveLaunchedPurchaseRepository).saveLaunchedPurchase(
+                LaunchedPurchaseDomainModel(PremiumPlanDomainModel.Yearly, Period.ofDays(7), NOW)
+            )
+            verify(launchPurchaseRepository).launchPurchase(any())
+            verify(saveLaunchedPurchaseRepository).saveLaunchedPurchase(null)
+        }
+    }
+
+    @Test
+    fun `Given a subscription whose plan is unknown then buying a plan replaces nothing`() {
+        given(getEntitlementRepository.entitlement()).willReturn(subscription(plan = null))
+        given(launchPurchaseRepository.launchPurchase(any()))
+            .willReturn(PurchaseSheetResultDomainModel.Cancelled)
+
+        classUnderTest.executeInBackground(MONTHLY)
+
+        verify(launchPurchaseRepository).launchPurchase(PurchaseLaunchDomainModel(MONTHLY, null))
     }
 }

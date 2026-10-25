@@ -24,6 +24,8 @@ import com.migrely.app.subscription.ui.model.PremiumSectionViewStateUiModel
 import com.migrely.app.subscription.ui.model.PremiumStatusUiModel
 import com.migrely.app.subscription.ui.model.RestoreNoteUiModel
 import com.migrely.app.subscription.ui.model.TrialBannerViewStateUiModel
+import com.migrely.app.subscription.ui.model.TrialLengthUiModel
+import java.time.Period
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -69,7 +71,9 @@ class PaywallViewStateUiMapper(
     private fun product(product: PaywallProductPresentationModel) = PaywallProductUiModel(
         plan = premiumPlanUiMapper.toUi(product.plan),
         price = product.price,
-        freeTrial = product.freeTrial,
+        trial = product.freeTrial?.let {
+            TrialLengthUiModel(months = it.toTotalMonths().toInt(), days = it.days)
+        },
         offerToken = product.offerToken,
         current = product.current,
         choosable = product.choosable
@@ -85,7 +89,7 @@ class PaywallProductPresentationMapper {
             PremiumPlanUiModel.Lifetime -> PremiumPlanPresentationModel.Lifetime
         },
         price = product.price,
-        freeTrial = product.freeTrial,
+        freeTrial = product.trial?.let { Period.of(0, it.months, it.days) },
         offerToken = product.offerToken,
         current = product.current,
         choosable = product.choosable
@@ -168,7 +172,10 @@ class PremiumSectionNotificationUiMapper :
 class TrialBannerViewStateUiMapper {
     fun toUi(viewState: TrialBannerViewState): TrialBannerViewStateUiModel = when (viewState) {
         TrialBannerViewState.Hidden -> TrialBannerViewStateUiModel.Hidden
-        is TrialBannerViewState.Shown ->
-            TrialBannerViewStateUiModel.Shown(viewState.trialEnd.toEpochMilli())
+        is TrialBannerViewState.Shown -> TrialBannerViewStateUiModel.Shown(
+            trialEndMillis = viewState.trialEnd.toEpochMilli(),
+            endsToday = viewState.endsToday,
+            renews = viewState.renews
+        )
     }
 }

@@ -1,6 +1,7 @@
 package com.migrely.app.subscription.domain.model
 
 import java.time.Instant
+import java.time.Period
 import java.time.ZoneId
 
 /** The three ways to buy Migrely Premium (BRD §7.2, D107). */
@@ -109,11 +110,14 @@ enum class BillingAvailabilityDomainModel {
     Unknown
 }
 
-/** A product with Google Play's local price (BRD SUB-F1). [freeTrial] when it starts with one. */
+/**
+ * A product with Google Play's local price (BRD SUB-F1). [freeTrial] is the free trial it starts
+ * with, as long as Google Play gives it, or null (review M8).
+ */
 data class PremiumProductDomainModel(
     val plan: PremiumPlanDomainModel,
     val price: String,
-    val freeTrial: Boolean,
+    val freeTrial: Period?,
     val offerToken: String?
 )
 
@@ -176,7 +180,17 @@ sealed interface PurchaseSheetResultDomainModel {
 data class BoughtDomainModel(
     val purchaseToken: String,
     val plan: PremiumPlanDomainModel,
-    val freeTrial: Boolean
+    val freeTrial: Period?
+)
+
+/**
+ * What was asked of Google Play's sheet, kept before it opens, so a purchase that completes while
+ * the app is away, or after it was closed, still gets its plan and trial (review M5).
+ */
+data class LaunchedPurchaseDomainModel(
+    val plan: PremiumPlanDomainModel,
+    val freeTrial: Period?,
+    val at: Instant
 )
 
 enum class PurchaseOutcomeDomainModel {
@@ -218,8 +232,12 @@ data class PaywallMarksDomainModel(
 sealed interface TrialReminderDomainModel {
     data object None : TrialReminderDomainModel
 
-    /** The trial ends at [trialEnd], within a day (BRD D111). */
-    data class EndsSoon(val trialEnd: Instant) : TrialReminderDomainModel
+    /**
+     * The trial ends at [trialEnd], within a day (BRD D111): [endsToday] by the phone's date, and
+     * [renews] while the subscription goes on after it; once cancelled, Premium ends with it.
+     */
+    data class EndsSoon(val trialEnd: Instant, val endsToday: Boolean, val renews: Boolean) :
+        TrialReminderDomainModel
 }
 
 enum class SubscriptionWriteResultDomainModel {

@@ -3,11 +3,13 @@ package com.migrely.app.subscription.domain.usecase
 import com.migrely.app.subscription.domain.model.BoughtDomainModel
 import com.migrely.app.subscription.domain.model.EntitlementDomainModel
 import com.migrely.app.subscription.domain.model.EntitlementKindDomainModel
+import com.migrely.app.subscription.domain.model.LaunchedPurchaseDomainModel
 import com.migrely.app.subscription.domain.model.PremiumPlanDomainModel
 import com.migrely.app.subscription.domain.model.PremiumStatusDomainModel
 import com.migrely.app.subscription.domain.model.PurchaseProductDomainModel
 import com.migrely.app.subscription.domain.model.PurchaseStateDomainModel
 import java.time.Duration
+import java.time.Period
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -76,7 +78,7 @@ class EntitlementRulesTest {
 
     @Test
     fun `Given a purchase made here with the trial then its plan and trial end are kept`() {
-        val bought = BoughtDomainModel("sub", PremiumPlanDomainModel.Yearly, freeTrial = true)
+        val bought = BoughtDomainModel("sub", PremiumPlanDomainModel.Yearly, Period.ofDays(7))
 
         val entitlement = classUnderTest.answered(
             EntitlementDomainModel.NONE,
@@ -169,5 +171,86 @@ class EntitlementRulesTest {
     @Test
     fun `Given the clock went back before the last check then Play is due`() {
         assertTrue(classUnderTest.isDue(subscription(lastCheck = NOW.plusSeconds(3_600)), NOW))
+    }
+
+    @Test
+    fun `Given a trial of 14 days from Play then the trial ends 14 days after the purchase`() {
+        val bought = BoughtDomainModel("sub", PremiumPlanDomainModel.Yearly, Period.ofWeeks(2))
+
+        val entitlement =
+            classUnderTest.answered(
+                EntitlementDomainModel.NONE,
+                listOf(purchase(at = NOW)),
+                NOW,
+                bought
+            )
+
+        assertEquals(NOW.plus(Duration.ofDays(14)), entitlement.trialEnd)
+    }
+
+    @Test
+    fun `Given a clock set back before the last answer when Play is unreachable then it ends`() {
+        val previous = subscription(lastCheck = NOW.plus(Duration.ofHours(2)))
+
+        assertEquals(
+            EntitlementKindDomainModel.None,
+            classUnderTest.unanswered(previous, NOW).kind
+        )
+    }
+
+    @Test
+    fun `Given lifetime when the clock was moved back then it stays on`() {
+        val lifetime = subscription(lastCheck = NOW.plus(Duration.ofDays(2)))
+            .copy(kind = EntitlementKindDomainModel.Lifetime)
+
+        assertEquals(lifetime, classUnderTest.unanswered(lifetime, NOW))
+    }
+
+    @Test
+    fun `Given a sheet launched before the app closed then its purchase gets its plan and trial`() {
+        val launched = LaunchedPurchaseDomainModel(
+            PremiumPlanDomainModel.Yearly,
+            Period.ofDays(7),
+            NOW.minus(Duration.ofMinutes(3))
+        )
+
+        assertEquals(
+            BoughtDomainModel("new", PremiumPlanDomainModel.Yearly, Period.ofDays(7)),
+            classUnderTest.boughtFrom(
+                launched,
+                listOf(purchase(token = "new", at = NOW.minus(Duration.ofMinutes(2)))),
+                EntitlementDomainModel.NONE,
+                NOW
+            )
+        )
+    }
+
+    @Test
+    fun `Given a launch older than a day or a purchase before it then it gives nothing`() {
+        val old = LaunchedPurchaseDomainModel(
+            PremiumPlanDomainModel.Monthly,
+            null,
+            NOW.minus(Duration.ofDays(2))
+        )
+        val recent = old.copy(at = NOW.minus(Duration.ofMinutes(1)))
+
+        assertEquals(
+            null,
+            classUnderTest.boughtFrom(
+                old,
+                listOf(purchase(at = NOW)),
+                EntitlementDomainModel.NONE,
+                NOW
+            )
+        )
+        assertEquals(
+            null,
+            classUnderTest.boughtFrom(
+                recent,
+                listOf(purchase(at = NOW.minus(Duration.ofDays(30)))),
+                EntitlementDomainModel.NONE,
+                NOW
+            )
+        )
     }
 }

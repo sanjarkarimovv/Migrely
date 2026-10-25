@@ -13,6 +13,7 @@ import com.migrely.app.subscription.data.mapper.SubscriptionDataMappers
 import com.migrely.app.subscription.data.mapper.SubscriptionProducts
 import com.migrely.app.subscription.domain.model.BillingAvailabilityDomainModel
 import com.migrely.app.subscription.domain.model.EntitlementDomainModel
+import com.migrely.app.subscription.domain.model.LaunchedPurchaseDomainModel
 import com.migrely.app.subscription.domain.model.MigraineStartDomainModel
 import com.migrely.app.subscription.domain.model.OwnedPurchasesResultDomainModel
 import com.migrely.app.subscription.domain.model.PaywallMarksDomainModel
@@ -27,6 +28,7 @@ import com.migrely.app.subscription.domain.repository.GetAttackInProgressReposit
 import com.migrely.app.subscription.domain.repository.GetBillingAvailabilityRepository
 import com.migrely.app.subscription.domain.repository.GetCurrentTimeRepository
 import com.migrely.app.subscription.domain.repository.GetEntitlementRepository
+import com.migrely.app.subscription.domain.repository.GetLaunchedPurchaseRepository
 import com.migrely.app.subscription.domain.repository.GetMigraineStartsRepository
 import com.migrely.app.subscription.domain.repository.GetOwnedPurchasesRepository
 import com.migrely.app.subscription.domain.repository.GetPaywallMarksRepository
@@ -38,6 +40,7 @@ import com.migrely.app.subscription.domain.repository.LaunchPurchaseRepository
 import com.migrely.app.subscription.domain.repository.ManageSubscriptionRepository
 import com.migrely.app.subscription.domain.repository.MarkPaywallShownRepository
 import com.migrely.app.subscription.domain.repository.SaveEntitlementRepository
+import com.migrely.app.subscription.domain.repository.SaveLaunchedPurchaseRepository
 import com.migrely.app.subscription.domain.repository.SchedulePremiumChecksRepository
 import com.migrely.app.subscription.domain.repository.ShowPaymentMessagesRepository
 import java.time.DateTimeException
@@ -76,12 +79,26 @@ class SubscriptionRepository(
     ShowPaymentMessagesRepository,
     ManageSubscriptionRepository,
     GetPurchaseUpdatesRepository,
-    SchedulePremiumChecksRepository {
+    SchedulePremiumChecksRepository,
+    GetLaunchedPurchaseRepository,
+    SaveLaunchedPurchaseRepository {
     override fun entitlement(): EntitlementDomainModel =
         mappers.entitlementDomainMapper.toDomain(preferencesDataSource.entitlement())
 
     override fun saveEntitlement(entitlement: EntitlementDomainModel) = write {
         preferencesDataSource.setEntitlement(mappers.entitlementDataMapper.toData(entitlement))
+    }
+
+    override fun launchedPurchase(): LaunchedPurchaseDomainModel? =
+        mappers.launchedPurchaseDomainMapper.toDomain(preferencesDataSource.launchedPurchase())
+
+    // A launch that cannot be kept only loses its plan and trial if the app is closed meanwhile.
+    override fun saveLaunchedPurchase(launched: LaunchedPurchaseDomainModel?) {
+        write {
+            preferencesDataSource.setLaunchedPurchase(
+                launched?.let(mappers.launchedPurchaseDataMapper::toData)
+            )
+        }
     }
 
     override fun ownedPurchases(): OwnedPurchasesResultDomainModel = try {

@@ -11,8 +11,10 @@ import com.migrely.app.subscription.domain.model.PurchaseStateDomainModel
 import com.migrely.app.subscription.domain.repository.AcknowledgePurchaseRepository
 import com.migrely.app.subscription.domain.repository.GetCurrentTimeRepository
 import com.migrely.app.subscription.domain.repository.GetEntitlementRepository
+import com.migrely.app.subscription.domain.repository.GetLaunchedPurchaseRepository
 import com.migrely.app.subscription.domain.repository.GetOwnedPurchasesRepository
 import com.migrely.app.subscription.domain.repository.SaveEntitlementRepository
+import com.migrely.app.subscription.domain.repository.SaveLaunchedPurchaseRepository
 import com.migrely.app.subscription.domain.repository.SchedulePremiumChecksRepository
 import java.time.Duration
 import org.junit.Assert.assertEquals
@@ -37,6 +39,8 @@ class PremiumCheckerTest {
         on { now() } doReturn NOW
     }
     private val schedulePremiumChecksRepository: SchedulePremiumChecksRepository = mock()
+    private val getLaunchedPurchaseRepository: GetLaunchedPurchaseRepository = mock()
+    private val saveLaunchedPurchaseRepository: SaveLaunchedPurchaseRepository = mock()
     private val classUnderTest = PremiumChecker(
         getEntitlementRepository,
         saveEntitlementRepository,
@@ -44,6 +48,8 @@ class PremiumCheckerTest {
         acknowledgePurchaseRepository,
         getCurrentTimeRepository,
         schedulePremiumChecksRepository,
+        getLaunchedPurchaseRepository,
+        saveLaunchedPurchaseRepository,
         EntitlementRules()
     )
 
@@ -229,5 +235,30 @@ class PremiumCheckerTest {
         classUnderTest.check()
 
         verify(schedulePremiumChecksRepository).schedulePremiumChecks(true)
+    }
+
+    @Test
+    fun `Given the app closed with the sheet open then the next check keeps the plan and trial`() {
+        given(getLaunchedPurchaseRepository.launchedPurchase()).willReturn(
+            com.migrely.app.subscription.domain.model.LaunchedPurchaseDomainModel(
+                com.migrely.app.subscription.domain.model.PremiumPlanDomainModel.Yearly,
+                java.time.Period.ofDays(7),
+                NOW.minusSeconds(120)
+            )
+        )
+        given(getOwnedPurchasesRepository.ownedPurchases()).willReturn(
+            OwnedPurchasesResultDomainModel.Owned(listOf(purchase(token = "new", at = NOW)))
+        )
+
+        val status = classUnderTest.check().status
+
+        assertEquals(
+            PremiumStatusDomainModel.Subscribed(
+                com.migrely.app.subscription.domain.model.PremiumPlanDomainModel.Yearly,
+                NOW.plus(Duration.ofDays(7))
+            ),
+            status
+        )
+        verify(saveLaunchedPurchaseRepository).saveLaunchedPurchase(null)
     }
 }

@@ -16,6 +16,8 @@ import com.migrely.app.subscription.domain.model.PurchaseProductDomainModel
 import com.migrely.app.subscription.domain.model.PurchaseSheetResultDomainModel
 import com.migrely.app.subscription.domain.model.PurchaseStateDomainModel
 import java.time.Instant
+import java.time.Period
+import java.time.format.DateTimeParseException
 
 class OwnedPurchaseDomainMapper {
     fun toDomain(purchase: BillingPurchaseDataModel) = OwnedPurchaseDomainModel(
@@ -68,9 +70,16 @@ class PremiumProductsDomainMapper {
         PremiumProductDomainModel(
             plan = plan,
             price = offer.formattedPrice,
-            freeTrial = offer.freeTrialPeriod != null,
+            freeTrial = trialPeriodOf(offer.freeTrialPeriod),
             offerToken = offer.offerToken
         )
+}
+
+/** Google Play's ISO 8601 trial period, such as `P7D` or `P1W`; one it cannot read is no trial. */
+internal fun trialPeriodOf(period: String?): Period? = try {
+    period?.let(Period::parse)?.takeUnless { it.isZero || it.isNegative }
+} catch (_: DateTimeParseException) {
+    null
 }
 
 class PurchaseRequestDataMapper {

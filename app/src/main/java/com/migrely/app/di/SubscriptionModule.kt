@@ -95,6 +95,8 @@ internal object SubscriptionModule {
         acknowledgePurchaseRepository = repository,
         getCurrentTimeRepository = repository,
         schedulePremiumChecksRepository = repository,
+        getLaunchedPurchaseRepository = repository,
+        saveLaunchedPurchaseRepository = repository,
         entitlementRules = EntitlementRules()
     )
 
@@ -174,10 +176,13 @@ internal object SubscriptionModule {
         PaywallUseCases(
             getPaywallUseCase = GetPaywallUseCase(premiumChecker, repository, coroutines),
             buyPremiumUseCase = BuyPremiumUseCase(
-                repository,
-                repository,
-                premiumChecker,
-                coroutines
+                getEntitlementRepository = repository,
+                saveLaunchedPurchaseRepository = repository,
+                getCurrentTimeRepository = repository,
+                launchPurchaseRepository = repository,
+                premiumChecker = premiumChecker,
+                entitlementRules = EntitlementRules(),
+                coroutineContextProvider = coroutines
             ),
             restorePurchasesUseCase = restorePurchasesUseCase,
             manageSubscriptionUseCase = manageSubscriptionUseCase,
@@ -245,7 +250,7 @@ internal object SubscriptionModule {
         useCaseExecutor: UseCaseExecutor
     ) = TrialBannerDependencies(
         trialBannerViewModel = TrialBannerViewModel(
-            GetTrialReminderUseCase(repository, repository, repository, coroutines),
+            GetTrialReminderUseCase(repository, repository, repository, repository, coroutines),
             DismissTrialReminderUseCase(repository, coroutines),
             manageSubscriptionUseCase,
             useCaseExecutor
