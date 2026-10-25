@@ -13,6 +13,7 @@
 # reminder_permission, reminder_effect, reminder_replan (restarts the emulator), med_only_history,
 # message_tap_guard (#52), theme_check, onboarding_states, delete_all_data, backup_export, backup_import, upgrade.
 # On demand only: backup_android (bmgr).
+# QA_APK=<apk> names the build under test (default: this worktree's debug APK), for example a release branch's.
 # upgrade needs QA_OLD_APK=<older debug APK of com.migrely.app>; without it, it is reported as not run.
 set -euo pipefail
 
@@ -20,6 +21,7 @@ QA_SERIAL="emulator-5580"
 APP="com.migrely.app"
 export MAESTRO_CLI_NO_ANALYTICS=1
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+APK="${QA_APK:-$ROOT/app/build/outputs/apk/debug/app-debug.apk}"
 ADB="${ANDROID_HOME:-$HOME/Library/Android/sdk}/platform-tools/adb"
 FLOWS="$ROOT/.maestro/device"
 adbq() { "$ADB" -s "$QA_SERIAL" "$@"; }
@@ -1169,7 +1171,7 @@ scenario_onboarding_states() {
   adbq shell run-as "$APP" ls shared_prefs/migrely_preferences.xml >/dev/null 2>&1 || { echo "  FAILED: no preferences to remove"; return 1; }
   adbq shell run-as "$APP" rm -f shared_prefs/migrely_preferences.xml
   ! adbq shell run-as "$APP" ls shared_prefs/migrely_preferences.xml >/dev/null 2>&1 || { echo "  FAILED: the preferences are still there"; return 1; }
-  "$ADB" -s "$QA_SERIAL" install -r "$ROOT/app/build/outputs/apk/debug/app-debug.apk" 2>&1 | grep -q Success || { echo "  FAILED: the update did not install"; return 1; }
+  "$ADB" -s "$QA_SERIAL" install -r "$APK" 2>&1 | grep -q Success || { echo "  FAILED: the update did not install"; return 1; }
   run_flow update-no-onboarding || return 1
 }
 
@@ -1413,7 +1415,7 @@ scenario_upgrade() {
     echo "  NOT RUN: set QA_OLD_APK to the older APK (for a release: the APK of the previous release)"
     return 1
   fi
-  local new_apk="$ROOT/app/build/outputs/apk/debug/app-debug.apk"
+  local new_apk="$APK"
   adbq uninstall "$APP" >/dev/null 2>&1 || true
   adbq install "$QA_OLD_APK" >/dev/null || { echo "  FAILED: could not install $QA_OLD_APK"; return 1; }
   echo "    installed the older build $(adbq shell dumpsys package "$APP" | grep -m1 versionCode | tr -s ' ')"

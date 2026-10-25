@@ -5,6 +5,7 @@
 #   qa/maestro.sh --tags smoke         only flows tagged smoke
 #   qa/maestro.sh .maestro/today-sky   one folder or one flow file
 #   qa/maestro.sh --install ...        build and reinstall the debug APK first
+#   QA_APK=<apk> qa/maestro.sh --install ...   install that APK instead, for example a release branch's build
 #   QA_SERIAL=emulator-5582 qa/maestro.sh --tags smoke    on the Android 8.0 QA emulator
 #
 # Three passes:
@@ -30,7 +31,7 @@ esac
 export MAESTRO_CLI_NO_ANALYTICS=1
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 ADB="${ANDROID_HOME:-$HOME/Library/Android/sdk}/platform-tools/adb"
-APK="$ROOT/app/build/outputs/apk/debug/app-debug.apk"
+APK="${QA_APK:-$ROOT/app/build/outputs/apk/debug/app-debug.apk}"
 LONG_TIMEOUT_TAG="a11y-timeout"
 KNOWN_BUG_TAG="known-bug"
 GEOMETRY_TAG="geometry"
@@ -82,7 +83,7 @@ trap restore EXIT
 
 if $install; then
   # Always build: Gradle is incremental, and an old APK must never be retested by mistake.
-  (cd "$ROOT" && ./gradlew :app:assembleDebug --console=plain -q)
+  [[ -n "${QA_APK:-}" ]] || (cd "$ROOT" && ./gradlew :app:assembleDebug --console=plain -q)
   adbq install -r "$APK" >/dev/null
 fi
 
