@@ -31,7 +31,8 @@ ID'lar koddagi bilan aynan bir xil boʻlishi shart: Play bir marta ishlatilgan I
    - **`yearly` ichida offer `free-trial-7d`:** eligibility "New customer acquisition → never had this
      subscription", bitta faza "Free trial, 7 days". **Activate**.
 2. **In-app products** (yoki "One-time products") **→ Create product**
-   - **Product ID:** `migrely_lifetime`. **Name:** `Migrely Premium Lifetime`. **Price:** $59.99. **Activate**.
+   - **Product ID:** `migrely_lifetime`. **Name:** `Migrely Premium, lifetime`. Purchase option `buy` (Buy, **Backwards compatible**), age rating
+     All ages, $59.99. **Activate**.
 3. **Past xarid qobiliyatli bozorlar** (BRD 7.2): Hindiston, Braziliya, Indoneziya va shunga oʻxshash
    bozorlarda narxni AQSH narxining taxminan 50% iga qoʻlda tushiring (har base plan'ning "Prices" boʻlimida).
 

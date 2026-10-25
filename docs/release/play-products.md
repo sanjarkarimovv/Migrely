@@ -14,6 +14,7 @@ track, which 13b `publish-to-play` does first.
 | Product ID | `migrely_premium` |
 | Name | Migrely Premium |
 | Benefits (up to 4, shown by Play) | A PDF report for your doctor · Triggers and patterns in your migraines · What helped, and when migraines come · The last 12 months at a glance |
+| Icon | The 512 × 512 Play icon, also on `migrely_lifetime` |
 
 ### Base plans
 
@@ -23,9 +24,11 @@ track, which 13b `publish-to-play` does first.
 | `monthly` | Auto-renewing | 1 month | USD 4.99 | see Prices below |
 
 For both base plans:
-- **Grace period:** on, Play's default length. Premium stays on and Play shows its own "fix your payment" message,
-  which the app asks for at start (EC-BIL-03).
-- **Account hold:** on, Play's default length. Premium is off during the hold; Play shows its message (EC-BIL-04).
+- **Grace period:** on, Play's default length: 14 days for `yearly`, 7 days for `monthly`. Premium stays on and Play
+  shows its own "fix your payment" message, which the app asks for at start (EC-BIL-03).
+- **Account hold:** "Calculate account hold automatically", so grace and hold together make 60 days (46 days for
+  `yearly`, 53 for `monthly`). Premium is off during the hold; Play shows its message (EC-BIL-04).
+- **Customer base plan and offer changes:** Play's default, "Charge at next billing date".
 - **Resubscribe:** allowed, so a cancelled subscription can be restored from Play's subscriptions page.
 - **Prorations:** nothing to set. The app moves monthly to yearly with `WITH_TIME_PRORATION` (EC-BIL-10); there is
   no move from yearly to monthly in the app.
@@ -51,7 +54,13 @@ yearly price alone. `monthly` has no offer.
 | Name | Migrely Premium, lifetime |
 | Description | Premium for as long as you use Migrely. One payment. |
 | Type | One-time, non-consumable: the app acknowledges it and never consumes it |
-| Purchase option | One "Buy" option, price USD 59.99 |
+| Purchase option | ID `buy`, type Buy, price USD 59.99, marked **Backwards compatible**: the app reads the product's single `oneTimePurchaseOfferDetails`, which is that option |
+| Quantities | One per purchase (multi-quantity off) |
+| Classification | Digital content |
+| Age rating (US states) | All ages, as the app's content rating |
+
+Created in Play Console and active on 25 October 2026: `migrely_premium` with `yearly` (`free-trial-7d`) and
+`monthly` in 175 countries, and `migrely_lifetime` (`buy`) in 174.
 
 ## Prices
 
