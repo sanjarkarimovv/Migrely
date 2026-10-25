@@ -83,12 +83,12 @@
 
 - [ ] 5.1 Log medication's "Taken at" date and time dialogs say "When did you take it?", from home and from attack mode.
   Verify: the flow passes 3 times
-- [ ] 5.2 `qa/resource_names.py` (design D5). Verify: it passes on d0e0214, and it fails on a local duplicate that is
+- [x] 5.2 `qa/resource_names.py` (design D5). Verify: it passes on d0e0214, and it fails on a local duplicate that is
   then reverted
 
 ## 6. Documents
 
-- [ ] 6.1 `docs/QA.md`: verification depth (D63), notifications and permissions (D64), the reboot, and the resource
+- [x] 6.1 `docs/QA.md`: verification depth (D63), notifications and permissions (D64), the reboot, and the resource
   check. Verify: `grep -n "D63\|D64" docs/QA.md`
 
 ## 7. Verify (end of cycle, D63)
