@@ -1,4 +1,8 @@
 import com.android.build.api.artifact.SingleArtifact
+import java.security.GeneralSecurityException
+import java.security.KeyFactory
+import java.security.spec.X509EncodedKeySpec
+import java.util.Base64
 import java.util.Properties
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
@@ -35,6 +39,16 @@ val keystoreProperties = rootProject.file("keystore.properties").takeIf {
     Properties().apply { file.inputStream().use(::load) }
 }
 
+/**
+ * Google Play's licence public key, which checks the signature on every purchase (BRD D107): the
+ * base64 key Play Console shows under Monetization setup, passed as `-Pmigrely.playLicenseKey=…`
+ * or set in `~/.gradle/gradle.properties`. Empty by default: a debug build then skips the check, a
+ * release build unlocks nothing, and the bundle for Play refuses to build.
+ */
+val playLicenseKey: String = providers.gradleProperty(
+    "migrely.playLicenseKey"
+).orElse("").get().trim()
+
 android {
     namespace = "com.migrely.app"
     compileSdk = libs.versions.compileSdk.get().toInt()
@@ -47,6 +61,7 @@ android {
         versionName = "0.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField("String", "PLAY_LICENSE_KEY", "\"$playLicenseKey\"")
     }
 
     signingConfigs {
@@ -81,6 +96,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     packaging {
         resources.pickFirsts += "META-INF/versions/9/OSGI-INF/MANIFEST.MF"
@@ -159,6 +175,10 @@ dependencies {
     implementation(projects.features.insights.presentation)
     implementation(projects.features.insights.domain)
     implementation(projects.features.insights.data)
+    implementation(projects.features.subscription.ui)
+    implementation(projects.features.subscription.presentation)
+    implementation(projects.features.subscription.domain)
+    implementation(projects.features.subscription.data)
     implementation(libs.androidx.work.runtime)
 }
 
@@ -225,6 +245,38 @@ androidComponents {
             .configureEach { dependsOn(check) }
     }
 }
+
+/** The bundle for Play must check purchase signatures, so it needs the licence key (BRD D107). */
+val checkPlayLicenseKey by tasks.registering {
+    val key = playLicenseKey
+    doLast {
+        if (key.isEmpty()) {
+            throw GradleException(
+                "migrely.playLicenseKey is empty, so the bundle could not check purchases. " +
+                    "Pass Play Console's licence key (Monetization setup) with " +
+                    "-Pmigrely.playLicenseKey=… or in ~/.gradle/gradle.properties."
+            )
+        }
+        // The key must be Play's base64 X.509 RSA public key, or every purchase would fail its
+        // check and nothing would ever unlock (review M13).
+        try {
+            KeyFactory.getInstance("RSA")
+                .generatePublic(X509EncodedKeySpec(Base64.getDecoder().decode(key)))
+        } catch (exception: GeneralSecurityException) {
+            throw malformedKey(exception)
+        } catch (exception: IllegalArgumentException) {
+            throw malformedKey(exception)
+        }
+    }
+}
+
+fun malformedKey(cause: Exception) = GradleException(
+    "migrely.playLicenseKey is not an RSA public key in base64 (${cause.message}). " +
+        "Copy the whole licence key from Play Console → Monetization setup → Licensing.",
+    cause
+)
+
+tasks.matching { it.name == "bundleRelease" }.configureEach { dependsOn(checkPlayLicenseKey) }
 
 if (keystoreProperties == null) {
     tasks.matching { it.name in setOf("packageRelease", "signReleaseBundle") }.configureEach {

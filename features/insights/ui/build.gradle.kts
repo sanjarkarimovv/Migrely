@@ -67,6 +67,7 @@ dependencies {
     implementation(libs.androidx.activity.compose)
 
     testImplementation(libs.test.junit)
+    testImplementation(projects.features.patterns.domain)
     testImplementation(libs.test.mockito.kotlin)
     testImplementation(libs.test.kotlinx.coroutines)
 }

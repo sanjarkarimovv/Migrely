@@ -82,3 +82,23 @@ data object Report
 /** Insights (change add-trigger-insights, BRD D87). */
 @Serializable
 data object Insights
+
+/**
+ * Migrely Premium's paywall (change add-subscription, BRD D109). [origin] is a [PaywallOrigin]'s
+ * name: where it was opened from, which picks its headline and where it leads.
+ */
+@Serializable
+data class Paywall(val origin: String)
+
+/** Where a [Paywall] was opened from. */
+enum class PaywallOrigin {
+    Onboarding,
+    Patterns,
+    Report,
+    Insights,
+    Settings
+}
+
+/** Between onboarding and home: the paywall shows itself once, or home follows (design D4). */
+@Serializable
+data object PaywallGate

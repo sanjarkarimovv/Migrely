@@ -1,11 +1,12 @@
 # Release documents
 
 Everything Google Play asks for that does not live in the code (BRD D104). `TODO(user)` marks the user's own details,
-which 13b `publish-to-play` fills in; `TODO(change 9)` marks what the subscription settles.
+which 13b `publish-to-play` fills in.
 
 | File | For |
 |---|---|
 | `listing.md` | the store listing: name, descriptions, category, contact |
+| `play-products.md` | Monetize with Play → Products: Migrely Premium's subscription, base plans, trial offer and lifetime |
 | `privacy-policy.md` | the privacy policy; `make_policy_html.py` turns it into `privacy-policy.html` for hosting |
 | `data-safety.md` | App content → Data safety |
 | `content-rating.md` | App content → Content rating and target audience |

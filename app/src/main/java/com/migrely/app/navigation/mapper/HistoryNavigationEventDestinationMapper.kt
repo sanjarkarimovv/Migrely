@@ -3,11 +3,13 @@ package com.migrely.app.navigation.mapper
 import androidx.navigation.navOptions
 import com.migrely.app.architecture.ui.navigation.mapper.NavigationEventDestinationMapper
 import com.migrely.app.architecture.ui.navigation.model.UiDestination
+import com.migrely.app.history.presentation.model.PremiumFeaturePresentationModel
 import com.migrely.app.history.presentation.navigation.HistoryPresentationNavigationEvent
 import com.migrely.app.ui.main.route.AddPastAttack
 import com.migrely.app.ui.main.route.AttackDetails
 import com.migrely.app.ui.main.route.History
 import com.migrely.app.ui.main.route.Insights
+import com.migrely.app.ui.main.route.PaywallOrigin
 import com.migrely.app.ui.main.route.Report
 
 /**
@@ -41,5 +43,13 @@ class HistoryNavigationEventDestinationMapper :
             HistoryPresentationNavigationEvent.OnOpenInsights -> UiDestination { navController ->
                 navController.navigate(Insights, navOptions { launchSingleTop = true })
             }
+
+            // A free user's tap opens the paywall with that feature's headline (BRD D108).
+            is HistoryPresentationNavigationEvent.OnOpenPaywall -> openPaywall(
+                when (navigationEvent.feature) {
+                    PremiumFeaturePresentationModel.Report -> PaywallOrigin.Report
+                    PremiumFeaturePresentationModel.Insights -> PaywallOrigin.Insights
+                }
+            )
         }
 }

@@ -14,6 +14,8 @@ import com.migrely.app.datasource.medication.datasource.MedicationDataSource
 import com.migrely.app.datasource.medication.model.AcuteIntakeDataModel
 import com.migrely.app.datasource.medication.model.EarliestAcuteIntakeDataModel
 import com.migrely.app.datasource.preferences.datasource.PreferencesDataSource
+import com.migrely.app.datasource.preferences.model.EntitlementDataModel
+import com.migrely.app.datasource.preferences.model.EntitlementKindDataModel
 import com.migrely.app.history.data.mapper.AttackMedicationIntakeDomainMapper
 import com.migrely.app.history.data.mapper.DayMarkDomainMapper
 import com.migrely.app.history.data.mapper.HistoryAttackDomainMapper
@@ -309,5 +311,29 @@ class HistoryRepositoryTest {
         given(preferencesDataSource.periodTracking()).willReturn(false)
 
         assertEquals(false, classUnderTest.periodTracking())
+    }
+
+    @Test
+    fun `Given each stored entitlement when asking for Premium then only an active one unlocks`() {
+        val kinds = listOf(
+            EntitlementKindDataModel.Subscription,
+            EntitlementKindDataModel.Lifetime,
+            EntitlementKindDataModel.Pending,
+            EntitlementKindDataModel.None
+        )
+
+        val premium = kinds.map { kind ->
+            given(preferencesDataSource.entitlement()).willReturn(
+                EntitlementDataModel(kind, null, null, null, null, false, null, null, false)
+            )
+            classUnderTest.hasPremium()
+        }
+
+        assertEquals(listOf(true, true, false, false), premium)
+    }
+
+    @Test
+    fun `Given no entitlement stored when asking for Premium then the user is free`() {
+        assertEquals(false, classUnderTest.hasPremium())
     }
 }

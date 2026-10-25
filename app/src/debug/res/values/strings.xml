@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The simulated store of debug builds (BRD D113). Never in a release build. -->
+<resources>
+    <string name="simulated_store_title">Simulated Google Play</string>
+    <string name="simulated_store_yearly">Yearly: %1$s a year</string>
+    <string name="simulated_store_yearly_trial">Yearly: 7 days free, then %1$s a year</string>
+    <string name="simulated_store_monthly">Monthly: %1$s a month</string>
+    <string name="simulated_store_lifetime">Lifetime: %1$s once</string>
+    <string name="simulated_store_complete">Complete the purchase</string>
+    <string name="simulated_store_pending">Pay later (pending)</string>
+    <string name="simulated_store_cancel">Cancel</string>
+    <string name="simulated_store_pending_title">A payment is pending</string>
+    <string name="simulated_store_complete_pending">Complete the pending payment</string>
+    <string name="simulated_store_decline_pending">Decline the pending payment</string>
+    <string name="simulated_store_manage_title">Simulated Google Play: your purchases</string>
+    <string name="simulated_store_end_subscription">End the subscription</string>
+    <string name="simulated_store_refund_lifetime">Refund the lifetime purchase</string>
+    <string name="simulated_store_close">Close</string>
+</resources>

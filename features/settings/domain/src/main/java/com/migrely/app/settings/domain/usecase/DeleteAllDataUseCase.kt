@@ -14,8 +14,9 @@ import com.migrely.app.settings.domain.repository.DeleteRecordsRepository
  * 1. the records and the device's state, in one transaction, so a failure there has changed nothing, not even a planned
  *    reminder;
  * 2. the automatic backups, then the reports;
- * 3. planned reminders and notifications. A reminder that runs before this finds nothing to remind of: the daily one is
- *    off without its settings, and "Did it help?" finds no intake;
+ * 3. planned reminders, background checks of Premium and notifications. A reminder that runs
+ *    before this finds nothing to remind of: the daily one is off without its settings, and "Did
+ *    it help?" finds no intake;
  * 4. the settings last, onboarding's answers included, so the reset that brings onboarding back marks the end.
  *
  * A step that already ran is safe to run again, so trying again after a failure finishes the job.

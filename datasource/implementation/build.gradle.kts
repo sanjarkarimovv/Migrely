@@ -61,6 +61,7 @@ dependencies {
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
     ksp(libs.room.compiler)
+    implementation(libs.play.billing.ktx)
 
     testImplementation(libs.test.junit)
     testImplementation(libs.test.mockito.kotlin)

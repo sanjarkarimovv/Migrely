@@ -19,6 +19,7 @@ import com.migrely.app.history.domain.repository.GetEarliestAttackRepository
 import com.migrely.app.history.domain.repository.GetEarliestDayMarkRepository
 import com.migrely.app.history.domain.repository.GetPeriodTrackingRepository
 import com.migrely.app.history.domain.repository.GetRecentlyDeletedAttackRepository
+import com.migrely.app.history.domain.repository.HasPremiumRepository
 import com.migrely.app.history.domain.repository.RestoreDeletedAttackRepository
 import com.migrely.app.history.domain.repository.SetDayMarkRepository
 import dagger.Module
@@ -94,6 +95,10 @@ internal object HistoryDataModule {
     fun providesGetRecentlyDeletedAttackRepository(
         repository: HistoryRepository
     ): GetRecentlyDeletedAttackRepository = repository
+
+    @Provides
+    fun providesHasPremiumRepository(repository: HistoryRepository): HasPremiumRepository =
+        repository
 
     @Provides
     fun providesRestoreDeletedAttackRepository(

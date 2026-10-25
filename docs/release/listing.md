@@ -1,7 +1,6 @@
 # Play store listing
 
-The listing text for Google Play (BRD §14.2, D104). `TODO(user)` marks what the user provides; `TODO(change 9)`
-marks what the subscription change settles.
+The listing text for Google Play (BRD §14.2, D104). `TODO(user)` marks what the user provides.
 
 ## App details
 
@@ -15,7 +14,7 @@ marks what the subscription change settles.
 | Website | none, or TODO(user) |
 | Privacy policy URL | TODO(user), where `privacy-policy.html` is hosted |
 | Ads | No |
-| In-app purchases | TODO(change 9) |
+| In-app purchases | Yes: Migrely Premium, a yearly or monthly subscription or a one-time lifetime purchase (`play-products.md`) |
 | Target audience | 18 and over (BRD §11.5) |
 
 ## Full description (≤ 4000)
@@ -40,12 +39,17 @@ KEEP AN EYE ON MEDICATION
 • A gentle note when painkillers or triptans reach the days a month that can make headaches more frequent, so you can
   talk to your doctor about it
 
-FOR YOUR DOCTOR
+FOR YOUR DOCTOR (PREMIUM)
 • A clear PDF report: a summary, a calendar and every migraine and medication, ready to share
 
-UNDERSTAND YOUR PATTERNS
+UNDERSTAND YOUR PATTERNS (PREMIUM)
 • Triggers often logged with your migraines, the days and hours they come, the days around your period, what helped,
   and the last 12 months
+
+MIGRELY PREMIUM
+• Premium adds the doctor report and Insights: yearly, with a 7-day free trial for new subscribers, monthly, or a
+  single lifetime payment, all through Google Play
+• Logging, history, medications, reminders, backups and exports, and every safety warning stay free for good
 
 PRIVATE BY DESIGN
 • Migrely has no internet access. There is no account, no tracking and no ads
@@ -68,6 +72,7 @@ warning signs, call your local emergency number.
 
 - No competitor names and no superlatives (BRD §11.8). The name "Migrely" is to be checked in the USPTO and EUIPO
   databases before launch (TODO(user)).
-- Premium features (the doctor report, insights) are marked once change 9 settles the subscription (TODO(change 9)).
+- Premium features are the doctor report and Insights, marked "(PREMIUM)" above (BRD D108). Safety features are never
+  premium (§7.1). The products and prices are in `play-products.md`.
 - Graphics: the 512×512 icon is `icon/migrely-play-icon-512.png`. The feature graphic (1024×500) and the 8 screenshots
   come with 13b `publish-to-play`.

@@ -38,7 +38,9 @@ sealed interface ReportBlockDataModel {
         val shortenedNote: String? = null
     ) : ReportBlockDataModel
 
+    /** A calendar per month and one [legend]; [weekdays] heads the seven columns, from the week's first day. */
     data class HeatMap(
+        val weekdays: List<String>,
         val months: List<ReportHeatMonthDataModel>,
         val legend: List<ReportLegendDataModel>
     ) : ReportBlockDataModel
@@ -50,10 +52,13 @@ data class ReportFactDataModel(val label: String, val value: String)
 
 data class ReportColumnDataModel(val title: String, val weight: Float)
 
-/** One month of the heat map. [firstWeekday] is 0 for Monday; [levels] holds one level per day of the month. */
+/**
+ * One month of the heat map. [leadingEmptyDays] are the columns before its 1st, from 0 to 6; [levels] holds one level
+ * per day of the month.
+ */
 data class ReportHeatMonthDataModel(
     val title: String,
-    val firstWeekday: Int,
+    val leadingEmptyDays: Int,
     val levels: List<ReportDayLevelDataModel>
 )
 

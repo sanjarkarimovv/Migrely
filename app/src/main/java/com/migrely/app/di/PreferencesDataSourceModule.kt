@@ -10,14 +10,24 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
-private const val PREFERENCES = "migrely_preferences"
-
-/** The app's own settings that are not health records (change add-onboarding, BRD D78). */
+/**
+ * The app's own settings that are not health records (change add-onboarding, BRD D78), and the
+ * premium entitlement in a file of its own that is never backed up (change add-subscription, D115).
+ */
 @Module
 @InstallIn(SingletonComponent::class)
 internal object PreferencesDataSourceModule {
     @Provides
     @Singleton
     fun providesPreferencesDataSource(@ApplicationContext context: Context): PreferencesDataSource =
-        PreferencesDataSourceImpl(context.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE))
+        PreferencesDataSourceImpl(
+            preferences = context.getSharedPreferences(
+                PreferencesDataSourceImpl.FILE,
+                Context.MODE_PRIVATE
+            ),
+            entitlementPreferences = context.getSharedPreferences(
+                PreferencesDataSourceImpl.ENTITLEMENT_FILE,
+                Context.MODE_PRIVATE
+            )
+        )
 }

@@ -7,6 +7,7 @@ import com.migrely.app.datasource.exception.FileDataException
 import com.migrely.app.datasource.notification.datasource.NotificationDataSource
 import com.migrely.app.datasource.preferences.datasource.PreferencesDataSource
 import com.migrely.app.datasource.report.datasource.ReportDocumentDataSource
+import com.migrely.app.datasource.schedule.datasource.PremiumCheckScheduleDataSource
 import com.migrely.app.datasource.schedule.datasource.ReminderScheduleDataSource
 import com.migrely.app.settings.domain.model.SettingsWriteResultDomainModel
 import org.junit.Assert.assertEquals
@@ -25,13 +26,15 @@ class DeleteAllDataRepositoryTest {
     private val preferencesDataSource: PreferencesDataSource = mock()
     private val backupFileDataSource: BackupFileDataSource = mock()
     private val reportDocumentDataSource: ReportDocumentDataSource = mock()
+    private val premiumCheckScheduleDataSource: PremiumCheckScheduleDataSource = mock()
     private val classUnderTest = DeleteAllDataRepository(
         reminderScheduleDataSource,
         notificationDataSource,
         backupDataSource,
         preferencesDataSource,
         backupFileDataSource,
-        reportDocumentDataSource
+        reportDocumentDataSource,
+        premiumCheckScheduleDataSource
     )
 
     @Test
@@ -43,8 +46,13 @@ class DeleteAllDataRepositoryTest {
             classUnderTest.deleteFiles()
         ).forEach { assertEquals(SettingsWriteResultDomainModel.Done, it) }
 
-        inOrder(reminderScheduleDataSource, notificationDataSource) {
+        inOrder(
+            reminderScheduleDataSource,
+            premiumCheckScheduleDataSource,
+            notificationDataSource
+        ) {
             verify(reminderScheduleDataSource).cancelAll()
+            verify(premiumCheckScheduleDataSource).cancel()
             verify(notificationDataSource).cancelAll()
         }
         verify(backupDataSource).deleteAll()

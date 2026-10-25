@@ -65,3 +65,10 @@ bed-rest migraines as text a screen reader reads (BRD INS-F5, D92).
 #### Scenario: A screen reader
 - **WHEN** TalkBack reads the trends
 - **THEN** each month is read with its four numbers
+
+### Requirement: Insights are premium
+Insights SHALL need Premium. A free user's tap on "Insights" SHALL open the paywall with its headline (BRD §7.1, D108).
+
+#### Scenario: Free user
+- **WHEN** a free user taps "Insights"
+- **THEN** the paywall opens with an Insights headline

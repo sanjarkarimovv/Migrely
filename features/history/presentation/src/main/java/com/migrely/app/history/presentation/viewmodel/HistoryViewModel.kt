@@ -8,6 +8,7 @@ import com.migrely.app.history.domain.model.SetDayMarkRequestDomainModel
 import com.migrely.app.history.domain.model.SetDayMarkResultDomainModel
 import com.migrely.app.history.domain.model.UndoResultDomainModel
 import com.migrely.app.history.domain.usecase.GetHistoryMonthUseCase
+import com.migrely.app.history.domain.usecase.HasPremiumUseCase
 import com.migrely.app.history.domain.usecase.RestoreDeletedAttackUseCase
 import com.migrely.app.history.domain.usecase.SetDayMarkUseCase
 import com.migrely.app.history.presentation.mapper.HistoryMonthPresentationMapper
@@ -19,6 +20,7 @@ import com.migrely.app.history.presentation.model.HistoryPresentationNotificatio
 import com.migrely.app.history.presentation.model.HistoryPresentationNotification.UndoNotPossible
 import com.migrely.app.history.presentation.model.HistoryPresentationNotification.Undone
 import com.migrely.app.history.presentation.model.HistoryViewState
+import com.migrely.app.history.presentation.model.PremiumFeaturePresentationModel
 import com.migrely.app.history.presentation.navigation.HistoryPresentationNavigationEvent
 import java.time.LocalDate
 import java.time.YearMonth
@@ -32,6 +34,7 @@ class HistoryViewModel(
     private val getHistoryMonthUseCase: GetHistoryMonthUseCase,
     private val restoreDeletedAttackUseCase: RestoreDeletedAttackUseCase,
     private val setDayMarkUseCase: SetDayMarkUseCase,
+    private val hasPremiumUseCase: HasPremiumUseCase,
     private val historyMonthPresentationMapper: HistoryMonthPresentationMapper,
     useCaseExecutor: UseCaseExecutor
 ) : BaseViewModel<HistoryViewState, HistoryPresentationNotification>(useCaseExecutor) {
@@ -79,9 +82,30 @@ class HistoryViewModel(
 
     fun onLeaveAction() = emitNavigationEvent(HistoryPresentationNavigationEvent.OnLeave)
 
-    fun onReportAction() = emitNavigationEvent(HistoryPresentationNavigationEvent.OnOpenReport)
+    /** The doctor report, or its paywall for a free user (BRD D108). */
+    fun onReportAction() = openPremium(
+        PremiumFeaturePresentationModel.Report,
+        HistoryPresentationNavigationEvent.OnOpenReport
+    )
 
-    fun onInsightsAction() = emitNavigationEvent(HistoryPresentationNavigationEvent.OnOpenInsights)
+    /** Insights, or their paywall for a free user (BRD D108). */
+    fun onInsightsAction() = openPremium(
+        PremiumFeaturePresentationModel.Insights,
+        HistoryPresentationNavigationEvent.OnOpenInsights
+    )
+
+    private fun openPremium(
+        feature: PremiumFeaturePresentationModel,
+        open: HistoryPresentationNavigationEvent
+    ) {
+        hasPremiumUseCase(
+            onResult = { premium ->
+                emitNavigationEvent(
+                    if (premium) open else HistoryPresentationNavigationEvent.OnOpenPaywall(feature)
+                )
+            }
+        )
+    }
 
     private fun setMark(month: YearMonth?, request: SetDayMarkRequestDomainModel) {
         setDayMarkUseCase(

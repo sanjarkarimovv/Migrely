@@ -9,6 +9,7 @@ import com.migrely.app.datasource.exception.StorageFullDataException
 import com.migrely.app.datasource.report.datasource.ReportDocumentDataSource
 import com.migrely.app.datasource.report.model.ReportDocumentDataModel
 import com.migrely.app.datasource.report.model.ReportPaperDataModel
+import com.migrely.app.report.data.mapper.ReportDateTimeFormatter
 import com.migrely.app.report.data.mapper.ReportDocumentMapper
 import com.migrely.app.report.data.mapper.ReportRecordsDomainMapper
 import com.migrely.app.report.domain.model.ReportDatesDomainModel
@@ -57,7 +58,7 @@ class ReportRepositoryTest {
         reportDocumentDataSource,
         clockDataSource,
         ReportRecordsDomainMapper(),
-        ReportDocumentMapper()
+        ReportDocumentMapper(ReportDateTimeFormatter({ locale }, { true }) { _, _ -> "HH:mm" })
     ) { locale }
 
     @Test

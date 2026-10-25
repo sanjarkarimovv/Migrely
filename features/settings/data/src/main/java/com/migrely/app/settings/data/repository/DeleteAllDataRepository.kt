@@ -6,6 +6,7 @@ import com.migrely.app.datasource.exception.DataException
 import com.migrely.app.datasource.notification.datasource.NotificationDataSource
 import com.migrely.app.datasource.preferences.datasource.PreferencesDataSource
 import com.migrely.app.datasource.report.datasource.ReportDocumentDataSource
+import com.migrely.app.datasource.schedule.datasource.PremiumCheckScheduleDataSource
 import com.migrely.app.datasource.schedule.datasource.ReminderScheduleDataSource
 import com.migrely.app.settings.domain.model.SettingsWriteResultDomainModel
 import com.migrely.app.settings.domain.repository.CancelRemindersRepository
@@ -14,19 +15,23 @@ import com.migrely.app.settings.domain.repository.DeletePreferencesRepository
 import com.migrely.app.settings.domain.repository.DeleteRecordsRepository
 
 /** The steps of "Delete all data" (BRD D96); `DeleteAllDataUseCase` decides their order. */
+@Suppress("LongParameterList")
 class DeleteAllDataRepository(
     private val reminderScheduleDataSource: ReminderScheduleDataSource,
     private val notificationDataSource: NotificationDataSource,
     private val backupDataSource: BackupDataSource,
     private val preferencesDataSource: PreferencesDataSource,
     private val backupFileDataSource: BackupFileDataSource,
-    private val reportDocumentDataSource: ReportDocumentDataSource
+    private val reportDocumentDataSource: ReportDocumentDataSource,
+    private val premiumCheckScheduleDataSource: PremiumCheckScheduleDataSource
 ) : CancelRemindersRepository,
     DeleteRecordsRepository,
     DeletePreferencesRepository,
     DeleteFilesRepository {
+    /** Every planned background run: reminders, notifications, and the checks of Premium (I2). */
     override fun cancelReminders() = step {
         reminderScheduleDataSource.cancelAll()
+        premiumCheckScheduleDataSource.cancel()
         notificationDataSource.cancelAll()
     }
 

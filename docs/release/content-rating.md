@@ -14,7 +14,7 @@ wording may change, so map each answer to the current question at setup.
 | User-generated content shared with others | No: entries stay on the phone; exports go only where the user sends them |
 | Users can interact or communicate | No |
 | Shares the user's location | No |
-| Digital purchases | TODO(change 9): Yes, if a subscription ships |
+| Digital purchases | Yes: Migrely Premium, a subscription or a one-time purchase through Google Play (`play-products.md`) |
 | Unrestricted internet access | No: the app has no internet access |
 
 **Expected result:** the lowest age rating in every region (for example PEGI 3, ESRB Everyone).

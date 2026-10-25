@@ -16,6 +16,16 @@
     <uses-permission
         android:name="android.permission.FOREGROUND_SERVICE"
         tools:node="remove" />
+    <!--
+        Play Billing brings Google's datatransport, which declares INTERNET (and
+        ACCESS_NETWORK_STATE, removed above) only to upload the library's own usage logs. Billing
+        itself talks to the Play Store app over IPC and needs only com.android.vending.BILLING, so
+        Migrely still sends nothing (BRD D44, D105). Without the permissions the uploads fail
+        quietly: datatransport catches the failure on its own threads.
+    -->
+    <uses-permission
+        android:name="android.permission.INTERNET"
+        tools:node="remove" />
 
     <application
         android:allowBackup="true"

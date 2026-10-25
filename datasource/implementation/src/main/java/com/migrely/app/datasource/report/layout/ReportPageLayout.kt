@@ -26,13 +26,11 @@ private const val DOT_X = 0.78f
 private const val DOT_Y = 0.78f
 private const val DOT_RADIUS = 0.1f
 private const val WEEK_DAYS = 7
-private const val WEEK_ROWS = 6
 private const val SWATCH = 9f
 private const val LINE_SPACING = 1.1f
 
 /** A cell or paragraph longer than this is cut with an ellipsis, so no row is ever taller than a page. */
 private const val MAXIMUM_LINES = 40
-private val WEEKDAY_LETTERS = listOf("M", "T", "W", "T", "F", "S", "S")
 
 /**
  * Lays a report out on pages and draws it with Android's `PdfDocument` (ADR-07). Pages are laid out first, so every
@@ -164,7 +162,7 @@ internal class ReportPageLayout(private val document: ReportDocumentDataModel) {
             }
             is ReportBlockDataModel.HeatMap ->
                 block.months.chunked(MONTHS_PER_ROW).map {
-                    Item.Draw(cached(it.first()) { monthRow(it) })
+                    Item.Draw(cached(it.first()) { monthRow(it, block.weekdays) })
                 } +
                     Item.Draw(cached(block.legend) { legend(block.legend) })
             ReportBlockDataModel.PageBreak -> listOf(Item.Break)
@@ -220,17 +218,18 @@ internal class ReportPageLayout(private val document: ReportDocumentDataModel) {
         }
     }
 
-    private fun monthRow(months: List<ReportHeatMonthDataModel>): Piece {
+    private fun monthRow(months: List<ReportHeatMonthDataModel>, weekdays: List<String>): Piece {
         val boxWidth = (contentWidth - (MONTHS_PER_ROW - 1) * GAP * 2) / MONTHS_PER_ROW
         val cell = boxWidth / WEEK_DAYS
         val titleHeight = layout("M", headingPaint, boxWidth).height.toFloat()
-        val boxHeight = titleHeight + (WEEK_ROWS + 1) * cell + GAP
+        // The weekday initials, then only the weeks the row draws.
+        val boxHeight = titleHeight + (weekRowsOf(months) + 1) * cell + GAP
         return Piece(boxHeight) { canvas, top ->
             months.forEachIndexed { index, month ->
                 val left = MARGIN + index * (boxWidth + GAP * 2)
                 draw(canvas, layout(month.title, bodyPaint, boxWidth), left, top)
                 val gridTop = top + titleHeight
-                WEEKDAY_LETTERS.forEachIndexed { day, letter ->
+                weekdays.forEachIndexed { day, letter ->
                     draw(
                         canvas,
                         layout(letter, dayPaint, cell),
@@ -239,7 +238,7 @@ internal class ReportPageLayout(private val document: ReportDocumentDataModel) {
                     )
                 }
                 month.levels.forEachIndexed { dayIndex, level ->
-                    val slot = month.firstWeekday + dayIndex
+                    val slot = month.leadingEmptyDays + dayIndex
                     val x = left + (slot % WEEK_DAYS) * cell
                     val y = gridTop + (slot / WEEK_DAYS + 1) * cell
                     drawDay(canvas, x, y, cell, level, (dayIndex + 1).toString())
@@ -327,10 +326,21 @@ internal class ReportPageLayout(private val document: ReportDocumentDataModel) {
     }
 
     private fun paint(size: Float, bold: Boolean = false, color: Int = Color.BLACK) =
-        TextPaint().apply {
-            isAntiAlias = true
-            textSize = size
-            this.color = color
-            typeface = if (bold) Typeface.DEFAULT_BOLD else Typeface.DEFAULT
-        }
+        reportTextPaint(size, bold, color)
 }
+
+/**
+ * Text for a PDF page, whose unit is a point. Hinted metrics would round each glyph's advance to a whole point: at
+ * 10 pt a space, 2.48 pt in Roboto, became 2 while "m", "n" and "h" rounded up, so words ran together ("a month",
+ * "at the"). Linear metrics, subpixel positions and no hinting keep the font's own advances (store polish).
+ */
+internal fun reportTextPaint(size: Float, bold: Boolean, color: Int): TextPaint =
+    TextPaint().apply {
+        isAntiAlias = true
+        isLinearText = true
+        isSubpixelText = true
+        hinting = Paint.HINTING_OFF
+        textSize = size
+        this.color = color
+        typeface = if (bold) Typeface.DEFAULT_BOLD else Typeface.DEFAULT
+    }

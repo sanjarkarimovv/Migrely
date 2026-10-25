@@ -11,9 +11,11 @@ import com.migrely.app.history.domain.repository.GetEarliestAttackRepository
 import com.migrely.app.history.domain.repository.GetEarliestDayMarkRepository
 import com.migrely.app.history.domain.repository.GetPeriodTrackingRepository
 import com.migrely.app.history.domain.repository.GetRecentlyDeletedAttackRepository
+import com.migrely.app.history.domain.repository.HasPremiumRepository
 import com.migrely.app.history.domain.repository.RestoreDeletedAttackRepository
 import com.migrely.app.history.domain.repository.SetDayMarkRepository
 import com.migrely.app.history.domain.usecase.GetHistoryMonthUseCase
+import com.migrely.app.history.domain.usecase.HasPremiumUseCase
 import com.migrely.app.history.domain.usecase.RestoreDeletedAttackUseCase
 import com.migrely.app.history.domain.usecase.SetDayMarkUseCase
 import com.migrely.app.history.presentation.mapper.HistoryAttackPresentationMapper
@@ -76,6 +78,12 @@ internal object HistoryModule {
     ) = RestoreDeletedAttackUseCase(repository, coroutineContextProvider)
 
     @Provides
+    fun providesHasPremiumUseCase(
+        repository: HasPremiumRepository,
+        coroutineContextProvider: CoroutineContextProvider
+    ) = HasPremiumUseCase(repository, coroutineContextProvider)
+
+    @Provides
     fun providesHistoryMonthPresentationMapper() = HistoryMonthPresentationMapper(
         HistoryAttackPresentationMapper(),
         IntensityLevelPresentationMapper(PainLevelPresentationMapper()),
@@ -87,12 +95,14 @@ internal object HistoryModule {
         getHistoryMonthUseCase: GetHistoryMonthUseCase,
         restoreDeletedAttackUseCase: RestoreDeletedAttackUseCase,
         setDayMarkUseCase: SetDayMarkUseCase,
+        hasPremiumUseCase: HasPremiumUseCase,
         historyMonthPresentationMapper: HistoryMonthPresentationMapper,
         useCaseExecutor: UseCaseExecutor
     ) = HistoryViewModel(
         getHistoryMonthUseCase,
         restoreDeletedAttackUseCase,
         setDayMarkUseCase,
+        hasPremiumUseCase,
         historyMonthPresentationMapper,
         useCaseExecutor
     )
