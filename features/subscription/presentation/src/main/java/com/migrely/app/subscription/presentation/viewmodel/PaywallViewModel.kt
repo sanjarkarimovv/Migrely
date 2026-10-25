@@ -57,12 +57,12 @@ class PaywallViewModel(
         paywallTriggerDomainMapper.toDomain(context)?.let { trigger ->
             useCases.markPaywallShownUseCase(value = trigger)
         }
-        load()
+        load(context)
     }
 
     /** The screen listens again, after a rotation for example: it gets the state and an outcome. */
-    fun onResume() {
-        load()
+    fun onResume(context: PaywallContextPresentationModel) {
+        load(context)
         undelivered?.let(::notify)
     }
 
@@ -70,9 +70,12 @@ class PaywallViewModel(
         undelivered = null
     }
 
-    fun onRetryAction() = load()
+    fun onRetryAction(context: PaywallContextPresentationModel) = load(context)
 
-    fun onBuyAction(product: PaywallProductPresentationModel) {
+    fun onBuyAction(
+        context: PaywallContextPresentationModel,
+        product: PaywallProductPresentationModel
+    ) {
         // Two taps in one frame open one sheet.
         if (working) return
         working = true
@@ -82,12 +85,12 @@ class PaywallViewModel(
             onResult = { result ->
                 working = false
                 outcomeOf(result)?.let(::deliver)
-                load()
+                load(context)
             }
         )
     }
 
-    fun onRestoreAction() {
+    fun onRestoreAction(context: PaywallContextPresentationModel) {
         if (working) return
         working = true
         updateViewState(PaywallViewState.Working)
@@ -95,7 +98,7 @@ class PaywallViewModel(
             onResult = { check ->
                 working = false
                 deliver(restoredOf(check))
-                load()
+                load(context)
             }
         )
     }
@@ -147,14 +150,29 @@ class PaywallViewModel(
         notify(notification)
     }
 
-    private fun load() {
+    /**
+     * A premium user who reaches a feature's paywall, for example before the first check after an
+     * install finished, sees its success and goes on; from Settings, a subscriber sees the plans.
+     */
+    private fun load(context: PaywallContextPresentationModel) {
         if (working) {
             updateViewState(PaywallViewState.Working)
             return
         }
         useCases.getPaywallUseCase(
             onResult = { paywall ->
-                if (!working) updateViewState(paywallPresentationMapper.toPresentation(paywall))
+                if (!working) {
+                    updateViewState(paywallPresentationMapper.toPresentation(paywall))
+                    if (context != PaywallContextPresentationModel.Settings &&
+                        paywall.status.unlocks()
+                    ) {
+                        deliver(
+                            PaywallPresentationNotification.Unlocked(
+                                premiumStatusPresentationMapper.toPresentation(paywall.status)
+                            )
+                        )
+                    }
+                }
             }
         )
     }

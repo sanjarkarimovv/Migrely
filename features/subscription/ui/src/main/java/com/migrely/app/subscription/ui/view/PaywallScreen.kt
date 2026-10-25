@@ -126,7 +126,7 @@ fun PaywallDependencies.Paywall(
     LaunchedEffect(paywallEventPresenter, lifecycle) {
         lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
             paywallEventPresenter.events
-                .onSubscription { paywallViewModel.onResume() }
+                .onSubscription { paywallViewModel.onResume(presentationContext) }
                 .collect { event ->
                     paywallViewModel.onOutcomeShownAction()
                     when (event) {
@@ -157,11 +157,12 @@ fun PaywallDependencies.Paywall(
             onChoose = { chosen = it },
             onBuy = { product ->
                 paywallViewModel.onBuyAction(
+                    presentationContext,
                     paywallProductPresentationMapper.toPresentation(product)
                 )
             },
-            onRestore = paywallViewModel::onRestoreAction,
-            onRetry = paywallViewModel::onRetryAction,
+            onRestore = { paywallViewModel.onRestoreAction(presentationContext) },
+            onRetry = { paywallViewModel.onRetryAction(presentationContext) },
             onManage = paywallViewModel::onManageAction,
             onContinue = { paywallViewModel.onContinueAction(presentationContext) }
         ),

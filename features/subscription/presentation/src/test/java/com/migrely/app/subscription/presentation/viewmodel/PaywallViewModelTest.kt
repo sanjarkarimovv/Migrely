@@ -63,6 +63,7 @@ private val FREE_PAYWALL = PaywallDomainModel(
 )
 private val READY = PaywallViewState.Ready(PremiumStatusPresentationModel.Free, listOf(YEARLY_CARD))
 private val YEARLY_STATUS = PremiumStatusDomainModel.Subscribed(PremiumPlanDomainModel.Yearly, null)
+private val REPORT = PaywallContextPresentationModel.Report
 private val UNLOCKED = PaywallPresentationNotification.Unlocked(
     PremiumStatusPresentationModel.Subscribed(PremiumPlanPresentationModel.Yearly, null)
 )
@@ -142,7 +143,7 @@ class PaywallViewModelTest :
         )
         val states = async(start = UNDISPATCHED) { classUnderTest.viewState.take(2).toList() }
 
-        val notification = notificationOf { classUnderTest.onBuyAction(YEARLY_CARD) }
+        val notification = notificationOf { classUnderTest.onBuyAction(REPORT, YEARLY_CARD) }
 
         assertEquals(UNLOCKED, notification)
         assertEquals(listOf(PaywallViewState.Working, READY), states.await())
@@ -161,7 +162,7 @@ class PaywallViewModelTest :
 
         assertEquals(
             PaywallPresentationNotification.SomethingWentWrong,
-            notificationOf { classUnderTest.onBuyAction(YEARLY_CARD) }
+            notificationOf { classUnderTest.onBuyAction(REPORT, YEARLY_CARD) }
         )
     }
 
@@ -178,7 +179,7 @@ class PaywallViewModelTest :
         )
         val states = async(start = UNDISPATCHED) { classUnderTest.viewState.take(2).toList() }
 
-        classUnderTest.onBuyAction(YEARLY_CARD)
+        classUnderTest.onBuyAction(REPORT, YEARLY_CARD)
 
         assertEquals(
             READY.copy(status = PremiumStatusPresentationModel.Pending),
@@ -188,8 +189,8 @@ class PaywallViewModelTest :
 
     @Test
     fun `Given the sheet is open when buying again then a second sheet does not open`() = runTest {
-        classUnderTest.onBuyAction(YEARLY_CARD)
-        classUnderTest.onBuyAction(YEARLY_CARD)
+        classUnderTest.onBuyAction(REPORT, YEARLY_CARD)
+        classUnderTest.onBuyAction(REPORT, YEARLY_CARD)
 
         verify(useCaseExecutor, times(1)).execute(eq(buyPremiumUseCase), any(), any(), any())
     }
@@ -206,7 +207,7 @@ class PaywallViewModelTest :
 
         assertEquals(
             PaywallPresentationNotification.NothingToRestore,
-            notificationOf { classUnderTest.onRestoreAction() }
+            notificationOf { classUnderTest.onRestoreAction(REPORT) }
         )
     }
 
@@ -222,7 +223,7 @@ class PaywallViewModelTest :
 
         assertEquals(
             PaywallPresentationNotification.PlayUnreachable,
-            notificationOf { classUnderTest.onRestoreAction() }
+            notificationOf { classUnderTest.onRestoreAction(REPORT) }
         )
     }
 
@@ -233,7 +234,7 @@ class PaywallViewModelTest :
             PremiumCheckDomainModel(YEARLY_STATUS, BillingAvailabilityDomainModel.Available)
         )
 
-        assertEquals(UNLOCKED, notificationOf { classUnderTest.onRestoreAction() })
+        assertEquals(UNLOCKED, notificationOf { classUnderTest.onRestoreAction(REPORT) })
     }
 
     @Test
@@ -244,13 +245,13 @@ class PaywallViewModelTest :
                 YEARLY,
                 BuyPremiumResultDomainModel(PurchaseOutcomeDomainModel.Unlocked, YEARLY_STATUS)
             )
-            classUnderTest.onBuyAction(YEARLY_CARD)
+            classUnderTest.onBuyAction(REPORT, YEARLY_CARD)
 
-            assertEquals(UNLOCKED, notificationOf { classUnderTest.onResume() })
+            assertEquals(UNLOCKED, notificationOf { classUnderTest.onResume(REPORT) })
 
             classUnderTest.onOutcomeShownAction()
             val after = async(start = UNDISPATCHED) { classUnderTest.notification.first() }
-            classUnderTest.onResume()
+            classUnderTest.onResume(REPORT)
             assertEquals(false, after.isCompleted)
             after.cancel()
         }
@@ -289,5 +290,33 @@ class PaywallViewModelTest :
             ),
             events.await()
         )
+    }
+
+    @Test
+    fun `Given a premium user reaches the report's paywall then its success shows`() = runTest {
+        getPaywallUseCase.givenSuccessfulExecution(FREE_PAYWALL.copy(status = YEARLY_STATUS))
+
+        assertEquals(UNLOCKED, notificationOf { classUnderTest.onEnter(REPORT) })
+    }
+
+    @Test
+    fun `Given a subscriber opens the paywall from Settings then the plans show`() = runTest {
+        getPaywallUseCase.givenSuccessfulExecution(FREE_PAYWALL.copy(status = YEARLY_STATUS))
+        val notification = async(start = UNDISPATCHED) { classUnderTest.notification.first() }
+        val state = async(start = UNDISPATCHED) { classUnderTest.viewState.first() }
+
+        classUnderTest.onEnter(PaywallContextPresentationModel.Settings)
+
+        assertEquals(
+            READY.copy(
+                status = PremiumStatusPresentationModel.Subscribed(
+                    PremiumPlanPresentationModel.Yearly,
+                    null
+                )
+            ),
+            state.await()
+        )
+        assertEquals(false, notification.isCompleted)
+        notification.cancel()
     }
 }
