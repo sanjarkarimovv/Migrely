@@ -1,0 +1,8 @@
+# Device scenario step: home's today card reads LABEL (a regex), then the app closes.
+appId: com.migrely.app
+---
+- launchApp
+- extendedWaitUntil:
+    visible: "${LABEL}"
+    timeout: 10000
+- stopApp

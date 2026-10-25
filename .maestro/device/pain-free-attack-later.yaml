@@ -1,0 +1,27 @@
+# Device scenario step: the DAY-th was marked pain-free; a migraine is added for it later. It is then a migraine day,
+# not a pain-free day. The 1st is a migraine day too (stats_counting).
+appId: com.migrely.app
+---
+- launchApp
+- tapOn: ".*\\. Opens History\\."
+- tapOn: ".*[^0-9]${DAY}: pain-free\\."
+- scrollUntilVisible:
+    element: "Add a past migraine"
+    direction: DOWN
+- tapOn: "Add a past migraine"
+- extendedWaitUntil:
+    visible: "Past migraine"
+    timeout: 5000
+- tapOn: "Add migraine"
+- extendedWaitUntil:
+    visible: "Not recorded"
+    timeout: 5000
+- back
+- scrollUntilVisible:
+    element: ".*[^0-9]${DAY}: cloudy\\. 1 migraine\\..*"
+    direction: UP
+- scrollUntilVisible:
+    element: "Pain-free days: 0"
+    direction: DOWN
+- assertVisible: "Migraine days: 2"
+- stopApp

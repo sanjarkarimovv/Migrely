@@ -79,6 +79,33 @@ scale and restore it on exit.
 `# Covers:` lines may also sit above a scenario in `qa/device_scenarios.sh`, when the script itself makes the check. The
 coverage report also reads the delta specs of open changes, so a change can cover the scenarios it adds.
 
+Notifications are checked black-box (D64). `qa/device_scenarios.sh` works as follows:
+- It sets the clock just before the reminder time, opens the app (which re-plans its work on every start), and runs
+  the app's WorkManager jobs on demand (`cmd jobscheduler run -f -n androidx.work.systemjobscheduler`).
+- It reads notifications from `dumpsys notification --noredact` and taps their actions in the open shade. A collapsed
+  notification is first swiped open.
+- It reads the planned time from `dumpsys jobscheduler` ("Run time: earliest=").
+- Steps that must keep jobs and notifications never force-stop the app. Maestro's `stopApp`, and `launchApp` without
+  `stopApp: false`, force-stop it, and Android then cancels the app's jobs and removes its notifications.
+- Maestro's `launchApp` grants every permission unless told otherwise. So permission checks open the app through its
+  launcher intent and reset POST_NOTIFICATIONS with `pm revoke` and `pm clear-permission-flags`.
+- `reminder_replan` restarts the emulator to check that the planned work survives a reboot.
+
+How deep each run goes (D63):
+- **Every QA change:** its new and changed flows run 3 times, the device scenarios it touches run twice, and the
+  smoke flows run.
+- **The end of each QA cycle and every release candidate:** the full regression, every device scenario, the audit
+  and monkey.
+- **Edge cases:** each BRD edge case of the dev changes under test gets a flow, a device scenario, or a reason in the
+  change's tasks.
+
+`python3 -I qa/resource_names.py` fails when two modules define the same string resource name (#41). Android merges
+the modules' resources, so one module would show the other's text. This happened once with Log medication's picker
+title.
+
+A fresh install opens onboarding (change 8). `subflows/launch-clean.yaml` skips its four steps with "Skip this step",
+waiting out its 0.8 s tap guard.
+
 ## 4. Bugs
 
 | Severity | Meaning | Release |

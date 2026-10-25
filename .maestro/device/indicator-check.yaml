@@ -1,0 +1,47 @@
+# Device scenario step: History's "Last 30 days" section for this month (MONTHS_BACK "0") or last month ("1").
+# ROW (a regex) is a row that must show; "" means no section. DOCTOR "true" expects the doctor line, "false" not.
+# It leaves History open.
+appId: com.migrely.app
+---
+- launchApp
+- tapOn: ".*\\. Opens History\\."
+- runFlow:
+    when:
+      true: ${MONTHS_BACK == "1"}
+    commands:
+      - tapOn: "Previous month"
+      # The month really changed: its title is the month's name, not "<Month> so far".
+      - scrollUntilVisible:
+          element: "Days with attack medication: .*"
+          direction: DOWN
+      - assertNotVisible: "[A-Z][a-z]+ so far"
+# Centred, so what follows the last summary row is on screen too.
+- scrollUntilVisible:
+    element: "Days with attack medication: .*"
+    direction: DOWN
+    centerElement: true
+- runFlow:
+    when:
+      true: ${ROW == ""}
+    commands:
+      - assertNotVisible: "Last 30 days"
+- runFlow:
+    when:
+      true: ${ROW != ""}
+    commands:
+      - scrollUntilVisible:
+          element: "${ROW}"
+          direction: DOWN
+          centerElement: true
+      - assertVisible: "Last 30 days"
+- runFlow:
+    when:
+      true: ${DOCTOR == "true"}
+    commands:
+      - assertVisible: "At this many days, medication can make headaches more frequent\\. Talk to your doctor about it\\."
+- runFlow:
+    when:
+      true: ${DOCTOR == "false"}
+    commands:
+      - assertNotVisible: "At this many days.*"
+# The app stays open, so the script can read a row's colour.

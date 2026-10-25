@@ -1,0 +1,38 @@
+# Guard for a fixed bug: Log medication's date and time dialogs read "Reminder time" because :features:reminders:ui
+# had a string with the same name (picker_title, e74055e). Both dialogs, from home and from attack mode.
+appId: com.migrely.app
+name: Log medication's "Taken at" date and time dialogs ask "When did you take it?"
+tags: [regression, medication-intakes]
+---
+- runFlow: ../subflows/launch-clean.yaml
+- tapOn: "Log medication"
+- runFlow:
+    file: ../subflows/add-first-medication.yaml
+    env:
+      NAME: "Paracetamol"
+      TYPE: "Simple painkiller"
+- tapOn: "Done"
+- tapOn: "Log medication"
+- tapOn: "Taken at.*"
+- extendedWaitUntil:
+    visible: "When did you take it\\?"
+    timeout: 5000
+- tapOn: "Next"
+- extendedWaitUntil:
+    visible: "When did you take it\\?"
+    timeout: 5000
+- assertNotVisible: "Reminder time"
+- tapOn: "Cancel"
+- back
+- runFlow: ../subflows/start-attack.yaml
+- tapOn: ".*Medication taken"
+- tapOn: "Taken at.*"
+- extendedWaitUntil:
+    visible: "When did you take it\\?"
+    timeout: 5000
+- tapOn: "Next"
+- extendedWaitUntil:
+    visible: "When did you take it\\?"
+    timeout: 5000
+- assertNotVisible: "Reminder time"
+- tapOn: "Cancel"

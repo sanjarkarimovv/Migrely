@@ -1,0 +1,9 @@
+# Device scenario step: open the app in attack mode (no reset) and end the migraine now. The app is closed afterwards.
+appId: com.migrely.app
+---
+- launchApp
+- extendedWaitUntil:
+    visible: "Details of this migraine"
+    timeout: 10000
+- runFlow: ../subflows/end-attack.yaml
+- stopApp

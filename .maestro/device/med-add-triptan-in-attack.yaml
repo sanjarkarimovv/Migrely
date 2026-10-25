@@ -1,0 +1,25 @@
+# Device scenario step: start a migraine, add Sumatriptan (Triptan) from attack mode and log it, then end the migraine.
+appId: com.migrely.app
+---
+- launchApp
+- extendedWaitUntil:
+    visible: "Migraine started"
+    timeout: 10000
+- runFlow: ../subflows/start-attack.yaml
+- tapOn: ".*Medication taken"
+- tapOn: "Manage medications"
+- runFlow:
+    file: ../subflows/add-medication.yaml
+    env:
+      NAME: "Sumatriptan"
+      KIND: "For an attack"
+      TYPE: "Triptan"
+      DOSE: ""
+- back
+- tapOn: "Log Sumatriptan.*"
+- extendedWaitUntil:
+    visible: "Sumatriptan.* logged at .*"
+    timeout: 5000
+- tapOn: "Done"
+- runFlow: ../subflows/end-attack.yaml
+- stopApp
