@@ -1,6 +1,8 @@
 package com.migrely.app.settings.ui.view
 
+import android.content.ActivityNotFoundException
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,6 +12,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
@@ -27,8 +30,10 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -127,6 +132,45 @@ fun PrivacyContents(onBack: () -> Unit, modifier: Modifier = Modifier) = Setting
     Paragraph(stringResource(R.string.settings_privacy_files))
     Paragraph(stringResource(R.string.settings_privacy_delete))
     Paragraph(stringResource(R.string.settings_android_backup))
+    PolicyLink()
+}
+
+/**
+ * The full privacy policy on migrely.health, which Google Play asks health apps to reach from inside the app (BRD
+ * D119). It opens in the browser, which needs no permission of Migrely's; the address is written out too, so it can be
+ * typed where no browser opens it.
+ */
+@Composable
+private fun PolicyLink() {
+    val uriHandler = LocalUriHandler.current
+    val label = stringResource(R.string.settings_privacy_policy_link)
+    Column(
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 48.dp)
+            .clickable(role = Role.Button, onClickLabel = label) {
+                try {
+                    uriHandler.openUri(PRIVACY_POLICY_URL)
+                } catch (_: IllegalStateException) {
+                    // No app here opens web pages; the address below can still be typed elsewhere.
+                } catch (_: ActivityNotFoundException) {
+                    // As above, on Android versions that report it this way.
+                }
+            }
+            .padding(vertical = 8.dp)
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.primary
+        )
+        Text(
+            text = PRIVACY_POLICY_ADDRESS,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
 }
 
 @Composable
@@ -258,3 +302,6 @@ private fun PrivacyPreview() {
 private fun LicencesPreview() {
     MigrelyTheme { LicencesContents(onBack = {}) }
 }
+
+private const val PRIVACY_POLICY_URL = "https://migrely.health/privacy/"
+private const val PRIVACY_POLICY_ADDRESS = "migrely.health/privacy"
