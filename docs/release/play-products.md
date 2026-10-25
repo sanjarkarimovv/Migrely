@@ -30,7 +30,8 @@ For both base plans:
   `yearly`, 53 for `monthly`). Premium is off during the hold; Play shows its message (EC-BIL-04).
 - **Customer base plan and offer changes:** Play's default, "Charge at next billing date".
 - **Resubscribe:** allowed, so a cancelled subscription can be restored from Play's subscriptions page.
-- **Prorations:** nothing to set. The app moves monthly to yearly with `WITH_TIME_PRORATION` (EC-BIL-10); there is
+- **Prorations:** nothing to set. The app moves monthly to yearly with `WITHOUT_PRORATION`, the only kind of switch
+  besides charging the full price that Play allows between base plans of one subscription (EC-BIL-10, D120); there is
   no move from yearly to monthly in the app.
 
 ### Offer on `yearly`: `free-trial-7d`

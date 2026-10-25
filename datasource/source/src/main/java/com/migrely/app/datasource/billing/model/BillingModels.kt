@@ -63,7 +63,8 @@ data class BillingPurchaseDataModel(
 
 /**
  * What to buy: [offerToken] picks a subscription's base plan or offer. [oldPurchaseToken] is the
- * subscription being replaced, which Google Play prorates by time (BRD EC-BIL-10).
+ * subscription being replaced: the new plan starts at once and is charged on the next billing date
+ * (BRD EC-BIL-10, D120).
  */
 data class BillingPurchaseRequestDataModel(
     val productId: String,
