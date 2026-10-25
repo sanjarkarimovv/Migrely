@@ -466,8 +466,8 @@ Boshqa davlatlarda narxni Play avtomatik konvertatsiya qiladi. Hindiston, Brazil
 2. **Health apps declaration.** Play Console → App content boʻlimidagi sogʻliq ilovalari deklaratsiyasi toʻldiriladi. Joriy shakl setup paytida tekshiriladi.
 3. **Data safety.**
    - Sogʻliq maʼlumoti: "collected" emas, chunki u faqat qurilmada qayta ishlanadi.
-   - Xaridlar tarixi: RevenueCat orqali toʻplanadi.
-   - Ilova bilan oʻzaro taʼsir: anonim analytics orqali, oʻchirib qoʻyish mumkin.
+   - Xaridlar: 9-change'dagi billing qaroriga bogʻliq; Play Billing toʻgʻridan-toʻgʻri ishlatilsa, ilova xarid maʼlumotini oʻzi toʻplamaydi.
+   - Analytics yoʻq (D101): ilova hech narsa yubormaydi.
    - Maʼlumotni oʻchirish imkoniyati bor.
 
    Deklaratsiya kodga toʻliq mos boʻlishi shart.
@@ -567,7 +567,8 @@ Ish sikli: `/opsx:explore` (ixtiyoriy) → `/opsx:propose <nom>` → review → 
 | 10 | `add-doctor-report` — History'dan ochiladigan "Doctor report": davr, xulosa sahifasi, kalendar issiqlik xaritasi, xurujlar va dorilar jadvallari, ixtiyoriy izohlar, FileProvider orqali ulashish (D81–D85) | REP-F*, EC-REP-* |
 | 11 | `add-trigger-insights` — History'dan ochiladigan "Insights": triggerlar, hafta va kun patternlari, hayz bilan bogʻliqlik, dorilar samaradorligi, 12 oylik trendlar (D87–D92) | INS-F*, EC-INS-* |
 | 12 | `add-settings-and-safety` — Settings boʻlimlari, tema, Warning signs, Delete all data, Privacy/About/licences/version, avtomatik nusxadan tiklash (D93–D98) | SET-F*, SAF-F1, EC-STO-03, EC-STO-04 |
-| 13 | `prepare-release` — listing, privacy policy, Data safety hujjati, shortcut | 11- va 14-boʻlimlar |
+| 13 | `prepare-release` — R8 release build va smoke, analytics'siz Data safety, ilova ikonkasi, store hujjatlari (D101–D104) | 11- va 14-boʻlimlar, D44 |
+| 13b | `publish-to-play` — foydalanuvchi maʼlumotlari (developer nomi, email, policy URL, upload kalit), Privacy sahifasida havola, Play Console sozlamasi, skrinshotlar, pre-launch report | 14-boʻlim |
 | 14 | `upgrade-toolchain` — AGP 9, Kotlin 2.4, SDK 37, Navigation 3 (sample'ga moslash). `cag` AGP 9'ni qoʻllab-quvvatlaganda yoki Play API 37'ni talab qilishidan oldin, qaysi biri birinchi boʻlsa | ADR-03, `docs/ARCHITECTURE.md` §2, §13 |
 
 ---
@@ -741,6 +742,10 @@ Ilova 2023-yil 13-noyabrdan oldin ochilgan akkauntda chiqadi, shuning uchun 12 t
 | D98 | Avtomatik nusxadan tiklash (D75). Avtomatik nusxa boʻlsa, "Your data" ekranida "Restore the copy from <sana>" bandi chiqadi. U eng yangi nusxani tekshiradi va undagi yozuvlar sonini koʻrsatadi. Tasdiqlansa, avval hozirgi yozuvlar yangi avtomatik nusxa sifatida saqlanadi (eng yangi 3 tasi qoladi, D73), soʻng bitta tranzaksiyada almashtiriladi | PO | 2026-10-25 |
 | D99 | Faqat dori yozilgan History (D51, D53, D59 va EC-HIS-01 oʻzgartirildi; QA topgan). Dori koʻp ichishdan boshlanadigan bosh ogʻrigʻi aynan migren yozmay, faqat ogʻriq qoldiruvchi dori yozadigan odamda xavfli, shuning uchun indikator migren yozilganiga bogʻliq boʻlmaydi. History'ning eng birinchi oyi birinchi xuruj, birinchi kun belgisi va birinchi "attack" dori qabuli oylaridan eng oldingisi boʻladi; qabul oyi u yozilgan zonada olinadi. "No migraines logged yet" holati faqat hech qanday xuruj, kun belgisi va "attack" dori qabuli boʻlmaganda chiqadi. Aks holda oy xulosasi oddiy koʻrinadi (masalan, 0 migren kuni va dori kunlari), joriy oyda "Last 30 days" indikatori bilan. Profilaktik dorilar hisobga olinmaydi | PO | 2026-10-25 |
 | D100 | Faqat "attack" dori ichilgan kun kalendarda (EC-UX-09, EC-UX-15 va D49 toʻldirildi; QA review topgan). Oʻtgan kunda "attack" dori qabuli boʻlsa-yu, xuruj boʻlmasa, u "hech narsa yozilmagan" kun emas. History'dagi va bosh ekrandagi oy kalendari (ikkalasi bitta kalendar) uni migrensiz yozilgan kun sifatida chizadi: osmon yoʻq, punktir oʻrniga xuddi shu qalinlikdagi yaxlit neytral chegara (`outline` rangi). TalkBack uni "<kun>: attack medication taken, no migraine logged." deb oʻqiydi. Qabul kuni u ichilgan zonada aniqlanadi (D45 qoidasi). Profilaktik dorilar hisobga olinmaydi. Xuruj bor kun avvalgidek oʻz osmonini koʻrsatadi. Ogʻriqsiz deb belgilangan kunda "attack" dori ham boʻlsa, ogʻriqsiz koʻrinish qoladi, chunki belgi foydalanuvchining soʻzi, TalkBack esa unga "Attack medication taken." qoʻshadi. Legend'ga "Attack medication only" qoʻshiladi. Ikkala chegara ham bir xil `outline` rangida (yorugʻ temada 3.8:1, qorongʻi temada ataylab xira), kunlar rang bilan emas, shakl (yaxlit yoki punktir) va TalkBack matni bilan ajraladi | PO | 2026-10-25 |
+| D101 | MVP'da analytics yoʻq (ADR-09 va D9 dagi TelemetryDeck bekor qilindi). Migrely'da INTERNET ruxsati hech qachon boʻlmaydi (D44), shuning uchun hech qanday analytics SDK ishlay olmaydi. Data safety: "No data collected" va "No data shared". Xaridlar boʻyicha javob 9-change'da billing qarori bilan qayta tekshiriladi. 11-boʻlimning 3-bandi shunga moslanadi | PO | 2026-10-25 |
+| D102 | Release build: R8 (minify va resource shrinking) yoqiladi, keep qoidalari faqat kerak boʻlganda qoʻshiladi. Imzo `keystore.properties` faylidan olinadi, u git'da yoʻq. Fayl boʻlmasa, release build lokal smoke uchun debug kalit bilan imzolanadi; bunday build Play'ga yuklanmaydi (Play debug imzoni qabul qilmaydi). versionCode har release'da bittaga oshadi, versionName semver boʻyicha; launch versiyasi 1.0.0. Release smoke D44 boʻyicha emulatorda oʻtkaziladi | PO | 2026-10-25 |
+| D103 | Ilova ikonkasi. Bosh ekrandagi "Your sky" tili: toʻq koʻk tungi osmon gradienti, kumushrang yarim oy va ikkita kichik yulduz. Matn, bosh yoki miya tasviri yoʻq, chunki ikonka ogʻriqni emas, tinchlikni eslatadi. Adaptive icon (foreground 66dp xavfsiz doirada), themed icon uchun monochrome qatlam, Play uchun 512×512 PNG | PO | 2026-10-25 |
+| D104 | Store hujjatlari `docs/release/` da. Listing (title va short description 14.2 dagidek, toʻliq tavsif disclaimer bilan, kategoriya "Health & Fitness", chunki Migrely tibbiy qurilma emas, kundalik). Privacy policy (Consumer Health Data boʻlimi bilan, joylashtirishga tayyor HTML ham). Data safety, content rating (18+) va health apps deklaratsiyasi javoblari. Developer nomi, aloqa email'i va policy URL foydalanuvchidan keladi: ular `TODO(user)` bilan belgilanadi va 13b-change (`publish-to-play`) da toʻldiriladi, ilovadagi Privacy sahifasiga havola ham oʻshanda qoʻshiladi | PO | 2026-10-25 |
 
 ---
 
