@@ -54,7 +54,7 @@ yearly price alone. `monthly` has no offer.
 | Name | Migrely Premium, lifetime |
 | Description | Premium for as long as you use Migrely. One payment. |
 | Type | One-time, non-consumable: the app acknowledges it and never consumes it |
-| Purchase option | ID `buy`, type Buy, price USD 59.99, marked **Backwards compatible**: the app reads the product's single `oneTimePurchaseOfferDetails`, which is that option |
+| Purchase option | ID `buy`, type Buy, price USD 59.99. It is the product's only purchase option, so the app's `oneTimePurchaseOfferDetails` reads it; Play marks it **Backwards compatible** (for the old `querySkuDetailsAsync`), which changes nothing for Migrely. Keep it the only option |
 | Quantities | One per purchase (multi-quantity off) |
 | Classification | Digital content |
 | Age rating (US states) | All ages, as the app's content rating |
