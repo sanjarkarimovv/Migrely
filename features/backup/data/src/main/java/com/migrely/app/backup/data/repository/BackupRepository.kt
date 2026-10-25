@@ -34,7 +34,7 @@ private const val MAXIMUM_BACKUP_BYTES = 16L * 1024 * 1024
 /**
  * Backups, exports and the automatic copies (BRD BAK-F1–F3, D71–D73, D98). A spreadsheet in a language that writes
  * decimals with a comma splits columns at semicolons, so the CSV uses one there; Migrely's numbers are whole, so either
- * works.
+ * works. [locale] is the phone's own language, not the English one dates are formatted in (D117).
  */
 class BackupRepository(
     private val backupDataSource: BackupDataSource,
@@ -43,7 +43,7 @@ class BackupRepository(
     private val clockDataSource: ClockDataSource,
     private val attacksCsvMapper: AttacksCsvMapper,
     private val backupSummaryDomainMapper: BackupSummaryDomainMapper,
-    private val locale: () -> Locale = Locale::getDefault
+    private val locale: () -> Locale
 ) : ExportBackupRepository,
     ExportCsvRepository,
     ReadBackupRepository,
