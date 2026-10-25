@@ -129,6 +129,76 @@ class HistoryMonthPresentationMapperDayTest(
 }
 
 class HistoryMonthPresentationMapperTest {
+    private fun mappedDay(day: HistoryDayDomainModel) =
+        classUnderTest.toPresentation(month(days = listOf(day))).days.single()
+
+    @Test
+    fun `Given a past day with attack medication only when mapping then logged without a sky`() {
+        val actual = mappedDay(
+            HistoryDayDomainModel(
+                LocalDate.parse("2026-10-20"),
+                emptyList(),
+                attackMedication = true
+            )
+        )
+
+        assertEquals(DaySkyPresentationModel.MedicationOnly, actual.sky)
+        assertEquals(null, actual.peak)
+        assertEquals(true, actual.attackMedication)
+    }
+
+    @Test
+    fun `Given today with attack medication only when mapping then logged without a sky`() {
+        val actual = mappedDay(
+            HistoryDayDomainModel(TODAY, emptyList(), attackMedication = true)
+        )
+
+        assertEquals(DaySkyPresentationModel.MedicationOnly, actual.sky)
+    }
+
+    @Test
+    fun `Given attack medication on a migraine day when mapping then the attack's sky`() {
+        val actual = mappedDay(
+            HistoryDayDomainModel(
+                LocalDate.parse("2026-10-14"),
+                listOf(attack(8)),
+                attackMedication = true
+            )
+        )
+
+        assertEquals(DaySkyPresentationModel.Storm, actual.sky)
+        assertEquals(true, actual.attackMedication)
+    }
+
+    @Test
+    fun `Given attack medication on a pain-free day when mapping then the clear sky stays`() {
+        // The mark is the user's word (BRD D100).
+        val actual = mappedDay(
+            HistoryDayDomainModel(
+                LocalDate.parse("2026-10-06"),
+                emptyList(),
+                painFree = true,
+                attackMedication = true
+            )
+        )
+
+        assertEquals(DaySkyPresentationModel.Clear, actual.sky)
+        assertEquals(true, actual.attackMedication)
+    }
+
+    @Test
+    fun `Given attack medication on a future day when mapping then still future`() {
+        val actual = mappedDay(
+            HistoryDayDomainModel(
+                LocalDate.parse("2026-10-25"),
+                emptyList(),
+                attackMedication = true
+            )
+        )
+
+        assertEquals(DaySkyPresentationModel.Future, actual.sky)
+    }
+
     @Test
     fun `Given a pain-free period day when mapping then a clear sky with both marks`() {
         val day = HistoryDayDomainModel(

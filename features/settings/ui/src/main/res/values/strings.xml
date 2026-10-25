@@ -2,12 +2,95 @@
 <resources>
     <string name="settings_title">Settings</string>
     <string name="settings_back">Back</string>
+    <string name="settings_cancel">Cancel</string>
+
+    <string name="settings_section_diary">Your diary</string>
+    <string name="settings_section_look">Look</string>
+    <string name="settings_section_help">Help</string>
+    <string name="settings_section_privacy">Privacy and about</string>
+
     <string name="settings_reminders">Reminders</string>
     <string name="settings_reminders_summary">A daily check-in, and asking if a medication helped</string>
     <string name="settings_your_data">Your data</string>
     <string name="settings_your_data_summary">Back up, export for Excel, and import</string>
     <string name="settings_track_periods">Track periods</string>
     <string name="settings_track_periods_summary">Mark period days on home and in History. Marks you saved stay either way.</string>
+
+    <string name="settings_theme">Theme</string>
+    <string name="settings_theme_dark">Dark</string>
+    <string name="settings_theme_light">Light</string>
+    <string name="settings_theme_system">Match the phone</string>
+    <string name="settings_theme_note">During a migraine, Migrely stays dark.</string>
+
+    <string name="settings_warning_signs">Warning signs</string>
+    <string name="settings_warning_signs_summary">When a headache needs urgent care</string>
+    <string name="settings_about">About Migrely</string>
+    <string name="settings_about_summary">What Migrely is, and what it isn\'t</string>
+    <string name="settings_privacy">Privacy</string>
+    <string name="settings_privacy_summary">What Migrely keeps, and where</string>
+    <string name="settings_licences">Open-source licences</string>
+    <string name="settings_licences_summary">The libraries and fonts Migrely is built with</string>
+    <string name="settings_version">Version</string>
+
+    <string name="settings_delete_all">Delete all data</string>
+    <string name="settings_delete_all_summary">Every entry, setting and copy on this phone</string>
+    <string name="settings_delete_title">Delete all data?</string>
+    <!-- First the warning, then the field, then the details, so the field shows at once at any font size. -->
+    <string name="settings_delete_warning">Everything Migrely keeps on this phone goes, and it can\'t be undone.</string>
+    <string name="settings_delete_what">That is every migraine, medication and marked day, your settings, the automatic copies and any reports, and reminders stop. Backups you exported stay where you saved them.</string>
+    <!-- No API makes Android back up at once, so the user is told when its copy changes (BRD D96, D97). -->
+    <string name="settings_android_backup">Android\'s own backup of Migrely is replaced the next time your phone backs up, usually within a day.</string>
+    <string name="settings_delete_field">Type %1$s to confirm</string>
+    <string name="settings_delete_confirm">Delete everything</string>
+    <string name="settings_deleting">Deleting your data</string>
+    <string name="settings_not_deleted">Couldn\'t delete everything. Try again.</string>
+
+    <!-- Warning signs (BRD SAF-F1, D95). -->
+    <string name="settings_warning_signs_call">Call your local emergency number if any of these happen.</string>
+    <string-array name="settings_warning_signs_list">
+        <item>Sudden pain that is the worst of your life</item>
+        <item>Pain after a head injury</item>
+        <item>A stiff neck with a fever</item>
+        <item>Weakness, numbness or trouble speaking that doesn\'t pass</item>
+        <item>A first headache after the age of 50</item>
+    </string-array>
+
+    <!-- About Migrely: the full disclaimer (BRD D97). -->
+    <string name="settings_about_diary">Migrely is a headache diary. It helps you keep a record of your migraines, the medications you take and what might set them off, so you can see patterns and talk them over with your doctor.</string>
+    <string name="settings_about_not_medical">Migrely is not a medical device. It doesn\'t diagnose, treat or prevent any condition, and nothing in it is medical advice. Its counts and patterns come only from what you logged.</string>
+    <string name="settings_about_doctor">Talk to a doctor about your headaches, and before you start, stop or change a medication.</string>
+    <string name="settings_about_urgent">If a headache comes with any of the warning signs, call your local emergency number.</string>
+
+    <!-- Privacy (BRD D97). -->
+    <string name="settings_privacy_offline">Migrely has no internet access, so it sends nothing anywhere. There\'s no account to make and nothing to sign in to.</string>
+    <string name="settings_privacy_phone">Your entries stay on this phone. On Android 9 and later, Android\'s own backup keeps a copy in your Google account only when it can encrypt it end to end, which needs a screen lock.</string>
+    <string name="settings_privacy_files">A file leaves the phone only when you export it yourself: a backup, a spreadsheet or a report for your doctor.</string>
+    <string name="settings_privacy_delete">Delete all data, at the end of Settings, removes everything Migrely keeps on this phone.</string>
+
+    <!-- Open-source licences: what the release app ships, from gradle/libs.versions.toml (BRD D97). -->
+    <string name="settings_licences_intro">Migrely is built with these open-source libraries and fonts.</string>
+    <string name="settings_licence_apache">Apache License 2.0</string>
+    <string-array name="settings_licences_apache">
+        <item>AndroidX Activity</item>
+        <item>AndroidX Core and Core Splashscreen</item>
+        <item>AndroidX Fragment</item>
+        <item>AndroidX Lifecycle</item>
+        <item>AndroidX Navigation</item>
+        <item>AndroidX Room</item>
+        <item>AndroidX WorkManager</item>
+        <item>Jetpack Compose and Material 3</item>
+        <item>Material Components for Android</item>
+        <item>Dagger and Hilt</item>
+        <item>Kotlin standard library</item>
+        <item>Kotlin coroutines</item>
+        <item>Kotlin serialization</item>
+    </string-array>
+    <string name="settings_licence_ofl">SIL Open Font License 1.1</string>
+    <string-array name="settings_licences_ofl">
+        <item>Figtree</item>
+        <item>Fraunces</item>
+    </string-array>
+
     <string name="settings_not_saved">Couldn\'t save that. Try again.</string>
     <string name="settings_message_dismiss">Dismiss</string>
 </resources>

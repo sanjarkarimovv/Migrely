@@ -1,5 +1,7 @@
 package com.migrely.app.designsystem.theme
 
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.graphics.Color
 
 // Low-brightness palette for people with photophobia (BRD EC-UX-01): near-black backgrounds instead of
@@ -48,7 +50,59 @@ internal val InversePrimary = Color(0xFF4A5290)
 
 internal val Scrim = Color(0xFF000000)
 
-/** Colours outside the Material 3 scheme, used by the attack mode ("dark room", BRD 18.3 B) and progress messages. */
+internal val DarkPositive = Color(0xFF8FB8A0)
+
+// The light theme (BRD D94): a warm paper background instead of pure white, which glares, and the same indigo, slate
+// and amber hues made deep enough that every text colour keeps at least 4.5:1 on its background and on the containers
+// drawn over it. Outlines keep 3:1, the minimum for the edge of a control.
+
+internal val LightBackground = Color(0xFFF5F3EE)
+internal val LightOnBackground = Color(0xFF1E232A)
+
+internal val LightSurface = Color(0xFFF5F3EE)
+internal val LightOnSurface = Color(0xFF1E232A)
+internal val LightSurfaceVariant = Color(0xFFE4E1DA)
+internal val LightOnSurfaceVariant = Color(0xFF4A505A)
+internal val LightSurfaceContainerLowest = Color(0xFFFAF8F4)
+internal val LightSurfaceContainerLow = Color(0xFFF0EEE8)
+internal val LightSurfaceContainer = Color(0xFFEBE8E2)
+internal val LightSurfaceContainerHigh = Color(0xFFE5E2DB)
+internal val LightSurfaceContainerHighest = Color(0xFFDFDCD4)
+internal val LightSurfaceDim = Color(0xFFDAD7CF)
+
+internal val LightPrimary = Color(0xFF4A5290)
+internal val LightOnPrimary = Color(0xFFF5F3EE)
+internal val LightPrimaryContainer = Color(0xFFDDE0F5)
+internal val LightOnPrimaryContainer = Color(0xFF262B55)
+
+internal val LightSecondary = Color(0xFF4B6074)
+internal val LightOnSecondary = Color(0xFFF5F3EE)
+internal val LightSecondaryContainer = Color(0xFFD6DEE7)
+internal val LightOnSecondaryContainer = Color(0xFF1D2B37)
+
+internal val LightTertiary = Color(0xFF7A5916)
+internal val LightOnTertiary = Color(0xFFF5F3EE)
+internal val LightTertiaryContainer = Color(0xFFF0DFBB)
+internal val LightOnTertiaryContainer = Color(0xFF3A2A08)
+
+internal val LightError = Color(0xFF9E3434)
+internal val LightOnError = Color(0xFFF5F3EE)
+internal val LightErrorContainer = Color(0xFFF4D7D3)
+internal val LightOnErrorContainer = Color(0xFF4A1515)
+
+internal val LightOutline = Color(0xFF767C86)
+internal val LightOutlineVariant = Color(0xFFC8C5BE)
+
+internal val LightInverseSurface = Color(0xFF2C3036)
+internal val LightInverseOnSurface = Color(0xFFEEECE7)
+internal val LightInversePrimary = Color(0xFFA9B1E8)
+
+internal val LightPositive = Color(0xFF2E6A4C)
+
+/**
+ * Colours outside the Material 3 scheme. The attack mode ones ("dark room", BRD 18.3 B) are the same in every theme,
+ * because attack mode stays dark (BRD D94); [Positive] follows the theme.
+ */
 object MigrelyColors {
     val AttackModeBackground = Color(0xFF08090C)
     val AttackModeSurface = Color(0xFF12151A)
@@ -59,5 +113,10 @@ object MigrelyColors {
     val AttackModeSelectedText = Color(0xFFC9CDEA)
     val AttackModeEndContainer = Color(0xFF1F2A34)
     val AttackModeEndText = Color(0xFFBCC8D3)
-    val Positive = Color(0xFF8FB8A0)
+
+    /** Good news, such as fewer migraine days or a saved file. */
+    val Positive: Color
+        @Composable
+        @ReadOnlyComposable
+        get() = LocalPositive.current
 }

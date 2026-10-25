@@ -4,6 +4,7 @@ import com.migrely.app.datasource.attack.mapper.AttackTagLocalMapper
 import com.migrely.app.datasource.backup.model.BackupRecordsDataModel
 import com.migrely.app.datasource.backupfile.RECORDS
 import com.migrely.app.datasource.backupfile.mapper.BackupFileMapper
+import com.migrely.app.datasource.backupfile.model.AutomaticCopyDataModel
 import com.migrely.app.datasource.backupfile.model.BackupDecodedDataModel
 import com.migrely.app.datasource.backupfile.validator.BackupRecordsValidator
 import com.migrely.app.datasource.medication.mapper.MedicationLocalMapper
@@ -11,12 +12,16 @@ import com.migrely.app.datasource.tag.mapper.CustomTagLocalMapper
 import java.io.File
 import java.time.Instant
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 
 private val EXPORTED_AT = Instant.parse("2026-10-25T08:00:00Z")
+private val EMPTY_RECORDS =
+    BackupRecordsDataModel(emptyList(), emptyList(), emptyList(), emptyList(), emptyList())
 
 class BackupFileDataSourceImplTest {
     @get:Rule
@@ -33,6 +38,9 @@ class BackupFileDataSourceImplTest {
             BackupRecordsValidator()
         )
     }
+
+    private fun backupText(records: BackupRecordsDataModel = RECORDS) =
+        classUnderTest.encode(records, EXPORTED_AT)
 
     @Test
     fun `When a backup is written and read back then every record is as it was`() {
@@ -149,6 +157,67 @@ class BackupFileDataSourceImplTest {
             listOf("migrely-auto-1000.json", "migrely-auto-4000.json", "migrely-auto-5000.json"),
             File(folder.root, "backups").list().orEmpty().sorted()
         )
+    }
+
+    @Test
+    fun `Given no automatic backup then there is no newest one`() {
+        assertNull(classUnderTest.newestAutomatic())
+
+        File(folder.root, "backups/notes.txt").apply { parentFile?.mkdirs() }.writeText("x")
+        assertNull(classUnderTest.newestAutomatic())
+    }
+
+    @Test
+    fun `When asked for the newest automatic backup then its time and records`() {
+        listOf(4_000L, 9_000L, 6_000L).forEach {
+            classUnderTest.saveAutomatic(backupText(), Instant.ofEpochMilli(it))
+        }
+
+        assertEquals(
+            AutomaticCopyDataModel(Instant.ofEpochMilli(9_000L), RECORDS),
+            classUnderTest.newestAutomatic()
+        )
+    }
+
+    @Test
+    fun `Given the newest copies cannot be read or restored then the newest that can`() {
+        classUnderTest.saveAutomatic(backupText(), Instant.ofEpochMilli(4_000L))
+        // Written directly, so saving does not prune the good copy: a folder where a file should be, which cannot be
+        // read, a damaged file, and one from a newer version.
+        File(folder.root, "backups/migrely-auto-9000.json").mkdirs()
+        File(folder.root, "backups/migrely-auto-8000.json").writeText("damaged")
+        File(folder.root, "backups/migrely-auto-7000.json")
+            .writeText("{\"format\":\"migrely-backup\",\"schemaVersion\":99}")
+
+        assertEquals(
+            AutomaticCopyDataModel(Instant.ofEpochMilli(4_000L), RECORDS),
+            classUnderTest.newestAutomatic()
+        )
+    }
+
+    @Test
+    fun `When asked for the copy made at a time then exactly that one, or none`() {
+        classUnderTest.saveAutomatic(backupText(), Instant.ofEpochMilli(4_000L))
+        classUnderTest.saveAutomatic(backupText(EMPTY_RECORDS), Instant.ofEpochMilli(9_000L))
+        File(folder.root, "backups/migrely-auto-6000.json").writeText("damaged")
+
+        assertEquals(
+            AutomaticCopyDataModel(Instant.ofEpochMilli(4_000L), RECORDS),
+            classUnderTest.automatic(Instant.ofEpochMilli(4_000L))
+        )
+        assertNull(classUnderTest.automatic(Instant.ofEpochMilli(6_000L)))
+        assertNull(classUnderTest.automatic(Instant.ofEpochMilli(5_000L)))
+    }
+
+    @Test
+    fun `When deleting every automatic backup then none is left, and again is fine`() {
+        (1..3).forEach { classUnderTest.saveAutomatic(backupText(), Instant.ofEpochMilli(it * 1L)) }
+
+        classUnderTest.deleteAll()
+        classUnderTest.deleteAll()
+
+        assertFalse(File(folder.root, "backups").exists())
+        assertNull(classUnderTest.newestAutomatic())
     }
 
     @Test

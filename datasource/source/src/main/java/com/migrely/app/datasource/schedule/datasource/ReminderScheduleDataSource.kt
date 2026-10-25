@@ -17,4 +17,10 @@ interface ReminderScheduleDataSource {
     fun scheduleEffectQuestion(intakeId: String, at: Instant)
 
     fun cancelEffectQuestion(intakeId: String)
+
+    /**
+     * Cancels every run planned for reminders, of every kind, and returns once that is stored, so it holds even if the
+     * app stops right after (BRD D96).
+     */
+    fun cancelAll()
 }

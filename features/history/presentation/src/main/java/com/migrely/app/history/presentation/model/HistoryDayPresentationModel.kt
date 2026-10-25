@@ -15,5 +15,7 @@ data class HistoryDayPresentationModel(
     val painFree: Boolean = false,
     val painFreeAllowed: Boolean = true,
     /** Whether the day offers "Period": "Track periods" is on, or the day is marked, so it can be removed (D79). */
-    val periodOffered: Boolean = true
+    val periodOffered: Boolean = true,
+    /** A medication for attacks was taken on the day (BRD D100). */
+    val attackMedication: Boolean = false
 )

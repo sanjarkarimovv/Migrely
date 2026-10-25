@@ -61,6 +61,7 @@ import com.migrely.app.designsystem.picker.MigrelyDateTimePicker
 import com.migrely.app.designsystem.sky.SkyAppearance
 import com.migrely.app.designsystem.sky.SkyCanvas
 import com.migrely.app.designsystem.theme.MigrelyColors
+import com.migrely.app.designsystem.theme.MigrelyDarkRoom
 import com.migrely.app.designsystem.theme.MigrelyTheme
 import com.migrely.app.home.ui.R
 import com.migrely.app.home.ui.mapper.TimeUiFormatter
@@ -84,7 +85,10 @@ private val MOVE_START_OPTIONS = listOf(
     120 to R.string.move_start_120
 )
 
-/** The "dark room" (BRD 18.3 B): one line of text, the elapsed time and large controls in the lower half. */
+/**
+ * The "dark room" (BRD 18.3 B): one line of text, the elapsed time and large controls in the lower half. It is dark in
+ * every theme, its time picker included (BRD D94).
+ */
 @Composable
 fun AttackModeContents(
     attack: AttackInProgressUiModel,
@@ -94,7 +98,7 @@ fun AttackModeContents(
     timeUiFormatter: TimeUiFormatter,
     actions: HomeActions,
     modifier: Modifier = Modifier
-) {
+) = MigrelyDarkRoom {
     val startedAt = stringResource(
         R.string.attack_started_at,
         timeUiFormatter.formatStartTime(attack.startEpochMillis, attack.startZoneId, nowMillis),

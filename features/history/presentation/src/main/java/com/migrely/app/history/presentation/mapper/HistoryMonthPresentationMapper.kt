@@ -14,7 +14,8 @@ import java.time.YearMonth
  * Turns a month into calendar days, with the sky rule of today's card (BRD EC-UX-09): 1–3 hazy, 4–6 cloudy, 7–10
  * storm, and an attack without a recorded level counts as cloudy. A day with an attack in progress shows rain
  * (BRD HIS-F1). A day without attacks is clear only when marked pain-free; otherwise up to today it is "nothing logged",
- * later "future" (G6, D47).
+ * later "future" (G6, D47). A past day with attack medication but no attack is logged without a
+ * sky; a pain-free mark keeps its clear sky, since the mark is the user's word (BRD D100).
  */
 class HistoryMonthPresentationMapper(
     private val historyAttackPresentationMapper: HistoryAttackPresentationMapper,
@@ -49,6 +50,7 @@ class HistoryMonthPresentationMapper(
             skyLevel != null -> skyLevel.toSky()
             painFree -> DaySkyPresentationModel.Clear
             date.isAfter(today) -> DaySkyPresentationModel.Future
+            attackMedication -> DaySkyPresentationModel.MedicationOnly
             else -> DaySkyPresentationModel.NothingLogged
         }
         return HistoryDayPresentationModel(
@@ -59,7 +61,8 @@ class HistoryMonthPresentationMapper(
             period = period,
             painFree = painFree,
             painFreeAllowed = attacks.isEmpty(),
-            periodOffered = period || periodTracking
+            periodOffered = period || periodTracking,
+            attackMedication = attackMedication
         )
     }
 

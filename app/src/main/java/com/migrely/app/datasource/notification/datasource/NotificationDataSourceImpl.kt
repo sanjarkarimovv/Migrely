@@ -64,6 +64,8 @@ class NotificationDataSourceImpl(private val context: Context) : NotificationDat
 
     override fun cancelEffectQuestion(intakeId: String) = manager.cancel(effectId(intakeId))
 
+    override fun cancelAll() = manager.cancelAll()
+
     private fun builder(channelId: String, channelName: Int): NotificationCompat.Builder {
         manager.createNotificationChannel(
             NotificationChannelCompat.Builder(

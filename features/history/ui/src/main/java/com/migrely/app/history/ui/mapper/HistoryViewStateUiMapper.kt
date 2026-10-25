@@ -6,7 +6,7 @@ import com.migrely.app.history.ui.model.HistoryViewStateUiModel
 class HistoryViewStateUiMapper(private val historyMonthUiMapper: HistoryMonthUiMapper) {
     fun toUi(viewState: HistoryViewState): HistoryViewStateUiModel = when (viewState) {
         HistoryViewState.Loading -> HistoryViewStateUiModel.Loading
-        is HistoryViewState.NoAttacks -> HistoryViewStateUiModel.NoAttacks(
+        is HistoryViewState.NothingLogged -> HistoryViewStateUiModel.NothingLogged(
             historyMonthUiMapper.toUi(viewState.month),
             viewState.requestedMonth?.toString()
         )

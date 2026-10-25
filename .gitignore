@@ -20,3 +20,6 @@ keystore.properties
 # Play Console and service account credentials (never commit)
 *service-account*.json
 play-*.json
+# Android Studio writes signed bundles here; never commit them.
+/app/release/
+*.p12

@@ -1,6 +1,7 @@
 package com.migrely.app.datasource.medication.datasource
 
 import android.database.sqlite.SQLiteConstraintException
+import android.database.sqlite.SQLiteException
 import android.database.sqlite.SQLiteFullException
 import com.migrely.app.datasource.exception.DatabaseDataException
 import com.migrely.app.datasource.exception.StorageFullDataException
@@ -9,6 +10,8 @@ import com.migrely.app.datasource.medication.mapper.MedicationLocalMapper
 import com.migrely.app.datasource.medication.mapper.OveruseNoticeLocalMapper
 import com.migrely.app.datasource.medication.model.AcuteIntakeDataModel
 import com.migrely.app.datasource.medication.model.AcuteIntakeLocalModel
+import com.migrely.app.datasource.medication.model.EarliestAcuteIntakeDataModel
+import com.migrely.app.datasource.medication.model.EarliestAcuteIntakeLocalModel
 import com.migrely.app.datasource.medication.model.IntakeDataModel
 import com.migrely.app.datasource.medication.model.IntakeEffectDataModel
 import com.migrely.app.datasource.medication.model.IntakeWithMedicationLocalModel
@@ -366,6 +369,29 @@ class MedicationDataSourceImplTest {
                 Instant.ofEpochMilli(2_000L)
             )
         )
+    }
+
+    @Test
+    fun `When reading the earliest acute intake then its instant and zone`() {
+        given(medicationDao.earliestAcuteIntake())
+            .willReturn(EarliestAcuteIntakeLocalModel(1_100L, "Asia/Tokyo"))
+
+        assertEquals(
+            EarliestAcuteIntakeDataModel(Instant.ofEpochMilli(1_100L), "Asia/Tokyo"),
+            classUnderTest.earliestAcuteIntake()
+        )
+    }
+
+    @Test
+    fun `Given no acute intake when reading the earliest then null`() {
+        assertNull(classUnderTest.earliestAcuteIntake())
+    }
+
+    @Test(expected = DatabaseDataException::class)
+    fun `Given SQLite fails when reading the earliest intake then a database failure`() {
+        whenever(medicationDao.earliestAcuteIntake()).thenThrow(SQLiteException())
+
+        classUnderTest.earliestAcuteIntake()
     }
 
     @Test

@@ -16,5 +16,7 @@ data class HistoryDayUiModel(
     val period: Boolean = false,
     val painFree: Boolean = false,
     val painFreeAllowed: Boolean = true,
-    val periodOffered: Boolean = true
+    val periodOffered: Boolean = true,
+    /** A medication for attacks was taken on the day (BRD D100). */
+    val attackMedication: Boolean = false
 ) : Parcelable

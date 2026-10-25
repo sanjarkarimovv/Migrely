@@ -44,23 +44,23 @@ target API 37, whichever comes first. Until then, do not mix AGP 9 idioms into b
 | `:architecture:ui` | Android | `com.migrely.app.architecture.ui` | `BaseComposeHolder`, `UiDestination`, `NavigationEventDestinationMapper`, `ScreenEnterObserver`, notification contracts |
 | `:architecture:instrumentation-test` | Android | `com.migrely.app.test` | E2E test helpers (first used by a feature change) |
 | `:coroutine` | JVM | `com.migrely.app.coroutine` | `CoroutineContextProvider` |
-| `:designsystem` | Android | `com.migrely.app.designsystem.{theme,sky,motion,snackbar,picker,icon,input}` | `MigrelyTheme`, `MigrelyColors`, `SkyCanvas` / `SkyAppearance`, `MonthSkyCalendar` / `MonthSkyLegend` / `DaySkyAppearance`, `rememberReduceMotion()`, `MigrelySnackbar`, `MigrelyDateTimePicker`, `MigrelyIcons`, `TapGuard`. Compose only; depends on no feature, presentation or domain module |
+| `:designsystem` | Android | `com.migrely.app.designsystem.{theme,sky,motion,snackbar,picker,icon,input}` | `MigrelyTheme(dark)`, `MigrelyColors`, `MigrelyDarkRoom` / `DarkScreens`, `SkyCanvas` / `SkyAppearance`, `MonthSkyCalendar` / `MonthSkyLegend` / `DaySkyAppearance`, `rememberReduceMotion()`, `MigrelySnackbar`, `MigrelyDateTimePicker`, `MigrelyIcons`, `TapGuard`. Compose only; depends on no feature, presentation or domain module |
 | `:datasource:source` | JVM | `com.migrely.app.datasource.<resource>.{datasource,model,exception}` | datasource interfaces, `*DataModel` / `*LocalModel`, `*DataException` |
 | `:datasource:implementation` | Android (Room via KSP) | `com.migrely.app.datasource.<resource>.{datasource,model,dao,mapper}` and `com.migrely.app.datasource.database` | `*DataSourceImpl`, Room entities (`*LocalModel`), DAOs, `MigrelyDatabase`, `*LocalMapper` |
 | `:features:<feature>:domain` | JVM | `com.migrely.app.<feature>.domain` | `model/`, `repository/` (interfaces), `usecase/`, `exception/` |
 | `:features:attackdays:domain` | JVM | `com.migrely.app.attackdays.domain` | `AttackDays`: the one rule for which dates an attack touches, and the zone margin for reading them (BRD D57). A shared domain module, used by home's and History's domains; it has no models, repositories or use cases of its own |
 | `:features:reminders:*` | JVM / Android | `com.migrely.app.reminders.*` | The Reminders screen, the daily reminder and its runs (change add-reminders, BRD D65–D68), like any feature |
 | `:features:backup:*` | JVM / Android | `com.migrely.app.backup.*` | Your data: JSON and CSV exports and the import (change add-data-export-import, BRD D71–D73), like any feature |
-| `:features:settings:*` | JVM / Android | `com.migrely.app.settings.*` | The Settings screen: its links, and "Track periods" (BRD D70, D79), like any feature |
+| `:features:settings:*` | JVM / Android | `com.migrely.app.settings.*` | The Settings screen in sections, with "Track periods" and the theme; the Warning signs, About Migrely, Privacy and Open-source licences pages, which share one view model; and the "Delete all data" confirmation, a screen of its own (BRD D70, D79, D93–D97), like any feature |
 | `:features:onboarding:*` | JVM / Android | `com.migrely.app.onboarding.*` | Onboarding on a new user's first start (change add-onboarding, BRD D76–D80), like any feature |
-| `:app` `start/` | Android | `com.migrely.app.start` | `StartEntryPoint`, through which `MainActivity` asks, behind the splash, whether onboarding comes first (BRD D76) |
+| `:app` `start/` | Android | `com.migrely.app.start` | `StartEntryPoint`, through which `MainActivity` asks, behind the splash, whether onboarding comes first and which theme to draw in (BRD D76, D94); `restartApp`, which starts a new process after all data is deleted (D96) |
 | `:app` `reminder/` and `datasource/` | Android | `com.migrely.app.reminder`, `com.migrely.app.datasource.{schedule,notification}.datasource` | `ReminderWorker`, `ReminderActionReceiver`, `TimeChangeReceiver`, `ReminderEntryPoint`; and the implementations of `ReminderScheduleDataSource` (WorkManager) and `NotificationDataSource` (NotificationManagerCompat) |
 | `:features:<feature>:presentation` | JVM | `com.migrely.app.<feature>.presentation` | `viewmodel/`, `model/`, `navigation/`, `mapper/` |
 | `:features:<feature>:data` | JVM | `com.migrely.app.<feature>.data` | `repository/` (implementations), `mapper/` |
 | `:features:<feature>:ui` | Android | `com.migrely.app.<feature>.ui` | `view/`, `model/`, `mapper/`, `di/` (`*Dependencies`, plain classes, no Hilt) |
 
 - Datasources share one `source`/`implementation` pair, one package per resource (`database`, `attack`, `tag`, `medication`,
-  `preferences`, `billing`, `scheduler`, `pdf`, `file`, `analytics`, `clock`), as in the sample. The pair may be split later only for build-time
+  `preferences`, `billing`, `scheduler`, `pdf`, `file`, `analytics`, `clock`, `appinfo`), as in the sample. The pair may be split later only for build-time
   reasons.
 - Features: `home` (today's sky, attack mode, quick actions), `attack`, `history` and `medication`. They read the
   shared `AttackDataSource` and `MedicationDataSource` through their own models and repositories.
@@ -181,8 +181,10 @@ Health data must never be passed to either SDK.
   - Version 5 is an additive `AutoMigration(4, 5)`, covered by `MigrationTest` 4→5 and 1→5.
 - **Range reads (History).** A month is read with `overlapping(null, from, to)`, which returns every attack touching
   the range, the one in progress included, with a margin of two days on each side so that attacks logged in other
-  zones are found. The first month that can be shown comes from `earliestStart()`. Both use the start index; the
-  domain assigns days in each attack's zone (BRD EC-TIM-02).
+  zones are found. The first month that can be shown is the earliest of the months of `earliestStart()`,
+  `DayMarkDataSource.earliestMark()` and `MedicationDataSource.earliestAcuteIntake()`, the last read in its intake's
+  zone and leaving preventive medications out (BRD D51, D99). The attack reads use the start index and the intake read
+  the taken index; the domain assigns days in each attack's zone (BRD EC-TIM-02).
 - `SQLiteFullException` becomes `StorageFullDataException`. Any other `SQLiteException` becomes
   `DatabaseDataException`. Repositories turn both into failure values (section 7).
 - DAO SQL is covered by instrumented tests (`connectedDebugAndroidTest` on the `Migrely_API_36` emulator). Datasource
@@ -234,9 +236,16 @@ Health data must never be passed to either SDK.
 
 ## 10. Theme and resources
 
-- The theme lives in `:designsystem` (`MigrelyTheme`, `MigrelyColors`). The app is always dark: a fixed
-  `darkColorScheme`, no dynamic colour, no pure white anywhere (BRD EC-UX-01).
-- Feature previews wrap content in `MigrelyTheme`.
+- The theme lives in `:designsystem` (`MigrelyTheme`, `MigrelyColors`). It is dark by default, or light by the user's
+  choice in Settings (BRD EC-UX-01, D94): fixed schemes, no dynamic colour, no pure white anywhere.
+  - `MainActivity` reads the choice behind the splash and follows it live; "Match the phone" follows
+    `isSystemInDarkTheme()`. Screens take every colour from `MaterialTheme.colorScheme`.
+  - Attack mode and the dark room wrap themselves in `MigrelyDarkRoom`, which keeps them, their dialogs and their
+    messages in the dark scheme in either theme, and counts itself in `DarkScreens` so the system bars stay dark too.
+  - While an attack is in progress every screen is dark: `MainActivity` follows `GetAppearanceUseCase` (the theme and
+    `AttackDataSource.inProgressChanges()`) and `DarkThemeUiResolver` picks the scheme.
+  - Skies are dark in every theme; what is drawn on a sky takes the dark scheme's colours.
+- Feature previews wrap content in `MigrelyTheme`, with a light preview for new screens.
 - Feature UI mappers convert their own UI models into design-system parameters (for example `SkyAppearance`). No
   feature model is passed into `:designsystem`.
 - Motion: every animation checks `rememberReduceMotion()` (true when the system animator scale is 0) and snaps
@@ -298,6 +307,7 @@ with no `testDebugUnitTest` task, so `testDebugUnitTest` alone would skip their 
 | Home hosts History's month card and the medication card, and History hosts the overuse indicator, through composable slots that `:app` fills; each loads when its refresh key changes instead of using `ScreenEnterObserver` | one calendar implementation without a feature depending on another; the sample has no screen composed of two features. The key is home's view-state count, so the card follows every home load, including an undo on home | permanent |
 | The schedule and notification datasource implementations live in `:app`, not `:datasource:implementation` | they need `MainActivity`, the worker, the receivers and the notification copy, which `:datasource:implementation` cannot see; they keep the datasource package names, so the architecture tests still place them | permanent |
 | Onboarding hosts the reminders feature's daily reminder offer through a slot that `:app` fills. The offer is not a screen, so it reads its view model's state and notifications itself, through its own UI mappers, and loads with `LaunchedEffect(viewModel)` | the offer reuses the Reminders screen's permission rules without onboarding depending on the reminders feature (BRD D80) | permanent |
-| `YourDataViewModel` and `ReportViewModel` are `@Singleton`s that keep, only for delivery, whether work is going on and the last outcome the screen has not taken | writing or reading a file, or making a report, can outlast a rotation; the base view model's flows do not replay, so a screen rebuilt mid-work would show its actions enabled and miss the outcome. The screen asks for both once it listens, and acknowledges each outcome | permanent |
+| `YourDataViewModel`, `ReportViewModel` and `DeleteAllDataViewModel` are `@Singleton`s that keep, only for delivery, whether work is going on and its outcome: the last outcome the screen has not taken, or, for deleting all data, that it finished. `YourDataViewModel` also keeps the automatic copy it read last, so its row stays while work goes on | writing or reading a file, making a report or deleting all data can outlast a rotation; the base view model's flows do not replay, so a screen rebuilt mid-work would show its actions enabled and miss the outcome, and the deletion would miss the restart. The screen asks for both once it listens, and acknowledges each outcome | permanent |
+| The "Delete all data" screen asks its view model where the deletion stands with a `LaunchedEffect` on every composition, after its listeners, instead of `ScreenEnterObserver` | the view model is app-wide and the deletion outlives a rotation; a rebuilt screen must hear of a failure it missed or be sent on to the restart, and asking once its listeners run means nothing is emitted before they listen | permanent |
 | `AttacksCsvMapper` (`:features:backup:data`) and `ReportDocumentMapper` and `ReportRecordsDomainMapper` (`:features:report:data`) hold the English words of the CSV and of the PDF | the CSV and the PDF are documents whose words must not change with the screen; resources are UI only | the app's first translation |
 | Further Konsist rule adaptations | recorded here when made | — |

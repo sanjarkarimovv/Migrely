@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
     Android 12 and later (BRD BAK-F4, D74): the same as backup_rules.xml, for the cloud backup and for moving to a new
-    phone. The cache, where PDF reports go, is never backed up. Health records go to the cloud only end-to-end
-    encrypted, which needs a screen lock; without one, the user's own JSON export is the way to keep a copy.
+    phone. The cache, where PDF reports go, is never backed up. From Android 9, here and through requireFlags in
+    backup_rules.xml, health records go to the cloud only end-to-end encrypted, which needs a screen lock; without one,
+    the user's own JSON export is the way to keep a copy. Android 8 cannot require it, and backs up as Google does.
 -->
 <data-extraction-rules>
     <cloud-backup disableIfNoEncryptionCapabilities="true">

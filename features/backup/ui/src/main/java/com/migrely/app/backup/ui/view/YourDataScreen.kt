@@ -43,6 +43,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -53,24 +54,31 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavController
 import com.migrely.app.architecture.ui.view.ScreenEnterObserver
 import com.migrely.app.backup.presentation.model.ImportModePresentationModel
 import com.migrely.app.backup.presentation.model.YourDataViewState
 import com.migrely.app.backup.ui.R
 import com.migrely.app.backup.ui.di.YourDataDependencies
+import com.migrely.app.backup.ui.model.AutomaticCopyUiModel
 import com.migrely.app.backup.ui.model.BackupSummaryUiModel
 import com.migrely.app.backup.ui.model.PendingImportUiModel
 import com.migrely.app.backup.ui.model.YourDataEventUiModel
 import com.migrely.app.backup.ui.model.YourDataMessageUiModel
-import com.migrely.app.backup.ui.model.YourDataViewStateUiModel
 import com.migrely.app.designsystem.icon.MigrelyIcons
 import com.migrely.app.designsystem.motion.rememberReduceMotion
 import com.migrely.app.designsystem.snackbar.MigrelySnackbar
 import com.migrely.app.designsystem.snackbar.MigrelySnackbarHost
 import com.migrely.app.designsystem.snackbar.SnackbarTone
 import com.migrely.app.designsystem.theme.MigrelyTheme
+import java.time.Instant
 import java.time.LocalDate
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.onSubscription
 
@@ -83,26 +91,28 @@ private val BACKUP_TYPES = arrayOf("application/json", "text/*", "application/oc
 /** A message as shown, with its place in the order shown. */
 private data class ShownMessage(val message: YourDataMessageUiModel, val number: Int)
 
-/** Callbacks from the Your data screen. */
+/** Callbacks from the Your data screen. [onRestoreCopy] asks to confirm first. */
 data class YourDataActions(
     val onBack: () -> Unit,
     val onExportBackup: () -> Unit,
     val onExportCsv: () -> Unit,
-    val onImport: () -> Unit
+    val onImport: () -> Unit,
+    val onRestoreCopy: () -> Unit
 )
 
 /**
- * "Your data" (BRD BAK-F1–F3, BAK-F5, D71–D73). Files are chosen through the system's file picker, so no storage
- * permission is asked for. A picked backup is checked and shown before anything changes.
+ * "Your data" (BRD BAK-F1–F3, BAK-F5, D71–D73, D98). Files are chosen through the system's file picker, so no storage
+ * permission is asked for. A picked backup, or the automatic copy, is checked and shown before anything changes.
  */
 @Composable
 fun YourDataDependencies.YourData(navController: NavController, modifier: Modifier = Modifier) {
     ScreenEnterObserver { yourDataViewModel.onEnter() }
     ViewModelObserver(navController)
-    val viewState by yourDataViewModel.viewState.collectAsState(YourDataViewState.Idle)
-    val working = yourDataViewStateUiMapper.toUi(viewState) == YourDataViewStateUiModel.Working
+    val viewState by yourDataViewModel.viewState.collectAsState(YourDataViewState.Idle(null))
+    val uiState = yourDataViewStateUiMapper.toUi(viewState)
     // Kept across a rotation, so the question is not lost while the user decides.
     var pending by rememberSaveable { mutableStateOf<PendingImportUiModel?>(null) }
+    var confirmingRestore by rememberSaveable { mutableStateOf(false) }
     // Numbered, so the same message twice in a row shows and is announced again.
     var message by remember { mutableStateOf<ShownMessage?>(null) }
     var shownCount by remember { mutableIntStateOf(0) }
@@ -110,16 +120,20 @@ fun YourDataDependencies.YourData(navController: NavController, modifier: Modifi
         shownCount++
         message = ShownMessage(it, shownCount)
     }
-    LaunchedEffect(yourDataEventPresenter) {
-        // Asked once this screen listens, so an outcome that arrived during a rotation is not lost.
-        yourDataEventPresenter.events.onSubscription {
-            yourDataViewModel.onResume()
-        }.collect { event ->
-            when (event) {
-                is YourDataEventUiModel.Confirm -> pending = event.pending
-                is YourDataEventUiModel.Message -> show(event.message)
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    LaunchedEffect(yourDataEventPresenter, lifecycle) {
+        // Only while the screen shows, so a message is not timed out unseen while the app is away. An outcome that
+        // arrives meanwhile, or during a rotation, is asked for again when the screen listens.
+        lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            yourDataEventPresenter.events.onSubscription {
+                yourDataViewModel.onResume()
+            }.collect { event ->
+                when (event) {
+                    is YourDataEventUiModel.Confirm -> pending = event.pending
+                    is YourDataEventUiModel.Message -> show(event.message)
+                }
+                yourDataViewModel.onOutcomeShownAction()
             }
-            yourDataViewModel.onOutcomeShownAction()
         }
     }
     LaunchedEffect(message) {
@@ -152,7 +166,8 @@ fun YourDataDependencies.YourData(navController: NavController, modifier: Modifi
         }
     }
     YourDataContents(
-        working = working,
+        working = uiState.working,
+        automaticCopy = uiState.automaticCopy,
         actions = YourDataActions(
             onBack = yourDataViewModel::onBackAction,
             onExportBackup = {
@@ -161,7 +176,8 @@ fun YourDataDependencies.YourData(navController: NavController, modifier: Modifi
             onExportCsv = {
                 launching { exportCsv.launch("migrely-attacks-${LocalDate.now()}.csv") }
             },
-            onImport = { launching { pickBackup.launch(BACKUP_TYPES) } }
+            onImport = { launching { pickBackup.launch(BACKUP_TYPES) } },
+            onRestoreCopy = { confirmingRestore = true }
         ),
         messages = {
             MigrelySnackbarHost(message = message, reduceMotion = rememberReduceMotion()) { shown ->
@@ -186,6 +202,18 @@ fun YourDataDependencies.YourData(navController: NavController, modifier: Modifi
             onDismiss = { pending = null }
         )
     }
+    val copy = uiState.automaticCopy
+    if (confirmingRestore && copy != null) {
+        RestoreDialog(
+            copy = copy,
+            onRestore = {
+                confirmingRestore = false
+                // Exactly the copy the dialog showed, even if a newer one was saved meanwhile.
+                yourDataViewModel.onRestoreCopyAction(Instant.ofEpochMilli(copy.madeAtEpochMillis))
+            },
+            onDismiss = { confirmingRestore = false }
+        )
+    }
 }
 
 /** The screen itself, without its view model. */
@@ -193,6 +221,7 @@ fun YourDataDependencies.YourData(navController: NavController, modifier: Modifi
 @Composable
 fun YourDataContents(
     working: Boolean,
+    automaticCopy: AutomaticCopyUiModel?,
     actions: YourDataActions,
     messages: @Composable () -> Unit,
     modifier: Modifier = Modifier
@@ -268,6 +297,18 @@ fun YourDataContents(
                         enabled = !working,
                         onClick = actions.onImport
                     )
+                    // Only when there is a copy: the undo of the last "Replace" (BRD D98).
+                    if (automaticCopy != null) {
+                        ActionRow(
+                            title = stringResource(
+                                R.string.your_data_restore_copy,
+                                automaticCopy.madeAtText()
+                            ),
+                            summary = stringResource(R.string.your_data_restore_copy_summary),
+                            enabled = !working,
+                            onClick = actions.onRestoreCopy
+                        )
+                    }
                     Text(
                         text = stringResource(R.string.your_data_note),
                         style = MaterialTheme.typography.bodyMedium,
@@ -357,6 +398,54 @@ private fun ImportDialog(
     )
 }
 
+/** Shows what the copy holds before it takes the place of what the phone holds, as an import does. */
+@Composable
+private fun RestoreDialog(
+    copy: AutomaticCopyUiModel,
+    onRestore: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.your_data_restore_title, copy.madeAtText())) },
+        text = {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.verticalScroll(rememberScrollState())
+            ) {
+                Text(copy.summary.text())
+                Text(stringResource(R.string.your_data_restore_replaces))
+            }
+        },
+        confirmButton = {
+            // Like Replace, it swaps everything on the phone.
+            TextButton(
+                onClick = onRestore,
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = MaterialTheme.colorScheme.error
+                )
+            ) {
+                Text(stringResource(R.string.your_data_restore))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.your_data_cancel)) }
+        }
+    )
+}
+
+/** When the copy was made, in the phone's own date and time format and zone. */
+@Composable
+private fun AutomaticCopyUiModel.madeAtText(): String {
+    val locale = LocalConfiguration.current.locales[0]
+    return remember(madeAtEpochMillis, locale) {
+        DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM, FormatStyle.SHORT)
+            .withLocale(locale)
+            .withZone(ZoneId.systemDefault())
+            .format(Instant.ofEpochMilli(madeAtEpochMillis))
+    }
+}
+
 @Composable
 private fun BackupSummaryUiModel.text() = stringResource(
     R.string.your_data_confirm_holds,
@@ -371,6 +460,8 @@ private fun YourDataMessageUiModel.text(): String = when (this) {
     YourDataMessageUiModel.CsvSaved -> stringResource(R.string.your_data_csv_saved)
     is YourDataMessageUiModel.Replaced ->
         pluralStringResource(R.plurals.your_data_replaced, attacks, attacks)
+    is YourDataMessageUiModel.Restored ->
+        pluralStringResource(R.plurals.your_data_restored, attacks, attacks)
     is YourDataMessageUiModel.Added -> when {
         addedAttacks > 0 && skippedAttacks > 0 ->
             pluralStringResource(R.plurals.your_data_added, addedAttacks, addedAttacks) + " " +
@@ -399,7 +490,8 @@ private fun YourDataMessageUiModel.text(): String = when (this) {
 private fun YourDataMessageUiModel.tone() = when (this) {
     YourDataMessageUiModel.BackupSaved,
     YourDataMessageUiModel.CsvSaved,
-    is YourDataMessageUiModel.Replaced -> SnackbarTone.Confirmation
+    is YourDataMessageUiModel.Replaced,
+    is YourDataMessageUiModel.Restored -> SnackbarTone.Confirmation
     is YourDataMessageUiModel.Added ->
         if (addedAttacks == 0 &&
             addedOthers == 0
@@ -415,13 +507,32 @@ private fun YourDataMessageUiModel.tone() = when (this) {
     YourDataMessageUiModel.NoFilePicker -> SnackbarTone.Error
 }
 
+private val PREVIEW_ACTIONS = YourDataActions({}, {}, {}, {}, {})
+
 @Preview(name = "Your data")
 @Composable
 private fun YourDataPreview() {
     MigrelyTheme {
         YourDataContents(
             working = false,
-            actions = YourDataActions({}, {}, {}, {}),
+            automaticCopy = null,
+            actions = PREVIEW_ACTIONS,
+            messages = {}
+        )
+    }
+}
+
+@Preview(name = "Your data, a copy to restore, light")
+@Composable
+private fun YourDataCopyPreview() {
+    MigrelyTheme(dark = false) {
+        YourDataContents(
+            working = false,
+            automaticCopy = AutomaticCopyUiModel(
+                madeAtEpochMillis = 1_793_000_000_000L,
+                summary = BackupSummaryUiModel(16, 2, 5)
+            ),
+            actions = PREVIEW_ACTIONS,
             messages = {}
         )
     }
@@ -433,7 +544,8 @@ private fun YourDataWorkingPreview() {
     MigrelyTheme {
         YourDataContents(
             working = true,
-            actions = YourDataActions({}, {}, {}, {}),
+            automaticCopy = null,
+            actions = PREVIEW_ACTIONS,
             messages = {}
         )
     }

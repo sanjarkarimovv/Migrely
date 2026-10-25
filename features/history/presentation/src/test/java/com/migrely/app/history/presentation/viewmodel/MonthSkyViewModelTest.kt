@@ -31,7 +31,7 @@ private val OCTOBER = HistoryMonthDomainModel(
     month = YearMonth.of(2026, 10),
     today = LocalDate.parse("2026-10-23"),
     earliestMonth = YearMonth.of(2026, 8),
-    anyAttackLogged = true,
+    anythingLogged = true,
     days = emptyList(),
     attacks = emptyList(),
     stats = MonthStatsDomainModel(0, 0, 0, null, 0, chronic = false, progress = null)

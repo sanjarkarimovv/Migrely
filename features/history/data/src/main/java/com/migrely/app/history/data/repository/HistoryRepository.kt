@@ -19,6 +19,7 @@ import com.migrely.app.history.domain.model.DayMarkKindDomainModel
 import com.migrely.app.history.domain.model.DayMarkWriteResultDomainModel
 import com.migrely.app.history.domain.model.DayMarksResultDomainModel
 import com.migrely.app.history.domain.model.DeletedAttackDomainModel
+import com.migrely.app.history.domain.model.EarliestAttackMedicationIntakeResultDomainModel
 import com.migrely.app.history.domain.model.EarliestAttackResultDomainModel
 import com.migrely.app.history.domain.model.EarliestDayMarkResultDomainModel
 import com.migrely.app.history.domain.model.UndoResultDomainModel
@@ -26,6 +27,7 @@ import com.migrely.app.history.domain.repository.GetAttackMedicationIntakesRepos
 import com.migrely.app.history.domain.repository.GetAttacksTouchingRepository
 import com.migrely.app.history.domain.repository.GetCurrentTimeRepository
 import com.migrely.app.history.domain.repository.GetDayMarksRepository
+import com.migrely.app.history.domain.repository.GetEarliestAttackMedicationIntakeRepository
 import com.migrely.app.history.domain.repository.GetEarliestAttackRepository
 import com.migrely.app.history.domain.repository.GetEarliestDayMarkRepository
 import com.migrely.app.history.domain.repository.GetPeriodTrackingRepository
@@ -59,7 +61,8 @@ class HistoryRepository(
     GetDayMarksRepository,
     SetDayMarkRepository,
     GetEarliestDayMarkRepository,
-    GetAttackMedicationIntakesRepository {
+    GetAttackMedicationIntakesRepository,
+    GetEarliestAttackMedicationIntakeRepository {
     override fun currentTime() =
         CurrentTimeDomainModel(instant = clockDataSource.now(), zone = clockDataSource.zone())
 
@@ -122,6 +125,19 @@ class HistoryRepository(
     } catch (_: DataException) {
         AttackMedicationIntakesResultDomainModel.Failed
     }
+
+    // An intake keeps the zone it was taken in; one unknown to this device reads as UTC.
+    override fun earliestAttackMedicationIntake(): EarliestAttackMedicationIntakeResultDomainModel =
+        try {
+            medicationDataSource.earliestAcuteIntake()?.let { earliest ->
+                EarliestAttackMedicationIntakeResultDomainModel.Found(
+                    takenAt = earliest.takenAt,
+                    zone = zoneDomainMapper.toDomain(earliest.takenZoneId)
+                )
+            } ?: EarliestAttackMedicationIntakeResultDomainModel.None
+        } catch (_: DataException) {
+            EarliestAttackMedicationIntakeResultDomainModel.Failed
+        }
 
     override fun earliestDayMark(): EarliestDayMarkResultDomainModel = try {
         dayMarkDataSource.earliestMark()

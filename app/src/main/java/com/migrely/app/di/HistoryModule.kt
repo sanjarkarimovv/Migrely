@@ -6,6 +6,7 @@ import com.migrely.app.history.domain.repository.GetAttackMedicationIntakesRepos
 import com.migrely.app.history.domain.repository.GetAttacksTouchingRepository
 import com.migrely.app.history.domain.repository.GetCurrentTimeRepository
 import com.migrely.app.history.domain.repository.GetDayMarksRepository
+import com.migrely.app.history.domain.repository.GetEarliestAttackMedicationIntakeRepository
 import com.migrely.app.history.domain.repository.GetEarliestAttackRepository
 import com.migrely.app.history.domain.repository.GetEarliestDayMarkRepository
 import com.migrely.app.history.domain.repository.GetPeriodTrackingRepository
@@ -39,6 +40,7 @@ internal object HistoryModule {
         getDayMarksRepository: GetDayMarksRepository,
         getEarliestDayMarkRepository: GetEarliestDayMarkRepository,
         getAttackMedicationIntakesRepository: GetAttackMedicationIntakesRepository,
+        getEarliestAttackMedicationIntakeRepository: GetEarliestAttackMedicationIntakeRepository,
         getPeriodTrackingRepository: GetPeriodTrackingRepository,
         coroutineContextProvider: CoroutineContextProvider
     ) = GetHistoryMonthUseCase(
@@ -49,6 +51,7 @@ internal object HistoryModule {
         getDayMarksRepository,
         getEarliestDayMarkRepository,
         getAttackMedicationIntakesRepository,
+        getEarliestAttackMedicationIntakeRepository,
         getPeriodTrackingRepository,
         coroutineContextProvider
     )
