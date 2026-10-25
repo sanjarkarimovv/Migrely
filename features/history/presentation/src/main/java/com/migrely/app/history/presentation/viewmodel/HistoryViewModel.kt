@@ -120,7 +120,7 @@ class HistoryViewModel(
                             if (result.month.anythingLogged) {
                                 HistoryViewState.Ready(shown, requestedMonth = month)
                             } else {
-                                HistoryViewState.NoAttacks(shown, requestedMonth = month)
+                                HistoryViewState.NothingLogged(shown, requestedMonth = month)
                             }
                         )
                         val deleted = result.recentlyDeleted

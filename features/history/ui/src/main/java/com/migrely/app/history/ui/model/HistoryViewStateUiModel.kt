@@ -9,7 +9,7 @@ sealed interface HistoryViewStateUiModel : Parcelable {
     data object Loading : HistoryViewStateUiModel
 
     @Parcelize
-    data class NoAttacks(val month: HistoryMonthUiModel, val requestedMonth: String?) :
+    data class NothingLogged(val month: HistoryMonthUiModel, val requestedMonth: String?) :
         HistoryViewStateUiModel
 
     @Parcelize

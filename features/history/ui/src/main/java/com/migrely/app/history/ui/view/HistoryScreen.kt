@@ -194,14 +194,14 @@ data class HistoryActions(
 private val HistoryViewStateUiModel.month: HistoryMonthUiModel?
     get() = when (this) {
         HistoryViewStateUiModel.Loading -> null
-        is HistoryViewStateUiModel.NoAttacks -> month
+        is HistoryViewStateUiModel.NothingLogged -> month
         is HistoryViewStateUiModel.Ready -> month
     }
 
 private val HistoryViewStateUiModel.requestedMonth: String?
     get() = when (this) {
         HistoryViewStateUiModel.Loading -> null
-        is HistoryViewStateUiModel.NoAttacks -> requestedMonth
+        is HistoryViewStateUiModel.NothingLogged -> requestedMonth
         is HistoryViewStateUiModel.Ready -> requestedMonth
     }
 
@@ -266,7 +266,7 @@ fun HistoryContents(
             } else {
                 MonthContents(
                     month = month,
-                    noAttacks = viewState is HistoryViewStateUiModel.NoAttacks,
+                    nothingLogged = viewState is HistoryViewStateUiModel.NothingLogged,
                     selectedEpochDay = selectedEpochDay,
                     mappers = mappers,
                     actions = actions,
@@ -281,7 +281,7 @@ fun HistoryContents(
 @Composable
 private fun MonthContents(
     month: HistoryMonthUiModel,
-    noAttacks: Boolean,
+    nothingLogged: Boolean,
     selectedEpochDay: Long?,
     mappers: HistoryCalendarMappers,
     actions: HistoryActions,
@@ -301,7 +301,7 @@ private fun MonthContents(
             onDay = actions.onDay
         )
         // Before anything is logged, the first-use card replaces the numbers (BRD EC-HIS-01, D99).
-        if (!noAttacks) {
+        if (!nothingLogged) {
             MonthSummary(
                 month = month,
                 timeUiFormatter = mappers.historyTimeUiFormatter,
@@ -311,7 +311,7 @@ private fun MonthContents(
         }
     }
     val list: @Composable () -> Unit = {
-        ListSection(month, noAttacks, selectedEpochDay, mappers.historyTimeUiFormatter, actions)
+        ListSection(month, nothingLogged, selectedEpochDay, mappers.historyTimeUiFormatter, actions)
     }
     // A phone in landscape puts the calendar and the list side by side (BRD EC-UX-03).
     if (LocalConfiguration.current.screenHeightDp < COMPACT_HEIGHT_DP) {
@@ -386,7 +386,7 @@ private fun MonthHeader(
 @Composable
 private fun ListSection(
     month: HistoryMonthUiModel,
-    noAttacks: Boolean,
+    nothingLogged: Boolean,
     selectedEpochDay: Long?,
     timeUiFormatter: HistoryTimeUiFormatter,
     actions: HistoryActions
@@ -395,7 +395,7 @@ private fun ListSection(
     val selectedDay = month.days.firstOrNull { it.epochDay == selectedEpochDay }
     when {
         selectedDay != null -> DaySection(selectedDay, monthName, timeUiFormatter, actions)
-        noAttacks -> EmptyHistory(actions)
+        nothingLogged -> EmptyHistory(actions)
         else -> {
             SectionTitle(
                 if (month.attacks.isEmpty()) {
@@ -701,7 +701,7 @@ private fun HistoryDayPreview() {
 private fun HistoryEmptyPreview() {
     MigrelyTheme {
         HistoryContents(
-            viewState = HistoryViewStateUiModel.NoAttacks(previewMonth(), null),
+            viewState = HistoryViewStateUiModel.NothingLogged(previewMonth(), null),
             selectedEpochDay = null,
             mappers = previewMappers,
             actions = previewActions,

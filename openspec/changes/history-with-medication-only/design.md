@@ -15,7 +15,8 @@
 
 - **The model:** `HistoryMonthDomainModel.anyAttackLogged` becomes `anythingLogged`: an attack, a day mark or an
   attack-medication intake.
-- **The view state:** `HistoryViewModel` chooses `Ready` when anything is logged, and `NoAttacks` only when nothing is.
+- **The view state:** `HistoryViewModel` chooses `Ready` when anything is logged, and `NothingLogged` (formerly
+  `NoAttacks`, renamed for what it now means) only when nothing is.
 - **The empty state:** the copy stays "No migraines logged yet" with "Log your first migraine", since it now shows only
   when nothing at all is logged.
 - **The progress message:** it still needs a logged attack. It compares migraine days, and without a migraine ever

@@ -110,14 +110,14 @@ class HistoryViewModelTest :
     }
 
     @Test
-    fun `Given nothing logged yet when entering then no attacks`() = runTest {
+    fun `Given nothing logged yet when entering then nothing logged`() = runTest {
         givenMonth(HistoryMonthResultDomainModel.Loaded(month(anythingLogged = false)), null)
         val state = nextViewState()
 
         classUnderTest.onEnter(null)
 
         assertEquals(
-            HistoryViewState.NoAttacks(
+            HistoryViewState.NothingLogged(
                 historyMonthPresentationMapper.toPresentation(month(anythingLogged = false)),
                 requestedMonth = null
             ),
@@ -157,8 +157,8 @@ class HistoryViewModelTest :
             classUnderTest.onEnter(SEPTEMBER)
 
             val actual = state.await()
-            assertTrue(actual is HistoryViewState.NoAttacks)
-            assertEquals(false, (actual as HistoryViewState.NoAttacks).month.hasPreviousMonth)
+            assertTrue(actual is HistoryViewState.NothingLogged)
+            assertEquals(false, (actual as HistoryViewState.NothingLogged).month.hasPreviousMonth)
         }
 
     @Test
