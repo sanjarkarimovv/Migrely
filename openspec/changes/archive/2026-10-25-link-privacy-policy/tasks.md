@@ -9,5 +9,6 @@
 ## 2. Verify
 
 - [x] 2.1 Gate: `assembleDebug test ktlintCheck detekt`
-- [ ] 2.2 On emulator-5570: the link is at the end of the Privacy page, a tap opens the browser at the policy, and
-  TalkBack reads it as a button
+- [x] 2.2 On emulator-5570: the link is at the end of the Privacy page with the address under it; a tap sends
+  `VIEW https://migrely.health/privacy/` to Chrome; the link is one clickable, focusable node 57 dp tall, exposed as a
+  button like the app's other buttons
