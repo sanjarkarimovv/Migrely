@@ -326,10 +326,21 @@ internal class ReportPageLayout(private val document: ReportDocumentDataModel) {
     }
 
     private fun paint(size: Float, bold: Boolean = false, color: Int = Color.BLACK) =
-        TextPaint().apply {
-            isAntiAlias = true
-            textSize = size
-            this.color = color
-            typeface = if (bold) Typeface.DEFAULT_BOLD else Typeface.DEFAULT
-        }
+        reportTextPaint(size, bold, color)
 }
+
+/**
+ * Text for a PDF page, whose unit is a point. Hinted metrics would round each glyph's advance to a whole point: at
+ * 10 pt a space, 2.48 pt in Roboto, became 2 while "m", "n" and "h" rounded up, so words ran together ("a month",
+ * "at the"). Linear metrics, subpixel positions and no hinting keep the font's own advances (store polish).
+ */
+internal fun reportTextPaint(size: Float, bold: Boolean, color: Int): TextPaint =
+    TextPaint().apply {
+        isAntiAlias = true
+        isLinearText = true
+        isSubpixelText = true
+        hinting = Paint.HINTING_OFF
+        textSize = size
+        this.color = color
+        typeface = if (bold) Typeface.DEFAULT_BOLD else Typeface.DEFAULT
+    }
