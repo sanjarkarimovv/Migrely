@@ -10,6 +10,7 @@ import com.migrely.app.navigation.mapper.PaywallGateNavigationEventDestinationMa
 import com.migrely.app.navigation.mapper.PaywallNavigationEventDestinationMapper
 import com.migrely.app.navigation.mapper.PaywallTriggerNavigationEventDestinationMapper
 import com.migrely.app.navigation.mapper.PremiumSectionNavigationEventDestinationMapper
+import com.migrely.app.premium.PurchaseUpdatesWatcher
 import com.migrely.app.subscription.data.mapper.SubscriptionDataMappers
 import com.migrely.app.subscription.data.repository.SubscriptionRepository
 import com.migrely.app.subscription.domain.usecase.BuyPremiumUseCase
@@ -24,6 +25,7 @@ import com.migrely.app.subscription.domain.usecase.RefreshPremiumUseCase
 import com.migrely.app.subscription.domain.usecase.RestorePurchasesUseCase
 import com.migrely.app.subscription.domain.usecase.ShouldShowPaywallUseCase
 import com.migrely.app.subscription.domain.usecase.ShowPaymentMessagesUseCase
+import com.migrely.app.subscription.domain.usecase.WatchPurchaseUpdatesUseCase
 import com.migrely.app.subscription.presentation.mapper.PaywallPresentationMapper
 import com.migrely.app.subscription.presentation.mapper.PaywallProductDomainMapper
 import com.migrely.app.subscription.presentation.mapper.PaywallTriggerDomainMapper
@@ -56,6 +58,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
+import kotlinx.coroutines.Dispatchers
 
 /**
  * Migrely Premium (change add-subscription, BRD D105–D113). One repository serves every repository
@@ -79,7 +82,9 @@ internal object SubscriptionModule {
         SubscriptionDataMappers.create()
     )
 
+    /** One for the app, so checks run one at a time (review M5). */
     @Provides
+    @Singleton
     fun providesPremiumChecker(repository: SubscriptionRepository) = PremiumChecker(
         getEntitlementRepository = repository,
         saveEntitlementRepository = repository,
@@ -130,6 +135,18 @@ internal object SubscriptionModule {
         coroutines: CoroutineContextProvider
     ) = ShowPaymentMessagesUseCase(repository, repository, premiumChecker, coroutines)
 
+    /** Play's purchase changes outside a sheet, checked for as long as the app runs (review I1). */
+    @Provides
+    @Singleton
+    fun providesPurchaseUpdatesWatcher(
+        repository: SubscriptionRepository,
+        premiumChecker: PremiumChecker,
+        coroutines: CoroutineContextProvider
+    ): PurchaseUpdatesWatcher {
+        val useCase = WatchPurchaseUpdatesUseCase(repository, premiumChecker, coroutines)
+        return PurchaseUpdatesWatcher({ useCase.executeInBackground(Unit) }, Dispatchers.IO)
+    }
+
     @Provides
     fun providesPremiumStatusPresentationMapper() =
         PremiumStatusPresentationMapper(PremiumPlanPresentationMapper())
@@ -172,12 +189,14 @@ internal object SubscriptionModule {
     @Singleton
     fun providesPaywallDependencies(
         paywallViewModel: PaywallViewModel,
+        purchaseUpdatesWatcher: PurchaseUpdatesWatcher,
         premiumStatusUiMapper: PremiumStatusUiMapper
     ): PaywallDependencies {
         // The mapper and the screen share one presenter, so outcomes reach this screen.
         val presenter = PaywallEventPresenter()
         return PaywallDependencies(
             paywallViewModel = paywallViewModel,
+            purchaseUpdates = purchaseUpdatesWatcher.updates,
             paywallViewStateUiMapper = PaywallViewStateUiMapper(
                 premiumStatusUiMapper,
                 PremiumPlanUiMapper()
@@ -197,6 +216,7 @@ internal object SubscriptionModule {
         manageSubscriptionUseCase: ManageSubscriptionUseCase,
         premiumStatusPresentationMapper: PremiumStatusPresentationMapper,
         premiumStatusUiMapper: PremiumStatusUiMapper,
+        purchaseUpdatesWatcher: PurchaseUpdatesWatcher,
         useCaseExecutor: UseCaseExecutor
     ) = PremiumSectionDependencies(
         premiumSectionViewModel = PremiumSectionViewModel(
@@ -206,6 +226,7 @@ internal object SubscriptionModule {
             premiumStatusPresentationMapper,
             useCaseExecutor
         ),
+        purchaseUpdates = purchaseUpdatesWatcher.updates,
         premiumSectionViewStateUiMapper = PremiumSectionViewStateUiMapper(premiumStatusUiMapper),
         navigationMapper = PremiumSectionNavigationEventDestinationMapper(),
         notificationMapper = PremiumSectionNotificationUiMapper()

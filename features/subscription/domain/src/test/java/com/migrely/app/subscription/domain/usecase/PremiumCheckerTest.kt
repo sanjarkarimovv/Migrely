@@ -163,4 +163,21 @@ class PremiumCheckerTest {
 
         assertEquals(PremiumStatusDomainModel.Free, classUnderTest.current())
     }
+
+    @Test
+    fun `Given two checks at once then they run one after the other`() {
+        val inside = java.util.concurrent.atomic.AtomicInteger()
+        var most = 0
+        given(getOwnedPurchasesRepository.ownedPurchases()).willAnswer {
+            most = maxOf(most, inside.incrementAndGet())
+            Thread.sleep(50L)
+            inside.decrementAndGet()
+            OwnedPurchasesResultDomainModel.Owned(emptyList())
+        }
+
+        val threads = List(4) { kotlin.concurrent.thread { classUnderTest.check() } }
+        threads.forEach { it.join(5_000L) }
+
+        assertEquals(1, most)
+    }
 }

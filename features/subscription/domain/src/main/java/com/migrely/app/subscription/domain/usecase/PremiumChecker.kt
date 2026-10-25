@@ -16,6 +16,9 @@ import com.migrely.app.subscription.domain.repository.SaveEntitlementRepository
  * Asks Google Play what this account owns, applies [EntitlementRules] and keeps the result (BRD
  * D106). A purchase that unlocks and is not yet acknowledged is acknowledged, and asked about again
  * at the next check when that fails. The check that every use case about the entitlement shares.
+ * One for the app: checks run one at a time, so two that overlap never write over each other's
+ * answer, and a purchase's plan and trial are never lost to a check that read the cache before it
+ * (review M5).
  */
 class PremiumChecker(
     private val getEntitlementRepository: GetEntitlementRepository,
@@ -25,11 +28,13 @@ class PremiumChecker(
     private val getCurrentTimeRepository: GetCurrentTimeRepository,
     private val entitlementRules: EntitlementRules
 ) {
+    private val lock = Any()
+
     /** The status, asking Google Play only when the last answer is old (BRD D106). */
-    fun current(): PremiumStatusDomainModel {
+    fun current(): PremiumStatusDomainModel = synchronized(lock) {
         val cached = getEntitlementRepository.entitlement()
         val now = getCurrentTimeRepository.now()
-        return if (entitlementRules.isDue(cached, now)) {
+        if (entitlementRules.isDue(cached, now)) {
             check().status
         } else {
             entitlementRules.status(cached, now)
@@ -39,7 +44,7 @@ class PremiumChecker(
     /**
      * Asks Google Play now. [bought] is a purchase just made here, whose plan and trial are kept.
      */
-    fun check(bought: BoughtDomainModel? = null): PremiumCheckDomainModel {
+    fun check(bought: BoughtDomainModel? = null): PremiumCheckDomainModel = synchronized(lock) {
         val previous = getEntitlementRepository.entitlement()
         val now = getCurrentTimeRepository.now()
         val owned = getOwnedPurchasesRepository.ownedPurchases()
@@ -61,7 +66,7 @@ class PremiumChecker(
         }
         // A write that fails leaves the last entitlement, and the next check tries again.
         if (entitlement != previous) saveEntitlementRepository.saveEntitlement(entitlement)
-        return PremiumCheckDomainModel(
+        PremiumCheckDomainModel(
             status = entitlementRules.status(entitlement, now),
             billing = when (owned) {
                 is OwnedPurchasesResultDomainModel.Owned -> BillingAvailabilityDomainModel.Available

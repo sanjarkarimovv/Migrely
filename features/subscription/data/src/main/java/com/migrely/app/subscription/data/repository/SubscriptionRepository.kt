@@ -29,6 +29,7 @@ import com.migrely.app.subscription.domain.repository.GetMigraineCountRepository
 import com.migrely.app.subscription.domain.repository.GetOwnedPurchasesRepository
 import com.migrely.app.subscription.domain.repository.GetPaywallMarksRepository
 import com.migrely.app.subscription.domain.repository.GetPremiumProductsRepository
+import com.migrely.app.subscription.domain.repository.GetPurchaseUpdatesRepository
 import com.migrely.app.subscription.domain.repository.GetTrialBannerDismissalRepository
 import com.migrely.app.subscription.domain.repository.LaunchPurchaseRepository
 import com.migrely.app.subscription.domain.repository.ManageSubscriptionRepository
@@ -36,6 +37,7 @@ import com.migrely.app.subscription.domain.repository.MarkPaywallShownRepository
 import com.migrely.app.subscription.domain.repository.SaveEntitlementRepository
 import com.migrely.app.subscription.domain.repository.ShowPaymentMessagesRepository
 import java.time.Instant
+import kotlinx.coroutines.flow.Flow
 
 /**
  * Migrely Premium over Google Play billing, the entitlement kept in the preferences, and the
@@ -64,7 +66,8 @@ class SubscriptionRepository(
     GetTrialBannerDismissalRepository,
     DismissTrialBannerRepository,
     ShowPaymentMessagesRepository,
-    ManageSubscriptionRepository {
+    ManageSubscriptionRepository,
+    GetPurchaseUpdatesRepository {
     override fun entitlement(): EntitlementDomainModel =
         mappers.entitlementDomainMapper.toDomain(preferencesDataSource.entitlement())
 
@@ -81,6 +84,8 @@ class SubscriptionRepository(
     } catch (_: BillingDataException) {
         OwnedPurchasesResultDomainModel.Unreachable
     }
+
+    override fun purchaseUpdates(): Flow<Unit> = billingDataSource.purchaseUpdates()
 
     override fun acknowledgePurchase(purchaseToken: String): Boolean =
         billingDataSource.acknowledge(purchaseToken)

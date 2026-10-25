@@ -66,6 +66,14 @@ class PaywallViewModel(
         undelivered?.let(::notify)
     }
 
+    /**
+     * Google Play reported a purchase change while the paywall shows, such as a pending payment
+     * that completed: it reads Premium again, and shows its success once Premium is on, whatever
+     * it was opened from (review I1).
+     */
+    fun onPurchaseUpdatedAction(context: PaywallContextPresentationModel) =
+        load(context, celebrate = true)
+
     fun onOutcomeShownAction() {
         undelivered = null
     }
@@ -154,7 +162,7 @@ class PaywallViewModel(
      * A premium user who reaches a feature's paywall, for example before the first check after an
      * install finished, sees its success and goes on; from Settings, a subscriber sees the plans.
      */
-    private fun load(context: PaywallContextPresentationModel) {
+    private fun load(context: PaywallContextPresentationModel, celebrate: Boolean = false) {
         if (working) {
             updateViewState(PaywallViewState.Working)
             return
@@ -163,7 +171,7 @@ class PaywallViewModel(
             onResult = { paywall ->
                 if (!working) {
                     updateViewState(paywallPresentationMapper.toPresentation(paywall))
-                    if (context != PaywallContextPresentationModel.Settings &&
+                    if ((celebrate || context != PaywallContextPresentationModel.Settings) &&
                         paywall.status.unlocks()
                     ) {
                         deliver(

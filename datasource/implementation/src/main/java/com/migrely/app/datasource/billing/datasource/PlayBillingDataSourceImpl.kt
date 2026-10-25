@@ -349,7 +349,7 @@ private fun playBillingClient(context: Context, listener: PurchasesUpdatedListen
         .enableAutoServiceReconnection()
         .build()
 
-/** How a sheet that did not complete closed; an unavailable item is not "try again" (review M10). */
+/** How a sheet that did not complete closed; an unavailable item is not "try again" (M10). */
 internal fun sheetResultOf(responseCode: Int): BillingPurchaseResultDataModel =
     when (responseCode) {
         BillingResponseCode.USER_CANCELED -> BillingPurchaseResultDataModel.Cancelled

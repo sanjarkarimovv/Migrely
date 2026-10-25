@@ -19,6 +19,7 @@ dependencies {
     implementation(projects.architecture.domain)
 
     implementation(projects.datasource.source)
+    implementation(libs.kotlinx.coroutines.core)
 
     testImplementation(libs.test.junit)
     testImplementation(libs.test.mockito.kotlin)

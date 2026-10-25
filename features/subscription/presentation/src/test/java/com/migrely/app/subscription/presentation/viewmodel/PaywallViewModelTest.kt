@@ -319,4 +319,17 @@ class PaywallViewModelTest :
         assertEquals(false, notification.isCompleted)
         notification.cancel()
     }
+
+    @Test
+    fun `Given a pending payment completes while the paywall shows then its success shows`() =
+        runTest {
+            getPaywallUseCase.givenSuccessfulExecution(FREE_PAYWALL.copy(status = YEARLY_STATUS))
+
+            assertEquals(
+                UNLOCKED,
+                notificationOf {
+                    classUnderTest.onPurchaseUpdatedAction(PaywallContextPresentationModel.Settings)
+                }
+            )
+        }
 }

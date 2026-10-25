@@ -9,7 +9,8 @@
   - the products, with their offer tokens, Play's formatted prices and any free-trial phase;
   - the owned purchases: product, state, purchase time, auto-renewing, token, acknowledged, and whether the signature is
     valid;
-  - a flow of purchase updates;
+  - a flow of the purchase updates that arrive while no purchase sheet waits for them, such as a pending payment
+    completed at a shop (a sheet that is open takes its own update, and gives up after 10 minutes);
   - launching a purchase, an upgrade (`WITH_TIME_PRORATION`) and acknowledging;
   - showing Play's in-app messages.
 - **Two implementations:**
@@ -39,7 +40,14 @@
   - Unreachable keeps a subscription for 3 days after the last check, and lifetime until Play answers otherwise;
   - an unverified signature never unlocks;
   - an unacknowledged PURCHASED purchase is acknowledged.
-- **Observing:** `ObservePremiumUseCase` exposes the status as a flow for every screen.
+- **Observing:** built differently from the `ObservePremiumUseCase` first planned, since ARCHITECTURE §7 rule 6 allows
+  a flow use case only in a scope that is cancelled, and view models are not:
+  - screens read the status with one-shot use cases on enter, on resume and after every action;
+  - `WatchPurchaseUpdatesUseCase` turns each update Play sends with no sheet open into a check, which acknowledges
+    the purchase and keeps the cache at once. `:app`'s `PurchaseUpdatesWatcher`, started by `MigrelyApplication`,
+    collects it for as long as the app runs;
+  - after each such check the watcher signals the paywall and Settings' Premium section, which read the status
+    again, so a payment that completes while either shows unlocks there; the paywall then shows its success.
 
 ### D3. The subscription feature
 

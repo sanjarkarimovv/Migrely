@@ -164,4 +164,12 @@ class SubscriptionRepositoryTest {
 
         verify(billingDataSource).manageSubscription("migrely_premium")
     }
+
+    @Test
+    fun `When asking for purchase updates then they are Play's own`() {
+        val updates = kotlinx.coroutines.flow.flowOf(Unit)
+        given(billingDataSource.purchaseUpdates()).willReturn(updates)
+
+        assertEquals(updates, classUnderTest.purchaseUpdates())
+    }
 }

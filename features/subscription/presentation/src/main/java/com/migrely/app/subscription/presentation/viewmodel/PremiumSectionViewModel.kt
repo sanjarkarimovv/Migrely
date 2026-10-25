@@ -36,6 +36,9 @@ class PremiumSectionViewModel(
         )
     }
 
+    /** Google Play reported a purchase change while Settings shows, so the status is read again. */
+    fun onPurchaseUpdatedAction() = onEnter()
+
     /** The status row of a user who can buy or change plans opens the paywall. */
     fun onStatusAction() =
         emitNavigationEvent(PremiumSectionPresentationNavigationEvent.OnOpenPaywall)

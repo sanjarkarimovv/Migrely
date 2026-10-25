@@ -142,4 +142,20 @@ class PremiumSectionViewModelTest :
 
         assertEquals(PremiumSectionPresentationNavigationEvent.OnOpenPaywall, event.await())
     }
+
+    @Test
+    fun `Given a purchase change while Settings shows then the status is read again`() = runTest {
+        refreshPremiumUseCase.givenSuccessfulExecution(
+            RefreshPremiumRequestDomainModel(force = false),
+            PremiumStatusDomainModel.Lifetime(subscriptionRenewsToo = false)
+        )
+        val state = async(start = UNDISPATCHED) { classUnderTest.viewState.first() }
+
+        classUnderTest.onPurchaseUpdatedAction()
+
+        assertEquals(
+            PremiumSectionViewState.Ready(PremiumStatusPresentationModel.Lifetime(false), null),
+            state.await()
+        )
+    }
 }

@@ -23,10 +23,15 @@ import com.migrely.app.subscription.ui.mapper.PaywallProductPresentationMapper
 import com.migrely.app.subscription.ui.mapper.PaywallViewStateUiMapper
 import com.migrely.app.subscription.ui.mapper.PremiumSectionViewStateUiMapper
 import com.migrely.app.subscription.ui.mapper.TrialBannerViewStateUiMapper
+import kotlinx.coroutines.flow.Flow
 
-/** The paywall screen (BRD D109). */
+/**
+ * The paywall screen (BRD D109). [purchaseUpdates] signals each purchase change Google Play reported
+ * outside a sheet, once the app has checked it (review I1).
+ */
 class PaywallDependencies(
     val paywallViewModel: PaywallViewModel,
+    val purchaseUpdates: Flow<Unit>,
     val paywallViewStateUiMapper: PaywallViewStateUiMapper,
     val paywallContextPresentationMapper: PaywallContextPresentationMapper,
     val paywallProductPresentationMapper: PaywallProductPresentationMapper,
@@ -42,6 +47,7 @@ class PaywallDependencies(
 /** The Premium section that `:app` puts at the top of Settings (BRD D112, design D3). */
 class PremiumSectionDependencies(
     val premiumSectionViewModel: PremiumSectionViewModel,
+    val purchaseUpdates: Flow<Unit>,
     val premiumSectionViewStateUiMapper: PremiumSectionViewStateUiMapper,
     navigationMapper: NavigationEventDestinationMapper<PremiumSectionPresentationNavigationEvent>,
     notificationMapper: NotificationUiMapper<PremiumSectionPresentationNotification>

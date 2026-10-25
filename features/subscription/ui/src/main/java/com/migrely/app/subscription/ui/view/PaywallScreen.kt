@@ -139,6 +139,10 @@ fun PaywallDependencies.Paywall(
                 }
         }
     }
+    // A pending payment that completes while the paywall shows unlocks it here (review I1).
+    LaunchedEffect(purchaseUpdates) {
+        purchaseUpdates.collect { paywallViewModel.onPurchaseUpdatedAction(presentationContext) }
+    }
     LaunchedEffect(message) {
         if (message != null) {
             delay(MESSAGE_MILLIS)
