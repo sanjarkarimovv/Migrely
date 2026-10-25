@@ -37,6 +37,7 @@ appId: com.migrely.app
     timeout: 1000
     optional: true
 - tapOn: "Turn on at 8:00.*"
+- runFlow: ../subflows/close-onboarding-paywall.yaml
 - extendedWaitUntil:
     visible: "Migraine started"
     timeout: 10000

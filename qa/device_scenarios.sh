@@ -37,6 +37,7 @@ qa_check_baseline
 ORIGINAL_AUTO_TIME="$(adbq shell settings get global auto_time | tr -d '\r')"
 ORIGINAL_ZONE="$(adbq shell getprop persist.sys.timezone | tr -d '\r')"
 ORIGINAL_TIMEOUT="$(adbq shell settings get secure accessibility_interactive_ui_timeout_ms | tr -d '\r')"
+ORIGINAL_TEXT_TIMEOUT="$(adbq shell settings get secure accessibility_non_interactive_ui_timeout_ms | tr -d '\r')"
 ORIGINAL_USER_ROTATION="$(adbq shell settings get system user_rotation | tr -d '\r')"
 ORIGINAL_AUTO_ROTATE="$(adbq shell settings get system accelerometer_rotation | tr -d '\r')"
 ORIGINAL_ANIMATOR="$(adbq shell settings get global animator_duration_scale | tr -d '\r')"
@@ -58,6 +59,7 @@ restore() {
   adbq shell cmd alarm set-time "$(($(date +%s) * 1000))" >/dev/null 2>&1
   qa_restore_setting global auto_time "$ORIGINAL_AUTO_TIME"
   qa_restore_setting secure accessibility_interactive_ui_timeout_ms "$ORIGINAL_TIMEOUT"
+  qa_restore_setting secure accessibility_non_interactive_ui_timeout_ms "$ORIGINAL_TEXT_TIMEOUT"
   adbq shell cmd locale set-app-locales "$APP" --locales "$ORIGINAL_APP_LOCALES" >/dev/null 2>&1
   qa_restore_setting system user_rotation "$ORIGINAL_USER_ROTATION"
   qa_restore_setting system accelerometer_rotation "$ORIGINAL_AUTO_ROTATE"
@@ -657,6 +659,7 @@ scenario_med_link_home() {
 # Covers: medication-overuse › A standing indicator in History › After an undo
 # Covers: medication-overuse › A standing indicator in History › A past month
 # Covers: medication-overuse › A standing indicator in History › No migraine logged
+# Covers: medication-overuse › A standing indicator in History › One day
 scenario_med_overuse() {
   echo "Scenario med_overuse: painkillers on 13 days warn softly, \"Got it\" hides it, 15 days warn about the doctor; History's \"Last 30 days\" (D59)"
   local d
@@ -771,9 +774,11 @@ scenario_keyboard_history() {
   expect_focus SHIFT_TAB "[^0-9]23$DAY_CELL" || return 1
 }
 
-# The mirrored arrows are in the requirement "Arrow keys move between days"; it has no right-to-left scenario.
+# Until a right-to-left language ships, a Hebrew phone gets the app's English, left-to-right layout (D117, EC-UX-05):
+# Right is the next day and Left the previous one, as on an English phone. The layout keeps start and end, so it will
+# mirror once a right-to-left language ships (the requirement "Arrow keys move between days", D38).
 scenario_keyboard_rtl() {
-  echo "Scenario keyboard_rtl: the arrows are mirrored in a right-to-left language (Hebrew), on the 24th (D38)"
+  echo "Scenario keyboard_rtl: a right-to-left phone (Hebrew) gets the English, left-to-right layout, on the 24th (D117)"
   set_clock_millis "$(day_millis -9)" || return 1
   run_flow clean || return 1
   adbq shell cmd locale set-app-locales "$APP" --locales iw >/dev/null
@@ -781,8 +786,8 @@ scenario_keyboard_rtl() {
   local ok=0
   expect_focus TAB "^Settings" && expect_focus TAB "^Period today" && expect_focus TAB "Opens History\.$" &&
     expect_focus TAB "^Today, .*$(day_re 24)" &&
-    expect_focus DPAD_RIGHT "$(day_re 23)" && expect_focus DPAD_LEFT "$(day_re 24)" &&
-    expect_focus DPAD_LEFT "$(day_re 24)" || ok=1
+    expect_focus DPAD_LEFT "$(day_re 23)" && expect_focus DPAD_RIGHT "$(day_re 24)" &&
+    expect_focus DPAD_RIGHT "$(day_re 24)" || ok=1
   adbq shell cmd locale set-app-locales "$APP" --locales "$ORIGINAL_APP_LOCALES" >/dev/null
   return $ok
 }
@@ -1234,52 +1239,56 @@ pull_newest() { # $1 glob in /sdcard/Download (for example "migrely-*.json"), $2
   echo "    pulled ${name##*/}"
 }
 
-# Covers: medication-overuse › A standing indicator in History › One day
-# Retest of #45: the indicator rows are plurals now.
-scenario_one_day_row() {
-  echo "Scenario one_day_row: a triptan on 1 of the last 30 days reads \"1 day\" (#45)"
-  set_clock_millis "$(when_millis 0 15 12:00)" || return 1
-  run_flow clean || return 1
-  run_flow med-add-triptan-in-attack || return 1
-  run_flow_env last-30-days-row "ROW=Triptans: 1 day \\(limit 10\\).*" || return 1
-  echo "    History: \"Triptans: 1 day (limit 10)\""
-}
 
-message_seconds() { # $1 Python regex of a message already on screen or about to be: prints how long it stays, in seconds
-  local first="" last="" now
-  local end=$(( $(date +%s) + 40 ))
-  while (( $(date +%s) < end )); do
-    now="$(perl -MTime::HiRes=time -e 'printf "%.1f", time')"
-    if [[ -n "$(screen_text_matching "$1")" ]]; then
-      [[ -n "$first" ]] || first="$now"
-      last="$now"
-    elif [[ -n "$first" ]]; then
-      break
-    fi
-  done
-  [[ -n "$first" ]] || { echo "none"; return 1; }
-  perl -e "printf '%.1f', $last - $first"
-}
+tap_time() { perl -MTime::HiRes=time -e 'printf "%.2f", time'; }
 
 # Also checks: in-app-messages › Message durations by kind (Your data's information message; retest of #56)
-# The message is first seen up to ~2 s after it appears (Maestro hands over, then a screen dump), so the measured time
-# is a lower bound: at least 5.5 s for 8 s, and at least 16 s with a 20 s accessibility timeout. It must also go: under
-# 11 s and 23 s.
+# The file is tapped through adb, and screenshots taken back to back from that tap (about 8 a second) show when the
+# message comes and goes (qa/message_timing.py). An information message stays 8 s, or the accessibility timeout for
+# messages to read when it is longer (accessibility_non_interactive_ui_timeout_ms; both timeouts are set to 20 s, as
+# "Time to take action" sets them).
 scenario_message_duration() {
   echo "Scenario message_duration: a Your data message stays 8 s, or the accessibility timeout when longer (#56, EC-UX-16)"
-  local seconds want_min want_max timeout
+  local timeout box sent end frames result stayed low high ok=0
   run_flow clean || return 1
   adbq shell "echo 'This is a shopping list, not a backup.' > /sdcard/Download/broken.json"
   for timeout in default 20; do
-    if [[ "$timeout" == 20 ]]; then long_undo_window; want_min=16; want_max=23; else default_undo_window; want_min=5.5; want_max=11; fi
-    maestro --device "$QA_SERIAL" test -e FILE=broken.json -e HOLDS= -e CHOICE= "$FLOWS/import-step.yaml" \
-      >"$out/message-duration-$timeout.log" 2>&1 || { echo "  FAILED: import-step (log: $out/message-duration-$timeout.log)"; return 1; }
-    seconds="$(message_seconds "This file isn.t a Migrely backup\. Nothing was changed\.")" || { echo "  FAILED: the message was never seen"; return 1; }
-    echo "    accessibility timeout $timeout: seen for $seconds s"
-    perl -e "exit !($seconds >= $want_min && $seconds <= $want_max)" ||
-      { echo "  FAILED: expected between $want_min and $want_max s (#56)"; default_undo_window; return 1; }
+    if [[ "$timeout" == 20 ]]; then
+      adbq shell settings put secure accessibility_interactive_ui_timeout_ms 20000
+      adbq shell settings put secure accessibility_non_interactive_ui_timeout_ms 20000
+      low=19.5; high=21.5
+    else
+      default_undo_window
+      put_or_delete secure accessibility_non_interactive_ui_timeout_ms "$ORIGINAL_TEXT_TIMEOUT"
+      low=7.5; high=9
+    fi
+    run_flow_env import-pick-ready FILE=broken.json || { ok=1; break; }
+    box="$(adbq exec-out uiautomator dump /dev/tty 2>/dev/null | python3 -I -c "import re, sys, xml.etree.ElementTree as ET
+raw = sys.stdin.read(); raw = raw[raw.find('<?xml'):raw.rfind('>') + 1]
+top = lambda n: int(re.findall(r'\d+', n.get('bounds'))[1])
+hits = [n for n in ET.fromstring(raw).iter('node') if n.get('text') == 'broken.json']
+if hits:
+    x1, y1, x2, y2 = map(int, re.findall(r'\d+', max(hits, key=top).get('bounds')))
+    print((x1 + x2) // 2, (y1 + y2) // 2)")"
+    [[ -n "$box" ]] || { echo "  FAILED: broken.json is not in the picker's results"; ok=1; break; }
+    frames="$out/message-frames-$timeout"
+    mkdir -p "$frames"
+    sent="$(tap_time)"
+    adbq shell input tap $box
+    end="$(perl -e "print $sent + $high + 4")"
+    while perl -MTime::HiRes=time -e "exit !(time < $end)"; do
+      adbq exec-out screencap -p >"$frames/$(tap_time).png"
+    done
+    result="$(python3 -I "$ROOT/qa/message_timing.py" "$frames" "$sent")"
+    echo "    accessibility timeout $timeout: $result"
+    stayed="$(sed -nE 's/.*stayed ([0-9.]+) s.*/\1/p' <<<"$result")"
+    [[ -n "$stayed" ]] && perl -e "exit !($stayed >= $low && $stayed <= $high)" ||
+      { echo "  FAILED: expected $low to $high s (#56)"; ok=1; break; }
+    rm -rf "$frames"
   done
   default_undo_window
+  put_or_delete secure accessibility_non_interactive_ui_timeout_ms "$ORIGINAL_TEXT_TIMEOUT"
+  return $ok
 }
 
 # Covers: data-backup › JSON backup › Exporting (2 attacks, 1 medication, 1 day mark rather than 16, 2 and 5)
@@ -1501,7 +1510,7 @@ if [[ $# -eq 0 ]]; then
     med_link_home med_overuse keyboard_home keyboard_history keyboard_rtl landscape_band mark_travel mark_earliest_month \
     stats_counting stats_chronic stats_progress reminder_daily reminder_permission reminder_effect reminder_replan \
     med_only_history message_tap_guard \
-    theme_check onboarding_states delete_all_data backup_export backup_import one_day_row message_duration
+    theme_check onboarding_states delete_all_data backup_export backup_import message_duration
   if [[ -n "${QA_OLD_APK:-}" ]]; then
     set -- "$@" upgrade
   else
