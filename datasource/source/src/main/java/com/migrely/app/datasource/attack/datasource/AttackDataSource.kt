@@ -76,6 +76,9 @@ interface AttackDataSource {
     /** Whether any attack that is not deleted has an intensity point of 10. */
     fun maximumRecorded(): Boolean
 
+    /** How many attacks are logged, the one in progress included, deleted ones not (BRD D110). */
+    fun count(): Int
+
     fun updateStart(attackId: String, start: Instant)
 
     /** Atomic: sets both times and removes [pointsToRemove]. */

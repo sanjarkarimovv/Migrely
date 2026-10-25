@@ -3,7 +3,10 @@ package com.migrely.app.datasource.preferences.datasource
 import android.content.SharedPreferences
 import com.migrely.app.datasource.exception.FileDataException
 import com.migrely.app.datasource.preferences.model.AttackFrequencyDataModel
+import com.migrely.app.datasource.preferences.model.EntitlementDataModel
+import com.migrely.app.datasource.preferences.model.EntitlementKindDataModel
 import com.migrely.app.datasource.preferences.model.GoalDataModel
+import com.migrely.app.datasource.preferences.model.PaywallTriggerDataModel
 import com.migrely.app.datasource.preferences.model.ThemeDataModel
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -15,6 +18,18 @@ private const val GOAL = "goal"
 private const val ATTACK_FREQUENCY = "attack_frequency"
 private const val PERIOD_TRACKING = "period_tracking"
 private const val THEME = "theme"
+private const val ENTITLEMENT_KIND = "entitlement_kind"
+private const val ENTITLEMENT_PRODUCT = "entitlement_product"
+private const val ENTITLEMENT_BASE_PLAN = "entitlement_base_plan"
+private const val ENTITLEMENT_TOKEN = "entitlement_token"
+private const val ENTITLEMENT_PURCHASE_TIME = "entitlement_purchase_time"
+private const val ENTITLEMENT_AUTO_RENEWING = "entitlement_auto_renewing"
+private const val ENTITLEMENT_TRIAL_END = "entitlement_trial_end"
+private const val ENTITLEMENT_LAST_CHECK = "entitlement_last_check"
+private const val ENTITLEMENT_SUBSCRIPTION_TOO = "entitlement_subscription_too"
+private const val PAYWALL_SHOWN_PREFIX = "paywall_shown_"
+private const val PAYWALL_LAST_SHOWN = "paywall_last_shown"
+private const val TRIAL_BANNER_DISMISSED = "trial_banner_dismissed"
 
 /**
  * Over the app's `migrely_preferences` file. Writes use `commit()`, which is safe here because every call already runs
@@ -60,7 +75,59 @@ class PreferencesDataSourceImpl(private val preferences: SharedPreferences) :
         awaitClose { preferences.unregisterOnSharedPreferenceChangeListener(listener) }
     }.distinctUntilChanged()
 
+    override fun entitlement(): EntitlementDataModel? {
+        val kind = preferences.getString(ENTITLEMENT_KIND, null)
+            ?.let { stored -> EntitlementKindDataModel.entries.firstOrNull { it.key == stored } }
+            ?: return null
+        return EntitlementDataModel(
+            kind = kind,
+            productId = preferences.getString(ENTITLEMENT_PRODUCT, null),
+            basePlanId = preferences.getString(ENTITLEMENT_BASE_PLAN, null),
+            purchaseToken = preferences.getString(ENTITLEMENT_TOKEN, null),
+            purchaseTimeMillis = longOrNull(ENTITLEMENT_PURCHASE_TIME),
+            autoRenewing = preferences.getBoolean(ENTITLEMENT_AUTO_RENEWING, false),
+            trialEndMillis = longOrNull(ENTITLEMENT_TRIAL_END),
+            lastCheckMillis = longOrNull(ENTITLEMENT_LAST_CHECK),
+            subscriptionRenewsToo = preferences.getBoolean(ENTITLEMENT_SUBSCRIPTION_TOO, false)
+        )
+    }
+
+    // One commit, so a check is never stored half written.
+    override fun setEntitlement(entitlement: EntitlementDataModel) = write {
+        putString(ENTITLEMENT_KIND, entitlement.kind.key)
+        putString(ENTITLEMENT_PRODUCT, entitlement.productId)
+        putString(ENTITLEMENT_BASE_PLAN, entitlement.basePlanId)
+        putString(ENTITLEMENT_TOKEN, entitlement.purchaseToken)
+        putLongOrRemove(ENTITLEMENT_PURCHASE_TIME, entitlement.purchaseTimeMillis)
+        putBoolean(ENTITLEMENT_AUTO_RENEWING, entitlement.autoRenewing)
+        putLongOrRemove(ENTITLEMENT_TRIAL_END, entitlement.trialEndMillis)
+        putLongOrRemove(ENTITLEMENT_LAST_CHECK, entitlement.lastCheckMillis)
+        putBoolean(ENTITLEMENT_SUBSCRIPTION_TOO, entitlement.subscriptionRenewsToo)
+    }
+
+    override fun paywallShown(trigger: PaywallTriggerDataModel): Boolean =
+        preferences.getBoolean(PAYWALL_SHOWN_PREFIX + trigger.key, false)
+
+    override fun lastPaywallShownMillis(): Long? = longOrNull(PAYWALL_LAST_SHOWN)
+
+    override fun markPaywallShown(trigger: PaywallTriggerDataModel, atMillis: Long) = write {
+        putBoolean(PAYWALL_SHOWN_PREFIX + trigger.key, true)
+        putLong(PAYWALL_LAST_SHOWN, atMillis)
+    }
+
+    override fun trialBannerDismissedFor(): Long? = longOrNull(TRIAL_BANNER_DISMISSED)
+
+    override fun dismissTrialBanner(trialEndMillis: Long) =
+        write { putLong(TRIAL_BANNER_DISMISSED, trialEndMillis) }
+
     override fun clear() = write { this.clear() }
+
+    private fun longOrNull(key: String): Long? =
+        if (preferences.contains(key)) preferences.getLong(key, 0L) else null
+
+    private fun SharedPreferences.Editor.putLongOrRemove(key: String, value: Long?) {
+        if (value == null) remove(key) else putLong(key, value)
+    }
 
     private inline fun write(change: SharedPreferences.Editor.() -> Unit) {
         if (!preferences.edit().apply(

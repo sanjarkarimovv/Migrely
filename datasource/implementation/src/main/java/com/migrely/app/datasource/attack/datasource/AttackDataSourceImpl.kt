@@ -169,6 +169,8 @@ class AttackDataSourceImpl(
         attackDao.anyIntensityPointOf(MAXIMUM_INTENSITY)
     }
 
+    override fun count(): Int = database { attackDao.count() }
+
     override fun updateStart(attackId: String, start: Instant) = database {
         attackDao.updateStart(attackId, start.toEpochMilli(), clock.millis())
     }
