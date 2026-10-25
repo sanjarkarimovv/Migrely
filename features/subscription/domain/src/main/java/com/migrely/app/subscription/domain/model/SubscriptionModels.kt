@@ -163,6 +163,9 @@ sealed interface PurchaseSheetResultDomainModel {
     data object Unavailable : PurchaseSheetResultDomainModel
 
     data object Failed : PurchaseSheetResultDomainModel
+
+    /** The sheet gave no answer for a long while; a later update or check tells what happened. */
+    data object Unanswered : PurchaseSheetResultDomainModel
 }
 
 /** A purchase just made on this phone, which is the only time its plan and trial are known. */

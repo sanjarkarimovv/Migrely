@@ -64,7 +64,9 @@ class BuyPremiumUseCase(
                 PurchaseOutcomeDomainModel.Failed
             }
 
-            PurchaseSheetResultDomainModel.Cancelled -> PurchaseOutcomeDomainModel.Cancelled
+            // Nothing to say about a sheet that never answered: the check above says what Play holds.
+            PurchaseSheetResultDomainModel.Cancelled,
+            PurchaseSheetResultDomainModel.Unanswered -> PurchaseOutcomeDomainModel.Cancelled
             PurchaseSheetResultDomainModel.Unavailable -> PurchaseOutcomeDomainModel.Unavailable
             PurchaseSheetResultDomainModel.Failed -> PurchaseOutcomeDomainModel.Failed
         }

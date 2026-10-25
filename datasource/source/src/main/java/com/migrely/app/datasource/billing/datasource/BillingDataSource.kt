@@ -5,12 +5,14 @@ import com.migrely.app.datasource.billing.model.BillingProductDataModel
 import com.migrely.app.datasource.billing.model.BillingPurchaseDataModel
 import com.migrely.app.datasource.billing.model.BillingPurchaseRequestDataModel
 import com.migrely.app.datasource.billing.model.BillingPurchaseResultDataModel
+import kotlinx.coroutines.flow.Flow
 
 /**
  * Google Play's billing (BRD D105, D107), feature-agnostic: it knows product ids, not what they
- * unlock. Every function blocks and must be called off the main thread. [products] and [purchases]
- * throw [com.migrely.app.datasource.exception.BillingUnavailableDataException] when billing cannot
- * be used on this phone and [com.migrely.app.datasource.exception.BillingDataException] when Google
+ * unlock. Every function but [purchaseUpdates] blocks and must be called off the main thread.
+ * [products] and [purchases] throw
+ * [com.migrely.app.datasource.exception.BillingUnavailableDataException] when billing cannot be
+ * used on this phone and [com.migrely.app.datasource.exception.BillingDataException] when Google
  * Play does not answer.
  */
 interface BillingDataSource {
@@ -32,11 +34,21 @@ interface BillingDataSource {
      */
     fun purchases(): List<BillingPurchaseDataModel>
 
-    /** Opens Google Play's purchase sheet and waits until it closes. Never throws. */
+    /**
+     * A signal each time Google Play reports a purchase change while no purchase sheet waits for
+     * it, such as a pending payment completed at a shop. Collect it for as long as the app runs.
+     */
+    fun purchaseUpdates(): Flow<Unit>
+
+    /**
+     * Opens Google Play's purchase sheet and waits until it closes, or gives up after a long while
+     * with [BillingPurchaseResultDataModel.TimedOut]. Never throws.
+     */
     fun purchase(request: BillingPurchaseRequestDataModel): BillingPurchaseResultDataModel
 
     /**
-     * Acknowledges a purchase, which Google Play refunds when it is not acknowledged within 3 days.
+     * Acknowledges a purchase, which Google Play refunds when it is not acknowledged within 3 days,
+     * trying again a few times before it gives up.
      */
     fun acknowledge(purchaseToken: String): Boolean
 

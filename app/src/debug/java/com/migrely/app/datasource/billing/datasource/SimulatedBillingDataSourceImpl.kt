@@ -16,6 +16,9 @@ import com.migrely.app.datasource.exception.BillingUnavailableDataException
 import java.text.NumberFormat
 import java.util.Locale
 import java.util.UUID
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 
 /**
  * The products Play Console holds for Migrely (docs/release/play-products.md), as the simulated
@@ -41,6 +44,13 @@ private const val TRIAL_USED = "trial_used"
 private const val MODE = "mode"
 private const val FIELD_SEPARATOR = "|"
 private const val FIELDS = 6
+private const val UPDATES_BUFFER = 8
+
+/**
+ * The store's updates while no sheet is open, shared by every instance as the store's file is: the
+ * adb receiver's instance settles a pending payment, and the app's hears of it (review I1).
+ */
+private val storeUpdates = MutableSharedFlow<Unit>(extraBufferCapacity = UPDATES_BUFFER)
 
 /** What the simulated store answers to a connection, set from adb by [SimulatedBillingReceiver]. */
 enum class SimulatedStoreMode(val key: String) {
@@ -53,8 +63,9 @@ enum class SimulatedStoreMode(val key: String) {
  * A store for debug builds in place of Google Play (BRD D113), for the emulator walk and QA: the
  * same products with fake prices in the phone's locale, and a 7-day free trial on the yearly plan
  * until it is used. Its purchase sheet can complete a purchase, leave it pending, or cancel; a
- * pending payment is completed or declined from the next sheet; its subscriptions page ends a
- * subscription or refunds lifetime. The store lives in its own preferences file, which "Delete all
+ * pending payment is completed or declined from the next sheet, or from adb, which reports it as
+ * Google Play does a payment completed at a shop; its subscriptions page ends a subscription or
+ * refunds lifetime. The store lives in its own preferences file, which "Delete all
  * data" leaves alone, so a purchase outlives the restart that follows, as it would in Google Play.
  * Purchases carry no signature to check. Release builds do not contain this class.
  */
@@ -134,6 +145,8 @@ class SimulatedBillingDataSourceImpl(
         return true
     }
 
+    override fun purchaseUpdates(): Flow<Unit> = storeUpdates.asSharedFlow()
+
     override fun showInAppMessages(): Boolean = false
 
     override fun manageSubscription(productId: String) {
@@ -151,13 +164,37 @@ class SimulatedBillingDataSourceImpl(
         }
     }
 
-    /** Sets what the store answers, or empties it, for QA from adb. */
+    /**
+     * Sets what the store answers, empties it, or settles a pending payment with no sheet open, for
+     * QA from adb.
+     */
     fun apply(command: String) {
         val mode = SimulatedStoreMode.entries.firstOrNull { it.key == command }
         when {
             mode != null -> store.edit().putString(MODE, mode.key).apply()
             command == "reset" -> store.edit().clear().apply()
+            command == "complete-pending" -> settleOutside(complete = true)
+            command == "decline-pending" -> settleOutside(complete = false)
         }
+    }
+
+    private fun settleOutside(complete: Boolean) {
+        val pending = stored().firstOrNull { it.state == BillingPurchaseStateDataModel.Pending }
+            ?: return
+        save(
+            if (complete) {
+                stored().map {
+                    if (it.purchaseToken == pending.purchaseToken) {
+                        it.copy(state = BillingPurchaseStateDataModel.Purchased)
+                    } else {
+                        it
+                    }
+                }
+            } else {
+                stored().filterNot { it.purchaseToken == pending.purchaseToken }
+            }
+        )
+        storeUpdates.tryEmit(Unit)
     }
 
     private fun buy(request: BillingPurchaseRequestDataModel): BillingPurchaseResultDataModel {

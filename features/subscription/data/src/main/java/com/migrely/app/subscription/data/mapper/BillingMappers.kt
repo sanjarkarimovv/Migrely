@@ -98,6 +98,7 @@ class PurchaseSheetResultDomainMapper(
                 PurchaseSheetResultDomainModel.AlreadyOwned
             BillingPurchaseResultDataModel.Unavailable -> PurchaseSheetResultDomainModel.Unavailable
             BillingPurchaseResultDataModel.Failed -> PurchaseSheetResultDomainModel.Failed
+            BillingPurchaseResultDataModel.TimedOut -> PurchaseSheetResultDomainModel.Unanswered
         }
 }
 

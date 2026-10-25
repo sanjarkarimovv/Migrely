@@ -83,4 +83,7 @@ sealed interface BillingPurchaseResultDataModel {
     data object Unavailable : BillingPurchaseResultDataModel
 
     data object Failed : BillingPurchaseResultDataModel
+
+    /** The sheet gave no answer for a long while; a later update or check tells what happened. */
+    data object TimedOut : BillingPurchaseResultDataModel
 }

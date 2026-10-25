@@ -145,13 +145,15 @@ class BillingMappersTest {
                 PurchaseSheetResultDomainModel.Cancelled,
                 PurchaseSheetResultDomainModel.AlreadyOwned,
                 PurchaseSheetResultDomainModel.Unavailable,
-                PurchaseSheetResultDomainModel.Failed
+                PurchaseSheetResultDomainModel.Failed,
+                PurchaseSheetResultDomainModel.Unanswered
             ),
             listOf(
                 BillingPurchaseResultDataModel.Cancelled,
                 BillingPurchaseResultDataModel.AlreadyOwned,
                 BillingPurchaseResultDataModel.Unavailable,
-                BillingPurchaseResultDataModel.Failed
+                BillingPurchaseResultDataModel.Failed,
+                BillingPurchaseResultDataModel.TimedOut
             ).map(mapper::toDomain)
         )
     }

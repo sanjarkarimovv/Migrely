@@ -5,14 +5,16 @@ import android.content.Context
 import android.content.Intent
 
 /**
- * Lets QA set the simulated store from adb, in debug builds only (BRD D113):
+ * Lets QA set the simulated store from adb, in debug builds only (BRD D113). It takes broadcasts
+ * only from holders of android.permission.DUMP, which adb's shell has:
  *
  *     adb shell am broadcast -p com.migrely.app \
  *         -a com.migrely.app.debug.SIMULATED_STORE --es command unavailable
  *
  * The commands are "available", the default; "unavailable", a country without Google Play billing;
- * "unreachable", a Play Store that does not answer; and "reset", which empties the store and gives
- * the trial back.
+ * "unreachable", a Play Store that does not answer; "complete-pending" and "decline-pending",
+ * which settle a pending payment with no sheet open, as at a shop; and "reset", which empties the
+ * store and gives the trial back.
  */
 class SimulatedBillingReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {

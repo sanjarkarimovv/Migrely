@@ -9,6 +9,12 @@ import com.migrely.app.datasource.exception.BillingDataException
 import com.migrely.app.datasource.exception.BillingUnavailableDataException
 import java.text.NumberFormat
 import java.util.Locale
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
@@ -174,6 +180,34 @@ class SimulatedBillingDataSourceImplTest {
         classUnderTest.apply("reset")
 
         assertEquals(BillingConnectionDataModel.Available, classUnderTest.connect())
+        assertEquals(emptyList<Any>(), classUnderTest.purchases())
+    }
+
+    @Test
+    fun `When a pending payment completes from adb then it is owned and the app hears of it`() =
+        runBlocking {
+            choice = 1
+            classUnderTest.purchase(LIFETIME)
+            val heard = async(Dispatchers.Default, start = CoroutineStart.UNDISPATCHED) {
+                withTimeout(5_000L) { classUnderTest.purchaseUpdates().first() }
+            }
+
+            classUnderTest.apply("complete-pending")
+
+            assertEquals(Unit, heard.await())
+            assertEquals(
+                BillingPurchaseStateDataModel.Purchased,
+                classUnderTest.purchases().single().state
+            )
+        }
+
+    @Test
+    fun `When a pending payment is declined from adb then nothing is owned`() {
+        choice = 1
+        classUnderTest.purchase(LIFETIME)
+
+        classUnderTest.apply("decline-pending")
+
         assertEquals(emptyList<Any>(), classUnderTest.purchases())
     }
 
