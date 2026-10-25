@@ -5,5 +5,5 @@ appId: com.migrely.app
     stopApp: false
 - tapOn: "Details of this migraine"
 - extendedWaitUntil:
-    visible: "Anything else worth remembering|Notes"
+    visible: "Where it hurts"
     timeout: 5000
