@@ -21,6 +21,7 @@ include(":app")
 include(":coroutine")
 include(":designsystem")
 include(":features:attackdays:domain")
+include(":features:patterns:domain")
 
 setOf(
     "ui",

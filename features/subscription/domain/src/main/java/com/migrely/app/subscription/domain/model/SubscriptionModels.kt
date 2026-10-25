@@ -1,6 +1,7 @@
 package com.migrely.app.subscription.domain.model
 
 import java.time.Instant
+import java.time.ZoneId
 
 /** The three ways to buy Migrely Premium (BRD §7.2, D107). */
 enum class PremiumPlanDomainModel {
@@ -199,6 +200,9 @@ data class PremiumCheckDomainModel(
 )
 
 data class RefreshPremiumRequestDomainModel(val force: Boolean)
+
+/** A migraine's start, in the zone it was logged in, which gives its date (BRD D57). */
+data class MigraineStartDomainModel(val start: Instant, val zone: ZoneId)
 
 /** What shows a paywall without a tap (BRD D110). */
 enum class PaywallTriggerDomainModel {

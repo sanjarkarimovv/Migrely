@@ -123,10 +123,6 @@ abstract class AttackDao {
     )
     abstract fun anyIntensityPointOf(value: Int): Boolean
 
-    /** Every attack that is not deleted, the one in progress included (BRD D110). */
-    @Query("SELECT COUNT(*) FROM attack WHERE deleted_epoch_millis IS NULL")
-    abstract fun count(): Int
-
     @Query(
         "UPDATE attack SET start_epoch_millis = :startEpochMillis, " +
             "updated_epoch_millis = :nowEpochMillis " +

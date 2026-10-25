@@ -192,21 +192,6 @@ class AttackDaoTest {
         assertEquals(false, classUnderTest.inProgressChanges().first())
     }
 
-    @Test
-    fun givenEndedInProgressAndDeletedAttacks_whenCounting_thenDeletedOnesAreLeftOut() {
-        // Given
-        classUnderTest.insertAttack(attack(id = "ended", start = 1_000L, end = 2_000L))
-        classUnderTest.insertAttack(attack(id = "deleted", start = 3_000L, end = 4_000L))
-        classUnderTest.insertAttack(attack(id = "going", start = 5_000L, end = null))
-        classUnderTest.softDelete("deleted", nowEpochMillis = 6_000L)
-
-        // When
-        val counted = classUnderTest.count()
-
-        // Then
-        assertEquals(2, counted)
-    }
-
     private fun attack(id: String, start: Long, end: Long?) = AttackLocalModel(
         id = id,
         startEpochMillis = start,

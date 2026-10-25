@@ -1,6 +1,7 @@
 package com.migrely.app.subscription.data.repository
 
 import com.migrely.app.datasource.attack.datasource.AttackDataSource
+import com.migrely.app.datasource.attack.model.AttackDataModel
 import com.migrely.app.datasource.billing.datasource.BillingDataSource
 import com.migrely.app.datasource.billing.model.BillingConnectionDataModel
 import com.migrely.app.datasource.billing.model.BillingPurchaseDataModel
@@ -16,6 +17,7 @@ import com.migrely.app.datasource.schedule.datasource.PremiumCheckScheduleDataSo
 import com.migrely.app.subscription.data.mapper.SubscriptionDataMappers
 import com.migrely.app.subscription.domain.model.BillingAvailabilityDomainModel
 import com.migrely.app.subscription.domain.model.EntitlementDomainModel
+import com.migrely.app.subscription.domain.model.MigraineStartDomainModel
 import com.migrely.app.subscription.domain.model.OwnedPurchasesResultDomainModel
 import com.migrely.app.subscription.domain.model.PaywallMarksDomainModel
 import com.migrely.app.subscription.domain.model.PaywallTriggerDomainModel
@@ -23,10 +25,12 @@ import com.migrely.app.subscription.domain.model.PremiumProductsResultDomainMode
 import com.migrely.app.subscription.domain.model.PurchaseProductDomainModel
 import com.migrely.app.subscription.domain.model.SubscriptionWriteResultDomainModel
 import java.time.Instant
+import java.time.ZoneId
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.given
@@ -122,7 +126,7 @@ class SubscriptionRepositoryTest {
     fun `Given the attacks cannot be read then neither the count nor an attack is known`() {
         val failing: AttackDataSource = mock {
             on { inProgress() } doThrow DatabaseDataException()
-            on { count() } doThrow DatabaseDataException()
+            on { overlapping(anyOrNull(), any(), any()) } doThrow DatabaseDataException()
         }
         val repository = SubscriptionRepository(
             billingDataSource,
@@ -134,7 +138,29 @@ class SubscriptionRepositoryTest {
         )
 
         assertNull(repository.attackInProgress())
-        assertNull(repository.migraineCount())
+        assertNull(repository.migraineStarts())
+    }
+
+    @Test
+    fun `When reading when migraines started then each keeps its zone, up to now`() {
+        given(attackDataSource.overlapping(null, Instant.EPOCH, NOW)).willReturn(
+            listOf(
+                AttackDataModel(
+                    id = "a",
+                    start = NOW.minusSeconds(60),
+                    startZoneId = "Asia/Tashkent",
+                    end = null,
+                    intensityPoints = emptyList(),
+                    longCheckConfirmedAt = null,
+                    longCheckDisabled = false
+                )
+            )
+        )
+
+        assertEquals(
+            listOf(MigraineStartDomainModel(NOW.minusSeconds(60), ZoneId.of("Asia/Tashkent"))),
+            classUnderTest.migraineStarts()
+        )
     }
 
     @Test

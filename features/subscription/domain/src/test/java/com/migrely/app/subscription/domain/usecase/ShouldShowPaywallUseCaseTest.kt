@@ -4,15 +4,19 @@ import com.migrely.app.coroutine.CoroutineContextProvider
 import com.migrely.app.subscription.domain.model.BillingAvailabilityDomainModel
 import com.migrely.app.subscription.domain.model.EntitlementDomainModel
 import com.migrely.app.subscription.domain.model.EntitlementKindDomainModel
+import com.migrely.app.subscription.domain.model.MigraineStartDomainModel
 import com.migrely.app.subscription.domain.model.PaywallMarksDomainModel
 import com.migrely.app.subscription.domain.model.PaywallTriggerDomainModel
 import com.migrely.app.subscription.domain.repository.GetAttackInProgressRepository
 import com.migrely.app.subscription.domain.repository.GetBillingAvailabilityRepository
 import com.migrely.app.subscription.domain.repository.GetCurrentTimeRepository
 import com.migrely.app.subscription.domain.repository.GetEntitlementRepository
-import com.migrely.app.subscription.domain.repository.GetMigraineCountRepository
+import com.migrely.app.subscription.domain.repository.GetMigraineStartsRepository
 import com.migrely.app.subscription.domain.repository.GetPaywallMarksRepository
+import com.migrely.app.subscription.domain.repository.GetTimeZoneRepository
 import java.time.Duration
+import java.time.ZoneId
+import java.time.ZoneOffset
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -31,8 +35,11 @@ class ShouldShowPaywallUseCaseTest {
     private val getAttackInProgressRepository: GetAttackInProgressRepository = mock {
         on { attackInProgress() } doReturn false
     }
-    private val getMigraineCountRepository: GetMigraineCountRepository = mock {
-        on { migraineCount() } doReturn 5
+    private val getMigraineStartsRepository: GetMigraineStartsRepository = mock {
+        on { migraineStarts() } doReturn startsDaysAgo(40, 20, 10, 5, 1)
+    }
+    private val getTimeZoneRepository: GetTimeZoneRepository = mock {
+        on { zone() } doReturn ZoneOffset.UTC
     }
     private val getBillingAvailabilityRepository: GetBillingAvailabilityRepository = mock {
         on { billingAvailability() } doReturn BillingAvailabilityDomainModel.Available
@@ -45,7 +52,8 @@ class ShouldShowPaywallUseCaseTest {
         getEntitlementRepository,
         getPaywallMarksRepository,
         getAttackInProgressRepository,
-        getMigraineCountRepository,
+        getMigraineStartsRepository,
+        getTimeZoneRepository,
         getBillingAvailabilityRepository,
         getCurrentTimeRepository,
         EntitlementRules(),
@@ -95,9 +103,37 @@ class ShouldShowPaywallUseCaseTest {
 
     @Test
     fun `Given 4 migraines then the patterns paywall waits`() {
-        given(getMigraineCountRepository.migraineCount()).willReturn(4)
+        given(getMigraineStartsRepository.migraineStarts()).willReturn(startsDaysAgo(40, 20, 10, 5))
 
         assertFalse(classUnderTest.executeInBackground(PaywallTriggerDomainModel.FifthMigraine))
+    }
+
+    @Test
+    fun `Given 5 migraines within the first 30 days then no paywall, as Insights show none yet`() {
+        given(
+            getMigraineStartsRepository.migraineStarts()
+        ).willReturn(startsDaysAgo(25, 20, 10, 5, 1))
+
+        assertFalse(classUnderTest.executeInBackground(PaywallTriggerDomainModel.FifthMigraine))
+    }
+
+    @Test
+    fun `Given 5 migraines but one older than 6 months then the paywall waits as Insights do`() {
+        given(getMigraineStartsRepository.migraineStarts())
+            .willReturn(startsDaysAgo(250, 40, 20, 10, 5))
+
+        assertFalse(classUnderTest.executeInBackground(PaywallTriggerDomainModel.FifthMigraine))
+    }
+
+    @Test
+    fun `Given the migraines cannot be read then the patterns paywall waits`() {
+        given(getMigraineStartsRepository.migraineStarts()).willReturn(null)
+
+        assertFalse(classUnderTest.executeInBackground(PaywallTriggerDomainModel.FifthMigraine))
+    }
+
+    private fun startsDaysAgo(vararg days: Long) = days.map {
+        MigraineStartDomainModel(NOW.minus(Duration.ofDays(it)), ZoneId.of("Asia/Tashkent"))
     }
 
     @Test

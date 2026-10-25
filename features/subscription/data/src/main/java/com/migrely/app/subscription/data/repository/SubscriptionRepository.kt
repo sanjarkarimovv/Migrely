@@ -13,6 +13,7 @@ import com.migrely.app.subscription.data.mapper.SubscriptionDataMappers
 import com.migrely.app.subscription.data.mapper.SubscriptionProducts
 import com.migrely.app.subscription.domain.model.BillingAvailabilityDomainModel
 import com.migrely.app.subscription.domain.model.EntitlementDomainModel
+import com.migrely.app.subscription.domain.model.MigraineStartDomainModel
 import com.migrely.app.subscription.domain.model.OwnedPurchasesResultDomainModel
 import com.migrely.app.subscription.domain.model.PaywallMarksDomainModel
 import com.migrely.app.subscription.domain.model.PaywallTriggerDomainModel
@@ -26,11 +27,12 @@ import com.migrely.app.subscription.domain.repository.GetAttackInProgressReposit
 import com.migrely.app.subscription.domain.repository.GetBillingAvailabilityRepository
 import com.migrely.app.subscription.domain.repository.GetCurrentTimeRepository
 import com.migrely.app.subscription.domain.repository.GetEntitlementRepository
-import com.migrely.app.subscription.domain.repository.GetMigraineCountRepository
+import com.migrely.app.subscription.domain.repository.GetMigraineStartsRepository
 import com.migrely.app.subscription.domain.repository.GetOwnedPurchasesRepository
 import com.migrely.app.subscription.domain.repository.GetPaywallMarksRepository
 import com.migrely.app.subscription.domain.repository.GetPremiumProductsRepository
 import com.migrely.app.subscription.domain.repository.GetPurchaseUpdatesRepository
+import com.migrely.app.subscription.domain.repository.GetTimeZoneRepository
 import com.migrely.app.subscription.domain.repository.GetTrialBannerDismissalRepository
 import com.migrely.app.subscription.domain.repository.LaunchPurchaseRepository
 import com.migrely.app.subscription.domain.repository.ManageSubscriptionRepository
@@ -38,7 +40,9 @@ import com.migrely.app.subscription.domain.repository.MarkPaywallShownRepository
 import com.migrely.app.subscription.domain.repository.SaveEntitlementRepository
 import com.migrely.app.subscription.domain.repository.SchedulePremiumChecksRepository
 import com.migrely.app.subscription.domain.repository.ShowPaymentMessagesRepository
+import java.time.DateTimeException
 import java.time.Instant
+import java.time.ZoneId
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -63,7 +67,8 @@ class SubscriptionRepository(
     GetCurrentTimeRepository,
     GetBillingAvailabilityRepository,
     GetAttackInProgressRepository,
-    GetMigraineCountRepository,
+    GetMigraineStartsRepository,
+    GetTimeZoneRepository,
     GetPaywallMarksRepository,
     MarkPaywallShownRepository,
     GetTrialBannerDismissalRepository,
@@ -145,11 +150,20 @@ class SubscriptionRepository(
         null
     }
 
-    override fun migraineCount(): Int? = try {
-        attackDataSource.count()
+    /** Every attack not deleted: those touching any time up to now, the one going on too. */
+    override fun migraineStarts(): List<MigraineStartDomainModel>? = try {
+        attackDataSource.overlapping(null, Instant.EPOCH, clockDataSource.now()).mapNotNull {
+            try {
+                MigraineStartDomainModel(it.start, ZoneId.of(it.startZoneId))
+            } catch (_: DateTimeException) {
+                null
+            }
+        }
     } catch (_: DataException) {
         null
     }
+
+    override fun zone(): ZoneId = clockDataSource.zone()
 
     override fun paywallMarks() = PaywallMarksDomainModel(
         shown = PaywallTriggerDomainModel.entries.filter {

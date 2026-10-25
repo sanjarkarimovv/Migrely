@@ -17,6 +17,7 @@ detekt {
 dependencies {
     implementation(projects.architecture.domain)
     implementation(projects.coroutine)
+    implementation(projects.features.patterns.domain)
     implementation(libs.kotlinx.coroutines.core)
 
     testImplementation(libs.test.junit)

@@ -177,11 +177,4 @@ class AttackDataSourceImplTest {
 
         assertEquals(emptyList<Any>(), classUnderTest.endedTouching(from, to))
     }
-
-    @Test
-    fun `When counting then asks the DAO for attacks that are not deleted`() {
-        given(attackDao.count()).willReturn(5)
-
-        assertEquals(5, classUnderTest.count())
-    }
 }

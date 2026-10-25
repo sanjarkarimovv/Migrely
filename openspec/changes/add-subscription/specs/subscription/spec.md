@@ -102,14 +102,21 @@ The paywall SHALL show:
 ### Requirement: When the paywall shows itself
 Without a tap, the paywall SHALL show only:
 - once after the last onboarding step;
-- once when the user returns to home after logging their 5th migraine.
+- once when the user returns to home after logging their 5th migraine, and only once Insights have enough to show
+  patterns by their own rule (D88: at least 5 migraines started in the last 6 months, the first at least 30 days
+  ago).
 
 It SHALL show at most once in any 7 days, and never during attack mode or in the dark room. A tap on a premium feature
 SHALL always open it (BRD §7.3, D110).
 
 #### Scenario: The 5th migraine
-- **WHEN** a free user logs their 5th migraine and no paywall showed itself in the last 7 days
-- **THEN** the paywall opens once on returning to home, with a patterns headline
+- **WHEN** a free user logs their 5th migraine in the last 6 months, the first was logged at least 30 days ago, and no
+  paywall showed itself in the last 7 days
+- **THEN** the paywall opens once on returning to home, with a patterns headline that names no number
+
+#### Scenario: Patterns not ready yet
+- **WHEN** a free user logs their 5th migraine within 30 days of their first
+- **THEN** no paywall shows itself until Insights could show their patterns
 
 #### Scenario: Within 7 days
 - **WHEN** the onboarding paywall showed 3 days ago and the 5th migraine is logged now

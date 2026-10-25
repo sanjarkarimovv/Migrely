@@ -19,6 +19,7 @@ import com.migrely.app.insights.domain.model.InsightsTriggerCountDomainModel
 import com.migrely.app.insights.domain.model.InsightsTriggerDomainModel
 import com.migrely.app.insights.domain.model.InsightsWeekdayDomainModel
 import com.migrely.app.insights.domain.model.InsightsWeekdaysDomainModel
+import com.migrely.app.patterns.domain.PatternsReadiness
 import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
@@ -27,8 +28,6 @@ import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
 import java.util.Locale
 
-private const val MIGRAINES_NEEDED = 5
-private const val DAYS_NEEDED = 30
 private const val TOP_TRIGGERS = 5
 private const val CYCLES_NEEDED = 2
 private const val ANSWERS_NEEDED = 3
@@ -81,10 +80,12 @@ class InsightsCalculator(private val dates: InsightsDatesDomainModel, private va
      * today; otherwise how many migraines and days are still missing (BRD D88).
      */
     fun notEnough(records: InsightsRecordsDomainModel): InsightsPatternsDomainModel.NotEnough? {
-        val missingMigraines = (MIGRAINES_NEEDED - started(records).size).coerceAtLeast(0)
-        val daysSinceFirst = records.attacks.minByOrNull { it.start }
-            ?.let { ChronoUnit.DAYS.between(startDate(it), dates.to).toInt() } ?: 0
-        val missingDays = (DAYS_NEEDED - daysSinceFirst).coerceAtLeast(0)
+        // The rule the paywall after the 5th migraine shares (BRD D88, D110).
+        val missingMigraines = PatternsReadiness.missingMigraines(started(records).size)
+        val missingDays = PatternsReadiness.missingDays(
+            records.attacks.minByOrNull { it.start }?.let(::startDate),
+            dates.to
+        )
         return if (missingMigraines == 0 && missingDays == 0) {
             null
         } else {
