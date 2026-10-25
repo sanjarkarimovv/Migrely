@@ -12,6 +12,7 @@ import com.migrely.app.datasource.exception.DatabaseDataException
 import com.migrely.app.datasource.exception.StorageFullDataException
 import com.migrely.app.datasource.medication.datasource.MedicationDataSource
 import com.migrely.app.datasource.medication.model.AcuteIntakeDataModel
+import com.migrely.app.datasource.medication.model.EarliestAcuteIntakeDataModel
 import com.migrely.app.datasource.preferences.datasource.PreferencesDataSource
 import com.migrely.app.history.data.mapper.AttackMedicationIntakeDomainMapper
 import com.migrely.app.history.data.mapper.DayMarkDomainMapper
@@ -26,6 +27,7 @@ import com.migrely.app.history.domain.model.DayMarkKindDomainModel
 import com.migrely.app.history.domain.model.DayMarkWriteResultDomainModel
 import com.migrely.app.history.domain.model.DayMarksResultDomainModel
 import com.migrely.app.history.domain.model.DeletedAttackDomainModel
+import com.migrely.app.history.domain.model.EarliestAttackMedicationIntakeResultDomainModel
 import com.migrely.app.history.domain.model.EarliestAttackResultDomainModel
 import com.migrely.app.history.domain.model.EarliestDayMarkResultDomainModel
 import com.migrely.app.history.domain.model.HistoryAttackDomainModel
@@ -33,6 +35,7 @@ import com.migrely.app.history.domain.model.UndoResultDomainModel
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import java.time.ZoneOffset
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -257,6 +260,47 @@ class HistoryRepositoryTest {
         assertEquals(
             AttackMedicationIntakesResultDomainModel.Failed,
             classUnderTest.attackMedicationIntakes(from, to)
+        )
+    }
+
+    @Test
+    fun `Given an attack-medication intake when reading the earliest then found with its zone`() {
+        given(medicationDataSource.earliestAcuteIntake())
+            .willReturn(EarliestAcuteIntakeDataModel(NOW, "Asia/Tokyo"))
+
+        assertEquals(
+            EarliestAttackMedicationIntakeResultDomainModel.Found(NOW, ZoneId.of("Asia/Tokyo")),
+            classUnderTest.earliestAttackMedicationIntake()
+        )
+    }
+
+    @Test
+    fun `Given an intake in a zone unknown here when reading the earliest then in UTC`() {
+        given(medicationDataSource.earliestAcuteIntake())
+            .willReturn(EarliestAcuteIntakeDataModel(NOW, "Mars/Olympus_Mons"))
+
+        assertEquals(
+            EarliestAttackMedicationIntakeResultDomainModel.Found(NOW, ZoneOffset.UTC),
+            classUnderTest.earliestAttackMedicationIntake()
+        )
+    }
+
+    @Test
+    fun `Given no attack-medication intake when reading the earliest then none`() {
+        // The datasource leaves preventive medications out, so only preventive intakes read as none.
+        assertEquals(
+            EarliestAttackMedicationIntakeResultDomainModel.None,
+            classUnderTest.earliestAttackMedicationIntake()
+        )
+    }
+
+    @Test
+    fun `Given the database fails when reading the earliest intake then failed`() {
+        whenever(medicationDataSource.earliestAcuteIntake()).thenThrow(DatabaseDataException())
+
+        assertEquals(
+            EarliestAttackMedicationIntakeResultDomainModel.Failed,
+            classUnderTest.earliestAttackMedicationIntake()
         )
     }
 

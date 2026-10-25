@@ -7,6 +7,7 @@ import com.migrely.app.history.domain.model.AttackMedicationIntakesResultDomainM
 import com.migrely.app.history.domain.model.AttacksTouchingResultDomainModel
 import com.migrely.app.history.domain.model.DayMarkDomainModel
 import com.migrely.app.history.domain.model.DayMarksResultDomainModel
+import com.migrely.app.history.domain.model.EarliestAttackMedicationIntakeResultDomainModel
 import com.migrely.app.history.domain.model.EarliestAttackResultDomainModel
 import com.migrely.app.history.domain.model.EarliestDayMarkResultDomainModel
 import com.migrely.app.history.domain.model.HistoryAttackDomainModel
@@ -18,6 +19,7 @@ import com.migrely.app.history.domain.repository.GetAttackMedicationIntakesRepos
 import com.migrely.app.history.domain.repository.GetAttacksTouchingRepository
 import com.migrely.app.history.domain.repository.GetCurrentTimeRepository
 import com.migrely.app.history.domain.repository.GetDayMarksRepository
+import com.migrely.app.history.domain.repository.GetEarliestAttackMedicationIntakeRepository
 import com.migrely.app.history.domain.repository.GetEarliestAttackRepository
 import com.migrely.app.history.domain.repository.GetEarliestDayMarkRepository
 import com.migrely.app.history.domain.repository.GetPeriodTrackingRepository
@@ -29,8 +31,8 @@ import java.time.ZoneId
 
 /**
  * One month of History (BRD HIS-F1, HIS-F2, D29). The request is the month asked for, or null for the current one; the
- * month shown never precedes the month of the first attack or the first day mark, nor follows the current month
- * (BRD EC-HIS-03, D51).
+ * month shown never precedes the month of the first attack, the first day mark or the first attack-medication intake,
+ * nor follows the current month (BRD EC-HIS-03, D51, D99).
  *
  * An attack belongs to every day it touches in the zone where it started (BRD EC-ATK-06, EC-TIM-02): from its start
  * date to the date just before its end, or to today while it is in progress. Each day carries its period mark, and is
@@ -45,6 +47,7 @@ class GetHistoryMonthUseCase(
     private val getDayMarksRepository: GetDayMarksRepository,
     private val getEarliestDayMarkRepository: GetEarliestDayMarkRepository,
     private val getAttackMedicationIntakesRepository: GetAttackMedicationIntakesRepository,
+    private val getEarliestIntakeRepository: GetEarliestAttackMedicationIntakeRepository,
     private val getPeriodTrackingRepository: GetPeriodTrackingRepository,
     coroutineContextProvider: CoroutineContextProvider
 ) : BackgroundExecutingUseCase<YearMonth?, HistoryMonthResultDomainModel>(
@@ -69,9 +72,21 @@ class GetHistoryMonthUseCase(
             EarliestDayMarkResultDomainModel.None -> null
             EarliestDayMarkResultDomainModel.Failed -> return HistoryMonthResultDomainModel.Failed
         }
+        // So does a medication for attacks taken before either, in the zone it was taken in; preventive ones never
+        // count (BRD D99).
+        val earliestIntakeMonth = when (
+            val intake = getEarliestIntakeRepository.earliestAttackMedicationIntake()
+        ) {
+            is EarliestAttackMedicationIntakeResultDomainModel.Found ->
+                YearMonth.from(intake.takenAt.atZone(intake.zone))
+            EarliestAttackMedicationIntakeResultDomainModel.None -> null
+            EarliestAttackMedicationIntakeResultDomainModel.Failed ->
+                return HistoryMonthResultDomainModel.Failed
+        }
         val earliestMonth = listOfNotNull(
             earliestAttackMonth,
             earliestMarkMonth,
+            earliestIntakeMonth,
             currentMonth
         ).min()
         val month = (request ?: currentMonth).coerceIn(earliestMonth, currentMonth)

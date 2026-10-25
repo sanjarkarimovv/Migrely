@@ -8,6 +8,7 @@ import com.migrely.app.history.domain.model.CurrentTimeDomainModel
 import com.migrely.app.history.domain.model.DayMarkDomainModel
 import com.migrely.app.history.domain.model.DayMarksResultDomainModel
 import com.migrely.app.history.domain.model.DeletedAttackDomainModel
+import com.migrely.app.history.domain.model.EarliestAttackMedicationIntakeResultDomainModel
 import com.migrely.app.history.domain.model.EarliestAttackResultDomainModel
 import com.migrely.app.history.domain.model.EarliestDayMarkResultDomainModel
 import com.migrely.app.history.domain.model.HistoryAttackDomainModel
@@ -19,6 +20,7 @@ import com.migrely.app.history.domain.repository.GetAttackMedicationIntakesRepos
 import com.migrely.app.history.domain.repository.GetAttacksTouchingRepository
 import com.migrely.app.history.domain.repository.GetCurrentTimeRepository
 import com.migrely.app.history.domain.repository.GetDayMarksRepository
+import com.migrely.app.history.domain.repository.GetEarliestAttackMedicationIntakeRepository
 import com.migrely.app.history.domain.repository.GetEarliestAttackRepository
 import com.migrely.app.history.domain.repository.GetEarliestDayMarkRepository
 import com.migrely.app.history.domain.repository.GetPeriodTrackingRepository
@@ -28,6 +30,7 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.YearMonth
 import java.time.ZoneId
+import java.time.ZoneOffset
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -54,6 +57,7 @@ class GetHistoryMonthUseCaseTest {
     private val getDayMarksRepository: GetDayMarksRepository = mock()
     private val getEarliestDayMarkRepository: GetEarliestDayMarkRepository = mock()
     private val getAttackMedicationIntakesRepository: GetAttackMedicationIntakesRepository = mock()
+    private val getEarliestIntakeRepository: GetEarliestAttackMedicationIntakeRepository = mock()
     private val getPeriodTrackingRepository: GetPeriodTrackingRepository = mock {
         on { periodTracking() } doReturn true
     }
@@ -68,6 +72,7 @@ class GetHistoryMonthUseCaseTest {
             getDayMarksRepository,
             getEarliestDayMarkRepository,
             getAttackMedicationIntakesRepository,
+            getEarliestIntakeRepository,
             getPeriodTrackingRepository,
             CoroutineContextProvider.Default
         )
@@ -77,6 +82,7 @@ class GetHistoryMonthUseCaseTest {
             .willReturn(EarliestDayMarkResultDomainModel.None)
         givenNow("2026-10-23T12:00")
         givenEarliest(EarliestAttackResultDomainModel.None)
+        givenEarliestIntake(EarliestAttackMedicationIntakeResultDomainModel.None)
         givenAttacks()
         givenMarks()
     }
@@ -96,6 +102,11 @@ class GetHistoryMonthUseCaseTest {
 
     private fun givenEarliest(result: EarliestAttackResultDomainModel) {
         given(getEarliestAttackRepository.earliestAttack()).willReturn(result)
+    }
+
+    private fun givenEarliestIntake(result: EarliestAttackMedicationIntakeResultDomainModel) {
+        given(getEarliestIntakeRepository.earliestAttackMedicationIntake())
+            .willReturn(result)
     }
 
     private fun givenAttacks(vararg attacks: HistoryAttackDomainModel) {
@@ -389,6 +400,51 @@ class GetHistoryMonthUseCaseTest {
             .willReturn(EarliestDayMarkResultDomainModel.Found(LocalDate.parse("2026-08-30")))
 
         assertEquals(YearMonth.of(2026, 8), loaded(null).earliestMonth)
+    }
+
+    @Test
+    fun `Given only an attack-medication intake in September when September is asked then shown`() {
+        // A medication for attacks logged before any migraine keeps its month reachable (BRD D99).
+        givenEarliestIntake(
+            EarliestAttackMedicationIntakeResultDomainModel.Found(at("2026-09-20T09:00"), TASHKENT)
+        )
+
+        val actual = loaded(YearMonth.of(2026, 9))
+
+        assertEquals(YearMonth.of(2026, 9), actual.month)
+        assertEquals(YearMonth.of(2026, 9), actual.earliestMonth)
+    }
+
+    @Test
+    fun `Given an attack, a mark and an intake when executed then the earliest of their months`() {
+        givenEarliest(EarliestAttackResultDomainModel.Found(at("2026-10-05T10:00"), TASHKENT))
+        given(getEarliestDayMarkRepository.earliestDayMark())
+            .willReturn(EarliestDayMarkResultDomainModel.Found(LocalDate.parse("2026-09-12")))
+        givenEarliestIntake(
+            EarliestAttackMedicationIntakeResultDomainModel.Found(at("2026-08-20T09:00"), TASHKENT)
+        )
+
+        assertEquals(YearMonth.of(2026, 8), loaded(YearMonth.of(2026, 1)).earliestMonth)
+    }
+
+    @Test
+    fun `Given an intake late on 30 September in UTC when in Tashkent then September counts`() {
+        // 30 September 22:00 UTC is already 1 October in Tashkent; the intake's own zone decides.
+        givenEarliestIntake(
+            EarliestAttackMedicationIntakeResultDomainModel.Found(
+                at("2026-09-30T22:00", ZoneOffset.UTC),
+                ZoneOffset.UTC
+            )
+        )
+
+        assertEquals(YearMonth.of(2026, 9), loaded(request = null).earliestMonth)
+    }
+
+    @Test
+    fun `Given the earliest intake cannot be read when executed then failed`() {
+        givenEarliestIntake(EarliestAttackMedicationIntakeResultDomainModel.Failed)
+
+        assertEquals(HistoryMonthResultDomainModel.Failed, classUnderTest.executeInBackground(null))
     }
 
     @Test

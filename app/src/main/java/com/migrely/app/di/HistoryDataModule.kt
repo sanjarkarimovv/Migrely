@@ -14,6 +14,7 @@ import com.migrely.app.history.domain.repository.GetAttackMedicationIntakesRepos
 import com.migrely.app.history.domain.repository.GetAttacksTouchingRepository
 import com.migrely.app.history.domain.repository.GetCurrentTimeRepository
 import com.migrely.app.history.domain.repository.GetDayMarksRepository
+import com.migrely.app.history.domain.repository.GetEarliestAttackMedicationIntakeRepository
 import com.migrely.app.history.domain.repository.GetEarliestAttackRepository
 import com.migrely.app.history.domain.repository.GetEarliestDayMarkRepository
 import com.migrely.app.history.domain.repository.GetPeriodTrackingRepository
@@ -56,6 +57,11 @@ internal object HistoryDataModule {
     fun providesGetAttackMedicationIntakesRepository(
         repository: HistoryRepository
     ): GetAttackMedicationIntakesRepository = repository
+
+    @Provides
+    fun providesGetEarliestAttackMedicationIntakeRepository(
+        repository: HistoryRepository
+    ): GetEarliestAttackMedicationIntakeRepository = repository
 
     @Provides
     fun providesGetDayMarksRepository(repository: HistoryRepository): GetDayMarksRepository =
