@@ -11,7 +11,12 @@
   - About Migrely;
   - Privacy;
   - Open-source licences, a static list in resources;
-  - Delete all data, a confirmation dialog with a text field.
+  - Delete all data, a confirmation screen of its own (walk B3, B4): a one-line warning, the field "Type DELETE to
+    confirm", then the details, with "Delete everything" pinned below the scrolling part so the field and the button
+    show together in landscape at twice the font size. Once deleting starts, its progress takes the form's place and
+    nothing leaves the screen until the app restarts or the deletion fails. It is drawn dark then, in every theme, so
+    the settings clearing to the dark theme changes nothing on it, and its last frame before the restart is that
+    progress, in the activity's own window; a rotation brings it back as it was.
 - **Version:** read through `AppInfoDataSource` (`PackageManager`) in `:datasource:implementation`.
 
 ### D2. Theme
@@ -54,7 +59,8 @@
   - every step is safe to run again, so trying again finishes the job.
 - **Before the restart**, `:app` removes every notification once more, in case a worker that was already running posted
   after step 3.
-- **The restart:** on Deleted, the ViewModel emits `OnAllDataDeleted`, and `:app` restarts the process
+- **The restart:** on Deleted, the confirmation's ViewModel, `DeleteAllDataViewModel`, emits `OnAllDataDeleted`, and
+  `:app` restarts the process
   (`Intent.makeRestartActivityTask` and then `exitProcess(0)`). App-wide singletons, such as Your data's and the
   report's ViewModels, can hold nothing from before. The app then finds no records and no finished onboarding, and
   shows onboarding.

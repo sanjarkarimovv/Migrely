@@ -9,7 +9,5 @@ class SettingsNotificationUiMapper(private val presenter: SettingsEventPresenter
     override fun toUi(notification: SettingsPresentationNotification): UiNotification =
         when (notification) {
             SettingsPresentationNotification.NotSaved -> UiNotification { presenter.showNotSaved() }
-            SettingsPresentationNotification.NotDeleted ->
-                UiNotification { presenter.showNotDeleted() }
         }
 }

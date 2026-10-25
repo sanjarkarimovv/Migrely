@@ -59,14 +59,13 @@ import com.migrely.app.settings.ui.di.SettingsDependencies
 import com.migrely.app.settings.ui.model.SettingsUiModel
 import com.migrely.app.settings.ui.model.ThemeUiModel
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
 internal val CONTENT_MAX_WIDTH = 600.dp
 private val ROW_MIN_HEIGHT = 56.dp
 
 private const val MESSAGE_MILLIS = 6_000L
 
-/** Callbacks from the Settings screen. [onTheme] and [onDeleteAllData] open their dialogs. */
+/** Callbacks from the Settings screen. [onTheme] opens its dialog. */
 data class SettingsActions(
     val onBack: () -> Unit,
     val onReminders: () -> Unit,
@@ -84,7 +83,7 @@ data class SettingsActions(
 @Composable
 fun SettingsDependencies.Settings(navController: NavController, modifier: Modifier = Modifier) {
     ScreenEnterObserver { settingsViewModel.onEnter() }
-    // A screen rebuilt after a rotation reads the settings again, and sees a deletion going on or done.
+    // A screen rebuilt after a rotation, or shown again, reads the settings again.
     LifecycleResumeEffect(settingsViewModel) {
         settingsViewModel.onResume()
         onPauseOrDispose { }
@@ -93,20 +92,10 @@ fun SettingsDependencies.Settings(navController: NavController, modifier: Modifi
     val viewState by settingsViewModel.viewState.collectAsState(SettingsViewState.Loading)
     val settings = settingsViewStateUiMapper.toUi(viewState)
     var notSaved by remember { mutableStateOf(false) }
-    // The dialogs, and what the user typed, are kept across a rotation.
+    // Kept across a rotation.
     var choosingTheme by rememberSaveable { mutableStateOf(false) }
-    var confirmingDelete by rememberSaveable { mutableStateOf(false) }
-    var typed by rememberSaveable { mutableStateOf("") }
-    var deleteFailed by rememberSaveable { mutableStateOf(false) }
-    // Set on confirming and cleared only by a failure: the progress stays until the app starts again (BRD D96).
-    var deleteStarted by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(settingsEventPresenter) {
-        launch { settingsEventPresenter.notSaved.collect { notSaved = true } }
-        settingsEventPresenter.notDeleted.collect {
-            deleteStarted = false
-            deleteFailed = true
-            settingsViewModel.onDeleteFailureShownAction()
-        }
+        settingsEventPresenter.notSaved.collect { notSaved = true }
     }
     LaunchedEffect(notSaved) {
         if (notSaved) {
@@ -126,7 +115,7 @@ fun SettingsDependencies.Settings(navController: NavController, modifier: Modifi
             onAboutMigrely = settingsViewModel::onAboutMigrelyAction,
             onPrivacy = settingsViewModel::onPrivacyAction,
             onLicences = settingsViewModel::onLicencesAction,
-            onDeleteAllData = { confirmingDelete = true }
+            onDeleteAllData = settingsViewModel::onDeleteAllDataAction
         ),
         messages = {
             MigrelySnackbarHost(
@@ -152,29 +141,6 @@ fun SettingsDependencies.Settings(navController: NavController, modifier: Modifi
                 settingsViewModel.onThemeAction(themeUiToPresentationMapper.toPresentation(theme))
             },
             onDismiss = { choosingTheme = false }
-        )
-    }
-    if (confirmingDelete) {
-        DeleteAllDataDialog(
-            typed = typed,
-            word = deleteConfirmationResolver.word,
-            confirmed = deleteConfirmationResolver.resolve(typed),
-            deleting = deleteProgressUiResolver.resolve(deleteStarted, settings),
-            failed = deleteFailed,
-            onTyped = {
-                typed = it
-                deleteFailed = false
-            },
-            onDelete = {
-                deleteFailed = false
-                deleteStarted = true
-                settingsViewModel.onDeleteAllDataAction(typed)
-            },
-            onDismiss = {
-                confirmingDelete = false
-                typed = ""
-                deleteFailed = false
-            }
         )
     }
 }
@@ -301,7 +267,6 @@ private fun SettingsItems(settings: SettingsUiModel?, actions: SettingsActions) 
         title = stringResource(R.string.settings_delete_all),
         summary = stringResource(R.string.settings_delete_all_summary),
         onClick = actions.onDeleteAllData,
-        opensScreen = false,
         titleColor = MaterialTheme.colorScheme.error
     )
 }
@@ -410,8 +375,7 @@ private val PREVIEW_ACTIONS = SettingsActions({}, {}, {}, {}, {}, {}, {}, {}, {}
 private val PREVIEW_SETTINGS = SettingsUiModel(
     periodTracking = true,
     theme = ThemeUiModel.Dark,
-    version = "0.1.0",
-    deleting = false
+    version = "0.1.0"
 )
 
 @Preview(name = "Settings")

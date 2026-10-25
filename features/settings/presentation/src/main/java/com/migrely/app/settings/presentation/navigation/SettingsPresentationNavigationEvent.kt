@@ -17,6 +17,6 @@ sealed interface SettingsPresentationNavigationEvent : PresentationNavigationEve
 
     data object OnLicences : SettingsPresentationNavigationEvent
 
-    /** Everything is deleted: the app starts again as on a new phone, with onboarding (BRD D96). */
-    data object OnAllDataDeleted : SettingsPresentationNavigationEvent
+    /** The confirmation of "Delete all data" (BRD D96). */
+    data object OnDeleteAllData : SettingsPresentationNavigationEvent
 }

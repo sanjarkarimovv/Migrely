@@ -7,9 +7,11 @@ import com.migrely.app.architecture.presentation.navigation.PresentationNavigati
 import com.migrely.app.architecture.ui.navigation.exception.UnhandledNavigationException
 import com.migrely.app.backup.presentation.navigation.YourDataPresentationNavigationEvent
 import com.migrely.app.settings.presentation.model.SettingsPagePresentationModel
+import com.migrely.app.settings.presentation.navigation.DeleteAllDataPresentationNavigationEvent
 import com.migrely.app.settings.presentation.navigation.SettingsPagePresentationNavigationEvent
 import com.migrely.app.settings.presentation.navigation.SettingsPresentationNavigationEvent
 import com.migrely.app.ui.main.route.AboutMigrely
+import com.migrely.app.ui.main.route.DeleteAllData
 import com.migrely.app.ui.main.route.Licences
 import com.migrely.app.ui.main.route.Privacy
 import com.migrely.app.ui.main.route.Reminders
@@ -45,6 +47,7 @@ class SettingsNavigationEventDestinationMappersTest(
             arrayOf(SettingsPresentationNavigationEvent.OnAboutMigrely, AboutMigrely),
             arrayOf(SettingsPresentationNavigationEvent.OnPrivacy, Privacy),
             arrayOf(SettingsPresentationNavigationEvent.OnLicences, Licences),
+            arrayOf(SettingsPresentationNavigationEvent.OnDeleteAllData, DeleteAllData),
             arrayOf(SettingsPresentationNavigationEvent.OnBack, null)
         )
     }
@@ -55,7 +58,7 @@ class SettingsNavigationEventDestinationMappersTest(
         val navController: NavController = mock()
 
         // When
-        SettingsNavigationEventDestinationMapper {}.toUi(event).navigate(navController)
+        SettingsNavigationEventDestinationMapper().toUi(event).navigate(navController)
 
         // Then
         if (route == null) {
@@ -70,7 +73,7 @@ class SettingsNavigationEventDestinationMappersTest(
     }
 }
 
-class SettingsAllDataDeletedDestinationMapperTest {
+class DeleteAllDataNavigationEventDestinationMapperTest {
     @Test
     fun `Given all data is deleted when toUi then the app starts again, not a screen`() {
         // Given
@@ -78,13 +81,29 @@ class SettingsAllDataDeletedDestinationMapperTest {
         var restarts = 0
 
         // When
-        SettingsNavigationEventDestinationMapper { restarts++ }
-            .toUi(SettingsPresentationNavigationEvent.OnAllDataDeleted)
+        DeleteAllDataNavigationEventDestinationMapper { restarts++ }
+            .toUi(DeleteAllDataPresentationNavigationEvent.OnAllDataDeleted)
             .navigate(navController)
 
         // Then
         assertEquals(1, restarts)
         verifyNoInteractions(navController)
+    }
+
+    @Test
+    fun `Given going back when toUi then leaves the confirmation, and nothing restarts`() {
+        // Given
+        val navController: NavController = mock()
+        var restarts = 0
+
+        // When
+        DeleteAllDataNavigationEventDestinationMapper { restarts++ }
+            .toUi(DeleteAllDataPresentationNavigationEvent.OnBack)
+            .navigate(navController)
+
+        // Then
+        verify(navController).popBackStack(DeleteAllData::class, true, false)
+        assertEquals(0, restarts)
     }
 }
 

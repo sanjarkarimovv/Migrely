@@ -23,6 +23,7 @@ import com.migrely.app.reminders.ui.view.DailyReminderOffer
 import com.migrely.app.reminders.ui.view.Reminders
 import com.migrely.app.report.ui.view.Report
 import com.migrely.app.settings.ui.view.AboutMigrely
+import com.migrely.app.settings.ui.view.DeleteAllData
 import com.migrely.app.settings.ui.view.Licences
 import com.migrely.app.settings.ui.view.Privacy
 import com.migrely.app.settings.ui.view.Settings
@@ -31,6 +32,7 @@ import com.migrely.app.ui.main.di.AppNavHostDependencies
 import com.migrely.app.ui.main.route.AboutMigrely
 import com.migrely.app.ui.main.route.AddPastAttack
 import com.migrely.app.ui.main.route.AttackDetails
+import com.migrely.app.ui.main.route.DeleteAllData
 import com.migrely.app.ui.main.route.EditMedication
 import com.migrely.app.ui.main.route.History
 import com.migrely.app.ui.main.route.Home
@@ -135,6 +137,9 @@ fun AppNavHostDependencies.AppNavHost(
         }
         composable<Licences> {
             settingsPageDependencies.Licences(navController)
+        }
+        composable<DeleteAllData> {
+            deleteAllDataDependencies.DeleteAllData(navController)
         }
         composable<YourData> {
             yourDataDependencies.YourData(navController)

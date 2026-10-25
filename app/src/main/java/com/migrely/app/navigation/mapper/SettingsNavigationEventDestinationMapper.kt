@@ -5,6 +5,7 @@ import com.migrely.app.architecture.ui.navigation.mapper.NavigationEventDestinat
 import com.migrely.app.architecture.ui.navigation.model.UiDestination
 import com.migrely.app.settings.presentation.navigation.SettingsPresentationNavigationEvent
 import com.migrely.app.ui.main.route.AboutMigrely
+import com.migrely.app.ui.main.route.DeleteAllData
 import com.migrely.app.ui.main.route.Licences
 import com.migrely.app.ui.main.route.Privacy
 import com.migrely.app.ui.main.route.Reminders
@@ -12,8 +13,7 @@ import com.migrely.app.ui.main.route.Settings
 import com.migrely.app.ui.main.route.WarningSigns
 import com.migrely.app.ui.main.route.YourData
 
-/** [restartApp] starts the app again in a new process; in the app it is `restartApp(context)`. */
-class SettingsNavigationEventDestinationMapper(private val restartApp: () -> Unit) :
+class SettingsNavigationEventDestinationMapper :
     NavigationEventDestinationMapper<SettingsPresentationNavigationEvent>(
         SettingsPresentationNavigationEvent::class
     ) {
@@ -30,7 +30,7 @@ class SettingsNavigationEventDestinationMapper(private val restartApp: () -> Uni
         SettingsPresentationNavigationEvent.OnAboutMigrely -> open(AboutMigrely)
         SettingsPresentationNavigationEvent.OnPrivacy -> open(Privacy)
         SettingsPresentationNavigationEvent.OnLicences -> open(Licences)
-        SettingsPresentationNavigationEvent.OnAllDataDeleted -> UiDestination { restartApp() }
+        SettingsPresentationNavigationEvent.OnDeleteAllData -> open(DeleteAllData)
     }
 
     private fun open(route: Any) = UiDestination {

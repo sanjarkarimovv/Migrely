@@ -23,16 +23,10 @@ class SettingsUiMappersTest {
 
         assertNull(mapper.toUi(SettingsViewState.Loading))
         assertEquals(
-            SettingsUiModel(
-                periodTracking = false,
-                theme = ThemeUiModel.Light,
-                version = "1.2.0",
-                deleting = true
-            ),
+            SettingsUiModel(periodTracking = false, theme = ThemeUiModel.Light, version = "1.2.0"),
             mapper.toUi(
                 SettingsViewState.Ready(
-                    SettingsPresentationModel(false, ThemePresentationModel.Light, "1.2.0"),
-                    deleting = true
+                    SettingsPresentationModel(false, ThemePresentationModel.Light, "1.2.0")
                 )
             )
         )
@@ -46,18 +40,6 @@ class SettingsUiMappersTest {
         SettingsNotificationUiMapper(
             presenter
         ).toUi(SettingsPresentationNotification.NotSaved).present()
-
-        assertEquals(Unit, shown.await())
-    }
-
-    @Test
-    fun `When deleting all data stopped then the presenter says so`() = runTest {
-        val presenter = SettingsEventPresenter()
-        val shown = async(start = UNDISPATCHED) { presenter.notDeleted.first() }
-
-        SettingsNotificationUiMapper(
-            presenter
-        ).toUi(SettingsPresentationNotification.NotDeleted).present()
 
         assertEquals(Unit, shown.await())
     }

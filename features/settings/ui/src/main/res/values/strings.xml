@@ -20,7 +20,7 @@
     <string name="settings_theme_dark">Dark</string>
     <string name="settings_theme_light">Light</string>
     <string name="settings_theme_system">Match the phone</string>
-    <string name="settings_theme_note">Attack mode always stays dark.</string>
+    <string name="settings_theme_note">During a migraine, Migrely stays dark.</string>
 
     <string name="settings_warning_signs">Warning signs</string>
     <string name="settings_warning_signs_summary">When a headache needs urgent care</string>

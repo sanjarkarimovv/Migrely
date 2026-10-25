@@ -63,6 +63,10 @@ data object Privacy
 @Serializable
 data object Licences
 
+/** The confirmation of "Delete all data", and its progress until the app starts again (BRD D96). */
+@Serializable
+data object DeleteAllData
+
 /** Your data: backups, exports and imports (change add-data-export-import). */
 @Serializable
 data object YourData
