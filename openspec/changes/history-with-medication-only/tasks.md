@@ -2,7 +2,7 @@
 
 ## 1. Data
 
-- [ ] 1.1 `MedicationDataSource.earliestAcuteIntake()`: its implementation, DAO query and instrumented test.
+- [x] 1.1 `MedicationDataSource.earliestAcuteIntake()`: its implementation, DAO query and instrumented test.
 
 ## 2. History
 

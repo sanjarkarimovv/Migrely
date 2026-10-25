@@ -1,6 +1,7 @@
 package com.migrely.app.datasource.medication.datasource
 
 import com.migrely.app.datasource.medication.model.AcuteIntakeDataModel
+import com.migrely.app.datasource.medication.model.EarliestAcuteIntakeDataModel
 import com.migrely.app.datasource.medication.model.IntakeDataModel
 import com.migrely.app.datasource.medication.model.IntakeEffectDataModel
 import com.migrely.app.datasource.medication.model.MedicationCategoryDataModel
@@ -89,6 +90,12 @@ interface MedicationDataSource {
 
     /** Acute intakes taken in the half-open window [[from], [to]), outside attacks being deleted (BRD D45). */
     fun acuteIntakesTakenBetween(from: Instant, to: Instant): List<AcuteIntakeDataModel>
+
+    /**
+     * The first acute intake, by the same rules: preventive medications and attacks being deleted are left out, or null
+     * when there is none (BRD D99).
+     */
+    fun earliestAcuteIntake(): EarliestAcuteIntakeDataModel?
 
     /** The last "Got it" of each overuse category and level (BRD EC-MED-06). */
     fun overuseNotices(): List<OveruseNoticeDataModel>

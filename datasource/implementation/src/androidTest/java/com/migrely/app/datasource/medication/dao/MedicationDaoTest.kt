@@ -255,6 +255,33 @@ class MedicationDaoTest {
     }
 
     @Test
+    fun givenIntakes_whenReadingTheEarliestAcuteOne_thenWithoutPreventiveOrDeletedWithItsZone() {
+        attackDao.insertAttack(attack("gone", 1_000L).copy(deletedEpochMillis = 9_000L))
+        attackDao.insertAttack(attack("kept", 1_000L))
+        classUnderTest.insert(medication("i", "Ibuprofen"))
+        classUnderTest.insert(medication("t", "Topiramate", kind = "PREVENTIVE", category = null))
+        classUnderTest.insertIntake(intake("preventive", "t", null, 1_000L))
+        classUnderTest.insertIntake(intake("deleted", "i", "gone", 1_100L))
+        classUnderTest.insertIntake(
+            intake("first", "i", "kept", 1_200L).copy(takenZoneId = "Asia/Tokyo")
+        )
+        classUnderTest.insertIntake(intake("alone", "i", null, 1_300L))
+
+        val actual = checkNotNull(classUnderTest.earliestAcuteIntake())
+
+        assertEquals(1_200L to "Asia/Tokyo", actual.takenEpochMillis to actual.takenZoneId)
+    }
+
+    @Test
+    fun givenOnlyPreventiveIntakes_whenReadingTheEarliestAcuteOne_thenNull() {
+        assertNull(classUnderTest.earliestAcuteIntake())
+        classUnderTest.insert(medication("t", "Topiramate", kind = "PREVENTIVE", category = null))
+        classUnderTest.insertIntake(intake("preventive", "t", null, 1_000L))
+
+        assertNull(classUnderTest.earliestAcuteIntake())
+    }
+
+    @Test
     fun givenANotice_whenAcknowledgedAgain_thenTheLatestTimeReplacesIt() {
         classUnderTest.upsertOveruseNotice(OveruseNoticeLocalModel("TRIPTAN", "SOFT", 1_000L))
         classUnderTest.upsertOveruseNotice(OveruseNoticeLocalModel("TRIPTAN", "DOCTOR", 2_000L))

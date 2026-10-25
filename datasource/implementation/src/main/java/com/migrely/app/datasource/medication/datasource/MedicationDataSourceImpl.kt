@@ -5,6 +5,7 @@ import com.migrely.app.datasource.medication.dao.MedicationDao
 import com.migrely.app.datasource.medication.mapper.MedicationLocalMapper
 import com.migrely.app.datasource.medication.mapper.OveruseNoticeLocalMapper
 import com.migrely.app.datasource.medication.model.AcuteIntakeDataModel
+import com.migrely.app.datasource.medication.model.EarliestAcuteIntakeDataModel
 import com.migrely.app.datasource.medication.model.IntakeDataModel
 import com.migrely.app.datasource.medication.model.IntakeEffectDataModel
 import com.migrely.app.datasource.medication.model.MedicationCategoryDataModel
@@ -182,6 +183,10 @@ class MedicationDataSourceImpl(
             medicationDao.acuteIntakesBetween(from.toEpochMilli(), to.toEpochMilli())
                 .map(medicationLocalMapper::toData)
         }
+
+    override fun earliestAcuteIntake(): EarliestAcuteIntakeDataModel? = database {
+        medicationDao.earliestAcuteIntake()?.let(medicationLocalMapper::toData)
+    }
 
     override fun overuseNotices(): List<OveruseNoticeDataModel> = database {
         medicationDao.overuseNotices().mapNotNull(overuseNoticeLocalMapper::toData)
