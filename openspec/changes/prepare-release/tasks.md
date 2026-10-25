@@ -2,9 +2,9 @@
 
 ## 1. Release build
 
-- [ ] 1.1 R8 and resource shrinking, `proguard-rules.pro`, and signing from `keystore.properties` with the debug
+- [x] 1.1 R8 and resource shrinking, `proguard-rules.pro`, and signing from `keystore.properties` with the debug
   fallback.
-- [ ] 1.2 Release smoke on the emulator; keep rules only for breakages found.
+- [x] 1.2 Release smoke on the emulator; keep rules only for breakages found.
 
 ## 2. Icon
 
