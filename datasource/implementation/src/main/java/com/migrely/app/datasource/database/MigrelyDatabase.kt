@@ -63,6 +63,23 @@ abstract class MigrelyDatabase : RoomDatabase() {
 
     abstract fun backupDao(): BackupDao
 
+    /**
+     * Deletes every row of every table, including tables added later, and resets the AUTOINCREMENT counters, which
+     * would otherwise still tell how many intensity points were ever logged (BRD D96). The counters go first: should
+     * clearing the tables then fail, the next IDs still follow the rows left. Blocks; never on the main thread.
+     */
+    fun deleteEverything() {
+        with(openHelper.writableDatabase) {
+            // The table exists only once a table with AUTOINCREMENT does.
+            val hasSequences = query(
+                "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'sqlite_sequence'"
+            ).use { it.moveToFirst() }
+            if (hasSequences) execSQL("DELETE FROM sqlite_sequence")
+        }
+        // In one transaction, then compacted, so the deleted rows do not linger in the file.
+        clearAllTables()
+    }
+
     companion object {
         const val NAME = "migrely.db"
     }

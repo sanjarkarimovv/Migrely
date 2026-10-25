@@ -10,6 +10,8 @@ import java.time.Instant
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -173,6 +175,22 @@ class AttackDaoTest {
             cursor.moveToFirst()
             cursor.getInt(0)
         }
+
+    /** The app's theme follows it (change add-settings-and-safety, BRD D94). */
+    @Test
+    fun whenAnAttackStartsEndsOrIsDeleted_thenWhetherOneIsInProgressFollows() = runBlocking {
+        assertEquals(false, classUnderTest.inProgressChanges().first())
+
+        classUnderTest.startIfNoneInProgress(attack(id = "now", start = 1_000L, end = null))
+        assertEquals(true, classUnderTest.inProgressChanges().first())
+
+        classUnderTest.end("now", endEpochMillis = 2_000L, nowEpochMillis = 2_000L)
+        assertEquals(false, classUnderTest.inProgressChanges().first())
+
+        classUnderTest.clearEnd("now", nowEpochMillis = 3_000L)
+        classUnderTest.softDelete("now", nowEpochMillis = 4_000L)
+        assertEquals(false, classUnderTest.inProgressChanges().first())
+    }
 
     private fun attack(id: String, start: Long, end: Long?) = AttackLocalModel(
         id = id,

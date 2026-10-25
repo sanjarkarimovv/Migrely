@@ -2,12 +2,14 @@ package com.migrely.app.datasource.backupfile.datasource
 
 import com.migrely.app.datasource.backup.model.BackupRecordsDataModel
 import com.migrely.app.datasource.backupfile.mapper.BackupFileMapper
+import com.migrely.app.datasource.backupfile.model.AutomaticCopyDataModel
 import com.migrely.app.datasource.backupfile.model.BackupDecodedDataModel
 import com.migrely.app.datasource.backupfile.model.BackupFileHeaderLocalModel
 import com.migrely.app.datasource.backupfile.model.BackupFileLocalModel
 import com.migrely.app.datasource.backupfile.validator.BackupRecordsValidator
 import com.migrely.app.datasource.file.file
 import java.io.File
+import java.io.IOException
 import java.time.DateTimeException
 import java.time.Instant
 import kotlinx.serialization.json.Json
@@ -73,13 +75,13 @@ class BackupFileDataSourceImpl(
 
     override fun saveAutomatic(text: String, madeAt: Instant) = file {
         val directory = File(filesDirectory, AUTOMATIC_DIRECTORY).apply { mkdirs() }
-        val name = "$AUTOMATIC_PREFIX${madeAt.toEpochMilli()}$AUTOMATIC_SUFFIX"
+        val name = automaticName(madeAt)
         // Written aside first, so a full phone never leaves a half backup behind.
         val partial = File(directory, "$name.partial")
         try {
             partial.writeText(text, Charsets.UTF_8)
             if (!partial.renameTo(File(directory, name))) {
-                throw java.io.IOException("Could not save $name")
+                throw IOException("Could not save $name")
             }
         } finally {
             partial.delete()
@@ -90,11 +92,42 @@ class BackupFileDataSourceImpl(
         }.drop(AUTOMATIC_KEPT - 1).forEach(File::delete)
     }
 
+    override fun newestAutomatic(): AutomaticCopyDataModel? = automaticBackups(
+        File(filesDirectory, AUTOMATIC_DIRECTORY)
+    ).firstNotNullOfOrNull(::restorable)
+
+    override fun automatic(madeAt: Instant): AutomaticCopyDataModel? =
+        restorable(File(File(filesDirectory, AUTOMATIC_DIRECTORY), automaticName(madeAt)))
+
+    /** The copy in [copy] with its records, or null when it is gone, cannot be read or is not a backup this reads. */
+    @Suppress("SwallowedException")
+    private fun restorable(copy: File): AutomaticCopyDataModel? {
+        val text = try {
+            copy.readText(Charsets.UTF_8)
+        } catch (exception: IOException) {
+            return null
+        }
+        return when (val decoded = decode(text)) {
+            is BackupDecodedDataModel.Records ->
+                AutomaticCopyDataModel(Instant.ofEpochMilli(madeAtMillis(copy)), decoded.records)
+
+            BackupDecodedDataModel.NotABackup, BackupDecodedDataModel.Newer -> null
+        }
+    }
+
+    override fun deleteAll() = file {
+        val directory = File(filesDirectory, AUTOMATIC_DIRECTORY)
+        if (!directory.deleteRecursively()) throw IOException("Could not delete ${directory.name}")
+    }
+
     /** Newest first. */
     private fun automaticBackups(directory: File): List<File> = directory.listFiles().orEmpty()
         .filter { it.name.startsWith(AUTOMATIC_PREFIX) && it.name.endsWith(AUTOMATIC_SUFFIX) }
-        .sortedByDescending {
-            it.name.removePrefix(AUTOMATIC_PREFIX).removeSuffix(AUTOMATIC_SUFFIX).toLongOrNull()
-                ?: 0L
-        }
+        .sortedByDescending(::madeAtMillis)
+
+    private fun automaticName(madeAt: Instant) =
+        "$AUTOMATIC_PREFIX${madeAt.toEpochMilli()}$AUTOMATIC_SUFFIX"
+
+    private fun madeAtMillis(copy: File): Long =
+        copy.name.removePrefix(AUTOMATIC_PREFIX).removeSuffix(AUTOMATIC_SUFFIX).toLongOrNull() ?: 0L
 }

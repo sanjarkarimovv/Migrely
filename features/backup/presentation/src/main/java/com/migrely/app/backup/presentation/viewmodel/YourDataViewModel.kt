@@ -7,45 +7,52 @@ import com.migrely.app.backup.domain.model.BackupWriteResultDomainModel
 import com.migrely.app.backup.domain.model.ImportBackupRequestDomainModel
 import com.migrely.app.backup.domain.model.ImportResultDomainModel
 import com.migrely.app.backup.domain.model.ReadBackupResultDomainModel
+import com.migrely.app.backup.domain.model.RestoreResultDomainModel
 import com.migrely.app.backup.domain.usecase.ExportBackupUseCase
 import com.migrely.app.backup.domain.usecase.ExportCsvUseCase
+import com.migrely.app.backup.domain.usecase.GetAutomaticCopyUseCase
 import com.migrely.app.backup.domain.usecase.ImportBackupUseCase
 import com.migrely.app.backup.domain.usecase.ReadBackupUseCase
+import com.migrely.app.backup.domain.usecase.RestoreAutomaticCopyUseCase
+import com.migrely.app.backup.presentation.mapper.AutomaticCopyPresentationMapper
 import com.migrely.app.backup.presentation.mapper.BackupSummaryPresentationMapper
 import com.migrely.app.backup.presentation.mapper.ImportModeDomainMapper
+import com.migrely.app.backup.presentation.model.AutomaticCopyPresentationModel
 import com.migrely.app.backup.presentation.model.ImportModePresentationModel
 import com.migrely.app.backup.presentation.model.YourDataPresentationNotification
 import com.migrely.app.backup.presentation.model.YourDataViewState
 import com.migrely.app.backup.presentation.navigation.YourDataPresentationNavigationEvent
+import java.time.Instant
 
 /**
- * "Your data" (BRD BAK-F1–F3, D71–D73). Each event carries the file the user picked through the system's picker.
+ * "Your data" (BRD BAK-F1–F3, D71–D73, D98). Each event carries the file the user picked through the system's picker.
  *
- * Writing or reading a file can outlast a rotation, so this view model lives as long as the app and keeps two things,
- * only for delivery: how many files are being worked on, and an outcome the screen has not taken yet. On returning, the
- * screen sees the work still going and gets the outcome it missed (ARCHITECTURE section 13).
+ * Writing or reading a file can outlast a rotation, so this view model lives as long as the app and keeps three
+ * things, only for delivery: how many files are being worked on, an outcome the screen has not taken yet, and the
+ * newest automatic copy last read, so the screen shows its row while work goes on. On returning, the screen sees the
+ * work still going and gets the outcome it missed (ARCHITECTURE section 13).
  */
+@Suppress("LongParameterList", "TooManyFunctions")
 class YourDataViewModel(
     private val exportBackupUseCase: ExportBackupUseCase,
     private val exportCsvUseCase: ExportCsvUseCase,
     private val readBackupUseCase: ReadBackupUseCase,
     private val importBackupUseCase: ImportBackupUseCase,
+    private val getAutomaticCopyUseCase: GetAutomaticCopyUseCase,
+    private val restoreAutomaticCopyUseCase: RestoreAutomaticCopyUseCase,
     private val backupSummaryPresentationMapper: BackupSummaryPresentationMapper,
+    private val automaticCopyPresentationMapper: AutomaticCopyPresentationMapper,
     private val importModeDomainMapper: ImportModeDomainMapper,
     useCaseExecutor: UseCaseExecutor
 ) : BaseViewModel<YourDataViewState, YourDataPresentationNotification>(useCaseExecutor) {
     private var working = 0
     private var undelivered: YourDataPresentationNotification? = null
+    private var automaticCopy: AutomaticCopyPresentationModel? = null
 
-    fun onEnter() = updateViewState(
-        if (working >
-            0
-        ) {
-            YourDataViewState.Working
-        } else {
-            YourDataViewState.Idle
-        }
-    )
+    fun onEnter() {
+        updateViewState(state())
+        readAutomaticCopy { updateViewState(state()) }
+    }
 
     /** The screen listens again, after a rotation for example: it gets the state and an outcome it missed. */
     fun onResume() = show()
@@ -107,6 +114,18 @@ class YourDataViewModel(
         }
     }
 
+    /** The user confirmed restoring the automatic copy made at [madeAt], the one the screen showed (BRD D98). */
+    fun onRestoreCopyAction(madeAt: Instant) = work(restoreAutomaticCopyUseCase, madeAt) { result ->
+        when (result) {
+            is RestoreResultDomainModel.Restored -> YourDataPresentationNotification.Restored(
+                backupSummaryPresentationMapper.toPresentation(result.summary)
+            )
+
+            RestoreResultDomainModel.StorageFull -> YourDataPresentationNotification.StorageFull
+            RestoreResultDomainModel.Failed -> YourDataPresentationNotification.SomethingWentWrong
+        }
+    }
+
     private fun written(
         result: BackupWriteResultDomainModel,
         saved: YourDataPresentationNotification
@@ -116,8 +135,14 @@ class YourDataViewModel(
         BackupWriteResultDomainModel.Failed -> YourDataPresentationNotification.SomethingWentWrong
     }
 
+    private fun state() = if (working > 0) {
+        YourDataViewState.Working(automaticCopy)
+    } else {
+        YourDataViewState.Idle(automaticCopy)
+    }
+
     private fun show() {
-        updateViewState(if (working > 0) YourDataViewState.Working else YourDataViewState.Idle)
+        updateViewState(state())
         undelivered?.let(::notify)
     }
 
@@ -131,7 +156,7 @@ class YourDataViewModel(
         outcome: (OUTPUT) -> YourDataPresentationNotification
     ) {
         working++
-        updateViewState(YourDataViewState.Working)
+        updateViewState(state())
         useCase(
             value = value,
             onResult = { result -> finish(outcome(result)) },
@@ -142,6 +167,15 @@ class YourDataViewModel(
     private fun finish(outcome: YourDataPresentationNotification) {
         working = (working - 1).coerceAtLeast(0)
         undelivered = outcome
-        show()
+        // A replace or a restore saves a new copy, so the copy is read again before the outcome shows.
+        readAutomaticCopy(::show)
     }
+
+    private fun readAutomaticCopy(then: () -> Unit) = getAutomaticCopyUseCase(
+        onResult = { copy ->
+            automaticCopy = automaticCopyPresentationMapper.toPresentation(copy)
+            then()
+        },
+        onException = { then() }
+    )
 }

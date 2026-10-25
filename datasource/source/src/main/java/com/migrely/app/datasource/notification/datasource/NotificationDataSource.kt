@@ -19,4 +19,7 @@ interface NotificationDataSource {
     fun showEffectQuestion(intakeId: String, medicationName: String)
 
     fun cancelEffectQuestion(intakeId: String)
+
+    /** Removes every notification Migrely shows (BRD D96). */
+    fun cancelAll()
 }

@@ -16,7 +16,9 @@ import com.migrely.app.onboarding.ui.di.OnboardingDependencies
 import com.migrely.app.reminders.ui.di.DailyReminderOfferDependencies
 import com.migrely.app.reminders.ui.di.RemindersDependencies
 import com.migrely.app.report.ui.di.ReportDependencies
+import com.migrely.app.settings.ui.di.DeleteAllDataDependencies
 import com.migrely.app.settings.ui.di.SettingsDependencies
+import com.migrely.app.settings.ui.di.SettingsPageDependencies
 
 data class AppNavHostDependencies(
     val homeDependencies: HomeDependencies,
@@ -31,6 +33,8 @@ data class AppNavHostDependencies(
     val overuseIndicatorDependencies: OveruseIndicatorDependencies,
     val remindersDependencies: RemindersDependencies,
     val settingsDependencies: SettingsDependencies,
+    val settingsPageDependencies: SettingsPageDependencies,
+    val deleteAllDataDependencies: DeleteAllDataDependencies,
     val yourDataDependencies: YourDataDependencies,
     val onboardingDependencies: OnboardingDependencies,
     val dailyReminderOfferDependencies: DailyReminderOfferDependencies,

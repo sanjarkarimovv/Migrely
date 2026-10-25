@@ -20,6 +20,10 @@ sealed interface YourDataPresentationNotification : PresentationNotification {
     data class Replaced(val summary: BackupSummaryPresentationModel) :
         YourDataPresentationNotification
 
+    /** The automatic copy took the place of the phone's records (BRD D98). */
+    data class Restored(val summary: BackupSummaryPresentationModel) :
+        YourDataPresentationNotification
+
     /** [addedOthers] counts the medications, custom tags, intakes and marked days added. */
     data class Added(val addedAttacks: Int, val skippedAttacks: Int, val addedOthers: Int) :
         YourDataPresentationNotification
