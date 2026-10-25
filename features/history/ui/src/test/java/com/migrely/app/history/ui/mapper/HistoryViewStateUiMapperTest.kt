@@ -88,14 +88,14 @@ class HistoryViewStateUiMapperTest {
     }
 
     @Test
-    fun `When mapping no attacks then no attacks`() {
+    fun `When mapping nothing logged then nothing logged`() {
         assertEquals(
-            HistoryViewStateUiModel.NoAttacks(
+            HistoryViewStateUiModel.NothingLogged(
                 monthUi(DaySkyUiModel.NothingLogged, null),
                 requestedMonth = null
             ),
             classUnderTest.toUi(
-                HistoryViewState.NoAttacks(
+                HistoryViewState.NothingLogged(
                     month(DaySkyPresentationModel.NothingLogged, null),
                     requestedMonth = null
                 )

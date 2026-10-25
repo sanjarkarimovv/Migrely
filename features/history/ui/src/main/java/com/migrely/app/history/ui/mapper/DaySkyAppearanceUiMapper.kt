@@ -6,6 +6,7 @@ import com.migrely.app.history.ui.model.DaySkyUiModel
 class DaySkyAppearanceUiMapper {
     fun toAppearance(sky: DaySkyUiModel): DaySkyAppearance = when (sky) {
         DaySkyUiModel.NothingLogged -> DaySkyAppearance.NothingLogged
+        DaySkyUiModel.MedicationOnly -> DaySkyAppearance.MedicationOnly
         DaySkyUiModel.Future -> DaySkyAppearance.Future
         DaySkyUiModel.Clear -> DaySkyAppearance.Clear
         DaySkyUiModel.Hazy -> DaySkyAppearance.Hazy

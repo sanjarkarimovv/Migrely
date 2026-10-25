@@ -5,6 +5,7 @@ import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.Upsert
 import com.migrely.app.datasource.medication.model.AcuteIntakeLocalModel
+import com.migrely.app.datasource.medication.model.EarliestAcuteIntakeLocalModel
 import com.migrely.app.datasource.medication.model.IntakeWithMedicationLocalModel
 import com.migrely.app.datasource.medication.model.MedicationIntakeLocalModel
 import com.migrely.app.datasource.medication.model.MedicationLocalModel
@@ -139,6 +140,21 @@ interface MedicationDao {
             "AND attack.deleted_epoch_millis IS NULL"
     )
     fun acuteIntakesBetween(fromEpochMillis: Long, toEpochMillis: Long): List<AcuteIntakeLocalModel>
+
+    /**
+     * The first intake [acuteIntakesBetween] would count at any time; the taken index serves the
+     * order (BRD D99).
+     */
+    @Query(
+        "SELECT medication_intake.taken_epoch_millis, medication_intake.taken_zone_id " +
+            "FROM medication_intake " +
+            "JOIN medication ON medication.id = medication_intake.medication_id " +
+            "LEFT JOIN attack ON attack.id = medication_intake.attack_id " +
+            "WHERE medication.kind != 'PREVENTIVE' " +
+            "AND attack.deleted_epoch_millis IS NULL " +
+            "ORDER BY medication_intake.taken_epoch_millis LIMIT 1"
+    )
+    fun earliestAcuteIntake(): EarliestAcuteIntakeLocalModel?
 
     @Query("SELECT * FROM overuse_notice")
     fun overuseNotices(): List<OveruseNoticeLocalModel>

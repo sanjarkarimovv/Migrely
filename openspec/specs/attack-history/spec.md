@@ -23,8 +23,9 @@ from (BRD HIS-F1, 18.3 A, D29).
 
 ### Requirement: Month by month
 History SHALL show one month at a time with "Previous month" and "Next month" buttons. It SHALL NOT go before the
-earlier of the month in which the first attack started, in that attack's zone, and the month of the first day mark, nor
-past the current month. With nothing logged or marked, only the current month SHALL be shown (BRD EC-HIS-03, D51).
+earliest of the month in which the first attack started, in that attack's zone, the month of the first day mark, and
+the month of the first attack-medication intake, in its zone, nor past the current month. Preventive intakes SHALL not
+count. With nothing logged or marked, only the current month SHALL be shown (BRD EC-HIS-03, D51, D99).
 
 #### Scenario: Previous month
 - **WHEN** History shows October 2026 and the first attack was in August 2026, and the user taps "Previous month"
@@ -41,6 +42,11 @@ past the current month. With nothing logged or marked, only the current month SH
 #### Scenario: A mark before any attack
 - **WHEN** no migraine was ever logged, 30 September is marked as a period day, and today is 2 October
 - **THEN** History can go back to September 2026, where 30 September shows its period mark
+
+#### Scenario: Medication before any attack
+- **WHEN** no migraine was ever logged, ibuprofen (an attack medication) was logged on 20 September, and today is
+  2 October
+- **THEN** History can go back to September 2026
 
 ### Requirement: The month's attacks
 Under the calendar, History SHALL list every attack that touches the shown month, newest first. Each row SHALL show its
@@ -100,12 +106,29 @@ attack (BRD D30, D26).
 - **THEN** History shows 20 October with the new attack's sky and lists it
 
 ### Requirement: No attacks yet
-When no attack has been logged, History SHALL show the current month, a short explanation of the skies and "Log your
-first migraine", which opens the add screen of `past-attacks` (BRD EC-HIS-01).
+When no attack, no day mark and no attack-medication intake has been logged, History SHALL show the current month,
+a short explanation of the skies and "Log your first migraine", which opens the add screen of `past-attacks`.
+Otherwise it SHALL show the month and its summary as usual, even with no migraine logged. Preventive intakes SHALL
+not count (BRD EC-HIS-01, D99).
 
 #### Scenario: First use
-- **WHEN** no attack has ever been logged and the user opens History
+- **WHEN** no attack, no day mark and no attack-medication intake has ever been logged and the user opens History
 - **THEN** it shows the current month with every past day dashed, the explanation and "Log your first migraine"
+
+#### Scenario: Only medication logged
+- **WHEN** no migraine was ever logged and ibuprofen was taken on 16 of the last 30 days
+- **THEN** History shows the current month with its summary, "0" migraine days, its days with attack medication, and
+  the "Last 30 days" indicator, without "Log your first migraine"
+
+#### Scenario: A day with medication only
+- **WHEN** no migraine was ever logged, ibuprofen was taken on 20 October, and today is 23 October
+- **THEN** History's calendar shows 20 October with a solid outline and no sky, as `month-sky` describes (BRD D100)
+
+#### Scenario: Only preventive medication
+- **WHEN** no migraine and no day mark was ever logged, topiramate (a preventive medication) was taken on
+  20 September, and today is 2 October
+- **THEN** History shows the current month with the explanation and "Log your first migraine"
+- **AND** "Previous month" is disabled
 
 ### Requirement: Undo a deletion on History
 After an attack opened from History is deleted, History SHALL no longer show it and SHALL offer "Migraine deleted" with

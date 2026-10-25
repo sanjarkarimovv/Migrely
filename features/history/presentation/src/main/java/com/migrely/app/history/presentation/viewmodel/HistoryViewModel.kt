@@ -115,11 +115,12 @@ class HistoryViewModel(
                 when (result) {
                     is HistoryMonthResultDomainModel.Loaded -> {
                         val shown = historyMonthPresentationMapper.toPresentation(result.month)
+                        // The summary shows once anything is logged, migraine or not (BRD D99).
                         updateViewState(
-                            if (result.month.anyAttackLogged) {
+                            if (result.month.anythingLogged) {
                                 HistoryViewState.Ready(shown, requestedMonth = month)
                             } else {
-                                HistoryViewState.NoAttacks(shown, requestedMonth = month)
+                                HistoryViewState.NothingLogged(shown, requestedMonth = month)
                             }
                         )
                         val deleted = result.recentlyDeleted

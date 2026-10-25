@@ -2,6 +2,8 @@ package com.migrely.app.datasource.medication.mapper
 
 import com.migrely.app.datasource.medication.model.AcuteIntakeDataModel
 import com.migrely.app.datasource.medication.model.AcuteIntakeLocalModel
+import com.migrely.app.datasource.medication.model.EarliestAcuteIntakeDataModel
+import com.migrely.app.datasource.medication.model.EarliestAcuteIntakeLocalModel
 import com.migrely.app.datasource.medication.model.IntakeDataModel
 import com.migrely.app.datasource.medication.model.IntakeEffectDataModel
 import com.migrely.app.datasource.medication.model.IntakeWithMedicationLocalModel
@@ -67,6 +69,11 @@ class MedicationLocalMapper {
         takenAt = Instant.ofEpochMilli(local.takenEpochMillis),
         takenZoneId = local.takenZoneId,
         category = toDataCategory(local.category)
+    )
+
+    fun toData(local: EarliestAcuteIntakeLocalModel) = EarliestAcuteIntakeDataModel(
+        takenAt = Instant.ofEpochMilli(local.takenEpochMillis),
+        takenZoneId = local.takenZoneId
     )
 
     fun toLocalKind(kind: MedicationKindDataModel): String = when (kind) {
