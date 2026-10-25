@@ -1,0 +1,7 @@
+# Device scenario step: log one more migraine now (start and end), then close the app.
+appId: com.migrely.app
+---
+- launchApp
+- runFlow: ../subflows/start-attack.yaml
+- runFlow: ../subflows/end-attack.yaml
+- stopApp

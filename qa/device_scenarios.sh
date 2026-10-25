@@ -11,7 +11,7 @@
 # med_preventive, med_two_waiting, med_link_home, med_overuse, keyboard_home, keyboard_history, keyboard_rtl,
 # landscape_band, mark_travel, mark_earliest_month, stats_counting, stats_chronic, stats_progress, reminder_daily,
 # reminder_permission, reminder_effect, reminder_replan (restarts the emulator), med_only_history,
-# message_tap_guard (#52), theme_check, onboarding_states, delete_all_data, upgrade.
+# message_tap_guard (#52), theme_check, onboarding_states, delete_all_data, backup_export, backup_import, upgrade.
 # upgrade needs QA_OLD_APK=<older debug APK of com.migrely.app>; without it, it is reported as not run.
 set -euo pipefail
 
@@ -61,6 +61,8 @@ restore() {
   qa_restore_setting global animator_duration_scale "$ORIGINAL_ANIMATOR"
   notifications_permission "$ORIGINAL_NOTIFICATIONS" >/dev/null 2>&1
   [[ -n "$ORIGINAL_NIGHT" ]] && adbq shell cmd uimode night "$ORIGINAL_NIGHT" >/dev/null 2>&1
+  # The screen dumps this script writes to shared storage would show in the phone's Files app.
+  adbq shell "rm -f /sdcard/qa-*.xml" >/dev/null 2>&1
   echo "Restored: clock $(adbq shell date | tr -d '\r'), zone $ORIGINAL_ZONE, auto_time $ORIGINAL_AUTO_TIME"
   qa_unlock_device
 }
@@ -1151,6 +1153,163 @@ scenario_delete_all_data() {
   run_flow after-delete-check || return 1
 }
 
+pull_newest() { # $1 glob in /sdcard/Download (for example "migrely-*.json"), $2 local path: pull the newest match
+  local name
+  name="$(adbq shell "ls -t /sdcard/Download/$1 2>/dev/null | head -1" | tr -d '\r')"
+  [[ -n "$name" ]] || { echo "  FAILED: no $1 in Download"; return 1; }
+  adbq pull "$name" "$2" >/dev/null || { echo "  FAILED: could not pull $name"; return 1; }
+  echo "    pulled ${name##*/}"
+}
+
+# Covers: data-backup › JSON backup › Exporting
+# Covers: data-backup › CSV export › Opening in Excel
+# Covers: data-backup › CSV export › A phone in Uzbek or Russian
+# Covers: data-backup › CSV export › A note that looks like a formula
+# Covers: quality-gates › Files through the system picker are checked by their bytes › An exported CSV
+scenario_backup_export() {
+  echo "Scenario backup_export: the JSON backup and the CSV, checked by their bytes, in English, Uzbek and Russian (D71, D72)"
+  local language separator
+  adbq shell "rm -f /sdcard/Download/migrely-*" >/dev/null
+  set_clock_millis "$(when_millis 0 15 12:00)" || return 1
+  run_flow backup-data || return 1
+  run_flow backup-export || return 1
+  pull_newest "migrely-2*.json" "$out/backup.json" || return 1
+  python3 -I "$ROOT/qa/backup_files.py" json "$out/backup.json" 2 1 1 | sed 's/^/    /' | grep -q "JSON ok" || {
+    python3 -I "$ROOT/qa/backup_files.py" json "$out/backup.json" 2 1 1; return 1; }
+  echo "    $(python3 -I "$ROOT/qa/backup_files.py" json "$out/backup.json" 2 1 1)"
+  for language in en uz ru; do
+    separator=","
+    if [[ "$language" != "en" ]]; then
+      separator=";"
+      adbq shell cmd locale set-app-locales "$APP" --locales "$language" >/dev/null
+      sleep 2
+      run_flow backup-export-csv || { adbq shell cmd locale set-app-locales "$APP" --locales "$ORIGINAL_APP_LOCALES"; return 1; }
+    fi
+    pull_newest "migrely-attacks-*.csv" "$out/attacks-$language.csv" || return 1
+    local result
+    result="$(python3 -I "$ROOT/qa/backup_files.py" csv "$out/attacks-$language.csv" "$separator" "=SUM(1)")"
+    echo "    $language: $result"
+    [[ "$result" == "CSV ok"* ]] || { adbq shell cmd locale set-app-locales "$APP" --locales "$ORIGINAL_APP_LOCALES"; return 1; }
+  done
+  adbq shell cmd locale set-app-locales "$APP" --locales "$ORIGINAL_APP_LOCALES" >/dev/null
+}
+
+# Covers: data-backup › Import shows what it brings › Before importing
+# Covers: data-backup › Replace or add › Add
+# Covers: data-backup › Replace or add › The same attack logged on two phones
+# Covers: data-backup › Replace or add › A medication by the same name
+# Covers: data-backup › Replace or add › Replace
+# Covers: data-backup › Restore the automatic copy › Undoing a Replace
+# Covers: data-backup › Files that cannot be imported › A broken file
+# Covers: data-backup › Files that cannot be imported › A newer file
+# Also checks: an older schemaVersion is offered for import (EC-BAK-03)
+# Covers: quality-gates › Files through the system picker are checked by their bytes › A prepared broken file
+expect_text_soon() { # $1 extended regex, $2 seconds: some text or label on screen matches within that time
+  local end=$((SECONDS + $2)) found
+  while ((SECONDS < end)); do
+    found="$(adbq exec-out uiautomator dump /dev/tty 2>/dev/null | grep -oE '(text|content-desc)="[^"]*"' | sed -E 's/^[^"]*"(.*)"$/\1/' | grep -E "^($1)$" | head -1)"
+    if [[ -n "$found" ]]; then echo "    message: $found"; return 0; fi
+  done
+  echo "  FAILED: no \"$1\" on screen within $2 s"
+  return 1
+}
+import_and_expect() { # $1 file in Download, $2 HOLDS regex or "", $3 choice or "", $4 extended regex of the result message
+  # Run without a report folder: writing it takes seconds, and the result message lasts only about 4 s until #56 is
+  # fixed. The log is kept.
+  STEP=$((STEP + 1))
+  local log="$out/$(printf '%03d' "$STEP")-${CURRENT:-x}-import-step.log"
+  echo "  flow import-step ($1, ${3:-no choice})"
+  maestro --device "$QA_SERIAL" test -e "FILE=$1" -e "HOLDS=$2" -e "CHOICE=$3" "$FLOWS/import-step.yaml" >"$log" 2>&1 || {
+    echo "  FAILED: import-step (log: $log)"
+    return 1
+  }
+  # Known bug #56: the result message lasts about 4 s and ignores the accessibility timeout, so a check that starts
+  # after the step may miss it. A missed message is reported, not failed; the outcome is checked on the data.
+  local seen
+  if seen="$(expect_text_soon "$4" 10)"; then
+    echo "$seen"
+  else
+    echo "    KNOWN BUG #56 still reproduces: \"$4\" was gone before it could be read"
+  fi
+}
+
+history_count_now() { # prints how many migraines History lists this month (1 to 5)
+  local c
+  for c in 1 2 3 4 5; do
+    if run_flow_env history-count "COUNT=$c" >/dev/null 2>&1; then echo "$c"; return 0; fi
+  done
+  echo "?"
+  return 1
+}
+
+scenario_backup_import() {
+  echo "Scenario backup_import: Add, Replace and its copy, broken, newer and older files, and an empty phone (D73-D75, EC-BAK-01-04)"
+  adbq shell "rm -f /sdcard/Download/migrely-* /sdcard/Download/broken.json /sdcard/Download/newer.json /sdcard/Download/older.json" >/dev/null
+  set_clock_millis "$(when_millis 0 15 12:00)" || return 1
+  # A phone with 2 migraines, Ibuprofen and a period mark; its backup becomes the file to import.
+  run_flow backup-data || return 1
+  run_flow backup-export || return 1
+  pull_newest "migrely-2*.json" "$out/import-source.json" || return 1
+  python3 -I "$ROOT/qa/backup_files.py" fixtures "$out/import-source.json" "$out/fixtures" | sed 's/^/    /'
+  local f
+  for f in broken newer older; do adbq push "$out/fixtures/$f.json" "/sdcard/Download/$f.json" >/dev/null; done
+  local name
+  name="$(basename "$(adbq shell 'ls -t /sdcard/Download/migrely-2*.json | head -1' | tr -d '\r')")"
+  # Add, after one migraine was deleted here: it comes back, the other is not doubled, Ibuprofen stays one.
+  run_flow delete-first-attack || return 1
+  run_flow_env history-count COUNT=1 || return 1
+  import_and_expect "$name" "2 migraines, 1 medication and 1 marked day" Add "Added 1 migraine\. 1 was already here\." || return 1
+  # Known bug #58: the deleted migraine is still a hidden row, so Add counts it "already here" and does not bring it back.
+  local n
+  if run_flow_env history-count COUNT=2 >/dev/null 2>&1; then
+    n=2; echo "    NOW PASSES (#58): Add brought the deleted migraine back"
+  else
+    run_flow_env history-count COUNT=1 || return 1
+    n=1; echo "    KNOWN BUG #58 still reproduces: Add left the deleted migraine out (1 migraine)"
+  fi
+  run_flow_env med-list-count NAME=Ibuprofen || return 1
+  # A broken and a newer file change nothing.
+  import_and_expect broken.json "" "" "This file isn.{1,3}t a Migrely backup\. Nothing was changed\." || return 1
+  import_and_expect newer.json "" "" "Update Migrely to open this file\." || return 1
+  run_flow_env history-count "COUNT=$n" || return 1
+  # An older schemaVersion is offered for import (EC-BAK-03). No older format exists yet, so the file is this version's
+  # content labelled 5; everything in it is already here.
+  import_and_expect older.json "2 migraines, 1 medication and 1 marked day" Add "Nothing new: everything in it is already here\." || return 1
+  # Replace keeps an automatic copy; restoring it brings back the third migraine logged after the export.
+  # Two minutes after the delete, opening History purges the hidden row, so this Add may bring it back: count again.
+  n="$(history_count_now)" || { echo "  FAILED: History's count could not be read"; return 1; }
+  echo "    History now lists $n migraine(s)"
+  run_flow log-and-keep-attack || return 1
+  run_flow_env history-count "COUNT=$((n + 1))" || return 1
+  import_and_expect "$name" "2 migraines, 1 medication and 1 marked day" Replace "Backup imported: 2 migraines\." || return 1
+  run_flow_env history-count COUNT=2 || return 1
+  run_flow restore-copy || return 1
+  run_flow_env history-count "COUNT=$((n + 1))" || return 1
+  # An empty phone offers Import and Cancel only.
+  run_flow clean || return 1
+  import_and_expect "$name" "2 migraines, 1 medication and 1 marked day" Import "Backup imported: 2 migraines\." || return 1
+  run_flow_env history-count COUNT=2 || return 1
+}
+
+# Android's own backup through the local transport (D3 of add-data-and-onboarding-e2e-coverage). The app turns cloud
+# backup off without end-to-end encryption, and the local transport has none, so the observed result is recorded;
+# "A new phone" itself needs a real Google account backup (a D61 gap).
+scenario_backup_android() {
+  echo "Scenario backup_android: bmgr with the local transport, result recorded as observed (D74)"
+  local enabled transport result
+  enabled="$(adbq shell bmgr enabled | tr -d '\r')"
+  transport="$(adbq shell bmgr list transports | tr -d '\r' | sed -n 's/^ *\* //p')"
+  adbq shell bmgr enable true >/dev/null
+  adbq shell bmgr transport com.android.localtransport/.LocalTransport >/dev/null
+  set_clock_millis "$(when_millis 0 15 12:00)" || return 1
+  run_flow log-and-close || return 1
+  result="$(adbq shell bmgr backupnow "$APP" 2>&1 | tr -d '\r' | grep -E "$APP|Backup finished" | tr '\n' ' ')"
+  echo "    bmgr backupnow: $result"
+  [[ -n "$transport" ]] && adbq shell bmgr transport "$transport" >/dev/null
+  [[ "$enabled" == *disabled* ]] && adbq shell bmgr enable false >/dev/null
+  echo "    transport back to ${transport:-unknown}, backup $([[ "$enabled" == *disabled* ]] && echo disabled || echo enabled)"
+}
+
 scenario_double_tap() {
   echo "Scenario double_tap: double taps never cross a mode switch (EC-UX-18, D32), with exact gaps between the taps"
   local gap point
@@ -1200,7 +1359,7 @@ if [[ $# -eq 0 ]]; then
     med_link_home med_overuse keyboard_home keyboard_history keyboard_rtl landscape_band mark_travel mark_earliest_month \
     stats_counting stats_chronic stats_progress reminder_daily reminder_permission reminder_effect reminder_replan \
     med_only_history message_tap_guard \
-    theme_check onboarding_states delete_all_data
+    theme_check onboarding_states delete_all_data backup_export backup_import backup_android
   if [[ -n "${QA_OLD_APK:-}" ]]; then
     set -- "$@" upgrade
   else

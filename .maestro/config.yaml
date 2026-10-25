@@ -21,3 +21,4 @@ flows:
   - "medication-overuse/*"
   - "onboarding/*"
   - "app-settings/*"
+  - "data-backup/*"

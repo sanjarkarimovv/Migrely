@@ -1,0 +1,15 @@
+# Device scenario step: Your data offers "Restore the copy from <date>"; restore it.
+appId: com.migrely.app
+---
+- launchApp
+- tapOn: "Settings"
+- tapOn: "Your data.*"
+- tapOn: "Restore the copy from .*"
+- extendedWaitUntil:
+    visible: "Restore the copy from .*\\?"
+    timeout: 5000
+- tapOn: "Restore"
+- extendedWaitUntil:
+    visible: "Copy restored: [0-9]+ migraines?\\."
+    timeout: 10000
+- stopApp

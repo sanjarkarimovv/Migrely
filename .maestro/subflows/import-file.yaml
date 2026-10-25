@@ -1,0 +1,20 @@
+# On Your data: "Import a backup", then find FILE (a name in Download, for example "broken.json") with the system
+# picker's search and pick it. The picker opens on "Recent", where pushed files may not show.
+appId: com.migrely.app
+---
+- tapOn: "Import a backup.*"
+- extendedWaitUntil:
+    visible: "Search"
+    timeout: 10000
+- tapOn: "Search"
+- inputText: "${FILE}"
+- pressKey: Enter
+# The results list (as a list or a grid) sits under its "Files…" heading; the query field and the search history show the name too.
+- extendedWaitUntil:
+    visible: ".*JSON document|[0-9.]+ k?B"
+    timeout: 10000
+# No settle wait: a refused file's message is short (#56), so the check after this tap starts at once.
+- tapOn:
+    text: "${FILE}"
+    below: "Files.*"
+    waitToSettleTimeoutMs: 0

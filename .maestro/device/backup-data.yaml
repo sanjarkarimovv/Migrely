@@ -1,0 +1,27 @@
+# Device scenario step: a clean install with 2 migraines (one with the note "=SUM(1)"), 1 medication and 1 period mark,
+# then Your data is opened. The app stays open.
+appId: com.migrely.app
+---
+- runFlow: ../subflows/launch-clean.yaml
+- runFlow: ../subflows/start-attack.yaml
+- tapOn: "Details of this migraine"
+- scrollUntilVisible:
+    element: "Anything else worth remembering"
+    direction: DOWN
+- tapOn: "Anything else worth remembering"
+- inputText: "=SUM(1)"
+- hideKeyboard
+- back
+- runFlow: ../subflows/end-attack.yaml
+- runFlow: ../subflows/start-attack.yaml
+- runFlow: ../subflows/end-attack.yaml
+- tapOn: "Period today"
+- tapOn: "Log medication"
+- runFlow:
+    file: ../subflows/add-first-medication.yaml
+    env:
+      NAME: "Ibuprofen"
+      TYPE: "Simple painkiller"
+- tapOn: "Done"
+- tapOn: "Settings"
+- tapOn: "Your data.*"

@@ -66,3 +66,5 @@ The exit status comes from passes 1 and 2 only.
 | Permissions | `launchApp` grants every permission by default; use `permissions: {all: unset}` or open the app from the script when a permission dialog must appear |
 | Typographic text | Some system and app texts use a curly apostrophe ("Don’t allow", "That’s") or a narrow no-break space before "PM". Match them with `.` in the regex |
 | Onboarding | A fresh install shows four onboarding steps; `subflows/launch-clean.yaml` skips them |
+| The system file picker | It opens on "Recent". Use its search, then pick the file under the "Files…" heading (`subflows/import-file.yaml`); saving lands in Download |
+| App language | `cmd locale set-app-locales` recreates the screen in place, so the next step may start where the app was |

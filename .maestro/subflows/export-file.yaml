@@ -1,0 +1,19 @@
+# From Your data, export ROW ("Export a backup \\(JSON\\)" or "Export for Excel \\(CSV\\)") to Download through the system
+# picker, and wait for MESSAGE ("Backup saved\\." or "Saved for Excel\\.").
+appId: com.migrely.app
+---
+- tapOn: "${ROW}.*"
+- extendedWaitUntil:
+    visible: "SAVE"
+    timeout: 10000
+# The picker opens on Downloads (its last folder); make sure of it.
+- runFlow:
+    when:
+      notVisible: "Files in Downloads"
+    commands:
+      - tapOn: "Show roots"
+      - tapOn: "Downloads"
+- tapOn: "SAVE"
+- extendedWaitUntil:
+    visible: "${MESSAGE}"
+    timeout: 10000
