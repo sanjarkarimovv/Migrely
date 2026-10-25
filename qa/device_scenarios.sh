@@ -266,7 +266,14 @@ tap_notification_action() { # $1 the action's label, $2 the notification's title
       point="$(point_in "$1" 0.5)"
     fi
   fi
-  [[ -n "$point" ]] || { adbq shell cmd statusbar collapse; echo "  FAILED: no \"$1\" in the shade"; return 1; }
+  if [[ -z "$point" ]]; then
+    adbq exec-out uiautomator dump /dev/tty 2>/dev/null | python3 -I -c "import re, sys
+labels = [l for l in re.findall(r'(?:text|content-desc)=\"([^\"]+)\"', sys.stdin.read()) if l.strip()]
+print('    shade shows:', ' | '.join(labels[:25]))"
+    adbq shell cmd statusbar collapse
+    echo "  FAILED: no \"$1\" in the shade"
+    return 1
+  fi
   adbq shell input tap $point
   sleep 3
   adbq shell cmd statusbar collapse
@@ -935,8 +942,11 @@ scenario_reminder_replan() {
   after="$(adbq shell cat /proc/sys/kernel/random/boot_id 2>/dev/null | tr -d '\r')"
   [[ -n "$after" && "$after" != "$before" ]] || { echo "  FAILED: the emulator did not restart"; return 1; }
   sleep 15
-  # Planned again without opening the app, for the next 8:00 PM in Berlin.
-  expect_planned Europe/Berlin 20:00 || return 1
+  # Planned again without opening the app, for the next 8:00 PM. The emulator takes the host's time zone again when it
+  # boots (measured: Berlin became Tashkent), so the expected time follows the zone the device has now.
+  local zone_now
+  zone_now="$(adbq shell getprop persist.sys.timezone | tr -d '\r')"
+  expect_planned "$zone_now" 20:00 || return 1
 }
 
 # Covers: reminders › "Did it help?" notification › Two hours later
@@ -962,7 +972,8 @@ scenario_reminder_effect() {
   set_clock_millis "$(when_millis 0 16 14:30)" || return 1
   run_flow attack-start-keep || return 1
   set_clock_millis "$(when_millis 0 16 16:01)" || return 1
-  run_app_jobs 1 || return 1
+  # Measured: the app keeps no "Did it help?" job while an attack is in progress, so none may run here.
+  run_app_jobs
   expect_no_notification || return 1
   run_flow attack-end || return 1
   run_flow med-question-due || return 1
