@@ -22,3 +22,10 @@
 
 - [x] 4.1 Gate (`./gradlew assembleDebug test ktlintCheck detekt`), the instrumented sources compile, and
   `openspec validate fix-import-deleted --strict`.
+- [x] 4.2 Instrumented tests on emulator-5570: datasource 100, designsystem 37, app 1, none failing.
+- [x] 4.3 On emulator-5570 (`migrely-work/walks/qa5658/`):
+  - #58: deleted then "Add" brings the migraine back ("Added 1 migraine. 15 were already here."), both after leaving
+    for Home and after a force-stop inside the undo window; a deletion older than its undo time is purged at start;
+  - #56: "Nothing new" stays 7.8 s by default and 20 s with both accessibility timeouts at 20 s; Report's message
+    follows the same rule;
+  - D110: with the simulated store unavailable, no paywall shows itself.
