@@ -98,9 +98,12 @@ fun SettingsDependencies.Settings(navController: NavController, modifier: Modifi
     var confirmingDelete by rememberSaveable { mutableStateOf(false) }
     var typed by rememberSaveable { mutableStateOf("") }
     var deleteFailed by rememberSaveable { mutableStateOf(false) }
+    // Set on confirming and cleared only by a failure: the progress stays until the app starts again (BRD D96).
+    var deleteStarted by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(settingsEventPresenter) {
         launch { settingsEventPresenter.notSaved.collect { notSaved = true } }
         settingsEventPresenter.notDeleted.collect {
+            deleteStarted = false
             deleteFailed = true
             settingsViewModel.onDeleteFailureShownAction()
         }
@@ -156,7 +159,7 @@ fun SettingsDependencies.Settings(navController: NavController, modifier: Modifi
             typed = typed,
             word = deleteConfirmationResolver.word,
             confirmed = deleteConfirmationResolver.resolve(typed),
-            deleting = settings?.deleting == true,
+            deleting = deleteProgressUiResolver.resolve(deleteStarted, settings),
             failed = deleteFailed,
             onTyped = {
                 typed = it
@@ -164,6 +167,7 @@ fun SettingsDependencies.Settings(navController: NavController, modifier: Modifi
             },
             onDelete = {
                 deleteFailed = false
+                deleteStarted = true
                 settingsViewModel.onDeleteAllDataAction(typed)
             },
             onDismiss = {

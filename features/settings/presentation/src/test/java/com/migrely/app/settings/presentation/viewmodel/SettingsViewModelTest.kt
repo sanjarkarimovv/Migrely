@@ -170,6 +170,19 @@ class SettingsViewModelTest :
     }
 
     @Test
+    fun `Given a deletion going on when the screen comes back then it still shows deleting`() =
+        runTest {
+            getSettingsUseCase.givenSuccessfulExecution(SETTINGS)
+            // The deletion has not answered yet: the screen is rebuilt meanwhile.
+            classUnderTest.onDeleteAllDataAction("DELETE")
+            val state = async(start = UNDISPATCHED) { classUnderTest.viewState.first() }
+
+            classUnderTest.onResume()
+
+            assertEquals(SettingsViewState.Ready(SHOWN, deleting = true), state.await())
+        }
+
+    @Test
     fun `Given all data was deleted when the screen comes back then it still starts again`() =
         runTest {
             getSettingsUseCase.givenSuccessfulExecution(SETTINGS)

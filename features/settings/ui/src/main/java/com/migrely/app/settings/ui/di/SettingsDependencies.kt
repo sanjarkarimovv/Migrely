@@ -8,6 +8,7 @@ import com.migrely.app.settings.presentation.model.SettingsPresentationNotificat
 import com.migrely.app.settings.presentation.model.SettingsViewState
 import com.migrely.app.settings.presentation.navigation.SettingsPresentationNavigationEvent
 import com.migrely.app.settings.presentation.viewmodel.SettingsViewModel
+import com.migrely.app.settings.ui.mapper.DeleteProgressUiResolver
 import com.migrely.app.settings.ui.mapper.SettingsEventPresenter
 import com.migrely.app.settings.ui.mapper.SettingsViewStateUiMapper
 import com.migrely.app.settings.ui.mapper.ThemeUiToPresentationMapper
@@ -17,6 +18,7 @@ class SettingsDependencies(
     val settingsViewStateUiMapper: SettingsViewStateUiMapper,
     val themeUiToPresentationMapper: ThemeUiToPresentationMapper,
     val deleteConfirmationResolver: DeleteConfirmationResolver,
+    val deleteProgressUiResolver: DeleteProgressUiResolver,
     val settingsEventPresenter: SettingsEventPresenter,
     navigationMapper: NavigationEventDestinationMapper<SettingsPresentationNavigationEvent>,
     notificationMapper: NotificationUiMapper<SettingsPresentationNotification>

@@ -22,6 +22,7 @@ import com.migrely.app.settings.presentation.viewmodel.SettingsPageViewModel
 import com.migrely.app.settings.presentation.viewmodel.SettingsViewModel
 import com.migrely.app.settings.ui.di.SettingsDependencies
 import com.migrely.app.settings.ui.di.SettingsPageDependencies
+import com.migrely.app.settings.ui.mapper.DeleteProgressUiResolver
 import com.migrely.app.settings.ui.mapper.SettingsEventPresenter
 import com.migrely.app.settings.ui.mapper.SettingsNotificationUiMapper
 import com.migrely.app.settings.ui.mapper.SettingsViewStateUiMapper
@@ -84,6 +85,7 @@ internal object SettingsModule {
             settingsViewStateUiMapper = SettingsViewStateUiMapper(ThemeUiMapper()),
             themeUiToPresentationMapper = ThemeUiToPresentationMapper(),
             deleteConfirmationResolver = DeleteConfirmationResolver(),
+            deleteProgressUiResolver = DeleteProgressUiResolver(),
             settingsEventPresenter = presenter,
             navigationMapper = SettingsNavigationEventDestinationMapper {
                 // A reminder that ran while everything was deleted may have posted after the cancel step.
