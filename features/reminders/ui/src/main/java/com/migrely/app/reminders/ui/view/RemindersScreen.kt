@@ -67,7 +67,7 @@ import com.migrely.app.designsystem.icon.MigrelyIcons
 import com.migrely.app.designsystem.motion.rememberReduceMotion
 import com.migrely.app.designsystem.snackbar.MigrelySnackbar
 import com.migrely.app.designsystem.snackbar.MigrelySnackbarHost
-import com.migrely.app.designsystem.snackbar.SnackbarTone
+import com.migrely.app.designsystem.snackbar.messageTimeoutMillis
 import com.migrely.app.designsystem.theme.MigrelyTheme
 import com.migrely.app.reminders.presentation.model.RemindersViewState
 import com.migrely.app.reminders.ui.R
@@ -84,7 +84,6 @@ import kotlinx.coroutines.delay
 
 private const val MINUTES_PER_HOUR = 60
 private const val DEFAULT_MINUTE_OF_DAY = 20 * MINUTES_PER_HOUR
-private const val MESSAGE_MILLIS = 6_000L
 private val CONTENT_MAX_WIDTH = 600.dp
 
 /** Callbacks from the Reminders screen to its view model. */
@@ -143,9 +142,13 @@ fun RemindersDependencies.Reminders(navController: NavController, modifier: Modi
             }
         }
     }
-    LaunchedEffect(message) {
-        if (message != null) {
-            delay(MESSAGE_MILLIS)
+    // Stretched to the accessibility timeout (BRD EC-UX-16; QA #56).
+    val messageTimeout = messageTimeoutMillis(
+        message?.let { remindersMessageBehaviourUiMapper.toUi(it).baseDurationMillis }
+    )
+    LaunchedEffect(message, messageTimeout) {
+        if (message != null && messageTimeout != null) {
+            delay(messageTimeout)
             message = null
         }
     }
@@ -183,7 +186,7 @@ fun RemindersDependencies.Reminders(navController: NavController, modifier: Modi
             MigrelySnackbarHost(message = message, reduceMotion = rememberReduceMotion()) { shown ->
                 MigrelySnackbar(
                     text = stringResource(shown.text()),
-                    tone = SnackbarTone.Error,
+                    tone = remindersMessageBehaviourUiMapper.toUi(shown).tone,
                     action = null,
                     dismissLabel = stringResource(R.string.reminders_message_dismiss),
                     onDismiss = { message = null }

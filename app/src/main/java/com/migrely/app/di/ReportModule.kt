@@ -22,6 +22,7 @@ import com.migrely.app.report.presentation.mapper.ReportPeriodDomainMapper
 import com.migrely.app.report.presentation.viewmodel.ReportViewModel
 import com.migrely.app.report.ui.di.ReportDependencies
 import com.migrely.app.report.ui.mapper.ReportEventPresenter
+import com.migrely.app.report.ui.mapper.ReportMessageBehaviourUiMapper
 import com.migrely.app.report.ui.mapper.ReportNotificationUiMapper
 import com.migrely.app.report.ui.mapper.ReportPeriodPresentationMapper
 import com.migrely.app.report.ui.mapper.ReportViewStateUiMapper
@@ -96,6 +97,7 @@ internal object ReportModule {
             reportViewStateUiMapper = ReportViewStateUiMapper(),
             reportPeriodPresentationMapper = ReportPeriodPresentationMapper(),
             reportEventPresenter = presenter,
+            reportMessageBehaviourUiMapper = ReportMessageBehaviourUiMapper(),
             navigationMapper = ReportNavigationEventDestinationMapper(),
             notificationMapper = ReportNotificationUiMapper(presenter)
         )

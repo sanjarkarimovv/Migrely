@@ -267,6 +267,8 @@ data must never be passed to any SDK.
   - A feature maps each message to a `SnackbarTone`, an optional `SnackbarAction` and a base duration (UI mapper).
   - The feature keeps the shown message in `rememberSaveable` and stretches the base duration with
     `LocalAccessibilityManager.calculateRecommendedTimeoutMillis`. The home feature's `HomeMessages` is the reference.
+  - Screens whose messages have no "Undo" stretch it with `:designsystem`'s `messageTimeoutMillis`, which counts the
+    close button as a control. No screen hard-codes how long a message stays (QA #56).
 
 ## 11. Testing
 

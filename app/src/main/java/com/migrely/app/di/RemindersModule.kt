@@ -33,6 +33,7 @@ import com.migrely.app.reminders.ui.mapper.DailyReminderOfferEventUiMapper
 import com.migrely.app.reminders.ui.mapper.DailyReminderOfferUiMapper
 import com.migrely.app.reminders.ui.mapper.ReminderKindUiToPresentationMapper
 import com.migrely.app.reminders.ui.mapper.RemindersEventPresenter
+import com.migrely.app.reminders.ui.mapper.RemindersMessageBehaviourUiMapper
 import com.migrely.app.reminders.ui.mapper.RemindersNotificationUiMapper
 import com.migrely.app.reminders.ui.mapper.RemindersViewStateUiMapper
 import dagger.Module
@@ -187,6 +188,7 @@ internal object RemindersModule {
             remindersViewModel = remindersViewModel,
             remindersViewStateUiMapper = RemindersViewStateUiMapper(),
             remindersEventPresenter = presenter,
+            remindersMessageBehaviourUiMapper = RemindersMessageBehaviourUiMapper(),
             reminderKindUiToPresentationMapper = ReminderKindUiToPresentationMapper(),
             navigationMapper = RemindersNavigationEventDestinationMapper(),
             notificationMapper = RemindersNotificationUiMapper(presenter)

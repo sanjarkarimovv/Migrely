@@ -19,6 +19,7 @@ import com.migrely.app.backup.ui.di.YourDataDependencies
 import com.migrely.app.backup.ui.mapper.AutomaticCopyUiMapper
 import com.migrely.app.backup.ui.mapper.BackupSummaryUiMapper
 import com.migrely.app.backup.ui.mapper.YourDataEventPresenter
+import com.migrely.app.backup.ui.mapper.YourDataMessageBehaviourUiMapper
 import com.migrely.app.backup.ui.mapper.YourDataNotificationUiMapper
 import com.migrely.app.backup.ui.mapper.YourDataViewStateUiMapper
 import com.migrely.app.coroutine.CoroutineContextProvider
@@ -126,6 +127,7 @@ internal object BackupModule {
                 AutomaticCopyUiMapper(BackupSummaryUiMapper())
             ),
             yourDataEventPresenter = presenter,
+            yourDataMessageBehaviourUiMapper = YourDataMessageBehaviourUiMapper(),
             navigationMapper = YourDataNavigationEventDestinationMapper(),
             notificationMapper = YourDataNotificationUiMapper(presenter, BackupSummaryUiMapper())
         )
