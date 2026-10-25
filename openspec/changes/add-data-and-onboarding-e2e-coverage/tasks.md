@@ -75,7 +75,7 @@
 
 ## Verification record (2026-10-25, emulator-5580, AVD `Migrely_QA_API_36`)
 
-Base: develop 1fbc32b (changes 7, 8, 10, 11, 12 and #54).
+Base: develop 1fbc32b (up to PR #54).
 
 | Check | Result |
 |---|---|
