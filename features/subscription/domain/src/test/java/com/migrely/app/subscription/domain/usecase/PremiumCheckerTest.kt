@@ -138,4 +138,29 @@ class PremiumCheckerTest {
 
         assertEquals(PremiumStatusDomainModel.Free, classUnderTest.current())
     }
+
+    @Test
+    fun `Given a fresh install with no cache then Free until Play reports the purchase`() {
+        // A reinstall or a restored backup: the entitlement is never backed up (BRD D115).
+        given(getOwnedPurchasesRepository.ownedPurchases())
+            .willReturn(OwnedPurchasesResultDomainModel.Unreachable)
+            .willReturn(
+                OwnedPurchasesResultDomainModel.Owned(
+                    listOf(purchase(PurchaseProductDomainModel.Lifetime, token = "life"))
+                )
+            )
+
+        assertEquals(PremiumStatusDomainModel.Free, classUnderTest.current())
+        verifyNoInteractions(saveEntitlementRepository)
+
+        assertEquals(PremiumStatusDomainModel.Lifetime(false), classUnderTest.current())
+    }
+
+    @Test
+    fun `Given a phone on another Google account then Play's empty answer keeps it Free`() {
+        given(getOwnedPurchasesRepository.ownedPurchases())
+            .willReturn(OwnedPurchasesResultDomainModel.Owned(emptyList()))
+
+        assertEquals(PremiumStatusDomainModel.Free, classUnderTest.current())
+    }
 }

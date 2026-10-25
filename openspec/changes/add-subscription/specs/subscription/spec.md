@@ -37,7 +37,7 @@ Premium SHALL be on while Google Play reports an active subscription or the life
 return (at most every 15 minutes), after a purchase and on "Restore purchases". When Google Play cannot be reached, an
 active subscription SHALL stay on for 3 days after the last successful check, and lifetime until Google Play says
 otherwise. When Premium ends, the premium features SHALL lock and no data SHALL be touched (BRD EC-BIL-01, EC-BIL-04…07,
-D106).
+D106, D115).
 
 #### Scenario: Offline
 - **WHEN** the subscription was confirmed yesterday and Google Play cannot be reached today
@@ -50,6 +50,12 @@ D106).
 #### Scenario: New phone
 - **WHEN** the user installs Migrely on a new phone with the same Google account
 - **THEN** Premium is found again at the first check, and "Restore purchases" checks again on demand
+
+#### Scenario: Reinstall or backup on another account
+- **WHEN** a lifetime buyer reinstalls Migrely, or restores it from a backup on a phone signed in to another Google
+  account
+- **THEN** Premium comes only from what Google Play reports for the phone's account, since the entitlement cache is
+  never backed up (D115)
 
 ### Requirement: Changing plans
 Moving from monthly to yearly SHALL use Google Play's upgrade with time proration. Buying lifetime while a subscription

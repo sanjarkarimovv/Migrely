@@ -32,11 +32,19 @@ private const val PAYWALL_LAST_SHOWN = "paywall_last_shown"
 private const val TRIAL_BANNER_DISMISSED = "trial_banner_dismissed"
 
 /**
- * Over the app's `migrely_preferences` file. Writes use `commit()`, which is safe here because every call already runs
- * off the main thread, so a write that did not reach the disk is reported instead of lost.
+ * Over the app's `migrely_preferences` file ([FILE]). Writes use `commit()`, which is safe here
+ * because every call already runs off the main thread, so a write that did not reach the disk is
+ * reported instead of lost.
+ *
+ * The premium entitlement is kept apart, in [entitlementPreferences] over [ENTITLEMENT_FILE],
+ * which Android's backup and device transfer leave out (BRD D115): a purchase belongs to a Google
+ * account, so on a new install or phone Premium comes only from what Google Play reports for the
+ * account signed in there.
  */
-class PreferencesDataSourceImpl(private val preferences: SharedPreferences) :
-    PreferencesDataSource {
+class PreferencesDataSourceImpl(
+    private val preferences: SharedPreferences,
+    private val entitlementPreferences: SharedPreferences
+) : PreferencesDataSource {
     override fun onboardingFinished(): Boolean = preferences.getBoolean(ONBOARDING_FINISHED, false)
 
     override fun finishOnboarding() = write { putBoolean(ONBOARDING_FINISHED, true) }
@@ -76,24 +84,25 @@ class PreferencesDataSourceImpl(private val preferences: SharedPreferences) :
     }.distinctUntilChanged()
 
     override fun entitlement(): EntitlementDataModel? {
-        val kind = preferences.getString(ENTITLEMENT_KIND, null)
-            ?.let { stored -> EntitlementKindDataModel.entries.firstOrNull { it.key == stored } }
+        val stored = entitlementPreferences
+        val kind = stored.getString(ENTITLEMENT_KIND, null)
+            ?.let { key -> EntitlementKindDataModel.entries.firstOrNull { it.key == key } }
             ?: return null
         return EntitlementDataModel(
             kind = kind,
-            productId = preferences.getString(ENTITLEMENT_PRODUCT, null),
-            basePlanId = preferences.getString(ENTITLEMENT_BASE_PLAN, null),
-            purchaseToken = preferences.getString(ENTITLEMENT_TOKEN, null),
-            purchaseTimeMillis = longOrNull(ENTITLEMENT_PURCHASE_TIME),
-            autoRenewing = preferences.getBoolean(ENTITLEMENT_AUTO_RENEWING, false),
-            trialEndMillis = longOrNull(ENTITLEMENT_TRIAL_END),
-            lastCheckMillis = longOrNull(ENTITLEMENT_LAST_CHECK),
-            subscriptionRenewsToo = preferences.getBoolean(ENTITLEMENT_SUBSCRIPTION_TOO, false)
+            productId = stored.getString(ENTITLEMENT_PRODUCT, null),
+            basePlanId = stored.getString(ENTITLEMENT_BASE_PLAN, null),
+            purchaseToken = stored.getString(ENTITLEMENT_TOKEN, null),
+            purchaseTimeMillis = stored.longOrNull(ENTITLEMENT_PURCHASE_TIME),
+            autoRenewing = stored.getBoolean(ENTITLEMENT_AUTO_RENEWING, false),
+            trialEndMillis = stored.longOrNull(ENTITLEMENT_TRIAL_END),
+            lastCheckMillis = stored.longOrNull(ENTITLEMENT_LAST_CHECK),
+            subscriptionRenewsToo = stored.getBoolean(ENTITLEMENT_SUBSCRIPTION_TOO, false)
         )
     }
 
     // One commit, so a check is never stored half written.
-    override fun setEntitlement(entitlement: EntitlementDataModel) = write {
+    override fun setEntitlement(entitlement: EntitlementDataModel) = entitlementPreferences.write {
         putString(ENTITLEMENT_KIND, entitlement.kind.key)
         putString(ENTITLEMENT_PRODUCT, entitlement.productId)
         putString(ENTITLEMENT_BASE_PLAN, entitlement.basePlanId)
@@ -108,33 +117,43 @@ class PreferencesDataSourceImpl(private val preferences: SharedPreferences) :
     override fun paywallShown(trigger: PaywallTriggerDataModel): Boolean =
         preferences.getBoolean(PAYWALL_SHOWN_PREFIX + trigger.key, false)
 
-    override fun lastPaywallShownMillis(): Long? = longOrNull(PAYWALL_LAST_SHOWN)
+    override fun lastPaywallShownMillis(): Long? = preferences.longOrNull(PAYWALL_LAST_SHOWN)
 
     override fun markPaywallShown(trigger: PaywallTriggerDataModel, atMillis: Long) = write {
         putBoolean(PAYWALL_SHOWN_PREFIX + trigger.key, true)
         putLong(PAYWALL_LAST_SHOWN, atMillis)
     }
 
-    override fun trialBannerDismissedFor(): Long? = longOrNull(TRIAL_BANNER_DISMISSED)
+    override fun trialBannerDismissedFor(): Long? = preferences.longOrNull(TRIAL_BANNER_DISMISSED)
 
     override fun dismissTrialBanner(trialEndMillis: Long) =
         write { putLong(TRIAL_BANNER_DISMISSED, trialEndMillis) }
 
-    override fun clear() = write { this.clear() }
+    /** The entitlement first, so whatever stops this leaves no Premium behind (BRD D112). */
+    override fun clear() {
+        entitlementPreferences.write { clear() }
+        write { this.clear() }
+    }
 
-    private fun longOrNull(key: String): Long? =
-        if (preferences.contains(key)) preferences.getLong(key, 0L) else null
+    private fun SharedPreferences.longOrNull(key: String): Long? =
+        if (contains(key)) getLong(key, 0L) else null
 
     private fun SharedPreferences.Editor.putLongOrRemove(key: String, value: Long?) {
         if (value == null) remove(key) else putLong(key, value)
     }
 
-    private inline fun write(change: SharedPreferences.Editor.() -> Unit) {
-        if (!preferences.edit().apply(
-                change
-            ).commit()
-        ) {
-            throw FileDataException("Preferences not saved")
-        }
+    private inline fun write(change: SharedPreferences.Editor.() -> Unit) =
+        preferences.write(change)
+
+    private inline fun SharedPreferences.write(change: SharedPreferences.Editor.() -> Unit) {
+        if (!edit().apply(change).commit()) throw FileDataException("Preferences not saved")
+    }
+
+    companion object {
+        /** The settings, paywall marks and trial banner: backed up with the diary (BRD D74). */
+        const val FILE = "migrely_preferences"
+
+        /** The premium entitlement, never backed up (BRD D115; res/xml/backup_rules.xml). */
+        const val ENTITLEMENT_FILE = "migrely_entitlement"
     }
 }

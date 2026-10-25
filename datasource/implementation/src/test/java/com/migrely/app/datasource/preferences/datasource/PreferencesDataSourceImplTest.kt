@@ -19,6 +19,7 @@ import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.given
+import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 
@@ -34,7 +35,14 @@ class PreferencesDataSourceImplTest {
         on { getBoolean("period_tracking", true) } doReturn true
         on { getBoolean("onboarding_finished", false) } doReturn false
     }
-    private val classUnderTest = PreferencesDataSourceImpl(preferences)
+    private val entitlementEditor: SharedPreferences.Editor = mock {
+        on { clear() } doReturn it
+        on { commit() } doReturn true
+    }
+    private val entitlementPreferences: SharedPreferences = mock {
+        on { edit() } doReturn entitlementEditor
+    }
+    private val classUnderTest = PreferencesDataSourceImpl(preferences, entitlementPreferences)
 
     @Test
     fun `Given nothing saved then onboarding is not finished and periods are tracked`() {
@@ -101,11 +109,15 @@ class PreferencesDataSourceImplTest {
     }
 
     @Test
-    fun `When clearing then every setting goes in one write`() {
+    fun `When clearing then every setting goes in one write, and the entitlement's file first`() {
         classUnderTest.clear()
 
-        verify(editor).clear()
-        verify(editor).commit()
+        inOrder(entitlementEditor, editor) {
+            verify(entitlementEditor).clear()
+            verify(entitlementEditor).commit()
+            verify(editor).clear()
+            verify(editor).commit()
+        }
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)

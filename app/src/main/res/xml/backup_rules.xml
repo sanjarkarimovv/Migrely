@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
     Android 11 and older (BRD BAK-F4, D74): the diary, the settings kept in shared preferences, and the automatic
-    backups taken before an import. The cache, where PDF reports go, is never backed up.
+    backups taken before an import. The cache, where PDF reports go, is never backed up, and neither is the premium
+    entitlement in migrely_entitlement.xml: a purchase belongs to a Google account, so a new install asks Google Play
+    for the account signed in there (D115). Its exclude stands beside each shared-preferences include.
 
     From Android 9, requireFlags lets each include go to the cloud only end-to-end encrypted, which needs a screen
     lock; the second include of each keeps moving to a new phone by cable or nearby transfer, which never reaches the
@@ -23,11 +25,17 @@
         path="."
         requireFlags="clientSideEncryption"
         tools:ignore="UnusedAttribute" />
+    <exclude
+        domain="sharedpref"
+        path="migrely_entitlement.xml" />
     <include
         domain="sharedpref"
         path="."
         requireFlags="deviceToDeviceTransfer"
         tools:ignore="UnusedAttribute" />
+    <exclude
+        domain="sharedpref"
+        path="migrely_entitlement.xml" />
     <include
         domain="file"
         path="backups/"

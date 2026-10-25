@@ -41,7 +41,8 @@ interface PreferencesDataSource {
 
     /**
      * The premium entitlement as last decided (BRD D106), or null before the first check or when
-     * what is stored cannot be read. The purchase itself stays in Google Play.
+     * what is stored cannot be read. The purchase itself stays in Google Play. Unlike the settings,
+     * it is not in Android's backup: a new install asks Google Play again (D115).
      */
     fun entitlement(): EntitlementDataModel?
 

@@ -24,8 +24,15 @@
 
 ### D2. The entitlement
 
-- **The cache:** in `migrely_preferences`. It holds the kind (none, subscription, lifetime, pending), the product and
-  base plan, the purchase time, auto-renewing, the trial's end when known, and the last successful check.
+- **The cache:** in its own preferences file, `migrely_entitlement`, behind `PreferencesDataSource`. It holds the kind
+  (none, subscription, lifetime, pending), the product and base plan, the purchase time, auto-renewing, the trial's end
+  when known, and the last successful check.
+  - It is never backed up or moved to a new phone (D115): `backup_rules.xml` and `data_extraction_rules.xml` exclude
+    it beside each shared-preferences include. A purchase belongs to a Google account, so a restored backup, or a phone
+    on another account, never gets Premium from an old cache; on a new install Premium comes only from Google Play.
+  - The paywall marks and the trial banner's dismissal stay in `migrely_preferences`, which is backed up, so a
+    restored user does not see the onboarding paywall again.
+  - "Delete all data" clears both files.
 - **Checking:** `RefreshPremiumUseCase` asks Play at most every 15 minutes, unless forced after a purchase or on restore.
 - **The rules:**
   - pending never unlocks;
