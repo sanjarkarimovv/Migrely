@@ -20,6 +20,6 @@ tags: [regression, medication-overuse, known-bug]
     centerElement: true
 - assertVisible: "Migraine days: 0"
 - scrollUntilVisible:
-    element: "Simple painkillers: 1 days? \\(limit 15\\)"
+    element: "Simple painkillers: 1 day \\(limit 15\\)"
     direction: DOWN
 - assertNotVisible: "No migraines logged yet"

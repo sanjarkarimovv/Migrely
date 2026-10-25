@@ -1,6 +1,7 @@
 # Covers: month-stats › How the numbers are counted › Preventive medication
 # Covers: medication-overuse › A standing indicator in History › No attack medication
 # Covers: medication-overuse › A standing indicator in History › Below the limit
+# Covers: medication-overuse › A standing indicator in History › One day
 appId: com.migrely.app
 name: Only attack medication counts as a day with attack medication
 tags: [regression, month-stats]
@@ -51,7 +52,7 @@ tags: [regression, month-stats]
     direction: DOWN
 # One day of a simple painkiller: below its limit, with no doctor line.
 - scrollUntilVisible:
-    element: "Simple painkillers: 1 days? \\(limit 15\\)"
+    element: "Simple painkillers: 1 day \\(limit 15\\)"
     direction: DOWN
     centerElement: true
 - assertVisible: "Last 30 days"

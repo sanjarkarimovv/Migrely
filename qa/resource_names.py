@@ -4,10 +4,10 @@ Android merges every module's resources into one app, so two modules that both d
 end up with one of them, and a screen of the other module shows the wrong text. That is how Log medication's date and
 time dialogs once read "Reminder time" (a duplicate in :features:reminders:ui, fixed in e74055e).
 
-The check fails (exit 1) when two modules define the same <string>, <plurals> or <string-array> name with different
-text in the same resource folder (values, values-de, ...), because one module then shows the other's text. The same
-name with the same text is a warning: nothing is wrong yet, but the first edit or translation of one copy breaks the
-other. ALLOWED silences a name, with a reason.
+The check fails (exit 1) when two modules define the same <string>, <plurals> or <string-array> name in the same
+resource folder (values, values-de, ...). With different text, one module already shows the other's text; with the
+same text, the first edit or translation of one copy breaks the other. Each module prefixes its names (#41, PR #44).
+ALLOWED lets a name repeat, with a reason.
 
     python3 -I qa/resource_names.py
 """
@@ -63,11 +63,11 @@ def main():
     for row in different:
         print(f"FAIL: {row}")
     for row in same:
-        print(f"warning: same text, {row}")
-    if different:
-        print(f"{len(different)} name(s) with different text in different modules: one module shows the other's text.")
+        print(f"FAIL: same text, {row}")
+    if different or same:
+        print(f"{len(different) + len(same)} name(s) defined in more than one module; give each a module prefix.")
         return 1
-    print(f"Resource name check passed ({len(same)} warning(s): rename with a module prefix or share one resource)")
+    print("Resource name check passed")
     return 0
 
 

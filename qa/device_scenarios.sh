@@ -565,13 +565,13 @@ scenario_med_overuse() {
   run_flow_env indicator-check MONTHS_BACK=0 "ROW=Simple painkillers: 16 days \(limit 15\), over the limit" DOCTOR=true || return 1
   # A triptan in an attack today: two categories, and the union of days over its limit.
   run_flow med-add-triptan-in-attack || return 1
-  run_flow_env indicator-check MONTHS_BACK=0 "ROW=Triptans: 1 days? \(limit 10\)" DOCTOR=true || return 1
+  run_flow_env indicator-check MONTHS_BACK=0 "ROW=Triptans: 1 day \(limit 10\)" DOCTOR=true || return 1
   run_flow_env indicator-check MONTHS_BACK=0 "ROW=All attack medication: 16 days \(limit 10\), over the limit" DOCTOR=true || return 1
   # Deleting that attack and restoring it with Undo counts its triptan again.
   long_undo_window
   run_flow delete-attack-undo || { default_undo_window; return 1; }
   default_undo_window
-  run_flow_env indicator-check MONTHS_BACK=0 "ROW=Triptans: 1 days? \(limit 10\)" DOCTOR=true || return 1
+  run_flow_env indicator-check MONTHS_BACK=0 "ROW=Triptans: 1 day \(limit 10\)" DOCTOR=true || return 1
   # Last month (with a migraine of its own, so History reaches it) has no "Last 30 days" section.
   run_flow past-attack-last-month || return 1
   run_flow_env indicator-check MONTHS_BACK=1 ROW= DOCTOR=false || return 1
