@@ -383,6 +383,25 @@ for n in ET.fromstring(sys.stdin.read()).iter('node'):
 }
 open_app() { adbq shell monkey -p "$APP" -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1; sleep 4; }
 
+qa_store() { # $1 a simulated store command (debug builds, D201): available, unavailable, unreachable, reset,
+  # complete-pending or decline-pending. -f 0x20 reaches a stopped app too.
+  adbq shell am broadcast -p "$APP" -f 0x20 -a com.migrely.app.debug.SIMULATED_STORE --es command "$1" >/dev/null
+  sleep 1
+}
+
+shared_prefs_files() { # the shared-preferences files the app has written, one name a line
+  adbq shell run-as "$APP" ls shared_prefs 2>/dev/null | tr -d '\r'
+}
+
+pull_report() { # $1 local path: the newest finished report in the app's cache
+  local name
+  name="$(adbq shell run-as "$APP" ls -t cache/reports 2>/dev/null | tr -d '\r' | grep -m1 '\.pdf$')"
+  [[ -n "$name" ]] || { echo "  FAILED: no report in cache/reports"; return 1; }
+  adbq exec-out run-as "$APP" cat "cache/reports/$name" >"$1"
+  [[ -s "$1" ]] || { echo "  FAILED: the report $name could not be read"; return 1; }
+  echo "    report: $name ($(wc -c <"$1" | tr -d ' ') bytes)"
+}
+
 screen_luminance() { # the average luminance (0-255) of the screen's left margin, where only the background shows
   adbq exec-out screencap -p >"$out/screen-$STEP.png"
   python3 -I -c "import sys
@@ -1106,7 +1125,8 @@ focused_screen() { # "doctor report", "history (undone)", "history (deleted)" or
   adbq shell rm -f /sdcard/qa-screen.xml
   adbq shell uiautomator dump /sdcard/qa-screen.xml >/dev/null
   xml="$(adbq exec-out cat /sdcard/qa-screen.xml)"
-  if grep -q 'text="Create report"' <<<"$xml"; then echo "doctor report"
+  # A free user's tap on Doctor report opens its paywall (D108); for the guard either means the tap got through.
+  if grep -qE 'text="(Create report|A report for your doctor)"' <<<"$xml"; then echo "doctor report"
   elif grep -q 'Opens its details' <<<"$xml"; then echo "history (undone)"
   elif grep -q 'text="Log your first migraine"' <<<"$xml"; then echo "history (deleted)"
   else echo "unknown"; fi

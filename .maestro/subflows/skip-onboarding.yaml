@@ -34,3 +34,17 @@ appId: com.migrely.app
     timeout: 1000
     optional: true
 - tapOn: "Skip this step"
+# With Google Play billing available, the onboarding paywall shows once after the last step (D110). The flows that use
+# this subflow test something else, so it is closed; onboarding/paywall-after-onboarding.yaml checks it.
+- extendedWaitUntil:
+    visible: "Get more from your diary"
+    timeout: 5000
+    optional: true
+- runFlow:
+    when:
+      visible: "Get more from your diary"
+    commands:
+      - tapOn: "Close"
+      - extendedWaitUntil:
+          notVisible: "Get more from your diary"
+          timeout: 5000
