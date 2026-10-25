@@ -1,4 +1,5 @@
 import com.android.build.api.artifact.SingleArtifact
+import java.util.Properties
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -27,6 +28,13 @@ kotlin {
     }
 }
 
+/** The upload key, from the git-ignored `keystore.properties` at the root; null when the file is absent (BRD D102). */
+val keystoreProperties = rootProject.file("keystore.properties").takeIf {
+    it.exists()
+}?.let { file ->
+    Properties().apply { file.inputStream().use(::load) }
+}
+
 android {
     namespace = "com.migrely.app"
     compileSdk = libs.versions.compileSdk.get().toInt()
@@ -41,13 +49,30 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        if (keystoreProperties != null) {
+            create("release") {
+                fun key(name: String) = requireNotNull(keystoreProperties.getProperty(name)) {
+                    "keystore.properties lacks $name"
+                }
+                storeFile = rootProject.file(key("storeFile"))
+                storePassword = key("storePassword")
+                keyAlias = key("keyAlias")
+                keyPassword = key("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfig =
+                signingConfigs.getByName(if (keystoreProperties != null) "release" else "debug")
         }
     }
     compileOptions {
@@ -195,6 +220,14 @@ androidComponents {
             forbidden.set(forbiddenPermissions)
             report.set(layout.buildDirectory.file("reports/permissions/${variant.name}.txt"))
         }
-        tasks.matching { it.name == "assemble$name" }.configureEach { dependsOn(check) }
+        // The bundle that goes to Play does not depend on assemble, so it gets the check too (BRD D44).
+        tasks.matching { it.name == "assemble$name" || it.name == "bundle$name" }
+            .configureEach { dependsOn(check) }
+    }
+}
+
+if (keystoreProperties == null) {
+    tasks.matching { it.name in setOf("packageRelease", "signReleaseBundle") }.configureEach {
+        doFirst { logger.warn("Release signed with the debug key: for local smoke only") }
     }
 }
