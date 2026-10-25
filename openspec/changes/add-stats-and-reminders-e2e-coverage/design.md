@@ -33,14 +33,15 @@ is built this way:
 
 | Case | How |
 |---|---|
-| Chronic: 15 against 14 days | One attack from the 1st to the 15th, against one from the 1st to the 14th |
-| Progress: fewer, more, as many | Last month and this month get attacks touching 12 and 10 days, 10 and 12, and 10 and 10 |
-| Progress: too few entries | 9 days on one side |
-| An attack over two months | From the 30th of last month to the 2nd |
-| Average peak | Levels set through the intensity choices, and "—" when none is set |
+| Chronic: 15 against 14 days | One attack from the 1st to the 15th, against one from the 2nd to the 15th |
+| Progress, better (warm) | Two months ago 12 days, last month 10 days |
+| Progress, too few entries | Two months ago 8 days (the comparison month), last month 12 days: no message |
+| Progress, worse (neutral) and this time last month | Two months ago 10 days, last month the 5th to the 20th (16 days, 11 by the 15th), this month 10 days by the 15th: "6 more" and "1 fewer … than this time last month", which also proves that the same dates are compared, not the whole month |
+| An attack over two months | From 22:00 on the last day of last month to 03:00 on the 1st |
+| Average peak | Levels set through the intensity choices, and "—" when none is set (a Maestro flow) |
 
-The clock moves through `qa/device_scenarios.sh` (D60). The long-attack check (EC-ATK, after 72 h) is answered with
-"Still going". sqlite is the fallback only if the UI cannot build a case within about 5 minutes.
+The message's colour is read from the screenshot's pixels (`qa/text_colour.py`). The clock moves through `qa/device_scenarios.sh` (D60). sqlite is the fallback only if the UI cannot build a case within
+about 5 minutes; no case needed it.
 
 ### D2. Notifications on demand (D64)
 
@@ -50,16 +51,19 @@ The clock moves through `qa/device_scenarios.sh` (D60). The long-attack check (E
 | Move the clock past the time | Rejected on its own: JobScheduler delays run on elapsed time, so a wall-clock jump does not fire them |
 | Set the clock 2 min before the time, start the app (it re-plans), then `cmd jobscheduler run -f com.migrely.app <id>` | **Chosen**. The job id comes from `dumpsys jobscheduler com.migrely.app` |
 
-The notification is read with `cmd statusbar expand-notifications` and uiautomator, and its actions are tapped by
-label. The shade is collapsed afterwards.
+The notification is read from `dumpsys notification --noredact`, and its actions are tapped by label in the shade
+(`cmd statusbar expand-notifications`; a collapsed notification is swiped open first). Reminder steps never force-stop
+the app: Android then cancels its jobs and removes its notifications. This relies on WorkManager's job namespace
+(WorkManager 2.9+, API 34+).
 
 ### D3. Permission states
 
-- **Grant and revoke:** `pm grant` and `pm revoke com.migrely.app android.permission.POST_NOTIFICATIONS`.
+- **Grant and reset:** `pm grant`, or `pm revoke` plus `pm clear-permission-flags … user-set user-fixed`. Maestro's
+  `launchApp` grants every permission, so these steps open the app through its launcher intent.
 - **First refusal:** a real tap on "Don't allow" in the system dialog.
 - **30-day re-ask** (`reminder_settings.permission_asked_epoch_millis`): the clock moves 29 days, where there is no
   dialog, and then 31 days, where the dialog comes back.
-- **Restore:** the scripts save the permission state and its flags, and restore them.
+- **Restore:** the script saves whether the permission was granted and puts that back on exit.
 
 ### D4. Reboot (EC-REM-04)
 

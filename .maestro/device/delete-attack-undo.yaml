@@ -7,7 +7,13 @@ appId: com.migrely.app
 - scrollUntilVisible:
     element: ".*Opens its details\\."
     direction: DOWN
-- tapOn: ".*Opens its details\\."
+# The newest migraine (listed first) is the one with Sumatriptan.
+- tapOn:
+    text: ".*Opens its details\\."
+    index: 0
+- scrollUntilVisible:
+    element: "Sumatriptan.*"
+    direction: DOWN
 - scrollUntilVisible:
     element: "Delete migraine"
     direction: DOWN

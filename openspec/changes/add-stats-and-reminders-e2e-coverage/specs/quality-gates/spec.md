@@ -18,8 +18,9 @@ flow, a device scenario, or a reason in the QA change's tasks (BRD D63, D61).
 ### Requirement: Notifications are checked black-box
 Notifications SHALL be checked on the QA emulator without test code in the app. The device clock is set just before the
 planned time, the app re-plans when it starts, the planned work is run on demand, the notification is read from the
-open notification shade, and its actions are tapped. The notification permission SHALL be granted, revoked and marked
-as refused through the package manager, and a reboot SHALL be a real restart of the emulator (BRD D64).
+notification service, and its actions are tapped in the open shade. The notification permission SHALL be granted and
+reset through the package manager and refused with a real tap in the system dialog, and a reboot SHALL be a real
+restart of the emulator (BRD D64).
 
 #### Scenario: Daily reminder on demand
 - **WHEN** the daily reminder is on and the clock is set two minutes before its time, the app is opened and the planned
@@ -27,9 +28,9 @@ as refused through the package manager, and a reboot SHALL be a real restart of 
 - **THEN** the check finds "How was today?" in the shade with "Pain-free day" and "Log a migraine"
 
 #### Scenario: Refused permission
-- **WHEN** the notification permission is revoked and marked as refused, and the user turns a reminder on
+- **WHEN** the notification permission is reset and the user turns a reminder on and taps "Don’t allow"
 - **THEN** the check finds that the switch stays off and "Open settings" is shown
 
 #### Scenario: After a reboot
 - **WHEN** the daily reminder is on and the emulator restarts
-- **THEN** the check finds the daily work planned again for the reminder time
+- **THEN** the check finds the daily work planned again for the next reminder time, before the app is opened

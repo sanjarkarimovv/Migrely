@@ -16,5 +16,10 @@ appId: com.migrely.app
     when:
       true: ${SHOWN != "true"}
     commands:
+      # The end of the summary sits right above the list's heading; with it centred, that place is on screen.
+      - scrollUntilVisible:
+          element: "[0-9]+ migraines? in .*"
+          direction: DOWN
+          centerElement: true
       - assertNotVisible: ".*or more migraine days in.*"
 - stopApp

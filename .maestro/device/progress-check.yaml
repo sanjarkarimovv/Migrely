@@ -1,5 +1,5 @@
 # Device scenario step: History's summary of this month (MONTHS_BACK "0") or last month ("1") shows the progress
-# message TEXT (a regex), or none when TEXT is "".
+# message TEXT (a regex), or none when TEXT is "". It leaves History open.
 appId: com.migrely.app
 ---
 - launchApp
@@ -16,11 +16,19 @@ appId: com.migrely.app
     when:
       true: ${TEXT != ""}
     commands:
-      - assertVisible: "${TEXT}"
+      - scrollUntilVisible:
+          element: "${TEXT}"
+          direction: DOWN
+          centerElement: true
 - runFlow:
     when:
       true: ${TEXT == ""}
     commands:
+      # The progress message ends the summary, right above the list's heading.
+      - scrollUntilVisible:
+          element: "[0-9]+ migraines? in .*"
+          direction: DOWN
+          centerElement: true
       - assertNotVisible: ".*migraine days? than .*"
       - assertNotVisible: "As many migraine days as .*"
-- stopApp
+# The app stays open, so the script can read the message's colour.

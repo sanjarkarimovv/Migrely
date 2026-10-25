@@ -32,9 +32,9 @@
   Verify: passes twice
 - [ ] 2.3 Device scenario `stats_chronic`: the card at 15 migraine days, none at 14. Verify: passes twice
 - [ ] 2.4 Device scenario `stats_progress`:
-  - fewer (green), more and as many (grey);
-  - "than this time last month" against "than <Month>";
-  - too few entries (9) against enough (10);
+  - fewer (warm, read from the pixels) and more (neutral);
+  - "than this time last month" compares the same dates, not the whole month;
+  - too few entries in the comparison month (8 days);
   - on home under the month title;
   - none in attack mode.
   Verify: passes twice
@@ -67,11 +67,13 @@
   - "Pain-free day" marks the date;
   - on an attack day it says "A migraine is logged today.";
   - "Log a migraine" opens home and clears the notification;
-  - nothing on a pain-free day, an attack day, or a day already shown.
+  - nothing on a pain-free day or an attack day. (A day already shown is not checked: a forced run after the day's
+    reminder runs the next day's job, so "nothing" would not prove the rule; it is a D61 gap.)
   Verify: passes twice
 - [ ] 4.4 Device scenario `reminder_replan`:
-  - a zone change and a clock change re-plan to local 8:00 PM;
-  - after a reboot the daily job is planned again (EC-REM-04).
+  - a zone change and a clock change re-plan to local 8:00 PM with the app in the background, not restarted;
+  - after a reboot (a new boot_id) the daily job is planned for the next 8:00 PM, before the app is opened
+    (EC-REM-04).
   Verify: passes twice
 - [ ] 4.5 Device scenario `reminder_effect` (D69):
   - "Did <name> help?" two hours after an intake;

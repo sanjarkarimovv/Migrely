@@ -1,0 +1,6 @@
+# Device scenario step: whatever is in front now (no launchApp) is the app's home screen.
+appId: com.migrely.app
+---
+- extendedWaitUntil:
+    visible: "Migraine started"
+    timeout: 10000

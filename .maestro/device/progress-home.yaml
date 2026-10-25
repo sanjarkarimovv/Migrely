@@ -17,5 +17,6 @@ appId: com.migrely.app
       - extendedWaitUntil:
           visible: "Details of this migraine"
           timeout: 10000
-      - assertNotVisible: "${TEXT}"
+      - assertNotVisible: ".*migraine days? than .*"
+      - assertNotVisible: "As many migraine days as .*"
 - stopApp
