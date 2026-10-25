@@ -1,18 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Migrely's icon: a crescent moon and two stars on the home screen's night sky (BRD D103). Source:
-     docs/release/icon/migrely-icon.svg. -->
+<!-- Migrely's icon: a white calendar page with a navy band and crescent moon. Source: docs/release/icon/make_icon.py (BRD D116). -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
     <path
-        android:fillColor="#C8CCD2"
-        android:pathData="M47.26,38.2 A19,19 0 1,0 68.38,61.81 A16,16 0 0,1 47.26,38.2 Z" />
+        android:fillColor="#FFFFFF"
+        android:pathData="M40,35 H68 A10,10 0 0 1 78,45 V69 A10,10 0 0 1 68,79 H40 A10,10 0 0 1 30,69 V45 A10,10 0 0 1 40,35 Z" />
     <path
-        android:fillColor="#C8CCD2"
-        android:pathData="M66.5,39.9 Q66.5,44.5 71.1,44.5 Q66.5,44.5 66.5,49.1 Q66.5,44.5 61.9,44.5 Q66.5,44.5 66.5,39.9 Z" />
+        android:fillColor="#1C1F4A"
+        android:pathData="M30,45 A10,10 0 0 1 40,35 H68 A10,10 0 0 1 78,45 V48 H30 Z" />
     <path
-        android:fillColor="#C8CCD2"
-        android:pathData="M74,56.9 Q74,59.5 76.6,59.5 Q74,59.5 74,62.1 Q74,59.5 71.4,59.5 Q74,59.5 74,56.9 Z" />
+        android:fillColor="#FFFFFF"
+        android:pathData="M42.25,28.5 H42.25 A2.75,2.75 0 0 1 45,31.25 V36.75 A2.75,2.75 0 0 1 42.25,39.5 H42.25 A2.75,2.75 0 0 1 39.5,36.75 V31.25 A2.75,2.75 0 0 1 42.25,28.5 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M65.75,28.5 H65.75 A2.75,2.75 0 0 1 68.5,31.25 V36.75 A2.75,2.75 0 0 1 65.75,39.5 H65.75 A2.75,2.75 0 0 1 63,36.75 V31.25 A2.75,2.75 0 0 1 65.75,28.5 Z" />
+    <path
+        android:fillColor="#1C1F4A"
+        android:pathData="M53.84,53.56 A10.5,10.5 0 1,0 65.14,66.74 A8.8,8.8 0 0,1 53.84,53.56 Z" />
 </vector>

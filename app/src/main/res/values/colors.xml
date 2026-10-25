@@ -2,4 +2,6 @@
 <resources>
     <!-- Same value as Background in ui/theme/Color.kt. -->
     <color name="window_background">#FF0F1115</color>
+    <!-- Migrely violet, the icon's colour (BRD D116); also the circle behind the icon on the launch screen. -->
+    <color name="brand_violet">#FF5B50D6</color>
 </resources>
