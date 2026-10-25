@@ -19,6 +19,11 @@ import com.migrely.app.report.ui.di.ReportDependencies
 import com.migrely.app.settings.ui.di.DeleteAllDataDependencies
 import com.migrely.app.settings.ui.di.SettingsDependencies
 import com.migrely.app.settings.ui.di.SettingsPageDependencies
+import com.migrely.app.subscription.ui.di.PaywallDependencies
+import com.migrely.app.subscription.ui.di.PaywallGateDependencies
+import com.migrely.app.subscription.ui.di.PaywallTriggerDependencies
+import com.migrely.app.subscription.ui.di.PremiumSectionDependencies
+import com.migrely.app.subscription.ui.di.TrialBannerDependencies
 import com.migrely.app.ui.main.di.AppNavHostDependencies
 import dagger.Module
 import dagger.Provides
@@ -48,7 +53,12 @@ internal object AppNavHostModule {
         onboardingDependencies: OnboardingDependencies,
         dailyReminderOfferDependencies: DailyReminderOfferDependencies,
         reportDependencies: ReportDependencies,
-        insightsDependencies: InsightsDependencies
+        insightsDependencies: InsightsDependencies,
+        paywallDependencies: PaywallDependencies,
+        paywallGateDependencies: PaywallGateDependencies,
+        premiumSectionDependencies: PremiumSectionDependencies,
+        trialBannerDependencies: TrialBannerDependencies,
+        paywallTriggerDependencies: PaywallTriggerDependencies
     ): AppNavHostDependencies = AppNavHostDependencies(
         homeDependencies = homeDependencies,
         attackDetailsDependencies = attackDetailsDependencies,
@@ -68,6 +78,11 @@ internal object AppNavHostModule {
         onboardingDependencies = onboardingDependencies,
         dailyReminderOfferDependencies = dailyReminderOfferDependencies,
         reportDependencies = reportDependencies,
-        insightsDependencies = insightsDependencies
+        insightsDependencies = insightsDependencies,
+        paywallDependencies = paywallDependencies,
+        paywallGateDependencies = paywallGateDependencies,
+        premiumSectionDependencies = premiumSectionDependencies,
+        trialBannerDependencies = trialBannerDependencies,
+        paywallTriggerDependencies = paywallTriggerDependencies
     )
 }

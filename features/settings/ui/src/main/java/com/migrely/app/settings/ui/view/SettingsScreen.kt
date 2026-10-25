@@ -79,9 +79,16 @@ data class SettingsActions(
     val onDeleteAllData: () -> Unit
 )
 
-/** Settings (BRD SET-F1, D93), opened from home's header. */
+/**
+ * Settings (BRD SET-F1, D93), opened from home's header. [premiumSection] is drawn at the top;
+ * `:app` fills it with the subscription feature's Premium section (change add-subscription, D112).
+ */
 @Composable
-fun SettingsDependencies.Settings(navController: NavController, modifier: Modifier = Modifier) {
+fun SettingsDependencies.Settings(
+    navController: NavController,
+    modifier: Modifier = Modifier,
+    premiumSection: @Composable () -> Unit = {}
+) {
     ScreenEnterObserver { settingsViewModel.onEnter() }
     // A screen rebuilt after a rotation, or shown again, reads the settings again.
     LifecycleResumeEffect(settingsViewModel) {
@@ -131,7 +138,8 @@ fun SettingsDependencies.Settings(navController: NavController, modifier: Modifi
                 )
             }
         },
-        modifier = modifier
+        modifier = modifier,
+        premiumSection = premiumSection
     )
     if (choosingTheme && settings != null) {
         ThemeDialog(
@@ -152,7 +160,8 @@ fun SettingsContents(
     settings: SettingsUiModel?,
     actions: SettingsActions,
     messages: @Composable () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    premiumSection: @Composable () -> Unit = {}
 ) {
     Box(
         modifier = modifier
@@ -195,6 +204,7 @@ fun SettingsContents(
                         .verticalScroll(rememberScrollState())
                         .padding(bottom = 16.dp)
                 ) {
+                    premiumSection()
                     SettingsItems(settings, actions)
                 }
             }

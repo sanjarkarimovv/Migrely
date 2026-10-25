@@ -171,6 +171,10 @@ dependencies {
     implementation(projects.features.insights.presentation)
     implementation(projects.features.insights.domain)
     implementation(projects.features.insights.data)
+    implementation(projects.features.subscription.ui)
+    implementation(projects.features.subscription.presentation)
+    implementation(projects.features.subscription.domain)
+    implementation(projects.features.subscription.data)
     implementation(libs.androidx.work.runtime)
 }
 

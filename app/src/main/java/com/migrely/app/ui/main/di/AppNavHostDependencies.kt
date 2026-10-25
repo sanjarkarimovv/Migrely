@@ -19,6 +19,11 @@ import com.migrely.app.report.ui.di.ReportDependencies
 import com.migrely.app.settings.ui.di.DeleteAllDataDependencies
 import com.migrely.app.settings.ui.di.SettingsDependencies
 import com.migrely.app.settings.ui.di.SettingsPageDependencies
+import com.migrely.app.subscription.ui.di.PaywallDependencies
+import com.migrely.app.subscription.ui.di.PaywallGateDependencies
+import com.migrely.app.subscription.ui.di.PaywallTriggerDependencies
+import com.migrely.app.subscription.ui.di.PremiumSectionDependencies
+import com.migrely.app.subscription.ui.di.TrialBannerDependencies
 
 data class AppNavHostDependencies(
     val homeDependencies: HomeDependencies,
@@ -39,5 +44,10 @@ data class AppNavHostDependencies(
     val onboardingDependencies: OnboardingDependencies,
     val dailyReminderOfferDependencies: DailyReminderOfferDependencies,
     val reportDependencies: ReportDependencies,
-    val insightsDependencies: InsightsDependencies
+    val insightsDependencies: InsightsDependencies,
+    val paywallDependencies: PaywallDependencies,
+    val paywallGateDependencies: PaywallGateDependencies,
+    val premiumSectionDependencies: PremiumSectionDependencies,
+    val trialBannerDependencies: TrialBannerDependencies,
+    val paywallTriggerDependencies: PaywallTriggerDependencies
 )

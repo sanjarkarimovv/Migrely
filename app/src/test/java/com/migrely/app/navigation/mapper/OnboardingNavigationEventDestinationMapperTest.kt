@@ -4,7 +4,7 @@ import androidx.navigation.NavController
 import androidx.navigation.NavOptions
 import androidx.navigation.Navigator
 import com.migrely.app.onboarding.presentation.navigation.OnboardingPresentationNavigationEvent
-import com.migrely.app.ui.main.route.Home
+import com.migrely.app.ui.main.route.PaywallGate
 import com.migrely.app.ui.main.route.YourData
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -18,7 +18,7 @@ class OnboardingNavigationEventDestinationMapperTest {
     private val classUnderTest = OnboardingNavigationEventDestinationMapper()
 
     @Test
-    fun `Given onboarding is finished when toUi then home takes its place`() {
+    fun `Given onboarding is finished when toUi then the paywall gate takes its place`() {
         // Given
         val navController: NavController = mock()
 
@@ -29,7 +29,11 @@ class OnboardingNavigationEventDestinationMapperTest {
 
         // Then
         val options = argumentCaptor<NavOptions>()
-        verify(navController).navigate(eq(Home()), options.capture(), anyOrNull<Navigator.Extras>())
+        verify(navController).navigate(
+            eq(PaywallGate),
+            options.capture(),
+            anyOrNull<Navigator.Extras>()
+        )
         assertTrue(options.firstValue.isPopUpToInclusive())
         assertTrue(options.firstValue.shouldLaunchSingleTop())
     }

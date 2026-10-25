@@ -41,7 +41,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 
-private const val CONNECT_TIMEOUT_MILLIS = 10_000L
+private const val CONNECT_TIMEOUT_MILLIS = 5_000L
 private const val MESSAGES_TIMEOUT_MILLIS = 10 * 60_000L
 private const val SUBSCRIPTIONS_PAGE =
     "https://play.google.com/store/account/subscriptions?sku=%s&package=%s"

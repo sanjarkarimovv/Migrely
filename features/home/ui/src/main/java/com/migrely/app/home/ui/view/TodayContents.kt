@@ -75,8 +75,12 @@ fun TodayContents(
     monthCalendar: @Composable () -> Unit = {},
     medicationPrompt: @Composable () -> Unit = {},
     onPeriodToday: (marked: Boolean) -> Unit = {},
-    onSettings: () -> Unit = {}
+    onSettings: () -> Unit = {},
+    trialBanner: @Composable () -> Unit = {},
+    paywallTrigger: @Composable () -> Unit = {}
 ) {
+    // Today's mode only: the paywall after the 5th migraine never shows itself during an attack.
+    paywallTrigger()
     val screenModifier = modifier
         .fillMaxSize()
         .background(MaterialTheme.colorScheme.background)
@@ -94,6 +98,7 @@ fun TodayContents(
                     .verticalScroll(rememberScrollState())
             ) {
                 DayHeader(dayTitle, onSettings)
+                trialBanner()
                 TodaySkyCard(today = today, appearance = appearance)
                 if (periodShown) PeriodToday(today.periodToday, onPeriodToday)
                 medicationPrompt()
@@ -121,6 +126,7 @@ fun TodayContents(
                     .verticalScroll(rememberScrollState())
             ) {
                 DayHeader(dayTitle, onSettings)
+                trialBanner()
                 TodaySkyCard(today = today, appearance = appearance)
                 if (periodShown) PeriodToday(today.periodToday, onPeriodToday)
                 medicationPrompt()
