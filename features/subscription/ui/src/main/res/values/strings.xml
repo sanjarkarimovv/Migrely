@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Migrely Premium (change add-subscription, BRD §7, D109–D112). Prices always come from Google
+    Play (design D7).
+-->
+<resources>
+    <!-- The paywall -->
+    <string name="subscription_close">Close</string>
+    <string name="subscription_headline_onboarding">Get more from your diary</string>
+    <string name="subscription_lead_onboarding">Premium turns what you log into answers you can use.</string>
+    <string name="subscription_headline_patterns">See your patterns</string>
+    <string name="subscription_lead_patterns">Your diary now has enough entries to show patterns. Premium shows what your migraines have in common.</string>
+    <string name="subscription_headline_report">A report for your doctor</string>
+    <string name="subscription_lead_report">Premium makes a clear PDF of your migraines and medications to take to your appointment.</string>
+    <string name="subscription_headline_insights">See what your migraines have in common</string>
+    <string name="subscription_lead_insights">Premium shows your triggers, when migraines come, and what helped.</string>
+    <string name="subscription_headline_settings">Migrely Premium</string>
+    <string name="subscription_lead_settings">Premium adds the doctor report and Insights.</string>
+    <string name="subscription_benefits_title">What Premium adds</string>
+    <string name="subscription_benefit_report">A PDF report for your doctor</string>
+    <string name="subscription_benefit_triggers">Triggers often logged with your migraines</string>
+    <string name="subscription_benefit_timing">When migraines come, and what helped</string>
+    <string name="subscription_benefit_trends">The last 12 months at a glance</string>
+    <string name="subscription_free_stays">Logging, history, reminders, export and every safety warning stay free.</string>
+    <string name="subscription_plans_title">Choose a plan</string>
+    <string name="subscription_plan_yearly">Yearly</string>
+    <string name="subscription_plan_monthly">Monthly</string>
+    <string name="subscription_plan_lifetime">Lifetime</string>
+    <plurals name="subscription_price_yearly_trial_days">
+        <item quantity="one">%1$d day free, then %2$s/year</item>
+        <item quantity="other">%1$d days free, then %2$s/year</item>
+    </plurals>
+    <plurals name="subscription_price_yearly_trial_months">
+        <item quantity="one">%1$d month free, then %2$s/year</item>
+        <item quantity="other">%1$d months free, then %2$s/year</item>
+    </plurals>
+    <string name="subscription_price_yearly">%1$s/year</string>
+    <string name="subscription_price_monthly">%1$s/month</string>
+    <string name="subscription_price_lifetime">%1$s · one payment</string>
+    <string name="subscription_your_plan">Your plan</string>
+    <string name="subscription_card_description">%1$s. %2$s.</string>
+    <string name="subscription_card_description_current">%1$s. %2$s. Your plan.</string>
+    <string name="subscription_start_trial">Start free trial</string>
+    <string name="subscription_subscribe">Subscribe</string>
+    <string name="subscription_buy_once">Buy once</string>
+    <string name="subscription_terms_renews">Renews automatically. Cancel anytime in Google Play.</string>
+    <string name="subscription_terms_trial">Cancel before the trial ends and you won\'t be charged.</string>
+    <string name="subscription_terms_once">One payment. Nothing renews.</string>
+    <string name="subscription_restore">Restore purchases</string>
+    <string name="subscription_loading">Getting prices from Google Play</string>
+    <string name="subscription_working">Waiting for Google Play</string>
+    <string name="subscription_pending_title">Payment pending</string>
+    <string name="subscription_pending_text">Premium unlocks when Google Play confirms your payment.</string>
+    <string name="subscription_unavailable">Premium isn\'t available in your region yet</string>
+    <string name="subscription_unavailable_text">Everything else in Migrely works as before.</string>
+    <string name="subscription_unreachable">Google Play can\'t be reached right now</string>
+    <string name="subscription_unreachable_text">Check your connection, then try again.</string>
+    <string name="subscription_try_again">Try again</string>
+    <string name="subscription_success_title">You have Premium</string>
+    <string name="subscription_success_trial_title">Your free trial has started</string>
+    <string name="subscription_success_text">Thank you. The doctor report and Insights are open to you.</string>
+    <string name="subscription_success_trial_text">It ends on %1$s. Cancel before then in Google Play and you won\'t be charged.</string>
+    <string name="subscription_success_lifetime_text">Thank you. Premium is yours to keep.</string>
+    <string name="subscription_cancel_subscription">Your subscription still renews. Migrely can\'t cancel it for you: cancel it in Google Play so you aren\'t charged again.</string>
+    <string name="subscription_manage">Manage subscription</string>
+    <string name="subscription_continue">Continue</string>
+    <string name="subscription_message_nothing_to_restore">No purchases were found for this Google account.</string>
+    <string name="subscription_message_unreachable">Google Play can\'t be reached. Try again later.</string>
+    <string name="subscription_message_failed">The purchase didn\'t go through. Try again.</string>
+    <string name="subscription_message_dismiss">Dismiss</string>
+
+    <!-- Settings → Premium (D112) -->
+    <string name="subscription_section_title">Premium</string>
+    <string name="subscription_status_free">Free</string>
+    <string name="subscription_status_free_summary">See what Premium adds</string>
+    <string name="subscription_status_yearly">Premium · yearly</string>
+    <string name="subscription_status_monthly">Premium · monthly</string>
+    <string name="subscription_status_premium">Premium</string>
+    <string name="subscription_status_lifetime">Premium · lifetime</string>
+    <string name="subscription_status_trial">Free trial</string>
+    <string name="subscription_status_pending">Payment pending</string>
+    <string name="subscription_status_change_plan">Change plan</string>
+    <string name="subscription_status_trial_ends">Trial ends %1$s</string>
+    <string name="subscription_status_lifetime_summary">Yours to keep</string>
+    <string name="subscription_status_still_renews">Your subscription still renews. Cancel it in Google Play.</string>
+    <string name="subscription_restore_summary">Checks Google Play for what this account bought</string>
+    <string name="subscription_checking">Checking with Google Play</string>
+    <string name="subscription_manage_summary">Change or cancel it in Google Play</string>
+    <string name="subscription_note_restored">Premium was found and is on.</string>
+    <string name="subscription_note_nothing">No purchases were found for this Google account.</string>
+    <string name="subscription_note_pending">A payment is pending. Premium unlocks when it is confirmed.</string>
+    <string name="subscription_note_unreachable">Google Play can\'t be reached. Try again later.</string>
+    <string name="subscription_note_unavailable">Premium isn\'t available in your region yet.</string>
+
+    <!-- Home's trial reminder (D111) -->
+    <string name="subscription_trial_ends_tomorrow">Your free trial ends tomorrow</string>
+    <string name="subscription_trial_ends_today">Your free trial ends today</string>
+    <string name="subscription_trial_banner_text">Cancel in Google Play before it ends and you won\'t be charged.</string>
+    <string name="subscription_trial_and_premium_end_tomorrow">Your free trial and Premium end tomorrow</string>
+    <string name="subscription_trial_and_premium_end_today">Your free trial and Premium end today</string>
+    <string name="subscription_trial_banner_cancelled">Your subscription is cancelled, so you won\'t be charged.</string>
+    <string name="subscription_trial_manage">Manage</string>
+    <string name="subscription_trial_dismiss">Dismiss the reminder</string>
+
+    <!-- The step between onboarding and home (design D4) -->
+    <string name="subscription_gate">Getting your diary ready</string>
+</resources>

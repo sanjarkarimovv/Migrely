@@ -25,6 +25,7 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.withResumed
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.migrely.app.datasource.notification.datasource.NotificationDataSourceImpl
@@ -32,7 +33,9 @@ import com.migrely.app.designsystem.theme.DarkScreens
 import com.migrely.app.designsystem.theme.LocalDarkScreens
 import com.migrely.app.designsystem.theme.MigrelyColors
 import com.migrely.app.designsystem.theme.MigrelyTheme
+import com.migrely.app.premium.PremiumStartChecks
 import com.migrely.app.start.StartEntryPoint
+import com.migrely.app.subscription.domain.model.RefreshPremiumRequestDomainModel
 import com.migrely.app.ui.main.AppNavHost
 import com.migrely.app.ui.main.di.AppNavHostDependencies
 import com.migrely.app.ui.main.route.Home
@@ -65,6 +68,7 @@ const val ACTION_START_ATTACK = "com.migrely.app.action.START_ATTACK"
 private const val STARTS_WITH_ONBOARDING = "starts_with_onboarding"
 private const val THEME = "theme"
 private const val ATTACK_IN_PROGRESS = "attack_in_progress"
+private const val PAYMENT_MESSAGES_ASKED = "payment_messages_asked"
 private const val START_DECISION_MILLIS = 2_000L
 
 @AndroidEntryPoint
@@ -88,6 +92,20 @@ class MainActivity : ComponentActivity() {
     private var appearance = AppearanceUiModel(AppThemeUiModel.Dark, attackInProgress = false)
 
     private val darkThemeUiResolver = DarkThemeUiResolver()
+
+    private val premiumStartChecks = PremiumStartChecks(
+        refresh = {
+            inBackground {
+                startEntryPoint().refreshPremiumUseCase()
+                    .executeInBackground(RefreshPremiumRequestDomainModel(force = false))
+            }
+        },
+        showPaymentMessages = {
+            inBackground {
+                startEntryPoint().showPaymentMessagesUseCase().executeInBackground(Unit)
+            }
+        }
+    )
 
     private val appearanceChanges: Flow<AppearanceUiModel> by lazy {
         val appearanceUiMapper = AppearanceUiMapper(AppThemeUiMapper())
@@ -117,6 +135,8 @@ class MainActivity : ComponentActivity() {
         applySystemBars(dark = true)
         super.onCreate(savedInstanceState)
         dismissDailyReminderIfAsked(intent)
+        premiumStartChecks.paymentMessagesAsked =
+            savedInstanceState?.getBoolean(PAYMENT_MESSAGES_ASKED) == true
         startsWithOnboarding = savedInstanceState
             ?.takeIf { it.containsKey(STARTS_WITH_ONBOARDING) }
             ?.getBoolean(STARTS_WITH_ONBOARDING)
@@ -185,11 +205,14 @@ class MainActivity : ComponentActivity() {
         startsWithOnboarding?.let { outState.putBoolean(STARTS_WITH_ONBOARDING, it) }
         outState.putString(THEME, appearance.theme.name)
         outState.putBoolean(ATTACK_IN_PROGRESS, appearance.attackInProgress)
+        outState.putBoolean(PAYMENT_MESSAGES_ASKED, premiumStartChecks.paymentMessagesAsked)
     }
 
     private fun showContent(startAttack: Boolean) {
         // Starting an attack wins over onboarding, and the saved start must match the graph that is shown.
         if (startAttack) startsWithOnboarding = false
+        // Over the first screen, never the splash, and not when the app opened to start an attack.
+        lifecycleScope.launch { withResumed { premiumStartChecks.onFirstScreen(startAttack) } }
         val start: Any = if (startsWithOnboarding == true) {
             Onboarding
         } else {
@@ -240,6 +263,30 @@ class MainActivity : ComponentActivity() {
             SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT)
         }
         enableEdgeToEdge(statusBarStyle = style, navigationBarStyle = style)
+    }
+
+    /** Premium is checked with Google Play as the app starts and every time it comes back. */
+    override fun onResume() {
+        super.onResume()
+        premiumStartChecks.onResume()
+    }
+
+    private fun startEntryPoint() =
+        EntryPointAccessors.fromApplication(applicationContext, StartEntryPoint::class.java)
+
+    /**
+     * Billing work off the main thread. A failure nobody expected never takes the app down: the
+     * free part must always work (BRD EC-BIL-11).
+     */
+    @Suppress("TooGenericExceptionCaught")
+    private fun inBackground(work: () -> Unit) {
+        lifecycleScope.launch {
+            try {
+                withContext(Dispatchers.IO) { work() }
+            } catch (exception: Exception) {
+                if (exception is CancellationException) throw exception
+            }
+        }
     }
 
     override fun onStart() {

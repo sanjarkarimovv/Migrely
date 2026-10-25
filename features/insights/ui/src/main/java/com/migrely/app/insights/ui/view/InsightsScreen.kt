@@ -71,7 +71,9 @@ import java.time.YearMonth
 
 private val CONTENT_MAX_WIDTH = 600.dp
 private val MONTH_CHOICES = listOf(3, 6, 12)
-private const val DEFAULT_MONTHS = 6
+
+/** The paywall after the 5th migraine promises patterns for these months (BRD D110). */
+internal const val DEFAULT_MONTHS = 6
 
 /** Callbacks from the Insights screen. */
 data class InsightsActions(val onBack: () -> Unit, val onPeriod: (months: Int) -> Unit)

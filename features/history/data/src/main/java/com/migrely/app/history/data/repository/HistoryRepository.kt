@@ -8,6 +8,7 @@ import com.migrely.app.datasource.exception.DataException
 import com.migrely.app.datasource.exception.StorageFullDataException
 import com.migrely.app.datasource.medication.datasource.MedicationDataSource
 import com.migrely.app.datasource.preferences.datasource.PreferencesDataSource
+import com.migrely.app.datasource.preferences.model.EntitlementKindDataModel
 import com.migrely.app.history.data.mapper.AttackMedicationIntakeDomainMapper
 import com.migrely.app.history.data.mapper.DayMarkDomainMapper
 import com.migrely.app.history.data.mapper.HistoryAttackDomainMapper
@@ -32,6 +33,7 @@ import com.migrely.app.history.domain.repository.GetEarliestAttackRepository
 import com.migrely.app.history.domain.repository.GetEarliestDayMarkRepository
 import com.migrely.app.history.domain.repository.GetPeriodTrackingRepository
 import com.migrely.app.history.domain.repository.GetRecentlyDeletedAttackRepository
+import com.migrely.app.history.domain.repository.HasPremiumRepository
 import com.migrely.app.history.domain.repository.RestoreDeletedAttackRepository
 import com.migrely.app.history.domain.repository.SetDayMarkRepository
 import java.time.Instant
@@ -62,7 +64,8 @@ class HistoryRepository(
     SetDayMarkRepository,
     GetEarliestDayMarkRepository,
     GetAttackMedicationIntakesRepository,
-    GetEarliestAttackMedicationIntakeRepository {
+    GetEarliestAttackMedicationIntakeRepository,
+    HasPremiumRepository {
     override fun currentTime() =
         CurrentTimeDomainModel(instant = clockDataSource.now(), zone = clockDataSource.zone())
 
@@ -164,4 +167,10 @@ class HistoryRepository(
     }
 
     override fun periodTracking(): Boolean = preferencesDataSource.periodTracking()
+
+    /** The cache that each check with Google Play keeps (BRD D106); pending unlocks nothing. */
+    override fun hasPremium(): Boolean = when (preferencesDataSource.entitlement()?.kind) {
+        EntitlementKindDataModel.Subscription, EntitlementKindDataModel.Lifetime -> true
+        EntitlementKindDataModel.None, EntitlementKindDataModel.Pending, null -> false
+    }
 }

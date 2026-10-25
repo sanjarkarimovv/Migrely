@@ -81,3 +81,11 @@ system share sheet with the PDF, and no permission SHALL be asked for (BRD REP-F
 #### Scenario: Closed while making it
 - **WHEN** the app is closed while a report is being made
 - **THEN** no partial file is left after the next start, and a new report can be made
+
+### Requirement: The doctor report is premium
+The doctor report SHALL need Premium. A free user's tap on "Doctor report" SHALL open the paywall with its headline, and
+the report screen SHALL open once Premium is on (BRD §7.1, D108).
+
+#### Scenario: Free user
+- **WHEN** a free user taps "Doctor report"
+- **THEN** the paywall opens; after buying, the report screen opens

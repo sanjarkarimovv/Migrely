@@ -21,6 +21,7 @@ include(":app")
 include(":coroutine")
 include(":designsystem")
 include(":features:attackdays:domain")
+include(":features:patterns:domain")
 
 setOf(
     "ui",
@@ -126,4 +127,13 @@ setOf(
     "data"
 ).forEach { module ->
     include(":features:insights:$module")
+}
+
+setOf(
+    "ui",
+    "presentation",
+    "domain",
+    "data"
+).forEach { module ->
+    include(":features:subscription:$module")
 }

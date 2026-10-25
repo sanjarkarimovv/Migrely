@@ -1,7 +1,10 @@
 package com.migrely.app.datasource.preferences.datasource
 
 import com.migrely.app.datasource.preferences.model.AttackFrequencyDataModel
+import com.migrely.app.datasource.preferences.model.EntitlementDataModel
 import com.migrely.app.datasource.preferences.model.GoalDataModel
+import com.migrely.app.datasource.preferences.model.LaunchedPurchaseDataModel
+import com.migrely.app.datasource.preferences.model.PaywallTriggerDataModel
 import com.migrely.app.datasource.preferences.model.ThemeDataModel
 import kotlinx.coroutines.flow.Flow
 
@@ -37,6 +40,37 @@ interface PreferencesDataSource {
     /** The theme now, then again whenever it changes, until the collector stops. */
     fun themeChanges(): Flow<ThemeDataModel>
 
-    /** Forgets every setting, so the app starts as on a new phone (BRD D96). */
+    /**
+     * The premium entitlement as last decided (BRD D106), or null before the first check or when
+     * what is stored cannot be read. The purchase itself stays in Google Play. Unlike the settings,
+     * it is not in Android's backup: a new install asks Google Play again (D115).
+     */
+    fun entitlement(): EntitlementDataModel?
+
+    fun setEntitlement(entitlement: EntitlementDataModel)
+
+    /** The purchase last asked of Google Play's sheet, kept with the entitlement, or null. */
+    fun launchedPurchase(): LaunchedPurchaseDataModel?
+
+    /** Keeps [launched] before the sheet opens; null forgets it. */
+    fun setLaunchedPurchase(launched: LaunchedPurchaseDataModel?)
+
+    /** Whether a paywall has shown itself for [trigger] (BRD D110). */
+    fun paywallShown(trigger: PaywallTriggerDataModel): Boolean
+
+    /** When a paywall last showed itself, in epoch milliseconds, or null. */
+    fun lastPaywallShownMillis(): Long?
+
+    fun markPaywallShown(trigger: PaywallTriggerDataModel, atMillis: Long)
+
+    /** The trial end, in epoch milliseconds, whose home banner was dismissed, or null (D111). */
+    fun trialBannerDismissedFor(): Long?
+
+    fun dismissTrialBanner(trialEndMillis: Long)
+
+    /**
+     * Forgets every setting, so the app starts as on a new phone (BRD D96). The entitlement goes
+     * too and is read from Google Play again at the next check (D112).
+     */
     fun clear()
 }

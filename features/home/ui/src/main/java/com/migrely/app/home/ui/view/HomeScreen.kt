@@ -60,10 +60,14 @@ internal fun isCompactHeight(): Boolean =
     LocalConfiguration.current.screenHeightDp < COMPACT_HEIGHT_DP
 
 /**
- * [monthCalendar] is drawn under today's card and list; `:app` fills it with this month's calendar (change
- * add-attack-history, design D1). [medicationPrompt] is drawn right under today's card; `:app` fills it with the
- * medication card (BRD D46). Both receive the number of view states home has received, so they can load again whenever
- * home does: after every action and on every resume. Attack mode shows neither (G4).
+ * [monthCalendar] is drawn under today's card and list; `:app` fills it with this month's calendar
+ * (change add-attack-history, design D1). [medicationPrompt] is drawn right under today's card;
+ * `:app` fills it with the medication card (BRD D46). [trialBanner] is drawn under the day's header
+ * and [paywallTrigger] draws nothing: `:app` fills them with the subscription feature's trial
+ * reminder and its paywall after the 5th migraine (change add-subscription, BRD D110, D111). All
+ * receive the number of view states home has received, so they can load again whenever home does:
+ * after every action and on every resume. Attack mode shows none of them (G4), so no paywall shows
+ * itself during an attack.
  */
 @Composable
 fun HomeDependencies.Home(
@@ -71,7 +75,9 @@ fun HomeDependencies.Home(
     startAttackRequested: Boolean,
     modifier: Modifier = Modifier,
     monthCalendar: @Composable (refreshKey: Int) -> Unit = {},
-    medicationPrompt: @Composable (refreshKey: Int) -> Unit = {}
+    medicationPrompt: @Composable (refreshKey: Int) -> Unit = {},
+    trialBanner: @Composable (refreshKey: Int) -> Unit = {},
+    paywallTrigger: @Composable (refreshKey: Int) -> Unit = {}
 ) {
     ScreenEnterObserver { homeViewModel.onEnter(startAttackRequested) }
     LifecycleResumeEffect(homeViewModel) {
@@ -124,6 +130,8 @@ fun HomeDependencies.Home(
         ),
         monthCalendar = { monthCalendar(homeLoads) },
         medicationPrompt = { medicationPrompt(homeLoads) },
+        trialBanner = { trialBanner(homeLoads) },
+        paywallTrigger = { paywallTrigger(homeLoads) },
         messages = {
             HomeMessages(
                 presenter = homeMessagePresenter,
@@ -197,7 +205,9 @@ fun HomeContents(
     messageBottom: () -> Dp,
     modifier: Modifier = Modifier,
     monthCalendar: @Composable () -> Unit = {},
-    medicationPrompt: @Composable () -> Unit = {}
+    medicationPrompt: @Composable () -> Unit = {},
+    trialBanner: @Composable () -> Unit = {},
+    paywallTrigger: @Composable () -> Unit = {}
 ) {
     // Decided from the target mode in the same pass as the switch, so a quick switch back (for example Undo) can never
     // leave a stale previous mode behind (BRD EC-UX-18, D32).
@@ -250,7 +260,8 @@ fun HomeContents(
                     onPeriodToday = actions.onPeriodToday,
                     onSettings = actions.onSettings,
                     monthCalendar = monthCalendar,
-                    medicationPrompt = medicationPrompt
+                    medicationPrompt = medicationPrompt,
+                    trialBanner = trialBanner
                 )
 
                 is HomeViewStateUiModel.AttackInProgress -> AttackModeContents(
@@ -263,6 +274,9 @@ fun HomeContents(
                 )
             }
         }
+        // Only while today's mode is the one shown or coming, never while it fades out into attack
+        // mode: a paywall the trigger asks for after that is dropped with it (BRD D110).
+        if (mode == HomeMode.Today) paywallTrigger()
         // Above both modes and below the messages, so Undo always stays tappable.
         if (guardTaps) {
             TapGuard(

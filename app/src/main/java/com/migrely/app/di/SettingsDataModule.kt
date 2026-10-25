@@ -7,6 +7,7 @@ import com.migrely.app.datasource.backupfile.datasource.BackupFileDataSource
 import com.migrely.app.datasource.notification.datasource.NotificationDataSource
 import com.migrely.app.datasource.preferences.datasource.PreferencesDataSource
 import com.migrely.app.datasource.report.datasource.ReportDocumentDataSource
+import com.migrely.app.datasource.schedule.datasource.PremiumCheckScheduleDataSource
 import com.migrely.app.datasource.schedule.datasource.ReminderScheduleDataSource
 import com.migrely.app.settings.data.mapper.ThemeDataMapper
 import com.migrely.app.settings.data.mapper.ThemeDomainMapper
@@ -44,13 +45,15 @@ internal object SettingsDataModule {
         backupDataSource: BackupDataSource,
         preferencesDataSource: PreferencesDataSource,
         backupFileDataSource: BackupFileDataSource,
-        reportDocumentDataSource: ReportDocumentDataSource
+        reportDocumentDataSource: ReportDocumentDataSource,
+        premiumCheckScheduleDataSource: PremiumCheckScheduleDataSource
     ) = DeleteAllDataRepository(
         reminderScheduleDataSource,
         notificationDataSource,
         backupDataSource,
         preferencesDataSource,
         backupFileDataSource,
-        reportDocumentDataSource
+        reportDocumentDataSource,
+        premiumCheckScheduleDataSource
     )
 }

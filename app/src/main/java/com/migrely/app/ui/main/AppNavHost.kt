@@ -18,6 +18,7 @@ import com.migrely.app.medication.ui.view.LogMedication
 import com.migrely.app.medication.ui.view.MedicationPrompt
 import com.migrely.app.medication.ui.view.Medications
 import com.migrely.app.medication.ui.view.OveruseIndicator
+import com.migrely.app.navigation.mapper.PaywallOriginUiMapper
 import com.migrely.app.onboarding.ui.view.Onboarding
 import com.migrely.app.reminders.ui.view.DailyReminderOffer
 import com.migrely.app.reminders.ui.view.Reminders
@@ -28,6 +29,11 @@ import com.migrely.app.settings.ui.view.Licences
 import com.migrely.app.settings.ui.view.Privacy
 import com.migrely.app.settings.ui.view.Settings
 import com.migrely.app.settings.ui.view.WarningSigns
+import com.migrely.app.subscription.ui.view.Paywall
+import com.migrely.app.subscription.ui.view.PaywallGate
+import com.migrely.app.subscription.ui.view.PaywallTrigger
+import com.migrely.app.subscription.ui.view.PremiumSection
+import com.migrely.app.subscription.ui.view.TrialBanner
 import com.migrely.app.ui.main.di.AppNavHostDependencies
 import com.migrely.app.ui.main.route.AboutMigrely
 import com.migrely.app.ui.main.route.AddPastAttack
@@ -41,6 +47,8 @@ import com.migrely.app.ui.main.route.Licences
 import com.migrely.app.ui.main.route.LogMedication
 import com.migrely.app.ui.main.route.Medications
 import com.migrely.app.ui.main.route.Onboarding
+import com.migrely.app.ui.main.route.Paywall
+import com.migrely.app.ui.main.route.PaywallGate
 import com.migrely.app.ui.main.route.Privacy
 import com.migrely.app.ui.main.route.Reminders
 import com.migrely.app.ui.main.route.Report
@@ -48,6 +56,8 @@ import com.migrely.app.ui.main.route.Settings
 import com.migrely.app.ui.main.route.WarningSigns
 import com.migrely.app.ui.main.route.YourData
 import java.time.LocalDate
+
+private val paywallOriginUiMapper = PaywallOriginUiMapper()
 
 @Composable
 fun AppNavHostDependencies.AppNavHost(
@@ -71,6 +81,11 @@ fun AppNavHostDependencies.AppNavHost(
                 },
                 medicationPrompt = { refreshKey ->
                     medicationPromptDependencies.MedicationPrompt(refreshKey)
+                },
+                // And the subscription's trial reminder and 5th-migraine paywall (BRD D110, D111).
+                trialBanner = { refreshKey -> trialBannerDependencies.TrialBanner(refreshKey) },
+                paywallTrigger = { refreshKey ->
+                    paywallTriggerDependencies.PaywallTrigger(navController, refreshKey)
                 }
             )
         }
@@ -123,8 +138,21 @@ fun AppNavHostDependencies.AppNavHost(
         composable<Insights> {
             insightsDependencies.Insights(navController)
         }
+        composable<Paywall> { entry ->
+            paywallDependencies.Paywall(
+                navController,
+                context = paywallOriginUiMapper.toUi(entry.toRoute<Paywall>().origin)
+            )
+        }
+        composable<PaywallGate> {
+            paywallGateDependencies.PaywallGate(navController)
+        }
         composable<Settings> {
-            settingsDependencies.Settings(navController)
+            settingsDependencies.Settings(
+                navController,
+                // Settings shows the subscription's Premium section first (BRD D112).
+                premiumSection = { premiumSectionDependencies.PremiumSection(navController) }
+            )
         }
         composable<WarningSigns> {
             settingsPageDependencies.WarningSigns(navController)

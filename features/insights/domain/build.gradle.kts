@@ -18,6 +18,7 @@ dependencies {
     implementation(projects.architecture.domain)
     implementation(projects.coroutine)
     implementation(projects.features.attackdays.domain)
+    implementation(projects.features.patterns.domain)
 
     testImplementation(libs.test.junit)
     testImplementation(libs.test.mockito.kotlin)
