@@ -35,11 +35,12 @@
     <string name="settings_delete_all">Delete all data</string>
     <string name="settings_delete_all_summary">Every entry, setting and copy on this phone</string>
     <string name="settings_delete_title">Delete all data?</string>
-    <string name="settings_delete_what">This deletes every migraine, medication and marked day, your settings, the automatic copies and any reports. Reminders stop. It can\'t be undone.\n\nBackups you exported stay where you saved them.</string>
+    <!-- First the warning, then the field, then the details, so the field shows at once at any font size. -->
+    <string name="settings_delete_warning">Everything Migrely keeps on this phone goes, and it can\'t be undone.</string>
+    <string name="settings_delete_what">That is every migraine, medication and marked day, your settings, the automatic copies and any reports, and reminders stop. Backups you exported stay where you saved them.</string>
     <!-- No API makes Android back up at once, so the user is told when its copy changes (BRD D96, D97). -->
     <string name="settings_android_backup">Android\'s own backup of Migrely is replaced the next time your phone backs up, usually within a day.</string>
-    <string name="settings_delete_type">To confirm, type %1$s.</string>
-    <string name="settings_delete_field">Type %1$s</string>
+    <string name="settings_delete_field">Type %1$s to confirm</string>
     <string name="settings_delete_confirm">Delete everything</string>
     <string name="settings_deleting">Deleting your data</string>
     <string name="settings_not_deleted">Couldn\'t delete everything. Try again.</string>

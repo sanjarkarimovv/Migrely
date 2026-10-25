@@ -86,9 +86,10 @@ internal fun ThemeDialog(
 }
 
 /**
- * "Delete all data" (BRD EC-STO-03, D96). The button turns on only once [typed] is [word] exactly, which [confirmed]
- * says. While [deleting], the dialog shows its progress and cannot be closed; [failed] says the deletion stopped
- * partway, and the user can try again.
+ * "Delete all data" (BRD EC-STO-03, D96). A one-line warning, then the field, then the details, so the field shows
+ * without scrolling even at twice the font size. The button turns on only once [typed] is [word] exactly, which
+ * [confirmed] says. While [deleting], the dialog shows its progress and cannot be closed; [failed] says the deletion
+ * stopped partway, and the user can try again.
  */
 @Suppress("LongParameterList")
 @Composable
@@ -114,9 +115,7 @@ internal fun DeleteAllDataDialog(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.verticalScroll(rememberScrollState())
             ) {
-                Text(stringResource(R.string.settings_delete_what))
-                Text(stringResource(R.string.settings_android_backup))
-                Text(stringResource(R.string.settings_delete_type, word))
+                Text(stringResource(R.string.settings_delete_warning))
                 OutlinedTextField(
                     value = typed,
                     onValueChange = onTyped,
@@ -148,6 +147,16 @@ internal fun DeleteAllDataDialog(
                         modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
                     )
                 }
+                Text(
+                    text = stringResource(R.string.settings_delete_what),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = stringResource(R.string.settings_android_backup),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         },
         confirmButton = {
