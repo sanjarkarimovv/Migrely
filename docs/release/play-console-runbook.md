@@ -97,9 +97,10 @@ ID'lar koddagi bilan aynan bir xil boʻlishi shart: Play bir marta ishlatilgan I
 ## 5. Store listing (Grow users → Store presence → Main store listing)
 
 1. **App name:** `Migrely: Migraine Tracker`.
-2. **Short description:** `Log migraines in 3 taps. Private headache diary & doctor-ready reports.`
-3. **Full description:** `listing.md` dagi matn.
-4. **Graphics:** ikonka, feature graphic, 8 ta telefon skrinshoti (01 dan 08 gacha).
+2. **Short description:** `Private headache diary & migraine log. Spot triggers, watch painkiller days.`
+3. **Full description:** `listing.md` dagi matn, oʻzgartirmasdan (har paragraf bitta qator).
+4. **Graphics:** ikonka, feature graphic, 8 ta telefon skrinshoti (01 dan 08 gacha, fayl nomi tartibida:
+   birinchi uchtasi qidiruvda koʻrinadi).
 5. **Store settings:**
    - kategoriya: **Health & Fitness**;
    - email: `support@migrely.health`;

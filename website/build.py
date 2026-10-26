@@ -136,8 +136,8 @@ def home():
         f'<figure><img src="/assets/img/{name}.webp" alt="{esc(alt)}" width="360" height="640" loading="lazy"></figure>'
         for name, alt in [('01-log', 'Attack mode: Rest now, we will keep time'),
                           ('02-sky', 'Your month as a calm night sky'),
-                          ('04-report', 'A clear report for your doctor'),
-                          ('05-insights', 'Triggers and patterns in your migraines')])
+                          ('03-report', 'A clear report for your doctor'),
+                          ('04-insights', 'Triggers and patterns in your migraines')])
     features = ''.join(f'<article><h3>{esc(t)}</h3><p>{esc(d)}</p></article>' for t, d in FEATURES)
     body = f'''
 <section class="hero"><div class="wrap hero-grid">
@@ -275,7 +275,7 @@ def not_found():
 def images():
     img = ASSETS / 'img'
     img.mkdir(parents=True, exist_ok=True)
-    for name in ['01-log', '02-sky', '04-report', '05-insights']:
+    for name in ['01-log', '02-sky', '03-report', '04-insights']:
         src = STORE_ART / 'screenshots' / f'{name}.png'
         tmp = img / f'{name}.png'
         Image.open(src).convert('RGB').resize((720, 1280), Image.LANCZOS).save(tmp)
