@@ -18,3 +18,7 @@ migraines." (BRD EC-REP-02, D84).
 #### Scenario: Notes of a report that fits
 - **WHEN** the user makes a report with notes on whose migraines all fit
 - **THEN** every note is in it, with no "Notes from the latest" line
+
+#### Scenario: No note among the migraines shown
+- **WHEN** the migraines table is shortened and none of the migraines it shows has a note
+- **THEN** the notes section says "Notes from the latest N migraines." over an empty notes table

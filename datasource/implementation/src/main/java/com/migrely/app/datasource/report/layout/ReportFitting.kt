@@ -6,8 +6,9 @@ import java.util.Locale
 /**
  * Within its page limit (EC-REP-02): while [blocks] would take more than [maxPages], as [pageCount] counts them, each
  * table that may be shortened keeps, in turn, as many of its first rows (the latest) as fit, and says how many it
- * shows. A table that follows it, such as the notes of the migraines listed, keeps only the rows of the rows it keeps,
- * and says so (D84). Past that, the renderer cuts the last pages.
+ * shows. A table that follows it, such as the notes of the migraines listed, keeps only its rows whose owner is among
+ * the rows kept, and says so; with none kept, only its header is left, as for a table kept to no rows (D84). Past
+ * that, the renderer cuts the last pages.
  */
 internal fun fittedBlocks(
     blocks: List<ReportBlockDataModel>,

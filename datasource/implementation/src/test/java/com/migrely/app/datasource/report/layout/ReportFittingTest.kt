@@ -92,6 +92,21 @@ class ReportFittingTest {
     }
 
     @Test
+    fun `Given notes on the oldest migraines only then the line and an empty notes table`() {
+        val migraines = migraines(900)
+        val blocks = report(migraines, notes(migraines, (800 until 900).toList()))
+
+        val fitted = fittedBlocks(blocks, maxPages = 50, pageCount = ::pageCount)
+
+        val shown = (fitted[2] as ReportBlockDataModel.Table).rows.size
+        assertEquals(
+            ReportBlockDataModel.Paragraph("Notes from the latest $shown migraines."),
+            fitted[fitted.size - 2]
+        )
+        assertEquals(emptyList<List<String>>(), (fitted.last() as ReportBlockDataModel.Table).rows)
+    }
+
+    @Test
     fun `Given few migraines with notes then every note and no line`() {
         val migraines = migraines(20)
         val blocks = report(migraines, notes(migraines, List(20) { it }))
