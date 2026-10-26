@@ -435,7 +435,8 @@ private fun DaySection(
     }
     Spacer(Modifier.height(8.dp))
     // With "Track periods" off, a marked day still offers the switch, so the mark can be removed, and it stays while
-    // the day is chosen, so a mark removed by mistake can be put back (BRD D79).
+    // the day is chosen, so a mark removed by mistake can be put back (BRD D79). The latch only ever turns on: it is
+    // safe because Settings opens only from home, so the setting cannot change while History is open (QA #66).
     var periodShown by rememberSaveable(day.epochDay) { mutableStateOf(false) }
     if (day.periodOffered) periodShown = true
     if (periodShown) {

@@ -2,13 +2,12 @@ package com.migrely.app.datasource.report.datasource
 
 import com.migrely.app.datasource.file.file
 import com.migrely.app.datasource.report.layout.ReportPageLayout
-import com.migrely.app.datasource.report.model.ReportBlockDataModel
+import com.migrely.app.datasource.report.layout.fittedBlocks
 import com.migrely.app.datasource.report.model.ReportDocumentDataModel
 import java.io.File
 import java.io.IOException
 import java.time.Duration
 import java.time.Instant
-import java.util.Locale
 import java.util.UUID
 
 private const val DIRECTORY = "reports"
@@ -33,7 +32,8 @@ class ReportDocumentDataSourceImpl(
         val partial = File(directory, document.fileName + PARTIAL)
         try {
             val layout = ReportPageLayout(document)
-            val pdf = layout.render(fitted(document, layout), document.maxPages)
+            val blocks = fittedBlocks(document.blocks, document.maxPages, layout::pageCount)
+            val pdf = layout.render(blocks, document.maxPages)
             try {
                 partial.outputStream().use(pdf::writeTo)
             } finally {
@@ -69,51 +69,5 @@ class ReportDocumentDataSourceImpl(
     override fun deleteAll() = file {
         val directory = File(cacheDirectory, DIRECTORY)
         if (!directory.deleteRecursively()) throw IOException("Could not delete ${directory.name}")
-    }
-
-    /**
-     * Within its page limit (EC-REP-02): while it would be longer, each table that may be shortened keeps, in turn, as
-     * many of its first rows (the latest) as fit, and says how many it shows. Past that, `render` cuts the last pages.
-     */
-    private fun fitted(
-        document: ReportDocumentDataModel,
-        layout: ReportPageLayout
-    ): List<ReportBlockDataModel> {
-        var blocks = document.blocks
-        document.blocks.filterIsInstance<ReportBlockDataModel.Table>()
-            .filter { it.shortenedNote != null }
-            .forEach { table ->
-                if (layout.pageCount(blocks) > document.maxPages) {
-                    blocks = shortened(blocks, table, document.maxPages, layout)
-                }
-            }
-        return blocks
-    }
-
-    private fun shortened(
-        blocks: List<ReportBlockDataModel>,
-        table: ReportBlockDataModel.Table,
-        maxPages: Int,
-        layout: ReportPageLayout
-    ): List<ReportBlockDataModel> {
-        // Found by identity: a table shortened before this one added its note, so the positions moved.
-        val offset = blocks.indexOfFirst { it === table }
-        fun keeping(kept: Int): List<ReportBlockDataModel> = blocks.toMutableList().apply {
-            set(offset, table.copy(rows = table.rows.take(kept)))
-            // Before the table, where a reader starts it (walk B3).
-            add(
-                offset,
-                ReportBlockDataModel.Paragraph(
-                    String.format(Locale.ENGLISH, table.shortenedNote!!, kept, table.rows.size)
-                )
-            )
-        }
-        var low = 0
-        var high = table.rows.size
-        while (low < high) {
-            val middle = (low + high + 1) / 2
-            if (layout.pageCount(keeping(middle)) <= maxPages) low = middle else high = middle - 1
-        }
-        return keeping(low)
     }
 }

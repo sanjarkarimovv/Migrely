@@ -53,6 +53,15 @@ private const val SUBSCRIPTIONS_PAGE =
     "https://play.google.com/store/account/subscriptions?sku=%s&package=%s"
 private const val UPDATES_BUFFER = 8
 
+/**
+ * How Google Play moves a subscriber between `monthly` and `yearly`, two base plans of one
+ * subscription (BRD EC-BIL-10, D120). Play allows only CHARGE_FULL_PRICE and WITHOUT_PRORATION
+ * there and answers any other mode with DEVELOPER_ERROR. The new plan starts at once and its price
+ * is charged on the next billing date, as the default set in Play Console.
+ */
+internal const val PLAN_SWITCH_REPLACEMENT_MODE =
+    BillingFlowParams.SubscriptionUpdateParams.ReplacementMode.WITHOUT_PRORATION
+
 /** Launch answers worth one more try once the connection is back (review M10). */
 private val RETRIED_LAUNCH = setOf(
     BillingResponseCode.SERVICE_DISCONNECTED,
@@ -262,10 +271,7 @@ class PlayBillingDataSourceImpl(
                     setSubscriptionUpdateParams(
                         BillingFlowParams.SubscriptionUpdateParams.newBuilder()
                             .setOldPurchaseToken(oldToken)
-                            .setSubscriptionReplacementMode(
-                                BillingFlowParams.SubscriptionUpdateParams.ReplacementMode
-                                    .WITH_TIME_PRORATION
-                            )
+                            .setSubscriptionReplacementMode(PLAN_SWITCH_REPLACEMENT_MODE)
                             .build()
                     )
                 }

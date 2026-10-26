@@ -13,6 +13,7 @@ import com.migrely.app.home.ui.mapper.IntensityLevelUiToPresentationMapper
 import com.migrely.app.home.ui.mapper.SkyAppearanceUiMapper
 import com.migrely.app.home.ui.mapper.TimeUiFormatter
 import com.migrely.app.home.ui.notification.HomeMessagePresenter
+import com.migrely.app.locale.FormattingLocales
 import com.migrely.app.navigation.mapper.HomeNavigationEventDestinationMapper
 import dagger.Module
 import dagger.Provides
@@ -30,8 +31,11 @@ internal object HomeUiModule {
         HomeNavigationEventDestinationMapper()
 
     @Provides
-    fun providesTimeUiFormatter(@ApplicationContext context: Context) = TimeUiFormatter(
-        locale = { context.resources.configuration.locales[0] },
+    fun providesTimeUiFormatter(
+        @ApplicationContext context: Context,
+        formattingLocales: FormattingLocales
+    ) = TimeUiFormatter(
+        locale = { formattingLocales.of(context.resources.configuration) },
         is24HourFormat = { DateFormat.is24HourFormat(context) },
         deviceZone = { ZoneId.systemDefault() },
         bestDateTimePattern = { locale, skeleton ->

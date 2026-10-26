@@ -25,8 +25,9 @@ internal val SELF_SHOWN_GAP: Duration = Duration.ofDays(7)
  * - the trigger has not shown one before, and no paywall showed itself in the last 7 days;
  * - for the 5th migraine, Insights have enough to show the patterns the paywall promises: the
  *   rule Insights use (BRD D88), for the months they open on;
- * - Google Play billing is known to be available: a paywall that could only show an error or "not
- *   available" is no reason to interrupt (walk B-1);
+ * - Google Play billing is known to be available and offers Migrely's products: a paywall that
+ *   could only show an error or "not available" is no reason to interrupt (walk B-1). Products
+ *   Play does not return count as unavailable here, while a tap still opens the paywall;
  * - no attack is in progress, or it cannot be told. Asked last, after Google Play, which may take
  *   a moment, so an attack started meanwhile is seen.
  */

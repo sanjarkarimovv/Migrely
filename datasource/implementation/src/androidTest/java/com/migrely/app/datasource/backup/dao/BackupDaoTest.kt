@@ -76,6 +76,12 @@ class BackupDaoTest {
         database.close()
     }
 
+    /** Every row of [table], hidden ones included. */
+    private fun rows(table: String): Int = database.query("SELECT COUNT(*) FROM $table", null).use {
+        it.moveToFirst()
+        it.getInt(0)
+    }
+
     private val phone = records(
         attacks = listOf(
             attack("p1", 10 * HOUR, 12 * HOUR),
@@ -297,49 +303,87 @@ class BackupDaoTest {
         assertEquals(listOf("a"), classUnderTest.records().attacks.map { it.id })
     }
 
+    /** QA #58: a deleted attack, however long ago, lingers hidden until purged; the backup's copy takes its place. */
     @Test
-    fun givenAnAttackBeingDeletedWithTheSameId_whenAdding_thenTheBackupsIntakeIsNotLinkedToIt() {
+    fun givenAnAttackBeingDeletedWithTheSameId_whenAdding_thenTheBackupsCopyTakesItsPlace() {
         classUnderTest.replaceAll(
             records(
                 attacks = listOf(attack("gone", 10 * HOUR, 12 * HOUR, deleted = 13 * HOUR)),
-                medications = listOf(medication("pm", "Ibuprofen"))
-            )
-        )
-
-        classUnderTest.add(
-            records(
-                attacks = listOf(attack("gone", 10 * HOUR, 12 * HOUR)),
+                points = listOf(IntensityPointLocalModel(0, "gone", 10 * HOUR, 3)),
+                tags = listOf(AttackTagLocalModel("gone", "SYMPTOM", "aura")),
                 medications = listOf(medication("pm", "Ibuprofen")),
                 intakes = listOf(intake("i", "pm", "gone", 11 * HOUR))
             )
         )
+        val backup = records(
+            attacks = listOf(attack("gone", 10 * HOUR, 12 * HOUR)),
+            points = listOf(IntensityPointLocalModel(0, "gone", 10 * HOUR, 7)),
+            tags = listOf(AttackTagLocalModel("gone", "TRIGGER", "stress")),
+            medications = listOf(medication("pm", "Ibuprofen")),
+            intakes = listOf(intake("i", "pm", "gone", 11 * HOUR))
+        )
 
-        assertEquals(listOf(intake("i", "pm", null, 11 * HOUR)), classUnderTest.records().intakes)
+        val added = classUnderTest.add(backup)
+
+        // The intake was hidden with the attack, so it comes back too, linked to it.
+        assertEquals(AddedLocalModel(addedAttacks = 1, skippedAttacks = 0, addedOthers = 1), added)
+        val read = classUnderTest.records()
+        assertEquals(backup.attacks, read.attacks)
+        assertEquals(listOf(7), read.intensityPoints.map { it.value })
+        assertEquals(backup.attackTags, read.attackTags)
+        assertEquals(backup.intakes, read.intakes)
+        assertEquals(1, rows("attack"))
     }
 
     @Test
-    fun givenAnAttackBeingDeleted_whenReplacing_thenItGoesToo() {
+    fun givenAnIntakeHiddenWithAnotherAttackBeingDeleted_whenAdding_thenTheBackupsCopyIsAdded() {
+        // On the phone, the backup's "a" was merged into "b", which took its intake, and "b" was then deleted.
         classUnderTest.replaceAll(
             records(
-                attacks = listOf(
-                    attack(
-                        "gone",
-                        10 * HOUR,
-                        12 * HOUR,
-                        deleted =
-                        13 * HOUR
-                    )
+                attacks = listOf(attack("b", 9 * HOUR, 12 * HOUR, deleted = 13 * HOUR)),
+                medications = listOf(medication("pm", "Ibuprofen")),
+                intakes = listOf(
+                    intake("i", "pm", "b", 11 * HOUR),
+                    intake("j", "pm", "b", 9 * HOUR)
                 )
             )
         )
 
+        val added = classUnderTest.add(
+            records(
+                attacks = listOf(attack("a", 10 * HOUR, 12 * HOUR)),
+                medications = listOf(medication("pm", "Ibuprofen")),
+                intakes = listOf(
+                    intake("i", "pm", "a", 11 * HOUR), // the same ID as one hidden
+                    intake("k", "pm", null, 9 * HOUR) // the same medication and time as one hidden
+                )
+            )
+        )
+
+        assertEquals(AddedLocalModel(addedAttacks = 1, skippedAttacks = 0, addedOthers = 2), added)
+        assertEquals(
+            listOf(intake("k", "pm", null, 9 * HOUR), intake("i", "pm", "a", 11 * HOUR)),
+            classUnderTest.records().intakes
+        )
+        // "b" stays hidden, for its undo or its purge, without the intakes the backup brought back.
+        assertEquals(2, rows("attack"))
+        assertEquals(2, rows("medication_intake"))
+    }
+
+    @Test
+    fun givenAnAttackBeingDeleted_whenReplacing_thenItGoesToo() {
+        // The phone's "gone" is being deleted, with a point, a tag and the intake "gi".
+        classUnderTest.replaceAll(phone)
+
         classUnderTest.replaceAll(records(attacks = listOf(attack("gone", 20 * HOUR, 21 * HOUR))))
 
         assertEquals(
-            listOf(20 * HOUR),
-            classUnderTest.records().attacks.map {
-                it.startEpochMillis
-            }
+            listOf(attack("gone", 20 * HOUR, 21 * HOUR)),
+            classUnderTest.records().attacks
+        )
+        assertEquals(
+            listOf(1, 0, 0, 0),
+            listOf("attack", "intensity_point", "attack_tag", "medication_intake").map { rows(it) }
         )
     }
 

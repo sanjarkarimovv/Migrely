@@ -11,10 +11,12 @@ import com.migrely.app.datasource.attack.model.DeletedAttackDataModel
 import com.migrely.app.datasource.attack.model.IntensityPointDataModel
 import com.migrely.app.datasource.attack.model.IntensityPointLocalModel
 import com.migrely.app.datasource.attack.model.RestoreDataModel
+import com.migrely.app.datasource.exception.StorageFullDataException
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneOffset
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertThrows
 import org.junit.Before
 import org.junit.Test
 import org.mockito.kotlin.doThrow
@@ -133,6 +135,24 @@ class AttackDataSourceDetailsTest {
             ),
             nowEpochMillis = NOW.toEpochMilli()
         )
+    }
+
+    @Test
+    fun `When purging expired deletions then removes the attacks deleted before the undo window`() {
+        classUnderTest.purgeExpiredDeletions()
+
+        verify(attackDao).purgeDeletedBefore(NOW.toEpochMilli() - TWO_MINUTES)
+    }
+
+    @Test
+    fun `Given storage is full when purging expired deletions then storage full`() {
+        whenever(
+            attackDao.purgeDeletedBefore(NOW.toEpochMilli() - TWO_MINUTES)
+        ).doThrow(SQLiteFullException())
+
+        assertThrows(StorageFullDataException::class.java) {
+            classUnderTest.purgeExpiredDeletions()
+        }
     }
 
     @Test

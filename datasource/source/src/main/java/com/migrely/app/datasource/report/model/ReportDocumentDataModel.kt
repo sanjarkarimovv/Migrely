@@ -31,11 +31,13 @@ sealed interface ReportBlockDataModel {
     /**
      * A table whose header repeats on every page. With a [shortenedNote], taking the shown and total row counts as in
      * "Showing the latest %1$d of %2$d", rows may be dropped from its end so the report fits in its pages (EC-REP-02).
+     * A table that [follows] another is shortened only with it (D84).
      */
     data class Table(
         val columns: List<ReportColumnDataModel>,
         val rows: List<List<String>>,
-        val shortenedNote: String? = null
+        val shortenedNote: String? = null,
+        val follows: ReportFollowedTableDataModel? = null
     ) : ReportBlockDataModel
 
     /** A calendar per month and one [legend]; [weekdays] heads the seven columns, from the week's first day. */
@@ -47,6 +49,18 @@ sealed interface ReportBlockDataModel {
 
     data object PageBreak : ReportBlockDataModel
 }
+
+/**
+ * The table whose rows a table's rows belong to, as notes belong to the migraines listed (BRD D84). [owners] holds, for
+ * each row of the following table, the index of its row in [table], which must be the very table in the blocks. When
+ * [table] keeps only its first N rows, the rows whose owner is among them stay, after [shortenedNote], which takes N as
+ * in "Notes from the latest %1$d migraines."
+ */
+data class ReportFollowedTableDataModel(
+    val table: ReportBlockDataModel.Table,
+    val owners: List<Int>,
+    val shortenedNote: String
+)
 
 data class ReportFactDataModel(val label: String, val value: String)
 

@@ -52,6 +52,7 @@ import com.migrely.app.designsystem.motion.rememberReduceMotion
 import com.migrely.app.designsystem.snackbar.MigrelySnackbar
 import com.migrely.app.designsystem.snackbar.MigrelySnackbarHost
 import com.migrely.app.designsystem.snackbar.SnackbarTone
+import com.migrely.app.designsystem.snackbar.messageTimeoutMillis
 import com.migrely.app.designsystem.theme.MigrelyTheme
 import com.migrely.app.settings.presentation.model.SettingsViewState
 import com.migrely.app.settings.ui.R
@@ -63,7 +64,8 @@ import kotlinx.coroutines.delay
 internal val CONTENT_MAX_WIDTH = 600.dp
 private val ROW_MIN_HEIGHT = 56.dp
 
-private const val MESSAGE_MILLIS = 6_000L
+/** "Couldn't save that" is an error: 8 s, stretched to the accessibility timeout (BRD EC-UX-16; QA #56). */
+private const val READING_MILLIS = 8_000L
 
 /** Callbacks from the Settings screen. [onTheme] opens its dialog. */
 data class SettingsActions(
@@ -104,9 +106,10 @@ fun SettingsDependencies.Settings(
     LaunchedEffect(settingsEventPresenter) {
         settingsEventPresenter.notSaved.collect { notSaved = true }
     }
-    LaunchedEffect(notSaved) {
-        if (notSaved) {
-            delay(MESSAGE_MILLIS)
+    val notSavedTimeout = messageTimeoutMillis(READING_MILLIS)
+    LaunchedEffect(notSaved, notSavedTimeout) {
+        if (notSaved && notSavedTimeout != null) {
+            delay(notSavedTimeout)
             notSaved = false
         }
     }

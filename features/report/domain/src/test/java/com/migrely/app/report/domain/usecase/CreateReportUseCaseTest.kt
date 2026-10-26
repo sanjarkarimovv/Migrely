@@ -88,6 +88,30 @@ class CreateReportUseCaseTest {
     }
 
     @Test
+    fun `Given notes then each points at its own migraine in the report's migraines`() {
+        givenRecords(
+            ATTACK,
+            ATTACK.copy(start = Instant.parse("2026-10-22T04:00:00Z"), note = null),
+            ATTACK.copy(start = Instant.parse("2026-10-24T04:00:00Z"), note = "Newest")
+        )
+        given(
+            writeReportRepository.writeReport(any())
+        ).willReturn(ReportWriteResultDomainModel.Written("content://r"))
+
+        classUnderTest.executeInBackground(
+            CreateReportRequestDomainModel(THREE_MONTHS, includeNotes = true)
+        )
+
+        val report = argumentCaptor<ReportDomainModel>()
+        verify(writeReportRepository).writeReport(report.capture())
+        // The writer keeps a note only while its migraine's row is kept (D84).
+        assertEquals(
+            listOf("Newest", "A note"),
+            report.firstValue.notes.map { report.firstValue.attacks[it.attackIndex].note }
+        )
+    }
+
+    @Test
     fun `Given notes are not asked for then the report holds none`() {
         givenRecords(ATTACK)
         given(

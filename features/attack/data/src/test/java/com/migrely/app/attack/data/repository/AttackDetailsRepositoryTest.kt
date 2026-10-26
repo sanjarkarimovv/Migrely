@@ -49,6 +49,7 @@ import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.given
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
@@ -251,6 +252,16 @@ class AttackDetailsRepositoryTest {
     fun `When deleting then deletes softly`() {
         assertEquals(WriteResultDomainModel.Written, classUnderTest.deleteAttack("a"))
         verify(attackDataSource).softDelete("a")
+    }
+
+    @Test
+    fun `When purging expired deletions then the datasource purges them, and a failure is quiet`() {
+        classUnderTest.purgeExpiredDeletions()
+        verify(attackDataSource).purgeExpiredDeletions()
+
+        whenever(attackDataSource.purgeExpiredDeletions()).doThrow(StorageFullDataException())
+        classUnderTest.purgeExpiredDeletions()
+        verify(attackDataSource, times(2)).purgeExpiredDeletions()
     }
 
     @Test

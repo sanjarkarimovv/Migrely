@@ -3,6 +3,7 @@ package com.migrely.app.di
 import android.content.Context
 import android.text.format.DateFormat
 import com.migrely.app.architecture.ui.navigation.mapper.NavigationEventDestinationMapper
+import com.migrely.app.locale.FormattingLocales
 import com.migrely.app.medication.presentation.navigation.EditMedicationPresentationNavigationEvent
 import com.migrely.app.medication.presentation.navigation.LogMedicationPresentationNavigationEvent
 import com.migrely.app.medication.presentation.navigation.MedicationsPresentationNavigationEvent
@@ -71,15 +72,17 @@ internal object MedicationUiModule {
         EditMedicationNavigationEventDestinationMapper()
 
     @Provides
-    fun providesMedicationTimeUiFormatter(@ApplicationContext context: Context) =
-        MedicationTimeUiFormatter(
-            locale = { context.resources.configuration.locales[0] },
-            is24HourFormat = { DateFormat.is24HourFormat(context) },
-            deviceZone = { ZoneId.systemDefault() },
-            bestDateTimePattern = { locale, skeleton ->
-                DateFormat.getBestDateTimePattern(locale, skeleton)
-            }
-        )
+    fun providesMedicationTimeUiFormatter(
+        @ApplicationContext context: Context,
+        formattingLocales: FormattingLocales
+    ) = MedicationTimeUiFormatter(
+        locale = { formattingLocales.of(context.resources.configuration) },
+        is24HourFormat = { DateFormat.is24HourFormat(context) },
+        deviceZone = { ZoneId.systemDefault() },
+        bestDateTimePattern = { locale, skeleton ->
+            DateFormat.getBestDateTimePattern(locale, skeleton)
+        }
+    )
 
     // Each screen gets its own presenter, shared by its notification mapper and its composable.
     @Provides

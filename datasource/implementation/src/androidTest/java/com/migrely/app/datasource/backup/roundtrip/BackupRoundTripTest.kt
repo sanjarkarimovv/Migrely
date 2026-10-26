@@ -162,6 +162,27 @@ class BackupRoundTripTest {
         assertEquals(exported, source.records())
     }
 
+    /**
+     * QA #58, BRD D118: a migraine deleted after the export, and not undone, lingers hidden until it is purged. Adding
+     * the backup brings it back as it was, with its points, tags and intake.
+     */
+    @Test
+    fun givenAMigraineDeletedAfterTheExport_whenAddingTheBackup_thenItIsBack() {
+        val source = BackupDataSourceImpl(phone.backupDao(), localMapper, phone::deleteEverything)
+        val backup = files.decode(files.encode(source.records(), Instant.EPOCH))
+            as BackupDecodedDataModel.Records
+        phone.attackDao().softDelete("ended", 40 * HOUR)
+        assertEquals(listOf("now"), source.records().attacks.map { it.id })
+
+        val added = source.add(backup.records)
+
+        assertEquals(
+            AddedRecordsDataModel(addedAttacks = 1, skippedAttacks = 1, addedOthers = 1),
+            added
+        )
+        assertEquals(backup.records, source.records())
+    }
+
     /** Delete all data (change add-settings-and-safety, BRD D96): the device's own state goes with the records. */
     @Test
     fun whenEverythingIsDeleted_thenNoTableKeepsARow() {

@@ -14,7 +14,7 @@ interface BackupDataSource {
     /** Whether the phone holds any health record, so an import has to ask how to go about it. */
     fun hasRecords(): Boolean
 
-    /** Deletes every health record and writes [records] in their place. */
+    /** Deletes every health record, attacks being deleted included, and writes [records] in their place. */
     fun replaceAll(records: BackupRecordsDataModel)
 
     /**
@@ -24,6 +24,9 @@ interface BackupDataSource {
      * - An intake already present, by ID or by medication and time, is skipped. An intake of an attack that was skipped
      *   for overlapping is kept without the link.
      * - A date already marked keeps its marks.
+     * - An attack being deleted, or an intake hidden with one, does not count as present. When [records] holds it (an
+     *   intake also by medication and time), it goes for good with what hangs on it, and the backup's copy is added by
+     *   the rules above (BRD D118).
      */
     fun add(records: BackupRecordsDataModel): AddedRecordsDataModel
 

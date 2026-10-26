@@ -33,6 +33,7 @@ import com.migrely.app.designsystem.theme.DarkScreens
 import com.migrely.app.designsystem.theme.LocalDarkScreens
 import com.migrely.app.designsystem.theme.MigrelyColors
 import com.migrely.app.designsystem.theme.MigrelyTheme
+import com.migrely.app.locale.FormattingLocales
 import com.migrely.app.premium.PremiumStartChecks
 import com.migrely.app.start.StartEntryPoint
 import com.migrely.app.subscription.domain.model.RefreshPremiumRequestDomainModel
@@ -126,6 +127,18 @@ class MainActivity : ComponentActivity() {
     private lateinit var renderedZone: ZoneId
     private val zoneChangeReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) = recreateIfZoneChanged()
+    }
+
+    /**
+     * Dates and times in English with the phone's region (BRD D117): Compose's configuration, Material's date and time
+     * pickers and the resources read the formatting locale. A new system language recreates the activity, which
+     * applies it again.
+     */
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(newBase)
+        applyOverrideConfiguration(
+            FormattingLocales().activityOverride(newBase.resources.configuration)
+        )
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
