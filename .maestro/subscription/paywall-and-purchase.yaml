@@ -5,6 +5,7 @@
 # Covers: doctor-report › Choosing the period › Opening the report
 # Covers: doctor-report › Nothing to report › An empty month
 # Covers: app-settings › Premium in Settings › A subscriber
+# Covers: subscription › Changing plans › Monthly to yearly
 # Covers: quality-gates › Premium is checked through the simulated store › A purchase from the paywall
 # A free user's taps on Doctor report and Insights open the paywall with their own headlines; closing it returns to
 # History. Monthly is bought through the simulated store and the report screen opens; then Change plan moves to yearly

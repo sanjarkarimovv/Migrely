@@ -1543,6 +1543,7 @@ report_texts() { # $1 seed: its PDF texts into REPORT_TEXTS and its patterns ("r
 
 # Covers: doctor-report › The summary page › Three months
 # Covers: doctor-report › The details › Notes left out
+# Covers: doctor-report › Large periods › Notes of a report that fits
 # Covers: quality-gates › Generated reports are checked by their text › A three-month report
 scenario_report_three_months() {
   echo "Scenario report_three_months: the PDF's summary, tables and footer from a seed; notes only when chosen (D82, D202)"
@@ -1557,7 +1558,8 @@ scenario_report_three_months() {
   [[ "${PIPESTATUS[0]}" == 0 ]] || return 1
   run_flow_env report-make "PERIOD=3 months" NOTES=true || return 1
   pull_report "$out/report-three-months-notes.pdf" || return 1
-  python3 -I "$ROOT/qa/report_pdf.py" "$out/report-three-months-notes.pdf" --text NOTE-ALPHA-7 NOTE-BETA-9 | sed 's/^/    notes on: /'
+  python3 -I "$ROOT/qa/report_pdf.py" "$out/report-three-months-notes.pdf" --text NOTE-ALPHA-7 NOTE-BETA-9 \
+    --absent "Notes from the latest" | sed 's/^/    notes on: /'
   [[ "${PIPESTATUS[0]}" == 0 ]] || return 1
 }
 
@@ -1585,7 +1587,7 @@ scenario_report_counting() {
 
 # Covers: doctor-report › Large periods › Twelve heavy months
 # Covers: doctor-report › The file and sharing › Closed while making it
-# Also checks: #67, the notes capped with the table
+# Covers: doctor-report › Large periods › Twelve heavy months with notes
 scenario_report_heavy() {
   echo "Scenario report_heavy: 900 attacks in 12 months make at most 50 pages; a report closed half-made leaves nothing (D84, D85)"
   local files box want

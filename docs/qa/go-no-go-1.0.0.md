@@ -27,7 +27,7 @@ The production track still waits for lines 11 and 12.
 | # | Check | Result |
 |---|---|---|
 | 1 | Build gate (`assembleDebug assembleRelease test ktlintCheck detekt`) | ✅ BUILD SUCCESSFUL |
-| 2 | Smoke on Android 8.0 (API 26), `--tags smoke` | ⏳ |
+| 2 | Smoke on Android 8.0 (API 26), `--tags smoke` | ✅ debug 12/12 + 3/3; R8 release 12/12 + 3/3 (versionCode 4, not debuggable) |
 | 3 | Full regression on API 36 (debug) | ✅ 43/43 + 9/9 |
 | 4 | Accessibility audit | ✅ 30 states, `0 failure(s)`, run again on this build |
 | 5 | Device scenarios | ✅ all 53 passed. See the note below |
