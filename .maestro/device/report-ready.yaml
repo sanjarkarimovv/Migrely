@@ -1,0 +1,11 @@
+# Device scenario step: History › Doctor report open with PERIOD chosen; the scenario taps Create report itself, so it
+# can close the app while the report is being made.
+appId: com.migrely.app
+---
+- launchApp
+- tapOn: ".*\\. Opens History\\."
+- tapOn: "Doctor report"
+- extendedWaitUntil:
+    visible: "Create report"
+    timeout: 10000
+- tapOn: "${PERIOD}"

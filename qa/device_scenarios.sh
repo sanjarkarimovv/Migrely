@@ -14,6 +14,7 @@
 # message_tap_guard (#52), theme_check, onboarding_states, delete_all_data, backup_export, backup_import, upgrade.
 # On demand only: backup_android (bmgr).
 # QA_APK=<apk> names the build under test (default: this worktree's debug APK), for example a release branch's.
+# release_apk needs QA_RELEASE_APK=<release APK>; without it, it is reported as not run.
 # upgrade needs QA_OLD_APK=<older debug APK of com.migrely.app>; without it, it is reported as not run.
 set -euo pipefail
 
@@ -395,13 +396,13 @@ shared_prefs_files() { # the shared-preferences files the app has written, one n
   adbq shell run-as "$APP" ls shared_prefs 2>/dev/null | tr -d '\r'
 }
 
-pull_report() { # $1 local path: the newest finished report in the app's cache
+pull_report() { # $1 local path: the newest finished report in the app's cache (cache/reports/<id>/<name>.pdf)
   local name
-  name="$(adbq shell run-as "$APP" ls -t cache/reports 2>/dev/null | tr -d '\r' | grep -m1 '\.pdf$')"
-  [[ -n "$name" ]] || { echo "  FAILED: no report in cache/reports"; return 1; }
-  adbq exec-out run-as "$APP" cat "cache/reports/$name" >"$1"
+  name="$(adbq shell "run-as $APP sh -c 'ls -t \$(find cache/reports -name \"*.pdf\")'" 2>/dev/null | tr -d '\r' | head -1)"
+  [[ "$name" == *.pdf ]] || { echo "  FAILED: no report in cache/reports"; return 1; }
+  adbq exec-out run-as "$APP" cat "$name" >"$1"
   [[ -s "$1" ]] || { echo "  FAILED: the report $name could not be read"; return 1; }
-  echo "    report: $name ($(wc -c <"$1" | tr -d ' ') bytes)"
+  echo "    report: ${name##*/} ($(wc -c <"$1" | tr -d ' ') bytes)"
 }
 
 screen_luminance() { # the average luminance (0-255) of the screen's left margin, where only the background shows
@@ -1240,6 +1241,22 @@ pull_newest() { # $1 glob in /sdcard/Download (for example "migrely-*.json"), $2
 }
 
 
+seed_import() { # $1 seed name, $2 "Import" (an empty phone) or "Replace": the seed, written for the emulator's date by
+  # qa/seed_backup.py, goes to Download and through Your data's import (D202); what the app must show is in
+  # $out/seed-$1.expected
+  local today file="seed-$1.json"
+  today="$(adbq shell date +%F | tr -d '\r')"
+  python3 -I "$ROOT/qa/seed_backup.py" "$1" "$out/$file" --today "$today" >"$out/seed-$1.expected" ||
+    { echo "  FAILED: qa/seed_backup.py $1"; return 1; }
+  adbq push "$out/$file" "/sdcard/Download/$file" >/dev/null
+  import_and_expect "$file" ".*" "$2" "Backup imported: [0-9]+ migraines?.*" || return 1
+}
+
+start_attack_shortcut() { # the launcher shortcut "Start migraine": straight into attack mode
+  adbq shell am start -a com.migrely.app.action.START_ATTACK \
+    -n "$(adbq shell cmd package resolve-activity --brief "$APP" | tail -1 | tr -d '\r')" >/dev/null
+}
+
 tap_time() { perl -MTime::HiRes=time -e 'printf "%.2f", time'; }
 
 # Also checks: in-app-messages › Message durations by kind (Your data's information message; retest of #56)
@@ -1289,6 +1306,320 @@ if hits:
   default_undo_window
   put_or_delete secure accessibility_non_interactive_ui_timeout_ms "$ORIGINAL_TEXT_TIMEOUT"
   return $ok
+}
+
+# Covers: subscription › Billing unavailable › No billing
+# Covers: subscription › Billing unavailable › No Google Play billing service on the phone
+# The debug half of "No Google Play billing service": with the store unavailable on a fresh install, the line shows at
+# once and no paywall shows itself. The release half (a release build with no Play products) is in the Go/No-Go record.
+scenario_premium_store_states() {
+  echo "Scenario premium_store_states: unavailable and unreachable stores; no paywall by itself without billing (EC-BIL-11, D110)"
+  run_flow clean || return 1
+  qa_store unavailable; adbq shell am force-stop "$APP"
+  run_flow_env paywall-state "STATE=Premium isn.t available in your region yet" NO_BUY=true ABSENT= TAP= || return 1
+  run_flow_env paywall-state "STATE=Everything else in Migrely works as before\." NO_BUY=true ABSENT= TAP= || return 1
+  qa_store unreachable; adbq shell am force-stop "$APP"
+  run_flow_env paywall-state "STATE=Google Play can.t be reached right now" NO_BUY=true ABSENT= "TAP=Try again" || return 1
+  qa_store available; adbq shell am force-stop "$APP"
+  run_flow_env paywall-state "STATE=Start free trial" NO_BUY=false ABSENT= TAP= || return 1
+  echo "    unavailable: the line and no buy button; unreachable: Try again; available again: the products"
+  adbq shell pm clear "$APP" >/dev/null
+  qa_store unavailable
+  run_flow no-self-paywall || return 1
+  run_flow_env paywall-state "STATE=Premium isn.t available in your region yet" NO_BUY=true ABSENT= TAP= || return 1
+  echo "    a new install with billing unavailable: no paywall after onboarding"
+  qa_store available
+}
+
+# Covers: subscription › Buying › Pending
+scenario_premium_pending() {
+  echo "Scenario premium_pending: a cancelled sheet changes nothing; pending unlocks nothing until it completes (EC-BIL-08)"
+  run_flow clean || return 1
+  run_flow_env premium-buy PLAN=Monthly BUTTON=Subscribe SHEET=Cancel "RESULT=Migrely Premium" || return 1
+  run_flow_env premium-check STATUS=Free REPORT=locked || return 1
+  run_flow_env premium-buy PLAN=Monthly BUTTON=Subscribe "SHEET=Pay later \\(pending\\)" "RESULT=Payment pending" || return 1
+  run_flow_env premium-check "STATUS=Payment pending" REPORT=locked || return 1
+  qa_store complete-pending; adbq shell am force-stop "$APP"
+  run_flow_env premium-check "STATUS=Premium · monthly" REPORT=open || return 1
+  echo "    cancelled: Free; pending: locked; completed from the shop (adb): Premium · monthly"
+  run_flow clean || return 1
+  run_flow_env premium-buy PLAN=Monthly BUTTON=Subscribe "SHEET=Pay later \\(pending\\)" "RESULT=Payment pending" || return 1
+  qa_store decline-pending; adbq shell am force-stop "$APP"
+  run_flow_env premium-check STATUS=Free REPORT=locked || return 1
+  echo "    declined at the shop: Free"
+}
+
+# Covers: subscription › Products from Google Play › Prices shown
+# Covers: subscription › Products from Google Play › No trial left
+# Covers: subscription › Changing plans › Lifetime over a subscription
+# The euro price has a no-break space before the sign, so the pattern takes any character there.
+scenario_premium_plans() {
+  echo "Scenario premium_plans: prices in the phone's currency, no trial left, lifetime over a subscription (SUB-F1, EC-BIL-10)"
+  run_flow clean || return 1
+  adbq shell cmd locale set-app-locales "$APP" --locales de-DE >/dev/null
+  run_flow_env paywall-state "STATE=Yearly\\. 7 days free, then 29,99.€/year\\." NO_BUY=false ABSENT= TAP= ||
+    { adbq shell cmd locale set-app-locales "$APP" --locales "$ORIGINAL_APP_LOCALES" >/dev/null; return 1; }
+  adbq shell cmd locale set-app-locales "$APP" --locales "$ORIGINAL_APP_LOCALES" >/dev/null
+  echo "    de-DE: euros with a decimal comma, and the trial line"
+  run_flow_env premium-buy PLAN=Monthly BUTTON=Subscribe "SHEET=Complete the purchase" "RESULT=You have Premium" || return 1
+  run_flow_env plan-change PLAN=Lifetime "BUTTON=Buy once" "RESULT=Your subscription still renews\\. Migrely can.t cancel it for you.*" || return 1
+  run_flow_env premium-check "STATUS=Premium · lifetime" REPORT=open || return 1
+  run_flow_env premium-check "STATUS=Your subscription still renews\\. Cancel it in Google Play\\." REPORT=open || return 1
+  echo "    lifetime over monthly: Premium · lifetime, and the note to cancel the monthly plan in Google Play"
+  run_flow clean || return 1
+  run_flow_env premium-buy PLAN=Yearly "BUTTON=Start free trial" "SHEET=Complete the purchase" "RESULT=Your free trial has started" || return 1
+  run_flow_env premium-manage "CHOICE=End the subscription" || return 1
+  adbq shell am force-stop "$APP"
+  run_flow_env premium-check STATUS=Free REPORT=locked || return 1
+  run_flow_env paywall-state "STATE=Yearly\\. .29\\.99/year\\." NO_BUY=false "ABSENT=.*7 days free.*" TAP= || return 1
+  echo "    after a used trial: the yearly price with no trial line"
+}
+
+# Covers: subscription › The entitlement › New phone
+# Covers: subscription › The entitlement › Reinstall or backup on another account
+# Covers: subscription › The entitlement › Refunded
+scenario_premium_entitlement() {
+  echo "Scenario premium_entitlement: found again without the cache, never backed up, and locked after a refund (D106, D115)"
+  run_flow clean || return 1
+  run_flow log-and-close || return 1
+  run_flow_env premium-buy PLAN=Lifetime "BUTTON=Buy once" "SHEET=Complete the purchase" "RESULT=You have Premium" || return 1
+  run_flow_env premium-check "STATUS=Premium · lifetime" REPORT=open || return 1
+  shared_prefs_files | grep -qx migrely_entitlement.xml ||
+    { echo "  FAILED: no migrely_entitlement.xml after a purchase ($(shared_prefs_files | tr '\n' ' '))"; return 1; }
+  python3 -I "$ROOT/qa/backup_rules.py" "$APK" migrely_entitlement.xml | sed 's/^/    /'
+  python3 -I "$ROOT/qa/backup_rules.py" "$APK" migrely_entitlement.xml >/dev/null || return 1
+  adbq shell run-as "$APP" rm shared_prefs/migrely_entitlement.xml
+  adbq shell am force-stop "$APP"
+  run_flow_env premium-check "STATUS=Premium · lifetime" REPORT=open || return 1
+  echo "    the entitlement cache removed: Premium found again at the first check"
+  # A lifetime purchase alone has no Manage row, so the simulated store's refund page is out of reach; emptying the
+  # store is the same to the app: Google Play no longer reports the purchase. The app asks Google Play at start and at
+  # most every 15 minutes, so the next check comes an hour later.
+  qa_store reset
+  shift_clock_hours 1 || return 1
+  adbq shell am force-stop "$APP"
+  run_flow_env premium-check STATUS=Free REPORT=locked || return 1
+  run_flow_env history-count COUNT=1 || return 1
+  echo "    refunded: Free, the report locked, the migraine kept"
+}
+
+# Covers: subscription › The entitlement › Offline
+# Covers: quality-gates › Premium is checked through the simulated store › Offline for too long
+scenario_premium_offline() {
+  echo "Scenario premium_offline: Premium stays 3 days without Google Play, then locks; entries stay (EC-BIL-01, D106)"
+  set_clock_millis "$(when_millis 0 15 12:00)" || return 1
+  run_flow clean || return 1
+  run_flow log-and-close || return 1
+  run_flow_env premium-buy PLAN=Monthly BUTTON=Subscribe "SHEET=Complete the purchase" "RESULT=You have Premium" || return 1
+  qa_store unreachable
+  shift_clock_hours 48 || return 1
+  adbq shell am force-stop "$APP"
+  run_flow_env premium-check "STATUS=Premium · monthly" REPORT=open || return 1
+  echo "    2 days unreachable: Premium · monthly"
+  shift_clock_hours 48 || return 1
+  adbq shell am force-stop "$APP"
+  run_flow_env premium-check "STATUS=Restore purchases" REPORT=locked || return 1
+  run_flow_env history-count COUNT=1 || return 1
+  echo "    4 days unreachable: locked, the migraine kept"
+  qa_store available
+}
+
+# Covers: subscription › Trial ending reminder › A day before
+scenario_trial_banner() {
+  echo "Scenario trial_banner: the day before the trial ends home shows the banner once (EC-BIL-02, D111)"
+  set_clock_millis "$(when_millis 0 10 12:00)" || return 1
+  run_flow clean || return 1
+  run_flow_env premium-buy PLAN=Yearly "BUTTON=Start free trial" "SHEET=Complete the purchase" "RESULT=Your free trial has started" || return 1
+  run_flow_env premium-check "STATUS=Free trial" REPORT=open || return 1
+  run_flow home-no-banner || return 1
+  shift_clock_hours 144 || return 1
+  adbq shell am force-stop "$APP"
+  run_flow trial-banner || return 1
+  echo "    6 days in: \"Your free trial ends tomorrow\" with Manage; dismissed, it does not come back"
+}
+
+# Covers: subscription › When the paywall shows itself › Within 7 days
+# Covers: subscription › When the paywall shows itself › The 5th migraine
+# Covers: subscription › When the paywall shows itself › Patterns not ready yet
+# Patterns are ready with 5 migraines started in the last 6 months, the first started at least 30 days ago (D88, as
+# worded in b93659e). Back-filled migraines count: four-old's start 40 days back although they are imported today.
+scenario_paywall_self_show() {
+  echo "Scenario paywall_self_show: the patterns paywall after the 5th migraine, not within 7 days, not in attack mode (D110)"
+  set_clock_millis "$(when_millis 0 10 12:00)" || return 1
+  run_flow clean || return 1
+  shift_clock_hours 72 || return 1
+  seed_import four-old Import || return 1
+  run_flow log-attack || return 1
+  run_flow home-no-paywall || return 1
+  echo "    5th migraine 3 days after the onboarding paywall: none"
+  shift_clock_hours 120 || return 1
+  adbq shell am force-stop "$APP"
+  start_attack_shortcut
+  run_flow attack-mode-no-paywall || return 1
+  run_flow patterns-paywall || return 1
+  echo "    8 days after it: none in attack mode; once on home, then never again"
+  set_clock_millis "$(when_millis 0 10 12:00)" || return 1
+  run_flow clean || return 1
+  shift_clock_hours 72 || return 1
+  seed_import five-new Import || return 1
+  shift_clock_hours 120 || return 1
+  adbq shell am force-stop "$APP"
+  run_flow home-no-paywall || return 1
+  echo "    5 migraines, the first 15 days ago, 8 days after the onboarding paywall: none"
+}
+
+screen_labels_scrolled() { # $1 swipes: every text and label seen on screen while scrolling down that many times
+  local i
+  for ((i = 0; i <= $1; i++)); do
+    adbq exec-out uiautomator dump /dev/tty 2>/dev/null | python3 -I -c "import sys, xml.etree.ElementTree as ET
+raw = sys.stdin.read(); raw = raw[raw.find('<?xml'):raw.rfind('>') + 1]
+try:
+    nodes = list(ET.fromstring(raw).iter('node'))
+except ET.ParseError:
+    nodes = []
+for n in nodes:
+    for label in (n.get('text'), n.get('content-desc')):
+        if label:
+            print(label.replace('\n', ' '))"
+    adbq shell input swipe 540 1800 540 900 400
+    sleep 1
+  done | sort -u
+}
+
+expect_seen() { # $1 file of texts, one a line, $2 file of labels seen: every text was seen as a whole label
+  local missing
+  missing="$(grep -vxFf "$2" "$1")"
+  [[ -z "$missing" ]] && return 0
+  echo "  FAILED: not on screen:"
+  sed 's/^/      /' <<<"$missing"
+  return 1
+}
+
+report_texts() { # $1 seed: its PDF texts into REPORT_TEXTS and its patterns ("re:" lines) into REPORT_PATTERNS; expand
+  # them as ${REPORT_TEXTS[@]+"${REPORT_TEXTS[@]}"}, since bash 3.2 under set -u takes an empty array for unbound
+  REPORT_TEXTS=()
+  REPORT_PATTERNS=()
+  local line
+  while IFS= read -r line; do
+    if [[ "$line" == re:* ]]; then REPORT_PATTERNS+=("${line#re:}"); else REPORT_TEXTS+=("$line"); fi
+  done < <(python3 -I "$ROOT/qa/seed_expect.py" pdf "$out/seed-$1.expected")
+}
+
+# Covers: doctor-report › The summary page › Three months
+# Covers: doctor-report › The details › Notes left out
+# Covers: quality-gates › Generated reports are checked by their text › A three-month report
+scenario_report_three_months() {
+  echo "Scenario report_three_months: the PDF's summary, tables and footer from a seed; notes only when chosen (D82, D202)"
+  run_flow clean || return 1
+  seed_import report-three-months Import || return 1
+  run_flow_env premium-buy PLAN=Monthly BUTTON=Subscribe "SHEET=Complete the purchase" "RESULT=You have Premium" || return 1
+  run_flow_env report-make "PERIOD=3 months" NOTES=false || return 1
+  pull_report "$out/report-three-months.pdf" || return 1
+  report_texts report-three-months
+  python3 -I "$ROOT/qa/report_pdf.py" "$out/report-three-months.pdf" --every-page "Patient-entered data. Not a diagnosis." \
+    --absent NOTE-ALPHA-7 NOTE-BETA-9 --text ${REPORT_TEXTS[@]+"${REPORT_TEXTS[@]}"} --regex ${REPORT_PATTERNS[@]+"${REPORT_PATTERNS[@]}"} | sed 's/^/    notes off: /'
+  [[ "${PIPESTATUS[0]}" == 0 ]] || return 1
+  run_flow_env report-make "PERIOD=3 months" NOTES=true || return 1
+  pull_report "$out/report-three-months-notes.pdf" || return 1
+  python3 -I "$ROOT/qa/report_pdf.py" "$out/report-three-months-notes.pdf" --text NOTE-ALPHA-7 NOTE-BETA-9 | sed 's/^/    notes on: /'
+  [[ "${PIPESTATUS[0]}" == 0 ]] || return 1
+}
+
+# Covers: doctor-report › The summary page › A month only partly in the period
+# Covers: doctor-report › Counting like the app › Logged in Tokyo
+scenario_report_counting() {
+  echo "Scenario report_counting: overuse spans across a month change, and an attack logged in Tokyo (D82, D83)"
+  local seed period
+  for seed in report-partial-month report-tokyo; do
+    period="3 months"; [[ "$seed" == report-partial-month ]] && period="1 month"
+    run_flow clean || return 1
+    seed_import "$seed" Import || return 1
+    run_flow_env premium-buy PLAN=Monthly BUTTON=Subscribe "SHEET=Complete the purchase" "RESULT=You have Premium" || return 1
+    run_flow_env report-make "PERIOD=$period" NOTES=false || return 1
+    pull_report "$out/$seed.pdf" || return 1
+    report_texts "$seed"
+    python3 -I "$ROOT/qa/report_pdf.py" "$out/$seed.pdf" --every-page "Patient-entered data. Not a diagnosis." \
+      --text ${REPORT_TEXTS[@]+"${REPORT_TEXTS[@]}"} --regex ${REPORT_PATTERNS[@]+"${REPORT_PATTERNS[@]}"} | sed "s/^/    $seed: /"
+    [[ "${PIPESTATUS[0]}" == 0 ]] || return 1
+  done
+}
+
+# Covers: doctor-report › Large periods › Twelve heavy months
+# Covers: doctor-report › The file and sharing › Closed while making it
+scenario_report_heavy() {
+  echo "Scenario report_heavy: 900 attacks in 12 months make at most 50 pages; a report closed half-made leaves nothing (D84, D85)"
+  local files box
+  run_flow clean || return 1
+  seed_import report-heavy Import || return 1
+  run_flow_env premium-buy PLAN=Monthly BUTTON=Subscribe "SHEET=Complete the purchase" "RESULT=You have Premium" || return 1
+  # Closed while making it: Create report is tapped through adb and the app is closed half a second later (a
+  # 12-month report of 900 attacks takes about a second). After the next start no ".partial" file or empty folder is
+  # left. Then planted leftovers: a partial file, an empty folder and a report two days old go at the next start.
+  run_flow_env report-ready "PERIOD=12 months" || return 1
+  box="$(node_bounds "Create report")"
+  [[ -n "$box" ]] || { echo "  FAILED: no Create report"; return 1; }
+  set -- $box
+  adbq shell "input tap $((($1 + $3) / 2)) $((($2 + $4) / 2)); sleep 0.5; am force-stop $APP"
+  echo "    closed 0.5 s after Create report: $(adbq shell run-as "$APP" find cache/reports 2>/dev/null | tr -d '\r' | grep -c .) entries in cache/reports"
+  open_app
+  sleep 3
+  files="$(adbq shell run-as "$APP" find cache/reports -mindepth 1 2>/dev/null | tr -d '\r')"
+  if grep -q '\.partial$' <<<"$files"; then echo "  FAILED: a partial file is left after the next start"; return 1; fi
+  local old
+  old="$(( $(adbq shell date +%s | tr -d '\r') - 2 * 86400 ))"
+  adbq shell "run-as $APP sh -c 'mkdir -p cache/reports/qa-partial cache/reports/qa-empty cache/reports/qa-old &&
+    echo x > cache/reports/qa-partial/migrely-report-qa.pdf.partial && echo x > cache/reports/qa-old/migrely-report-qa.pdf &&
+    touch -d @$old cache/reports/qa-old/migrely-report-qa.pdf'"
+  adbq shell am force-stop "$APP"
+  open_app
+  sleep 3
+  files="$(adbq shell run-as "$APP" find cache/reports -mindepth 1 2>/dev/null | tr -d '\r')"
+  if grep -q 'qa-' <<<"$files"; then echo "  FAILED: left after the next start: $(grep 'qa-' <<<"$files" | tr '\n' ' ')"; return 1; fi
+  echo "    after the next start: no partial file, no empty folder, no report older than a day"
+  run_flow_env report-make "PERIOD=12 months" NOTES=false || return 1
+  pull_report "$out/report-heavy.pdf" || return 1
+  report_texts report-heavy
+  python3 -I "$ROOT/qa/report_pdf.py" "$out/report-heavy.pdf" --pages-at-most 50 --every-page "Patient-entered data. Not a diagnosis." \
+    --regex "Showing the latest [0-9]+ of 900 migraines\. The summary counts all of them\." --text ${REPORT_TEXTS[@]+"${REPORT_TEXTS[@]}"} --regex ${REPORT_PATTERNS[@]+"${REPORT_PATTERNS[@]}"} |
+    sed 's/^/    /'
+  [[ "${PIPESTATUS[0]}" == 0 ]] || return 1
+}
+
+# Covers: trigger-insights › Triggers, never causes › Stress
+# Covers: trigger-insights › When migraines come › Mondays
+# Covers: trigger-insights › What helped › Ibuprofen
+# Covers: trigger-insights › Around the period › Tracking off
+# Covers: trigger-insights › Twelve months › A screen reader
+# Covers: trigger-insights › Enough to go on › Three migraines so far
+# Covers: trigger-insights › The period › Opening Insights
+scenario_insights() {
+  echo "Scenario insights: triggers, days and times, what helped, the 12 months for TalkBack, the N-more card (D87-D92)"
+  local seed
+  for seed in insights-patterns insights-three; do
+    run_flow clean || return 1
+    seed_import "$seed" Import || return 1
+    run_flow_env premium-buy PLAN=Monthly BUTTON=Subscribe "SHEET=Complete the purchase" "RESULT=You have Premium" || return 1
+    run_flow insights-open || return 1
+    screen_labels_scrolled 14 >"$out/insights-$seed.seen"
+    python3 -I "$ROOT/qa/seed_expect.py" insights "$out/seed-$seed.expected" >"$out/insights-$seed.want"
+    expect_seen "$out/insights-$seed.want" "$out/insights-$seed.seen" || return 1
+    if grep -q "Around your period" "$out/insights-$seed.seen"; then echo "  FAILED: a period section with Track periods off"; return 1; fi
+    if grep -qiE "caus|leads? to" "$out/insights-$seed.seen"; then echo "  FAILED: a text says a trigger causes migraines"; return 1; fi
+    echo "    $seed: $(wc -l <"$out/insights-$seed.want" | tr -d ' ') texts seen; no period section; nothing says \"cause\""
+  done
+}
+
+# Covers: subscription › A store for testing › Release
+# On demand, with QA_RELEASE_APK=<release APK>: the release build holds no simulated store and is not debuggable
+# (D113); the debug APK under test is the control that the search still finds it.
+scenario_release_apk() {
+  echo "Scenario release_apk: no simulated store in the release build (D113)"
+  if [[ -z "${QA_RELEASE_APK:-}" || ! -f "${QA_RELEASE_APK:-}" ]]; then
+    echo "  NOT RUN: set QA_RELEASE_APK to the release APK"
+    return 0
+  fi
+  python3 -I "$ROOT/qa/release_apk.py" "$QA_RELEASE_APK" "$APK" | sed 's/^/    /'
+  [[ "${PIPESTATUS[0]}" == 0 ]]
 }
 
 # Covers: data-backup › JSON backup › Exporting (2 attacks, 1 medication, 1 day mark rather than 16, 2 and 5)
@@ -1510,11 +1841,18 @@ if [[ $# -eq 0 ]]; then
     med_link_home med_overuse keyboard_home keyboard_history keyboard_rtl landscape_band mark_travel mark_earliest_month \
     stats_counting stats_chronic stats_progress reminder_daily reminder_permission reminder_effect reminder_replan \
     med_only_history message_tap_guard \
-    theme_check onboarding_states delete_all_data backup_export backup_import message_duration
+    theme_check onboarding_states delete_all_data backup_export backup_import message_duration \
+    premium_store_states premium_pending premium_plans premium_entitlement premium_offline trial_banner paywall_self_show \
+    report_three_months report_counting report_heavy insights
   if [[ -n "${QA_OLD_APK:-}" ]]; then
     set -- "$@" upgrade
   else
     echo "Note: upgrade is not in this run; set QA_OLD_APK to the older APK to include it."
+  fi
+  if [[ -n "${QA_RELEASE_APK:-}" ]]; then
+    set -- "$@" release_apk
+  else
+    echo "Note: release_apk is not in this run; set QA_RELEASE_APK to the release APK to include it."
   fi
 fi
 failed=()

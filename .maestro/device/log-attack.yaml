@@ -1,0 +1,6 @@
+# Device scenario step: one migraine logged today on the phone as it is (no data cleared), then the app closes.
+appId: com.migrely.app
+---
+- launchApp
+- runFlow: ../subflows/log-attack-today.yaml
+- stopApp

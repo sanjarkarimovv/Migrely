@@ -1,0 +1,26 @@
+# Device scenario step: Track periods is turned off in Settings (on after a skipped onboarding), and home's "Period
+# today" toggle goes; the app is restarted for that, as home keeps it until then (#66). Then History › Insights opens on
+# its 6 months; the scenario reads the screen while scrolling.
+appId: com.migrely.app
+---
+- launchApp
+- runFlow:
+    when:
+      visible: "Period today"
+    commands:
+      - tapOn: "Settings"
+      - tapOn: "Track periods"
+      - back
+      - stopApp
+      - launchApp
+- extendedWaitUntil:
+    visible: "Today: .*"
+    timeout: 10000
+- assertNotVisible: "Period today"
+- tapOn: ".*\\. Opens History\\."
+- tapOn: "Insights"
+- extendedWaitUntil:
+    visible:
+      checked: true
+      containsChild: "6 months"
+    timeout: 15000

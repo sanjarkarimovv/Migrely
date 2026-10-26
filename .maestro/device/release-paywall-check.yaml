@@ -4,25 +4,7 @@ appId: com.migrely.app
 ---
 - launchApp:
     clearState: true
-- repeat:
-    times: 4
-    commands:
-      - extendedWaitUntil:
-          visible: "Step [1-4] of 4.*"
-          timeout: 15000
-      - extendedWaitUntil:
-          visible: "QA: never shown, a pause for the 0.8 s tap guard"
-          timeout: 1000
-          optional: true
-      - tapOn: "Skip this step"
-- extendedWaitUntil:
-    visible: "Today: calm. Calm so far today. No migraine logged."
-    timeout: 15000
-- extendedWaitUntil:
-    visible: "Get more from your diary"
-    timeout: 6000
-    optional: true
-- assertNotVisible: "Get more from your diary"
+- runFlow: no-self-paywall.yaml
 - tapOn: ".*\\. Opens History\\."
 - tapOn: "Doctor report"
 - extendedWaitUntil:

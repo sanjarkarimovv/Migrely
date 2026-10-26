@@ -1,0 +1,27 @@
+# Device scenario step: Settings' Premium section reads STATUS (a regex), and History's Doctor report opens the paywall
+# (REPORT "locked") or the report screen (REPORT "open").
+appId: com.migrely.app
+---
+- launchApp
+- tapOn: "Settings"
+- extendedWaitUntil:
+    visible: "${STATUS}"
+    timeout: 15000
+- back
+- tapOn: ".*\\. Opens History\\."
+- tapOn: "Doctor report"
+- runFlow:
+    when:
+      true: ${REPORT == "locked"}
+    commands:
+      - extendedWaitUntil:
+          visible: "A report for your doctor"
+          timeout: 10000
+- runFlow:
+    when:
+      true: ${REPORT == "open"}
+    commands:
+      - extendedWaitUntil:
+          visible: "Create report"
+          timeout: 10000
+- stopApp

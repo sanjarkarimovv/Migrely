@@ -1,0 +1,21 @@
+# Device scenario step: the day before the trial ends, home shows "Your free trial ends tomorrow" with the way to cancel
+# and "Manage"; "Dismiss the reminder" takes it away, and it does not come back at the next start (D111).
+appId: com.migrely.app
+---
+- launchApp
+- extendedWaitUntil:
+    visible: "Your free trial ends tomorrow"
+    timeout: 15000
+- assertVisible: "Cancel in Google Play before it ends and you won.t be charged\\."
+- assertVisible: "Manage"
+- tapOn: "Dismiss the reminder"
+- extendedWaitUntil:
+    notVisible: "Your free trial ends tomorrow"
+    timeout: 5000
+- stopApp
+- launchApp
+- extendedWaitUntil:
+    visible: "Today: .*"
+    timeout: 15000
+- assertNotVisible: "Your free trial ends tomorrow"
+- stopApp

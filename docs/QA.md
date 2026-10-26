@@ -115,10 +115,52 @@ Files through the system picker are checked by their bytes (D200).
   - a `'` before a note that starts with `=+-@`.
 - **Imports:** `backup_import` writes broken, newer and older files from a real export and pushes them to Download. The
   picker opens on "Recent", so the flows find a file with the picker's search and pick it under its "Files…" heading.
-- **Result messages:** they are read with uiautomator right after the step, because they last only about 4 s (#56).
-  The outcome is also checked on the data.
+- **Result messages:** they are read with uiautomator right after the step. The outcome is also checked on the data.
+  How long a message stays is measured by `message_duration`. It taps the file through adb, takes screenshots back to
+  back, and runs `qa/message_timing.py`, which is precise to about ±0.3 s (#56: 8 s, or 20 s with the accessibility
+  timeouts).
 - **Debug database:** when a result needs explaining, the debug build's database is read with `run-as … sqlite3`, read
   only. That is how #58 (a soft-deleted migraine blocking its own restore) was found.
+
+**The build under test.** `QA_APK=<apk>` names the APK that `qa/maestro.sh --install` and the scenarios' reinstalls
+use; without it, the worktree's own debug APK is used.
+- **A release candidate:** it is built in a detached worktree, `../migraine-app-qa-rc`, at the candidate's commit. That
+  worktree has no `keystore.properties`, so its R8 release APK is signed with the debug key (D102).
+- **Building:** use `--no-daemon`. A Gradle daemon shared with another checkout once made KSP fail to resolve a new
+  class.
+- **The record:** a Go/No-Go is recorded in `docs/qa/go-no-go-<version>.md`.
+
+**Premium is checked through the simulated store (D201).** Debug builds hold a simulated Google Play. The paywall's
+products, its sheet ("Complete the purchase", "Pay later (pending)", "Cancel") and its subscriptions page are the
+app's own screens. QA taps through them (`subflows/buy.yaml`, `device/premium-buy.yaml`).
+- **Store states:** `qa_store <command>` sets what the store answers through an adb broadcast:
+  - available, unavailable, unreachable;
+  - complete-pending and decline-pending, for a payment settled "at a shop";
+  - reset, which empties the store, as Google Play no longer reporting a purchase after a refund.
+  - Maestro's `clearState` empties the store too; "Delete all data" does not.
+- **Rules that depend on time** use the emulator clock: 3 days offline, the 7 days between self-shown paywalls, and the
+  day before a trial ends. The app re-checks at start and at most every 15 minutes, so every time step force-stops it.
+- **The paywall after onboarding:** every flow that finishes onboarding closes it (`subflows/close-onboarding-paywall.yaml`);
+  `onboarding/paywall-after-onboarding.yaml` checks it.
+- **Release builds have no simulated store:** `qa/release_apk.py <release.apk> <debug.apk>` checks that, with the debug
+  APK as a control.
+- **The entitlement cache:** `qa/backup_rules.py <apk> migrely_entitlement.xml` reads the backup rules from the APK and
+  checks that every rule leaves the cache out (D115).
+- **Only on a phone:** a real purchase, Play's grace-period message and a backup to a new phone. They are checked on
+  the internal testing track (see the Go/No-Go record).
+
+**Reports and Insights get their data from seeds (D202).**
+- **Seeds:** `qa/seed_backup.py <seed> <out.json> --today <emulator date>` writes a v6 backup with known content: dates,
+  zones, triggers, medications and answers. It also prints what the app must show. `--list` names the seeds, and
+  `--self-test` recounts them independently.
+- **Import:** `seed_import` pushes the seed to Download and imports it through Your data.
+- **What to expect:** `qa/seed_expect.py` turns the printed expectations into the texts to find in the PDF or on
+  Insights.
+- **The PDF:** it is pulled from `cache/reports/<id>/` with `run-as` and checked by `qa/report_pdf.py`: the text after
+  `pdftotext -layout`, the footer on every page, and the page count. A table cell wraps in the PDF, and an en-US phone
+  writes 12-hour times, so a migraine row is checked by a pattern.
+- **Insights:** the scenario scrolls the screen, collects every text and TalkBack label, and checks each expected line
+  is one of them.
 
 ## 4. Bugs
 

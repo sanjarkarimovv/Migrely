@@ -1,0 +1,27 @@
+# Device scenario step: History's Doctor report opens the paywall in the state STATE (a regex), with no buy button
+# when NO_BUY is "true" and without ABSENT (a regex) when it is not empty; TAP, when not empty, is tapped next
+# (for example "Try again").
+appId: com.migrely.app
+---
+- launchApp
+- tapOn: ".*\\. Opens History\\."
+- tapOn: "Doctor report"
+- extendedWaitUntil:
+    visible: "${STATE}"
+    timeout: 15000
+- runFlow:
+    when:
+      true: ${NO_BUY == "true"}
+    commands:
+      - assertNotVisible: "Start free trial|Subscribe|Buy once"
+- runFlow:
+    when:
+      true: ${ABSENT != ""}
+    commands:
+      - assertNotVisible: "${ABSENT}"
+- runFlow:
+    when:
+      true: ${TAP != ""}
+    commands:
+      - tapOn: "${TAP}"
+- stopApp
