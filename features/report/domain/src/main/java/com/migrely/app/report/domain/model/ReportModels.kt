@@ -135,7 +135,11 @@ data class ReportMedicationDomainModel(
     val helped: Int
 )
 
-data class ReportNoteDomainModel(val date: LocalDate, val note: String)
+/**
+ * A migraine's note. [attackIndex] is the position of that migraine in [ReportDomainModel.attacks], so a report that
+ * lists only the latest migraines keeps only their notes (BRD EC-REP-02, D84).
+ */
+data class ReportNoteDomainModel(val date: LocalDate, val note: String, val attackIndex: Int)
 
 sealed interface ReportRecordsResultDomainModel {
     data class Loaded(val records: ReportRecordsDomainModel) : ReportRecordsResultDomainModel
