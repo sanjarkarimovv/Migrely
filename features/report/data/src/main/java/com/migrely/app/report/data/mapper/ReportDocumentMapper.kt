@@ -5,6 +5,7 @@ import com.migrely.app.datasource.report.model.ReportColumnDataModel
 import com.migrely.app.datasource.report.model.ReportDayLevelDataModel
 import com.migrely.app.datasource.report.model.ReportDocumentDataModel
 import com.migrely.app.datasource.report.model.ReportFactDataModel
+import com.migrely.app.datasource.report.model.ReportFollowedTableDataModel
 import com.migrely.app.datasource.report.model.ReportHeatMonthDataModel
 import com.migrely.app.datasource.report.model.ReportLegendDataModel
 import com.migrely.app.datasource.report.model.ReportPaperDataModel
@@ -14,6 +15,7 @@ import com.migrely.app.report.domain.model.ReportDomainModel
 import com.migrely.app.report.domain.model.ReportMedicationCategoryDomainModel
 import com.migrely.app.report.domain.model.ReportMedicationDomainModel
 import com.migrely.app.report.domain.model.ReportMedicationKindDomainModel
+import com.migrely.app.report.domain.model.ReportNoteDomainModel
 import com.migrely.app.report.domain.model.ReportPainLevelDomainModel
 import java.time.DayOfWeek
 import java.time.Duration
@@ -23,12 +25,12 @@ import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
 
-/** At most this many pages; a longer attacks table keeps its latest rows (BRD EC-REP-02, D84). */
+/** At most this many pages; a longer attacks table keeps its latest rows, and the notes theirs (EC-REP-02, D84). */
 const val MAXIMUM_REPORT_PAGES = 50
 
 private const val SHORTENED_NOTE =
     "Showing the latest %1\$d of %2\$d migraines. The summary counts all of them."
-private const val SHORTENED_NOTES = "Showing the latest %1\$d of %2\$d notes."
+private const val NOTES_SHORTENED = "Notes from the latest %1\$d migraines."
 private const val AVERAGE_FROM_DAYS = 28
 private const val MILD_UNTIL = 3
 private const val MODERATE_UNTIL = 6
@@ -47,17 +49,24 @@ private val MONTH: DateTimeFormatter = DateTimeFormatter.ofPattern("MMMM yyyy", 
  * named when it is not the phone's [deviceZone]. Weeks and times follow the phone, as in the app (EC-TIM-05).
  */
 class ReportDocumentMapper(private val reportDateTimeFormatter: ReportDateTimeFormatter) {
-    fun toData(report: ReportDomainModel, paper: ReportPaperDataModel, deviceZone: ZoneId) =
-        ReportDocumentDataModel(
+    fun toData(
+        report: ReportDomainModel,
+        paper: ReportPaperDataModel,
+        deviceZone: ZoneId
+    ): ReportDocumentDataModel {
+        // One table, which the notes follow, so they keep only the notes of the migraines it keeps (D84).
+        val attacksTable = if (report.attacks.isEmpty()) null else attacksTable(report, deviceZone)
+        return ReportDocumentDataModel(
             fileName = "migrely-report-${report.madeOn}.pdf",
             paper = paper,
             footer = "Patient-entered data. Not a diagnosis.",
             pageLabel = "Page %1\$d of %2\$d",
             maxPages = MAXIMUM_REPORT_PAGES,
             blocks =
-            summary(report) + calendar(report) + attacks(report, deviceZone) + medications(report) +
-                notes(report)
+            summary(report) + calendar(report) + attacks(attacksTable) + medications(report) +
+                notes(report, attacksTable)
         )
+    }
 
     private fun summary(report: ReportDomainModel): List<ReportBlockDataModel> {
         val summary = report.summary
@@ -155,15 +164,11 @@ class ReportDocumentMapper(private val reportDateTimeFormatter: ReportDateTimeFo
             )
         )
 
-    private fun attacks(report: ReportDomainModel, deviceZone: ZoneId): List<ReportBlockDataModel> =
+    private fun attacks(attacksTable: ReportBlockDataModel.Table?): List<ReportBlockDataModel> =
         listOf(
             ReportBlockDataModel.PageBreak,
             ReportBlockDataModel.Heading("Migraines"),
-            if (report.attacks.isEmpty()) {
-                ReportBlockDataModel.Paragraph("No migraine was logged in this period.")
-            } else {
-                attacksTable(report, deviceZone)
-            }
+            attacksTable ?: ReportBlockDataModel.Paragraph("No migraine was logged in this period.")
         )
 
     /**
@@ -250,22 +255,29 @@ class ReportDocumentMapper(private val reportDateTimeFormatter: ReportDateTimeFo
         }
     )
 
-    private fun notes(report: ReportDomainModel): List<ReportBlockDataModel> =
-        if (report.notes.isEmpty()) {
-            emptyList()
-        } else {
-            listOf(
-                ReportBlockDataModel.Heading("Notes"),
-                ReportBlockDataModel.Table(
-                    columns = listOf(
-                        ReportColumnDataModel("Date", 1f),
-                        ReportColumnDataModel("Note", 5f)
-                    ),
-                    rows = report.notes.map { listOf(DATE.format(it.date), it.note) },
-                    shortenedNote = SHORTENED_NOTES
+    /** Each note is its migraine's, so there are notes only when there is a migraines table. */
+    private fun notes(
+        report: ReportDomainModel,
+        attacksTable: ReportBlockDataModel.Table?
+    ): List<ReportBlockDataModel> = if (attacksTable == null || report.notes.isEmpty()) {
+        emptyList()
+    } else {
+        listOf(
+            ReportBlockDataModel.Heading("Notes"),
+            ReportBlockDataModel.Table(
+                columns = listOf(
+                    ReportColumnDataModel("Date", 1f),
+                    ReportColumnDataModel("Note", 5f)
+                ),
+                rows = report.notes.map { listOf(DATE.format(it.date), it.note) },
+                follows = ReportFollowedTableDataModel(
+                    table = attacksTable,
+                    owners = report.notes.map(ReportNoteDomainModel::attackIndex),
+                    shortenedNote = NOTES_SHORTENED
                 )
             )
-        }
+        )
+    }
 
     private fun typeOf(medication: ReportMedicationDomainModel) = when (medication.kind) {
         ReportMedicationKindDomainModel.Preventive -> "Preventive"
