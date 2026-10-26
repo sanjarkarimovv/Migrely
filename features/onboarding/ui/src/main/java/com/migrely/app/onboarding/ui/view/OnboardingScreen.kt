@@ -45,6 +45,7 @@ import com.migrely.app.designsystem.motion.rememberReduceMotion
 import com.migrely.app.designsystem.snackbar.MigrelySnackbar
 import com.migrely.app.designsystem.snackbar.MigrelySnackbarHost
 import com.migrely.app.designsystem.snackbar.SnackbarTone
+import com.migrely.app.designsystem.snackbar.messageTimeoutMillis
 import com.migrely.app.designsystem.theme.MigrelyTheme
 import com.migrely.app.onboarding.presentation.model.AttackFrequencyPresentationModel
 import com.migrely.app.onboarding.presentation.model.OnboardingGoalPresentationModel
@@ -57,7 +58,9 @@ private const val GOAL = 0
 private const val FREQUENCY = 1
 private const val PERIOD = 2
 private const val REMINDER = 3
-private const val MESSAGE_MILLIS = 6_000L
+
+/** "Couldn't save that answer" is an error: 8 s, stretched to the accessibility timeout (BRD EC-UX-16; QA #56). */
+private const val READING_MILLIS = 8_000L
 private const val STEP_GUARD_MILLIS = 800L
 private val CONTENT_MAX_WIDTH = 600.dp
 
@@ -88,9 +91,10 @@ fun OnboardingDependencies.Onboarding(
     LaunchedEffect(onboardingEventPresenter) {
         onboardingEventPresenter.notSaved.collect { notSaved = true }
     }
-    LaunchedEffect(notSaved) {
-        if (notSaved) {
-            delay(MESSAGE_MILLIS)
+    val notSavedTimeout = messageTimeoutMillis(READING_MILLIS)
+    LaunchedEffect(notSaved, notSavedTimeout) {
+        if (notSaved && notSavedTimeout != null) {
+            delay(notSavedTimeout)
             notSaved = false
         }
     }

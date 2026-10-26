@@ -369,6 +369,22 @@ class HomeViewModelTest :
         getTodayUseCase.givenSuccessfulExecution(TodayResultDomainModel.Loaded(today))
     }
 
+    /** "Track periods" is off and today has no period mark (BRD D79). */
+    private fun givenTodayNotOffered() {
+        getTodayUseCase.givenSuccessfulExecution(
+            TodayResultDomainModel.Loaded(TodayDomainModel.Calm, periodOffered = false)
+        )
+    }
+
+    private fun calmWithPeriodToggle(offered: Boolean) = HomeViewState.Today(
+        TodayPresentationModel(
+            sky = SkyPresentationModel.Calm,
+            attackCount = 0,
+            peak = null,
+            periodOffered = offered
+        )
+    )
+
     private fun TestScope.nextViewState() = async(start = UNDISPATCHED) {
         classUnderTest.viewState.first()
     }
@@ -417,6 +433,63 @@ class HomeViewModelTest :
             state.await()
         )
     }
+
+    @Test
+    fun `Given tracking is off when removing today's mark then keeps the toggle to put it back`() =
+        runTest {
+            setPeriodTodayUseCase.givenSuccessfulExecution(false, WriteResultDomainModel.Written)
+            givenTodayNotOffered()
+            val state = nextViewState()
+
+            classUnderTest.onPeriodTodayAction(marked = false)
+
+            assertEquals(calmWithPeriodToggle(offered = true), state.await())
+        }
+
+    @Test
+    fun `Given the toggle was kept when returning to home then shows only what is saved`() =
+        runTest {
+            setPeriodTodayUseCase.givenSuccessfulExecution(false, WriteResultDomainModel.Written)
+            givenTodayNotOffered()
+            val kept = nextViewState()
+            classUnderTest.onPeriodTodayAction(marked = false)
+            kept.await()
+            val state = nextViewState()
+
+            classUnderTest.onResume()
+
+            assertEquals(calmWithPeriodToggle(offered = false), state.await())
+        }
+
+    @Test
+    fun `Given tracking was turned off in settings when returning to home then hides the toggle`() =
+        runTest {
+            givenToday(TodayDomainModel.Calm)
+            val shown = nextViewState()
+            classUnderTest.onEnter(startAttackRequested = false)
+            assertEquals(calmWithPeriodToggle(offered = true), shown.await())
+            givenTodayNotOffered()
+            val state = nextViewState()
+
+            classUnderTest.onResume()
+
+            assertEquals(calmWithPeriodToggle(offered = false), state.await())
+        }
+
+    @Test
+    fun `Given tracking was turned on in settings when returning to home then shows the toggle`() =
+        runTest {
+            givenTodayNotOffered()
+            val hidden = nextViewState()
+            classUnderTest.onEnter(startAttackRequested = false)
+            assertEquals(calmWithPeriodToggle(offered = false), hidden.await())
+            givenToday(TodayDomainModel.Calm)
+            val state = nextViewState()
+
+            classUnderTest.onResume()
+
+            assertEquals(calmWithPeriodToggle(offered = true), state.await())
+        }
 
     @Test
     fun `Given storage is full when marking today's period then says so`() = runTest {

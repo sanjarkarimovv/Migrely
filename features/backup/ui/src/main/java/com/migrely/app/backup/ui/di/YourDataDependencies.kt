@@ -8,12 +8,14 @@ import com.migrely.app.backup.presentation.model.YourDataViewState
 import com.migrely.app.backup.presentation.navigation.YourDataPresentationNavigationEvent
 import com.migrely.app.backup.presentation.viewmodel.YourDataViewModel
 import com.migrely.app.backup.ui.mapper.YourDataEventPresenter
+import com.migrely.app.backup.ui.mapper.YourDataMessageBehaviourUiMapper
 import com.migrely.app.backup.ui.mapper.YourDataViewStateUiMapper
 
 class YourDataDependencies(
     val yourDataViewModel: YourDataViewModel,
     val yourDataViewStateUiMapper: YourDataViewStateUiMapper,
     val yourDataEventPresenter: YourDataEventPresenter,
+    val yourDataMessageBehaviourUiMapper: YourDataMessageBehaviourUiMapper,
     navigationMapper: NavigationEventDestinationMapper<YourDataPresentationNavigationEvent>,
     notificationMapper: NotificationUiMapper<YourDataPresentationNotification>
 ) : BaseComposeHolder<YourDataViewState, YourDataPresentationNotification>(

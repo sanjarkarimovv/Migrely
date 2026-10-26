@@ -216,6 +216,25 @@ class BackupRepositoryTest {
         verify(backupDataSource).replaceAll(EMPTY)
     }
 
+    /** QA #58: the datasource counts a migraine it brought back from being deleted as added. */
+    @Test
+    fun `Given a migraine deleted on the phone when adding it back then it counts as added`() {
+        val twoMigraines = EMPTY.copy(attacks = List(2) { mock() })
+        given(documentDataSource.read(eq(URI), any())).willReturn("text")
+        given(
+            backupFileDataSource.decode("text")
+        ).willReturn(BackupDecodedDataModel.Records(twoMigraines, 6))
+        given(
+            backupDataSource.add(twoMigraines)
+        ).willReturn(AddedRecordsDataModel(addedAttacks = 1, skippedAttacks = 1, addedOthers = 0))
+
+        assertEquals(
+            ImportResultDomainModel.Added(addedAttacks = 1, skippedAttacks = 1, addedOthers = 0),
+            classUnderTest.addBackup(URI)
+        )
+        verify(backupDataSource, never()).replaceAll(any())
+    }
+
     @Test
     fun `Given the file changed or the write fails when importing then why, and nothing changed`() {
         given(documentDataSource.read(eq(URI), any())).willReturn("text")

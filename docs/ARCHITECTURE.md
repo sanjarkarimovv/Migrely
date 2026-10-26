@@ -37,7 +37,7 @@ target API 37, whichever comes first. Until then, do not mix AGP 9 idioms into b
 
 | Module | Kind | Package | Contents |
 |---|---|---|---|
-| `:app` | Android app | `com.migrely.app` | `MainActivity`, `MigrelyApplication`, `di/` (all Hilt modules), `navigation/mapper/`, `ui/main/` (nav host, routes), `ui/theme/` |
+| `:app` | Android app | `com.migrely.app` | `MainActivity`, `MigrelyApplication`, `di/` (all Hilt modules), `navigation/mapper/`, `ui/main/` (nav host, routes), `ui/theme/`, `locale/` (the formatting locale, BRD D117) |
 | `:architecture:domain` | JVM | `com.migrely.app.architecture.domain` | `UseCase`, `BackgroundExecutingUseCase`, `ContinuousExecutingUseCase`, `UseCaseExecutor`, `DomainException` |
 | `:architecture:presentation` | JVM | `com.migrely.app.architecture.presentation` | `BaseViewModel`, `PresentationNavigationEvent`, `PresentationNotification` |
 | `:architecture:presentation-test` | JVM | same | `BaseViewModelTest` |
@@ -55,7 +55,7 @@ target API 37, whichever comes first. Until then, do not mix AGP 9 idioms into b
 | `:features:settings:*` | JVM / Android | `com.migrely.app.settings.*` | The Settings screen in sections, with "Track periods" and the theme; the Warning signs, About Migrely, Privacy and Open-source licences pages, which share one view model; and the "Delete all data" confirmation, a screen of its own (BRD D70, D79, D93–D97), like any feature |
 | `:features:onboarding:*` | JVM / Android | `com.migrely.app.onboarding.*` | Onboarding on a new user's first start (change add-onboarding, BRD D76–D80), like any feature |
 | `:features:subscription:*` | JVM / Android | `com.migrely.app.subscription.*` | Migrely Premium (change add-subscription, BRD D105–D113): the paywall and the gate after onboarding, which are screens, and the Premium section, the trial banner and the 5th-migraine trigger, which `:app` puts into Settings and home through slots. History reads the entitlement through its own repository |
-| `:app` `start/` | Android | `com.migrely.app.start` | `StartEntryPoint`, through which `MainActivity` asks, behind the splash, whether onboarding comes first and which theme to draw in (BRD D76, D94); `restartApp`, which starts a new process after all data is deleted (D96) |
+| `:app` `start/` | Android | `com.migrely.app.start` | `StartEntryPoint`, through which `MainActivity` asks, behind the splash, whether onboarding comes first and which theme to draw in (BRD D76, D94), and `MigrelyApplication` runs the start-up clean-ups: cut-off reports and expired deletions (EC-REP-03, D118); `restartApp`, which starts a new process after all data is deleted (D96) |
 | `:app` `reminder/` and `datasource/` | Android | `com.migrely.app.reminder`, `com.migrely.app.datasource.{schedule,notification}.datasource` | `ReminderWorker`, `ReminderActionReceiver`, `TimeChangeReceiver`, `ReminderEntryPoint`; and the implementations of `ReminderScheduleDataSource` (WorkManager) and `NotificationDataSource` (NotificationManagerCompat) |
 | `:features:<feature>:presentation` | JVM | `com.migrely.app.<feature>.presentation` | `viewmodel/`, `model/`, `navigation/`, `mapper/` |
 | `:features:<feature>:data` | JVM | `com.migrely.app.<feature>.data` | `repository/` (implementations), `mapper/` |
@@ -150,7 +150,9 @@ data must never be passed to any SDK.
   `custom:<id>` rows in `custom_tag`, which are archived but never deleted. Unknown keys are skipped when read.
 - **Soft delete.** Deleting an attack sets `deleted_epoch_millis`. Every read except `recentlyDeleted` and the restore
   check hides deleted attacks. Rows deleted more than 2 minutes ago are purged by the datasource when it deletes or
-  lists deletions (BRD D23). The hard `delete` remains only for "undo start".
+  lists deletions, and when the app starts (BRD D23, D118). The hard `delete` remains only for "undo start".
+  - An import treats an attack being deleted, and the intakes hidden with it, as absent: "Add" removes those the
+    backup holds and adds the backup's copies; "Replace" removes them with every other row (D118).
 - **Overlaps and merges.** Stored attacks never overlap; touching at one instant is allowed, and an attack in progress
   is open-ended. `overlapping(excludingId?, start, end)` lists every overlapping attack, oldest first.
   - The domain decides what a merge means (BRD D27). `AttackDataSource.merge` then writes it in one transaction:
@@ -255,6 +257,17 @@ data must never be passed to any SDK.
 - Motion: every animation checks `rememberReduceMotion()` (true when the system animator scale is 0) and snaps
   instead of animating (BRD EC-UX-08). Animations never flash more than three times per second (EC-UX-07).
 - User-facing strings live in the owning feature's `ui` module resources. Screens never hard-code strings.
+- Dates and times (BRD D117): every formatter uses the formatting locale, English with the phone's region, which
+  `:app`'s `FormattingLocaleResolver` decides and `FormattingLocales` applies in one place:
+  - `:app/di` formatters read `FormattingLocales.of` the application context's configuration at every call;
+  - `MainActivity` overrides its configuration in `attachBaseContext`, so composables read it from
+    `LocalConfiguration`, as Material's pickers and resources do;
+  - `MigrelyApplication` also sets it as the process default, at start and on every configuration change, for code that
+    formats with the default. Android sets the default back to the phone's language on configuration updates it does
+    not report to the application, so the app's formatters never read `Locale.getDefault()`.
+  - Features never choose a locale. The first day of the week is the phone's; the 12- or 24-hour setting is read where
+    a time is formatted. Only the CSV export is handed the phone's own locale, for its separator (D72). The PDF's fixed
+    English formats stay (section 13).
 - Type (BRD D20): Fraunces (soft serif) for display, headline and `titleLarge`, and Figtree for every other style.
   - Both are bundled variable fonts in `designsystem/src/main/res/font`, and their OFL texts are in
     `designsystem/src/main/assets/licenses/fonts`. Fonts are never downloaded.
@@ -265,6 +278,8 @@ data must never be passed to any SDK.
   - A feature maps each message to a `SnackbarTone`, an optional `SnackbarAction` and a base duration (UI mapper).
   - The feature keeps the shown message in `rememberSaveable` and stretches the base duration with
     `LocalAccessibilityManager.calculateRecommendedTimeoutMillis`. The home feature's `HomeMessages` is the reference.
+  - Screens whose messages have no "Undo" stretch it with `:designsystem`'s `messageTimeoutMillis`, which counts the
+    close button as a control. No screen hard-codes how long a message stays (QA #56).
 
 ## 11. Testing
 

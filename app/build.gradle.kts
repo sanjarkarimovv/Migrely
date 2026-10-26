@@ -41,9 +41,9 @@ val keystoreProperties = rootProject.file("keystore.properties").takeIf {
 
 /**
  * Google Play's licence public key, which checks the signature on every purchase (BRD D107): the
- * base64 key Play Console shows under Monetization setup, passed as `-Pmigrely.playLicenseKey=…`
- * or set in `~/.gradle/gradle.properties`. Empty by default: a debug build then skips the check, a
- * release build unlocks nothing, and the bundle for Play refuses to build.
+ * base64 key Play Console shows under Monetization setup, set in the project's `gradle.properties`
+ * (a public key) or passed as `-Pmigrely.playLicenseKey=…`. Without it a debug build skips the
+ * check, a release build unlocks nothing, and the bundle for Play refuses to build.
  */
 val playLicenseKey: String = providers.gradleProperty(
     "migrely.playLicenseKey"
@@ -57,8 +57,8 @@ android {
         applicationId = "com.migrely.app"
         minSdk = libs.versions.minSdk.get().toInt()
         targetSdk = libs.versions.targetSdk.get().toInt()
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 4
+        versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "PLAY_LICENSE_KEY", "\"$playLicenseKey\"")
@@ -88,6 +88,9 @@ android {
             )
             signingConfig =
                 signingConfigs.getByName(if (keystoreProperties != null) "release" else "debug")
+            // Play warns that the bundle has native code without debug symbols. The only native
+            // code is androidx.graphics.path, which ships its libraries already stripped, so there
+            // are no symbols to upload; the warning is expected and harmless.
         }
     }
     compileOptions {

@@ -133,13 +133,17 @@ class HomeViewModel(
     /** The gear in home's header (BRD D70). */
     fun onSettingsAction() = emitNavigationEvent(HomePresentationNavigationEvent.OnOpenSettings)
 
-    /** Home's one-tap period toggle for today (BRD DAY-F1, D48). */
+    /**
+     * Home's one-tap period toggle for today (BRD DAY-F1, D48). The load after the change keeps the toggle, so a mark
+     * removed by mistake while "Track periods" is off can be put back; any later load, such as returning to home, a
+     * rotation, an undo or midnight, offers it only as saved (D79).
+     */
     fun onPeriodTodayAction(marked: Boolean) {
         setPeriodTodayUseCase(
             value = marked,
             onResult = { result ->
                 when (result) {
-                    WriteResultDomainModel.Written -> loadToday()
+                    WriteResultDomainModel.Written -> loadToday(keepPeriodToggle = true)
                     WriteResultDomainModel.StorageFull -> notify(StorageFull)
                     WriteResultDomainModel.Failed -> notify(SomethingWentWrong)
                 }
@@ -222,9 +226,10 @@ class HomeViewModel(
 
     /**
      * Loads today. Only a load on entering or returning to the screen announces a recent deletion, so the undo of a
-     * deletion never replaces the undo of an action taken here.
+     * deletion never replaces the undo of an action taken here. [keepPeriodToggle] keeps the "Period" toggle that was
+     * just used; every other load offers it as today's result says (BRD D79).
      */
-    private fun loadToday(announceDeletion: Boolean = false) {
+    private fun loadToday(announceDeletion: Boolean = false, keepPeriodToggle: Boolean = false) {
         getTodayUseCase(
             onResult = { result ->
                 when (result) {
@@ -233,7 +238,7 @@ class HomeViewModel(
                             todayPresentationMapper.toPresentation(
                                 result.today,
                                 result.periodToday,
-                                result.periodOffered
+                                result.periodOffered || keepPeriodToggle
                             )
                         )
                         val deleted = result.recentlyDeleted

@@ -1,6 +1,7 @@
 package com.migrely.app.subscription.ui.model
 
 import android.os.Parcelable
+import com.migrely.app.designsystem.snackbar.SnackbarTone
 import kotlinx.parcelize.Parcelize
 
 /** Where the paywall was opened from (BRD D109); `:app` passes it with the route. */
@@ -72,6 +73,12 @@ enum class PaywallMessageUiModel {
     PlayUnreachable,
     SomethingWentWrong
 }
+
+/**
+ * How a paywall message behaves (BRD EC-UX-16): its [tone], and how long it stays before the
+ * accessibility timeout is applied ([baseDurationMillis]).
+ */
+data class PaywallMessageBehaviourUiModel(val tone: SnackbarTone, val baseDurationMillis: Long)
 
 sealed interface PaywallEventUiModel {
     data class Unlocked(val status: PremiumStatusUiModel) : PaywallEventUiModel

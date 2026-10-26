@@ -8,7 +8,10 @@ import java.util.Locale
 
 private const val DAYS_PER_WEEK = 7
 
-/** Weeks start on the locale's first day, with its weekday initials (BRD EC-TIM-05); read at every call. */
+/**
+ * Weeks start on the locale's first day, with its weekday initials (BRD EC-TIM-05); read at every call. The app hands it
+ * the formatting locale, English with the phone's region, so the initials are English (D117).
+ */
 class CalendarLayoutUiMapper(private val locale: () -> Locale) {
     fun toUi(year: Int, month: Int): CalendarLayoutUiModel {
         val locale = locale()

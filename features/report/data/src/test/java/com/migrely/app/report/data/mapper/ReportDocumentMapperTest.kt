@@ -21,6 +21,8 @@ import java.time.ZoneId
 import java.time.ZoneOffset
 import java.util.Locale
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -148,7 +150,8 @@ class ReportDocumentMapperTest {
                 "Left side",
                 "Nausea, Ko‘ngil aynishi",
                 "Stress",
-                "Ibuprofen 400 mg"
+                // A dose's number and unit stay on one line (store polish).
+                "Ibuprofen 400${Char(0x00A0)}mg"
             ),
             rows[1]
         )
@@ -220,7 +223,9 @@ class ReportDocumentMapperTest {
                         0
                     )
                 ),
-                notes = listOf(ReportNoteDomainModel(LocalDate.of(2026, 10, 7), "Stress at work"))
+                notes = listOf(
+                    ReportNoteDomainModel(LocalDate.of(2026, 10, 7), "Stress at work", 0)
+                )
             )
         ).filterIsInstance<ReportBlockDataModel.Table>()
 
@@ -232,6 +237,30 @@ class ReportDocumentMapperTest {
             tables[1].rows
         )
         assertEquals(listOf(listOf("7 Oct 2026", "Stress at work")), tables[2].rows)
+    }
+
+    @Test
+    fun `Given notes then they follow the migraines table, each with its migraine's row`() {
+        val tables = blocks(
+            report(
+                attacks = List(3) { attack(TASHKENT, Instant.parse("2026-10-20T06:15:00Z")) },
+                notes = listOf(
+                    ReportNoteDomainModel(LocalDate.of(2026, 10, 20), "Stress at work", 0),
+                    ReportNoteDomainModel(LocalDate.of(2026, 10, 20), "Little sleep", 2)
+                )
+            )
+        ).filterIsInstance<ReportBlockDataModel.Table>()
+        val migraines = tables.first()
+        val follows = tables.last().follows!!
+
+        // The writer finds the table by identity, so it is the one in the blocks (D84).
+        assertSame(migraines, follows.table)
+        assertEquals(listOf(0, 2), follows.owners)
+        assertEquals(
+            "Notes from the latest 165 migraines.",
+            String.format(Locale.ENGLISH, follows.shortenedNote, 165)
+        )
+        assertNull(tables.last().shortenedNote)
     }
 
     @Test

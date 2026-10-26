@@ -122,11 +122,12 @@ class ReportCalculator(private val dates: ReportDatesDomainModel, private val no
             }.thenBy { it.name }
         )
 
-    /** The notes of the period's attacks, newest first. */
+    /** The notes of the period's attacks, newest first, each with its attack's position in [attacks] (D84). */
     fun notes(records: ReportRecordsDomainModel): List<ReportNoteDomainModel> = attacks(records)
-        .mapNotNull { attack ->
-            attack.note?.trim()?.takeIf(String::isNotEmpty)
-                ?.let { ReportNoteDomainModel(attack.start.atZone(attack.zone).toLocalDate(), it) }
+        .mapIndexedNotNull { index, attack ->
+            attack.note?.trim()?.takeIf(String::isNotEmpty)?.let { note ->
+                ReportNoteDomainModel(attack.start.atZone(attack.zone).toLocalDate(), note, index)
+            }
         }
 
     private fun touched(attack: ReportAttackDomainModel): List<LocalDate> {

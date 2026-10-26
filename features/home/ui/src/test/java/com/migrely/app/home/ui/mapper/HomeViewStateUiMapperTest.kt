@@ -50,6 +50,20 @@ class HomeViewStateUiMapperTest(
                     TodayUiModel(SkyUiModel.Clear, 0, null, periodToday = true)
                 )
             ),
+            // "Track periods" off and today unmarked: home draws no toggle (QA #66).
+            arrayOf<Any>(
+                HomeViewState.Today(
+                    TodayPresentationModel(
+                        SkyPresentationModel.Calm,
+                        0,
+                        null,
+                        periodOffered = false
+                    )
+                ),
+                HomeViewStateUiModel.Today(
+                    TodayUiModel(SkyUiModel.Calm, 0, null, periodOffered = false)
+                )
+            ),
             arrayOf<Any>(
                 HomeViewState.Today(
                     TodayPresentationModel(SkyPresentationModel.Hazy, 1, PeakPresentationModel.Mild)
