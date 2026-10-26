@@ -61,7 +61,7 @@ plus AndroidX's dynamic-receiver permission. There is no INTERNET, ACCESS_NETWOR
 | D117: English dates; the region decides the first weekday | ✅ ru-RU: English, Monday first. ru-US and en-US: Sunday first. No Cyrillic. A Hebrew phone gets the left-to-right layout (`keyboard_rtl`) |
 | D119: Privacy ends with "Read the full privacy policy" | ✅ VIEW intent to https://migrely.health/privacy/ in Chrome. The URL was also read from the R8 APK |
 | D110: no paywall shows itself without Play products (release build) | ✅ none after onboarding, in 3 runs. A tap on Doctor report says Premium cannot be bought, and shows no buy button |
-| D113: the release build has no simulated store | ✅ the R8 APK has 0 hits in its dex, resources and manifest. The debug APK has 13, 1 and 2, as a control |
+| D113: the release build has no simulated store | ✅ the R8 APK has 0 hits in its dex, resources and manifest; the debug APK, the control, has 57, 2 and 4 (`qa/release_apk.py`) |
 | D115: the entitlement cache is never backed up | ✅ `qa/backup_rules.py` reads the APK: `migrely_entitlement.xml` is excluded in full-backup-content, cloud-backup and device-transfer |
 
 ## Real Google Play, on the user's phone (dev session, build 3, license tester)

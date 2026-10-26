@@ -2,12 +2,15 @@
 
     python3 -I qa/seed_expect.py pdf <seed.expected>        one text per line, to find in the report's PDF
     python3 -I qa/seed_expect.py insights <seed.expected>   one text per line, to find on the Insights screen
+    python3 -I qa/seed_expect.py period <seed.expected>     Insights' "Around your period" texts, with Track periods on
 
 pdf: the period line of page 1 ("27 Jul 2026 to 26 Oct 2026 (92 days)"), each summary row as "Label Value", each
-medications row with its cells joined by spaces, and the start of each migraines row. The start cell wraps in the PDF
-and its time is written as an en-US phone writes it (12-hour), so a start is a Python regex, marked "re:".
+medications row with its cells joined by spaces, and the start of each migraines row. Lines marked "re:" are Python
+regexes: a summary or medications row must not run on into more digits ("bed rest 4" is not "bed rest 40"), and a
+migraines row's start cell wraps in the PDF and its time is written as an en-US phone writes it (12-hour).
 insights: the "N more migraines" card, each trigger share, the busiest day and time of day, each medication's "What
-helped" line, and the 12 months as TalkBack reads them.
+helped" line, and the 12 months as TalkBack reads them; none of them depends on Track periods.
+period: the lines under "Around your period (Track periods on):", the section's title and texts.
 """
 import re
 import sys
@@ -35,10 +38,15 @@ def start_pattern(cell):
     match = re.match(r"^(\d{1,2} \w{3} \d{4}), (\d{2}:\d{2})(?: \((.+?)\))?", cell)
     date, time, zone = match.groups()
     twelve = datetime.strptime(time, "%H:%M").strftime("%I:%M %p").lstrip("0")
-    pattern = re.escape(date) + r",.{0,120}?" + re.escape(twelve)
+    pattern = re.escape(date) + r",.{0,120}?(?<![\d:])" + re.escape(twelve)
     if zone:
         pattern += r"\s*\(" + r"\s?".join(re.escape(c) for c in zone) + r"\)"
     return pattern
+
+
+def whole(text):
+    # The text, not followed by more of a number: "Migraines started 13" must not match "Migraines started 130".
+    return "re:" + re.escape(text) + r"(?![\d.,])"
 
 
 def pdf_texts(lines):
@@ -60,18 +68,38 @@ def pdf_texts(lines):
             continue
         cells = [c.strip() for c in stripped.split(" | ")]
         if table == "summary":
-            out.append(f"{cells[0]} {cells[1]}")
+            out.append(whole(f"{cells[0]} {cells[1]}"))
         elif table == "medications":
-            out.append(" ".join(c for c in cells if c))
+            out.append(whole(" ".join(c for c in cells if c)))
         elif table == "migraines":
             out.append("re:" + start_pattern(cells[0]))
     return out
 
 
-def insights_texts(lines):
-    out = []
+def period_texts(lines):
+    out, inside = [], False
     for line in lines:
         stripped = line.strip()
+        if stripped == "Around your period (Track periods on):":
+            inside = True
+        elif inside and line.startswith(" " * 6):
+            out.append(stripped)
+        else:
+            inside = False
+    return out
+
+
+def insights_texts(lines):
+    out, inside = [], False
+    for line in lines:
+        stripped = line.strip()
+        # The period block is read with Track periods on only (period_texts).
+        if stripped == "Around your period (Track periods on):":
+            inside = True
+            continue
+        if inside and line.startswith(" " * 6):
+            continue
+        inside = False
         card = re.match(r"^The card reads: (.+)$", stripped)
         if card:
             out.append(card.group(1))
@@ -88,10 +116,11 @@ def insights_texts(lines):
 
 
 def main():
-    if len(sys.argv) != 3 or sys.argv[1] not in ("pdf", "insights"):
+    if len(sys.argv) != 3 or sys.argv[1] not in ("pdf", "insights", "period"):
         sys.exit(__doc__)
     found = sections(Path(sys.argv[2]).read_text(encoding="utf-8").splitlines())
-    texts = (pdf_texts if sys.argv[1] == "pdf" else insights_texts)(found.get(sys.argv[1], []))
+    reader = {"pdf": pdf_texts, "insights": insights_texts, "period": period_texts}[sys.argv[1]]
+    texts = reader(found.get("pdf" if sys.argv[1] == "pdf" else "insights", []))
     if not texts:
         sys.exit(f"no {sys.argv[1]} texts in {sys.argv[2]}")
     print("\n".join(dict.fromkeys(texts)))

@@ -11,7 +11,7 @@
 # (D120), and Settings reads "Premium · yearly".
 appId: com.migrely.app
 name: Premium through the paywall; the report screen opens after buying; Change plan to yearly
-tags: [regression, smoke, subscription]
+tags: [regression, subscription, simulated-store]
 ---
 - runFlow: ../subflows/launch-clean.yaml
 - tapOn: ".*\\. Opens History\\."

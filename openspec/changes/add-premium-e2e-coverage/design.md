@@ -89,16 +89,18 @@ values.
   - `report-heavy`: 900 attacks in 12 months, with notes;
   - `insights-patterns`: 10 migraines in 6 months, Stress with 6, Mondays 3, Ibuprofen 7 of 9 answers helped;
   - `insights-three`: 3 migraines;
-  - `five-old` and `five-new`: five migraines in 6 months, the first at least 30 days old or not.
+  - `four-old` (the 5th is logged in the app) and `five-new`: migraines in 6 months, the first at least 30 days old or
+    not; `five-old` stays for a manual walk.
 - **Dates:** all are relative to `--today`, the emulator's date, so a seed never goes stale.
 - **Import:** an empty phone shows "Import" on onboarding's restore; a phone with entries uses Replace. The result
   message is waited for as in D200.
 
 ### D5. The report PDF (D202)
 
-`qa/report_pdf.py <pdf> [--pages-at-most N] [--text T ...] [--absent T ...] [--every-page T]` runs `pdfinfo` and
-`pdftotext -layout`.
-- **Where the file comes from:** the newest `cache/reports/*.pdf`, through `run-as … cat` into the run's folder.
+`qa/report_pdf.py <pdf> [--pages-at-most N] [--text T ...] [--regex R ...] [--absent T ...] [--every-page T]` runs
+`pdfinfo` and `pdftotext -layout`. Values are checked as whole numbers ("bed rest 4" is not "bed rest 40"), and a
+migraine row's start as a pattern, since the cell wraps and an en-US phone writes 12-hour times.
+- **Where the file comes from:** the newest `cache/reports/<id>/*.pdf`, through `run-as … cat` into the run's folder.
 - **The partial file:** "Closed while making it" force-stops the app during the progress. After the next start,
   `run-as ls cache/reports` must list no temporary file.
 
@@ -117,4 +119,5 @@ The debug half of that last scenario is checked here: unavailable shows the line
   as in 12b.
 - **Clock jumps:** WorkManager and the 15-minute re-check can race the jump. Every time step force-stops the app and
   re-opens it, and each assertion waits.
-- **Store state is not reset by "Delete all data":** every scenario starts with `qa_store reset` and `available`.
+- **Store state is not reset by "Delete all data":** every scenario starts with Maestro's `clearState`, which empties
+  the store, and `restore()` sets it available again on exit.

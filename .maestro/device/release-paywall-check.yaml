@@ -1,4 +1,4 @@
-# Device scenario step, release build: with no Premium products from Google Play, no paywall shows itself after
+# A manual Go/No-Go step on the release build: with no Premium products from Google Play, no paywall shows itself after
 # onboarding, and a tap on Doctor report shows why Premium cannot be bought, with no buy button (D110, EC-BIL-11).
 appId: com.migrely.app
 ---

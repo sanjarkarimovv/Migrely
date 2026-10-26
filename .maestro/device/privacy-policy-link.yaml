@@ -1,5 +1,5 @@
-# Device scenario step: Settings › Privacy ends with "Read the full privacy policy", and a tap hands the link to the
-# browser (D119); the scenario reads the intent from the activity log.
+# A manual Go/No-Go step: Settings › Privacy ends with "Read the full privacy policy", and a tap hands the link to the
+# browser (D119). Run it with `adb logcat -c` first, then read the VIEW intent from `adb logcat -d`.
 appId: com.migrely.app
 ---
 - launchApp

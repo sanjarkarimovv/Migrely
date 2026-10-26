@@ -1,4 +1,4 @@
-"""How long did a message stay on screen? Read from screenshots taken about every half second (#56).
+"""How long did a message stay on screen? Read from screenshots taken back to back, about 8 a second (#56).
 
     python3 -I qa/message_timing.py <frames-dir> <tap-time>
 

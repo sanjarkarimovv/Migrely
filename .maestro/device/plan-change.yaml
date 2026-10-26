@@ -1,4 +1,5 @@
-# Device scenario step: Settings › Change plan, PLAN with BUTTON, the purchase completed; then RESULT (a regex) shows.
+# Device scenario step: Settings › Change plan, PLAN with BUTTON, the purchase completed; then RESULT (a regex) shows,
+# and ALSO too when it is not empty.
 appId: com.migrely.app
 ---
 - launchApp
@@ -16,4 +17,9 @@ appId: com.migrely.app
 - extendedWaitUntil:
     visible: "${RESULT}"
     timeout: 10000
+- runFlow:
+    when:
+      true: ${ALSO != ""}
+    commands:
+      - assertVisible: "${ALSO}"
 - stopApp

@@ -4,8 +4,10 @@
 
 The rules are read from the APK itself, so the check covers the build under test, release builds with shortened
 resource names included: the manifest's fullBackupContent and dataExtractionRules point at the files.
-A section that includes shared preferences must exclude the file:
-- in the data extraction rules (Android 12 and later), cloud-backup and device-transfer each;
+A section that takes shared preferences must exclude the file. A section takes them when it includes the
+"sharedpref" or the "root" domain, or when it includes nothing at all (Android then backs up everything not excluded):
+- in the data extraction rules (Android 12 and later), cloud-backup and device-transfer each, and both must be there
+  (a missing section moves everything);
 - in the full-backup rules (Android 11 and older), once, since an exclude there applies to every include.
 Prints what it checked and exits 1 on the first rule that would back the file up.
 """
@@ -82,13 +84,15 @@ def main():
     checked = []
     for kind, path in rule_files(apk).items():
         for section, rules in sections(apk, path):
-            includes = [r for r in rules if r[0] == "include" and r[1] == "sharedpref"]
+            includes = [r for r in rules if r[0] == "include"]
+            takes = not includes or any(r[1] in ("sharedpref", "root") for r in includes)
             excluded = any(r[0] == "exclude" and r[1] == "sharedpref" and r[2] == name for r in rules)
-            if includes and not excluded:
-                fail(f"{section} in {path} includes shared preferences and does not exclude {name}")
-            checked.append(f"{section} ({'excluded' if includes else 'no shared preferences'})")
-    if not any(c.startswith(("cloud-backup", "device-transfer")) for c in checked):
-        fail("the data extraction rules have no cloud-backup or device-transfer section")
+            if takes and not excluded:
+                fail(f"{section} in {path} takes shared preferences and does not exclude {name}")
+            checked.append(f"{section} ({'excluded' if takes else 'no shared preferences'})")
+    for section in ("cloud-backup", "device-transfer"):
+        if not any(c.startswith(section) for c in checked):
+            fail(f"the data extraction rules have no {section} section, so it would take everything")
     print(f"Backup rules ok: {name} left out of " + ", ".join(checked))
 
 

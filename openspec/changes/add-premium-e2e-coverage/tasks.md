@@ -3,19 +3,19 @@
 ## 1. Requirements and baseline
 
 - [x] 1.1 BRD §13 row 11b and §17 D201, D202. Verify: `grep -n "| 11b |\|| D201 \|| D202 " docs/BRD.md`
-- [ ] 1.2 `QA_APK` in `qa/maestro.sh` and `qa/device_scenarios.sh`; the release branch's debug APK built in
+- [x] 1.2 `QA_APK` in `qa/maestro.sh` and `qa/device_scenarios.sh`; the release branch's debug APK built in
   `../migraine-app-qa-rc` (design D1). Verify: `bash -n`; the APK installs
-- [ ] 1.3 Baseline on `release/1.0.0` cedc4c4: full regression and all device scenarios. Adapt the flows to the
-  self-showing paywalls (design D2), and triage every other failure. Verify: stale checks fixed, defects filed
+- [x] 1.3 Baseline on `release/1.0.0`: full regression and all device scenarios. Adapt the flows to the self-showing
+  paywalls (design D2), and triage every other failure. Verify: stale checks fixed, defects filed. The baseline moved
+  with the RCs (cedc4c4 → 195fff2 → 0914bcb) and became the 1.0.0 Go/No-Go (`docs/qa/go-no-go-1.0.0.md`)
 
 ## 2. Tools
 
-- [ ] 2.1 `qa_store` in `qa/device_scenarios.sh`, `subflows/buy.yaml` and `subflows/close-paywall.yaml` (design D3).
-  Verify: a purchase completes, and `reset` empties the store
-- [ ] 2.2 `qa/seed_backup.py` with the named seeds of design D4. Verify: its output passes `backup_files.py json`, and
-  an imported seed shows the expected count in History
-- [ ] 2.3 `qa/report_pdf.py` (design D5). Verify: it reads a real report, and fails on a missing text and on too many
-  pages
+- [x] 2.1 `qa_store` in `qa/device_scenarios.sh`, `subflows/buy.yaml` and `subflows/close-onboarding-paywall.yaml`
+  (design D3). Verify: a purchase completes, and `reset` empties the store
+- [x] 2.2 `qa/seed_backup.py` with the named seeds of design D4, and `qa/seed_expect.py`. Verify: its output passes
+  `backup_files.py json`, its self-test recounts every seed, and an imported seed shows the expected texts
+- [x] 2.3 `qa/report_pdf.py` (design D5). Verify: it reads a real report, and fails on a missing text and a wrong day
 
 ## 3. Subscription (SUB-F*, EC-BIL-*)
 

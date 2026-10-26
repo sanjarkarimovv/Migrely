@@ -1,6 +1,12 @@
-# Device scenario step: one migraine logged today on the phone as it is (no data cleared), then the app closes.
+# Device scenario step: one migraine logged today on the phone as it is (no data cleared); home then shows no paywall
+# by itself, waited for 6 s (the paywall would come on returning home); then the app closes.
 appId: com.migrely.app
 ---
 - launchApp
 - runFlow: ../subflows/log-attack-today.yaml
+- extendedWaitUntil:
+    visible: "See your patterns|Get more from your diary"
+    timeout: 6000
+    optional: true
+- assertNotVisible: "See your patterns|Get more from your diary"
 - stopApp

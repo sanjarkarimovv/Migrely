@@ -1,0 +1,8 @@
+# Device scenario step: home, in the normal mode, shows TEXT (a regex).
+appId: com.migrely.app
+---
+- launchApp
+- extendedWaitUntil:
+    visible: "${TEXT}"
+    timeout: 15000
+- stopApp

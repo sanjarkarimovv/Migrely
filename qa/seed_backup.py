@@ -95,9 +95,11 @@ DESCRIPTIONS = {
     "report-three-months": "3-month Doctor report: 18 migraine days, 4 at bed rest, notes NOTE-ALPHA-7 and NOTE-BETA-9",
     "report-partial-month": "1-month Doctor report: Sumatriptan on 11 days across the month change, at the triptan "
                             "limit",
-    "report-tokyo": "an attack logged in Asia/Tokyo whose Tokyo date is the day after the phone's, and one at home",
+    "report-tokyo": "an attack logged in Asia/Tokyo whose Tokyo date is the day after the phone's, and one at home "
+                    "that morning: 2 migraine days, not 1",
     "report-heavy": "900 short migraines over 12 months, 2 or 3 a day, each with a note: more than 50 pages hold",
-    "insights-patterns": "10 migraines in 6 months: Stress with 6, 3 on Mondays, Ibuprofen helped on 7 of 9 answers",
+    "insights-patterns": "10 migraines in 6 months: Stress with 6, 3 on Mondays, Ibuprofen helped on 7 of 9 answers, "
+                         "3 marked periods",
     "insights-three": "3 migraines in 6 months, the first 45 days ago: 2 more are needed for patterns",
     "five-old": "5 migraines in 6 months, the first 40 days ago: patterns ready, the paywall shows itself",
     "five-new": "5 migraines, the first 10 days ago: patterns not ready yet",
@@ -131,6 +133,13 @@ PATTERNS = (  # weekday (Monday 0), start, minutes, triggers, impact, Ibuprofen'
     (0, "14:00", 180, ("stress",), 1, "A_LOT"),
     (5, "18:00", 180, ("too_little_sleep",), None, "COMPLETELY"),
 )
+PERIOD_RUNS = (  # migraine (index in PATTERNS), days from its start date to the period's first day, days marked
+    (1, 2, 5),
+    (3, -2, 4),
+    (6, 3, 5),
+)
+CYCLE_WINDOW = range(-2, 3)
+CYCLE_WINDOW_TEXT = "The days around your period run from 2 days before it starts through its third day."
 FEW = {"insights-three": (45, 20, 6), "five-old": (40, 31, 22, 13, 4), "five-new": (10, 8, 6, 4, 2),
        "four-old": (40, 28, 15, 5)}
 FEW_SPEC = {
@@ -300,8 +309,8 @@ def partial_month(today, zone):
 
 def tokyo(today, zone):
     backup = Backup("report-tokyo", zone)
+    backup.attack(today - 10 * DAY, "08:00", 180, impact=2, peaks=(4,))
     backup.attack(today - 10 * DAY, "20:30", 180, logged_in=TOKYO, impact=1, peaks=(6,))
-    backup.attack(today - 5 * DAY, "14:00", 180, impact=2, peaks=(4,))
     return backup
 
 
@@ -327,15 +336,19 @@ def insights_patterns(today, zone):
     ibuprofen = backup.medication("Ibuprofen", "ACUTE", "SIMPLE", "400 mg")
     sumatriptan = backup.medication("Sumatriptan", "ACUTE", "TRIPTAN", "50 mg")
     topiramate = backup.medication("Topiramate", "PREVENTIVE", None, "25 mg")
+    days = []
     for index, (weekday, clock, minutes, triggers, impact, answer) in enumerate(PATTERNS):
         anchor = today - (4 + 11 * index) * DAY
-        day = anchor - (anchor.weekday() - weekday) % 7 * DAY
-        attack = backup.attack(day, clock, minutes, impact=impact, tags=[("TRIGGER", key) for key in triggers])
+        days.append(anchor - (anchor.weekday() - weekday) % 7 * DAY)
+        attack = backup.attack(days[-1], clock, minutes, impact=impact, tags=[("TRIGGER", key) for key in triggers])
         backup.intake(ibuprofen, attack["startEpochMillis"] + 30 * MINUTE, attack, answer, closed=True)
         if index in (1, 3):
             backup.intake(sumatriptan, attack["startEpochMillis"] + 120 * MINUTE, attack, EFFECTS[index // 2])
-    for days in (4, 3, 2):
-        backup.intake(topiramate, millis(today - days * DAY, "08:00", zone))
+    for before in (4, 3, 2):
+        backup.intake(topiramate, millis(today - before * DAY, "08:00", zone))
+    for migraine, offset, length in PERIOD_RUNS:
+        for day in range(length):
+            backup.day_mark(days[migraine] + (offset + day) * DAY, period=True)
     return backup
 
 
@@ -505,7 +518,26 @@ def helped_lines(data, period):
     return lines
 
 
-def patterns(data, started, period):
+def period_starts(data):
+    marked = {date.fromisoformat(mark["date"]) for mark in data["dayMarks"] if mark["period"]}
+    return sorted(day for day in marked if day - DAY not in marked)
+
+
+def cycle_text(data, started, period, months):
+    """What "Around your period" says with Track periods on, or None when fewer than 2 periods start in [period]."""
+    starts = period_starts(data)
+    if sum(within(day, period) for day in starts) < 2:
+        return None
+    window = {day for start in starts for day in (start + offset * DAY for offset in CYCLE_WINDOW)
+              if within(day, period)}
+    migraines, total = sum(start_date(a) in window for a in started), len(started)
+    days = (period[1] - period[0]).days + 1
+    return (f"{migraines} of {counted(total, 'migraine')} ({percent(migraines, total)}) started in the days around "
+            f"your period. Those days are {percent(len(window), days)} of {'this' if months == 1 else 'these'} "
+            f"{counted(months, 'month')} ({len(window)} of {counted(days, 'day')}).")
+
+
+def patterns(data, started, period, months):
     total = len(started)
     counts = Counter(key for a in started for key in {t["key"] for t in a["tags"] if t["kind"] == "TRIGGER"})
     top = sorted(counts.items(), key=lambda item: (-item[1], list(TRIGGERS).index(item[0])))[:5]
@@ -521,6 +553,7 @@ def patterns(data, started, period):
         "times": times,
         "busiest_time": busiest(times, total, [f"Most often {words}" for _, words in TIMES_OF_DAY],
                                 "No single time of day stands out"),
+        "cycle": cycle_text(data, started, period, months),
         "medications": helped_lines(data, period),
     }
 
@@ -550,7 +583,7 @@ def insights(data, months, today):
     view = {"months": months, "period": period, "started": len(started),
             "card": progress_card(len(started), since), "trends": trends(data, today)}
     if not view["card"]:
-        view.update(patterns(data, started, period))
+        view.update(patterns(data, started, period, months))
     return view
 
 
@@ -639,13 +672,17 @@ def insights_lines(view, with_trends):
         total = view["started"]
         triggers = view["triggers"] or ["No triggers were logged in this period."]
         medications = view["medications"] or ["No attack medication was logged in this period."]
+        cycle = (["  Around your period (Track periods on):", "    Around your period", f"    {view['cycle']}",
+                  f"    {CYCLE_WINDOW_TEXT}",
+                  '  With Track periods off (Settings, on by default): no "Around your period" section']
+                 if view["cycle"] else ['  No "Around your period" section with Track periods on or off: fewer than '
+                                        "2 periods start in these months"])
         body = (["  Often logged with your migraines:"] + [f"    {line}" for line in triggers]
                 + ["  When migraines come, by day of the week:", f"    {view['busiest_day']}",
                    "    " + ", ".join(f"{day} {n} of {total}" for day, n in zip(WEEKDAYS, view["weekdays"])),
                    "  By time of day:", f"    {view['busiest_time']}",
-                   "    " + ", ".join(f"{label} {n} of {total}" for (label, _), n in zip(TIMES_OF_DAY, view["times"])),
-                   "  What helped:"] + [f"    {line}" for line in medications]
-                + ['  No "Around your period" section: no day is marked as a period'])
+                   "    " + ", ".join(f"{label} {n} of {total}" for (label, _), n in zip(TIMES_OF_DAY, view["times"]))]
+                + cycle + ["  What helped:"] + [f"    {line}" for line in medications])
     trend = (["  The last 12 months, as TalkBack reads each row (month names as on an English phone):"]
              + [f"    {line}" for line in view["trends"]]) if with_trends else []
     return [head] + body + trend
@@ -706,18 +743,23 @@ def expect_tokyo(data, today, zone):
     attack = next(a for a in data["attacks"] if a["startZoneId"] == TOKYO)
     here, there = moment(attack["startEpochMillis"], zone), moment(attack["startEpochMillis"], TOKYO)
     days = sorted({day for a in data["attacks"] for day in touched(a)})
+    phone_days = {day for a in data["attacks"] for day in touched(dict(a, startZoneId=zone))}
     lines = [
         f"The {TOKYO} attack starts at {here:%H:%M} on {pdf_date(here.date())} in {zone}, "
         f"which is {there:%H:%M} on {pdf_date(there.date())} in {TOKYO}",
         f"The app counts it on {pdf_date(there.date())}, its date in {TOKYO}, the zone it was logged in"
         + (f", and not on {pdf_date(here.date())}" if here.date() != there.date() else ""),
-        "History, home and the report's calendar: migraine days on " + ", ".join(pdf_date(day) for day in days),
+        "History, home and the report's calendar: migraine days on " + ", ".join(pdf_date(day) for day in days)
+        + f", {counted(len(days), 'migraine day')}; counting both in {zone} would give "
+        + counted(len(phone_days), "migraine day"),
     ] + report_lines(summary) + migraine_rows(summary)
     spec = [("migraine days", summary["migraine_days"], 2)]
     if zone == DEFAULT_ZONE:
         spec += [("counted on", there.date(), today - 9 * DAY),
-                 ("Tokyo date after the phone's", there.date() - here.date(), DAY)]
-    return {"report": summary, "tokyo": {"counted_on": there.date(), "phone_date": here.date()}}, lines, spec
+                 ("Tokyo date after the phone's", there.date() - here.date(), DAY),
+                 ("migraine days if both counted in the phone's zone", len(phone_days), 1)]
+    tokyo_facts = {"counted_on": there.date(), "phone_date": here.date(), "phone_zone_days": len(phone_days)}
+    return {"report": summary, "tokyo": tokyo_facts}, lines, spec
 
 
 def expect_heavy(data, today, zone):
@@ -726,12 +768,13 @@ def expect_heavy(data, today, zone):
     lines = report_lines(summary) + [
         f'Migraines table: "Showing the latest N of {total} migraines. The summary counts all of them." above it, then '
         f"N rows, newest first, from {summary['rows'][0][0]}; the PDF has at most 50 pages",
+    ] + medication_lines(summary) + [
         f"N is known only once the PDF exists: the writer keeps as many rows as fit in 50 pages, measured with "
         f"Android's text layout; read it from the PDF, below {total}",
         f"Include notes on: the migraines table is cut first so that every note fits, so N is smaller than with notes "
         f'off; the Notes table starts with HEAVY-0001 and, if it says "Showing the latest K of {total} notes.", '
         "ends with HEAVY-K",
-    ] + medication_lines(summary)
+    ]
     per_day = Counter(start_date(a) for a in data["attacks"])
     spec = [("migraines touching the period", total, HEAVY_ATTACKS), ("started", summary["started"], HEAVY_ATTACKS),
             ("notes", len(summary["notes"]), HEAVY_ATTACKS), ("attacks a day", sorted(set(per_day.values())), [2, 3]),
@@ -742,7 +785,17 @@ def expect_heavy(data, today, zone):
 def expect_insights_patterns(data, today, zone):
     view = insights(data, 6, today)
     gate = paywall(data, today)
+    marked = {date.fromisoformat(mark["date"]) for mark in data["dayMarks"] if mark["period"]}
+    starts = period_starts(data)
+    lengths = [next(n for n in range(1, 99) if start + n * DAY not in marked) for start in starts]
+    near = sorted(((start_date(a) - start).days, start_date(a)) for a in data["attacks"] for start in starts
+                  if -3 <= (start_date(a) - start).days <= 3)
     lines = insights_lines(view, True) + [
+        "Periods marked from " + ", ".join(f"{pdf_date(start)} ({n} days)" for start, n in zip(starts, lengths))
+        + "; " + ", ".join(f"the migraine of {pdf_date(day)} starts "
+                           + (f"{counted(-offset, 'day')} before a period" if offset < 0
+                              else f"on day {offset + 1} of a period")
+                           + (" (counted)" if offset in CYCLE_WINDOW else " (not counted)") for offset, day in near),
         f"Other periods: 3 months {counted(insights(data, 3, today)['started'], 'migraine')} started, "
         f"12 months {counted(insights(data, 12, today)['started'], 'migraine')}",
         PAYWALL_READY if gate["ready"] else PAYWALL_NOT_READY,
@@ -752,7 +805,11 @@ def expect_insights_patterns(data, today, zone):
             ("busiest day", view["busiest_day"], "Most often on Mondays: 3 of 10"),
             ("night, morning, afternoon, evening", view["times"], [1, 4, 3, 2]),
             ("Ibuprofen", "Ibuprofen: Helped a lot or completely: 7 of 9 answers (78%)" in view["medications"], True),
-            ("period day marks", sum(mark["period"] for mark in data["dayMarks"]), 0), ("ready", gate["ready"], True)]
+            ("periods starting in the 6 months", sum(within(start, view["period"]) for start in starts), 3),
+            ("a migraine 2 days before, on day 3 and 3 days before a period",
+             {-3, -2, 2} <= {offset for offset, _ in near}, True),
+            ("Around your period shows with Track periods on", view["cycle"] is not None, True),
+            ("ready", gate["ready"], True)]
     return {"insights": view, "paywall": gate}, lines, spec
 
 
@@ -905,6 +962,20 @@ def plain_trends(data, today):
     return lines
 
 
+def plain_cycle(data, first, today, started, months):
+    marked = sorted(date.fromisoformat(mark["date"]) for mark in data["dayMarks"] if mark["period"])
+    starts = [day for index, day in enumerate(marked) if index == 0 or (day - marked[index - 1]).days > 1]
+    if len([start for start in starts if first <= start <= today]) < 2:
+        return None
+    days = (today - first).days + 1
+    window = [first + timedelta(days=n) for n in range(days)
+              if any(abs((first + timedelta(days=n) - start).days) <= 2 for start in starts)]
+    near = sum(any(abs((start_time.date() - start).days) <= 2 for start in starts) for start_time in started)
+    return (f"{near} of {len(started)} migraines ({plain_percent(near, len(started))}) started in the days around your "
+            f"period. Those days are {plain_percent(len(window), days)} of these {months} months ({len(window)} of "
+            f"{days} days).")
+
+
 def recount_insights(data, months, today):
     first = plain_first(months, today)
     started = [plain_start(a) for a in data["attacks"] if first <= plain_start(a).date() <= today]
@@ -935,6 +1006,7 @@ def recount_insights(data, months, today):
         "times": times,
         "busiest_time": f"Most often {TIMES_OF_DAY[peaks[0]][1]}: {max(times)} of {total}" if len(peaks) == 1
         else "No single time of day stands out",
+        "cycle": plain_cycle(data, first, today, started, months),
         "medications": plain_helped(data, first, today),
     })
     return plain
@@ -975,7 +1047,9 @@ def recount(data, today, zone, facts):
     if "tokyo" in facts:
         attack = next(a for a in data["attacks"] if a["startZoneId"] == TOKYO)
         plain["tokyo"] = {"counted_on": plain_start(attack).date(),
-                          "phone_date": plain_local(attack["startEpochMillis"], zone).date()}
+                          "phone_date": plain_local(attack["startEpochMillis"], zone).date(),
+                          "phone_zone_days": len(set().union(*(plain_days(dict(a, startZoneId=zone))
+                                                               for a in data["attacks"])))}
     return plain
 
 

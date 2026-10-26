@@ -77,10 +77,11 @@ None.
 ## Impact
 
 - **Files:**
-  - `.maestro/`: new `subscription/`, `doctor-report/` and `trigger-insights/` folders, plus `device/` and
-    `subflows/`;
+  - `.maestro/`: a new `subscription/` folder, plus `device/` and `subflows/` (the report and Insights checks need adb,
+    so they are device scenarios);
   - `qa/device_scenarios.sh` and `qa/maestro.sh`;
-  - new `qa/seed_backup.py` and `qa/report_pdf.py`;
+  - new `qa/seed_backup.py`, `qa/seed_expect.py`, `qa/report_pdf.py`, `qa/backup_rules.py`, `qa/release_apk.py` and
+    `qa/message_timing.py`;
   - `docs/QA.md` and `docs/BRD.md`.
 - **BRD IDs:** SUB-F*, EC-BIL-*, REP-F*, EC-REP-*, INS-F*, EC-INS-*, D81–D92, D105–D115, D201 and D202.
 

@@ -3,7 +3,7 @@
 # next start goes straight home (D110).
 appId: com.migrely.app
 name: The paywall opens once after onboarding, and Close leads home
-tags: [regression, subscription, onboarding]
+tags: [regression, subscription, onboarding, simulated-store]
 ---
 - launchApp:
     clearState: true

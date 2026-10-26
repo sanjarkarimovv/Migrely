@@ -5,5 +5,9 @@ appId: com.migrely.app
 - extendedWaitUntil:
     visible: "Today: .*"
     timeout: 15000
-- assertNotVisible: "Your free trial (and Premium )?ends? tomorrow"
+- extendedWaitUntil:
+    visible: "Your free trial (and Premium )?ends? (tomorrow|today)"
+    timeout: 5000
+    optional: true
+- assertNotVisible: "Your free trial (and Premium )?ends? (tomorrow|today)"
 - stopApp
