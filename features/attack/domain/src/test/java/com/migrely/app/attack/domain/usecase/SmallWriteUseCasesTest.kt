@@ -12,6 +12,7 @@ import com.migrely.app.attack.domain.model.UpdateAttackNoteRequestDomainModel
 import com.migrely.app.attack.domain.model.UpdateAttackNoteResultDomainModel
 import com.migrely.app.attack.domain.model.WriteResultDomainModel
 import com.migrely.app.attack.domain.repository.DeleteAttackRepository
+import com.migrely.app.attack.domain.repository.PurgeExpiredDeletionsRepository
 import com.migrely.app.attack.domain.repository.RemoveIntensityPointRepository
 import com.migrely.app.attack.domain.repository.SelectAttackTagRepository
 import com.migrely.app.attack.domain.repository.SetCustomTagArchivedRepository
@@ -103,6 +104,15 @@ class SmallWriteUseCasesTest {
             WriteResultDomainModel.Written,
             DeleteAttackUseCase(repository, context).executeInBackground("a")
         )
+    }
+
+    @Test
+    fun `When the app starts then the repository purges the deletions whose undo has run out`() {
+        val repository: PurgeExpiredDeletionsRepository = mock()
+
+        PurgeExpiredDeletionsUseCase(repository, context).executeInBackground(Unit)
+
+        verify(repository).purgeExpiredDeletions()
     }
 
     @Test

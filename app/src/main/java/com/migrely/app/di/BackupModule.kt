@@ -19,6 +19,7 @@ import com.migrely.app.backup.ui.di.YourDataDependencies
 import com.migrely.app.backup.ui.mapper.AutomaticCopyUiMapper
 import com.migrely.app.backup.ui.mapper.BackupSummaryUiMapper
 import com.migrely.app.backup.ui.mapper.YourDataEventPresenter
+import com.migrely.app.backup.ui.mapper.YourDataMessageBehaviourUiMapper
 import com.migrely.app.backup.ui.mapper.YourDataNotificationUiMapper
 import com.migrely.app.backup.ui.mapper.YourDataViewStateUiMapper
 import com.migrely.app.coroutine.CoroutineContextProvider
@@ -83,6 +84,7 @@ internal object BackupModule {
 
     @Provides
     fun providesBackupRepository(
+        @ApplicationContext context: Context,
         backupDataSource: BackupDataSource,
         backupFileDataSource: BackupFileDataSource,
         documentDataSource: DocumentDataSource,
@@ -93,7 +95,10 @@ internal object BackupModule {
         documentDataSource,
         clockDataSource,
         AttacksCsvMapper(),
-        BackupSummaryDomainMapper()
+        BackupSummaryDomainMapper(),
+        // The phone's own language, not the formatting locale (BRD D117): the CSV opens in a spreadsheet of the
+        // phone's region, which expects semicolons where decimals take a comma (D72).
+        locale = { context.resources.configuration.locales[0] }
     )
 
     /** One for the app, so a file being written or read survives a rotation (ARCHITECTURE section 13). */
@@ -126,6 +131,7 @@ internal object BackupModule {
                 AutomaticCopyUiMapper(BackupSummaryUiMapper())
             ),
             yourDataEventPresenter = presenter,
+            yourDataMessageBehaviourUiMapper = YourDataMessageBehaviourUiMapper(),
             navigationMapper = YourDataNavigationEventDestinationMapper(),
             notificationMapper = YourDataNotificationUiMapper(presenter, BackupSummaryUiMapper())
         )

@@ -19,8 +19,9 @@ import com.migrely.app.subscription.domain.repository.SaveLaunchedPurchaseReposi
 
 /**
  * Buys [PremiumProductDomainModel] through Google Play's sheet (BRD D107, EC-BIL-08–10):
- * - a subscriber on a known plan choosing the other one upgrades it, prorated by time by Google
- *   Play; one whose plan is unknown here is offered lifetime only (review M9);
+ * - a subscriber on a known plan choosing the other one switches to it at once, and Google Play
+ *   charges the new price on the next billing date (D120); one whose plan is unknown here is
+ *   offered lifetime only (review M9);
  * - what is asked of the sheet is kept before it opens, so a purchase is never left without its
  *   plan and trial if the app is closed while the sheet is open (review M5);
  * - after the sheet closes, however it closed, Google Play is asked again, so the status shown is

@@ -44,14 +44,23 @@ import com.migrely.app.subscription.domain.repository.SaveLaunchedPurchaseReposi
 import com.migrely.app.subscription.domain.repository.SchedulePremiumChecksRepository
 import com.migrely.app.subscription.domain.repository.ShowPaymentMessagesRepository
 import java.time.DateTimeException
+import java.time.Duration
 import java.time.Instant
 import java.time.ZoneId
 import kotlinx.coroutines.flow.Flow
 
 /**
+ * How long Google Play's word on whether Premium can be sold here is kept for the paywalls that
+ * show themselves, so a home screen resumed again and again asks Play at most once an hour
+ * (BRD D110).
+ */
+internal val PREMIUM_OFFER_MEMORY: Duration = Duration.ofHours(1)
+
+/**
  * Migrely Premium over Google Play billing, the entitlement kept in the preferences, and the
  * attacks the paywall rules look at (change add-subscription). Every datasource failure comes back
- * as a value (ARCHITECTURE section 7).
+ * as a value (ARCHITECTURE section 7). One for the app, so what Play said about the products is
+ * remembered across screens.
  */
 @Suppress("TooManyFunctions", "LongParameterList")
 class SubscriptionRepository(
@@ -116,7 +125,15 @@ class SubscriptionRepository(
     override fun acknowledgePurchase(purchaseToken: String): Boolean =
         billingDataSource.acknowledge(purchaseToken)
 
-    override fun premiumProducts(): PremiumProductsResultDomainModel = try {
+    @Volatile
+    private var rememberedAvailability: RememberedAvailability? = null
+
+    /** Google Play's answer, read afresh: it also renews what [billingAvailability] remembers. */
+    override fun premiumProducts(): PremiumProductsResultDomainModel = queryPremiumProducts().also {
+        remember(availabilityOf(it))
+    }
+
+    private fun queryPremiumProducts(): PremiumProductsResultDomainModel = try {
         val products = mappers.premiumProductsDomainMapper.toDomain(
             billingDataSource.products(
                 subscriptionIds = listOf(SubscriptionProducts.PREMIUM),
@@ -154,12 +171,39 @@ class SubscriptionRepository(
         }
     }
 
-    override fun billingAvailability(): BillingAvailabilityDomainModel =
-        when (billingDataSource.connect()) {
-            BillingConnectionDataModel.Available -> BillingAvailabilityDomainModel.Available
-            BillingConnectionDataModel.Unavailable -> BillingAvailabilityDomainModel.Unavailable
-            BillingConnectionDataModel.Failed -> BillingAvailabilityDomainModel.Unknown
+    /**
+     * Available only when billing connects and Google Play offers Migrely's products: products
+     * Play does not return, as before they are set up in the Play Console, are as good as no
+     * billing for a paywall that shows itself (BRD D110, EC-BIL-11). A known answer is kept for
+     * [PREMIUM_OFFER_MEMORY]; one Play did not give is asked for again next time.
+     */
+    override fun billingAvailability(): BillingAvailabilityDomainModel {
+        val now = clockDataSource.now()
+        rememberedAvailability?.takeIf { it.isFreshAt(now) }?.let { return it.availability }
+        return when (billingDataSource.connect()) {
+            BillingConnectionDataModel.Available -> availabilityOf(premiumProducts())
+            BillingConnectionDataModel.Unavailable ->
+                BillingAvailabilityDomainModel.Unavailable.also(::remember)
+
+            BillingConnectionDataModel.Failed ->
+                BillingAvailabilityDomainModel.Unknown.also(::remember)
         }
+    }
+
+    private fun availabilityOf(products: PremiumProductsResultDomainModel) = when (products) {
+        is PremiumProductsResultDomainModel.Loaded -> BillingAvailabilityDomainModel.Available
+        PremiumProductsResultDomainModel.Unavailable -> BillingAvailabilityDomainModel.Unavailable
+        PremiumProductsResultDomainModel.Unreachable -> BillingAvailabilityDomainModel.Unknown
+    }
+
+    private fun remember(availability: BillingAvailabilityDomainModel) {
+        rememberedAvailability = when (availability) {
+            BillingAvailabilityDomainModel.Available, BillingAvailabilityDomainModel.Unavailable ->
+                RememberedAvailability(availability, clockDataSource.now())
+
+            BillingAvailabilityDomainModel.Unknown -> null
+        }
+    }
 
     override fun attackInProgress(): Boolean? = try {
         attackDataSource.inProgress() != null
@@ -214,4 +258,14 @@ class SubscriptionRepository(
     } catch (_: DataException) {
         SubscriptionWriteResultDomainModel.Failed
     }
+}
+
+/** What Google Play said about selling Premium here, and when. */
+private class RememberedAvailability(
+    val availability: BillingAvailabilityDomainModel,
+    private val at: Instant
+) {
+    /** Fresh for a while; a clock set back makes it stale at once. */
+    fun isFreshAt(now: Instant) =
+        !now.isBefore(at) && Duration.between(at, now) < PREMIUM_OFFER_MEMORY
 }

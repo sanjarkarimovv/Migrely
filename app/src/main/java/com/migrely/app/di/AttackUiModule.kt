@@ -37,6 +37,7 @@ import com.migrely.app.attack.ui.mapper.TimesUndoUiToPresentationMapper
 import com.migrely.app.attack.ui.notification.AddPastAttackEventPresenter
 import com.migrely.app.attack.ui.notification.AttackDetailsEventPresenter
 import com.migrely.app.attack.ui.view.AttackLabels
+import com.migrely.app.locale.FormattingLocales
 import com.migrely.app.navigation.mapper.AddPastAttackNavigationEventDestinationMapper
 import com.migrely.app.navigation.mapper.AttackDetailsNavigationEventDestinationMapper
 import dagger.Module
@@ -65,8 +66,11 @@ internal object AttackUiModule {
         AddPastAttackNavigationEventDestinationMapper()
 
     @Provides
-    fun providesAttackTimeUiFormatter(@ApplicationContext context: Context) = AttackTimeUiFormatter(
-        locale = { context.resources.configuration.locales[0] },
+    fun providesAttackTimeUiFormatter(
+        @ApplicationContext context: Context,
+        formattingLocales: FormattingLocales
+    ) = AttackTimeUiFormatter(
+        locale = { formattingLocales.of(context.resources.configuration) },
         is24HourFormat = { DateFormat.is24HourFormat(context) },
         deviceZone = { ZoneId.systemDefault() },
         bestDateTimePattern = { locale, skeleton ->

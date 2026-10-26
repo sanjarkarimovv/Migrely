@@ -52,6 +52,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -72,7 +73,7 @@ import com.migrely.app.designsystem.icon.MigrelyIcons
 import com.migrely.app.designsystem.motion.rememberReduceMotion
 import com.migrely.app.designsystem.snackbar.MigrelySnackbar
 import com.migrely.app.designsystem.snackbar.MigrelySnackbarHost
-import com.migrely.app.designsystem.snackbar.SnackbarTone
+import com.migrely.app.designsystem.snackbar.messageTimeoutMillis
 import com.migrely.app.designsystem.theme.MigrelyTheme
 import com.migrely.app.report.presentation.model.ReportViewState
 import com.migrely.app.report.ui.R
@@ -89,7 +90,6 @@ import java.time.format.FormatStyle
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.onSubscription
 
-private const val MESSAGE_MILLIS = 6_000L
 private val CONTENT_MAX_WIDTH = 600.dp
 private val MONTH_CHOICES = listOf(1, 3, 6, 12)
 private val DEFAULT_PERIOD = ReportPeriodUiModel.LastMonths(3)
@@ -151,9 +151,13 @@ fun ReportDependencies.Report(navController: NavController, modifier: Modifier =
                 }
         }
     }
-    LaunchedEffect(message) {
-        if (message != null) {
-            delay(MESSAGE_MILLIS)
+    // Stretched to the accessibility timeout (BRD EC-UX-16; QA #56).
+    val messageTimeout = messageTimeoutMillis(
+        message?.let { reportMessageBehaviourUiMapper.toUi(it.message).baseDurationMillis }
+    )
+    LaunchedEffect(message, messageTimeout) {
+        if (message != null && messageTimeout != null) {
+            delay(messageTimeout)
             message = null
         }
     }
@@ -177,7 +181,7 @@ fun ReportDependencies.Report(navController: NavController, modifier: Modifier =
             MigrelySnackbarHost(message = message, reduceMotion = rememberReduceMotion()) { shown ->
                 MigrelySnackbar(
                     text = stringResource(shown.message.text()),
-                    tone = SnackbarTone.Error,
+                    tone = reportMessageBehaviourUiMapper.toUi(shown.message).tone,
                     action = null,
                     dismissLabel = stringResource(R.string.report_message_dismiss),
                     onDismiss = { message = null }
@@ -337,7 +341,9 @@ fun ReportContents(
 
 @Composable
 private fun Covers(options: ReportOptionsUiModel) {
+    // The activity's formatting locale, English with the phone's region (BRD D117).
     val format = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
+        .withLocale(LocalConfiguration.current.locales[0])
     Text(
         stringResource(
             R.string.report_covers,

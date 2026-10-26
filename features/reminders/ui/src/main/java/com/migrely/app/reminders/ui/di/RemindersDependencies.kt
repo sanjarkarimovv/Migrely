@@ -9,12 +9,14 @@ import com.migrely.app.reminders.presentation.navigation.RemindersPresentationNa
 import com.migrely.app.reminders.presentation.viewmodel.RemindersViewModel
 import com.migrely.app.reminders.ui.mapper.ReminderKindUiToPresentationMapper
 import com.migrely.app.reminders.ui.mapper.RemindersEventPresenter
+import com.migrely.app.reminders.ui.mapper.RemindersMessageBehaviourUiMapper
 import com.migrely.app.reminders.ui.mapper.RemindersViewStateUiMapper
 
 class RemindersDependencies(
     val remindersViewModel: RemindersViewModel,
     val remindersViewStateUiMapper: RemindersViewStateUiMapper,
     val remindersEventPresenter: RemindersEventPresenter,
+    val remindersMessageBehaviourUiMapper: RemindersMessageBehaviourUiMapper,
     val reminderKindUiToPresentationMapper: ReminderKindUiToPresentationMapper,
     navigationMapper: NavigationEventDestinationMapper<RemindersPresentationNavigationEvent>,
     notificationMapper: NotificationUiMapper<RemindersPresentationNotification>

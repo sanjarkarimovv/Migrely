@@ -9,6 +9,7 @@ import com.migrely.app.datasource.backup.datasource.BackupDataSource
 import com.migrely.app.datasource.clock.datasource.ClockDataSource
 import com.migrely.app.datasource.report.datasource.ReportDocumentDataSource
 import com.migrely.app.datasource.report.datasource.ReportDocumentDataSourceImpl
+import com.migrely.app.locale.FormattingLocales
 import com.migrely.app.navigation.mapper.ReportNavigationEventDestinationMapper
 import com.migrely.app.report.data.mapper.ReportDateTimeFormatter
 import com.migrely.app.report.data.mapper.ReportDocumentMapper
@@ -22,6 +23,7 @@ import com.migrely.app.report.presentation.mapper.ReportPeriodDomainMapper
 import com.migrely.app.report.presentation.viewmodel.ReportViewModel
 import com.migrely.app.report.ui.di.ReportDependencies
 import com.migrely.app.report.ui.mapper.ReportEventPresenter
+import com.migrely.app.report.ui.mapper.ReportMessageBehaviourUiMapper
 import com.migrely.app.report.ui.mapper.ReportNotificationUiMapper
 import com.migrely.app.report.ui.mapper.ReportPeriodPresentationMapper
 import com.migrely.app.report.ui.mapper.ReportViewStateUiMapper
@@ -47,6 +49,7 @@ internal object ReportModule {
     @Provides
     fun providesReportRepository(
         @ApplicationContext context: Context,
+        formattingLocales: FormattingLocales,
         backupDataSource: BackupDataSource,
         reportDocumentDataSource: ReportDocumentDataSource,
         clockDataSource: ClockDataSource
@@ -57,7 +60,7 @@ internal object ReportModule {
         ReportRecordsDomainMapper(),
         ReportDocumentMapper(
             ReportDateTimeFormatter(
-                locale = { context.resources.configuration.locales[0] },
+                locale = { formattingLocales.of(context.resources.configuration) },
                 is24HourFormat = { DateFormat.is24HourFormat(context) },
                 bestDateTimePattern = { locale, skeleton ->
                     DateFormat.getBestDateTimePattern(locale, skeleton)
@@ -96,6 +99,7 @@ internal object ReportModule {
             reportViewStateUiMapper = ReportViewStateUiMapper(),
             reportPeriodPresentationMapper = ReportPeriodPresentationMapper(),
             reportEventPresenter = presenter,
+            reportMessageBehaviourUiMapper = ReportMessageBehaviourUiMapper(),
             navigationMapper = ReportNavigationEventDestinationMapper(),
             notificationMapper = ReportNotificationUiMapper(presenter)
         )

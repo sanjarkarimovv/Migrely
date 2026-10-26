@@ -19,6 +19,7 @@ import com.migrely.app.subscription.presentation.viewmodel.PremiumSectionViewMod
 import com.migrely.app.subscription.presentation.viewmodel.TrialBannerViewModel
 import com.migrely.app.subscription.ui.mapper.PaywallContextPresentationMapper
 import com.migrely.app.subscription.ui.mapper.PaywallEventPresenter
+import com.migrely.app.subscription.ui.mapper.PaywallMessageBehaviourUiMapper
 import com.migrely.app.subscription.ui.mapper.PaywallProductPresentationMapper
 import com.migrely.app.subscription.ui.mapper.PaywallViewStateUiMapper
 import com.migrely.app.subscription.ui.mapper.PremiumSectionViewStateUiMapper
@@ -36,6 +37,7 @@ class PaywallDependencies(
     val paywallContextPresentationMapper: PaywallContextPresentationMapper,
     val paywallProductPresentationMapper: PaywallProductPresentationMapper,
     val paywallEventPresenter: PaywallEventPresenter,
+    val paywallMessageBehaviourUiMapper: PaywallMessageBehaviourUiMapper,
     navigationMapper: NavigationEventDestinationMapper<PaywallPresentationNavigationEvent>,
     notificationMapper: NotificationUiMapper<PaywallPresentationNotification>
 ) : BaseComposeHolder<PaywallViewState, PaywallPresentationNotification>(

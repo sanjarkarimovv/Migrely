@@ -12,6 +12,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
@@ -26,7 +27,6 @@ import com.migrely.app.insights.ui.model.InsightsPercentUiModel
 import com.migrely.app.insights.ui.model.InsightsTriggerUiModel
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
-import java.util.Locale
 
 /** A titled card; the title is a heading, so a screen reader can move from section to section. */
 @Composable
@@ -301,9 +301,10 @@ private fun percentText(percent: InsightsPercentUiModel): String = when (percent
     InsightsPercentUiModel.AboveNinetyNine -> stringResource(R.string.insights_percent_above, 99)
 }
 
-/** "October 2026", in the order of the device's language. */
+/** "October 2026", in the activity's formatting locale, English with the phone's region (BRD D117). */
+@Composable
 private fun monthName(year: Int, month: Int): String {
-    val locale = Locale.getDefault()
+    val locale = LocalConfiguration.current.locales[0]
     return DateTimeFormatter.ofPattern(DateFormat.getBestDateTimePattern(locale, "MMMMy"), locale)
         .format(YearMonth.of(year, month))
 }

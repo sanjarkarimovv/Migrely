@@ -12,6 +12,7 @@ import com.migrely.app.attack.domain.repository.GetAttackDetailsRepository
 import com.migrely.app.attack.domain.repository.GetCurrentTimeRepository
 import com.migrely.app.attack.domain.repository.GetMaximumRecordedRepository
 import com.migrely.app.attack.domain.repository.MergeAttacksRepository
+import com.migrely.app.attack.domain.repository.PurgeExpiredDeletionsRepository
 import com.migrely.app.attack.domain.repository.RemoveIntakeRepository
 import com.migrely.app.attack.domain.repository.RemoveIntensityPointRepository
 import com.migrely.app.attack.domain.repository.RestoreAttackTimesRepository
@@ -31,6 +32,7 @@ import com.migrely.app.attack.domain.usecase.DeleteAttackUseCase
 import com.migrely.app.attack.domain.usecase.GetAttackDetailsUseCase
 import com.migrely.app.attack.domain.usecase.GetPastAttackDraftUseCase
 import com.migrely.app.attack.domain.usecase.MergeAttacksUseCase
+import com.migrely.app.attack.domain.usecase.PurgeExpiredDeletionsUseCase
 import com.migrely.app.attack.domain.usecase.RemoveIntakeUseCase
 import com.migrely.app.attack.domain.usecase.RemoveIntensityPointUseCase
 import com.migrely.app.attack.domain.usecase.RestoreIntakeUseCase
@@ -201,6 +203,12 @@ internal object AttackModule {
         deleteAttackRepository: DeleteAttackRepository,
         coroutineContextProvider: CoroutineContextProvider
     ) = DeleteAttackUseCase(deleteAttackRepository, coroutineContextProvider)
+
+    @Provides
+    fun providesPurgeExpiredDeletionsUseCase(
+        purgeExpiredDeletionsRepository: PurgeExpiredDeletionsRepository,
+        coroutineContextProvider: CoroutineContextProvider
+    ) = PurgeExpiredDeletionsUseCase(purgeExpiredDeletionsRepository, coroutineContextProvider)
 
     @Provides
     fun providesGetPastAttackDraftUseCase(

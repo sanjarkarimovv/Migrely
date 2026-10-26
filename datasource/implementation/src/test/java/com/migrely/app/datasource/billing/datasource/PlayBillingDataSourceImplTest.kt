@@ -174,6 +174,22 @@ class PlayBillingDataSourceImplTest {
     }
 
     @Test
+    fun `Given monthly and yearly share a subscription then the switch uses a mode Play allows`() {
+        // Google Play answers any other mode with DEVELOPER_ERROR for two base plans of one
+        // subscription (BRD D120); WITH_TIME_PRORATION failed on a real phone.
+        val allowed = setOf(
+            BillingFlowParams.SubscriptionUpdateParams.ReplacementMode.CHARGE_FULL_PRICE,
+            BillingFlowParams.SubscriptionUpdateParams.ReplacementMode.WITHOUT_PRORATION
+        )
+
+        assertTrue(PLAN_SWITCH_REPLACEMENT_MODE in allowed)
+        assertEquals(
+            BillingFlowParams.SubscriptionUpdateParams.ReplacementMode.WITHOUT_PRORATION,
+            PLAN_SWITCH_REPLACEMENT_MODE
+        )
+    }
+
+    @Test
     fun `Given each setup answer when connecting then it maps, and failures can be retried`() {
         setupAnswer = BillingResponseCode.BILLING_UNAVAILABLE
         assertEquals(BillingConnectionDataModel.Unavailable, classUnderTest.connect())

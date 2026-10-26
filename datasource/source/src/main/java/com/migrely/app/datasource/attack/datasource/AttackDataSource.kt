@@ -116,6 +116,12 @@ interface AttackDataSource {
     /** The newest attack deleted at or after [since], if it is still restorable. */
     fun recentlyDeleted(since: Instant): DeletedAttackDataModel?
 
+    /**
+     * Removes for good the attacks deleted before the undo window, with their points, tags and intakes. Run when the
+     * app starts, so they never linger until the next deletion.
+     */
+    fun purgeExpiredDeletions()
+
     fun updateLongAttackCheck(attackId: String, confirmedAt: Instant?, disabled: Boolean)
 
     /** Idempotent: selecting a selected tag or clearing a cleared one changes nothing. */

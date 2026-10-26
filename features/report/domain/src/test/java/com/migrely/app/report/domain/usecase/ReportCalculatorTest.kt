@@ -286,7 +286,7 @@ class ReportCalculatorTest {
     }
 
     @Test
-    fun `Notes are the period's, trimmed, newest first, and blank ones are left out`() {
+    fun `Notes are the period's, trimmed, newest first, with their migraine's row, no blanks`() {
         val notes = classUnderTest.notes(
             records(
                 listOf(
@@ -300,8 +300,8 @@ class ReportCalculatorTest {
 
         assertEquals(
             listOf(
-                ReportNoteDomainModel(LocalDate.of(2026, 10, 7), "Stress at work"),
-                ReportNoteDomainModel(LocalDate.of(2026, 10, 1), "Little sleep")
+                ReportNoteDomainModel(LocalDate.of(2026, 10, 7), "Stress at work", attackIndex = 0),
+                ReportNoteDomainModel(LocalDate.of(2026, 10, 1), "Little sleep", attackIndex = 2)
             ),
             notes
         )
