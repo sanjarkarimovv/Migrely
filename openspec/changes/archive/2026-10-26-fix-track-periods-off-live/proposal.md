@@ -19,8 +19,12 @@ was restarted. Turning tracking on worked because the latch only listens for `tr
 - The view state alone decides whether the toggle shows. `TodayContents` draws it when `periodOffered` is true, with no
   state of its own.
 - The "kept once shown" rule moves to `HomeViewModel`, which stays stateless: the load that follows the user's own
-  change on home keeps the toggle (`loadToday(keepPeriodToggle = true)`). Every other load, on entering, on returning
-  to home or at midnight, offers it only as saved.
+  change on home keeps the toggle (`loadToday(keepPeriodToggle = true)`). Every other load offers it only as saved: on
+  entering, on returning to home, after an undo, at midnight, and after a rotation or the screen turning off, since
+  each resumes home.
+  - Decision: the kept toggle no longer survives a rotation, which the latch did. Keeping it through a rotation would
+    need state the ViewModel may not hold (skill rule 4). A mark removed by mistake and rotated away can still be put
+    back by turning "Track periods" on.
 - Unit tests in `HomeViewModelTest` for both directions and for the kept toggle.
 - The day-markers spec says when the toggle stays and when it goes.
 

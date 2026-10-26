@@ -39,5 +39,17 @@
 - Evidence: `migrely-work/walks/fix66/` (node dumps and two screenshots). The baseline was restored afterwards (dump
   md5 `c3cfd32487171b7886baf9725dce7594`).
 - **Not checked:** rotation right after removing a mark. The resume that follows a rotation loads home again, so the
-  kept toggle is expected to go then; before, it survived a rotation. History's switch is unchanged: History cannot open
+  kept toggle is expected to go then; before, it survived a rotation (a decision in the proposal).
+
+## Review
+
+An independent review found nothing critical or important. Minor findings, all fixed:
+- the spec and the KDoc said the kept toggle stays "until home is next opened or returned to", while any other load
+  ends it (midnight, an undo, a rotation): both now say so;
+- the rotation trade-off is now a decision in the proposal;
+- `HomeViewStateUiMapperTest` has a case with the toggle not offered;
+- History's switch keeps its one-way latch, now with a comment naming why it is safe: Settings opens only from home.
+
+Accepted: the tests guard the ViewModel, where the decision now lives; feature UI has no Compose tests (ARCHITECTURE
+§11), so a latch put back into the composable would not be caught by a unit test. History's switch is unchanged: History cannot open
   Settings, so its own "while the day is chosen" latch cannot outlive a change of the setting.

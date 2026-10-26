@@ -135,8 +135,8 @@ class HomeViewModel(
 
     /**
      * Home's one-tap period toggle for today (BRD DAY-F1, D48). The load after the change keeps the toggle, so a mark
-     * removed by mistake while "Track periods" is off can be put back; the next load on entering or returning to home
-     * offers it only as saved (D79).
+     * removed by mistake while "Track periods" is off can be put back; any later load, such as returning to home, a
+     * rotation, an undo or midnight, offers it only as saved (D79).
      */
     fun onPeriodTodayAction(marked: Boolean) {
         setPeriodTodayUseCase(
