@@ -31,6 +31,7 @@ esac
 export MAESTRO_CLI_NO_ANALYTICS=1
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 ADB="${ANDROID_HOME:-$HOME/Library/Android/sdk}/platform-tools/adb"
+APP="com.migrely.app"
 APK="${QA_APK:-$ROOT/app/build/outputs/apk/debug/app-debug.apk}"
 LONG_TIMEOUT_TAG="a11y-timeout"
 KNOWN_BUG_TAG="known-bug"

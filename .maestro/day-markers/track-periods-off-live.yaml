@@ -1,9 +1,9 @@
 # Covers: day-markers › Track periods › Turning it off
 # Turning "Track periods" off in Settings takes the Period toggle off home at once, as turning it on adds it at once.
-# Known bug #66: home keeps "Period today" until the app restarts.
+# Regression test for #66 (fixed in PR #68): home kept "Period today" until the app restarted.
 appId: com.migrely.app
 name: Turning Track periods off takes the Period toggle off home at once (#66)
-tags: [regression, day-markers, known-bug]
+tags: [regression, day-markers]
 ---
 - runFlow: ../subflows/launch-clean.yaml
 - assertVisible: "Period today"

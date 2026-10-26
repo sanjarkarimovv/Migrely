@@ -1585,6 +1585,7 @@ scenario_report_counting() {
 
 # Covers: doctor-report › Large periods › Twelve heavy months
 # Covers: doctor-report › The file and sharing › Closed while making it
+# Also checks: #67, the notes capped with the table
 scenario_report_heavy() {
   echo "Scenario report_heavy: 900 attacks in 12 months make at most 50 pages; a report closed half-made leaves nothing (D84, D85)"
   local files box want
@@ -1629,6 +1630,28 @@ scenario_report_heavy() {
   report_texts report-heavy || return 1
   python3 -I "$ROOT/qa/report_pdf.py" "$out/report-heavy.pdf" --pages-at-most 50 --every-page "Patient-entered data. Not a diagnosis." \
     --regex "Showing the latest [0-9]+ of 900 migraines\. The summary counts all of them\." --text ${REPORT_TEXTS[@]+"${REPORT_TEXTS[@]}"} --regex ${REPORT_PATTERNS[@]+"${REPORT_PATTERNS[@]}"} |
+    sed 's/^/    /'
+  [[ "${PIPESTATUS[0]}" == 0 ]] || return 1
+  # With notes on, the notes follow the table's cap (#67, D84): only the latest N migraines' notes, and a line saying
+  # so. The seed numbers its notes from HEAVY-0001, the newest, so the notes kept are HEAVY-0001 to HEAVY-N.
+  run_flow_env report-make "PERIOD=12 months" NOTES=true || return 1
+  pull_report "$out/report-heavy-notes.pdf" || return 1
+  python3 -I "$ROOT/qa/report_pdf.py" "$out/report-heavy-notes.pdf" --pages-at-most 50 \
+    --every-page "Patient-entered data. Not a diagnosis." | sed 's/^/    notes on: /'
+  [[ "${PIPESTATUS[0]}" == 0 ]] || return 1
+  pdftotext -layout "$out/report-heavy-notes.pdf" "$out/report-heavy-notes.txt" || return 1
+  python3 -I -c "import re, sys
+text = re.sub(r'\s+', ' ', open(sys.argv[1], encoding='utf-8').read())
+rows = re.search(r'Showing the latest (\d+) of 900 migraines\.', text)
+notes = re.search(r'Notes from the latest (\d+) migraines\.', text)
+kept = sorted({int(n) for n in re.findall(r'HEAVY-(\d{4})', text)})
+if not rows or not notes:
+    sys.exit('FAIL: the table or the notes do not say how many they show')
+n = int(rows.group(1))
+if int(notes.group(1)) != n or kept != list(range(1, n + 1)):
+    span = f' (HEAVY-{kept[0]:04} to HEAVY-{kept[-1]:04})' if kept else ''
+    sys.exit(f'FAIL: {n} rows, notes say {notes.group(1)}, notes kept {len(kept)}{span}')
+print(f'notes on: the latest {n} of 900 migraines and their {n} notes, HEAVY-0001 to HEAVY-{n:04}')" "$out/report-heavy-notes.txt" |
     sed 's/^/    /'
   [[ "${PIPESTATUS[0]}" == 0 ]] || return 1
 }
