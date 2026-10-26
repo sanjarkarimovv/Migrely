@@ -1,0 +1,39 @@
+# Covers: onboarding › The paywall after onboarding › Finishing onboarding
+# With Google Play billing available, the paywall opens once after the last onboarding step and Close leads home; the
+# next start goes straight home (D110).
+appId: com.migrely.app
+name: The paywall opens once after onboarding, and Close leads home
+tags: [regression, subscription, onboarding]
+---
+- launchApp:
+    clearState: true
+- repeat:
+    times: 4
+    commands:
+      - extendedWaitUntil:
+          visible: "Step [1-4] of 4.*"
+          timeout: 15000
+      - extendedWaitUntil:
+          visible: "QA: never shown, a pause for the 0.8 s tap guard"
+          timeout: 1000
+          optional: true
+      - tapOn: "Skip this step"
+- extendedWaitUntil:
+    visible: "Get more from your diary"
+    timeout: 10000
+- assertVisible: "Premium turns what you log into answers you can use\\."
+- assertVisible: "Close"
+- tapOn: "Close"
+- extendedWaitUntil:
+    visible: "Today: calm\\. Calm so far today\\. No migraine logged\\."
+    timeout: 10000
+- stopApp
+- launchApp
+- extendedWaitUntil:
+    visible: "Today: calm\\. Calm so far today\\. No migraine logged\\."
+    timeout: 10000
+- extendedWaitUntil:
+    visible: "Get more from your diary"
+    timeout: 5000
+    optional: true
+- assertNotVisible: "Get more from your diary"

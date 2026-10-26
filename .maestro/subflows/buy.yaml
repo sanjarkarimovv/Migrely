@@ -1,0 +1,13 @@
+# Buys on an open paywall through the debug build's simulated store (D201): PLAN is "Yearly", "Monthly" or "Lifetime",
+# BUTTON the action it shows ("Start free trial", "Subscribe" or "Buy once"), SHEET the sheet's choice ("Complete the
+# purchase", "Pay later (pending)" or "Cancel").
+appId: com.migrely.app
+---
+- tapOn: "${PLAN}\\. .*"
+- tapOn: "${BUTTON}"
+# The sheet's title and the product are one node ("Simulated Google Play" and a line under it).
+- extendedWaitUntil:
+    visible: "${SHEET}"
+    timeout: 10000
+- assertVisible: "(?s)Simulated Google Play.*"
+- tapOn: "${SHEET}"
