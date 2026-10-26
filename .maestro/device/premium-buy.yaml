@@ -1,0 +1,28 @@
+# Device scenario step: from Settings' Premium row (a free user's status row opens the paywall), buy PLAN with BUTTON
+# and the simulated sheet's SHEET; then wait for RESULT (a regex) and leave through Continue when it shows.
+appId: com.migrely.app
+---
+- launchApp
+- tapOn: "Settings"
+- tapOn: "See what Premium adds"
+- extendedWaitUntil:
+    visible: "Migrely Premium"
+    timeout: 10000
+- extendedWaitUntil:
+    visible: "${PLAN}\\. .*"
+    timeout: 10000
+- runFlow:
+    file: ../subflows/buy.yaml
+    env:
+      PLAN: "${PLAN}"
+      BUTTON: "${BUTTON}"
+      SHEET: "${SHEET}"
+- extendedWaitUntil:
+    visible: "${RESULT}"
+    timeout: 10000
+- runFlow:
+    when:
+      visible: "Continue"
+    commands:
+      - tapOn: "Continue"
+- stopApp

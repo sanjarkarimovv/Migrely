@@ -1,0 +1,13 @@
+# Device scenario step: home shows no trial-ending banner.
+appId: com.migrely.app
+---
+- launchApp
+- extendedWaitUntil:
+    visible: "Today: .*"
+    timeout: 15000
+- extendedWaitUntil:
+    visible: "Your free trial (and Premium )?ends? (tomorrow|today)"
+    timeout: 5000
+    optional: true
+- assertNotVisible: "Your free trial (and Premium )?ends? (tomorrow|today)"
+- stopApp

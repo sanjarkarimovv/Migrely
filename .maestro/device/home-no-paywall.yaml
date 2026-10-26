@@ -1,0 +1,13 @@
+# Device scenario step: home opens and no paywall shows itself, waited for 6 s.
+appId: com.migrely.app
+---
+- launchApp
+- extendedWaitUntil:
+    visible: "Today: .*"
+    timeout: 15000
+- extendedWaitUntil:
+    visible: "See your patterns|Get more from your diary"
+    timeout: 6000
+    optional: true
+- assertNotVisible: "See your patterns|Get more from your diary"
+- stopApp

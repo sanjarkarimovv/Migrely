@@ -1,0 +1,10 @@
+# Device scenario step: Settings › Restore purchases asks the store again, and the status reads STATUS (a regex).
+appId: com.migrely.app
+---
+- launchApp
+- tapOn: "Settings"
+- tapOn: "Restore purchases"
+- extendedWaitUntil:
+    visible: "${STATUS}"
+    timeout: 15000
+- stopApp

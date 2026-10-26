@@ -45,7 +45,8 @@ qa_unlock_device() {
 # values they find and restore those, so a value left over by a crashed run would be "restored" again; it is reported
 # when a script starts. qa/reset_device.sh puts the baseline back.
 QA_BASELINE=("system accelerometer_rotation=1" "system user_rotation=0" "system font_scale=1.0"
-  "secure accessibility_interactive_ui_timeout_ms=null" "global animator_duration_scale=null" "global auto_time=1")
+  "secure accessibility_interactive_ui_timeout_ms=null" "secure accessibility_non_interactive_ui_timeout_ms=null"
+  "global animator_duration_scale=null" "global auto_time=1")
 
 qa_adb() { "${ADB:-${ANDROID_HOME:-$HOME/Library/Android/sdk}/platform-tools/adb}" -s "$QA_SERIAL" "$@"; }
 

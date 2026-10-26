@@ -1,0 +1,24 @@
+# Device scenario step: History › Doctor report, PERIOD chosen, notes included when NOTES is "true", Create report; once
+# the report is made the system share sheet opens with the PDF and no permission is asked (D85). It waits for the
+# sheet for at most 120 s and closes it.
+appId: com.migrely.app
+---
+- launchApp
+- tapOn: ".*\\. Opens History\\."
+- tapOn: "Doctor report"
+- extendedWaitUntil:
+    visible: "Create report"
+    timeout: 10000
+- tapOn: "${PERIOD}"
+- runFlow:
+    when:
+      true: ${NOTES == "true"}
+    commands:
+      - tapOn: "Include notes"
+- tapOn: "Create report"
+- extendedWaitUntil:
+    visible: "migrely-report-[0-9-]+\\.pdf"
+    timeout: 120000
+- assertNotVisible: "Allow .*"
+- back
+- stopApp

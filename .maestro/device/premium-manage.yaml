@@ -1,0 +1,16 @@
+# Device scenario step: Settings › Manage subscription opens the simulated store's purchases, and CHOICE is chosen
+# ("End the subscription", "Refund the lifetime purchase" or "Close"); the app asks the store again after the sheet
+# closes, so it waits for the status AFTER (a regex) before closing.
+appId: com.migrely.app
+---
+- launchApp
+- tapOn: "Settings"
+- tapOn: "Manage subscription|Manage"
+- extendedWaitUntil:
+    visible: "${CHOICE}"
+    timeout: 10000
+- tapOn: "${CHOICE}"
+- extendedWaitUntil:
+    visible: "${AFTER}"
+    timeout: 15000
+- stopApp
