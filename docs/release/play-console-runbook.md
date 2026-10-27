@@ -149,9 +149,7 @@ Production'ga faqat Git-flow boʻyicha yakunlangan va tag qoʻyilgan versiya chi
    yuklanadi. Farq boʻlsa, AAB tag'dan qayta yigʻiladi va QA'ga qayta beriladi.
 4. **Production → Create new release:**
    - birinchi chiqish 100% boʻladi, chunki Play birinchi chiqishda staged rollout bermaydi;
-   - yangilanishlar staged rollout bilan chiqadi: 20% → 2–3 kundan keyin 50% → yana 2–3 kundan keyin 100%;
-   - hali foydalanuvchi yoʻq boʻlsa, yangilanish darhol 100% chiqishi mumkin: staged rollout mavjud
-     foydalanuvchilarni himoya qiladi, ular boʻlmasa u faqat tuzatishni kechiktiradi (D126).
+   - yangilanishlar staged rollout bilan chiqadi: 20% → 2–3 kundan keyin 50% → yana 2–3 kundan keyin 100%.
 5. **Managed publishing yoqilgan.** **Send changes for review** bosiladi; Google tasdiqlasa ham ilova oʻzi chiqmaydi.
 6. **Publish changes** faqat QA hukmidan keyin bosiladi (D124): QA tekshiruvi va closed track'ning pre-launch report'i
    launch blocker koʻrsatmasligi kerak. Launch blocker:
