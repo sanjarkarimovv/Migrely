@@ -40,7 +40,7 @@ QA's own checks and the pre-launch report are therefore all that stand before us
 - **Base:** develop 438be90. Its product code is the same as build 4's. The checks run on build 4's APKs and bundle,
   built in `../migraine-app-qa-rc` (`QA_APK`, D201).
 - **Go/No-Go record (`docs/qa/go-no-go-1.0.0.md`):**
-  - line 11 is the closed track's pre-launch report, read when it is out (build 4 went live first);
+  - line 11 is the closed track's pre-launch report, read when it is out (build 4 went to closed testing first);
   - line 12 is waived by the user on 2026-10-27;
   - build 4's new lines: lint (#74), the instrumented tests, the split APKs;
   - a residual-risk section.

@@ -5,7 +5,7 @@
 - [x] 1.1 BRD §13 row 13c, §17 D203 and D204. Verify: `grep -n "| 13c |\|| D203 \|| D204 " docs/BRD.md`
 - [x] 1.2 `docs/qa/go-no-go-1.0.0.md` for build 4's Play state:
   - the closed testing release and managed publishing, with Publish held for QA's verdict;
-  - line 11 is the closed track's pre-launch report, read when it is out (build 4 went live first);
+  - line 11 is the closed track's pre-launch report, read when it is out (build 4 went to closed testing first);
   - line 12 is waived by the user on 2026-10-27.
   Verify: `grep -n "waived\|managed publishing\|pre-launch" docs/qa/go-no-go-1.0.0.md`
 
@@ -35,7 +35,7 @@
 - [ ] 4.1 Lint and the instrumented tests on build 4 (design D7), with the results and the #74 exception in the
   Go/No-Go record. Verify: the record's lines name the counts and #74
 - [ ] 4.2 `qa/split_apks.sh` and the device specs in `qa/fixtures/device-specs/` (design D8), on the 1.0.1 bundle (build 4
-  went live before the script ran). Verify:
+  went to closed testing before the script ran). Verify:
   - it refuses emulator-5570;
   - `pm path` lists 4 APKs for each profile;
   - the smoke suite and the D117 checks pass on ru-26 (emulator-5582) and on he-36, uz-36 and en-36 (emulator-5580);

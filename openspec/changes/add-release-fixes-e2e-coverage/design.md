@@ -6,8 +6,11 @@ See proposal.md (Why).
 - **Build under test:** build 4, `release/1.0.0` @ 29aadb3, with the same product code as develop 438be90. Its debug
   and R8 APKs are in `../migraine-app-qa-rc` and are named with `QA_APK` (D201). So is its debug-signed bundle
   (`app/build/outputs/bundle/release/app-release.aab`).
-- **Play:** build 4 is live: the user pressed "Publish changes" on 2026-10-27, before QA's verdict and before the
-  closed track's pre-launch report. The sweep and the report are checks after the release.
+- **Play:** build 4 went to the closed track only.
+  - The user pressed "Publish changes" on 2026-10-27, before QA's verdict and before the closed track's pre-launch
+    report.
+  - No production release was sent (corrected later that day). So the sweep and the report are checks before
+    production.
 - **The bundle:**
   - `bundletool dump config` shows the default splits (language, density, ABI);
   - the one native library is stored uncompressed with 16 KB alignment;
@@ -152,7 +155,7 @@ Each charter below is 30 to 45 minutes on the debug APK, or on the R8 APK for th
 
 ### D11. The 1.0.1 hotfix candidate
 
-Build 4 went live before QA's verdict. Its sweep found #77 to #81, and the dev session fixed them on `hotfix/1.0.1`,
+Build 4 went to closed testing before QA's verdict. Its sweep found #77 to #81, and the dev session fixed them on `hotfix/1.0.1`,
 cut from `main` (versionCode 5, D125). The candidate's commit is named in its record, `docs/qa/go-no-go-1.0.1.md`.
 - **Why it belongs to this change:** the change's device tasks are this candidate's Go/No-Go lines, so each check runs
   once:

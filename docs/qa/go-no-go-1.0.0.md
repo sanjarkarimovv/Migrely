@@ -21,16 +21,17 @@
 **GO for the internal testing track, with the risks of "What these checks do not prove" open**: lines 1–10 pass,
 and line 1a holds the stated #74 exception.
 
-**No Publish verdict was given: build 4 went live before it, on the user's decision.**
-- **Published:** on 2026-10-27, to production at 100% in every country (the EEA included) and to the closed track.
+**No Publish verdict was given: build 4 went to closed testing before it, on the user's decision.**
+- **Published:** on 2026-10-27, to the closed testing track (Alpha) only.
+  - No production release was sent, so the store page stayed unpublished.
+  - Corrected later that day, from the user through the dev session. QA had first recorded production at 100%.
 - **How:** Google approved the submission of 14:01 the same day. Managed publishing held it, and the user pressed
   "Publish changes".
 - **Before:**
   - QA's verdict on the build 4 sweep, which was still running;
   - line 11, the closed track's pre-launch report, which was not out yet.
 - **Tag:** `v1.0.0` on `main` at a1cf745.
-- **No smaller first audience:** Play has no staged rollout for an app's first release. Every user has build 4, and
-  only a new build can change that.
+- **Production:** 1.0.0 never reached it. The first production release is 1.0.1 (`docs/qa/go-no-go-1.0.1.md`).
 - **Line 12:** the week of internal testing is waived, on the user's decision of 2026-10-27.
 
 **After the release:**
@@ -169,7 +170,7 @@ first.
   - screen-state tests (audit C3).
   Both wait for the dev session's build logic (audit C1).
 - **Checks that could not run:**
-  - **Split APKs (line 2a):** the script was new on 2026-10-27, and it had not run when build 4 went live.
+  - **Split APKs (line 2a):** the script was new on 2026-10-27, and it had not run when build 4 went to closed testing.
   - **Device tests in CI (audit C5):** GitHub Actions starts no job while the account's billing lock lasts.
   - **Code coverage:** not measured until audit C2.
   - **Play's grace period and account hold:** they need a failed renewal (a D61 gap of QA 11b).

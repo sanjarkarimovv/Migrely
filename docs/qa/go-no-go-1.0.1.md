@@ -2,7 +2,7 @@
 
 - **Candidate:** `hotfix/1.0.1` @ ed695424, versionName 1.0.1, versionCode 6. The branch was cut from `main` at
   `v1.0.0` (a1cf745), as D125 requires.
-- **What it fixes:** the defects that QA's build 4 sweep found after 1.0.0 went live (QA 13c):
+- **What it fixes:** the defects that QA's build 4 sweep found while 1.0.0 was on closed testing only (QA 13c):
   - #77: the privacy link crashed with no browser;
   - #78: overlapping migraines;
   - #79: the landscape time pickers;
@@ -26,6 +26,9 @@
 **The user's decision of 2026-10-27, 20:30, to QA directly. It replaces the gates below:**
 - **The decision:** 1.0.1 goes to production now, on the evidence at hand. It waits neither for QA's full Go nor for the first signal.
 - **The user's reason:** 1.0.0 has no users yet.
+  - 1.0.0 went only to closed testing, so 1.0.1 is the first production release.
+  - So it goes out at 100%: Play has no staged rollout for a first release.
+  - The user sent it to review on 2026-10-27, and presses "Publish changes" after Google approves.
 - **The evidence at that time:**
   - lines 1 and 1a;
   - every retest on the debug build, twice each, with the dev's ANR path 5 times clean;
@@ -62,11 +65,11 @@
 | 1b | Instrumented tests on emulator-5580 | ⏳ |
 | 2 | Smoke on Android 8.0 (API 26), debug and R8 | ⏳ |
 | 2a | Split APKs from the upload-signed bundle: ru-26, he-36, uz-36, en-36 | ⏳ |
-| 3 | Full regression on API 36 (debug) | ⏳ |
+| 3 | Full regression on API 36 (debug) | ✅ 21:29–22:15, host load average 8–10. Pass 2 (`a11y-timeout`): 9 of 9. Pass 1: 43 of 45, and both failures were the flows, not the app:<ul><li>`track-periods-off-marks` (new in 13c) read the toggle's state from its label, but the state is on the parent. Fixed, then 3 of 3;</li><li>`undo-window-passes` found the 5 s offer already gone under load: 2 of 2 on rerun, unchanged.</li></ul> |
 | 4 | Accessibility audit (22 states) | ⏳ |
 | 5 | Device scenarios | ⏳ |
 | 6 | Random input (`qa/monkey.sh 20261024 5000`) | ⏳ |
-| 6a | Upgrade to 1.0.1 from build 4 (1.0.0) | ⏳ |
+| 6a | Upgrade to 1.0.1 from build 4 (1.0.0); only closed testers had build 4 | ⏳ |
 | 7 | Permissions (`qa/permission_audit.sh`, debug and release APK) | ⏳ |
 | 8 | Open defects (`gh issue list --label qa --state open`) | ✅ The retests passed. #74 and #77–#81 are fixed in ed695424 and closed with PR #96, and no S1 or S2 is open. Still open, all for develop:
 <ul>
