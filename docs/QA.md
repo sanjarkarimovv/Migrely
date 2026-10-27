@@ -83,8 +83,8 @@ scale and restore it on exit.
 - attack details (top and bottom), History (first use and a month), the past-migraine screen and its overlap card;
 - onboarding's first step, Settings, Warning signs, the privacy page (its top and its end), Theme;
 - My medications, Reminders, Your data;
-- the paywall, the report's period screen and Insights. These three buy Premium through the simulated store, so on a
-  release build the audit lists them as not run.
+- the paywall, the report's period screen and Insights. These three need the simulated store and carry the tag
+  `simulated-store`. On a release build the audit lists them as not run; if nothing else is left, it fails.
 A change that adds a screen adds its state.
 
 **`privacy_link`** checks the privacy policy link: a VIEW intent to migrely.health that a browser opens. With every
@@ -223,7 +223,7 @@ results in the release PR.
 | 6a | Upgrade from the previous release | `QA_OLD_APK=<previous release APK> qa/device_scenarios.sh upgrade` | every attack, pain level and symptom logged on the old build is still there |
 | 7 | Permissions | `qa/permission_audit.sh` (and on the release APK) | `Permission audit passed` |
 | 8 | Open defects | `gh issue list --label qa --state open` | no S1 or S2 |
-| 9 | Coverage report | `python3 -I qa/e2e_coverage.py --below 50 --register docs/qa/test-strategy.md` | exits 0 (no stale scenario names, every capability in the risk register). Exit 0 says nothing about how much is covered: the capabilities under 50% go to the record's residual risks (D204) |
+| 9 | Coverage report | `python3 -I qa/e2e_coverage.py --below 50 --register docs/qa/test-strategy.md` | exits 0 (no stale scenario names; the risk register has a row for every capability and the same counts as the flows). Exit 0 says nothing about how much is covered: the capabilities under 50% go to the record's residual risks (D204) |
 
 From change 13 `prepare-release` on, these lines are added:
 

@@ -6,13 +6,13 @@ See proposal.md (Why).
 - **Build under test:** build 4, `release/1.0.0` @ 29aadb3, with the same product code as develop 438be90. Its debug
   and R8 APKs are in `../migraine-app-qa-rc` and are named with `QA_APK` (D201). So is its debug-signed bundle
   (`app/build/outputs/bundle/release/app-release.aab`).
-- **Play:** build 4 is in a closed testing release for the pre-launch report. Managed publishing is on, and the dev
-  session presses "Publish changes" only after QA's verdict.
+- **Play:** build 4 is live: the user pressed "Publish changes" on 2026-10-27, before QA's verdict and before the
+  closed track's pre-launch report. The sweep and the report are checks after the release.
 - **The bundle:**
   - `bundletool dump config` shows the default splits (language, density, ABI);
   - the one native library is stored uncompressed with 16 KB alignment;
-  - for a ru, he, uz or en x86_64 phone, `bundletool extract-apks` gives the base, the language, the xxhdpi and the
-    x86_64 APKs.
+  - for a ru, he, uz or en arm64-v8a phone at 420 dpi, `bundletool extract-apks` gives the base, the language, the
+    xxhdpi and the arm64-v8a APKs.
 - **The audit:** `qa/a11y_audit.sh` drives every flow in `.maestro/a11y-tour/` with Maestro. It captures each state 3
   times (100% portrait, 200% portrait, 100% landscape) and checks the captures with `qa/a11y_audit.py`.
   - The rules are contrast, 48 dp targets, labels and keyboard focus.
@@ -171,18 +171,25 @@ shows there.
 - **The script:**
   - It reads `<aab> <profile>`. A profile is a bundletool device spec in `qa/fixtures/device-specs/`:
     - `ru-26`, `he-36`, `uz-36`, `en-36`;
-    - each with x86_64 and 420 dpi.
+    - each with arm64-v8a, the QA AVDs' ABI, and 420 dpi.
   - It runs `bundletool build-apks` with the debug key, since QA has no upload key (D102).
-  - It checks that the profile's language split is in the set.
-  - It installs with `bundletool install-apks --device-id <QA serial>`, after uninstalling the app.
+  - It runs `extract-apks` for the profile and checks that the profile's language split is in the set.
+  - It installs the set with `adb install-multiple`, after uninstalling the app. That is the same install as
+    `install-apks`, and it shows which files went in.
   - It refuses every serial except emulator-5580 and emulator-5582.
 - **The check:**
   - `pm path com.migrely.app` lists the base and its 3 splits;
-  - the system language is set to the profile's language;
-  - the smoke suite runs without `--install`;
-  - the D117 checks run: Home, History and a date picker show English, the region's first weekday, and no Cyrillic or
-    Hebrew in the app's own text.
-  - The language and the app are reset afterwards.
+  - the profile's language is set and read back from the device. On API 33 and later it is the app's own language;
+    on Android 8.0 it is the system's;
+  - the D117 checks:
+    - Home, History and a date picker show English month and day names;
+    - home shows the region's date order (day first for en-IL, month first for en-US, en-RU and en-UZ);
+    - the date picker starts the week on the region's first weekday;
+    - the app's own text has no Cyrillic or Hebrew;
+  - with `--smoke`, the smoke suite runs without `--install`. On API 33 and later its clean starts clear the app's
+    own language, so the suite checks the install, and the steps above check the language.
+  - The language is put back on exit, and the debug APK under test is installed again, since the other QA scripts
+    need a debuggable build.
 - **Rejected: Play's internal app sharing.** It needs the upload key and Play itself. bundletool builds the same split
   set from the same bundle.
 
@@ -219,11 +226,12 @@ The verdict then reads "Go, with these risks open", never a bare "Go". Line 9 ch
 
 - **Chrome left disabled:** a failed scenario that skips `restore()` would leave the QA emulator without a browser. So
   `restore()` re-enables Chrome, and `qa/reset_device.sh` enables it too.
-- **The audit's run time grows** from 30 captures to about 63, about 40 minutes more. It runs at the Go/No-Go and after
+- **The audit's run time grows** from 30 captures to 66, about 40 minutes more. It runs at the Go/No-Go and after
   UI changes, not on every flow change.
 - **New states may fail on old screens.** They are expected to find real issues. Those are filed, not worked around
   (D203).
-- **The system language left changed after a split-APK run:** `qa/split_apks.sh` restores it on exit, and
-  `qa/reset_device.sh` resets the app's language as it does today.
+- **The system language left changed after a split-APK run:** `qa/split_apks.sh` restores it on exit.
+  `qa/reset_device.sh` resets the app's language, and on Android 8.0 the system's too. Every QA script warns at its
+  start when the system language is not the baseline's.
 - **Build 4 fails the new lint line.** The requirement is new, and the 3 errors are shown not to reach users. So build
-  4's record states the exception, with #74 and D123, instead of a hidden pass. From build 5 on there is no exception.
+  4's record states the exception, with #74 and D123, instead of a hidden pass. From the next candidate on (1.0.1) there is no exception.

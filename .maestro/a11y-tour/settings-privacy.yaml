@@ -8,6 +8,7 @@ appId: com.migrely.app
     direction: DOWN
     centerElement: true
 - tapOn: "What Migrely keeps, and where"
+# The row's summary is not on the page itself; the page's first paragraph is.
 - extendedWaitUntil:
-    visible: "What Migrely keeps, and where"
+    visible: "Migrely has no internet access, so it sends nothing anywhere\\..*"
     timeout: 5000

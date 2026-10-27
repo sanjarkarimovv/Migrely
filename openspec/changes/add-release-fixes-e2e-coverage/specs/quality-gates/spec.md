@@ -67,12 +67,14 @@ The Go/No-Go record SHALL state what each check does not prove. It SHALL also li
 
 #### Scenario: A lint error
 - **WHEN** Android Lint reports an error on a release candidate
-- **THEN** the candidate is No-Go until the error is fixed. A lint baseline never holds an error
+- **THEN** the candidate is No-Go until the error is fixed. A lint baseline never holds an error. A candidate checked
+  before this rule existed records each error as a stated exception: why it cannot reach users, and the issue that
+  fixes it
 
 #### Scenario: The APKs users install
 - **WHEN** the candidate's bundle is turned into split APKs for a device profile and installed
-- **THEN** the smoke suite passes on them, and the dates and pickers stay in English with the region's first weekday
-  (D117)
+- **THEN** the smoke suite passes on them. In the profile's language, read back from the device, the dates and
+  pickers stay in English with the region's date order and first weekday (D117)
 
 #### Scenario: Residual risk in the record
 - **WHEN** QA writes the Go/No-Go record of a release candidate

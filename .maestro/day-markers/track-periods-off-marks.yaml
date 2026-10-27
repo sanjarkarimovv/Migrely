@@ -81,6 +81,8 @@ tags: [regression, day-markers]
 - tapOn: ".*\\. Opens History\\."
 - runFlow: ../subflows/choose-empty-past-day.yaml
 - assertVisible: "Pain-free day"
+# The heading must be on screen, or the check below it would pass with nothing to look at.
+- assertVisible: "No migraine logged on this day\\."
 - assertNotVisible:
     text: "Period"
     below: "No migraine logged on this day\\."

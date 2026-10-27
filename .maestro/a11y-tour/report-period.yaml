@@ -1,6 +1,7 @@
 # Accessibility tour state: the doctor report's period screen after buying Premium (D203). Needs the simulated store
 # of the debug build (D201).
 appId: com.migrely.app
+tags: [simulated-store]
 ---
 - runFlow: ../subflows/launch-clean.yaml
 - tapOn: ".*\\. Opens History\\."

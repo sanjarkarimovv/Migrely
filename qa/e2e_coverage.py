@@ -14,9 +14,13 @@ delta drops stays in the main spec until the change is archived, so a Covers lin
     python3 qa/e2e_coverage.py --below 50 # also list the capabilities with under 50% of their scenarios covered, for
                                           # the residual risks of a Go/No-Go record (D204)
     python3 qa/e2e_coverage.py --register docs/qa/test-strategy.md
-                                          # also fail when a capability has no row in the risk register, a table
-                                          # row that starts with "| <capability> |" (D204)
+                                          # also fail when the test strategy is out of date (D204): a capability
+                                          # without a row in its risk register (section 2), a row whose E2E column
+                                          # is not "<covered>/<total> (<share>%)" as printed here, or an End-to-end
+                                          # level row (section 1) without the overall "<covered> of <total>
+                                          # scenarios (<share>%)"
 """
+import argparse
 import re
 import sys
 from pathlib import Path
@@ -63,7 +67,40 @@ def read_flows():
     return covered, malformed
 
 
+def share(hit, total):
+    return f"{100 * hit / total:.0f}%"
+
+
+def section(text, number):
+    # The body of the "## <number>. ..." section, up to the next "## " heading.
+    match = re.search(rf"^## {number}\. .*?$(.*?)(?=^## |\Z)", text, re.M | re.S)
+    return match.group(1) if match else ""
+
+
+def check_register(path, shares, total_hit, total):
+    text = Path(path).read_text(encoding="utf-8")
+    register, levels, problems = section(text, 2), section(text, 1), []
+    for capability, (hit, count) in shares.items():
+        row = re.search(rf"^\| {re.escape(capability)} \| ([^|]*)\|", register, re.M)
+        want = f"{hit}/{count} ({share(hit, count)})"
+        if not row:
+            problems.append(f"{capability}: no row in the risk register")
+        elif row.group(1).strip() != want:
+            problems.append(f"{capability}: the register says {row.group(1).strip()}, the flows give {want}")
+    level = re.search(r"^\| End-to-end \|.*$", levels, re.M)
+    want = f"{total_hit} of {total} scenarios ({share(total_hit, total)})"
+    if not level or want not in level.group(0):
+        problems.append(f"the End-to-end level row does not say {want}")
+    return problems
+
+
 def main():
+    parser = argparse.ArgumentParser(description="Which OpenSpec scenarios have an end-to-end Maestro flow?")
+    parser.add_argument("--missing", action="store_true", help="list the scenarios without a flow")
+    parser.add_argument("--below", type=float, metavar="PERCENT",
+                        help="list the capabilities with under PERCENT of their scenarios covered")
+    parser.add_argument("--register", metavar="FILE", help="check the test strategy's risk register against the flows")
+    args = parser.parse_args()
     scenarios = read_specs()
     covered, malformed = read_flows()
     capabilities = sorted({key[0] for key in scenarios})
@@ -76,7 +113,7 @@ def main():
         total_hit += hit
         shares[capability] = (hit, len(keys))
         print(f"{capability:<18} {hit:>8} {len(keys):>6}")
-    print(f"{'all':<18} {total_hit:>8} {len(scenarios):>6}  ({100 * total_hit / len(scenarios):.0f}%)")
+    print(f"{'all':<18} {total_hit:>8} {len(scenarios):>6}  ({share(total_hit, len(scenarios))})")
 
     stale = {key: flows for key, flows in covered.items() if key not in scenarios}
     if stale:
@@ -87,26 +124,24 @@ def main():
         print("\nCovers lines without capability › requirement › scenario:")
         for line in malformed:
             print(f"  {line}")
-    if "--missing" in sys.argv:
+    if args.missing:
         print("\nScenarios without an end-to-end flow:")
         for key, (requirement, scenario) in scenarios.items():
             if key not in covered:
                 print(f"  {key[0]} › {requirement} › {scenario}")
-    if "--below" in sys.argv:
-        limit = float(sys.argv[sys.argv.index("--below") + 1])
-        print(f"\nCapabilities with under {limit:.0f}% of their scenarios covered:")
+    if args.below is not None:
+        print(f"\nCapabilities with under {args.below:.0f}% of their scenarios covered:")
         for capability, (hit, total) in shares.items():
-            if 100 * hit < limit * total:
-                print(f"  {capability}: {hit} of {total} ({100 * hit / total:.0f}%)")
-    unregistered = []
-    if "--register" in sys.argv:
-        register = Path(sys.argv[sys.argv.index("--register") + 1]).read_text(encoding="utf-8")
-        unregistered = [c for c in capabilities if not re.search(rf"^\| {re.escape(c)} \|", register, re.M)]
-        if unregistered:
-            print("\nCapabilities without a row in the risk register:")
-            for capability in unregistered:
-                print(f"  {capability}")
-    return 1 if stale or malformed or unregistered else 0
+            if 100 * hit < args.below * total:
+                print(f"  {capability}: {hit} of {total} ({share(hit, total)})")
+    out_of_date = []
+    if args.register:
+        out_of_date = check_register(args.register, shares, total_hit, len(scenarios))
+        if out_of_date:
+            print(f"\nThe test strategy {args.register} is out of date:")
+            for problem in out_of_date:
+                print(f"  {problem}")
+    return 1 if stale or malformed or out_of_date else 0
 
 
 if __name__ == "__main__":

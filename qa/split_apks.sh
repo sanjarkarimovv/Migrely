@@ -10,11 +10,12 @@
 # A profile is a bundletool device spec in qa/fixtures/device-specs/. The bundle is signed with the debug key here, as QA
 # has no upload key (D102). The checks:
 #   1. the profile's language split is among the APKs, and `pm path` lists every one of them;
-#   2. in the profile's language, History and the date picker show English month and day names, the region's first
-#      weekday, and no Cyrillic or Hebrew in the app's own text.
+#   2. the profile's language is read back from the device, so a language that was never applied cannot pass;
+#   3. in that language, home, History and the date picker show English month and day names, the region's date order
+#      and first weekday, and no Cyrillic or Hebrew in the app's own text (D117).
 # The language is the app's own on API 33 and later. On Android 8.0 it is the system's, set through the emulator's
-# Custom Locale app. Either way it is put back on exit, even when a step fails. The app is left installed from the
-# splits.
+# Custom Locale app. Either way it is put back on exit, even when a step fails, and the debug APK under test
+# ($QA_APK, as for qa/device_scenarios.sh) is installed again, since the other QA scripts need a debuggable build.
 #
 # Covers: quality-gates › Release Go/No-Go gate › The APKs users install
 set -euo pipefail
@@ -46,46 +47,49 @@ abi="$(qa_adb shell getprop ro.product.cpu.abi | tr -d '\r')"
 [[ "$sdk" == "$SDK_WANTED" ]] || { echo "$QA_SERIAL runs API $sdk, but profile $PROFILE is API $SDK_WANTED." >&2; exit 2; }
 [[ ",$ABIS," == *",$abi,"* ]] || { echo "$QA_SERIAL is $abi, but profile $PROFILE has $ABIS." >&2; exit 2; }
 
-# Expected first weekday of the date picker, from the profile's region (CLDR).
+# The region's first weekday and date order, from CLDR. D117 formats with English and the phone's country: en-IL takes
+# its day-first order from en-001, while en-RU and en-UZ, which CLDR does not have, fall back to en's month-first.
 case "$LOCALE" in
-  *-RU | *-UZ) FIRST_DAY=Monday ;;
-  *-US | *-IL) FIRST_DAY=Sunday ;;
-  *) echo "No first weekday is known for $LOCALE; add it here." >&2; exit 2 ;;
+  *-RU | *-UZ) FIRST_DAY=Monday DAY_FIRST=false ;;
+  *-US) FIRST_DAY=Sunday DAY_FIRST=false ;;
+  *-IL) FIRST_DAY=Sunday DAY_FIRST=true ;;
+  *) echo "No first weekday or date order is known for $LOCALE; add it here." >&2; exit 2 ;;
 esac
 language="${LOCALE%%-*}"
 # bundletool names the Hebrew split by Android's old code.
 split_language="$language"; [[ "$language" == "he" ]] && split_language=iw
 
+QA_APK="${QA_APK:-$ROOT/app/build/outputs/apk/debug/app-debug.apk}"
 out="$(mktemp -d "${TMPDIR:-/tmp}/split-apks.XXXXXX")"
 LANGUAGE_SET=""
 ORIGINAL_SYSTEM_LOCALE=""
+SPLITS_INSTALLED=false
 restore_language() {
   if [[ "$LANGUAGE_SET" == app ]]; then
     qa_adb shell cmd locale set-app-locales "$APP" --locales "" >/dev/null 2>&1 || true
   elif [[ "$LANGUAGE_SET" == system ]]; then
-    set_system_locale "$ORIGINAL_SYSTEM_LOCALE" || echo "Warning: the system language is not back to $ORIGINAL_SYSTEM_LOCALE." >&2
+    # Android 8.0 has no per-app language; the emulator's Custom Locale app changes the system's, as Settings would.
+    qa_set_system_locale "$ORIGINAL_SYSTEM_LOCALE" ||
+      echo "Warning: the system language is not back to $ORIGINAL_SYSTEM_LOCALE; run qa/reset_device.sh." >&2
   fi
   LANGUAGE_SET=""
 }
+restore_app() {
+  $SPLITS_INSTALLED || return 0
+  SPLITS_INSTALLED=false
+  if [[ -f "$QA_APK" ]]; then
+    qa_adb uninstall "$APP" >/dev/null 2>&1 || true
+    qa_adb install "$QA_APK" >/dev/null 2>&1 || echo "Warning: could not install $QA_APK again." >&2
+  else
+    echo "Warning: no debug APK at $QA_APK; the release build from the splits stays installed." >&2
+  fi
+}
 finish() {
   restore_language
+  restore_app
   qa_unlock_device
 }
 trap finish EXIT
-
-# Android 8.0 has no per-app language. The emulator's Custom Locale app changes the system's, as Settings would.
-set_system_locale() { # $1 BCP-47 tag
-  local want="$1" have="" end
-  qa_adb shell am broadcast -a com.android.intent.action.SET_LOCALE --es com.android.intent.extra.LOCALE "$want" \
-    com.android.customlocale2 >/dev/null
-  end=$((SECONDS + 20))
-  while ((SECONDS < end)); do
-    have="$(qa_adb shell getprop persist.sys.locale | tr -d '\r')"
-    [[ "$have" == "$want" ]] && return 0
-  done
-  echo "  FAILED: the system language is $have, not $want" >&2
-  return 1
-}
 
 app_texts() { # every text and label of the app's own window, one per line
   qa_adb exec-out uiautomator dump /dev/tty 2>/dev/null | python3 -I -c "import sys, xml.etree.ElementTree as ET
@@ -125,12 +129,14 @@ echo "Split APKs of $(basename "$AAB") for $PROFILE ($LOCALE, API $sdk, $abi) on
 bundletool build-apks --bundle="$AAB" --output="$out/app.apks" --overwrite --ks="$HOME/.android/debug.keystore" \
   --ks-pass=pass:android --ks-key-alias=androiddebugkey --key-pass=pass:android >"$out/build-apks.log" 2>&1 ||
   { echo "  FAILED: bundletool build-apks (log: $out/build-apks.log)"; exit 1; }
-bundletool extract-apks --apks="$out/app.apks" --device-spec="$SPEC" --output-dir="$out/splits" >/dev/null 2>&1
+bundletool extract-apks --apks="$out/app.apks" --device-spec="$SPEC" --output-dir="$out/splits" >"$out/extract-apks.log" 2>&1 ||
+  { echo "  FAILED: bundletool extract-apks (log: $out/extract-apks.log)"; exit 1; }
 splits=("$out"/splits/*.apk)
 echo "    splits: $(cd "$out/splits" && ls | tr '\n' ' ')"
 [[ -f "$out/splits/base-$split_language.apk" ]] ||
   { echo "  FAILED: no $split_language language split for $PROFILE"; exit 1; }
 qa_adb uninstall "$APP" >/dev/null 2>&1 || true
+SPLITS_INSTALLED=true
 qa_adb install-multiple "${splits[@]}" >"$out/install.log" 2>&1 ||
   { echo "  FAILED: install-multiple (log: $out/install.log)"; exit 1; }
 installed="$(qa_adb shell pm path "$APP" | tr -d '\r' | grep -c '^package:' || true)"
@@ -138,32 +144,41 @@ installed="$(qa_adb shell pm path "$APP" | tr -d '\r' | grep -c '^package:' || t
   { echo "  FAILED: pm path lists $installed APKs, not ${#splits[@]}"; exit 1; }
 echo "    pm path: $installed APKs installed"
 
-# 2. The app in the profile's language: English names, the region's first weekday (D117).
+# 2. The app in the profile's language, read back from the device.
 run_step language-setup
 if [[ "$sdk" -ge 33 ]]; then
-  qa_adb shell cmd locale set-app-locales "$APP" --locales "$LOCALE" >/dev/null
   LANGUAGE_SET=app
+  qa_adb shell cmd locale set-app-locales "$APP" --locales "$LOCALE" >/dev/null
+  have="$(qa_adb shell cmd locale get-app-locales "$APP" | tr -d '\r')"
+  [[ "$have" == *"[$LOCALE]"* ]] || { echo "  FAILED: the app's language is not $LOCALE: $have"; exit 1; }
 else
-  ORIGINAL_SYSTEM_LOCALE="$(qa_adb shell getprop persist.sys.locale | tr -d '\r')"
-  ORIGINAL_SYSTEM_LOCALE="${ORIGINAL_SYSTEM_LOCALE:-en-US}"
+  ORIGINAL_SYSTEM_LOCALE="$(qa_system_locale)"
   LANGUAGE_SET=system
-  set_system_locale "$LOCALE"
+  qa_set_system_locale "$LOCALE"
 fi
-echo "    language: $LOCALE ($LANGUAGE_SET)"
+echo "    language: $LOCALE ($LANGUAGE_SET), read back from the device"
+
+# 3. English names, the region's date order and first weekday (D117).
+months='January|February|March|April|May|June|July|August|September|October|November|December'
+weekdays='Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday'
+if $DAY_FIRST; then order="day first"; dated=".*\b($weekdays),? [0-9]{1,2} ($months)\b.*"
+else order="month first"; dated=".*\b($weekdays), ($months) [0-9]{1,2}\b.*"; fi
+run_step language-home
+app_texts >"$out/home.txt"
+check_texts "$out/home.txt" "$dated" "Home, today's date $order,"
 run_step language-history
 app_texts >"$out/history.txt"
-month='.*\b(January|February|March|April|May|June|July|August|September|October|November|December)\b.*'
-check_texts "$out/history.txt" "$month" "History"
+check_texts "$out/history.txt" ".*\b($months)\b.*" "History"
 run_step language-picker
 app_texts >"$out/picker.txt"
 check_texts "$out/picker.txt" "Cancel" "The date picker"
-first="$(grep -m1 -xE "Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday" "$out/picker.txt" || true)"
+first="$(grep -m1 -xE "$weekdays" "$out/picker.txt" || true)"
 [[ "$first" == "$FIRST_DAY" ]] ||
   { echo "  FAILED: the date picker's week starts on '${first:-nothing}', not $FIRST_DAY"; exit 1; }
 echo "    the week starts on $first"
 qa_adb shell input keyevent KEYCODE_BACK
 
-# 3. The smoke suite on the same splits. maestro.sh takes the device for itself, so this run lets it go first. On
+# 4. The smoke suite on the same splits. maestro.sh takes the device for itself, so this run lets it go first. On
 # Android 8.0 the system language stays the profile's for the suite; on later versions the suite's clean starts clear
 # the app's own language.
 if $SMOKE; then

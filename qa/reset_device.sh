@@ -20,8 +20,14 @@ for entry in "${QA_BASELINE[@]}"; do
   qa_restore_setting ${key% *} ${key#* } "${entry##*=}"
 done
 qa_adb shell cmd locale set-app-locales com.migrely.app --locales "" >/dev/null 2>&1 || true
+# qa/split_apks.sh stopped half-way on Android 8.0 may leave the system language changed.
+if [[ "$(qa_system_locale)" != "$QA_BASELINE_LOCALE" ]]; then
+  qa_set_system_locale "$QA_BASELINE_LOCALE"
+fi
 # A device scenario stopped half-way may leave the browser disabled (privacy_link).
-if qa_adb shell pm list packages -d 2>/dev/null | tr -d '\r' | grep -qx "package:com.android.chrome"; then
+disabled="$(qa_adb shell pm list packages -d 2>/dev/null | tr -d '\r')"
+if grep -qx "package:com.android.chrome" <<<"$disabled"; then
   qa_adb shell pm enable com.android.chrome >/dev/null
 fi
-echo "$QA_SERIAL is back to its baseline: ${QA_BASELINE[*]}, app language from the system."
+echo "$QA_SERIAL is back to its baseline: ${QA_BASELINE[*]}, system language $QA_BASELINE_LOCALE," \
+  "app language from the system."

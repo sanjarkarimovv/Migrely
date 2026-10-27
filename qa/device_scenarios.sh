@@ -1736,15 +1736,12 @@ scenario_insights() {
   done
 }
 
-# Covers: subscription › A store for testing › Release
-# On demand, with QA_RELEASE_APK=<release APK>: the release build holds no simulated store and is not debuggable
-# (D113); the debug APK under test is the control that the search still finds it.
 # Covers: app-settings › Privacy and about › The full privacy policy
 # Covers: app-settings › Privacy and about › No browser
 # The link is read from the activity manager's START line: a VIEW intent to migrely.health, to a browser. Android shortens
-# the URI in that line, so the full address is read from the page itself. "No browser" disables, for this user, every
-# package that answers the link (only Chrome on the QA image), taps again, and enables them all at the end, also when
-# the check fails (restore() does too).
+# the URI in that line, and the page shows only "migrely.health/privacy", so the full address is looked up in the APK's
+# string table. "No browser" disables, for this user, every package that answers the link (only Chrome on the QA image),
+# taps again, and enables them all at the end, also when the check fails (restore() and reset_device.sh do too).
 scenario_privacy_link() {
   echo "Scenario privacy_link: the privacy policy opens in the browser; with no browser nothing breaks (D119)"
   local url="https://migrely.health/privacy/" browsers started pkg front fatal address
@@ -1761,30 +1758,44 @@ scenario_privacy_link() {
   pkg="$(grep -oE "cmp=[a-zA-Z0-9_.]+" <<<"$started" | cut -d= -f2)"
   grep -qxF "$pkg" <<<"$browsers" || { echo "  FAILED: the link went to '$pkg', not to a browser"; return 1; }
   echo "    the link: a VIEW intent to migrely.health, opened by $pkg ($(resumed_package) in front)"
+  python3 -I -c "import sys, zipfile
+url = sys.argv[2].encode()
+with zipfile.ZipFile(sys.argv[1]) as apk:
+    dex = b''.join(apk.read(n) for n in apk.namelist() if n.startswith('classes') and n.endswith('.dex'))
+# A dex string entry is its length, its bytes and a zero byte, so this finds the address as a whole string.
+sys.exit(0 if bytes([len(url)]) + url + b'\\0' in dex else 1)" "$APK" "$url" ||
+    { echo "  FAILED: the APK holds no string $url"; return 1; }
+  echo "    the full address $url is in the APK"
   adbq shell am force-stop "$APP"
   for pkg in $browsers; do
-    adbq shell pm disable-user --user 0 "$pkg" >/dev/null || { echo "  FAILED: could not disable $pkg"; enable_browsers; return 1; }
+    # Recorded first, so a run stopped during the next call still enables it again.
     DISABLED_BROWSERS+=("$pkg")
+    adbq shell pm disable-user --user 0 "$pkg" >/dev/null || { echo "  FAILED: could not disable $pkg"; enable_browsers; return 1; }
   done
   [[ -z "$(browsers_for "$url")" ]] || { echo "  FAILED: a browser still answers the link"; enable_browsers; return 1; }
   adbq logcat -c
   run_flow privacy-policy-link || { enable_browsers; return 1; }
   sleep 2
+  fatal="$(adbq logcat -d -b crash | tr -d '\r' | grep -A3 "FATAL EXCEPTION" | grep -m1 -A2 "$APP" || true)"
   front="$(resumed_package)"
-  fatal="$(adbq logcat -d -b crash | tr -d '\r' | grep -A3 "FATAL EXCEPTION" | grep -m1 "$APP" || true)"
-  address="$(screen_text_matching ".*https://migrely\.health/privacy/.*")"
+  address="$(screen_text_matching "migrely\.health/privacy")"
   enable_browsers
+  [[ -z "$fatal" ]] || { echo "  FAILED: Migrely crashed: $(tr '\n' ' ' <<<"$fatal")"; return 1; }
   [[ "$front" == "$APP" ]] || { echo "  FAILED: with no browser, '$front' is in front, not Migrely"; return 1; }
-  [[ -z "$fatal" ]] || { echo "  FAILED: Migrely crashed: $fatal"; return 1; }
   [[ -n "$address" ]] || { echo "  FAILED: the Privacy page does not show the address"; return 1; }
   echo "    no browser: Migrely stays in front, no crash, the page shows \"$address\""
-  if adbq shell pm list packages -d | tr -d '\r' | sed 's/^package://' | grep -qxF -f <(echo "$browsers"); then
+  local disabled
+  disabled="$(adbq shell pm list packages -d | tr -d '\r' | sed 's/^package://')"
+  if grep -qxF -f <(echo "$browsers") <<<"$disabled"; then
     echo "  FAILED: a browser is still disabled"
     return 1
   fi
   echo "    browsers enabled again: $(tr '\n' ' ' <<<"$browsers")"
 }
 
+# Covers: subscription › A store for testing › Release
+# On demand, with QA_RELEASE_APK=<release APK>: the release build holds no simulated store and is not debuggable
+# (D113); the debug APK under test is the control that the search still finds it.
 scenario_release_apk() {
   echo "Scenario release_apk: no simulated store in the release build (D113)"
   if [[ -z "${QA_RELEASE_APK:-}" || ! -f "${QA_RELEASE_APK:-}" ]]; then

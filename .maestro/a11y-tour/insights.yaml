@@ -1,6 +1,7 @@
 # Accessibility tour state: Insights with patterns, after buying Premium and adding 5 past migraines last month (D203).
 # Needs the simulated store of the debug build (D201).
 appId: com.migrely.app
+tags: [simulated-store]
 ---
 - runFlow: ../subflows/launch-clean.yaml
 - tapOn: ".*\\. Opens History\\."
