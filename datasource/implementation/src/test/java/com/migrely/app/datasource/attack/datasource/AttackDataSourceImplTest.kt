@@ -133,15 +133,15 @@ class AttackDataSourceImplTest {
     }
 
     @Test
-    fun `Given the DAO refuses to reopen when reopening then AnotherInProgress`() {
-        given(attackDao.reopenIfNoneInProgress("a", NOW.toEpochMilli())).willReturn(false)
+    fun `Given the DAO refuses to reopen when reopening then NotPossible`() {
+        given(attackDao.reopenIfNothingOverlaps("a", NOW.toEpochMilli())).willReturn(false)
 
-        assertEquals(ReopenDataModel.AnotherInProgress, classUnderTest.reopen("a"))
+        assertEquals(ReopenDataModel.NotPossible, classUnderTest.reopen("a"))
     }
 
     @Test
     fun `Given the DAO reopens when reopening then Reopened`() {
-        given(attackDao.reopenIfNoneInProgress("a", NOW.toEpochMilli())).willReturn(true)
+        given(attackDao.reopenIfNothingOverlaps("a", NOW.toEpochMilli())).willReturn(true)
 
         assertEquals(ReopenDataModel.Reopened, classUnderTest.reopen("a"))
     }

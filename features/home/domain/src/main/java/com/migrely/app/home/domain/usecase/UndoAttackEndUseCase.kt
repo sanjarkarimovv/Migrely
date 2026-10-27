@@ -6,7 +6,7 @@ import com.migrely.app.home.domain.model.ReopenResultDomainModel
 import com.migrely.app.home.domain.model.UndoResultDomainModel
 import com.migrely.app.home.domain.repository.ReopenAttackRepository
 
-/** Reopens a just-ended attack, unless another attack is in progress by now. */
+/** Reopens a just-ended attack, unless it would now overlap another attack (BRD EC-ATK-20). */
 class UndoAttackEndUseCase(
     private val reopenAttackRepository: ReopenAttackRepository,
     coroutineContextProvider: CoroutineContextProvider
@@ -14,7 +14,7 @@ class UndoAttackEndUseCase(
     override fun executeInBackground(request: String): UndoResultDomainModel =
         when (reopenAttackRepository.reopenAttack(request)) {
             ReopenResultDomainModel.Reopened -> UndoResultDomainModel.Undone
-            ReopenResultDomainModel.AnotherInProgress -> UndoResultDomainModel.NotPossible
+            ReopenResultDomainModel.NotPossible -> UndoResultDomainModel.NotPossible
             ReopenResultDomainModel.StorageFull -> UndoResultDomainModel.Failed
             ReopenResultDomainModel.Failed -> UndoResultDomainModel.Failed
         }

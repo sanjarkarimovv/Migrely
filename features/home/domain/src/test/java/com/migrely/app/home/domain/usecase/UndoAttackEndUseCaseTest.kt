@@ -22,7 +22,7 @@ class UndoAttackEndUseCaseTest(
         @Parameterized.Parameters(name = "Given {0} then {1}")
         fun data(): Collection<Array<*>> = listOf(
             arrayOf(ReopenResultDomainModel.Reopened, UndoResultDomainModel.Undone),
-            arrayOf(ReopenResultDomainModel.AnotherInProgress, UndoResultDomainModel.NotPossible),
+            arrayOf(ReopenResultDomainModel.NotPossible, UndoResultDomainModel.NotPossible),
             arrayOf(ReopenResultDomainModel.StorageFull, UndoResultDomainModel.Failed),
             arrayOf(ReopenResultDomainModel.Failed, UndoResultDomainModel.Failed)
         )
