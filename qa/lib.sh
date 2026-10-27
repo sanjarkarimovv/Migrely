@@ -79,7 +79,8 @@ qa_system_locale() { # the system language as a BCP-47 tag; a fresh AVD has no p
 }
 qa_set_system_locale() { # $1 BCP-47 tag: sets the system language and waits up to 20 s for it to apply
   local want="$1" have="" end
-  qa_adb shell am broadcast -a com.android.intent.action.SET_LOCALE --es com.android.intent.extra.LOCALE "$want" \
+  # Custom Locale takes "ru_RU" and logs "Invalid locale: expected ab_CD" for "ru-RU" (API 26 image), changing nothing.
+  qa_adb shell am broadcast -a com.android.intent.action.SET_LOCALE --es com.android.intent.extra.LOCALE "${want//-/_}" \
     com.android.customlocale2 >/dev/null
   end=$((SECONDS + 20))
   while ((SECONDS < end)); do

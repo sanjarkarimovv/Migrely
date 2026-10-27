@@ -63,8 +63,8 @@
 | 1 | Build gate (`assembleDebug assembleRelease test ktlintCheck detekt`) | ✅ exit 0 |
 | 1a | Android Lint (`./gradlew lint --continue`) | ✅ 0 errors; 56 warnings, the same kinds as build 4's. See the note below |
 | 1b | Instrumented tests on emulator-5580 | ⏳ |
-| 2 | Smoke on Android 8.0 (API 26), debug and R8 | ⏳ |
-| 2a | Split APKs from the upload-signed bundle: ru-26, he-36, uz-36, en-36 | ⏳ |
+| 2 | Smoke on Android 8.0 (API 26), debug and R8 | ✅ emulator-5582, 23:31–23:58: 15 of 15 on the debug APK, and 15 of 15 on the bundle's universal APK (not debuggable) |
+| 2a | Split APKs from the upload-signed bundle: ru-26, he-36, uz-36, en-36 | ru-26 ✅, on emulator-5582 at 00:03–00:15. Base, ABI, density and ru splits, all 4 installed. With ru-RU read back as the system language, home, History and the date picker are in English (36, 53 and 49 texts) and the week starts on Monday. Smoke on the splits: 15 of 15.<ul><li>The first try never set the language: Android 8's Custom Locale wants "ru_RU". `qa/lib.sh` is fixed.</li><li>The second try failed 1 of 15: its migraine was logged at 23:59, and home then showed 28 October.</li></ul>he-36, uz-36 and en-36: ⏳ |
 | 3 | Full regression on API 36 (debug) | ✅ 21:29–22:15, host load average 8–10. Pass 2 (`a11y-timeout`): 9 of 9. Pass 1: 43 of 45, and both failures were the flows, not the app:<ul><li>`track-periods-off-marks` (new in 13c) read the toggle's state from its label, but the state is on the parent. Fixed, then 3 of 3;</li><li>`undo-window-passes` found the 5 s offer already gone under load: 2 of 2 on rerun, unchanged.</li></ul> |
 | 4 | Accessibility audit (22 states) | ⏳ |
 | 5 | Device scenarios | ⏳ |
@@ -96,7 +96,7 @@
 | Issue | Debug, run 1 | Debug, run 2 | R8, run 1 | R8, run 2 |
 |---|---|---|---|---|
 | #74 Settings' version, API 36 | ✅ | ✅ | ✅ | ✅ |
-| #74 Settings' version, API 26 | ⏳ | ⏳ | ⏳ | ⏳ |
+| #74 Settings' version, API 26 | ✅ | ✅ | ✅ universal APK | ✅ universal APK |
 | #77 privacy link with no browser | ✅ | ✅ | ✅ by hand | ✅ by hand |
 | #78 a start inside an ended migraine | ✅ | ✅ | ✅ | ✅ |
 | #79 landscape time pickers | ✅ | ✅ | ✅ | ✅ |
@@ -105,7 +105,8 @@
 
 The retests ran on emulator-5580 from 17:00 to 21:40, each run from a clean install. The evidence is in the job
 scratchpad (`sweep/retest-101.md`).
-- **#74:** Settings reads "Version 1.0.1", with no crash.
+- **#74:** Settings reads "Version 1.0.1", with no crash. On API 26 (emulator-5582), the row reads "1.0.1" on the debug
+  APK and on the universal APK, twice each, and `logcat -b crash` stays empty.
 - **#77:** the `privacy_link` scenario failed 2 of 2 before it checked anything.
   - Its flow tapped "Settings" during home's 1 s mode guard right after launch, so Settings never opened.
   - The flow now waits for home and the guard. Run that way, the scenario passed 2 of 2.
