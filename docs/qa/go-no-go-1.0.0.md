@@ -21,19 +21,21 @@
 **GO for the internal testing track, with the risks of "What these checks do not prove" open**: lines 1–10 pass,
 and line 1a holds the stated #74 exception.
 
-**Publishing:** build 4 is not published yet, as of 2026-10-27.
-- **In review:** submitted to Google on 2026-10-27 at 14:01, for production, the closed track, the listing, App content
-  and the store settings.
-- **Who gets it:** every country, the EEA included, at 100% of production.
-  - Play has no staged rollout for an app's first release, so there is no smaller first audience.
-  - Once Publish is pressed, a defect reaches every user, and only a new build can fix it. QA's verdict is the last
-    gate before that.
-- **Managed publishing is on.** Google's approval publishes nothing; "Publish changes" is a separate step.
-- **Publish waits for:**
-  - QA's verdict on the closed track's pre-launch report (line 11);
-  - QA's verdict on the build 4 sweep (QA 13c).
-- **Line 11:** a closed testing release of build 4 is made for the pre-launch report, which is read before Publish.
+**No Publish verdict was given: build 4 went live before it, on the user's decision.**
+- **Published:** on 2026-10-27, to production at 100% in every country (the EEA included) and to the closed track.
+- **How:** Google approved the submission of 14:01 the same day. Managed publishing held it, and the user pressed
+  "Publish changes".
+- **Before:**
+  - QA's verdict on the build 4 sweep, which was still running;
+  - line 11, the closed track's pre-launch report, which was not out yet.
+- **Tag:** `v1.0.0` on `main` at a1cf745.
+- **No smaller first audience:** Play has no staged rollout for an app's first release. Every user has build 4, and
+  only a new build can change that.
 - **Line 12:** the week of internal testing is waived, on the user's decision of 2026-10-27.
+
+**After the release:**
+- **The sweep:** the build 4 sweep (QA 13c) and line 11 go on as post-release checks. Their results are recorded below
+  when they are in.
 - **The launch-blocker rule** (the dev session's):
   - Blockers:
     - a crash or ANR in a core flow;
@@ -41,8 +43,10 @@ and line 1a holds the stated #74 exception.
     - a wrong or missing safety warning;
     - a broken purchase or entitlement;
     - data leaving the device.
-  - A blocker is fixed on `release/1.0.0` as build 5 (still 1.0.0), and build 5 replaces build 4 before Publish.
-  - Every other defect ships in 1.0.1.
+  - QA sends a blocker to the dev session as soon as it has reproduced twice. It is fixed in hotfix 1.0.1
+    (versionCode 5), cut from `main`.
+- **Every other defect:** it goes into the hotfix or into `develop`. The dev session decides each one, by its crash
+  risk.
 
 ## The lines (on 29aadb3)
 
@@ -52,23 +56,24 @@ and line 1a holds the stated #74 exception.
 | 1a | Android Lint (`./gradlew lint`, D204, new on 2026-10-27) | ⚠️ 3 errors, none reachable at runtime: #74 (S3), fixed in 1.0.1 by D123. See the note below |
 | 1b | Instrumented tests on emulator-5580 (`connectedDebugAndroidTest`, D204) | ✅ datasource 100/100, designsystem 37/37, app 1/1 |
 | 2 | Smoke on Android 8.0 (API 26), `--tags smoke` | ✅ debug 12/12 + 3/3; R8 release 12/12 + 3/3 (versionCode 4, not debuggable) |
+| 2a | Split APKs from the bundle, in ru, he, uz and en (`qa/split_apks.sh`, D204, new on 2026-10-27) | ⏳ not run yet (QA 13c task 4.2), so after the release |
 | 3 | Full regression on API 36 (debug) | ✅ 43/43 + 9/9 |
-| 4 | Accessibility audit | ✅ 30 states, `0 failure(s)`, run again on this build |
+| 4 | Accessibility audit | ✅ 10 states at 100% and 200% font and in landscape (30 captures), `0 failure(s)`, run again on this build |
 | 5 | Device scenarios | ✅ all 53 passed. See the note below |
 | 6 | Random input (`qa/monkey.sh 20261024 5000`) | ✅ 0 crashes, 0 ANRs |
 | 6a | Upgrade to build 4 from build 3, and from build 1 | ✅ both keep every attack, pain level and symptom |
 | 7 | Permissions (`qa/permission_audit.sh`, debug and release APK) | ✅ passes. See the note below |
 | 8 | Open defects (`gh issue list --label qa --state open`) | ✅ none |
-| 9 | Coverage report (`qa/e2e_coverage.py`) | ✅ exit 0. 253 of 482 scenarios (52%) |
+| 9 | Coverage report (`qa/e2e_coverage.py`) | ✅ exit 0. 253 of the 482 scenarios of 2026-10-26 (52%) |
 | 10 | R8 release APK: lines 3 and 7 | ✅ regression 41/41 + 9/9 on API 36; permissions as line 7; not debuggable |
-| 11 | Play pre-launch report (closed testing track) | ⏳ for build 4, read before Publish |
+| 11 | Play pre-launch report (closed testing track) | ⏳ for build 4, not out before the release; read when it is |
 | 12 | Internal testing with people, at least a week (BRD §14.1) | waived by the user on 2026-10-27 |
 
 **Line 1a:** lint was run on a candidate for the first time on 2026-10-27, after the outside audit. Two of its 3
 errors are NewApi in `AppInfoDataSourceImpl.kt:15`: the API 33 `getPackageInfo` overload. The call sits behind
 `sdkInt() >= TIRAMISU`, and lint cannot see through that lambda. The third is in test code (`TapGuardTest`).
 - Build 4 takes this as a stated exception, because the requirement is new (D204).
-- From build 5 on, a lint error makes the candidate No-Go.
+- From the next candidate on (1.0.1), a lint error makes it No-Go.
 
 **Line 1b:** before 2026-10-27 the dev session ran these tests only on its own emulator, when a datasource changed.
 They cover the DAO SQL, the Room migrations and the design-system components. The run installs and then removes the
@@ -129,7 +134,7 @@ stronger verdict than its checks supported.
 | 1 Build gate | that the logic is tested: code coverage is not measured (audit C2) |
 | 1a Lint | anything until lint passes; see #74 |
 | 1b Instrumented | the screens: it covers DAO SQL, migrations and design-system components only |
-| 2, 3, 10 Smoke and regression | the scenarios without a flow: 249 of 507 (49%) |
+| 2, 3, 10 Smoke and regression | the scenarios without a flow: 242 of 507 (48%) on 2026-10-27 |
 | 4 Accessibility audit | the screens outside its 10 states: onboarding, Settings, medications, reminders, Your data, the paywall, the report, Insights (D203, QA 13c task 3) |
 | 5 Device scenarios | anything beyond its 53 named scenarios |
 | 6 Random input | anything beyond 5,000 events from one seed |
@@ -164,6 +169,7 @@ first.
   - screen-state tests (audit C3).
   Both wait for the dev session's build logic (audit C1).
 - **Checks that could not run:**
+  - **Split APKs (line 2a):** the script was new on 2026-10-27, and it had not run when build 4 went live.
   - **Device tests in CI (audit C5):** GitHub Actions starts no job while the account's billing lock lasts.
   - **Code coverage:** not measured until audit C2.
   - **Play's grace period and account hold:** they need a failed renewal (a D61 gap of QA 11b).

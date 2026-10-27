@@ -5,7 +5,7 @@
 - [x] 1.1 BRD §13 row 13c, §17 D203 and D204. Verify: `grep -n "| 13c |\|| D203 \|| D204 " docs/BRD.md`
 - [x] 1.2 `docs/qa/go-no-go-1.0.0.md` for build 4's Play state:
   - the closed testing release and managed publishing, with Publish held for QA's verdict;
-  - line 11 is the closed track's pre-launch report, read before Publish;
+  - line 11 is the closed track's pre-launch report, read when it is out (build 4 went live first);
   - line 12 is waived by the user on 2026-10-27.
   Verify: `grep -n "waived\|managed publishing\|pre-launch" docs/qa/go-no-go-1.0.0.md`
 

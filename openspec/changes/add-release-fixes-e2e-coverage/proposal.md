@@ -22,21 +22,22 @@ QA's own checks and the pre-launch report are therefore all that stand before us
     datasource changes. They are never run on a release candidate.
   - Users install the split APKs that Play builds from the bundle: language, density and ABI. QA tests only the
     universal APK.
-  - Go/No-Go line 9 says "exit 0" while only 257 of 502 scenarios (51%) have a check. That exit code proves only that
+  - Go/No-Go line 9 says "exit 0" while only 257 of 502 scenarios (51%) had a check when this change began. That exit code proves only that
     no flow names a stale scenario.
   - No Go/No-Go names the risk that is left: the scenarios without a check, the deferred QA changes (D42's visual
     regression) and the checks that could not run.
-- **Build 4 needs exploratory testing.** It is the build users will get, so QA keeps testing it before Publish.
-  Anything found is judged against the dev's launch-blocker rule:
-  - a launch blocker becomes build 5 (1.0.0);
-  - anything else ships in 1.0.1.
+- **Build 4 needs exploratory testing.** It is the build users have: the user published it on 2026-10-27, before
+  QA's verdict. QA keeps testing it, now after the release. Anything found is judged against the dev's launch-blocker
+  rule:
+  - a launch blocker goes into hotfix 1.0.1 (versionCode 5), cut from `main`;
+  - anything else goes into the hotfix or into `develop`, as the dev session decides.
 
 ## What Changes
 
 - **Base:** develop 438be90. Its product code is the same as build 4's. The checks run on build 4's APKs and bundle,
   built in `../migraine-app-qa-rc` (`QA_APK`, D201).
 - **Go/No-Go record (`docs/qa/go-no-go-1.0.0.md`):**
-  - line 11 is the closed track's pre-launch report, read before Publish;
+  - line 11 is the closed track's pre-launch report, read when it is out (build 4 went live first);
   - line 12 is waived by the user on 2026-10-27;
   - build 4's new lines: lint (#74), the instrumented tests, the split APKs;
   - a residual-risk section.
@@ -109,8 +110,8 @@ None.
 
 **Out of scope:**
 - **Product code.** Defects go to GitHub issues, marked launch blocker or not, and the dev session fixes them.
-  - Build 5 carries the blockers.
-  - 1.0.1 carries the rest, including #74 and the audit's S2, S3 and S5.
+  - Hotfix 1.0.1 carries the blockers.
+  - The hotfix or `develop` carries the rest, including #74 and the audit's S2, S3 and S5.
 - **E2E flows for the swept core-flow scenarios.** A later QA change (13d) turns what the sweep confirms into flows.
 - **The audit's other changes:**
   - C1 (build logic), C2 (coverage gate) and C6 (architecture rules) belong to the dev session, after launch.
