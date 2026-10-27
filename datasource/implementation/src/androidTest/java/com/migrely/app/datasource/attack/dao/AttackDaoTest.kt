@@ -143,6 +143,63 @@ class AttackDaoTest {
         assertEquals(2_060L, points.single().atEpochMillis)
     }
 
+    /** QA #78: a past attack may end up to the clock tolerance after now, so a start may fall inside it. */
+    @Test
+    fun givenAnAttackEndingAfterTheNewStart_whenStarting_thenItEndsAtTheNewStart() {
+        // Given
+        classUnderTest.insertAttack(attack(id = "past", start = 1_000L, end = 5_000L))
+        classUnderTest.insertIntensityPoint(
+            IntensityPointLocalModel(attackId = "past", atEpochMillis = 2_000L, value = 4)
+        )
+        classUnderTest.insertIntensityPoint(
+            IntensityPointLocalModel(attackId = "past", atEpochMillis = 4_500L, value = 7)
+        )
+
+        // When
+        val outcome =
+            classUnderTest.startIfNoneInProgress(attack(id = "new", start = 3_000L, end = null))
+
+        // Then
+        assertTrue(outcome.created)
+        val past = classUnderTest.byId("past")!!
+        assertEquals(3_000L, past.attack.endEpochMillis)
+        assertEquals(3_000L, past.attack.updatedEpochMillis)
+        assertEquals(
+            listOf(2_000L to 4, 3_000L to 7),
+            past.intensityPoints.map { it.atEpochMillis to it.value }.sortedBy { it.first }
+        )
+    }
+
+    @Test
+    fun givenAnAttackEndedBeforeOrAtTheNewStart_whenStarting_thenItIsUnchanged() {
+        // Given
+        classUnderTest.insertAttack(attack(id = "earlier", start = 1_000L, end = 2_000L))
+        classUnderTest.insertAttack(attack(id = "touching", start = 2_000L, end = 3_000L))
+
+        // When
+        classUnderTest.startIfNoneInProgress(attack(id = "new", start = 3_000L, end = null))
+
+        // Then
+        assertEquals(2_000L, classUnderTest.byId("earlier")!!.attack.endEpochMillis)
+        assertEquals(3_000L, classUnderTest.byId("touching")!!.attack.endEpochMillis)
+        assertEquals(2_000L, classUnderTest.byId("touching")!!.attack.updatedEpochMillis)
+    }
+
+    @Test
+    fun givenAnAttackInProgress_whenStartingAgain_thenNoEndMoves() {
+        // Given
+        classUnderTest.insertAttack(attack(id = "past", start = 1_000L, end = 5_000L))
+        classUnderTest.insertAttack(attack(id = "current", start = 500L, end = null))
+
+        // When
+        val outcome =
+            classUnderTest.startIfNoneInProgress(attack(id = "new", start = 3_000L, end = null))
+
+        // Then
+        assertFalse(outcome.created)
+        assertEquals(5_000L, classUnderTest.byId("past")!!.attack.endEpochMillis)
+    }
+
     @Test
     fun givenAnotherAttackInProgress_whenReopening_thenRefuses() {
         // Given

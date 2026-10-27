@@ -261,14 +261,36 @@ abstract class AttackDao {
      * Inserts [attack] unless an attack is already in progress, in one transaction so that two quick taps can never
      * create two attacks in progress (BRD EC-ATK-01). Returns the attack in progress, new or existing, and whether it
      * was created.
+     *
+     * An ended attack may end up to the clock tolerance after now, so the new start can fall inside it (QA #78). That
+     * attack then ends at the new start, with its later pain entries moved there too, so the two only touch (BRD
+     * EC-ATK-05, EC-ATK-19).
      */
     @Transaction
     open fun startIfNoneInProgress(attack: AttackLocalModel): StartOutcome {
         val existing = inProgress()
         if (existing != null) return StartOutcome(existing, created = false)
+        movePointsOfAttacksRunningPast(attack.startEpochMillis)
+        endAttacksRunningPast(attack.startEpochMillis, attack.createdEpochMillis)
         insertAttack(attack)
         return StartOutcome(AttackWithPointsLocalModel(attack, emptyList()), created = true)
     }
+
+    @Query(
+        "UPDATE intensity_point SET at_epoch_millis = :startEpochMillis " +
+            "WHERE at_epoch_millis > :startEpochMillis AND attack_id IN (SELECT id FROM attack " +
+            "WHERE deleted_epoch_millis IS NULL AND start_epoch_millis < :startEpochMillis " +
+            "AND end_epoch_millis > :startEpochMillis)"
+    )
+    abstract fun movePointsOfAttacksRunningPast(startEpochMillis: Long)
+
+    @Query(
+        "UPDATE attack SET end_epoch_millis = :startEpochMillis, " +
+            "updated_epoch_millis = :nowEpochMillis " +
+            "WHERE deleted_epoch_millis IS NULL AND start_epoch_millis < :startEpochMillis " +
+            "AND end_epoch_millis > :startEpochMillis"
+    )
+    abstract fun endAttacksRunningPast(startEpochMillis: Long, nowEpochMillis: Long)
 
     /** Replaces the newest point of [attackId], or adds [point] when the attack has none yet. */
     @Transaction
