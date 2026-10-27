@@ -79,6 +79,17 @@ class CreatePastAttackUseCaseTest {
     }
 
     @Test
+    fun `Given a start 2 minutes after now when creating then the start is in the future`() {
+        // QA #89: the tolerance is for ends only; an attack cannot have started later than now.
+        val actual = create(
+            start = FIXTURE_NOW.plus(Duration.ofMinutes(2)),
+            end = FIXTURE_NOW.plus(Duration.ofMinutes(4))
+        )
+
+        assertEquals(CreatePastAttackResultDomainModel.InFuture(TimeFieldDomainModel.Start), actual)
+    }
+
+    @Test
     fun `Given a start beyond the tolerance when creating then the start is in the future`() {
         val actual = create(
             start = FIXTURE_NOW.plus(Duration.ofMinutes(10)),

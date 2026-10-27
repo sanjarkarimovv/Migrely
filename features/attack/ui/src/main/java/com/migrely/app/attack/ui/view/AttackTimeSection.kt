@@ -129,8 +129,12 @@ internal fun TimeSection(
         TimeFieldUiModel.Start -> MigrelyDateTimePicker(
             initialEpochMillis = details.startEpochMillis,
             minEpochMillis = EARLIEST_START_MILLIS,
-            // Strictly before the end: the picker works in whole minutes, the stored end may have seconds.
-            maxEpochMillis = end?.minus(1) ?: latestAllowed,
+            // Strictly before the end: the picker works in whole minutes, the stored end may have seconds. Never after
+            // now: the clock tolerance is for ends only (QA #89).
+            maxEpochMillis = minOf(
+                end?.minus(1) ?: Long.MAX_VALUE,
+                latestAllowed - CLOCK_TOLERANCE_MILLIS
+            ),
             zoneId = zone,
             labels = pickerLabels(R.string.picker_start_title, R.string.picker_start_out_of_range),
             onConfirm = { start ->

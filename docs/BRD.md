@@ -298,7 +298,7 @@ Boshqa davlatlarda narxni Play avtomatik konvertatsiya qiladi. Hindiston, Brazil
 |---|---|---|---|
 | EC-ATK-01 | Davom etayotgan xuruj bor va yana "Xuruj boshlandi" bosildi | Yangi xuruj yaratilmaydi. Mavjud xuruj ochiladi va "Ogʻriqni yangilash" yoki "Tugatish" taklif qilinadi. Bir vaqtda faqat 1 ta davom etayotgan xuruj boʻladi | ✅ |
 | EC-ATK-02 | Xuruj 72 soatdan oshdi (tugatish esdan chiqqan yoki surunkali migren) | Avtomatik yopilmaydi. "Hali davom etyaptimi?" soʻraladi: "Ha", "Tugadi (vaqtni tanlash)" yoki "Bu xurujda boshqa soʻrama". Yonida SAF-F3 maʼlumoti | ✅ |
-| EC-ATK-03 | Boshlanish yoki tugash vaqti kelajakda | Ruxsat berilmaydi. 5 daqiqalik tolerantlik bor (soat farqi uchun). Xato xabari forma ichida chiqadi | ✅ |
+| EC-ATK-03 | Boshlanish yoki tugash vaqti kelajakda | Ruxsat berilmaydi. Tugash vaqti uchun 5 daqiqalik tolerantlik bor (soat farqi uchun). Boshlanish hozirgi vaqtdan keyin boʻla olmaydi: xuruj hozirdan kech boshlangan boʻlishi mumkin emas, aks holda u keyin bosilgan "Migraine started" bilan ustma-ust tushadi (QA #89). Xato xabari forma ichida chiqadi | ✅ |
 | EC-ATK-04 | Tugash vaqti boshlanishdan oldin | Saqlanmaydi, forma ichida xato koʻrsatiladi | ✅ |
 | EC-ATK-05 | Yangi xuruj mavjud xuruj bilan ustma-ust tushadi | Saqlanmaydi. Ikki variant taklif qilinadi: "Birlashtirish" (bitta xuruj, vaqtlar kengayadi, maʼlumotlar qoʻshiladi) yoki "Vaqtni oʻzgartirish" | ✅ |
 | EC-ATK-06 | Xuruj yarim tundan oʻtadi | Bu bitta xuruj. Kalendarda u tegib oʻtgan har bir kun bosh ogʻrigʻi kuni sifatida belgilanadi. Statistikada xuruj boshlangan kuni boʻyicha 1 marta sanaladi | ✅ |

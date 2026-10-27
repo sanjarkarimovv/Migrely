@@ -353,6 +353,14 @@ class MergeAttacksUseCaseTest {
     }
 
     @Test
+    fun `Given a start 2 minutes after now when merging then the start is in the future`() {
+        assertEquals(
+            MergeAttacksResultDomainModel.InFuture(TimeFieldDomainModel.Start),
+            merge(null, NOW.plusSeconds(120), NOW.plusSeconds(240))
+        )
+    }
+
+    @Test
     fun `Given a start beyond the tolerance when merging then the start is in the future`() {
         assertEquals(
             MergeAttacksResultDomainModel.InFuture(TimeFieldDomainModel.Start),
