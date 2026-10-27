@@ -92,6 +92,14 @@
 - **App crashes or ANRs:** none.
 - **Issues:** #78, #79, #80, #81, #82, #83, #84. Every one has "launch blocker: no", sent to the dev session.
 
+**Sweep 2 on build 4** (emulator-5580, 2026-10-27, until 16:52): `sweep-b.md`.
+- **The scope:** cut twice for the 1.0.1 candidate, after data-backup, sweep A's leads and the delete retries. The rest of
+  batch B is NOT RUN, moved to the 1.0.1 build and to QA 13d.
+- **medication-overuse:** 11/11 PASS, every threshold and text exact.
+- **data-backup:** 2 PASS; "A new phone" is NOT RUN, since it needs a real Google backup.
+- **App crashes:** none.
+- **Issues:** #87 and #88 (S4). No blocker.
+
 **2.1, `privacy_link` on build 4's debug APK:** it fails 2 of 2 runs (14:42 and 14:43) on a real defect, #77 (S2,
 launch blocker: no).
 - The app crashes with `IllegalArgumentException: Can't open https://migrely.health/privacy/.` from

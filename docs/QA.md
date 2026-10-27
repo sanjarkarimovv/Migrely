@@ -145,6 +145,13 @@ use; without it, the worktree's own debug APK is used.
   class.
 - **The record:** a Go/No-Go is recorded in `docs/qa/go-no-go-<version>.md`.
 
+**Developer options on the QA emulators stay on.**
+- Turning them off, even with `settings delete global development_settings_enabled`, turns USB debugging off too, and
+  adb goes offline (2026-10-27).
+- The way back is the emulator's own screen: Build number seven times, then USB debugging.
+- "Don't keep activities" is set with `always_finish_activities` and its switch in Developer options. The setting alone
+  does not take effect.
+
 **Premium is checked through the simulated store (D201).** Debug builds hold a simulated Google Play. The paywall's
 products, its sheet ("Complete the purchase", "Pay later (pending)", "Cancel") and its subscriptions page are the
 app's own screens. QA taps through them (`subflows/buy.yaml`, `device/premium-buy.yaml`).
