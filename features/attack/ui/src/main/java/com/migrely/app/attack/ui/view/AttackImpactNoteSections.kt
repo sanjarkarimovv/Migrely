@@ -16,6 +16,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -23,11 +24,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import com.migrely.app.attack.ui.R
 import com.migrely.app.attack.ui.model.FunctionalImpactUiModel
+import com.migrely.app.designsystem.input.limitedEdit
 import kotlinx.coroutines.delay
 
 private const val MAXIMUM_NOTE_LENGTH = 1_000
@@ -101,11 +105,18 @@ internal fun NoteSection(
     DisposableEffect(attackId) { onDispose { flush() } }
 
     val text = draft ?: savedNote
+    // The field keeps its cursor; any other change of the text (a reload or a merge) puts the cursor at the end.
+    var field by remember(attackId) { mutableStateOf(TextFieldValue(text, TextRange(text.length))) }
+    val shown = if (field.text == text) field else TextFieldValue(text, TextRange(text.length))
     Column {
         SectionTitle(stringResource(R.string.section_note))
         OutlinedTextField(
-            value = text,
-            onValueChange = { onDraftChange(it.take(MAXIMUM_NOTE_LENGTH)) },
+            value = shown,
+            onValueChange = { edited ->
+                val limited = limitedEdit(shown, edited, MAXIMUM_NOTE_LENGTH)
+                field = limited
+                if (limited.text != shown.text) onDraftChange(limited.text)
+            },
             placeholder = { Text(stringResource(R.string.note_hint)) },
             supportingText = {
                 Text(

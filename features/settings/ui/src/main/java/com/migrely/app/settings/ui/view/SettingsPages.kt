@@ -31,6 +31,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -150,13 +151,7 @@ private fun PolicyLink() {
             .fillMaxWidth()
             .heightIn(min = 48.dp)
             .clickable(role = Role.Button, onClickLabel = label) {
-                try {
-                    uriHandler.openUri(PRIVACY_POLICY_URL)
-                } catch (_: IllegalStateException) {
-                    // No app here opens web pages; the address below can still be typed elsewhere.
-                } catch (_: ActivityNotFoundException) {
-                    // As above, on Android versions that report it this way.
-                }
+                uriHandler.openInBrowserIfAny(PRIVACY_POLICY_URL)
             }
             .padding(vertical = 8.dp)
     ) {
@@ -170,6 +165,21 @@ private fun PolicyLink() {
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
+    }
+}
+
+/**
+ * Opens [uri] in the browser, or does nothing where no app opens web pages: the address under the link can still be
+ * typed elsewhere. Compose's handler reports a missing browser as [IllegalArgumentException]; the
+ * [ActivityNotFoundException] catch covers a handler that passes Android's own exception on.
+ */
+internal fun UriHandler.openInBrowserIfAny(uri: String) {
+    try {
+        openUri(uri)
+    } catch (_: IllegalArgumentException) {
+        // No browser; see above.
+    } catch (_: ActivityNotFoundException) {
+        // No browser; see above.
     }
 }
 

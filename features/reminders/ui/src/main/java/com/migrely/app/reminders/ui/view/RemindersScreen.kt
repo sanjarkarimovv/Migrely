@@ -28,7 +28,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -38,6 +37,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
+import androidx.compose.material3.TimePickerLayoutType
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberTimePickerState
@@ -60,6 +60,7 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.navigation.NavController
 import com.migrely.app.architecture.ui.view.ScreenEnterObserver
@@ -406,21 +407,36 @@ private fun TimeDialog(minuteOfDay: Int, onPick: (Int) -> Unit, onDismiss: () ->
         initialMinute = minuteOfDay % MINUTES_PER_HOUR,
         is24Hour = android.text.format.DateFormat.is24HourFormat(context)
     )
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.reminders_picker_title)) },
-        text = { TimePicker(state = state) },
-        confirmButton = {
-            TextButton(onClick = { onPick(state.hour * MINUTES_PER_HOUR + state.minute) }) {
-                Text(stringResource(R.string.reminders_picker_ok))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.reminders_picker_cancel))
+    // The whole dialog scrolls, as the design system's picker does, so in landscape the title and buttons leave room
+    // to drag outside the dial (QA #79).
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            shape = RoundedCornerShape(28.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerHigh
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier
+                    .verticalScroll(rememberScrollState())
+                    .padding(24.dp)
+            ) {
+                Text(
+                    text = stringResource(R.string.reminders_picker_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+                TimePicker(state = state, layoutType = TimePickerLayoutType.Vertical)
+                Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
+                    TextButton(onClick = onDismiss) {
+                        Text(stringResource(R.string.reminders_picker_cancel))
+                    }
+                    TextButton(onClick = { onPick(state.hour * MINUTES_PER_HOUR + state.minute) }) {
+                        Text(stringResource(R.string.reminders_picker_ok))
+                    }
+                }
             }
         }
-    )
+    }
 }
 
 private fun Int.toLocalTime(): LocalTime = LocalTime.of(
