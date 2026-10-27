@@ -25,10 +25,9 @@ the attack no longer exists, the screen SHALL say so and offer to go back.
 - **THEN** it shows that the migraine no longer exists and a way back
 
 ### Requirement: Exact start and end times
-The user SHALL be able to set the start, and the end of an ended attack, to any date and time with a date picker
-followed by a time picker. Times SHALL be shown and picked in the attack's time zone, in the device's 12- or 24-hour
-format. A start after now, or an end more than 5 minutes after now, SHALL be rejected. An end before the start SHALL
-be rejected. Each rejection SHALL be shown as an inline error under the time, and nothing SHALL be stored (BRD
+The user SHALL be able to set the start, and an ended attack's end, with a date picker then a time picker, in the
+attack's time zone and the device's 12- or 24-hour format. A start after now, an end more than 5 minutes after now,
+and an end before the start SHALL be rejected with an inline error under the time, and nothing SHALL be stored (BRD
 EC-ATK-03, EC-ATK-04, EC-TIM-02, EC-TIM-04, EC-TIM-05).
 
 #### Scenario: Correct the start
