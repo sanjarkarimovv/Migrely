@@ -203,7 +203,7 @@ results in the release PR.
 | 6a | Upgrade from the previous release | `QA_OLD_APK=<previous release APK> qa/device_scenarios.sh upgrade` | every attack, pain level and symptom logged on the old build is still there |
 | 7 | Permissions | `qa/permission_audit.sh` (and on the release APK) | `Permission audit passed` |
 | 8 | Open defects | `gh issue list --label qa --state open` | no S1 or S2 |
-| 9 | Coverage report | `python3 -I qa/e2e_coverage.py` | exits 0 (no stale scenario names) |
+| 9 | Coverage report | `python3 -I qa/e2e_coverage.py --below 50 --register docs/qa/test-strategy.md` | exits 0 (no stale scenario names, every capability in the risk register). Exit 0 says nothing about how much is covered: the capabilities under 50% go to the record's residual risks (D204) |
 
 From change 13 `prepare-release` on, these lines are added:
 

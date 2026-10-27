@@ -2,8 +2,8 @@
 
 ## 1. Requirements and the Go/No-Go record
 
-- [ ] 1.1 BRD §13 row 13c, §17 D203 and D204. Verify: `grep -n "| 13c |\|| D203 \|| D204 " docs/BRD.md`
-- [ ] 1.2 `docs/qa/go-no-go-1.0.0.md` for build 4's Play state:
+- [x] 1.1 BRD §13 row 13c, §17 D203 and D204. Verify: `grep -n "| 13c |\|| D203 \|| D204 " docs/BRD.md`
+- [x] 1.2 `docs/qa/go-no-go-1.0.0.md` for build 4's Play state:
   - the closed testing release and managed publishing, with Publish held for QA's verdict;
   - line 11 is the closed track's pre-launch report, read before Publish;
   - line 12 is waived by the user on 2026-10-27.
@@ -39,10 +39,10 @@
   - `pm path` lists 4 APKs for each profile;
   - the smoke suite and the D117 checks pass on ru-26 (emulator-5582) and on he-36, uz-36 and en-36 (emulator-5580);
   - the system language is back afterwards
-- [ ] 4.3 The residual-risk section in `docs/qa/go-no-go-1.0.0.md` (design D9), and line 9's new pass condition in
+- [x] 4.3 The residual-risk section in `docs/qa/go-no-go-1.0.0.md` (design D9), and line 9's new pass condition in
   `docs/QA.md` §5. Verify: the section lists every capability under 50% from `qa/e2e_coverage.py`, D42, C3–C5 and the
   checks that could not run
-- [ ] 4.4 `docs/qa/test-strategy.md` (design D10). Verify: every capability of `openspec/specs/` has a row (a script
+- [x] 4.4 `docs/qa/test-strategy.md` (design D10). Verify: every capability of `openspec/specs/` has a row (a script
   compares the two lists); every level has its tool, owner and when
 
 ## 5. Exploratory testing on build 4

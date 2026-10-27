@@ -1,0 +1,13 @@
+# Device scenario step (qa/split_apks.sh): from History, the past-migraine screen with its date picker open (the script
+# reads the weekday header and the buttons).
+appId: com.migrely.app
+---
+- back
+- extendedWaitUntil:
+    visible: "Add a past migraine"
+    timeout: 5000
+- tapOn: "Add a past migraine"
+- tapOn: "Change when it started, now .*"
+- extendedWaitUntil:
+    visible: "Change to previous month"
+    timeout: 5000
