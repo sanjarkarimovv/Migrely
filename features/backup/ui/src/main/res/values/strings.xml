@@ -54,6 +54,7 @@
         <item quantity="other">%d were already here.</item>
     </plurals>
     <string name="your_data_added_others">Added the other entries. Every migraine in it was already here.</string>
+    <string name="your_data_added_new_entries">Added the new entries.</string>
     <string name="your_data_nothing_new">Nothing new: everything in it is already here.</string>
     <string name="your_data_not_a_backup">This file isn\'t a Migrely backup. Nothing was changed.</string>
     <string name="your_data_newer">Update Migrely to open this file.</string>
