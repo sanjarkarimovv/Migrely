@@ -55,7 +55,7 @@
 
 ## 6. Documentation and verification
 
-- [ ] 6.1 `docs/QA.md`:
+- [x] 6.1 `docs/QA.md`:
   - the audit's screen list (D203);
   - `privacy_link` and the new seed;
   - §5's new lines (lint, instrumented, split APKs) and the residual-risk rule (D204).

@@ -8,14 +8,16 @@ How Migrely's quality is checked before anything reaches Google Play. The requir
 | Layer | Where | Catches | Runs |
 |---|---|---|---|
 | Unit and architecture tests | each module's `test`, Konsist in `:app` | logic, mappers, Clean Architecture rules | the gate, every change |
-| Instrumented tests | `:datasource:implementation`, `:designsystem` | SQL, migrations, design-system components | per module, every change |
+| Instrumented tests | `:datasource:implementation`, `:designsystem` | SQL, migrations, design-system components | per module, every change; on every release candidate in QA (D204) |
 | **End-to-end flows** | `.maestro/` (Maestro) | a person's journeys, navigation, persistence, regressions between changes | `qa/maestro.sh` |
-| **Accessibility audit** | `qa/a11y_audit.sh` | contrast, touch targets, labels and keyboard reach on real pixels, at 100% and 200% font and in landscape | before a release, after UI changes |
+| **Accessibility audit** | `qa/a11y_audit.sh` | contrast, touch targets, labels and keyboard reach on real pixels, at 100% and 200% font and in landscape, on every screen (D203) | before a release, after UI changes |
 | **Device scenarios** | `qa/device_scenarios.sh` | the clock, time zones, midnight, process death, exact double-tap gaps, upgrades with real data | before a release, after time, lifecycle or database changes |
 | **Robustness and privacy** | `qa/monkey.sh`, `qa/permission_audit.sh` | crashes and ANRs under random input, unexpected permissions (never `INTERNET`) | before a release |
+| **Split APKs** | `qa/split_apks.sh` | what Play installs from the bundle: language, density and ABI splits, in the profile's language (D117, D204) | every release candidate |
 | Exploratory testing | the QA session, by hand and through the Maestro MCP server | everything a script did not think of | every change |
 
 Visual regression (Roborazzi screenshots of the `@Preview`s with pseudo-locales) comes in its own QA change (D42).
+The test levels, who owns each, and the risk left per capability are in `docs/qa/test-strategy.md` (D204).
 
 ## 2. Devices and sessions
 
@@ -75,6 +77,19 @@ cell, is focusable for accessibility services. The Tab order is checked only by 
 Reduce motion is the animator scale (`global animator_duration_scale 0`). `landscape_band` checks the landscape message
 band with and without it. Like the rotation, the accessibility timeout and the app language, the scripts save the
 scale and restore it on exit.
+
+**The accessibility audit has a state for every screen (D203).** `.maestro/a11y-tour/` holds:
+- home (calm, with attacks), attack mode with a message, a custom-tag dialog;
+- attack details (top and bottom), History (first use and a month), the past-migraine screen and its overlap card;
+- onboarding's first step, Settings, Warning signs, the privacy page (its top and its end), Theme;
+- My medications, Reminders, Your data;
+- the paywall, the report's period screen and Insights. These three buy Premium through the simulated store, so on a
+  release build the audit lists them as not run.
+A change that adds a screen adds its state.
+
+**`privacy_link`** checks the privacy policy link: a VIEW intent to migrely.health that a browser opens. With every
+browser disabled for the user it then checks "No browser": Migrely stays in front without a crash, and the page shows
+the address. The browsers are enabled again at the end, in `restore()` and by `qa/reset_device.sh`.
 
 `# Covers:` lines may also sit above a scenario in `qa/device_scenarios.sh`, when the script itself makes the check. The
 coverage report also reads the delta specs of open changes, so a change can cover the scenarios it adds.
@@ -152,7 +167,9 @@ app's own screens. QA taps through them (`subflows/buy.yaml`, `device/premium-bu
 **Reports and Insights get their data from seeds (D202).**
 - **Seeds:** `qa/seed_backup.py <seed> <out.json> --today <emulator date>` writes a v6 backup with known content: dates,
   zones, triggers, medications and answers. It also prints what the app must show. `--list` names the seeds, and
-  `--self-test` recounts them independently.
+  `--self-test` recounts them independently. `report-heavy` has a note on each of its 900 migraines;
+  `report-heavy-old-notes` has the same migraines with notes on the oldest 100 only, for a shortened table that shows
+  none of them (#67).
 - **Import:** `seed_import` pushes the seed to Download and imports it through Your data.
 - **What to expect:** `qa/seed_expect.py` turns the printed expectations into the texts to find in the PDF or on
   Insights.
@@ -195,7 +212,10 @@ results in the release PR.
 | # | Check | Command | Pass when |
 |---|---|---|---|
 | 1 | Build gate | `./gradlew assembleDebug test ktlintCheck detekt` | BUILD SUCCESSFUL |
+| 1a | Android Lint on the candidate (D204) | `./gradlew lint --continue` | no error; each warning with a user-visible effect has an issue or a line in the record |
+| 1b | Instrumented tests on the candidate (D204) | `ANDROID_SERIAL=emulator-5580 ./gradlew connectedDebugAndroidTest --continue`, then `qa/reset_device.sh` | every test passes |
 | 2 | Smoke on Android 8.0 | `QA_SERIAL=emulator-5582 qa/maestro.sh --install --tags smoke` | every flow passes |
+| 2a | Split APKs from the candidate's bundle (D204) | `qa/split_apks.sh --smoke <aab> ru-26` (emulator-5582), then `he-36`, `uz-36` and `en-36` (emulator-5580) | `Split APKs passed` for each profile |
 | 3 | Full regression on the target version | `qa/maestro.sh --install` | exit 0 (passes 1 and 2 green). Pass 3 lists the open known bugs; none of them may be S1 or S2 |
 | 4 | Accessibility audit | `qa/a11y_audit.sh` | `0 failure(s)` and no state that could not be captured; every warning and every "not judged" line looked at |
 | 5 | Device scenarios | `qa/device_scenarios.sh` | `All scenarios passed` |
@@ -214,3 +234,11 @@ From change 13 `prepare-release` on, these lines are added:
 | 12 | Internal testing with people for at least a week (BRD §14.1) | no new S1 or S2 |
 
 Any failing line makes the candidate No-Go. The release PR names the failing line and the issue filed for it.
+
+**Every Go/No-Go record has a section "What these checks do not prove" (D204).** It holds:
+- what passing each line does not cover;
+- the capabilities under 50% from line 9's `--below 50`, each with its follow-up from `docs/qa/test-strategy.md`;
+- the deferred QA changes;
+- the checks that could not run, and why.
+
+The verdict reads "Go, with these risks open", never a bare "Go".
