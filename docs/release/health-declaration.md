@@ -27,7 +27,8 @@ setup, and choose only what Migrely does.
   Each one advises talking to a doctor or calling the local emergency number, and never prescribes (BRD §11.9).
 - **Health data:** stays on the phone, never transmitted, with no account (see `data-safety.md`).
 
-## To confirm in 13b
+## Confirmed in 13b
 
 - **The account type:** Play asks some health apps, such as medical ones, to be published from an organization account.
-  Check the current rule for the features above against the user's developer account (TODO(user)).
+  With the three features above, Play asked for no organization account and listed no regional requirements
+  (2026-10-27, D124).

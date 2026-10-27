@@ -10,7 +10,7 @@ The listing text for Google Play (BRD §14.2, D104, D121). The keyword plan and 
 | App name (≤ 30) | Migrely: Migraine Tracker |
 | Short description (≤ 80) | Private headache diary & migraine log. Spot triggers, watch painkiller days. |
 | Category | Health & Fitness. Migrely is a diary, not a medical device (D104). |
-| Tags | Health & Fitness, Medical diary (choose the closest Play offers) |
+| Tags | Health & fitness, Medical |
 | Contact email | support@migrely.health |
 | Website | https://migrely.health |
 | Privacy policy URL | https://migrely.health/privacy/ |
@@ -73,6 +73,10 @@ The text is 2,577 characters. Paste it as it is: each paragraph is one line, bec
 | Icon 512×512 | `icon/migrely-play-icon-512.png` |
 | Feature graphic 1024×500 | `store/feature-graphic-1024x500.png` |
 | Phone screenshots 1080×1920 | `store/screenshots/01…08`, uploaded in file-name order |
+| Tablet screenshots (7" and 10") | the same eight phone screenshots |
+
+Video, Chromebook and XR assets are left empty. Play's question about AI-generated assets is answered "Don't label
+assets".
 
 The first three screenshots show in search results, so they carry the three main reasons to install: logging in
 seconds, the month as a sky, and the doctor report (D121). Insights, "Did it help?", privacy, history and the themes
