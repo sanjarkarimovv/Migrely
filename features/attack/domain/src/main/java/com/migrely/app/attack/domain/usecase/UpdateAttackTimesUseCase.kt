@@ -51,7 +51,8 @@ class UpdateAttackTimesUseCase(
         val latestAllowed = now.plus(CLOCK_TOLERANCE)
         val requestedEnd = if (attack.isInProgress) null else request.end ?: attack.end
         when {
-            request.start.isAfter(latestAllowed) ->
+            // The tolerance is for ends only: an attack cannot have started later than now (QA #89).
+            request.start.isAfter(now) ->
                 return UpdateAttackTimesResultDomainModel.InFuture(TimeFieldDomainModel.Start)
 
             requestedEnd != null && requestedEnd.isAfter(latestAllowed) ->

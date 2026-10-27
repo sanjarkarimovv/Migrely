@@ -25,11 +25,10 @@ the attack no longer exists, the screen SHALL say so and offer to go back.
 - **THEN** it shows that the migraine no longer exists and a way back
 
 ### Requirement: Exact start and end times
-The user SHALL be able to set the start, and the end of an ended attack, to any date and time with a date picker
-followed by a time picker. Times SHALL be shown and picked in the attack's time zone, in the device's 12- or 24-hour
-format. A time more than 5 minutes after now SHALL be rejected. An end before the start SHALL be rejected. Each
-rejection SHALL be shown as an inline error under the time, and nothing SHALL be stored (BRD EC-ATK-03, EC-ATK-04,
-EC-TIM-02, EC-TIM-04, EC-TIM-05).
+The user SHALL be able to set the start, and an ended attack's end, with a date picker then a time picker, in the
+attack's time zone and the device's 12- or 24-hour format. A start after now, an end more than 5 minutes after now,
+and an end before the start SHALL be rejected with an inline error under the time, and nothing SHALL be stored (BRD
+EC-ATK-03, EC-ATK-04, EC-TIM-02, EC-TIM-04, EC-TIM-05).
 
 #### Scenario: Correct the start
 - **WHEN** the user changes the start of an attack from 14:05 to 13:40
@@ -50,6 +49,10 @@ EC-TIM-02, EC-TIM-04, EC-TIM-05).
 #### Scenario: Attack in progress
 - **WHEN** the details of the attack in progress are shown
 - **THEN** its start can be changed and its end shows "In progress" without a picker
+
+#### Scenario: Start in the next few minutes
+- **WHEN** at 13:54 the user sets an ended attack's start to 13:56 and its end to 13:59
+- **THEN** an inline error under the start says the time cannot be in the future, and nothing is stored (QA #89)
 
 ### Requirement: Times never overlap another attack
 A start or end that would make the attack overlap other attacks SHALL be rejected with an inline error that names every
