@@ -17,14 +17,21 @@ inside.
 - **Domain:** `UpdateAttackTimesUseCase`, `MergeAttacksUseCase` and `CreatePastAttackUseCase` reject a start after now
   as `InFuture(Start)`. The tolerance stays for ends only. It exists for a clock a little behind, and an attack cannot
   have started later than now.
-- **Details screen:** the start picker ends at now, or just before the end when that is earlier.
+- **Details screen:** the start picker ends at now, or just before the end when that is earlier, and its message names
+  that limit.
 - **BRD** EC-ATK-03 and two spec requirements: attack-details "Exact start and end times" and past-attacks "Times in
   the past only".
 
 **Unchanged:**
 - the end's tolerance;
-- the in-progress attack, whose start was always now or earlier;
-- existing data. A start already stored after now (only possible within 5 minutes) becomes past by itself.
+- existing data. A start already stored after now, at most 5 minutes ahead, becomes past by itself. Until then, saving
+  that attack's end is refused with the start's "in the future" error, which the user can wait out or fix by picking
+  the start again.
+- the start picker's message, which now names the limit that applies: "Pick a time before now." or "Pick a time
+  before the end." (review finding).
+
+**Out of scope:** a backup import, or a phone clock moved back (EC-TIM-04), can still bring an attack that lies after
+now. The import keeps the file's times as they are.
 
 ## Capabilities
 

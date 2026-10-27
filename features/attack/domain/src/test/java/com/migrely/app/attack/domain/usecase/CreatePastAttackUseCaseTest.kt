@@ -90,7 +90,7 @@ class CreatePastAttackUseCaseTest {
     }
 
     @Test
-    fun `Given a start beyond the tolerance when creating then the start is in the future`() {
+    fun `Given a start 10 minutes after now when creating then the start is in the future`() {
         val actual = create(
             start = FIXTURE_NOW.plus(Duration.ofMinutes(10)),
             end = FIXTURE_NOW.plus(Duration.ofMinutes(20))

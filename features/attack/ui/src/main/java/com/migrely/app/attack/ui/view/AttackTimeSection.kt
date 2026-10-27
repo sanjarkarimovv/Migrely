@@ -65,7 +65,8 @@ internal fun TimeSection(
 ) {
     var picking by rememberSaveable(details.id) { mutableStateOf<TimeFieldUiModel?>(null) }
     // Read when a picker opens, so a screen left open for a while still allows the current time.
-    val latestAllowed = remember(picking) { System.currentTimeMillis() } + CLOCK_TOLERANCE_MILLIS
+    val openedAt = remember(picking) { System.currentTimeMillis() }
+    val latestAllowed = openedAt + CLOCK_TOLERANCE_MILLIS
     val end = details.endEpochMillis
     Column {
         SectionTitle(stringResource(R.string.section_time))
@@ -131,12 +132,17 @@ internal fun TimeSection(
             minEpochMillis = EARLIEST_START_MILLIS,
             // Strictly before the end: the picker works in whole minutes, the stored end may have seconds. Never after
             // now: the clock tolerance is for ends only (QA #89).
-            maxEpochMillis = minOf(
-                end?.minus(1) ?: Long.MAX_VALUE,
-                latestAllowed - CLOCK_TOLERANCE_MILLIS
-            ),
+            maxEpochMillis = minOf(end?.minus(1) ?: Long.MAX_VALUE, openedAt),
             zoneId = zone,
-            labels = pickerLabels(R.string.picker_start_title, R.string.picker_start_out_of_range),
+            // The message names whichever limit applies: the end, or now (review finding).
+            labels = pickerLabels(
+                R.string.picker_start_title,
+                if (end != null && end - 1 <= openedAt) {
+                    R.string.picker_start_out_of_range
+                } else {
+                    R.string.picker_past_start_out_of_range
+                }
+            ),
             onConfirm = { start ->
                 picking = null
                 // Confirming the minute already shown keeps the stored time and its seconds.
@@ -146,7 +152,7 @@ internal fun TimeSection(
         )
 
         TimeFieldUiModel.End -> MigrelyDateTimePicker(
-            initialEpochMillis = end ?: (latestAllowed - CLOCK_TOLERANCE_MILLIS),
+            initialEpochMillis = end ?: openedAt,
             minEpochMillis = details.startEpochMillis + 1,
             maxEpochMillis = latestAllowed,
             zoneId = zone,

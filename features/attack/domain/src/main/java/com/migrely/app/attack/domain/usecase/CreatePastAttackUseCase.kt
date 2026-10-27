@@ -17,8 +17,8 @@ import java.time.Instant
 
 /**
  * Adds an attack that has already ended (BRD ATK-F3), in the device's zone. A start after now, an end more than
- * [CLOCK_TOLERANCE] after now and an end not after the start are refused (EC-ATK-03, EC-ATK-04, QA #89). Overlapping attacks are named, not stored
- * (EC-ATK-05, EC-ATK-15); merging them is [MergeAttacksUseCase].
+ * [CLOCK_TOLERANCE] after now and an end not after the start are refused (EC-ATK-03, EC-ATK-04, QA #89). Overlapping
+ * attacks are named, not stored (EC-ATK-05, EC-ATK-15); merging them is [MergeAttacksUseCase].
  */
 class CreatePastAttackUseCase(
     private val getCurrentTimeRepository: GetCurrentTimeRepository,
