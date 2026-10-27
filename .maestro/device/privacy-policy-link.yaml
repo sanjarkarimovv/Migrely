@@ -4,6 +4,15 @@
 appId: com.migrely.app
 ---
 - launchApp
+# Home first, then about 1 s more: a tap on "Settings" during home's 1 s mode guard is lost, and the flow then failed
+# before it checked anything (1.0.1 retest, 2 of 2 on emulator-5580 under load).
+- extendedWaitUntil:
+    visible: "Migraine started"
+    timeout: 15000
+- extendedWaitUntil:
+    visible: "QA: never shown, a pause for home's 1 s tap guard"
+    timeout: 1500
+    optional: true
 - tapOn: "Settings"
 - scrollUntilVisible:
     element: "What Migrely keeps, and where"

@@ -1905,7 +1905,7 @@ expect_text_soon() { # $1 Python regex, $2 seconds: some text or label on screen
 }
 import_and_expect() { # $1 file in Download, $2 HOLDS regex or "", $3 choice or "", $4 extended regex of the result message
   # Run without a report folder: writing it takes seconds, and the result message lasts only about 4 s (#56).
-  local attempt seen log others="This file isn.t a Migrely backup.*|Update Migrely to open this file.*|Backup imported:.*|Added [0-9]+ migraines?.*|Added the other entries.*|Nothing new.*|Couldn.t.*"
+  local attempt seen log others="This file isn.t a Migrely backup.*|Update Migrely to open this file.*|Backup imported:.*|Added [0-9]+ migraines?.*|Added the other entries.*|Added the new entries.*|Nothing new.*|Couldn.t.*"
   for attempt in 1 2; do
     STEP=$((STEP + 1))
     log="$out/$(printf '%03d' "$STEP")-${CURRENT:-x}-import-step.log"
