@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   quality-gate:
-    name: Build, tests, Konsist, ktlint, detekt
+    name: Build, tests, Konsist, ktlint, detekt, Android Lint
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -32,7 +32,7 @@ jobs:
 
       # Same command as the local gate in docs/ARCHITECTURE.md section 12.
       - name: Quality gate
-        run: ./gradlew assembleDebug test ktlintCheck detekt --stacktrace
+        run: ./gradlew assembleDebug test ktlintCheck detekt lint --stacktrace
 
       - name: Upload reports
         if: failure()
