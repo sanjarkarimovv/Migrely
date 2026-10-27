@@ -20,7 +20,8 @@ mode, kept in its own preferences file, decides what each call answers. QA sets 
 | D1 | A new `SimulatedStoreMode.NoProducts("no-products")` | the store's other states are modes too, set and reset the same way |
 | D2 | `connect()` answers Available; `purchases()` reads the store | Play's billing connection and a user's purchases do not depend on products being listed |
 | D3 | `products()` answers an empty list | Play returns no product details for IDs it does not know |
-| D4 | `purchase()` answers Unavailable | `PlayBillingDataSourceImpl` maps Play's ITEM_UNAVAILABLE to Unavailable. The paywall offers nothing to buy in this state anyway |
+| D4 | `purchase()` answers Unavailable | The paywall offers no plan in this state, so the app never asks. Real Play differs by path: `PlayBillingDataSourceImpl` answers Failed when it has no details for the product, and Unavailable for Play's ITEM_UNAVAILABLE. Unavailable is the plainer of the two for a store that sells nothing |
+| D6 | The documentation says to force-stop the app after changing the mode | a running app remembers Play's answer for an hour before a paywall shows itself (D110), so a mode switch reaches that check only after a restart; a tapped paywall reads afresh (review finding) |
 | D5 | `acknowledge()` works whenever the store connects | an owned purchase still has to be acknowledged; the check now asks `connect()`, so it follows any future mode too |
 
 ## Risks
