@@ -14,10 +14,14 @@ import android.content.Intent
  * The -f 0x20 flag (include stopped packages) lets it reach the app after a force-stop too;
  * without it Android drops the broadcast silently.
  *
- * The commands are "available", the default; "unavailable", a country without Google Play billing;
- * "unreachable", a Play Store that does not answer; "complete-pending" and "decline-pending",
- * which settle a pending payment with no sheet open, as at a shop; and "reset", which empties the
- * store and gives the trial back.
+ * The commands are "available", the default; "no-products", a Google Play that connects but knows
+ * none of Migrely's products, as before they are set up in Play Console; "unavailable", a country
+ * without Google Play billing; "unreachable", a Play Store that does not answer;
+ * "complete-pending" and "decline-pending", which settle a pending payment with no sheet open, as
+ * at a shop; and "reset", which empties the store and gives the trial back.
+ *
+ * A running app remembers Google Play's answer for an hour before a paywall shows itself (BRD
+ * D110), so force-stop the app after changing the mode; a tapped paywall reads the store afresh.
  */
 class SimulatedBillingReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {

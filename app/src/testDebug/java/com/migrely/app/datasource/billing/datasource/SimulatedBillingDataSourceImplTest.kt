@@ -168,6 +168,42 @@ class SimulatedBillingDataSourceImplTest {
     }
 
     @Test
+    fun `Given no products then the store connects, keeps what was bought and sells nothing`() {
+        val owned = classUnderTest.purchase(LIFETIME) as BillingPurchaseResultDataModel.Completed
+        classUnderTest.apply("no-products")
+
+        assertEquals(BillingConnectionDataModel.Available, classUnderTest.connect())
+        assertEquals(
+            emptyList<Any>(),
+            classUnderTest.products(listOf("migrely_premium"), listOf("migrely_lifetime"))
+        )
+        assertEquals(owned.purchases, classUnderTest.purchases())
+        assertTrue(classUnderTest.acknowledge(owned.purchases.single().purchaseToken))
+        assertTrue(classUnderTest.purchases().single().acknowledged)
+        assertEquals(BillingPurchaseResultDataModel.Unavailable, classUnderTest.purchase(MONTHLY))
+
+        classUnderTest.apply("available")
+
+        assertEquals(
+            listOf("migrely_premium", "migrely_lifetime"),
+            classUnderTest.products(listOf("migrely_premium"), listOf("migrely_lifetime"))
+                .map { it.productId }
+        )
+    }
+
+    @Test
+    fun `Given no products when resetting then the products are back`() {
+        classUnderTest.apply("no-products")
+
+        classUnderTest.apply("reset")
+
+        assertEquals(
+            listOf("migrely_premium"),
+            classUnderTest.products(listOf("migrely_premium"), emptyList()).map { it.productId }
+        )
+    }
+
+    @Test
     fun `Given the store is unreachable then reads fail and resetting brings it back`() {
         classUnderTest.purchase(LIFETIME)
         classUnderTest.apply("unreachable")
