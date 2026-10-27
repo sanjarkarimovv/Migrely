@@ -215,10 +215,10 @@ class AttackDataSourceImpl(
     }
 
     override fun reopen(attackId: String): ReopenDataModel = database {
-        if (attackDao.reopenIfNoneInProgress(attackId, clock.millis())) {
+        if (attackDao.reopenIfNothingOverlaps(attackId, clock.millis())) {
             ReopenDataModel.Reopened
         } else {
-            ReopenDataModel.AnotherInProgress
+            ReopenDataModel.NotPossible
         }
     }
 

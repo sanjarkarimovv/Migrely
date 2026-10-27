@@ -312,11 +312,14 @@ abstract class AttackDao {
         }
     }
 
-    /** Reopens [attackId] only when no other attack is in progress. Returns false when another one is. */
+    /**
+     * Reopens [attackId] only when, open-ended again, it overlaps no other attack: no attack in progress and none that
+     * ends after its start (BRD EC-ATK-20). Returns false when it would, or when the attack no longer exists.
+     */
     @Transaction
-    open fun reopenIfNoneInProgress(attackId: String, nowEpochMillis: Long): Boolean {
-        val inProgress = inProgress()
-        if (inProgress != null && inProgress.attack.id != attackId) return false
+    open fun reopenIfNothingOverlaps(attackId: String, nowEpochMillis: Long): Boolean {
+        val attack = byId(attackId)?.attack ?: return false
+        if (overlapping(attackId, attack.startEpochMillis, Long.MAX_VALUE) != null) return false
         clearEnd(attackId, nowEpochMillis)
         return true
     }
