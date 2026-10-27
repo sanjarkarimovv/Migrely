@@ -22,6 +22,12 @@
 and line 1a holds the stated #74 exception.
 
 **Publishing:** build 4 is not published yet, as of 2026-10-27.
+- **In review:** submitted to Google on 2026-10-27 at 14:01, for production, the closed track, the listing, App content
+  and the store settings.
+- **Who gets it:** every country, the EEA included, at 100% of production.
+  - Play has no staged rollout for an app's first release, so there is no smaller first audience.
+  - Once Publish is pressed, a defect reaches every user, and only a new build can fix it. QA's verdict is the last
+    gate before that.
 - **Managed publishing is on.** Google's approval publishes nothing; "Publish changes" is a separate step.
 - **Publish waits for:**
   - QA's verdict on the closed track's pre-launch report (line 11);
