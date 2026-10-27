@@ -1,7 +1,7 @@
 # Play Console: Migrely 1.0.0 ni chiqarish yoʻriqnomasi
 
 Bu hujjat Migrely'ni Google Play'ga chiqarish uchun Play Console'da qilinadigan barcha qadamlarni tartib bilan
-beradi (BRD 13b, D101–D124). Tugma va boʻlim nomlari Play Console'dagidek inglizcha yozilgan. Play Console vaqti-vaqti
+beradi (BRD 13b, D101–D125). Tugma va boʻlim nomlari Play Console'dagidek inglizcha yozilgan. Play Console vaqti-vaqti
 bilan oʻzgaradi: nom boshqacha boʻlsa, eng yaqin maʼnodagi boʻlimni tanlang.
 
 ## 0. Tayyor fayllar
@@ -68,6 +68,10 @@ ID'lar koddagi bilan aynan bir xil boʻlishi shart: Play bir marta ishlatilgan I
 
 ## 3. Yangi build'ni yuklash (Test and release → Testing → Internal testing)
 
+Testing track'lariga (internal, closed) faqat `release/X.Y.Z` yoki `hotfix/X.Y.Z` branch boshidan yigʻilgan build
+yuklanadi. Har build'ning versionCode'i yangi boʻladi. AAB qaysi commit'dan yigʻilganini yozib qoʻying, chunki 7-boʻlim
+shu commit'ni tag bilan solishtiradi (D125).
+
 1. **Create new release** → AAB'ni yuklang.
 2. **Release notes:**
    ```
@@ -128,28 +132,39 @@ ID'lar koddagi bilan aynan bir xil boʻlishi shart: Play bir marta ishlatilgan I
 allaqachon obuna sotadi, ochiq aloqa maʼlumotlari esa akkauntga tegishli: Migrely yangi maʼlumot ochmaydi. Play
 EEA uchun biror narsa soʻrasa, oʻshanda hal qilinadi.
 
-## 7. Production release
+## 7. Production release (Git-flow, D125)
 
-1. **Production → Create new release:** release branch'dagi oxirgi AAB, rollout **100%**. Play birinchi chiqishda
-   staged rollout bermaydi, u faqat yangilanishlar uchun.
-2. **Managed publishing yoqilgan** (Publishing overview). Keyin **Send changes for review**. Google tasdiqlasa ham
-   ilova oʻzi chiqmaydi.
-3. **Publish changes** faqat QA hukmidan keyin bosiladi (D124): build'ning QA sweep'i va closed track'ning
-   pre-launch report'i launch blocker koʻrsatmasa. Launch blocker:
+Production'ga faqat Git-flow boʻyicha yakunlangan va tag qoʻyilgan versiya chiqadi. Tartib:
+
+1. **QA Go:** QA `release/X.Y.Z` yoki `hotfix/X.Y.Z` branch boshidagi build'ni (debug va R8) tekshirib, Go beradi.
+2. **Branch'ni yakunlash:**
+   - PR orqali `main` ga merge commit bilan qoʻshiladi;
+   - shu merge commit'ga annotated tag `vX.Y.Z` qoʻyilib, push qilinadi;
+   - branch `develop` ga merge qilinadi. Konflikt boʻlsa, `merge/<branch>-into-develop` yordamchi branch'i va PR
+     orqali hal qilinadi. Hotfix yakunlanganda ochiq `release/*` branch boʻlsa, hotfix `develop` ga emas, oʻsha release
+     branch'iga merge qilinadi;
+   - branch oʻchiriladi.
+3. **Build tag'ga mosligini tekshirish:** `git diff <AAB yigʻilgan commit> vX.Y.Z` boʻsh boʻlishi kerak. Shunda
+   production'ga QA sinagan aynan oʻsha AAB chiqadi: internal track'dan **Promote release** qilinadi yoki shu AAB
+   yuklanadi. Farq boʻlsa, AAB tag'dan qayta yigʻiladi va QA'ga qayta beriladi.
+4. **Production → Create new release:**
+   - birinchi chiqish 100% boʻladi, chunki Play birinchi chiqishda staged rollout bermaydi;
+   - yangilanishlar staged rollout bilan chiqadi: 20% → 2–3 kundan keyin 50% → yana 2–3 kundan keyin 100%.
+5. **Managed publishing yoqilgan.** **Send changes for review** bosiladi; Google tasdiqlasa ham ilova oʻzi chiqmaydi.
+6. **Publish changes** faqat QA hukmidan keyin bosiladi (D124): QA tekshiruvi va closed track'ning pre-launch report'i
+   launch blocker koʻrsatmasligi kerak. Launch blocker:
    - asosiy oqimda crash yoki ANR;
    - maʼlumot yoʻqolishi yoki buzilishi;
    - xavfsizlik ogohlantirishi notoʻgʻri yoki yoʻq;
    - xarid yoki Premium ishlamasligi;
    - maʼlumotning telefondan chiqishi.
-
-   Blocker topilsa, release branch'da tuzatilib, versionCode oshirilgan yangi build (versionName oʻsha) yuklanadi va
-   review'dagi build oʻrnini oladi. Qolgan topilmalar keyingi versiyaga qoladi.
-4. Google review birinchi chiqishda odatda bir necha soatdan bir necha kungacha davom etadi.
-5. **Publish'dan keyin:**
-   - release branch `main` ga merge qilinadi va `v<versionName>` tag qoʻyiladi, keyin `develop` ga back-merge qilinadi;
-   - yangilanishlarda staged rollout ishlatiladi: 20% → 2–3 kundan keyin 50% → yana 2–3 kundan keyin 100%;
-   - har bosqichda **Android vitals**'ni tekshiring: crash va ANR darajasi Play chegarasidan past boʻlsin. Vitals
-     QA'ga yuboriladi.
+7. **Tag qoʻyilgandan keyin topilgan muammo:**
+   - Google rad etsa ham, blocker chiqsa ham, `main` dan yangi `hotfix/X.Y.(Z+1)` ochiladi;
+   - tag hech qachon koʻchirilmaydi, versiya qayta ishlatilmaydi;
+   - qolgan topilmalar `develop` orqali keyingi versiyaga qoladi.
+8. Google review odatda bir necha soatdan bir necha kungacha davom etadi.
+9. **Publish'dan keyin** har bosqichda **Android vitals**'ni tekshiring: crash va ANR darajasi Play chegarasidan past
+   boʻlsin. Vitals QA'ga yuboriladi.
 
 ## 8. Launch'dan keyin
 
