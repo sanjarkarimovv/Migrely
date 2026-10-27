@@ -2,12 +2,12 @@
 
 ## 1. Requirements and the Go/No-Go record
 
-- [ ] 1.1 BRD §13 row 13c and §17 D203. Verify: `grep -n "| 13c |\|| D203 " docs/BRD.md`
-- [ ] 1.2 `docs/qa/go-no-go-1.0.0.md`:
-  - line 12 waived by the user on 2026-10-27;
-  - line 11 not available before launch (no closed track), the user's decision of 2026-10-27;
-  - the decision says production at 100%.
-  Verify: `grep -n "waived\|not available before launch" docs/qa/go-no-go-1.0.0.md`
+- [ ] 1.1 BRD §13 row 13c, §17 D203 and D204. Verify: `grep -n "| 13c |\|| D203 \|| D204 " docs/BRD.md`
+- [ ] 1.2 `docs/qa/go-no-go-1.0.0.md` for build 4's Play state:
+  - the closed testing release and managed publishing, with Publish held for QA's verdict;
+  - line 11 is the closed track's pre-launch report, read before Publish;
+  - line 12 is waived by the user on 2026-10-27.
+  Verify: `grep -n "waived\|managed publishing\|pre-launch" docs/qa/go-no-go-1.0.0.md`
 
 ## 2. Release-fix scenarios
 
@@ -30,17 +30,39 @@
 - [ ] 3.3 The full audit on build 4's debug APK. Every failure is filed as an `accessibility` issue with its capture,
   and every "not judged" line is looked at. Verify: the audit's summary in the verification record
 
-## 4. Exploratory testing on build 4
+## 4. Release-candidate checks and residual risk (D204)
 
-- [ ] 4.1 Charters 1–4 of design D6, each with notes: what was tried, and what was found. Verify: the notes in the
+- [ ] 4.1 Lint and the instrumented tests on build 4 (design D7), with the results and the #74 exception in the
+  Go/No-Go record. Verify: the record's lines name the counts and #74
+- [ ] 4.2 `qa/split_apks.sh` and the device specs in `qa/fixtures/device-specs/` (design D8). Verify:
+  - it refuses emulator-5570;
+  - `pm path` lists 4 APKs for each profile;
+  - the smoke suite and the D117 checks pass on ru-26 (emulator-5582) and on he-36, uz-36 and en-36 (emulator-5580);
+  - the system language is back afterwards
+- [ ] 4.3 The residual-risk section in `docs/qa/go-no-go-1.0.0.md` (design D9), and line 9's new pass condition in
+  `docs/QA.md` §5. Verify: the section lists every capability under 50% from `qa/e2e_coverage.py`, D42, C3–C5 and the
+  checks that could not run
+- [ ] 4.4 `docs/qa/test-strategy.md` (design D10). Verify: every capability of `openspec/specs/` has a row (a script
+  compares the two lists); every level has its tool, owner and when
+
+## 5. Exploratory testing on build 4
+
+- [ ] 5.1 The core-flow sweep (design D6): every one of the 92 scenarios is PASS, FAIL or NOT RUN with a reason, and every
+  edge case has notes. Verify: the results in the verification record; an issue for every defect, with its blocker
+  verdict sent to the dev session
+- [ ] 5.2 Charters 1–4 of design D6, each with notes: what was tried, and what was found. Verify: the notes in the
   verification record; an issue for every defect
 
-## 5. Documentation and verification
+## 6. Documentation and verification
 
-- [ ] 5.1 `docs/QA.md`: the audit's screen list (D203), `privacy_link`, and the new seed. Verify: `grep -n "D203\|privacy_link\|report-heavy-old-notes" docs/QA.md`
-- [ ] 5.2 Coverage, `qa/resource_names.py`, `openspec validate --strict`, smoke, and every new flow and scenario as its
+- [ ] 6.1 `docs/QA.md`:
+  - the audit's screen list (D203);
+  - `privacy_link` and the new seed;
+  - §5's new lines (lint, instrumented, split APKs) and the residual-risk rule (D204).
+  Verify: `grep -n "D203\|D204\|privacy_link\|report-heavy-old-notes\|split_apks" docs/QA.md`
+- [ ] 6.2 Coverage, `qa/resource_names.py`, `openspec validate --strict`, smoke, and every new flow and scenario as its
   task says. Verify: the verification record below
-- [ ] 5.3 Review (`superpowers:code-reviewer`), with every finding fixed or answered. Verify: a re-run of what each fix
+- [ ] 6.3 Review (`superpowers:code-reviewer`), with every finding fixed or answered. Verify: a re-run of what each fix
   touched
-- [ ] 5.4 Gate `./gradlew assembleDebug assembleRelease test ktlintCheck detekt --no-daemon` after merging develop.
+- [ ] 6.4 Gate `./gradlew assembleDebug assembleRelease test ktlintCheck detekt --no-daemon` after merging develop.
   Verify: exit 0

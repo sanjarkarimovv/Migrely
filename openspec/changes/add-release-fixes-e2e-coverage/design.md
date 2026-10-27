@@ -4,7 +4,15 @@
 
 See proposal.md (Why).
 - **Build under test:** build 4, `release/1.0.0` @ 29aadb3, with the same product code as develop 438be90. Its debug
-  and R8 APKs are in `../migraine-app-qa-rc` and are named with `QA_APK` (D201).
+  and R8 APKs are in `../migraine-app-qa-rc` and are named with `QA_APK` (D201). So is its debug-signed bundle
+  (`app/build/outputs/bundle/release/app-release.aab`).
+- **Play:** build 4 is in a closed testing release for the pre-launch report. Managed publishing is on, and the dev
+  session presses "Publish changes" only after QA's verdict.
+- **The bundle:**
+  - `bundletool dump config` shows the default splits (language, density, ABI);
+  - the one native library is stored uncompressed with 16 KB alignment;
+  - for a ru, he, uz or en x86_64 phone, `bundletool extract-apks` gives the base, the language, the xxhdpi and the
+    x86_64 APKs.
 - **The audit:** `qa/a11y_audit.sh` drives every flow in `.maestro/a11y-tour/` with Maestro. It captures each state 3
   times (100% portrait, 200% portrait, 100% landscape) and checks the captures with `qa/a11y_audit.py`.
   - The rules are contrast, 48 dp targets, labels and keyboard focus.
@@ -21,7 +29,9 @@ See proposal.md (Why).
 **Goals:**
 - every release-fix scenario named in the proposal has a check, or a D61 reason;
 - every screen the app shows is captured by the audit;
-- exploratory findings on build 4 are filed before users meet them.
+- exploratory findings on build 4 are filed before users meet them;
+- a release candidate is checked at every test level the project has, on the APKs users install;
+- no Go/No-Go record reads as a stronger verdict than its checks support.
 
 **Non-Goals:**
 - the old audit states change only if a new rule needs it;
@@ -109,10 +119,22 @@ When D122 lands, the dev session names the command. The scenario `premium_store_
 
 If D122 is not on develop when the rest is verified, the scenario stays a D61 gap with that follow-up.
 
-### D6. Exploratory charters on build 4
+### D6. Exploratory testing on build 4
 
-Each charter is 30 to 45 minutes on the debug APK (the R8 APK for the launch path). A defect is filed with its steps
-and a screenshot.
+- **Every defect is filed with:** its steps, two reproductions (D40), a screenshot and the dev's launch-blocker
+  verdict:
+  - **blocker:** a crash or ANR in a core flow, data loss, a wrong or missing safety warning, a broken purchase or
+    entitlement, or data leaving the device;
+  - **not a blocker:** everything else.
+  A blocker goes to the dev session at once, before the sweep ends.
+- **The sweep:**
+  - the 92 scenarios of attack-details, past-attacks, medication-intakes, attack-mode, attack-logging and
+    attack-history that have no flow, on the R8 APK;
+  - plus these edge cases: emoji, right-to-left and over-long notes; "Don't keep activities" with unsaved input;
+    rotation with a picker open; back with unsaved edits; repeated taps on Save, Delete, Undo and End.
+  - Its results are the input of change 13d and of the risk register.
+
+Each charter below is 30 to 45 minutes on the debug APK, or on the R8 APK for the launch path.
 1. **Rotation and process death** on the paywall, the purchase sheet, the report while it is being made, and Insights.
    The questions: are the chosen plan, the chosen period and any message kept? Does the state come back after
    `am kill`?
@@ -122,6 +144,76 @@ and a screenshot.
 4. **First launch of the R8 APK as a new user:** onboarding, the first migraine, the Settings pages, then the privacy
    link. This is the path every new user takes on day one.
 
+### D7. Lint and the instrumented tests on the candidate (D204)
+
+Both run in the candidate's worktree (`../migraine-app-qa-rc`), before the device lines:
+- `./gradlew lint --continue --no-daemon`. Every error is either fixed before Go or a S1/S2 issue makes the candidate
+  No-Go. Warnings are read for user-visible effects (Compose state, plurals, API levels). Each such warning gets an
+  issue or a line in the record saying why it is harmless.
+- `ANDROID_SERIAL=emulator-5580 ./gradlew connectedDebugAndroidTest --continue --no-daemon`. The run installs and then
+  removes the app, so `qa/reset_device.sh` and the candidate's install follow it.
+- **Build 4:**
+  - Lint has 3 errors (#74), none reachable at runtime:
+    - the NewApi call is behind a check lint cannot see, and QA checks that path on API 26;
+    - the other error is in test code.
+    The dev session fixes them in 1.0.1 with D123. Build 4's record states this as a known exception, because the
+    requirement applies from the next candidate.
+  - The instrumented tests pass: datasource 100/100, designsystem 37/37, app 1/1.
+- **Rejected: running lint in `qa/` with its own rules.** Lint belongs to the build. The dev session adds it to the gate
+  (D123), and QA's line only reads its result on the candidate.
+
+### D8. The split APKs users install (`qa/split_apks.sh`, D204)
+
+Play builds split APKs from the bundle: base, language, density and ABI. The universal APK holds every language and
+density, so a mistake in a split, such as a missing resource or a locale change that needs a missing language, never
+shows there.
+- **The script:**
+  - It reads `<aab> <profile>`. A profile is a bundletool device spec in `qa/fixtures/device-specs/`:
+    - `ru-26`, `he-36`, `uz-36`, `en-36`;
+    - each with x86_64 and 420 dpi.
+  - It runs `bundletool build-apks` with the debug key, since QA has no upload key (D102).
+  - It checks that the profile's language split is in the set.
+  - It installs with `bundletool install-apks --device-id <QA serial>`, after uninstalling the app.
+  - It refuses every serial except emulator-5580 and emulator-5582.
+- **The check:**
+  - `pm path com.migrely.app` lists the base and its 3 splits;
+  - the system language is set to the profile's language;
+  - the smoke suite runs without `--install`;
+  - the D117 checks run: Home, History and a date picker show English, the region's first weekday, and no Cyrillic or
+    Hebrew in the app's own text.
+  - The language and the app are reset afterwards.
+- **Rejected: Play's internal app sharing.** It needs the upload key and Play itself. bundletool builds the same split
+  set from the same bundle.
+
+### D9. Residual risk in every Go/No-Go record (D204)
+
+The record gets a section "What these checks do not prove". It holds:
+- a table with one row per check, saying what passing it does not cover. For example: the regression covers only the
+  scenarios that have a flow, and the audit covers only the states in its tour;
+- the capabilities with under half of their scenarios checked, from `qa/e2e_coverage.py`, each with the follow-up in
+  the test strategy;
+- the deferred QA changes: D42 visual regression; the audit's C3 and C4, which wait for C1; and C5, which waits for
+  GitHub Actions;
+- the checks that could not run, and why (for example: CI, Play's grace period).
+
+The verdict then reads "Go, with these risks open", never a bare "Go". Line 9 changes its pass condition to "exits 0
+(no stale names). The share per capability goes to the residual risks".
+
+### D10. The test strategy and its risk register (`docs/qa/test-strategy.md`, D204)
+
+- **Levels:** unit, architecture rules, screen state, visual, instrumented, end-to-end, device scenarios, device audits,
+  static analysis, exploratory and Play's pre-launch report. Each has its tool, owner, where it runs and when, with a
+  "today / target" column, so the audit's gaps (C1–C6) are visible.
+- **Risk register:** one row per capability of `openspec/specs/`. Each row has:
+  - its E2E share;
+  - its other levels;
+  - what is not checked;
+  - the user risk (high for attack logging and details, medications and backup);
+  - the follow-up.
+  Rows come from the coverage report and the sweep's results. The follow-up of a high-risk row is a named QA change
+  (13d for the swept core flows).
+- **When it is updated:** by every QA change that changes a level or a capability's checks, and at every Go/No-Go.
+
 ## Risks / Trade-offs
 
 - **Chrome left disabled:** a failed scenario that skips `restore()` would leave the QA emulator without a browser. So
@@ -130,3 +222,7 @@ and a screenshot.
   UI changes, not on every flow change.
 - **New states may fail on old screens.** They are expected to find real issues. Those are filed, not worked around
   (D203).
+- **The system language left changed after a split-APK run:** `qa/split_apks.sh` restores it on exit, and
+  `qa/reset_device.sh` resets the app's language as it does today.
+- **Build 4 fails the new lint line.** The requirement is new, and the 3 errors are shown not to reach users. So build
+  4's record states the exception, with #74 and D123, instead of a hidden pass. From build 5 on there is no exception.
