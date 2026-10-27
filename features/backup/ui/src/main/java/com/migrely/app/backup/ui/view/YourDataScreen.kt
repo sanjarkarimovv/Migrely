@@ -478,7 +478,9 @@ private fun YourDataMessageUiModel.text(): String = when (this) {
             addedAttacks,
             addedAttacks
         )
-        addedOthers > 0 -> stringResource(R.string.your_data_added_others)
+        addedOthers > 0 && skippedAttacks > 0 -> stringResource(R.string.your_data_added_others)
+        // A file without migraines says nothing about them (QA #87).
+        addedOthers > 0 -> stringResource(R.string.your_data_added_new_entries)
         else -> stringResource(R.string.your_data_nothing_new)
     }
     YourDataMessageUiModel.NotABackup -> stringResource(R.string.your_data_not_a_backup)
