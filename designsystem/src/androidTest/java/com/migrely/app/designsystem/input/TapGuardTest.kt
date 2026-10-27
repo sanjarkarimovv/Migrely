@@ -8,6 +8,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -40,7 +41,7 @@ class TapGuardTest {
                     Column {
                         Button(onClick = { buttonClicks++ }) { Text("Button") }
                         TextButton(onClick = { textButtonClicks++ }) { Text("Link") }
-                        var selected by mutableStateOf(false)
+                        var selected by remember { mutableStateOf(false) }
                         Text(
                             "Chip",
                             Modifier.selectable(selected = selected) {
