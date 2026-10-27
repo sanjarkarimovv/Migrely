@@ -150,11 +150,16 @@ products, its sheet ("Complete the purchase", "Pay later (pending)", "Cancel") a
 app's own screens. QA taps through them (`subflows/buy.yaml`, `device/premium-buy.yaml`).
 - **Store states:** `qa_store <command>` sets what the store answers through an adb broadcast:
   - available, unavailable, unreachable;
+  - no-products (D122): billing connects and reads what is owned, but no product is offered, as Google Play does
+    before the products are set up. `premium_no_products` checks it;
   - complete-pending and decline-pending, for a payment settled "at a shop";
-  - reset, which empties the store, as Google Play no longer reporting a purchase after a refund.
+  - reset, which empties the store, as Google Play no longer reporting a purchase after a refund. Premium already
+    shown stays until the app asks the store again, after 15 minutes or on "Restore purchases".
   - Maestro's `clearState` empties the store too; "Delete all data" does not.
 - **Rules that depend on time** use the emulator clock: 3 days offline, the 7 days between self-shown paywalls, and the
-  day before a trial ends. The app re-checks at start and at most every 15 minutes, so every time step force-stops it.
+  day before a trial ends. The app asks the store again for Premium when its last answer is over 15 minutes old
+  (`CHECK_INTERVAL`) or on "Restore purchases". It keeps the store's products for an hour before a paywall shows itself.
+  So every time step force-stops it, and a step that needs a fresh Premium answer moves the clock 20 minutes on.
 - **The paywall after onboarding:** every flow that finishes onboarding closes it (`subflows/close-onboarding-paywall.yaml`);
   `onboarding/paywall-after-onboarding.yaml` checks it.
 - **Release builds have no simulated store:** `qa/release_apk.py <release.apk> <debug.apk>` checks that, with the debug

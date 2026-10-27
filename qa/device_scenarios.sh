@@ -12,7 +12,7 @@
 # landscape_band, mark_travel, mark_earliest_month, stats_counting, stats_chronic, stats_progress, reminder_daily,
 # reminder_permission, reminder_effect, reminder_replan (restarts the emulator), med_only_history,
 # message_tap_guard (#52), theme_check, onboarding_states, delete_all_data, privacy_link, backup_export, backup_import,
-# message_duration (#56), premium_store_states, premium_pending, premium_plans, premium_entitlement, premium_offline,
+# message_duration (#56), premium_store_states, premium_no_products, premium_pending, premium_plans, premium_entitlement, premium_offline,
 # trial_banner, paywall_self_show, report_three_months, report_counting, report_heavy, insights, upgrade, release_apk.
 # On demand only: backup_android (bmgr).
 # QA_APK=<apk> names the build under test (default: this worktree's debug APK), for example a release branch's.
@@ -419,12 +419,12 @@ browsers_for() { # $1 URL: the packages whose activities open it as a link from 
     -d "$1" 2>/dev/null | tr -d '\r' | sed -n 's|^ *\([a-zA-Z0-9_.]*\)/.*|\1|p' | sort -u
 }
 
-qa_store() { # $1 a simulated store command (debug builds, D201): available, unavailable, unreachable, reset,
-  # complete-pending or decline-pending. -f 0x20 reaches a stopped app too.
+qa_store() { # $1 a simulated store command (debug builds, D201, D122): available, no-products, unavailable,
+  # unreachable, reset, complete-pending or decline-pending. -f 0x20 reaches a stopped app too.
   adbq shell am broadcast -p "$APP" -f 0x20 -a com.migrely.app.debug.SIMULATED_STORE --es command "$1" >/dev/null
   sleep 1
   case "$1" in
-    available | unavailable | unreachable)
+    available | no-products | unavailable | unreachable)
       local store
       store="$(adbq shell run-as "$APP" cat shared_prefs/migrely_simulated_store.xml 2>/dev/null | tr -d '\r')"
       [[ "$store" == *"name=\"mode\">$1<"* ]] || { echo "  FAILED: the simulated store did not take \"$1\""; return 1; }
@@ -1374,6 +1374,50 @@ scenario_premium_store_states() {
   qa_store available || return 1
 }
 
+# Covers: subscription › When the paywall shows itself › Google Play offers no products
+# Covers: subscription › A store for testing › No products from the store for testing
+# The store answers with no products, as Google Play does before they are set up in the Play Console (D110, D122).
+# - No paywall shows itself, after onboarding or after the 5th migraine.
+# - The second "none" cannot pass on its own: in the same state, with products back, the patterns paywall shows.
+# - A tap on Doctor report still opens the paywall with the region line and no prices.
+# - Premium bought before stays Premium, once the app has asked the store again.
+# The app keeps the store's answer for an hour before a paywall shows itself, and its Premium for 15 minutes
+# (CHECK_INTERVAL), so each store change is followed by a force-stop, or by a clock 20 minutes on. "Asked again at
+# most once an hour" is not checked here: the store does not count the asks, and the app's unit tests hold it (D110).
+scenario_premium_no_products() {
+  echo "Scenario premium_no_products: no products from the store: no paywall by itself, the region line on a tap, Premium kept (D110, D122)"
+  set_clock_millis "$(when_millis 0 10 12:00)" || return 1
+  adbq shell pm clear "$APP" >/dev/null
+  qa_store no-products || return 1
+  run_flow no-self-paywall || return 1
+  echo "    a new install with no products: no paywall after onboarding"
+  shift_clock_hours 192 || return 1
+  seed_import four-old Import || return 1
+  adbq shell am force-stop "$APP"
+  run_flow log-attack || return 1
+  run_flow home-no-paywall || return 1
+  echo "    the 5th migraine, patterns ready, 8 days after onboarding: none"
+  qa_store available || return 1
+  adbq shell am force-stop "$APP"
+  run_flow patterns-paywall || return 1
+  echo "    the same state with products: the patterns paywall shows, so the \"none\" above was the store's"
+  qa_store no-products || return 1
+  adbq shell am force-stop "$APP"
+  run_flow_env paywall-state "STATE=Premium isn.t available in your region yet" NO_BUY=true \
+    "ABSENT=.*(/month|/year|free, then).*" TAP= || return 1
+  run_flow_env paywall-state "STATE=Everything else in Migrely works as before\." NO_BUY=true ABSENT= TAP= || return 1
+  echo "    a tap on Doctor report: the region line, no buy button and no price"
+  qa_store available || return 1
+  adbq shell am force-stop "$APP"
+  run_flow_env premium-buy PLAN=Monthly BUTTON=Subscribe "SHEET=Complete the purchase" "RESULT=You have Premium" || return 1
+  qa_store no-products || return 1
+  adbq shell am force-stop "$APP"
+  set_clock_millis $((($(device_seconds) + 20 * 60) * 1000)) || return 1
+  run_flow_env premium-check "STATUS=Premium · monthly" REPORT=open || return 1
+  echo "    Premium bought before, the store asked again 20 minutes on with no products: still Premium · monthly"
+  qa_store reset || return 1
+}
+
 # Covers: subscription › Buying › Pending
 scenario_premium_pending() {
   echo "Scenario premium_pending: a cancelled sheet changes nothing; pending unlocks nothing until it completes (EC-BIL-08)"
@@ -2026,7 +2070,7 @@ if [[ $# -eq 0 ]]; then
     stats_counting stats_chronic stats_progress reminder_daily reminder_permission reminder_effect reminder_replan \
     med_only_history message_tap_guard \
     theme_check onboarding_states delete_all_data privacy_link backup_export backup_import message_duration \
-    premium_store_states premium_pending premium_plans premium_entitlement premium_offline trial_banner paywall_self_show \
+    premium_store_states premium_no_products premium_pending premium_plans premium_entitlement premium_offline trial_banner paywall_self_show \
     report_three_months report_counting report_heavy insights
   if [[ -n "${QA_OLD_APK:-}" ]]; then
     set -- "$@" upgrade

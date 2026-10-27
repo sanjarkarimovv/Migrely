@@ -110,15 +110,20 @@ One flow, in this order. Marks are checked by the cell's spoken label (`<day>: n
   - no "HEAVY-" note at all.
 - **Rejected: a separate scenario.** It would buy Premium and import 900 migraines again for one check.
 
-### D5. Google Play offers no products (D110)
+### D5. Google Play offers no products (D110, D122)
 
-When D122 lands, the dev session names the command. The scenario `premium_store_states` then sets it, and checks:
-- no paywall shows itself after onboarding, nor after the 5th migraine;
-- a tap on Doctor report opens the paywall with "Premium isn't available";
-- with the clock 30 minutes on, then 61 minutes on, the app asks again at most once an hour, if the command or the
-  store's log makes the asks visible.
-
-If D122 is not on develop when the rest is verified, the scenario stays a D61 gap with that follow-up.
+D122 (PR #85, merged into develop at d156579) gives the simulated store the command `no-products`. Billing connects and
+reads what is owned, but no product is offered. A new scenario `premium_no_products` checks, on a develop debug build:
+- no paywall shows itself after onboarding, or after the 5th migraine with patterns ready, 8 days on;
+- in that same state with products back, the patterns paywall does show, so the "none" was the store's doing;
+- a tap on Doctor report opens the paywall with "Premium isn't available in your region yet", no buy button and no
+  price;
+- Premium bought before stays Premium once the app asks the store again (the clock 20 minutes on, past
+  `CHECK_INTERVAL`).
+- **Its own scenario, not part of `premium_store_states`:** it needs the clock and an import, which the other states do
+  not.
+- **Not checked:** "Google Play is asked again at most once an hour". The store does not count the asks, and the
+  app's unit tests hold the rule.
 
 ### D6. Exploratory testing on build 4
 

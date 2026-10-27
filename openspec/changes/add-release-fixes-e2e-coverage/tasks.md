@@ -18,8 +18,8 @@
   check is pointed at a day that keeps its mark (mutation of the flow, reverted)
 - [ ] 2.3 Seed `report-heavy-old-notes` in `qa/seed_backup.py`, with its self-test, and its check in `report_heavy`
   (design D4). Verify: the self-test recounts it; `report_heavy` passes twice
-- [x] 2.4 "Google Play offers no products" in `premium_store_states` once D122 is on develop (design D5). Otherwise it
-  goes to the D61 table with its follow-up. Verify: passes twice, or the D61 row
+- [ ] 2.4 "Google Play offers no products" in a new scenario `premium_no_products`, as D122 is on develop (PR #85,
+  d156579; design D5). Verify: passes twice on a develop debug build
 
 ## 3. Accessibility audit on every screen (D203)
 
@@ -66,12 +66,6 @@
   touched
 - [ ] 6.4 Gate `./gradlew assembleDebug assembleRelease test ktlintCheck detekt --no-daemon` after merging develop.
   Verify: exit 0
-
-## Scenarios without a check (D61)
-
-| Scenario | Reason | Follow-up |
-|---|---|---|
-| subscription › When the paywall shows itself › Google Play offers no products | D122, the simulated store's `no-products` command, is not on develop: the dev session put the privacy-link hotfix (1.0.1) first. Build 4's R8 APK was checked by hand for D110, as in QA 11b | `premium_store_states` adds it once D122 lands (design D5) |
 
 ## Verification record
 

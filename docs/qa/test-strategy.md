@@ -23,7 +23,7 @@
 | Screen state | Compose UI test under Robolectric on `*Contents` | QA | gate | **none** (0 of 32 screens) | audit C3, after C1 adds the test dependencies |
 | Visual | Roborazzi goldens of the `@Preview`s, `en-XA`, `ar-XB` | QA | gate | **none**; D42 promised it as a QA change | audit C4, after C1 |
 | Instrumented | `connectedDebugAndroidTest`: DAO SQL, Room migrations, design system | dev; QA on each candidate | when a datasource changes; Go/No-Go line 1b | 138 tests, run by QA on a candidate since 2026-10-27 | also in CI (audit C5) |
-| End-to-end | Maestro flows with `# Covers:` lines | QA | per QA change (D63); full regression per candidate | 265 of 507 scenarios (52%) | every high-risk capability at 80% or more (QA 13d) |
+| End-to-end | Maestro flows with `# Covers:` lines | QA | per QA change (D63); full regression per candidate | 267 of 508 scenarios (53%) | every high-risk capability at 80% or more (QA 13d) |
 | Device scenarios | `qa/device_scenarios.sh`: clock, zone, kill, keyboard, files, billing states | QA | per candidate | 54 scenarios: 52 by default, plus `upgrade` and `release_apk` on demand | grows with 13c and 13d |
 | Device audits | a11y audit, monkey, permission audit, R8 APK, backup rules | QA | per candidate | the a11y tour has 22 states; the 12 that QA 13c adds are not yet run on a build | every screen (D203) |
 | Split APKs | `qa/split_apks.sh` on the bundle (D204) | QA | per candidate | from build 4 | as today |
@@ -62,7 +62,7 @@
 | app-settings | 10/10 (100%) | settings | — | medium | — |
 | onboarding | 9/9 (100%) | onboarding | — | medium | — |
 | reminders | 12/13 (92%) | reminders | permission refused during onboarding | medium | QA 13d |
-| subscription | 18/20 (90%) | subscription | grace period; Play offers no products | high (money) | D122, then QA 13c task 2.4; the grace period needs Play itself |
+| subscription | 20/21 (95%) | subscription | grace period; "asked again at most once an hour" with no products (unit tests only) | high (money) | the grace period needs Play itself |
 | doctor-report | 12/12 (100%) | report | — | high (shared with a doctor) | — |
 | trigger-insights | 8/8 (100%) | insights, patterns | — | medium | — |
 | app-identity | 0/3 (0%) | app | name, icon and package checked by hand at each release | low | a release-checklist line in QA 13d |
