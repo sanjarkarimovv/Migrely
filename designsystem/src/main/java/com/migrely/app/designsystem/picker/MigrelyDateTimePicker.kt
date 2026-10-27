@@ -18,6 +18,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
+import androidx.compose.material3.TimePickerLayoutType
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
@@ -177,7 +178,9 @@ private fun TimeStep(
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.padding(bottom = 16.dp)
                 )
-                TimePicker(state = state)
+                // Vertical in every orientation: the horizontal layout Material picks in landscape is wider than a
+                // dialog and hid the afternoon hours (QA #79); in landscape the column scrolls instead.
+                TimePicker(state = state, layoutType = TimePickerLayoutType.Vertical)
                 if (!inRange) {
                     Text(
                         text = labels.outOfRange,

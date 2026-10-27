@@ -38,6 +38,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
+import androidx.compose.material3.TimePickerLayoutType
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberTimePickerState
@@ -409,7 +410,12 @@ private fun TimeDialog(minuteOfDay: Int, onPick: (Int) -> Unit, onDismiss: () ->
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.reminders_picker_title)) },
-        text = { TimePicker(state = state) },
+        // Vertical and scrollable in every orientation, as in the design system's picker (QA #79).
+        text = {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                TimePicker(state = state, layoutType = TimePickerLayoutType.Vertical)
+            }
+        },
         confirmButton = {
             TextButton(onClick = { onPick(state.hour * MINUTES_PER_HOUR + state.minute) }) {
                 Text(stringResource(R.string.reminders_picker_ok))
