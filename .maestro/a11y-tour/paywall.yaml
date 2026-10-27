@@ -1,0 +1,10 @@
+# Accessibility tour state: the doctor report's paywall for a free user, the yearly plan chosen first (D203). Needs the
+# simulated store of the debug build (D201).
+appId: com.migrely.app
+---
+- runFlow: ../subflows/launch-clean.yaml
+- tapOn: ".*\\. Opens History\\."
+- tapOn: "Doctor report"
+- extendedWaitUntil:
+    visible: "A report for your doctor"
+    timeout: 10000

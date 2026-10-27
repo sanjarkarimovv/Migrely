@@ -1,0 +1,12 @@
+# Accessibility tour state: My medications, with one medication added (D203).
+appId: com.migrely.app
+---
+- runFlow: ../subflows/launch-clean.yaml
+- tapOn: "Log medication"
+- runFlow:
+    file: ../subflows/add-first-medication.yaml
+    env:
+      NAME: "Paracetamol"
+      TYPE: "Simple painkiller"
+- runFlow: ../subflows/wait-message-gone.yaml
+- runFlow: ../subflows/open-my-medications.yaml

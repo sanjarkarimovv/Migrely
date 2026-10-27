@@ -24,8 +24,8 @@
 ## 3. Accessibility audit on every screen (D203)
 
 - [ ] 3.1 Tour states `onboarding-first`, `settings-main`, `settings-warning-signs`, `settings-privacy`,
-  `settings-theme`, `medications-list`, `reminders` and `your-data` (design D1). Verify: `qa/a11y_audit.sh <state>`
-  captures each at 100%, 200% and landscape
+  `settings-privacy-link`, `settings-theme`, `medications-list`, `reminders` and `your-data` (design D1). Verify:
+  `qa/a11y_audit.sh <state>` captures each at 100%, 200% and landscape
 - [ ] 3.2 Tour states `paywall`, `report-period` and `insights` through the simulated store. Verify: as 3.1
 - [ ] 3.3 The full audit on build 4's debug APK. Every failure is filed as an `accessibility` issue with its capture,
   and every "not judged" line is looked at. Verify: the audit's summary in the verification record

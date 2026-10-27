@@ -1,0 +1,23 @@
+# Accessibility tour state: the doctor report's period screen after buying Premium (D203). Needs the simulated store
+# of the debug build (D201).
+appId: com.migrely.app
+---
+- runFlow: ../subflows/launch-clean.yaml
+- tapOn: ".*\\. Opens History\\."
+- tapOn: "Doctor report"
+- extendedWaitUntil:
+    visible: "A report for your doctor"
+    timeout: 10000
+- runFlow:
+    file: ../subflows/buy.yaml
+    env:
+      PLAN: "Monthly"
+      BUTTON: "Subscribe"
+      SHEET: "Complete the purchase"
+- extendedWaitUntil:
+    visible: "You have Premium"
+    timeout: 10000
+- tapOn: "Continue"
+- extendedWaitUntil:
+    visible: "Create report"
+    timeout: 10000

@@ -1,0 +1,9 @@
+# Accessibility tour state: Settings › Theme (D203).
+appId: com.migrely.app
+---
+- runFlow: ../subflows/launch-clean.yaml
+- tapOn: "Settings"
+- tapOn: "Theme.*"
+- extendedWaitUntil:
+    visible: "During a migraine, Migrely stays dark\\."
+    timeout: 5000

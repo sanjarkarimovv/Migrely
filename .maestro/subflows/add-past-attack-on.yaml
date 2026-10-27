@@ -1,0 +1,23 @@
+# From home with no attack in progress: add a 2-hour past migraine at 10 AM on day ${DAY} of last month, then return
+# home. Like add-past-attack-last-month.yaml, with the day as a parameter, so several can be added without overlaps.
+appId: com.migrely.app
+---
+- tapOn: "Add a past migraine"
+- tapOn: "Change when it started, now .*"
+- tapOn: "Change to previous month"
+- tapOn: "[A-Za-z]+, [A-Za-z]+ ${DAY}, [0-9]{4}"
+- tapOn: "Next"
+- tapOn:
+    text: "10 o.clock"
+    below: "Select minutes"
+- tapOn: "AM"
+- tapOn: "OK"
+- assertVisible: "Duration 2 h 0 min"
+- tapOn: "Add migraine"
+- extendedWaitUntil:
+    visible: "Not recorded"
+    timeout: 5000
+- back
+- extendedWaitUntil:
+    visible: "Migraine started"
+    timeout: 5000

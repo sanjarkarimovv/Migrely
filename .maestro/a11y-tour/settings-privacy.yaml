@@ -1,0 +1,13 @@
+# Accessibility tour state: Settings › What Migrely keeps, and where, at its top (D203).
+appId: com.migrely.app
+---
+- runFlow: ../subflows/launch-clean.yaml
+- tapOn: "Settings"
+- scrollUntilVisible:
+    element: "What Migrely keeps, and where"
+    direction: DOWN
+    centerElement: true
+- tapOn: "What Migrely keeps, and where"
+- extendedWaitUntil:
+    visible: "What Migrely keeps, and where"
+    timeout: 5000

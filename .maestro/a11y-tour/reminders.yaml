@@ -1,0 +1,9 @@
+# Accessibility tour state: Settings › Reminders, nothing turned on (D203).
+appId: com.migrely.app
+---
+- runFlow: ../subflows/launch-clean.yaml
+- tapOn: "Settings"
+- tapOn: "Reminders.*"
+- extendedWaitUntil:
+    visible: "Reminder time, .*"
+    timeout: 5000

@@ -1,0 +1,8 @@
+# Accessibility tour state: Settings, at its top (D203).
+appId: com.migrely.app
+---
+- runFlow: ../subflows/launch-clean.yaml
+- tapOn: "Settings"
+- extendedWaitUntil:
+    visible: "Your diary"
+    timeout: 5000

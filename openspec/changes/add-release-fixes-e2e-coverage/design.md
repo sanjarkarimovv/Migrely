@@ -49,14 +49,15 @@ do. Landscape and 200% font use the same flow, so each scroll waits for its elem
 | `onboarding-first` | a clean install, without the Skip of `launch-clean` |
 | `settings-main` | Settings |
 | `settings-warning-signs` | Settings › Warning signs |
-| `settings-privacy` | Settings › What Migrely keeps, and where, scrolled to "Read the full privacy policy" |
+| `settings-privacy` | Settings › What Migrely keeps, and where, at its top |
+| `settings-privacy-link` | the same page scrolled to "Read the full privacy policy", since its end never shows at the top |
 | `settings-theme` | Settings › Theme |
 | `medications-list` | My medications, with one medication added |
 | `reminders` | Settings › Reminders |
 | `your-data` | Settings › Your data |
 | `paywall` | History › Doctor report, as a free user. The yearly plan is chosen first |
 | `report-period` | Premium bought (`subflows/buy.yaml`), then History › Doctor report |
-| `insights` | Premium bought and 3 migraines logged, then History › Insights ("N more migraines") |
+| `insights` | Premium bought and 5 past migraines added last month (`subflows/add-past-attack-on.yaml`), then History › Insights with its patterns, so the full screen is audited, not only the "more migraines" card |
 
 - **Premium in a tour flow:** the purchase goes through the simulated sheet, so these states need the debug APK. The
   audit already runs on it. On the R8 APK the premium states are not reachable, and the audit says so.
