@@ -150,6 +150,29 @@ Each charter below is 30 to 45 minutes on the debug APK, or on the R8 APK for th
 4. **First launch of the R8 APK as a new user:** onboarding, the first migraine, the Settings pages, then the privacy
    link. This is the path every new user takes on day one.
 
+### D11. The 1.0.1 hotfix candidate
+
+Build 4 went live before QA's verdict. Its sweep found #77 to #81, and the dev session fixed them on `hotfix/1.0.1`,
+cut from `main` (versionCode 5, D125). The candidate's commit is named in its record, `docs/qa/go-no-go-1.0.1.md`.
+- **Why it belongs to this change:** the change's device tasks are this candidate's Go/No-Go lines, so each check runs
+  once:
+  - the new flows and scenarios;
+  - the full accessibility audit (line 4);
+  - the split APKs (line 2a).
+- **Which builds:**
+  - QA builds the debug and R8 APKs in `../migraine-app-qa-hotfix` at the candidate.
+  - Lines 2a and 10 use the upload-signed bundle that goes to Play. bundletool turns it into split APKs, and into a
+    universal APK signed with the debug key.
+  - Line 6a upgrades from build 4's APKs.
+- **The retests:** each fixed issue twice on the debug APK and twice on the R8 APK, plus the regression case the dev
+  session found in its own fix of #81. An issue is closed by the hotfix PR only after its retest passes.
+- **No exceptions:** line 1a has none, because the requirement now applies (D7). Lint errors on the candidate make it
+  No-Go, unless the user records a decision to accept them.
+- **Not part of 1.0.1:**
+  - `premium_no_products` needs D122, which is on `develop` and not in the hotfix. It runs on a `develop` debug build
+    (task 2.4).
+  - The rest of sweep 2 (batch B after data-backup) runs on the 1.0.1 build once it is out. Its results go to QA 13d.
+
 ### D7. Lint and the instrumented tests on the candidate (D204)
 
 Both run in the candidate's worktree (`../migraine-app-qa-rc`), before the device lines:

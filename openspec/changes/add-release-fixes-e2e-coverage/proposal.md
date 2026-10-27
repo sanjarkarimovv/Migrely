@@ -34,6 +34,9 @@ QA's own checks and the pre-launch report are therefore all that stand before us
 
 ## What Changes
 
+- **The 1.0.1 hotfix candidate (design D11):** build 4's sweep found #77 to #81, and `hotfix/1.0.1` fixes them. QA gives
+  it a Go/No-Go in `docs/qa/go-no-go-1.0.1.md`, with retests of the 5 issues. This change's device checks run on it.
+
 - **Base:** develop 438be90. Its product code is the same as build 4's. The checks run on build 4's APKs and bundle,
   built in `../migraine-app-qa-rc` (`QA_APK`, D201).
 - **Go/No-Go record (`docs/qa/go-no-go-1.0.0.md`):**

@@ -27,14 +27,15 @@
   `settings-privacy-link`, `settings-theme`, `medications-list`, `reminders` and `your-data` (design D1). Verify:
   `qa/a11y_audit.sh <state>` captures each at 100%, 200% and landscape
 - [ ] 3.2 Tour states `paywall`, `report-period` and `insights` through the simulated store. Verify: as 3.1
-- [ ] 3.3 The full audit on build 4's debug APK. Every failure is filed as an `accessibility` issue with its capture,
+- [ ] 3.3 The full audit on the 1.0.1 candidate's debug APK (line 4 of its record, task 7.2). Every failure is filed as an `accessibility` issue with its capture,
   and every "not judged" line is looked at. Verify: the audit's summary in the verification record
 
 ## 4. Release-candidate checks and residual risk (D204)
 
 - [ ] 4.1 Lint and the instrumented tests on build 4 (design D7), with the results and the #74 exception in the
   Go/No-Go record. Verify: the record's lines name the counts and #74
-- [ ] 4.2 `qa/split_apks.sh` and the device specs in `qa/fixtures/device-specs/` (design D8). Verify:
+- [ ] 4.2 `qa/split_apks.sh` and the device specs in `qa/fixtures/device-specs/` (design D8), on the 1.0.1 bundle (build 4
+  went live before the script ran). Verify:
   - it refuses emulator-5570;
   - `pm path` lists 4 APKs for each profile;
   - the smoke suite and the D117 checks pass on ru-26 (emulator-5582) and on he-36, uz-36 and en-36 (emulator-5580);
@@ -52,6 +53,23 @@
   verdict sent to the dev session
 - [ ] 5.2 Charters 1–4 of design D6, each with notes: what was tried, and what was found. Verify: the notes in the
   verification record; an issue for every defect
+
+## 7. The 1.0.1 hotfix candidate (design D11)
+
+- [ ] 7.1 Retests of #77, #78, #79, #80 and #81 on the candidate's debug and R8 APKs, twice each. Also the dev session's
+  regression case: a paste whose first letter matches the text after the cursor, then one DEL beside an emoji. Verify:
+  the retest table in `docs/qa/go-no-go-1.0.1.md`
+- [ ] 7.2 Lines 1–10 of `docs/QA.md` §5 on the candidate:
+  - line 2a and line 10 use the upload-signed bundle that goes to Play;
+  - line 6a upgrades from build 4.
+  Verify: each line's result in the record, and its section "What these checks do not prove"
+- [ ] 7.3 Lines 11 and 12:
+  - line 11 is the pre-launch report of 1.0.1's closed track, read before the build is promoted to production;
+  - line 12 records the user's decision.
+  Verify: both lines in the record
+- [ ] 7.4 The verdict, "Go, with these risks open" or No-Go with the failing line and its issue, sent to the dev session
+  before the hotfix is finished. After the tag, `git diff <candidate> v1.0.1` is empty (D125). Verify: the record's
+  decision, and the diff
 
 ## 6. Documentation and verification
 
