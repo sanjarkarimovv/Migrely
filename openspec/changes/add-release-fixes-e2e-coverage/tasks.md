@@ -11,10 +11,10 @@
 
 ## 2. Release-fix scenarios
 
-- [ ] 2.1 `qa/device_scenarios.sh privacy_link` (design D2): the link to Chrome, and "No browser" with Chrome disabled.
+- [x] 2.1 `qa/device_scenarios.sh privacy_link` (design D2): the link to Chrome, and "No browser" with Chrome disabled.
   `restore()` and `qa/reset_device.sh` enable Chrome again. Verify: passes twice; after a run stopped half-way
   (Ctrl-C while Chrome is disabled), `pm list packages -d` does not list Chrome
-- [ ] 2.2 `.maestro/day-markers/track-periods-off-marks.yaml` (design D3). Verify: passes 3 times; it fails when step 3's
+- [x] 2.2 `.maestro/day-markers/track-periods-off-marks.yaml` (design D3). Verify: passes 3 times; it fails when step 3's
   check is pointed at a day that keeps its mark (mutation of the flow, reverted)
 - [ ] 2.3 Seed `report-heavy-old-notes` in `qa/seed_backup.py`, with its self-test, and its check in `report_heavy`
   (design D4). Verify: the self-test recounts it; `report_heavy` passes twice
@@ -56,7 +56,7 @@
 
 ## 7. The 1.0.1 hotfix candidate (design D11)
 
-- [ ] 7.1 Retests of #77, #78, #79, #80 and #81 on the candidate's debug and R8 APKs, twice each. Also the dev session's
+- [x] 7.1 Retests of #77, #78, #79, #80 and #81 on the candidate's debug and R8 APKs, twice each. Also the dev session's
   regression case: a paste whose first letter matches the text after the cursor, then one DEL beside an emoji. Verify:
   the retest table in `docs/qa/go-no-go-1.0.1.md`
 - [ ] 7.2 Lines 1–10 of `docs/QA.md` §5 on the candidate:
@@ -106,3 +106,21 @@ launch blocker: no).
   `AndroidUriHandler.openUri`.
 - Chrome was enabled again after both runs. Before them, `pm list packages -d` did not list Chrome.
 - The fix is on `hotfix/1.0.1` (590e5d7). The scenario's pass is its retest on that build.
+
+**2.1 on 1.0.1** (ed695424 = `v1.0.1`, debug APK, emulator-5580, 2026-10-27):
+- **The flow:** `privacy-policy-link.yaml` first failed 2 of 2 in the retest. It tapped "Settings" during home's 1 s mode
+  guard, so Settings never opened. It now waits for home and the guard.
+- **After that fix:** `privacy_link` passed 2 of 2 (22:26 and 22:28): Chrome opened the link, and with no browser
+  Migrely stayed in front.
+- **Ctrl-C:** sent to the script's process group 56 s in, while Chrome was disabled. The script stopped with exit 1, and
+  `pm list packages -d` then did not list Chrome.
+
+**2.2 on 1.0.1** (same build and emulator):
+- **The first run:** the flow failed in line 3's regression. Its `text: "Period today", checked: true` matched the label,
+  and the state sits on its clickable parent.
+- **The fix:** the checks now use `containsChild`, as `.maestro/README.md` says.
+- **After that fix:** passed 3 of 3 (22:19, 22:21, 22:22).
+- **The mutation:** step 3's check pointed at the past day that keeps its mark. The flow failed at that step ("Thursday,
+  October 1: nothing logged. Period." is visible). The mutation lives in a scratch copy, so nothing needs reverting.
+
+**7.1, the 1.0.1 retests:** every issue passed twice on each APK. See the retest table in `docs/qa/go-no-go-1.0.1.md`.

@@ -4,6 +4,7 @@
 # Covers: day-markers › Mark a chosen day › Period tracking off
 # With "Track periods" off, a period mark made before can still be removed, on home and in History, and a day without
 # a mark offers only "Pain-free day" (#66, D79). Marks are read from the cells' spoken labels, as mark-and-remove does.
+# A toggle's state sits on its clickable parent, not on the label, so the checks use containsChild (.maestro/README.md).
 # The flow needs a past day of the current month, so it cannot run on the 1st.
 appId: com.migrely.app
 name: With Track periods off, earlier period marks can be removed and no new one is offered
@@ -13,7 +14,7 @@ tags: [regression, day-markers]
 # Tracking on: today marked from home, and one empty past day marked in History.
 - tapOn: "Period today"
 - assertVisible:
-    text: "Period today"
+    containsChild: "Period today"
     checked: true
 - tapOn: ".*\\. Opens History\\."
 - assertVisible: "Today, .*: nothing logged\\. Period\\."
@@ -34,12 +35,13 @@ tags: [regression, day-markers]
     visible: "Today: .*"
     timeout: 5000
 - assertVisible:
-    text: "Period today"
+    containsChild: "Period today"
     checked: true
 - tapOn: "Period today"
-- assertVisible:
-    text: "Period today"
-    checked: false
+- assertVisible: "Period today"
+- assertNotVisible:
+    containsChild: "Period today"
+    checked: true
 # Away from home and back: the toggle is gone, and today's cell has no mark.
 - tapOn: ".*\\. Opens History\\."
 - assertVisible: "Today, .*: nothing logged\\."
@@ -63,7 +65,7 @@ tags: [regression, day-markers]
     element: "Pain-free day"
     direction: DOWN
 - assertVisible:
-    text: "Period"
+    containsChild: "Period"
     below: "No migraine logged on this day\\."
     checked: true
 - tapOn:
