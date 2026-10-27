@@ -1,5 +1,6 @@
-# A manual Go/No-Go step: Settings › Privacy ends with "Read the full privacy policy", and a tap hands the link to the
-# browser (D119). Run it with `adb logcat -c` first, then read the VIEW intent from `adb logcat -d`.
+# Device scenario step (privacy_link): Settings › Privacy ends with "Read the full privacy policy", and a tap hands the
+# link to the browser (D119). The script reads the VIEW intent from the log, and with no browser checks the app and the
+# page.
 appId: com.migrely.app
 ---
 - launchApp

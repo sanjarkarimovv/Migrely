@@ -11,7 +11,7 @@
 # med_preventive, med_two_waiting, med_link_home, med_overuse, keyboard_home, keyboard_history, keyboard_rtl,
 # landscape_band, mark_travel, mark_earliest_month, stats_counting, stats_chronic, stats_progress, reminder_daily,
 # reminder_permission, reminder_effect, reminder_replan (restarts the emulator), med_only_history,
-# message_tap_guard (#52), theme_check, onboarding_states, delete_all_data, backup_export, backup_import,
+# message_tap_guard (#52), theme_check, onboarding_states, delete_all_data, privacy_link, backup_export, backup_import,
 # message_duration (#56), premium_store_states, premium_pending, premium_plans, premium_entitlement, premium_offline,
 # trial_banner, paywall_self_show, report_three_months, report_counting, report_heavy, insights, upgrade, release_apk.
 # On demand only: backup_android (bmgr).
@@ -83,6 +83,8 @@ restore() {
   adbq shell "rm -f /sdcard/qa-*.xml" >/dev/null 2>&1
   # Files the backup scenarios put in Download.
   adbq shell "rm -f /sdcard/Download/migrely-* /sdcard/Download/seed-*.json /sdcard/Download/broken.json /sdcard/Download/newer.json /sdcard/Download/older.json /sdcard/Download/add.json" >/dev/null 2>&1
+  # A scenario stopped half-way may leave a browser disabled (privacy_link).
+  enable_browsers
   # A scenario stopped half-way may leave the simulated store unavailable or unreachable.
   adbq shell am broadcast -p "$APP" -f 0x20 -a com.migrely.app.debug.SIMULATED_STORE --es command available >/dev/null 2>&1
   if [[ -n "${BMGR_TRANSPORT:-}" ]]; then
@@ -399,6 +401,23 @@ for n in ET.fromstring(sys.stdin.read()).iter('node'):
   return 1
 }
 open_app() { adbq shell monkey -p "$APP" -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1; sleep 4; }
+# The package of the activity in front, from the activity manager (topResumedActivity, or mResumedActivity before
+# Android 10).
+resumed_package() {
+  adbq shell dumpsys activity activities | tr -d '\r' | grep -m1 -E "topResumedActivity|mResumedActivity" |
+    grep -oE "[a-zA-Z0-9_.]+/[a-zA-Z0-9_.\$]+" | head -1 | cut -d/ -f1
+}
+# Browsers that privacy_link disabled: restore() and the loop after each scenario enable them again.
+DISABLED_BROWSERS=()
+enable_browsers() {
+  local pkg
+  for pkg in ${DISABLED_BROWSERS[@]+"${DISABLED_BROWSERS[@]}"}; do adbq shell pm enable "$pkg" >/dev/null 2>&1; done
+  DISABLED_BROWSERS=()
+}
+browsers_for() { # $1 URL: the packages whose activities open it as a link from an app
+  adbq shell cmd package query-activities --brief -a android.intent.action.VIEW -c android.intent.category.BROWSABLE \
+    -d "$1" 2>/dev/null | tr -d '\r' | sed -n 's|^ *\([a-zA-Z0-9_.]*\)/.*|\1|p' | sort -u
+}
 
 qa_store() { # $1 a simulated store command (debug builds, D201): available, unavailable, unreachable, reset,
   # complete-pending or decline-pending. -f 0x20 reaches a stopped app too.
@@ -1720,6 +1739,52 @@ scenario_insights() {
 # Covers: subscription › A store for testing › Release
 # On demand, with QA_RELEASE_APK=<release APK>: the release build holds no simulated store and is not debuggable
 # (D113); the debug APK under test is the control that the search still finds it.
+# Covers: app-settings › Privacy and about › The full privacy policy
+# Covers: app-settings › Privacy and about › No browser
+# The link is read from the activity manager's START line: a VIEW intent to migrely.health, to a browser. Android shortens
+# the URI in that line, so the full address is read from the page itself. "No browser" disables, for this user, every
+# package that answers the link (only Chrome on the QA image), taps again, and enables them all at the end, also when
+# the check fails (restore() does too).
+scenario_privacy_link() {
+  echo "Scenario privacy_link: the privacy policy opens in the browser; with no browser nothing breaks (D119)"
+  local url="https://migrely.health/privacy/" browsers started pkg front fatal address
+  browsers="$(browsers_for "$url")"
+  [[ -n "$browsers" ]] || { echo "  FAILED: no browser answers $url on $QA_SERIAL, so the two cases look the same"; return 1; }
+  echo "    browsers for the link: $(tr '\n' ' ' <<<"$browsers")"
+  run_flow clean || return 1
+  adbq logcat -c
+  run_flow privacy-policy-link || return 1
+  sleep 2
+  started="$(adbq logcat -d -s ActivityTaskManager:I ActivityManager:I | tr -d '\r' |
+    grep -m1 "START .*act=android.intent.action.VIEW.*migrely\.health" || true)"
+  [[ -n "$started" ]] || { echo "  FAILED: no VIEW intent to migrely.health was started"; return 1; }
+  pkg="$(grep -oE "cmp=[a-zA-Z0-9_.]+" <<<"$started" | cut -d= -f2)"
+  grep -qxF "$pkg" <<<"$browsers" || { echo "  FAILED: the link went to '$pkg', not to a browser"; return 1; }
+  echo "    the link: a VIEW intent to migrely.health, opened by $pkg ($(resumed_package) in front)"
+  adbq shell am force-stop "$APP"
+  for pkg in $browsers; do
+    adbq shell pm disable-user --user 0 "$pkg" >/dev/null || { echo "  FAILED: could not disable $pkg"; enable_browsers; return 1; }
+    DISABLED_BROWSERS+=("$pkg")
+  done
+  [[ -z "$(browsers_for "$url")" ]] || { echo "  FAILED: a browser still answers the link"; enable_browsers; return 1; }
+  adbq logcat -c
+  run_flow privacy-policy-link || { enable_browsers; return 1; }
+  sleep 2
+  front="$(resumed_package)"
+  fatal="$(adbq logcat -d -b crash | tr -d '\r' | grep -A3 "FATAL EXCEPTION" | grep -m1 "$APP" || true)"
+  address="$(screen_text_matching ".*https://migrely\.health/privacy/.*")"
+  enable_browsers
+  [[ "$front" == "$APP" ]] || { echo "  FAILED: with no browser, '$front' is in front, not Migrely"; return 1; }
+  [[ -z "$fatal" ]] || { echo "  FAILED: Migrely crashed: $fatal"; return 1; }
+  [[ -n "$address" ]] || { echo "  FAILED: the Privacy page does not show the address"; return 1; }
+  echo "    no browser: Migrely stays in front, no crash, the page shows \"$address\""
+  if adbq shell pm list packages -d | tr -d '\r' | sed 's/^package://' | grep -qxF -f <(echo "$browsers"); then
+    echo "  FAILED: a browser is still disabled"
+    return 1
+  fi
+  echo "    browsers enabled again: $(tr '\n' ' ' <<<"$browsers")"
+}
+
 scenario_release_apk() {
   echo "Scenario release_apk: no simulated store in the release build (D113)"
   if [[ -z "${QA_RELEASE_APK:-}" || ! -f "${QA_RELEASE_APK:-}" ]]; then
@@ -1949,7 +2014,7 @@ if [[ $# -eq 0 ]]; then
     med_link_home med_overuse keyboard_home keyboard_history keyboard_rtl landscape_band mark_travel mark_earliest_month \
     stats_counting stats_chronic stats_progress reminder_daily reminder_permission reminder_effect reminder_replan \
     med_only_history message_tap_guard \
-    theme_check onboarding_states delete_all_data backup_export backup_import message_duration \
+    theme_check onboarding_states delete_all_data privacy_link backup_export backup_import message_duration \
     premium_store_states premium_pending premium_plans premium_entitlement premium_offline trial_banner paywall_self_show \
     report_three_months report_counting report_heavy insights
   if [[ -n "${QA_OLD_APK:-}" ]]; then
@@ -1970,6 +2035,7 @@ for s in "$@"; do
   # Language and night mode back after every scenario, so a failure mid-way cannot leak into the next one.
   adbq shell cmd locale set-app-locales "$APP" --locales "$ORIGINAL_APP_LOCALES" >/dev/null 2>&1
   [[ -n "$ORIGINAL_NIGHT" ]] && adbq shell cmd uimode night "$ORIGINAL_NIGHT" >/dev/null 2>&1
+  enable_browsers
   # Each scenario starts from the real time, so one scenario's clock never leaks into the next.
   adbq shell cmd alarm set-timezone "$ORIGINAL_ZONE" >/dev/null
   set_clock_millis $(($(date +%s) * 1000))

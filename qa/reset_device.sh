@@ -20,4 +20,8 @@ for entry in "${QA_BASELINE[@]}"; do
   qa_restore_setting ${key% *} ${key#* } "${entry##*=}"
 done
 qa_adb shell cmd locale set-app-locales com.migrely.app --locales "" >/dev/null 2>&1 || true
+# A device scenario stopped half-way may leave the browser disabled (privacy_link).
+if qa_adb shell pm list packages -d 2>/dev/null | tr -d '\r' | grep -qx "package:com.android.chrome"; then
+  qa_adb shell pm enable com.android.chrome >/dev/null
+fi
 echo "$QA_SERIAL is back to its baseline: ${QA_BASELINE[*]}, app language from the system."
