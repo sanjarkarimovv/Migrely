@@ -78,4 +78,27 @@ class LimitedTextTest {
             limitedEdit(old, pasted, maxLength = 8)
         )
     }
+
+    @Test
+    fun `Given a paste starting like the text after the cursor then it is cut at its own end`() {
+        // Walk finding: the common prefix grew into the paste, and the cursor landed inside the last emoji.
+        val old = TextFieldValue("aaaaaaaa", TextRange(4))
+        val pasted = TextFieldValue("aaaaabc$THUMBS_UP${THUMBS_UP}aaaa", TextRange(11))
+
+        assertEquals(
+            TextFieldValue("aaaaabcaaaa", TextRange(7)),
+            limitedEdit(old, pasted, maxLength = 12)
+        )
+    }
+
+    @Test
+    fun `Given a selection when a paste replaces it then only the selection is replaced`() {
+        val old = TextFieldValue("abXXcd", TextRange(2, 4))
+        val pasted = TextFieldValue("abXYZWcd", TextRange(6))
+
+        assertEquals(
+            TextFieldValue("abXYZcd", TextRange(5)),
+            limitedEdit(old, pasted, maxLength = 7)
+        )
+    }
 }
