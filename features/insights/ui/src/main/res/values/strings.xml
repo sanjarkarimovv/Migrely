@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="insights_title">Insights</string>
+    <string name="insights_back">Back</string>
+    <plurals name="insights_months">
+        <item quantity="one">%d month</item>
+        <item quantity="other">%d months</item>
+    </plurals>
+    <string name="insights_loading">Reading your entries</string>
+    <string name="insights_percent">%d%%</string>
+    <string name="insights_percent_below">&lt;%d%%</string>
+    <string name="insights_percent_above">&gt;%d%%</string>
+    <string name="insights_unavailable">Your entries can\'t be read right now. Try again in a moment.</string>
+    <!-- Not enough to go on yet (BRD EC-INS-01, D88). -->
+    <plurals name="insights_more_migraines">
+        <item quantity="one">%d more migraine to see your patterns</item>
+        <item quantity="other">%d more migraines to see your patterns</item>
+    </plurals>
+    <plurals name="insights_more_days">
+        <item quantity="one">Patterns show after 30 days of entries: %d more day to go.</item>
+        <item quantity="other">Patterns show after 30 days of entries: %d more days to go.</item>
+    </plurals>
+    <!-- Triggers as counts and shares only, with no causal words (BRD INS-F1, INS-F6, D89). -->
+    <string name="insights_triggers_title">Often logged with your migraines</string>
+    <plurals name="insights_trigger_share">
+        <item quantity="one">%1$s — %2$d of %3$d migraine (%4$s)</item>
+        <item quantity="other">%1$s — %2$d of %3$d migraines (%4$s)</item>
+    </plurals>
+    <string name="insights_no_triggers">No triggers were logged in this period.</string>
+    <string name="insights_trigger_stress">Stress</string>
+    <string name="insights_trigger_too_little_sleep">Too little sleep</string>
+    <string name="insights_trigger_too_much_sleep">Too much sleep</string>
+    <string name="insights_trigger_skipped_meal">Skipped meal</string>
+    <string name="insights_trigger_dehydration">Dehydration</string>
+    <string name="insights_trigger_alcohol">Alcohol</string>
+    <string name="insights_trigger_caffeine">Caffeine</string>
+    <string name="insights_trigger_period">Period</string>
+    <string name="insights_trigger_weather">Weather</string>
+    <string name="insights_trigger_bright_light_or_screens">Bright light or screens</string>
+    <string name="insights_trigger_smell">Smell</string>
+    <string name="insights_trigger_physical_effort">Physical effort</string>
+    <string name="insights_trigger_travel">Travel</string>
+    <!-- When migraines come (BRD INS-F2, D90). -->
+    <string name="insights_when_title">When migraines come</string>
+    <string name="insights_weekdays_title">By day of the week</string>
+    <string name="insights_times_title">By time of day</string>
+    <string name="insights_count_of">%1$d of %2$d</string>
+    <plurals name="insights_bar_description">
+        <item quantity="one">%1$s: %2$d of %3$d migraine</item>
+        <item quantity="other">%1$s: %2$d of %3$d migraines</item>
+    </plurals>
+    <string name="insights_busiest_monday">Most often on Mondays: %1$d of %2$d</string>
+    <string name="insights_busiest_tuesday">Most often on Tuesdays: %1$d of %2$d</string>
+    <string name="insights_busiest_wednesday">Most often on Wednesdays: %1$d of %2$d</string>
+    <string name="insights_busiest_thursday">Most often on Thursdays: %1$d of %2$d</string>
+    <string name="insights_busiest_friday">Most often on Fridays: %1$d of %2$d</string>
+    <string name="insights_busiest_saturday">Most often on Saturdays: %1$d of %2$d</string>
+    <string name="insights_busiest_sunday">Most often on Sundays: %1$d of %2$d</string>
+    <string name="insights_no_busiest_day">No single day stands out</string>
+    <string name="insights_busiest_night">Most often at night: %1$d of %2$d</string>
+    <string name="insights_busiest_morning">Most often in the morning: %1$d of %2$d</string>
+    <string name="insights_busiest_afternoon">Most often in the afternoon: %1$d of %2$d</string>
+    <string name="insights_busiest_evening">Most often in the evening: %1$d of %2$d</string>
+    <string name="insights_no_busiest_time">No single time of day stands out</string>
+    <string name="insights_monday">Monday</string>
+    <string name="insights_tuesday">Tuesday</string>
+    <string name="insights_wednesday">Wednesday</string>
+    <string name="insights_thursday">Thursday</string>
+    <string name="insights_friday">Friday</string>
+    <string name="insights_saturday">Saturday</string>
+    <string name="insights_sunday">Sunday</string>
+    <string name="insights_night">Night, 00–06</string>
+    <string name="insights_morning">Morning, 06–12</string>
+    <string name="insights_afternoon">Afternoon, 12–18</string>
+    <string name="insights_evening">Evening, 18–24</string>
+    <string name="insights_zone_note">Each migraine counts in the time zone it was logged in.</string>
+    <!-- Around the period (BRD INS-F3, EC-INS-02, EC-INS-03, D91). -->
+    <string name="insights_cycle_title">Around your period</string>
+    <plurals name="insights_cycle_share">
+        <item quantity="one">%1$d of %2$d migraine (%3$s) started in the days around your period.</item>
+        <item quantity="other">%1$d of %2$d migraines (%3$s) started in the days around your period.</item>
+    </plurals>
+    <!-- The range is named by its months: "period" would read as the menstrual period here (store polish). -->
+    <plurals name="insights_cycle_months">
+        <item quantity="one">this %d month</item>
+        <item quantity="other">these %d months</item>
+    </plurals>
+    <plurals name="insights_cycle_base">
+        <item quantity="one">Those days are %1$s of %4$s (%2$d of %3$d day).</item>
+        <item quantity="other">Those days are %1$s of %4$s (%2$d of %3$d days).</item>
+    </plurals>
+    <string name="insights_cycle_text">%1$s %2$s</string>
+    <string name="insights_cycle_window">The days around your period run from 2 days before it starts through its third day.</string>
+    <!-- What helped (BRD INS-F4, D92). -->
+    <string name="insights_medications_title">What helped</string>
+    <plurals name="insights_helped">
+        <item quantity="one">Helped a lot or completely: %1$d of %2$d answer (%3$s)</item>
+        <item quantity="other">Helped a lot or completely: %1$d of %2$d answers (%3$s)</item>
+    </plurals>
+    <string name="insights_needs_answers">Needs 3 answers (has %1$d)</string>
+    <string name="insights_no_medications">No attack medication was logged in this period.</string>
+    <!-- Twelve months (BRD INS-F5, D92). -->
+    <string name="insights_trends_title">The last 12 months</string>
+    <string name="insights_trends_note">The bars show migraine days in each month.</string>
+    <plurals name="insights_migraine_days">
+        <item quantity="one">%d migraine day</item>
+        <item quantity="other">%d migraine days</item>
+    </plurals>
+    <plurals name="insights_migraines">
+        <item quantity="one">%d migraine</item>
+        <item quantity="other">%d migraines</item>
+    </plurals>
+    <plurals name="insights_medication_days">
+        <item quantity="one">%d day with attack medication</item>
+        <item quantity="other">%d days with attack medication</item>
+    </plurals>
+    <plurals name="insights_bed_rest">
+        <item quantity="one">%d bed-rest migraine</item>
+        <item quantity="other">%d bed-rest migraines</item>
+    </plurals>
+    <string name="insights_month_details">%1$s, %2$s, %3$s</string>
+    <string name="insights_month_description">%1$s: %2$s, %3$s, %4$s, %5$s</string>
+</resources>

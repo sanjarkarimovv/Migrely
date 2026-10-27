@@ -1,0 +1,4 @@
+# Device scenario step (double_tap): a clean home screen, ready for adb to tap "Migraine started" twice.
+appId: com.migrely.app
+---
+- runFlow: ../subflows/launch-clean.yaml

@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Asked for only when the user turns a reminder on (BRD EC-REM-01). No INTERNET and no exact alarms. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!--
+        WorkManager declares these for network constraints and foreground work, and Migrely uses neither: it has no
+        network at all, and its reminders are plain one-time work (BRD EC-REM-03, issue #36). The build checks that no
+        library brings them back (app/build.gradle.kts, checkDebugPermissions).
+    -->
+    <uses-permission
+        android:name="android.permission.ACCESS_NETWORK_STATE"
+        tools:node="remove" />
+    <uses-permission
+        android:name="android.permission.FOREGROUND_SERVICE"
+        tools:node="remove" />
+    <!--
+        Play Billing brings Google's datatransport, which declares INTERNET (and
+        ACCESS_NETWORK_STATE, removed above) only to upload the library's own usage logs. Billing
+        itself talks to the Play Store app over IPC and needs only com.android.vending.BILLING, so
+        Migrely still sends nothing (BRD D44, D105). Without the permissions the uploads fail
+        quietly: datatransport catches the failure on its own threads.
+    -->
+    <uses-permission
+        android:name="android.permission.INTERNET"
+        tools:node="remove" />
+
+    <application
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Migrely"
+        android:name=".MigrelyApplication"
+        tools:targetApi="31">
+        <!-- Only foreground work uses it, and no Migrely work runs in the foreground. -->
+        <service
+            android:name="androidx.work.impl.foreground.SystemForegroundService"
+            tools:node="remove" />
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:theme="@style/Theme.Migrely.Starting">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts" />
+        </activity>
+        <receiver
+            android:name=".reminder.ReminderActionReceiver"
+            android:exported="false" />
+        <receiver
+            android:name=".reminder.TimeChangeReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+                <action android:name="android.intent.action.TIME_SET" />
+            </intent-filter>
+        </receiver>
+        <!-- Doctor reports in the cache, shared through the share sheet with a one-off read grant (BRD REP-F4, D85). -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.reports"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/report_paths" />
+        </provider>
+    </application>
+
+</manifest>

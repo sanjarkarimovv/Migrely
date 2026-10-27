@@ -1,0 +1,115 @@
+<resources>
+    <string name="medication_navigate_back">Back</string>
+
+    <!-- Medication taken (BRD D34). -->
+    <string name="log_title">Medication taken</string>
+    <string name="log_taken_at">Taken at</string>
+    <string name="log_manage">Manage medications</string>
+    <string name="log_logged">%1$s logged at %2$s</string>
+    <string name="log_undo">Undo</string>
+    <string name="log_done">Done</string>
+    <string name="log_medication_description">Log %1$s</string>
+    <string name="log_first_title">Add the medication you took</string>
+    <string name="log_first_body">You can add its dose and others later in My medications.</string>
+    <string name="log_add_and_log">Add and log</string>
+    <string name="picker_title">When did you take it?</string>
+    <string name="picker_out_of_range">Pick a time up to now.</string>
+    <string name="medication_picker_next">Next</string>
+    <string name="medication_picker_cancel">Cancel</string>
+    <string name="medication_picker_confirm">OK</string>
+
+    <!-- My medications (BRD MED-F1, EC-MED-01). -->
+    <string name="list_title">My medications</string>
+    <string name="list_add">Add medication</string>
+    <string name="list_empty">No medications yet. Add the ones you take for migraine, so you can log them in two taps.</string>
+    <string name="list_remove">Remove %1$s</string>
+    <string name="list_item_description">%1$s. Opens it to edit.</string>
+
+    <!-- Medication editor (BRD MED-F2, D35). -->
+    <string name="edit_title_add">Add medication</string>
+    <string name="edit_title_edit">Edit medication</string>
+    <string name="edit_name">Name</string>
+    <string name="edit_dose">Usual dose (optional)</string>
+    <string name="edit_dose_hint">For example 400 mg</string>
+    <string name="edit_counter">%1$d/%2$d</string>
+    <string name="edit_kind">Kind</string>
+    <string name="kind_acute">For an attack</string>
+    <string name="kind_preventive">Preventive</string>
+    <string name="edit_category">Type</string>
+    <string name="edit_save">Save</string>
+    <string name="edit_not_found">This medication no longer exists.</string>
+    <string name="category_simple">Simple painkiller</string>
+    <string name="category_simple_examples">Ibuprofen, paracetamol, aspirin</string>
+    <string name="category_triptan">Triptan</string>
+    <string name="category_triptan_examples">Sumatriptan, rizatriptan, zolmitriptan</string>
+    <string name="category_combination">Combination or other</string>
+    <string name="category_combination_examples">Mixed tablets, other prescriptions</string>
+    <string name="category_not_sure">Not sure</string>
+
+    <!-- Problems (BRD EC-MED-07, D35). -->
+    <string name="problem_duplicate">You already have %1$s.</string>
+    <string name="problem_archived_name">%1$s is in your archive. Add it as a new medication to bring it back.</string>
+    <string name="problem_invalid_name">Enter a name.</string>
+    <string name="problem_invalid_dose">Keep the dose to 20 characters.</string>
+
+    <!-- Messages (BRD EC-UX-16). -->
+    <string name="message_archived">Medication removed</string>
+    <string name="message_undo_archive_description">Undo removing the medication</string>
+    <string name="medication_message_undone">Undone.</string>
+    <string name="message_intake_undone">Removed. Nothing was logged.</string>
+    <string name="message_in_future">Pick a time up to now.</string>
+    <string name="message_limit_reached">You can keep up to 50 medications. Remove one you no longer take.</string>
+    <string name="medication_message_storage_full">Couldn\'t save. Your phone\'s storage is full.</string>
+    <string name="medication_message_generic">Something went wrong. Please try again.</string>
+    <string name="medication_snackbar_undo">Undo</string>
+    <string name="medication_snackbar_dismiss">Dismiss</string>
+    <!-- Home's medication card (BRD D39, D45, D46) -->
+    <string name="prompt_effect_title">How much did %1$s help?</string>
+    <string name="prompt_effect_taken">Taken at %1$s</string>
+    <string name="prompt_effect_taken_dose">Taken at %1$s · %2$s</string>
+    <string name="prompt_effect_taken_dose_spoken">Taken at %1$s, %2$s</string>
+    <string name="prompt_effect_skip">Don\'t ask about this one</string>
+    <string name="effect_not_at_all">Not at all</string>
+    <string name="effect_a_little">A little</string>
+    <string name="effect_a_lot">A lot</string>
+    <string name="effect_completely">Completely</string>
+    <plurals name="overuse_title_simple">
+        <item quantity="one">Painkillers on %1$d of the last 30 days</item>
+        <item quantity="other">Painkillers on %1$d of the last 30 days</item>
+    </plurals>
+    <plurals name="overuse_title_triptan">
+        <item quantity="one">Triptans on %1$d of the last 30 days</item>
+        <item quantity="other">Triptans on %1$d of the last 30 days</item>
+    </plurals>
+    <plurals name="overuse_title_other">
+        <item quantity="one">Combination or other medications on %1$d of the last 30 days</item>
+        <item quantity="other">Combination or other medications on %1$d of the last 30 days</item>
+    </plurals>
+    <plurals name="overuse_title_multiple">
+        <item quantity="one">Acute medications on %1$d of the last 30 days</item>
+        <item quantity="other">Acute medications on %1$d of the last 30 days</item>
+    </plurals>
+    <string name="overuse_body_soft">Taking them on %1$d days or more a month can lead to more headaches. Worth keeping an eye on.</string>
+    <string name="overuse_body_doctor">Taking them this often can make headaches more frequent. It\'s worth talking to your doctor.</string>
+    <string name="overuse_got_it">Got it</string>
+    <string name="indicator_title">Last 30 days</string>
+    <plurals name="indicator_row_simple">
+        <item quantity="one">Simple painkillers: %1$d day (limit %2$d)</item>
+        <item quantity="other">Simple painkillers: %1$d days (limit %2$d)</item>
+    </plurals>
+    <plurals name="indicator_row_triptan">
+        <item quantity="one">Triptans: %1$d day (limit %2$d)</item>
+        <item quantity="other">Triptans: %1$d days (limit %2$d)</item>
+    </plurals>
+    <plurals name="indicator_row_other">
+        <item quantity="one">Combination or other: %1$d day (limit %2$d)</item>
+        <item quantity="other">Combination or other: %1$d days (limit %2$d)</item>
+    </plurals>
+    <plurals name="indicator_row_multiple">
+        <item quantity="one">All attack medication: %1$d day (limit %2$d)</item>
+        <item quantity="other">All attack medication: %1$d days (limit %2$d)</item>
+    </plurals>
+    <string name="indicator_at_limit">%1$s, at the limit</string>
+    <string name="indicator_over_limit">%1$s, over the limit</string>
+    <string name="indicator_reached">At this many days, medication can make headaches more frequent. Talk to your doctor about it.</string>
+</resources>

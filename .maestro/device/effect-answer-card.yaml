@@ -1,0 +1,13 @@
+# Device scenario step: home asks "How much did NAME help?"; answer "A lot", then go to the home screen (no force stop).
+appId: com.migrely.app
+---
+- launchApp:
+    stopApp: false
+- extendedWaitUntil:
+    visible: "How much did ${NAME} help\\?"
+    timeout: 10000
+- tapOn: "A lot"
+- extendedWaitUntil:
+    notVisible: "How much did ${NAME} help\\?"
+    timeout: 5000
+- pressKey: Home

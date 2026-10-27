@@ -1,0 +1,14 @@
+# Device scenario step: a clean install (notifications already allowed) turns the daily reminder on, then the app
+# closes. The app plans the reminder for 8:00 PM.
+appId: com.migrely.app
+---
+- runFlow: ../subflows/launch-clean.yaml
+- tapOn: "Settings"
+- tapOn: "Reminders"
+- tapOn: "Daily reminder"
+- extendedWaitUntil:
+    visible: "QA: never shown, a pause for the setting to be saved"
+    timeout: 2000
+    optional: true
+# Home, not stopApp: a force stop cancels every job the app planned.
+- pressKey: Home

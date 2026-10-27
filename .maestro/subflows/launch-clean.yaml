@@ -1,0 +1,11 @@
+# Fresh install state: no data, home screen with today's calm sky.
+# The sky card is one merged accessibility node ("Today: calm. Calm so far today. No migraine logged."), the way
+# TalkBack reads it, so its inner texts are matched with a regex on that label.
+appId: com.migrely.app
+---
+- launchApp:
+    clearState: true
+- runFlow: skip-onboarding.yaml
+- extendedWaitUntil:
+    visible: "Today: calm. Calm so far today. No migraine logged."
+    timeout: 15000

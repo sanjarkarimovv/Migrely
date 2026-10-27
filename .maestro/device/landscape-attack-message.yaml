@@ -1,0 +1,13 @@
+# Device scenario step: landscape attack mode with the "Migraine started" message on screen. It stays in landscape for the
+# check; the scenario turns the screen back.
+appId: com.migrely.app
+---
+- setOrientation: LANDSCAPE_LEFT
+- runFlow: ../subflows/launch-clean.yaml
+- tapOn:
+    text: "Migraine started"
+    waitToSettleTimeoutMs: 0
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible: "Undo the start"
+    timeout: 5000

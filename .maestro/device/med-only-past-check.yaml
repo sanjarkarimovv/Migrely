@@ -1,0 +1,18 @@
+# Device scenario step: no migraine was ever logged, only ibuprofen on the 20th of last month. History reaches last
+# month, reads that day as medication only, and its summary has 0 migraine days and no "Last 30 days".
+appId: com.migrely.app
+---
+- launchApp
+- tapOn: ".*\\. Opens History\\."
+- tapOn: "Previous month"
+- extendedWaitUntil:
+    visible: ".*[^0-9]20: attack medication taken, no migraine logged\\."
+    timeout: 5000
+- scrollUntilVisible:
+    element: "Days with attack medication: 1"
+    direction: DOWN
+    centerElement: true
+- assertVisible: "Migraine days: 0"
+- assertNotVisible: "[A-Z][a-z]+ so far"
+- assertNotVisible: "Last 30 days"
+- stopApp

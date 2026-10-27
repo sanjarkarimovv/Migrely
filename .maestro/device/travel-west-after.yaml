@@ -1,0 +1,20 @@
+# Covers: today-sky › Today's sky reflects today's data only › Logged before flying west
+# Covers: month-sky › One sky per day from data › Logged ahead of the phone's date
+# Logged at 01:00 Tashkent on the 15th, opened at 22:00 Berlin on the 14th: the attack belongs to the 15th.
+appId: com.migrely.app
+---
+- launchApp
+- extendedWaitUntil:
+    visible: "Today: calm\\. Calm so far today\\. No migraine logged\\."
+    timeout: 10000
+- assertNotVisible: "Logged today"
+# The 15th shows the attack's sky in the zone where it was logged, and cannot be chosen before that date (D50, #27).
+- assertVisible: ".*, [A-Za-z]+ 15: cloudy\\. 1 migraine\\. Peak: not recorded\\."
+- tapOn: ".*, [A-Za-z]+ 15: cloudy\\. 1 migraine\\. Peak: not recorded\\."
+# History would show "Previous month" at its top; home stays with "Migraine started".
+- extendedWaitUntil:
+    visible: "Previous month"
+    timeout: 4000
+    optional: true
+- assertNotVisible: "Previous month"
+- assertVisible: "Migraine started"

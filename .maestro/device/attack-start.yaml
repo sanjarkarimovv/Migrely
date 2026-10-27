@@ -1,0 +1,15 @@
+# Device scenario step: open the app (no reset) and start a migraine now; LEVEL ("Mild", "Moderate", "Severe" or "")
+# sets its pain. The app is closed afterwards.
+appId: com.migrely.app
+---
+- launchApp
+- extendedWaitUntil:
+    visible: "Migraine started"
+    timeout: 10000
+- runFlow: ../subflows/start-attack.yaml
+- runFlow:
+    when:
+      true: ${LEVEL != ""}
+    commands:
+      - tapOn: "${LEVEL}"
+- stopApp

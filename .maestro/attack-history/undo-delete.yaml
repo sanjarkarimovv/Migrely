@@ -1,0 +1,31 @@
+# Can fail now and then until #52 is fixed: the Undo button sits on top of History's top-bar actions, so a tap
+# during the message's motion can open Doctor report instead (see `qa/device_scenarios.sh message_overlap`).
+# Covers: attack-history › Undo a deletion on History › Undo from History
+appId: com.migrely.app
+name: An attack deleted from History comes back with Undo
+tags: [regression, attack-history, a11y-timeout]
+# Runs with a 20 s accessibility timeout (qa/maestro.sh pass 2): it checks what Undo does, not how long it lasts.
+---
+- runFlow: ../subflows/launch-clean.yaml
+- runFlow: ../subflows/start-attack.yaml
+- runFlow: ../subflows/end-attack.yaml
+- tapOn: ".*\\. Opens History\\."
+- tapOn: ".*, peak not recorded\\. Opens its details\\."
+- scrollUntilVisible:
+    element: "Delete migraine"
+    direction: DOWN
+- tapOn:
+    text: "Delete migraine"
+    waitToSettleTimeoutMs: 0
+    retryTapIfNoChange: false
+# Undo is tapped as the very next action (see in-app-messages/newest-wins.yaml).
+- tapOn:
+    text: "Undo the deletion"
+    waitToSettleTimeoutMs: 0
+    retryTapIfNoChange: false
+# "Undone." is checked first: it stays 8 s, and each Maestro step takes 1–4 s on this emulator.
+- extendedWaitUntil:
+    visible: "Undone\\."
+    timeout: 5000
+- assertVisible: "1 migraine in .*"
+- assertVisible: "History"

@@ -1,0 +1,21 @@
+# Maestro workspace for Migrely end-to-end flows.
+# Run it with qa/maestro.sh, which pins the QA emulator (emulator-5580) and writes reports to build/qa/.
+# Every flow names the OpenSpec scenarios it covers in "# Covers:" lines (openspec/specs/<capability>/spec.md).
+# Tags: smoke (release gate, fast), regression (everything), known-bug (expected to fail until its issue is fixed).
+flows:
+  - "app-shell/*"
+  - "attack-logging/*"
+  - "attack-mode/*"
+  - "today-sky/*"
+  - "in-app-messages/*"
+  - "past-attacks/*"
+  - "attack-history/*"
+  - "attack-details/*"
+  - "custom-tags/*"
+  - "medication-list/*"
+  - "medication-intakes/*"
+  - "day-markers/*"
+  - "month-sky/*"
+  - "month-stats/*"
+  - "reminders/*"
+  - "medication-overuse/*"

@@ -1,0 +1,13 @@
+# Covers: attack-logging › Check attacks open for 72 hours › Don't ask again
+# Runs another 73 h later: the question comes back once, and "Don't ask again" silences it for this attack.
+appId: com.migrely.app
+---
+- launchApp
+- extendedWaitUntil:
+    visible: "Still going?"
+    timeout: 10000
+- tapOn: "Don't ask again for this attack"
+- extendedWaitUntil:
+    visible: "Rest now. We'll keep time."
+    timeout: 5000
+- stopApp

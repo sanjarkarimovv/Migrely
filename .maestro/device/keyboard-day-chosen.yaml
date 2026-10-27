@@ -1,0 +1,10 @@
+# Device scenario step: Enter on a day opened History with that day chosen (DAY: the day of the month).
+appId: com.migrely.app
+---
+- extendedWaitUntil:
+    visible: "Previous month"
+    timeout: 10000
+- scrollUntilVisible:
+    element: "[A-Za-z]+, [A-Za-z]+ ${DAY}"
+    direction: DOWN
+- assertVisible: "No migraine logged on this day\\."

@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="today_calm_title">Calm so far today</string>
+    <string name="today_calm_subtitle">No migraine logged</string>
+    <string name="today_pain_free_title">Pain-free today</string>
+    <string name="today_pain_free_subtitle">Marked by you</string>
+    <string name="period_today">Period</string>
+    <string name="period_today_description">Period today</string>
+    <plurals name="today_attack_count">
+        <item quantity="one">%d migraine today</item>
+        <item quantity="other">%d migraines today</item>
+    </plurals>
+    <string name="today_peak_mild">Peak: mild</string>
+    <string name="today_peak_moderate">Peak: moderate</string>
+    <string name="today_peak_severe">Peak: severe</string>
+    <string name="today_peak_not_recorded">Peak: not recorded</string>
+    <string name="sky_calm">calm</string>
+    <string name="sky_clear">clear</string>
+    <string name="home_sky_hazy">hazy</string>
+    <string name="home_sky_cloudy">cloudy</string>
+    <string name="home_sky_storm">storm</string>
+    <string name="sky_rain">rain</string>
+    <string name="today_card_description">Today: %1$s. %2$s. %3$s.</string>
+
+    <string name="start_attack">Migraine started</string>
+    <string name="home_add_past_attack">Add a past migraine</string>
+
+    <string name="attack_rest">Rest now. We\'ll keep time.</string>
+    <string name="attack_started_at">Started %1$s · %2$s</string>
+    <string name="elapsed_minutes">%d min</string>
+    <string name="elapsed_hours_minutes">%1$d h %2$d min</string>
+    <string name="elapsed_days_hours">%1$d d %2$d h</string>
+    <string name="intensity_mild">Mild</string>
+    <string name="intensity_moderate">Moderate</string>
+    <string name="intensity_severe">Severe</string>
+    <string name="move_start_label">Started earlier?</string>
+    <string name="move_start_15">15 min</string>
+    <string name="move_start_30">30 min</string>
+    <string name="move_start_60">1 h</string>
+    <string name="move_start_120">2 h</string>
+    <string name="move_start_description">Move the start %1$s earlier</string>
+    <string name="end_attack">Migraine ended</string>
+
+    <string name="long_check_title">Still going?</string>
+    <string name="long_check_body">Attacks longer than 72 hours should be checked by a doctor.</string>
+    <string name="long_check_still_going">Still going</string>
+    <string name="long_check_ended">It has ended</string>
+    <string name="long_check_dont_ask">Don\'t ask again for this attack</string>
+    <string name="end_time_title">When did it end?</string>
+    <string name="home_picker_next">Next</string>
+    <string name="home_picker_confirm">OK</string>
+    <string name="home_picker_cancel">Cancel</string>
+
+    <string name="snackbar_attack_started">Migraine started</string>
+    <string name="snackbar_attack_ended">Migraine ended</string>
+    <string name="home_snackbar_undo">Undo</string>
+    <string name="snackbar_undo_start_description">Undo the start</string>
+    <string name="snackbar_undo_end_description">Undo the end</string>
+    <string name="home_snackbar_dismiss">Dismiss</string>
+    <string name="home_snackbar_attack_deleted">Migraine deleted</string>
+    <string name="home_snackbar_undo_delete_description">Undo the deletion</string>
+    <string name="today_list_title">Logged today</string>
+    <string name="attack_summary_range">%1$s – %2$s</string>
+    <string name="attack_summary_peak">%1$d/10</string>
+    <string name="attack_summary_peak_not_recorded">Not recorded</string>
+    <string name="attack_summary_description">Migraine from %1$s to %2$s, peak %3$s. Opens its details.</string>
+    <string name="attack_summary_peak_spoken">%1$d out of 10</string>
+    <string name="attack_details">Details</string>
+    <string name="attack_details_description">Details of this migraine</string>
+    <string name="home_message_undone">Undone.</string>
+    <string name="home_message_undo_not_possible">This can no longer be undone.</string>
+    <string name="home_message_storage_full">Couldn\'t save. Your phone\'s storage is full.</string>
+    <string name="message_move_rejected">Your previous migraine ended at %1$s.</string>
+    <string name="message_end_out_of_range">Pick a time between the start and now.</string>
+    <string name="home_message_generic">Something went wrong. Please try again.</string>
+    <string name="medication_taken">Medication taken</string>
+    <string name="log_medication">Log medication</string>
+    <string name="home_settings">Settings</string>
+</resources>

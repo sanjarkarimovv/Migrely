@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Dark from the first frame, so no white flash before Compose draws (BRD EC-UX-01). -->
+    <style name="Theme.Migrely" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="android:windowBackground">@color/window_background</item>
+    </style>
+
+    <!--
+        The launch theme: the system splash, held while the app decides whether onboarding comes first (BRD D76), then
+        Theme.Migrely.
+    -->
+    <style name="Theme.Migrely.Starting" parent="Theme.SplashScreen.IconBackground">
+        <item name="windowSplashScreenBackground">@color/window_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <!-- The icon's violet circle on the dark launch screen, so it opens as it looks on the home screen. -->
+        <item name="windowSplashScreenIconBackgroundColor">@color/brand_violet</item>
+        <item name="postSplashScreenTheme">@style/Theme.Migrely</item>
+    </style>
+</resources>

@@ -1,0 +1,22 @@
+# Covers: past-attacks › Add an attack that has ended › Add and describe (with the default times)
+# Covers: past-attacks › Add an attack that has ended › Back from the new attack
+appId: com.migrely.app
+name: Adding a past migraine opens its details and back returns home
+tags: [smoke, regression, past-attacks]
+---
+- runFlow: ../subflows/launch-clean.yaml
+- tapOn: "Add a past migraine"
+- extendedWaitUntil:
+    visible: "Add migraine"
+    timeout: 5000
+- tapOn: "Add migraine"
+- extendedWaitUntil:
+    visible: "Not recorded"
+    timeout: 5000
+- assertVisible: "Duration 2 h 0 min"
+- back
+- extendedWaitUntil:
+    visible: "Logged today"
+    timeout: 5000
+- assertNotVisible: "Past migraine"
+- assertVisible: "Today: cloudy. 1 migraine today. Peak: not recorded."

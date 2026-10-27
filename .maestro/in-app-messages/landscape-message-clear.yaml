@@ -1,0 +1,30 @@
+# Partly checks: in-app-messages › Landscape attack mode keeps messages beside the controls › Message during landscape
+# attack mode (see docs: the timing with Reduce motion and tapping under the message are not checked).
+# The controls stay visible here; `qa/device_scenarios.sh landscape_band` checks that the guidance starts below the
+# message and comes back, with and without Reduce motion (#26, D52).
+# Regression guard for https://github.com/sanjarkarimovv/Migrely/issues/20 (fixed in PR #24): in landscape the start
+# message covered Mild and Moderate. Runs in pass 2 (20 s accessibility timeout), so the message is surely on screen.
+appId: com.migrely.app
+name: In landscape the start message leaves every intensity choice visible
+tags: [regression, in-app-messages, a11y-timeout]
+# Back to portrait even when an assertion fails, so later flows are not run in landscape.
+onFlowComplete:
+  - setOrientation: PORTRAIT
+---
+- setOrientation: LANDSCAPE_LEFT
+- runFlow: ../subflows/launch-clean.yaml
+- tapOn:
+    text: "Migraine started"
+    waitToSettleTimeoutMs: 0
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible: "Undo the start"
+    timeout: 5000
+- assertVisible: "Mild"
+- assertVisible: "Moderate"
+- assertVisible: "Severe"
+- assertVisible: ".*Medication taken"
+- assertVisible:
+    text: "Migraine ended"
+    index: 0
+- takeScreenshot: in-app-messages-landscape-message

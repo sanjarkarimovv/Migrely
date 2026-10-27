@@ -1,0 +1,48 @@
+# Covers: attack-history › Choose a day › Day with nothing logged
+# Covers: attack-history › Add a past migraine for the chosen day › Add for a chosen day
+# Covers: attack-history › Add a past migraine for the chosen day › Back to History after adding
+# Picks the first past day of this month with nothing logged and checks the new attack on that same day.
+appId: com.migrely.app
+name: An empty day offers a past migraine that lands on that day
+tags: [regression, attack-history, past-attacks]
+---
+- runFlow: ../subflows/launch-clean.yaml
+- runFlow: ../subflows/log-attack-today.yaml
+- tapOn: ".*\\. Opens History\\."
+# On the 1st there is no past day of this month without data: say so instead of passing without testing anything.
+- runFlow:
+    when:
+      notVisible: ".*: nothing logged\\."
+    commands:
+      - assertVisible: "QA: this flow needs a past day of the current month, so it cannot run on the 1st"
+# Remember which day is chosen, so the result below is checked on that day and not on today's cell.
+- copyTextFrom:
+    text: ".*: nothing logged\\."
+    index: 0
+- evalScript: ${output.day = maestro.copiedText.split(':')[0]}
+- tapOn:
+    text: ".*: nothing logged\\."
+    index: 0
+- extendedWaitUntil:
+    visible: "No migraine logged on this day\\."
+    timeout: 3000
+- scrollUntilVisible:
+    element: "Add a past migraine"
+    direction: DOWN
+- tapOn: "Add a past migraine"
+- extendedWaitUntil:
+    visible: "Past migraine"
+    timeout: 5000
+- tapOn: "Add migraine"
+- extendedWaitUntil:
+    visible: "Not recorded"
+    timeout: 5000
+- back
+# History keeps its scroll position, so the cell may be above the screen.
+- scrollUntilVisible:
+    element: "${output.day}: cloudy\\. 1 migraine\\. Peak: not recorded\\..*"
+    direction: UP
+- scrollUntilVisible:
+    element: "Show all of .*"
+    direction: DOWN
+- assertNotVisible: "No migraine logged on this day\\."

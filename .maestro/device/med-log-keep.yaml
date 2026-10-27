@@ -1,0 +1,18 @@
+# Device scenario step: log NAME from home now without stopping the app (a force stop cancels its planned jobs), then
+# go to the home screen.
+appId: com.migrely.app
+---
+- launchApp:
+    stopApp: false
+- extendedWaitUntil:
+    visible: "Migraine started|Details of this migraine"
+    timeout: 10000
+- runFlow:
+    when:
+      visible: "Migraine started"
+    commands:
+      - runFlow:
+          file: ../subflows/log-from-home.yaml
+          env:
+            NAME: "${NAME}"
+- pressKey: Home

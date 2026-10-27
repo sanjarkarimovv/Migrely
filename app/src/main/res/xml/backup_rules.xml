@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Android 11 and older (BRD BAK-F4, D74): the diary, the settings kept in shared preferences, and the automatic
+    backups taken before an import. The cache, where PDF reports go, is never backed up, and neither is the premium
+    entitlement in migrely_entitlement.xml: a purchase belongs to a Google account, so a new install asks Google Play
+    for the account signed in there (D115). Its exclude stands beside each shared-preferences include.
+    The Play Billing library's own usage logs, a database of Google's datatransport, are left out
+    beside each database include (review M12): they are not the user's, and Migrely never sends them.
+
+    From Android 9, requireFlags lets each include go to the cloud only end-to-end encrypted, which needs a screen
+    lock; the second include of each keeps moving to a new phone by cable or nearby transfer, which never reaches the
+    cloud. Android 8 does not know requireFlags and backs everything up as before.
+-->
+<full-backup-content xmlns:tools="http://schemas.android.com/tools">
+    <include
+        domain="database"
+        path="."
+        requireFlags="clientSideEncryption"
+        tools:ignore="UnusedAttribute" />
+    <exclude
+        domain="database"
+        path="com.google.android.datatransport.events" />
+    <exclude
+        domain="database"
+        path="com.google.android.datatransport.events-journal" />
+    <exclude
+        domain="database"
+        path="com.google.android.datatransport.events-wal" />
+    <exclude
+        domain="database"
+        path="com.google.android.datatransport.events-shm" />
+    <include
+        domain="database"
+        path="."
+        requireFlags="deviceToDeviceTransfer"
+        tools:ignore="UnusedAttribute" />
+    <exclude
+        domain="database"
+        path="com.google.android.datatransport.events" />
+    <exclude
+        domain="database"
+        path="com.google.android.datatransport.events-journal" />
+    <exclude
+        domain="database"
+        path="com.google.android.datatransport.events-wal" />
+    <exclude
+        domain="database"
+        path="com.google.android.datatransport.events-shm" />
+    <include
+        domain="sharedpref"
+        path="."
+        requireFlags="clientSideEncryption"
+        tools:ignore="UnusedAttribute" />
+    <exclude
+        domain="sharedpref"
+        path="migrely_entitlement.xml" />
+    <include
+        domain="sharedpref"
+        path="."
+        requireFlags="deviceToDeviceTransfer"
+        tools:ignore="UnusedAttribute" />
+    <exclude
+        domain="sharedpref"
+        path="migrely_entitlement.xml" />
+    <include
+        domain="file"
+        path="backups/"
+        requireFlags="clientSideEncryption"
+        tools:ignore="UnusedAttribute" />
+    <include
+        domain="file"
+        path="backups/"
+        requireFlags="deviceToDeviceTransfer"
+        tools:ignore="UnusedAttribute" />
+</full-backup-content>

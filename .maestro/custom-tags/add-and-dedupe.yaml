@@ -1,0 +1,33 @@
+# Covers: custom-tags › Add your own symptom or trigger › Add a symptom
+# Covers: custom-tags › No duplicate names › Same name, different case
+appId: com.migrely.app
+name: Add your own symptom once, even when typed again in another case
+tags: [regression, custom-tags]
+---
+- runFlow: ../subflows/launch-clean.yaml
+- runFlow: ../subflows/start-attack.yaml
+- tapOn: "Details of this migraine"
+- scrollUntilVisible:
+    element: "Add your own symptom"
+    direction: DOWN
+- tapOn: "Add your own symptom"
+- extendedWaitUntil:
+    visible: "Your own symptom"
+    timeout: 3000
+- inputText: "Jaw pain"
+- tapOn: "Add"
+- scrollUntilVisible:
+    element: "Jaw pain"
+    direction: DOWN
+- assertVisible:
+    containsChild: "Jaw pain"
+    checked: true
+- tapOn: "Add your own symptom"
+- inputText: "jaw PAIN "
+- tapOn: "Add"
+- assertVisible:
+    containsChild: "Jaw pain"
+    checked: true
+- assertNotVisible:
+    text: "Jaw pain"
+    index: 1

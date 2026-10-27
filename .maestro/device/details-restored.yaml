@@ -1,0 +1,17 @@
+# Covers: attack-details › Every change saves itself › App killed while editing
+appId: com.migrely.app
+---
+- extendedWaitUntil:
+    visible: "Rest now\\. We'll keep time\\.|Details of this migraine|In progress"
+    timeout: 10000
+- runFlow:
+    when:
+      visible: "Details of this migraine"
+    commands:
+      - tapOn: "Details of this migraine"
+- scrollUntilVisible:
+    element: "Nausea"
+    direction: DOWN
+- assertVisible:
+    containsChild: "Nausea"
+    checked: true

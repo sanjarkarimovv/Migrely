@@ -1,0 +1,17 @@
+# Covers: month-sky › Legend without a guess › Legend
+appId: com.migrely.app
+name: The month legend lists the seven kinds of day
+tags: [regression, month-sky]
+---
+- runFlow: ../subflows/launch-clean.yaml
+- runFlow: ../subflows/log-attack-today.yaml
+- tapOn: ".*\\. Opens History\\."
+- assertVisible: "Pain-free"
+- assertVisible: "Mild"
+- assertVisible: "Moderate"
+- assertVisible: "Severe"
+- assertVisible: "Attack medication only"
+- assertVisible: "Not logged"
+- assertVisible:
+    text: "Period"
+    above: "Migraines started: .*"

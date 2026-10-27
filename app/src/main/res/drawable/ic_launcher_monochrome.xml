@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The icon in one colour, for themed icons: the page with the moon cut out, and its rings. Source: docs/release/icon/make_icon.py (BRD D116). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M40,35 H68 A10,10 0 0 1 78,45 V69 A10,10 0 0 1 68,79 H40 A10,10 0 0 1 30,69 V45 A10,10 0 0 1 40,35 Z M53.84,53.56 A10.5,10.5 0 1,0 65.14,66.74 A8.8,8.8 0 0,1 53.84,53.56 Z"
+        android:fillType="evenOdd" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M42.25,28.5 H42.25 A2.75,2.75 0 0 1 45,31.25 V36.75 A2.75,2.75 0 0 1 42.25,39.5 H42.25 A2.75,2.75 0 0 1 39.5,36.75 V31.25 A2.75,2.75 0 0 1 42.25,28.5 Z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M65.75,28.5 H65.75 A2.75,2.75 0 0 1 68.5,31.25 V36.75 A2.75,2.75 0 0 1 65.75,39.5 H65.75 A2.75,2.75 0 0 1 63,36.75 V31.25 A2.75,2.75 0 0 1 65.75,28.5 Z" />
+</vector>

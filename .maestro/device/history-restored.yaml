@@ -1,0 +1,14 @@
+# Covers: attack-history › History stays current › Rotation and process death (process-death part)
+# Runs after the system ended the app in the background and the user opened it again from the launcher.
+appId: com.migrely.app
+---
+- extendedWaitUntil:
+    visible: "History"
+    timeout: 10000
+# The chosen day survived (its controls sit below the month summary), and so did the month with the 12th.
+- scrollUntilVisible:
+    element: "Show all of .*"
+    direction: DOWN
+- scrollUntilVisible:
+    element: ".*, [A-Za-z]+ 12: cloudy\\. 1 migraine\\. Peak: not recorded\\..*"
+    direction: UP

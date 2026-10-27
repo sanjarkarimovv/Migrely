@@ -1,0 +1,24 @@
+# Covers: attack-details › Every change saves itself › Leave right after typing
+appId: com.migrely.app
+name: A note typed right before going back is kept
+tags: [smoke, regression, attack-details]
+---
+- runFlow: ../subflows/launch-clean.yaml
+- runFlow: ../subflows/start-attack.yaml
+- tapOn: "Details of this migraine"
+- scrollUntilVisible:
+    element: "Anything else worth remembering"
+    direction: DOWN
+- tapOn: "Anything else worth remembering"
+- inputText: "Took ibuprofen"
+- hideKeyboard
+- back
+- assertVisible: "Rest now. We'll keep time."
+- tapOn: "Details of this migraine"
+- scrollUntilVisible:
+    element: "Took ibuprofen"
+    direction: DOWN
+# The counter sits under the note field, below the fold since change 3 added the Medications section.
+- scrollUntilVisible:
+    element: "14/1000"
+    direction: DOWN

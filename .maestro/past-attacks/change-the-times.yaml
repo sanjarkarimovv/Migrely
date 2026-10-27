@@ -1,0 +1,23 @@
+# Covers: past-attacks › Overlapping attacks are named › Change the times
+appId: com.migrely.app
+name: Changing the times hides the overlap card and brings back Add migraine
+tags: [regression, past-attacks]
+---
+- runFlow: ../subflows/launch-clean.yaml
+- tapOn: "Add a past migraine"
+- tapOn: "Add migraine"
+- extendedWaitUntil:
+    visible: "Not recorded"
+    timeout: 5000
+- back
+- tapOn: "Add a past migraine"
+- tapOn: "Add migraine"
+- extendedWaitUntil:
+    visible: "Change the times"
+    timeout: 5000
+- tapOn: "Change the times"
+- extendedWaitUntil:
+    visible: "Add migraine"
+    timeout: 3000
+- assertNotVisible: "Merge them"
+- assertVisible: "Duration 2 h 0 min"

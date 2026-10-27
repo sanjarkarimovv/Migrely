@@ -1,0 +1,36 @@
+# A fresh install opens onboarding (change 8). Skip its four steps. Each step change starts a 0.8 s tap guard, so every
+# tap waits for its step and then about 1 s more.
+appId: com.migrely.app
+---
+- extendedWaitUntil:
+    visible: "Step 1 of 4.*"
+    timeout: 15000
+- extendedWaitUntil:
+    visible: "QA: never shown, a pause for the 0.8 s tap guard"
+    timeout: 1000
+    optional: true
+- tapOn: "Skip this step"
+- extendedWaitUntil:
+    visible: "Step 2 of 4.*"
+    timeout: 5000
+- extendedWaitUntil:
+    visible: "QA: never shown, a pause for the 0.8 s tap guard"
+    timeout: 1000
+    optional: true
+- tapOn: "Skip this step"
+- extendedWaitUntil:
+    visible: "Step 3 of 4.*"
+    timeout: 5000
+- extendedWaitUntil:
+    visible: "QA: never shown, a pause for the 0.8 s tap guard"
+    timeout: 1000
+    optional: true
+- tapOn: "Skip this step"
+- extendedWaitUntil:
+    visible: "Step 4 of 4.*"
+    timeout: 5000
+- extendedWaitUntil:
+    visible: "QA: never shown, a pause for the 0.8 s tap guard"
+    timeout: 1000
+    optional: true
+- tapOn: "Skip this step"

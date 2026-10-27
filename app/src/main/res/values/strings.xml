@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Migrely</string>
+    <string name="shortcut_start_attack">Migraine started</string>
+    <string name="shortcut_start_attack_long">Log that a migraine started</string>
+    <string name="notification_channel_daily">Daily reminder</string>
+    <string name="notification_channel_effect">Did it help?</string>
+    <string name="notification_daily_title">How was today?</string>
+    <string name="notification_daily_text">Mark a pain-free day, or log a migraine.</string>
+    <string name="notification_daily_pain_free">Pain-free day</string>
+    <string name="notification_daily_log">Log a migraine</string>
+    <string name="notification_attack_logged">A migraine is logged today.</string>
+    <string name="notification_effect_title">Did %1$s help?</string>
+    <string name="notification_effect_text">Tap to answer in Migrely.</string>
+</resources>

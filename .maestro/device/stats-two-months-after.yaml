@@ -1,0 +1,24 @@
+# Device scenario step, on the 1st of this month at 03:00 after a migraine from 22:00 on the last day of last month.
+# This month: the attack is listed but not started here, and the 1st is a migraine day. Last month: one started.
+appId: com.migrely.app
+---
+- launchApp
+- tapOn: ".*\\. Opens History\\."
+- scrollUntilVisible:
+    element: "Migraines started: 0"
+    direction: DOWN
+- assertVisible: "Migraine days: 1"
+- assertVisible: "[A-Z][a-z]+ so far"
+- scrollUntilVisible:
+    element: ".*, peak not recorded\\. Opens its details\\."
+    direction: DOWN
+- scrollUntilVisible:
+    element: "Previous month"
+    direction: UP
+- tapOn: "Previous month"
+- scrollUntilVisible:
+    element: "Migraines started: 1"
+    direction: DOWN
+- assertVisible: "Migraine days: 1"
+- assertNotVisible: "[A-Z][a-z]+ so far"
+- stopApp

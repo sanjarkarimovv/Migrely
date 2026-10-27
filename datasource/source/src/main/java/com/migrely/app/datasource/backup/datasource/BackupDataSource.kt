@@ -1,0 +1,38 @@
+package com.migrely.app.datasource.backup.datasource
+
+import com.migrely.app.datasource.backup.model.AddedRecordsDataModel
+import com.migrely.app.datasource.backup.model.BackupRecordsDataModel
+
+/**
+ * Reads and writes every health record at once, for backups (BRD BAK-F1, BAK-F3, D71, D73). Each function runs in one
+ * database transaction, blocks, and throws the storage exceptions described on
+ * [com.migrely.app.datasource.attack.datasource.AttackDataSource].
+ */
+interface BackupDataSource {
+    fun records(): BackupRecordsDataModel
+
+    /** Whether the phone holds any health record, so an import has to ask how to go about it. */
+    fun hasRecords(): Boolean
+
+    /** Deletes every health record, attacks being deleted included, and writes [records] in their place. */
+    fun replaceAll(records: BackupRecordsDataModel)
+
+    /**
+     * Writes the records of [records] the phone does not have yet.
+     * - An attack whose ID is present, or which overlaps an attack on the phone, is skipped.
+     * - A medication or custom tag whose name is already used stands for the one on the phone.
+     * - An intake already present, by ID or by medication and time, is skipped. An intake of an attack that was skipped
+     *   for overlapping is kept without the link.
+     * - A date already marked keeps its marks.
+     * - An attack being deleted, or an intake hidden with one, does not count as present. When [records] holds it (an
+     *   intake also by medication and time), it goes for good with what hangs on it, and the backup's copy is added by
+     *   the rules above (BRD D118).
+     */
+    fun add(records: BackupRecordsDataModel): AddedRecordsDataModel
+
+    /**
+     * Deletes every row of every table at once: the health records and the device's own state, such as the reminder
+     * settings and the overuse notices (BRD D96).
+     */
+    fun deleteAll()
+}

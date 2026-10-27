@@ -1,0 +1,23 @@
+# Covers: attack-history › Open History › Open from a day
+# Covers: attack-history › Choose a day › Back to the month
+appId: com.migrely.app
+name: A day on home opens History with that day chosen
+tags: [regression, attack-history]
+---
+- runFlow: ../subflows/launch-clean.yaml
+- runFlow: ../subflows/log-attack-today.yaml
+# Late in the month, today's row sits below the screen on home.
+- scrollUntilVisible:
+    element: "Today, .*: cloudy\\. 1 migraine\\. Peak: not recorded\\."
+    direction: DOWN
+- tapOn: "Today, .*: cloudy\\. 1 migraine\\. Peak: not recorded\\."
+# The chosen day's controls sit below the month summary (change 5) and the day marks (change 4).
+- scrollUntilVisible:
+    element: "Show all of .*"
+    direction: DOWN
+- assertNotVisible: "1 migraine in .*"
+- tapOn: "Show all of .*"
+- scrollUntilVisible:
+    element: "1 migraine in .*"
+    direction: DOWN
+- assertNotVisible: "Show all of .*"

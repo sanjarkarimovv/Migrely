@@ -1,0 +1,11 @@
+# Device scenario step, on an app already open: Settings → Reminders, which stays open for the script to read.
+appId: com.migrely.app
+---
+- extendedWaitUntil:
+    visible: "Settings"
+    timeout: 10000
+- tapOn: "Settings"
+- tapOn: "Reminders"
+- extendedWaitUntil:
+    visible: "Reminder time, 8:00.PM\\. Change it\\."
+    timeout: 5000

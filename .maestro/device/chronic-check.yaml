@@ -1,0 +1,25 @@
+# Device scenario step: History's summary of this month has DAYS migraine days; SHOWN "true" expects the chronic card,
+# "false" expects none.
+appId: com.migrely.app
+---
+- launchApp
+- tapOn: ".*\\. Opens History\\."
+- scrollUntilVisible:
+    element: "Migraine days: ${DAYS}"
+    direction: DOWN
+- runFlow:
+    when:
+      true: ${SHOWN == "true"}
+    commands:
+      - assertVisible: "15 or more migraine days in [A-Z][a-z]+\\. That.s a lot\\. Talk to your doctor about it\\."
+- runFlow:
+    when:
+      true: ${SHOWN != "true"}
+    commands:
+      # The end of the summary sits right above the list's heading; with it centred, that place is on screen.
+      - scrollUntilVisible:
+          element: "[0-9]+ migraines? in .*"
+          direction: DOWN
+          centerElement: true
+      - assertNotVisible: ".*or more migraine days in.*"
+- stopApp

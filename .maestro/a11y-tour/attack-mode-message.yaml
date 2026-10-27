@@ -1,0 +1,7 @@
+# Accessibility tour state: attack mode with the "Migraine started" message and its Undo.
+# The audit sets a 30 s accessibility timeout, so the message is still shown when the screen is captured.
+appId: com.migrely.app
+---
+- runFlow: ../subflows/launch-clean.yaml
+- runFlow: ../subflows/start-attack.yaml
+- tapOn: "Moderate"

@@ -1,0 +1,25 @@
+# Covers: attack-logging › Check attacks open for 72 hours › Prompt after 72 hours
+# Covers: attack-logging › Check attacks open for 72 hours › Still going
+# Runs about 73 h after start-attack-and-close.yaml (qa/device_scenarios.sh).
+appId: com.migrely.app
+---
+- launchApp
+- extendedWaitUntil:
+    visible: "Still going?"
+    timeout: 10000
+- assertVisible: "Attacks longer than 72 hours should be checked by a doctor."
+- assertVisible: "It has ended"
+- assertVisible: "Don't ask again for this attack"
+- takeScreenshot: time-72h-prompt
+- tapOn: "Still going"
+- extendedWaitUntil:
+    visible: "Rest now. We'll keep time."
+    timeout: 5000
+- assertVisible: "Started .* · 3 d [01] h"
+- stopApp
+- launchApp
+- extendedWaitUntil:
+    visible: "Rest now. We'll keep time."
+    timeout: 10000
+- assertNotVisible: "Still going?"
+- stopApp

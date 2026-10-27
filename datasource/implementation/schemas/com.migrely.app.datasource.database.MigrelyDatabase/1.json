@@ -1,0 +1,151 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 1,
+    "identityHash": "d34d92e1140fd4f65ad455b1225470c7",
+    "entities": [
+      {
+        "tableName": "attack",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `start_epoch_millis` INTEGER NOT NULL, `start_zone_id` TEXT NOT NULL, `end_epoch_millis` INTEGER, `long_check_confirmed_epoch_millis` INTEGER, `long_check_disabled` INTEGER NOT NULL, `created_epoch_millis` INTEGER NOT NULL, `updated_epoch_millis` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "startEpochMillis",
+            "columnName": "start_epoch_millis",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "startZoneId",
+            "columnName": "start_zone_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "endEpochMillis",
+            "columnName": "end_epoch_millis",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "longCheckConfirmedEpochMillis",
+            "columnName": "long_check_confirmed_epoch_millis",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "longCheckDisabled",
+            "columnName": "long_check_disabled",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdEpochMillis",
+            "columnName": "created_epoch_millis",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedEpochMillis",
+            "columnName": "updated_epoch_millis",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_attack_start_epoch_millis",
+            "unique": false,
+            "columnNames": [
+              "start_epoch_millis"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_attack_start_epoch_millis` ON `${TABLE_NAME}` (`start_epoch_millis`)"
+          },
+          {
+            "name": "index_attack_end_epoch_millis",
+            "unique": false,
+            "columnNames": [
+              "end_epoch_millis"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_attack_end_epoch_millis` ON `${TABLE_NAME}` (`end_epoch_millis`)"
+          }
+        ]
+      },
+      {
+        "tableName": "intensity_point",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `attack_id` TEXT NOT NULL, `at_epoch_millis` INTEGER NOT NULL, `value` INTEGER NOT NULL, FOREIGN KEY(`attack_id`) REFERENCES `attack`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "attackId",
+            "columnName": "attack_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "atEpochMillis",
+            "columnName": "at_epoch_millis",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "value",
+            "columnName": "value",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_intensity_point_attack_id",
+            "unique": false,
+            "columnNames": [
+              "attack_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_intensity_point_attack_id` ON `${TABLE_NAME}` (`attack_id`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "attack",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "attack_id"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'd34d92e1140fd4f65ad455b1225470c7')"
+    ]
+  }
+}

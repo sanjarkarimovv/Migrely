@@ -1,0 +1,9 @@
+# Accessibility tour state: details of the attack in progress, top of the screen.
+appId: com.migrely.app
+---
+- runFlow: ../subflows/launch-clean.yaml
+- runFlow: ../subflows/start-attack.yaml
+- tapOn: "Details of this migraine"
+- extendedWaitUntil:
+    visible: "In progress"
+    timeout: 5000

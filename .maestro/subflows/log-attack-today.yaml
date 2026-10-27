@@ -1,0 +1,6 @@
+# From home with no attack in progress: log one ended attack today without intensity, and let the message go.
+appId: com.migrely.app
+---
+- runFlow: start-attack.yaml
+- runFlow: end-attack.yaml
+- runFlow: wait-message-gone.yaml

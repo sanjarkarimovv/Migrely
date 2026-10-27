@@ -1,0 +1,20 @@
+# Covers: attack-logging › Time storage and day attribution › Travel to another time zone
+# Covers: month-sky › Days follow where the attack was logged › Logged in another zone
+# Covers: today-sky › Today's sky reflects today's data only › Logged before flying east
+# Covers: attack-history › The month's attacks › Logged in another zone
+# The phone is now in Tashkent, where it is already the next day. The attack still belongs to the Berlin day.
+appId: com.migrely.app
+---
+- launchApp
+- extendedWaitUntil:
+    visible: "Today: calm\\. Calm so far today\\. No migraine logged\\."
+    timeout: 10000
+- assertNotVisible: "Logged today"
+- assertVisible: ".*: cloudy\\. 1 migraine\\. Peak: not recorded\\."
+# History names the city where the attack was logged, once, after the end.
+- tapOn: ".*\\. Opens History\\."
+- extendedWaitUntil:
+    visible: ".*\\(Berlin\\).*Opens its details\\."
+    timeout: 5000
+- assertNotVisible: ".*\\(Berlin\\).*\\(Berlin\\).*"
+- takeScreenshot: device-travel-after

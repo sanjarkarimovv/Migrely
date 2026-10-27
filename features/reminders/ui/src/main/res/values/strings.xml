@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="reminders_title">Reminders</string>
+    <string name="reminders_back">Back</string>
+    <string name="reminders_daily_title">Daily reminder</string>
+    <string name="reminders_daily_summary">“How was today?” once a day, so you can mark a pain-free day</string>
+    <string name="reminders_daily_time">Time</string>
+    <string name="reminders_daily_time_description">Reminder time, %1$s. Change it.</string>
+    <string name="reminders_effect_title">Ask if a medication helped</string>
+    <string name="reminders_effect_summary">Two hours after you log a medication for an attack</string>
+    <string name="reminders_notifications_off">Notifications are off for Migrely, so reminders can\'t arrive.</string>
+    <string name="reminders_open_settings">Open settings</string>
+    <string name="reminders_unavailable">Reminders can\'t be shown right now.</string>
+    <string name="reminders_picker_title">Reminder time</string>
+    <string name="reminders_picker_ok">OK</string>
+    <string name="reminders_picker_cancel">Cancel</string>
+    <string name="reminders_message_storage_full">Couldn\'t save. Your phone\'s storage is full.</string>
+    <string name="reminders_message_something_went_wrong">Something went wrong. Try again.</string>
+    <string name="reminders_message_dismiss">Dismiss</string>
+    <string name="reminders_offer_turn_on">Turn on at %1$s</string>
+    <string name="reminders_offer_not_now">Not now</string>
+</resources>

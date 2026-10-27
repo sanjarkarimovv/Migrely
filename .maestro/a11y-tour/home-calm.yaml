@@ -1,0 +1,4 @@
+# Accessibility tour state: home, nothing logged. Not a test; qa/a11y_audit.sh captures the screen after it.
+appId: com.migrely.app
+---
+- runFlow: ../subflows/launch-clean.yaml

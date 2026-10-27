@@ -1,0 +1,10 @@
+# Covers: attack-logging › Double taps never cross a mode switch › Double tap on "Migraine ended"
+# Covers: attack-logging › Double taps never cross a mode switch › Deliberate tap after the guard
+# Runs right after adb tapped the upper part of "Migraine ended" twice (the first tap 1.5 s after the start, past the
+# guard, so it is a deliberate end).
+appId: com.migrely.app
+---
+- extendedWaitUntil:
+    visible: "Today: cloudy\\. 1 migraine today\\. Peak: not recorded\\."
+    timeout: 5000
+- assertNotVisible: "Rest now\\. We'll keep time\\."

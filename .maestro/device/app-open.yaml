@@ -1,0 +1,10 @@
+# Device scenario step: open the app (it re-plans its reminders on every start), then go to the home screen. Not
+# stopApp: a force stop cancels every job the app planned.
+appId: com.migrely.app
+---
+- launchApp
+- extendedWaitUntil:
+    visible: "Migraine started|Details of this migraine"
+    timeout: 10000
+# Home, not stopApp: a force stop cancels every job the app planned.
+- pressKey: Home

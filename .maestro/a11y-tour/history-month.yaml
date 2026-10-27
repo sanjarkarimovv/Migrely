@@ -1,0 +1,15 @@
+# Accessibility tour state: History on this month with one attack listed.
+appId: com.migrely.app
+---
+- runFlow: ../subflows/launch-clean.yaml
+- runFlow: ../subflows/start-attack.yaml
+- runFlow: ../subflows/end-attack.yaml
+# In landscape the month card is below the fold.
+- scrollUntilVisible:
+    element: ".*\\. Opens History\\."
+    direction: DOWN
+- tapOn: ".*\\. Opens History\\."
+# At 200% the month summary (change 5) pushes the list below the screen.
+- scrollUntilVisible:
+    element: "1 migraine in .*"
+    direction: DOWN

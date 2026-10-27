@@ -1,0 +1,14 @@
+# Covers: attack-logging › Move the start of an attack earlier › Pain began before logging
+# Covers: attack-mode › Elapsed time follows a moved start › Started an hour earlier
+appId: com.migrely.app
+name: Move the start one hour earlier
+tags: [regression, attack-logging]
+---
+- runFlow: ../subflows/launch-clean.yaml
+- runFlow: ../subflows/start-attack.yaml
+- tapOn: "Move the start 1 h earlier"
+# The elapsed time follows the new start at once (regression guard for
+# https://github.com/sanjarkarimovv/Migrely/issues/15); it may tick over a minute while the step runs.
+- extendedWaitUntil:
+    visible: "Started .* · 1 h [01] min"
+    timeout: 3000

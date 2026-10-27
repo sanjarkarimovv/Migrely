@@ -1,0 +1,13 @@
+# Accessibility tour state: the "Your own symptom" dialog, before a name is typed (no keyboard over it).
+appId: com.migrely.app
+---
+- runFlow: ../subflows/launch-clean.yaml
+- runFlow: ../subflows/start-attack.yaml
+- tapOn: "Details of this migraine"
+- scrollUntilVisible:
+    element: "Add your own symptom"
+    direction: DOWN
+- tapOn: "Add your own symptom"
+- extendedWaitUntil:
+    visible: "Your own symptom"
+    timeout: 3000

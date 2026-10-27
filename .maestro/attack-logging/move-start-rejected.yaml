@@ -1,0 +1,17 @@
+# Covers: attack-logging › Move the start of an attack earlier › Move would overlap the previous attack
+# Also checks (without timing it): the refusal is shown as a message.
+appId: com.migrely.app
+name: Moving the start over the previous attack is refused with the reason
+tags: [regression, attack-logging, in-app-messages]
+---
+- runFlow: ../subflows/launch-clean.yaml
+- runFlow: ../subflows/start-attack.yaml
+- runFlow: ../subflows/end-attack.yaml
+- runFlow: ../subflows/wait-message-gone.yaml
+- runFlow: ../subflows/start-attack.yaml
+- runFlow: ../subflows/wait-message-gone.yaml
+- tapOn: "Move the start 15 min earlier"
+- extendedWaitUntil:
+    visible: "Your previous migraine ended at .*"
+    timeout: 3000
+- assertVisible: "Started .* · 0 min"

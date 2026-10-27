@@ -1,0 +1,25 @@
+# Covers: attack-mode › Dark room while an attack is in progress › Attack mode content
+# Covers: today-sky › Add a past migraine from home › Not in attack mode
+# Covers: attack-mode › Nothing that asks for attention › Attack in progress
+appId: com.migrely.app
+name: Attack mode shows only its own controls
+tags: [smoke, regression, attack-mode]
+---
+- runFlow: ../subflows/launch-clean.yaml
+- runFlow: ../subflows/start-attack.yaml
+- assertVisible: "Started .* · 0 min"
+- assertVisible: "Details of this migraine"
+- assertVisible: "Started earlier?"
+- assertVisible: "Move the start 15 min earlier"
+- assertVisible: "Move the start 30 min earlier"
+- assertVisible: "Move the start 1 h earlier"
+- assertVisible: "Move the start 2 h earlier"
+- assertVisible: "Mild"
+- assertVisible: "Moderate"
+- assertVisible: "Severe"
+- assertVisible:
+    text: "Migraine ended"
+    index: 0
+- assertNotVisible: "Add a past migraine"
+- assertNotVisible: "Logged today"
+- takeScreenshot: attack-mode-controls

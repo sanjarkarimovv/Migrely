@@ -1,0 +1,9 @@
+# Device scenario step: in Berlin, still on the 15th, History shows the period mark made in Tashkent.
+appId: com.migrely.app
+---
+- launchApp
+- tapOn: ".*\\. Opens History\\."
+- extendedWaitUntil:
+    visible: "Today, .*[^0-9]15: nothing logged\\. Period\\."
+    timeout: 10000
+- stopApp

@@ -1,0 +1,12 @@
+# Device scenario step (qa/device_scenarios.sh): History on last month with the 12th chosen, left in the foreground.
+appId: com.migrely.app
+---
+- runFlow: ../subflows/launch-clean.yaml
+- runFlow: ../subflows/add-past-attack-last-month.yaml
+- tapOn: ".*\\. Opens History\\."
+- tapOn: "Previous month"
+- tapOn: ".*, [A-Za-z]+ 12: cloudy\\. 1 migraine\\. Peak: not recorded\\."
+# The chosen day's controls sit below the month summary (change 5).
+- scrollUntilVisible:
+    element: "Show all of .*"
+    direction: DOWN

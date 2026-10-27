@@ -1,0 +1,8 @@
+# Covers: attack-logging › Double taps never cross a mode switch › Double tap on "Migraine started"
+# Covers: attack-logging › One attack in progress at a time › Rapid double tap
+# Runs right after adb tapped the lower part of "Migraine started" twice with an exact gap.
+appId: com.migrely.app
+---
+- extendedWaitUntil:
+    visible: "Rest now\\. We'll keep time\\."
+    timeout: 5000

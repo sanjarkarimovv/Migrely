@@ -1,0 +1,20 @@
+# Covers: today-sky › Sky by peak intensity after attacks end › Several attacks
+# Covers: today-sky › Card stays current › Attack ends
+# Covers: attack-logging › Time storage and day attribution › Several attacks in one day
+appId: com.migrely.app
+name: Two attacks today show a storm with the highest peak
+tags: [regression, today-sky, attack-logging]
+---
+- runFlow: ../subflows/launch-clean.yaml
+- runFlow: ../subflows/start-attack.yaml
+- tapOn: "Mild"
+- runFlow: ../subflows/end-attack.yaml
+- assertVisible: "Today: hazy. 1 migraine today. Peak: mild."
+- runFlow: ../subflows/wait-message-gone.yaml
+- runFlow: ../subflows/start-attack.yaml
+- tapOn: "Severe"
+- runFlow: ../subflows/end-attack.yaml
+- assertVisible: "Today: storm. 2 migraines today. Peak: severe."
+- assertVisible: "Migraine from .*, peak 3 out of 10. Opens its details."
+- assertVisible: "Migraine from .*, peak 9 out of 10. Opens its details."
+- takeScreenshot: today-sky-storm

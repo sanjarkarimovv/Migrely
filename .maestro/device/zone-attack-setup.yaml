@@ -1,0 +1,5 @@
+# Device scenario step: an attack started now (the device is in Dubai), left in attack mode.
+appId: com.migrely.app
+---
+- runFlow: ../subflows/launch-clean.yaml
+- runFlow: ../subflows/start-attack.yaml

@@ -1,0 +1,10 @@
+# Device scenario step: add a migraine on the 12th of last month through home's "Add a past migraine", so History can
+# show last month (D51: its first month is the first migraine's or the first mark's). The app closes afterwards.
+appId: com.migrely.app
+---
+- launchApp
+- extendedWaitUntil:
+    visible: "Migraine started"
+    timeout: 10000
+- runFlow: ../subflows/add-past-attack-last-month.yaml
+- stopApp
