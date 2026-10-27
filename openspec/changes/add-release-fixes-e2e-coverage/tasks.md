@@ -18,7 +18,7 @@
   check is pointed at a day that keeps its mark (mutation of the flow, reverted)
 - [ ] 2.3 Seed `report-heavy-old-notes` in `qa/seed_backup.py`, with its self-test, and its check in `report_heavy`
   (design D4). Verify: the self-test recounts it; `report_heavy` passes twice
-- [ ] 2.4 "Google Play offers no products" in `premium_store_states` once D122 is on develop (design D5). Otherwise it
+- [x] 2.4 "Google Play offers no products" in `premium_store_states` once D122 is on develop (design D5). Otherwise it
   goes to the D61 table with its follow-up. Verify: passes twice, or the D61 row
 
 ## 3. Accessibility audit on every screen (D203)
@@ -47,7 +47,7 @@
 
 ## 5. Exploratory testing on build 4
 
-- [ ] 5.1 The core-flow sweep (design D6): every one of the 92 scenarios is PASS, FAIL or NOT RUN with a reason, and every
+- [x] 5.1 The core-flow sweep (design D6): every one of the 92 scenarios is PASS, FAIL or NOT RUN with a reason, and every
   edge case has notes. Verify: the results in the verification record; an issue for every defect, with its blocker
   verdict sent to the dev session
 - [ ] 5.2 Charters 1–4 of design D6, each with notes: what was tried, and what was found. Verify: the notes in the
@@ -66,3 +66,23 @@
   touched
 - [ ] 6.4 Gate `./gradlew assembleDebug assembleRelease test ktlintCheck detekt --no-daemon` after merging develop.
   Verify: exit 0
+
+## Scenarios without a check (D61)
+
+| Scenario | Reason | Follow-up |
+|---|---|---|
+| subscription › When the paywall shows itself › Google Play offers no products | D122, the simulated store's `no-products` command, is not on develop: the dev session put the privacy-link hotfix (1.0.1) first. Build 4's R8 APK was checked by hand for D110, as in QA 11b | `premium_store_states` adds it once D122 lands (design D5) |
+
+## Verification record
+
+**5.1, the core-flow sweep on build 4's R8 APK** (emulator-5580, 2026-10-27, 11:42–14:38): `sweep-a.md`.
+- **The 92 scenarios:** 79 PASS (5 of them PASS*), 0 FAIL, 13 NOT RUN, each with its reason.
+- **App crashes or ANRs:** none.
+- **Issues:** #78, #79, #80, #81, #82, #83, #84. Every one has "launch blocker: no", sent to the dev session.
+
+**2.1, `privacy_link` on build 4's debug APK:** it fails 2 of 2 runs (14:42 and 14:43) on a real defect, #77 (S2,
+launch blocker: no).
+- The app crashes with `IllegalArgumentException: Can't open https://migrely.health/privacy/.` from
+  `AndroidUriHandler.openUri`.
+- Chrome was enabled again after both runs. Before them, `pm list packages -d` did not list Chrome.
+- The fix is on `hotfix/1.0.1` (590e5d7). The scenario's pass is its retest on that build.
