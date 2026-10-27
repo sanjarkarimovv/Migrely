@@ -20,8 +20,8 @@ medication's day in the zone it was taken in, "the last N months" from the day a
 today, a month's average as days x 30 / the period's days rounded half up to one decimal, shares as whole percents
 rounded half up. Times are printed 24-hour; a 12-hour phone shows 22:30 as 10:30 PM.
 
-Seeds: report-three-months, report-partial-month, report-tokyo, report-heavy, insights-patterns, insights-three,
-five-old, five-new, four-old.
+Seeds: report-three-months, report-partial-month, report-tokyo, report-heavy, report-heavy-old-notes,
+insights-patterns, insights-three, five-old, five-new, four-old.
 """
 import argparse
 import calendar
@@ -98,6 +98,8 @@ DESCRIPTIONS = {
     "report-tokyo": "an attack logged in Asia/Tokyo whose Tokyo date is the day after the phone's, and one at home "
                     "that morning: 2 migraine days, not 1",
     "report-heavy": "900 short migraines over 12 months, 2 or 3 a day, each with a note: more than 50 pages hold",
+    "report-heavy-old-notes": "the same 900 migraines, but only the oldest 100 have a note (HEAVY-0801 to HEAVY-0900): "
+                              "none of the migraines the shortened table shows has one",
     "insights-patterns": "10 migraines in 6 months: Stress with 6, 3 on Mondays, Ibuprofen helped on 7 of 9 answers, "
                          "3 marked periods",
     "insights-three": "3 migraines in 6 months, the first 45 days ago: 2 more are needed for patterns",
@@ -149,6 +151,7 @@ FEW_SPEC = {
     "four-old": {"card": ["1 more migraine to see your patterns"], "ready": False, "ready_after_one_more": True},
 }
 HEAVY_ATTACKS = 900
+HEAVY_OLD_NOTES = 100  # report-heavy-old-notes: only the oldest this many have a note
 HEAVY_CLOCKS = ("07:00", "13:00", "19:00")
 HEAVY_TAGS = (("LOCATION", "left"), ("LOCATION", "around_eyes"), ("SYMPTOM", "nausea"),
               ("SYMPTOM", "light_sensitivity"), ("SYMPTOM", "sound_sensitivity"), ("SYMPTOM", "dizziness"),
@@ -314,8 +317,9 @@ def tokyo(today, zone):
     return backup
 
 
-def heavy(today, zone):
-    backup = Backup("report-heavy", zone)
+def heavy(today, zone, name="report-heavy", noted=HEAVY_ATTACKS):
+    """report-heavy; with `noted` below HEAVY_ATTACKS, only the oldest `noted` migraines have their note."""
+    backup = Backup(name, zone)
     ibuprofen = backup.medication("Ibuprofen", "ACUTE", "SIMPLE", "400 mg")
     first = last_months(12, today)[0]
     days = (today - first).days
@@ -325,7 +329,8 @@ def heavy(today, zone):
     for index, (day, clock) in enumerate(starts):
         rank = len(starts) - index
         attack = backup.attack(day, clock, 60, impact=BED_REST if rank % 10 == 0 else rank % 3,
-                               peaks=(2 + rank % 9,), tags=HEAVY_TAGS, note=f"HEAVY-{rank:04d}")
+                               peaks=(2 + rank % 9,), tags=HEAVY_TAGS,
+                               note=f"HEAVY-{rank:04d}" if rank > HEAVY_ATTACKS - noted else None)
         if rank % 7 == 0:
             backup.intake(ibuprofen, attack["startEpochMillis"] + 15 * MINUTE, attack, EFFECTS[rank % 4])
     return backup
@@ -771,14 +776,28 @@ def expect_heavy(data, today, zone):
     ] + medication_lines(summary) + [
         f"N is known only once the PDF exists: the writer keeps as many rows as fit in 50 pages, measured with "
         f"Android's text layout; read it from the PDF, below {total}",
-        f"Include notes on: the migraines table is cut first so that every note fits, so N is smaller than with notes "
-        f'off; the Notes table starts with HEAVY-0001 and, if it says "Showing the latest K of {total} notes.", '
-        "ends with HEAVY-K",
+        'Include notes on: the notes follow the table\'s cap (#67, D84): "Notes from the latest N migraines." with '
+        "the table's N, and only their notes, HEAVY-0001 to HEAVY-N; N is smaller than with notes off",
     ]
     per_day = Counter(start_date(a) for a in data["attacks"])
     spec = [("migraines touching the period", total, HEAVY_ATTACKS), ("started", summary["started"], HEAVY_ATTACKS),
             ("notes", len(summary["notes"]), HEAVY_ATTACKS), ("attacks a day", sorted(set(per_day.values())), [2, 3]),
             ("days with attacks", len(per_day), (today - last_months(12, today)[0]).days)]
+    return {"report": summary}, lines, spec
+
+
+def expect_heavy_old_notes(data, today, zone):
+    summary = report(data, 12, today, zone)
+    total = summary["row_count"]
+    lines = report_lines(summary) + [
+        f'Include notes on: "Showing the latest N of {total} migraines." and "Notes from the latest N migraines." with '
+        "the same N, over an empty notes table: no HEAVY- note anywhere, as long as N is at most "
+        f"{HEAVY_ATTACKS - HEAVY_OLD_NOTES} (the newest migraine with a note is HEAVY-{HEAVY_ATTACKS - HEAVY_OLD_NOTES + 1:04d})",
+    ]
+    ranks = sorted(int(note.removeprefix("HEAVY-")) for _, note in summary["notes"])
+    spec = [("migraines touching the period", total, HEAVY_ATTACKS), ("started", summary["started"], HEAVY_ATTACKS),
+            ("notes", len(summary["notes"]), HEAVY_OLD_NOTES),
+            ("noted migraines", ranks, list(range(HEAVY_ATTACKS - HEAVY_OLD_NOTES + 1, HEAVY_ATTACKS + 1)))]
     return {"report": summary}, lines, spec
 
 
@@ -830,6 +849,8 @@ SEEDS = {
     "report-partial-month": (partial_month, expect_partial_month),
     "report-tokyo": (tokyo, expect_tokyo),
     "report-heavy": (heavy, expect_heavy),
+    "report-heavy-old-notes": (partial(heavy, name="report-heavy-old-notes", noted=HEAVY_OLD_NOTES),
+                               expect_heavy_old_notes),
     "insights-patterns": (insights_patterns, expect_insights_patterns),
     **{name: (partial(few_migraines, name), partial(expect_few, name)) for name in FEW},
 }

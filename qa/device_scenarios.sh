@@ -1588,6 +1588,7 @@ scenario_report_counting() {
 # Covers: doctor-report › Large periods › Twelve heavy months
 # Covers: doctor-report › The file and sharing › Closed while making it
 # Covers: doctor-report › Large periods › Twelve heavy months with notes
+# Covers: doctor-report › Large periods › No note among the migraines shown
 scenario_report_heavy() {
   echo "Scenario report_heavy: 900 attacks in 12 months make at most 50 pages; a report closed half-made leaves nothing (D84, D85)"
   local files box want
@@ -1655,6 +1656,30 @@ if int(notes.group(1)) != n or kept != list(range(1, n + 1)):
     sys.exit(f'FAIL: {n} rows, notes say {notes.group(1)}, notes kept {len(kept)}{span}')
 print(f'notes on: the latest {n} of 900 migraines and their {n} notes, HEAVY-0001 to HEAVY-{n:04}')" "$out/report-heavy-notes.txt" |
     sed 's/^/    /'
+  [[ "${PIPESTATUS[0]}" == 0 ]] || return 1
+  # No note among the migraines shown (#67, D84): the same 900 migraines, but only the oldest 100 have a note. The table
+  # is still shortened, none of its migraines has a note, so the notes section says how many migraines it is from, over
+  # an empty table. The check holds only while the table shows at most 800 rows; a larger cap is reported, not passed.
+  seed_import report-heavy-old-notes Replace || return 1
+  run_flow_env report-make "PERIOD=12 months" NOTES=true || return 1
+  pull_report "$out/report-heavy-old-notes.pdf" || return 1
+  python3 -I "$ROOT/qa/report_pdf.py" "$out/report-heavy-old-notes.pdf" --pages-at-most 50 \
+    --every-page "Patient-entered data. Not a diagnosis." --absent "HEAVY-" | sed 's/^/    old notes: /'
+  [[ "${PIPESTATUS[0]}" == 0 ]] || return 1
+  pdftotext -layout "$out/report-heavy-old-notes.pdf" "$out/report-heavy-old-notes.txt" || return 1
+  python3 -I -c "import re, sys
+text = re.sub(r'\s+', ' ', open(sys.argv[1], encoding='utf-8').read())
+rows = re.search(r'Showing the latest (\d+) of 900 migraines\.', text)
+notes = re.search(r'Notes from the latest (\d+) migraines\.', text)
+if not rows or not notes:
+    sys.exit('FAIL: the table or the notes do not say how many they show')
+n = int(rows.group(1))
+if n > 800:
+    sys.exit(f'FAIL: the table shows {n} rows, so it reaches the noted migraines; move the seed\'s notes further back')
+if int(notes.group(1)) != n:
+    sys.exit(f'FAIL: {n} rows, but the notes say {notes.group(1)}')
+print(f'old notes: the latest {n} of 900 migraines, \"Notes from the latest {n} migraines.\" and no note')" \
+    "$out/report-heavy-old-notes.txt" | sed 's/^/    /'
   [[ "${PIPESTATUS[0]}" == 0 ]] || return 1
 }
 
