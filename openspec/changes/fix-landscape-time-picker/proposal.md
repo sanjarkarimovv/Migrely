@@ -13,7 +13,9 @@ QA #79 (S2, accessibility) shows that no afternoon time can be picked in landsca
 
 - **Design system:** `MigrelyDateTimePicker` uses the vertical time picker in every orientation. Its column already
   scrolls, so in landscape the user scrolls to the buttons.
-- **Reminders:** the time dialog does the same, inside a scrolling column.
+- **Reminders:** the time dialog does the same. It becomes a dialog that scrolls as a whole, like the design system's
+  picker, in place of an `AlertDialog`. Inside an `AlertDialog`, only the text slot scrolled, and in landscape the
+  256 dp dial filled it, so drags turned the hand instead of scrolling (review finding).
 
 **Unchanged:**
 - portrait, which already used the vertical layout;
@@ -28,5 +30,6 @@ None changed. The fix makes the code meet the existing landscape and accessibili
 
 ## Impact
 
-- `:designsystem`: `MigrelyDateTimePicker.kt`.
+- `:designsystem`: `MigrelyDateTimePicker.kt`. It is used at seven places: add a past migraine (start and end), attack
+  details (start and end), a pain entry's time, attack mode and logging a medication.
 - `:features:reminders:ui`: `RemindersScreen.kt` (`TimeDialog`).

@@ -19,5 +19,5 @@ cursor SHALL stay as they were (BRD ATK-F5, EC-ATK-13).
 - **THEN** the note is unchanged, and no half of the emoji is stored
 
 #### Scenario: Pasting across the limit
-- **WHEN** the note has 995 characters and the user pastes "abc👍👍"
-- **THEN** "abc" is inserted, the note has 998 characters, and the cursor is after "abc"
+- **WHEN** the note has 996 characters and the user pastes "abc👍👍", where each "👍" takes two
+- **THEN** "abc" is inserted, the note has 999 characters, and the cursor is after "abc"

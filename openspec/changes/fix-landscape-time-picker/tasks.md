@@ -3,7 +3,7 @@
 ## 1. Fix
 
 - [x] 1.1 `MigrelyDateTimePicker`: `TimePickerLayoutType.Vertical`
-- [x] 1.2 Reminders `TimeDialog`: the same, in a scrolling column
+- [x] 1.2 Reminders `TimeDialog`: the same, in a dialog that scrolls as a whole (review finding)
 
 ## 2. Verify
 
@@ -13,4 +13,5 @@
   - "Add a past migraine" › Ended › Next shows every hour, the minutes and PM;
   - a 3:30 PM end can be picked and confirmed;
   - the same in "Log medication" and in the Reminders time;
-  - portrait looks as before.
+  - portrait looks as before;
+  - the Reminders time in a 24-hour locale in landscape, where the dial is widest.

@@ -12,10 +12,14 @@ the note field keeping `text.take(1000)` after every edit, which cuts from the e
 
 ## What Changes
 
-- **Design system:** a new `limitedEdit`, for text and for a field value with its cursor. An edit that fits, or that
-  shortens the text, is kept as typed. Otherwise only the inserted text that fits is kept, cut after a whole character
-  (`java.text.BreakIterator`, so emoji sequences stay whole). When nothing fits, the text and the cursor stay as they
-  were.
+- **Design system:** a new `limitedEdit`, for text and for a field value with its cursor.
+  - An edit that fits, or that shortens the text, is kept as typed.
+  - Otherwise only the inserted text that fits is kept, cut after a whole character (`java.text.BreakIterator`, so
+    emoji sequences stay whole).
+  - The field version takes the edit to start no later than the old cursor and to end at the new cursor. That
+    protects two cases: a paste starting like the text after the cursor is cut at its own end, and a keyboard
+    rewriting a word before the cursor never costs the end of the note.
+  - When nothing fits, the text and the cursor stay as they were.
 - **Attack details:** the note field keeps a field value with its cursor and limits each edit with `limitedEdit`. A
   reload or a merge of the note still replaces the text, and puts the cursor at the end.
 - **BRD** EC-ATK-13, and the attack-details "Note with a limit" requirement with three new scenarios.

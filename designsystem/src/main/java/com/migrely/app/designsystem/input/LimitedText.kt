@@ -23,9 +23,10 @@ fun limitedEdit(old: String, new: String, maxLength: Int): String {
 }
 
 /**
- * [limitedEdit] for a field that also keeps its cursor. The edit is taken to replace what lay between [old]'s
- * selection bounds, so a paste that happens to start like the text after the cursor is still cut at its own end. A
- * refused edit keeps [old] as it was, cursor included; a shortened one leaves the cursor right after what it inserted.
+ * [limitedEdit] for a field that also keeps its cursor. The edit starts no later than [old]'s cursor and ends at
+ * [new]'s, so a paste that happens to start like the text after the cursor is still cut at its own end, and a keyboard
+ * rewriting a word before the cursor never costs the end of the text. A refused edit keeps [old] as it was, cursor
+ * included; a shortened one leaves the cursor right after what it inserted.
  */
 fun limitedEdit(old: TextFieldValue, new: TextFieldValue, maxLength: Int): TextFieldValue {
     if (new.text.length <= maxLength || new.text.length <= old.text.length) return new
@@ -34,7 +35,7 @@ fun limitedEdit(old: TextFieldValue, new: TextFieldValue, maxLength: Int): TextF
         new = new.text,
         maxLength = maxLength,
         keptStartAtMost = old.selection.min,
-        keptEndAtMost = old.text.length - old.selection.max
+        keptEndAtMost = new.text.length - new.selection.max
     ) ?: return old
     return TextFieldValue(edit.text, TextRange(edit.cursor))
 }

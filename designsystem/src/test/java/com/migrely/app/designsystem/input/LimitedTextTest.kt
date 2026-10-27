@@ -3,6 +3,7 @@ package com.migrely.app.designsystem.input
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import org.junit.Assert.assertEquals
+import org.junit.Assume.assumeTrue
 import org.junit.Test
 
 private const val THUMBS_UP = "👍"
@@ -43,6 +44,8 @@ class LimitedTextTest {
 
     @Test
     fun `Given room for a whole emoji sequence then it is inserted, otherwise none of it`() {
+        // java.text.BreakIterator keeps emoji ZWJ sequences whole from JDK 20; Android's ICU always has.
+        assumeTrue((System.getProperty("java.specification.version")?.toIntOrNull() ?: 0) >= 20)
         val old = "a".repeat(2)
 
         assertEquals(old + FAMILY, limitedEdit(old = old, new = old + FAMILY, maxLength = 10))
@@ -99,6 +102,18 @@ class LimitedTextTest {
         assertEquals(
             TextFieldValue("abXYZcd", TextRange(5)),
             limitedEdit(old, pasted, maxLength = 7)
+        )
+    }
+
+    @Test
+    fun `Given a keyboard rewriting a word before the cursor then the end of the text stays`() {
+        // Review finding: a proofread of "teh" into "these" in a full note cost its last letter.
+        val old = TextFieldValue("teh" + "a".repeat(5) + "Z", TextRange(9))
+        val rewritten = TextFieldValue("these" + "a".repeat(5) + "Z", TextRange(5))
+
+        assertEquals(
+            TextFieldValue("thes" + "a".repeat(5) + "Z", TextRange(4)),
+            limitedEdit(old, rewritten, maxLength = 10)
         )
     }
 }
