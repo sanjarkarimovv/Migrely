@@ -17,6 +17,9 @@ import kotlinx.coroutines.flow.Flow
  * Attack queries. Every read except [deletedById] and [recentlyDeleted] skips deleted attacks
  * (`deleted_epoch_millis IS NOT NULL`), which wait for their undo window to pass before they are purged (BRD D23).
  */
+/** The clock tolerance of BRD EC-ATK-03: an ended attack may end up to this long after now. */
+private const val CLOCK_TOLERANCE_MILLIS = 5 * 60_000L
+
 @Suppress("TooManyFunctions")
 @Dao
 abstract class AttackDao {
@@ -264,14 +267,16 @@ abstract class AttackDao {
      *
      * An ended attack may end up to the clock tolerance after now, so the new start can fall inside it (QA #78). That
      * attack then ends at the new start, with its later pain entries moved there too, so the two only touch (BRD
-     * EC-ATK-05, EC-ATK-19).
+     * EC-ATK-05, EC-ATK-19). An end further away, which only a phone clock moved back can leave, is not touched: a
+     * silent cut of a real attack would be worse than an overlap the user can see and fix (EC-TIM-04).
      */
     @Transaction
     open fun startIfNoneInProgress(attack: AttackLocalModel): StartOutcome {
         val existing = inProgress()
         if (existing != null) return StartOutcome(existing, created = false)
-        movePointsOfAttacksRunningPast(attack.startEpochMillis)
-        endAttacksRunningPast(attack.startEpochMillis, attack.createdEpochMillis)
+        val latestEnd = attack.startEpochMillis + CLOCK_TOLERANCE_MILLIS
+        movePointsOfAttacksRunningPast(attack.startEpochMillis, latestEnd)
+        endAttacksRunningPast(attack.startEpochMillis, latestEnd, attack.createdEpochMillis)
         insertAttack(attack)
         return StartOutcome(AttackWithPointsLocalModel(attack, emptyList()), created = true)
     }
@@ -280,17 +285,21 @@ abstract class AttackDao {
         "UPDATE intensity_point SET at_epoch_millis = :startEpochMillis " +
             "WHERE at_epoch_millis > :startEpochMillis AND attack_id IN (SELECT id FROM attack " +
             "WHERE deleted_epoch_millis IS NULL AND start_epoch_millis < :startEpochMillis " +
-            "AND end_epoch_millis > :startEpochMillis)"
+            "AND end_epoch_millis > :startEpochMillis AND end_epoch_millis <= :latestEndEpochMillis)"
     )
-    abstract fun movePointsOfAttacksRunningPast(startEpochMillis: Long)
+    abstract fun movePointsOfAttacksRunningPast(startEpochMillis: Long, latestEndEpochMillis: Long)
 
     @Query(
         "UPDATE attack SET end_epoch_millis = :startEpochMillis, " +
             "updated_epoch_millis = :nowEpochMillis " +
             "WHERE deleted_epoch_millis IS NULL AND start_epoch_millis < :startEpochMillis " +
-            "AND end_epoch_millis > :startEpochMillis"
+            "AND end_epoch_millis > :startEpochMillis AND end_epoch_millis <= :latestEndEpochMillis"
     )
-    abstract fun endAttacksRunningPast(startEpochMillis: Long, nowEpochMillis: Long)
+    abstract fun endAttacksRunningPast(
+        startEpochMillis: Long,
+        latestEndEpochMillis: Long,
+        nowEpochMillis: Long
+    )
 
     /** Replaces the newest point of [attackId], or adds [point] when the attack has none yet. */
     @Transaction

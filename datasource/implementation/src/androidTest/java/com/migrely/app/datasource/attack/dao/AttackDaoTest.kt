@@ -186,6 +186,38 @@ class AttackDaoTest {
     }
 
     @Test
+    fun givenAttacksNotEndingWithinTheToleranceAfterTheStart_whenStarting_thenTheyStay() {
+        // Given: a deleted attack in its undo window, one wholly after the start, and one ending more than the
+        // 5-minute clock tolerance after the start (a phone clock moved back).
+        val start = 1_000_000L
+        val deleted = attack(id = "deleted", start = 1_000L, end = start + 60_000L)
+        classUnderTest.insertAttack(deleted.copy(deletedEpochMillis = start))
+        classUnderTest.insertAttack(
+            attack(id = "later", start = start + 30_000L, end = start + 90_000L)
+        )
+        classUnderTest.insertAttack(attack(id = "far", start = 2_000L, end = start + 6 * 60_000L))
+        listOf("deleted", "later", "far").forEach { id ->
+            classUnderTest.insertIntensityPoint(
+                IntensityPointLocalModel(attackId = id, atEpochMillis = start + 45_000L, value = 5)
+            )
+        }
+
+        // When
+        classUnderTest.startIfNoneInProgress(attack(id = "new", start = start, end = null))
+
+        // Then
+        assertEquals(start + 60_000L, classUnderTest.deletedById("deleted")!!.endEpochMillis)
+        assertEquals(start + 90_000L, classUnderTest.byId("later")!!.attack.endEpochMillis)
+        assertEquals(start + 6 * 60_000L, classUnderTest.byId("far")!!.attack.endEpochMillis)
+        assertEquals(
+            3,
+            count(
+                "SELECT COUNT(*) FROM intensity_point WHERE at_epoch_millis = ${start + 45_000L}"
+            )
+        )
+    }
+
+    @Test
     fun givenAnAttackInProgress_whenStartingAgain_thenNoEndMoves() {
         // Given
         classUnderTest.insertAttack(attack(id = "past", start = 1_000L, end = 5_000L))
