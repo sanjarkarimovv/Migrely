@@ -70,14 +70,14 @@
 | 5 | Device scenarios | ⏳ |
 | 6 | Random input (`qa/monkey.sh 20261024 5000`) | ⏳ |
 | 6a | Upgrade to 1.0.1 from build 4 (1.0.0); only closed testers had build 4 | ⏳ |
-| 7 | Permissions (`qa/permission_audit.sh`, debug and release APK) | ⏳ |
+| 7 | Permissions (`qa/permission_audit.sh`, debug and release APK) | ✅ The debug APK, the R8 APK and the bundle's universal APK each have the 5 permissions of 1.0.0, and none has INTERNET |
 | 8 | Open defects (`gh issue list --label qa --state open`) | ✅ The retests passed. #74 and #77–#81 are fixed in ed695424 and closed with PR #96, and no S1 or S2 is open. Still open, all for develop:
 <ul>
 <li>S3: #90 and #92;</li>
 <li>S4: #82, #83, #88 and #91.</li>
 </ul>#84, #87 and #89 are fixed on develop and closed. |
 | 9 | Coverage report (`qa/e2e_coverage.py --below 50 --register docs/qa/test-strategy.md`) | ✅ exit 0. 267 of 508 scenarios (53%); the register matches the flows |
-| 10 | R8: lines 3 and 7 on the universal APK of the upload-signed bundle | ⏳ |
+| 10 | R8: lines 3 and 7 on the universal APK of the upload-signed bundle | ✅ 22:33–23:19, not debuggable. Pass 2: 9 of 9. Pass 1: 41 of 43; the simulated-store flows need a debug build. Both failures were timing under load, and the app did the right thing:<ul><li>`move-start-rejected`: the start stayed and the message had gone. The tap took 7.5 s to settle, so the 8 s message ran out before the check;</li><li>`undo-window-passes`: as in line 3.</li></ul>Both flows were made load-proof: a tap that does not wait to settle, and the 20 s timeout pass. Each then passed 2 of 2 at load average 18–20, during the dev session's emulator walk. Line 7 on this APK: ✅ |
 | 11 | Play pre-launch report (closed testing track, ed695424) | ⏳ before Publish |
 | 12 | Internal testing with people, at least a week (BRD §14.1) | ⏳ the user's decision |
 

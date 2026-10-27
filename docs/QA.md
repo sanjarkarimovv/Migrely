@@ -223,8 +223,8 @@ results in the release PR.
 
 | # | Check | Command | Pass when |
 |---|---|---|---|
-| 1 | Build gate | `./gradlew assembleDebug test ktlintCheck detekt` | BUILD SUCCESSFUL |
-| 1a | Android Lint on the candidate (D204) | `./gradlew lint --continue` | no error; each warning with a user-visible effect has an issue or a line in the record |
+| 1 | Build gate, with Android Lint since D123 (develop 18b8b9b5) | `./gradlew assembleDebug test ktlintCheck detekt lint` | BUILD SUCCESSFUL: a Lint error fails it |
+| 1a | Lint's warnings (D204) | `app/build/reports/lint-results-debug.txt` from line 1. A candidate cut before D123 runs `./gradlew lint --continue` | each warning with a user-visible effect has an issue or a line in the record |
 | 1b | Instrumented tests on the candidate (D204) | `ANDROID_SERIAL=emulator-5580 ./gradlew connectedDebugAndroidTest --continue`, then `qa/reset_device.sh` | every test passes |
 | 2 | Smoke on Android 8.0 | `QA_SERIAL=emulator-5582 qa/maestro.sh --install --tags smoke` | every flow passes |
 | 2a | Split APKs from the candidate's bundle (D204) | `qa/split_apks.sh --smoke <aab> ru-26` (emulator-5582), then `he-36`, `uz-36` and `en-36` (emulator-5580) | `Split APKs passed` for each profile |
