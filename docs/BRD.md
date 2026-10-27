@@ -308,7 +308,7 @@ Boshqa davlatlarda narxni Play avtomatik konvertatsiya qiladi. Hindiston, Brazil
 | EC-ATK-10 | Ilova kiritish oʻrtasida yopildi (process death) | Har bir maydon darhol saqlangani uchun (ATK-F6) maʼlumot yoʻqolmaydi. Ochilmagan dialog holati tiklanmaydi | ✅ |
 | EC-ATK-11 | Foydalanuvchi oʻzi qoʻshgan trigger yoki belgini oʻchirdi | Tarixdagi yozuvlarda saqlanib qoladi (arxivlanadi), yangi tanlash roʻyxatida koʻrinmaydi | ✅ |
 | EC-ATK-12 | Oʻzi qoʻshadigan teglar chegarasi | Nom 1–40 belgi, takror nom (katta-kichik harf farqisiz) qoʻshilmaydi, har turdan koʻpi bilan 100 ta | ✅ |
-| EC-ATK-13 | Izoh 1 000 belgidan uzun | Kiritish 1 000 belgida toʻxtaydi, hisoblagich koʻrinadi | ✅ |
+| EC-ATK-13 | Izoh 1 000 belgidan uzun | Kiritish 1 000 belgida toʻxtaydi, hisoblagich koʻrinadi. Sigʻmaydigan tahrirdan faqat sigʻadigan butun belgilar qoʻshiladi: matnning boshqa joyidan hech narsa oʻchmaydi, emoji yarmidan boʻlinmaydi, hech narsa sigʻmasa matn oʻzgarmaydi va kursor joyida qoladi (QA #80, #81). Chegara hozircha UTF-16 birliklarida; hisoblagichni koʻrinadigan belgilar bilan sanash (QA #82) keyingi versiyada | ✅ |
 | EC-ATK-14 | Oʻchirilgan xurujni qaytarish | Faqat 5 soniyalik Undo. Keyin butunlay oʻchadi | ✅ |
 | EC-ATK-15 | Yangi yoki oʻzgartirilgan vaqt bir nechta xuruj bilan ustma-ust tushadi | Hammasi vaqtlari bilan sanab koʻrsatiladi. "Birlashtirish" ularning hammasini bitta xurujga qoʻshadi (D27) | ✅ |
 | EC-ATK-16 | Birlashtirilgan izohlar 1 000 belgidan oshadi | Izohlar vaqt tartibida boʻsh qator bilan ulanadi. Ulangan matn 1 000 belgida oxiridan kesiladi, yaʼni eng yangi izohlar oxiridan qisqaradi. Belgi yarmidan kesilmaydi, oxirida boʻsh qator qolmaydi. Yagona izoh oʻzgarmaydi (EC-ATK-13) | ✅ |
