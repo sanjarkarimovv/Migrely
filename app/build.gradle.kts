@@ -187,6 +187,8 @@ dependencies {
     implementation(projects.features.review.presentation)
     implementation(projects.features.review.domain)
     implementation(projects.features.review.data)
+    // Google's FakeReviewManager, for debug builds only (BRD D132).
+    debugImplementation(libs.play.review)
 }
 
 /**

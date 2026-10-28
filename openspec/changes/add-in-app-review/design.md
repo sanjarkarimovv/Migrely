@@ -109,7 +109,11 @@ context.
     (`@Singleton`) and the dependencies.
   - `AppNavHost` fills the slot.
   - `AppInfoDataSourceModule` passes the `ActivityManager`.
-  - Debug and release use the Play implementation.
+  - The datasource is bound per build type, as billing is, in `app/src/debug` and `app/src/release`:
+    - Debug builds pass Google's `FakeReviewManager`. It completes at once with no card, so the walk and QA check
+      the rules through the marks, as with billing's simulated store (D113). A debug build is never installed
+      from Play, so the real manager would show no card there anyway.
+    - Release builds always pass the real manager.
 
 ### D6. Privacy text
 
@@ -124,4 +128,4 @@ rating to Google under Google's terms; Migrely never sees it. Data safety does n
 | Play's quota hides the card, and a request is "spent" | Accepted: Play does not report display. 120 days later the app may ask again, at most 3 times |
 | The flow interrupts the paywall | The 3-day gap, and a paywall navigates home away, which cancels the settle wait |
 | `launchReviewFlow` never completes | A 10-minute timeout, then `Unavailable`; the attempt is spent for the process |
-| QA cannot see the card in a sideloaded build | The flow completes without a card. QA checks the marks in `migrely_preferences` with `run-as`. The real card can be seen on an internal-testing install |
+| QA cannot see the card in a debug build | Debug uses `FakeReviewManager`, so every launch completes and is marked: QA checks the marks in `migrely_preferences` with `run-as`. The real card can be seen on an internal-testing install of a release build |
