@@ -24,5 +24,5 @@ exported. A deletion stamped after now SHALL never be offered (BRD ATK-F7, EC-AT
 - **THEN** neither home nor History offers "Undo" for it, and the attack is gone for good
 
 #### Scenario: A real deletion after one stamped ahead
-- **WHEN** after that the user deletes another attack
-- **THEN** home offers "Undo" for that one
+- **WHEN** a deletion stamped three days ahead is still stored and the user deletes another attack
+- **THEN** home offers "Undo" for that one, and "Undo" restores it

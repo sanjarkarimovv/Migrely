@@ -19,8 +19,9 @@ class DeletionOfferTest {
     }
 
     @Test
-    fun `Given a deletion stamped after now, as after a clock set back, then it is not offered`() {
-        assertFalse(isFreshDeletion(deletedAtMillis = NOW + 1L, nowMillis = NOW))
+    fun `Given a deletion stamped ahead of the clock then only a moment ahead is offered`() {
+        assertTrue(isFreshDeletion(deletedAtMillis = NOW + 2_000L, nowMillis = NOW))
+        assertFalse(isFreshDeletion(deletedAtMillis = NOW + 2_001L, nowMillis = NOW))
         assertFalse(isFreshDeletion(deletedAtMillis = NOW + 60_000L, nowMillis = NOW))
         assertFalse(isFreshDeletion(deletedAtMillis = NOW + 3 * 86_400_000L, nowMillis = NOW))
     }

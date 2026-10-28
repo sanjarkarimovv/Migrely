@@ -17,11 +17,12 @@ every visit. It also found the cause at its root, in the datasource.
 
 - **Datasource:**
   - `AttackDao.recentlyDeleted(since, until)` looks only up to now plus a 2-second clock tolerance.
-  - `purgeDeletedOutside(cutoff, ahead)` also removes deletions stamped after that. They can never be offered, and the
-    user asked for them to go.
+  - `purgeDeletedOutside(cutoff, ahead)` also removes deletions stamped further ahead than the undo window (2 minutes).
+    They can never be offered, and the user asked for them to go. One only a little ahead, as after an automatic clock
+    correction of a few seconds, stays restorable, so an Undo already offered still works (review).
 - **UI:**
   - One rule for both screens, `isFreshDeletion` in the design system's `snackbar` package: a deletion is offered only
-    when its age is between 0 and `DELETION_OFFER_MAX_AGE_MILLIS` (30 s).
+    when it is at most 30 s old and at most 2 s ahead of the clock.
   - Home and History use it in place of their own copies.
 - **BRD:** EC-ATK-21.
 - **Spec:** `attack-details` › Delete with undo gets two scenarios.

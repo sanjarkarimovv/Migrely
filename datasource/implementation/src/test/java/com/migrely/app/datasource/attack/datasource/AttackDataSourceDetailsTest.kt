@@ -86,7 +86,7 @@ class AttackDataSourceDetailsTest {
         inOrder(attackDao) {
             verify(attackDao).purgeDeletedOutside(
                 NOW.toEpochMilli() - TWO_MINUTES,
-                NOW.toEpochMilli() + TWO_SECONDS
+                NOW.toEpochMilli() + TWO_MINUTES
             )
             verify(attackDao).softDelete("a", NOW.toEpochMilli())
         }
@@ -147,12 +147,12 @@ class AttackDataSourceDetailsTest {
     }
 
     @Test
-    fun `When purging expired deletions then removes the attacks deleted before the undo window`() {
+    fun `When purging expired deletions then removes those outside the undo window either way`() {
         classUnderTest.purgeExpiredDeletions()
 
         verify(attackDao).purgeDeletedOutside(
             NOW.toEpochMilli() - TWO_MINUTES,
-            NOW.toEpochMilli() + TWO_SECONDS
+            NOW.toEpochMilli() + TWO_MINUTES
         )
     }
 
@@ -161,7 +161,7 @@ class AttackDataSourceDetailsTest {
         whenever(
             attackDao.purgeDeletedOutside(
                 NOW.toEpochMilli() - TWO_MINUTES,
-                NOW.toEpochMilli() + TWO_SECONDS
+                NOW.toEpochMilli() + TWO_MINUTES
             )
         ).doThrow(SQLiteFullException())
 
@@ -175,7 +175,7 @@ class AttackDataSourceDetailsTest {
         whenever(
             attackDao.purgeDeletedOutside(
                 NOW.toEpochMilli() - TWO_MINUTES,
-                NOW.toEpochMilli() + TWO_SECONDS
+                NOW.toEpochMilli() + TWO_MINUTES
             )
         ).doThrow(SQLiteFullException())
 

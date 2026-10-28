@@ -5,12 +5,16 @@
 - [x] 1.1 `DeletionOfferTest`:
   - a deletion just made, or 30 s old, is offered;
   - one more than 30 s old is not;
-  - one stamped 1 ms or more after now is not.
+  - one up to 2 s ahead of now, as after an automatic correction, is;
+  - one further ahead is not.
   The future cases failed with the old rule.
 - [x] 1.2 `AttackDaoDetailsTest`:
   - a deletion stamped ahead does not hide a newer real one;
-  - one stamped ahead is purged for good.
-- [x] 1.3 `AttackDataSourceDetailsTest`: the recent deletion and the purge use now plus the 2 s tolerance
+  - one stamped ahead is purged for good;
+  - the window's edges: live attacks and deletions inside it stay, and only those outside go.
+- [x] 1.3 `AttackDataSourceDetailsTest`:
+  - the recent deletion is read up to now plus the 2 s tolerance;
+  - the purge keeps the undo window on both sides of now, so a correction of a few seconds never breaks an Undo already offered (review).
 
 ## 2. Fix
 
@@ -31,4 +35,4 @@
 ## 4. Review
 
 - [x] 4.1 Independent review (`superpowers:code-reviewer`) of 3b442503. Its Important findings (History, the datasource) are fixed here.
-- [ ] 4.2 Review of the follow-up
+- [x] 4.2 Review of the follow-up (e8b3226e). Its Important finding (the ahead purge) and its minors are fixed.

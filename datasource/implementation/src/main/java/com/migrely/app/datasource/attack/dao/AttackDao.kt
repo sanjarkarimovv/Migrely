@@ -195,8 +195,8 @@ abstract class AttackDao {
 
     /**
      * Removes deleted attacks for good: those deleted before [cutoffEpochMillis], and those stamped
-     * after [aheadEpochMillis], as after a clock set back, which could never be offered for undo
-     * (#112). Their points, tags and intakes go with them (foreign keys cascade).
+     * after [aheadEpochMillis], as after a clock set back by days (#112). Their points, tags and
+     * intakes go with them (foreign keys cascade). Attacks that are not deleted are never touched.
      */
     @Query(
         "DELETE FROM attack WHERE deleted_epoch_millis IS NOT NULL " +
