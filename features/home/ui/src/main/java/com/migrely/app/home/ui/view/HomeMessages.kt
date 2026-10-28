@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.Dp
 import com.migrely.app.designsystem.snackbar.MigrelySnackbar
 import com.migrely.app.designsystem.snackbar.MigrelySnackbarHost
 import com.migrely.app.designsystem.snackbar.SnackbarAction
+import com.migrely.app.designsystem.snackbar.isFreshDeletion
 import com.migrely.app.home.ui.R
 import com.migrely.app.home.ui.mapper.HomeMessageBehaviourUiMapper
 import com.migrely.app.home.ui.mapper.TimeUiFormatter
@@ -31,7 +32,6 @@ import com.migrely.app.home.ui.notification.HomeMessagePresenter
 import java.time.ZoneId
 import kotlinx.coroutines.delay
 
-private const val DELETION_OFFER_MAX_AGE_MILLIS = 30_000L
 private const val OFFERED_DELETIONS_KEPT = 10
 
 /**
@@ -219,11 +219,3 @@ private fun messageText(message: HomeMessageUiModel, timeUiFormatter: TimeUiForm
         HomeMessageUiModel.EndTimeOutOfRange -> stringResource(R.string.message_end_out_of_range)
         HomeMessageUiModel.SomethingWentWrong -> stringResource(R.string.home_message_generic)
     }
-
-/**
- * Whether a deletion made at [deletedAtMillis] may still be offered for undo at [nowMillis]: at most 30 s old, and not
- * stamped after now. After the clock was set back, a deletion's age reads negative, and it was offered at every start
- * (QA #112).
- */
-internal fun isFreshDeletion(deletedAtMillis: Long, nowMillis: Long): Boolean =
-    nowMillis - deletedAtMillis in 0..DELETION_OFFER_MAX_AGE_MILLIS

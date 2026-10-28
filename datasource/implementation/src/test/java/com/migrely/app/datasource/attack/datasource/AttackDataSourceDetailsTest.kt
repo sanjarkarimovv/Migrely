@@ -28,6 +28,7 @@ import org.mockito.kotlin.whenever
 
 private val NOW: Instant = Instant.parse("2026-10-23T09:00:00Z")
 private const val TWO_MINUTES = 120_000L
+private const val TWO_SECONDS = 2_000L
 
 /** The functions added for the details screen (change add-attack-details). */
 class AttackDataSourceDetailsTest {
@@ -83,7 +84,10 @@ class AttackDataSourceDetailsTest {
         classUnderTest.softDelete("a")
 
         inOrder(attackDao) {
-            verify(attackDao).purgeDeletedBefore(NOW.toEpochMilli() - TWO_MINUTES)
+            verify(attackDao).purgeDeletedOutside(
+                NOW.toEpochMilli() - TWO_MINUTES,
+                NOW.toEpochMilli() + TWO_SECONDS
+            )
             verify(attackDao).softDelete("a", NOW.toEpochMilli())
         }
     }
@@ -101,7 +105,12 @@ class AttackDataSourceDetailsTest {
             updatedEpochMillis = 1L,
             deletedEpochMillis = NOW.toEpochMilli() - 1_000L
         )
-        given(attackDao.recentlyDeleted(NOW.toEpochMilli() - TWO_MINUTES)).willReturn(local)
+        given(
+            attackDao.recentlyDeleted(
+                NOW.toEpochMilli() - TWO_MINUTES,
+                NOW.toEpochMilli() + TWO_SECONDS
+            )
+        ).willReturn(local)
 
         val actual = classUnderTest.recentlyDeleted(Instant.EPOCH)
 
@@ -141,13 +150,19 @@ class AttackDataSourceDetailsTest {
     fun `When purging expired deletions then removes the attacks deleted before the undo window`() {
         classUnderTest.purgeExpiredDeletions()
 
-        verify(attackDao).purgeDeletedBefore(NOW.toEpochMilli() - TWO_MINUTES)
+        verify(attackDao).purgeDeletedOutside(
+            NOW.toEpochMilli() - TWO_MINUTES,
+            NOW.toEpochMilli() + TWO_SECONDS
+        )
     }
 
     @Test
     fun `Given storage is full when purging expired deletions then storage full`() {
         whenever(
-            attackDao.purgeDeletedBefore(NOW.toEpochMilli() - TWO_MINUTES)
+            attackDao.purgeDeletedOutside(
+                NOW.toEpochMilli() - TWO_MINUTES,
+                NOW.toEpochMilli() + TWO_SECONDS
+            )
         ).doThrow(SQLiteFullException())
 
         assertThrows(StorageFullDataException::class.java) {
@@ -158,7 +173,10 @@ class AttackDataSourceDetailsTest {
     @Test
     fun `Given the purge fails when asking for a recent deletion then still answers`() {
         whenever(
-            attackDao.purgeDeletedBefore(NOW.toEpochMilli() - TWO_MINUTES)
+            attackDao.purgeDeletedOutside(
+                NOW.toEpochMilli() - TWO_MINUTES,
+                NOW.toEpochMilli() + TWO_SECONDS
+            )
         ).doThrow(SQLiteFullException())
 
         assertEquals(null, classUnderTest.recentlyDeleted(Instant.EPOCH))

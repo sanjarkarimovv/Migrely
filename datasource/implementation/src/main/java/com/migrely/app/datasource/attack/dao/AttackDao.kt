@@ -181,18 +181,29 @@ abstract class AttackDao {
     )
     abstract fun clearDeleted(attackId: String, nowEpochMillis: Long)
 
+    /**
+     * The latest deletion stamped from [sinceEpochMillis] to [untilEpochMillis], so one stamped
+     * ahead of the clock never hides a real one (#112).
+     */
     @Query(
         "SELECT * FROM attack WHERE deleted_epoch_millis IS NOT NULL " +
             "AND deleted_epoch_millis >= :sinceEpochMillis " +
+            "AND deleted_epoch_millis <= :untilEpochMillis " +
             "ORDER BY deleted_epoch_millis DESC LIMIT 1"
     )
-    abstract fun recentlyDeleted(sinceEpochMillis: Long): AttackLocalModel?
+    abstract fun recentlyDeleted(sinceEpochMillis: Long, untilEpochMillis: Long): AttackLocalModel?
 
-    /** Removes deleted attacks for good; their points, tags and intakes go with them (foreign keys cascade). */
+    /**
+     * Removes deleted attacks for good: those deleted before [cutoffEpochMillis], and those stamped
+     * after [aheadEpochMillis], as after a clock set back, which could never be offered for undo
+     * (#112). Their points, tags and intakes go with them (foreign keys cascade).
+     */
     @Query(
-        "DELETE FROM attack WHERE deleted_epoch_millis IS NOT NULL AND deleted_epoch_millis < :cutoffEpochMillis"
+        "DELETE FROM attack WHERE deleted_epoch_millis IS NOT NULL " +
+            "AND (deleted_epoch_millis < :cutoffEpochMillis " +
+            "OR deleted_epoch_millis > :aheadEpochMillis)"
     )
-    abstract fun purgeDeletedBefore(cutoffEpochMillis: Long)
+    abstract fun purgeDeletedOutside(cutoffEpochMillis: Long, aheadEpochMillis: Long)
 
     @Query(
         "UPDATE attack SET long_check_confirmed_epoch_millis = :confirmedEpochMillis, " +

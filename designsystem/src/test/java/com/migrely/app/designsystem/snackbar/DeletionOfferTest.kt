@@ -1,4 +1,4 @@
-package com.migrely.app.home.ui.view
+package com.migrely.app.designsystem.snackbar
 
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -20,6 +20,7 @@ class DeletionOfferTest {
 
     @Test
     fun `Given a deletion stamped after now, as after a clock set back, then it is not offered`() {
+        assertFalse(isFreshDeletion(deletedAtMillis = NOW + 1L, nowMillis = NOW))
         assertFalse(isFreshDeletion(deletedAtMillis = NOW + 60_000L, nowMillis = NOW))
         assertFalse(isFreshDeletion(deletedAtMillis = NOW + 3 * 86_400_000L, nowMillis = NOW))
     }
