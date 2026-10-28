@@ -26,21 +26,17 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.DatePickerDialog
-import androidx.compose.material3.DateRangePicker
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.rememberDateRangePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -71,6 +67,8 @@ import androidx.navigation.NavController
 import com.migrely.app.architecture.ui.view.ScreenEnterObserver
 import com.migrely.app.designsystem.icon.MigrelyIcons
 import com.migrely.app.designsystem.motion.rememberReduceMotion
+import com.migrely.app.designsystem.picker.DateRangePickerLabels
+import com.migrely.app.designsystem.picker.MigrelyDateRangePicker
 import com.migrely.app.designsystem.snackbar.MigrelySnackbar
 import com.migrely.app.designsystem.snackbar.MigrelySnackbarHost
 import com.migrely.app.designsystem.snackbar.messageTimeoutMillis
@@ -84,7 +82,6 @@ import com.migrely.app.report.ui.model.ReportOptionsUiModel
 import com.migrely.app.report.ui.model.ReportPeriodUiModel
 import com.migrely.app.report.ui.model.ReportViewStateUiModel
 import java.time.LocalDate
-import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import kotlinx.coroutines.delay
@@ -387,8 +384,7 @@ private fun NotesRow(checked: Boolean, enabled: Boolean, onChange: (Boolean) -> 
     }
 }
 
-/** A date range up to today; the picker works in UTC midnights. */
-@OptIn(ExperimentalMaterial3Api::class)
+/** A date range up to today, full screen (BRD D127). */
 @Composable
 private fun RangeDialog(
     current: ReportPeriodUiModel.Range?,
@@ -396,58 +392,22 @@ private fun RangeDialog(
     onDismiss: () -> Unit
 ) {
     val today = LocalDate.now()
-    val state = rememberDateRangePickerState(
+    MigrelyDateRangePicker(
         // The range chosen before, so it can be changed rather than chosen again (walk B5).
-        initialSelectedStartDateMillis = current?.fromEpochDay?.let(::utcMillisOf),
-        initialSelectedEndDateMillis = current?.toEpochDay?.let(::utcMillisOf),
+        initialStart = current?.fromEpochDay?.let(LocalDate::ofEpochDay),
+        initialEnd = current?.toEpochDay?.let(LocalDate::ofEpochDay),
+        lastDate = today,
         // A report covers at most 24 months (BRD D84), so the picker offers this year and the two before.
         yearRange = (today.year - 2)..today.year,
-        selectableDates = object : SelectableDates {
-            override fun isSelectableDate(utcTimeMillis: Long) =
-                utcTimeMillis <= today.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
-
-            override fun isSelectableYear(year: Int) = year <= today.year
-        }
+        labels = DateRangePickerLabels(
+            title = stringResource(R.string.report_range_title),
+            confirm = stringResource(R.string.report_range_confirm),
+            cancel = stringResource(R.string.report_range_cancel)
+        ),
+        onConfirm = { start, end -> onPick(start.toEpochDay(), end.toEpochDay()) },
+        onDismiss = onDismiss
     )
-    val from = state.selectedStartDateMillis
-    val to = state.selectedEndDateMillis ?: from
-    DatePickerDialog(
-        onDismissRequest = onDismiss,
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    if (from != null &&
-                        to != null
-                    ) {
-                        onPick(epochDayOf(from), epochDayOf(to))
-                    }
-                },
-                enabled = from != null
-            ) {
-                Text(stringResource(R.string.report_range_confirm))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.report_range_cancel)) }
-        }
-    ) {
-        DateRangePicker(
-            state = state,
-            title = {
-                Text(
-                    stringResource(R.string.report_range_title),
-                    modifier = Modifier.padding(16.dp)
-                )
-            }
-        )
-    }
 }
-
-private const val DAY_MILLIS = 86_400_000L
-
-private fun epochDayOf(utcMillis: Long) = Math.floorDiv(utcMillis, DAY_MILLIS)
-
-private fun utcMillisOf(epochDay: Long) = epochDay * DAY_MILLIS
 
 /** The PDF through the share sheet, readable by the chosen app only. False when no app can take it. */
 private fun share(context: Context, uri: String, title: String): Boolean {

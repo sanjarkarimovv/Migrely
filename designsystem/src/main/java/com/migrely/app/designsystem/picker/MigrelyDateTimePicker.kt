@@ -217,7 +217,7 @@ private fun TimeStep(
     }
 }
 
-private fun LocalDate.utcMidnight(): Long = atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+internal fun LocalDate.utcMidnight(): Long = atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
 
 private fun LocalDate.coerceIn(first: LocalDate, last: LocalDate): LocalDate = when {
     isBefore(first) -> first
