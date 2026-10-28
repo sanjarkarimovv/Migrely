@@ -1,5 +1,6 @@
 package com.migrely.app.subscription.ui.view
 
+import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -60,9 +61,15 @@ fun PremiumSectionDependencies.PremiumSection(
     modifier: Modifier = Modifier
 ) {
     ViewModelObserver(navController)
+    // The status stays while Google Play is asked again, so the section does not jump.
+    var shown by rememberSaveable { mutableStateOf<PremiumSectionUiModel?>(null) }
+    val activity = LocalActivity.current
     LifecycleResumeEffect(premiumSectionViewModel) {
         premiumSectionViewModel.onEnter()
-        onPauseOrDispose { }
+        onPauseOrDispose {
+            // A restore's note stays across a rotation (QA #106), but not once Settings is left.
+            if (activity?.isChangingConfigurations != true) shown = shown?.copy(note = null)
+        }
     }
     // A purchase change Google Play reported while Settings shows is shown at once (review I1).
     LaunchedEffect(purchaseUpdates) {
@@ -71,12 +78,7 @@ fun PremiumSectionDependencies.PremiumSection(
     val viewState by premiumSectionViewModel.viewState
         .collectAsState(PremiumSectionViewState.Loading)
     val uiState = premiumSectionViewStateUiMapper.toUi(viewState)
-    // The status stays while Google Play is asked again, so the section does not jump, and a
-    // restore's note stays across a rotation (QA #106).
-    var shown by rememberSaveable { mutableStateOf<PremiumSectionUiModel?>(null) }
-    (uiState as? PremiumSectionViewStateUiModel.Ready)?.let {
-        shown = premiumSectionShownResolver.resolve(shown, it.section)
-    }
+    shown = premiumSectionShownResolver.resolve(shown, uiState)
     PremiumSectionContents(
         section = shown,
         checking = uiState == PremiumSectionViewStateUiModel.Checking,
