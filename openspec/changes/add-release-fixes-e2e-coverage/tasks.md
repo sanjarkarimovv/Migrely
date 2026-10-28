@@ -16,9 +16,9 @@
   (Ctrl-C while Chrome is disabled), `pm list packages -d` does not list Chrome
 - [x] 2.2 `.maestro/day-markers/track-periods-off-marks.yaml` (design D3). Verify: passes 3 times; it fails when step 3's
   check is pointed at a day that keeps its mark (mutation of the flow, reverted)
-- [ ] 2.3 Seed `report-heavy-old-notes` in `qa/seed_backup.py`, with its self-test, and its check in `report_heavy`
+- [x] 2.3 Seed `report-heavy-old-notes` in `qa/seed_backup.py`, with its self-test, and its check in `report_heavy`
   (design D4). Verify: the self-test recounts it; `report_heavy` passes twice
-- [ ] 2.4 "Google Play offers no products" in a new scenario `premium_no_products`, as D122 is on develop (PR #85,
+- [x] 2.4 "Google Play offers no products" in a new scenario `premium_no_products`, as D122 is on develop (PR #85,
   d156579; design D5). Verify: passes twice on a develop debug build
 
 ## 3. Accessibility audit on every screen (D203)
@@ -67,7 +67,7 @@
   - line 11 is the pre-launch report of 1.0.1's closed track, read before the build is promoted to production;
   - line 12 records the user's decision.
   Verify: both lines in the record
-- [ ] 7.4 The verdict, "Go, with these risks open" or No-Go with the failing line and its issue, sent to the dev session
+- [x] 7.4 The verdict, "Go, with these risks open" or No-Go with the failing line and its issue, sent to the dev session
   before the hotfix is finished. After the tag, `git diff <candidate> v1.0.1` is empty (D125). Verify: the record's
   decision, and the diff
 
@@ -78,11 +78,11 @@
   - `privacy_link` and the new seed;
   - §5's new lines (lint, instrumented, split APKs) and the residual-risk rule (D204).
   Verify: `grep -n "D203\|D204\|privacy_link\|report-heavy-old-notes\|split_apks" docs/QA.md`
-- [ ] 6.2 Coverage, `qa/resource_names.py`, `openspec validate --strict`, smoke, and every new flow and scenario as its
+- [x] 6.2 Coverage, `qa/resource_names.py`, `openspec validate --strict`, smoke, and every new flow and scenario as its
   task says. Verify: the verification record below
-- [ ] 6.3 Review (`superpowers:code-reviewer`), with every finding fixed or answered. Verify: a re-run of what each fix
+- [x] 6.3 Review (`superpowers:code-reviewer`), with every finding fixed or answered. Verify: a re-run of what each fix
   touched
-- [ ] 6.4 Gate `./gradlew assembleDebug assembleRelease test ktlintCheck detekt --no-daemon` after merging develop.
+- [x] 6.4 Gate `./gradlew assembleDebug assembleRelease test ktlintCheck detekt --no-daemon` after merging develop.
   Verify: exit 0
 
 ## Verification record
@@ -174,4 +174,62 @@ from build 4. The record has "What these checks do not prove", and QA's verdict 
 open".
 - **The monkey:** `qa/monkey.sh` now turns Do Not Disturb off through `cmd notification set_dnd off`. A plain
   `settings put` was written back. Its second run left `zen_mode` at 0.
+
+**2.3 and 2.4 on develop** (the QA branch with develop merged up to #100, 396e602d; its debug APK; emulator-5580,
+2026-10-28, host load average 9–13):
+- **2.3:** `python3 -I qa/seed_backup.py --self-test` recounts `report-heavy-old-notes` on 5 dates, with 4 spec values
+  each. `report_heavy` passed 3 times:
+  - once in 1.0.1's line 5;
+  - twice on develop (06:01–06:08 and 06:08–06:16).
+  Each time: "the latest 382 of 900 migraines", "Notes from the latest 382 migraines." and no HEAVY- note.
+- **2.4:** `premium_no_products` passed in the same 2 runs. Every point of design D5 held:
+  - no paywall after onboarding, nor at the 5th migraine 8 days on;
+  - with products, the patterns paywall shows in that same state;
+  - Doctor report shows the region line, with no buy button and no price;
+  - Premium bought before is still "Premium · monthly" 20 minutes on.
+  On 1.0.1 it fails, as expected: D122 is on develop only.
+
+**6.2:**
+- **Coverage:** `qa/e2e_coverage.py --below 50 --register docs/qa/test-strategy.md` exits 0. Develop brought the total
+  to 520 scenarios, so the register now says 267 of 520 (51%). Its attack-logging, attack-details, past-attacks and
+  data-backup rows follow.
+- **Resources:** `qa/resource_names.py` passed with 706 names.
+- **Specs:** `openspec validate --all --strict` gave 28 of 28.
+- **Smoke on develop:** 14 of 14, then 3 of 3 (06:16–06:27).
+- **The new flows and scenarios:** each passed as its task says. See 2.1–2.4, 3.1–3.3 and 7.2 above.
+
+**6.4:** after merging develop, `./gradlew assembleDebug assembleRelease test ktlintCheck detekt lint --no-daemon`
+exited 0 (05:58–06:01). Lint has been in the gate since D123.
+
+**7.4:**
+- **The verdict:** "Go, with these risks open", on lines 1–10. It was sent to the dev session at 05:55 and recorded
+  under Decision in `docs/qa/go-no-go-1.0.1.md`.
+- **The timing:** the hotfix had been finished before it, on the user's decision of 2026-10-27 at 20:30. That
+  decision is recorded there too.
+- **The diff:** `git diff ed695424 v1.0.1` is empty. The two trees are the same, 2e546e95.
+
+**6.3:** the review (`superpowers:code-reviewer`) covered `git diff 152ad9ed HEAD`, read-only. It confirmed:
+- the `${DAY}` cause, read from Maestro 2.11's `Env` regex;
+- days 15–21, which are in row 3 or 4 for any first weekday;
+- the new scrolls, which do nothing when the element is already visible, for all callers.
+
+Its findings, and what was done:
+1. **Line 1a read only the app's lint report;** each module writes its own. `docs/QA.md` now reads every module's report.
+   1.0.1's "56 warnings" was already all of them: the app's 47 and 9 from 5 UI modules.
+2. **`cmd notification set_dnd` exists only from API 30.** A plain put of `airplane_mode_on` also leaves the radios off.
+   - `qa/monkey.sh` uses the API 30 commands where they exist.
+   - It reads both values again 1 s later and warns if they reverted.
+   - `QA_BASELINE` now has `zen_mode=0` and `airplane_mode_on=0`, and `qa/reset_device.sh` turns both off.
+   - **Re-run:** reset on emulator-5580, then the monkey on develop (06:27): 0 crashes, 0 ANRs. Do Not Disturb went
+     back to 0 with no warning, and airplane mode stayed disabled.
+3. **`.maestro/README.md` still said a flow times the 5 s window.** It now says no flow does: the length was measured by
+   hand, `message_duration` times a message, and on Android 8.0 `undo-window-passes` can still fail under load.
+4. **The landscape swipe at 65% had about 9 dp to the dial.** It runs at 66%, the midpoint measured on
+   Migrely_QA_API_36 (dial 1536 px, dialog 1620 px). **Re-run:** `insights` passed twice in all 3 configurations on
+   develop (06:30–06:50).
+5. **The subscription row counted 20/21 before 2.4 had run.** Answered: 2.4 has now passed twice on develop, so the row
+   holds.
+6. **A tag with a script turns into an ab_CD form that Custom Locale rejects.** `qa_set_system_locale` now refuses
+   anything but language-COUNTRY: `uz-Latn-UZ` gets "is not a language-COUNTRY tag" and exit 1, while ru-RU, en-US,
+   he-IL and uz-UZ pass.
 

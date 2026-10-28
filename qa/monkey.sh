@@ -34,18 +34,29 @@ WATCHED=("system user_rotation" "system accelerometer_rotation" "system font_sca
   "global airplane_mode_on" "global zen_mode")
 declare -a BEFORE
 for i in "${!WATCHED[@]}"; do BEFORE[$i]="$(adbq shell settings get ${WATCHED[$i]} | tr -d '\r')"; done
+SDK="$(adbq shell getprop ro.build.version.sdk | tr -d '\r')"
 restore() {
   set +e
   adbq shell cmd statusbar collapse >/dev/null 2>&1
   for i in "${!WATCHED[@]}"; do
     now="$(adbq shell settings get ${WATCHED[$i]} | tr -d '\r')"
     if [[ "$now" != "${BEFORE[$i]}" ]]; then
-      echo "monkey changed ${WATCHED[$i]}: ${BEFORE[$i]} -> $now (restored)"
-      # The notification service owns Do Not Disturb and writes zen_mode back over a plain settings put.
-      if [[ "${WATCHED[$i]}" == "global zen_mode" && "${BEFORE[$i]}" == "0" ]]; then
+      echo "monkey changed ${WATCHED[$i]}: ${BEFORE[$i]} -> $now; restoring"
+      # The notification service owns Do Not Disturb and writes zen_mode back over a plain settings put, and a plain
+      # put of airplane_mode_on leaves the radios off. API 30 added shell commands for both; older versions only have
+      # the setting, so the value is read again below.
+      if [[ "${WATCHED[$i]}" == "global zen_mode" && "${BEFORE[$i]}" == "0" && "$SDK" -ge 30 ]]; then
         adbq shell cmd notification set_dnd off >/dev/null 2>&1
+      elif [[ "${WATCHED[$i]}" == "global airplane_mode_on" && "${BEFORE[$i]}" == "0" && "$SDK" -ge 30 ]]; then
+        adbq shell cmd connectivity airplane-mode disable >/dev/null 2>&1
       fi
       qa_restore_setting ${WATCHED[$i]} "${BEFORE[$i]}"
+      if [[ "${WATCHED[$i]}" == "global zen_mode" || "${WATCHED[$i]}" == "global airplane_mode_on" ]]; then
+        sleep 1 # the system service may write its own value back a moment later
+        now="$(adbq shell settings get ${WATCHED[$i]} | tr -d '\r')"
+        [[ "$now" == "${BEFORE[$i]}" ]] ||
+          echo "WARNING: ${WATCHED[$i]} is $now again, not ${BEFORE[$i]}; turn it off in the shade by hand." >&2
+      fi
     fi
   done
   qa_unlock_device

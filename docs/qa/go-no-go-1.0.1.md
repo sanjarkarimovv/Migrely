@@ -83,7 +83,7 @@
 <ul>
 <li>S3: #92, and #101 (found in line 4 at 05:00);</li>
 <li>S4: #82, #83, #88 and #91.</li>
-</ul>#84, #87, #89 and #90 are fixed on develop and closed. #91 and #92 came from the dev session's review and have no labels. |
+</ul>#84, #87, #89 and #90 are fixed on develop and closed. #91 and #92 came from the dev session's review; the dev session labelled them at 05:59 (#92 S3 with accessibility, #91 S4). |
 | 9 | Coverage report (`qa/e2e_coverage.py --below 50 --register docs/qa/test-strategy.md`) | ✅ exit 0. 267 of 508 scenarios (53%); the register matches the flows |
 | 10 | R8: lines 3 and 7 on the universal APK of the upload-signed bundle | ✅ 22:33–23:19, not debuggable. Pass 2: 9 of 9. Pass 1: 41 of 43; the simulated-store flows need a debug build. Both failures were timing under load, and the app did the right thing:<ul><li>`move-start-rejected`: the start stayed and the message had gone. The tap took 7.5 s to settle, so the 8 s message ran out before the check;</li><li>`undo-window-passes`: as in line 3.</li></ul>Both flows were made load-proof: a tap that does not wait to settle, and the 20 s timeout pass. Each then passed 2 of 2 at load average 18–20, during the dev session's emulator walk. Line 7 on this APK: ✅ |
 | 11 | Play pre-launch report (closed testing track, ed695424) | ⏳ before Publish |

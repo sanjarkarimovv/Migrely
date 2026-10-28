@@ -15,6 +15,11 @@ esac
 source "$ROOT/qa/lib.sh"
 qa_lock_device
 trap qa_unlock_device EXIT
+# The system services own Do Not Disturb and airplane mode and write a plain settings put back; API 30 added commands.
+if [[ "$(qa_adb shell getprop ro.build.version.sdk | tr -d '\r')" -ge 30 ]]; then
+  qa_adb shell cmd notification set_dnd off >/dev/null 2>&1 || true
+  qa_adb shell cmd connectivity airplane-mode disable >/dev/null 2>&1 || true
+fi
 for entry in "${QA_BASELINE[@]}"; do
   key="${entry%=*}"
   qa_restore_setting ${key% *} ${key#* } "${entry##*=}"
