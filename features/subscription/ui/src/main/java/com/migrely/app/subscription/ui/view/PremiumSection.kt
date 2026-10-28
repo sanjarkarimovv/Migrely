@@ -71,9 +71,12 @@ fun PremiumSectionDependencies.PremiumSection(
     val viewState by premiumSectionViewModel.viewState
         .collectAsState(PremiumSectionViewState.Loading)
     val uiState = premiumSectionViewStateUiMapper.toUi(viewState)
-    // The status stays while Google Play is asked again, so the section does not jump.
+    // The status stays while Google Play is asked again, so the section does not jump, and a
+    // restore's note stays across a rotation (QA #106).
     var shown by rememberSaveable { mutableStateOf<PremiumSectionUiModel?>(null) }
-    (uiState as? PremiumSectionViewStateUiModel.Ready)?.let { shown = it.section }
+    (uiState as? PremiumSectionViewStateUiModel.Ready)?.let {
+        shown = premiumSectionShownResolver.resolve(shown, it.section)
+    }
     PremiumSectionContents(
         section = shown,
         checking = uiState == PremiumSectionViewStateUiModel.Checking,
