@@ -42,14 +42,20 @@ import java.time.ZoneId
 import kotlinx.coroutines.CoroutineStart.UNDISPATCHED
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.mockito.BDDMockito.willAnswer
 import org.mockito.Mock
 import org.mockito.junit.MockitoJUnitRunner
+import org.mockito.kotlin.any
+import org.mockito.kotlin.eq
 
 private val START: Instant = Instant.parse("2026-10-23T09:00:00Z")
 private val ATTACK = AttackDomainModel(
@@ -363,6 +369,60 @@ class HomeViewModelTest :
         classUnderTest.onAddPastAttackAction()
 
         assertEquals(HomePresentationNavigationEvent.OnAddPastAttack, event.await())
+    }
+
+    @Test
+    fun `Given two reads of today when the older one answers last then the newer one stays`() =
+        runTest {
+            val answers = mutableListOf<(TodayResultDomainModel) -> Unit>()
+            willAnswer { invocation ->
+                answers += invocation.getArgument<(TodayResultDomainModel) -> Unit>(1)
+            }.given(useCaseExecutor).execute(
+                useCase = eq(getTodayUseCase),
+                onResult = any(),
+                onException = any()
+            )
+            val states = mutableListOf<HomeViewState>()
+            val collecting =
+                launch(start = UNDISPATCHED) { classUnderTest.viewState.toList(states) }
+
+            // The resume's read, then the start's read after the attack is stored (#116).
+            classUnderTest.onResume()
+            classUnderTest.onDateChanged()
+            answers[1](
+                TodayResultDomainModel.Loaded(
+                    TodayDomainModel.AttackInProgress(ATTACK, longAttackCheckDue = false)
+                )
+            )
+            answers[0](TodayResultDomainModel.Loaded(TodayDomainModel.Calm))
+            runCurrent()
+
+            assertEquals(HomeViewState.AttackInProgress::class, states.last()::class)
+            collecting.cancel()
+        }
+
+    @Test
+    fun `Given two reads of today when the older one fails last then nothing is said`() = runTest {
+        val answers = mutableListOf<(TodayResultDomainModel) -> Unit>()
+        willAnswer { invocation ->
+            answers += invocation.getArgument<(TodayResultDomainModel) -> Unit>(1)
+        }.given(useCaseExecutor).execute(
+            useCase = eq(getTodayUseCase),
+            onResult = any(),
+            onException = any()
+        )
+        val notifications = mutableListOf<HomePresentationNotification>()
+        val collecting =
+            launch(start = UNDISPATCHED) { classUnderTest.notification.toList(notifications) }
+
+        classUnderTest.onResume()
+        classUnderTest.onDateChanged()
+        answers[1](TodayResultDomainModel.Loaded(TodayDomainModel.Calm))
+        answers[0](TodayResultDomainModel.Failed)
+        runCurrent()
+
+        assertEquals(emptyList<HomePresentationNotification>(), notifications)
+        collecting.cancel()
     }
 
     private fun givenToday(today: TodayDomainModel) {

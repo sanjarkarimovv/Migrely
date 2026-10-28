@@ -61,6 +61,9 @@ class HomeViewModel(
     private val intensityLevelDomainMapper: IntensityLevelDomainMapper,
     useCaseExecutor: UseCaseExecutor
 ) : BaseViewModel<HomeViewState, HomePresentationNotification>(useCaseExecutor) {
+    /** The number of the latest read of today; reads are made and answered on the main thread. */
+    private var todayRequest = 0
+
     fun onEnter(startAttackRequested: Boolean) {
         if (startAttackRequested) startAttack() else loadToday(announceDeletion = true)
     }
@@ -230,24 +233,30 @@ class HomeViewModel(
      * just used; every other load offers it as today's result says (BRD D79).
      */
     private fun loadToday(announceDeletion: Boolean = false, keepPeriodToggle: Boolean = false) {
+        val request = ++todayRequest
         getTodayUseCase(
             onResult = { result ->
+                // Reads run side by side and can answer out of order: only the newest is shown, so a read made before
+                // an attack started never takes attack mode away when it answers last (#116).
+                val newest = request == todayRequest
                 when (result) {
                     is TodayResultDomainModel.Loaded -> {
-                        updateViewState(
-                            todayPresentationMapper.toPresentation(
-                                result.today,
-                                result.periodToday,
-                                result.periodOffered || keepPeriodToggle
+                        if (newest) {
+                            updateViewState(
+                                todayPresentationMapper.toPresentation(
+                                    result.today,
+                                    result.periodToday,
+                                    result.periodOffered || keepPeriodToggle
+                                )
                             )
-                        )
+                        }
                         val deleted = result.recentlyDeleted
                         if (announceDeletion && deleted != null) {
                             notify(AttackDeleted(deleted.id, deleted.deletedAt))
                         }
                     }
 
-                    TodayResultDomainModel.Failed -> notify(SomethingWentWrong)
+                    TodayResultDomainModel.Failed -> if (newest) notify(SomethingWentWrong)
                 }
             }
         )
