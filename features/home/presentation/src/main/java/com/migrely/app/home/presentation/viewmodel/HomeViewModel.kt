@@ -43,7 +43,8 @@ import java.time.Instant
 
 /**
  * Stateless (skill rule 4): every successful action reloads today, and the UI passes back any id it needs, for example
- * to undo. Today is loaded on enter, on every resume and when the local date changes (design D11).
+ * to undo. Today is loaded on enter, on every resume and when the local date changes (design D11). The one thing kept
+ * is the number of the latest read of today, so an older read answering last is not shown (#116).
  */
 @Suppress("LongParameterList", "TooManyFunctions")
 class HomeViewModel(

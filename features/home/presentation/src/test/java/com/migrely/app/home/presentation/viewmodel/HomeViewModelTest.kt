@@ -1,5 +1,6 @@
 package com.migrely.app.home.presentation.viewmodel
 
+import com.migrely.app.architecture.domain.usecase.UseCase
 import com.migrely.app.architecture.presentation.viewmodel.BaseViewModelTest
 import com.migrely.app.home.domain.model.AnswerLongAttackResultDomainModel
 import com.migrely.app.home.domain.model.AttackDomainModel
@@ -48,6 +49,7 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -56,6 +58,9 @@ import org.mockito.Mock
 import org.mockito.junit.MockitoJUnitRunner
 import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
+
+/** Where the use case executor takes the answer callback of a use case with no input. */
+private const val NO_INPUT_ON_RESULT_INDEX = 1
 
 private val START: Instant = Instant.parse("2026-10-23T09:00:00Z")
 private val ATTACK = AttackDomainModel(
@@ -372,57 +377,57 @@ class HomeViewModelTest :
     }
 
     @Test
-    fun `Given two reads of today when the older one answers last then the newer one stays`() =
+    fun `Given the shortcut starts an attack when an older read answers last then it is ignored`() =
         runTest {
-            val answers = mutableListOf<(TodayResultDomainModel) -> Unit>()
-            willAnswer { invocation ->
-                answers += invocation.getArgument<(TodayResultDomainModel) -> Unit>(1)
-            }.given(useCaseExecutor).execute(
-                useCase = eq(getTodayUseCase),
-                onResult = any(),
-                onException = any()
-            )
+            val starts = answeredLater(startAttackUseCase)
+            val reads = answeredLater(getTodayUseCase)
             val states = mutableListOf<HomeViewState>()
             val collecting =
                 launch(start = UNDISPATCHED) { classUnderTest.viewState.toList(states) }
 
-            // The resume's read, then the start's read after the attack is stored (#116).
+            // The new home entry starts the attack and resumes at once; the resume reads before
+            // the attack is stored (#116).
+            classUnderTest.onEnter(startAttackRequested = true)
             classUnderTest.onResume()
-            classUnderTest.onDateChanged()
-            answers[1](
+            starts[0](StartAttackResultDomainModel.Started(ATTACK))
+            reads[1](
                 TodayResultDomainModel.Loaded(
                     TodayDomainModel.AttackInProgress(ATTACK, longAttackCheckDue = false)
                 )
             )
-            answers[0](TodayResultDomainModel.Loaded(TodayDomainModel.Calm))
+            reads[0](TodayResultDomainModel.Loaded(TodayDomainModel.Calm))
             runCurrent()
 
-            assertEquals(HomeViewState.AttackInProgress::class, states.last()::class)
+            assertEquals(listOf(HomeViewState.AttackInProgress::class), states.map { it::class })
             collecting.cancel()
         }
 
     @Test
     fun `Given two reads of today when the older one fails last then nothing is said`() = runTest {
-        val answers = mutableListOf<(TodayResultDomainModel) -> Unit>()
-        willAnswer { invocation ->
-            answers += invocation.getArgument<(TodayResultDomainModel) -> Unit>(1)
-        }.given(useCaseExecutor).execute(
-            useCase = eq(getTodayUseCase),
-            onResult = any(),
-            onException = any()
-        )
-        val notifications = mutableListOf<HomePresentationNotification>()
-        val collecting =
-            launch(start = UNDISPATCHED) { classUnderTest.notification.toList(notifications) }
+        val reads = answeredLater(getTodayUseCase)
+        val notification = nextNotification()
 
         classUnderTest.onResume()
         classUnderTest.onDateChanged()
-        answers[1](TodayResultDomainModel.Loaded(TodayDomainModel.Calm))
-        answers[0](TodayResultDomainModel.Failed)
+        reads[1](TodayResultDomainModel.Loaded(TodayDomainModel.Calm))
+        reads[0](TodayResultDomainModel.Failed)
         runCurrent()
 
-        assertEquals(emptyList<HomePresentationNotification>(), notifications)
-        collecting.cancel()
+        assertFalse(notification.isCompleted)
+        notification.cancel()
+    }
+
+    /** Holds each answer of [useCase] for the test to give later, in any order. */
+    private fun <RESULT> answeredLater(useCase: UseCase<Unit, RESULT>): List<(RESULT) -> Unit> {
+        val answers = mutableListOf<(RESULT) -> Unit>()
+        willAnswer { invocation ->
+            answers += invocation.getArgument<(RESULT) -> Unit>(NO_INPUT_ON_RESULT_INDEX)
+        }.given(useCaseExecutor).execute(
+            useCase = eq(useCase),
+            onResult = any(),
+            onException = any()
+        )
+        return answers
     }
 
     private fun givenToday(today: TodayDomainModel) {

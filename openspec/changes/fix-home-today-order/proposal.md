@@ -9,14 +9,14 @@ QA saw it in `paywall_self_show`, once in 3 runs, and rated it S2 because starti
   - The resume's read: `onResume()` reads today too.
   - The reads run side by side and `loadToday` showed whatever answered. When the resume's read was made before the attack was stored but answered last, its calm today replaced attack mode.
 - **The month calendar** reloads on every home load and read the database later, so it showed the attack.
-- **The date tick** adds a third read. Under load the order is easy to lose.
+- **The date tick** adds a third read when the local date changes, as with QA's clock jump. Under load the order is easy to lose.
 
 ## What Changes
 
 - **`HomeViewModel.loadToday`:**
   - numbers its reads, and shows only the newest one's answer;
   - says "Something went wrong" only for the newest read's failure;
-  - announces a recent deletion from any read, as before (home's messages offer each deletion once).
+  - announces a recent deletion from any read, as before (home's messages offer each deletion once per home entry).
 - **Threads:** reads are made and answered on the main thread, so the counter needs no lock.
 
 **Unchanged:** what is read, and when.
