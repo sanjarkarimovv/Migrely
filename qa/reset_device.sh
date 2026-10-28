@@ -15,9 +15,24 @@ esac
 source "$ROOT/qa/lib.sh"
 qa_lock_device
 trap qa_unlock_device EXIT
+# The system services own Do Not Disturb and airplane mode and write a plain settings put back; API 30 added commands.
+if [[ "$(qa_adb shell getprop ro.build.version.sdk | tr -d '\r')" -ge 30 ]]; then
+  qa_adb shell cmd notification set_dnd off >/dev/null 2>&1 || true
+  qa_adb shell cmd connectivity airplane-mode disable >/dev/null 2>&1 || true
+fi
 for entry in "${QA_BASELINE[@]}"; do
   key="${entry%=*}"
   qa_restore_setting ${key% *} ${key#* } "${entry##*=}"
 done
 qa_adb shell cmd locale set-app-locales com.migrely.app --locales "" >/dev/null 2>&1 || true
-echo "$QA_SERIAL is back to its baseline: ${QA_BASELINE[*]}, app language from the system."
+# qa/split_apks.sh stopped half-way on Android 8.0 may leave the system language changed.
+if [[ "$(qa_system_locale)" != "$QA_BASELINE_LOCALE" ]]; then
+  qa_set_system_locale "$QA_BASELINE_LOCALE"
+fi
+# A device scenario stopped half-way may leave the browser disabled (privacy_link).
+disabled="$(qa_adb shell pm list packages -d 2>/dev/null | tr -d '\r')"
+if grep -qx "package:com.android.chrome" <<<"$disabled"; then
+  qa_adb shell pm enable com.android.chrome >/dev/null
+fi
+echo "$QA_SERIAL is back to its baseline: ${QA_BASELINE[*]}, system language $QA_BASELINE_LOCALE," \
+  "app language from the system."

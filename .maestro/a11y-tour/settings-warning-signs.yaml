@@ -1,0 +1,13 @@
+# Accessibility tour state: Settings › Warning signs (D203).
+appId: com.migrely.app
+---
+- runFlow: ../subflows/launch-clean.yaml
+- tapOn: "Settings"
+- scrollUntilVisible:
+    element: "Warning signs.*"
+    direction: DOWN
+    centerElement: true
+- tapOn: "Warning signs.*"
+- extendedWaitUntil:
+    visible: "Call your local emergency number if any of these happen\\."
+    timeout: 5000

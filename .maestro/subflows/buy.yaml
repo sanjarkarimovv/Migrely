@@ -4,6 +4,10 @@
 appId: com.migrely.app
 ---
 - tapOn: "${PLAN}\\. .*"
+# In landscape the button can be below the plans.
+- scrollUntilVisible:
+    element: "${BUTTON}"
+    direction: DOWN
 - tapOn: "${BUTTON}"
 # The sheet's title and the product are one node ("Simulated Google Play" and a line under it).
 - extendedWaitUntil:

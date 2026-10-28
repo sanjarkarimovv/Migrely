@@ -1,0 +1,8 @@
+# Accessibility tour state: the first onboarding step of a new install (D203).
+appId: com.migrely.app
+---
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: "Step 1 of 4.*"
+    timeout: 15000

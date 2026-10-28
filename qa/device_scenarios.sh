@@ -11,8 +11,8 @@
 # med_preventive, med_two_waiting, med_link_home, med_overuse, keyboard_home, keyboard_history, keyboard_rtl,
 # landscape_band, mark_travel, mark_earliest_month, stats_counting, stats_chronic, stats_progress, reminder_daily,
 # reminder_permission, reminder_effect, reminder_replan (restarts the emulator), med_only_history,
-# message_tap_guard (#52), theme_check, onboarding_states, delete_all_data, backup_export, backup_import,
-# message_duration (#56), premium_store_states, premium_pending, premium_plans, premium_entitlement, premium_offline,
+# message_tap_guard (#52), theme_check, onboarding_states, delete_all_data, privacy_link, backup_export, backup_import,
+# message_duration (#56), premium_store_states, premium_no_products, premium_pending, premium_plans, premium_entitlement, premium_offline,
 # trial_banner, paywall_self_show, report_three_months, report_counting, report_heavy, insights, upgrade, release_apk.
 # On demand only: backup_android (bmgr).
 # QA_APK=<apk> names the build under test (default: this worktree's debug APK), for example a release branch's.
@@ -83,6 +83,8 @@ restore() {
   adbq shell "rm -f /sdcard/qa-*.xml" >/dev/null 2>&1
   # Files the backup scenarios put in Download.
   adbq shell "rm -f /sdcard/Download/migrely-* /sdcard/Download/seed-*.json /sdcard/Download/broken.json /sdcard/Download/newer.json /sdcard/Download/older.json /sdcard/Download/add.json" >/dev/null 2>&1
+  # A scenario stopped half-way may leave a browser disabled (privacy_link).
+  enable_browsers
   # A scenario stopped half-way may leave the simulated store unavailable or unreachable.
   adbq shell am broadcast -p "$APP" -f 0x20 -a com.migrely.app.debug.SIMULATED_STORE --es command available >/dev/null 2>&1
   if [[ -n "${BMGR_TRANSPORT:-}" ]]; then
@@ -399,13 +401,30 @@ for n in ET.fromstring(sys.stdin.read()).iter('node'):
   return 1
 }
 open_app() { adbq shell monkey -p "$APP" -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1; sleep 4; }
+# The package of the activity in front, from the activity manager (topResumedActivity, or mResumedActivity before
+# Android 10).
+resumed_package() {
+  adbq shell dumpsys activity activities | tr -d '\r' | grep -m1 -E "topResumedActivity|mResumedActivity" |
+    grep -oE "[a-zA-Z0-9_.]+/[a-zA-Z0-9_.\$]+" | head -1 | cut -d/ -f1
+}
+# Browsers that privacy_link disabled: restore() and the loop after each scenario enable them again.
+DISABLED_BROWSERS=()
+enable_browsers() {
+  local pkg
+  for pkg in ${DISABLED_BROWSERS[@]+"${DISABLED_BROWSERS[@]}"}; do adbq shell pm enable "$pkg" >/dev/null 2>&1; done
+  DISABLED_BROWSERS=()
+}
+browsers_for() { # $1 URL: the packages whose activities open it as a link from an app
+  adbq shell cmd package query-activities --brief -a android.intent.action.VIEW -c android.intent.category.BROWSABLE \
+    -d "$1" 2>/dev/null | tr -d '\r' | sed -n 's|^ *\([a-zA-Z0-9_.]*\)/.*|\1|p' | sort -u
+}
 
-qa_store() { # $1 a simulated store command (debug builds, D201): available, unavailable, unreachable, reset,
-  # complete-pending or decline-pending. -f 0x20 reaches a stopped app too.
+qa_store() { # $1 a simulated store command (debug builds, D201, D122): available, no-products, unavailable,
+  # unreachable, reset, complete-pending or decline-pending. -f 0x20 reaches a stopped app too.
   adbq shell am broadcast -p "$APP" -f 0x20 -a com.migrely.app.debug.SIMULATED_STORE --es command "$1" >/dev/null
   sleep 1
   case "$1" in
-    available | unavailable | unreachable)
+    available | no-products | unavailable | unreachable)
       local store
       store="$(adbq shell run-as "$APP" cat shared_prefs/migrely_simulated_store.xml 2>/dev/null | tr -d '\r')"
       [[ "$store" == *"name=\"mode\">$1<"* ]] || { echo "  FAILED: the simulated store did not take \"$1\""; return 1; }
@@ -1355,6 +1374,50 @@ scenario_premium_store_states() {
   qa_store available || return 1
 }
 
+# Covers: subscription › When the paywall shows itself › Google Play offers no products
+# Covers: subscription › A store for testing › No products from the store for testing
+# The store answers with no products, as Google Play does before they are set up in the Play Console (D110, D122).
+# - No paywall shows itself, after onboarding or after the 5th migraine.
+# - The second "none" cannot pass on its own: in the same state, with products back, the patterns paywall shows.
+# - A tap on Doctor report still opens the paywall with the region line and no prices.
+# - Premium bought before stays Premium, once the app has asked the store again.
+# The app keeps the store's answer for an hour before a paywall shows itself, and its Premium for 15 minutes
+# (CHECK_INTERVAL), so each store change is followed by a force-stop, or by a clock 20 minutes on. "Asked again at
+# most once an hour" is not checked here: the store does not count the asks, and the app's unit tests hold it (D110).
+scenario_premium_no_products() {
+  echo "Scenario premium_no_products: no products from the store: no paywall by itself, the region line on a tap, Premium kept (D110, D122)"
+  set_clock_millis "$(when_millis 0 10 12:00)" || return 1
+  adbq shell pm clear "$APP" >/dev/null
+  qa_store no-products || return 1
+  run_flow no-self-paywall || return 1
+  echo "    a new install with no products: no paywall after onboarding"
+  shift_clock_hours 192 || return 1
+  seed_import four-old Import || return 1
+  adbq shell am force-stop "$APP"
+  run_flow log-attack || return 1
+  run_flow home-no-paywall || return 1
+  echo "    the 5th migraine, patterns ready, 8 days after onboarding: none"
+  qa_store available || return 1
+  adbq shell am force-stop "$APP"
+  run_flow patterns-paywall || return 1
+  echo "    the same state with products: the patterns paywall shows, so the \"none\" above was the store's"
+  qa_store no-products || return 1
+  adbq shell am force-stop "$APP"
+  run_flow_env paywall-state "STATE=Premium isn.t available in your region yet" NO_BUY=true \
+    "ABSENT=.*(/month|/year|free, then).*" TAP= || return 1
+  run_flow_env paywall-state "STATE=Everything else in Migrely works as before\." NO_BUY=true ABSENT= TAP= || return 1
+  echo "    a tap on Doctor report: the region line, no buy button and no price"
+  qa_store available || return 1
+  adbq shell am force-stop "$APP"
+  run_flow_env premium-buy PLAN=Monthly BUTTON=Subscribe "SHEET=Complete the purchase" "RESULT=You have Premium" || return 1
+  qa_store no-products || return 1
+  adbq shell am force-stop "$APP"
+  set_clock_millis $((($(device_seconds) + 20 * 60) * 1000)) || return 1
+  run_flow_env premium-check "STATUS=Premium · monthly" REPORT=open || return 1
+  echo "    Premium bought before, the store asked again 20 minutes on with no products: still Premium · monthly"
+  qa_store reset || return 1
+}
+
 # Covers: subscription › Buying › Pending
 scenario_premium_pending() {
   echo "Scenario premium_pending: a cancelled sheet changes nothing; pending unlocks nothing until it completes (EC-BIL-08)"
@@ -1588,6 +1651,7 @@ scenario_report_counting() {
 # Covers: doctor-report › Large periods › Twelve heavy months
 # Covers: doctor-report › The file and sharing › Closed while making it
 # Covers: doctor-report › Large periods › Twelve heavy months with notes
+# Covers: doctor-report › Large periods › No note among the migraines shown
 scenario_report_heavy() {
   echo "Scenario report_heavy: 900 attacks in 12 months make at most 50 pages; a report closed half-made leaves nothing (D84, D85)"
   local files box want
@@ -1656,6 +1720,30 @@ if int(notes.group(1)) != n or kept != list(range(1, n + 1)):
 print(f'notes on: the latest {n} of 900 migraines and their {n} notes, HEAVY-0001 to HEAVY-{n:04}')" "$out/report-heavy-notes.txt" |
     sed 's/^/    /'
   [[ "${PIPESTATUS[0]}" == 0 ]] || return 1
+  # No note among the migraines shown (#67, D84): the same 900 migraines, but only the oldest 100 have a note. The table
+  # is still shortened, none of its migraines has a note, so the notes section says how many migraines it is from, over
+  # an empty table. The check holds only while the table shows at most 800 rows; a larger cap is reported, not passed.
+  seed_import report-heavy-old-notes Replace || return 1
+  run_flow_env report-make "PERIOD=12 months" NOTES=true || return 1
+  pull_report "$out/report-heavy-old-notes.pdf" || return 1
+  python3 -I "$ROOT/qa/report_pdf.py" "$out/report-heavy-old-notes.pdf" --pages-at-most 50 \
+    --every-page "Patient-entered data. Not a diagnosis." --absent "HEAVY-" | sed 's/^/    old notes: /'
+  [[ "${PIPESTATUS[0]}" == 0 ]] || return 1
+  pdftotext -layout "$out/report-heavy-old-notes.pdf" "$out/report-heavy-old-notes.txt" || return 1
+  python3 -I -c "import re, sys
+text = re.sub(r'\s+', ' ', open(sys.argv[1], encoding='utf-8').read())
+rows = re.search(r'Showing the latest (\d+) of 900 migraines\.', text)
+notes = re.search(r'Notes from the latest (\d+) migraines\.', text)
+if not rows or not notes:
+    sys.exit('FAIL: the table or the notes do not say how many they show')
+n = int(rows.group(1))
+if n > 800:
+    sys.exit(f'FAIL: the table shows {n} rows, so it reaches the noted migraines; move the seed\'s notes further back')
+if int(notes.group(1)) != n:
+    sys.exit(f'FAIL: {n} rows, but the notes say {notes.group(1)}')
+print(f'old notes: the latest {n} of 900 migraines, \"Notes from the latest {n} migraines.\" and no note')" \
+    "$out/report-heavy-old-notes.txt" | sed 's/^/    /'
+  [[ "${PIPESTATUS[0]}" == 0 ]] || return 1
 }
 
 # Covers: trigger-insights › Triggers, never causes › Stress
@@ -1690,6 +1778,63 @@ scenario_insights() {
     if grep -qiE "caus|leads? to" "$out/insights-$seed.seen"; then echo "  FAILED: a text says a trigger causes migraines"; return 1; fi
     echo "    $seed, Track periods off: $(wc -l <"$out/insights-$seed.want" | tr -d ' ') texts seen; no period section; nothing says \"cause\""
   done
+}
+
+# Covers: app-settings › Privacy and about › The full privacy policy
+# Covers: app-settings › Privacy and about › No browser
+# The link is read from the activity manager's START line: a VIEW intent to migrely.health, to a browser. Android shortens
+# the URI in that line, and the page shows only "migrely.health/privacy", so the full address is looked up in the APK's
+# string table. "No browser" disables, for this user, every package that answers the link (only Chrome on the QA image),
+# taps again, and enables them all at the end, also when the check fails (restore() and reset_device.sh do too).
+scenario_privacy_link() {
+  echo "Scenario privacy_link: the privacy policy opens in the browser; with no browser nothing breaks (D119)"
+  local url="https://migrely.health/privacy/" browsers started pkg front fatal address
+  browsers="$(browsers_for "$url")"
+  [[ -n "$browsers" ]] || { echo "  FAILED: no browser answers $url on $QA_SERIAL, so the two cases look the same"; return 1; }
+  echo "    browsers for the link: $(tr '\n' ' ' <<<"$browsers")"
+  run_flow clean || return 1
+  adbq logcat -c
+  run_flow privacy-policy-link || return 1
+  sleep 2
+  started="$(adbq logcat -d -s ActivityTaskManager:I ActivityManager:I | tr -d '\r' |
+    grep -m1 "START .*act=android.intent.action.VIEW.*migrely\.health" || true)"
+  [[ -n "$started" ]] || { echo "  FAILED: no VIEW intent to migrely.health was started"; return 1; }
+  pkg="$(grep -oE "cmp=[a-zA-Z0-9_.]+" <<<"$started" | cut -d= -f2)"
+  grep -qxF "$pkg" <<<"$browsers" || { echo "  FAILED: the link went to '$pkg', not to a browser"; return 1; }
+  echo "    the link: a VIEW intent to migrely.health, opened by $pkg ($(resumed_package) in front)"
+  python3 -I -c "import sys, zipfile
+url = sys.argv[2].encode()
+with zipfile.ZipFile(sys.argv[1]) as apk:
+    dex = b''.join(apk.read(n) for n in apk.namelist() if n.startswith('classes') and n.endswith('.dex'))
+# A dex string entry is its length, its bytes and a zero byte, so this finds the address as a whole string.
+sys.exit(0 if bytes([len(url)]) + url + b'\\0' in dex else 1)" "$APK" "$url" ||
+    { echo "  FAILED: the APK holds no string $url"; return 1; }
+  echo "    the full address $url is in the APK"
+  adbq shell am force-stop "$APP"
+  for pkg in $browsers; do
+    # Recorded first, so a run stopped during the next call still enables it again.
+    DISABLED_BROWSERS+=("$pkg")
+    adbq shell pm disable-user --user 0 "$pkg" >/dev/null || { echo "  FAILED: could not disable $pkg"; enable_browsers; return 1; }
+  done
+  [[ -z "$(browsers_for "$url")" ]] || { echo "  FAILED: a browser still answers the link"; enable_browsers; return 1; }
+  adbq logcat -c
+  run_flow privacy-policy-link || { enable_browsers; return 1; }
+  sleep 2
+  fatal="$(adbq logcat -d -b crash | tr -d '\r' | grep -A3 "FATAL EXCEPTION" | grep -m1 -A2 "$APP" || true)"
+  front="$(resumed_package)"
+  address="$(screen_text_matching "migrely\.health/privacy")"
+  enable_browsers
+  [[ -z "$fatal" ]] || { echo "  FAILED: Migrely crashed: $(tr '\n' ' ' <<<"$fatal")"; return 1; }
+  [[ "$front" == "$APP" ]] || { echo "  FAILED: with no browser, '$front' is in front, not Migrely"; return 1; }
+  [[ -n "$address" ]] || { echo "  FAILED: the Privacy page does not show the address"; return 1; }
+  echo "    no browser: Migrely stays in front, no crash, the page shows \"$address\""
+  local disabled
+  disabled="$(adbq shell pm list packages -d | tr -d '\r' | sed 's/^package://')"
+  if grep -qxF -f <(echo "$browsers") <<<"$disabled"; then
+    echo "  FAILED: a browser is still disabled"
+    return 1
+  fi
+  echo "    browsers enabled again: $(tr '\n' ' ' <<<"$browsers")"
 }
 
 # Covers: subscription › A store for testing › Release
@@ -1760,7 +1905,7 @@ expect_text_soon() { # $1 Python regex, $2 seconds: some text or label on screen
 }
 import_and_expect() { # $1 file in Download, $2 HOLDS regex or "", $3 choice or "", $4 extended regex of the result message
   # Run without a report folder: writing it takes seconds, and the result message lasts only about 4 s (#56).
-  local attempt seen log others="This file isn.t a Migrely backup.*|Update Migrely to open this file.*|Backup imported:.*|Added [0-9]+ migraines?.*|Added the other entries.*|Nothing new.*|Couldn.t.*"
+  local attempt seen log others="This file isn.t a Migrely backup.*|Update Migrely to open this file.*|Backup imported:.*|Added [0-9]+ migraines?.*|Added the other entries.*|Added the new entries.*|Nothing new.*|Couldn.t.*"
   for attempt in 1 2; do
     STEP=$((STEP + 1))
     log="$out/$(printf '%03d' "$STEP")-${CURRENT:-x}-import-step.log"
@@ -1924,8 +2069,8 @@ if [[ $# -eq 0 ]]; then
     med_link_home med_overuse keyboard_home keyboard_history keyboard_rtl landscape_band mark_travel mark_earliest_month \
     stats_counting stats_chronic stats_progress reminder_daily reminder_permission reminder_effect reminder_replan \
     med_only_history message_tap_guard \
-    theme_check onboarding_states delete_all_data backup_export backup_import message_duration \
-    premium_store_states premium_pending premium_plans premium_entitlement premium_offline trial_banner paywall_self_show \
+    theme_check onboarding_states delete_all_data privacy_link backup_export backup_import message_duration \
+    premium_store_states premium_no_products premium_pending premium_plans premium_entitlement premium_offline trial_banner paywall_self_show \
     report_three_months report_counting report_heavy insights
   if [[ -n "${QA_OLD_APK:-}" ]]; then
     set -- "$@" upgrade
@@ -1945,6 +2090,7 @@ for s in "$@"; do
   # Language and night mode back after every scenario, so a failure mid-way cannot leak into the next one.
   adbq shell cmd locale set-app-locales "$APP" --locales "$ORIGINAL_APP_LOCALES" >/dev/null 2>&1
   [[ -n "$ORIGINAL_NIGHT" ]] && adbq shell cmd uimode night "$ORIGINAL_NIGHT" >/dev/null 2>&1
+  enable_browsers
   # Each scenario starts from the real time, so one scenario's clock never leaks into the next.
   adbq shell cmd alarm set-timezone "$ORIGINAL_ZONE" >/dev/null
   set_clock_millis $(($(date +%s) * 1000))
