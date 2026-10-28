@@ -130,15 +130,27 @@ class EntitlementRules {
     fun isDue(
         entitlement: EntitlementDomainModel,
         now: Instant,
-        launched: LaunchedPurchaseDomainModel? = null
+        launched: LaunchedPurchaseDomainModel?
     ): Boolean {
         val lastCheck = entitlement.lastCheck
         return lastCheck == null ||
             needsBackgroundChecks(entitlement) ||
             now < lastCheck ||
             Duration.between(lastCheck, now) >= CHECK_INTERVAL ||
-            launched != null && !launched.at.isBefore(lastCheck)
+            (launched != null && neverAnswered(launched, lastCheck, now))
     }
+
+    /**
+     * A launch at or after the last answer, not ahead of the clock, and young enough to be given
+     * its purchase: a clock set back, or a launch from days ago, does not ask Play at every turn.
+     */
+    private fun neverAnswered(
+        launched: LaunchedPurchaseDomainModel,
+        lastCheck: Instant,
+        now: Instant
+    ) = !launched.at.isBefore(lastCheck) &&
+        !now.isBefore(launched.at) &&
+        Duration.between(launched.at, now) <= LAUNCH_KEPT
 
     fun status(entitlement: EntitlementDomainModel, now: Instant): PremiumStatusDomainModel =
         when (entitlement.kind) {

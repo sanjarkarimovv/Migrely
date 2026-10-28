@@ -10,6 +10,7 @@ import com.migrely.app.subscription.domain.model.PremiumPlanDomainModel
 import com.migrely.app.subscription.domain.model.PremiumStatusDomainModel
 import com.migrely.app.subscription.domain.model.PurchaseProductDomainModel
 import com.migrely.app.subscription.domain.model.PurchaseStateDomainModel
+import com.migrely.app.subscription.domain.model.SubscriptionWriteResultDomainModel
 import com.migrely.app.subscription.domain.repository.AcknowledgePurchaseRepository
 import com.migrely.app.subscription.domain.repository.GetCurrentTimeRepository
 import com.migrely.app.subscription.domain.repository.GetEntitlementRepository
@@ -23,6 +24,7 @@ import java.time.Period
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.given
@@ -35,7 +37,9 @@ class PremiumCheckerTest {
     private val getEntitlementRepository: GetEntitlementRepository = mock {
         on { entitlement() } doReturn EntitlementDomainModel.NONE
     }
-    private val saveEntitlementRepository: SaveEntitlementRepository = mock()
+    private val saveEntitlementRepository: SaveEntitlementRepository = mock {
+        on { saveEntitlement(any()) } doReturn SubscriptionWriteResultDomainModel.Done
+    }
     private val getOwnedPurchasesRepository: GetOwnedPurchasesRepository = mock()
     private val acknowledgePurchaseRepository: AcknowledgePurchaseRepository = mock()
     private val getCurrentTimeRepository: GetCurrentTimeRepository = mock {
@@ -206,7 +210,7 @@ class PremiumCheckerTest {
         val saved = argumentCaptor<EntitlementDomainModel>()
         verify(saveEntitlementRepository).saveEntitlement(saved.capture())
         assertEquals(true, saved.firstValue.acknowledgementPending)
-        assertEquals(true, EntitlementRules().isDue(saved.firstValue, NOW))
+        assertEquals(true, EntitlementRules().isDue(saved.firstValue, NOW, null))
         verify(schedulePremiumChecksRepository).schedulePremiumChecks(true)
     }
 
@@ -243,9 +247,9 @@ class PremiumCheckerTest {
     @Test
     fun `Given the app closed with the sheet open then the next check keeps the plan and trial`() {
         given(getLaunchedPurchaseRepository.launchedPurchase()).willReturn(
-            com.migrely.app.subscription.domain.model.LaunchedPurchaseDomainModel(
-                com.migrely.app.subscription.domain.model.PremiumPlanDomainModel.Yearly,
-                java.time.Period.ofDays(7),
+            LaunchedPurchaseDomainModel(
+                PremiumPlanDomainModel.Yearly,
+                Period.ofDays(7),
                 NOW.minusSeconds(120)
             )
         )
@@ -257,7 +261,7 @@ class PremiumCheckerTest {
 
         assertEquals(
             PremiumStatusDomainModel.Subscribed(
-                com.migrely.app.subscription.domain.model.PremiumPlanDomainModel.Yearly,
+                PremiumPlanDomainModel.Yearly,
                 NOW.plus(Duration.ofDays(7))
             ),
             status
@@ -320,5 +324,48 @@ class PremiumCheckerTest {
         )
 
         assertEquals(PremiumStatusDomainModel.Pending, classUnderTest.current())
+    }
+
+    @Test
+    fun `Given the app closed after the sheet was cancelled then the start asks Play once`() {
+        val launchedAt = NOW.minusSeconds(40)
+        given(getEntitlementRepository.entitlement()).willReturn(
+            EntitlementDomainModel.NONE.copy(lastCheck = NOW.minusSeconds(44)),
+            EntitlementDomainModel.NONE.copy(lastCheck = NOW.minusSeconds(44)),
+            EntitlementDomainModel.NONE.copy(lastCheck = NOW)
+        )
+        given(getLaunchedPurchaseRepository.launchedPurchase()).willReturn(
+            LaunchedPurchaseDomainModel(PremiumPlanDomainModel.Yearly, Period.ofDays(7), launchedAt)
+        )
+        given(getOwnedPurchasesRepository.ownedPurchases())
+            .willReturn(OwnedPurchasesResultDomainModel.Owned(emptyList()))
+
+        assertEquals(PremiumStatusDomainModel.Free, classUnderTest.current())
+        assertEquals(PremiumStatusDomainModel.Free, classUnderTest.current())
+
+        verify(getOwnedPurchasesRepository).ownedPurchases()
+        verify(saveLaunchedPurchaseRepository, never()).saveLaunchedPurchase(anyOrNull())
+    }
+
+    @Test
+    fun `Given the entitlement cannot be written then the launch is kept for the next check`() {
+        given(saveEntitlementRepository.saveEntitlement(any()))
+            .willReturn(SubscriptionWriteResultDomainModel.Failed)
+        given(getLaunchedPurchaseRepository.launchedPurchase()).willReturn(
+            LaunchedPurchaseDomainModel(
+                PremiumPlanDomainModel.Yearly,
+                Period.ofDays(7),
+                NOW.minusSeconds(40)
+            )
+        )
+        given(getOwnedPurchasesRepository.ownedPurchases()).willReturn(
+            OwnedPurchasesResultDomainModel.Owned(
+                listOf(purchase(token = "new", at = NOW.minusSeconds(38)))
+            )
+        )
+
+        classUnderTest.check()
+
+        verify(saveLaunchedPurchaseRepository, never()).saveLaunchedPurchase(anyOrNull())
     }
 }

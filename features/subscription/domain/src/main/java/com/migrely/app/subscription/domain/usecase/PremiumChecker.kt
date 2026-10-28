@@ -8,6 +8,7 @@ import com.migrely.app.subscription.domain.model.OwnedPurchasesResultDomainModel
 import com.migrely.app.subscription.domain.model.PremiumCheckDomainModel
 import com.migrely.app.subscription.domain.model.PremiumStatusDomainModel
 import com.migrely.app.subscription.domain.model.PurchaseStateDomainModel
+import com.migrely.app.subscription.domain.model.SubscriptionWriteResultDomainModel
 import com.migrely.app.subscription.domain.repository.AcknowledgePurchaseRepository
 import com.migrely.app.subscription.domain.repository.GetCurrentTimeRepository
 import com.migrely.app.subscription.domain.repository.GetEntitlementRepository
@@ -61,23 +62,26 @@ class PremiumChecker(
         val previous = getEntitlementRepository.entitlement()
         val now = getCurrentTimeRepository.now()
         val owned = getOwnedPurchasesRepository.ownedPurchases()
+        var boughtAfterLaunch: BoughtDomainModel? = null
         val entitlement = when (owned) {
             is OwnedPurchasesResultDomainModel.Owned -> {
                 val purchases = acknowledged(owned.purchases)
-                entitlementRules.answered(
-                    previous,
-                    purchases,
-                    now,
-                    bought ?: boughtAfterLaunch(purchases, previous, now)
-                )
+                if (bought == null) boughtAfterLaunch = boughtAfterLaunch(purchases, previous, now)
+                entitlementRules.answered(previous, purchases, now, bought ?: boughtAfterLaunch)
             }
 
             OwnedPurchasesResultDomainModel.Unavailable,
             OwnedPurchasesResultDomainModel.Unreachable ->
                 entitlementRules.unanswered(previous, now)
         }
-        // A write that fails leaves the last entitlement, and the next check tries again.
-        if (entitlement != previous) saveEntitlementRepository.saveEntitlement(entitlement)
+        // A write that fails leaves the last entitlement, and the next check tries again; so a
+        // launch is forgotten only once its purchase's plan and trial are written.
+        val written = entitlement == previous ||
+            saveEntitlementRepository.saveEntitlement(entitlement) ==
+            SubscriptionWriteResultDomainModel.Done
+        if (written && boughtAfterLaunch != null) {
+            saveLaunchedPurchaseRepository.saveLaunchedPurchase(null)
+        }
         schedulePremiumChecksRepository.schedulePremiumChecks(
             entitlementRules.needsBackgroundChecks(entitlement)
         )
@@ -95,7 +99,7 @@ class PremiumChecker(
 
     /**
      * A purchase whose sheet was launched here but whose answer never came back, for example
-     * because the app was closed meanwhile; once found, the launch is forgotten (review M5).
+     * because the app was closed meanwhile (review M5).
      */
     private fun boughtAfterLaunch(
         purchases: List<OwnedPurchaseDomainModel>,
@@ -103,9 +107,7 @@ class PremiumChecker(
         now: Instant
     ): BoughtDomainModel? {
         val launched = getLaunchedPurchaseRepository.launchedPurchase() ?: return null
-        val bought = entitlementRules.boughtFrom(launched, purchases, previous, now)
-        if (bought != null) saveLaunchedPurchaseRepository.saveLaunchedPurchase(null)
-        return bought
+        return entitlementRules.boughtFrom(launched, purchases, previous, now)
     }
 
     /** The purchases, with those that unlock acknowledged now where Google Play took it. */

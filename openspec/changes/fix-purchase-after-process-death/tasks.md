@@ -2,13 +2,21 @@
 
 ## 1. Test first
 
-- [x] 1.1 `EntitlementRulesTest`: a sheet launched at or after the last answer makes Play due at once; one launched before it waits for the interval
-- [x] 1.2 `PremiumCheckerTest`: the start a minute after a check, with a sheet launched since and its purchase completed, asks Play, acknowledges the purchase and shows the trial; with the payment pending it shows pending. The tests fail before the fix.
+- [x] 1.1 `EntitlementRulesTest`:
+  - a sheet launched at or after the last answer makes Play due at once;
+  - one launched before it waits for the interval;
+  - one ahead of the clock or more than a day old makes nothing due.
+- [x] 1.2 `PremiumCheckerTest`:
+  - the start a minute after a check, with a sheet launched since and its purchase completed, asks Play, acknowledges the purchase and shows the trial;
+  - with the payment pending, it shows pending;
+  - after a cancelled sheet, Play is asked once and the launch is kept;
+  - a failed write keeps the launch.
+  The tests fail before the fix.
 
 ## 2. Implement
 
 - [x] 2.1 `EntitlementRules.isDue(entitlement, now, launched)`
-- [x] 2.2 `PremiumChecker.current()` passes the stored launch
+- [x] 2.2 `PremiumChecker.current()` passes the stored launch; `check()` forgets a launch only after a written entitlement (review)
 - [x] 2.3 BRD EC-BIL-13
 
 ## 3. Verify

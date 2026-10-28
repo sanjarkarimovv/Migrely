@@ -155,9 +155,11 @@ class EntitlementRulesTest {
 
     @Test
     fun `Given a check 10 minutes ago then Play is not due, and after 15 minutes it is`() {
-        assertFalse(classUnderTest.isDue(subscription(lastCheck = NOW.minusSeconds(600)), NOW))
-        assertTrue(classUnderTest.isDue(subscription(lastCheck = NOW.minusSeconds(900)), NOW))
-        assertTrue(classUnderTest.isDue(EntitlementDomainModel.NONE, NOW))
+        assertFalse(
+            classUnderTest.isDue(subscription(lastCheck = NOW.minusSeconds(600)), NOW, null)
+        )
+        assertTrue(classUnderTest.isDue(subscription(lastCheck = NOW.minusSeconds(900)), NOW, null))
+        assertTrue(classUnderTest.isDue(EntitlementDomainModel.NONE, NOW, null))
     }
 
     @Test
@@ -165,36 +167,43 @@ class EntitlementRulesTest {
         val pending = subscription(lastCheck = NOW.minusSeconds(1))
             .copy(kind = EntitlementKindDomainModel.Pending)
 
-        assertTrue(classUnderTest.isDue(pending, NOW))
+        assertTrue(classUnderTest.isDue(pending, NOW, null))
     }
 
     @Test
     fun `Given the clock went back before the last check then Play is due`() {
-        assertTrue(classUnderTest.isDue(subscription(lastCheck = NOW.plusSeconds(3_600)), NOW))
+        assertTrue(
+            classUnderTest.isDue(subscription(lastCheck = NOW.plusSeconds(3_600)), NOW, null)
+        )
     }
 
     @Test
     fun `Given a sheet launched after the last check then Play is due at once`() {
-        val launched =
-            LaunchedPurchaseDomainModel(
-                PremiumPlanDomainModel.Yearly,
-                Period.ofDays(7),
-                NOW.minusSeconds(40)
-            )
+        val entitlement = subscription(lastCheck = NOW.minusSeconds(44))
 
-        assertTrue(
-            classUnderTest.isDue(subscription(lastCheck = NOW.minusSeconds(44)), NOW, launched)
-        )
-        assertTrue(classUnderTest.isDue(subscription(lastCheck = null), NOW, launched))
+        assertTrue(classUnderTest.isDue(entitlement, NOW, launched(at = NOW.minusSeconds(40))))
+        assertTrue(classUnderTest.isDue(entitlement, NOW, launched(at = NOW.minusSeconds(44))))
     }
 
     @Test
     fun `Given a sheet launched before the last check then Play waits for the interval`() {
-        val launched =
-            LaunchedPurchaseDomainModel(PremiumPlanDomainModel.Yearly, null, NOW.minusSeconds(90))
+        val entitlement = subscription(lastCheck = NOW.minusSeconds(60))
 
+        assertFalse(classUnderTest.isDue(entitlement, NOW, launched(at = NOW.minusSeconds(90))))
+    }
+
+    @Test
+    fun `Given a launch more than a day old or ahead of the clock then it makes nothing due`() {
+        val entitlement = subscription(lastCheck = NOW.minusSeconds(60))
+        val longAgo = subscription(lastCheck = NOW.minus(Duration.ofDays(2)).plusSeconds(60))
+
+        assertFalse(classUnderTest.isDue(entitlement, NOW, launched(at = NOW.plusSeconds(60))))
         assertFalse(
-            classUnderTest.isDue(subscription(lastCheck = NOW.minusSeconds(60)), NOW, launched)
+            classUnderTest.isDue(
+                longAgo.copy(lastCheck = NOW.minusSeconds(60)),
+                NOW,
+                launched(at = NOW.minus(Duration.ofDays(2)))
+            )
         )
     }
 
@@ -278,4 +287,7 @@ class EntitlementRulesTest {
             )
         )
     }
+
+    private fun launched(at: java.time.Instant) =
+        LaunchedPurchaseDomainModel(PremiumPlanDomainModel.Yearly, Period.ofDays(7), at)
 }
