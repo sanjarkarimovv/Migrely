@@ -26,7 +26,9 @@ in landscape it shows only about 2.5 weeks.
   - Done is on only once the range has an end, as in Material's own full-screen picker. Picking the same day twice
     gives one day. The old dialog took a start alone. The walk showed this lets text input mode give a one-day range
     silently, when the changed start dropped the end, or when the end was not allowed.
-  - It pads for the system bars but not the keyboard, so in text input mode the fields at the top keep their size.
+  - Its window resizes for the keyboard instead of panning (a dialog's default), so Cancel and Done always stay on
+    screen. In text input mode with less than 240 dp left, as over the keyboard in landscape, the header gives its
+    height to the date fields.
 - **Doctor report:** the custom range uses it. Its rules stay in the feature:
   - up to today;
   - this year and the two before (BRD D81, D84);

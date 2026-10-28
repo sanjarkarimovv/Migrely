@@ -3,12 +3,9 @@ package com.migrely.app.designsystem.picker
 import android.view.WindowManager
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material3.DatePickerDefaults
@@ -96,7 +93,7 @@ fun MigrelyDateRangePicker(
  * The picker's full-screen content: Cancel, the title and Done in a row above Material's range picker. The window
  * is announced by the title, as a dialog's would be.
  */
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun DateRangePickerScreen(
     state: DateRangePickerState,
@@ -143,12 +140,12 @@ internal fun DateRangePickerScreen(
             // starts 24 dp in rather than Material's 64 dp, so the two dates wrap less.
             val dateFormatter = remember { DatePickerDefaults.dateFormatter() }
             BoxWithConstraints(Modifier.weight(1f)) {
-                // Typing with little room left over the keyboard, as in landscape at 200% font, the header gives
-                // its height to the date fields, which were squeezed to thin lines; they show the dates, and the
-                // header comes back with the keyboard's closing.
-                val headerShown = state.displayMode != DisplayMode.Input ||
-                    !WindowInsets.isImeVisible ||
-                    maxHeight >= ROOM_FOR_HEADER_WHILE_TYPING
+                // In text input mode with little room, as over the keyboard in landscape, the header gives its
+                // height to the date fields, which show the dates; with the window resized for the keyboard, the
+                // room is what tells, since the keyboard's insets do not reach a window that fits them.
+                val headerShown =
+                    state.displayMode != DisplayMode.Input ||
+                        maxHeight >= ROOM_FOR_HEADER_WHILE_TYPING
                 DateRangePicker(
                     state = state,
                     dateFormatter = dateFormatter,
@@ -177,7 +174,7 @@ internal fun DateRangePickerScreen(
     }
 }
 
-/** Below this height over the keyboard, the header and the date fields do not both fit at 200% font. */
+/** Below this height in text input mode, the header and the date fields do not both fit at 200% font. */
 private val ROOM_FOR_HEADER_WHILE_TYPING = 240.dp
 
 private fun Long.utcDate(): LocalDate =
