@@ -154,4 +154,28 @@ class ShouldRequestReviewUseCaseTest {
 
         verifyNoInteractions(getAttackInProgressRepository)
     }
+
+    @Test
+    fun `Given the requests are used up then the migraines are not even read`() {
+        given(getReviewMarksRepository.reviewMarks()).willReturn(ReviewMarksDomainModel(3, null))
+
+        asks()
+
+        verifyNoInteractions(getMigraineCountRepository)
+    }
+
+    @Test
+    fun `Given the last request is dated after now, as when the clock moved back, then no`() {
+        given(getReviewMarksRepository.reviewMarks())
+            .willReturn(ReviewMarksDomainModel(1, NOW.plus(Duration.ofDays(1))))
+
+        assertFalse(asks())
+    }
+
+    @Test
+    fun `Given a paywall dated after now then the app does not ask`() {
+        given(getLastPaywallShownRepository.lastPaywallShown()).willReturn(NOW.plusSeconds(60))
+
+        assertFalse(asks())
+    }
 }

@@ -98,6 +98,15 @@ class ReviewRepositoryTest {
     }
 
     @Test
+    fun `When preparing the flow then whether Google Play prepared it`() {
+        given(reviewDataSource.prepareReviewFlow()).willReturn(true)
+        assertTrue(classUnderTest.prepareReviewFlow())
+
+        given(reviewDataSource.prepareReviewFlow()).willReturn(false)
+        assertFalse(classUnderTest.prepareReviewFlow())
+    }
+
+    @Test
     fun `When launching the flow then Google Play's answer, for the domain`() {
         given(reviewDataSource.launchReviewFlow()).willReturn(ReviewFlowDataModel.Completed)
         assertEquals(ReviewFlowResultDomainModel.Completed, classUnderTest.launchReviewFlow())

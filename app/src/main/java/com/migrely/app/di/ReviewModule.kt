@@ -9,6 +9,7 @@ import com.migrely.app.datasource.preferences.datasource.PreferencesDataSource
 import com.migrely.app.datasource.review.datasource.ReviewDataSource
 import com.migrely.app.review.data.mapper.ReviewFlowDomainMapper
 import com.migrely.app.review.data.repository.ReviewRepository
+import com.migrely.app.review.domain.usecase.PrepareReviewUseCase
 import com.migrely.app.review.domain.usecase.RequestReviewUseCase
 import com.migrely.app.review.domain.usecase.ShouldRequestReviewUseCase
 import com.migrely.app.review.presentation.viewmodel.ReviewPromptViewModel
@@ -62,7 +63,13 @@ internal object ReviewModule {
             getCurrentTimeRepository = reviewRepository,
             coroutineContextProvider = coroutineContextProvider
         ),
+        prepareReviewUseCase = PrepareReviewUseCase(
+            prepareReviewFlowRepository = reviewRepository,
+            coroutineContextProvider = coroutineContextProvider
+        ),
         requestReviewUseCase = RequestReviewUseCase(
+            getAttackInProgressRepository = reviewRepository,
+            getLastPaywallShownRepository = reviewRepository,
             launchReviewFlowRepository = reviewRepository,
             markReviewRequestedRepository = reviewRepository,
             getCurrentTimeRepository = reviewRepository,

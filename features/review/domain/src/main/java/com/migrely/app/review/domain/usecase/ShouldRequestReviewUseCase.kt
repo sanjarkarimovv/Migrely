@@ -24,14 +24,22 @@ internal val REQUEST_GAP: Duration = Duration.ofDays(120)
 internal const val MAX_REQUESTS = 3
 
 /**
- * Whether the app asks for a rating now (BRD §14.4, D130, design D3). Only when all hold:
- * - at least [MIN_MIGRAINES] migraines are logged and not deleted;
+ * Whether no paywall showed itself in the last [PAYWALL_GAP] before [now] (BRD D130). One dated after
+ * [now], as a clock moved back leaves it, counts as recent until the clock passes it.
+ */
+internal fun longSinceLastPaywall(lastShown: Instant?, now: Instant): Boolean =
+    lastShown == null || Duration.between(lastShown, now) >= PAYWALL_GAP
+
+/**
+ * Whether the app asks for a rating now (BRD §14.4, D130, design D3). Only when all hold, read in
+ * this order, the cheap ones first (review M-1):
+ * - it never asked, or it asked fewer than [MAX_REQUESTS] times and last at least [REQUEST_GAP] ago;
  * - no paywall showed itself in the last [PAYWALL_GAP];
  * - the app's previous run did not end with a crash or an ANR;
- * - it never asked, or it asked fewer than [MAX_REQUESTS] times and last at least [REQUEST_GAP] ago;
+ * - at least [MIN_MIGRAINES] migraines are logged and not deleted;
  * - no attack is in progress. Asked last, so an attack started meanwhile is seen.
  *
- * Whatever cannot be read counts as no.
+ * Whatever cannot be read counts as no, and so does a mark dated after now.
  */
 @Suppress("LongParameterList")
 class ShouldRequestReviewUseCase(
@@ -45,20 +53,15 @@ class ShouldRequestReviewUseCase(
 ) : BackgroundExecutingUseCase<Unit, Boolean>(coroutineContextProvider) {
     override fun executeInBackground(request: Unit): Boolean {
         val now = getCurrentTimeRepository.now()
-        return enoughMigraines() &&
-            longSinceLastPaywall(now) &&
+        return requestAllowed(now) &&
+            longSinceLastPaywall(getLastPaywallShownRepository.lastPaywallShown(), now) &&
             !getPreviousExitRepository.previousExitCrashed() &&
-            requestAllowed(now) &&
+            enoughMigraines() &&
             getAttackInProgressRepository.attackInProgress() == false
     }
 
     private fun enoughMigraines(): Boolean =
         (getMigraineCountRepository.migraineCount() ?: 0) >= MIN_MIGRAINES
-
-    private fun longSinceLastPaywall(now: Instant): Boolean {
-        val shown = getLastPaywallShownRepository.lastPaywallShown() ?: return true
-        return Duration.between(shown, now) >= PAYWALL_GAP
-    }
 
     private fun requestAllowed(now: Instant): Boolean {
         val marks = getReviewMarksRepository.reviewMarks()

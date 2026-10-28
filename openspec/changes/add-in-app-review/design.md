@@ -28,17 +28,22 @@ already opens Google Play's UI over the activity held by `CurrentActivityHolder`
 
 | Piece | Where | What |
 |---|---|---|
-| `ReviewDataSource` | `:datasource:source`, package `review` | `launchReviewFlow(): ReviewFlowDataModel`, blocking, off the main thread |
+| `ReviewDataSource` | `:datasource:source`, package `review` | `prepareReviewFlow(): Boolean` and `launchReviewFlow(): ReviewFlowDataModel`, both blocking, off the main thread |
 | `ReviewFlowDataModel` | same, `model` | `Completed`, `Unavailable` |
-| `PlayReviewDataSourceImpl` | `:datasource:implementation` | `requestReviewFlow()`, then `launchReviewFlow(activity, info)`, both on the main context |
+| `PlayReviewDataSourceImpl` | `:datasource:implementation` | `requestReviewFlow()` keeps the `ReviewInfo`; `launchReviewFlow(activity, info)` uses it once |
 
-- **Activity:** it comes from `currentActivity`, which is `CurrentActivityHolder::resumed`. With no resumed activity
-  the result is `Unavailable`.
+- **Two steps (code review I-1):** the flow is prepared first and launched only when the caller still wants it. A
+  launch without a prepared `ReviewInfo` is `Unavailable`, and a launch uses it up.
+- **Activity:** it comes from `currentActivity`, which is `CurrentActivityHolder::resumed`. It is read in the same
+  main-thread block that launches, so the flow opens over the activity on screen at that moment. With no resumed
+  activity the result is `Unavailable`.
 - **Waiting:** each Google Play task is awaited through a `CompletableDeferred` completed by
   `addOnCompleteListener`.
-- **Timeouts (`PlayReviewTimings`):** 10 s for the request; 10 min for the launch, which completes only when the card
+- **Timeouts (`PlayReviewTimings`):** 10 s for preparing; 10 min for the launch, which completes only when the card
   closes.
 - **Unavailable:** a failed task, a timeout or any thrown `RuntimeException`.
+- **Main thread (review M-2):** both calls block until Google Play answers on the main thread, so calling either on
+  the main thread would deadlock. Each checks first and throws at once.
 - **Tests:** `newManager` builds the `ReviewManager`, and tests pass their own.
 
 ### D2. Preferences and the previous exit
@@ -64,6 +69,7 @@ already opens Google Play's UI over the activity held by `CurrentActivityHolder`
   - `GetPreviousExitRepository`;
   - `GetReviewMarksRepository`;
   - `GetCurrentTimeRepository`;
+  - `PrepareReviewFlowRepository`;
   - `LaunchReviewFlowRepository`;
   - `MarkReviewRequestedRepository`.
 - `ShouldRequestReviewUseCase` applies D130 with these constants:
@@ -71,12 +77,18 @@ already opens Google Play's UI over the activity held by `CurrentActivityHolder`
   - `PAYWALL_GAP` = 3 days;
   - `REQUEST_GAP` = 120 days;
   - `MAX_REQUESTS` = 3.
-  It reads the attack in progress last, like the paywall, so an attack started meanwhile is seen. An unknown count
-  or an unknown attack in progress means no.
-- `RequestReviewUseCase` launches the flow. On `Completed` it marks the request with the current time and returns
-  `true`; otherwise it marks nothing.
+- **Order of reads:**
+  1. The preference rules (marks, paywall, previous exit) come first, as they are cheap (review M-1).
+  2. The migraine count comes next.
+  3. The attack in progress is read last, like the paywall, so an attack started meanwhile is seen.
+  An unknown count or an unknown attack in progress means no.
+- **Marks dated after now:** say no, as a clock moved back would leave them, until the clock passes them.
+- `PrepareReviewUseCase` has Google Play prepare the flow and answers whether it did.
+- `RequestReviewUseCase` re-checks, just before launching, that no attack is in progress and that no paywall showed
+  itself within `PAYWALL_GAP` (I-1, I-2). It then launches the prepared flow. On `Completed` it marks the request
+  with the current time and answers `true`; otherwise it marks nothing.
 
-**Data:** `ReviewRepository` implements all eight repositories.
+**Data:** `ReviewRepository` implements all nine repositories.
 - It uses `AttackDataSource`, `PreferencesDataSource`, `AppInfoDataSource`, `ClockDataSource` and
   `ReviewDataSource`.
 - Migraines: `overlapping(null, EPOCH, now)`, as the subscription counts them. Soft-deleted attacks are invisible
@@ -85,17 +97,23 @@ already opens Google Play's UI over the activity held by `CurrentActivityHolder`
 - `ReviewFlowDomainMapper` maps the result.
 
 **Presentation:** `ReviewPromptViewModel` is `BaseViewModel<Unit, ReviewPromptPresentationNotification>`.
-- `onEnter()` asks `ShouldRequestReviewUseCase` and, when it answers yes, `RequestReviewUseCase`.
-- `asking` keeps one question at a time. `tried` is set when the flow is launched and is never cleared.
+- `onEnter()` (home settled) runs `ShouldRequestReviewUseCase`, then `PrepareReviewUseCase`, then
+  `RequestReviewUseCase`. The last runs only if `onLeave()` has not come in between.
+- The view model keeps three flags:
+  - `onHome` is set by `onEnter()` and cleared by `onLeave()`;
+  - `asking` keeps one round at a time;
+  - `done` is set when the flow is launched or Google Play could not prepare it, and is never cleared.
+- A round dropped because home was left leaves `done` unset, so the next settle tries again.
 
 **UI:** `ReviewPromptDependencies.ReviewPrompt(refreshKey)` draws nothing.
-- `LaunchedEffect(refreshKey, lifecycle)` runs `repeatOnLifecycle(RESUMED) { delay(2 s); onEnter() }`.
-- Leaving today's mode removes the slot, and leaving the screen pauses the lifecycle. Both cancel the wait
-  (EC-REV-07).
+- `LaunchedEffect(refreshKey, lifecycle)` runs `repeatOnLifecycle(RESUMED)` with
+  `try { delay(2 s); onEnter(); awaitCancellation() } finally { onLeave() }`.
+- Leaving today's mode removes the slot, leaving the screen pauses the lifecycle, and a new home load restarts the
+  effect. Each of these cancels the wait, or tells the view model that home was left (EC-REV-07).
 
 ### D4. Once per process
 
-The `AppNavHostDependencies` are built per activity. A view model built with them would forget `tried` on rotation.
+The `AppNavHostDependencies` are built per activity. A view model built with them would forget `done` on rotation.
 `:app` therefore provides `ReviewPromptViewModel` as `@Singleton`. The flag then lives as long as the process
 (EC-REV-08), and "Delete all data", which starts a new process, starts afresh. The view model holds no activity or
 context.
@@ -117,8 +135,11 @@ context.
 
 ### D6. Privacy text
 
-The privacy policy (md and html) gains one sentence under Purchases: rating Migrely in Google Play's window sends the
-rating to Google under Google's terms; Migrely never sees it. Data safety does not change: Migrely collects nothing.
+- **Privacy policy (md and html):** a "Rating Migrely" section, and a line in the list of what Migrely keeps. A rating
+  goes to Google Play under Google's terms, and Migrely never sees it.
+- **Data safety:** a "Ratings" entry. Migrely still collects nothing.
+- **Website:** `python3 website/build.py` regenerates `website/public/privacy/`, which the owner deploys (tracker T09;
+  review M-3).
 
 ## Risks
 
@@ -126,6 +147,7 @@ rating to Google under Google's terms; Migrely never sees it. Data safety does n
 |---|---|
 | A library update brings a network permission | The build's permission check fails the build (issue #36); the AARs are checked in this change |
 | Play's quota hides the card, and a request is "spent" | Accepted: Play does not report display. 120 days later the app may ask again, at most 3 times |
-| The flow interrupts the paywall | The 3-day gap, and a paywall navigates home away, which cancels the settle wait |
+| The flow interrupts the paywall (review I-2) | The 3-day gap. A paywall that opens before the launch takes home away, so `onLeave()` drops the round, and the launch re-checks the paywall mark. The one window left: the 5th-migraine paywall decides more than 2 seconds after home loads (Google Play billing slow to connect) and only after the card has opened. The card and the paywall then follow each other once. Sequencing the two would mean changing the subscription feature, which QA has verified for release. It is left for later and recorded here |
 | `launchReviewFlow` never completes | A 10-minute timeout, then `Unavailable`; the attempt is spent for the process |
+| An attack starts while Google Play prepares (review I-1) | Two steps: a launch needs home still on screen (`onLeave()` not called) and re-reads the attack in progress just before launching |
 | QA cannot see the card in a debug build | Debug uses `FakeReviewManager`, so every launch completes and is marked: QA checks the marks in `migrely_preferences` with `run-as`. The real card can be seen on an internal-testing install of a release build |

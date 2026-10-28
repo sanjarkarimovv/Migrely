@@ -7,13 +7,15 @@ import com.google.android.gms.tasks.Task
 import com.google.android.play.core.review.ReviewInfo
 import com.google.android.play.core.review.ReviewManager
 import com.migrely.app.datasource.review.model.ReviewFlowDataModel
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.asCoroutineDispatcher
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.mockito.kotlin.any
-import org.mockito.kotlin.doAnswer
-import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.given
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
@@ -30,25 +32,38 @@ class PlayReviewDataSourceImplTest {
         context = context,
         currentActivity = { onScreen },
         newManager = { manager },
-        timings = PlayReviewTimings(requestTimeoutMillis = 50L, launchTimeoutMillis = 50L),
-        mainContext = Dispatchers.Unconfined
+        timings = PlayReviewTimings(prepareTimeoutMillis = 50L, launchTimeoutMillis = 50L),
+        mainContext = Dispatchers.Unconfined,
+        onMainThread = { false }
     )
 
-    /** A Google Play task that ends at once as [successful], or never ends when [answers] is false. */
-    private fun <T> task(successful: Boolean, result: T? = null, answers: Boolean = true): Task<T> {
-        val task: Task<T> = mock {
-            on { isSuccessful } doReturn successful
-            on { this.result } doReturn result
-        }
+    /**
+     * A Google Play task that ends as [successful]: at once, through [answer] when given (as Google
+     * Play answers later, on its own thread), or never when [answers] is false.
+     */
+    private fun <T> task(
+        successful: Boolean,
+        result: T? = null,
+        answers: Boolean = true,
+        answer: ((() -> Unit) -> Unit)? = null
+    ): Task<T> {
+        val task: Task<T> = mock()
+        given(task.isSuccessful).willReturn(successful)
+        given(task.result).willReturn(result)
         given(task.addOnCompleteListener(any<OnCompleteListener<T>>())).willAnswer { invocation ->
-            if (answers) invocation.getArgument<OnCompleteListener<T>>(0).onComplete(task)
+            val listener = invocation.getArgument<OnCompleteListener<T>>(0)
+            when {
+                !answers -> Unit
+                answer != null -> answer { listener.onComplete(task) }
+                else -> listener.onComplete(task)
+            }
             task
         }
         return task
     }
 
     // Each task is built before stubbing, as Mockito cannot stub one mock while making another.
-    private fun givenRequest(successful: Boolean, answers: Boolean = true) {
+    private fun givenPrepare(successful: Boolean, answers: Boolean = true) {
         val request = task(successful, reviewInfo, answers)
         given(manager.requestReviewFlow()).willReturn(request)
     }
@@ -59,25 +74,52 @@ class PlayReviewDataSourceImplTest {
     }
 
     @Test
-    fun `Given Google Play runs the flow to its end then completed, over the activity on screen`() {
-        givenRequest(successful = true)
+    fun `Given Google Play prepares and runs the flow then completed, over the screen`() {
+        givenPrepare(successful = true)
         givenLaunch(successful = true)
 
+        assertTrue(classUnderTest.prepareReviewFlow())
         assertEquals(ReviewFlowDataModel.Completed, classUnderTest.launchReviewFlow())
         verify(manager).launchReviewFlow(activity, reviewInfo)
     }
 
     @Test
-    fun `Given Google Play cannot prepare the flow then unavailable, and nothing is launched`() {
-        givenRequest(successful = false)
+    fun `Given a launch has used the prepared flow then another launch is unavailable`() {
+        givenPrepare(successful = true)
+        givenLaunch(successful = true)
+        classUnderTest.prepareReviewFlow()
+        classUnderTest.launchReviewFlow()
 
+        assertEquals(ReviewFlowDataModel.Unavailable, classUnderTest.launchReviewFlow())
+        verify(manager).launchReviewFlow(activity, reviewInfo)
+    }
+
+    @Test
+    fun `Given nothing was prepared then a launch is unavailable, and nothing opens`() {
         assertEquals(ReviewFlowDataModel.Unavailable, classUnderTest.launchReviewFlow())
         verify(manager, never()).launchReviewFlow(any(), any())
     }
 
     @Test
-    fun `Given no activity on screen then unavailable, and nothing is launched`() {
-        givenRequest(successful = true)
+    fun `Given Google Play cannot prepare the flow then no, and a launch opens nothing`() {
+        givenPrepare(successful = false)
+
+        assertFalse(classUnderTest.prepareReviewFlow())
+        assertEquals(ReviewFlowDataModel.Unavailable, classUnderTest.launchReviewFlow())
+        verify(manager, never()).launchReviewFlow(any(), any())
+    }
+
+    @Test
+    fun `Given Google Play does not prepare in time then no`() {
+        givenPrepare(successful = true, answers = false)
+
+        assertFalse(classUnderTest.prepareReviewFlow())
+    }
+
+    @Test
+    fun `Given no activity on screen when launching then unavailable, and nothing opens`() {
+        givenPrepare(successful = true)
+        classUnderTest.prepareReviewFlow()
         onScreen = null
 
         assertEquals(ReviewFlowDataModel.Unavailable, classUnderTest.launchReviewFlow())
@@ -85,42 +127,91 @@ class PlayReviewDataSourceImplTest {
     }
 
     @Test
-    fun `Given the launch fails then unavailable`() {
-        givenRequest(successful = true)
+    fun `Given the launch fails or does not end in time then unavailable`() {
+        givenPrepare(successful = true)
         givenLaunch(successful = false)
-
+        classUnderTest.prepareReviewFlow()
         assertEquals(ReviewFlowDataModel.Unavailable, classUnderTest.launchReviewFlow())
-    }
 
-    @Test
-    fun `Given Google Play does not answer the request in time then unavailable`() {
-        givenRequest(successful = true, answers = false)
-
-        assertEquals(ReviewFlowDataModel.Unavailable, classUnderTest.launchReviewFlow())
-        verify(manager, never()).launchReviewFlow(any(), any())
-    }
-
-    @Test
-    fun `Given the flow does not end in time then unavailable`() {
-        givenRequest(successful = true)
         givenLaunch(successful = true, answers = false)
-
+        classUnderTest.prepareReviewFlow()
         assertEquals(ReviewFlowDataModel.Unavailable, classUnderTest.launchReviewFlow())
     }
 
     @Test
-    fun `Given Google Play throws then unavailable, never a crash`() {
-        val throwing: ReviewManager = mock {
-            on { requestReviewFlow() } doThrow
-                IllegalStateException()
+    fun `Given Google Play throws while preparing then no, never a crash`() {
+        given(manager.requestReviewFlow()).willThrow(IllegalStateException())
+
+        assertFalse(classUnderTest.prepareReviewFlow())
+    }
+
+    @Test
+    fun `Given Google Play throws while launching then unavailable, never a crash`() {
+        givenPrepare(successful = true)
+        classUnderTest.prepareReviewFlow()
+        given(manager.launchReviewFlow(activity, reviewInfo)).willThrow(IllegalStateException())
+
+        assertEquals(ReviewFlowDataModel.Unavailable, classUnderTest.launchReviewFlow())
+    }
+
+    @Test(expected = IllegalStateException::class)
+    fun `Given the main thread when preparing then it fails at once instead of hanging`() {
+        PlayReviewDataSourceImpl(
+            context = context,
+            currentActivity = { activity },
+            newManager = { manager },
+            onMainThread = { true }
+        ).prepareReviewFlow()
+    }
+
+    @Test(expected = IllegalStateException::class)
+    fun `Given the main thread when launching then it fails at once instead of hanging`() {
+        PlayReviewDataSourceImpl(
+            context = context,
+            currentActivity = { activity },
+            newManager = { manager },
+            onMainThread = { true }
+        ).launchReviewFlow()
+    }
+
+    @Test
+    fun `Given Google Play answers later on its own thread then the caller waits for it`() {
+        val main = Executors.newSingleThreadExecutor()
+        val play = Executors.newSingleThreadScheduledExecutor()
+        val mainThread = main.submit<Thread> { Thread.currentThread() }.get()
+        val calledOn = mutableListOf<Thread>()
+        val later: (() -> Unit) -> Unit = { complete ->
+            play.schedule(complete, 20, TimeUnit.MILLISECONDS)
+        }
+        val request = task(true, reviewInfo, answer = later)
+        val launch = task<Void>(true, null, answer = later)
+        val threaded: ReviewManager = mock()
+        given(threaded.requestReviewFlow()).willAnswer {
+            calledOn += Thread.currentThread()
+            request
+        }
+        given(threaded.launchReviewFlow(activity, reviewInfo)).willAnswer {
+            calledOn += Thread.currentThread()
+            launch
         }
         val dataSource = PlayReviewDataSourceImpl(
             context = context,
             currentActivity = { activity },
-            newManager = { throwing },
-            mainContext = Dispatchers.Unconfined
+            newManager = { threaded },
+            timings = PlayReviewTimings(
+                prepareTimeoutMillis = 2_000L,
+                launchTimeoutMillis = 2_000L
+            ),
+            mainContext = main.asCoroutineDispatcher(),
+            onMainThread = { Thread.currentThread() == mainThread }
         )
-
-        assertEquals(ReviewFlowDataModel.Unavailable, dataSource.launchReviewFlow())
+        try {
+            assertTrue(dataSource.prepareReviewFlow())
+            assertEquals(ReviewFlowDataModel.Completed, dataSource.launchReviewFlow())
+            assertEquals(listOf(mainThread, mainThread), calledOn)
+        } finally {
+            main.shutdownNow()
+            play.shutdownNow()
+        }
     }
 }

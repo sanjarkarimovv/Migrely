@@ -15,7 +15,7 @@ Migrely keeps what you enter on your phone:
 - your answers to the welcome questions, such as how often migraines come;
 - your settings, such as reminders, the theme and whether you track periods;
 - whether Migrely Premium is on (see Purchases below);
-- how many times it has asked Google Play to show its rating window, and when it last did (see Rating Migrely below);
+- how many times Google Play's rating window has run, and when it last did (see Rating Migrely below);
 - up to three automatic copies of your entries, made before an import replaces them.
 
 Migrely does not ask for your name, email, location, contacts, photos or any account. It has no internet permission,
@@ -65,7 +65,8 @@ use Google Play; Migrely cannot cancel it for you.
 After a few migraines, at a calm moment and rarely, Migrely may ask Google Play to show its own rating window over the
 app. Whatever you choose or write there goes to Google Play under Google's privacy policy. Google Play does not tell
 Migrely whether you rated it or what you wrote, and we never receive it from the app. Migrely keeps only how many times
-it has asked and when it last did, so that it asks no more than once in 120 days and three times in all. This is kept
+Google Play's window has run and when it last did, so that it asks no more than once in 120 days and three times in
+all. This is kept
 with your settings: it is part of Android's backup, and Settings → Delete all data removes it.
 
 ## Deleting your information

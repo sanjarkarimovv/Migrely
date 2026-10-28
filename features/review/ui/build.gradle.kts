@@ -2,7 +2,6 @@ plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.compose.compiler)
-    id("kotlin-parcelize")
 
     alias(libs.plugins.ktlint)
     alias(libs.plugins.detekt)
@@ -52,21 +51,9 @@ detekt {
 
 dependencies {
     implementation(projects.features.review.presentation)
-    implementation(projects.designsystem)
-    implementation(projects.architecture.ui)
     implementation(projects.architecture.presentation)
 
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)
-    implementation(libs.compose.material3)
-    implementation(libs.compose.ui.graphics)
-    implementation(libs.compose.ui.tooling)
-    implementation(libs.compose.navigation)
-    implementation(libs.compose.ui.tooling.preview)
     implementation(libs.androidx.lifecycle.runtime.compose)
-    implementation(libs.androidx.activity.compose)
-
-    testImplementation(libs.test.junit)
-    testImplementation(libs.test.mockito.kotlin)
-    testImplementation(libs.test.kotlinx.coroutines)
 }

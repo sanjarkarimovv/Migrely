@@ -17,6 +17,7 @@ import com.migrely.app.review.domain.repository.GetPreviousExitRepository
 import com.migrely.app.review.domain.repository.GetReviewMarksRepository
 import com.migrely.app.review.domain.repository.LaunchReviewFlowRepository
 import com.migrely.app.review.domain.repository.MarkReviewRequestedRepository
+import com.migrely.app.review.domain.repository.PrepareReviewFlowRepository
 import java.time.Instant
 
 /**
@@ -38,6 +39,7 @@ class ReviewRepository(
     GetPreviousExitRepository,
     GetReviewMarksRepository,
     GetCurrentTimeRepository,
+    PrepareReviewFlowRepository,
     LaunchReviewFlowRepository,
     MarkReviewRequestedRepository {
     /**
@@ -70,6 +72,8 @@ class ReviewRepository(
     }
 
     override fun now(): Instant = clockDataSource.now()
+
+    override fun prepareReviewFlow(): Boolean = reviewDataSource.prepareReviewFlow()
 
     override fun launchReviewFlow(): ReviewFlowResultDomainModel =
         reviewFlowDomainMapper.toDomain(reviewDataSource.launchReviewFlow())

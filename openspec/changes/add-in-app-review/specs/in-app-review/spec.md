@@ -61,14 +61,21 @@ On a home load in today's mode, the app SHALL ask only when all of these hold (D
 - **THEN** nothing is asked on that load
 
 ### Requirement: Letting home settle
-The app SHALL ask only after home has shown today's mode for 2 seconds while the app is on screen. It SHALL NOT ask if
-within them an attack starts, another screen opens or the app leaves the screen. It SHALL launch the flow at most once
-per process, whatever the rotations or home loads (D130).
+The app SHALL ask only after home has shown today's mode for 2 seconds while the app is on screen. It SHALL first have
+Google Play prepare the flow, and SHALL launch it only if home is still on screen, no attack is in progress and no
+paywall has shown itself. It SHALL launch the flow at most once per process, whatever the rotations or home loads
+(D130).
 
 #### Scenario: Leaving within 2 seconds
 - **WHEN** within 2 seconds of home showing today's mode the user starts an attack, opens another screen or sends the
   app to the background
 - **THEN** nothing is asked, and the rules are checked again on the next home load in today's mode (EC-REV-07)
+
+#### Scenario: Leaving while Google Play prepares
+- **WHEN** after home has settled the user starts an attack, opens another screen or a paywall opens before Google
+  Play has prepared the flow
+- **THEN** the flow is not launched, nothing counts, and the next settled home load in today's mode tries again
+  (EC-REV-01, EC-REV-03, EC-REV-07)
 
 #### Scenario: Rotation and reloads
 - **WHEN** the screen rotates or home reloads several times after the flow was launched in this process
@@ -84,8 +91,8 @@ app SHALL NOT try again in that process. The marks SHALL be kept with the settin
 - **THEN** one request is counted with its time (EC-REV-06)
 
 #### Scenario: Play cannot run it
-- **WHEN** the Play Store is missing, the app was not installed from Play and Play fails, no activity is on screen, or
-  Play does not answer in time
+- **WHEN** the Play Store is missing, the app was not installed from Play and Play fails to prepare or launch the
+  flow, no activity is on screen, or Play does not answer in time
 - **THEN** no error shows, the app goes on, no request counts, and none is tried again in that process (EC-REV-05)
 
 #### Scenario: Delete all data
