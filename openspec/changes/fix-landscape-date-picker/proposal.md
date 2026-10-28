@@ -14,20 +14,21 @@ QA #101 (S3, accessibility) shows that, in landscape, the date step of every dat
   grid needs, so the grid is centred on the space it gets and spills above and below it. The picker itself never
   scrolls.
 - **The spec it breaks:** the specs already require these screens to stay usable in landscape and at 200% font
-  (`past-attacks`, `attack-details`). The workarounds are text input mode and portrait.
+  (`past-attacks`, `attack-details`, `medication-intakes`). The workarounds are text input mode and portrait.
 
 ## What Changes
 
 - **Design system:** the date step's `DatePicker` scrolls vertically. Measured at its own height, the month grid
-  keeps its 48 dp rows. When the dialog is shorter, the user scrolls to the weeks that do not fit. This is the same
-  approach as the time step since QA #79.
+  keeps its 48 dp rows. When the dialog is shorter, the user scrolls to the weeks that do not fit. Like the time step
+  since QA #79 it scrolls, but here Cancel and Next stay in place, because the dialog keeps them below its content.
 
 **Unchanged:**
 - portrait at the default font size, where the picker fits;
 - text input mode;
 - the time step;
 - the picked values and their checks;
-- the Doctor report's `DateRangePicker`, whose months already scroll in a list.
+- the Doctor report's `DateRangePicker`, whose months already scroll in a list. Its header does not scroll, so the
+  walk also checks it in landscape at 200% font.
 
 **Out of scope:** the AM/PM switch's missing selected state (#92).
 
