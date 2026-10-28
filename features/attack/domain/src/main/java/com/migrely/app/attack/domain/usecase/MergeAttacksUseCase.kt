@@ -85,7 +85,8 @@ class MergeAttacksUseCase(
         }
         val latestAllowed = now.instant.plus(CLOCK_TOLERANCE)
         when {
-            request.start.isAfter(latestAllowed) ->
+            // The tolerance is for ends only: an attack cannot have started later than now (QA #89).
+            request.start.isAfter(now.instant) ->
                 return MergeAttacksResultDomainModel.InFuture(TimeFieldDomainModel.Start)
 
             end != null && end.isAfter(latestAllowed) ->

@@ -176,7 +176,7 @@ private fun AttackSummaryRow(
         stringResource(R.string.attack_summary_peak, peak)
     }
     val spokenPeak = if (peak == null) {
-        stringResource(R.string.attack_summary_peak_not_recorded)
+        stringResource(R.string.attack_summary_peak_not_recorded_spoken)
     } else {
         stringResource(R.string.attack_summary_peak_spoken, peak)
     }

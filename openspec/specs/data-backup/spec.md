@@ -84,6 +84,10 @@ EC-BAK-04, EC-MED-07, D73, D118).
 - **WHEN** the user deletes a migraine and chooses "Replace" with a backup before the undo has run out
 - **THEN** the phone holds only the backup's records, and the deleted migraine can no longer be restored
 
+#### Scenario: A file with no migraines
+- **WHEN** the user adds a backup that holds medications and intakes but no migraine, and some of them are new
+- **THEN** Migrely says "Added the new entries." and says nothing about migraines
+
 ### Requirement: Files that cannot be imported
 A broken file, or a file of another format, SHALL change nothing and say "This file isn't a Migrely backup." A file
 from a newer version of Migrely SHALL be refused with "Update Migrely to open this file." A file from an older version

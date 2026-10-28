@@ -22,7 +22,7 @@ rules:
   tasks:
     - Order tasks domain, presentation, data and datasource, UI, app DI and navigation, tests, verify.
     - Keep each task small enough to finish in about two hours.
-    - End with a verify task that runs the build, unit tests, Konsist architecture tests, ktlint and detekt.
+    - End with a verify task that runs the build, unit tests, Konsist architecture tests, ktlint, detekt and Android Lint.
 
 operations:
   apply:
