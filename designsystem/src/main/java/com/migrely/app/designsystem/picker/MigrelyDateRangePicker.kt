@@ -2,17 +2,20 @@ package com.migrely.app.designsystem.picker
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.union
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.DatePickerDefaults
 import androidx.compose.material3.DateRangePicker
 import androidx.compose.material3.DateRangePickerDefaults
 import androidx.compose.material3.DateRangePickerState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -24,6 +27,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -38,7 +42,8 @@ data class DateRangePickerLabels(val title: String, val confirm: String, val can
 
 /**
  * Picks a range of days up to [lastDate] in the years of [yearRange], full screen as Material advises for a range
- * picker on a phone (BRD D127). Done takes the chosen range, or the start day alone when no end is chosen.
+ * picker on a phone (BRD D127). Done is on once the range has an end, as in Material's own full-screen picker;
+ * picking the same day twice gives a range of one day.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Suppress("LongParameterList")
@@ -53,16 +58,19 @@ fun MigrelyDateRangePicker(
     onDismiss: () -> Unit
 ) {
     // The Material picker works in UTC days, so dates are converted at their UTC midnight.
-    val state = rememberDateRangePickerState(
-        initialSelectedStartDateMillis = initialStart?.utcMidnight(),
-        initialSelectedEndDateMillis = initialEnd?.utcMidnight(),
-        yearRange = yearRange,
-        selectableDates = object : SelectableDates {
+    val selectableDates = remember(lastDate) {
+        object : SelectableDates {
             override fun isSelectableDate(utcTimeMillis: Long) =
                 utcTimeMillis <= lastDate.utcMidnight()
 
             override fun isSelectableYear(year: Int) = year <= lastDate.year
         }
+    }
+    val state = rememberDateRangePickerState(
+        initialSelectedStartDateMillis = initialStart?.utcMidnight(),
+        initialSelectedEndDateMillis = initialEnd?.utcMidnight(),
+        yearRange = yearRange,
+        selectableDates = selectableDates
     )
     Dialog(
         onDismissRequest = onDismiss,
@@ -72,6 +80,10 @@ fun MigrelyDateRangePicker(
     }
 }
 
+/**
+ * The picker's full-screen content: Cancel, the title and Done in a row above Material's range picker. The window
+ * is announced by the title, as a dialog's would be.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun DateRangePickerScreen(
@@ -81,8 +93,18 @@ internal fun DateRangePickerScreen(
     onDismiss: () -> Unit
 ) {
     val start = state.selectedStartDateMillis
-    Surface(Modifier.fillMaxSize(), color = DatePickerDefaults.colors().containerColor) {
-        Column(Modifier.safeDrawingPadding()) {
+    val end = state.selectedEndDateMillis
+    Surface(
+        modifier = Modifier
+            .fillMaxSize()
+            .semantics { paneTitle = labels.title },
+        color = DatePickerDefaults.colors().containerColor
+    ) {
+        // Clear of the system bars, but not of the keyboard: in text input mode the fields sit at the top, and
+        // making room for the keyboard squeezed them to thin lines in landscape at 200% font.
+        Column(
+            Modifier.windowInsetsPadding(WindowInsets.systemBars.union(WindowInsets.displayCutout))
+        ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
@@ -100,21 +122,16 @@ internal fun DateRangePickerScreen(
                 )
                 TextButton(
                     onClick = {
-                        if (start !=
-                            null
-                        ) {
-                            onConfirm(
-                                start.utcDate(),
-                                (state.selectedEndDateMillis ?: start).utcDate()
-                            )
-                        }
+                        if (start != null && end != null) onConfirm(start.utcDate(), end.utcDate())
                     },
-                    enabled = start != null
+                    // Not on a start alone: in text input mode, a changed start drops the end while its field
+                    // still shows it, and an end that is not allowed is dropped too.
+                    enabled = start != null && end != null
                 ) { Text(labels.confirm) }
             }
-            // The picker's header does not scroll and the months get only the height left under it. Material's title
-            // keeps the header at least 128 dp high and its large headline wraps the two dates into many lines, so
-            // at 200% font no week was left (#102): the title is in the row above, and the headline is smaller.
+            // The picker's header does not scroll, and the months get only the height left under it (#102). So the
+            // picker fills the screen, its title is in the row above instead of a header line, and the headline
+            // starts 24 dp in rather than Material's 64 dp, so the two dates wrap less.
             val dateFormatter = remember { DatePickerDefaults.dateFormatter() }
             DateRangePicker(
                 state = state,
@@ -122,15 +139,13 @@ internal fun DateRangePickerScreen(
                 dateFormatter = dateFormatter,
                 title = null,
                 headline = {
-                    ProvideTextStyle(MaterialTheme.typography.titleLarge) {
-                        DateRangePickerDefaults.DateRangePickerHeadline(
-                            selectedStartDateMillis = state.selectedStartDateMillis,
-                            selectedEndDateMillis = state.selectedEndDateMillis,
-                            displayMode = state.displayMode,
-                            dateFormatter = dateFormatter,
-                            modifier = Modifier.padding(start = 24.dp, end = 12.dp, bottom = 12.dp)
-                        )
-                    }
+                    DateRangePickerDefaults.DateRangePickerHeadline(
+                        selectedStartDateMillis = state.selectedStartDateMillis,
+                        selectedEndDateMillis = state.selectedEndDateMillis,
+                        displayMode = state.displayMode,
+                        dateFormatter = dateFormatter,
+                        modifier = Modifier.padding(start = 24.dp, end = 12.dp, bottom = 12.dp)
+                    )
                 }
             )
         }

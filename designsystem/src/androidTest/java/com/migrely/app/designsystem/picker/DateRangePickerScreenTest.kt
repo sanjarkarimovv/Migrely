@@ -1,24 +1,29 @@
 package com.migrely.app.designsystem.picker
 
+import android.content.res.Configuration
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.material3.DatePickerDefaults
 import androidx.compose.material3.DateRangePickerState
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.Density
-import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.migrely.app.designsystem.theme.MigrelyTheme
@@ -32,8 +37,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * The full-screen range picker (#102, BRD D127). With Material's own title and headline, at 200%
- * font the header filled the picker and the months got no height.
+ * The full-screen range picker (#102, BRD D127). In Material's 360 dp dialog, at 200% font the
+ * picker's header took all the height and the months got none.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @RunWith(AndroidJUnit4::class)
@@ -46,7 +51,7 @@ class DateRangePickerScreenTest {
 
     @Test
     fun atTwiceTheFontSizeInLandscapeTwoWeeksShowInFull() {
-        show(LANDSCAPE_WIDTH, LANDSCAPE_HEIGHT, fontScale = 2f, start = OCTOBER_5, end = OCTOBER_13)
+        showScreen(LANDSCAPE, fontScale = 2f, start = OCTOBER_5, end = OCTOBER_13)
 
         val weeks = weeksInFull()
         assertTrue("only $weeks weeks show in full", weeks >= 2)
@@ -54,7 +59,7 @@ class DateRangePickerScreenTest {
 
     @Test
     fun atTwiceTheFontSizeInPortraitTwoWeeksShowInFull() {
-        show(PORTRAIT_WIDTH, PORTRAIT_HEIGHT, fontScale = 2f, start = OCTOBER_5, end = OCTOBER_13)
+        showScreen(PORTRAIT, fontScale = 2f, start = OCTOBER_5, end = OCTOBER_13)
 
         val weeks = weeksInFull()
         assertTrue("only $weeks weeks show in full", weeks >= 2)
@@ -62,7 +67,7 @@ class DateRangePickerScreenTest {
 
     @Test
     fun twoDaysAndDoneGiveTheRange() {
-        show(PORTRAIT_WIDTH, PORTRAIT_HEIGHT)
+        showScreen()
 
         day(OCTOBER_3).performClick()
         day(OCTOBER_9).performClick()
@@ -72,9 +77,10 @@ class DateRangePickerScreenTest {
     }
 
     @Test
-    fun aStartAloneAndDoneGiveOneDay() {
-        show(PORTRAIT_WIDTH, PORTRAIT_HEIGHT)
+    fun theSameDayTwiceGivesOneDay() {
+        showScreen()
 
+        day(OCTOBER_3).performClick()
         day(OCTOBER_3).performClick()
         done().performClick()
 
@@ -82,15 +88,20 @@ class DateRangePickerScreenTest {
     }
 
     @Test
-    fun doneIsOffUntilAStartIsChosen() {
-        show(PORTRAIT_WIDTH, PORTRAIT_HEIGHT)
-
+    fun doneIsOffUntilAnEndIsChosen() {
+        showScreen()
         done().assertIsNotEnabled()
+
+        day(OCTOBER_3).performClick()
+        done().assertIsNotEnabled()
+
+        day(OCTOBER_9).performClick()
+        done().assertIsEnabled()
     }
 
     @Test
     fun cancelDismissesWithoutARange() {
-        show(PORTRAIT_WIDTH, PORTRAIT_HEIGHT, start = OCTOBER_5, end = OCTOBER_13)
+        showScreen(start = OCTOBER_5, end = OCTOBER_13)
 
         composeTestRule.onNode(hasText(LABELS.cancel) and hasClickAction()).performClick()
 
@@ -98,15 +109,30 @@ class DateRangePickerScreenTest {
         assertNull(confirmed)
     }
 
-    private fun show(
-        width: Dp,
-        height: Dp,
+    @Test
+    fun theRangeGivenIsKeptByDone() {
+        showPicker(start = OCTOBER_5, end = OCTOBER_13, lastDate = OCTOBER_13)
+
+        done().performClick()
+
+        assertEquals(OCTOBER_5 to OCTOBER_13, confirmed)
+    }
+
+    @Test
+    fun aDayAfterTheLastDateCannotBePicked() {
+        showPicker(start = OCTOBER_5, end = OCTOBER_13, lastDate = OCTOBER_13)
+
+        day(OCTOBER_13.plusDays(1)).assertIsNotEnabled()
+    }
+
+    /** [DateRangePickerScreen] alone, in a box of [size] or filling the test's window. */
+    private fun showScreen(
+        size: DpSize? = null,
         fontScale: Float = 1f,
         start: LocalDate? = null,
         end: LocalDate? = null
     ) {
         composeTestRule.setContent {
-            // A fixed locale, so the texts the test looks for do not depend on the device's.
             val state = remember {
                 DateRangePickerState(
                     locale = LOCALE,
@@ -116,17 +142,20 @@ class DateRangePickerScreenTest {
                     yearRange = YEARS
                 )
             }
+            // Compose scales text linearly here; Android 14 and later scale large text less, so this
+            // is stricter than a phone set to 200%.
             val density = LocalDensity.current
             CompositionLocalProvider(LocalDensity provides Density(density.density, fontScale)) {
-                MigrelyTheme {
-                    // Required, so a landscape phone can be laid out on a test device held
-                    // upright. The size is already less the system bars, so the test device's
-                    // own bars are not taken off again.
-                    Box(
+                InFixedLocale {
+                    // A landscape phone is laid out at its own size on a test device held upright.
+                    // The size is already less the system bars, so the test device's bars are not
+                    // taken off again.
+                    val box = size?.let {
                         Modifier
-                            .requiredSize(width, height)
+                            .requiredSize(it)
                             .consumeWindowInsets(WindowInsets.safeDrawing)
-                    ) {
+                    } ?: Modifier.fillMaxSize()
+                    Box(box) {
                         DateRangePickerScreen(
                             state = state,
                             labels = LABELS,
@@ -139,13 +168,41 @@ class DateRangePickerScreenTest {
         }
     }
 
-    /** The week rows whose day cells show at full height; a cell past the device's edge is none. */
+    /** The whole [MigrelyDateRangePicker], in its own window. */
+    private fun showPicker(start: LocalDate?, end: LocalDate?, lastDate: LocalDate) {
+        composeTestRule.setContent {
+            InFixedLocale {
+                MigrelyDateRangePicker(
+                    initialStart = start,
+                    initialEnd = end,
+                    lastDate = lastDate,
+                    yearRange = YEARS,
+                    labels = LABELS,
+                    onConfirm = { first, last -> confirmed = first to last },
+                    onDismiss = { dismissed = true }
+                )
+            }
+        }
+    }
+
+    /** The test's locale, so the texts it looks for do not depend on the device's. */
+    @Composable
+    private fun InFixedLocale(content: @Composable () -> Unit) {
+        val configuration = Configuration(LocalConfiguration.current).apply { setLocale(LOCALE) }
+        CompositionLocalProvider(LocalConfiguration provides configuration) {
+            MigrelyTheme(content = content)
+        }
+    }
+
+    /** The week rows whose day cells show their whole touch target, not cut by the list's edge. */
     private fun weeksInFull(): Int {
         val density = composeTestRule.density
         return composeTestRule.onAllNodes(hasText(", 2026", substring = true) and hasClickAction())
             .fetchSemanticsNodes()
             .map { it.boundsInRoot }
-            .filter { bounds -> with(density) { bounds.height.toDp() } >= DAY_HEIGHT - TOLERANCE }
+            .filter { bounds ->
+                with(density) { bounds.height.toDp() } >= DAY_TOUCH_HEIGHT - TOLERANCE
+            }
             .map { it.top }
             .distinct()
             .size
@@ -164,11 +221,9 @@ class DateRangePickerScreenTest {
         )
 
         /** A 1080×2400 phone at 420 dpi, less its status and navigation bars. */
-        val LANDSCAPE_WIDTH = 860.dp
-        val LANDSCAPE_HEIGHT = 367.dp
-        val PORTRAIT_WIDTH = 411.dp
-        val PORTRAIT_HEIGHT = 840.dp
-        val DAY_HEIGHT = 40.dp
+        val LANDSCAPE = DpSize(860.dp, 367.dp)
+        val PORTRAIT = DpSize(411.dp, 840.dp)
+        val DAY_TOUCH_HEIGHT = 48.dp
         val TOLERANCE = 0.5.dp
         val YEARS = 2024..2026
         val OCTOBER_3: LocalDate = LocalDate.of(2026, 10, 3)

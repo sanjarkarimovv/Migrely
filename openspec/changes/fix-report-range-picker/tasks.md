@@ -2,7 +2,7 @@
 
 ## 1. Decision
 
-- [x] 1.1 BRD D127: the custom range picker is full screen, with a smaller headline
+- [x] 1.1 BRD D127: the custom range picker is full screen, and Done needs an end
 
 ## 2. Test first
 
@@ -10,9 +10,10 @@
   - in a landscape-sized box at 200% font, at least two weeks of the month can be seen at their full height; it fails
     with Material's default title and headline;
   - two days and Done return the range;
-  - a start alone and Done return one day;
-  - Done is off with nothing chosen;
-  - Cancel dismisses.
+  - the same day twice and Done return one day;
+  - Done is off until the range has an end;
+  - Cancel dismisses;
+  - the whole picker keeps the range given, and a day after the last date is off.
 
 ## 3. Implement
 
