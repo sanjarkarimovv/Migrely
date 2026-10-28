@@ -40,11 +40,14 @@ class PremiumChecker(
 ) {
     private val lock = Any()
 
-    /** The status, asking Google Play only when the last answer is old (BRD D106). */
+    /**
+     * The status, asking Google Play only when the last answer is old, or when a purchase sheet
+     * opened since then never answered (BRD D106, EC-BIL-13).
+     */
     fun current(): PremiumStatusDomainModel = synchronized(lock) {
         val cached = getEntitlementRepository.entitlement()
         val now = getCurrentTimeRepository.now()
-        if (entitlementRules.isDue(cached, now)) {
+        if (entitlementRules.isDue(cached, now, getLaunchedPurchaseRepository.launchedPurchase())) {
             check().status
         } else {
             entitlementRules.status(cached, now)

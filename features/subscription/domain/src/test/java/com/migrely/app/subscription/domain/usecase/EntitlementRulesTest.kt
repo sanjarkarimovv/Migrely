@@ -174,6 +174,31 @@ class EntitlementRulesTest {
     }
 
     @Test
+    fun `Given a sheet launched after the last check then Play is due at once`() {
+        val launched =
+            LaunchedPurchaseDomainModel(
+                PremiumPlanDomainModel.Yearly,
+                Period.ofDays(7),
+                NOW.minusSeconds(40)
+            )
+
+        assertTrue(
+            classUnderTest.isDue(subscription(lastCheck = NOW.minusSeconds(44)), NOW, launched)
+        )
+        assertTrue(classUnderTest.isDue(subscription(lastCheck = null), NOW, launched))
+    }
+
+    @Test
+    fun `Given a sheet launched before the last check then Play waits for the interval`() {
+        val launched =
+            LaunchedPurchaseDomainModel(PremiumPlanDomainModel.Yearly, null, NOW.minusSeconds(90))
+
+        assertFalse(
+            classUnderTest.isDue(subscription(lastCheck = NOW.minusSeconds(60)), NOW, launched)
+        )
+    }
+
+    @Test
     fun `Given a trial of 14 days from Play then the trial ends 14 days after the purchase`() {
         val bought = BoughtDomainModel("sub", PremiumPlanDomainModel.Yearly, Period.ofWeeks(2))
 

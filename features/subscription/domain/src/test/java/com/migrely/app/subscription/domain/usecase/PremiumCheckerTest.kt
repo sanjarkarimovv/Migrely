@@ -3,8 +3,10 @@ package com.migrely.app.subscription.domain.usecase
 import com.migrely.app.subscription.domain.model.BillingAvailabilityDomainModel
 import com.migrely.app.subscription.domain.model.EntitlementDomainModel
 import com.migrely.app.subscription.domain.model.EntitlementKindDomainModel
+import com.migrely.app.subscription.domain.model.LaunchedPurchaseDomainModel
 import com.migrely.app.subscription.domain.model.OwnedPurchasesResultDomainModel
 import com.migrely.app.subscription.domain.model.PremiumCheckDomainModel
+import com.migrely.app.subscription.domain.model.PremiumPlanDomainModel
 import com.migrely.app.subscription.domain.model.PremiumStatusDomainModel
 import com.migrely.app.subscription.domain.model.PurchaseProductDomainModel
 import com.migrely.app.subscription.domain.model.PurchaseStateDomainModel
@@ -17,6 +19,7 @@ import com.migrely.app.subscription.domain.repository.SaveEntitlementRepository
 import com.migrely.app.subscription.domain.repository.SaveLaunchedPurchaseRepository
 import com.migrely.app.subscription.domain.repository.SchedulePremiumChecksRepository
 import java.time.Duration
+import java.time.Period
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.mockito.kotlin.any
@@ -260,5 +263,62 @@ class PremiumCheckerTest {
             status
         )
         verify(saveLaunchedPurchaseRepository).saveLaunchedPurchase(null)
+    }
+
+    @Test
+    fun `Given the app closed with the sheet open then the start asks Play at once`() {
+        given(getEntitlementRepository.entitlement())
+            .willReturn(EntitlementDomainModel.NONE.copy(lastCheck = NOW.minusSeconds(44)))
+        given(getLaunchedPurchaseRepository.launchedPurchase()).willReturn(
+            LaunchedPurchaseDomainModel(
+                PremiumPlanDomainModel.Yearly,
+                Period.ofDays(7),
+                NOW.minusSeconds(40)
+            )
+        )
+        given(getOwnedPurchasesRepository.ownedPurchases()).willReturn(
+            OwnedPurchasesResultDomainModel.Owned(
+                listOf(purchase(token = "new", at = NOW.minusSeconds(38), acknowledged = false))
+            )
+        )
+        given(acknowledgePurchaseRepository.acknowledgePurchase("new")).willReturn(true)
+
+        val status = classUnderTest.current()
+
+        verify(acknowledgePurchaseRepository).acknowledgePurchase("new")
+        assertEquals(
+            PremiumStatusDomainModel.Subscribed(
+                PremiumPlanDomainModel.Yearly,
+                NOW.minusSeconds(38).plus(Duration.ofDays(7))
+            ),
+            status
+        )
+        verify(saveLaunchedPurchaseRepository).saveLaunchedPurchase(null)
+    }
+
+    @Test
+    fun `Given the app closed with the sheet open and payment pending then it shows pending`() {
+        given(getEntitlementRepository.entitlement())
+            .willReturn(EntitlementDomainModel.NONE.copy(lastCheck = NOW.minusSeconds(44)))
+        given(getLaunchedPurchaseRepository.launchedPurchase()).willReturn(
+            LaunchedPurchaseDomainModel(
+                PremiumPlanDomainModel.Yearly,
+                Period.ofDays(7),
+                NOW.minusSeconds(40)
+            )
+        )
+        given(getOwnedPurchasesRepository.ownedPurchases()).willReturn(
+            OwnedPurchasesResultDomainModel.Owned(
+                listOf(
+                    purchase(
+                        token = "new",
+                        state = PurchaseStateDomainModel.Pending,
+                        at = NOW.minusSeconds(38)
+                    )
+                )
+            )
+        )
+
+        assertEquals(PremiumStatusDomainModel.Pending, classUnderTest.current())
     }
 }

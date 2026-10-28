@@ -124,14 +124,20 @@ class EntitlementRules {
     /**
      * Whether Google Play is due to be asked again: a pending payment, and a purchase not yet
      * acknowledged, are asked about every time, and so after a clock that went back before the
-     * last answer.
+     * last answer, and after a purchase sheet [launched] since that answer whose own answer never
+     * came back, as when the app was closed with the sheet open (EC-BIL-13).
      */
-    fun isDue(entitlement: EntitlementDomainModel, now: Instant): Boolean {
+    fun isDue(
+        entitlement: EntitlementDomainModel,
+        now: Instant,
+        launched: LaunchedPurchaseDomainModel? = null
+    ): Boolean {
         val lastCheck = entitlement.lastCheck
         return lastCheck == null ||
             needsBackgroundChecks(entitlement) ||
             now < lastCheck ||
-            Duration.between(lastCheck, now) >= CHECK_INTERVAL
+            Duration.between(lastCheck, now) >= CHECK_INTERVAL ||
+            launched != null && !launched.at.isBefore(lastCheck)
     }
 
     fun status(entitlement: EntitlementDomainModel, now: Instant): PremiumStatusDomainModel =
