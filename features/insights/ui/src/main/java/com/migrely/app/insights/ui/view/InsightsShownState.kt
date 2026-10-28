@@ -26,7 +26,10 @@ internal class InsightsShownState(months: Int, private val resolver: InsightsSho
         this.months = months
     }
 
-    /** Takes [answer] when it is for the chosen months (see [InsightsShownStateResolver]). */
+    /**
+     * Takes [answer] when it is for the chosen months (see [InsightsShownStateResolver]). Called, like [choose], on the
+     * main thread only, so the two never interleave.
+     */
     fun take(answer: InsightsViewStateUiModel) {
         shown = resolver.resolve(shown, answer, months)
     }

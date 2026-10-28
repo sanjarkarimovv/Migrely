@@ -16,7 +16,7 @@ period's numbers. QA saw it in 5 of 10 taps from 6 to 3 months, and nothing relo
 - **Insights UI:** a small state holder, `InsightsShownState`, keeps the chosen months and the insights shown together.
   - A tap changes the months at once.
   - Every result is weighed against the months in the holder, so the order of a tap, its answer and a redraw no
-    longer matters.
+    longer matters. Both the tap and the results collector run on the main thread, so they never interleave.
   - The months are kept across a rotation and process death, as before, and the insights are read again after it.
 - `InsightsShownStateResolver` is unchanged: a late answer for an earlier choice is still dropped.
 

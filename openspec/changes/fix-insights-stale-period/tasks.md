@@ -5,8 +5,11 @@
 - [x] 1.1 `InsightsShownStateTest`:
   - an answer for the new months that comes right after the tap is shown;
   - a late answer for the earlier months is not;
-  - loading shows first.
-  It fails before `InsightsShownState` exists.
+  - with two quick taps, only the last one's answer shows;
+  - loading shows first;
+  - the saver restores the months and reads the insights again.
+  It does not compile before `InsightsShownState` exists. It checks the holder, not the screen's wiring: the walk does
+  that, and QA's Insights scenario gets a chip-switch loop (review).
 
 ## 2. Fix
 

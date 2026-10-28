@@ -1,5 +1,6 @@
 package com.migrely.app.insights.ui.view
 
+import androidx.compose.runtime.saveable.SaverScope
 import com.migrely.app.insights.ui.mapper.InsightsShownStateResolver
 import com.migrely.app.insights.ui.model.InsightsPatternsUiModel
 import com.migrely.app.insights.ui.model.InsightsUiModel
@@ -38,8 +39,34 @@ class InsightsShownStateTest {
     }
 
     @Test
-    fun `Given nothing answered yet then loading shows`() {
+    fun `Given 3 then 12 chosen quickly when 3 answers first then 12 shows once it answers`() {
+        classUnderTest.take(ready(6))
+        classUnderTest.choose(3)
+        classUnderTest.choose(12)
+
+        classUnderTest.take(ready(3))
+        assertEquals(ready(6), classUnderTest.shown)
+
+        classUnderTest.take(ready(12))
+        assertEquals(ready(12), classUnderTest.shown)
+    }
+
+    @Test
+    fun `Given the screen opens when nothing has answered yet then loading shows`() {
         assertEquals(InsightsViewStateUiModel.Loading, classUnderTest.shown)
         assertEquals(6, classUnderTest.months)
+    }
+
+    @Test
+    fun `Given 3 months chosen when restored after a rotation then 3 months stay`() {
+        val saver = InsightsShownState.saver(InsightsShownStateResolver())
+        classUnderTest.take(ready(6))
+        classUnderTest.choose(3)
+
+        val saved = checkNotNull(with(saver) { SaverScope { true }.save(classUnderTest) })
+        val restored = checkNotNull(saver.restore(saved))
+
+        assertEquals(3, restored.months)
+        assertEquals(InsightsViewStateUiModel.Loading, restored.shown)
     }
 }
