@@ -1,5 +1,6 @@
 package com.migrely.app.subscription.ui.view
 
+import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -11,9 +12,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -30,7 +31,6 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.navigation.NavController
 import com.migrely.app.designsystem.icon.MigrelyIcons
 import com.migrely.app.designsystem.theme.MigrelyTheme
-import com.migrely.app.subscription.presentation.model.PremiumSectionViewState
 import com.migrely.app.subscription.ui.R
 import com.migrely.app.subscription.ui.di.PremiumSectionDependencies
 import com.migrely.app.subscription.ui.model.PremiumPlanUiModel
@@ -60,23 +60,33 @@ fun PremiumSectionDependencies.PremiumSection(
     modifier: Modifier = Modifier
 ) {
     ViewModelObserver(navController)
+    // The status stays while Google Play is asked again, so the section does not jump.
+    var shown by rememberSaveable { mutableStateOf<PremiumSectionUiModel?>(null) }
+    val activity = LocalActivity.current
     LifecycleResumeEffect(premiumSectionViewModel) {
         premiumSectionViewModel.onEnter()
-        onPauseOrDispose { }
+        onPauseOrDispose {
+            // A restore's note stays across a rotation (QA #106), but not once Settings is left.
+            if (activity?.isChangingConfigurations != true) shown = shown?.copy(note = null)
+        }
     }
     // A purchase change Google Play reported while Settings shows is shown at once (review I1).
     LaunchedEffect(purchaseUpdates) {
         purchaseUpdates.collect { premiumSectionViewModel.onPurchaseUpdatedAction() }
     }
-    val viewState by premiumSectionViewModel.viewState
-        .collectAsState(PremiumSectionViewState.Loading)
-    val uiState = premiumSectionViewStateUiMapper.toUi(viewState)
-    // The status stays while Google Play is asked again, so the section does not jump.
-    var shown by rememberSaveable { mutableStateOf<PremiumSectionUiModel?>(null) }
-    (uiState as? PremiumSectionViewStateUiModel.Ready)?.let { shown = it.section }
+    // Each new view state is resolved once, as it comes: resolving the last one held again at every
+    // composition brought a restore's note back after Settings had dropped it.
+    var checking by remember { mutableStateOf(false) }
+    LaunchedEffect(premiumSectionViewModel) {
+        premiumSectionViewModel.viewState.collect { viewState ->
+            val uiState = premiumSectionViewStateUiMapper.toUi(viewState)
+            checking = uiState == PremiumSectionViewStateUiModel.Checking
+            shown = premiumSectionShownResolver.resolve(shown, uiState)
+        }
+    }
     PremiumSectionContents(
         section = shown,
-        checking = uiState == PremiumSectionViewStateUiModel.Checking,
+        checking = checking,
         actions = PremiumSectionActions(
             onStatus = premiumSectionViewModel::onStatusAction,
             onRestore = premiumSectionViewModel::onRestoreAction,
