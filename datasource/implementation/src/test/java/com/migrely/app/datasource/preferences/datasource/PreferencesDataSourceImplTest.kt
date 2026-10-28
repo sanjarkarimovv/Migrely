@@ -4,6 +4,7 @@ import android.content.SharedPreferences
 import com.migrely.app.datasource.exception.FileDataException
 import com.migrely.app.datasource.preferences.model.AttackFrequencyDataModel
 import com.migrely.app.datasource.preferences.model.GoalDataModel
+import com.migrely.app.datasource.preferences.model.ReviewRequestsDataModel
 import com.migrely.app.datasource.preferences.model.ThemeDataModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.toList
@@ -27,6 +28,8 @@ class PreferencesDataSourceImplTest {
     private val editor: SharedPreferences.Editor = mock {
         on { putBoolean(any(), any()) } doReturn it
         on { putString(any(), anyOrNull()) } doReturn it
+        on { putInt(any(), any()) } doReturn it
+        on { putLong(any(), any()) } doReturn it
         on { clear() } doReturn it
         on { commit() } doReturn true
     }
@@ -105,6 +108,36 @@ class PreferencesDataSourceImplTest {
 
             given(preferences.getString("theme", null)).willReturn(key)
             assertEquals(theme, classUnderTest.theme())
+        }
+    }
+
+    @Test
+    fun `Given no request for a rating yet then none, with no time`() {
+        assertEquals(ReviewRequestsDataModel(0, null), classUnderTest.reviewRequests())
+    }
+
+    @Test
+    fun `Given requests made then their count and the last time`() {
+        given(preferences.getInt("review_request_count", 0)).willReturn(2)
+        given(preferences.contains("review_last_requested")).willReturn(true)
+        given(preferences.getLong("review_last_requested", 0L)).willReturn(1_700_000_000_000L)
+
+        assertEquals(
+            ReviewRequestsDataModel(2, 1_700_000_000_000L),
+            classUnderTest.reviewRequests()
+        )
+    }
+
+    @Test
+    fun `When a request is made then the count goes up with its time, in one write`() {
+        given(preferences.getInt("review_request_count", 0)).willReturn(1)
+
+        classUnderTest.markReviewRequested(1_700_000_000_000L)
+
+        inOrder(editor) {
+            verify(editor).putInt("review_request_count", 2)
+            verify(editor).putLong("review_last_requested", 1_700_000_000_000L)
+            verify(editor).commit()
         }
     }
 
