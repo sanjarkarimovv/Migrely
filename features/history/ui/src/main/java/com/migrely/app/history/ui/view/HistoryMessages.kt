@@ -19,6 +19,7 @@ import androidx.compose.ui.res.stringResource
 import com.migrely.app.designsystem.snackbar.MigrelySnackbar
 import com.migrely.app.designsystem.snackbar.MigrelySnackbarHost
 import com.migrely.app.designsystem.snackbar.SnackbarAction
+import com.migrely.app.designsystem.snackbar.isFreshDeletion
 import com.migrely.app.history.ui.R
 import com.migrely.app.history.ui.mapper.HistoryMessageBehaviourUiMapper
 import com.migrely.app.history.ui.model.HistoryMessageBehaviourUiModel
@@ -27,7 +28,6 @@ import com.migrely.app.history.ui.model.ShownHistoryMessageUiModel
 import com.migrely.app.history.ui.notification.HistoryMessagePresenter
 import kotlinx.coroutines.delay
 
-private const val DELETION_OFFER_MAX_AGE_MILLIS = 30_000L
 private const val OFFERED_DELETIONS_KEPT = 10
 
 /**
@@ -69,8 +69,7 @@ internal fun HistoryMessages(
             if (message is HistoryMessageUiModel.AttackDeleted) {
                 // An older deletion, for example after the app was closed and opened again, is past its undo.
                 val fresh =
-                    System.currentTimeMillis() - message.deletedAtEpochMillis <=
-                        DELETION_OFFER_MAX_AGE_MILLIS
+                    isFreshDeletion(message.deletedAtEpochMillis, System.currentTimeMillis())
                 val madeHere = message.deletedAtEpochMillis >= enteredAtEpochMillis
                 if (!fresh || !madeHere || message in offeredDeletions) return@collect
                 offeredDeletions = ArrayList(

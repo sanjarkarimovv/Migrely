@@ -145,7 +145,7 @@ class MedicationDaoTest {
         classUnderTest.insertIntake(intake("2", "i", null, 3_000L))
 
         attackDao.softDelete("a", 5_000L)
-        attackDao.purgeDeletedBefore(6_000L)
+        attackDao.purgeDeletedOutside(6_000L, 60_000L)
 
         assertEquals(listOf("2"), intakeAttackIds().keys.toList())
         assertEquals(listOf("i"), classUnderTest.activeByLastUse().map { it.id })

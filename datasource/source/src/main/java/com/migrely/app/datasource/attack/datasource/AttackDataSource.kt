@@ -113,12 +113,16 @@ interface AttackDataSource {
     /** Atomic: undoes [softDelete] unless the attack would overlap another one or be a second one in progress. */
     fun restore(attackId: String): RestoreDataModel
 
-    /** The newest attack deleted at or after [since], if it is still restorable. */
+    /**
+     * The newest attack deleted at or after [since], if it is still restorable; one stamped ahead of the clock by more
+     * than a moment is never it (#112).
+     */
     fun recentlyDeleted(since: Instant): DeletedAttackDataModel?
 
     /**
-     * Removes for good the attacks deleted before the undo window, with their points, tags and intakes. Run when the
-     * app starts, so they never linger until the next deletion.
+     * Removes for good the attacks deleted before the undo window, and those stamped further ahead of the clock than
+     * the window (#112), with their points, tags and intakes. Run when the app starts, so they never linger until the
+     * next deletion.
      */
     fun purgeExpiredDeletions()
 
