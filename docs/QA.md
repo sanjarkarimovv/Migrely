@@ -8,14 +8,16 @@ How Migrely's quality is checked before anything reaches Google Play. The requir
 | Layer | Where | Catches | Runs |
 |---|---|---|---|
 | Unit and architecture tests | each module's `test`, Konsist in `:app` | logic, mappers, Clean Architecture rules | the gate, every change |
-| Instrumented tests | `:datasource:implementation`, `:designsystem` | SQL, migrations, design-system components | per module, every change |
+| Instrumented tests | `:datasource:implementation`, `:designsystem` | SQL, migrations, design-system components | per module, every change; on every release candidate in QA (D204) |
 | **End-to-end flows** | `.maestro/` (Maestro) | a person's journeys, navigation, persistence, regressions between changes | `qa/maestro.sh` |
-| **Accessibility audit** | `qa/a11y_audit.sh` | contrast, touch targets, labels and keyboard reach on real pixels, at 100% and 200% font and in landscape | before a release, after UI changes |
+| **Accessibility audit** | `qa/a11y_audit.sh` | contrast, touch targets, labels and keyboard reach on real pixels, at 100% and 200% font and in landscape, on every screen (D203) | before a release, after UI changes |
 | **Device scenarios** | `qa/device_scenarios.sh` | the clock, time zones, midnight, process death, exact double-tap gaps, upgrades with real data | before a release, after time, lifecycle or database changes |
 | **Robustness and privacy** | `qa/monkey.sh`, `qa/permission_audit.sh` | crashes and ANRs under random input, unexpected permissions (never `INTERNET`) | before a release |
+| **Split APKs** | `qa/split_apks.sh` | what Play installs from the bundle: language, density and ABI splits, in the profile's language (D117, D204) | every release candidate |
 | Exploratory testing | the QA session, by hand and through the Maestro MCP server | everything a script did not think of | every change |
 
 Visual regression (Roborazzi screenshots of the `@Preview`s with pseudo-locales) comes in its own QA change (D42).
+The test levels, who owns each, and the risk left per capability are in `docs/qa/test-strategy.md` (D204).
 
 ## 2. Devices and sessions
 
@@ -76,6 +78,19 @@ Reduce motion is the animator scale (`global animator_duration_scale 0`). `lands
 band with and without it. Like the rotation, the accessibility timeout and the app language, the scripts save the
 scale and restore it on exit.
 
+**The accessibility audit has a state for every screen (D203).** `.maestro/a11y-tour/` holds:
+- home (calm, with attacks), attack mode with a message, a custom-tag dialog;
+- attack details (top and bottom), History (first use and a month), the past-migraine screen and its overlap card;
+- onboarding's first step, Settings, Warning signs, the privacy page (its top and its end), Theme;
+- My medications, Reminders, Your data;
+- the paywall, the report's period screen and Insights. These three need the simulated store and carry the tag
+  `simulated-store`. On a release build the audit lists them as not run; if nothing else is left, it fails.
+A change that adds a screen adds its state.
+
+**`privacy_link`** checks the privacy policy link: a VIEW intent to migrely.health that a browser opens. With every
+browser disabled for the user it then checks "No browser": Migrely stays in front without a crash, and the page shows
+the address. The browsers are enabled again at the end, in `restore()` and by `qa/reset_device.sh`.
+
 `# Covers:` lines may also sit above a scenario in `qa/device_scenarios.sh`, when the script itself makes the check. The
 coverage report also reads the delta specs of open changes, so a change can cover the scenarios it adds.
 
@@ -130,16 +145,28 @@ use; without it, the worktree's own debug APK is used.
   class.
 - **The record:** a Go/No-Go is recorded in `docs/qa/go-no-go-<version>.md`.
 
+**Developer options on the QA emulators stay on.**
+- Turning them off, even with `settings delete global development_settings_enabled`, turns USB debugging off too, and
+  adb goes offline (2026-10-27).
+- The way back is the emulator's own screen: Build number seven times, then USB debugging.
+- "Don't keep activities" is set with `always_finish_activities` and its switch in Developer options. The setting alone
+  does not take effect.
+
 **Premium is checked through the simulated store (D201).** Debug builds hold a simulated Google Play. The paywall's
 products, its sheet ("Complete the purchase", "Pay later (pending)", "Cancel") and its subscriptions page are the
 app's own screens. QA taps through them (`subflows/buy.yaml`, `device/premium-buy.yaml`).
 - **Store states:** `qa_store <command>` sets what the store answers through an adb broadcast:
   - available, unavailable, unreachable;
+  - no-products (D122): billing connects and reads what is owned, but no product is offered, as Google Play does
+    before the products are set up. `premium_no_products` checks it;
   - complete-pending and decline-pending, for a payment settled "at a shop";
-  - reset, which empties the store, as Google Play no longer reporting a purchase after a refund.
+  - reset, which empties the store, as Google Play no longer reporting a purchase after a refund. Premium already
+    shown stays until the app asks the store again, after 15 minutes or on "Restore purchases".
   - Maestro's `clearState` empties the store too; "Delete all data" does not.
 - **Rules that depend on time** use the emulator clock: 3 days offline, the 7 days between self-shown paywalls, and the
-  day before a trial ends. The app re-checks at start and at most every 15 minutes, so every time step force-stops it.
+  day before a trial ends. The app asks the store again for Premium when its last answer is over 15 minutes old
+  (`CHECK_INTERVAL`) or on "Restore purchases". It keeps the store's products for an hour before a paywall shows itself.
+  So every time step force-stops it, and a step that needs a fresh Premium answer moves the clock 20 minutes on.
 - **The paywall after onboarding:** every flow that finishes onboarding closes it (`subflows/close-onboarding-paywall.yaml`);
   `onboarding/paywall-after-onboarding.yaml` checks it.
 - **Release builds have no simulated store:** `qa/release_apk.py <release.apk> <debug.apk>` checks that, with the debug
@@ -152,7 +179,9 @@ app's own screens. QA taps through them (`subflows/buy.yaml`, `device/premium-bu
 **Reports and Insights get their data from seeds (D202).**
 - **Seeds:** `qa/seed_backup.py <seed> <out.json> --today <emulator date>` writes a v6 backup with known content: dates,
   zones, triggers, medications and answers. It also prints what the app must show. `--list` names the seeds, and
-  `--self-test` recounts them independently.
+  `--self-test` recounts them independently. `report-heavy` has a note on each of its 900 migraines;
+  `report-heavy-old-notes` has the same migraines with notes on the oldest 100 only, for a shortened table that shows
+  none of them (#67).
 - **Import:** `seed_import` pushes the seed to Download and imports it through Your data.
 - **What to expect:** `qa/seed_expect.py` turns the printed expectations into the texts to find in the PDF or on
   Insights.
@@ -194,8 +223,11 @@ results in the release PR.
 
 | # | Check | Command | Pass when |
 |---|---|---|---|
-| 1 | Build gate | `./gradlew assembleDebug test ktlintCheck detekt` | BUILD SUCCESSFUL |
+| 1 | Build gate, with Android Lint since D123 (develop 18b8b9b5) | `./gradlew assembleDebug test ktlintCheck detekt lint` | BUILD SUCCESSFUL: a Lint error fails it |
+| 1a | Lint's warnings (D204) | every module's `*/build/reports/lint-results-debug.txt` from line 1 (each module writes its own; the app's has only app/ and gradle/ files). A candidate cut before D123 runs `./gradlew lint --continue` | each warning with a user-visible effect has an issue or a line in the record |
+| 1b | Instrumented tests on the candidate (D204) | `ANDROID_SERIAL=emulator-5580 ./gradlew connectedDebugAndroidTest --continue`, then `qa/reset_device.sh` | every test passes |
 | 2 | Smoke on Android 8.0 | `QA_SERIAL=emulator-5582 qa/maestro.sh --install --tags smoke` | every flow passes |
+| 2a | Split APKs from the candidate's bundle (D204) | `qa/split_apks.sh --smoke <aab> ru-26` (emulator-5582), then `he-36`, `uz-36` and `en-36` (emulator-5580) | `Split APKs passed` for each profile |
 | 3 | Full regression on the target version | `qa/maestro.sh --install` | exit 0 (passes 1 and 2 green). Pass 3 lists the open known bugs; none of them may be S1 or S2 |
 | 4 | Accessibility audit | `qa/a11y_audit.sh` | `0 failure(s)` and no state that could not be captured; every warning and every "not judged" line looked at |
 | 5 | Device scenarios | `qa/device_scenarios.sh` | `All scenarios passed` |
@@ -203,7 +235,7 @@ results in the release PR.
 | 6a | Upgrade from the previous release | `QA_OLD_APK=<previous release APK> qa/device_scenarios.sh upgrade` | every attack, pain level and symptom logged on the old build is still there |
 | 7 | Permissions | `qa/permission_audit.sh` (and on the release APK) | `Permission audit passed` |
 | 8 | Open defects | `gh issue list --label qa --state open` | no S1 or S2 |
-| 9 | Coverage report | `python3 -I qa/e2e_coverage.py` | exits 0 (no stale scenario names) |
+| 9 | Coverage report | `python3 -I qa/e2e_coverage.py --below 50 --register docs/qa/test-strategy.md` | exits 0 (no stale scenario names; the risk register has a row for every capability and the same counts as the flows). Exit 0 says nothing about how much is covered: the capabilities under 50% go to the record's residual risks (D204) |
 
 From change 13 `prepare-release` on, these lines are added:
 
@@ -214,3 +246,11 @@ From change 13 `prepare-release` on, these lines are added:
 | 12 | Internal testing with people for at least a week (BRD §14.1) | no new S1 or S2 |
 
 Any failing line makes the candidate No-Go. The release PR names the failing line and the issue filed for it.
+
+**Every Go/No-Go record has a section "What these checks do not prove" (D204).** It holds:
+- what passing each line does not cover;
+- the capabilities under 50% from line 9's `--below 50`, each with its follow-up from `docs/qa/test-strategy.md`;
+- the deferred QA changes;
+- the checks that could not run, and why.
+
+The verdict reads "Go, with these risks open", never a bare "Go".

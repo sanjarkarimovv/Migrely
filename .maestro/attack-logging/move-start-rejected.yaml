@@ -10,8 +10,12 @@ tags: [regression, attack-logging, in-app-messages]
 - runFlow: ../subflows/wait-message-gone.yaml
 - runFlow: ../subflows/start-attack.yaml
 - runFlow: ../subflows/wait-message-gone.yaml
-- tapOn: "Move the start 15 min earlier"
+# The rain keeps the screen moving, so a tap that waits to settle can take 7 s under load and use up the 8 s message
+# (1.0.1 line 10, 22:45).
+- tapOn:
+    text: "Move the start 15 min earlier"
+    waitToSettleTimeoutMs: 500
 - extendedWaitUntil:
     visible: "Your previous migraine ended at .*"
-    timeout: 3000
+    timeout: 5000
 - assertVisible: "Started .* · 0 min"

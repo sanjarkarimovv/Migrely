@@ -1,0 +1,13 @@
+# Accessibility tour state: My medications, with one medication added (D203).
+appId: com.migrely.app
+---
+- runFlow: ../subflows/launch-clean.yaml
+- tapOn: "Log medication"
+- runFlow:
+    file: ../subflows/add-first-medication.yaml
+    env:
+      NAME: "Paracetamol"
+      TYPE: "Simple painkiller"
+# "Medication taken" keeps Undo and Done until one is tapped; it is not a message that times out.
+- tapOn: "Done"
+- runFlow: ../subflows/open-my-medications.yaml

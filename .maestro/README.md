@@ -42,8 +42,11 @@ The exit status comes from passes 1 and 2 only.
   - `geometry`: taps a screen point measured on the QA AVD (API 36). It is skipped below API 29, where the navigation
     bar moves the controls.
   - `a11y-timeout`: checks what Undo does inside its window. `qa/maestro.sh` runs these in a second pass with
-    Android's "Time to take action" at 20 s, which the app honours (EC-UX-16). The default 5 s window has its own
-    flow, `attack-logging/undo-window-passes.yaml`.
+    Android's "Time to take action" at 20 s, which the app honours (EC-UX-16). No flow times the default 5 s window:
+    under host load a start can use it all up, so `attack-logging/undo-window-passes.yaml` runs in this pass too
+    (1.0.1). The length was measured by hand (5.6–5.8 s), and `qa/device_scenarios.sh message_duration` times a
+    message with and without the accessibility timeout. On Android 8.0, which has no "Time to take action", the flow
+    runs with the 5 s window and can still fail under load.
   - `simulated-store`: buys Premium through the debug build's simulated Google Play (D201). It is skipped on a build
     that is not debuggable, such as the R8 release APK, which has no simulated store (D113).
 - `a11y-tour/` and `device/` are not test suites. `qa/a11y_audit.sh` and `qa/device_scenarios.sh` run them step by
