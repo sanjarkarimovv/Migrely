@@ -80,8 +80,7 @@ internal fun HomeMessages(
                 // Home learns of a deletion right after the details screen closes; an older one, for example after the
                 // app was closed and opened again, is past its undo and is never offered.
                 val fresh =
-                    System.currentTimeMillis() - message.deletedAtEpochMillis <=
-                        DELETION_OFFER_MAX_AGE_MILLIS
+                    isFreshDeletion(message.deletedAtEpochMillis, System.currentTimeMillis())
                 if (!fresh || message in offeredDeletions) return@collect
                 offeredDeletions = ArrayList(
                     offeredDeletions.takeLast(OFFERED_DELETIONS_KEPT - 1) + message
@@ -220,3 +219,11 @@ private fun messageText(message: HomeMessageUiModel, timeUiFormatter: TimeUiForm
         HomeMessageUiModel.EndTimeOutOfRange -> stringResource(R.string.message_end_out_of_range)
         HomeMessageUiModel.SomethingWentWrong -> stringResource(R.string.home_message_generic)
     }
+
+/**
+ * Whether a deletion made at [deletedAtMillis] may still be offered for undo at [nowMillis]: at most 30 s old, and not
+ * stamped after now. After the clock was set back, a deletion's age reads negative, and it was offered at every start
+ * (QA #112).
+ */
+internal fun isFreshDeletion(deletedAtMillis: Long, nowMillis: Long): Boolean =
+    nowMillis - deletedAtMillis in 0..DELETION_OFFER_MAX_AGE_MILLIS
