@@ -401,6 +401,7 @@ Boshqa davlatlarda narxni Play avtomatik konvertatsiya qiladi. Hindiston, Brazil
 | EC-BIL-10 | Oylikdan yillikka oʻtish | Yillik darhol boshlanadi, narxi keyingi toʻlov sanasida olinadi (`WITHOUT_PRORATION`, D120) | ✅ |
 | EC-BIL-11 | Play billing mavjud boʻlmagan davlat | Bepul qism toʻliq ishlaydi. Paywall'da "Sizning hududingizda mavjud emas" yoziladi | ✅ |
 | EC-BIL-12 | Family Library | MVP'da oʻchiq | ✅ |
+| EC-BIL-13 | Xarid oynasi ochiq turganda ilova yopildi, Play esa toʻlovni yakunladi | Keyingi tekshiruv Play'dan darhol soʻraydi, oxirgi javobdan 15 daqiqa oʻtmagan boʻlsa ham: xarid tasdiqlanadi (acknowledge), Premium oʻsha oyna ochilgan reja va trial bilan yoqiladi, pending toʻlov "Toʻlov kutilmoqda" boʻlib koʻrinadi (QA #105, review M5) | ✅ |
 
 ### 9.8 Saqlash va ilovaning hayot sikli
 
