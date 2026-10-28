@@ -183,6 +183,10 @@ dependencies {
     implementation(projects.features.subscription.domain)
     implementation(projects.features.subscription.data)
     implementation(libs.androidx.work.runtime)
+    implementation(projects.features.review.ui)
+    implementation(projects.features.review.presentation)
+    implementation(projects.features.review.domain)
+    implementation(projects.features.review.data)
 }
 
 /**
