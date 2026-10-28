@@ -28,8 +28,23 @@
 - **The risks still open:**
   - the defects in line 8;
   - "What these checks do not prove" below.
-- **Line 11:** waits for the pre-launch report.
+- **Line 11:** not waited for, by the user's decision of 2026-10-28.
 - **Line 12:** is the user's decision below.
+
+**After the verdict: QA 13c's charters on 1.0.1** (2026-10-28, 07:02–08:55, emulator-5580). They found 3 defects, all
+in 1.0.1. None is a launch blocker, because none is a crash, data loss, a safety warning, a lost entitlement or data
+leaving the phone. The two S2s should be fixed before the next release:
+- #104 (S2): Insights keeps the previous period's numbers after a period chip is tapped, about 1 time in 2. A reload
+  corrects it.
+- #105 (S2): a purchase completed while the app was closed is not seen at the next start for up to 15 minutes. The
+  entitlement comes late but is not lost, and Restore purchases finds it at once.
+- #106 (S4): Settings' Restore purchases result line disappears on rotation.
+
+The rest of the charters passed:
+- rotation and process death on the paywall, the purchase sheet, the report and Insights;
+- restarts around a pending payment;
+- a 200% font with the dark theme on the report, the PDF and Insights;
+- the R8 APK's first launch, through to the privacy link: 0 crashes.
 
 **The user's decision of 2026-10-27, 20:30, to QA directly. It replaces the gates below:**
 - **The decision:** 1.0.1 goes to production now, on the evidence at hand. It waits neither for QA's full Go nor for the first signal.
@@ -86,7 +101,7 @@
 </ul>#84, #87, #89 and #90 are fixed on develop and closed. #91 and #92 came from the dev session's review; the dev session labelled them at 05:59 (#92 S3 with accessibility, #91 S4). |
 | 9 | Coverage report (`qa/e2e_coverage.py --below 50 --register docs/qa/test-strategy.md`) | ✅ exit 0. 267 of 508 scenarios (53%); the register matches the flows |
 | 10 | R8: lines 3 and 7 on the universal APK of the upload-signed bundle | ✅ 22:33–23:19, not debuggable. Pass 2: 9 of 9. Pass 1: 41 of 43; the simulated-store flows need a debug build. Both failures were timing under load, and the app did the right thing:<ul><li>`move-start-rejected`: the start stayed and the message had gone. The tap took 7.5 s to settle, so the 8 s message ran out before the check;</li><li>`undo-window-passes`: as in line 3.</li></ul>Both flows were made load-proof: a tap that does not wait to settle, and the 20 s timeout pass. Each then passed 2 of 2 at load average 18–20, during the dev session's emulator walk. Line 7 on this APK: ✅ |
-| 11 | Play pre-launch report (closed testing track, ed695424) | ⏳ before Publish |
+| 11 | Play pre-launch report (closed testing track, ed695424) | Not waited for: the user's decision of 2026-10-28 (morning): Play has produced no report yet, and Publish does not wait for one. Neither session could open Play Console (no Chrome connection) |
 | 12 | Internal testing with people, at least a week (BRD §14.1) | Not waited for: the user's decision of 2026-10-27 at 20:30 (see Decision). 1.0.0 has no users yet, so 1.0.1 went to production review without a week of people testing it |
 
 **Line 1a:** these warnings could affect users, and each one was looked at:

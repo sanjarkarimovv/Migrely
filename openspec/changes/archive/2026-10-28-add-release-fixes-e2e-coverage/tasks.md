@@ -51,7 +51,7 @@
 - [x] 5.1 The core-flow sweep (design D6): every one of the 92 scenarios is PASS, FAIL or NOT RUN with a reason, and every
   edge case has notes. Verify: the results in the verification record; an issue for every defect, with its blocker
   verdict sent to the dev session
-- [ ] 5.2 Charters 1–4 of design D6, each with notes: what was tried, and what was found. Verify: the notes in the
+- [x] 5.2 Charters 1–4 of design D6, each with notes: what was tried, and what was found. Verify: the notes in the
   verification record; an issue for every defect
 
 ## 7. The 1.0.1 hotfix candidate (design D11)
@@ -63,7 +63,7 @@
   - line 2a and line 10 use the upload-signed bundle that goes to Play;
   - line 6a upgrades from build 4.
   Verify: each line's result in the record, and its section "What these checks do not prove"
-- [ ] 7.3 Lines 11 and 12:
+- [x] 7.3 Lines 11 and 12:
   - line 11 is the pre-launch report of 1.0.1's closed track, read before the build is promoted to production;
   - line 12 records the user's decision.
   Verify: both lines in the record
@@ -232,4 +232,41 @@ Its findings, and what was done:
 6. **A tag with a script turns into an ab_CD form that Custom Locale rejects.** `qa_set_system_locale` now refuses
    anything but language-COUNTRY: `uz-Latn-UZ` gets "is not a language-COUNTRY tag" and exit 1, while ru-RU, en-US,
    he-IL and uz-UZ pass.
+
+**5.2, charters 1–4 of design D6** (2026-10-28, 07:02–08:55, emulator-5580; on 1.0.1, which replaced build 4 as the build
+users get). The debug APK was used for charters 1–3, and the R8 universal APK of the upload-signed bundle for charter 4.
+Each charter has notes on what was tried and what was found.
+- **1. Rotation and process death:** about 15 min. These kept their state through both:
+  - the paywall's chosen plan, and the purchase sheet's states (Payment pending, You have Premium);
+  - the report's period, notes switch and custom range;
+  - Insights' period;
+  - the back stack.
+
+  A report made during a rotation, or behind HOME, opens the share sheet exactly once, and leaves no partial file.
+  - Found: #104 (S2, Insights keeps the previous period's numbers, 5 of 10 tries) and #106 (S4, the Restore purchases
+    line is lost on rotation, 4 of 4).
+- **2. 200% font with the dark theme:** about 9 min. The report screen, the PDF (in print preview) and every Insights
+  section had nothing cut off or overlapping, and no target under 48 dp. The custom range at 200% is #102 (the dev's).
+- **3. Restarts around a purchase:** about 16 min.
+  - Passed: the sheet force-stopped with nothing bought; a pending payment across a force-stop, completed or declined
+    afterwards; a completion while the app is in the background.
+  - Found: #105 (S2). A purchase that Play completes while the app is dead is not seen at a start within 15 minutes,
+    3 of 3 times from clean.
+- **4. The R8 APK's first launch:** about 10 min. Onboarding, the first migraine, every Settings page, and the privacy
+  link online and offline gave 0 crashes.
+- **Every defect has 2 or more reproductions from clean.** None is a launch blocker. The dev session has #104–#106.
+- **Not tried:**
+  - real Google Play;
+  - Insights on R8, which has no store;
+  - the 200% custom date range, which is #102.
+- **Environment:**
+  - emulator-5580's process died once under host load (around 50) at 07:11, and was cold-booted with docs/QA.md's
+    command.
+  - Chrome on it is now past its first-run screens.
+
+**7.3:**
+- **Line 11:** not waited for. On 2026-10-28 the user said Play has produced no pre-launch report yet, and that
+  Publish does not wait for one. Neither session could open Play Console.
+- **Line 12:** the user's decision of 2026-10-27 at 20:30 to go to production without a week of people testing.
+- Both are in `docs/qa/go-no-go-1.0.1.md`.
 
