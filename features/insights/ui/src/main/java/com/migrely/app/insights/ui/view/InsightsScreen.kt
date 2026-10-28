@@ -29,13 +29,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
@@ -85,35 +79,29 @@ data class InsightsActions(val onBack: () -> Unit, val onPeriod: (months: Int) -
  */
 @Composable
 fun InsightsDependencies.Insights(navController: NavController, modifier: Modifier = Modifier) {
-    var months by rememberSaveable { mutableIntStateOf(DEFAULT_MONTHS) }
-    val currentMonths by rememberUpdatedState(months)
-    var shown by remember {
-        mutableStateOf<InsightsViewStateUiModel>(InsightsViewStateUiModel.Loading)
+    val state = rememberSaveable(saver = InsightsShownState.saver(insightsShownStateResolver)) {
+        InsightsShownState(DEFAULT_MONTHS, insightsShownStateResolver)
     }
     // Every result is looked at, even two in one frame, which a collected state could merge.
     LaunchedEffect(insightsViewModel) {
         insightsViewModel.viewState.collect { viewState ->
-            shown = insightsShownStateResolver.resolve(
-                shown,
-                insightsViewStateUiMapper.toUi(viewState),
-                currentMonths
-            )
+            state.take(insightsViewStateUiMapper.toUi(viewState))
         }
     }
-    ScreenEnterObserver { insightsViewModel.onEnter(currentMonths) }
+    ScreenEnterObserver { insightsViewModel.onEnter(state.months) }
     // A rotation brings a new view model, so the numbers are read again whenever the screen resumes.
     LifecycleResumeEffect(insightsViewModel) {
-        insightsViewModel.onResume(currentMonths)
+        insightsViewModel.onResume(state.months)
         onPauseOrDispose { }
     }
     ViewModelObserver(navController)
     InsightsContents(
-        viewState = shown,
-        months = months,
+        viewState = state.shown,
+        months = state.months,
         actions = InsightsActions(
             onBack = insightsViewModel::onBackAction,
             onPeriod = {
-                months = it
+                state.choose(it)
                 insightsViewModel.onPeriodAction(it)
             }
         ),
