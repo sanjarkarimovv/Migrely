@@ -21,7 +21,15 @@
 
 ## Decision
 
-**Pending.** The lines below are filled in as they run.
+**QA's verdict on lines 1–10, 2026-10-28 at 05:55: Go, with these risks open.**
+- **No line found a blocker.** Every failure on the way was in QA's own flows or scripts, and each fix is in the line's row.
+- **One new defect:** #101 (S3, accessibility): in landscape, the date picker hides the first week of the month. It
+  is for develop and is not a blocker: portrait works, and so does the dialog's text input.
+- **The risks still open:**
+  - the defects in line 8;
+  - "What these checks do not prove" below.
+- **Line 11:** waits for the pre-launch report.
+- **Line 12:** is the user's decision below.
 
 **The user's decision of 2026-10-27, 20:30, to QA directly. It replaces the gates below:**
 - **The decision:** 1.0.1 goes to production now, on the evidence at hand. It waits neither for QA's full Go nor for the first signal.
@@ -62,24 +70,24 @@
 |---|---|---|
 | 1 | Build gate (`assembleDebug assembleRelease test ktlintCheck detekt`) | ✅ exit 0 |
 | 1a | Android Lint (`./gradlew lint --continue`) | ✅ 0 errors; 56 warnings, the same kinds as build 4's. See the note below |
-| 1b | Instrumented tests on emulator-5580 | ⏳ |
+| 1b | Instrumented tests on emulator-5580 (`connectedDebugAndroidTest`) | ✅ 00:18–00:20: datasource 104/104, designsystem 37/37, app 1/1, 0 failed. Build 4 had 100 datasource tests; the 4 new ones came with the fixes |
 | 2 | Smoke on Android 8.0 (API 26), debug and R8 | ✅ emulator-5582, 23:31–23:58: 15 of 15 on the debug APK, and 15 of 15 on the bundle's universal APK (not debuggable) |
-| 2a | Split APKs from the upload-signed bundle: ru-26, he-36, uz-36, en-36 | ru-26 ✅, on emulator-5582 at 00:03–00:15. Base, ABI, density and ru splits, all 4 installed. With ru-RU read back as the system language, home, History and the date picker are in English (36, 53 and 49 texts) and the week starts on Monday. Smoke on the splits: 15 of 15.<ul><li>The first try never set the language: Android 8's Custom Locale wants "ru_RU". `qa/lib.sh` is fixed.</li><li>The second try failed 1 of 15: its migraine was logged at 23:59, and home then showed 28 October.</li></ul>he-36, uz-36 and en-36: ⏳ |
+| 2a | Split APKs from the upload-signed bundle: ru-26, he-36, uz-36, en-36 | ru-26 ✅, on emulator-5582 at 00:03–00:15. Base, ABI, density and ru splits, all 4 installed. With ru-RU read back as the system language, home, History and the date picker are in English (36, 53 and 49 texts) and the week starts on Monday. Smoke on the splits: 15 of 15.<ul><li>The first try never set the language: Android 8's Custom Locale wants "ru_RU". `qa/lib.sh` is fixed.</li><li>The second try failed 1 of 15: its migraine was logged at 23:59, and home then showed 28 October.</li></ul>he-36, uz-36 and en-36 ✅, on emulator-5580 at 01:06–01:45. Each has the base, arm64-v8a, xxhdpi and language splits (he's is `base-iw.apk`), all 4 installed, and the app language read back. The orders are D117's (English with the phone's region; en-UZ has no CLDR data and falls back to month first):<ul><li>he-IL: the texts are English (35, 53 and 49), today's date is day first and the week starts on Sunday;</li><li>uz-UZ: English (36, 53, 49), month first, the week starts on Monday;</li><li>en-US: English (35, 53, 49), month first, the week starts on Sunday.</li></ul>Smoke on each set of splits: 14 of 14, and 3 of 3 with the 20 s accessibility timeout |
 | 3 | Full regression on API 36 (debug) | ✅ 21:29–22:15, host load average 8–10. Pass 2 (`a11y-timeout`): 9 of 9. Pass 1: 43 of 45, and both failures were the flows, not the app:<ul><li>`track-periods-off-marks` (new in 13c) read the toggle's state from its label, but the state is on the parent. Fixed, then 3 of 3;</li><li>`undo-window-passes` found the 5 s offer already gone under load: 2 of 2 on rerun, unchanged.</li></ul> |
-| 4 | Accessibility audit (22 states) | ⏳ |
-| 5 | Device scenarios | ⏳ |
-| 6 | Random input (`qa/monkey.sh 20261024 5000`) | ⏳ |
-| 6a | Upgrade to 1.0.1 from build 4 (1.0.0); only closed testers had build 4 | ⏳ |
+| 4 | Accessibility audit (22 states) | ✅ `0 failure(s)` on all 66 captures: 22 states at 100% and 200% font and in landscape. The full audit ran 00:21–01:06. 59 captures were taken; 7, of 3 states new in 13c, were not, because of their tour flows:<ul><li>`insights`: `${DAY}, [0-9]{4}` — Maestro read the script up to the last brace. In landscape, the date picker then hid day 3 (#101), so the tour now picks days 15–21. OK is below the time dial, so the dialog is scrolled to it.</li><li>`medications-list`: it waited for Undo to time out, but "Medication taken" keeps Undo and Done until one is tapped. The tour taps Done, and scrolls to "Add and log" at 200% and in landscape.</li><li>`settings-theme`: at 200%, Theme is below the fold.</li></ul>`buy.yaml` also scrolls to the buy button, which is below the plans in landscape. After the fixes, each of the 3 states passed twice in all 3 configurations, with 0 failures. The 6 medication flows that share `add-first-medication` passed, and so did the purchase flow. Every "not judged" line was looked at:<ul><li>**Cut off by scrolling:** 27 labels are cut off in every capture of their screen. Each is part of a component that is judged in full elsewhere: 7 trigger chips under the details header, 14 day cells in the week under home's buttons, 4 times Settings' "Privacy" row, and 2 History attack rows (judged in full in history-month at 200% and on home).</li><li>**Text contrast in merged nodes:** the audit's own method, applied to the node bounds, measured 459. 449 are at least 4.5:1. The other 10 are History's month arrows at 2.65:1 (#55585D on #0F1115), and both arrows are disabled in those states, so they are exempt. The method is approximate: the brightest pixel can be an icon instead of the text.</li></ul>New defect: #101 (S3, accessibility), the landscape date picker. It is not a blocker |
+| 5 | Device scenarios | ✅ emulator-5580, 01:48–04:03: 53 of 54 passed. The one failure is `premium_no_products` (new in 13c): "the simulated store did not take no-products". That command is D122, which is on develop only (PR #85), so this build cannot run it; it is checked on develop instead (13c task 2.4). The first try, at 00:19, did not start: `connectedDebugAndroidTest` (line 1b) uninstalls the app when it ends, and the scenarios need the build under test installed |
+| 6 | Random input (`qa/monkey.sh 20261024 5000`) | ✅ twice (00:19 and 04:28): 5,000 events, 0 crashes, 0 ANRs. Both runs turned on airplane mode and Do Not Disturb from the shade. A plain `settings put` does not turn Do Not Disturb off, as the notification service writes it back. `qa/monkey.sh` now uses `cmd notification set_dnd off`, and the second run left both off |
+| 6a | Upgrade to 1.0.1 from build 4 (1.0.0); only closed testers had build 4 | ✅ in line 5's `upgrade` scenario: build 4's debug APK (versionCode 4) installed with data, 1.0.1 installed over it, every attack kept |
 | 7 | Permissions (`qa/permission_audit.sh`, debug and release APK) | ✅ The debug APK, the R8 APK and the bundle's universal APK each have the 5 permissions of 1.0.0, and none has INTERNET |
 | 8 | Open defects (`gh issue list --label qa --state open`) | ✅ The retests passed. #74 and #77–#81 are fixed in ed695424 and closed with PR #96, and no S1 or S2 is open. Still open, all for develop:
 <ul>
-<li>S3: #90 and #92;</li>
+<li>S3: #92, and #101 (found in line 4 at 05:00);</li>
 <li>S4: #82, #83, #88 and #91.</li>
-</ul>#84, #87 and #89 are fixed on develop and closed. |
+</ul>#84, #87, #89 and #90 are fixed on develop and closed. #91 and #92 came from the dev session's review and have no labels. |
 | 9 | Coverage report (`qa/e2e_coverage.py --below 50 --register docs/qa/test-strategy.md`) | ✅ exit 0. 267 of 508 scenarios (53%); the register matches the flows |
 | 10 | R8: lines 3 and 7 on the universal APK of the upload-signed bundle | ✅ 22:33–23:19, not debuggable. Pass 2: 9 of 9. Pass 1: 41 of 43; the simulated-store flows need a debug build. Both failures were timing under load, and the app did the right thing:<ul><li>`move-start-rejected`: the start stayed and the message had gone. The tap took 7.5 s to settle, so the 8 s message ran out before the check;</li><li>`undo-window-passes`: as in line 3.</li></ul>Both flows were made load-proof: a tap that does not wait to settle, and the 20 s timeout pass. Each then passed 2 of 2 at load average 18–20, during the dev session's emulator walk. Line 7 on this APK: ✅ |
 | 11 | Play pre-launch report (closed testing track, ed695424) | ⏳ before Publish |
-| 12 | Internal testing with people, at least a week (BRD §14.1) | ⏳ the user's decision |
+| 12 | Internal testing with people, at least a week (BRD §14.1) | Not waited for: the user's decision of 2026-10-27 at 20:30 (see Decision). 1.0.0 has no users yet, so 1.0.1 went to production review without a week of people testing it |
 
 **Line 1a:** these warnings could affect users, and each one was looked at:
 - **`PluralsCandidate`, twice:**
@@ -145,8 +153,8 @@ scratchpad (`sweep/retest-101.md`).
 | 1a Lint | anything about behaviour; lint is not yet in the gate (D123), so a later change can bring errors back |
 | 1b Instrumented | the screens: it covers DAO SQL, migrations and design-system components only |
 | 2, 3, 10 Smoke and regression | the scenarios without a flow: 241 of 508 (47%) |
-| 4 Accessibility audit | what a screen reader says: TalkBack itself is not driven (the audit reads labels, contrast and sizes) |
-| 5 Device scenarios | anything beyond its named scenarios |
+| 4 Accessibility audit | what a screen reader says: TalkBack itself is not driven (the audit reads labels, contrast and sizes). Also the dialogs: no state captures an open picker. #79 and #101 were found by flows that pass through them, not by the audit (QA 13d adds those states) |
+| 5 Device scenarios | anything beyond its named scenarios. "Google Play offers no products" (`premium_no_products`) cannot run on this build, as its store command is on develop only |
 | 6 Random input | anything beyond 5,000 events from one seed |
 | 6a Upgrade | an upgrade through Android's backup on a new phone |
 | 7 Permissions | what the Play app does with billing data, which Google Play's own terms govern |

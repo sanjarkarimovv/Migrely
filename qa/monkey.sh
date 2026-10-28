@@ -41,6 +41,10 @@ restore() {
     now="$(adbq shell settings get ${WATCHED[$i]} | tr -d '\r')"
     if [[ "$now" != "${BEFORE[$i]}" ]]; then
       echo "monkey changed ${WATCHED[$i]}: ${BEFORE[$i]} -> $now (restored)"
+      # The notification service owns Do Not Disturb and writes zen_mode back over a plain settings put.
+      if [[ "${WATCHED[$i]}" == "global zen_mode" && "${BEFORE[$i]}" == "0" ]]; then
+        adbq shell cmd notification set_dnd off >/dev/null 2>&1
+      fi
       qa_restore_setting ${WATCHED[$i]} "${BEFORE[$i]}"
     fi
   done

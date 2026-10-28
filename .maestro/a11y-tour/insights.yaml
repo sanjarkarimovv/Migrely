@@ -27,11 +27,13 @@ tags: [simulated-store]
 - extendedWaitUntil:
     visible: "Today: .*"
     timeout: 5000
-- runFlow: {file: ../subflows/add-past-attack-on.yaml, env: {DAY: "3"}}
-- runFlow: {file: ../subflows/add-past-attack-on.yaml, env: {DAY: "8"}}
-- runFlow: {file: ../subflows/add-past-attack-on.yaml, env: {DAY: "12"}}
+# Days 15 to 21 are in the calendar's third or fourth row in every month. In landscape the date picker hides the first
+# row and squeezes the second (#101), so earlier days could not be picked there.
+- runFlow: {file: ../subflows/add-past-attack-on.yaml, env: {DAY: "15"}}
+- runFlow: {file: ../subflows/add-past-attack-on.yaml, env: {DAY: "16"}}
 - runFlow: {file: ../subflows/add-past-attack-on.yaml, env: {DAY: "18"}}
-- runFlow: {file: ../subflows/add-past-attack-on.yaml, env: {DAY: "24"}}
+- runFlow: {file: ../subflows/add-past-attack-on.yaml, env: {DAY: "19"}}
+- runFlow: {file: ../subflows/add-past-attack-on.yaml, env: {DAY: "21"}}
 - tapOn: ".*\\. Opens History\\."
 - tapOn: "Insights"
 - extendedWaitUntil:

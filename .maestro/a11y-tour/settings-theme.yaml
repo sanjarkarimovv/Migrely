@@ -3,6 +3,10 @@ appId: com.migrely.app
 ---
 - runFlow: ../subflows/launch-clean.yaml
 - tapOn: "Settings"
+- scrollUntilVisible:
+    element: "Theme.*"
+    direction: DOWN
+    centerElement: true
 - tapOn: "Theme.*"
 - extendedWaitUntil:
     visible: "During a migraine, Migrely stays dark\\."

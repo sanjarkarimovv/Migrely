@@ -5,12 +5,22 @@ appId: com.migrely.app
 - tapOn: "Add a past migraine"
 - tapOn: "Change when it started, now .*"
 - tapOn: "Change to previous month"
-- tapOn: "[A-Za-z]+, [A-Za-z]+ ${DAY}, [0-9]{4}"
+# No {n} quantifier after ${DAY}: Maestro reads up to the last closing brace as the script ("DAY}, [0-9]{4").
+- tapOn: "[A-Za-z]+, [A-Za-z]+ ${DAY}, [0-9]+"
 - tapOn: "Next"
 - tapOn:
     text: "10 o.clock"
     below: "Select minutes"
 - tapOn: "AM"
+# In landscape OK is below the dial and the dialog scrolls (#79). The swipe runs right of the dial, which a drag would
+# turn, and inside the dialog.
+- runFlow:
+    when:
+      notVisible: "OK"
+    commands:
+      - swipe:
+          start: 65%, 85%
+          end: 65%, 15%
 - tapOn: "OK"
 - assertVisible: "Duration 2 h 0 min"
 - tapOn: "Add migraine"

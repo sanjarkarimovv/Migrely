@@ -23,18 +23,18 @@
 
 ## 3. Accessibility audit on every screen (D203)
 
-- [ ] 3.1 Tour states `onboarding-first`, `settings-main`, `settings-warning-signs`, `settings-privacy`,
+- [x] 3.1 Tour states `onboarding-first`, `settings-main`, `settings-warning-signs`, `settings-privacy`,
   `settings-privacy-link`, `settings-theme`, `medications-list`, `reminders` and `your-data` (design D1). Verify:
   `qa/a11y_audit.sh <state>` captures each at 100%, 200% and landscape
-- [ ] 3.2 Tour states `paywall`, `report-period` and `insights` through the simulated store. Verify: as 3.1
-- [ ] 3.3 The full audit on the 1.0.1 candidate's debug APK (line 4 of its record, task 7.2). Every failure is filed as an `accessibility` issue with its capture,
+- [x] 3.2 Tour states `paywall`, `report-period` and `insights` through the simulated store. Verify: as 3.1
+- [x] 3.3 The full audit on the 1.0.1 candidate's debug APK (line 4 of its record, task 7.2). Every failure is filed as an `accessibility` issue with its capture,
   and every "not judged" line is looked at. Verify: the audit's summary in the verification record
 
 ## 4. Release-candidate checks and residual risk (D204)
 
-- [ ] 4.1 Lint and the instrumented tests on build 4 (design D7), with the results and the #74 exception in the
+- [x] 4.1 Lint and the instrumented tests on build 4 (design D7), with the results and the #74 exception in the
   Go/No-Go record. Verify: the record's lines name the counts and #74
-- [ ] 4.2 `qa/split_apks.sh` and the device specs in `qa/fixtures/device-specs/` (design D8), on the 1.0.1 bundle (build 4
+- [x] 4.2 `qa/split_apks.sh` and the device specs in `qa/fixtures/device-specs/` (design D8), on the 1.0.1 bundle (build 4
   went to closed testing before the script ran). Verify:
   - it refuses emulator-5570;
   - `pm path` lists 4 APKs for each profile;
@@ -59,7 +59,7 @@
 - [x] 7.1 Retests of #77, #78, #79, #80 and #81 on the candidate's debug and R8 APKs, twice each. Also the dev session's
   regression case: a paste whose first letter matches the text after the cursor, then one DEL beside an emoji. Verify:
   the retest table in `docs/qa/go-no-go-1.0.1.md`
-- [ ] 7.2 Lines 1–10 of `docs/QA.md` §5 on the candidate:
+- [x] 7.2 Lines 1–10 of `docs/QA.md` §5 on the candidate:
   - line 2a and line 10 use the upload-signed bundle that goes to Play;
   - line 6a upgrades from build 4.
   Verify: each line's result in the record, and its section "What these checks do not prove"
@@ -124,3 +124,54 @@ launch blocker: no).
   October 1: nothing logged. Period." is visible). The mutation lives in a scratch copy, so nothing needs reverting.
 
 **7.1, the 1.0.1 retests:** every issue passed twice on each APK. See the retest table in `docs/qa/go-no-go-1.0.1.md`.
+
+**3.1–3.3, the accessibility audit on 1.0.1's debug APK** (ed695424, emulator-5580, 2026-10-28):
+- **The full audit, 00:21–01:06:** 22 states at 100% and 200% font and in landscape. Of the 66 captures, 59 were
+  taken, with `0 failure(s)`. The other 7, of `insights`, `medications-list` and `settings-theme`, failed in their
+  tour flows.
+- **The tour fixes:**
+  - `add-past-attack-on`: Maestro read `${DAY}, [0-9]{4}` as one script up to the last brace, so the regex is
+    `[0-9]+`. In landscape, OK is below the time dial, so the dialog is scrolled to it, right of the dial;
+  - `insights`: picks days 15–21, which are always in the third or fourth row. The landscape date picker hides the
+    first row (#101);
+  - `medications-list`: taps Done, since "Medication taken" does not time out. `add-first-medication` scrolls to "Add
+    and log";
+  - `settings-theme`: scrolls to Theme;
+  - `buy.yaml`: scrolls to the buy button.
+- **After the fixes:** each of the 3 states passed twice in all 3 configurations, with 0 failures. The flows that share
+  the changed subflows passed: the 6 medication flows (05:23–05:32) and `paywall-and-purchase` (04:53).
+- **Not judged:**
+  - 27 labels are cut off in every capture of their screen. Each belongs to a component that is judged in full
+    elsewhere;
+  - 459 merged nodes were measured with the audit's own contrast method. 449 are at least 4.5:1. The other 10 are the
+    disabled month arrows, which are exempt.
+  - The detail is in line 4 of `docs/qa/go-no-go-1.0.1.md`.
+- **Issues:** no audit failure, so none was filed from the audit. The tours found #101 (S3, accessibility), with 3
+  reproductions.
+
+**4.1:** in `docs/qa/go-no-go-1.0.0.md`:
+- line 1a: 3 errors, #74;
+- line 1b: datasource 100/100, designsystem 37/37, app 1/1.
+
+On 1.0.1, line 1b gave datasource 104/104, designsystem 37/37 and app 1/1.
+
+**4.2, `qa/split_apks.sh` on the upload-signed `Migrely-1.0.1-6.aab`:**
+- **ru-26** (emulator-5582, 00:03–00:15): ru-RU was read back as the system language; smoke 15 of 15. At the end the
+  system language read back as en-US.
+- **he-36, uz-36 and en-36** (emulator-5580, 01:06–01:45): smoke 14 of 14, then 3 of 3 with the 20 s timeout. The D117
+  orders hold:
+  - he: day first, the week starts on Sunday;
+  - uz: month first, Monday;
+  - en: month first, Sunday.
+  The app language was set and then cleared.
+- **`pm path`:** 4 APKs for each profile: base, ABI, density and language. He's split is `base-iw.apk`.
+- **The serial guard:** it is an allowlist of emulator-5580 and emulator-5582, checked before any adb call.
+  `QA_SERIAL=emulator-0000` printed "Refusing to run on emulator-0000" and exited 2. emulator-5570 takes the same branch.
+  It was not run on 5570 itself, which is the dev session's.
+
+**7.2:** lines 1–10 of `docs/qa/go-no-go-1.0.1.md` all pass. 2a and 10 used the upload-signed bundle, and 6a upgraded
+from build 4. The record has "What these checks do not prove", and QA's verdict on lines 1–10 is "Go, with these risks
+open".
+- **The monkey:** `qa/monkey.sh` now turns Do Not Disturb off through `cmd notification set_dnd off`. A plain
+  `settings put` was written back. Its second run left `zen_mode` at 0.
+
