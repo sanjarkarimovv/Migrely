@@ -1,26 +1,30 @@
 {
   "/": {
     "lastmod": "2026-10-29",
-    "sha256": "d34f96844d9cd0a6dec85d227bfc657d56eb4c5a413b477741dd66c7e83aed23"
+    "sha256": "0ecdcc88f8d2d38af8fa0a54d1bfe2621baa7002371b3ec6c911d7ff1d70a0e0"
   },
   "/about/": {
     "lastmod": "2026-10-29",
-    "sha256": "756937e49d97a89ff6bb83b643b95484cc434c1f401c913febdf697eb1feec5f"
+    "sha256": "9d986170628714b1f6d02a7f4e76713757a0d2a9e25da5305dd4965dde942a06"
   },
   "/delete-data/": {
     "lastmod": "2026-10-29",
-    "sha256": "63716692c664ea00a8b48a2b6f7a7014f8a39e09b9569cec3e7832db6bdd8b75"
+    "sha256": "382c292ffef4ebe6f81a9bfbdc8b433eda0e7dc9b96ef1fae89cfcbe890a43ca"
+  },
+  "/headache-diary/": {
+    "lastmod": "2026-10-29",
+    "sha256": "ee9f382a847af8a8fa07b81a80eeb08825c8d9de6cd31d80a480f0e439c8bbe5"
   },
   "/privacy-check/": {
     "lastmod": "2026-10-29",
-    "sha256": "4ba769eb2094bfaf36edff6344ada68cafe4ce892e980c51671020fb1d6d6789"
+    "sha256": "2894209beeb453c682d197d98c8938e6c1620691a1514780b1557bf9f9e16fa2"
   },
   "/privacy/": {
     "lastmod": "2026-10-29",
-    "sha256": "1a6e60f80f67b42f74692afcb61743bed2afe6f8326b007a4513c4e1020b334e"
+    "sha256": "0c11af5a7cde5a23002a7e1c339e8441e0637d612ccc5d4791f4296a431cda6f"
   },
   "/support/": {
     "lastmod": "2026-10-29",
-    "sha256": "9c49c49e13d1ef5632db9700bf2e6a6e242e37a19658eaae032ac86497c013f8"
+    "sha256": "f1dc1ef38a5d97c4ac4038bb77a027e567b33576cbbde3f7deace62008049994"
   }
 }

@@ -26,14 +26,34 @@ ASSETS = SITE / 'assets'
 STORE_ART = ROOT / 'docs' / 'release' / 'store'
 LASTMOD = ROOT / 'website' / 'lastmod.json'
 PERMISSION_REPORT = ROOT / 'app' / 'build' / 'reports' / 'permissions' / 'release.txt'
+# _headers caches /assets/ for a year, so the stylesheet's address changes whenever it does.
+CSS_VERSION = hashlib.sha256((ASSETS / 'site.css').read_bytes()).hexdigest()[:10]
 BASE = 'https://migrely.health'
 PLAY = 'https://play.google.com/store/apps/details?id=com.migrely.app'
 SUPPORT = 'support@migrely.health'
 PRIVACY_MAIL = 'privacy@migrely.health'
 DISCLAIMER = ('Migrely is a diary. It is not a medical device and does not diagnose, treat or prevent any condition. '
               'Talk to a doctor about your headaches.')
+# /headache-diary/ (BRD D138): the date its facts were last checked against the sources, as ISO and as text.
+DIARY_REVIEWED = ('2026-10-29', '29 October 2026')
+# The printable template, made by website/make_diary_pdf.py (BRD D140).
+DIARY_PDFS = {'a4': 'migrely-headache-diary-a4.pdf', 'letter': 'migrely-headache-diary-letter.pdf'}
+DIARY_TITLE = 'Headache diary: what to write down, with a free printable template'
 ICHD_MOH = ('https://ichd-3.org/8-headache-attributed-to-a-substance-or-its-withdrawal/'
             '8-2-medication-overuse-headache-moh/')
+NHS_MIGRAINE = 'https://www.nhs.uk/conditions/migraine/'
+DIARY_SOURCES = [
+    ('NICE CG150, Headaches in over 12s: recommendations 1.1.3, 1.1.4, 1.2.6, 1.2.7 and 1.3.1',
+     'https://www.nice.org.uk/guidance/cg150/chapter/Recommendations'),
+    ('ICHD-3, Definition of terms: headache days', 'https://ichd-3.org/definition-of-terms/'),
+    ('ICHD-3, 1.3 Chronic migraine', 'https://ichd-3.org/1-migraine/1-3-chronic-migraine/'),
+    ('ICHD-3, 8.2 Medication-overuse headache', ICHD_MOH),
+    ('NHS, Migraine', NHS_MIGRAINE),
+    ('The Migraine Trust, Keeping a headache diary',
+     'https://migrainetrust.org/live-with-migraine/self-management/keeping-a-migraine-diary/'),
+    ('The Migraine Trust, Menstrual migraine',
+     'https://migrainetrust.org/understand-migraine/types-of-migraine/menstrual-migraine/'),
+]
 # One object for the home page and /about/ (BRD D135). sameAs comes with the social profiles (EC-WEB-06).
 ORGANIZATION = {'@type': 'Organization', '@id': f'{BASE}/#organization', 'name': 'Migrely', 'url': f'{BASE}/',
                 'logo': f'{BASE}/assets/img/icon-512.png', 'email': SUPPORT,
@@ -121,7 +141,7 @@ def page(path, title, description, body, extra_head=''):
 <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="preload" href="/assets/fonts/fraunces-600.woff" as="font" type="font/woff" crossorigin>
-<link rel="stylesheet" href="/assets/site.css">
+<link rel="stylesheet" href="/assets/site.css?v={CSS_VERSION}">
 {extra_head}
 </head>
 <body>
@@ -136,8 +156,8 @@ def page(path, title, description, body, extra_head=''):
 <footer class="foot"><div class="wrap">
   <p>{esc(DISCLAIMER)}</p>
   <p class="links"><a href="/support/">Help</a><a href="/about/">About</a><a href="/privacy/">Privacy policy</a>
-    <a href="/privacy-check/">Check our privacy</a><a href="/delete-data/">Delete your data</a>
-    <a href="{esc(play_link(campaign(path)))}">Google Play</a></p>
+    <a href="/privacy-check/">Check our privacy</a><a href="/headache-diary/">Free headache diary</a>
+    <a href="/delete-data/">Delete your data</a><a href="{esc(play_link(campaign(path)))}">Google Play</a></p>
   <p>© 2026 Migrely, published by Sulton UzDev · <a href="mailto:{SUPPORT}">{SUPPORT}</a></p>
 </div></footer>
 </body>
@@ -425,6 +445,72 @@ def privacy():
                 'keeps on your phone, Android\'s backup, and how to delete everything.', body)
 
 
+def headache_diary():
+    path = '/headache-diary/'
+    downloads = ''.join(f'<a class="play alt" href="{path}{DIARY_PDFS[size]}">{label}</a>'
+                        for size, label in [('a4', 'Download the template (A4, PDF)'),
+                                            ('letter', 'Download US Letter (PDF)')])
+    sources = ''.join(f'<li><a href="{esc(url)}">{esc(name)}</a></li>' for name, url in DIARY_SOURCES)
+    body = f'''<section class="wrap block narrow prose"><h1>{esc(DIARY_TITLE)}</h1>
+  <p class="lead">A headache diary turns hazy weeks into facts your doctor can use. Here is what UK guidance suggests
+    recording, for how long, and a free 8-week template to print.</p>
+  <div class="cta">{downloads}</div>
+  <h2>Why keep a headache diary?</h2>
+  <p>NICE, which writes guidance for doctors in England, suggests considering a headache diary to help diagnose
+    headaches. A diary also shows whether a treatment is working, and gives you and your doctor something concrete to
+    talk about.</p>
+  <h2>What should I write down?</h2>
+  <p>NICE suggests recording:</p>
+  <ul><li>how often headaches come, how long they last and how bad they get;</li>
+    <li>other symptoms, such as nausea, or light or sound bothering you;</li>
+    <li>every medicine you take for them, prescribed and over the counter;</li>
+    <li>possible triggers;</li><li>any link to your period, if you have periods.</li></ul>
+  <p>The template also asks whether each medicine helped.</p>
+  <h2>How long should I keep it?</h2>
+  <p>At least 8 weeks, NICE suggests. If headaches seem linked to your period, keep it for at least 2 menstrual cycles;
+    the Migraine Trust suggests 3 months. For frequent headaches, the international classification (ICHD-3) says a
+    day-by-day diary for at least a month is generally needed.</p>
+  <h2>What counts as a headache day?</h2>
+  <p>Any day with headache, for any part of the day (ICHD-3). Fill in a line on pain-free days too: they are part of
+    the picture, and they make the count reliable.</p>
+  <h2>Why count medicine days?</h2>
+  <p>Taking medicine for attacks on many days a month can make headaches more frequent. This is called
+    medication-overuse headache. ICHD-3 describes it in people who have headache on 15 or more days a month after more
+    than 3 months of taking:</p>
+  <ul><li>triptans, ergots, opioids or combination painkillers (such as those with caffeine or codeine) on 10 or more
+      days a month;</li>
+    <li>a mix of these kinds, or of these and simple painkillers, on 10 or more days a month in total;</li>
+    <li>simple painkillers alone, such as paracetamol, aspirin or ibuprofen, one or several, on 15 or more days a
+      month.</li></ul>
+  <p>These are diagnostic thresholds, not safe limits: the NHS suggests not taking painkillers on more than 2 days a
+    week. Don't stop or change medicines without talking to your doctor.</p>
+  <h2>When should I get help straight away?</h2>
+  <p>Call your emergency number if a headache comes on suddenly and is extremely painful, or comes with weakness on one
+    side, problems speaking or loss of vision. The <a href="{NHS_MIGRAINE}">NHS migraine page</a> lists every warning
+    sign, and page 1 of the template prints them.</p>
+  <h2>What's in the template?</h2>
+  <ul><li>Page 1: how to use it, a key, and the warning signs that need urgent care.</li>
+    <li>Pages 2 to 5: two weeks each, one row a day, for 8 weeks.</li>
+    <li>Page 6: a summary for your doctor, with medicine days by kind.</li></ul>
+  <p>It prints well in black and white, on A4 or US Letter.</p>
+  <h2>Would you rather use your phone?</h2>
+  <p>Migrely, our app, keeps the same diary on Android, with no account and no internet access. Logging, your whole
+    history and spreadsheet export are free, and it counts medicine days for you. Its doctor PDF report is part of
+    Premium.</p>
+  <p>{play_button(path)}</p>
+  <h2>Sources</h2>
+  <ul>{sources}</ul>
+  <p class="meta">Last reviewed: {DIARY_REVIEWED[1]}. Written by Migrely from the sources above; not reviewed by a
+    clinician. Educational only, not medical advice.</p></section>'''
+    ld = {'@context': 'https://schema.org', '@type': 'MedicalWebPage', 'url': f'{BASE}{path}',
+          'name': DIARY_TITLE, 'inLanguage': 'en',
+          'lastReviewed': DIARY_REVIEWED[0], 'about': {'@type': 'MedicalCondition', 'name': 'Headache'},
+          'publisher': ORGANIZATION}
+    return page(path, 'Headache diary: free printable template · Migrely',
+                'What to write in a headache or migraine diary, for how long, and how to count headache and medicine '
+                'days. A free printable 8-week template, A4 and US Letter.', body, json_ld(ld))
+
+
 def not_found():
     body = '''<section class="wrap block narrow"><h1>Page not found</h1>
   <p class="lead">The page you were looking for is not here. <a href="/">Go to the home page</a>.</p></section>'''
@@ -484,12 +570,22 @@ def lastmods(pages):
 
 # The pages in the sitemap, in its order; the 404 page stays out of it.
 PAGES = [('/', 'index.html', home), ('/about/', 'about/index.html', about),
-         ('/privacy-check/', 'privacy-check/index.html', privacy_check), ('/support/', 'support/index.html', support),
+         ('/privacy-check/', 'privacy-check/index.html', privacy_check),
+         ('/headache-diary/', 'headache-diary/index.html', headache_diary),
+         ('/support/', 'support/index.html', support),
          ('/privacy/', 'privacy/index.html', privacy), ('/delete-data/', 'delete-data/index.html', delete_data)]
+
+
+def check_diary_pdfs():
+    """Stops the build when a download on /headache-diary/ would be missing (BRD D140)."""
+    missing = [name for name in DIARY_PDFS.values() if not (SITE / 'headache-diary' / name).exists()]
+    if missing:
+        raise SystemExit(f'Missing {", ".join(missing)}: run python3 website/make_diary_pdf.py first.')
 
 
 def main():
     check_permissions()
+    check_diary_pdfs()
     built = {path: (rel, build()) for path, rel, build in PAGES}
     for rel, content in [*built.values(), ('404.html', not_found())]:
         target = SITE / rel
