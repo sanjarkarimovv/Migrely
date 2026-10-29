@@ -50,7 +50,7 @@
 
 - [x] 4.1 Independent review (`superpowers:code-reviewer`) of `git diff origin/develop...`. Check the facts against
   the sources in D1 and the build logic. Fix the real findings and record them here.
-- [ ] 4.2 `openspec archive add-website-trust-pages --yes`. Write the `website` spec's Purpose, then run
+- [x] 4.2 `openspec archive add-website-trust-pages --yes`. Write the `website` spec's Purpose, then run
   `openspec validate --specs --strict`.
 
 ## Verification record
