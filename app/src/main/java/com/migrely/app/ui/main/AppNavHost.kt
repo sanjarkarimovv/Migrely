@@ -23,6 +23,7 @@ import com.migrely.app.onboarding.ui.view.Onboarding
 import com.migrely.app.reminders.ui.view.DailyReminderOffer
 import com.migrely.app.reminders.ui.view.Reminders
 import com.migrely.app.report.ui.view.Report
+import com.migrely.app.review.ui.view.ReviewPrompt
 import com.migrely.app.settings.ui.view.AboutMigrely
 import com.migrely.app.settings.ui.view.DeleteAllData
 import com.migrely.app.settings.ui.view.Licences
@@ -86,7 +87,9 @@ fun AppNavHostDependencies.AppNavHost(
                 trialBanner = { refreshKey -> trialBannerDependencies.TrialBanner(refreshKey) },
                 paywallTrigger = { refreshKey ->
                     paywallTriggerDependencies.PaywallTrigger(navController, refreshKey)
-                }
+                },
+                // And the review feature's request for a rating (BRD D130, D132).
+                reviewPrompt = { refreshKey -> reviewPromptDependencies.ReviewPrompt(refreshKey) }
             )
         }
         composable<AttackDetails> { entry ->
