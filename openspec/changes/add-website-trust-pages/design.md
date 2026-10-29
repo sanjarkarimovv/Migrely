@@ -63,17 +63,20 @@ The page puts the check before the explanation:
    use it, and the page says this plainly.
 3. **For developers.** `adb shell dumpsys package com.migrely.app`, with its "requested permissions" section.
 
-Then each permission, in a list of cards rather than a table so that 320 px works:
+Then each permission, in a list of cards rather than a table so that 320 px works. The emulator showed Android's
+labels for the first three. It lists neither BILLING (Play Store, which defines it, is not on the emulator) nor the
+AndroidX permission, so those two get descriptive titles instead:
 
 | Shown as | Permission | Why |
 |---|---|---|
-| Android's label | `POST_NOTIFICATIONS` | reminders and "Did it help?"; Android asks first |
-| Android's label | `RECEIVE_BOOT_COMPLETED` | WorkManager puts reminders back after a restart |
-| Android's label | `WAKE_LOCK` | WorkManager keeps the phone awake while a reminder runs |
-| Android's label | `com.android.vending.BILLING` | asks the Play Store app about Premium, on the phone |
-| none | `…DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION` | AndroidX: only Migrely may message its own parts |
+| “show notifications” | `POST_NOTIFICATIONS` | reminders and "Did it help?"; Android asks first |
+| “run at startup” | `RECEIVE_BOOT_COMPLETED` | WorkManager puts reminders back after a restart |
+| “prevent phone from sleeping” | `WAKE_LOCK` | WorkManager keeps the phone awake while a reminder runs |
+| Google Play billing | `com.android.vending.BILLING` | asks the Play Store app about Premium, on the phone |
+| An internal AndroidX permission | `…DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION` | only Migrely may message its own parts |
 
-The labels are written as the emulator shows them. Then comes "What can still leave your phone": Android's backup,
+The labels in quotes are Android 16's own, written as the emulator shows them, in lower case. A networked app
+(Chrome) shows “have full network access” in the same list. Then comes "What can still leave your phone": Android's backup,
 Google Play and shared files, in the privacy policy's words, and a link to it.
 
 **Drift guard (EC-WEB-01).** `PERMISSIONS` in `build.py` holds the five entries. `check_permissions()` reads the
@@ -117,14 +120,19 @@ plain store URL, because it identifies the app rather than a visit.
 
 ### D6. Styles
 
-`site.css` gains only what the pages need:
+`site.css` gains only what the pages need, using the existing colour tokens, which pass AA in both themes:
 
-- `code`, in the system monospace font on `--violet-soft`, with `overflow-wrap: anywhere`;
-- `pre`, with wrapping (`white-space: pre-wrap`);
-- `.perms`, a grid of cards like `.features`, one column at 320 px;
-- `.steps`, an ordered list with room between steps.
+- `code`, in the system monospace font on `--violet-soft`;
+- `pre`, which wraps (`white-space: pre-wrap`);
+- `.perms`, a grid of cards like `.features`, with `minmax(min(240px, 100%), 1fr)` so it is one column on a small
+  phone;
+- `overflow-wrap: anywhere` on `body`.
 
-Colours reuse the existing tokens, which already pass AA in both themes.
+The walk at 320 px with every font size doubled showed that long words pushed every page sideways, the old ones too:
+`support@migrely.health`, and headings at their 200% minimum size. Grid items cannot shrink below their longest word.
+`overflow-wrap: anywhere` lets such a word wrap, and only when it does not fit, so normal sizes look the same.
+Permission names get `<wbr>` after each dot and underscore (`breakable()`), so they wrap between their parts and not
+inside a word.
 
 ## Risks
 

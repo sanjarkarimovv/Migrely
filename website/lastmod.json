@@ -1,0 +1,26 @@
+{
+  "/": {
+    "lastmod": "2026-10-29",
+    "sha256": "d34f96844d9cd0a6dec85d227bfc657d56eb4c5a413b477741dd66c7e83aed23"
+  },
+  "/about/": {
+    "lastmod": "2026-10-29",
+    "sha256": "ef7bc142a6a01a3c2e90a83873460d1192f7ea07ec024ff6531d348fd506c840"
+  },
+  "/delete-data/": {
+    "lastmod": "2026-10-29",
+    "sha256": "b62efa87d1dec905ef939600dc1a82ac6202b4c948f755140c82484f4026f2cd"
+  },
+  "/privacy-check/": {
+    "lastmod": "2026-10-29",
+    "sha256": "3670fef81d37c22ca7ebc66c1f4b327c531ce508d12578c774abb80e3d0af7d6"
+  },
+  "/privacy/": {
+    "lastmod": "2026-10-29",
+    "sha256": "1a6e60f80f67b42f74692afcb61743bed2afe6f8326b007a4513c4e1020b334e"
+  },
+  "/support/": {
+    "lastmod": "2026-10-29",
+    "sha256": "9c49c49e13d1ef5632db9700bf2e6a6e242e37a19658eaae032ac86497c013f8"
+  }
+}

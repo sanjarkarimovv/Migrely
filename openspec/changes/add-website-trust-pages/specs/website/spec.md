@@ -26,7 +26,7 @@ The site SHALL serve `/privacy-check/`. It explains that Migrely has no internet
 #### Scenario: Checking on the phone
 
 - **WHEN** a visitor follows the steps Settings → Apps → Migrely → Permissions → ⋮ → All permissions
-- **THEN** the page tells them that "Have full network access" is not in the list
+- **THEN** the page tells them that “have full network access” is not in the list
 
 #### Scenario: The phone's maker uses other names
 
