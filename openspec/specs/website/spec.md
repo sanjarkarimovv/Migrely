@@ -1,10 +1,10 @@
 # website Specification
 
 ## Purpose
-Defines migrely.health's trust pages and their signals: `/about/` and `/privacy-check/` with only verifiable claims,
-a permission list kept equal to the release build's, links from every page, Organization structured data, honest
-sitemap dates, UTM-tagged Google Play links, and the site's static, script-free rules (BRD D119, D133–D137,
-EC-WEB-01…06).
+Defines migrely.health's trust pages and content: `/about/` and `/privacy-check/` with only verifiable claims, a
+permission list kept equal to the release build's, `/headache-diary/` with its printable 8-week template (sources,
+review date, NHS warning signs), links from every page, structured data, honest sitemap dates, UTM-tagged Google Play
+links, and the site's static, script-free rules (BRD D119, D133–D140, EC-WEB-01…10).
 
 ## Requirements
 
