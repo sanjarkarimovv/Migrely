@@ -37,7 +37,7 @@
 ## 5. Review and archive
 
 - [x] 5.1 Independent review of the diff, the PDFs and the medical wording. Fix the real findings and record them.
-- [ ] 5.2 Archive, `openspec validate --specs --strict`, PR into `develop` and merge.
+- [x] 5.2 Archive, `openspec validate --specs --strict`, PR into `develop` and merge.
 
 ## Verification record
 
