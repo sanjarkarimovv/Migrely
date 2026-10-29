@@ -11,10 +11,11 @@ a page by the links to it, so these pages would rank lower than they deserve. Th
 
 - **`GUIDES`:** one list in `website/build.py` with each guide's path, short name and one-sentence summary.
 - **A "Free guides" section on the home page:** one card per guide, with a descriptive link and its summary. The VA
-  card keeps "Not affiliated with VA" (D143).
+  card keeps "Migrely is not affiliated with VA" (D143).
 - **A "Guides" footer navigation on every page:** `<nav aria-label="Guides">` with all five guides, the current one
   marked `aria-current="page"`. "Free headache diary" moves from the footer's link row into it.
-- **An orphan check in the build:** the build stops and names any sitemap page that no other page links to.
+- **An orphan check in the build:** the build stops and names any sitemap page that can't be reached by following
+  links from the home page.
 
 ## Out of scope
 

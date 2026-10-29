@@ -60,7 +60,7 @@ GUIDES = [
     ('/menstrual-migraine/', 'Menstrual migraine',
      'The window around your period that doctors use, how long to track it, and keeping period data private.'),
     ('/va-migraine-log/', 'Migraine log for a VA claim',
-     'What to record about each attack, and where veterans get free help. Not affiliated with VA.'),
+     'What to record about each attack, and where veterans get free help. Migrely is not affiliated with VA.'),
     ('/compare/', 'Compare migraine apps',
      'Android migraine diaries side by side, on facts from each app\'s own listing, website and policy.'),
 ]
@@ -144,7 +144,8 @@ def page(path, title, description, body, extra_head=''):
     nav = ''.join(
         f'<a href="{href}"{current if href == path else ""}>{label}</a>'
         for href, label in [('/', 'Home'), ('/about/', 'About'), ('/support/', 'Help'), ('/privacy/', 'Privacy')])
-    guides = ''.join(f'<a href="{href}"{current if href == path else ""}>{esc(name)}</a>' for href, name, _ in GUIDES)
+    guides = ''.join(f'<a href="{esc(href)}"{current if href == path else ""}>{esc(name)}</a>'
+                     for href, name, _ in GUIDES)
     return f'''<!doctype html>
 <html lang="en">
 <head>
@@ -250,7 +251,7 @@ def home():
                           ('03-report', 'A clear report for your doctor'),
                           ('04-insights', 'Triggers and patterns in your migraines')])
     features = ''.join(f'<article><h3>{esc(t)}</h3><p>{esc(d)}</p></article>' for t, d in FEATURES)
-    guides = ''.join(f'<article><h3><a href="{href}">{esc(name)}</a></h3><p>{esc(summary)}</p></article>'
+    guides = ''.join(f'<article><h3><a href="{esc(href)}">{esc(name)}</a></h3><p>{esc(summary)}</p></article>'
                      for href, name, summary in GUIDES)
     body = f'''
 <section class="hero"><div class="wrap hero-grid">
@@ -1011,12 +1012,18 @@ PAGES = [('/', 'index.html', home), ('/about/', 'about/index.html', about),
 
 
 def check_orphans(built):
-    """Stops the build when a sitemap page has no link from another page (BRD EC-WEB-19)."""
-    linked = {href for path, (_, content) in built.items()
-              for href in re.findall(r'href="(/[^"#?]*)', content) if href != path}
-    orphans = [path for path in built if path != '/' and path not in linked]
+    """Stops the build when a sitemap page can't be reached by following links from the home page (BRD EC-WEB-19)."""
+    links = {path: set(re.findall(r'<a\b[^>]*?\shref="(/[^"#?]*)"', re.sub(r'<!--.*?-->', '', content, flags=re.S)))
+             for path, (_, content) in built.items()}
+    reached, todo = {'/'}, ['/']
+    while todo:
+        for href in links[todo.pop()] & links.keys() - reached:
+            reached.add(href)
+            todo.append(href)
+    orphans = [path for path in built if path not in reached]
     if orphans:
-        raise SystemExit(f'No page links to {", ".join(orphans)}: add it to GUIDES or link it from another page.')
+        raise SystemExit(f'No link path from the home page reaches {", ".join(orphans)}: if it is a guide, add it to '
+                         'GUIDES; otherwise link it from another page (EC-WEB-19).')
 
 
 def check_diary_pdfs():

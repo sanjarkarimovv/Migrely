@@ -2,7 +2,7 @@
 
 ### Requirement: Links to every guide
 
-The home page SHALL have a "Free guides" section with a card for each guide in `GUIDES`: a link with the guide's name and a one-sentence summary. Every page's footer SHALL have a navigation labelled "Guides" that links to each guide, with the current page marked `aria-current="page"`. The VA guide's summary SHALL say Migrely is not affiliated with VA.
+The home page SHALL have a "Free guides" section with a card for each guide in `GUIDES`: a link with the guide's name and a one-sentence summary. Every page's footer SHALL have a navigation labelled "Guides" that links to each guide, with the current page marked `aria-current="page"`. The VA guide's summary SHALL say "Migrely is not affiliated with VA".
 
 #### Scenario: From the home page
 
@@ -27,12 +27,17 @@ The home page SHALL have a "Free guides" section with a card for each guide in `
 
 ### Requirement: No orphan pages
 
-The build SHALL stop and name the page when a page in the sitemap, other than the home page, has no link to it from another page of the site.
+The build SHALL stop and name the page when a page in the sitemap can't be reached from the home page by following `<a href>` links between the site's pages. Links in HTML comments SHALL NOT count.
 
 #### Scenario: A new page without links
 
 - **WHEN** a page is added to `PAGES` but no other page links to it
 - **THEN** the build stops with a message naming that page (EC-WEB-19)
+
+#### Scenario: Two pages that link only to each other
+
+- **WHEN** two new pages link to each other but no reachable page links to either
+- **THEN** the build stops and names both
 
 #### Scenario: A new guide
 

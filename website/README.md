@@ -34,7 +34,7 @@ This writes `website/public/`. It needs Pillow and `cwebp`. The images come from
   `COMPARE_REVIEWED`, re-read every source on the cards; prices and Data safety change often.
 - **Guides** (BRD D145) are listed once in `GUIDES`: the home page's "Free guides" cards and every footer's "Guides"
   navigation come from it. Add a new guide there, with a summary that claims nothing the page doesn't. The build stops
-  when a sitemap page has no link from another page (EC-WEB-19).
+  when a sitemap page can't be reached by following links from the home page (EC-WEB-19).
 - **CSP and PDFs:** `_headers` detaches the CSP from the two PDFs so browsers' PDF viewers can open them. After a
   deploy, open both on a phone and in Chrome, Safari and Firefox.
 - **Stylesheet:** pages link `site.css?v=<hash>`, because `/assets/` is cached for a year. The hash changes with the
