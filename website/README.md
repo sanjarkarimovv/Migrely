@@ -24,8 +24,11 @@ This writes `website/public/`. It needs Pillow and `cwebp`. The images come from
   dates both the page and the PDFs' footer, and remake the PDFs.
 - **Medical pages** (`/headache-diary/`, `/medication-overuse-headache/`, `/menstrual-migraine/`) share
   `urgent_help()`, `reviewed_block()` and `medical_ld()`. Each has its own review date (`DIARY_REVIEWED`,
-  `MOH_REVIEWED`, `MENSTRUAL_REVIEWED`): update it when the page's facts are
-  checked against its sources again.
+  `MOH_REVIEWED`, `MENSTRUAL_REVIEWED`): update it when the page's facts are checked against its sources again.
+- **VA page** (`/va-migraine-log/`) uses `urgent_help()` with the Veterans Crisis Line, `reviewed_block()` with
+  `VA_DISCLAIMER`, and a `WebPage` JSON-LD. It quotes 38 CFR 4.124a (DC 8100), VA's Headaches DBQ and VA's
+  representative FAQ word for word. Before updating `VA_REVIEWED`, re-read all three and check the Federal Register
+  for a final rule under RIN 2900-AQ73.
 - **CSP and PDFs:** `_headers` detaches the CSP from the two PDFs so browsers' PDF viewers can open them. After a
   deploy, open both on a phone and in Chrome, Safari and Firefox.
 - **Stylesheet:** pages link `site.css?v=<hash>`, because `/assets/` is cached for a year. The hash changes with the
@@ -73,7 +76,7 @@ Live since 26 October 2026:
    only, so nobody may send as it.
 8. **Check:**
    - `https://migrely.health`, `/about/`, `/privacy-check/`, `/headache-diary/` (and its two PDFs),
-     `/medication-overuse-headache/`, `/menstrual-migraine/`, `/privacy/`,
+     `/medication-overuse-headache/`, `/menstrual-migraine/`, `/va-migraine-log/`, `/privacy/`,
      `/support/` and `/delete-data/` answer 200,
      and a missing page answers 404;
    - `www` and `http` redirect with 301;
