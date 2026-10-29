@@ -23,8 +23,8 @@
 
 ## 4. Review and archive
 
-- [ ] 4.1 Independent review. Fix the findings and record them.
-- [ ] 4.2 Archive, `openspec validate --specs --strict`, PR into `develop` and merge.
+- [x] 4.1 Independent review. Fix the findings and record them.
+- [x] 4.2 Archive, `openspec validate --specs --strict`, PR into `develop` and merge.
 
 ## Verification record
 
@@ -61,3 +61,46 @@ Run on 2026-10-29 at `feature/add-website-moh-page`, built from `develop` 06bb1b
 - **OpenSpec:** `openspec validate add-website-moh-page --strict` passes.
 - **Not run:** the Android gate (no Gradle input changed), the live site (the owner deploys), and a clinician's review
   (the page says so).
+
+## Review
+
+An independent review (`superpowers:code-reviewer`) of 8c52c39a..11cae0dd read ICHD-3 8.2 to 8.2.8, NICE CG150 and the
+NHS live. It confirmed:
+- every threshold;
+- that the treatment section avoids NICE's "stop abruptly" (1.3.43), which is right for a consumer page;
+- the app description against D45 and the app's strings;
+- the refactor (the diary page's JSON-LD, Sources and review line are byte-identical);
+- the escaping and the build's reproducibility.
+
+There was nothing Critical, 5 Important findings and 9 Minor. All were fixed except M9 (optional style).
+
+**Important:**
+- **I1:** the table's second column broke inside words at 320 px ("Days a mon/th"). Fixed with `overflow-wrap:
+  normal` on the last column, `hyphens: auto` on the table and smaller cell padding under 400 px. At simulated 200%
+  text on 320 px, long words in the first column still wrap, but now mostly at hyphens, and nothing scrolls sideways.
+- **I2:** the treatment text now follows NICE 1.3.43, 1.3.44 and 1.3.47 as written: at least a month; headaches
+  likely to get worse; withdrawal symptoms; close follow-up and support; strong opioids may need a specialist.
+- **I3:** days taking these medicines for other pain count too (ICHD-3 8.2 criterion B), as the template already said.
+- **I4:** the lead ends with "simple painkillers alone, one or several".
+- **I5:** a row "Any other medicine taken for attacks: 10 or more" (ICHD-3 8.2.8) was added as the last row, and 8.2.8
+  joined the Sources.
+
+**Minor:**
+- the table caption gives the 3-month duration;
+- "How can I keep count?" replaces "getting close";
+- the app's note is described in its own words, without quotes;
+- the description says "how it is treated";
+- the combination row says "in one medicine";
+- `medical_ld(…, condition)` no longer shadows `about()` and has a docstring;
+- `/about/` says "day counts", not "limits";
+- the design table matches the output.
+
+**Not done:**
+- M9, deriving the display date from one `date` and moving the MOH constants to the top: optional style.
+- The app's indicator labels ("limit 15", "at the limit"): an app change, noted for the dev session.
+
+**Re-verified after the fixes:**
+- The static checks find nothing.
+- 27 and then 12 overflow measurements show 0 sideways scroll.
+- 0 CSP violations.
+- The table was screenshotted at 320 px at 100% and simulated 200% text.

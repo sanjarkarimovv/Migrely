@@ -29,20 +29,23 @@ The H1 is "Medication-overuse headache: the 10- and 15-day rules". It is followe
    chronic migraine (both diagnoses can apply).
 3. **How many days count as overuse?** A two-column table:
 
-   | Medicine | Days a month, for more than 3 months |
+   | Medicine for the attack | Days a month |
    |---|---|
    | Triptans | 10 or more |
    | Ergots (ergotamine) | 10 or more |
    | Opioids, such as codeine | 10 or more |
-   | Combination painkillers: two or more drugs in one, or with caffeine | 10 or more |
+   | Combination painkillers: drugs of two or more kinds in one medicine, such as paracetamol with codeine, or a painkiller with caffeine | 10 or more |
    | A mix of the kinds above, or of these and simple painkillers | 10 or more in total |
-   | Simple painkillers alone (paracetamol/acetaminophen, aspirin, ibuprofen and other NSAIDs), one or several | 15 or more |
+   | Simple painkillers alone, one or several (paracetamol/acetaminophen, aspirin, ibuprofen and other NSAIDs) | 15 or more |
+   | Any other medicine taken for attacks (ICHD-3 8.2.8) | 10 or more |
+
+   The caption reads "ICHD-3: days a month, kept up for more than 3 months", so the duration travels with the table.
 
 4. **Does it count doses or days?** Days, with the same rule as the template's page 6.
 5. **Are these safe limits?** No: the NHS's 2 days a week, and NICE 1.3.6 (doctors should explain the risk).
 6. **How is it treated?** General information attributed to NICE, then "plan it with your doctor; opioids need
    medical guidance; don't stop or change medicines on your own", and ICHD-3's "usually, but not always, gets better".
-7. **How can I tell if I'm getting close?** Count days with the free template, or with Migrely (D45). The note is a
+7. **How can I keep count?** Count days with the free template, or with Migrely (D45). The note is a
    heads-up, not a diagnosis, because the app looks at 30 days and ICHD-3 at more than 3 months (EC-WEB-12).
 8. **When should I get help straight away?** The shared paragraph.
 9. **Sources** and the review block.

@@ -335,7 +335,7 @@ def about():
     <li>Show ads, or carry analytics or tracking code of its own.</li>
     <li>Put a safety warning behind Premium.</li></ul>
   <h2>Where do the medication limits come from?</h2>
-  <p>Migrely is a diary, not a medical device. Its medication note uses the limits for
+  <p>Migrely is a diary, not a medical device. Its medication note uses the day counts for
     <a href="/medication-overuse-headache/">medication-overuse headache</a> in the International Classification of
     Headache Disorders (ICHD-3): 15 or more days a month
     with simple painkillers, or 10 or more with triptans, combination painkillers or other medicines for attacks.
@@ -466,9 +466,10 @@ def reviewed_block(sources, reviewed):
     clinician. Educational only, not medical advice.</p>'''
 
 
-def medical_ld(path, name, reviewed, about):
+def medical_ld(path, name, reviewed, condition):
+    """A medical page's MedicalWebPage JSON-LD, dated like its "Last reviewed" line."""
     return json_ld({'@context': 'https://schema.org', '@type': 'MedicalWebPage', 'url': f'{BASE}{path}',
-                    'name': name, 'inLanguage': 'en', 'lastReviewed': reviewed[0], 'about': about,
+                    'name': name, 'inLanguage': 'en', 'lastReviewed': reviewed[0], 'about': condition,
                     'publisher': ORGANIZATION})
 
 
@@ -534,14 +535,15 @@ MOH_DAYS = [
     ('Triptans', '10 or more'),
     ('Ergots (ergotamine)', '10 or more'),
     ('Opioids, such as codeine', '10 or more'),
-    ('Combination painkillers: drugs of two or more kinds in one tablet, such as paracetamol with codeine, or a '
+    ('Combination painkillers: drugs of two or more kinds in one medicine, such as paracetamol with codeine, or a '
      'painkiller with caffeine', '10 or more'),
     ('A mix of the kinds above, or of these and simple painkillers', '10 or more in total'),
     ('Simple painkillers alone, one or several: paracetamol (acetaminophen), aspirin, ibuprofen and other NSAIDs',
      '15 or more'),
+    ('Any other medicine taken for attacks', '10 or more'),
 ]
 MOH_SOURCES = [
-    ('ICHD-3, 8.2 Medication-overuse headache, with 8.2.3, 8.2.5 and 8.2.6', ICHD_MOH),
+    ('ICHD-3, 8.2 Medication-overuse headache, with 8.2.3, 8.2.5, 8.2.6 and 8.2.8', ICHD_MOH),
     ('NICE CG150, Headaches in over 12s: recommendations 1.2.7, 1.3.6 and 1.3.42 to 1.3.48', NICE_CG150),
     ('NHS, Migraine', NHS_MIGRAINE),
 ]
@@ -553,34 +555,38 @@ def medication_overuse():
     body = f'''<section class="wrap block narrow prose"><h1>{esc(MOH_TITLE)}</h1>
   <p class="lead">Medication-overuse headache is headache on 15 or more days a month that comes from taking medicine
     for headache too often for more than 3 months: on 10 or more days a month for triptans, ergots, opioids,
-    combination painkillers or a mix of kinds, or on 15 or more days a month for simple painkillers alone.</p>
+    combination painkillers or a mix of kinds, or on 15 or more days a month for simple painkillers alone, one or
+    several.</p>
   <h2>What is medication-overuse headache?</h2>
   <p>It is a headache disorder in its own right, in people who already have headaches such as migraine, and it was
     once called rebound headache. Medicine that eases an attack, taken on many days, can make headaches more frequent.
     It can come with chronic migraine, and a doctor may diagnose both.</p>
   <h2>How many days count as overuse?</h2>
   <p>The international classification (ICHD-3) counts days a month, kept up for more than 3 months:</p>
-  <table><thead><tr><th>Medicine for the attack</th><th>Days a month</th></tr></thead><tbody>{rows}</tbody></table>
+  <table><caption>ICHD-3: days a month, kept up for more than 3 months</caption>
+    <thead><tr><th>Medicine for the attack</th><th>Days a month</th></tr></thead><tbody>{rows}</tbody></table>
   <p>Simple painkillers are one kind, so paracetamol on some days and ibuprofen on others still count toward 15, not
     10.</p>
   <h2>Does it count doses or days?</h2>
   <p>Days. A day with two doses counts once. A day with a triptan and paracetamol counts for both kinds, and once in
-    the total.</p>
+    the total. Days you take these medicines for other pain, such as period or back pain, count too.</p>
   <h2>Are these safe limits?</h2>
   <p>No. They are the counts doctors use to diagnose it, not a safe amount. The NHS suggests not taking painkillers on
     more than 2 days a week, and NICE asks doctors to explain the risk to anyone using medicine for headache
     attacks.</p>
   <h2>How is it treated?</h2>
-  <p>UK guidance (NICE) says doctors treat it by stopping the overused medicine, usually for at least a month. Headaches
-    may get worse for a while before they improve, so it comes with close follow-up, sometimes with a preventive
-    treatment, and a review after 4 to 8 weeks. ICHD-3 says it usually, but not always, gets better once the overuse
+  <p>UK guidance (NICE) says doctors treat it by stopping the overused medicine for at least a month. Headaches are
+    likely to get worse for a while before they improve, and there may be withdrawal symptoms, so doctors offer close
+    follow-up and support, sometimes a preventive treatment, and a review 4 to 8 weeks after stopping. People who take
+    strong opioids may need a specialist. ICHD-3 says it usually, but not always, gets better once the overuse
     stops.</p>
   <p>Plan this with your doctor, especially if you take opioids, and don't stop or change medicines on your own.</p>
-  <h2>How can I tell if I'm getting close?</h2>
+  <h2>How can I keep count?</h2>
   <p>Count your medicine days by kind. The <a href="/headache-diary/">free printable headache diary</a> has a column
     for it. Migrely, our app, counts them for you over the last 30 days: it shows a gentle note 2 days before these
-    counts and a "talk to your doctor" note when you reach one. The note is free, and it is a heads-up, not a
-    diagnosis: the diagnosis looks at more than 3 months, and only a doctor makes it.</p>
+    counts and a note suggesting you talk to your doctor when you reach one. The note is free, and it is a heads-up,
+    not a diagnosis: it looks at 30 days, while the diagnosis also needs headache on 15 or more days a month for more
+    than 3 months, and only a doctor makes it.</p>
   <p>{play_button(path)}</p>
   {urgent_help()}
   {reviewed_block(MOH_SOURCES, MOH_REVIEWED)}</section>'''
@@ -588,7 +594,7 @@ def medication_overuse():
                                                     'alternateName': 'Rebound headache'})
     return page(path, 'Medication-overuse headache: 10 and 15 days · Migrely',
                 'Medication-overuse (rebound) headache: the ICHD-3 day counts for triptans and painkillers, why they '
-                'aren\'t safe limits, and what to ask your doctor.', body, ld)
+                'aren\'t safe limits, and how it is treated.', body, ld)
 
 
 def not_found():

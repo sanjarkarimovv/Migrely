@@ -1,34 +1,34 @@
 {
   "/": {
     "lastmod": "2026-10-29",
-    "sha256": "b8cebccdb858fef60485a8f6f678c177631bde18418aa7d14bb8e9f1aae8d6ff"
+    "sha256": "7eb6eb476e69f72ab5fd7ff4e3952155f06b24ae03da1ea87827c74a4c9f9b69"
   },
   "/about/": {
     "lastmod": "2026-10-29",
-    "sha256": "a830e1771170fbac48e5678c55195fbeedbd109ad6288ba89d9ae2f60d670e71"
+    "sha256": "27f7f468400a2dd7e50c127f19962a3ef4a624512f15e696c675805c723c9fed"
   },
   "/delete-data/": {
     "lastmod": "2026-10-29",
-    "sha256": "287568a2388f56d208f6dc0877d48875706f0a41b034772b323f1210f5c756fc"
+    "sha256": "e95539f9b78be65be02b5d1217bd285a9c94e93b2ea69946589e62481342acaa"
   },
   "/headache-diary/": {
     "lastmod": "2026-10-29",
-    "sha256": "209e2cc277f87162308b2c1c4489f88aebf21c5edf913da79603e348bb492f42"
+    "sha256": "303e959d7174f8b4da2358eb9b2914459724152217134fcfbe51001b37aea878"
   },
   "/medication-overuse-headache/": {
     "lastmod": "2026-10-29",
-    "sha256": "efc0fd60ffa8ce44da4ed208eed0acd0c7503de1a3e5cd3fd0d40e372a5f438a"
+    "sha256": "d389574715c059e6be40cc58eb4f0f722e8be4f8446d556fd3daec81a398e263"
   },
   "/privacy-check/": {
     "lastmod": "2026-10-29",
-    "sha256": "9484a9ebae0e15065ffea145868f35a452e984db1e653da8c1d41d75a8f6ab3e"
+    "sha256": "f4a769ee2ca06c41bd588f0e5880e9fd4d3e915a3cbd13ee67ad91875f1bc012"
   },
   "/privacy/": {
     "lastmod": "2026-10-29",
-    "sha256": "2e375dc7fbf81ad446498e356886e7e821cbfba8e6bd37defa52160f91bbedb3"
+    "sha256": "c86094cb9d39a9a7e01012c4cc6f66547bdf26ca94d82f95b44f46de63443299"
   },
   "/support/": {
     "lastmod": "2026-10-29",
-    "sha256": "61fb1234b552f4fa938aa0a7c65c089d3ab408ec29a0a8b0c5bd880fffb50028"
+    "sha256": "23443685c1fecbd45896a45e9505ac5dcd6f69af0c27a7b18142e48b2bb03698"
   }
 }
