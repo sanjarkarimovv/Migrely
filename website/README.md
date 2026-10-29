@@ -29,6 +29,9 @@ This writes `website/public/`. It needs Pillow and `cwebp`. The images come from
   `VA_DISCLAIMER`, and a `WebPage` JSON-LD. It quotes 38 CFR 4.124a (DC 8100), VA's Headaches DBQ and VA's
   representative FAQ word for word. Before updating `VA_REVIEWED`, re-read all three and check the Federal Register
   for a final rule under RIN 2900-AQ73.
+- **Comparison** (`/compare/`, BRD D144) is data in `COMPARE_APPS`: only facts read from each app's own listing,
+  permission list, Data safety, website or policy. A fact that can't be verified gets no row. Before updating
+  `COMPARE_REVIEWED`, re-read every source on the cards; prices and Data safety change often.
 - **CSP and PDFs:** `_headers` detaches the CSP from the two PDFs so browsers' PDF viewers can open them. After a
   deploy, open both on a phone and in Chrome, Safari and Firefox.
 - **Stylesheet:** pages link `site.css?v=<hash>`, because `/assets/` is cached for a year. The hash changes with the
@@ -76,7 +79,7 @@ Live since 26 October 2026:
    only, so nobody may send as it.
 8. **Check:**
    - `https://migrely.health`, `/about/`, `/privacy-check/`, `/headache-diary/` (and its two PDFs),
-     `/medication-overuse-headache/`, `/menstrual-migraine/`, `/va-migraine-log/`, `/privacy/`,
+     `/medication-overuse-headache/`, `/menstrual-migraine/`, `/va-migraine-log/`, `/compare/`, `/privacy/`,
      `/support/` and `/delete-data/` answer 200,
      and a missing page answers 404;
    - `www` and `http` redirect with 301;

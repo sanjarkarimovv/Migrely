@@ -67,7 +67,7 @@ nav a[aria-current="page"], nav a:hover { color: var(--ink); }
 .strip img { border-radius: 18px; }
 
 .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
-.features article, .perms article { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 22px; display: grid; gap: 8px; align-content: start; }
+.features article, .perms article, .apps article { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 22px; display: grid; gap: 8px; align-content: start; }
 .features p, .perms p { color: var(--muted); font-size: 16px; }
 
 .band { background: var(--band); }
@@ -95,6 +95,12 @@ ol { margin: 0; padding-left: 22px; display: grid; gap: 8px; }
 .prose th:last-child, .prose td:last-child { overflow-wrap: normal; }
 .prose table.short-first tr > :first-child { white-space: nowrap; }
 .prose caption { caption-side: top; text-align: left; color: var(--muted); font-size: 15px; padding-bottom: 6px; }
+.apps { display: grid; gap: 16px; }
+.apps dl { margin: 0; display: grid; gap: 8px; }
+.apps dl div { display: grid; grid-template-columns: minmax(0, 11em) minmax(0, 1fr); gap: 12px; }
+.apps dt { font-weight: 600; }
+.apps dd { margin: 0; color: var(--muted); }
+@media (max-width: 520px) { .apps dl div { grid-template-columns: 1fr; gap: 2px; } }
 @media (max-width: 400px) { .prose th, .prose td { padding: 8px; } }
 
 code { font: 0.9em/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background: var(--violet-soft);

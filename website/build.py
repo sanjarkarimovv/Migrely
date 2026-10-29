@@ -48,6 +48,8 @@ MENSTRUAL_REVIEWED = ('2026-10-29', '29 October 2026')
 MENSTRUAL_TITLE = 'Menstrual migraine: the day −2 to +3 window'
 VA_REVIEWED = ('2026-10-29', '29 October 2026')
 VA_TITLE = 'Keeping a migraine log for a VA claim'
+COMPARE_REVIEWED = ('2026-10-29', '29 October 2026')
+COMPARE_TITLE = 'Migraine diary apps for Android, compared on facts'
 # The last line of a reviewed page's sources (BRD D143): the medical pages and the VA page say who did not review them.
 MEDICAL_DISCLAIMER = 'not reviewed by a clinician. Educational only, not medical advice.'
 VA_DISCLAIMER = 'not reviewed by a lawyer or by VA. General information, not legal or medical advice.'
@@ -327,7 +329,7 @@ def about():
   <p>A headache diary holds some of the most personal things a phone can know: when you were in pain, what you took
     and your cycle. Migrely keeps all of it on your phone and has no internet access, so it cannot send it to us or
     to anyone else. <a href="/privacy-check/">You can check that yourself</a>, and see what Android's own backup and
-    the files you choose to share do.</p>
+    the files you choose to share do. <a href="/compare/">See how other migraine diaries compare</a>.</p>
   <p>It is built for the moment a migraine starts: one tap to log, a dark screen, and the details later.</p>
   <h2>How does Migrely make money?</h2>
   <p>From Migrely Premium, and nothing else. Premium adds the doctor report and Insights. The yearly plan starts with
@@ -751,6 +753,174 @@ def va_migraine_log():
                 'to get free help. Not affiliated with VA.', body, ld)
 
 
+def play_page(package):
+    return f'https://play.google.com/store/apps/details?id={package}'
+
+
+def data_safety(package):
+    return f'https://play.google.com/store/apps/datasafety?id={package}'
+
+
+COMPARE_NETWORK = ('Requests "full network access" (Android\'s internet permission), per its Google Play permission '
+                   'list')
+# Every app the comparison shows (BRD D144), with only facts read from its own listing, website or policy on
+# COMPARE_REVIEWED. A fact that could not be verified has no row (EC-WEB-18). Migrely comes first, then A to Z.
+COMPARE_APPS = [
+    {'name': 'Migrely (our app)', 'maker': 'Sulton UzDev', 'rows': [
+        ('Platforms', 'Android only'),
+        ('Account', 'None'),
+        ('Internet permission', 'None: Android stops it from connecting (see how to check, linked below)'),
+        ('Play Data safety: shared', 'Declared to Google Play: none shared. The Play listing is not public yet'),
+        ('Free', 'Logging, the whole history, medications, reminders, backup and spreadsheet export, and every safety '
+                 'warning'),
+        ('Premium', 'Doctor PDF report and Insights: $29.99 a year with a 7-day free trial, $4.99 a month, or $59.99 '
+                    'once (US prices)'),
+        ('Doctor report', 'A PDF report (Premium); spreadsheet export is free'),
+        ('Does well', 'One-tap logging with a dark attack screen; medicine days counted by kind; privacy you can '
+                      'check yourself'),
+        ('Limits', 'New, with no reviews yet; Android only; English only; no weather, sleep or wearable data'),
+    ], 'sources': [('Check Migrely\'s privacy yourself', '/privacy-check/'), ('About Migrely', '/about/')]},
+    {'name': 'Bearable', 'maker': 'Bearable Ltd', 'rows': [
+        ('Platforms', 'Android and iOS; no browser or desktop version'),
+        ('Account', 'Required: "Currently, we require you to create an account". It says throwaway accounts are '
+                    'fine'),
+        ('Internet permission', COMPARE_NETWORK),
+        ('Play Data safety: shared', '"Location, Personal info and 2 others"'),
+        ('Free', 'Unlimited tracking and reminders, trends reports for the past 30 days, and export of all data to '
+                 'CSV'),
+        ('Premium', '60, 90 and 365 days of data in reports: $34.99 a year or $6.99 a month, 7-day trial'),
+        ('Doctor report', 'Shares through data export and screenshots of reports'),
+        ('Does well', 'Tracks far beyond migraine, with mood and symptoms; Fitbit sync; a generous free tier'),
+    ], 'sources': [('Google Play listing', play_page('com.bearable')), ('Bearable', 'https://bearable.app/'),
+                   ('Google Play Data safety', data_safety('com.bearable')),
+                   ('Why do I need to create an account?',
+                    'https://bearable.app/support/common-questions/why-do-i-need-to-create-an-account/'),
+                   ('Free vs Premium features',
+                    'https://bearable.app/support/common-questions/bearable-free-vs-premium-features/'),
+                   ('Pricing and principles', 'https://bearable.app/blog/pricing-and-principles/'),
+                   ('Browser or desktop version?',
+                    'https://bearable.app/support/common-questions/is-there-a-browser-or-desktop-version-of-bearable/'),
+                   ('Sharing data with a doctor', 'https://bearable.app/support/common-questions/'
+                    'how-to-share-data-with-a-doctor-therapist-or-other-medical-team-member/')]},
+    {'name': 'Dark Logger', 'maker': 'ZephLogic', 'rows': [
+        ('Platforms', 'Android and iOS'),
+        ('Account', 'None'),
+        ('Internet permission', COMPARE_NETWORK + '. Its privacy policy says your logs are stored "solely in your '
+                                'device\'s secure local storage", that it looks up weather (such as Met.no) with your '
+                                'location when you log an attack, and that it stores an anonymous push token only if '
+                                'you turn on notifications'),
+        ('Play Data safety: shared', '"No data shared with third parties"'),
+        ('Premium', 'Paid "Pro" unlocks: $9.99 to $21.99 per item on Google Play (US)'),
+        ('Doctor report', '30- and 90-day PDF summaries; CSV export and import'),
+        ('Does well', 'A screen designed for light sensitivity; one-tap logging; automatic pressure readings'),
+    ], 'sources': [('Google Play listing', play_page('com.zephlogic.darklogger.pro')),
+                   ('Dark Logger', 'https://zephlogic.com/darklogger.html'),
+                   ('Privacy policy', 'https://zephlogic.com/dark-logger-privacy')]},
+    {'name': 'Migraine Buddy', 'maker': 'Aptar Digital Health', 'rows': [
+        ('Platforms', 'Android and iOS'),
+        ('Account', 'Its help center: "You have registered with Migraine Buddy so your data synchronizes '
+                    'automatically with our server and is linked with your private account."'),
+        ('Internet permission', COMPARE_NETWORK),
+        ('Play Data safety: shared', '"No data shared with third parties"'),
+        ('Premium', 'MBplus: $89.99 a year or $24.99 for two months (its website, US)'),
+        ('Does well', 'The most Google Play downloads here (1M+); a community; automatic sleep recording; weather '
+                      'forecasts; Health Connect'),
+    ], 'sources': [('Google Play listing', play_page('com.healint.migraineapp')),
+                   ('Google Play Data safety', data_safety('com.healint.migraineapp')),
+                   ('Help center: account and data', 'https://migrainebuddy.com/help-center/category/account-data/'),
+                   ('MBplus', 'https://migrainebuddy.com/mbplus/'), ('Migraine Buddy', 'https://migrainebuddy.com/')]},
+    {'name': 'Migraine Insight', 'maker': 'Shiny New App', 'rows': [
+        ('Platforms', 'Android and iPhone'),
+        ('Internet permission', COMPARE_NETWORK),
+        ('Play Data safety: shared', '"No data shared with third parties"'),
+        ('Free', 'Logging, automated tracking, your logs as a list, and doctor reports ("make doctor\'s reports - '
+                 'free forever")'),
+        ('Premium', 'The pattern finder, and your logs shown on the calendar: $9.99 a month or $95.99 a year'),
+        ('Does well', 'Free doctor reports; automatic weather, pollen, location, workout and sleep tracking'),
+    ], 'sources': [('Google Play listing', play_page('com.shinynewapp.migraineinsight2')),
+                   ('FAQ', 'https://www.migraineinsight.com/faq/'),
+                   ('Premium vs free', 'https://www.migraineinsight.com/kb/premium-vs-free-how-to-see-your-data/'),
+                   ('Migraine Insight', 'https://www.migraineinsight.com/')]},
+    {'name': 'Migraine Log', 'maker': 'Eskild Hustvedt (open source)', 'rows': [
+        ('Platforms', 'Android (Google Play and F-Droid) and iOS'),
+        ('Account', 'None mentioned; it has no network access'),
+        ('Internet permission', 'None: Google Play lists no permissions, and F-Droid lists only the app\'s own '
+                                'internal one'),
+        ('Play Data safety: shared', '"No data shared with third parties"'),
+        ('Free', 'Everything: free and open source (GPLv3 or later), with an export function; no in-app purchases'),
+        ('Does well', 'Open source; minimal; works with no network at all'),
+    ], 'sources': [('Google Play listing', play_page('org.zerodogg.migraineLog')),
+                   ('F-Droid', 'https://f-droid.org/en/packages/org.zerodogg.migraineLog/'),
+                   ('Migraine Log', 'https://migrainelog.zerodogg.org/en')]},
+    {'name': 'Migraine Monitor', 'maker': 'RPM Healthcare', 'rows': [
+        ('Platforms', 'Android and iPhone, plus a web dashboard for clinicians'),
+        ('Account', 'Required: its FAQ says to create an account and log in; records are kept "in a secure cloud '
+                    'server"'),
+        ('Internet permission', COMPARE_NETWORK),
+        ('Play Data safety: shared', '"Personal info"'),
+        ('Free', 'Free, with ads; no in-app purchases on Google Play'),
+        ('Doctor report', 'A PDF of your report'),
+        ('Does well', 'A clinician dashboard with messaging; an anonymous community'),
+    ], 'sources': [('Google Play listing', play_page('com.migrainemonitor')),
+                   ('FAQ', 'https://migrainemonitor.com/faq/')]},
+    {'name': 'Nagi', 'maker': 'Timothé Duc', 'rows': [
+        ('Platforms', 'Android and iPhone'),
+        ('Account', 'None ("No account is created")'),
+        ('Internet permission', COMPARE_NETWORK + '. Its privacy policy says recording an attack, completing it and '
+                                'making a report "need no network at all"'),
+        ('Play Data safety: shared', '"Personal info, Financial info and 3 others"'),
+        ('Free', 'The diary for the last 30 days, and CSV export of all your data'),
+        ('Premium', 'The PDF doctor report, among other features: €59.90 a year (shown as €4.99 a month) or €35.99 '
+                    'every 3 months, 7-day free trial (prices in euros)'),
+        ('Does well', 'A dark, animation-free attack mode; a widget; correlations worked out on the phone'),
+    ], 'sources': [('Google Play listing', play_page('com.timotheduc.nagi')),
+                   ('Google Play Data safety', data_safety('com.timotheduc.nagi')),
+                   ('Nagi', 'https://nagimigraine.com/'), ('Privacy policy', 'https://nagimigraine.com/privacy/')]},
+]
+COMPARE_SOURCES = [
+    ('Android: the INTERNET permission and its label',
+     'https://android.googlesource.com/platform/frameworks/base/+/refs/heads/main/core/res/AndroidManifest.xml'),
+    ('Android: the label "have full network access"',
+     'https://android.googlesource.com/platform/frameworks/base/+/refs/heads/main/core/res/res/values/strings.xml'),
+]
+COMPARE_DISCLAIMER = ('not reviewed by the other apps\' makers. Prices and features change, so check each app\'s own '
+                      'sources before you choose.')
+
+
+def compare():
+    path = '/compare/'
+    cards = []
+    for app in COMPARE_APPS:
+        rows = ''.join(f'<div><dt>{esc(field)}</dt><dd>{esc(text)}</dd></div>' for field, text in app['rows'])
+        links = ' · '.join(f'<a href="{esc(url)}">{esc(label)}</a>' for label, url in app['sources'])
+        cards.append(f'<article><h3>{esc(app["name"])}</h3><p class="meta">{esc(app["maker"])}</p><dl>{rows}</dl>'
+                     f'<p class="meta">Sources, read on {COMPARE_REVIEWED[1]}: {links}</p></article>')
+    body = f'''<section class="wrap block narrow prose"><h1>{esc(COMPARE_TITLE)}</h1>
+  <p class="lead">We make Migrely, so we are not neutral. This page sticks to what each app's own Google Play listing,
+    permission list, Data safety section, website and privacy policy said on {COMPARE_REVIEWED[1]}, with links, and
+    it lists what each app does well. Prices and features change, so check the sources before you choose.</p>
+  <h2>Which apps have no internet permission?</h2>
+  <p>Two of these diaries request no internet permission on Android: Migrely and the open-source Migraine Log. The
+    others request "full network access", according to their Google Play permission lists. Nagi and Dark Logger say
+    their diaries work offline; their privacy policies list what they use the network for, such as weather.</p>
+  <h2>Which apps need an account?</h2>
+  <p>Bearable and Migraine Monitor require one. Migraine Buddy's help center says your data synchronizes with its
+    server and is linked with your account. Nagi, Dark Logger and Migrely need none, and Migraine Log mentions
+    none.</p>
+  <h2>The apps, one by one</h2>
+  <div class="apps">{''.join(cards)}</div>
+  <p>Bearable, Dark Logger, Migraine Buddy, Migraine Insight, Migraine Log, Migraine Monitor and Nagi belong to
+    their owners. Migrely is not affiliated with any of them, and none of them reviewed or endorsed this page. Tell us
+    at <a href="mailto:{SUPPORT}">{SUPPORT}</a> if anything here is out of date.</p>
+  <p>{play_button(path)}</p>
+  {reviewed_block(COMPARE_SOURCES, COMPARE_REVIEWED, COMPARE_DISCLAIMER)}</section>'''
+    ld = json_ld({'@context': 'https://schema.org', '@type': 'WebPage', 'url': f'{BASE}{path}', 'name': COMPARE_TITLE,
+                  'inLanguage': 'en', 'lastReviewed': COMPARE_REVIEWED[0], 'publisher': ORGANIZATION})
+    return page(path, 'Migraine diary apps for Android, compared · Migrely',
+                'Migraine diary apps for Android compared on their own published facts: account, internet access, '
+                'data shared, free tier and price, with sources.', body, ld)
+
+
 def not_found():
     body = '''<section class="wrap block narrow"><h1>Page not found</h1>
   <p class="lead">The page you were looking for is not here. <a href="/">Go to the home page</a>.</p></section>'''
@@ -815,6 +985,7 @@ PAGES = [('/', 'index.html', home), ('/about/', 'about/index.html', about),
          ('/medication-overuse-headache/', 'medication-overuse-headache/index.html', medication_overuse),
          ('/menstrual-migraine/', 'menstrual-migraine/index.html', menstrual_migraine),
          ('/va-migraine-log/', 'va-migraine-log/index.html', va_migraine_log),
+         ('/compare/', 'compare/index.html', compare),
          ('/support/', 'support/index.html', support),
          ('/privacy/', 'privacy/index.html', privacy), ('/delete-data/', 'delete-data/index.html', delete_data)]
 
