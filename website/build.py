@@ -50,6 +50,20 @@ VA_REVIEWED = ('2026-10-29', '29 October 2026')
 VA_TITLE = 'Keeping a migraine log for a VA claim'
 COMPARE_REVIEWED = ('2026-10-29', '29 October 2026')
 COMPARE_TITLE = 'Migraine diary apps for Android, compared on facts'
+# The guides, linked from the home page and every footer (BRD D145): path, name and a summary that makes no claim
+# the page itself does not.
+GUIDES = [
+    ('/headache-diary/', 'Free headache diary',
+     'What to write down and for how long, with a free printable 8-week template in A4 and US Letter.'),
+    ('/medication-overuse-headache/', 'Medication-overuse headache',
+     'How headache and medicine days are counted, why those counts aren\'t safe limits, and how it is treated.'),
+    ('/menstrual-migraine/', 'Menstrual migraine',
+     'The window around your period that doctors use, how long to track it, and keeping period data private.'),
+    ('/va-migraine-log/', 'Migraine log for a VA claim',
+     'What to record about each attack, and where veterans get free help. Migrely is not affiliated with VA.'),
+    ('/compare/', 'Compare migraine apps',
+     'Android migraine diaries side by side, on facts from each app\'s own listing, website and policy.'),
+]
 # The last line of a reviewed page's sources (BRD D143): the medical pages and the VA page say who did not review them.
 MEDICAL_DISCLAIMER = 'not reviewed by a clinician. Educational only, not medical advice.'
 VA_DISCLAIMER = 'not reviewed by a lawyer or by VA. General information, not legal or medical advice.'
@@ -130,6 +144,8 @@ def page(path, title, description, body, extra_head=''):
     nav = ''.join(
         f'<a href="{href}"{current if href == path else ""}>{label}</a>'
         for href, label in [('/', 'Home'), ('/about/', 'About'), ('/support/', 'Help'), ('/privacy/', 'Privacy')])
+    guides = ''.join(f'<a href="{esc(href)}"{current if href == path else ""}>{esc(name)}</a>'
+                     for href, name, _ in GUIDES)
     return f'''<!doctype html>
 <html lang="en">
 <head>
@@ -167,9 +183,10 @@ def page(path, title, description, body, extra_head=''):
 </main>
 <footer class="foot"><div class="wrap">
   <p>{esc(DISCLAIMER)}</p>
+  <nav class="links" aria-label="Guides">{guides}</nav>
   <p class="links"><a href="/support/">Help</a><a href="/about/">About</a><a href="/privacy/">Privacy policy</a>
-    <a href="/privacy-check/">Check our privacy</a><a href="/headache-diary/">Free headache diary</a>
-    <a href="/delete-data/">Delete your data</a><a href="{esc(play_link(campaign(path)))}">Google Play</a></p>
+    <a href="/privacy-check/">Check our privacy</a><a href="/delete-data/">Delete your data</a>
+    <a href="{esc(play_link(campaign(path)))}">Google Play</a></p>
   <p>© 2026 Migrely, published by Sulton UzDev · <a href="mailto:{SUPPORT}">{SUPPORT}</a></p>
 </div></footer>
 </body>
@@ -234,6 +251,8 @@ def home():
                           ('03-report', 'A clear report for your doctor'),
                           ('04-insights', 'Triggers and patterns in your migraines')])
     features = ''.join(f'<article><h3>{esc(t)}</h3><p>{esc(d)}</p></article>' for t, d in FEATURES)
+    guides = ''.join(f'<article><h3><a href="{esc(href)}">{esc(name)}</a></h3><p>{esc(summary)}</p></article>'
+                     for href, name, summary in GUIDES)
     body = f'''
 <section class="hero"><div class="wrap hero-grid">
   <div class="hero-text">
@@ -260,6 +279,8 @@ def home():
   </ul>
   <p><a class="quiet" href="/privacy-check/">Check it yourself in two minutes</a></p>
 </div></section>
+
+<section class="wrap block"><h2>Free guides</h2><div class="features">{guides}</div></section>
 
 <section class="wrap block two">
   <div><h2>Free, and Premium when you want more</h2>
@@ -990,6 +1011,21 @@ PAGES = [('/', 'index.html', home), ('/about/', 'about/index.html', about),
          ('/privacy/', 'privacy/index.html', privacy), ('/delete-data/', 'delete-data/index.html', delete_data)]
 
 
+def check_orphans(built):
+    """Stops the build when a sitemap page can't be reached by following links from the home page (BRD EC-WEB-19)."""
+    links = {path: set(re.findall(r'<a\b[^>]*?\shref="(/[^"#?]*)"', re.sub(r'<!--.*?-->', '', content, flags=re.S)))
+             for path, (_, content) in built.items()}
+    reached, todo = {'/'}, ['/']
+    while todo:
+        for href in links[todo.pop()] & links.keys() - reached:
+            reached.add(href)
+            todo.append(href)
+    orphans = [path for path in built if path not in reached]
+    if orphans:
+        raise SystemExit(f'No link path from the home page reaches {", ".join(orphans)}: if it is a guide, add it to '
+                         'GUIDES; otherwise link it from another page (EC-WEB-19).')
+
+
 def check_diary_pdfs():
     """Stops the build when a download on /headache-diary/ would be missing (BRD D140)."""
     missing = [name for name in DIARY_PDFS.values() if not (SITE / 'headache-diary' / name).exists()]
@@ -1001,6 +1037,7 @@ def main():
     check_permissions()
     check_diary_pdfs()
     built = {path: (rel, build()) for path, rel, build in PAGES}
+    check_orphans(built)
     for rel, content in [*built.values(), ('404.html', not_found())]:
         target = SITE / rel
         target.parent.mkdir(parents=True, exist_ok=True)
