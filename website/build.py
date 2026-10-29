@@ -44,7 +44,10 @@ ICHD_MOH = ('https://ichd-3.org/8-headache-attributed-to-a-substance-or-its-with
 NHS_MIGRAINE = 'https://www.nhs.uk/conditions/migraine/'
 MOH_REVIEWED = ('2026-10-29', '29 October 2026')
 MOH_TITLE = 'Medication-overuse headache: the 10- and 15-day rules'
+MENSTRUAL_REVIEWED = ('2026-10-29', '29 October 2026')
+MENSTRUAL_TITLE = 'Menstrual migraine: the day −2 to +3 window'
 NICE_CG150 = 'https://www.nice.org.uk/guidance/cg150/chapter/Recommendations'
+MT_MENSTRUAL = 'https://migrainetrust.org/understand-migraine/types-of-migraine/menstrual-migraine/'
 DIARY_SOURCES = [
     ('NICE CG150, Headaches in over 12s: recommendations 1.1.3, 1.1.4, 1.2.6, 1.2.7 and 1.3.1',
      NICE_CG150),
@@ -54,8 +57,7 @@ DIARY_SOURCES = [
     ('NHS, Migraine', NHS_MIGRAINE),
     ('The Migraine Trust, Keeping a headache diary',
      'https://migrainetrust.org/live-with-migraine/self-management/keeping-a-migraine-diary/'),
-    ('The Migraine Trust, Menstrual migraine',
-     'https://migrainetrust.org/understand-migraine/types-of-migraine/menstrual-migraine/'),
+    ('The Migraine Trust, Menstrual migraine', MT_MENSTRUAL),
 ]
 # One object for the home page and /about/ (BRD D135). sameAs comes with the social profiles (EC-WEB-06).
 ORGANIZATION = {'@type': 'Organization', '@id': f'{BASE}/#organization', 'name': 'Migrely', 'url': f'{BASE}/',
@@ -495,8 +497,9 @@ def headache_diary():
   <p>The template also asks whether each medicine helped.</p>
   <h2>How long should I keep it?</h2>
   <p>At least 8 weeks, NICE suggests. If headaches seem linked to your period, keep it for at least 2 menstrual cycles;
-    the Migraine Trust suggests 3 months. For frequent headaches, the international classification (ICHD-3) says a
-    day-by-day diary for at least a month is generally needed.</p>
+    the Migraine Trust suggests 3 months (<a href="/menstrual-migraine/">more on menstrual migraine</a>). For
+    frequent headaches, the international classification (ICHD-3) says a day-by-day diary for at least a month is
+    generally needed.</p>
   <h2>What counts as a headache day?</h2>
   <p>Any day with headache, for any part of the day (ICHD-3). Fill in a line on pain-free days too: they are part of
     the picture, and they make the count reliable.</p>
@@ -551,7 +554,7 @@ MOH_SOURCES = [
 
 def medication_overuse():
     path = '/medication-overuse-headache/'
-    rows = ''.join(f'<tr><td>{esc(kind)}</td><td>{esc(days)}</td></tr>' for kind, days in MOH_DAYS)
+    rows = ''.join(f'<tr><th scope="row">{esc(kind)}</th><td>{esc(days)}</td></tr>' for kind, days in MOH_DAYS)
     body = f'''<section class="wrap block narrow prose"><h1>{esc(MOH_TITLE)}</h1>
   <p class="lead">Medication-overuse headache is headache on 15 or more days a month that comes from taking medicine
     for headache too often for more than 3 months: on 10 or more days a month for triptans, ergots, opioids,
@@ -564,7 +567,8 @@ def medication_overuse():
   <h2>How many days count as overuse?</h2>
   <p>The international classification (ICHD-3) counts days a month, kept up for more than 3 months:</p>
   <table><caption>ICHD-3: days a month, kept up for more than 3 months</caption>
-    <thead><tr><th>Medicine for the attack</th><th>Days a month</th></tr></thead><tbody>{rows}</tbody></table>
+    <thead><tr><th scope="col">Medicine for the attack</th><th scope="col">Days a month</th></tr></thead>
+    <tbody>{rows}</tbody></table>
   <p>Simple painkillers are one kind, so paracetamol on some days and ibuprofen on others still count toward 15, not
     10.</p>
   <h2>Does it count doses or days?</h2>
@@ -595,6 +599,78 @@ def medication_overuse():
     return page(path, 'Medication-overuse headache: 10 and 15 days · Migrely',
                 'Medication-overuse (rebound) headache: the ICHD-3 day counts for triptans and painkillers, why they '
                 'aren\'t safe limits, and how it is treated.', body, ld)
+
+
+# The window around day 1 of a period (ICHD-3 A1.1.1, A1.1.2; NICE 1.2.5); there is no day 0.
+MENSTRUAL_DAYS = [('Day −2', '2 days before your period starts'), ('Day −1', 'The day before your period starts'),
+                  ('Day 1', 'The first day of bleeding'), ('Day 2', 'The 2nd day of your period'),
+                  ('Day 3', 'The 3rd day of your period')]
+MENSTRUAL_SOURCES = [
+    ('ICHD-3, A1.1.1 Pure menstrual migraine without aura',
+     'https://ichd-3.org/appendix/a1-migraine/a1-1-migraine-without-aura/a1-1-1-pure-menstrual-migraine-without-aura/'),
+    ('ICHD-3, A1.1.2 Menstrually-related migraine without aura',
+     'https://ichd-3.org/appendix/a1-migraine/a1-1-migraine-without-aura/'
+     'a1-1-2-menstrually-related-migraine-without-aura/'),
+    ('NICE CG150, Headaches in over 12s: recommendations 1.2.5, 1.2.6, 1.3.30 and 1.3.31', NICE_CG150),
+    ('The Migraine Trust, Menstrual migraine', MT_MENSTRUAL),
+    ('NHS, Migraine', NHS_MIGRAINE),
+]
+
+
+def menstrual_migraine():
+    path = '/menstrual-migraine/'
+    rows = ''.join(f'<tr><th scope="row">{esc(day)}</th><td>{esc(what)}</td></tr>' for day, what in MENSTRUAL_DAYS)
+    body = f'''<section class="wrap block narrow prose"><h1>{esc(MENSTRUAL_TITLE)}</h1>
+  <p class="lead">Menstrual migraine means migraine attacks that happen from 2 days before a period to its 3rd day
+    (days −2 to +3, where day 1 is the first day of bleeding and there is no day 0) in at least 2 of 3 cycles. If
+    attacks happen only then, it is called pure menstrual migraine. If they also happen at other times, it is
+    menstrually-related migraine, which is far more common. A doctor confirms it, usually from a diary kept over a few
+    cycles.</p>
+  <h2>What is menstrual migraine?</h2>
+  <p>It is migraine linked to periods. The international classification (ICHD-3) describes both kinds, for migraine
+    without aura, in its appendix of research criteria. The Migraine Trust says fewer than 1 in 100 women with migraine
+    are thought to have the pure kind, while as many as two-thirds may have attacks linked to their period.</p>
+  <p>For this purpose, the withdrawal bleed in the break between packs of a combined pill, or during cyclical hormone
+    replacement therapy (HRT), counts as a period too.</p>
+  <h2>How do I count the days?</h2>
+  <p>Day 1 is the first day of bleeding. The day before it is day −1, so there is no day 0. The window is five days:</p>
+  <table><caption>The menstrual migraine window (ICHD-3)</caption>
+    <thead><tr><th scope="col">Day</th><th scope="col">When</th></tr></thead><tbody>{rows}</tbody></table>
+  <h2>How long should I track it?</h2>
+  <p>UK guidance (NICE) suggests a headache diary for at least 2 menstrual cycles, and the Migraine Trust at least 3
+    months. Mark your period days and every attack. NICE suggests suspecting migraine linked to periods (it calls this
+    menstrual-related migraine) when attacks happen mostly in this window in at least 2 of 3 cycles in a row. The NHS
+    suggests seeing a GP if you regularly get attacks around your period. The
+    <a href="/headache-diary/">free printable headache diary</a> has a column for period days.</p>
+  <h2>Does contraception matter?</h2>
+  <p>It can. NICE advises doctors not to routinely offer combined hormonal contraception (the combined pill, patch or
+    ring) for contraception to people who have migraine with aura, and the Migraine Trust says the same for other
+    stroke risk factors. If you have aura, or get it for the first time while using one of these, tell whoever
+    prescribes your contraception soon: they may suggest a different method. If you stop a method, it no longer
+    protects you from pregnancy.</p>
+  <h2>How is it treated?</h2>
+  <p>Standard migraine medicines can be used for menstrual migraine, the Migraine Trust says. For period-related
+    migraine that is predictable and does not respond well to usual acute treatment, NICE describes options a doctor
+    may consider on the days migraine is expected. Days you take medicine for it count toward
+    <a href="/medication-overuse-headache/">medication-overuse headache</a>. Talk to your doctor about what suits
+    you.</p>
+  <h2>Is my period data private in Migrely?</h2>
+  <p>Migrely has no internet access and no account, so it cannot send your period days or migraines anywhere. They are
+    kept on your phone, and can leave it only in two ways: in Android's own backup to your Google account, if backup
+    is on (end-to-end encrypted on Android 9 and later when your phone has a screen lock), and in any file you export
+    and share. Tracking periods is optional: turning it off hides the marks, and any you saved stay until you delete
+    them. You can <a href="/privacy-check/">check the privacy yourself</a>.</p>
+  <p>Marking period days on the calendar is free. Once the months you look at include at least 2 period starts and 5
+    migraines, Insights, part of Premium, counts how many of your migraines started in these five days and shows how
+    much of the time those days make up. It doesn't draw a conclusion: that is for you and your doctor.</p>
+  <p>{play_button(path)}</p>
+  {urgent_help()}
+  {reviewed_block(MENSTRUAL_SOURCES, MENSTRUAL_REVIEWED)}</section>'''
+    ld = medical_ld(path, MENSTRUAL_TITLE, MENSTRUAL_REVIEWED,
+                    {'@type': 'MedicalCondition', 'name': 'Menstrual migraine'})
+    return page(path, f'{MENSTRUAL_TITLE} · Migrely',
+                'Migraine around your period: the window doctors use, pure and menstrually-related migraine, how long '
+                'to track it, and keeping period data private.', body, ld)
 
 
 def not_found():
@@ -659,6 +735,7 @@ PAGES = [('/', 'index.html', home), ('/about/', 'about/index.html', about),
          ('/privacy-check/', 'privacy-check/index.html', privacy_check),
          ('/headache-diary/', 'headache-diary/index.html', headache_diary),
          ('/medication-overuse-headache/', 'medication-overuse-headache/index.html', medication_overuse),
+         ('/menstrual-migraine/', 'menstrual-migraine/index.html', menstrual_migraine),
          ('/support/', 'support/index.html', support),
          ('/privacy/', 'privacy/index.html', privacy), ('/delete-data/', 'delete-data/index.html', delete_data)]
 
