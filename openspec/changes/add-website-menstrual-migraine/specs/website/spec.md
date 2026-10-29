@@ -13,20 +13,24 @@ The site SHALL serve `/menstrual-migraine/`. It opens with a short answer (attac
 #### Scenario: On the pill
 
 - **WHEN** a reader takes a combined pill or cyclical HRT
-- **THEN** the page says that withdrawal bleeds count as a period for this purpose
+- **THEN** the page says that the withdrawal bleed between packs, or during cyclical HRT, counts as a period for this
+  purpose
 
 #### Scenario: Migraine with aura and contraception
 
 - **WHEN** a reader with aura reads about contraception
 - **THEN** the page says NICE advises doctors not to routinely offer combined hormonal contraception for contraception
-  to people who have migraine with aura, and tells the reader to tell whoever prescribes their contraception
+  to people who have migraine with aura, and tells the reader to tell whoever prescribes their contraception soon,
+  including when aura appears for the first time while using it
+- **AND** it says that a stopped method no longer protects from pregnancy
 - **AND** it names no drug or dose for treating menstrual migraine
 
 #### Scenario: Period data stays private
 
 - **WHEN** a reader asks whether Migrely shares period data
-- **THEN** the page says Migrely has no internet access or account, so it cannot send period days anywhere, and names
-  where they are: the phone, Android's own backup if used, and files the user exports
+- **THEN** the page says Migrely has no internet access or account, so it cannot send period days anywhere, and that
+  they can leave the phone only in Android's own backup to the user's Google account (if backup is on) and in files
+  the user exports and shares
 - **AND** it says what the app shows: period marks are free, and Premium Insights counts attacks that started in the
   window without drawing a conclusion
 

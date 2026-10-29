@@ -25,7 +25,7 @@ The H1 is "Menstrual migraine: the day −2 to +3 window". The page then runs:
 1. **The short answer** (lead).
 2. **What is menstrual migraine?** The ICHD-3 description, that these are appendix criteria, the withdrawal-bleed
    note and the Migraine Trust figures.
-3. **How do I count the days?** A one-row table of −2, −1, 1, 2 and 3, with the day-1 rule.
+3. **How do I count the days?** The day-1 rule, then a two-column table with one row per day (D2).
 4. **How long should I track it?** NICE's 2 cycles and the Migraine Trust's 3 months. What to record: period days
    and attacks. A link to the free template, which has a period column.
 5. **Does contraception matter?** NICE 1.3.30, as general information, then "tell whoever prescribes your
