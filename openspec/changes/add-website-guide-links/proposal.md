@@ -20,7 +20,7 @@ a page by the links to it, so these pages would rank lower than they deserve. Th
 
 - A "Guides" item in the header menu, or a `/guides/` hub page. Five guides fit on the home page, and the header has no
   room for a fifth item at 320 px.
-- New styles: the cards use `.features`, and the footer uses `.links`.
+- New components: the cards use `.features`, and the footer uses `.links` with one row-gap rule.
 - New links inside the guides' text.
 
 ## Capabilities
@@ -31,5 +31,6 @@ a page by the links to it, so these pages would rank lower than they deserve. Th
 
 ## Impact
 
-- `website/build.py`, `website/public/` (every page's footer, the home page), `lastmod.json` and `README.md`.
+- `website/build.py`, `website/public/` (every page's footer, the home page, one rule in `site.css`), `lastmod.json`
+  and `README.md`.
 - `docs/BRD.md`: D145, EC-WEB-19, §13 row 22, §14.4.

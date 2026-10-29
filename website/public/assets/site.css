@@ -113,5 +113,7 @@ pre code { background: none; padding: 0; }
 .foot { border-top: 1px solid var(--line); padding-block: 32px 48px; color: var(--muted); font-size: 15px; }
 .foot .wrap { display: grid; gap: 12px; }
 .foot .links { display: flex; gap: 18px; flex-wrap: wrap; }
+/* The guides' links carry the menu's 8px padding, so their rows need no extra gap. */
+.foot nav.links { row-gap: 0; }
 
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; transition: none !important; } }
