@@ -22,6 +22,9 @@ This writes `website/public/`. It needs Pillow and `cwebp`. The images come from
   for another) and checks that each PDF has 6 pages. Run it when the template changes and commit the PDFs. `build.py`
   only checks that they exist. When the page's facts are checked again, update `DIARY_REVIEWED` in `build.py`, which
   dates both the page and the PDFs' footer, and remake the PDFs.
+- **Medical pages** (`/headache-diary/`, `/medication-overuse-headache/`) share `urgent_help()`, `reviewed_block()` and
+  `medical_ld()`. Each has its own review date (`DIARY_REVIEWED`, `MOH_REVIEWED`): update it when the page's facts are
+  checked against its sources again.
 - **CSP and PDFs:** `_headers` detaches the CSP from the two PDFs so browsers' PDF viewers can open them. After a
   deploy, open both on a phone and in Chrome, Safari and Firefox.
 - **Stylesheet:** pages link `site.css?v=<hash>`, because `/assets/` is cached for a year. The hash changes with the
@@ -68,7 +71,8 @@ Live since 26 October 2026:
 7. **DMARC:** add a TXT record `_dmarc` with `v=DMARC1; p=reject; sp=reject; adkim=s; aspf=s;`. The domain receives mail
    only, so nobody may send as it.
 8. **Check:**
-   - `https://migrely.health`, `/about/`, `/privacy-check/`, `/headache-diary/` (and its two PDFs), `/privacy/`,
+   - `https://migrely.health`, `/about/`, `/privacy-check/`, `/headache-diary/` (and its two PDFs),
+     `/medication-overuse-headache/`, `/privacy/`,
      `/support/` and `/delete-data/` answer 200,
      and a missing page answers 404;
    - `www` and `http` redirect with 301;

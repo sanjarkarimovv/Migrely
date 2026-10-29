@@ -89,6 +89,12 @@ ol { margin: 0; padding-left: 22px; display: grid; gap: 8px; }
 .prose h1 { margin-bottom: 8px; }
 .prose h2 { font-size: 22px; margin-top: 18px; }
 .prose ul { margin: 0; padding-left: 22px; display: grid; gap: 6px; }
+.prose table { width: 100%; border-collapse: collapse; font-size: 16px; hyphens: auto; }
+.prose th, .prose td { border: 1px solid var(--line); padding: 10px 12px; text-align: left; vertical-align: top; }
+.prose th { font-weight: 600; background: var(--surface); }
+.prose th:last-child, .prose td:last-child { overflow-wrap: normal; }
+.prose caption { caption-side: top; text-align: left; color: var(--muted); font-size: 15px; padding-bottom: 6px; }
+@media (max-width: 400px) { .prose th, .prose td { padding: 8px; } }
 
 code { font: 0.9em/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background: var(--violet-soft);
   border-radius: 6px; padding: 1px 6px; }
