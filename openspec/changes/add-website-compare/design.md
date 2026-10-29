@@ -42,7 +42,9 @@ verbatim.
 2. The lead: "We make Migrely, so we're not neutral…" It names the sources, the date, and that prices and features
    change.
 3. Two short answers:
-   - **"Which apps work without the internet?"**: Migrely and Migraine Log. The others request full network access.
+   - **"Which apps have no internet permission?"**: Migrely and Migraine Log. The others request full network access.
+     Nagi and Dark Logger are credited for saying their diaries work offline, so the question is about the permission,
+     not about working offline.
    - **"Which apps need an account?"**:
      - Bearable and Migraine Monitor require one;
      - Migraine Buddy syncs with its server and links data to an account (its help center, quoted);
@@ -55,7 +57,9 @@ verbatim.
 
 ### D3. Uniform fairness
 
-Every competitor gets the same fields. Data safety shows only the "shared" headline as Play prints it. Privacy-policy
+Every app gets the same set of fields in the same order. Data safety shows only the "shared" headline as Play
+prints it, for Migrely and Migraine Log too. Migrely's row says "declared to Google Play", because its listing is not
+public yet. Privacy-policy
 quotes appear only where the field needs them: Migraine Buddy's account sync, Nagi's offline statement and Dark
 Logger's weather and push lookups. These are the same statements those apps make about themselves. Nothing is
 called worse or better: the reader judges.
