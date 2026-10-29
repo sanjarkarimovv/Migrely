@@ -24,7 +24,8 @@ This writes `website/public/`. It needs Pillow and `cwebp`. The images come from
   dates both the page and the PDFs' footer, and remake the PDFs.
 - **Medical pages** (`/headache-diary/`, `/medication-overuse-headache/`, `/menstrual-migraine/`) share
   `urgent_help()`, `reviewed_block()` and `medical_ld()`. Each has its own review date (`DIARY_REVIEWED`,
-  `MOH_REVIEWED`, `MENSTRUAL_REVIEWED`): update it when the page's facts are
+  `MOH_REVIEWED`, `MENSTRUAL_REVIEWED`). `/va-migraine-log/` quotes 38 CFR 4.124a and VA's DBQ, and its date is
+  `VA_REVIEWED`: re-read eCFR before updating it, because VA can change the rating schedule: update it when the page's facts are
   checked against its sources again.
 - **CSP and PDFs:** `_headers` detaches the CSP from the two PDFs so browsers' PDF viewers can open them. After a
   deploy, open both on a phone and in Chrome, Safari and Firefox.
@@ -73,7 +74,7 @@ Live since 26 October 2026:
    only, so nobody may send as it.
 8. **Check:**
    - `https://migrely.health`, `/about/`, `/privacy-check/`, `/headache-diary/` (and its two PDFs),
-     `/medication-overuse-headache/`, `/menstrual-migraine/`, `/privacy/`,
+     `/medication-overuse-headache/`, `/menstrual-migraine/`, `/va-migraine-log/`, `/privacy/`,
      `/support/` and `/delete-data/` answer 200,
      and a missing page answers 404;
    - `www` and `http` redirect with 301;

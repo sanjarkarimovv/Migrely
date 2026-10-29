@@ -1,38 +1,42 @@
 {
   "/": {
     "lastmod": "2026-10-29",
-    "sha256": "7eb6eb476e69f72ab5fd7ff4e3952155f06b24ae03da1ea87827c74a4c9f9b69"
+    "sha256": "c677b116fafc1b978e65deda9c8a5d93435412d6115f8975da96541f2416090f"
   },
   "/about/": {
     "lastmod": "2026-10-29",
-    "sha256": "27f7f468400a2dd7e50c127f19962a3ef4a624512f15e696c675805c723c9fed"
+    "sha256": "f17a002c9d533b05d250ee152bbec32fc7a01b32189f0f75cbe481ae3ea37d81"
   },
   "/delete-data/": {
     "lastmod": "2026-10-29",
-    "sha256": "e95539f9b78be65be02b5d1217bd285a9c94e93b2ea69946589e62481342acaa"
+    "sha256": "9c33a795c0edfaba1a0e6b2b92e04a1f0b6a285aa549b82ac68d06d39f3fb947"
   },
   "/headache-diary/": {
     "lastmod": "2026-10-29",
-    "sha256": "e5f9d724bb67c8bc1ab7e9061d257760fbadeba2982ef523fb0456943951210e"
+    "sha256": "ba21886051eb36445fea4a18ace3ff333848e2735e72576b9dd93de784c13d8a"
   },
   "/medication-overuse-headache/": {
     "lastmod": "2026-10-29",
-    "sha256": "d6edf6c9dd5db36b7fcc39e7415afd7fceddc2f44d1b6ce66fc51ec5fe9ac79e"
+    "sha256": "48945bc143037f7d703c5fea4372398b2f5061c2930d0be039340a318cd16f7b"
   },
   "/menstrual-migraine/": {
     "lastmod": "2026-10-29",
-    "sha256": "774f968bcf279f92de2553d0ef59ac85a3a98df0fe1f47b761f6596e5d24233f"
+    "sha256": "ff39f0f8b0d28b72831776cc72c95c324eeb338675354f8a2832413d1275af57"
   },
   "/privacy-check/": {
     "lastmod": "2026-10-29",
-    "sha256": "f4a769ee2ca06c41bd588f0e5880e9fd4d3e915a3cbd13ee67ad91875f1bc012"
+    "sha256": "8c54860fcb195998e146538cf5506dce4b5c0579c46dd08807af722602f597fe"
   },
   "/privacy/": {
     "lastmod": "2026-10-29",
-    "sha256": "c86094cb9d39a9a7e01012c4cc6f66547bdf26ca94d82f95b44f46de63443299"
+    "sha256": "dc9b7e6a02c5354d66654f53698bcbf709449990a4b2b652118ca337e068a820"
   },
   "/support/": {
     "lastmod": "2026-10-29",
-    "sha256": "23443685c1fecbd45896a45e9505ac5dcd6f69af0c27a7b18142e48b2bb03698"
+    "sha256": "37536c36a761d37aa36e054172f9385487c93eb5010541789462cd50398e80c4"
+  },
+  "/va-migraine-log/": {
+    "lastmod": "2026-10-29",
+    "sha256": "45b2c3e721c15fd4234bcf0a3c10101f42e6158200bbabc4d7bdd3c7a3dd0e61"
   }
 }

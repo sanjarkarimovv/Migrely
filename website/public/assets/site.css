@@ -93,6 +93,7 @@ ol { margin: 0; padding-left: 22px; display: grid; gap: 8px; }
 .prose th, .prose td { border: 1px solid var(--line); padding: 10px 12px; text-align: left; vertical-align: top; }
 .prose th { font-weight: 600; background: var(--surface); }
 .prose th:last-child, .prose td:last-child { overflow-wrap: normal; }
+.prose table.short-first tr > :first-child { white-space: nowrap; }
 .prose caption { caption-side: top; text-align: left; color: var(--muted); font-size: 15px; padding-bottom: 6px; }
 @media (max-width: 400px) { .prose th, .prose td { padding: 8px; } }
 
