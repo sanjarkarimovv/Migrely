@@ -58,6 +58,8 @@ nav a[aria-current="page"], nav a:hover { color: var(--ink); }
   background: var(--violet); color: var(--violet-ink); font-weight: 600; text-decoration: none; }
 .play:hover { filter: brightness(1.06); }
 .quiet { font-weight: 600; }
+.play.alt { background: transparent; color: var(--violet); border: 2px solid var(--violet); }
+.meta { font-size: 15px; color: var(--muted); }
 
 .shots { padding-block: 8px 24px; }
 .strip { display: flex; gap: 16px; overflow-x: auto; padding-bottom: 12px; scroll-snap-type: x mandatory; }
