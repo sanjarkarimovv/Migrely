@@ -15,8 +15,10 @@ The site SHALL serve `/headache-diary/`. Under question headings it explains why
 #### Scenario: Medicine days are not read as safe limits
 
 - **WHEN** the page explains medication overuse
-- **THEN** it gives 10 or more days a month for triptans, ergots, opioids, combination painkillers or any mix of acute
-  medicines, and 15 or more for simple painkillers alone
+- **THEN** it describes medication-overuse headache as headache on 15 or more days a month after more than 3 months
+  of: triptans, ergots, opioids or combination painkillers on 10 or more days a month; a mix of these kinds, or of
+  these and simple painkillers, on 10 or more days in total; or simple painkillers alone, one or several, on 15 or
+  more days
 - **AND** it says these are diagnostic thresholds, not safe limits, quotes the NHS advice of no more than 2 days a week,
   and tells the reader not to stop or change medicines without their doctor
 
@@ -30,12 +32,21 @@ The site SHALL serve `/headache-diary/`. Under question headings it explains why
 #### Scenario: The sources change
 
 - **WHEN** a source changes and the page is updated
-- **THEN** the "Last reviewed" date and `lastReviewed` are updated by hand, and the sitemap's `lastmod` moves because
-  the HTML changed
+- **THEN** `DIARY_REVIEWED` is updated, which changes the "Last reviewed" date, `lastReviewed` and the date in the PDFs'
+  footer, and the PDFs are made again
+- **AND** the sitemap's `lastmod` moves, because the HTML changed
 
 ### Requirement: Printable headache diary template
 
 The site SHALL offer an 8-week printable headache diary as two landscape PDFs, A4 and US Letter, of 6 pages each: how to use it with a key and the warning signs, four two-week logs with one row a day, and a summary page for the doctor. It SHALL be readable when printed in black and white, and each PDF SHALL be smaller than 300 KB.
+
+#### Scenario: Warning signs on paper
+
+- **WHEN** a reader looks at page 1
+- **THEN** it lists the NHS migraine page's emergency signs unsoftened, and its same-day signs (an attack over 72
+  hours, aura over 1 hour, pregnancy or a new baby)
+- **AND** it does not list numbness or a stiff neck alone as emergencies, because the NHS lists them as ordinary
+  migraine symptoms
 
 #### Scenario: Printing in black and white
 
