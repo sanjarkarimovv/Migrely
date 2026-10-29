@@ -48,7 +48,7 @@
 
 ## 4. Review and archive
 
-- [ ] 4.1 Independent review (`superpowers:code-reviewer`) of `git diff origin/develop...`. Check the facts against
+- [x] 4.1 Independent review (`superpowers:code-reviewer`) of `git diff origin/develop...`. Check the facts against
   the sources in D1 and the build logic. Fix the real findings and record them here.
 - [ ] 4.2 `openspec archive add-website-trust-pages --yes`. Write the `website` spec's Purpose, then run
   `openspec validate --specs --strict`.
@@ -63,8 +63,10 @@ Run on 2026-10-29 at `feature/add-website-trust-pages`, built from `develop` 1ff
   - Chrome's list, in the same place, includes “have full network access” and “view network connections”.
   - BILLING is not listed, because the emulator has no Play Store to define it, and neither is the AndroidX
     permission. The page therefore gives those two descriptive titles and does not claim a label for them.
-  - `dumpsys package com.migrely.app` prints "requested permissions:" followed by the same five, so
-    `grep -A5` shows exactly them.
+  - `dumpsys package com.migrely.app` prints "requested permissions:" followed by the same five, so `grep -A5` shows
+    exactly them.
+  - `dumpsys package com.migrely.app | grep INTERNET` prints nothing (exit 1). For Chrome it prints
+    `android.permission.INTERNET`.
 - **Permission report:** `./gradlew :app:checkReleasePermissions` passed, and the report is the five permissions on
   the page.
   - A report with an extra permission stopped the build with both lists (exit 1).
@@ -84,7 +86,7 @@ Run on 2026-10-29 at `feature/add-website-trust-pages`, built from `develop` 1ff
     organization's `@id`, no `sameAs`, and an untagged `downloadUrl`;
   - `/about/` is an `AboutPage` about the same Organization.
 
-  `/delete-data/`'s description was 52 characters and became 128.
+  `/delete-data/`'s description was 52 characters and became 112.
 - **Headless Chrome**, behind a local server that sends the `_headers` CSP:
   - **CSP:** 0 violations on all 7 pages. A control page with an inline script and a style attribute was caught.
   - **Width:** at 320 px, light and dark, no page scrolls sideways (`scrollWidth` ≤ 320).
@@ -100,3 +102,59 @@ Run on 2026-10-29 at `feature/add-website-trust-pages`, built from `develop` 1ff
     send the CSP header.
   - The Play Store app's own permission list, because the emulator has no Play Store.
   - Whether Play Console reports the UTM tags, which needs real traffic. Check it at the day-30 review (T22).
+
+## Review
+
+An independent review (`superpowers:code-reviewer`) of 734ef565..9f2d9a77 found nothing Critical.
+
+**What it confirmed:**
+- the build logic: `lastmods()`, `check_permissions()`, the Play links, `breakable()` and the JSON-LD;
+- the CSP and static rules;
+- that the spec, design and output agree;
+- most claims, each checked against the privacy policy, data safety, the manifest, the merged-manifest blame, BRD §7,
+  D45 and the backup rules.
+
+**Important.** It found six sentences that claim more than their sources. All were fixed:
+1. *"Android itself stops it from sending anything"* became "from connecting to the internet". The page itself lists
+   what can still leave the phone.
+2. The BILLING card said "without the internet", but buying goes online. It now says Migrely talks only to the Google
+   Play app, and Google Play goes online to complete a purchase.
+3. *"Android asks you first"* is true only on Android 13 and later (minSdk is 26). It now says so, and adds that
+   notifications can be turned off in Settings on any version.
+4. WorkManager was called "the part of Android that runs reminders". It is a library inside the app, as the merger
+   blame shows (`work-runtime` 2.10.1), and the card now says that.
+5. On `/about/`, *"has no way to send it anywhere"* became the privacy policy's "cannot send it to us or to anyone
+   else", with a pointer to Android's backup and shared files on `/privacy-check/`.
+6. The new `/delete-data/` description said *"Migrely holds nothing about you anywhere else"*. That is not true of
+   support email or Play order records. It became "We never receive your entries."
+
+**Minor, fixed:**
+- *"Buying Premium is the one thing that needs Google Play online"* became "Buying or restoring Premium, and rating
+  Migrely, need Google Play to be online".
+- Android 8's backup, which is not end-to-end encrypted, is now named.
+- "The first three appear…" became "Those in quotes appear…", with a hedge that phones with Google Play may list
+  billing too. The code comment no longer claims what a real phone lists.
+- A second `adb` check was added, `… | grep INTERNET`, which prints nothing (checked on the emulator above).
+- "independent" and "the people who build it" became "reach us at": no source states either.
+- The heading became "Where do the medication limits come from?".
+- "export" became "backup and spreadsheet export", because the PDF report is Premium. The trial is "for new
+  subscribers" (BRD §7.2).
+- `NUMBER_WORDS` moved to the constants, and `in_words()` falls back to digits from 10.
+- The buttons' campaign comes from each page's own `path`, as the footer's does.
+- `json_ld()` escapes `</`.
+- `.perms article` and `.perms p` share the `.features` rules.
+- New lines over 120 characters were wrapped, and `', '.join(built)` was simplified.
+- BRD D134 says "kartalarda" (cards), not "jadvalda" (table).
+
+**Minor, not done:**
+- Linking `MobileApplication` to the `Organization`: optional, and its publisher stays as on Play (D135).
+- A strict flag for a missing report: the README makes `:app:checkReleasePermissions` the first step, and the design
+  names the risk.
+- Naming in-app links that open the browser or Play: they send no entries, and the page is about entries.
+
+**Re-verified after the fixes:**
+- The build passes the permission check.
+- The static checks find nothing.
+- 21 overflow measurements show 0 sideways scroll (light, dark, 200% text, 7 pages).
+- 0 CSP violations on 7 pages.
+- The screenshots were taken again.

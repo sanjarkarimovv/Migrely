@@ -8,7 +8,7 @@ The site SHALL serve `/about/`. It states, under question headings, who publishe
 
 - **WHEN** a visitor opens `https://migrely.health/about/`
 - **THEN** the page answers "Who makes Migrely?", "How does Migrely make money?", "What stays free?", "What will
-  Migrely never do?", "Where do the medical notes come from?" and "How can I contact you?"
+  Migrely never do?", "Where do the medication limits come from?" and "How can I contact you?"
 - **AND** it names Sulton UzDev as the Google Play publisher, links to `/privacy-check/` and the ICHD-3 page on
   medication-overuse headache, and ends with a Google Play button
 
