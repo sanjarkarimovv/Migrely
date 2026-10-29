@@ -17,8 +17,8 @@
 
 ## 3. Review and archive
 
-- [ ] 3.1 Independent review. Fix the findings and record them.
-- [ ] 3.2 Archive, `openspec validate --specs --strict`, PR into `develop` and merge.
+- [x] 3.1 Independent review. Fix the findings and record them.
+- [x] 3.2 Archive, `openspec validate --specs --strict`, PR into `develop` and merge.
 
 ## Verification record
 
@@ -50,3 +50,49 @@ Run on 2026-10-29 at `feature/add-website-va-log`, built from `develop` 5ca2bea1
 - **OpenSpec:** `openspec validate add-website-va-log --strict` passes.
 - **Not run:** the Android gate (no Gradle input changed), the live site, and a lawyer's or VA's review (the page says
   so).
+
+## Review
+
+An independent review (`superpowers:code-reviewer`) of 9b055c7a..581bb880 read the eCFR API (up to date as of
+2026-10-27; § 4.124a last amended 2016-12-14), the DBQ, VA's FAQ and the Federal Register. It confirmed:
+- the four DC 8100 levels and the DBQ definition match word for word;
+- the notice comes first and is complete;
+- there is no VA seal or "official" wording;
+- the app claims match the strings, `AttacksCsvMapper` and D108;
+- the medical pages render the same text.
+
+It found nothing Critical, 5 Important issues and 7 Minor. All were fixed except the ones listed under "Not done".
+
+**Important:**
+1. The page summarised all of DC 8100 as "how often". Now the 10% and 30% levels are tied to frequency, and the 50%
+   level also to "completely prostrating and prolonged" attacks and "severe economic inadaptability". The description
+   was rewritten.
+2. "Your own words" became "You choose these labels for your own record. They are Migrely's words, not VA's terms".
+3. The severe-only example ("lying down in a dark room or leaving work") became a neutral range: "carried on, slowed
+   down, stopped, or lay down". "And the examiner" was dropped.
+4. The notice now says Migrely is not a VA-accredited representative and cannot help prepare or file a claim. "How can
+   Migrely help?" became "What does Migrely record?".
+5. The broken README sentence was split into a medical-pages item and a VA-page item.
+
+**Minor:**
+- The design records the NPRM (RIN 2900-AQ73, 89 FR 88917, 12 November 2024). It restates DC 8100 unchanged, and its
+  final action is planned for April 2027. The BRD and the README say to check it before updating `VA_REVIEWED`.
+- "Byte-identical" became "renders the same text".
+- The DBQ is described as "the form doctors complete for VA".
+- The source labels give the section's real title and the FAQ's date.
+- "Export for Excel, CSV" is named.
+- `urgent_help(extra)` adds the Veterans Crisis Line (988, then 1; text 838255) on this page only, and its docstring
+  is updated.
+- The FAQ's fee facts were added: attorneys and claims agents may charge once VA has decided the initial claim.
+
+**Not done:**
+- A link to this page from `/headache-diary/`. It stays reachable through the sitemap; deciding where a link fits
+  belongs to a later content review.
+- Folding the `WebPage` JSON-LD into `medical_ld()`. With two types, a single helper would need a type switch for one
+  use.
+
+**Re-verified after the fixes:**
+- The quotes still match. The normalised text contains the DBQ definition and the 50% wording.
+- The static checks find nothing, and two builds in a row change nothing.
+- 9 overflow measurements show 0 sideways scroll, and there are 0 CSP violations.
+- The three medical pages render the same text as on `develop`.

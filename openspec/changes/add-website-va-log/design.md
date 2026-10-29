@@ -10,7 +10,9 @@ These sources were read on 2026-10-29:
   - 10%: "With characteristic prostrating attacks averaging one in 2 months over last several months";
   - 0%: "With less frequent attacks".
 
-  No proposed or final 2026 change was found.
+  A proposed rule exists: NPRM RIN 2900-AQ73, 89 FR 88917, published 12 November 2024, with comments closed 13
+  January 2025. It amends § 4.124a but restates DC 8100 unchanged. The Fall 2025 Unified Agenda plans the final
+  action for April 2027. eCFR was up to date as of 2026-10-27, and § 4.124a was last amended on 2016-12-14.
 - **VA's Headaches DBQ** (updated 2024-07-09, Section IV): "For VA purposes, the term prostrating means 'causing
   extreme exhaustion, powerlessness, debilitation or incapacitation with substantial inability to engage in ordinary
   activities.'"
@@ -37,8 +39,10 @@ The H1 is "Keeping a migraine log for a VA claim". The page then runs:
 4. **What should a migraine log record?** For each attack: the date; when it started and ended; how bad it got; what
    it stopped you doing, such as lying down or leaving work; the medicines and whether they helped; any missed work.
    Over months, every attack, the mild ones too, so the record is complete and honest.
-5. **How can Migrely help?** What it records, the free CSV with its columns, the Premium PDF, and that "Bed rest" is
-   the user's label while VA decides what is prostrating. The Play button.
+5. **What does Migrely record?** What it records, the free CSV ("Export for Excel") with its columns, and the Premium
+   PDF. The labels are Migrely's preset words, chosen by the user for their own record; they are not VA's terms, and
+   VA decides what is prostrating. The Play button. The heading avoids "help", because Migrely is not an accredited
+   representative and cannot help with a claim.
 6. **Who can help with a claim?** VA-accredited representatives: VSO representatives (always free), attorneys and
    claims agents. The tool link.
 7. **Urgent help,** Sources and the review block with the VA disclaimer.
@@ -46,7 +50,7 @@ The H1 is "Keeping a migraine log for a VA claim". The page then runs:
 ### D2. `reviewed_block(sources, reviewed, disclaimer=MEDICAL_DISCLAIMER)`
 
 `MEDICAL_DISCLAIMER = 'not reviewed by a clinician. Educational only, not medical advice.'` keeps the medical pages'
-line byte-identical. `VA_DISCLAIMER = 'not reviewed by a lawyer or by VA. General information, not legal or medical
+rendered text the same. Their HTML loses one line break inside the review line. `VA_DISCLAIMER = 'not reviewed by a lawyer or by VA. General information, not legal or medical
 advice.'`
 
 ### D3. JSON-LD

@@ -456,12 +456,12 @@ def privacy():
                 'keeps on your phone, Android\'s backup, and how to delete everything.', body)
 
 
-def urgent_help():
-    """The same urgent-help section on every medical page."""
+def urgent_help(extra=''):
+    """The same urgent-help section on the medical pages and the VA page, with an optional extra line."""
     return f'''<h2>When should I get help straight away?</h2>
   <p>Call your emergency number if a headache comes on suddenly and is extremely painful, or comes with weakness on one
     side, problems speaking or loss of vision. The <a href="{NHS_MIGRAINE}">NHS migraine page</a> lists every warning
-    sign.</p>'''
+    sign.</p>{extra}'''
 
 
 def reviewed_block(sources, reviewed, disclaimer=MEDICAL_DISCLAIMER):
@@ -680,6 +680,8 @@ def menstrual_migraine():
 ECFR_4124A = 'https://www.ecfr.gov/current/title-38/chapter-I/part-4/subpart-B/section-4.124a'
 VA_DBQ = 'https://www.benefits.va.gov/compensation/docs/Headaches_Including_Migraines.pdf'
 VA_FIND_REP = 'https://www.va.gov/get-help-from-accredited-representative/find-rep/'
+VA_CRISIS_LINE = '''
+  <p>Veterans in crisis can dial 988, then press 1, or text 838255 (Veterans Crisis Line).</p>'''
 # 38 CFR 4.124a, diagnostic code 8100, in the regulation's own words (read on VA_REVIEWED).
 DC_8100 = [
     ('50%', 'With very frequent completely prostrating and prolonged attacks productive of severe economic '
@@ -689,9 +691,11 @@ DC_8100 = [
     ('0%', 'With less frequent attacks'),
 ]
 VA_SOURCES = [
-    ('38 CFR 4.124a, Schedule of ratings: neurological conditions, diagnostic code 8100 (eCFR)', ECFR_4124A),
+    ('38 CFR 4.124a, Schedule of ratings: neurological conditions and convulsive disorders, diagnostic code 8100 '
+     '(eCFR)', ECFR_4124A),
     ('VA, Headaches (including migraine headaches) Disability Benefits Questionnaire, updated 9 July 2024', VA_DBQ),
-    ('VA, VA-accredited representative FAQs', 'https://www.va.gov/resources/va-accredited-representative-faqs/'),
+    ('VA, VA-accredited representative FAQs, last updated 8 August 2024',
+     'https://www.va.gov/resources/va-accredited-representative-faqs/'),
 ]
 
 
@@ -699,46 +703,52 @@ def va_migraine_log():
     path = '/va-migraine-log/'
     rows = ''.join(f'<tr><th scope="row">{esc(rating)}</th><td>{esc(words)}</td></tr>' for rating, words in DC_8100)
     body = f'''<section class="wrap block narrow prose"><h1>{esc(VA_TITLE)}</h1>
-  <p class="lead">Migrely is not affiliated with or endorsed by the U.S. Department of Veterans Affairs (VA). This page
-    is general information, not legal or medical advice, and no log or app can promise a rating. Accredited Veterans
-    Service Organization (VSO) representatives help with VA claims for free.</p>
+  <p class="lead">Migrely is not affiliated with or endorsed by the U.S. Department of Veterans Affairs (VA), and it is
+    not a VA-accredited representative, so it cannot help you prepare or file a claim. This page is general
+    information, not legal or medical advice, and no log or app can promise a rating. Accredited Veterans Service
+    Organization (VSO) representatives help with VA claims for free.</p>
   <h2>How does VA rate migraine?</h2>
-  <p>VA rates migraine under diagnostic code 8100 by how often you have "prostrating" attacks, on average, over the
-    last several months:</p>
+  <p>VA rates migraine under diagnostic code 8100. The 10% and 30% levels depend on how often "prostrating" attacks
+    happen, on average, over the last several months. The 50% level also asks whether attacks are completely
+    prostrating and prolonged and cause "severe economic inadaptability". In the regulation's words:</p>
   <table class="short-first"><caption>38 CFR 4.124a, diagnostic code 8100, read on {VA_REVIEWED[1]}</caption>
     <thead><tr><th scope="col">Rating</th><th scope="col">VA's words</th></tr></thead><tbody>{rows}</tbody></table>
   <p>VA can change its rating schedule. The current text is on <a href="{ECFR_4124A}">eCFR</a>.</p>
   <h2>What does "prostrating" mean?</h2>
-  <p>VA's headaches questionnaire for examiners (the DBQ) says: "For VA purposes, the term prostrating means 'causing
-    extreme exhaustion, powerlessness, debilitation or incapacitation with substantial inability to engage in ordinary
-    activities.'" It then asks how often such attacks happened, on average, over the last several months.</p>
+  <p>VA's headaches Disability Benefits Questionnaire (DBQ), the form doctors complete for VA, says: "For VA purposes,
+    the term prostrating means 'causing extreme exhaustion, powerlessness, debilitation or incapacitation with
+    substantial inability to engage in ordinary activities.'" It then asks how often such attacks happened, on
+    average, over the last several months.</p>
   <h2>What should a migraine log record?</h2>
   <ul><li>the date of every attack, the mild ones too, so the record is complete;</li>
     <li>when it started and when it ended;</li>
     <li>how bad it got;</li>
-    <li>what it stopped you doing, such as lying down in a dark room or leaving work;</li>
+    <li>what you could still do and what you had to stop, for example: carried on, slowed down, stopped, or lay
+      down;</li>
     <li>the medicines you took, and whether they helped;</li>
     <li>work or plans you missed.</li></ul>
-  <p>Keep it for months, written at the time or soon after. A steady, honest record is easier for your doctor, your
-    representative and the examiner to rely on than memory.</p>
-  <h2>How can Migrely help?</h2>
+  <p>Keep it for months, written at the time or soon after. A steady, honest record is easier for your doctor and
+    your representative to rely on than memory.</p>
+  <h2>What does Migrely record?</h2>
   <p>Migrely, our app for Android, keeps the start and end of each attack, the worst pain, the medicines you took and
     a note. "Impact on your day" lets you record how each attack affected you: No impact, Less active, Had to stop or
-    Bed rest. These are your own words for your own record: what counts as prostrating is for VA to decide.</p>
-  <p>Exporting a spreadsheet is free. It has one row per attack, with its start, end, duration, peak pain, symptoms,
-    medicines, impact and note. The PDF report for appointments is part of Premium.</p>
+    Bed rest. You choose these labels for your own record. They are Migrely's words, not VA's terms, and what counts
+    as prostrating is for VA to decide.</p>
+  <p>Exporting a spreadsheet (Export for Excel, CSV) is free. It has one row per attack, with its start, end,
+    duration, peak pain, symptoms, medicines, impact and note. The PDF report for appointments is part of Premium.</p>
   <p>{play_button(path)}</p>
   <h2>Who can help with a claim?</h2>
   <p>VA accredits three kinds of representatives: VSO representatives, attorneys and claims agents. VA says the
-    services an accredited VSO representative provides on your claim are always free. You can
-    <a href="{VA_FIND_REP}">find a VA-accredited representative or VSO</a> on VA's website.</p>
-  {urgent_help()}
+    services an accredited VSO representative provides on your claim are always free. Some accredited attorneys and
+    claims agents also help for free on initial claims; VA lets them charge fees once it has decided your initial
+    claim. You can <a href="{VA_FIND_REP}">find a VA-accredited representative or VSO</a> on VA's website.</p>
+  {urgent_help(VA_CRISIS_LINE)}
   {reviewed_block(VA_SOURCES, VA_REVIEWED, VA_DISCLAIMER)}</section>'''
     ld = json_ld({'@context': 'https://schema.org', '@type': 'WebPage', 'url': f'{BASE}{path}', 'name': VA_TITLE,
                   'inLanguage': 'en', 'lastReviewed': VA_REVIEWED[0], 'publisher': ORGANIZATION})
     return page(path, 'Migraine log for a VA claim: what to record · Migrely',
-                'VA rates migraine by how often prostrating attacks happen: what code 8100 says, what to record in a '
-                'migraine log, and free help. Not affiliated with VA.', body, ld)
+                'How VA\'s migraine code 8100 rates prostrating attacks, what to record in a migraine log, and where '
+                'to get free help. Not affiliated with VA.', body, ld)
 
 
 def not_found():
