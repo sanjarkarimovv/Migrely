@@ -12,6 +12,15 @@ python3 website/build.py
 This writes `website/public/`. It needs Pillow and `cwebp`. The images come from `docs/release/store/` and
 `docs/release/icon/`.
 
+- **The permission list on `/privacy-check/`** must match what the app ships (BRD D134, EC-WEB-01). The build compares
+  it with `app/build/reports/permissions/release.txt` and stops when they differ, so run
+  `./gradlew :app:checkReleasePermissions` first. Without the report it prints a note and skips the check.
+- **`website/lastmod.json`** keeps each page's hash and the date its HTML last changed. The sitemap's `lastmod` comes
+  from it (BRD D136). The build updates it, and it is committed with the site.
+- **Google Play links** carry `utm_source=migrely.health`, `utm_medium=website` and `utm_campaign=<page>` inside
+  `referrer` (BRD D137). Play Console shows them under the store listing's acquisition report, as UTM source and
+  campaign.
+
 ## How it is deployed
 
 Live since 26 October 2026:
@@ -50,14 +59,19 @@ Live since 26 October 2026:
 7. **DMARC:** add a TXT record `_dmarc` with `v=DMARC1; p=reject; sp=reject; adkim=s; aspf=s;`. The domain receives mail
    only, so nobody may send as it.
 8. **Check:**
-   - `https://migrely.health`, `/privacy/`, `/support/` and `/delete-data/` answer 200, and a missing page answers 404;
+   - `https://migrely.health`, `/about/`, `/privacy-check/`, `/privacy/`, `/support/` and `/delete-data/` answer 200,
+     and a missing page answers 404;
    - `www` and `http` redirect with 301;
    - the response headers include the `Content-Security-Policy` from `_headers`;
    - the pages show `support@` and `privacy@` as plain addresses, with no `email-decode` script;
    - an email from another mailbox to each address arrives.
 
-To update the site, run `python3 website/build.py`, zip `website/public` again with its files at the root, then
-Deployments → **Create deployment** → upload.
+To update the site:
+
+1. Run `./gradlew :app:checkReleasePermissions`, then `python3 website/build.py`.
+2. Commit `website/public` and `website/lastmod.json`.
+3. Zip `website/public` again with its files at the root.
+4. Deployments → **Create deployment** → upload.
 
 ## Google Play
 

@@ -5,13 +5,18 @@ served from the site itself, as Migrely's promise of privacy deserves. The priva
 docs/release/privacy-policy.md, so the store, the app and the site always say the same thing.
 
 Run from the repo root: python3 website/build.py
-It needs Pillow and the cwebp tool for the images.
+It needs Pillow and the cwebp tool for the images. It checks /privacy-check/ against the release build's permission
+report, so run ./gradlew :app:checkReleasePermissions first (BRD EC-WEB-01). It updates website/lastmod.json, which is
+committed with the site (BRD D136).
 """
+import hashlib
 import html
 import json
 import re
 import subprocess
+from datetime import date
 from pathlib import Path
+from urllib.parse import quote
 
 from PIL import Image
 
@@ -19,16 +24,72 @@ ROOT = Path(__file__).resolve().parents[1]
 SITE = ROOT / 'website' / 'public'
 ASSETS = SITE / 'assets'
 STORE_ART = ROOT / 'docs' / 'release' / 'store'
+LASTMOD = ROOT / 'website' / 'lastmod.json'
+PERMISSION_REPORT = ROOT / 'app' / 'build' / 'reports' / 'permissions' / 'release.txt'
 BASE = 'https://migrely.health'
 PLAY = 'https://play.google.com/store/apps/details?id=com.migrely.app'
 SUPPORT = 'support@migrely.health'
 PRIVACY_MAIL = 'privacy@migrely.health'
 DISCLAIMER = ('Migrely is a diary. It is not a medical device and does not diagnose, treat or prevent any condition. '
               'Talk to a doctor about your headaches.')
+ICHD_MOH = ('https://ichd-3.org/8-headache-attributed-to-a-substance-or-its-withdrawal/'
+            '8-2-medication-overuse-headache-moh/')
+# One object for the home page and /about/ (BRD D135). sameAs comes with the social profiles (EC-WEB-06).
+ORGANIZATION = {'@type': 'Organization', '@id': f'{BASE}/#organization', 'name': 'Migrely', 'url': f'{BASE}/',
+                'logo': f'{BASE}/assets/img/icon-512.png', 'email': SUPPORT,
+                'contactPoint': {'@type': 'ContactPoint', 'contactType': 'customer support', 'email': SUPPORT}}
+# Every permission the release build asks for, and what Migrely uses it for (BRD D134). Titles in quotes are the
+# names Android 16 shows in Settings → Apps → Migrely → Permissions → All permissions; the emulator, without Google
+# Play, did not list the other two. check_permissions() keeps this list equal to the release build's.
+PERMISSIONS = [
+    ('“show notifications”', 'android.permission.POST_NOTIFICATIONS',
+     'Reminders and the “Did it help?” question. On Android 13 and later, Android asks you first. On any version '
+     'you can turn notifications off in Settings.'),
+    ('“run at startup”', 'android.permission.RECEIVE_BOOT_COMPLETED',
+     'Puts your reminders back after the phone restarts. It comes with WorkManager, the Android library Migrely '
+     'uses to schedule reminders.'),
+    ('“prevent phone from sleeping”', 'android.permission.WAKE_LOCK',
+     'Lets WorkManager keep the phone awake for the moments it takes to run a reminder.'),
+    ('Google Play billing', 'com.android.vending.BILLING',
+     'Lets Migrely ask the Google Play app on your phone whether Premium is on, and open Google Play\'s purchase '
+     'screen. Migrely talks only to the Google Play app, never to the internet; Google Play itself goes online to '
+     'complete a purchase.'),
+    ('An internal AndroidX permission', 'com.migrely.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION',
+     'AndroidX, Google\'s standard library for Android apps, adds it so that on older Android versions only Migrely '
+     'can send messages to its own parts. Settings does not list it.'),
+]
+NUMBER_WORDS = ['no', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine']
 
 
 def esc(text):
     return html.escape(text, quote=True)
+
+
+def in_words(number):
+    return NUMBER_WORDS[number] if number < len(NUMBER_WORDS) else str(number)
+
+
+def breakable(name):
+    """A permission name that wraps after its dots and underscores instead of inside a word."""
+    return re.sub(r'([._])', r'\1<wbr>', esc(name))
+
+
+def json_ld(data):
+    # '</' would end the script element early; JSON may write it as '<\/'.
+    text = json.dumps(data).replace('</', '<\\/')
+    return f'<script type="application/ld+json">{text}</script>'
+
+
+def campaign(path):
+    """The page a Play link sits on, as its UTM campaign: home, or the path's name (BRD D137)."""
+    return path.strip('/').removesuffix('.html') or 'home'
+
+
+def play_link(page_campaign):
+    """The Play listing with the site's UTM tags in referrer, the Play URL builder's format (BRD D137). Play Console
+    counts the visits; nothing here tracks the visitor."""
+    tags = f'utm_source=migrely.health&utm_medium=website&utm_campaign={page_campaign}'
+    return f'{PLAY}&referrer={quote(tags, safe="")}'
 
 
 def page(path, title, description, body, extra_head=''):
@@ -36,7 +97,7 @@ def page(path, title, description, body, extra_head=''):
     current = ' aria-current="page"'
     nav = ''.join(
         f'<a href="{href}"{current if href == path else ""}>{label}</a>'
-        for href, label in [('/', 'Home'), ('/support/', 'Help'), ('/privacy/', 'Privacy')])
+        for href, label in [('/', 'Home'), ('/about/', 'About'), ('/support/', 'Help'), ('/privacy/', 'Privacy')])
     return f'''<!doctype html>
 <html lang="en">
 <head>
@@ -74,8 +135,9 @@ def page(path, title, description, body, extra_head=''):
 </main>
 <footer class="foot"><div class="wrap">
   <p>{esc(DISCLAIMER)}</p>
-  <p class="links"><a href="/support/">Help</a><a href="/privacy/">Privacy policy</a><a href="/delete-data/">Delete your data</a>
-    <a href="{PLAY}">Google Play</a></p>
+  <p class="links"><a href="/support/">Help</a><a href="/about/">About</a><a href="/privacy/">Privacy policy</a>
+    <a href="/privacy-check/">Check our privacy</a><a href="/delete-data/">Delete your data</a>
+    <a href="{esc(play_link(campaign(path)))}">Google Play</a></p>
   <p>© 2026 Migrely, published by Sulton UzDev · <a href="mailto:{SUPPORT}">{SUPPORT}</a></p>
 </div></footer>
 </body>
@@ -83,8 +145,9 @@ def page(path, title, description, body, extra_head=''):
 '''
 
 
-def play_button(label='Get it on Google Play'):
-    return (f'<a class="play" href="{PLAY}"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">'
+def play_button(path, label='Get it on Google Play'):
+    return (f'<a class="play" href="{esc(play_link(campaign(path)))}">'
+            '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">'
             '<path fill="currentColor" d="M4 2.6v18.8c0 .5.5.8.9.6l16.3-9.4c.4-.2.4-.9 0-1.1L4.9 2.1c-.4-.2-.9.1-.9.5z"/>'
             f'</svg><span>{label}</span></a>')
 
@@ -146,7 +209,7 @@ def home():
     <h1>A calm, private migraine diary</h1>
     <p class="lead">Log a migraine in seconds, see your months as a quiet night sky, and bring a clear report to your
       doctor. No account, no internet, no ads.</p>
-    <div class="cta">{play_button()}<a class="quiet" href="/privacy/">How your data stays private</a></div>
+    <div class="cta">{play_button('/')}<a class="quiet" href="/privacy/">How your data stays private</a></div>
   </div>
   <img class="hero-icon" src="/assets/img/icon-512.png" alt="The Migrely icon: a white calendar with a crescent moon on violet" width="256" height="256">
 </div></section>
@@ -163,6 +226,7 @@ def home():
     <li>Your entries stay on your phone, and in Android's own backup, end-to-end encrypted on Android 9 and later.</li>
     <li>Export a backup or a spreadsheet, or delete everything, whenever you like.</li>
   </ul>
+  <p><a class="quiet" href="/privacy-check/">Check it yourself in two minutes</a></p>
 </div></section>
 
 <section class="wrap block two">
@@ -174,16 +238,18 @@ def home():
       helps you keep a record and talk to your doctor.</p></div>
 </section>
 
-<section class="wrap block final"><h2>Start your diary today</h2>{play_button()}</section>
+<section class="wrap block final"><h2>Start your diary today</h2>{play_button('/')}</section>
 '''
-    ld = {'@context': 'https://schema.org', '@type': 'MobileApplication', 'name': 'Migrely: Migraine Tracker',
+    app = {'@type': 'MobileApplication', 'name': 'Migrely: Migraine Tracker',
           'operatingSystem': 'Android', 'applicationCategory': 'HealthApplication', 'url': f'{BASE}/',
           'downloadUrl': PLAY, 'image': f'{BASE}/assets/img/icon-512.png',
           'description': 'A calm, private migraine diary: log in seconds, see your patterns, and share a report with '
                          'your doctor.',
           'offers': {'@type': 'Offer', 'price': '0', 'priceCurrency': 'USD'},
           'publisher': {'@type': 'Organization', 'name': 'Sulton UzDev'}}
-    extra = f'<script type="application/ld+json">{json.dumps(ld)}</script>'
+    website = {'@type': 'WebSite', '@id': f'{BASE}/#website', 'name': 'Migrely', 'url': f'{BASE}/',
+               'publisher': {'@id': ORGANIZATION['@id']}}
+    extra = json_ld({'@context': 'https://schema.org', '@graph': [ORGANIZATION, website, app]})
     return page('/', 'Migrely: Migraine Tracker & Private Headache Diary',
                 'Log migraines in seconds, see your patterns and share a doctor-ready PDF. A private migraine diary '
                 'for Android: no account, no internet, no ads.', body, extra)
@@ -197,7 +263,7 @@ def support():
     ld = {'@context': 'https://schema.org', '@type': 'FAQPage', 'mainEntity': [
         {'@type': 'Question', 'name': q, 'acceptedAnswer': {'@type': 'Answer', 'text': a}} for q, a in FAQ]}
     return page('/support/', 'Help · Migrely', 'Answers about Migrely: privacy, backups, Premium, cancelling and '
-                'deleting your data.', body, f'<script type="application/ld+json">{json.dumps(ld)}</script>')
+                'deleting your data.', body, json_ld(ld))
 
 
 def delete_data():
@@ -215,8 +281,101 @@ def delete_data():
   <p>Deleting your data does not cancel a subscription. Cancel it in Google Play: Profile, Payments and subscriptions,
     Subscriptions.</p>
   <p>Questions: <a href="mailto:{PRIVACY_MAIL}">{PRIVACY_MAIL}</a></p></section>'''
-    return page('/delete-data/', 'Delete your data · Migrely', 'How to delete everything Migrely keeps on your phone.',
-                body)
+    return page('/delete-data/', 'Delete your data · Migrely', 'How to delete everything Migrely keeps on your phone, '
+                'and Android\'s backup of it. We never receive your entries.', body)
+
+
+def about():
+    path = '/about/'
+    body = f'''<section class="wrap block narrow prose"><h1>About Migrely</h1>
+  <p class="lead">Migrely is a calm, private migraine diary for Android. Here is who makes it, how it is paid for, and
+    what it will never do.</p>
+  <h2>Who makes Migrely?</h2>
+  <p>Migrely is published on Google Play by Sulton UzDev. Questions and ideas reach us at
+    <a href="mailto:{SUPPORT}">{SUPPORT}</a>.</p>
+  <h2>Why does Migrely keep everything on the phone?</h2>
+  <p>A headache diary holds some of the most personal things a phone can know: when you were in pain, what you took
+    and your cycle. Migrely keeps all of it on your phone and has no internet access, so it cannot send it to us or
+    to anyone else. <a href="/privacy-check/">You can check that yourself</a>, and see what Android's own backup and
+    the files you choose to share do.</p>
+  <p>It is built for the moment a migraine starts: one tap to log, a dark screen, and the details later.</p>
+  <h2>How does Migrely make money?</h2>
+  <p>From Migrely Premium, and nothing else. Premium adds the doctor report and Insights. The yearly plan starts with
+    a 7-day free trial for new subscribers; there is also a monthly plan and a one-time lifetime purchase. Google Play
+    handles the payment, and we never see your card, name or email.</p>
+  <p>There are no ads, and no data is sold or shared: your entries never reach us, so there is nothing to sell.</p>
+  <h2>What stays free?</h2>
+  <p>Logging, your whole history, medications, reminders, backup and spreadsheet export, and every safety warning
+    are free, for good.</p>
+  <h2>What will Migrely never do?</h2>
+  <ul><li>Ask for internet access.</li><li>Ask you to make an account.</li>
+    <li>Show ads, or carry analytics or tracking code of its own.</li>
+    <li>Put a safety warning behind Premium.</li></ul>
+  <h2>Where do the medication limits come from?</h2>
+  <p>Migrely is a diary, not a medical device. Its medication note uses the limits for medication-overuse headache in
+    the International Classification of Headache Disorders (<a href="{ICHD_MOH}">ICHD-3</a>): 15 or more days a month
+    with simple painkillers, or 10 or more with triptans, combination painkillers or other medicines for attacks.
+    Migrely counts your days over the last 30 and suggests talking to your doctor. It does not diagnose.</p>
+  <h2>How can I contact you?</h2>
+  <p>Help and questions: <a href="mailto:{SUPPORT}">{SUPPORT}</a>. Privacy:
+    <a href="mailto:{PRIVACY_MAIL}">{PRIVACY_MAIL}</a>. Answers to common questions are on the
+    <a href="/support/">help page</a>.</p>
+  <p>{play_button(path)}</p></section>'''
+    ld = {'@context': 'https://schema.org', '@type': 'AboutPage', 'url': f'{BASE}{path}', 'name': 'About Migrely',
+          'about': ORGANIZATION}
+    return page(path, 'About Migrely: who makes it and how it is paid for',
+                'Migrely is a migraine diary paid for by Premium, not by your data: no ads, no account and no internet '
+                'access. Who makes it, and why.', body, json_ld(ld))
+
+
+def privacy_check():
+    path = '/privacy-check/'
+    count = in_words(len(PERMISSIONS))
+    cards = ''.join(f'<article><h3>{esc(title)}</h3><p><code>{breakable(name)}</code></p><p>{esc(why)}</p></article>'
+                    for title, name, why in PERMISSIONS)
+    body = f'''<section class="wrap block narrow prose"><h1>Check Migrely's privacy yourself</h1>
+  <p class="lead">Many apps promise privacy. With Migrely you can check it: the app has no internet permission, so
+    Android itself stops it from connecting to the internet. It takes about two minutes.</p>
+  <h2>Does Migrely connect to the internet?</h2>
+  <p>No. An Android app can reach the internet only if it asks for the internet permission, and Migrely does not ask
+    for it. Android then blocks every connection the app tries, so nothing you enter can leave your phone through
+    Migrely.</p>
+  <h2>How can I check it on my phone?</h2>
+  <ol><li>Open your phone's Settings, then Apps, then Migrely.</li><li>Tap Permissions.</li>
+    <li>Tap the ⋮ menu at the top, then All permissions.</li>
+    <li>Look for “have full network access”. Apps that use the internet list it. Migrely does not.</li></ol>
+  <p>The names can differ a little between phone makers. The check for developers below is the same on every
+    phone.</p>
+  <h2>Does airplane mode prove it?</h2>
+  <p>It shows half of it. Turn on airplane mode and Migrely works as usual: logging, your history, reminders and export
+    all work offline. That shows Migrely does not need the internet; the permission list shows it cannot use it.
+    Buying or restoring Premium, and rating Migrely, need Google Play to be online.</p>
+  <h2>What are Migrely's {count} permissions for?</h2>
+  <p>These are all the permissions Migrely asks for. Those in quotes appear in the list under those names. On
+    phones with Google Play, billing may be listed too.</p>
+  <div class="perms">{cards}</div>
+  <h2>What can still leave my phone?</h2>
+  <p>Without the internet permission, Migrely itself sends nothing. Three things are up to Android, Google Play or
+    you:</p>
+  <ul><li><strong>Android's own backup.</strong> Android may back up Migrely's entries to your Google account, as it
+      does for other apps. On Android 9 and later Migrely allows this only end-to-end encrypted, which needs a screen
+      lock; on Android 8 it is backed up like other apps' data. You can turn backup off in your phone's
+      settings.</li>
+    <li><strong>Google Play.</strong> When you buy Premium or rate Migrely, Google Play's own window handles it, under
+      Google's privacy policy. Migrely never sees your payment details or your rating.</li>
+    <li><strong>Files you share.</strong> A backup, spreadsheet or PDF report goes wherever you choose to send
+      it.</li></ul>
+  <p>The <a href="/privacy/">privacy policy</a> has the details.</p>
+  <h2>How can a developer check it?</h2>
+  <p>With USB debugging on and Migrely installed, run:</p>
+  <pre><code>adb shell dumpsys package com.migrely.app | grep -A{len(PERMISSIONS)} "requested permissions"</code></pre>
+  <p>It prints the same {count} permissions. To look for the internet permission alone, run:</p>
+  <pre><code>adb shell dumpsys package com.migrely.app | grep INTERNET</code></pre>
+  <p>It prints nothing.</p>
+  <p>{play_button(path)}</p></section>'''
+    return page(path, 'Check Migrely\'s privacy yourself · Migrely',
+                'Migrely has no internet permission. Check it on your own phone in two minutes, and see what each of '
+                f'its {count} permissions is for.', body)
 
 
 def privacy():
@@ -294,20 +453,56 @@ def images():
     og.save(img / 'og.png', optimize=True)
 
 
+def check_permissions():
+    """Stops the build when /privacy-check/ no longer lists what the release build asks for (BRD EC-WEB-01)."""
+    if not PERMISSION_REPORT.exists():
+        print('note: no release permission report, so the list on /privacy-check/ is not checked; run '
+              './gradlew :app:checkReleasePermissions first')
+        return
+    shipped = set(PERMISSION_REPORT.read_text().split())
+    listed = {name for _, name, _ in PERMISSIONS}
+    if shipped != listed:
+        raise SystemExit(f'/privacy-check/ lists {sorted(listed)}, but the release build asks for {sorted(shipped)}. '
+                         'Update PERMISSIONS in website/build.py.')
+
+
+def lastmods(pages):
+    """Each page's last change date, kept with its HTML's hash in website/lastmod.json (BRD D136).
+
+    Google trusts lastmod only when it is always right, so a page keeps its date until its HTML changes.
+    """
+    known = json.loads(LASTMOD.read_text()) if LASTMOD.exists() else {}
+    today = date.today().isoformat()
+    marks = {}
+    for path, content in pages.items():
+        digest = hashlib.sha256(content.encode()).hexdigest()
+        mark = known.get(path)
+        marks[path] = mark if mark and mark['sha256'] == digest else {'sha256': digest, 'lastmod': today}
+    LASTMOD.write_text(json.dumps(marks, indent=2, sort_keys=True) + '\n')
+    return {path: mark['lastmod'] for path, mark in marks.items()}
+
+
+# The pages in the sitemap, in its order; the 404 page stays out of it.
+PAGES = [('/', 'index.html', home), ('/about/', 'about/index.html', about),
+         ('/privacy-check/', 'privacy-check/index.html', privacy_check), ('/support/', 'support/index.html', support),
+         ('/privacy/', 'privacy/index.html', privacy), ('/delete-data/', 'delete-data/index.html', delete_data)]
+
+
 def main():
-    pages = {'index.html': home(), 'support/index.html': support(), 'privacy/index.html': privacy(),
-             'delete-data/index.html': delete_data(), '404.html': not_found()}
-    for rel, content in pages.items():
+    check_permissions()
+    built = {path: (rel, build()) for path, rel, build in PAGES}
+    for rel, content in [*built.values(), ('404.html', not_found())]:
         target = SITE / rel
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(content)
     images()
-    urls = ['/', '/support/', '/privacy/', '/delete-data/']
+    dates = lastmods({path: content for path, (_, content) in built.items()})
     (SITE / 'sitemap.xml').write_text(
         '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
-        + ''.join(f'  <url><loc>{BASE}{u}</loc></url>\n' for u in urls) + '</urlset>\n')
+        + ''.join(f'  <url><loc>{BASE}{path}</loc><lastmod>{dates[path]}</lastmod></url>\n' for path in built)
+        + '</urlset>\n')
     (SITE / 'robots.txt').write_text(f'User-agent: *\nAllow: /\nSitemap: {BASE}/sitemap.xml\n')
-    print('built', ', '.join(pages))
+    print('built', ', '.join(built), 'and 404.html')
 
 
 if __name__ == '__main__':

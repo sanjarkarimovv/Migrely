@@ -20,7 +20,8 @@
 
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
-body { margin: 0; background: var(--bg); color: var(--ink); font: 400 17px/1.6 var(--body); }
+/* Long words and addresses wrap rather than push the page sideways at large text sizes. */
+body { margin: 0; background: var(--bg); color: var(--ink); font: 400 17px/1.6 var(--body); overflow-wrap: anywhere; }
 img { max-width: 100%; height: auto; display: block; }
 a { color: var(--violet); text-underline-offset: 3px; }
 a:focus-visible, summary:focus-visible { outline: 3px solid var(--violet); outline-offset: 3px; border-radius: 6px; }
@@ -64,8 +65,8 @@ nav a[aria-current="page"], nav a:hover { color: var(--ink); }
 .strip img { border-radius: 18px; }
 
 .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
-.features article { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 22px; display: grid; gap: 8px; align-content: start; }
-.features p { color: var(--muted); font-size: 16px; }
+.features article, .perms article { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 22px; display: grid; gap: 8px; align-content: start; }
+.features p, .perms p { color: var(--muted); font-size: 16px; }
 
 .band { background: var(--band); }
 .ticks { margin: 0; padding: 0; list-style: none; display: grid; gap: 12px; max-width: 70ch; }
@@ -86,6 +87,13 @@ ol { margin: 0; padding-left: 22px; display: grid; gap: 8px; }
 .prose h1 { margin-bottom: 8px; }
 .prose h2 { font-size: 22px; margin-top: 18px; }
 .prose ul { margin: 0; padding-left: 22px; display: grid; gap: 6px; }
+
+code { font: 0.9em/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background: var(--violet-soft);
+  border-radius: 6px; padding: 1px 6px; }
+pre { margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px;
+  white-space: pre-wrap; }
+pre code { background: none; padding: 0; }
+.perms { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr)); gap: 14px; }
 
 .foot { border-top: 1px solid var(--line); padding-block: 32px 48px; color: var(--muted); font-size: 15px; }
 .foot .wrap { display: grid; gap: 12px; }
