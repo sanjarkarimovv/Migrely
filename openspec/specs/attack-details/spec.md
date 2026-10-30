@@ -25,11 +25,10 @@ the attack no longer exists, the screen SHALL say so and offer to go back.
 - **THEN** it shows that the migraine no longer exists and a way back
 
 ### Requirement: Exact start and end times
-The user SHALL be able to set the start, and the end of an ended attack, to any date and time with a date picker
-followed by a time picker. Times SHALL be shown and picked in the attack's time zone, in the device's 12- or 24-hour
-format. A time more than 5 minutes after now SHALL be rejected. An end before the start SHALL be rejected. Each
-rejection SHALL be shown as an inline error under the time, and nothing SHALL be stored (BRD EC-ATK-03, EC-ATK-04,
-EC-TIM-02, EC-TIM-04, EC-TIM-05).
+The user SHALL be able to set the start, and an ended attack's end, with a date picker then a time picker, in the
+attack's time zone and the device's 12- or 24-hour format. A start after now, an end more than 5 minutes after now,
+and an end before the start SHALL be rejected with an inline error under the time, and nothing SHALL be stored (BRD
+EC-ATK-03, EC-ATK-04, EC-TIM-02, EC-TIM-04, EC-TIM-05).
 
 #### Scenario: Correct the start
 - **WHEN** the user changes the start of an attack from 14:05 to 13:40
@@ -50,6 +49,10 @@ EC-TIM-02, EC-TIM-04, EC-TIM-05).
 #### Scenario: Attack in progress
 - **WHEN** the details of the attack in progress are shown
 - **THEN** its start can be changed and its end shows "In progress" without a picker
+
+#### Scenario: Start in the next few minutes
+- **WHEN** at 13:54 the user sets an ended attack's start to 13:56 and its end to 13:59
+- **THEN** an inline error under the start says the time cannot be in the future, and nothing is stored (QA #89)
 
 ### Requirement: Times never overlap another attack
 A start or end that would make the attack overlap other attacks SHALL be rejected with an inline error that names every
@@ -199,7 +202,7 @@ EC-STO-02).
 The user SHALL be able to delete an attack from its details screen without a confirmation dialog. The app SHALL return
 to the home screen and show "Migraine deleted" with "Undo" for the undo window of `in-app-messages`. Undo SHALL restore
 the attack with all its details. After the window the attack SHALL be unrecoverable and SHALL never be shown, counted or
-exported (BRD ATK-F7, EC-ATK-14, D23).
+exported. A deletion stamped after now SHALL never be offered (BRD ATK-F7, EC-ATK-14, EC-ATK-21, D23).
 
 #### Scenario: Delete and undo
 - **WHEN** the user deletes an attack and taps "Undo" on the home screen within the window
@@ -212,6 +215,15 @@ exported (BRD ATK-F7, EC-ATK-14, D23).
 #### Scenario: Delete the attack in progress
 - **WHEN** the user deletes the attack in progress
 - **THEN** the home screen leaves attack mode and offers "Undo"
+
+#### Scenario: Clock set back after a deletion
+- **WHEN** the user deleted an attack with the phone's clock three days ahead, the clock was then set back, and the
+  app is opened again
+- **THEN** neither home nor History offers "Undo" for it, and the attack is gone for good
+
+#### Scenario: A real deletion after one stamped ahead
+- **WHEN** a deletion stamped three days ahead is still stored and the user deletes another attack
+- **THEN** home offers "Undo" for that one, and "Undo" restores it
 
 ### Requirement: Accessible details screen
 Every control SHALL have a spoken label. Selected choices SHALL be announced as selected. The pain level control SHALL

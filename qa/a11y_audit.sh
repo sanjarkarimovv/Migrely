@@ -64,6 +64,33 @@ configure() { # $1 font scale, $2 rotation (0 portrait, 1 landscape)
   echo "Warning: the display did not reach $want" >&2
 }
 
+# The states tagged simulated-store (as in qa/maestro.sh) reach their screen through the debug build's simulated store
+# (D201, D203). A release build has none, so they cannot be reached there: they are reported as not run, never as
+# passed, and an audit with nothing left to run fails.
+STORE_TAG="simulated-store"
+has_tag() { # $1 flow file, $2 tag: exact match on one of the comma-separated names in "tags: [...]"
+  local tags
+  tags="$(grep -m1 '^tags:' "$1" | tr -d '[] ' | sed 's/^tags://' | tr ',' '\n')"
+  grep -qx "$2" <<<"$tags"
+}
+not_run=()
+if [[ "$(adbq shell dumpsys package com.migrely.app)" != *DEBUGGABLE* ]]; then
+  reachable=()
+  for state in "${states[@]}"; do
+    if has_tag "$ROOT/.maestro/a11y-tour/$state.yaml" "$STORE_TAG"; then
+      echo "[not run] $state: it needs the simulated store of a debug build"
+      not_run+=("$state")
+    else
+      reachable+=("$state")
+    fi
+  done
+  if [[ ${#reachable[@]} -eq 0 ]]; then
+    echo "Nothing to audit: every state asked for needs a debug build (${not_run[*]})."
+    exit 1
+  fi
+  states=("${reachable[@]}")
+fi
+
 skipped=()
 for config in "font100:1.0:0" "font200:2.0:0" "landscape:1.0:1"; do
   IFS=: read -r label scale rotation <<<"$config"
@@ -98,5 +125,8 @@ python3 -I "$ROOT/qa/a11y_audit.py" "$out" --density "$density" || status=1
 if [[ ${#skipped[@]} -gt 0 ]]; then
   echo "${#skipped[@]} state(s) could not be captured: ${skipped[*]}"
   status=1
+fi
+if [[ ${#not_run[@]} -gt 0 ]]; then
+  echo "${#not_run[@]} state(s) not run on this build: ${not_run[*]}"
 fi
 exit $status

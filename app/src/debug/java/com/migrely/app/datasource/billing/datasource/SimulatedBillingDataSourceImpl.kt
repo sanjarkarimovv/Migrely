@@ -55,6 +55,9 @@ private val storeUpdates = MutableSharedFlow<Unit>(extraBufferCapacity = UPDATES
 /** What the simulated store answers to a connection, set from adb by [SimulatedBillingReceiver]. */
 enum class SimulatedStoreMode(val key: String) {
     Available("available"),
+
+    /** Billing connects, but Google Play knows none of Migrely's products yet (BRD D110, D122). */
+    NoProducts("no-products"),
     Unavailable("unavailable"),
     Unreachable("unreachable")
 }
@@ -77,7 +80,8 @@ class SimulatedBillingDataSourceImpl(
     private val locale: () -> Locale = Locale::getDefault
 ) : BillingDataSource {
     override fun connect(): BillingConnectionDataModel = when (mode()) {
-        SimulatedStoreMode.Available -> BillingConnectionDataModel.Available
+        SimulatedStoreMode.Available,
+        SimulatedStoreMode.NoProducts -> BillingConnectionDataModel.Available
         SimulatedStoreMode.Unavailable -> BillingConnectionDataModel.Unavailable
         SimulatedStoreMode.Unreachable -> BillingConnectionDataModel.Failed
     }
@@ -87,6 +91,7 @@ class SimulatedBillingDataSourceImpl(
         oneTimeIds: List<String>
     ): List<BillingProductDataModel> {
         requireAvailable()
+        if (mode() == SimulatedStoreMode.NoProducts) return emptyList()
         val premium = BillingProductDataModel(
             PREMIUM,
             BillingProductKindDataModel.Subscription,
@@ -116,6 +121,8 @@ class SimulatedBillingDataSourceImpl(
     ): BillingPurchaseResultDataModel {
         when (mode()) {
             SimulatedStoreMode.Available -> Unit
+            // As Google Play answers ITEM_UNAVAILABLE for a product it does not know.
+            SimulatedStoreMode.NoProducts,
             SimulatedStoreMode.Unavailable -> return BillingPurchaseResultDataModel.Unavailable
             SimulatedStoreMode.Unreachable -> return BillingPurchaseResultDataModel.Failed
         }
@@ -130,7 +137,7 @@ class SimulatedBillingDataSourceImpl(
     }
 
     override fun acknowledge(purchaseToken: String): Boolean {
-        if (mode() != SimulatedStoreMode.Available) return false
+        if (connect() != BillingConnectionDataModel.Available) return false
         save(
             stored().map {
                 if (it.purchaseToken ==
@@ -294,7 +301,7 @@ class SimulatedBillingDataSourceImpl(
 
     private fun requireAvailable() {
         when (mode()) {
-            SimulatedStoreMode.Available -> Unit
+            SimulatedStoreMode.Available, SimulatedStoreMode.NoProducts -> Unit
             SimulatedStoreMode.Unavailable -> throw BillingUnavailableDataException()
             SimulatedStoreMode.Unreachable -> throw BillingDataException(
                 "The simulated store is unreachable"

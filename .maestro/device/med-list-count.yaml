@@ -1,0 +1,10 @@
+# Device scenario step: My medications lists NAME exactly once.
+appId: com.migrely.app
+---
+- launchApp
+- runFlow: ../subflows/open-my-medications.yaml
+- assertVisible: "${NAME}.*Opens it to edit\\."
+- assertNotVisible:
+    text: "${NAME}.*Opens it to edit\\."
+    index: 1
+- stopApp

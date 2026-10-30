@@ -1,0 +1,26 @@
+# Device scenario step: on returning home the patterns paywall opens once, with a headline that names no number;
+# Close leads home, and the next start shows no paywall (D110).
+appId: com.migrely.app
+---
+- launchApp:
+    stopApp: false
+- extendedWaitUntil:
+    visible: "See your patterns"
+    timeout: 15000
+- assertVisible: "Your diary now has enough entries to show patterns\\. Premium shows what your migraines have in common\\."
+- assertNotVisible: ".*[0-9]+ migraines?.*"
+- tapOn: "Close"
+- extendedWaitUntil:
+    visible: "Today: .*"
+    timeout: 10000
+- stopApp
+- launchApp
+- extendedWaitUntil:
+    visible: "Today: .*"
+    timeout: 15000
+- extendedWaitUntil:
+    visible: "See your patterns"
+    timeout: 6000
+    optional: true
+- assertNotVisible: "See your patterns"
+- stopApp

@@ -6,6 +6,10 @@ appId: com.migrely.app
 - inputText: "${NAME}"
 - hideKeyboard
 - tapOn: "${TYPE}"
+# At a 200% font or in landscape the button is below the types.
+- scrollUntilVisible:
+    element: "Add and log"
+    direction: DOWN
 - tapOn: "Add and log"
 - extendedWaitUntil:
     visible: "${NAME} logged at .*"

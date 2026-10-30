@@ -19,3 +19,7 @@ flows:
   - "month-stats/*"
   - "reminders/*"
   - "medication-overuse/*"
+  - "onboarding/*"
+  - "app-settings/*"
+  - "data-backup/*"
+  - "subscription/*"

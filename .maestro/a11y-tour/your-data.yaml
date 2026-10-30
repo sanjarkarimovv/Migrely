@@ -1,0 +1,9 @@
+# Accessibility tour state: Settings › Your data (D203).
+appId: com.migrely.app
+---
+- runFlow: ../subflows/launch-clean.yaml
+- tapOn: "Settings"
+- tapOn: "Your data.*"
+- extendedWaitUntil:
+    visible: "Export a backup \\(JSON\\).*"
+    timeout: 5000

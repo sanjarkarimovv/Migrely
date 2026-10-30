@@ -1,0 +1,17 @@
+# A manual Go/No-Go step on the release build: with no Premium products from Google Play, no paywall shows itself after
+# onboarding, and a tap on Doctor report shows why Premium cannot be bought, with no buy button (D110, EC-BIL-11).
+appId: com.migrely.app
+---
+- launchApp:
+    clearState: true
+- runFlow: no-self-paywall.yaml
+- tapOn: ".*\\. Opens History\\."
+- tapOn: "Doctor report"
+- extendedWaitUntil:
+    visible: "Premium isn.t available in your region yet|Google Play can.t be reached right now"
+    timeout: 15000
+- assertNotVisible: "Start free trial|Subscribe|Buy once"
+- tapOn: "Close"
+- extendedWaitUntil:
+    visible: "Doctor report"
+    timeout: 5000

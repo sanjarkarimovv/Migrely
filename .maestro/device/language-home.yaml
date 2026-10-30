@@ -1,0 +1,8 @@
+# Device scenario step (qa/split_apks.sh): the app opened again in the language just set, left on home (the script reads
+# today's weekday, month and date order).
+appId: com.migrely.app
+---
+- launchApp
+- extendedWaitUntil:
+    visible: ".*\\. Opens History\\."
+    timeout: 15000

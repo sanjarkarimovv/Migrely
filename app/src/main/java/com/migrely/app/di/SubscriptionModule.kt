@@ -52,6 +52,7 @@ import com.migrely.app.subscription.ui.mapper.PaywallTriggerNotificationUiMapper
 import com.migrely.app.subscription.ui.mapper.PaywallViewStateUiMapper
 import com.migrely.app.subscription.ui.mapper.PremiumPlanUiMapper
 import com.migrely.app.subscription.ui.mapper.PremiumSectionNotificationUiMapper
+import com.migrely.app.subscription.ui.mapper.PremiumSectionShownResolver
 import com.migrely.app.subscription.ui.mapper.PremiumSectionViewStateUiMapper
 import com.migrely.app.subscription.ui.mapper.PremiumStatusUiMapper
 import com.migrely.app.subscription.ui.mapper.TrialBannerViewStateUiMapper
@@ -242,6 +243,7 @@ internal object SubscriptionModule {
         ),
         purchaseUpdates = purchaseUpdatesWatcher.updates,
         premiumSectionViewStateUiMapper = PremiumSectionViewStateUiMapper(premiumStatusUiMapper),
+        premiumSectionShownResolver = PremiumSectionShownResolver(),
         navigationMapper = PremiumSectionNavigationEventDestinationMapper(),
         notificationMapper = PremiumSectionNotificationUiMapper()
     )

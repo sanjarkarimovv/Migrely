@@ -11,7 +11,12 @@
 # med_preventive, med_two_waiting, med_link_home, med_overuse, keyboard_home, keyboard_history, keyboard_rtl,
 # landscape_band, mark_travel, mark_earliest_month, stats_counting, stats_chronic, stats_progress, reminder_daily,
 # reminder_permission, reminder_effect, reminder_replan (restarts the emulator), med_only_history,
-# message_overlap (known bug #52), upgrade.
+# message_tap_guard (#52), theme_check, onboarding_states, delete_all_data, privacy_link, backup_export, backup_import,
+# message_duration (#56), premium_store_states, premium_no_products, premium_pending, premium_plans, premium_entitlement, premium_offline,
+# trial_banner, paywall_self_show, report_three_months, report_counting, report_heavy, insights, upgrade, release_apk.
+# On demand only: backup_android (bmgr).
+# QA_APK=<apk> names the build under test (default: this worktree's debug APK), for example a release branch's.
+# release_apk needs QA_RELEASE_APK=<release APK>; without it, it is reported as not run.
 # upgrade needs QA_OLD_APK=<older debug APK of com.migrely.app>; without it, it is reported as not run.
 set -euo pipefail
 
@@ -19,6 +24,7 @@ QA_SERIAL="emulator-5580"
 APP="com.migrely.app"
 export MAESTRO_CLI_NO_ANALYTICS=1
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+APK="${QA_APK:-$ROOT/app/build/outputs/apk/debug/app-debug.apk}"
 ADB="${ANDROID_HOME:-$HOME/Library/Android/sdk}/platform-tools/adb"
 FLOWS="$ROOT/.maestro/device"
 adbq() { "$ADB" -s "$QA_SERIAL" "$@"; }
@@ -31,12 +37,24 @@ fi
 source "$ROOT/qa/lib.sh"
 qa_lock_device
 qa_check_baseline
+# The checks that read the APK (D113, D115) and the reinstalls must be about the build on the phone.
+AAPT2="$(ls -d "${ANDROID_HOME:-$HOME/Library/Android/sdk}"/build-tools/*/aapt2 | sort -V | tail -1)"
+BUILT_VERSION="$("$AAPT2" dump badging "$APK" | sed -nE "1s/.*versionCode='([0-9]+)'.*versionName='([^']*)'.*/\1 \2/p")"
+INSTALLED_PACKAGE="$(adbq shell dumpsys package "$APP" | tr -d '\r')"
+INSTALLED_VERSION="$(sed -nE 's/^ *versionCode=([0-9]+).*/\1/p' <<<"$INSTALLED_PACKAGE" | head -1) $(sed -nE 's/^ *versionName=(.*)/\1/p' <<<"$INSTALLED_PACKAGE" | head -1)"
+if [[ "$BUILT_VERSION" != "$INSTALLED_VERSION" ]]; then
+  echo "The phone has $APP $INSTALLED_VERSION, but the APK under test is $BUILT_VERSION ($APK)."
+  echo "Install it (qa/maestro.sh --install) or set QA_APK to the APK that is installed."
+  exit 2
+fi
 ORIGINAL_AUTO_TIME="$(adbq shell settings get global auto_time | tr -d '\r')"
 ORIGINAL_ZONE="$(adbq shell getprop persist.sys.timezone | tr -d '\r')"
 ORIGINAL_TIMEOUT="$(adbq shell settings get secure accessibility_interactive_ui_timeout_ms | tr -d '\r')"
+ORIGINAL_TEXT_TIMEOUT="$(adbq shell settings get secure accessibility_non_interactive_ui_timeout_ms | tr -d '\r')"
 ORIGINAL_USER_ROTATION="$(adbq shell settings get system user_rotation | tr -d '\r')"
 ORIGINAL_AUTO_ROTATE="$(adbq shell settings get system accelerometer_rotation | tr -d '\r')"
 ORIGINAL_ANIMATOR="$(adbq shell settings get global animator_duration_scale | tr -d '\r')"
+ORIGINAL_NIGHT="$(adbq shell cmd uimode night 2>/dev/null | tr -d '\r' | sed 's/.*: //')"
 ORIGINAL_NOTIFICATIONS="$(adbq shell dumpsys package "$APP" | grep -q "POST_NOTIFICATIONS: granted=true" && echo grant || echo reset)"
 # "Locales for <app> for user 0 are [iw]" -> "iw"; empty means the app follows the system language.
 ORIGINAL_APP_LOCALES=""
@@ -54,11 +72,26 @@ restore() {
   adbq shell cmd alarm set-time "$(($(date +%s) * 1000))" >/dev/null 2>&1
   qa_restore_setting global auto_time "$ORIGINAL_AUTO_TIME"
   qa_restore_setting secure accessibility_interactive_ui_timeout_ms "$ORIGINAL_TIMEOUT"
+  qa_restore_setting secure accessibility_non_interactive_ui_timeout_ms "$ORIGINAL_TEXT_TIMEOUT"
   adbq shell cmd locale set-app-locales "$APP" --locales "$ORIGINAL_APP_LOCALES" >/dev/null 2>&1
   qa_restore_setting system user_rotation "$ORIGINAL_USER_ROTATION"
   qa_restore_setting system accelerometer_rotation "$ORIGINAL_AUTO_ROTATE"
   qa_restore_setting global animator_duration_scale "$ORIGINAL_ANIMATOR"
   notifications_permission "$ORIGINAL_NOTIFICATIONS" >/dev/null 2>&1
+  [[ -n "$ORIGINAL_NIGHT" ]] && adbq shell cmd uimode night "$ORIGINAL_NIGHT" >/dev/null 2>&1
+  # The screen dumps this script writes to shared storage would show in the phone's Files app.
+  adbq shell "rm -f /sdcard/qa-*.xml" >/dev/null 2>&1
+  # Files the backup scenarios put in Download.
+  adbq shell "rm -f /sdcard/Download/migrely-* /sdcard/Download/seed-*.json /sdcard/Download/broken.json /sdcard/Download/newer.json /sdcard/Download/older.json /sdcard/Download/add.json" >/dev/null 2>&1
+  # A scenario stopped half-way may leave a browser disabled (privacy_link).
+  enable_browsers
+  # A scenario stopped half-way may leave the simulated store unavailable or unreachable.
+  adbq shell am broadcast -p "$APP" -f 0x20 -a com.migrely.app.debug.SIMULATED_STORE --es command available >/dev/null 2>&1
+  if [[ -n "${BMGR_TRANSPORT:-}" ]]; then
+    adbq shell bmgr transport "$BMGR_TRANSPORT" >/dev/null 2>&1
+    [[ "$BMGR_ENABLED" == *disabled* ]] && adbq shell bmgr enable false >/dev/null 2>&1
+    adbq shell settings delete secure backup_local_transport_parameters >/dev/null 2>&1
+  fi
   echo "Restored: clock $(adbq shell date | tr -d '\r'), zone $ORIGINAL_ZONE, auto_time $ORIGINAL_AUTO_TIME"
   qa_unlock_device
 }
@@ -299,26 +332,37 @@ expect_planned() { # $1 zone, $2 HH:MM: the app's daily job runs at the next $2 
   local got want
   got="$(adbq shell dumpsys jobscheduler | python3 -I -c "import re, sys
 t = sys.stdin.read()
-m = re.search(r'JOB [^\n]*@androidx\.work\.systemjobscheduler@$APP/[^\n]*\n(.*?)\n  JOB ', t + '\n  JOB ', re.S)
-e = m and re.search(r'Run time: earliest=([-+])(?:(\d+)d)?(?:(\d+)h)?(?:(\d+)m)?', m.group(1))
-print('' if not e else (1 if e.group(1) == '+' else -1) * (int(e.group(2) or 0) * 1440 + int(e.group(3) or 0) * 60 + int(e.group(4) or 0)))")"
+t = t + '\n  JOB '
+for m in re.finditer(r'JOB [^\n]*@androidx\.work\.systemjobscheduler@$APP/[^\n]*\n(.*?)(?=\n  JOB )', t, re.S):
+    e = re.search(r'Run time: earliest=([-+])(?:(\d+)d)?(?:(\d+)h)?(?:(\d+)m)?', m.group(1))
+    if e: print((1 if e.group(1) == '+' else -1) * (int(e.group(2) or 0) * 1440 + int(e.group(3) or 0) * 60 + int(e.group(4) or 0)))")"
   want="$(python3 -I -c "import sys, datetime as d, zoneinfo as z
 zone = z.ZoneInfo(sys.argv[1]); now = d.datetime.fromtimestamp(int(sys.argv[3]), zone)
 h, m = map(int, sys.argv[2].split(':')); t = now.replace(hour=h, minute=m, second=0, microsecond=0)
 t = t if t > now else t + d.timedelta(days=1)
 print(int((t - now).total_seconds() // 60))" "$1" "$2" "$(device_seconds)")"
   if [[ -z "$got" ]]; then echo "  FAILED: no planned daily job"; return 1; fi
-  if (( got - want > 5 || want - got > 5 )); then
-    echo "  FAILED: the daily job runs in $got min, expected about $want min (the next $2 in $1)"
-    return 1
-  fi
-  echo "    daily job planned in $got min (the next $2 in $1: $want min)"
+  # Other jobs ("Did it help?") may be planned too: one of them must be the daily one.
+  local minutes
+  for minutes in $got; do
+    if (( minutes - want <= 5 && want - minutes <= 5 )); then
+      echo "    daily job planned in $minutes min (the next $2 in $1: $want min)"
+      return 0
+    fi
+  done
+  echo "  FAILED: no job runs at the next $2 in $1 (about $want min); planned: $(echo $got)"
+  # WorkManager's own view (debug build), to tell a missing plan from a job not yet handed to JobScheduler.
+  adbq shell "run-as $APP sqlite3 no_backup/androidx.work.workdb 'select n.name, s.state, s.initial_delay / 60000, s.last_enqueue_time from workname n join workspec s on s.id = n.work_spec_id;'" 2>/dev/null |
+    while IFS='|' read -r name state delay enqueued; do
+      echo "    WorkManager: $name state $state, ${delay} min after $(date -r $((enqueued / 1000)) +%H:%M) (device $(adbq shell date +%H:%M </dev/null | tr -d '\r'))"
+    done
+  return 1
 }
 expect_job_in() { # $1 minutes: one of the app's jobs is planned to run in about that many minutes (within 5)
   local got
   got="$(adbq shell dumpsys jobscheduler | python3 -I -c "import re, sys
 t = sys.stdin.read() + '\n  JOB '
-for m in re.finditer(r'JOB [^\n]*@androidx\.work\.systemjobscheduler@$APP/[^\n]*\n(.*?)\n  JOB ', t, re.S):
+for m in re.finditer(r'JOB [^\n]*@androidx\.work\.systemjobscheduler@$APP/[^\n]*\n(.*?)(?=\n  JOB )', t, re.S):
     e = re.search(r'Run time: earliest=([-+])(?:(\d+)d)?(?:(\d+)h)?(?:(\d+)m)?', m.group(1))
     if e: print((1 if e.group(1) == '+' else -1) * (int(e.group(2) or 0) * 1440 + int(e.group(3) or 0) * 60 + int(e.group(4) or 0)))")"
   local minutes
@@ -357,6 +401,78 @@ for n in ET.fromstring(sys.stdin.read()).iter('node'):
   return 1
 }
 open_app() { adbq shell monkey -p "$APP" -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1; sleep 4; }
+# The package of the activity in front, from the activity manager (topResumedActivity, or mResumedActivity before
+# Android 10).
+resumed_package() {
+  adbq shell dumpsys activity activities | tr -d '\r' | grep -m1 -E "topResumedActivity|mResumedActivity" |
+    grep -oE "[a-zA-Z0-9_.]+/[a-zA-Z0-9_.\$]+" | head -1 | cut -d/ -f1
+}
+# Browsers that privacy_link disabled: restore() and the loop after each scenario enable them again.
+DISABLED_BROWSERS=()
+enable_browsers() {
+  local pkg
+  for pkg in ${DISABLED_BROWSERS[@]+"${DISABLED_BROWSERS[@]}"}; do adbq shell pm enable "$pkg" >/dev/null 2>&1; done
+  DISABLED_BROWSERS=()
+}
+browsers_for() { # $1 URL: the packages whose activities open it as a link from an app
+  adbq shell cmd package query-activities --brief -a android.intent.action.VIEW -c android.intent.category.BROWSABLE \
+    -d "$1" 2>/dev/null | tr -d '\r' | sed -n 's|^ *\([a-zA-Z0-9_.]*\)/.*|\1|p' | sort -u
+}
+
+qa_store() { # $1 a simulated store command (debug builds, D201, D122): available, no-products, unavailable,
+  # unreachable, reset, complete-pending or decline-pending. -f 0x20 reaches a stopped app too.
+  adbq shell am broadcast -p "$APP" -f 0x20 -a com.migrely.app.debug.SIMULATED_STORE --es command "$1" >/dev/null
+  sleep 1
+  case "$1" in
+    available | no-products | unavailable | unreachable)
+      local store
+      store="$(adbq shell run-as "$APP" cat shared_prefs/migrely_simulated_store.xml 2>/dev/null | tr -d '\r')"
+      [[ "$store" == *"name=\"mode\">$1<"* ]] || { echo "  FAILED: the simulated store did not take \"$1\""; return 1; }
+      ;;
+  esac
+}
+
+shared_prefs_files() { # the shared-preferences files the app has written, one name a line
+  adbq shell run-as "$APP" ls shared_prefs 2>/dev/null | tr -d '\r'
+}
+
+pull_report() { # $1 local path: the newest finished report in the app's cache (cache/reports/<id>/<name>.pdf)
+  local name
+  name="$(adbq shell "run-as $APP sh -c 'ls -t \$(find cache/reports -name \"*.pdf\")'" 2>/dev/null | tr -d '\r' | head -1)"
+  [[ "$name" == *.pdf ]] || { echo "  FAILED: no report in cache/reports"; return 1; }
+  adbq exec-out run-as "$APP" cat "$name" >"$1"
+  [[ -s "$1" ]] || { echo "  FAILED: the report $name could not be read"; return 1; }
+  echo "    report: ${name##*/} ($(wc -c <"$1" | tr -d ' ') bytes)"
+}
+
+screen_luminance() { # the average luminance (0-255) of the screen's left margin, where only the background shows
+  adbq exec-out screencap -p >"$out/screen-$STEP.png"
+  python3 -I -c "import sys
+from pathlib import Path
+sys.path.insert(0, sys.argv[2])
+from a11y_audit import read_png
+rows, bpp = read_png(Path(sys.argv[1]))
+px = [rows[y][x * bpp:x * bpp + 3] for y in range(400, 2000, 20) for x in range(5, 30, 5)]
+print(int(sum(0.2126 * p[0] + 0.7152 * p[1] + 0.0722 * p[2] for p in px) / len(px)))" "$out/screen-$STEP.png" "$ROOT/qa"
+}
+expect_theme() { # $1 light or dark: the screen in front, measured on its background; the app must be in front
+  local l focus
+  sleep 2
+  focus="$(adbq shell dumpsys window | grep -m1 mCurrentFocus | tr -d '\r')"
+  [[ "$focus" == *"$APP"* ]] || { echo "  FAILED: the app is not in front ($focus)"; return 1; }
+  l="$(screen_luminance)"
+  [[ "$l" =~ ^[0-9]+$ ]] || { echo "  FAILED: the screen could not be measured ('$l')"; return 1; }
+  if [[ "$1" == light && $l -gt 150 ]] || [[ "$1" == dark && $l -lt 100 ]]; then echo "    $1 (background luminance $l)"; return 0; fi
+  echo "  FAILED: expected $1, background luminance $l"
+  return 1
+}
+
+app_job_count() { # how many jobs the app has registered with JobScheduler (WorkManager's namespace)
+  local dump
+  dump="$(adbq shell dumpsys jobscheduler)"
+  python3 -I -c "import re, sys
+print(len(set(re.findall(r'JOB [^\n]*:u0a\d+/(\d+): \S+ @androidx\.work\.systemjobscheduler@' + re.escape(sys.argv[1]) + '/', sys.stdin.read()))))" "$APP" <<<"$dump"
+}
 
 tab_until() { # $1 extended regex, $2 most Tabs: press Tab until the focused label matches
   local label="" n
@@ -584,6 +700,7 @@ scenario_med_link_home() {
 # Covers: medication-overuse › A standing indicator in History › After an undo
 # Covers: medication-overuse › A standing indicator in History › A past month
 # Covers: medication-overuse › A standing indicator in History › No migraine logged
+# Covers: medication-overuse › A standing indicator in History › One day
 scenario_med_overuse() {
   echo "Scenario med_overuse: painkillers on 13 days warn softly, \"Got it\" hides it, 15 days warn about the doctor; History's \"Last 30 days\" (D59)"
   local d
@@ -698,9 +815,11 @@ scenario_keyboard_history() {
   expect_focus SHIFT_TAB "[^0-9]23$DAY_CELL" || return 1
 }
 
-# The mirrored arrows are in the requirement "Arrow keys move between days"; it has no right-to-left scenario.
+# Until a right-to-left language ships, a Hebrew phone gets the app's English, left-to-right layout (D117, EC-UX-05):
+# Right is the next day and Left the previous one, as on an English phone. The layout keeps start and end, so it will
+# mirror once a right-to-left language ships (the requirement "Arrow keys move between days", D38).
 scenario_keyboard_rtl() {
-  echo "Scenario keyboard_rtl: the arrows are mirrored in a right-to-left language (Hebrew), on the 24th (D38)"
+  echo "Scenario keyboard_rtl: a right-to-left phone (Hebrew) gets the English, left-to-right layout, on the 24th (D117)"
   set_clock_millis "$(day_millis -9)" || return 1
   run_flow clean || return 1
   adbq shell cmd locale set-app-locales "$APP" --locales iw >/dev/null
@@ -708,8 +827,8 @@ scenario_keyboard_rtl() {
   local ok=0
   expect_focus TAB "^Settings" && expect_focus TAB "^Period today" && expect_focus TAB "Opens History\.$" &&
     expect_focus TAB "^Today, .*$(day_re 24)" &&
-    expect_focus DPAD_RIGHT "$(day_re 23)" && expect_focus DPAD_LEFT "$(day_re 24)" &&
-    expect_focus DPAD_LEFT "$(day_re 24)" || ok=1
+    expect_focus DPAD_LEFT "$(day_re 23)" && expect_focus DPAD_RIGHT "$(day_re 24)" &&
+    expect_focus DPAD_RIGHT "$(day_re 24)" || ok=1
   adbq shell cmd locale set-app-locales "$APP" --locales "$ORIGINAL_APP_LOCALES" >/dev/null
   return $ok
 }
@@ -1015,30 +1134,889 @@ for n in ET.fromstring(sys.stdin.read()).iter('node'):
         print(*re.findall(r'\d+', n.get('bounds'))); break" "$1"
 }
 
-# Known bug #52: the message's Undo sits on top of History's top-bar actions, so a tap meant for Undo can open them.
-# It reports "KNOWN BUG #52 still reproduces" without failing the run, and "NOW PASSES" once the boxes stop overlapping.
-scenario_message_overlap() {
-  echo "Scenario message_overlap: History's Undo must not sit on top of its top-bar actions (#52)"
-  local undo action overlap="" i
-  long_undo_window
-  run_flow history-deleted-message || { default_undo_window; return 1; }
-  undo="$(node_bounds "Undo the deletion")"
-  default_undo_window
-  [[ -n "$undo" ]] || { echo "  FAILED: no Undo on screen"; return 1; }
-  for i in $(seq 1 15); do [[ -z "$(node_bounds "Undo the deletion")" ]] && break; sleep 3; done
-  for action in "Insights" "Doctor report"; do
-    local box
-    box="$(node_bounds "$action")"
-    [[ -n "$box" ]] || continue
-    if python3 -I -c "import sys; a = list(map(int, sys.argv[1].split())); b = list(map(int, sys.argv[2].split()))
-sys.exit(0 if a[0] < b[2] and b[0] < a[2] and a[1] < b[3] and b[1] < a[3] else 1)" "$undo" "$box"; then
-      overlap+=" $action [$box]"
-    fi
+# Covers: in-app-messages › A message never passes taps to what lies under it › Undo just as the message goes
+# Covers: in-app-messages › A message never passes taps to what lies under it › Afterwards
+# History's Undo sits on top of the top-bar actions (#52). A tap there just after the message leaves must reach nothing
+# (a guard under the message, 800 ms); a tap later must open Doctor report as usual. Taps go through adb, timed from
+# the tap on "Delete migraine" (the undo message lasts 5 s), at the centre of "Doctor report" where Undo overlaps it.
+scenario_message_tap_guard() {
+  echo "Scenario message_tap_guard: a tap where Undo was, just after the message leaves, opens nothing (#52, D114)"
+  local delete offset screen box point guarded=0
+  run_flow history-open || return 1
+  box="$(node_bounds "Doctor report")"
+  [[ -n "$box" ]] || { echo "  FAILED: no \"Doctor report\" in History's top bar"; return 1; }
+  set -- $box
+  point="$((($1 + $3) / 2)) $((($2 + $4) / 2))"
+  for offset in 5.2 5.5 5.8 7.5; do
+    run_flow history-delete-ready || return 1
+    delete="$(point_in 'Delete migraine' 0.5)"
+    [[ -n "$delete" ]] || { echo "  FAILED: \"Delete migraine\" not found"; return 1; }
+    adbq shell "input tap $delete; sleep $offset; input tap $point"
+    sleep 2
+    screen="$(focused_screen)"
+    echo "    tap at ($point) ${offset} s after the delete: $screen"
+    case "$screen" in
+      "doctor report") [[ "$offset" == "7.5" ]] || { echo "  FAILED: the tap reached Doctor report under the message (#52)"; return 1; } ;;
+      "history (deleted)") [[ "$offset" != "7.5" ]] && guarded=$((guarded + 1)) ;;
+      "history (undone)") ;;
+      *) echo "  FAILED: an unexpected screen after the tap"; return 1 ;;
+    esac
+    [[ "$offset" != "7.5" || "$screen" == "doctor report" ]] || { echo "  FAILED: the late tap did not open Doctor report (control)"; return 1; }
   done
-  if [[ -n "$overlap" ]]; then
-    echo "  KNOWN BUG #52 still reproduces: Undo [$undo] overlaps$overlap"
+  [[ $guarded -ge 1 ]] || { echo "  FAILED: every early tap landed on Undo, so the guard was never reached"; return 1; }
+}
+
+focused_screen() { # "doctor report", "history (undone)", "history (deleted)" or "unknown", from what is on screen
+  local xml
+  adbq shell rm -f /sdcard/qa-screen.xml
+  adbq shell uiautomator dump /sdcard/qa-screen.xml >/dev/null
+  xml="$(adbq exec-out cat /sdcard/qa-screen.xml)"
+  # A free user's tap on Doctor report opens its paywall (D108); for the guard either means the tap got through.
+  if grep -qE 'text="(Create report|A report for your doctor)"' <<<"$xml"; then echo "doctor report"
+  elif grep -q 'Opens its details' <<<"$xml"; then echo "history (undone)"
+  elif grep -q 'text="Log your first migraine"' <<<"$xml"; then echo "history (deleted)"
+  else echo "unknown"; fi
+}
+
+# Covers: app-settings › Theme › Light
+# Covers: app-settings › Theme › An attack in progress
+scenario_theme_check() {
+  echo "Scenario theme_check: Light at once and at the next start; attack mode and its screens dark; Match the phone (D94)"
+  set_clock_millis "$(when_millis 0 15 12:00)" || return 1
+  run_flow clean || return 1
+  open_app
+  expect_theme dark || return 1
+  run_flow_env theme-choose THEME=Light || return 1
+  echo "    Settings, right after choosing Light:"; expect_theme light || return 1
+  adbq shell am force-stop "$APP"; open_app
+  echo "    home at the next start:"; expect_theme light || return 1
+  run_flow attack-start-keep || return 1
+  open_app
+  echo "    attack mode:"; expect_theme dark || return 1
+  run_flow attack-details-open || return 1
+  echo "    details opened from attack mode:"; expect_theme dark || return 1
+  adbq shell input keyevent BACK
+  run_flow attack-end || return 1
+  open_app
+  echo "    home after the attack:"; expect_theme light || return 1
+  run_flow_env theme-choose "THEME=Match the phone" || return 1
+  adbq shell cmd uimode night no >/dev/null
+  open_app
+  expect_theme light || return 1
+  adbq shell cmd uimode night yes >/dev/null
+  open_app
+  expect_theme dark || return 1
+  adbq shell cmd uimode night "$ORIGINAL_NIGHT" >/dev/null
+}
+
+# Covers: onboarding › Four skippable steps › Answering
+# Covers: onboarding › The daily reminder offer › Turning it on
+# Covers: onboarding › Shown once, to a new user › Starting an attack from the shortcut
+# Covers: onboarding › Shown once, to a new user › An update
+scenario_onboarding_states() {
+  echo "Scenario onboarding_states: answers stored, the reminder offer, the attack shortcut and an update (D76-D80)"
+  local prefs
+  set_clock_millis "$(when_millis 0 15 12:00)" || return 1
+  run_flow onboarding-answer || return 1
+  expect_planned Asia/Tashkent 20:00 || return 1
+  # The answers, as the debug build stores them (read only).
+  prefs="$(adbq shell run-as "$APP" cat shared_prefs/migrely_preferences.xml 2>/dev/null | tr -d '\r')"
+  local want
+  for want in 'name="goal">find_triggers<' 'name="attack_frequency">4_to_14<' 'name="period_tracking" value="false"' 'name="onboarding_finished" value="true"'; do
+    [[ "$prefs" == *"$want"* ]] || { echo "  FAILED: the saved answers lack $want"; return 1; }
+  done
+  echo "    answers saved: triggers, 4 to 14 a month, no period tracking, onboarding finished"
+  # The launcher shortcut (res/xml/shortcuts.xml) names the activity, so the intent does too.
+  adbq shell pm clear "$APP" >/dev/null
+  adbq shell am start -a com.migrely.app.action.START_ATTACK -n "$(adbq shell cmd package resolve-activity --brief "$APP" | tail -1 | tr -d '\r')" >/dev/null
+  run_flow onboarding-shortcut || return 1
+  # An update over a version with entries and no onboarding answer saved yet opens home.
+  run_flow clean || return 1
+  run_flow_env attack-start LEVEL= || return 1
+  run_flow attack-end || return 1
+  adbq shell run-as "$APP" ls shared_prefs/migrely_preferences.xml >/dev/null 2>&1 || { echo "  FAILED: no preferences to remove"; return 1; }
+  adbq shell run-as "$APP" rm -f shared_prefs/migrely_preferences.xml
+  ! adbq shell run-as "$APP" ls shared_prefs/migrely_preferences.xml >/dev/null 2>&1 || { echo "  FAILED: the preferences are still there"; return 1; }
+  "$ADB" -s "$QA_SERIAL" install -r "$APK" 2>&1 | grep -q Success || { echo "  FAILED: the update did not install"; return 1; }
+  run_flow update-no-onboarding || return 1
+}
+
+# Covers: app-settings › Delete all data › Deleted
+scenario_delete_all_data() {
+  echo "Scenario delete_all_data: DELETE empties records, copies and reminders and restarts into onboarding, dark (D96)"
+  notifications_permission grant
+  adbq shell "rm -f /sdcard/Download/migrely-*" >/dev/null
+  set_clock_millis "$(when_millis 0 15 12:00)" || return 1
+  run_flow backup-data || return 1
+  run_flow backup-export || return 1
+  local name
+  name="$(basename "$(adbq shell 'ls -t /sdcard/Download/migrely-2*.json | head -1' | tr -d '\r')")"
+  # A Replace leaves an automatic copy behind.
+  import_and_expect "$name" "2 migraines, 1 medication and 1 marked day" Replace "Backup imported: 2 migraines\." || return 1
+  run_flow_env copy-row-check SHOWN=true || return 1
+  run_flow_env theme-set THEME=Light || return 1
+  run_flow reminder-on-granted || return 1
+  expect_switch "Daily reminder" true || return 1
+  key BACK; key BACK
+  adbq shell input keyevent HOME
+  expect_planned Asia/Tashkent 20:00 || return 1
+  run_flow delete-everything || return 1
+  expect_theme dark || return 1
+  local jobs
+  jobs="$(app_job_count)"
+  [[ "$jobs" == 0 ]] || { echo "  FAILED: $jobs job(s) still planned after Delete all data"; return 1; }
+  echo "    no planned job"
+  run_flow after-delete-check || return 1
+  run_flow_env copy-row-check SHOWN=false || return 1
+  # Nothing comes back at the next start.
+  run_flow after-delete-relaunch || return 1
+}
+
+pull_newest() { # $1 glob in /sdcard/Download (for example "migrely-*.json"), $2 local path: pull the newest match
+  local name
+  name="$(adbq shell "ls -t /sdcard/Download/$1 2>/dev/null | head -1" | tr -d '\r')"
+  [[ -n "$name" ]] || { echo "  FAILED: no $1 in Download"; return 1; }
+  adbq pull "$name" "$2" >/dev/null || { echo "  FAILED: could not pull $name"; return 1; }
+  echo "    pulled ${name##*/}"
+}
+
+seed_import() { # $1 seed name, $2 "Import" (an empty phone) or "Replace": the seed, written for the emulator's date by
+  # qa/seed_backup.py, goes to Download and through Your data's import (D202); what the app must show is in
+  # $out/seed-$1.expected
+  local today file="seed-$1.json"
+  today="$(adbq shell date +%F | tr -d '\r')"
+  python3 -I "$ROOT/qa/seed_backup.py" "$1" "$out/$file" --today "$today" \
+    --zone "$(adbq shell getprop persist.sys.timezone | tr -d '\r')" >"$out/seed-$1.expected" ||
+    { echo "  FAILED: qa/seed_backup.py $1"; return 1; }
+  adbq push "$out/$file" "/sdcard/Download/$file" >/dev/null
+  import_and_expect "$file" ".*" "$2" "Backup imported: [0-9]+ migraines?.*" || return 1
+}
+
+start_attack_shortcut() { # the launcher shortcut "Start migraine": straight into attack mode
+  adbq shell am start -a com.migrely.app.action.START_ATTACK \
+    -n "$(adbq shell cmd package resolve-activity --brief "$APP" | tail -1 | tr -d '\r')" >/dev/null
+}
+
+tap_time() { perl -MTime::HiRes=time -e 'printf "%.2f", time'; }
+
+# Also checks: in-app-messages › Message durations by kind (Your data's information message; retest of #56)
+# The file is tapped through adb, and screenshots taken back to back from that tap (about 8 a second) show when the
+# message comes and goes (qa/message_timing.py). An information message stays 8 s, or the accessibility timeout for
+# messages to read when it is longer (accessibility_non_interactive_ui_timeout_ms; both timeouts are set to 20 s, as
+# "Time to take action" sets them).
+scenario_message_duration() {
+  echo "Scenario message_duration: a Your data message stays 8 s, or the accessibility timeout when longer (#56, EC-UX-16)"
+  local timeout box sent end frames result stayed low high ok=0
+  run_flow clean || return 1
+  adbq shell "echo 'This is a shopping list, not a backup.' > /sdcard/Download/broken.json"
+  for timeout in default 20; do
+    if [[ "$timeout" == 20 ]]; then
+      adbq shell settings put secure accessibility_interactive_ui_timeout_ms 20000
+      adbq shell settings put secure accessibility_non_interactive_ui_timeout_ms 20000
+      low=19.5; high=21.5
+    else
+      default_undo_window
+      put_or_delete secure accessibility_non_interactive_ui_timeout_ms "$ORIGINAL_TEXT_TIMEOUT"
+      low=7.5; high=9
+    fi
+    run_flow_env import-pick-ready FILE=broken.json || { ok=1; break; }
+    box="$(adbq exec-out uiautomator dump /dev/tty 2>/dev/null | python3 -I -c "import re, sys, xml.etree.ElementTree as ET
+raw = sys.stdin.read(); raw = raw[raw.find('<?xml'):raw.rfind('>') + 1]
+top = lambda n: int(re.findall(r'\d+', n.get('bounds'))[1])
+hits = [n for n in ET.fromstring(raw).iter('node') if n.get('text') == 'broken.json']
+if hits:
+    x1, y1, x2, y2 = map(int, re.findall(r'\d+', max(hits, key=top).get('bounds')))
+    print((x1 + x2) // 2, (y1 + y2) // 2)")"
+    [[ -n "$box" ]] || { echo "  FAILED: broken.json is not in the picker's results"; ok=1; break; }
+    frames="$out/message-frames-$timeout"
+    mkdir -p "$frames"
+    sent="$(tap_time)"
+    adbq shell input tap $box
+    end="$(perl -e "print $sent + $high + 4")"
+    while perl -MTime::HiRes=time -e "exit !(time < $end)"; do
+      adbq exec-out screencap -p >"$frames/$(tap_time).png"
+    done
+    result="$(python3 -I "$ROOT/qa/message_timing.py" "$frames" "$sent")"
+    echo "    accessibility timeout $timeout: $result"
+    stayed="$(sed -nE 's/.*stayed ([0-9.]+) s.*/\1/p' <<<"$result")"
+    [[ -n "$stayed" ]] && perl -e "exit !($stayed >= $low && $stayed <= $high)" ||
+      { echo "  FAILED: expected $low to $high s (#56)"; ok=1; break; }
+    rm -rf "$frames"
+  done
+  default_undo_window
+  put_or_delete secure accessibility_non_interactive_ui_timeout_ms "$ORIGINAL_TEXT_TIMEOUT"
+  return $ok
+}
+
+# Covers: subscription › Billing unavailable › No billing
+# Covers: subscription › Billing unavailable › No Google Play billing service on the phone
+# The debug half of "No Google Play billing service": with the store unavailable on a fresh install, the line shows at
+# once and no paywall shows itself. The release half (a release build with no Play products) is in the Go/No-Go record.
+scenario_premium_store_states() {
+  echo "Scenario premium_store_states: unavailable and unreachable stores; no paywall by itself without billing (EC-BIL-11, D110)"
+  run_flow clean || return 1
+  qa_store unavailable || return 1
+  adbq shell am force-stop "$APP"
+  run_flow_env paywall-state "STATE=Premium isn.t available in your region yet" NO_BUY=true ABSENT= TAP= || return 1
+  run_flow_env paywall-state "STATE=Everything else in Migrely works as before\." NO_BUY=true ABSENT= TAP= || return 1
+  qa_store unreachable || return 1
+  adbq shell am force-stop "$APP"
+  run_flow_env paywall-state "STATE=Google Play can.t be reached right now" NO_BUY=true ABSENT= "TAP=Try again" || return 1
+  qa_store available || return 1
+  adbq shell am force-stop "$APP"
+  run_flow_env paywall-state "STATE=Start free trial" NO_BUY=false ABSENT= TAP= || return 1
+  echo "    unavailable: the line and no buy button; unreachable: Try again; available again: the products"
+  adbq shell pm clear "$APP" >/dev/null
+  qa_store unavailable || return 1
+  run_flow no-self-paywall || return 1
+  run_flow_env paywall-state "STATE=Premium isn.t available in your region yet" NO_BUY=true ABSENT= TAP= || return 1
+  echo "    a new install with billing unavailable: no paywall after onboarding"
+  qa_store available || return 1
+}
+
+# Covers: subscription › When the paywall shows itself › Google Play offers no products
+# Covers: subscription › A store for testing › No products from the store for testing
+# The store answers with no products, as Google Play does before they are set up in the Play Console (D110, D122).
+# - No paywall shows itself, after onboarding or after the 5th migraine.
+# - The second "none" cannot pass on its own: in the same state, with products back, the patterns paywall shows.
+# - A tap on Doctor report still opens the paywall with the region line and no prices.
+# - Premium bought before stays Premium, once the app has asked the store again.
+# The app keeps the store's answer for an hour before a paywall shows itself, and its Premium for 15 minutes
+# (CHECK_INTERVAL), so each store change is followed by a force-stop, or by a clock 20 minutes on. "Asked again at
+# most once an hour" is not checked here: the store does not count the asks, and the app's unit tests hold it (D110).
+scenario_premium_no_products() {
+  echo "Scenario premium_no_products: no products from the store: no paywall by itself, the region line on a tap, Premium kept (D110, D122)"
+  set_clock_millis "$(when_millis 0 10 12:00)" || return 1
+  adbq shell pm clear "$APP" >/dev/null
+  qa_store no-products || return 1
+  run_flow no-self-paywall || return 1
+  echo "    a new install with no products: no paywall after onboarding"
+  shift_clock_hours 192 || return 1
+  seed_import four-old Import || return 1
+  adbq shell am force-stop "$APP"
+  run_flow log-attack || return 1
+  run_flow home-no-paywall || return 1
+  echo "    the 5th migraine, patterns ready, 8 days after onboarding: none"
+  qa_store available || return 1
+  adbq shell am force-stop "$APP"
+  run_flow patterns-paywall || return 1
+  echo "    the same state with products: the patterns paywall shows, so the \"none\" above was the store's"
+  qa_store no-products || return 1
+  adbq shell am force-stop "$APP"
+  run_flow_env paywall-state "STATE=Premium isn.t available in your region yet" NO_BUY=true \
+    "ABSENT=.*(/month|/year|free, then).*" TAP= || return 1
+  run_flow_env paywall-state "STATE=Everything else in Migrely works as before\." NO_BUY=true ABSENT= TAP= || return 1
+  echo "    a tap on Doctor report: the region line, no buy button and no price"
+  qa_store available || return 1
+  adbq shell am force-stop "$APP"
+  run_flow_env premium-buy PLAN=Monthly BUTTON=Subscribe "SHEET=Complete the purchase" "RESULT=You have Premium" || return 1
+  qa_store no-products || return 1
+  adbq shell am force-stop "$APP"
+  set_clock_millis $((($(device_seconds) + 20 * 60) * 1000)) || return 1
+  run_flow_env premium-check "STATUS=Premium · monthly" REPORT=open || return 1
+  echo "    Premium bought before, the store asked again 20 minutes on with no products: still Premium · monthly"
+  qa_store reset || return 1
+}
+
+# Covers: subscription › Buying › Pending
+scenario_premium_pending() {
+  echo "Scenario premium_pending: a cancelled sheet changes nothing; pending unlocks nothing until it completes (EC-BIL-08)"
+  run_flow clean || return 1
+  run_flow_env premium-buy PLAN=Monthly BUTTON=Subscribe SHEET=Cancel "RESULT=Migrely Premium" || return 1
+  run_flow_env premium-check STATUS=Free REPORT=locked || return 1
+  run_flow_env premium-buy PLAN=Monthly BUTTON=Subscribe "SHEET=Pay later \\(pending\\)" "RESULT=Payment pending" || return 1
+  run_flow_env premium-check "STATUS=Payment pending" REPORT=locked || return 1
+  qa_store complete-pending || return 1
+  adbq shell am force-stop "$APP"
+  run_flow_env premium-check "STATUS=Premium · monthly" REPORT=open || return 1
+  echo "    cancelled: Free; pending: locked; completed from the shop (adb): Premium · monthly"
+  run_flow clean || return 1
+  run_flow_env premium-buy PLAN=Monthly BUTTON=Subscribe "SHEET=Pay later \\(pending\\)" "RESULT=Payment pending" || return 1
+  qa_store decline-pending || return 1
+  adbq shell am force-stop "$APP"
+  run_flow_env premium-check STATUS=Free REPORT=locked || return 1
+  echo "    declined at the shop: Free"
+}
+
+# Covers: subscription › Products from Google Play › Prices shown
+# Covers: subscription › Products from Google Play › No trial left
+# Covers: subscription › Changing plans › Lifetime over a subscription
+# The euro price has a no-break space before the sign, so the pattern takes any character there.
+scenario_premium_plans() {
+  echo "Scenario premium_plans: prices in the phone's currency, no trial left, lifetime over a subscription (SUB-F1, EC-BIL-10)"
+  run_flow clean || return 1
+  adbq shell cmd locale set-app-locales "$APP" --locales de-DE >/dev/null
+  local price
+  for price in "Yearly\\. 7 days free, then 29,99.€/year\\." "Monthly\\. 4,99.€/month\\." "Lifetime\\. 59,99.€ · one payment\\."; do
+    run_flow_env paywall-state "STATE=$price" NO_BUY=false ABSENT= TAP= ||
+      { adbq shell cmd locale set-app-locales "$APP" --locales "$ORIGINAL_APP_LOCALES" >/dev/null; return 1; }
+  done
+  adbq shell cmd locale set-app-locales "$APP" --locales "$ORIGINAL_APP_LOCALES" >/dev/null
+  echo "    de-DE: euros with a decimal comma, and the trial line"
+  run_flow_env premium-buy PLAN=Monthly BUTTON=Subscribe "SHEET=Complete the purchase" "RESULT=You have Premium" || return 1
+  run_flow_env plan-change PLAN=Lifetime "BUTTON=Buy once" "RESULT=Your subscription still renews\\. Migrely can.t cancel it for you.*" \
+    "ALSO=Manage subscription" || return 1
+  run_flow_env premium-check "STATUS=Premium · lifetime" REPORT=open || return 1
+  run_flow_env premium-check "STATUS=Your subscription still renews\\. Cancel it in Google Play\\." REPORT=open || return 1
+  echo "    lifetime over monthly: Premium · lifetime, and the note to cancel the monthly plan in Google Play"
+  run_flow clean || return 1
+  run_flow_env premium-buy PLAN=Yearly "BUTTON=Start free trial" "SHEET=Complete the purchase" "RESULT=Your free trial has started" || return 1
+  run_flow_env premium-manage "CHOICE=End the subscription" AFTER=Free || return 1
+  adbq shell am force-stop "$APP"
+  run_flow_env premium-check STATUS=Free REPORT=locked || return 1
+  run_flow_env paywall-state "STATE=Yearly\\. .29\\.99/year\\." NO_BUY=false "ABSENT=.*7 days free.*|Start free trial" TAP= || return 1
+  run_flow_env paywall-state STATE=Subscribe NO_BUY=false ABSENT= TAP= || return 1
+  echo "    after a used trial: the yearly price with no trial line"
+}
+
+# Covers: subscription › The entitlement › New phone
+# Covers: subscription › The entitlement › Reinstall or backup on another account
+# Covers: subscription › The entitlement › Refunded
+scenario_premium_entitlement() {
+  echo "Scenario premium_entitlement: found again without the cache, never backed up, and locked after a refund (D106, D115)"
+  run_flow clean || return 1
+  run_flow log-and-close || return 1
+  run_flow_env premium-buy PLAN=Lifetime "BUTTON=Buy once" "SHEET=Complete the purchase" "RESULT=You have Premium" || return 1
+  run_flow_env premium-check "STATUS=Premium · lifetime" REPORT=open || return 1
+  shared_prefs_files | grep -qx migrely_entitlement.xml ||
+    { echo "  FAILED: no migrely_entitlement.xml after a purchase ($(shared_prefs_files | tr '\n' ' '))"; return 1; }
+  python3 -I "$ROOT/qa/backup_rules.py" "$APK" migrely_entitlement.xml | sed 's/^/    /'
+  [[ "${PIPESTATUS[0]}" == 0 ]] || return 1
+  adbq shell am force-stop "$APP"
+  adbq shell run-as "$APP" rm shared_prefs/migrely_entitlement.xml
+  ! shared_prefs_files | grep -qx migrely_entitlement.xml || { echo "  FAILED: the cache is still there"; return 1; }
+  run_flow_env premium-check "STATUS=Premium · lifetime" REPORT=open || return 1
+  run_flow_env premium-restore "STATUS=Premium · lifetime" || return 1
+  echo "    the entitlement cache removed: Premium found again at the first check, and Restore purchases keeps it"
+  # A lifetime purchase alone has no Manage row, so the simulated store's refund page is out of reach; emptying the
+  # store is the same to the app: Google Play no longer reports the purchase. The app asks Google Play at start and at
+  # most every 15 minutes, so the next check comes an hour later.
+  qa_store reset || return 1
+  shift_clock_hours 1 || return 1
+  adbq shell am force-stop "$APP"
+  run_flow_env premium-check STATUS=Free REPORT=locked || return 1
+  run_flow_env history-count COUNT=1 || return 1
+  echo "    refunded: Free, the report locked, the migraine kept"
+}
+
+# Covers: subscription › The entitlement › Offline
+# Covers: quality-gates › Premium is checked through the simulated store › Offline for too long
+scenario_premium_offline() {
+  echo "Scenario premium_offline: Premium stays 3 days without Google Play, then locks; entries stay (EC-BIL-01, D106)"
+  set_clock_millis "$(when_millis 0 15 12:00)" || return 1
+  run_flow clean || return 1
+  run_flow log-and-close || return 1
+  run_flow_env premium-buy PLAN=Monthly BUTTON=Subscribe "SHEET=Complete the purchase" "RESULT=You have Premium" || return 1
+  qa_store unreachable || return 1
+  shift_clock_hours 48 || return 1
+  adbq shell am force-stop "$APP"
+  run_flow_env premium-check "STATUS=Premium · monthly" REPORT=open || return 1
+  echo "    2 days unreachable: Premium · monthly"
+  shift_clock_hours 48 || return 1
+  adbq shell am force-stop "$APP"
+  run_flow_env premium-check STATUS=Free REPORT=locked || return 1
+  run_flow_env history-count COUNT=1 || return 1
+  echo "    4 days unreachable: locked, the migraine kept"
+  qa_store available || return 1
+}
+
+# Covers: subscription › Trial ending reminder › A day before
+scenario_trial_banner() {
+  echo "Scenario trial_banner: the day before the trial ends home shows the banner once (EC-BIL-02, D111)"
+  set_clock_millis "$(when_millis 0 10 12:00)" || return 1
+  run_flow clean || return 1
+  run_flow_env premium-buy PLAN=Yearly "BUTTON=Start free trial" "SHEET=Complete the purchase" "RESULT=Your free trial has started" || return 1
+  run_flow_env premium-check "STATUS=Free trial" REPORT=open || return 1
+  run_flow home-no-banner || return 1
+  shift_clock_hours 144 || return 1
+  adbq shell am force-stop "$APP"
+  run_flow trial-banner || return 1
+  echo "    6 days in: \"Your free trial ends tomorrow\" with Manage; dismissed, it does not come back"
+}
+
+# Covers: subscription › When the paywall shows itself › Within 7 days
+# Covers: subscription › When the paywall shows itself › The 5th migraine
+# Covers: subscription › When the paywall shows itself › Patterns not ready yet
+# Patterns are ready with 5 migraines started in the last 6 months, the first started at least 30 days ago (D88, as
+# worded in b93659e). Back-filled migraines count: four-old's start 40 days back although they are imported today.
+scenario_paywall_self_show() {
+  echo "Scenario paywall_self_show: the patterns paywall after the 5th migraine, not within 7 days, not in attack mode (D110)"
+  set_clock_millis "$(when_millis 0 10 12:00)" || return 1
+  run_flow clean || return 1
+  shift_clock_hours 72 || return 1
+  seed_import four-old Import || return 1
+  run_flow log-attack || return 1
+  run_flow home-no-paywall || return 1
+  echo "    5th migraine 3 days after the onboarding paywall: none"
+  shift_clock_hours 120 || return 1
+  adbq shell am force-stop "$APP"
+  start_attack_shortcut
+  run_flow attack-mode-no-paywall || return 1
+  run_flow patterns-paywall || return 1
+  echo "    8 days after it: none in attack mode; once on home, then never again"
+  set_clock_millis "$(when_millis 0 10 12:00)" || return 1
+  run_flow clean || return 1
+  shift_clock_hours 72 || return 1
+  seed_import five-new Import || return 1
+  shift_clock_hours 120 || return 1
+  adbq shell am force-stop "$APP"
+  run_flow home-no-paywall || return 1
+  echo "    5 migraines, the first 15 days ago, 8 days after the onboarding paywall: none"
+}
+
+screen_labels_scrolled() { # $1 swipes: every text and label seen on screen while scrolling down that many times
+  local i
+  for ((i = 0; i <= $1; i++)); do
+    adbq exec-out uiautomator dump /dev/tty 2>/dev/null | python3 -I -c "import sys, xml.etree.ElementTree as ET
+raw = sys.stdin.read(); raw = raw[raw.find('<?xml'):raw.rfind('>') + 1]
+try:
+    nodes = list(ET.fromstring(raw).iter('node'))
+except ET.ParseError:
+    nodes = []
+for n in nodes:
+    for label in (n.get('text'), n.get('content-desc')):
+        if label:
+            print(label.replace('\n', ' '))"
+    adbq shell input swipe 540 1800 540 900 400
+    sleep 1
+  done | sort -u
+}
+
+expect_seen() { # $1 file of texts, one a line, $2 file of labels seen: every text was seen as a whole label
+  local missing
+  [[ -s "$1" ]] || { echo "  FAILED: nothing to look for in $1"; return 1; }
+  missing="$(grep -vxFf "$2" "$1")"
+  [[ -z "$missing" ]] && return 0
+  echo "  FAILED: not on screen:"
+  sed 's/^/      /' <<<"$missing"
+  return 1
+}
+
+report_texts() { # $1 seed: its PDF texts into REPORT_TEXTS and its patterns ("re:" lines) into REPORT_PATTERNS; expand
+  # them as ${REPORT_TEXTS[@]+"${REPORT_TEXTS[@]}"}, since bash 3.2 under set -u takes an empty array for unbound
+  REPORT_TEXTS=()
+  REPORT_PATTERNS=()
+  local line
+  python3 -I "$ROOT/qa/seed_expect.py" pdf "$out/seed-$1.expected" >"$out/seed-$1.pdf-texts" ||
+    { echo "  FAILED: no PDF texts for $1"; return 1; }
+  while IFS= read -r line; do
+    if [[ "$line" == re:* ]]; then REPORT_PATTERNS+=("${line#re:}"); else REPORT_TEXTS+=("$line"); fi
+  done <"$out/seed-$1.pdf-texts"
+}
+
+# Covers: doctor-report › The summary page › Three months
+# Covers: doctor-report › The details › Notes left out
+# Covers: doctor-report › Large periods › Notes of a report that fits
+# Covers: quality-gates › Generated reports are checked by their text › A three-month report
+scenario_report_three_months() {
+  echo "Scenario report_three_months: the PDF's summary, tables and footer from a seed; notes only when chosen (D82, D202)"
+  run_flow clean || return 1
+  seed_import report-three-months Import || return 1
+  run_flow_env premium-buy PLAN=Monthly BUTTON=Subscribe "SHEET=Complete the purchase" "RESULT=You have Premium" || return 1
+  run_flow_env report-make "PERIOD=3 months" NOTES=false || return 1
+  pull_report "$out/report-three-months.pdf" || return 1
+  report_texts report-three-months || return 1
+  python3 -I "$ROOT/qa/report_pdf.py" "$out/report-three-months.pdf" --every-page "Patient-entered data. Not a diagnosis." \
+    --absent NOTE-ALPHA-7 NOTE-BETA-9 --text ${REPORT_TEXTS[@]+"${REPORT_TEXTS[@]}"} --regex ${REPORT_PATTERNS[@]+"${REPORT_PATTERNS[@]}"} | sed 's/^/    notes off: /'
+  [[ "${PIPESTATUS[0]}" == 0 ]] || return 1
+  run_flow_env report-make "PERIOD=3 months" NOTES=true || return 1
+  pull_report "$out/report-three-months-notes.pdf" || return 1
+  python3 -I "$ROOT/qa/report_pdf.py" "$out/report-three-months-notes.pdf" --text NOTE-ALPHA-7 NOTE-BETA-9 \
+    --absent "Notes from the latest" | sed 's/^/    notes on: /'
+  [[ "${PIPESTATUS[0]}" == 0 ]] || return 1
+}
+
+# Covers: doctor-report › The summary page › A month only partly in the period
+# Covers: doctor-report › Counting like the app › Logged in Tokyo
+scenario_report_counting() {
+  echo "Scenario report_counting: overuse spans across a month change, and an attack logged in Tokyo (D82, D83)"
+  local seed period
+  for seed in report-partial-month report-tokyo; do
+    period="3 months"; [[ "$seed" == report-partial-month ]] && period="1 month"
+    run_flow clean || return 1
+    seed_import "$seed" Import || return 1
+    run_flow_env premium-buy PLAN=Monthly BUTTON=Subscribe "SHEET=Complete the purchase" "RESULT=You have Premium" || return 1
+    if [[ "$seed" == report-partial-month ]]; then
+      run_flow_env home-text "TEXT=Triptans on 11 of the last 30 days" || return 1
+    fi
+    run_flow_env report-make "PERIOD=$period" NOTES=false || return 1
+    pull_report "$out/$seed.pdf" || return 1
+    report_texts "$seed" || return 1
+    python3 -I "$ROOT/qa/report_pdf.py" "$out/$seed.pdf" --every-page "Patient-entered data. Not a diagnosis." \
+      --text ${REPORT_TEXTS[@]+"${REPORT_TEXTS[@]}"} --regex ${REPORT_PATTERNS[@]+"${REPORT_PATTERNS[@]}"} | sed "s/^/    $seed: /"
+    [[ "${PIPESTATUS[0]}" == 0 ]] || return 1
+  done
+}
+
+# Covers: doctor-report › Large periods › Twelve heavy months
+# Covers: doctor-report › The file and sharing › Closed while making it
+# Covers: doctor-report › Large periods › Twelve heavy months with notes
+# Covers: doctor-report › Large periods › No note among the migraines shown
+scenario_report_heavy() {
+  echo "Scenario report_heavy: 900 attacks in 12 months make at most 50 pages; a report closed half-made leaves nothing (D84, D85)"
+  local files box want
+  run_flow clean || return 1
+  seed_import report-heavy Import || return 1
+  run_flow_env premium-buy PLAN=Monthly BUTTON=Subscribe "SHEET=Complete the purchase" "RESULT=You have Premium" || return 1
+  # Closed while making it: Create report is tapped through adb and the app is closed half a second later (a
+  # 12-month report of 900 attacks takes about a second; the PDF is drawn in memory, then written as ".partial" and
+  # renamed). The report's folder at the kill shows it had started. After the next start there is no ".partial" file
+  # and no empty folder. Then planted leftovers (a partial file, an empty folder, a report two days old), read back
+  # first, are gone after the next start too.
+  run_flow_env report-ready "PERIOD=12 months" || return 1
+  box="$(node_bounds "Create report")"
+  [[ -n "$box" ]] || { echo "  FAILED: no Create report"; return 1; }
+  set -- $box
+  adbq shell "input tap $((($1 + $3) / 2)) $((($2 + $4) / 2)); sleep 0.5; am force-stop $APP"
+  files="$(adbq shell run-as "$APP" find cache/reports -mindepth 1 | tr -d '\r')" || { echo "  FAILED: cache/reports unreadable"; return 1; }
+  [[ -n "$files" ]] || { echo "  FAILED: no report had started when the app was closed"; return 1; }
+  echo "    closed 0.5 s after Create report: $(grep -c . <<<"$files") entries under cache/reports"
+  open_app
+  sleep 3
+  files="$(adbq shell "run-as $APP find cache/reports -mindepth 1 \\( -name '*.partial' -o -type d -empty \\)" | tr -d '\r')" ||
+    { echo "  FAILED: cache/reports unreadable"; return 1; }
+  [[ -z "$files" ]] || { echo "  FAILED: left after the next start: $(tr '\n' ' ' <<<"$files")"; return 1; }
+  local old planted
+  old="$(( $(adbq shell date +%s | tr -d '\r') - 2 * 86400 ))"
+  adbq shell "run-as $APP sh -c 'mkdir -p cache/reports/qa-partial cache/reports/qa-empty cache/reports/qa-old &&
+    echo x > cache/reports/qa-partial/migrely-report-qa.pdf.partial && echo x > cache/reports/qa-old/migrely-report-qa.pdf &&
+    touch -d @$old cache/reports/qa-old/migrely-report-qa.pdf'"
+  planted="$(adbq shell run-as "$APP" find cache/reports -path '*qa-*' | tr -d '\r')"
+  for want in qa-partial/migrely-report-qa.pdf.partial qa-empty qa-old/migrely-report-qa.pdf; do
+    grep -q "$want\$" <<<"$planted" || { echo "  FAILED: could not plant $want"; return 1; }
+  done
+  adbq shell am force-stop "$APP"
+  open_app
+  sleep 3
+  files="$(adbq shell run-as "$APP" find cache/reports -mindepth 1 | tr -d '\r')" || { echo "  FAILED: cache/reports unreadable"; return 1; }
+  if grep -q 'qa-' <<<"$files"; then echo "  FAILED: left after the next start: $(grep 'qa-' <<<"$files" | tr '\n' ' ')"; return 1; fi
+  echo "    after the next start: no partial file, no empty folder, no report older than a day (3 planted, all gone)"
+  run_flow_env report-make "PERIOD=12 months" NOTES=false || return 1
+  pull_report "$out/report-heavy.pdf" || return 1
+  report_texts report-heavy || return 1
+  python3 -I "$ROOT/qa/report_pdf.py" "$out/report-heavy.pdf" --pages-at-most 50 --every-page "Patient-entered data. Not a diagnosis." \
+    --regex "Showing the latest [0-9]+ of 900 migraines\. The summary counts all of them\." --text ${REPORT_TEXTS[@]+"${REPORT_TEXTS[@]}"} --regex ${REPORT_PATTERNS[@]+"${REPORT_PATTERNS[@]}"} |
+    sed 's/^/    /'
+  [[ "${PIPESTATUS[0]}" == 0 ]] || return 1
+  # With notes on, the notes follow the table's cap (#67, D84): only the latest N migraines' notes, and a line saying
+  # so. The seed numbers its notes from HEAVY-0001, the newest, so the notes kept are HEAVY-0001 to HEAVY-N.
+  run_flow_env report-make "PERIOD=12 months" NOTES=true || return 1
+  pull_report "$out/report-heavy-notes.pdf" || return 1
+  python3 -I "$ROOT/qa/report_pdf.py" "$out/report-heavy-notes.pdf" --pages-at-most 50 \
+    --every-page "Patient-entered data. Not a diagnosis." | sed 's/^/    notes on: /'
+  [[ "${PIPESTATUS[0]}" == 0 ]] || return 1
+  pdftotext -layout "$out/report-heavy-notes.pdf" "$out/report-heavy-notes.txt" || return 1
+  python3 -I -c "import re, sys
+text = re.sub(r'\s+', ' ', open(sys.argv[1], encoding='utf-8').read())
+rows = re.search(r'Showing the latest (\d+) of 900 migraines\.', text)
+notes = re.search(r'Notes from the latest (\d+) migraines\.', text)
+kept = sorted({int(n) for n in re.findall(r'HEAVY-(\d{4})', text)})
+if not rows or not notes:
+    sys.exit('FAIL: the table or the notes do not say how many they show')
+n = int(rows.group(1))
+if int(notes.group(1)) != n or kept != list(range(1, n + 1)):
+    span = f' (HEAVY-{kept[0]:04} to HEAVY-{kept[-1]:04})' if kept else ''
+    sys.exit(f'FAIL: {n} rows, notes say {notes.group(1)}, notes kept {len(kept)}{span}')
+print(f'notes on: the latest {n} of 900 migraines and their {n} notes, HEAVY-0001 to HEAVY-{n:04}')" "$out/report-heavy-notes.txt" |
+    sed 's/^/    /'
+  [[ "${PIPESTATUS[0]}" == 0 ]] || return 1
+  # No note among the migraines shown (#67, D84): the same 900 migraines, but only the oldest 100 have a note. The table
+  # is still shortened, none of its migraines has a note, so the notes section says how many migraines it is from, over
+  # an empty table. The check holds only while the table shows at most 800 rows; a larger cap is reported, not passed.
+  seed_import report-heavy-old-notes Replace || return 1
+  run_flow_env report-make "PERIOD=12 months" NOTES=true || return 1
+  pull_report "$out/report-heavy-old-notes.pdf" || return 1
+  python3 -I "$ROOT/qa/report_pdf.py" "$out/report-heavy-old-notes.pdf" --pages-at-most 50 \
+    --every-page "Patient-entered data. Not a diagnosis." --absent "HEAVY-" | sed 's/^/    old notes: /'
+  [[ "${PIPESTATUS[0]}" == 0 ]] || return 1
+  pdftotext -layout "$out/report-heavy-old-notes.pdf" "$out/report-heavy-old-notes.txt" || return 1
+  python3 -I -c "import re, sys
+text = re.sub(r'\s+', ' ', open(sys.argv[1], encoding='utf-8').read())
+rows = re.search(r'Showing the latest (\d+) of 900 migraines\.', text)
+notes = re.search(r'Notes from the latest (\d+) migraines\.', text)
+if not rows or not notes:
+    sys.exit('FAIL: the table or the notes do not say how many they show')
+n = int(rows.group(1))
+if n > 800:
+    sys.exit(f'FAIL: the table shows {n} rows, so it reaches the noted migraines; move the seed\'s notes further back')
+if int(notes.group(1)) != n:
+    sys.exit(f'FAIL: {n} rows, but the notes say {notes.group(1)}')
+print(f'old notes: the latest {n} of 900 migraines, \"Notes from the latest {n} migraines.\" and no note')" \
+    "$out/report-heavy-old-notes.txt" | sed 's/^/    /'
+  [[ "${PIPESTATUS[0]}" == 0 ]] || return 1
+}
+
+# Covers: trigger-insights › Triggers, never causes › Stress
+# Covers: trigger-insights › When migraines come › Mondays
+# Covers: trigger-insights › What helped › Ibuprofen
+# Covers: trigger-insights › Around the period › Tracking off
+# Covers: trigger-insights › Twelve months › A screen reader
+# Covers: trigger-insights › Enough to go on › Three migraines so far
+# Covers: trigger-insights › The period › Opening Insights
+scenario_insights() {
+  echo "Scenario insights: triggers, days and times, what helped, the period, the 12 months for TalkBack, the N-more card (D87-D92)"
+  local seed
+  for seed in insights-patterns insights-three; do
+    run_flow clean || return 1
+    seed_import "$seed" Import || return 1
+    run_flow_env premium-buy PLAN=Monthly BUTTON=Subscribe "SHEET=Complete the purchase" "RESULT=You have Premium" || return 1
+    if [[ "$seed" == insights-patterns ]]; then
+      # Track periods is on by default, and 3 periods start in these 6 months: the section shows with its share.
+      run_flow_env insights-open TRACKING=on || return 1
+      screen_labels_scrolled 14 >"$out/insights-$seed-on.seen"
+      python3 -I "$ROOT/qa/seed_expect.py" period "$out/seed-$seed.expected" >"$out/insights-$seed.period" ||
+        { echo "  FAILED: no period texts for $seed"; return 1; }
+      expect_seen "$out/insights-$seed.period" "$out/insights-$seed-on.seen" || return 1
+      echo "    $seed, Track periods on: \"Around your period\" with its share"
+    fi
+    run_flow_env insights-open TRACKING=off || return 1
+    screen_labels_scrolled 14 >"$out/insights-$seed.seen"
+    python3 -I "$ROOT/qa/seed_expect.py" insights "$out/seed-$seed.expected" >"$out/insights-$seed.want" ||
+      { echo "  FAILED: no Insights texts for $seed"; return 1; }
+    expect_seen "$out/insights-$seed.want" "$out/insights-$seed.seen" || return 1
+    if grep -q "Around your period" "$out/insights-$seed.seen"; then echo "  FAILED: a period section with Track periods off"; return 1; fi
+    if grep -qiE "caus|leads? to" "$out/insights-$seed.seen"; then echo "  FAILED: a text says a trigger causes migraines"; return 1; fi
+    echo "    $seed, Track periods off: $(wc -l <"$out/insights-$seed.want" | tr -d ' ') texts seen; no period section; nothing says \"cause\""
+  done
+}
+
+# Covers: app-settings › Privacy and about › The full privacy policy
+# Covers: app-settings › Privacy and about › No browser
+# The link is read from the activity manager's START line: a VIEW intent to migrely.health, to a browser. Android shortens
+# the URI in that line, and the page shows only "migrely.health/privacy", so the full address is looked up in the APK's
+# string table. "No browser" disables, for this user, every package that answers the link (only Chrome on the QA image),
+# taps again, and enables them all at the end, also when the check fails (restore() and reset_device.sh do too).
+scenario_privacy_link() {
+  echo "Scenario privacy_link: the privacy policy opens in the browser; with no browser nothing breaks (D119)"
+  local url="https://migrely.health/privacy/" browsers started pkg front fatal address
+  browsers="$(browsers_for "$url")"
+  [[ -n "$browsers" ]] || { echo "  FAILED: no browser answers $url on $QA_SERIAL, so the two cases look the same"; return 1; }
+  echo "    browsers for the link: $(tr '\n' ' ' <<<"$browsers")"
+  run_flow clean || return 1
+  adbq logcat -c
+  run_flow privacy-policy-link || return 1
+  sleep 2
+  started="$(adbq logcat -d -s ActivityTaskManager:I ActivityManager:I | tr -d '\r' |
+    grep -m1 "START .*act=android.intent.action.VIEW.*migrely\.health" || true)"
+  [[ -n "$started" ]] || { echo "  FAILED: no VIEW intent to migrely.health was started"; return 1; }
+  pkg="$(grep -oE "cmp=[a-zA-Z0-9_.]+" <<<"$started" | cut -d= -f2)"
+  grep -qxF "$pkg" <<<"$browsers" || { echo "  FAILED: the link went to '$pkg', not to a browser"; return 1; }
+  echo "    the link: a VIEW intent to migrely.health, opened by $pkg ($(resumed_package) in front)"
+  python3 -I -c "import sys, zipfile
+url = sys.argv[2].encode()
+with zipfile.ZipFile(sys.argv[1]) as apk:
+    dex = b''.join(apk.read(n) for n in apk.namelist() if n.startswith('classes') and n.endswith('.dex'))
+# A dex string entry is its length, its bytes and a zero byte, so this finds the address as a whole string.
+sys.exit(0 if bytes([len(url)]) + url + b'\\0' in dex else 1)" "$APK" "$url" ||
+    { echo "  FAILED: the APK holds no string $url"; return 1; }
+  echo "    the full address $url is in the APK"
+  adbq shell am force-stop "$APP"
+  for pkg in $browsers; do
+    # Recorded first, so a run stopped during the next call still enables it again.
+    DISABLED_BROWSERS+=("$pkg")
+    adbq shell pm disable-user --user 0 "$pkg" >/dev/null || { echo "  FAILED: could not disable $pkg"; enable_browsers; return 1; }
+  done
+  [[ -z "$(browsers_for "$url")" ]] || { echo "  FAILED: a browser still answers the link"; enable_browsers; return 1; }
+  adbq logcat -c
+  run_flow privacy-policy-link || { enable_browsers; return 1; }
+  sleep 2
+  fatal="$(adbq logcat -d -b crash | tr -d '\r' | grep -A3 "FATAL EXCEPTION" | grep -m1 -A2 "$APP" || true)"
+  front="$(resumed_package)"
+  address="$(screen_text_matching "migrely\.health/privacy")"
+  enable_browsers
+  [[ -z "$fatal" ]] || { echo "  FAILED: Migrely crashed: $(tr '\n' ' ' <<<"$fatal")"; return 1; }
+  [[ "$front" == "$APP" ]] || { echo "  FAILED: with no browser, '$front' is in front, not Migrely"; return 1; }
+  [[ -n "$address" ]] || { echo "  FAILED: the Privacy page does not show the address"; return 1; }
+  echo "    no browser: Migrely stays in front, no crash, the page shows \"$address\""
+  local disabled
+  disabled="$(adbq shell pm list packages -d | tr -d '\r' | sed 's/^package://')"
+  if grep -qxF -f <(echo "$browsers") <<<"$disabled"; then
+    echo "  FAILED: a browser is still disabled"
+    return 1
+  fi
+  echo "    browsers enabled again: $(tr '\n' ' ' <<<"$browsers")"
+}
+
+# Covers: subscription › A store for testing › Release
+# On demand, with QA_RELEASE_APK=<release APK>: the release build holds no simulated store and is not debuggable
+# (D113); the debug APK under test is the control that the search still finds it.
+scenario_release_apk() {
+  echo "Scenario release_apk: no simulated store in the release build (D113)"
+  if [[ -z "${QA_RELEASE_APK:-}" || ! -f "${QA_RELEASE_APK:-}" ]]; then
+    echo "  NOT RUN: set QA_RELEASE_APK to the release APK"
+    return 1
+  fi
+  python3 -I "$ROOT/qa/release_apk.py" "$QA_RELEASE_APK" "$APK" | sed 's/^/    /'
+  [[ "${PIPESTATUS[0]}" == 0 ]]
+}
+
+# Covers: data-backup › JSON backup › Exporting (2 attacks, 1 medication, 1 day mark rather than 16, 2 and 5)
+# Covers: data-backup › CSV export › Opening in Excel
+# Covers: data-backup › CSV export › A phone in Uzbek or Russian
+# Covers: data-backup › CSV export › A note that looks like a formula
+# Covers: quality-gates › Files through the system picker are checked by their bytes › An exported CSV
+scenario_backup_export() {
+  echo "Scenario backup_export: the JSON backup and the CSV, checked by their bytes, in English, Uzbek and Russian (D71, D72)"
+  local language separator result
+  adbq shell "rm -f /sdcard/Download/migrely-*" >/dev/null
+  set_clock_millis "$(when_millis 0 15 12:00)" || return 1
+  run_flow backup-data || return 1
+  run_flow backup-export || return 1
+  pull_newest "migrely-2*.json" "$out/backup.json" || return 1
+  result="$(python3 -I "$ROOT/qa/backup_files.py" json "$out/backup.json" 2 1 1)"
+  echo "    $result"
+  [[ "$result" == "JSON ok"* ]] || return 1
+  for language in en uz ru; do
+    separator=","
+    if [[ "$language" != "en" ]]; then
+      separator=";"
+      adbq shell cmd locale set-app-locales "$APP" --locales "$language" >/dev/null
+      sleep 2
+      run_flow backup-export-csv || return 1
+    fi
+    pull_newest "migrely-attacks-*.csv" "$out/attacks-$language.csv" || return 1
+    result="$(python3 -I "$ROOT/qa/backup_files.py" csv "$out/attacks-$language.csv" "$separator" --rows 2 --formula "=SUM(1)" --text "Голова")"
+    echo "    $language: $result"
+    [[ "$result" == "CSV ok"* ]] || return 1
+  done
+  adbq shell cmd locale set-app-locales "$APP" --locales "$ORIGINAL_APP_LOCALES" >/dev/null
+}
+
+screen_text_matching() { # $1 Python regex: prints the first text or label on screen that matches it in full
+  adbq exec-out uiautomator dump /dev/tty 2>/dev/null | python3 -I -c "import re, sys, xml.etree.ElementTree as ET
+raw = sys.stdin.read(); raw = raw[raw.find('<?xml'):raw.rfind('>') + 1]
+try:
+    nodes = list(ET.fromstring(raw).iter('node'))
+except ET.ParseError:
+    nodes = []
+for n in nodes:
+    for label in (n.get('text') or '', n.get('content-desc') or ''):
+        if label and re.fullmatch(sys.argv[1], label, re.S):
+            print(label); sys.exit(0)" "$1"
+}
+expect_text_soon() { # $1 Python regex, $2 seconds: some text or label on screen matches it in full within that time
+  local end=$((SECONDS + $2)) found
+  while ((SECONDS < end)); do
+    found="$(screen_text_matching "$1")"
+    if [[ -n "$found" ]]; then echo "    message: $found"; return 0; fi
+  done
+  echo "  FAILED: no \"$1\" on screen within $2 s"
+  return 1
+}
+import_and_expect() { # $1 file in Download, $2 HOLDS regex or "", $3 choice or "", $4 extended regex of the result message
+  # Run without a report folder: writing it takes seconds, and the result message lasts only about 4 s (#56).
+  local attempt seen log others="This file isn.t a Migrely backup.*|Update Migrely to open this file.*|Backup imported:.*|Added [0-9]+ migraines?.*|Added the other entries.*|Added the new entries.*|Nothing new.*|Couldn.t.*"
+  for attempt in 1 2; do
+    STEP=$((STEP + 1))
+    log="$out/$(printf '%03d' "$STEP")-${CURRENT:-x}-import-step.log"
+    echo "  flow import-step ($1, ${3:-no choice})"
+    maestro --device "$QA_SERIAL" test -e "FILE=$1" -e "HOLDS=$2" -e "CHOICE=$3" "$FLOWS/import-step.yaml" >"$log" 2>&1 || {
+      echo "  FAILED: import-step (log: $log)"
+      return 1
+    }
+    if seen="$(expect_text_soon "$4" 10)"; then echo "$seen"; break; fi
+    # Not the expected message: another result or a crash is a failure, not #56.
+    local other
+    other="$(screen_text_matching "$others")"
+    [[ -z "$other" ]] || { echo "  FAILED: the import said \"$other\", expected /$4/"; return 1; }
+    adbq shell pidof "$APP" >/dev/null || { echo "  FAILED: the app is not running after the import"; return 1; }
+    # A refused file changes nothing, so it is tried once more to read its message; a real import is not repeated.
+    if [[ -z "$3" && $attempt == 1 ]]; then echo "    the message was missed; trying the refused file again"; continue; fi
+    # Messages stay 8 s since #56 was fixed, so a missed one is a failure.
+    echo "  FAILED: \"$4\" was never read"
+    return 1
+  done
+}
+
+history_count_now() { # prints how many migraines History lists this month (1 to 5)
+  local c
+  for c in 1 2 3 4 5; do
+    if run_flow_env history-count "COUNT=$c" >/dev/null 2>&1; then echo "$c"; return 0; fi
+  done
+  echo "?"
+  return 1
+}
+
+# Covers: data-backup › Import shows what it brings › Before importing
+# Covers: data-backup › Replace or add › Add
+# Covers: data-backup › Replace or add › The same attack logged on two phones
+# Covers: data-backup › Replace or add › A medication by the same name
+# Covers: data-backup › Replace or add › Replace
+# Covers: data-backup › Restore the automatic copy › Undoing a Replace
+# Covers: data-backup › Files that cannot be imported › A broken file
+# Covers: data-backup › Files that cannot be imported › A newer file
+# Covers: onboarding › Restore from a backup › A new phone without Android's backup
+# Covers: quality-gates › Files through the system picker are checked by their bytes › A prepared broken file
+# Also checks: an older schemaVersion with optional fields left out is imported (EC-BAK-03)
+scenario_backup_import() {
+  echo "Scenario backup_import: refused files, an older file, Add, Replace and its copy, and onboarding's restore (D73-D75, EC-BAK-01-05)"
+  adbq shell "rm -f /sdcard/Download/migrely-* /sdcard/Download/broken.json /sdcard/Download/newer.json /sdcard/Download/older.json /sdcard/Download/add.json" >/dev/null
+  set_clock_millis "$(when_millis 0 15 12:00)" || return 1
+  # The phone: migraines A and B, Ibuprofen with one intake, a period mark. Its backup E is the source of the fixtures.
+  run_flow backup-data || return 1
+  run_flow backup-export || return 1
+  pull_newest "migrely-2*.json" "$out/import-source.json" || return 1
+  python3 -I "$ROOT/qa/backup_files.py" fixtures "$out/import-source.json" "$out/fixtures" | sed 's/^/    /'
+  local f name
+  for f in broken newer older add; do adbq push "$out/fixtures/$f.json" "/sdcard/Download/$f.json" >/dev/null; done
+  name="$(basename "$(adbq shell 'ls -t /sdcard/Download/migrely-2*.json | head -1' | tr -d '\r')")"
+  # Refused files change nothing (EC-BAK-01, 02).
+  import_and_expect broken.json "" "" "This file isn.t a Migrely backup\. Nothing was changed\." || return 1
+  import_and_expect newer.json "" "" "Update Migrely to open this file\." || return 1
+  run_flow_env history-count COUNT=2 || return 1
+  # An older file, its optional fields left out, is offered and adds nothing new (EC-BAK-03).
+  import_and_expect older.json "2 migraines, 1 medication and 1 marked day" Add "Nothing new: everything in it is already here\." || return 1
+  run_flow_env history-count COUNT=2 || return 1
+  # Add: A again under another ID overlaps and is skipped; a new migraine three days earlier is added; "ibuprofen"
+  # under another ID maps to the phone's Ibuprofen, and its intake counts as Ibuprofen on that new day.
+  import_and_expect add.json "2 migraines, 1 medication and 0 marked days" Add "Added 1 migraine\. 1 was already here\." || return 1
+  run_flow_env history-count COUNT=3 || return 1
+  run_flow_env med-list-count NAME=Ibuprofen || return 1
+  run_flow_env days-medication-check DAYS=2 || return 1
+  # Known bug #58: a deleted migraine stays a hidden row until a purge, so Add of E may count it "already here".
+  run_flow delete-first-attack || return 1
+  run_flow_env history-count COUNT=2 || return 1
+  import_and_expect "$name" "2 migraines, 1 medication and 1 marked day" Add "(Added 1 migraine\. 1 was already here\.|Nothing new: everything in it is already here\.)" || return 1
+  if run_flow_env history-count COUNT=3 >/dev/null 2>&1; then
+    echo "    NOW PASSES (#58): Add brought the deleted migraine back"
   else
-    echo "  NOW PASSES: Undo [$undo] overlaps no top-bar action; remove the known-bug note for #52"
+    run_flow_env history-count COUNT=2 || { echo "  FAILED: after Add History lists neither 2 (#58) nor 3"; return 1; }
+    echo "    KNOWN BUG #58 still reproduces: Add left the deleted migraine out"
+  fi
+  # Replace with E keeps a copy of what was here; restoring it brings that back and keeps a copy of E's state.
+  local before
+  before="$(history_count_now)" || { echo "  FAILED: History's count could not be read"; return 1; }
+  import_and_expect "$name" "2 migraines, 1 medication and 1 marked day" Replace "Backup imported: 2 migraines\." || return 1
+  run_flow_env history-count COUNT=2 || return 1
+  run_flow restore-copy || return 1
+  run_flow_env history-count "COUNT=$before" || return 1
+  run_flow_env copy-row-check SHOWN=true || return 1
+  # A new phone without Android's backup: onboarding's "Restore from a backup file" imports E, and Back returns there.
+  adbq shell pm clear "$APP" >/dev/null
+  run_flow_env onboarding-restore "FILE=$name" || return 1
+  run_flow_env history-count-after-onboarding COUNT=2 || return 1
+}
+
+# On demand (not in the default run). Android's own backup through the local transport. The app turns cloud backup off
+# without end-to-end encryption; the local transport can claim encryption (fake_encryption_flag), so a backup and a
+# restore after "pm clear" can be tried. The outcome is printed as observed; "A new phone" itself needs a real Google
+# account backup (a D61 gap).
+scenario_backup_android() {
+  echo "Scenario backup_android: bmgr with the local transport claiming encryption; the outcome is recorded (D74)"
+  BMGR_ENABLED="$(adbq shell bmgr enabled | tr -d '\r')"
+  BMGR_TRANSPORT="$(adbq shell bmgr list transports | tr -d '\r' | sed -n 's/^ *\* //p')"
+  adbq shell settings put secure backup_local_transport_parameters fake_encryption_flag=true
+  adbq shell bmgr enable true >/dev/null
+  adbq shell bmgr transport com.android.localtransport/.LocalTransport >/dev/null
+  set_clock_millis "$(when_millis 0 15 12:00)" || return 1
+  run_flow log-and-close || return 1
+  echo "    backupnow: $(adbq shell bmgr backupnow "$APP" 2>&1 | tr -d '\r' | grep -E "$APP|Backup finished" | tr '\n' ' ')"
+  adbq shell pm clear "$APP" >/dev/null
+  echo "    restore: $(adbq shell bmgr restore "$APP" 2>&1 | tr -d '\r' | tail -2 | tr '\n' ' ')"
+  if run_flow_env history-count-after-onboarding COUNT=1 >/dev/null 2>&1; then
+    echo "    OBSERVED: the migraine came back after pm clear and a restore"
+  else
+    echo "    OBSERVED: nothing came back (the app's backup rules or the transport kept it out)"
   fi
 }
 
@@ -1073,7 +2051,7 @@ scenario_upgrade() {
     echo "  NOT RUN: set QA_OLD_APK to the older APK (for a release: the APK of the previous release)"
     return 1
   fi
-  local new_apk="$ROOT/app/build/outputs/apk/debug/app-debug.apk"
+  local new_apk="$APK"
   adbq uninstall "$APP" >/dev/null 2>&1 || true
   adbq install "$QA_OLD_APK" >/dev/null || { echo "  FAILED: could not install $QA_OLD_APK"; return 1; }
   echo "    installed the older build $(adbq shell dumpsys package "$APP" | grep -m1 versionCode | tr -s ' ')"
@@ -1090,17 +2068,29 @@ if [[ $# -eq 0 ]]; then
     double_tap med_effect med_effect_attack med_effect_skip med_effect_late med_preventive med_two_waiting \
     med_link_home med_overuse keyboard_home keyboard_history keyboard_rtl landscape_band mark_travel mark_earliest_month \
     stats_counting stats_chronic stats_progress reminder_daily reminder_permission reminder_effect reminder_replan \
-    med_only_history message_overlap
+    med_only_history message_tap_guard \
+    theme_check onboarding_states delete_all_data privacy_link backup_export backup_import message_duration \
+    premium_store_states premium_no_products premium_pending premium_plans premium_entitlement premium_offline trial_banner paywall_self_show \
+    report_three_months report_counting report_heavy insights
   if [[ -n "${QA_OLD_APK:-}" ]]; then
     set -- "$@" upgrade
   else
     echo "Note: upgrade is not in this run; set QA_OLD_APK to the older APK to include it."
+  fi
+  if [[ -n "${QA_RELEASE_APK:-}" ]]; then
+    set -- "$@" release_apk
+  else
+    echo "Note: release_apk is not in this run; set QA_RELEASE_APK to the release APK to include it."
   fi
 fi
 failed=()
 for s in "$@"; do
   CURRENT="$s"
   "scenario_$s" || failed+=("$s")
+  # Language and night mode back after every scenario, so a failure mid-way cannot leak into the next one.
+  adbq shell cmd locale set-app-locales "$APP" --locales "$ORIGINAL_APP_LOCALES" >/dev/null 2>&1
+  [[ -n "$ORIGINAL_NIGHT" ]] && adbq shell cmd uimode night "$ORIGINAL_NIGHT" >/dev/null 2>&1
+  enable_browsers
   # Each scenario starts from the real time, so one scenario's clock never leaks into the next.
   adbq shell cmd alarm set-timezone "$ORIGINAL_ZONE" >/dev/null
   set_clock_millis $(($(date +%s) * 1000))

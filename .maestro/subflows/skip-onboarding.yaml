@@ -34,3 +34,4 @@ appId: com.migrely.app
     timeout: 1000
     optional: true
 - tapOn: "Skip this step"
+- runFlow: close-onboarding-paywall.yaml

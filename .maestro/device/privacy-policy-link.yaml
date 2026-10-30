@@ -1,0 +1,26 @@
+# Device scenario step (privacy_link): Settings › Privacy ends with "Read the full privacy policy", and a tap hands the
+# link to the browser (D119). The script reads the VIEW intent from the log, and with no browser checks the app and the
+# page.
+appId: com.migrely.app
+---
+- launchApp
+# Home first, then about 1 s more: a tap on "Settings" during home's 1 s mode guard is lost, and the flow then failed
+# before it checked anything (1.0.1 retest, 2 of 2 on emulator-5580 under load).
+- extendedWaitUntil:
+    visible: "Migraine started"
+    timeout: 15000
+- extendedWaitUntil:
+    visible: "QA: never shown, a pause for home's 1 s tap guard"
+    timeout: 1500
+    optional: true
+- tapOn: "Settings"
+- scrollUntilVisible:
+    element: "What Migrely keeps, and where"
+    direction: DOWN
+    centerElement: true
+- tapOn: "What Migrely keeps, and where"
+- scrollUntilVisible:
+    element: "Read the full privacy policy.*"
+    direction: DOWN
+    centerElement: true
+- tapOn: "Read the full privacy policy.*"

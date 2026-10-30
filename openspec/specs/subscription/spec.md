@@ -148,8 +148,33 @@ When the trial's end is known, the day before it ends, home SHALL show a banner 
 
 ### Requirement: A store for testing
 Debug builds SHALL use a simulated store that can complete, cancel or hold a purchase as pending, and end or restore
-Premium. Release builds SHALL always use Google Play (BRD D113).
+Premium. It SHALL also be able to answer with no products while billing connects, as Google Play does before the
+products are set up in Play Console (BRD D122). Release builds SHALL always use Google Play (BRD D113).
 
 #### Scenario: Release
 - **WHEN** a release build starts
 - **THEN** it talks to Google Play, and no simulated store is in it
+
+#### Scenario: No products from the store for testing
+- **WHEN** a debug build's store is set from adb to answer with no products
+- **THEN** the app behaves as when Google Play offers no products: with nothing bought, a tap on a premium feature
+  opens the paywall with "Premium isn't available in your region yet", and a Premium bought before stays Premium
+
+### Requirement: A purchase finished while the app was closed
+When the app was closed while Google Play's purchase sheet was open, the next check of the entitlement SHALL ask Google
+Play at once, as an exception to the 15 minutes between checks. A purchase completed meanwhile SHALL be acknowledged and
+SHALL unlock Premium with the plan and trial the sheet was opened for. A pending one SHALL show "Payment pending" (BRD
+EC-BIL-13).
+
+#### Scenario: Completed while closed
+- **WHEN** the app is closed with the yearly free trial's sheet open, Google Play completes the purchase, and the app
+  is started again a minute later
+- **THEN** Settings shows the free trial with its end date, and the purchase is acknowledged
+
+#### Scenario: Pending while closed
+- **WHEN** the same happens with a payment that completes later
+- **THEN** Settings shows "Payment pending", and the doctor report and Insights stay locked
+
+#### Scenario: Only once
+- **WHEN** the sheet was cancelled before the app closed, and the app is started twice within a minute
+- **THEN** Google Play is asked at the first start only

@@ -1,0 +1,34 @@
+# From home with no attack in progress: add a 2-hour past migraine at 10 AM on day ${DAY} of last month, then return
+# home. Like add-past-attack-last-month.yaml, with the day as a parameter, so several can be added without overlaps.
+appId: com.migrely.app
+---
+- tapOn: "Add a past migraine"
+- tapOn: "Change when it started, now .*"
+- tapOn: "Change to previous month"
+# No {n} quantifier after ${DAY}: Maestro reads up to the last closing brace as the script ("DAY}, [0-9]{4").
+- tapOn: "[A-Za-z]+, [A-Za-z]+ ${DAY}, [0-9]+"
+- tapOn: "Next"
+- tapOn:
+    text: "10 o.clock"
+    below: "Select minutes"
+- tapOn: "AM"
+# In landscape OK is below the dial and the dialog scrolls (#79). The swipe runs between the dial, which a drag would
+# turn, and the dialog's edge: on Migrely_QA_API_36 in landscape the dial ends at x 1536 px and the dialog at 1620, and
+# 66% is 1584.
+- runFlow:
+    when:
+      notVisible: "OK"
+    commands:
+      - swipe:
+          start: 66%, 85%
+          end: 66%, 15%
+- tapOn: "OK"
+- assertVisible: "Duration 2 h 0 min"
+- tapOn: "Add migraine"
+- extendedWaitUntil:
+    visible: "Not recorded"
+    timeout: 5000
+- back
+- extendedWaitUntil:
+    visible: "Migraine started"
+    timeout: 5000

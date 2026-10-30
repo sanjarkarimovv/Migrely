@@ -1,0 +1,7 @@
+# Device scenario step (qa/split_apks.sh): from home, History open (the script reads its month names).
+appId: com.migrely.app
+---
+- tapOn: ".*\\. Opens History\\."
+- extendedWaitUntil:
+    visible: "Doctor report"
+    timeout: 5000

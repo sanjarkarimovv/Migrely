@@ -1,0 +1,25 @@
+# Device scenario step: Settings › Change plan, PLAN with BUTTON, the purchase completed; then RESULT (a regex) shows,
+# and ALSO too when it is not empty.
+appId: com.migrely.app
+---
+- launchApp
+- tapOn: "Settings"
+- tapOn: "Change plan"
+- extendedWaitUntil:
+    visible: "${PLAN}\\. .*"
+    timeout: 10000
+- runFlow:
+    file: ../subflows/buy.yaml
+    env:
+      PLAN: "${PLAN}"
+      BUTTON: "${BUTTON}"
+      SHEET: "Complete the purchase"
+- extendedWaitUntil:
+    visible: "${RESULT}"
+    timeout: 10000
+- runFlow:
+    when:
+      true: ${ALSO != ""}
+    commands:
+      - assertVisible: "${ALSO}"
+- stopApp

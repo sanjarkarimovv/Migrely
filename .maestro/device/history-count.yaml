@@ -1,0 +1,9 @@
+# Device scenario step: History's list for this month counts COUNT migraines ("2 migraines in October").
+appId: com.migrely.app
+---
+- launchApp
+- tapOn: ".*\\. Opens History\\."
+- scrollUntilVisible:
+    element: "${COUNT} migraines? in .*"
+    direction: DOWN
+- stopApp

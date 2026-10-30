@@ -1,0 +1,15 @@
+# Accessibility tour state: the privacy page scrolled to its end, "Read the full privacy policy" (D119, D203). A second
+# state, because the page's end never shows in settings-privacy.
+appId: com.migrely.app
+---
+- runFlow: ../subflows/launch-clean.yaml
+- tapOn: "Settings"
+- scrollUntilVisible:
+    element: "What Migrely keeps, and where"
+    direction: DOWN
+    centerElement: true
+- tapOn: "What Migrely keeps, and where"
+- scrollUntilVisible:
+    element: "Read the full privacy policy.*"
+    direction: DOWN
+    centerElement: true

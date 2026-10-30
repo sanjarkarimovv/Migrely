@@ -11,6 +11,7 @@ qa/maestro.sh --tags smoke            # the release-gate subset
 qa/maestro.sh .maestro/past-attacks   # one folder or one file
 QA_SERIAL=emulator-5582 qa/maestro.sh --tags smoke   # on Android 8.0
 qa/maestro.sh --install --tags smoke  # reinstall the debug APK first
+QA_APK=<apk> qa/maestro.sh --install  # the build under test, for example a release candidate's (D201)
 ```
 
 The script runs only on the QA emulators `emulator-5580` (AVD `Migrely_QA_API_36`) and `emulator-5582` (AVD
@@ -41,8 +42,13 @@ The exit status comes from passes 1 and 2 only.
   - `geometry`: taps a screen point measured on the QA AVD (API 36). It is skipped below API 29, where the navigation
     bar moves the controls.
   - `a11y-timeout`: checks what Undo does inside its window. `qa/maestro.sh` runs these in a second pass with
-    Android's "Time to take action" at 20 s, which the app honours (EC-UX-16). The default 5 s window has its own
-    flow, `attack-logging/undo-window-passes.yaml`.
+    Android's "Time to take action" at 20 s, which the app honours (EC-UX-16). No flow times the default 5 s window:
+    under host load a start can use it all up, so `attack-logging/undo-window-passes.yaml` runs in this pass too
+    (1.0.1). The length was measured by hand (5.6–5.8 s), and `qa/device_scenarios.sh message_duration` times a
+    message with and without the accessibility timeout. On Android 8.0, which has no "Time to take action", the flow
+    runs with the 5 s window and can still fail under load.
+  - `simulated-store`: buys Premium through the debug build's simulated Google Play (D201). It is skipped on a build
+    that is not debuggable, such as the R8 release APK, which has no simulated store (D113).
 - `a11y-tour/` and `device/` are not test suites. `qa/a11y_audit.sh` and `qa/device_scenarios.sh` run them step by
   step.
 - Flows that depend on screen geometry say so in a comment and assume the QA AVD (pixel_6, 1080×2400, 420 dpi).
@@ -66,3 +72,6 @@ The exit status comes from passes 1 and 2 only.
 | Permissions | `launchApp` grants every permission by default; use `permissions: {all: unset}` or open the app from the script when a permission dialog must appear |
 | Typographic text | Some system and app texts use a curly apostrophe ("Don’t allow", "That’s") or a narrow no-break space before "PM". Match them with `.` in the regex |
 | Onboarding | A fresh install shows four onboarding steps; `subflows/launch-clean.yaml` skips them |
+| Premium | `subflows/buy.yaml` buys a plan (PLAN, SHEET). After onboarding the paywall shows itself while the store is available; `subflows/launch-clean.yaml` closes it, and `onboarding/paywall-after-onboarding.yaml` checks it. Store commands need adb, so they live in `qa/device_scenarios.sh` (`qa_store`) |
+| The system file picker | It opens on "Recent". Use its search, then pick the file under the "Files…" heading (`subflows/import-file.yaml`); saving lands in Download |
+| App language | `cmd locale set-app-locales` recreates the screen in place, so the next step may start where the app was |

@@ -1,0 +1,25 @@
+# Device scenario step: Your data's picker is open on FILE, found by search, and not tapped yet; the scenario taps the
+# file through adb, so a message's time can be counted from that tap (#56).
+appId: com.migrely.app
+---
+- launchApp:
+    stopApp: false
+- extendedWaitUntil:
+    visible: "Settings|Import a backup.*"
+    timeout: 10000
+- runFlow:
+    when:
+      notVisible: "Import a backup.*"
+    commands:
+      - tapOn: "Settings"
+      - tapOn: "Your data.*"
+- tapOn: "Import a backup.*"
+- extendedWaitUntil:
+    visible: "Search"
+    timeout: 10000
+- tapOn: "Search"
+- inputText: "${FILE}"
+- pressKey: Enter
+- extendedWaitUntil:
+    visible: ".*JSON document|[0-9.]+ k?B"
+    timeout: 10000

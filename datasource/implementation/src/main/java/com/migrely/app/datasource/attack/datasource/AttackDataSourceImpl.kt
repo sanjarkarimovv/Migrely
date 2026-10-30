@@ -32,6 +32,12 @@ private const val MAXIMUM_NOTE_LENGTH = 1_000
 /** How long a deleted attack stays restorable: the longest Android accessibility timeout (BRD D23). */
 internal val DELETED_RETENTION: Duration = Duration.ofMinutes(2)
 
+/**
+ * How far ahead of the clock a deletion may read, as after a small step back, and still count as the recent one; one
+ * further ahead never hides a real deletion (#112).
+ */
+internal val DELETION_CLOCK_TOLERANCE: Duration = Duration.ofSeconds(2)
+
 @Suppress("TooManyFunctions")
 class AttackDataSourceImpl(
     private val attackDao: AttackDao,
@@ -215,10 +221,10 @@ class AttackDataSourceImpl(
     }
 
     override fun reopen(attackId: String): ReopenDataModel = database {
-        if (attackDao.reopenIfNoneInProgress(attackId, clock.millis())) {
+        if (attackDao.reopenIfNothingOverlaps(attackId, clock.millis())) {
             ReopenDataModel.Reopened
         } else {
-            ReopenDataModel.AnotherInProgress
+            ReopenDataModel.NotPossible
         }
     }
 
@@ -239,9 +245,13 @@ class AttackDataSourceImpl(
     }
 
     override fun recentlyDeleted(since: Instant): DeletedAttackDataModel? = database {
-        val cutoff = clock.millis() - DELETED_RETENTION.toMillis()
-        purgeExpiredDeletionsQuietly(clock.millis())
-        attackDao.recentlyDeleted(maxOf(since.toEpochMilli(), cutoff))?.let { local ->
+        val now = clock.millis()
+        purgeExpiredDeletionsQuietly(now)
+        val cutoff = now - DELETED_RETENTION.toMillis()
+        attackDao.recentlyDeleted(
+            maxOf(since.toEpochMilli(), cutoff),
+            now + DELETION_CLOCK_TOLERANCE.toMillis()
+        )?.let { local ->
             local.deletedEpochMillis?.let { deletedAt ->
                 DeletedAttackDataModel(local.id, Instant.ofEpochMilli(deletedAt))
             }
@@ -249,7 +259,7 @@ class AttackDataSourceImpl(
     }
 
     override fun purgeExpiredDeletions() = database {
-        attackDao.purgeDeletedBefore(clock.millis() - DELETED_RETENTION.toMillis())
+        purgeDeletions(clock.millis())
     }
 
     override fun updateLongAttackCheck(attackId: String, confirmedAt: Instant?, disabled: Boolean) =
@@ -288,13 +298,23 @@ class AttackDataSourceImpl(
     }
 
     /**
+     * Deletions past their undo window, and those stamped further ahead of the clock than the window, as after a clock
+     * set back by days (#112). One a little ahead, as after an automatic correction of a few seconds, stays
+     * restorable, so an Undo already offered still works.
+     */
+    private fun purgeDeletions(nowEpochMillis: Long) = attackDao.purgeDeletedOutside(
+        nowEpochMillis - DELETED_RETENTION.toMillis(),
+        nowEpochMillis + DELETED_RETENTION.toMillis()
+    )
+
+    /**
      * Housekeeping only: a purge that fails, for example when storage is full, must not stop the read or the deletion
      * it runs before. Rows it leaves behind are hidden anyway and are purged on a later call.
      */
     @Suppress("SwallowedException")
     private fun purgeExpiredDeletionsQuietly(nowEpochMillis: Long) {
         try {
-            attackDao.purgeDeletedBefore(nowEpochMillis - DELETED_RETENTION.toMillis())
+            purgeDeletions(nowEpochMillis)
         } catch (exception: SQLiteException) {
             // Ignored on purpose; see above.
         }

@@ -1,0 +1,9 @@
+# Device scenario step: History's summary of this month reads "Days with attack medication: DAYS".
+appId: com.migrely.app
+---
+- launchApp
+- tapOn: ".*\\. Opens History\\."
+- scrollUntilVisible:
+    element: "Days with attack medication: ${DAYS}"
+    direction: DOWN
+- stopApp

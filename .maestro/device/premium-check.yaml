@@ -1,0 +1,45 @@
+# Device scenario step: Settings' Premium section reads STATUS (a regex), and History's Doctor report and Insights open
+# their paywalls (REPORT "locked") or their screens (REPORT "open").
+appId: com.migrely.app
+---
+- launchApp
+- tapOn: "Settings"
+- extendedWaitUntil:
+    visible: "${STATUS}"
+    timeout: 15000
+- back
+- tapOn: ".*\\. Opens History\\."
+- tapOn: "Doctor report"
+- runFlow:
+    when:
+      true: ${REPORT == "locked"}
+    commands:
+      - extendedWaitUntil:
+          visible: "A report for your doctor"
+          timeout: 10000
+- runFlow:
+    when:
+      true: ${REPORT == "open"}
+    commands:
+      - extendedWaitUntil:
+          visible: "Create report"
+          timeout: 10000
+- back
+- tapOn: "Insights"
+- runFlow:
+    when:
+      true: ${REPORT == "locked"}
+    commands:
+      - extendedWaitUntil:
+          visible: "See what your migraines have in common"
+          timeout: 10000
+- runFlow:
+    when:
+      true: ${REPORT == "open"}
+    commands:
+      - extendedWaitUntil:
+          visible:
+            checked: true
+            containsChild: "6 months"
+          timeout: 10000
+- stopApp

@@ -5,6 +5,7 @@
 #   qa/maestro.sh --tags smoke         only flows tagged smoke
 #   qa/maestro.sh .maestro/today-sky   one folder or one flow file
 #   qa/maestro.sh --install ...        build and reinstall the debug APK first
+#   QA_APK=<apk> qa/maestro.sh --install ...   install that APK instead, for example a release branch's build
 #   QA_SERIAL=emulator-5582 qa/maestro.sh --tags smoke    on the Android 8.0 QA emulator
 #
 # Three passes:
@@ -30,10 +31,12 @@ esac
 export MAESTRO_CLI_NO_ANALYTICS=1
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 ADB="${ANDROID_HOME:-$HOME/Library/Android/sdk}/platform-tools/adb"
-APK="$ROOT/app/build/outputs/apk/debug/app-debug.apk"
+APP="com.migrely.app"
+APK="${QA_APK:-$ROOT/app/build/outputs/apk/debug/app-debug.apk}"
 LONG_TIMEOUT_TAG="a11y-timeout"
 KNOWN_BUG_TAG="known-bug"
 GEOMETRY_TAG="geometry"
+STORE_TAG="simulated-store"
 LONG_TIMEOUT_MS=20000
 adbq() { "$ADB" -s "$QA_SERIAL" "$@"; }
 
@@ -82,7 +85,7 @@ trap restore EXIT
 
 if $install; then
   # Always build: Gradle is incremental, and an old APK must never be retested by mistake.
-  (cd "$ROOT" && ./gradlew :app:assembleDebug --console=plain -q)
+  [[ -n "${QA_APK:-}" ]] || (cd "$ROOT" && ./gradlew :app:assembleDebug --console=plain -q)
   adbq install -r "$APK" >/dev/null
 fi
 
@@ -113,12 +116,20 @@ wanted() { # $1 flow file: matches the --tags filter (any of a comma-separated l
 }
 
 pass1=() pass2=() pass3=()
-skipped_geometry=0
+skipped_geometry=0 skipped_store=0
+# A release build has no simulated store (D113), so the flows that buy through it are left out there.
+package="$(adbq shell dumpsys package "$APP")"
+debuggable=false
+[[ "$package" == *DEBUGGABLE* ]] && debuggable=true
 while IFS= read -r flow; do
   wanted "$flow" || continue
   if [[ "$SDK_LEVEL" -lt 29 ]] && has_tag "$flow" "$GEOMETRY_TAG"; then
     # Screen points measured on the API 36 edge-to-edge layout do not hold with Android 8's navigation bar.
     skipped_geometry=$((skipped_geometry + 1))
+    continue
+  fi
+  if ! $debuggable && has_tag "$flow" "$STORE_TAG"; then
+    skipped_store=$((skipped_store + 1))
     continue
   fi
   if has_tag "$flow" "$KNOWN_BUG_TAG"; then pass3+=("$flow")
@@ -133,6 +144,7 @@ mkdir -p "$out"
 status=0
 echo "Maestro on $QA_SERIAL (API $SDK_LEVEL) -> $out"
 [[ $skipped_geometry -gt 0 ]] && echo "Skipped $skipped_geometry flow(s) tagged $GEOMETRY_TAG: not valid below API 29"
+[[ $skipped_store -gt 0 ]] && echo "Skipped $skipped_store flow(s) tagged $STORE_TAG: the installed build is not debuggable"
 
 run_pass() { # $1 name, then flow files
   local name="$1"

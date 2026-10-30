@@ -239,7 +239,7 @@ class AttackDaoTest {
         classUnderTest.insertAttack(attack(id = "current", start = 3_000L, end = null))
 
         // When
-        val reopened = classUnderTest.reopenIfNoneInProgress("ended", 4_000L)
+        val reopened = classUnderTest.reopenIfNothingOverlaps("ended", 4_000L)
 
         // Then
         assertFalse(reopened)
@@ -247,16 +247,83 @@ class AttackDaoTest {
     }
 
     @Test
-    fun givenNoneInProgress_whenReopening_thenTheAttackIsInProgressAgain() {
+    fun givenNothingOverlapping_whenReopening_thenTheAttackIsInProgressAgain() {
         // Given
         classUnderTest.insertAttack(attack(id = "ended", start = 1_000L, end = 2_000L))
 
         // When
-        val reopened = classUnderTest.reopenIfNoneInProgress("ended", 4_000L)
+        val reopened = classUnderTest.reopenIfNothingOverlaps("ended", 4_000L)
 
         // Then
         assertTrue(reopened)
         assertNotNull(classUnderTest.inProgress())
+    }
+
+    @Test
+    fun givenAnEndedAttackAddedAfterTheStart_whenReopening_thenRefuses() {
+        // Given
+        classUnderTest.insertAttack(attack(id = "ended", start = 1_000L, end = 2_000L))
+        classUnderTest.insertAttack(attack(id = "later", start = 3_000L, end = 4_000L))
+
+        // When
+        val reopened = classUnderTest.reopenIfNothingOverlaps("ended", 5_000L)
+
+        // Then
+        assertFalse(reopened)
+        assertEquals(2_000L, classUnderTest.byId("ended")!!.attack.endEpochMillis)
+        assertEquals(4_000L, classUnderTest.byId("later")!!.attack.endEpochMillis)
+    }
+
+    @Test
+    fun givenAnAttackStartingAtTheEnd_whenReopening_thenRefuses() {
+        // Given
+        classUnderTest.insertAttack(attack(id = "ended", start = 1_000L, end = 2_000L))
+        classUnderTest.insertAttack(attack(id = "later", start = 2_000L, end = 4_000L))
+
+        // When
+        val reopened = classUnderTest.reopenIfNothingOverlaps("ended", 5_000L)
+
+        // Then
+        assertFalse(reopened)
+        assertEquals(2_000L, classUnderTest.byId("ended")!!.attack.endEpochMillis)
+    }
+
+    @Test
+    fun givenAnotherAttackOnlyTouchingTheStart_whenReopening_thenReopens() {
+        // Given
+        classUnderTest.insertAttack(attack(id = "earlier", start = 500L, end = 1_000L))
+        classUnderTest.insertAttack(attack(id = "ended", start = 1_000L, end = 2_000L))
+
+        // When
+        val reopened = classUnderTest.reopenIfNothingOverlaps("ended", 5_000L)
+
+        // Then
+        assertTrue(reopened)
+        assertEquals("ended", classUnderTest.inProgress()!!.attack.id)
+    }
+
+    @Test
+    fun givenADeletedAttackAfterTheStart_whenReopening_thenReopens() {
+        // Given
+        classUnderTest.insertAttack(attack(id = "ended", start = 1_000L, end = 2_000L))
+        classUnderTest.insertAttack(attack(id = "deleted", start = 3_000L, end = 4_000L))
+        classUnderTest.softDelete("deleted", nowEpochMillis = 4_500L)
+
+        // When
+        val reopened = classUnderTest.reopenIfNothingOverlaps("ended", 5_000L)
+
+        // Then
+        assertTrue(reopened)
+        assertEquals("ended", classUnderTest.inProgress()!!.attack.id)
+    }
+
+    @Test
+    fun givenNoSuchAttack_whenReopening_thenRefuses() {
+        // When
+        val reopened = classUnderTest.reopenIfNothingOverlaps("missing", 5_000L)
+
+        // Then
+        assertFalse(reopened)
     }
 
     private fun count(sql: String): Int =

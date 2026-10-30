@@ -1,0 +1,28 @@
+# Device scenario step: Settings → Theme → THEME ("Dark", "Light" or "Match the phone"); the dialog notes that attack
+# mode stays dark. Ends on home, which the script measures, without a force stop.
+appId: com.migrely.app
+---
+- launchApp:
+    stopApp: false
+- extendedWaitUntil:
+    visible: "Settings"
+    timeout: 10000
+- tapOn: "Settings"
+- tapOn: "Theme.*"
+- extendedWaitUntil:
+    visible: "During a migraine, Migrely stays dark\\."
+    timeout: 5000
+- tapOn: "${THEME}"
+- extendedWaitUntil:
+    visible: "QA: never shown, a pause for the theme to apply"
+    timeout: 1500
+    optional: true
+- runFlow:
+    when:
+      visible: "During a migraine, Migrely stays dark\\."
+    commands:
+      - back
+- back
+- extendedWaitUntil:
+    visible: "Migraine started"
+    timeout: 5000

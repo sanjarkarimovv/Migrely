@@ -1,0 +1,59 @@
+# Covers: app-settings › The settings list › Opening Settings
+# Covers: app-settings › Warning signs › Reading them
+# Covers: app-settings › Privacy and about › The version
+# Covers: app-settings › Delete all data › Not typed
+appId: com.migrely.app
+name: Settings lists its sections; Warning signs and the version open; Delete all data waits for DELETE
+tags: [regression, app-settings]
+---
+- runFlow: ../subflows/launch-clean.yaml
+- tapOn: "Settings"
+- assertVisible: "Your diary"
+- assertVisible: "Reminders.*"
+- assertVisible: "Track periods.*"
+- assertVisible: "Your data.*"
+- assertVisible: "Look"
+- assertVisible: "Theme.*"
+- scrollUntilVisible:
+    element: "Delete all data.*"
+    direction: DOWN
+    # Centred: at the screen's bottom edge a tap can land in the system gesture area.
+    centerElement: true
+- assertVisible: "Privacy and about"
+- assertVisible: "Version"
+# The installed version name sits under it, for example "0.1.0".
+- assertVisible: "[0-9]+\\.[0-9]+\\.[0-9]+"
+- scrollUntilVisible:
+    element: "Warning signs.*"
+    direction: UP
+- tapOn: "Warning signs.*"
+# The page's own lines: the Settings row has the title too.
+- extendedWaitUntil:
+    visible: "Call your local emergency number if any of these happen\\."
+    timeout: 5000
+- assertVisible: "Sudden pain that is the worst of your life"
+- assertVisible: "Pain after a head injury"
+- assertVisible: "A stiff neck with a fever"
+- assertVisible: "Weakness, numbness or trouble speaking that doesn.t pass"
+- assertVisible: "A first headache after the age of 50"
+- back
+# Delete all data: nothing happens until DELETE is typed exactly.
+- scrollUntilVisible:
+    element: "Delete all data.*"
+    direction: DOWN
+    # Centred: at the screen's bottom edge a tap can land in the system gesture area.
+    centerElement: true
+- tapOn: "Delete all data.*"
+- extendedWaitUntil:
+    visible: "Delete all data\\?"
+    timeout: 5000
+- tapOn: "Delete everything"
+- assertVisible: "Delete all data\\?"
+- tapOn: "Type DELETE to confirm"
+- inputText: "delete"
+- hideKeyboard
+- tapOn: "Delete everything"
+- assertVisible: "Delete all data\\?"
+- back
+- back
+- assertVisible: "Migraine started"

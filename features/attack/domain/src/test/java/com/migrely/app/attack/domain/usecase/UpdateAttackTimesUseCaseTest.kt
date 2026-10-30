@@ -115,7 +115,39 @@ class UpdateAttackTimesUseCaseTest {
     }
 
     @Test
-    fun `Given a start beyond the tolerance when updating then rejected`() {
+    fun `Given a start at now when updating then stored, and a millisecond later rejected`() {
+        givenAttack(end = null)
+
+        val atNow = update(FIXTURE_NOW, null)
+        val after = update(FIXTURE_NOW.plusMillis(1), null)
+
+        // Updated carries the times before the change.
+        assertEquals(
+            UpdateAttackTimesResultDomainModel.Updated(FIXTURE_START, null, emptyList()),
+            atNow
+        )
+        assertEquals(
+            UpdateAttackTimesResultDomainModel.InFuture(TimeFieldDomainModel.Start),
+            after
+        )
+    }
+
+    @Test
+    fun `Given an ended attack moved to start 2 minutes from now when updating then rejected`() {
+        // QA #89: such an attack would lie wholly after a start tapped now.
+        givenAttack()
+
+        val actual =
+            update(FIXTURE_NOW.plus(Duration.ofMinutes(2)), FIXTURE_NOW.plus(Duration.ofMinutes(4)))
+
+        assertEquals(
+            UpdateAttackTimesResultDomainModel.InFuture(TimeFieldDomainModel.Start),
+            actual
+        )
+    }
+
+    @Test
+    fun `Given a start 6 minutes after now when updating then rejected`() {
         givenAttack(end = null)
 
         val actual = update(FIXTURE_NOW.plus(Duration.ofMinutes(6)), null)

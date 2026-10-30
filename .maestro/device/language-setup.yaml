@@ -1,0 +1,6 @@
+# Device scenario step (qa/split_apks.sh): a clean install with one migraine today, left on home. The script sets the
+# language after this step, since clearing the app's data also clears its own language.
+appId: com.migrely.app
+---
+- runFlow: ../subflows/launch-clean.yaml
+- runFlow: ../subflows/log-attack-today.yaml

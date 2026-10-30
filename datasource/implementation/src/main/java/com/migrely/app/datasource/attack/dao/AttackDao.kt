@@ -181,18 +181,29 @@ abstract class AttackDao {
     )
     abstract fun clearDeleted(attackId: String, nowEpochMillis: Long)
 
+    /**
+     * The latest deletion stamped from [sinceEpochMillis] to [untilEpochMillis], so one stamped
+     * ahead of the clock never hides a real one (#112).
+     */
     @Query(
         "SELECT * FROM attack WHERE deleted_epoch_millis IS NOT NULL " +
             "AND deleted_epoch_millis >= :sinceEpochMillis " +
+            "AND deleted_epoch_millis <= :untilEpochMillis " +
             "ORDER BY deleted_epoch_millis DESC LIMIT 1"
     )
-    abstract fun recentlyDeleted(sinceEpochMillis: Long): AttackLocalModel?
+    abstract fun recentlyDeleted(sinceEpochMillis: Long, untilEpochMillis: Long): AttackLocalModel?
 
-    /** Removes deleted attacks for good; their points, tags and intakes go with them (foreign keys cascade). */
+    /**
+     * Removes deleted attacks for good: those deleted before [cutoffEpochMillis], and those stamped
+     * after [aheadEpochMillis], as after a clock set back by days (#112). Their points, tags and
+     * intakes go with them (foreign keys cascade). Attacks that are not deleted are never touched.
+     */
     @Query(
-        "DELETE FROM attack WHERE deleted_epoch_millis IS NOT NULL AND deleted_epoch_millis < :cutoffEpochMillis"
+        "DELETE FROM attack WHERE deleted_epoch_millis IS NOT NULL " +
+            "AND (deleted_epoch_millis < :cutoffEpochMillis " +
+            "OR deleted_epoch_millis > :aheadEpochMillis)"
     )
-    abstract fun purgeDeletedBefore(cutoffEpochMillis: Long)
+    abstract fun purgeDeletedOutside(cutoffEpochMillis: Long, aheadEpochMillis: Long)
 
     @Query(
         "UPDATE attack SET long_check_confirmed_epoch_millis = :confirmedEpochMillis, " +
@@ -312,11 +323,14 @@ abstract class AttackDao {
         }
     }
 
-    /** Reopens [attackId] only when no other attack is in progress. Returns false when another one is. */
+    /**
+     * Reopens [attackId] only when, open-ended again, it overlaps no other attack: no attack in progress and none that
+     * ends after its start (BRD EC-ATK-20). Returns false when it would, or when the attack no longer exists.
+     */
     @Transaction
-    open fun reopenIfNoneInProgress(attackId: String, nowEpochMillis: Long): Boolean {
-        val inProgress = inProgress()
-        if (inProgress != null && inProgress.attack.id != attackId) return false
+    open fun reopenIfNothingOverlaps(attackId: String, nowEpochMillis: Long): Boolean {
+        val attack = byId(attackId)?.attack ?: return false
+        if (overlapping(attackId, attack.startEpochMillis, Long.MAX_VALUE) != null) return false
         clearEnd(attackId, nowEpochMillis)
         return true
     }

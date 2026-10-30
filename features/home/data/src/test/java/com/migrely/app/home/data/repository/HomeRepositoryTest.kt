@@ -231,10 +231,10 @@ class HomeRepositoryTest {
     }
 
     @Test
-    fun `Given another attack in progress when reopening then AnotherInProgress`() {
-        given(attackDataSource.reopen("a")).willReturn(ReopenDataModel.AnotherInProgress)
+    fun `Given the attack would overlap another when reopening then NotPossible`() {
+        given(attackDataSource.reopen("a")).willReturn(ReopenDataModel.NotPossible)
 
-        assertEquals(ReopenResultDomainModel.AnotherInProgress, classUnderTest.reopenAttack("a"))
+        assertEquals(ReopenResultDomainModel.NotPossible, classUnderTest.reopenAttack("a"))
     }
 
     @Test

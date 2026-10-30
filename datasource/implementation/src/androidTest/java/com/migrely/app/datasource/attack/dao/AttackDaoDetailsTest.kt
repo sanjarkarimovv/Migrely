@@ -121,7 +121,7 @@ class AttackDaoDetailsTest {
 
         assertNull(classUnderTest.byId("a"))
         assertNull(classUnderTest.inProgress())
-        assertNotNull(classUnderTest.recentlyDeleted(1_000L))
+        assertNotNull(classUnderTest.recentlyDeleted(1_000L, 3_000L))
     }
 
     @Test
@@ -136,13 +136,58 @@ class AttackDaoDetailsTest {
     }
 
     @Test
+    fun givenADeletionStampedAheadOfNow_whenReadingTheRecentOne_thenANewerRealOneIsFound() {
+        classUnderTest.insertAttack(attack(id = "ahead", start = 1_000L, end = 2_000L))
+        classUnderTest.insertAttack(attack(id = "real", start = 3_000L, end = 4_000L))
+        // Deleted with the clock three days ahead, then the clock was set back (#112).
+        classUnderTest.softDelete("ahead", 260_000_000L)
+        classUnderTest.softDelete("real", 5_000L)
+
+        assertEquals("real", classUnderTest.recentlyDeleted(1_000L, 7_000L)?.id)
+    }
+
+    @Test
+    fun givenRowsAroundTheWindow_whenPurging_thenOnlyThoseOutsideGoAndLiveAttacksStay() {
+        classUnderTest.insertAttack(attack(id = "live", start = 1_000L, end = 2_000L))
+        listOf(
+            "inside" to 5_000L,
+            "edge" to 7_000L,
+            "ahead" to 7_001L,
+            "old" to 999L
+        ).forEach { (id, deletedAt) ->
+            classUnderTest.insertAttack(attack(id = id, start = 100L, end = 200L))
+            classUnderTest.softDelete(id, deletedAt)
+        }
+
+        assertEquals("edge", classUnderTest.recentlyDeleted(1_000L, 7_000L)?.id)
+        classUnderTest.purgeDeletedOutside(1_000L, 7_000L)
+
+        assertNotNull(classUnderTest.byId("live"))
+        assertNotNull(classUnderTest.deletedById("inside"))
+        assertNotNull(classUnderTest.deletedById("edge"))
+        assertNull(classUnderTest.deletedById("ahead"))
+        assertNull(classUnderTest.deletedById("old"))
+    }
+
+    @Test
+    fun givenADeletionStampedAheadOfNow_whenPurging_thenItIsGoneForGood() {
+        classUnderTest.insertAttack(attack(id = "ahead", start = 1_000L, end = 2_000L))
+        classUnderTest.softDelete("ahead", 260_000_000L)
+
+        classUnderTest.purgeDeletedOutside(1_000L, 7_000L)
+
+        assertFalse(classUnderTest.restoreIfPossible("ahead", 5_000L))
+        assertNull(classUnderTest.deletedById("ahead"))
+    }
+
+    @Test
     fun givenADeletion_whenPurgedAfterTheWindow_thenTheAttackAndItsRowsAreGone() {
         classUnderTest.insertAttack(attack(id = "a", start = 1_000L, end = 2_000L))
         classUnderTest.insertIntensityPoint(point("a", 1_500L, 5))
         classUnderTest.insertTag(AttackTagLocalModel("a", "SYMPTOM", "aura"))
         classUnderTest.softDelete("a", 3_000L)
 
-        classUnderTest.purgeDeletedBefore(4_000L)
+        classUnderTest.purgeDeletedOutside(4_000L, 10_000L)
 
         assertFalse(classUnderTest.restoreIfPossible("a", 5_000L))
         assertEquals(0, count("SELECT COUNT(*) FROM intensity_point"))

@@ -45,7 +45,8 @@ qa_unlock_device() {
 # values they find and restore those, so a value left over by a crashed run would be "restored" again; it is reported
 # when a script starts. qa/reset_device.sh puts the baseline back.
 QA_BASELINE=("system accelerometer_rotation=1" "system user_rotation=0" "system font_scale=1.0"
-  "secure accessibility_interactive_ui_timeout_ms=null" "global animator_duration_scale=null" "global auto_time=1")
+  "secure accessibility_interactive_ui_timeout_ms=null" "secure accessibility_non_interactive_ui_timeout_ms=null"
+  "global animator_duration_scale=null" "global auto_time=1" "global zen_mode=0" "global airplane_mode_on=0")
 
 qa_adb() { "${ADB:-${ANDROID_HOME:-$HOME/Library/Android/sdk}/platform-tools/adb}" -s "$QA_SERIAL" "$@"; }
 
@@ -60,6 +61,37 @@ qa_check_baseline() {
         "Run qa/reset_device.sh first if that value is left over." >&2
     fi
   done
+  have="$(qa_system_locale)"
+  if [[ "$have" != "$QA_BASELINE_LOCALE" ]]; then
+    echo "Warning: $QA_SERIAL starts with the system language $have, not the baseline $QA_BASELINE_LOCALE." \
+      "Run qa/reset_device.sh first if that value is left over." >&2
+  fi
+}
+
+# The system language of both QA AVDs. Android 8.0 has no per-app language, so qa/split_apks.sh changes the system's
+# there, through the emulator's Custom Locale app.
+QA_BASELINE_LOCALE=en-US
+qa_system_locale() { # the system language as a BCP-47 tag; a fresh AVD has no persist.sys.locale yet
+  local tag
+  tag="$(qa_adb shell getprop persist.sys.locale | tr -d '\r')"
+  [[ -n "$tag" ]] || tag="$(qa_adb shell getprop ro.product.locale | tr -d '\r')"
+  echo "${tag:-unknown}"
+}
+qa_set_system_locale() { # $1 BCP-47 tag: sets the system language and waits up to 20 s for it to apply
+  local want="$1" have="" end
+  # Custom Locale takes "ru_RU" and logs "Invalid locale: expected ab_CD" for "ru-RU" (API 26 image), changing nothing.
+  # A tag with a script, such as uz-Latn-UZ, has no ab_CD form.
+  [[ "$want" =~ ^[a-z]{2,3}-[A-Z]{2}$ ]] || { echo "  FAILED: $want is not a language-COUNTRY tag" >&2; return 1; }
+  qa_adb shell am broadcast -a com.android.intent.action.SET_LOCALE --es com.android.intent.extra.LOCALE "${want//-/_}" \
+    com.android.customlocale2 >/dev/null
+  end=$((SECONDS + 20))
+  while ((SECONDS < end)); do
+    have="$(qa_system_locale)"
+    [[ "$have" == "$want" ]] && return 0
+    sleep 0.5
+  done
+  echo "  FAILED: the system language is $have, not $want" >&2
+  return 1
 }
 
 qa_restore_setting() { # $1 namespace, $2 key, $3 value or "null": put it back and read it back

@@ -63,6 +63,7 @@
     <string name="attack_summary_range">%1$s – %2$s</string>
     <string name="attack_summary_peak">%1$d/10</string>
     <string name="attack_summary_peak_not_recorded">Not recorded</string>
+    <string name="attack_summary_peak_not_recorded_spoken">not recorded</string>
     <string name="attack_summary_description">Migraine from %1$s to %2$s, peak %3$s. Opens its details.</string>
     <string name="attack_summary_peak_spoken">%1$d out of 10</string>
     <string name="attack_details">Details</string>

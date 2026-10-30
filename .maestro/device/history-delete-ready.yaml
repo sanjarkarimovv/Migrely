@@ -1,0 +1,12 @@
+# Device scenario step: a migraine's details opened from History, scrolled so "Delete migraine" is on screen. The
+# script taps it with adb, so the time of the tap is exact.
+appId: com.migrely.app
+---
+- runFlow: ../subflows/launch-clean.yaml
+- runFlow: ../subflows/start-attack.yaml
+- runFlow: ../subflows/end-attack.yaml
+- tapOn: ".*\\. Opens History\\."
+- tapOn: ".*, peak not recorded\\. Opens its details\\."
+- scrollUntilVisible:
+    element: "Delete migraine"
+    direction: DOWN

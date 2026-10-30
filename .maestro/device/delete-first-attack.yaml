@@ -1,0 +1,20 @@
+# Device scenario step: delete the newest migraine from History (no undo).
+appId: com.migrely.app
+---
+- launchApp
+- tapOn: ".*\\. Opens History\\."
+- scrollUntilVisible:
+    element: ".*Opens its details\\."
+    direction: DOWN
+- tapOn:
+    text: ".*Opens its details\\."
+    index: 0
+- scrollUntilVisible:
+    element: "Delete migraine"
+    direction: DOWN
+- tapOn: "Delete migraine"
+- extendedWaitUntil:
+    visible: "QA: never shown, a pause past the undo window"
+    timeout: 7000
+    optional: true
+- stopApp

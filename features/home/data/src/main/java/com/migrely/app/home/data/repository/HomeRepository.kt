@@ -168,7 +168,7 @@ class HomeRepository(
     override fun reopenAttack(attackId: String): ReopenResultDomainModel = try {
         when (attackDataSource.reopen(attackId)) {
             ReopenDataModel.Reopened -> ReopenResultDomainModel.Reopened
-            ReopenDataModel.AnotherInProgress -> ReopenResultDomainModel.AnotherInProgress
+            ReopenDataModel.NotPossible -> ReopenResultDomainModel.NotPossible
         }
     } catch (_: StorageFullDataException) {
         ReopenResultDomainModel.StorageFull

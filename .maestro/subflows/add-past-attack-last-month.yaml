@@ -7,6 +7,12 @@ appId: com.migrely.app
 - tapOn: "Change to previous month"
 - tapOn: "[A-Za-z]+, [A-Za-z]+ 12, [0-9]{4}"
 - tapOn: "Next"
+# 10 in the morning, whatever the time now: two hours from the current time could run past midnight and make two
+# migraine days (it once did, at 23:59).
+- tapOn:
+    text: "10 o.clock"
+    below: "Select minutes"
+- tapOn: "AM"
 - tapOn: "OK"
 - assertVisible: "Duration 2 h 0 min"
 - tapOn: "Add migraine"

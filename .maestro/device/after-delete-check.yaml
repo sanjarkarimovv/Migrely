@@ -1,0 +1,19 @@
+# Device scenario step: after Delete all data, past onboarding: History is at its first-use state, which it shows only
+# with no migraine, no mark and no attack medication (D99), and Log medication offers to add a first medication.
+appId: com.migrely.app
+---
+- runFlow: ../subflows/skip-onboarding.yaml
+- extendedWaitUntil:
+    visible: "Today: calm\\. Calm so far today\\. No migraine logged\\."
+    timeout: 10000
+- tapOn: ".*\\. Opens History\\."
+- extendedWaitUntil:
+    visible: "Log your first migraine"
+    timeout: 5000
+- back
+- tapOn: "Log medication"
+- extendedWaitUntil:
+    visible: "Add the medication you took"
+    timeout: 5000
+- back
+- pressKey: Home

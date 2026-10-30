@@ -11,6 +11,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.DatePickerState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SelectableDates
@@ -129,8 +130,23 @@ private fun DateStep(
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text(labels.cancel) } }
     ) {
-        DatePicker(state = state, title = { Text(labels.title, Modifier.padding(16.dp)) })
+        DateStepCalendar(state = state, title = labels.title)
     }
+}
+
+/**
+ * The date step's calendar. Material draws a month as a grid of fixed height, and the dialog gives it only the height
+ * above its buttons; in landscape or at a large font that is too little, and the first and last weeks spilled under
+ * the weekday letters and the buttons (QA #101). Scrolling keeps the grid at its full height.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun DateStepCalendar(state: DatePickerState, title: String) {
+    DatePicker(
+        state = state,
+        modifier = Modifier.verticalScroll(rememberScrollState()),
+        title = { Text(title, Modifier.padding(16.dp)) }
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -201,7 +217,7 @@ private fun TimeStep(
     }
 }
 
-private fun LocalDate.utcMidnight(): Long = atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+internal fun LocalDate.utcMidnight(): Long = atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
 
 private fun LocalDate.coerceIn(first: LocalDate, last: LocalDate): LocalDate = when {
     isBefore(first) -> first

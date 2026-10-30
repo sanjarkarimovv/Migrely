@@ -1,0 +1,121 @@
+# Covers: subscription › The paywall › From the doctor report
+# Covers: trigger-insights › Insights are premium › Free user
+# Covers: doctor-report › The doctor report is premium › Free user
+# Covers: subscription › Buying › A purchase
+# Covers: doctor-report › Choosing the period › Opening the report
+# Covers: doctor-report › Nothing to report › An empty month
+# Covers: app-settings › Premium in Settings › A subscriber
+# Covers: subscription › Changing plans › Monthly to yearly
+# Covers: quality-gates › Premium is checked through the simulated store › A purchase from the paywall
+# A free user's taps on Doctor report and Insights open the paywall with their own headlines; closing it returns to
+# History. Monthly is bought through the simulated store and the report screen opens; then Change plan moves to yearly
+# (D120), and Settings reads "Premium · yearly".
+appId: com.migrely.app
+name: Premium through the paywall; the report screen opens after buying; Change plan to yearly
+tags: [regression, subscription, simulated-store]
+---
+- runFlow: ../subflows/launch-clean.yaml
+- tapOn: ".*\\. Opens History\\."
+- tapOn: "Doctor report"
+- extendedWaitUntil:
+    visible: "A report for your doctor"
+    timeout: 10000
+- assertVisible: "Close"
+- assertVisible: "Premium makes a clear PDF of your migraines and medications to take to your appointment\\."
+- assertVisible:
+    text: "Yearly\\. 7 days free, then .*/year\\."
+    checked: true
+- assertVisible:
+    text: "Monthly\\. .*/month\\."
+    checked: false
+- assertVisible: "Lifetime\\. .* · one payment\\."
+- assertVisible: "Start free trial"
+- assertVisible: "Renews automatically\\. Cancel anytime in Google Play\\. Cancel before the trial ends and you won.t be charged\\."
+- assertVisible: "What Premium adds"
+- assertVisible: "Logging, history, reminders, export and every safety warning stay free\\."
+- assertVisible: "Restore purchases"
+- tapOn: "Lifetime\\. .*"
+- assertVisible: "Buy once"
+- assertVisible: "One payment\\. Nothing renews\\."
+- tapOn: "Close"
+- extendedWaitUntil:
+    visible: "History"
+    timeout: 5000
+- assertNotVisible: "A report for your doctor"
+- tapOn: "Insights"
+- extendedWaitUntil:
+    visible: "See what your migraines have in common"
+    timeout: 10000
+- assertVisible: "Premium shows your triggers, when migraines come, and what helped\\."
+- tapOn: "Close"
+- extendedWaitUntil:
+    visible: "History"
+    timeout: 5000
+# Buying monthly from the report's paywall opens the report.
+- tapOn: "Doctor report"
+- extendedWaitUntil:
+    visible: "A report for your doctor"
+    timeout: 10000
+- runFlow:
+    file: ../subflows/buy.yaml
+    env:
+      PLAN: "Monthly"
+      BUTTON: "Subscribe"
+      SHEET: "Complete the purchase"
+- extendedWaitUntil:
+    visible: "You have Premium"
+    timeout: 10000
+- assertVisible: "Thank you\\. The doctor report and Insights are open to you\\."
+- tapOn: "Continue"
+- extendedWaitUntil:
+    visible: "Create report"
+    timeout: 10000
+# The report screen: 3 months chosen, notes off, the dates it covers; nothing logged, so Create report is off.
+- assertVisible:
+    checked: true
+    containsChild: "3 months"
+# "Include notes" starts off: the switch's state is not reliable in Maestro's tree, so the report scenario checks it
+# by the PDF (no note in a report made with the defaults).
+- assertVisible: "Include notes"
+- assertVisible: "[A-Z][a-z]{2} [0-9]{1,2}, [0-9]{4} to [A-Z][a-z]{2} [0-9]{1,2}, [0-9]{4}"
+- assertVisible: "Nothing was logged in this period\\."
+- tapOn: "1 month"
+- assertVisible:
+    checked: true
+    containsChild: "1 month"
+- assertVisible: "Nothing was logged in this period\\."
+- assertVisible:
+    enabled: false
+    containsChild: "Create report"
+- back
+- tapOn: "Insights"
+- extendedWaitUntil:
+    visible:
+      checked: true
+      containsChild: "6 months"
+    timeout: 10000
+- back
+- back
+# Change plan: monthly to yearly (D120), then Settings shows the yearly plan with Restore and Manage.
+- tapOn: "Settings"
+- assertVisible: "Premium · monthly"
+- tapOn: "Change plan"
+- extendedWaitUntil:
+    visible: "Yearly\\. .*"
+    timeout: 10000
+- tapOn: "Yearly\\. .*"
+- tapOn: "Subscribe|Start free trial|Change plan"
+- extendedWaitUntil:
+    visible: "Complete the purchase"
+    timeout: 10000
+- assertVisible: "(?s)Simulated Google Play.*Yearly.*"
+- tapOn: "Complete the purchase"
+- extendedWaitUntil:
+    visible: "Continue"
+    timeout: 10000
+- tapOn: "Continue"
+- extendedWaitUntil:
+    visible: "Premium · yearly"
+    timeout: 10000
+- assertVisible: "Restore purchases"
+- assertVisible: "Manage subscription"

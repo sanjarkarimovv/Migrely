@@ -1,7 +1,7 @@
 # Play Console: Migrely 1.0.0 ni chiqarish yoʻriqnomasi
 
 Bu hujjat Migrely'ni Google Play'ga chiqarish uchun Play Console'da qilinadigan barcha qadamlarni tartib bilan
-beradi (BRD 13b, D101–D119). Tugma va boʻlim nomlari Play Console'dagidek inglizcha yozilgan. Play Console vaqti-vaqti
+beradi (BRD 13b, D101–D125). Tugma va boʻlim nomlari Play Console'dagidek inglizcha yozilgan. Play Console vaqti-vaqti
 bilan oʻzgaradi: nom boshqacha boʻlsa, eng yaqin maʼnodagi boʻlimni tanlang.
 
 ## 0. Tayyor fayllar
@@ -68,6 +68,10 @@ ID'lar koddagi bilan aynan bir xil boʻlishi shart: Play bir marta ishlatilgan I
 
 ## 3. Yangi build'ni yuklash (Test and release → Testing → Internal testing)
 
+Testing track'lariga (internal, closed) faqat `release/X.Y.Z` yoki `hotfix/X.Y.Z` branch boshidan yigʻilgan build
+yuklanadi. Har build'ning versionCode'i yangi boʻladi. AAB qaysi commit'dan yigʻilganini yozib qoʻying, chunki 7-boʻlim
+shu commit'ni tag bilan solishtiradi (D125).
+
 1. **Create new release** → AAB'ni yuklang.
 2. **Release notes:**
    ```
@@ -77,46 +81,90 @@ ID'lar koddagi bilan aynan bir xil boʻlishi shart: Play bir marta ishlatilgan I
    ```
 3. **Next** → **Save and publish**. Kutiladigan yagona ogohlantirish: "native code ... debug symbols". U zararsiz:
    bu `androidx.graphics.path` kutubxonasidan keladi va u symbolsiz yetkaziladi.
+4. **Pre-launch report** uchun shu AAB'ni **Closed testing → Alpha** ga ham chiqaring: Play bu hisobotni internal
+   track uchun bermaydi, faqat closed yoki open track uchun beradi (D124). Hisobot QA'ga yuboriladi: crash'lar,
+   ANR'lar, accessibility, security va qurilma skrinshotlari.
 
 ## 4. App content (Policy and programs → App content)
 
 | Boʻlim | Javob |
 |---|---|
 | Privacy policy | `https://migrely.health/privacy/` (sayt joylangandan keyin) |
-| App access | "All functionality is available without special access". Login yoʻq; Premium oddiy xarid |
+| Sign in details (avval App access) | **Yes**, chunki Premium pullik va reviewer uni ochishi kerak. Login yoʻq: reviewer'ga Premium'ni ochadigan promo kod beriladi (pastda) |
 | Ads | **No**, ilovada reklama yoʻq |
-| Content rating | `content-rating.md` boʻyicha: kategoriya "Utility, Productivity, Communication, or Other", hammasiga "No", raqamli xaridlar "Yes" |
-| Target audience | Faqat **18 and over** |
+| Content rating | `content-rating.md` boʻyicha: kategoriya "All Other App Types", hammasiga "No", raqamli xaridlar "Yes", loot box'lar "No". Braziliya (ClassInd) 14+ berdi, faqat "In-App Purchases" bilan |
+| Target audience | Faqat **18 and over**. "Restrict users Google determines are minors" belgilanmaydi: Google adashib voyaga yetmagan deb topgan katta yoshdagi foydalanuvchi qidiruv, xarid va obuna yangilanishidan mahrum boʻladi |
 | News app | No |
 | Data safety | `data-safety.md` boʻyicha: "Does your app collect or share user data?" → **No** |
 | Government apps | No |
-| Financial features | No |
-| Health apps | `health-declaration.md` boʻyicha: Disease and condition management, Medication and treatment management, Period tracking |
-| Advertising ID | Ilova reklama ID'sini ishlatmaydi → **No** |
+| Financial features | "My app doesn't provide any financial features" |
+| Health apps | `health-declaration.md` boʻyicha: Disease and condition management, Medication and treatment management, Period tracking. Tashkilot akkaunti talab qilinmadi |
+| Regional requirements | Hech biri |
+| Advertising ID | Ilova reklama ID'sini ishlatmaydi → **No** (release manifest'da `AD_ID` yoʻq) |
+
+**Reviewer uchun promo kodlar (Sign in details):**
+
+- **Monetize with Play → Promotions → Create promotion:** "Play review access - lifetime", mahsulot `migrely_lifetime`,
+  10 ta bir martalik kod, bir yil amal qiladi. Promo shartlarini faqat akkaunt egasi qabul qila oladi.
+- Kodlar CSV'si repo'dan tashqarida: `migrely-keys/promotion_codes.csv`. Uni commit qilmang va kodlarni chat yoki
+  log'ga chiqarmang.
+- **Instruction:** nomi "Premium access (no sign-in)", "full access" belgilangan. Matnda 1–3-kodlar va ularni ishlatish
+  yoʻli (500 belgigacha); 5-koddan boshlab qolganlari zaxira. Pre-launch report uchun ruxsat yoqilgan.
 
 ## 5. Store listing (Grow users → Store presence → Main store listing)
 
 1. **App name:** `Migrely: Migraine Tracker`.
-2. **Short description:** `Log migraines in 3 taps. Private headache diary & doctor-ready reports.`
-3. **Full description:** `listing.md` dagi matn.
-4. **Graphics:** ikonka, feature graphic, 8 ta telefon skrinshoti (01 dan 08 gacha).
+2. **Short description:** `Private headache diary & migraine log. Spot triggers, watch painkiller days.`
+3. **Full description:** `listing.md` dagi matn, oʻzgartirmasdan (har paragraf bitta qator).
+4. **Graphics:** ikonka, feature graphic, 8 ta telefon skrinshoti (01 dan 08 gacha, fayl nomi tartibida:
+   birinchi uchtasi qidiruvda koʻrinadi).
+   - Planshet slotlariga shu telefon skrinshotlari qoʻyiladi. Video, Chromebook va XR boʻsh qoladi.
+   - AI bilan yaratilgan asset'lar haqidagi savolga: "Don't label assets".
 5. **Store settings:**
-   - kategoriya: **Health & Fitness**;
+   - kategoriya: **Health & Fitness**, teglar: Health & fitness, Medical;
    - email: `support@migrely.health`;
-   - website: `https://migrely.health`.
+   - website: `https://migrely.health`;
+   - telefon boʻsh qoladi, external marketing yoqilgan.
 
 ## 6. Davlatlar (Test and release → Production → Countries / regions)
 
-Birinchi bosqichda **EEA'dan tashqari hamma davlatlar** (BRD qarori: trader maʼlumotlari faqat EEA'da ochiq
-koʻrsatiladi). EEA: Yevropa Ittifoqining 27 davlati, Islandiya, Lixtenshteyn va Norvegiya. Uydan boshqa qonuniy manzil
-paydo boʻlgach, EEA qoʻshiladi.
+**Hamma davlatlar, EEA ham** (D124). Play Console'da alohida trader sozlamasi yoʻq. Akkaunt egasi shu akkauntdan EEA'da
+allaqachon obuna sotadi, ochiq aloqa maʼlumotlari esa akkauntga tegishli: Migrely yangi maʼlumot ochmaydi. Play
+EEA uchun biror narsa soʻrasa, oʻshanda hal qilinadi.
 
-## 7. Production release
+## 7. Production release (Git-flow, D125)
 
-1. QA'dan **Go** olingach (D44 roʻyxati), release branch'dagi oxirgi AAB'ni **Production** ga yuklang.
-2. **Staged rollout:** 20% → 2–3 kundan keyin 50% → yana 2–3 kundan keyin 100%. Har bosqichda **Android vitals**'ni
-   tekshiring: crash va ANR darajasi Play chegarasidan past boʻlsin.
-3. Google review birinchi chiqishda odatda bir necha soatdan bir necha kungacha davom etadi.
+Production'ga faqat Git-flow boʻyicha yakunlangan va tag qoʻyilgan versiya chiqadi. Tartib:
+
+1. **QA Go:** QA `release/X.Y.Z` yoki `hotfix/X.Y.Z` branch boshidagi build'ni (debug va R8) tekshirib, Go beradi.
+2. **Branch'ni yakunlash:**
+   - PR orqali `main` ga merge commit bilan qoʻshiladi;
+   - shu merge commit'ga annotated tag `vX.Y.Z` qoʻyilib, push qilinadi;
+   - branch `develop` ga merge qilinadi. Konflikt boʻlsa, `merge/<branch>-into-develop` yordamchi branch'i va PR
+     orqali hal qilinadi. Hotfix yakunlanganda ochiq `release/*` branch boʻlsa, hotfix `develop` ga emas, oʻsha release
+     branch'iga merge qilinadi;
+   - branch oʻchiriladi.
+3. **Build tag'ga mosligini tekshirish:** `git diff <AAB yigʻilgan commit> vX.Y.Z` boʻsh boʻlishi kerak. Shunda
+   production'ga QA sinagan aynan oʻsha AAB chiqadi: internal track'dan **Promote release** qilinadi yoki shu AAB
+   yuklanadi. Farq boʻlsa, AAB tag'dan qayta yigʻiladi va QA'ga qayta beriladi.
+4. **Production → Create new release:**
+   - birinchi chiqish 100% boʻladi, chunki Play birinchi chiqishda staged rollout bermaydi;
+   - yangilanishlar staged rollout bilan chiqadi: 20% → 2–3 kundan keyin 50% → yana 2–3 kundan keyin 100%.
+5. **Managed publishing yoqilgan.** **Send changes for review** bosiladi; Google tasdiqlasa ham ilova oʻzi chiqmaydi.
+6. **Publish changes** faqat QA hukmidan keyin bosiladi (D124): QA tekshiruvi va closed track'ning pre-launch report'i
+   launch blocker koʻrsatmasligi kerak. Launch blocker:
+   - asosiy oqimda crash yoki ANR;
+   - maʼlumot yoʻqolishi yoki buzilishi;
+   - xavfsizlik ogohlantirishi notoʻgʻri yoki yoʻq;
+   - xarid yoki Premium ishlamasligi;
+   - maʼlumotning telefondan chiqishi.
+7. **Tag qoʻyilgandan keyin topilgan muammo:**
+   - Google rad etsa ham, blocker chiqsa ham, `main` dan yangi `hotfix/X.Y.(Z+1)` ochiladi;
+   - tag hech qachon koʻchirilmaydi, versiya qayta ishlatilmaydi;
+   - qolgan topilmalar `develop` orqali keyingi versiyaga qoladi.
+8. Google review odatda bir necha soatdan bir necha kungacha davom etadi.
+9. **Publish'dan keyin** har bosqichda **Android vitals**'ni tekshiring: crash va ANR darajasi Play chegarasidan past
+   boʻlsin. Vitals QA'ga yuboriladi.
 
 ## 8. Launch'dan keyin
 

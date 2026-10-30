@@ -299,11 +299,12 @@ gate. They run on the QA emulators and are described in `docs/QA.md` (BRD D40–
 ## 12. Quality gate and Definition of Done
 
 ```bash
-./gradlew assembleDebug test ktlintCheck detekt
+./gradlew assembleDebug test ktlintCheck detekt lint
 ```
 
 The gate uses `test`, not `testDebugUnitTest`: the domain, presentation and data modules are plain JVM modules
-with no `testDebugUnitTest` task, so `testDebugUnitTest` alone would skip their tests. The same command runs in
+with no `testDebugUnitTest` task, so `testDebugUnitTest` alone would skip their tests. `lint` is Android Lint with its
+defaults: an error fails the gate, and a warning is only reported (BRD D123). The same command runs in
 `.github/workflows/ci.yml`. A change is done when:
 
 - the gate passes;

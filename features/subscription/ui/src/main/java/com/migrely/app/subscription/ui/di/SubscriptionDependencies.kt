@@ -22,6 +22,7 @@ import com.migrely.app.subscription.ui.mapper.PaywallEventPresenter
 import com.migrely.app.subscription.ui.mapper.PaywallMessageBehaviourUiMapper
 import com.migrely.app.subscription.ui.mapper.PaywallProductPresentationMapper
 import com.migrely.app.subscription.ui.mapper.PaywallViewStateUiMapper
+import com.migrely.app.subscription.ui.mapper.PremiumSectionShownResolver
 import com.migrely.app.subscription.ui.mapper.PremiumSectionViewStateUiMapper
 import com.migrely.app.subscription.ui.mapper.TrialBannerViewStateUiMapper
 import kotlinx.coroutines.flow.Flow
@@ -51,6 +52,7 @@ class PremiumSectionDependencies(
     val premiumSectionViewModel: PremiumSectionViewModel,
     val purchaseUpdates: Flow<Unit>,
     val premiumSectionViewStateUiMapper: PremiumSectionViewStateUiMapper,
+    val premiumSectionShownResolver: PremiumSectionShownResolver,
     navigationMapper: NavigationEventDestinationMapper<PremiumSectionPresentationNavigationEvent>,
     notificationMapper: NotificationUiMapper<PremiumSectionPresentationNotification>
 ) : BaseComposeHolder<PremiumSectionViewState, PremiumSectionPresentationNotification>(
