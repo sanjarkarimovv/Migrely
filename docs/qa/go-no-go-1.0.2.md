@@ -45,6 +45,8 @@
   - the S4s in line 8;
   - "What these checks do not prove" below;
   - lines 11 and 12, which are the user's decisions.
+- **The tag (D125), checked by QA:** `v1.0.2` points at 3b4a83cf on main, whose parents are 599a7b2f and deb41422.
+  `git diff deb41422 v1.0.2` is empty, and both trees are c88664f1. So `Migrely-1.0.2-7.aab` is `v1.0.2`.
 - **Release steps (D125):**
   - the user uploads `Migrely-1.0.2-7.aab` to internal and Alpha;
   - Production goes from the finished, tagged `main`, with `git diff deb41422 v1.0.2` empty.
