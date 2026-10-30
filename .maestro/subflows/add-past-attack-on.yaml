@@ -6,6 +6,12 @@ appId: com.migrely.app
 - tapOn: "Change when it started, now .*"
 - tapOn: "Change to previous month"
 # No {n} quantifier after ${DAY}: Maestro reads up to the last closing brace as the script ("DAY}, [0-9]{4").
+# Since #101 the calendar scrolls in landscape. A row cut at its bottom edge counts as visible to Maestro while it sits
+# beside Cancel and Next, where a tap misses it, so the day is brought to the middle first.
+- scrollUntilVisible:
+    element: "[A-Za-z]+, [A-Za-z]+ ${DAY}, [0-9]+"
+    direction: DOWN
+    centerElement: true
 - tapOn: "[A-Za-z]+, [A-Za-z]+ ${DAY}, [0-9]+"
 - tapOn: "Next"
 - tapOn:
