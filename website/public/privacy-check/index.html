@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Check Migrely&#x27;s privacy yourself · Migrely</title>
+<meta name="description" content="Migrely has no internet permission. Check it on your own phone in two minutes, and see what each of its five permissions is for.">
+<link rel="canonical" href="https://migrely.health/privacy-check/">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#5B50D6">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Migrely">
+<meta property="og:title" content="Check Migrely&#x27;s privacy yourself · Migrely">
+<meta property="og:description" content="Migrely has no internet permission. Check it on your own phone in two minutes, and see what each of its five permissions is for.">
+<meta property="og:url" content="https://migrely.health/privacy-check/">
+<meta property="og:image" content="https://migrely.health/assets/img/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="preload" href="/assets/fonts/fraunces-600.woff" as="font" type="font/woff" crossorigin>
+<link rel="stylesheet" href="/assets/site.css?v=8d9041b84e">
+
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="wrap bar">
+  <a class="brand" href="/"><img src="/favicon.svg" alt="" width="32" height="32"><span>Migrely</span></a>
+  <nav aria-label="Main"><a href="/">Home</a><a href="/about/">About</a><a href="/support/">Help</a><a href="/privacy/">Privacy</a></nav>
+</div></header>
+<main id="main">
+<section class="wrap block narrow prose"><h1>Check Migrely's privacy yourself</h1>
+  <p class="lead">Many apps promise privacy. With Migrely you can check it: the app has no internet permission, so
+    Android itself stops it from connecting to the internet. It takes about two minutes.</p>
+  <h2>Does Migrely connect to the internet?</h2>
+  <p>No. An Android app can reach the internet only if it asks for the internet permission, and Migrely does not ask
+    for it. Android then blocks every connection the app tries, so nothing you enter can leave your phone through
+    Migrely.</p>
+  <h2>How can I check it on my phone?</h2>
+  <ol><li>Open your phone's Settings, then Apps, then Migrely.</li><li>Tap Permissions.</li>
+    <li>Tap the ⋮ menu at the top, then All permissions.</li>
+    <li>Look for “have full network access”. Apps that use the internet list it. Migrely does not.</li></ol>
+  <p>The names can differ a little between phone makers. The check for developers below is the same on every
+    phone.</p>
+  <h2>Does airplane mode prove it?</h2>
+  <p>It shows half of it. Turn on airplane mode and Migrely works as usual: logging, your history, reminders and export
+    all work offline. That shows Migrely does not need the internet; the permission list shows it cannot use it.
+    Buying or restoring Premium, and rating Migrely, need Google Play to be online.</p>
+  <h2>What are Migrely's five permissions for?</h2>
+  <p>These are all the permissions Migrely asks for. Those in quotes appear in the list under those names. On
+    phones with Google Play, billing may be listed too.</p>
+  <div class="perms"><article><h3>“show notifications”</h3><p><code>android.<wbr>permission.<wbr>POST_<wbr>NOTIFICATIONS</code></p><p>Reminders and the “Did it help?” question. On Android 13 and later, Android asks you first. On any version you can turn notifications off in Settings.</p></article><article><h3>“run at startup”</h3><p><code>android.<wbr>permission.<wbr>RECEIVE_<wbr>BOOT_<wbr>COMPLETED</code></p><p>Puts your reminders back after the phone restarts. It comes with WorkManager, the Android library Migrely uses to schedule reminders.</p></article><article><h3>“prevent phone from sleeping”</h3><p><code>android.<wbr>permission.<wbr>WAKE_<wbr>LOCK</code></p><p>Lets WorkManager keep the phone awake for the moments it takes to run a reminder.</p></article><article><h3>Google Play billing</h3><p><code>com.<wbr>android.<wbr>vending.<wbr>BILLING</code></p><p>Lets Migrely ask the Google Play app on your phone whether Premium is on, and open Google Play&#x27;s purchase screen. Migrely talks only to the Google Play app, never to the internet; Google Play itself goes online to complete a purchase.</p></article><article><h3>An internal AndroidX permission</h3><p><code>com.<wbr>migrely.<wbr>app.<wbr>DYNAMIC_<wbr>RECEIVER_<wbr>NOT_<wbr>EXPORTED_<wbr>PERMISSION</code></p><p>AndroidX, Google&#x27;s standard library for Android apps, adds it so that on older Android versions only Migrely can send messages to its own parts. Settings does not list it.</p></article></div>
+  <h2>What can still leave my phone?</h2>
+  <p>Without the internet permission, Migrely itself sends nothing. Three things are up to Android, Google Play or
+    you:</p>
+  <ul><li><strong>Android's own backup.</strong> Android may back up Migrely's entries to your Google account, as it
+      does for other apps. On Android 9 and later Migrely allows this only end-to-end encrypted, which needs a screen
+      lock; on Android 8 it is backed up like other apps' data. You can turn backup off in your phone's
+      settings.</li>
+    <li><strong>Google Play.</strong> When you buy Premium or rate Migrely, Google Play's own window handles it, under
+      Google's privacy policy. Migrely never sees your payment details or your rating.</li>
+    <li><strong>Files you share.</strong> A backup, spreadsheet or PDF report goes wherever you choose to send
+      it.</li></ul>
+  <p>The <a href="/privacy/">privacy policy</a> has the details.</p>
+  <h2>How can a developer check it?</h2>
+  <p>With USB debugging on and Migrely installed, run:</p>
+  <pre><code>adb shell dumpsys package com.migrely.app | grep -A5 "requested permissions"</code></pre>
+  <p>It prints the same five permissions. To look for the internet permission alone, run:</p>
+  <pre><code>adb shell dumpsys package com.migrely.app | grep INTERNET</code></pre>
+  <p>It prints nothing.</p>
+  <p><a class="play" href="https://play.google.com/store/apps/details?id=com.migrely.app&amp;referrer=utm_source%3Dmigrely.health%26utm_medium%3Dwebsite%26utm_campaign%3Dprivacy-check"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M4 2.6v18.8c0 .5.5.8.9.6l16.3-9.4c.4-.2.4-.9 0-1.1L4.9 2.1c-.4-.2-.9.1-.9.5z"/></svg><span>Get it on Google Play</span></a></p></section>
+</main>
+<footer class="foot"><div class="wrap">
+  <p>Migrely is a diary. It is not a medical device and does not diagnose, treat or prevent any condition. Talk to a doctor about your headaches.</p>
+  <nav class="links" aria-label="Guides"><a href="/headache-diary/">Free headache diary</a><a href="/medication-overuse-headache/">Medication-overuse headache</a><a href="/menstrual-migraine/">Menstrual migraine</a><a href="/va-migraine-log/">Migraine log for a VA claim</a><a href="/compare/">Compare migraine apps</a></nav>
+  <p class="links"><a href="/support/">Help</a><a href="/about/">About</a><a href="/privacy/">Privacy policy</a>
+    <a href="/privacy-check/">Check our privacy</a><a href="/delete-data/">Delete your data</a>
+    <a href="https://play.google.com/store/apps/details?id=com.migrely.app&amp;referrer=utm_source%3Dmigrely.health%26utm_medium%3Dwebsite%26utm_campaign%3Dprivacy-check">Google Play</a></p>
+  <p>© 2026 Migrely, published by Sulton UzDev · <a href="mailto:support@migrely.health">support@migrely.health</a></p>
+</div></footer>
+</body>
+</html>

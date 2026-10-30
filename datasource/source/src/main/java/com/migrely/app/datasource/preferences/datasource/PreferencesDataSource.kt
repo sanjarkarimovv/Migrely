@@ -5,6 +5,7 @@ import com.migrely.app.datasource.preferences.model.EntitlementDataModel
 import com.migrely.app.datasource.preferences.model.GoalDataModel
 import com.migrely.app.datasource.preferences.model.LaunchedPurchaseDataModel
 import com.migrely.app.datasource.preferences.model.PaywallTriggerDataModel
+import com.migrely.app.datasource.preferences.model.ReviewRequestsDataModel
 import com.migrely.app.datasource.preferences.model.ThemeDataModel
 import kotlinx.coroutines.flow.Flow
 
@@ -67,6 +68,12 @@ interface PreferencesDataSource {
     fun trialBannerDismissedFor(): Long?
 
     fun dismissTrialBanner(trialEndMillis: Long)
+
+    /** How many times the app has asked for a rating, and when it last did (BRD D131). */
+    fun reviewRequests(): ReviewRequestsDataModel
+
+    /** Counts one request for a rating, made at [atMillis], in one write (BRD D131). */
+    fun markReviewRequested(atMillis: Long)
 
     /**
      * Forgets every setting, so the app starts as on a new phone (BRD D96). The entitlement goes

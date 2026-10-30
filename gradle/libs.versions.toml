@@ -37,6 +37,8 @@ androidxRecyclerView = "1.4.0"
 androidxFragmentKtx = "1.8.9"
 # The latest stable 8.x (BRD D105). It talks to the Play Store app over IPC and needs no INTERNET of its own.
 playBilling = "8.3.0"
+# Google Play's in-app review (BRD D129). It talks to the Play Store app over IPC and declares no permission.
+playReview = "2.0.2"
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
@@ -102,3 +104,4 @@ androidx-recyclerview = { module = "androidx.recyclerview:recyclerview", version
 androidx-fragment-ktx = { module = "androidx.fragment:fragment-ktx", version.ref = "androidxFragmentKtx" }
 androidx-navigation-fragment-ktx = { module = "androidx.navigation:navigation-fragment-ktx", version.ref = "androidNavigation" }
 play-billing-ktx = { module = "com.android.billingclient:billing-ktx", version.ref = "playBilling" }
+play-review = { module = "com.google.android.play:review", version.ref = "playReview" }
