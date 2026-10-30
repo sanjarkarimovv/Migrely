@@ -15,7 +15,7 @@
 ## 3. Review and archive
 
 - [x] 3.1 Independent review. Fix the findings and record them.
-- [ ] 3.2 Archive, `openspec validate --specs --strict`, PR into `develop` and merge, and a new deploy zip.
+- [x] 3.2 Archive, `openspec validate --specs --strict`, PR into `develop` and merge, and a new deploy zip.
 
 ## Verification record
 
