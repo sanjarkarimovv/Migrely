@@ -41,14 +41,21 @@ DIARY_PDFS = {'a4': 'migrely-headache-diary-a4.pdf', 'letter': 'migrely-headache
 # The home page's promo video and its poster in /assets/video/ (BRD D146). /assets/ is cached for a year, so a new cut
 # gets a new name (EC-WEB-20). It is made in marketing/video/promo-v3, outside the repo, from real app screens only.
 PROMO_VIDEO = ('migrely-promo-v3.mp4', 'migrely-promo-v3-poster.jpg')
-PROMO_UPLOADED = '2026-10-30'
-# What each scene shows, for people who can't see the video, which has music and no speech.
+PROMO_UPLOADED = '2026-10-30T12:00:00+05:00'
+PROMO_SIZE = '2 MB'
+# What each scene shows and says, for people who can't see the video, which has music and no speech (WCAG 1.2.1).
 PROMO_SCENES = [
-    'Logging a migraine in three taps: "Migraine started", a severity, then "Migraine ended".',
-    'The month on the Home screen, each day drawn as a sky from what was logged.',
-    'The doctor report (Premium): "Create report" and the PDF\'s pages.',
-    'Insights (Premium): triggers often logged with migraines, and the days they come.',
-    'Android\'s list of Migrely\'s permissions, which has no network access.',
+    '"Log a migraine in 3 taps. Even in a dark room. We\'ll keep the time while you rest." The taps are "Migraine '
+    'started", a severity, then "Migraine ended".',
+    '"Your month as a calm sky. Every day is drawn from what you logged." The month on the Home screen.',
+    '"For your doctor, Premium. A report your doctor can read. A PDF with your summary, calendar, every migraine and '
+    'medication." "Create report", then the PDF\'s pages.',
+    '"Premium Insights. Know what comes with your migraines. Triggers often logged with your migraines, when they '
+    'come, and what helped." Insights in the app.',
+    '"Private by design. No internet permission. Android lists every app\'s permissions. Migrely\'s has no network '
+    'access. No account. No ads. Check it yourself: migrely.health/privacy-check." Android\'s list of Migrely\'s '
+    'permissions.',
+    '"Migrely. A calm migraine diary. Free on Google Play. migrely.health"',
 ]
 DIARY_TITLE = 'Headache diary: what to write down, with a free printable template'
 ICHD_MOH = ('https://ichd-3.org/8-headache-attributed-to-a-substance-or-its-withdrawal/'
@@ -278,13 +285,14 @@ def home():
   <img class="hero-icon" src="/assets/img/icon-512.png" alt="The Migrely icon: a white calendar with a crescent moon on violet" width="256" height="256">
 </div></section>
 
-<section class="wrap block video"><h2>See Migrely in 30 seconds</h2>
+<section class="wrap block video"><h2 id="video-title">See Migrely in 30 seconds</h2>
   <figure>
     <video controls preload="none" playsinline width="1280" height="720" poster="/assets/video/{PROMO_VIDEO[1]}"
-      aria-describedby="video-scenes"><source src="/assets/video/{PROMO_VIDEO[0]}" type="video/mp4">
-      <a href="/assets/video/{PROMO_VIDEO[0]}">Download the video (MP4)</a></video>
-    <figcaption id="video-scenes"><p>The video shows real Migrely screens with sample data, with music and no
-      speech:</p><ol>{scenes}</ol></figcaption>
+      aria-labelledby="video-title" aria-describedby="video-scenes"><source src="/assets/video/{PROMO_VIDEO[0]}"
+      type="video/mp4"></video>
+    <figcaption id="video-scenes"><p>Migrely's screens with sample data, with music and no speech. What each scene
+      shows and says:</p><ol>{scenes}</ol>
+      <p><a href="/assets/video/{PROMO_VIDEO[0]}">Download the video (MP4, {PROMO_SIZE})</a></p></figcaption>
   </figure>
 </section>
 
@@ -326,7 +334,7 @@ def home():
     website = {'@type': 'WebSite', '@id': f'{BASE}/#website', 'name': 'Migrely', 'url': f'{BASE}/',
                'publisher': {'@id': ORGANIZATION['@id']}}
     video = {'@type': 'VideoObject', 'name': 'Migrely in 30 seconds',
-             'description': 'Real Migrely screens: logging a migraine in three taps, the month as a sky, the doctor '
+             'description': 'Migrely\'s screens with sample data: logging a migraine in three taps, the month as a sky, the doctor '
                             'report and Insights (Premium), and Android\'s permission list with no network access.',
              'thumbnailUrl': f'{BASE}/assets/video/{PROMO_VIDEO[1]}', 'contentUrl': f'{BASE}/assets/video/{PROMO_VIDEO[0]}',
              'uploadDate': PROMO_UPLOADED, 'duration': 'PT30S', 'publisher': {'@id': ORGANIZATION['@id']}}
@@ -1014,13 +1022,14 @@ def check_permissions():
 def lastmods(pages):
     """Each page's last change date, kept with its HTML's hash in website/lastmod.json (BRD D136).
 
-    Google trusts lastmod only when it is always right, so a page keeps its date until its HTML changes.
+    Google trusts lastmod only when it is always right, so a page keeps its date until its HTML changes. The
+    stylesheet's version is left out of the hash: a CSS change alone does not change what a page says.
     """
     known = json.loads(LASTMOD.read_text()) if LASTMOD.exists() else {}
     today = date.today().isoformat()
     marks = {}
     for path, content in pages.items():
-        digest = hashlib.sha256(content.encode()).hexdigest()
+        digest = hashlib.sha256(content.replace(CSS_VERSION, '').encode()).hexdigest()
         mark = known.get(path)
         marks[path] = mark if mark and mark['sha256'] == digest else {'sha256': digest, 'lastmod': today}
     LASTMOD.write_text(json.dumps(marks, indent=2, sort_keys=True) + '\n')

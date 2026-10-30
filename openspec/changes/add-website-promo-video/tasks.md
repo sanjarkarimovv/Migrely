@@ -14,7 +14,7 @@
 
 ## 3. Review and archive
 
-- [ ] 3.1 Independent review. Fix the findings and record them.
+- [x] 3.1 Independent review. Fix the findings and record them.
 - [ ] 3.2 Archive, `openspec validate --specs --strict`, PR into `develop` and merge, and a new deploy zip.
 
 ## Verification record
@@ -49,3 +49,32 @@ Run on 2026-10-30 at `feature/add-website-promo-video`, built from `develop` 4f9
 - **Not run:**
   - Playback on a real phone.
   - The live site, which changes only after the owner uploads the new zip.
+
+## Review
+
+An independent review (`superpowers:code-reviewer`) found nothing Critical. It confirmed:
+- the copy is true: the button labels are in `strings.xml`, and the release permission report has no network
+  permission;
+- the heading order;
+- that `media-src 'self'` is the minimum, and the PDFs' header blocks are untouched;
+- the required `VideoObject` fields;
+- no flashes: brightness changes by at most 11/255 between frames;
+- the build order, and that a rebuild changes nothing.
+
+| # | Finding | Outcome |
+|---|---|---|
+| 1 Important | The text alternative left out the end card and the words on screen (WCAG 1.2.1) | Fixed: six items, each with its scene's on-screen words, the end card included |
+| 2 Important | The fallback link inside `<video>` never shows when the MP4 can't be decoded | Fixed: a visible "Download the video (MP4, 2 MB)" link in the `<figcaption>` (design D7, and a spec scenario) |
+| 3 Minor | Ten unchanged pages got a new `lastmod` only because the CSS hash changed (D136) | Fixed: the hash leaves out `CSS_VERSION` (design D8). On the switch, every page kept `develop`'s date except `/`, which changed today |
+| 4 Minor | The video had no accessible name | Fixed: `aria-labelledby` points to the section heading |
+| 5 Minor | `uploadDate` had no time zone | Fixed: `2026-10-30T12:00:00+05:00` |
+| 6 Minor | "Real Migrely screens", though one frame has a recoloured chip | Fixed: "Migrely's screens with sample data" |
+| 7 Minor | The main spec said the CSP stays "unchanged" | Fixed: a MODIFIED requirement says it allows only the site itself, with `media-src 'self'` for the video |
+| 8 Minor | Repeated list styles; long caption lines | Fixed: the caption uses the global list style, at most 65ch wide |
+| 9 Optional | Pin a sha256 per video file | Not done: the version in the file name and the missing-file check cover EC-WEB-20, so a hash adds a second place to update |
+
+After the fixes:
+- static checks find nothing, and a rebuild changes nothing;
+- the sitemap changes only `/`'s date;
+- the home page has no sideways scroll at 320 px in light, dark and 200% text;
+- 0 CSP violations.
