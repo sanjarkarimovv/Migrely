@@ -23,7 +23,7 @@
 | Screen state | Compose UI test under Robolectric on `*Contents` | QA | gate | **none** (0 of 32 screens) | audit C3, after C1 adds the test dependencies |
 | Visual | Roborazzi goldens of the `@Preview`s, `en-XA`, `ar-XB` | QA | gate | **none**; D42 promised it as a QA change | audit C4, after C1 |
 | Instrumented | `connectedDebugAndroidTest`: DAO SQL, Room migrations, design system | dev; QA on each candidate | when a datasource changes; Go/No-Go line 1b | 138 tests, run by QA on a candidate since 2026-10-27 | also in CI (audit C5) |
-| End-to-end | Maestro flows with `# Covers:` lines | QA | per QA change (D63); full regression per candidate | 267 of 528 scenarios (51%) | every high-risk capability at 80% or more (QA 13d) |
+| End-to-end | Maestro flows with `# Covers:` lines | QA | per QA change (D63); full regression per candidate | 267 of 604 scenarios (44%) | every high-risk capability at 80% or more (QA 13d) |
 | Device scenarios | `qa/device_scenarios.sh`: clock, zone, kill, keyboard, files, billing states | QA | per candidate | 54 scenarios: 52 by default, plus `upgrade` and `release_apk` on demand | grows with 13c and 13d |
 | Device audits | a11y audit, monkey, permission audit, R8 APK, backup rules | QA | per candidate | the a11y tour has 22 states; the 12 that QA 13c adds are not yet run on a build | every screen (D203) |
 | Split APKs | `qa/split_apks.sh` on the bundle (D204) | QA | per candidate | from build 4 | as today |
@@ -64,6 +64,8 @@
 | reminders | 12/13 (92%) | reminders | permission refused during onboarding | medium | QA 13d |
 | subscription | 20/24 (83%) | subscription | grace period; "asked again at most once an hour" with no products (unit tests only); a purchase completed while the app was closed (#105): retested by hand, no scenario yet | high (money) | the grace period needs Play itself; #105 as a device scenario in QA 13d |
 | doctor-report | 12/15 (80%) | report | the full-screen custom range (#102, D127): retested by hand on develop 7f65d0e5, no flow yet | high (shared with a doctor) | QA 13d |
+| in-app-review | 0/18 (0%) | review | every rule: after the 3rd migraine, never in an attack, never within 3 days of a paywall or after a crash, at most once per 120 days and 3 times in all (EC-REV-01…12); the debug build uses Google's FakeReviewManager, so only `review_request_count` and `review_last_requested` can be read | medium (a store prompt at a bad moment) | device scenarios in the 1.1.0 test change; the real card only on an internal-testing install |
+| website | 0/58 (0%) | — | the migrely.health pages and their claims (not part of the app) | medium (trust and claims) | a link and content check in the website's own pipeline; not an Android E2E flow |
 | trigger-insights | 8/8 (100%) | insights, patterns | — | medium | — |
 | app-identity | 0/3 (0%) | app | name, icon and package checked by hand at each release | low | a release-checklist line in QA 13d |
 | brand-typography | 0/5 (0%) | designsystem | fonts and type scale | low | audit C4 (visual) |
