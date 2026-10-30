@@ -38,6 +38,18 @@ DISCLAIMER = ('Migrely is a diary. It is not a medical device and does not diagn
 DIARY_REVIEWED = ('2026-10-29', '29 October 2026')
 # The printable template, made by website/make_diary_pdf.py (BRD D140).
 DIARY_PDFS = {'a4': 'migrely-headache-diary-a4.pdf', 'letter': 'migrely-headache-diary-letter.pdf'}
+# The home page's promo video and its poster in /assets/video/ (BRD D146). /assets/ is cached for a year, so a new cut
+# gets a new name (EC-WEB-20). It is made in marketing/video/promo-v3, outside the repo, from real app screens only.
+PROMO_VIDEO = ('migrely-promo-v3.mp4', 'migrely-promo-v3-poster.jpg')
+PROMO_UPLOADED = '2026-10-30'
+# What each scene shows, for people who can't see the video, which has music and no speech.
+PROMO_SCENES = [
+    'Logging a migraine in three taps: "Migraine started", a severity, then "Migraine ended".',
+    'The month on the Home screen, each day drawn as a sky from what was logged.',
+    'The doctor report (Premium): "Create report" and the PDF\'s pages.',
+    'Insights (Premium): triggers often logged with migraines, and the days they come.',
+    'Android\'s list of Migrely\'s permissions, which has no network access.',
+]
 DIARY_TITLE = 'Headache diary: what to write down, with a free printable template'
 ICHD_MOH = ('https://ichd-3.org/8-headache-attributed-to-a-substance-or-its-withdrawal/'
             '8-2-medication-overuse-headache-moh/')
@@ -251,6 +263,7 @@ def home():
                           ('03-report', 'A clear report for your doctor'),
                           ('04-insights', 'Triggers and patterns in your migraines')])
     features = ''.join(f'<article><h3>{esc(t)}</h3><p>{esc(d)}</p></article>' for t, d in FEATURES)
+    scenes = ''.join(f'<li>{esc(scene)}</li>' for scene in PROMO_SCENES)
     guides = ''.join(f'<article><h3><a href="{esc(href)}">{esc(name)}</a></h3><p>{esc(summary)}</p></article>'
                      for href, name, summary in GUIDES)
     body = f'''
@@ -264,6 +277,16 @@ def home():
   </div>
   <img class="hero-icon" src="/assets/img/icon-512.png" alt="The Migrely icon: a white calendar with a crescent moon on violet" width="256" height="256">
 </div></section>
+
+<section class="wrap block video"><h2>See Migrely in 30 seconds</h2>
+  <figure>
+    <video controls preload="none" playsinline width="1280" height="720" poster="/assets/video/{PROMO_VIDEO[1]}"
+      aria-describedby="video-scenes"><source src="/assets/video/{PROMO_VIDEO[0]}" type="video/mp4">
+      <a href="/assets/video/{PROMO_VIDEO[0]}">Download the video (MP4)</a></video>
+    <figcaption id="video-scenes"><p>The video shows real Migrely screens with sample data, with music and no
+      speech:</p><ol>{scenes}</ol></figcaption>
+  </figure>
+</section>
 
 <section class="shots" aria-label="Screens from Migrely"><div class="wrap strip">{shots}</div></section>
 
@@ -302,7 +325,12 @@ def home():
           'publisher': {'@type': 'Organization', 'name': 'Sulton UzDev'}}
     website = {'@type': 'WebSite', '@id': f'{BASE}/#website', 'name': 'Migrely', 'url': f'{BASE}/',
                'publisher': {'@id': ORGANIZATION['@id']}}
-    extra = json_ld({'@context': 'https://schema.org', '@graph': [ORGANIZATION, website, app]})
+    video = {'@type': 'VideoObject', 'name': 'Migrely in 30 seconds',
+             'description': 'Real Migrely screens: logging a migraine in three taps, the month as a sky, the doctor '
+                            'report and Insights (Premium), and Android\'s permission list with no network access.',
+             'thumbnailUrl': f'{BASE}/assets/video/{PROMO_VIDEO[1]}', 'contentUrl': f'{BASE}/assets/video/{PROMO_VIDEO[0]}',
+             'uploadDate': PROMO_UPLOADED, 'duration': 'PT30S', 'publisher': {'@id': ORGANIZATION['@id']}}
+    extra = json_ld({'@context': 'https://schema.org', '@graph': [ORGANIZATION, website, app, video]})
     return page('/', 'Migrely: Migraine Tracker & Private Headache Diary',
                 'Log migraines in seconds, see your patterns and share a doctor-ready PDF. A private migraine diary '
                 'for Android: no account, no internet, no ads.', body, extra)
@@ -1026,6 +1054,14 @@ def check_orphans(built):
                          'GUIDES; otherwise link it from another page (EC-WEB-19).')
 
 
+def check_promo_video():
+    """Stops the build when the home page's video or its poster would be missing (BRD D146)."""
+    missing = [name for name in PROMO_VIDEO if not (ASSETS / 'video' / name).exists()]
+    if missing:
+        raise SystemExit(f'Missing {", ".join(missing)} in website/public/assets/video/: copy the cut from '
+                         'marketing/video/promo-v3/out/ under a new name and update PROMO_VIDEO (EC-WEB-20).')
+
+
 def check_diary_pdfs():
     """Stops the build when a download on /headache-diary/ would be missing (BRD D140)."""
     missing = [name for name in DIARY_PDFS.values() if not (SITE / 'headache-diary' / name).exists()]
@@ -1036,6 +1072,7 @@ def check_diary_pdfs():
 def main():
     check_permissions()
     check_diary_pdfs()
+    check_promo_video()
     built = {path: (rel, build()) for path, rel, build in PAGES}
     check_orphans(built)
     for rel, content in [*built.values(), ('404.html', not_found())]:
