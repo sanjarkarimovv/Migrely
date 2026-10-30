@@ -38,6 +38,25 @@ DISCLAIMER = ('Migrely is a diary. It is not a medical device and does not diagn
 DIARY_REVIEWED = ('2026-10-29', '29 October 2026')
 # The printable template, made by website/make_diary_pdf.py (BRD D140).
 DIARY_PDFS = {'a4': 'migrely-headache-diary-a4.pdf', 'letter': 'migrely-headache-diary-letter.pdf'}
+# The home page's promo video and its poster in /assets/video/ (BRD D146). /assets/ is cached for a year, so a new cut
+# gets a new name (EC-WEB-20). It is made in marketing/video/promo-v3, outside the repo, from real app screens only.
+PROMO_VIDEO = ('migrely-promo-v3.mp4', 'migrely-promo-v3-poster.jpg')
+PROMO_UPLOADED = '2026-10-30T12:00:00+05:00'
+PROMO_SIZE = '2 MB'
+# What each scene shows and says, for people who can't see the video, which has music and no speech (WCAG 1.2.1).
+PROMO_SCENES = [
+    '"Log a migraine in 3 taps. Even in a dark room. We\'ll keep the time while you rest." The taps are "Migraine '
+    'started", a severity, then "Migraine ended".',
+    '"Your month as a calm sky. Every day is drawn from what you logged." The month on the Home screen.',
+    '"For your doctor, Premium. A report your doctor can read. A PDF with your summary, calendar, every migraine and '
+    'medication." "Create report", then the PDF\'s pages.',
+    '"Premium Insights. Know what comes with your migraines. Triggers often logged with your migraines, when they '
+    'come, and what helped." Insights in the app.',
+    '"Private by design. No internet permission. Android lists every app\'s permissions. Migrely\'s has no network '
+    'access. No account. No ads. Check it yourself: migrely.health/privacy-check." Android\'s list of Migrely\'s '
+    'permissions.',
+    '"Migrely. A calm migraine diary. Free on Google Play. migrely.health"',
+]
 DIARY_TITLE = 'Headache diary: what to write down, with a free printable template'
 ICHD_MOH = ('https://ichd-3.org/8-headache-attributed-to-a-substance-or-its-withdrawal/'
             '8-2-medication-overuse-headache-moh/')
@@ -251,6 +270,7 @@ def home():
                           ('03-report', 'A clear report for your doctor'),
                           ('04-insights', 'Triggers and patterns in your migraines')])
     features = ''.join(f'<article><h3>{esc(t)}</h3><p>{esc(d)}</p></article>' for t, d in FEATURES)
+    scenes = ''.join(f'<li>{esc(scene)}</li>' for scene in PROMO_SCENES)
     guides = ''.join(f'<article><h3><a href="{esc(href)}">{esc(name)}</a></h3><p>{esc(summary)}</p></article>'
                      for href, name, summary in GUIDES)
     body = f'''
@@ -264,6 +284,17 @@ def home():
   </div>
   <img class="hero-icon" src="/assets/img/icon-512.png" alt="The Migrely icon: a white calendar with a crescent moon on violet" width="256" height="256">
 </div></section>
+
+<section class="wrap block video"><h2 id="video-title">See Migrely in 30 seconds</h2>
+  <figure>
+    <video controls preload="none" playsinline width="1280" height="720" poster="/assets/video/{PROMO_VIDEO[1]}"
+      aria-labelledby="video-title" aria-describedby="video-scenes"><source src="/assets/video/{PROMO_VIDEO[0]}"
+      type="video/mp4"></video>
+    <figcaption id="video-scenes"><p>Migrely's screens with sample data, with music and no speech. What each scene
+      shows and says:</p><ol>{scenes}</ol>
+      <p><a href="/assets/video/{PROMO_VIDEO[0]}">Download the video (MP4, {PROMO_SIZE})</a></p></figcaption>
+  </figure>
+</section>
 
 <section class="shots" aria-label="Screens from Migrely"><div class="wrap strip">{shots}</div></section>
 
@@ -302,7 +333,12 @@ def home():
           'publisher': {'@type': 'Organization', 'name': 'Sulton UzDev'}}
     website = {'@type': 'WebSite', '@id': f'{BASE}/#website', 'name': 'Migrely', 'url': f'{BASE}/',
                'publisher': {'@id': ORGANIZATION['@id']}}
-    extra = json_ld({'@context': 'https://schema.org', '@graph': [ORGANIZATION, website, app]})
+    video = {'@type': 'VideoObject', 'name': 'Migrely in 30 seconds',
+             'description': 'Migrely\'s screens with sample data: logging a migraine in three taps, the month as a sky, the doctor '
+                            'report and Insights (Premium), and Android\'s permission list with no network access.',
+             'thumbnailUrl': f'{BASE}/assets/video/{PROMO_VIDEO[1]}', 'contentUrl': f'{BASE}/assets/video/{PROMO_VIDEO[0]}',
+             'uploadDate': PROMO_UPLOADED, 'duration': 'PT30S', 'publisher': {'@id': ORGANIZATION['@id']}}
+    extra = json_ld({'@context': 'https://schema.org', '@graph': [ORGANIZATION, website, app, video]})
     return page('/', 'Migrely: Migraine Tracker & Private Headache Diary',
                 'Log migraines in seconds, see your patterns and share a doctor-ready PDF. A private migraine diary '
                 'for Android: no account, no internet, no ads.', body, extra)
@@ -986,13 +1022,14 @@ def check_permissions():
 def lastmods(pages):
     """Each page's last change date, kept with its HTML's hash in website/lastmod.json (BRD D136).
 
-    Google trusts lastmod only when it is always right, so a page keeps its date until its HTML changes.
+    Google trusts lastmod only when it is always right, so a page keeps its date until its HTML changes. The
+    stylesheet's version is left out of the hash: a CSS change alone does not change what a page says.
     """
     known = json.loads(LASTMOD.read_text()) if LASTMOD.exists() else {}
     today = date.today().isoformat()
     marks = {}
     for path, content in pages.items():
-        digest = hashlib.sha256(content.encode()).hexdigest()
+        digest = hashlib.sha256(content.replace(CSS_VERSION, '').encode()).hexdigest()
         mark = known.get(path)
         marks[path] = mark if mark and mark['sha256'] == digest else {'sha256': digest, 'lastmod': today}
     LASTMOD.write_text(json.dumps(marks, indent=2, sort_keys=True) + '\n')
@@ -1026,6 +1063,14 @@ def check_orphans(built):
                          'GUIDES; otherwise link it from another page (EC-WEB-19).')
 
 
+def check_promo_video():
+    """Stops the build when the home page's video or its poster would be missing (BRD D146)."""
+    missing = [name for name in PROMO_VIDEO if not (ASSETS / 'video' / name).exists()]
+    if missing:
+        raise SystemExit(f'Missing {", ".join(missing)} in website/public/assets/video/: copy the cut from '
+                         'marketing/video/promo-v3/out/ under a new name and update PROMO_VIDEO (EC-WEB-20).')
+
+
 def check_diary_pdfs():
     """Stops the build when a download on /headache-diary/ would be missing (BRD D140)."""
     missing = [name for name in DIARY_PDFS.values() if not (SITE / 'headache-diary' / name).exists()]
@@ -1036,6 +1081,7 @@ def check_diary_pdfs():
 def main():
     check_permissions()
     check_diary_pdfs()
+    check_promo_video()
     built = {path: (rel, build()) for path, rel, build in PAGES}
     check_orphans(built)
     for rel, content in [*built.values(), ('404.html', not_found())]:

@@ -35,6 +35,12 @@ This writes `website/public/`. It needs Pillow and `cwebp`. The images come from
 - **Guides** (BRD D145) are listed once in `GUIDES`: the home page's "Free guides" cards and every footer's "Guides"
   navigation come from it. Add a new guide there, with a summary that claims nothing the page doesn't. The build stops
   when a sitemap page can't be reached by following links from the home page (EC-WEB-19).
+- **Promo video** (BRD D146): `/assets/video/` holds the home page's 30-second cut and its poster, named in
+  `PROMO_VIDEO`. It plays from the site itself: never embed YouTube, which would load Google's scripts and cookies. The
+  player has no autoplay and `preload="none"`, and `PROMO_SCENES` is its text alternative. The video is made in
+  `marketing/video/promo-v3` (outside the repo) from real app screens. `/assets/` is cached for a year, so a new cut
+  gets a new file name (EC-WEB-20). Update `PROMO_VIDEO`, `PROMO_UPLOADED` and `PROMO_SCENES` with it. The build stops
+  when either file is missing. `_headers` allows `media-src 'self'` for it.
 - **CSP and PDFs:** `_headers` detaches the CSP from the two PDFs so browsers' PDF viewers can open them. After a
   deploy, open both on a phone and in Chrome, Safari and Firefox.
 - **Stylesheet:** pages link `site.css?v=<hash>`, because `/assets/` is cached for a year. The hash changes with the
