@@ -3,6 +3,11 @@
 # purchase", "Pay later (pending)" or "Cancel").
 appId: com.migrely.app
 ---
+# At 200% in landscape a plan can be cut at the bottom edge, where a tap on its middle misses it.
+- scrollUntilVisible:
+    element: "${PLAN}\\. .*"
+    direction: DOWN
+    centerElement: true
 - tapOn: "${PLAN}\\. .*"
 # In landscape the button can be below the plans.
 - scrollUntilVisible:
