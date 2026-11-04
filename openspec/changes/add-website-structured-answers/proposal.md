@@ -31,6 +31,7 @@ The rules are BRD D147 and D148, EC-WEB-21 and EC-WEB-22.
   as the visible steps.
 - **`/llms.txt`:** the app's facts and every page, with one sentence each.
 - **Premium prices** come from one constant for `/compare/` and `/support/`.
+- **Two titles grow:** `/privacy/` (24 characters) and `/delete-data/` (26) get titles that say what is on them.
 - **The build stops** when the app's `minSdk` no longer matches the "Android 8 and later" the site states
   (EC-WEB-22).
 
