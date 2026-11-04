@@ -1,0 +1,29 @@
+# Migrely
+
+> Migrely is a migraine and headache diary for Android. Log an attack in a few taps, see each month as a calm night sky, and get your medicine days counted. With no account and no internet permission, nothing you enter can leave your phone through the app. Logging is free; Premium adds a doctor report and Insights.
+
+- An Android app (Android 8 and later), in English, published by Sulton UzDev on Google Play: https://play.google.com/store/apps/details?id=com.migrely.app&referrer=utm_source%3Dmigrely.health%26utm_medium%3Dwebsite%26utm_campaign%3Dllms
+- No internet permission: Android stops it from connecting, so nothing entered can leave the phone through the app. Anyone can check this on their own phone: https://migrely.health/privacy-check/
+- Android's own backup may copy the entries to the user's Google account. On Android 9 and later the app allows this only end-to-end encrypted, which needs a screen lock; without one, the entries move only by direct transfer to a new phone. On Android 8 they are backed up like other apps' data. Files the user exports go wherever they send them.
+- No account, no ads, and no analytics or tracking code of its own.
+- Free, for good: logging, the whole history, medications, reminders, backup and spreadsheet export, and every safety warning.
+- Premium adds the doctor PDF report and Insights: $29.99 a year with a 7-day free trial, $4.99 a month, or $59.99 once (US prices).
+- Not a medical device: it does not diagnose, treat or prevent any condition. Its medicine-day note uses the ICHD-3 day counts for medication-overuse headache and suggests talking to a doctor.
+- Contact: support@migrely.health
+
+## Guides
+
+- [Free headache diary](https://migrely.health/headache-diary/): What to write down and for how long, with a free printable 8-week template in A4 and US Letter.
+- [Medication-overuse headache](https://migrely.health/medication-overuse-headache/): How headache and medicine days are counted, why those counts aren't safe limits, and how it is treated.
+- [Menstrual migraine](https://migrely.health/menstrual-migraine/): The window around your period that doctors use, how long to track it, and keeping period data private.
+- [Migraine log for a VA claim](https://migrely.health/va-migraine-log/): What to record about each attack, and where veterans get free help. Migrely is not affiliated with VA.
+- [Compare migraine apps](https://migrely.health/compare/): Android migraine diaries side by side, on facts from each app's own listing, website and policy.
+
+## About the app
+
+- [Home page](https://migrely.health/): What Migrely does, a 30-second video, and questions asked before installing.
+- [About Migrely](https://migrely.health/about/): Who makes Migrely, how Premium pays for it, and what it will never do.
+- [Check Migrely's privacy yourself](https://migrely.health/privacy-check/): How to see on your own phone that Migrely has no internet permission, and what each of its permissions is for.
+- [Migrely help](https://migrely.health/support/): What can leave your phone, Premium prices, moving to a new phone, cancelling, refunds and deleting everything.
+- [Privacy policy](https://migrely.health/privacy/): What Migrely keeps on your phone, Android's backup, and how to delete everything.
+- [Delete your data](https://migrely.health/delete-data/): How to delete everything Migrely keeps on your phone, and Android's backup of it.

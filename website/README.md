@@ -47,7 +47,23 @@ This writes `website/public/`. It needs Pillow and `cwebp`. The images come from
   file.
 - **Google Play links** carry `utm_source=migrely.health`, `utm_medium=website` and `utm_campaign=<page>` inside
   `referrer` (BRD D137). Play Console shows them under the store listing's acquisition report, as UTM source and
-  campaign.
+  campaign. The link in `/llms.txt` uses the campaign `llms`.
+- **Answers** (BRD D147): `WHAT_IS` is the home page's 40–60-word definition and `/llms.txt`'s summary. `HOME_FAQ`
+  holds the questions asked before installing (home page) and `FAQ` those asked after (`/support/`). Each answer
+  starts with the direct answer, and both lists are published as `FAQPage`. A question may sit in only one list, or the
+  build stops (EC-WEB-21). `PREMIUM_PRICES` feeds `/compare/`, `/support/` and `/llms.txt`.
+- **Structured data and breadcrumbs** (BRD D147):
+  - every inner page gets its JSON-LD from `page_ld()`: the `Organization`, the page node and its `BreadcrumbList`;
+  - the visible "Home › page" trail and the `BreadcrumbList` both take the page's name from `GUIDES` or `TRUST_PAGES`;
+  - `CHECK_STEPS` and `DELETE_STEPS` are both the visible steps and the `HowTo`.
+  - Add `reviewedBy`, a named `author` or `aggregateRating` only when the page shows the same reviewer, person or real
+    Play rating.
+- **`/llms.txt`** (llmstxt.org) is built from `WHAT_IS`, the app's facts, `GUIDES` and `TRUST_PAGES`. The build stops
+  when a sitemap page is missing from it, so a new trust page goes into `TRUST_PAGES`.
+- **Android version:** the site says "Android 8 and later" (`MIN_SDK`, `MIN_ANDROID`). The build stops when
+  `minSdk` in `gradle/libs.versions.toml` differs (EC-WEB-22).
+- **Languages** (BRD D148): the site is in English, like the app. A language gets its own pages, with `hreflang`, only
+  once the app ships in that language and a native-speaking clinician has checked the medical text.
 
 ## How it is deployed
 
