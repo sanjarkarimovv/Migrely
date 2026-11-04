@@ -4,7 +4,7 @@
 
 - An Android app (Android 8 and later), in English, published by Sulton UzDev on Google Play: https://play.google.com/store/apps/details?id=com.migrely.app&referrer=utm_source%3Dmigrely.health%26utm_medium%3Dwebsite%26utm_campaign%3Dllms
 - No internet permission: Android stops it from connecting, so nothing entered can leave the phone through the app. Anyone can check this on their own phone: https://migrely.health/privacy-check/
-- Android's own backup may copy the entries to the user's Google account (end-to-end encrypted on Android 9 and later with a screen lock), and files the user exports go wherever they send them.
+- Android's own backup may copy the entries to the user's Google account. On Android 9 and later the app allows this only end-to-end encrypted, which needs a screen lock; without one, the entries move only by direct transfer to a new phone. On Android 8 they are backed up like other apps' data. Files the user exports go wherever they send them.
 - No account, no ads, and no analytics or tracking code of its own.
 - Free, for good: logging, the whole history, medications, reminders, backup and spreadsheet export, and every safety warning.
 - Premium adds the doctor PDF report and Insights: $29.99 a year with a 7-day free trial, $4.99 a month, or $59.99 once (US prices).

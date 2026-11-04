@@ -38,7 +38,7 @@ sentence has to be true of the shipped app (D133–D146). The 2026-11-04 audit a
 
 - Each question becomes an `<h2>` with a `<p>`, in the `prose` layout the guides use.
 - Every answer is readable without a click, and crawlers see the questions as headings.
-- The `.faq` styles are no longer used, so they are removed.
+- The `<details>` styles are removed. The `.faq` class is reused for the home page's plain question list.
 
 ### D3. One JSON-LD graph per page
 
@@ -72,6 +72,7 @@ sentence has to be true of the shipped app (D133–D146). The 2026-11-04 audit a
 - `CHECK_STEPS` (privacy check, `totalTime` PT2M, as "about two minutes" on the page) and `DELETE_STEPS` (delete
   data) are lists of strings.
 - The `<ol>` and the `HowToStep`s are both built from them.
+- Each `HowTo` has the `@id` `<url>#howto`, is the page node's `mainEntity`, and is named with the page's H1.
 
 ### D6. `llms.txt`
 
@@ -90,7 +91,8 @@ sentence has to be true of the shipped app (D133–D146). The 2026-11-04 audit a
 |---|---|
 | `WHAT_IS` | home "What is Migrely?", `llms.txt` summary |
 | `PREMIUM_PRICES` | `/compare/` Migrely card, `/support/` "What does Premium cost?", `llms.txt` |
-| `MIN_SDK` = 26, `MIN_ANDROID` = "Android 8" | home FAQ, `llms.txt`; checked against `gradle/libs.versions.toml` (EC-WEB-22) |
+| `MIN_SDK` = 26; `MIN_ANDROID` ("Android 8") is derived from it | home FAQ, `llms.txt`; checked against `gradle/libs.versions.toml` (EC-WEB-22) |
+| `BACKUP_RULE` | every answer about Android's backup, and `llms.txt`: on Android 9 and later only end-to-end encrypted, which needs a screen lock; without one, only direct transfer; Android 8 like other apps |
 
 ### D8. No Twitter-specific tags
 

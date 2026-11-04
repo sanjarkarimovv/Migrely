@@ -90,6 +90,7 @@ nav a[aria-current="page"], nav a:hover { color: var(--ink); }
 /* The breadcrumb trail sits just above the page's H1; its separator is drawn, so screen readers don't read it. */
 .crumbs { padding-top: 24px; font-size: 15px; color: var(--muted); }
 .crumbs ol { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 8px; }
+.crumbs a { color: var(--violet); text-decoration: underline; font-weight: 400; }
 .crumbs li + li::before { content: "›"; content: "›" / ""; margin-right: 8px; }
 .crumbs + .block { padding-top: 16px; }
 ol { margin: 0; padding-left: 22px; display: grid; gap: 8px; }

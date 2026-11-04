@@ -37,13 +37,19 @@ DISCLAIMER = ('Migrely is a diary. It is not a medical device and does not diagn
               'Talk to a doctor about your headaches.')
 # The oldest Android the app runs on, as the site states it; check_min_sdk() keeps it equal to the app's (EC-WEB-22).
 MIN_SDK = 26
-MIN_ANDROID = 'Android 8'
+MIN_ANDROID = {26: 'Android 8', 27: 'Android 8.1', 28: 'Android 9', 29: 'Android 10', 30: 'Android 11'}[MIN_SDK]
+# How Android's own backup treats Migrely's entries, as the privacy policy says (BRD D74, D147). Without a screen lock
+# on Android 9 and later nothing goes to the cloud, so no answer may suggest the diary is backed up anyway.
+BACKUP_RULE = ('On Android 9 and later Migrely allows this only end-to-end encrypted, which needs a screen lock; '
+               'without one, the entries move only by direct transfer to a new phone. On Android 8 they are backed up '
+               'like other apps\' data.')
 # Premium's US prices, on /compare/, /support/ and /llms.txt alike (BRD D147).
 PREMIUM_PRICES = '$29.99 a year with a 7-day free trial, $4.99 a month, or $59.99 once (US prices)'
 # What Migrely is, in 40 to 60 words: the home page's definition and /llms.txt's summary (BRD D147).
-WHAT_IS = ('Migrely is a migraine and headache diary for Android. Log an attack in a few taps, see each month as a calm '
-           'night sky, and get your medicine days counted. With no account and no internet permission, nothing you '
-           'enter can leave your phone through the app. Logging is free; Premium adds a doctor report and Insights.')
+WHAT_IS = ('Migrely is a migraine and headache diary for Android. Log an attack in a few taps, see each month as a '
+           'calm night sky, and get your medicine days counted. With no account and no internet permission, nothing '
+           'you enter can leave your phone through the app. Logging is free; Premium adds a doctor report and '
+           'Insights.')
 # /headache-diary/ (BRD D138): the date its facts were last checked against the sources, as ISO and as text.
 DIARY_REVIEWED = ('2026-10-29', '29 October 2026')
 # The printable template, made by website/make_diary_pdf.py (BRD D140).
@@ -100,7 +106,8 @@ TRUST_PAGES = [
      'How to see on your own phone that Migrely has no internet permission, and what each of its permissions is for.'),
     ('/support/', 'Migrely help',
      'What can leave your phone, Premium prices, moving to a new phone, cancelling, refunds and deleting everything.'),
-    ('/privacy/', 'Privacy policy', 'What Migrely keeps on your phone, Android\'s backup, and how to delete everything.'),
+    ('/privacy/', 'Privacy policy',
+     'What Migrely keeps on your phone, Android\'s backup, and how to delete everything.'),
     ('/delete-data/', 'Delete your data',
      'How to delete everything Migrely keeps on your phone, and Android\'s backup of it.'),
 ]
@@ -187,9 +194,9 @@ def questions_ld(faq):
             for question, answer, *_ in faq]
 
 
-def how_to_ld(name, steps, **props):
-    """Numbered steps as a HowTo, from the same strings as the page's visible list (BRD D147)."""
-    return {'@type': 'HowTo', 'name': name, **props,
+def how_to_ld(path, name, steps, **props):
+    """Numbered steps as a HowTo named like the page, from the same strings as its visible list (BRD D147)."""
+    return {'@type': 'HowTo', '@id': f'{BASE}{path}#howto', 'name': name, **props,
             'step': [{'@type': 'HowToStep', 'position': position, 'text': step}
                      for position, step in enumerate(steps, start=1)]}
 
@@ -298,14 +305,13 @@ HOME_FAQ = [
      'trial.'),
     ('Does Migrely need the internet?',
      'No. Migrely has no internet permission, so Android stops it from connecting. Logging, your history, reminders '
-     'and export all work in airplane mode. Only buying or restoring Premium, and rating the app, go through Google '
-     'Play, which goes online.'),
+     'and export all work in airplane mode. Only Premium (buying, checking and restoring it) and rating the app go '
+     'through Google Play, which goes online.'),
     ('Is Migrely only for Android?',
      f'Yes. Migrely is for Android phones with {MIN_ANDROID} or later, and you install it from Google Play.'),
     ('Is my diary backed up?',
-     'If your phone\'s backup is on, Android backs up Migrely\'s entries to your Google account, end-to-end encrypted '
-     'on Android 9 and later when the phone has a screen lock. You can also export a backup file yourself in '
-     'Settings, Your data.'),
+     f'If your phone\'s backup is on, Android backs up Migrely\'s entries to your Google account. {BACKUP_RULE} You '
+     'can also export a backup file yourself in Settings, Your data.'),
     ('What does Premium add?',
      'A PDF report for your doctor, with a summary, a calendar and every migraine and medication, and Insights: '
      'triggers often logged with your migraines, the days and hours they come, the days around your period and what '
@@ -317,33 +323,33 @@ HOME_FAQ = [
 FAQ = [
     ('What can leave my phone?',
      'Migrely itself sends nothing: it has no internet permission, so Android stops it from connecting. Three things '
-     'are up to Android, Google Play or you. Android\'s own backup may copy Migrely\'s entries to your Google account, '
-     'end-to-end encrypted on Android 9 and later when the phone has a screen lock. Google Play handles buying '
-     'Premium and ratings, under Google\'s privacy policy. And a backup, spreadsheet or PDF report goes wherever you '
-     'choose to send it.',
+     'are up to Android, Google Play or you. Android\'s own backup may copy Migrely\'s entries to your Google account. '
+     f'{BACKUP_RULE} Google Play handles buying Premium and ratings, under Google\'s privacy policy. And a backup, '
+     'spreadsheet or PDF report goes wherever you choose to send it.',
      ('Check Migrely\'s privacy yourself', '/privacy-check/')),
     ('What does Premium cost?',
      f'Premium is {PREMIUM_PRICES}. The yearly plan\'s free trial is for new subscribers. Google Play shows the '
      'price in your currency before you pay and handles the payment, so we never see your card. Premium adds the '
      'doctor report and Insights; everything else is free.'),
     ('How do I move my diary to a new phone?',
-     'Use Android\'s backup or a backup file. If backup is on, Android brings Migrely\'s entries to a new phone '
-     'signed in to the same Google account when it restores your apps. Otherwise, on the old phone open Settings, '
-     'Your data, Export a backup (JSON), copy the file to the new phone, and choose Import a backup in the same '
-     'place there.'),
+     'Use Android\'s own transfer or a backup file. When you set up the new phone from the old one, by cable or nearby '
+     'transfer, Android brings Migrely\'s entries with it. It can also restore them from your Google account\'s '
+     'backup, which on Android 9 and later exists only if the old phone had a screen lock. Otherwise, on the old '
+     'phone open Settings, Your data, Export a backup (JSON), copy the file to the new phone, and choose Import a '
+     'backup in the same place there.'),
     ('How do I restore Premium on a new phone?',
      'Install Migrely with the Google account you bought Premium with, and it is found at the first start. If it is '
      'not, open Settings, Premium, Restore purchases, which checks Google Play again for what that account bought. '
      'Premium belongs to your Google account, not to the phone.'),
     ('How do I cancel my subscription?',
      'In Google Play: Profile, Payments and subscriptions, Subscriptions, Migrely Premium, Cancel. Cancel before a '
-     'free trial ends and you are not charged. After you cancel, Premium stays on until the end of the time you have '
-     'paid for. Your entries are never deleted.',
+     'free trial ends and you are not charged. After you cancel, Premium stays on until the trial or the period you '
+     'paid for ends. Your entries are never deleted.',
      ('Google Play: cancel a subscription', 'https://support.google.com/googleplay/answer/7018481')),
     ('Can I get a refund?',
-     f'Refunds follow Google Play\'s refund policies, because Google Play handles the payment. You can ask Google Play, '
-     f'or write to {SUPPORT} with the order number from your Google Play receipt. If a purchase is refunded, Premium '
-     'turns off; your entries stay.',
+     'Refunds follow Google Play\'s refund policies, because Google Play handles the payment, so ask Google Play for '
+     'one. If Google Play refunds and removes the purchase, Premium turns off at Migrely\'s next check; your entries '
+     'stay.',
      ('Google Play\'s refund policies', 'https://support.google.com/googleplay/answer/2479637')),
     ('How do I delete everything?',
      'In Migrely, open Settings, Delete all data, and type DELETE to confirm. Everything Migrely keeps on your phone '
@@ -403,7 +409,8 @@ def home():
   <ul class="ticks">
     <li>Migrely has no internet access. Nothing you enter can leave your phone through the app.</li>
     <li>No account to make, no tracking, no ads.</li>
-    <li>Your entries stay on your phone, and in Android's own backup, end-to-end encrypted on Android 9 and later.</li>
+    <li>Your entries stay on your phone, and in Android's own backup if it is on: on Android 9 and later only
+      end-to-end encrypted, which needs a screen lock.</li>
     <li>Export a backup or a spreadsheet, or delete everything, whenever you like.</li>
   </ul>
   <p><a class="quiet" href="/privacy-check/">Check it yourself in two minutes</a></p>
@@ -433,13 +440,14 @@ def home():
           'offers': {'@type': 'Offer', 'price': '0', 'priceCurrency': 'USD'},
           'publisher': {'@type': 'Organization', 'name': 'Sulton UzDev'}}
     website = {'@type': 'WebSite', '@id': f'{BASE}/#website', 'name': 'Migrely', 'url': f'{BASE}/',
-               'publisher': {'@id': ORGANIZATION['@id']}}
+               'publisher': BY_MIGRELY}
     video = {'@type': 'VideoObject', 'name': 'Migrely in 30 seconds',
              'description': 'Migrely\'s screens with sample data: logging a migraine in three taps, the month as a sky, the doctor '
                             'report and Insights (Premium), and Android\'s permission list with no network access.',
              'thumbnailUrl': f'{BASE}/assets/video/{PROMO_VIDEO[1]}', 'contentUrl': f'{BASE}/assets/video/{PROMO_VIDEO[0]}',
-             'uploadDate': PROMO_UPLOADED, 'duration': 'PT30S', 'publisher': {'@id': ORGANIZATION['@id']}}
+             'uploadDate': PROMO_UPLOADED, 'duration': 'PT30S', 'publisher': BY_MIGRELY}
     faq = {'@type': 'FAQPage', '@id': f'{BASE}/#questions', 'url': f'{BASE}/', 'name': 'Questions before you install',
+           'inLanguage': 'en', 'isPartOf': {'@id': website['@id']}, 'publisher': BY_MIGRELY,
            'mainEntity': questions_ld(HOME_FAQ)}
     extra = json_ld({'@context': 'https://schema.org', '@graph': [ORGANIZATION, website, app, video, faq]})
     return page('/', 'Migrely: Migraine Tracker & Private Headache Diary',
@@ -485,10 +493,11 @@ def delete_data():
   <p>Deleting your data does not cancel a subscription. Cancel it in Google Play: Profile, Payments and subscriptions,
     Subscriptions.</p>
   <p>Questions: <a href="mailto:{PRIVACY_MAIL}">{PRIVACY_MAIL}</a></p></section>'''
-    ld = page_ld(path, 'WebPage', 'Delete your data', how_to_ld('How to delete everything Migrely keeps on your phone',
-                                                                DELETE_STEPS))
-    return page(path, 'Delete your Migrely data and Android\'s backup of it', 'How to delete everything Migrely keeps on your phone, '
-                'and Android\'s backup of it. We never receive your entries.', body, ld)
+    steps = how_to_ld(path, 'Delete your data', DELETE_STEPS)
+    ld = page_ld(path, 'WebPage', 'Delete your data', steps, mainEntity={'@id': steps['@id']})
+    return page(path, 'Delete your Migrely data and Android\'s backup of it',
+                'How to delete everything Migrely keeps on your phone, and Android\'s backup of it. We never receive '
+                'your entries.', body, ld)
 
 
 def about():
@@ -585,8 +594,8 @@ def privacy_check():
   <pre><code>adb shell dumpsys package com.migrely.app | grep INTERNET</code></pre>
   <p>It prints nothing.</p>
   <p>{play_button(path)}</p></section>'''
-    ld = page_ld(path, 'WebPage', 'Check Migrely\'s privacy yourself',
-                 how_to_ld('How to check that Migrely has no internet permission', CHECK_STEPS, totalTime='PT2M'))
+    steps = how_to_ld(path, 'Check Migrely\'s privacy yourself', CHECK_STEPS, totalTime='PT2M')
+    ld = page_ld(path, 'WebPage', 'Check Migrely\'s privacy yourself', steps, mainEntity={'@id': steps['@id']})
     return page(path, 'Check Migrely\'s privacy yourself · Migrely',
                 'Migrely has no internet permission. Check it on your own phone in two minutes, and see what each of '
                 f'its {count} permissions is for.', body, ld)
@@ -635,9 +644,10 @@ def privacy():
             para.append(line.strip())
     close()
     body = '<section class="wrap block narrow prose">' + '\n'.join(out) + '</section>'
-    return page('/privacy/', 'Migrely privacy policy: what stays on your phone', 'Migrely has no internet access and no account. What it '
-                'keeps on your phone, Android\'s backup, and how to delete everything.', body,
-                page_ld('/privacy/', 'WebPage', 'Migrely privacy policy'))
+    path = '/privacy/'
+    return page(path, 'Migrely privacy policy: what it keeps and where',
+                'Migrely has no internet access and no account. What it keeps on your phone, Android\'s backup, and '
+                'how to delete everything.', body, page_ld(path, 'WebPage', 'Migrely privacy policy'))
 
 
 def urgent_help(extra=''):
@@ -844,7 +854,7 @@ def menstrual_migraine():
   <h2>Is my period data private in Migrely?</h2>
   <p>Migrely has no internet access and no account, so it cannot send your period days or migraines anywhere. They are
     kept on your phone, and can leave it only in two ways: in Android's own backup to your Google account, if backup
-    is on (end-to-end encrypted on Android 9 and later when your phone has a screen lock), and in any file you export
+    is on (on Android 9 and later only end-to-end encrypted, which needs a screen lock), and in any file you export
     and share. Tracking periods is optional: turning it off hides the marks, and any you saved stay until you delete
     them. You can <a href="/privacy-check/">check the privacy yourself</a>.</p>
   <p>Marking period days on the calendar is free. Once the months you look at include at least 2 period starts and 5
@@ -1211,8 +1221,9 @@ def check_min_sdk():
     """Stops the build when the app's minSdk no longer matches the Android version the site states (EC-WEB-22)."""
     found = re.search(r'^minSdk\s*=\s*"(\d+)"', VERSIONS.read_text(), re.M)
     if not found or int(found.group(1)) != MIN_SDK:
-        raise SystemExit(f'gradle/libs.versions.toml has minSdk {found and found.group(1)}, but the site says '
-                         f'"{MIN_ANDROID} and later" (minSdk {MIN_SDK}). Update MIN_SDK and MIN_ANDROID (EC-WEB-22).')
+        stated = f'minSdk {found.group(1)}' if found else 'no minSdk line'
+        raise SystemExit(f'gradle/libs.versions.toml has {stated}, but the site says "{MIN_ANDROID} and later" (minSdk '
+                         f'{MIN_SDK}). Update MIN_SDK (EC-WEB-22).')
 
 
 def llms_txt():
@@ -1222,8 +1233,9 @@ def llms_txt():
         f'{play_link("llms")}',
         'No internet permission: Android stops it from connecting, so nothing entered can leave the phone through the '
         f'app. Anyone can check this on their own phone: {BASE}/privacy-check/',
-        'Android\'s own backup may copy the entries to the user\'s Google account (end-to-end encrypted on Android 9 '
-        'and later with a screen lock), and files the user exports go wherever they send them.',
+        'Android\'s own backup may copy the entries to the user\'s Google account. '
+        + BACKUP_RULE.replace('Migrely allows this', 'the app allows this')
+        + ' Files the user exports go wherever they send them.',
         'No account, no ads, and no analytics or tracking code of its own.',
         'Free, for good: logging, the whole history, medications, reminders, backup and spreadsheet export, and every '
         'safety warning.',
@@ -1244,6 +1256,8 @@ def llms_txt():
 
 def check_llms(text, built):
     """Stops the build when /llms.txt would leave out a sitemap page (BRD D147)."""
+    if not text.isascii():
+        raise SystemExit('/llms.txt must be plain ASCII: replace curly quotes and dashes in its sources.')
     missing = [path for path in built if f']({BASE}{path})' not in text]
     if missing:
         raise SystemExit(f'/llms.txt does not list {", ".join(missing)}: add it to GUIDES or TRUST_PAGES.')

@@ -22,7 +22,7 @@
 
 ## 4. Review and archive
 
-- [ ] 4.1 Independent review. Fix the findings and record them.
+- [x] 4.1 Independent review. Fix the findings and record them.
 - [ ] 4.2 Archive, `openspec validate --specs --strict`, PR into `develop` and merge, and a new deploy zip.
 
 ## Verification record
@@ -65,3 +65,30 @@ Run on 2026-11-04 at `feature/add-website-structured-answers`, built from `devel
     was used.
   - 200% text: the site sets font sizes in px, so the 320 px run stands for 400% page zoom at 1280 px (WCAG 1.4.10).
     Light mode was not shot: the new parts use the existing `--muted` and `--violet` tokens.
+
+## Review record
+
+A `superpowers:code-reviewer` subagent reviewed `git diff origin/develop...HEAD` against the specs and BRD D147. It
+rebuilt every page in memory and got byte-identical output. Every finding was checked in the code or the sources before
+it was fixed.
+
+| # | Severity | Finding | Fix |
+|---|---|---|---|
+| 1 | Critical | The new answers (home "Is my diary backed up?", /support/ "What can leave my phone?", moving phones, `llms.txt`) said the backup is "end-to-end encrypted on Android 9 and later when the phone has a screen lock". That implies a plain cloud backup without a lock. `data_extraction_rules.xml` (`disableIfNoEncryptionCapabilities`), `backup_rules.xml` and the privacy policy say nothing goes to the cloud then. The same loose wording was already on the home page and `/menstrual-migraine/` | One `BACKUP_RULE` with the policy's wording, used by every answer and `llms.txt`. The home bullet and the menstrual page are corrected too. The moving answer now covers direct transfer by cable or nearby transfer |
+| 2 | Minor | "Only buying or restoring Premium … go through Google Play" left out the routine Premium check (D106) | "Only Premium (buying, checking and restoring it) and rating the app" |
+| 3 | Minor | Cancelling during a trial keeps Premium until the trial ends (EC-BIL-02). A refund turns Premium off at the next check (EC-BIL-05). No BRD decision covers refunds we would give ourselves | "until the trial or the period you paid for ends". "If Google Play refunds and removes the purchase, Premium turns off at Migrely's next check". The answer now sends people to Google Play only, and D147 records that the site promises no refunds of our own |
+| 4 | Minor | The `/privacy/` title "what stays on your phone" sat badly next to the policy's backup and Google Play sections | "Migrely privacy policy: what it keeps and where" |
+| 5 | Minor | The home `FAQPage` node lacked `inLanguage`, `publisher` and `isPartOf`, and two nodes still spelled out the Organization `@id` | Added, and both use `BY_MIGRELY` |
+| 6 | Minor | The `HowTo` nodes had no `@id` and invisible names | `@id` `<url>#howto`, the page's `mainEntity`, named with the H1 |
+| 7 | Minor | The global `nav a` style made the breadcrumb's Home link look like plain text | `.crumbs a` is violet and underlined |
+| 8 | Minor | `MIN_ANDROID` was set apart from `MIN_SDK`, and the message said "minSdk None" when no line matched | `MIN_ANDROID` is derived from `MIN_SDK`, and the message says "no minSdk line" |
+| 9 | Minor | Nothing enforced the ASCII-only `llms.txt` | `check_llms()` stops the build on non-ASCII text |
+| 10 | Minor | Lines over 120 columns, a literal `/privacy/`, and design D2 saying `.faq` was removed | Rewrapped, a `path` variable, D2 corrected |
+
+After the fixes, the checks were run again:
+- the static checks find nothing; the checker now also compares each `HowTo`'s `@id`, `mainEntity` and name, and the
+  home `FAQPage`'s fields;
+- a second build changes nothing;
+- the old backup wording is gone from every page;
+- CSP: 0 on all 12 pages, and the control page still shows 2;
+- 320 px: all 12 pages fit.
