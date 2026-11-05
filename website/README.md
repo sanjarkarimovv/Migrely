@@ -67,6 +67,9 @@ This writes `website/public/`. It needs Pillow and `cwebp`. The images come from
   - `CHECK_STEPS` and `DELETE_STEPS` are both the visible steps and the `HowTo`.
   - Add `reviewedBy`, a named `author` or `aggregateRating` only when the page shows the same reviewer, person or real
     Play rating.
+- **Official profiles** (BRD D150): `SOCIAL_PROFILES` (name, URL) feeds the `Organization`'s `sameAs`, a plain footer
+  link with `rel="me"` and `/llms.txt`. Add a profile only when it is Migrely's own, public and presented as Migrely.
+  An empty list removes all three.
 - **`/llms.txt`** (llmstxt.org) is built from `WHAT_IS`, the app's facts, `GUIDES` and `TRUST_PAGES`. The build stops
   when a sitemap page is missing from it, so a new trust page goes into `TRUST_PAGES`.
 - **Android version:** the site says "Android 8 and later" (`MIN_SDK`, `MIN_ANDROID`). The build stops when

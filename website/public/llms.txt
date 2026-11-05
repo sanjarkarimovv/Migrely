@@ -10,6 +10,7 @@
 - Premium adds the doctor PDF report and Insights: $29.99 a year with a 7-day free trial, $4.99 a month, or $59.99 once (US prices).
 - Not a medical device: it does not diagnose, treat or prevent any condition. Its medicine-day note uses the ICHD-3 day counts for medication-overuse headache and suggests talking to a doctor.
 - Contact: support@migrely.health
+- Official YouTube profile: https://www.youtube.com/@migrely
 
 ## Guides
 
