@@ -16,16 +16,16 @@
     "sha256": "4ecd1fb3091a0f625bc44c94a223d054b480c1920fbfb3872ec66817560aad2b"
   },
   "/headache-diary/": {
-    "lastmod": "2026-11-04",
-    "sha256": "0e21c86338e928629ea679f8025fdb9401dab0994b134fc6c022ae49454c9549"
+    "lastmod": "2026-11-05",
+    "sha256": "46c4c6e4302aced7ea8342f9f403c4c28a2a64de9fef244873c6cd5ced565b54"
   },
   "/medication-overuse-headache/": {
-    "lastmod": "2026-11-04",
-    "sha256": "853ae3b26aad3c88b464844f1e7c81c921d201f7b53881d1819298ba256b2967"
+    "lastmod": "2026-11-05",
+    "sha256": "6dfea7c5b24d02e3187e98ee71e61c5d7e4af8849ba9ffaa6bd14300120fb796"
   },
   "/menstrual-migraine/": {
-    "lastmod": "2026-11-04",
-    "sha256": "c8eceb1fe8a71ac4f145b97846c7762d7b2335f01d5e93ea0a4d65fc008ca96a"
+    "lastmod": "2026-11-05",
+    "sha256": "79ad78410d3d50573c4b624cce962e65bfbda33009c9d65f2303ee482ab016d8"
   },
   "/privacy-check/": {
     "lastmod": "2026-11-04",
@@ -40,7 +40,7 @@
     "sha256": "078ea6fa88d25d742a33b59c0d3ad5608af850a4fc1ef70884a52344293f64d2"
   },
   "/va-migraine-log/": {
-    "lastmod": "2026-11-04",
-    "sha256": "f32b23621692944be720f3c94b0d3d6706e233dc6e310ee190e1d0509c70240a"
+    "lastmod": "2026-11-05",
+    "sha256": "cbccc503a92c083f33442f4f8a1f8358c4246c87caa9bd76e773df047f807b72"
   }
 }
