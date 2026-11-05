@@ -9,7 +9,9 @@ page (the home page's "Free guides" and every footer's "Guides" navigation), a b
 page's links can't reach, a self-hosted promo video with no autoplay and a text alternative, direct answers (the home
 page's definition and questions, `/support/`'s H2 questions), breadcrumbs, one JSON-LD graph per page with `HowTo`
 where there are steps, `/llms.txt`, honest sitemap dates, UTM-tagged Google Play links, and the site's static,
-script-free rules (BRD D119, D133–D147, EC-WEB-01…22).
+script-free rules. The medical guides answer each question first in 40 to 60 words, credit every single-study figure
+in the text, leave how to stop a medicine to the doctor, and share the NHS "Call 999" list (BRD D119, D133–D149,
+EC-WEB-01…24).
 
 ## Requirements
 
@@ -158,7 +160,7 @@ The pages SHALL keep the site's rules (D119): no scripts, cookies or third-party
 
 ### Requirement: Headache diary page
 
-The site SHALL serve `/headache-diary/`. Under question headings it explains why to keep a headache diary, what to record and for how long (NICE CG150), what counts as a headache day (ICHD-3), and why medicine days are counted (ICHD-3 8.2, 8.2.6). Every fact SHALL cite a source listed on the page, which ends with a "Last reviewed" date and says that no clinician reviewed it.
+The site SHALL serve `/headache-diary/`. Under question headings it explains why to keep a headache diary, what to record and for how long (NICE CG150), which possible triggers to note and why they are not proof, how to keep it going, what counts as a headache day (ICHD-3), more than one kind of headache, why medicine days are counted (ICHD-3 8.2, 8.2.6) and what a doctor looks for. Every fact SHALL cite a source listed on the page, which ends with a "Last reviewed" date and says no clinician reviewed it.
 
 #### Scenario: A visitor preparing for an appointment
 
@@ -178,10 +180,16 @@ The site SHALL serve `/headache-diary/`. Under question headings it explains why
 - **AND** it says these are diagnostic thresholds, not safe limits, quotes the NHS advice of no more than 2 days a week,
   and tells the reader not to stop or change medicines without their doctor
 
+#### Scenario: Triggers are not proof
+
+- **WHEN** the page suggests possible triggers to note
+- **THEN** it says a trigger seen alongside an attack is not proof that it caused it, that early symptoms of an attack
+  can look like triggers, and that several factors often act together
+
 #### Scenario: Honest authorship and review date
 
 - **WHEN** a visitor or a crawler reads the end of the page
-- **THEN** it finds the sources with links, "Last reviewed: 29 October 2026", and a note that the page was written by
+- **THEN** it finds the sources with links, "Last reviewed: 4 November 2026", and a note that the page was written by
   Migrely from those sources and not reviewed by a clinician
 - **AND** the JSON-LD is a `MedicalWebPage` with the same `lastReviewed` date
 
@@ -272,12 +280,19 @@ The site SHALL serve `/medication-overuse-headache/`. It opens with a short answ
 
 ### Requirement: Shared parts of the medical pages
 
-`/headache-diary/` and `/medication-overuse-headache/` SHALL each end with their sources, a "Last reviewed" date and a note that no clinician reviewed them. Each SHALL have the same urgent-help paragraph and a `MedicalWebPage` JSON-LD whose `lastReviewed` matches the date shown.
+`/headache-diary/`, `/medication-overuse-headache/` and `/menstrual-migraine/` SHALL each end with their sources, a "Last reviewed" date and a note that no clinician reviewed them. Each SHALL have the same urgent-help paragraph, which gives every item of the NHS migraine page's "Call 999" list, and a `MedicalWebPage` JSON-LD whose `lastReviewed` matches the date shown.
 
 #### Scenario: Same urgent-help text
 
-- **WHEN** a visitor reads "When should I get help straight away?" on either page
+- **WHEN** a visitor reads "When should I get help straight away?" on any medical page or the VA page
 - **THEN** the text is identical and links to the NHS migraine page
+
+#### Scenario: Every NHS 999 sign
+
+- **WHEN** the urgent-help paragraph is read
+- **THEN** it names a sudden, extremely painful headache, one after a recent head injury, weakness on one side of the
+  body or face, problems speaking or remembering, loss of vision or blurred or double vision, drowsiness or
+  confusion, a seizure, and a very high temperature with signs of meningitis
 
 ### Requirement: Links to the medication-overuse headache page
 
@@ -578,3 +593,34 @@ The build SHALL read `minSdk` from `gradle/libs.versions.toml` and stop when it 
 
 - **WHEN** `minSdk` changes from 26 to 28 and the site is built
 - **THEN** the build stops, says the site still states Android 8, and writes nothing
+
+### Requirement: Direct answers on the medical guides
+
+On `/headache-diary/`, `/medication-overuse-headache/` and `/menstrual-migraine/`, the first paragraph after each question heading SHALL be a direct answer of 40 to 60 words. The app sections, the privacy section and the sources are exempt. The build SHALL stop and name the page and heading when an answer falls outside that range.
+
+#### Scenario: An answer grows too long
+
+- **WHEN** a direct answer is edited to 64 words and the site is built
+- **THEN** the build stops and names the page and the heading
+
+### Requirement: Follow-up questions on the medical guides
+
+`/medication-overuse-headache/` SHALL also answer how common it is, its signs, how to lower the risk, how long headaches get worse after stopping, and whether it comes back. `/menstrual-migraine/` SHALL also answer why it happens, whether period attacks are worse, what to bring to an appointment, and perimenopause, menopause and HRT. Figures from one study SHALL name it in the text; where sources disagree on how to stop a medicine, the page SHALL leave that to the doctor.
+
+#### Scenario: How long it gets worse
+
+- **WHEN** a reader asks how long headaches get worse after stopping the overused medicine
+- **THEN** the page gives the duration a 2017 review found, attributed to that review, and the American Migraine
+  Foundation's wording, and names no method of stopping
+
+#### Scenario: Relapse figures
+
+- **WHEN** the page gives relapse figures
+- **THEN** it attributes them to the review, gives the full range, and says most studies were done in specialist
+  headache centres
+
+#### Scenario: HRT with migraine
+
+- **WHEN** a reader asks whether they can take HRT with migraine
+- **THEN** the page says, citing the Migraine Trust, that migraine, aura included, does not rule HRT out, that the
+  doctor goes through the benefits and risks, and names no product or dose
