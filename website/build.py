@@ -667,9 +667,10 @@ def urgent_help(extra=''):
     sign in the "Call 999" list of the NHS migraine page (BRD D149)."""
     return f'''<h2>When should I get help straight away?</h2>
   <p>Call your emergency number if a headache comes on suddenly and is extremely painful, follows a recent head injury,
-    or comes with weakness on one side of the body or face, problems speaking or remembering, loss of vision or blurred
-    or double vision, drowsiness or confusion, a seizure, or a very high temperature with signs of meningitis.</p>
-  <p>The <a href="{NHS_MIGRAINE}">NHS migraine page</a> has the full list.</p>{extra}'''
+    or comes with weakness or loss of movement on one side of the body or face, problems speaking or remembering, loss
+    of vision, blurred or double vision, drowsiness or confusion, a seizure, or a very high temperature with signs of
+    meningitis.</p>
+  <p>The <a href="{NHS_MIGRAINE}">NHS migraine page</a> also lists when to get an urgent GP appointment.</p>{extra}'''
 
 
 def reviewed_block(sources, reviewed, disclaimer=MEDICAL_DISCLAIMER):
@@ -739,13 +740,13 @@ def headache_diary():
     <li><strong>Write it on the day.</strong> That 2020 study used a US trial of 182 people with migraine. A monthly
       questionnaire found fewer headache days than a daily diary in every 4-week period: 11.1 against 13.7 on
       average.</li>
-    <li><strong>Pain-free days count too.</strong> ICHD-3 says frequent headaches generally need a day-by-day record.
+    <li><strong>Daily is the default.</strong> ICHD-3 says frequent headaches generally need a day-by-day record.
       Your doctor may prefer something simpler, such as entries only on days with symptoms, the American Migraine
       Foundation says.</li></ul>
   <h2>What counts as a headache day?</h2>
-  <p>Any day with a headache counts as a headache day, whether the headache lasted all day or only for part of it. That is
-    the definition in the international classification (ICHD-3), and doctors usually count your headache days over
-    a month.</p>
+  <p>Any day with a headache counts as a headache day, whether the headache lasted all day or only for part of it. That
+    is the definition in the international classification (ICHD-3), and doctors usually count your headache days over a
+    month.</p>
   <p>Fill in a line on pain-free days too, so a blank line never leaves you guessing whether it was a good day or a
     forgotten one.</p>
   <h2>What if I have more than one kind of headache?</h2>
@@ -777,15 +778,14 @@ def headache_diary():
   <h2>What does a doctor look for in a headache diary?</h2>
   <p>A doctor can use your diary to see what kind of headache you have, how many headache days you have a month, how
     often you take medicine for them, and whether treatment is helping. The counts matter because diagnoses such as
-    chronic migraine and medication-overuse headache are defined by days a month.</p>
-  <ul><li><strong>How often.</strong> Migraine on fewer than 15 days a month is called episodic. Chronic migraine means
-      headache on 15 or more days a month for more than 3 months, with migraine features on at least 8 of those days
-      (NICE, ICHD-3).</li>
+    chronic migraine and medication-overuse headache are defined by days a month.</p> <ul><li><strong>How
+    often.</strong> Migraine on fewer than 15 days a month is called episodic. Chronic migraine means headache on 15 or
+    more days a month for more than 3 months, with migraine features on at least 8 days a month (NICE, ICHD-3).</li>
     <li><strong>Medicine days.</strong> ICHD-3 notes that medication overuse is the most common cause of symptoms that
       look like chronic migraine, so the two counts are read together. A day with two kinds of medicine counts under
       each kind, and once in the total of days with any medicine.</li>
     <li><strong>Whether treatment works.</strong> NICE suggests reviewing preventive treatment 3 to 6 months after it
-      starts, and for some newer preventive treatments it links continuing them to how far migraines or headache days
+      starts, and for some preventive treatments it links continuing them to how far migraines or headache days
       fall.</li></ul>
   <p>Before an appointment, add up each month's headache days and medicine days by kind, and list your questions.
     Page 6 of the template has boxes for these counts.</p>
@@ -849,14 +849,15 @@ def medication_overuse():
   <h2>What is medication-overuse headache?</h2>
   <p>Medication-overuse headache is headache on 15 or more days a month that comes from taking medicine for headache
     too often, in someone who already has a headache disorder such as migraine. It used to be called rebound headache.
-    Doctors class it as a secondary headache, and it can be diagnosed alongside chronic migraine.</p>
+    Doctors class it as a secondary headache, meaning one with another cause, and it can be diagnosed alongside chronic
+    migraine.</p>
   <p>Medicine that eases an attack, taken on many days, can make headaches more frequent. The American Migraine
     Foundation describes the cycle: more pain leads to more medicine, and the medicine itself can then worsen the
     headache and how often it comes.</p>
   <h2>How common is it, and who gets it?</h2>
   <p>About 1 to 2 in every 100 people have medication-overuse headache in a given year, a 2019 review in The Lancet
     Neurology says. It is more common in women and in people with depression, anxiety or other long-term pain. Most
-    people who get it already have migraine or tension-type headache.</p>
+    people who get it already have migraine or tension-type headache, ICHD-3 says.</p>
   <p>It is very common among people with frequent headache: ICHD-3 says studies from many countries show that more than
     half of people with headache on 15 or more days a month have it. A 2017 review puts it at 3 to 4 times as common in
     women as in men.</p>
@@ -864,8 +865,8 @@ def medication_overuse():
   <p>The main sign is headache on most days while you are taking medicine for headache often. The Migraine Trust
     describes a dull headache on most days, with migraine attacks on top, and pain that comes back as each dose wears
     off. Only a doctor can diagnose it, because its headaches have no unique features.</p>
-  <p>UK guidance (NICE) asks doctors to think of it when headache started or got worse while someone took these
-    medicines on 10 or 15 days a month, depending on the kind, for 3 months or more. Other sources mention:</p>
+  <p>UK guidance (NICE) asks doctors to think of it when headache started or got worse while someone took medicine for
+    headache on 10 or 15 days a month, depending on the kind, for 3 months or more. Other sources mention:</p>
   <ul><li>preventive treatment that works less well than expected (the Migraine Trust);</li>
     <li>taking medicine in case a headache comes, rather than for one you already have (a 2017 review);</li>
     <li>needing medicine on more than 2 days a week as headaches become more frequent, which the American Migraine
@@ -901,9 +902,10 @@ def medication_overuse():
     medicines have not been linked to medication-overuse headache. The NHS suggests seeing a GP if you have migraine
     attacks more than once a week.</p>
   <h2>How is it treated?</h2>
-  <p>Treatment means stopping the overused medicine for at least a month, UK guidance (NICE) says, on a plan agreed
-    with your doctor. Headaches are likely to get worse for a while before they improve, and there may be withdrawal
-    symptoms, so doctors offer close follow-up and support, and a review 4 to 8 weeks after stopping.</p>
+  <p>UK guidance (NICE) says treatment means stopping the overused medicine for at least a month; the Migraine Trust
+    says to agree a plan with your doctor first. Headaches are likely to get worse before they improve, and there may
+    be withdrawal symptoms, so doctors offer close follow-up and support, and a review 4 to 8 weeks after
+    stopping.</p>
   <p>Doctors may also offer preventive treatment for the underlying headache. NICE says a hospital stay is not
     routinely needed. People who take strong opioids, have other relevant health conditions, or have tried to stop
     several times without success may need a specialist, and sometimes a hospital stay. The best way to stop depends
@@ -923,9 +925,9 @@ def medication_overuse():
   <p>It usually gets better once the overuse stops, though not always, ICHD-3 says, and preventive treatment tends to
     work better afterwards. It can come back: a 2017 review says most studies found 25 to 35% of people relapsed within
     the first year after stopping, and few relapsed after that.</p>
-  <p>The same review says around 50 to 70% of people respond well to stopping the overused medicine. ICHD-3 notes that
-    around half of people who seem to have chronic migraine while overusing medicine go back to episodic migraine after
-    stopping it. Relapse figures vary widely, from 20 to 60%, and most studies were done in specialist headache
+  <p>ICHD-3 notes that around half of people who seem to have chronic migraine while overusing medicine go back to
+    episodic migraine after stopping it. The same 2017 review says around 50 to 70% of people seem to respond well to
+    stopping, that relapse figures vary widely, from 20 to 60%, and that most studies were done in specialist headache
     centres, so they may not reflect everyone.</p>
   <h2>How can I keep count?</h2>
   <p>Count your medicine days by kind. The <a href="/headache-diary/">free printable headache diary</a> has a column
@@ -939,8 +941,8 @@ def medication_overuse():
     ld = medical_ld(path, MOH_TITLE, MOH_REVIEWED, {'@type': 'MedicalCondition', 'name': 'Medication-overuse headache',
                                                     'alternateName': 'Rebound headache'})
     return page(path, 'Medication-overuse headache: 10 and 15 days · Migrely',
-                'Medication-overuse (rebound) headache: the ICHD-3 day counts, why they aren\'t safe limits, its signs, '
-                'how it is treated and whether it comes back.', body, ld)
+                'Medication-overuse (rebound) headache: the ICHD-3 day counts, why they aren\'t safe limits, its '
+                'signs, how it is treated and whether it comes back.', body, ld)
 
 
 # The window around day 1 of a period (ICHD-3 A1.1.1, A1.1.2; NICE 1.2.5); there is no day 0.
@@ -964,12 +966,15 @@ MENSTRUAL_SOURCES = [
     ('NHS, Symptoms of menopause and perimenopause',
      'https://www.nhs.uk/conditions/menopause-and-perimenopause/symptoms/'),
     ('The Migraine Trust, Menstrual migraine', MT_MENSTRUAL),
-    ('The Migraine Trust, Migraine and hormones', 'https://migrainetrust.org/live-with-migraine/migraine-and-hormones/'),
+    ('The Migraine Trust, Migraine and hormones',
+     'https://migrainetrust.org/live-with-migraine/migraine-and-hormones/'),
     ('The Migraine Trust, Migraine and contraception',
      'https://migrainetrust.org/live-with-migraine/migraine-and-contraception/'),
-    ('The Migraine Trust, Migraine and menopause', 'https://migrainetrust.org/live-with-migraine/migraine-and-menopause/'),
+    ('The Migraine Trust, Migraine and menopause',
+     'https://migrainetrust.org/live-with-migraine/migraine-and-menopause/'),
     ('American Migraine Foundation, Menstrual migraine and hormones',
-     'https://americanmigrainefoundation.org/resource-library/menstrual-migraine-and-hormones-understanding-the-connection/'),
+     'https://americanmigrainefoundation.org/resource-library/'
+     'menstrual-migraine-and-hormones-understanding-the-connection/'),
     ('American Migraine Foundation, Hormonal and menstrual migraine',
      'https://americanmigrainefoundation.org/resource-library/hormonal-menstrual-migraine/'),
     ('Vetvik KG and MacGregor EA, The Lancet Neurology, 2021: menstrual migraine (abstract)',
@@ -1007,10 +1012,10 @@ def menstrual_migraine():
   <p>If your bleeds come from the pill or HRT, say so in your diary: ICHD-3 notes that the cause of attacks may differ
     from a natural cycle, and so may the best way to manage them.</p>
   <h2>Why does migraine happen around a period?</h2>
-  <p>The most widely accepted explanation is the natural fall in oestrogen in the days before a period, which makes an
+  <p>A widely accepted explanation is the natural fall in oestrogen in the days before a period, which makes an
     attack more likely. Prostaglandins, hormone-like substances released around a period that also cause period pain,
-    may add to the risk. The evidence is still limited, and other changes at this point in the cycle may matter
-    too.</p>
+    may add to the risk. The evidence is still limited, a 2023 review says,
+    and other changes at this point in the cycle may matter too.</p>
   <p>Oestrogen seems to act directly on pain pathways in the nervous system, the Migraine Trust says, though how it
     does so is not fully understood. The American Migraine Foundation says it is often the rapid change in hormone
     levels, rather than oestrogen itself, that matters. A 2021 review in The Lancet Neurology names two mechanisms,
@@ -1058,20 +1063,20 @@ def menstrual_migraine():
     ring) for contraception to people who have migraine with aura. If you have aura, or get it for the first time while
     using one of these methods, tell whoever prescribes your contraception soon. They may suggest a different
     method.</p>
-  <p>The reason is stroke: the Migraine Trust says the oestrogen in these methods brings a small but significant rise
-    in stroke risk with aura. With other stroke risk factors, such as smoking, obesity or high blood pressure, you may
-    be advised not to use them either. It says progestogen-only methods (the mini-pill, implant, injection or hormonal
-    coil) and non-hormonal methods can be used with aura. Whenever you see anyone about contraception, tell them you
-    have migraine.</p>
+  <p>The reason is stroke risk. The Migraine Trust says studies suggest the oestrogen in these methods brings a small
+    but significant rise in stroke risk with aura: still a very small risk, but an unnecessary one to take. With other
+    stroke risk factors, such as smoking, obesity or high blood pressure, you may be advised not to use them either. It
+    says progestogen-only methods (the mini-pill, implant, injection or hormonal coil) and non-hormonal methods can be
+    used with aura. Whenever you see anyone about contraception, tell them you have migraine. If you stop a method, it
+    no longer protects you from pregnancy.</p>
   <p>Contraception can also change migraine itself, for better or worse, and the effect is hard to predict. The usual
     7-day break in the combined pill brings a sharp fall in oestrogen that can trigger attacks in some people, and a
-    doctor may suggest changes, such as fewer or shorter breaks. If you stop a method, it no longer protects you from
-    pregnancy.</p>
+    doctor may suggest changes, such as fewer or shorter breaks.</p>
   <h2>Does menstrual migraine change in perimenopause and after menopause?</h2>
   <p>Often, yes. In perimenopause, the years before periods stop, hormone levels swing and attacks can become more
-    frequent and severe, the Migraine Trust says. After menopause, migraine often gets better, according to the NHS,
-    though it can take a few years. It does not improve for everyone, and is more likely to continue or worsen when
-    menopause follows surgery.</p>
+    frequent and severe, the Migraine Trust says. After menopause, migraine often gets better, the NHS says. The
+    Migraine Trust adds that this can take a few years, and that it is more likely to continue or worsen when menopause
+    follows surgery.</p>
   <p>Period-linked attacks can become harder to predict as periods change, the Migraine Trust says. Hot flushes, night
     sweats and anxiety can disrupt sleep and add stress, which makes attacks more likely, and migraine can even start
     for the first time in perimenopause. The NHS lists headaches and migraines that are worse than usual among the
@@ -1451,13 +1456,16 @@ ANSWER_EXEMPT = {'Would you rather use your phone?', 'How can I keep count?', 'I
 
 
 def check_direct_answers(built):
-    """Stops the build when a guide's question heading does not open with a 40- to 60-word answer (BRD D149)."""
+    """Stops the build when a guide's question heading (H2 or H3) does not open with a 40- to 60-word answer (BRD
+    D149)."""
     wrong = []
     for path in ANSWER_PAGES:
-        for heading, answer in re.findall(r'<h2>(.*?)</h2>\s*(?:<p>(.*?)</p>)?', built[path][1], re.S):
+        questions = re.findall(r'<h([23])[^>]*>(.*?)</h\1>\s*(?:<p[^>]*>(.*?)</p>)?', built[path][1], re.S)
+        for _, heading, answer in questions:
+            heading = html.unescape(re.sub(r'<[^>]+>', '', heading))
             count = len(html.unescape(re.sub(r'<[^>]+>', '', answer)).split())
-            if html.unescape(heading) not in ANSWER_EXEMPT and not 40 <= count <= 60:
-                wrong.append(f'{path} "{html.unescape(heading)}" ({count} words)')
+            if heading not in ANSWER_EXEMPT and not 40 <= count <= 60:
+                wrong.append(f'{path} "{heading}" ({count} words)')
     if wrong:
         raise SystemExit('These headings need a first paragraph of 40 to 60 words that answers them (BRD D149): '
                          + '; '.join(wrong))
