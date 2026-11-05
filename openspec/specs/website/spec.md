@@ -9,8 +9,8 @@ page (the home page's "Free guides" and every footer's "Guides" navigation), a b
 page's links can't reach, a self-hosted promo video with no autoplay and a text alternative, direct answers (the home
 page's definition and questions, `/support/`'s H2 questions), breadcrumbs, one JSON-LD graph per page with `HowTo`
 where there are steps, `/llms.txt`, honest sitemap dates, UTM-tagged Google Play links, and the site's static,
-script-free rules. The medical guides answer each question first in 40 to 60 words, credit every single-study figure
-in the text, leave how to stop a medicine to the doctor, and share the NHS "Call 999" list (BRD D119, D133–D149,
+script-free rules, official profiles as `sameAs` (D150). The medical guides answer each question first in 40 to 60 words, credit every single-study figure
+in the text, leave how to stop a medicine to the doctor, and share the NHS "Call 999" list (BRD D119, D133–D150,
 EC-WEB-01…24).
 
 ## Requirements
@@ -96,7 +96,7 @@ Every page SHALL have "About" in its main menu, and `/about/` and `/privacy-chec
 
 ### Requirement: Organization structured data
 
-The home page SHALL publish one JSON-LD `@graph` with an `Organization` (Migrely: url, logo, email, contactPoint), a `WebSite` published by it and the `MobileApplication`, whose publisher stays Sulton UzDev. `/about/` SHALL publish an `AboutPage` about the same `Organization`. `sameAs` SHALL list only profiles that exist.
+The home page SHALL publish one JSON-LD `@graph` with an `Organization` (Migrely: url, logo, email, contactPoint), a `WebSite` published by it and the `MobileApplication`, whose publisher stays Sulton UzDev. `/about/` SHALL publish an `AboutPage` about the same `Organization`. `sameAs` SHALL list exactly the official profiles in `SOCIAL_PROFILES`, and every footer SHALL link them with `rel="me"`.
 
 #### Scenario: Search engines read the home page
 
@@ -104,10 +104,16 @@ The home page SHALL publish one JSON-LD `@graph` with an `Organization` (Migrely
 - **THEN** it finds an `Organization` with `@id` `https://migrely.health/#organization`, a `WebSite` whose publisher
   is that `@id`, and the `MobileApplication`
 
+#### Scenario: Official profiles
+
+- **WHEN** `SOCIAL_PROFILES` lists the YouTube channel
+- **THEN** the `Organization`'s `sameAs` is `["https://www.youtube.com/@migrely"]`, every page's footer links it with
+  `rel="me"`, and `/llms.txt` lists it
+
 #### Scenario: No social profiles yet
 
-- **WHEN** Migrely has no social profiles yet
-- **THEN** the `Organization` has no `sameAs`
+- **WHEN** `SOCIAL_PROFILES` is empty
+- **THEN** the `Organization` has no `sameAs` and no footer shows a profile link
 
 ### Requirement: Accurate sitemap dates
 

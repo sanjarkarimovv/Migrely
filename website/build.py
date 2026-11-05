@@ -141,10 +141,14 @@ DIARY_SOURCES = [
     ('Miller VE and others, Cephalalgia, 2020: daily headache diary versus a four-week questionnaire',
      'https://pubmed.ncbi.nlm.nih.gov/32799667/'),
 ]
-# One object for the home page and /about/ (BRD D135). sameAs comes with the social profiles (EC-WEB-06).
+# Migrely's own official profiles, by name and URL (BRD D150). Only a profile that is Migrely's, public and presented as
+# Migrely belongs here; it becomes the Organization's sameAs, a footer link and a line in /llms.txt (EC-WEB-06).
+SOCIAL_PROFILES = [('YouTube', 'https://www.youtube.com/@migrely')]
+# One object for the home page and /about/ (BRD D135).
 ORGANIZATION = {'@type': 'Organization', '@id': f'{BASE}/#organization', 'name': 'Migrely', 'url': f'{BASE}/',
                 'logo': f'{BASE}/assets/img/icon-512.png', 'email': SUPPORT,
-                'contactPoint': {'@type': 'ContactPoint', 'contactType': 'customer support', 'email': SUPPORT}}
+                'contactPoint': {'@type': 'ContactPoint', 'contactType': 'customer support', 'email': SUPPORT},
+                **({'sameAs': [url for _, url in SOCIAL_PROFILES]} if SOCIAL_PROFILES else {})}
 BY_MIGRELY = {'@id': ORGANIZATION['@id']}
 # Every permission the release build asks for, and what Migrely uses it for (BRD D134). Titles in quotes are the
 # names Android 16 shows in Settings → Apps → Migrely → Permissions → All permissions; the emulator, without Google
@@ -237,6 +241,7 @@ def page(path, title, description, body, extra_head=''):
         for href, label in [('/', 'Home'), ('/about/', 'About'), ('/support/', 'Help'), ('/privacy/', 'Privacy')])
     guides = ''.join(f'<a href="{esc(href)}"{current if href == path else ""}>{esc(name)}</a>'
                      for href, name, _ in GUIDES)
+    profiles = ''.join(f'<a href="{esc(url)}" rel="me">{esc(name)}</a>' for name, url in SOCIAL_PROFILES)
     trail = (f'<nav class="wrap narrow crumbs" aria-label="Breadcrumb"><ol><li><a href="/">Home</a></li>'
              f'<li><span aria-current="page">{esc(CRUMBS[path])}</span></li></ol></nav>\n' if path in CRUMBS else '')
     return f'''<!doctype html>
@@ -279,7 +284,7 @@ def page(path, title, description, body, extra_head=''):
   <nav class="links" aria-label="Guides">{guides}</nav>
   <p class="links"><a href="/support/">Help</a><a href="/about/">About</a><a href="/privacy/">Privacy policy</a>
     <a href="/privacy-check/">Check our privacy</a><a href="/delete-data/">Delete your data</a>
-    <a href="{esc(play_link(campaign(path)))}">Google Play</a></p>
+    <a href="{esc(play_link(campaign(path)))}">Google Play</a>{profiles}</p>
   <p>© 2026 Migrely, published by Sulton UzDev · <a href="mailto:{SUPPORT}">{SUPPORT}</a></p>
 </div></footer>
 </body>
@@ -1505,6 +1510,7 @@ def llms_txt():
         'Not a medical device: it does not diagnose, treat or prevent any condition. Its medicine-day note uses the '
         'ICHD-3 day counts for medication-overuse headache and suggests talking to a doctor.',
         f'Contact: {SUPPORT}',
+        *(f'Official {name} profile: {url}' for name, url in SOCIAL_PROFILES),
     ]
 
     def links(pages):
