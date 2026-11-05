@@ -2,7 +2,7 @@
 
 ### Requirement: Headache diary page
 
-The site SHALL serve `/headache-diary/`. Under question headings it explains why to keep a headache diary, what to record and for how long (NICE CG150), which possible triggers to note and why they are not proof, how to keep it going, what counts as a headache day (ICHD-3), more than one kind of headache, why medicine days are counted (ICHD-3 8.2, 8.2.6) and what a doctor looks for. Every fact SHALL cite a source listed on the page, which ends with a "Last reviewed" date and says no clinician reviewed it.
+The site SHALL serve `/headache-diary/`. Under question headings it explains why to keep a diary, what to record and for how long (NICE CG150), which triggers to note and why they are not proof, how to keep it going, what a headache day is (ICHD-3), more than one kind of headache, why medicine days count (ICHD-3 8.2) and what a doctor looks for. Every fact SHALL cite a listed source; the page ends with a "Last reviewed" date and says no clinician reviewed it.
 
 #### Scenario: A visitor preparing for an appointment
 
