@@ -46,9 +46,9 @@ Home Today, below the Settings row. A message SHALL never be the brightest eleme
 
 ### Requirement: Messages can be dismissed
 The user SHALL be able to dismiss any message by swiping it sideways. Messages without "Undo" SHALL also have a close button
-with the spoken label "Dismiss", and a tap anywhere on them SHALL dismiss them, by touch only with no new semantics. A tap
-on the body of a message with an action SHALL do nothing, so a stray tap cannot remove the offer to undo (BRD EC-UX-16,
-D158).
+with the spoken label "Dismiss". A tap anywhere on a message with a timeout and no action SHALL dismiss it, by touch only
+with no new semantics. A tap on the body of a message with an action or with no timeout SHALL do nothing, so a stray tap
+cannot remove the offer to undo or the word that nothing was saved (BRD EC-UX-16, D158).
 
 #### Scenario: Swipe away
 - **WHEN** the user swipes a message sideways
@@ -58,21 +58,21 @@ D158).
 - **WHEN** the user taps the close button on "storage full"
 - **THEN** the message disappears
 
-#### Scenario: A tap on a message with no action
-- **WHEN** the user taps the text of a message with no action
+#### Scenario: A tap on a message with a timeout and no action
+- **WHEN** the user taps the text of a message with a timeout and no action
 - **THEN** the message disappears
 
 #### Scenario: A stray tap on "storage full"
-- **WHEN** a tap lands on the "storage full" message before it is read
-- **THEN** the message disappears, which is an accepted limit, and what was typed stays on screen
+- **WHEN** a tap lands on the body of the "storage full" message
+- **THEN** the message stays, and its close button and a swipe still close it
 
 #### Scenario: A tap on the body of a message with Undo
 - **WHEN** the user taps the text of a message with "Undo"
 - **THEN** the message stays with the time it has left, and "Undo" still works
 
 #### Scenario: A control under a message
-- **WHEN** a message with no action lies over a control, the user taps the message, and then taps the control after the
-  guard has ended
+- **WHEN** a message with a timeout and no action lies over a control, the user taps the message, and then taps the control
+  after the guard has ended
 - **THEN** the first tap dismisses the message, and the second reaches the control
 
 #### Scenario: A screen reader
