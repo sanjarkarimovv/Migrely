@@ -52,12 +52,15 @@ back to it first.
 
 Head of the code: `2d1da37d`, on `f992f6e8`. Evidence: `migrely-work/walks/fix-overuse-wording/` (outside the repo). 6.6 to 6.9 are still open: `code-reviewer` and `qa-engineer` come next, and this change is not archived.
 
+Task 2.1's verify no longer reads empty: `code-reviewer` asked for `OveruseStatusRowDomainModelTest`, which lives in the domain module. `git diff origin/develop --stat -- 'features/*/domain/src/main'` is empty, so the domain's code is unchanged. No device ran after review: the walk below is of `2d1da37d`, and only a test and this record changed since.
+
 ### Gate and tests
 
 | Check | Result |
 |---|---|
 | `nice -n 19 ./gradlew --max-workers=2 assembleDebug test ktlintCheck detekt lint --rerun-tasks` | exit 0, BUILD SUCCESSFUL, 1841 tasks executed |
 | JVM tests in that run | 2319, 0 failed, 0 skipped (debug and release variants of the Android modules both count) |
+| The same gate after review's domain test, without `--rerun-tasks`, on `defc7baa` plus the test | exit 0, BUILD SUCCESSFUL, 23 of 1841 tasks executed, 2323 JVM tests, 0 failed |
 | `ANDROID_SERIAL=emulator-5570 ./gradlew :datasource:implementation:connectedDebugAndroidTest :designsystem:connectedDebugAndroidTest` | exit 0: 112 and 48 tests, 0 failed. Regression only: no module this change touches has instrumented tests, and `:app`'s one androidTest file does not reference this text, so `:app` was not run |
 | `:app:checkReleasePermissions` | exit 0. `android.permission.INTERNET`: 0 lines in the 4 merged debug and release manifests. No manifest or Gradle file changed |
 
@@ -69,6 +72,7 @@ Head of the code: `2d1da37d`, on `f992f6e8`. Evidence: `migrely-work/walks/fix-o
 | The label test can fail (task 3.1) | Run against the old label | Failed: `expected:<30-day spans [reaching an ICHD-3 8.2 medication-day threshold]> but was:<30-day spans [at the medication-overuse limit]>` |
 | "No label says limit" can fail | A temporary "limit" in another label | Failed: `expected:<[]> but was:<[Migraines with bed rest, limit]>` |
 | Word-for-word against `design.md` | A script reads the Final copy table and compares it with every `strings.xml` and the mapper. Run before the change | Before: 14 of 17 differed, 1 of them the script's own bug (it read one module), fixed. After: 0 of 18 differ |
+| `reached` is exactly "N or more" (added after review) | `OveruseStatusRowDomainModel.reached` changed to `days >= limit - 1` and to `days > limit`, running only `:features:medication:domain:test` | Before `OveruseStatusRowDomainModelTest`: both survived, 89 tests, 0 failed. With it, 93 tests: the first fails the two "one day below" tests, the second fails the two "exactly" tests |
 | Task 4.1's grep | `git grep -nP "\blimit\b"` on `strings.xml` | 10 lines on `develop`, 0 here |
 
 ### Walk on `emulator-5570`
@@ -96,7 +100,7 @@ API 36, debug build of `2d1da37d`, seeded by SQL into the app's database with in
 | A past month | October and September, with data | No section, read as described below the table. "Days with attack medication" counts 4 and 1 | Pass |
 | No attack medication | no intakes; then an attack today and an intake 40 days back only | No section, no card. Second state: "Days with attack medication: 0", no section | Pass |
 | A list cap is not an overuse number | 50 medications, saving a 51st | "You can keep up to 50 medications. Remove one you no longer take." | Pass |
-| Reached is said in words | dumps of the reached rows | One node holds the whole text, with no separate `content-desc` and no second node | Pass, see "Not checked" |
+| Reached is said in words | dumps of the reached rows | One node holds the whole text, with no separate `content-desc` and no second node. TalkBack was never run or heard | **Partial**: the node text is proven, the speech the scenario asks about is not |
 | Largest font, upright | 200%, simple 8, triptan 8 | The row wraps to 3 lines in a 293 px node, whole in the screenshot; the line below it is whole | Pass |
 | Largest font, landscape | 200%, same state | The row wraps to 3 lines, whole in the screenshot, in the two-pane layout | Pass |
 | Soft card in landscape | triptan 9 | Body whole after scrolling, at 100% and at 200% | Pass |
@@ -118,7 +122,7 @@ Data restored from the backup taken before the walk: database dump md5 `85c48a1a
 
 ### Not checked, and why
 
-- **TalkBack speech.** The brief asks for labels through `uiautomator dump`. It proves one node holds the text, not how the voice says it.
+- **TalkBack speech.** TalkBack was never turned on or heard. The brief asks for labels through `uiautomator dump`, which proves one node holds the text, not what the voice says. So "Reached is said in words" is partial, and every other scenario in the walk passes.
 - **The reached amber against a colour-blind view.** The words carry the state, so colour was only read, not simulated.
 - **A saved parcel from the old build being read.** `install -r` stops the app, so the upgrade run may have loaded fresh rather than read the old parcel. The upgrade row shows no crash, not that path.
 - **The old PDF's page count on the same data.** Only the new build was run. The label is on one line in both, so no extra line comes from it, but page counts were not compared.
