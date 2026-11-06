@@ -153,6 +153,60 @@ least tidy result, and it is accepted so that the order stays the same in every 
 | Play's payment messages at start (`showInAppMessages`) | Play's own message, only when Play has one | No. Nothing was tapped |
 | In-app review (D129) | Google's review card | No. It already stays silent when it fails (EC-REV-05) |
 
+### D7. Messages stop covering the top bar (BRD D158, #152)
+
+Decided by `ux-designer` and `team-lead`. The task 4.3 row that asked this question was answered by #152's measure on the
+paywall (d60dbb4c): at 100% a tap at Close's centre lands on the message's Dismiss, and at 200% it lands above Dismiss and
+nothing happens. A buy button under the message opens no sheet. System Back closes the paywall.
+
+**Where a message sits.** One top offset on `MigrelySnackbarHost`, added to the host's existing insets and 8 dp:
+
+| Screen | Top edge of the message | Why |
+|---|---|---|
+| Paywall | Below the Close row: 48 dp on the host, so 56 dp under the inset | Close is 48 dp with 4 dp of padding, so it is never covered, moved or guarded |
+| Every other screen with a top bar | Below the bar | Back, Insights and Doctor report answer, and a tap cannot hit Undo instead |
+| Home Today | Below the Settings row | Settings answers, and a tap cannot hit Undo and reopen the migraine |
+| Landscape attack mode | As D52 | The start column already moves below the message |
+| Portrait attack mode | Unchanged | Undo over the rain card is accepted: that card is the screen's content, not a top-bar control. Known limit |
+| No top bar, such as onboarding | Unchanged | Nothing to clear |
+
+`android-engineer` picks the top-bar value. If the bar is Material's default 64 dp, 56 dp on the host sets the edge at the
+bar's bottom. No screen in the repo overrides its height (`git grep expandedHeight` finds none).
+
+**The paywall's guard is 400 ms, not 800 ms,** through one host parameter defaulting to 800. It is longer than the message's
+250 ms entry and 200 ms exit. The paywall's message has no Undo, so the longer guard protects less here, and a person
+retrying a purchase is the one the guard would block. This is the exception to D114.
+
+**A tap on a message.**
+
+- With no action, a tap anywhere on it dismisses it, by touch only with no new semantics. The Dismiss button stays, and
+  TalkBack still reaches that button.
+- With Undo, a tap on the body does nothing. A stray tap must not remove the offer to undo a deletion. Data loss ranks above
+  this.
+
+**Everything else stays:** duration, top position, dim look, copy, other screens' 800 ms.
+
+**Limits, accepted:**
+
+- A control still under a message needs a tap to dismiss first, then a second tap.
+- After that tap, a tap in the message's area does nothing for 400 ms on the paywall and 800 ms elsewhere.
+- On the paywall, two X icons are stacked at the right edge. This is to be checked by eye.
+- People can dismiss a message unread. That includes "storage full", the one message with no timeout, because it means the
+  last action was not saved.
+- Not measured on people.
+
+**What reading the code adds, for task 3a.5 to measure. The decision stands; these are where one offset may fall short:**
+
+- **Home's Settings row is not a bar.** `DayHeader` scrolls with the content, and its height follows the date text. If the
+  date wraps at 200%, the row is taller and Settings sits lower, so one offset may still cover it. Once scrolled, the message
+  lies over whatever is there.
+- **Row 1 goes under the message at any font size.** On My medications a message with Undo now lies over the first row, with
+  Undo near its Remove. A tap on Remove there hits Undo. This was a 200% case in #152 and becomes a 100% case. It is visible
+  and reversible, like the Settings and Doctor report cases it replaces.
+- **Landscape Home Today.** The start button sits centred in the end column, and a centred message up to 560 dp wide also
+  reaches that column. Moved down, it comes closer to "Migraine started", and at 200% it may overlap it. The spec says a
+  message never covers the large controls. If measurement shows an overlap, it goes to `team-lead` before the release is cut.
+
 ## Edge-case checklist
 
 | Area | Result |
@@ -187,9 +241,8 @@ least tidy result, and it is accepted so that the order stays the same in every 
   not changed here. The real-phone check records it. If it happens, it gets its own issue.
 - **`Unavailable` with products still offered is not reachable on the simulated store,** which fails both together. A view
   model test covers it, and no walk can.
-- **The paywall's message may cover controls** while it shows, Close and, at 200%, possibly the buy button (UX verdict
-  finding). This predates this change, and D4 adds one more path to it. It is the category Google rejected on, so task 4.3
-  tests it. A control that does not answer goes to `team-lead` before the release is cut. No fix is designed here.
+- **The paywall's message covered controls** (UX verdict finding, measured in #152). D7 is the answer. Its limits and the
+  three places where one offset may fall short are listed there.
 - **Emulators cannot run Play's sheet.** So nothing before the real-phone check (task 5.3) shows this on a real sheet.
 
 ## Migration
@@ -254,7 +307,8 @@ Restore's messages, and D4 adds one more path to it. It is not seen on a device 
 real, files it. It does not block this change.
 
 Lead's decision, which overrides the last two sentences: it is the category Google rejected on, so `android-engineer` tests
-it in task 4.3, and a control that does not answer goes to `team-lead` before the release is cut.
+it in task 4.3, and a control that does not answer goes to `team-lead` before the release is cut. Measured in #152 and
+answered in D7.
 
 ### To judge on a device (tasks 3.3, 4.3, 5.3)
 

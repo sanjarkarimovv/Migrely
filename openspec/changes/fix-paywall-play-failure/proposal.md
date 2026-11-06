@@ -26,6 +26,10 @@ stop being silent in the one case where its own code knows that Play refused and
 - **The unreachable notice also speaks about the diary.** When the reload after a sheet fails, the cards and the line
   leave, so its text becomes "Check your connection, then try again. Your diary works offline."
 
+- **Messages stop covering the top bar (#152, D158).** On the paywall the message sits below the Close row, with a 400 ms
+  guard. On every other screen with a top bar it sits below the bar; on Home Today, below the Settings row.
+- **A tap on a message with no action dismisses it.** A tap on the body of a message with Undo does nothing.
+
 The existing `Failed` message and Restore's messages do not change.
 
 ## Out of scope
@@ -38,6 +42,8 @@ The existing `Failed` message and Restore's messages do not change.
 - Telling Play's error apart from a person's cancel.
 - Restore saying "No purchases were found" if Play answers from its cache while offline. See the design's risks.
 - Translation: the app is English only (D148).
+- A message's duration, top position, dim look and copy, and the 800 ms guard on other screens.
+- Portrait attack mode, landscape attack mode (D52) and screens with no top bar.
 
 ## Capabilities
 
@@ -48,10 +54,13 @@ None.
 ### Modified Capabilities
 
 - `subscription`: what the paywall shows, and what it says after a sheet that did not complete.
+- `in-app-messages`: where a message sits, how it is dismissed, and the paywall's guard.
 
 ## Impact
 
-- `docs/BRD.md`: D153, EC-BIL-14…18, §7.3, §13 row 28.
+- `docs/BRD.md`: D153, D158, EC-BIL-14…18, EC-UX-16, a note on D114, §7.3, §13 rows 28 and 28a.
+- `designsystem`: `MigrelySnackbar` and `MigrelySnackbarHost`, two host parameters and a body tap.
+- The screens that show messages: one offset each.
 - `features/subscription/ui`: one new string, one changed string, one `Text`, two blocks swapped in `PaywallOffer`.
 - `features/subscription/presentation`: `PaywallViewModel`, a few lines and tests.
 - `.maestro/`: `qa-engineer` updates `paywall-and-purchase.yaml`, which asserts the paywall without scrolling.
