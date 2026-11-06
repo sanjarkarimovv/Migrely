@@ -226,6 +226,10 @@ data must never be passed to any SDK.
 - `BaseComposeHolder.ViewModelObserver(navController)` collects `navigationEvent` and `notification` inside one
   `LaunchedEffect(Unit)` each. This deliberately deviates from the generated `collectAsState`, which drops two identical
   events in a row.
+- A navigation event navigates only while its screen is the current back-stack entry (`BaseComposeHolder`, issues #138,
+  #139). A screen stays composed and clickable through the 700 ms exit fade of `NavHost`, so a second touch can still send
+  an event after the first has navigated. A time-based tap guard cannot cover a resting finger, and a `RESUMED` check
+  would refuse a screen still fading in. Actions that do not navigate are not covered.
 - ViewModels are stateless (skill rule 4). Text and selections the user is editing live in the composable
   (`rememberSaveable`) and are passed to `on…Action(...)` as parameters.
 - Every screen has a stateful `<Screen>()` (with `ScreenEnterObserver` and `ViewModelObserver`) and a stateless

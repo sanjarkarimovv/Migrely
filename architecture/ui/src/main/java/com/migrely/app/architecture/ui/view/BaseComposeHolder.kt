@@ -2,6 +2,9 @@ package com.migrely.app.architecture.ui.view
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavController
 import com.migrely.app.architecture.presentation.notification.PresentationNotification
 import com.migrely.app.architecture.presentation.viewmodel.BaseViewModel
@@ -17,9 +20,12 @@ abstract class BaseComposeHolder<VIEW_STATE : Any, NOTIFICATION : PresentationNo
     // row from being dropped. See docs/ARCHITECTURE.md section 8.
     @Composable
     fun ViewModelObserver(navController: NavController) {
+        val screen = LocalLifecycleOwner.current
         LaunchedEffect(navController) {
             viewModel.navigationEvent.collect { navigationEvent ->
-                navigationMapper.toUi(navigationEvent).navigate(navController)
+                if (isCurrentScreen(navController, screen)) {
+                    navigationMapper.toUi(navigationEvent).navigate(navController)
+                }
             }
         }
 
@@ -28,5 +34,16 @@ abstract class BaseComposeHolder<VIEW_STATE : Any, NOTIFICATION : PresentationNo
                 notificationMapper.toUi(notification).present()
             }
         }
+    }
+
+    /**
+     * A screen stays composed and clickable through the exit fade, so a second touch can still send
+     * an event after it has navigated. Only the top of the back stack may navigate; a screen fading
+     * in is the top already, so its first tap counts. Compared by id, because `launchSingleTop`
+     * replaces the top entry's object and keeps its id. Outside a `NavHost` there is no back stack.
+     */
+    private fun isCurrentScreen(navController: NavController, screen: LifecycleOwner): Boolean {
+        val entry = screen as? NavBackStackEntry ?: return true
+        return navController.currentBackStackEntry?.id == entry.id
     }
 }
