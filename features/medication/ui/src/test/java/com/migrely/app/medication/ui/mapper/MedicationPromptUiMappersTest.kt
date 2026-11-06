@@ -62,8 +62,7 @@ class MedicationPromptUiMappersTest {
                     MedicationPromptUiModel.OveruseWarning(
                         expected,
                         OveruseLevelUiModel.Doctor,
-                        days = 10,
-                        thresholdDays = 10
+                        days = 10
                     ),
                     uiMapper.toUi(
                         MedicationPromptViewState.OveruseWarning(
