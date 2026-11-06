@@ -261,8 +261,7 @@ private fun OveruseWarning(
         // Informative, never a diagnosis (BRD MED-F5, section 11).
         Text(
             text = when (warning.level) {
-                OveruseLevelUiModel.Soft ->
-                    stringResource(R.string.overuse_body_soft, warning.thresholdDays)
+                OveruseLevelUiModel.Soft -> stringResource(R.string.overuse_body_soft)
                 OveruseLevelUiModel.Doctor -> stringResource(R.string.overuse_body_doctor)
             },
             style = MaterialTheme.typography.bodyMedium,
@@ -332,8 +331,7 @@ private fun OveruseDoctorPreview() {
             prompt = MedicationPromptUiModel.OveruseWarning(
                 OveruseCategoryUiModel.Triptan,
                 OveruseLevelUiModel.Doctor,
-                days = 10,
-                thresholdDays = 10
+                days = 10
             ),
             timeUiFormatter = previewFormatter,
             actions = previewActions
