@@ -54,7 +54,7 @@ tags: [regression, medication-overuse]
     centerElement: true
 - assertVisible: "Migraine days: 0"
 - scrollUntilVisible:
-    element: "Simple painkillers: 1 day \\(limit 15\\)"
+    element: "Simple painkillers: 1 day"
     direction: DOWN
 - assertVisible: "Last 30 days"
 # Marked pain-free, the day reads both.

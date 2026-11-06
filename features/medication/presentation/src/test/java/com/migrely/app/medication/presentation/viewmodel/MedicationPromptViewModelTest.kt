@@ -78,8 +78,7 @@ class MedicationPromptViewModelTest :
                 OveruseWarningPresentationModel(
                     OveruseCategoryPresentationModel.Triptan,
                     OveruseLevelPresentationModel.Doctor,
-                    days = 11,
-                    thresholdDays = 10
+                    days = 11
                 )
             ),
             state.await()
@@ -116,8 +115,7 @@ class MedicationPromptViewModelTest :
                 OveruseWarningPresentationModel(
                     OveruseCategoryPresentationModel.Triptan,
                     OveruseLevelPresentationModel.Doctor,
-                    days = 11,
-                    thresholdDays = 10
+                    days = 11
                 )
             ),
             state.await()

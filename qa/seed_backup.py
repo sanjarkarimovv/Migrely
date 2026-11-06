@@ -21,7 +21,8 @@ today, a month's average as days x 30 / the period's days rounded half up to one
 rounded half up. Times are printed 24-hour; a 12-hour phone shows 22:30 as 10:30 PM.
 
 Seeds: report-three-months, report-partial-month, report-tokyo, report-heavy, report-heavy-old-notes,
-insights-patterns, insights-three, five-old, five-new, four-old.
+insights-patterns, insights-three, five-old, five-new, four-old, overuse-nine, overuse-below, overuse-two-reached,
+overuse-largest-font, medications-fifty.
 """
 import argparse
 import calendar
@@ -78,9 +79,10 @@ CARD_TITLES = {"SIMPLE": "Painkillers", "TRIPTAN": "Triptans", "COMBINATION_OTHE
                "MULTIPLE": "Acute medications"}
 INDICATOR_ROWS = {"SIMPLE": "Simple painkillers", "TRIPTAN": "Triptans", "COMBINATION_OTHER": "Combination or other",
                   "MULTIPLE": "All attack medication"}
-SOFT_BODY = "Taking them on {} days or more a month can lead to more headaches. Worth keeping an eye on."
+SOFT_BODY = "Taking them often can lead to more headaches. Worth keeping an eye on."
 DOCTOR_BODY = "Taking them this often can make headaches more frequent. It's worth talking to your doctor."
-REACHED = "At this many days, medication can make headaches more frequent. Talk to your doctor about it."
+REACHED = ("Taking medication this often, month after month, can make headaches more frequent. "
+           "It's worth talking to your doctor.")
 WEEKDAYS = ("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")
 TIMES_OF_DAY = (("Night, 00–06", "at night"), ("Morning, 06–12", "in the morning"),
                 ("Afternoon, 12–18", "in the afternoon"), ("Evening, 18–24", "in the evening"))
@@ -93,8 +95,8 @@ TEST_DATES = (date(2026, 10, 25), date(2026, 3, 1), date(2026, 12, 31), date(202
 
 DESCRIPTIONS = {
     "report-three-months": "3-month Doctor report: 18 migraine days, 4 at bed rest, notes NOTE-ALPHA-7 and NOTE-BETA-9",
-    "report-partial-month": "1-month Doctor report: Sumatriptan on 11 days across the month change, at the triptan "
-                            "limit",
+    "report-partial-month": "1-month Doctor report: Sumatriptan on 11 days across the month change, past the triptan "
+                            "number",
     "report-tokyo": "an attack logged in Asia/Tokyo whose Tokyo date is the day after the phone's, and one at home "
                     "that morning: 2 migraine days, not 1",
     "report-heavy": "900 short migraines over 12 months, 2 or 3 a day, each with a note: more than 50 pages hold",
@@ -106,6 +108,12 @@ DESCRIPTIONS = {
     "five-old": "5 migraines in 6 months, the first 40 days ago: patterns ready, the paywall shows itself",
     "five-new": "5 migraines, the first 10 days ago: patterns not ready yet",
     "four-old": "4 migraines, the first 40 days ago: log the 5th in the app",
+    "overuse-nine": "no migraine, a triptan on 9 of the last 30 days: the soft card, and the row with no number",
+    "overuse-below": "no migraine, a painkiller on 7 days and a triptan on 2 others: 9 together, three rows, none reached",
+    "overuse-two-reached": "no migraine, a painkiller on 12 days and a triptan on 12 others: two rows reached, one not, "
+                           "the line once",
+    "overuse-largest-font": "no migraine, a painkiller on 8 days and a triptan on 8 others: the longest row",
+    "medications-fifty": "50 preventive medications, each taken once: the list is full",
 }
 
 THREE_MONTHS = (  # days before today, start, minutes, impact, intensity points, note, Ibuprofen (minutes in, answer)
@@ -307,6 +315,32 @@ def partial_month(today, zone):
     for index, day in enumerate(days):
         attack = backup.attack(day, "15:00", 240, impact=index % 3)
         backup.intake(sumatriptan, attack["startEpochMillis"] + 30 * MINUTE, attack, EFFECTS[index % 3])
+    return backup
+
+
+OVERUSE_SEEDS = {"overuse-nine": {"TRIPTAN": 9}, "overuse-below": {"SIMPLE": 7, "TRIPTAN": 2},
+                 "overuse-two-reached": {"SIMPLE": 12, "TRIPTAN": 12},
+                 "overuse-largest-font": {"SIMPLE": 8, "TRIPTAN": 8}}
+
+
+def overuse_only(name, today, zone):
+    """Intakes on separate days counting back from yesterday, one category after another, with no migraine at all."""
+    backup = Backup(name, zone)
+    names = {"SIMPLE": ("Ibuprofen", "400 mg"), "TRIPTAN": ("Sumatriptan", "50 mg")}
+    back = 0
+    for category, count in OVERUSE_SEEDS[name].items():
+        medication = backup.medication(names[category][0], "ACUTE", category, names[category][1])
+        for _ in range(count):
+            back += 1
+            backup.intake(medication, millis(today - back * DAY, "08:00", zone))
+    return backup
+
+
+def fifty_medications(today, zone):
+    backup = Backup("medications-fifty", zone)
+    for index in range(50):
+        medication = backup.medication(f"Medication {index + 1:02d}", "PREVENTIVE", None, None)
+        backup.intake(medication, millis(today - DAY, "08:00", zone) + index * MINUTE)
     return backup
 
 
@@ -616,16 +650,16 @@ def overuse_card(days):
     top = max(level(category) for category in candidates)
     chosen = max((c for c in candidates if level(c) == top), key=lambda c: (days[c], -OVERUSE.index(c)))
     return [f"{CARD_TITLES[chosen]} on {days[chosen]} of the last 30 days",
-            DOCTOR_BODY if top == 2 else SOFT_BODY.format(LIMITS[chosen]), "Got it"]
+            DOCTOR_BODY if top == 2 else SOFT_BODY, "Got it"]
 
 
 def indicator(days):
     lines = []
     for category in OVERUSE:
         if category in days:
-            row = f"{INDICATOR_ROWS[category]}: {counted(days[category], 'day')} (limit {LIMITS[category]})"
+            row = f"{INDICATOR_ROWS[category]}: {counted(days[category], 'day')}"
             if days[category] >= LIMITS[category]:
-                row += f", {'at' if days[category] == LIMITS[category] else 'over'} the limit"
+                row += f". Doctors watch for {LIMITS[category]} or more days a month."
             lines.append(row)
     return lines + ([REACHED] if any(days[c] >= LIMITS[c] for c in days) else [])
 
@@ -647,7 +681,7 @@ def report_lines(summary):
         ("Migraines started", summary["started"]),
         ("Days with attack medication" if short else "Days with attack medication a month, on average",
          average(summary["medication_per_month"], summary["medication_days"])),
-        ("30-day spans at the medication-overuse limit", ", ".join(summary["spans"]) or "None"),
+        ("30-day spans reaching an ICHD-3 8.2 medication-day threshold", ", ".join(summary["spans"]) or "None"),
         ("Migraines with bed rest", summary["bed_rest"]),
         ("Average peak pain", summary["average_peak"] or "Not logged"),
         ("A month with 15 or more migraine days", summary["chronic"]),
@@ -741,6 +775,22 @@ def expect_partial_month(data, today, zone):
     else:
         lines.append("On this date no month change falls inside both the period and home's last 30 days")
     return {"report": summary, "home": {"days": days}}, lines, spec
+
+
+def expect_overuse_only(name, data, today, zone):
+    days = overuse(data, today)
+    lines = ["Home in normal mode, the medication card: " + " / ".join(overuse_card(days)),
+             f"History, {calendar.month_name[today.month]} so far, Last 30 days: " + " / ".join(indicator(days))]
+    spec = [(f"{category} days", days.get(category), count) for category, count in OVERUSE_SEEDS[name].items()]
+    if len(OVERUSE_SEEDS[name]) > 1:
+        spec.append(("days of all attack medication", days.get("MULTIPLE"), sum(OVERUSE_SEEDS[name].values())))
+    return {"home": {"days": days}}, lines, spec
+
+
+def expect_fifty_medications(data, today, zone):
+    lines = ["Log medication > Manage medications: 50 listed; saving a 51st says \"You can keep up to 50 medications. "
+             "Remove one you no longer take.\""]
+    return {}, lines, [("medications", len(data["medications"]), 50), ("attack-medication days", overuse(data, today), {})]
 
 
 def expect_tokyo(data, today, zone):
@@ -853,6 +903,8 @@ SEEDS = {
                                expect_heavy_old_notes),
     "insights-patterns": (insights_patterns, expect_insights_patterns),
     **{name: (partial(few_migraines, name), partial(expect_few, name)) for name in FEW},
+    **{name: (partial(overuse_only, name), partial(expect_overuse_only, name)) for name in OVERUSE_SEEDS},
+    "medications-fifty": (fifty_medications, expect_fifty_medications),
 }
 
 

@@ -23,8 +23,7 @@ class MedicationPromptUiMapper(private val overuseCategoryUiMapper: OveruseCateg
                 OveruseLevelPresentationModel.Soft -> OveruseLevelUiModel.Soft
                 OveruseLevelPresentationModel.Doctor -> OveruseLevelUiModel.Doctor
             },
-            days = viewState.warning.days,
-            thresholdDays = viewState.warning.thresholdDays
+            days = viewState.warning.days
         )
     }
 }
