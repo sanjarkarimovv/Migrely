@@ -68,6 +68,7 @@ private const val BETA_NAME = "Betatriptan"
 private const val SAVE = "Save"
 private const val NOT_FOUND = "This medication no longer exists."
 private const val WAIT_MILLIS = 5_000L
+private const val AFTER_THE_TAP_GUARD_MILLIS = 800L
 
 /**
  * Whatever a route hands the editor, the form on screen and the row Save writes are the same
@@ -136,7 +137,7 @@ class EditMedicationIdTest {
 
         assertFormShows(BETA_NAME)
         nameField(BETA_NAME).performTextReplacement("BetatriptanForte")
-        composeRule.onNodeWithText(SAVE).performClick()
+        pressSave()
         assertUpdated(UpdatedRow(BETA, "BetatriptanForte", MedicationKindDomainModel.Acute))
     }
 
@@ -163,7 +164,7 @@ class EditMedicationIdTest {
 
         checkNotNull(betaRead).countDown()
         assertFormShows(BETA_NAME)
-        composeRule.onNodeWithText(SAVE).performClick()
+        pressSave()
         assertUpdated(UpdatedRow(BETA, BETA_NAME, MedicationKindDomainModel.Acute))
     }
 
@@ -180,7 +181,7 @@ class EditMedicationIdTest {
         composeRule.mainClock.autoAdvance = true
 
         assertFormShows(BETA_NAME)
-        composeRule.onNodeWithText(SAVE).performClick()
+        pressSave()
         assertUpdated(UpdatedRow(BETA, BETA_NAME, MedicationKindDomainModel.Acute))
     }
 
@@ -263,7 +264,7 @@ class EditMedicationIdTest {
         restoration.emulateSavedInstanceStateRestore()
 
         nameField("AlphaDraft").assertIsDisplayed()
-        composeRule.onNodeWithText(SAVE).performClick()
+        pressSave()
         assertUpdated(UpdatedRow(ALPHA, "AlphaDraft", MedicationKindDomainModel.Acute))
     }
 
@@ -276,10 +277,16 @@ class EditMedicationIdTest {
         }
 
         composeRule.onNode(hasSetTextAction() and hasText("Name")).performTextReplacement("New")
-        composeRule.onNodeWithText(SAVE).performClick()
+        pressSave()
 
         composeRule.waitUntil(WAIT_MILLIS) { repository.created.isNotEmpty() }
         assertEquals(listOf("New"), repository.created)
+    }
+
+    /** The form takes no touch while it fades in, as `TapGuard` asks (issue #140). */
+    private fun pressSave() {
+        composeRule.mainClock.advanceTimeBy(AFTER_THE_TAP_GUARD_MILLIS)
+        composeRule.onNodeWithText(SAVE).performClick()
     }
 
     private fun saveIsShown() =
