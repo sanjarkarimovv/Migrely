@@ -56,6 +56,7 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -63,6 +64,7 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.navigation.NavController
 import com.migrely.app.architecture.ui.view.ScreenEnterObserver
 import com.migrely.app.designsystem.icon.MigrelyIcons
+import com.migrely.app.designsystem.input.limitedEdit
 import com.migrely.app.designsystem.motion.rememberReduceMotion
 import com.migrely.app.designsystem.picker.DateTimePickerLabels
 import com.migrely.app.designsystem.picker.MigrelyDateTimePicker
@@ -515,7 +517,9 @@ private fun FirstMedicationForm(
     colors: LogPalette,
     actions: LogMedicationActions
 ) {
-    var name by rememberSaveable { mutableStateOf("") }
+    var name by rememberSaveable(stateSaver = TextFieldValue.Saver) {
+        mutableStateOf(TextFieldValue())
+    }
     var category by rememberSaveable { mutableStateOf<MedicationCategoryUiModel?>(null) }
     Text(
         text = stringResource(R.string.log_first_title),
@@ -535,7 +539,7 @@ private fun FirstMedicationForm(
     }
     OutlinedTextField(
         value = name,
-        onValueChange = { name = it.take(MAXIMUM_NAME_LENGTH) },
+        onValueChange = { name = limitedEdit(name, it, MAXIMUM_NAME_LENGTH) },
         label = { Text(stringResource(R.string.edit_name)) },
         singleLine = true,
         isError = nameProblem != null,
@@ -543,7 +547,7 @@ private fun FirstMedicationForm(
             Text(
                 nameProblem?.let { problemText(it) } ?: stringResource(
                     R.string.edit_counter,
-                    name.length,
+                    name.text.length,
                     MAXIMUM_NAME_LENGTH
                 )
             )
@@ -555,7 +559,7 @@ private fun FirstMedicationForm(
         category = it
     }
     Button(
-        onClick = { actions.onAddAndLog(name, category) },
+        onClick = { actions.onAddAndLog(name.text, category) },
         enabled = !pending,
         colors = colors.actionColors(),
         modifier = Modifier
