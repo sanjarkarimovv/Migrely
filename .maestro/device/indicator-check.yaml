@@ -5,6 +5,10 @@
 appId: com.migrely.app
 ---
 - launchApp
+# At 200% a warning card pushes the month below the fold.
+- scrollUntilVisible:
+    element: ".*\\. Opens History\\."
+    direction: DOWN
 - tapOn: ".*\\. Opens History\\."
 - runFlow:
     when:
