@@ -32,7 +32,10 @@ import com.migrely.app.settings.ui.mapper.DeleteProgressUiResolver
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.coroutines.CoroutineContext
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -133,14 +136,18 @@ class DeleteAllDataObserverTest {
     /** After a recreation nothing was listening when it ended: the observer itself must ask. */
     @Test
     fun anObserverComposedAfterTheDeletionEndedRestarts() {
+        val listening = CoroutineScope(Dispatchers.Main.immediate)
+        var emitted = 0
+        listening.launch { viewModel.navigationEvent.collect { emitted++ } }
         var composed by mutableStateOf(false)
         composeRule.setContent {
             if (composed) dependencies.DeleteAllDataObserver(rememberNavController())
         }
         composeRule.runOnUiThread { viewModel.onDeleteAction(WORD) }
         records.finish()
-        waitFor { records.allStepsRan() }
-        composeRule.waitForIdle()
+        // The event has gone by with no observer, so only the observer's own question can restart.
+        waitFor { emitted == 1 }
+        listening.cancel()
         composeRule.runOnIdle { assertEquals(0, restarts) }
 
         composeRule.runOnUiThread { composed = true }
@@ -185,11 +192,8 @@ private class HeldRecords :
     DeleteFilesRepository {
     private val started = CountDownLatch(1)
     private val finished = CountDownLatch(1)
-    private val lastStep = CountDownLatch(1)
 
     fun started() = started.count == 0L
-
-    fun allStepsRan() = lastStep.count == 0L
 
     fun finish() = finished.countDown()
 
@@ -201,10 +205,7 @@ private class HeldRecords :
 
     override fun cancelReminders() = SettingsWriteResultDomainModel.Done
 
-    override fun deletePreferences(): SettingsWriteResultDomainModel {
-        lastStep.countDown()
-        return SettingsWriteResultDomainModel.Done
-    }
+    override fun deletePreferences() = SettingsWriteResultDomainModel.Done
 
     override fun deleteFiles() = SettingsWriteResultDomainModel.Done
 }
