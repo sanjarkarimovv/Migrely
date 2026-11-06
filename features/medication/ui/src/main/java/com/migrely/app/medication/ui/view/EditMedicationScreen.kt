@@ -41,11 +41,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.migrely.app.architecture.ui.view.ScreenEnterObserver
 import com.migrely.app.designsystem.icon.MigrelyIcons
+import com.migrely.app.designsystem.input.limitedEdit
 import com.migrely.app.designsystem.motion.rememberReduceMotion
 import com.migrely.app.designsystem.theme.MigrelyTheme
 import com.migrely.app.medication.presentation.model.EditMedicationViewState
@@ -217,9 +219,20 @@ private fun MedicationForm(
             it is SaveProblemUiModel.ArchivedName ||
             it == SaveProblemUiModel.InvalidName
     }
+    // The form holds the text; these also hold the cursor. A cursor move or a refused edit is not
+    // a change of the form, which would clear a shown problem.
+    var nameField by rememberSaveable(stateSaver = TextFieldValue.Saver) {
+        mutableStateOf(TextFieldValue(form.name))
+    }
+    var doseField by rememberSaveable(stateSaver = TextFieldValue.Saver) {
+        mutableStateOf(TextFieldValue(form.dose))
+    }
     OutlinedTextField(
-        value = form.name,
-        onValueChange = { onFormChange(form.copy(name = it.take(MAXIMUM_NAME_LENGTH))) },
+        value = nameField,
+        onValueChange = { edited ->
+            nameField = limitedEdit(nameField, edited, MAXIMUM_NAME_LENGTH)
+            if (nameField.text != form.name) onFormChange(form.copy(name = nameField.text))
+        },
         label = { Text(stringResource(R.string.edit_name)) },
         singleLine = true,
         isError = nameProblem != null,
@@ -268,8 +281,11 @@ private fun MedicationForm(
         }
     }
     OutlinedTextField(
-        value = form.dose,
-        onValueChange = { onFormChange(form.copy(dose = it.take(MAXIMUM_DOSE_LENGTH))) },
+        value = doseField,
+        onValueChange = { edited ->
+            doseField = limitedEdit(doseField, edited, MAXIMUM_DOSE_LENGTH)
+            if (doseField.text != form.dose) onFormChange(form.copy(dose = doseField.text))
+        },
         label = { Text(stringResource(R.string.edit_dose)) },
         placeholder = { Text(stringResource(R.string.edit_dose_hint)) },
         singleLine = true,
