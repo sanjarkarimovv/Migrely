@@ -198,7 +198,7 @@ class ViewModelObserverNavigationTest {
     }
 
     @Test
-    fun aRowTappedAfterAFastBackIsObeyedWhileTheEditorFadesOut() {
+    fun aListEventAfterAFastBackIsObeyedWhileTheEditorFadesOut() {
         tap(ROW_A)
         advance(FADE_STARTED_MILLIS)
         composeRule.runOnUiThread { navController.popBackStack() }
