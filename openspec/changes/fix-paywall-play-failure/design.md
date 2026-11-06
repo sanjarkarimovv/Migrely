@@ -179,10 +179,17 @@ retrying a purchase is the one the guard would block. This is the exception to D
 
 **A tap on a message.**
 
-- With no action, a tap anywhere on it dismisses it, by touch only with no new semantics. The Dismiss button stays, and
-  TalkBack still reaches that button.
+- With a timeout and no action, a tap anywhere on it dismisses it, by touch only with no new semantics. The Dismiss button
+  stays, and TalkBack still reaches that button.
 - With Undo, a tap on the body does nothing. A stray tap must not remove the offer to undo a deletion. Data loss ranks above
   this.
+- With no timeout, which is "storage full", a tap on the body does nothing (lead's decision). It has no timeout because the
+  last action was not saved, so a stray tap must not remove it unread. Data loss ranks first. Dismiss and a swipe still
+  close it.
+
+The snackbar cannot work this out from `timeLeft`: that is null for every message with no action, and under reduce motion
+for all. So each caller says it, from its message's `baseDurationMillis`. The "not saved" messages on Settings and
+Onboarding have an 8-second timeout, so a tap dismisses them.
 
 **Everything else stays:** duration, top position, dim look, copy, other screens' 800 ms.
 
@@ -191,8 +198,9 @@ retrying a purchase is the one the guard would block. This is the exception to D
 - A control still under a message needs a tap to dismiss first, then a second tap.
 - After that tap, a tap in the message's area does nothing for 400 ms on the paywall and 800 ms elsewhere.
 - On the paywall, two X icons are stacked at the right edge. This is to be checked by eye.
-- People can dismiss a message unread. That includes "storage full", the one message with no timeout, because it means the
-  last action was not saved.
+- People can dismiss a message with a timeout unread.
+- A control under "storage full" does not answer until the message is closed with Dismiss or a swipe. It has no timeout, so
+  this lasts until they do.
 - Not measured on people.
 
 **What reading the code adds, for task 3a.5 to measure. The decision stands; these are where one offset may fall short:**
@@ -201,8 +209,8 @@ retrying a purchase is the one the guard would block. This is the exception to D
   date wraps at 200%, the row is taller and Settings sits lower, so one offset may still cover it. Once scrolled, the message
   lies over whatever is there.
 - **Row 1 goes under the message at any font size.** On My medications a message with Undo now lies over the first row, with
-  Undo near its Remove. A tap on Remove there hits Undo. This was a 200% case in #152 and becomes a 100% case. It is visible
-  and reversible, like the Settings and Doctor report cases it replaces.
+  Undo near its Remove. A tap on Remove there hits Undo. This was a 200% case in #152 and becomes a 100% case. Accepted by
+  `team-lead`, because it is visible and reversible, as long as task 3a.5 measures it.
 - **Landscape Home Today.** The start button sits centred in the end column, and a centred message up to 560 dp wide also
   reaches that column. Moved down, it comes closer to "Migraine started", and at 200% it may overlap it. The spec says a
   message never covers the large controls. If measurement shows an overlap, it goes to `team-lead` before the release is cut.
