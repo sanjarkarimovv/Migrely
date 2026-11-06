@@ -12,6 +12,7 @@ import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextInputSelection
 import androidx.compose.ui.text.TextRange
@@ -222,6 +223,7 @@ class MedicationFieldsLimitTest {
         logName.performTextInput("Ibuprofen")
 
         composeTestRule.onNodeWithText("Add and log", substring = true, ignoreCase = true)
+            .performScrollTo()
             .performClick()
 
         assertEquals("Ibuprofen", addedName)
