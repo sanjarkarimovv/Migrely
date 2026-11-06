@@ -17,6 +17,7 @@ import androidx.compose.ui.platform.LocalAccessibilityManager
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import com.migrely.app.designsystem.snackbar.MigrelySnackbar
 import com.migrely.app.designsystem.snackbar.MigrelySnackbarHost
 import com.migrely.app.designsystem.snackbar.SnackbarAction
@@ -49,7 +50,8 @@ internal fun HomeMessages(
     onUndoEnd: (attackId: String) -> Unit,
     onUndoDelete: (attackId: String) -> Unit,
     onMessageBottomChanged: (Dp) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    topOffset: Dp = 0.dp
 ) {
     var shown by rememberSaveable { mutableStateOf<ShownHomeMessageUiModel?>(null) }
     // Deletions already offered, so a return to home or a rotation does not offer one again after a dismissal.
@@ -116,6 +118,7 @@ internal fun HomeMessages(
         message = current,
         reduceMotion = reduceMotion,
         modifier = modifier,
+        topOffset = topOffset,
         onMessageBottomChanged = onMessageBottomChanged
     ) { visible ->
         val behaviour = behaviourMapper.toUi(visible.message)
@@ -172,6 +175,7 @@ private fun HomeSnackbar(
         text = messageText(shown.message, timeUiFormatter),
         tone = behaviour.tone,
         action = action,
+        hasTimeout = behaviour.baseDurationMillis != null,
         dismissLabel = stringResource(R.string.home_snackbar_dismiss),
         onDismiss = onDismiss,
         timeLeft = if (showTimeLeft && undoTarget != null && timeoutMillis != null) {

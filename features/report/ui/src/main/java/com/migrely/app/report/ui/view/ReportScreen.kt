@@ -69,6 +69,7 @@ import com.migrely.app.designsystem.icon.MigrelyIcons
 import com.migrely.app.designsystem.motion.rememberReduceMotion
 import com.migrely.app.designsystem.picker.DateRangePickerLabels
 import com.migrely.app.designsystem.picker.MigrelyDateRangePicker
+import com.migrely.app.designsystem.snackbar.MESSAGE_OFFSET_BELOW_TOP_BAR
 import com.migrely.app.designsystem.snackbar.MigrelySnackbar
 import com.migrely.app.designsystem.snackbar.MigrelySnackbarHost
 import com.migrely.app.designsystem.snackbar.messageTimeoutMillis
@@ -175,11 +176,17 @@ fun ReportDependencies.Report(navController: NavController, modifier: Modifier =
             }
         ),
         messages = {
-            MigrelySnackbarHost(message = message, reduceMotion = rememberReduceMotion()) { shown ->
+            MigrelySnackbarHost(
+                message = message,
+                reduceMotion = rememberReduceMotion(),
+                topOffset = MESSAGE_OFFSET_BELOW_TOP_BAR
+            ) { shown ->
+                val behaviour = reportMessageBehaviourUiMapper.toUi(shown.message)
                 MigrelySnackbar(
                     text = stringResource(shown.message.text()),
-                    tone = reportMessageBehaviourUiMapper.toUi(shown.message).tone,
+                    tone = behaviour.tone,
                     action = null,
+                    hasTimeout = behaviour.baseDurationMillis != null,
                     dismissLabel = stringResource(R.string.report_message_dismiss),
                     onDismiss = { message = null }
                 )

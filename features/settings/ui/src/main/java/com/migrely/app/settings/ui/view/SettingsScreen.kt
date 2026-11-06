@@ -49,6 +49,7 @@ import androidx.navigation.NavController
 import com.migrely.app.architecture.ui.view.ScreenEnterObserver
 import com.migrely.app.designsystem.icon.MigrelyIcons
 import com.migrely.app.designsystem.motion.rememberReduceMotion
+import com.migrely.app.designsystem.snackbar.MESSAGE_OFFSET_BELOW_TOP_BAR
 import com.migrely.app.designsystem.snackbar.MigrelySnackbar
 import com.migrely.app.designsystem.snackbar.MigrelySnackbarHost
 import com.migrely.app.designsystem.snackbar.SnackbarTone
@@ -130,12 +131,14 @@ fun SettingsDependencies.Settings(
         messages = {
             MigrelySnackbarHost(
                 message = Unit.takeIf { notSaved },
-                reduceMotion = rememberReduceMotion()
+                reduceMotion = rememberReduceMotion(),
+                topOffset = MESSAGE_OFFSET_BELOW_TOP_BAR
             ) {
                 MigrelySnackbar(
                     text = stringResource(R.string.settings_not_saved),
                     tone = SnackbarTone.Error,
                     action = null,
+                    hasTimeout = true,
                     dismissLabel = stringResource(R.string.settings_message_dismiss),
                     onDismiss = { notSaved = false }
                 )

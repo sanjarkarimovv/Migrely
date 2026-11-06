@@ -146,6 +146,7 @@ class MigrelySnackbarTest {
                             } else {
                                 null
                             },
+                            hasTimeout = true,
                             dismissLabel = "Dismiss",
                             onDismiss = { dismissals++ },
                             timeLeft = timeLeft?.let { fraction -> { fraction } }

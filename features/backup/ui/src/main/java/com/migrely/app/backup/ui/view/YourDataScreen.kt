@@ -70,6 +70,7 @@ import com.migrely.app.backup.ui.model.YourDataEventUiModel
 import com.migrely.app.backup.ui.model.YourDataMessageUiModel
 import com.migrely.app.designsystem.icon.MigrelyIcons
 import com.migrely.app.designsystem.motion.rememberReduceMotion
+import com.migrely.app.designsystem.snackbar.MESSAGE_OFFSET_BELOW_TOP_BAR
 import com.migrely.app.designsystem.snackbar.MigrelySnackbar
 import com.migrely.app.designsystem.snackbar.MigrelySnackbarHost
 import com.migrely.app.designsystem.snackbar.messageTimeoutMillis
@@ -183,11 +184,17 @@ fun YourDataDependencies.YourData(navController: NavController, modifier: Modifi
             onRestoreCopy = { confirmingRestore = true }
         ),
         messages = {
-            MigrelySnackbarHost(message = message, reduceMotion = rememberReduceMotion()) { shown ->
+            MigrelySnackbarHost(
+                message = message,
+                reduceMotion = rememberReduceMotion(),
+                topOffset = MESSAGE_OFFSET_BELOW_TOP_BAR
+            ) { shown ->
+                val behaviour = yourDataMessageBehaviourUiMapper.toUi(shown.message)
                 MigrelySnackbar(
                     text = shown.message.text(),
-                    tone = yourDataMessageBehaviourUiMapper.toUi(shown.message).tone,
+                    tone = behaviour.tone,
                     action = null,
+                    hasTimeout = behaviour.baseDurationMillis != null,
                     dismissLabel = stringResource(R.string.your_data_message_dismiss),
                     onDismiss = { message = null }
                 )

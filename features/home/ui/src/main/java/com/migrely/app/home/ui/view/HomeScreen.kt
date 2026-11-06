@@ -32,6 +32,7 @@ import androidx.navigation.NavController
 import com.migrely.app.architecture.ui.view.ScreenEnterObserver
 import com.migrely.app.designsystem.input.TapGuard
 import com.migrely.app.designsystem.motion.rememberReduceMotion
+import com.migrely.app.designsystem.snackbar.MESSAGE_OFFSET_BELOW_TOP_BAR
 import com.migrely.app.designsystem.theme.MigrelyColors
 import com.migrely.app.designsystem.theme.MigrelyDarkRoom
 import com.migrely.app.home.presentation.model.HomeViewState
@@ -145,7 +146,13 @@ fun HomeDependencies.Home(
                 onUndoStart = homeViewModel::onUndoStartAction,
                 onUndoEnd = homeViewModel::onUndoEndAction,
                 onUndoDelete = homeViewModel::onUndoDeleteAction,
-                onMessageBottomChanged = { messageBottom.value = it }
+                onMessageBottomChanged = { messageBottom.value = it },
+                // Below the Settings row on Today; attack mode keeps its own place (BRD D52, D158).
+                topOffset = if (uiState is HomeViewStateUiModel.AttackInProgress) {
+                    0.dp
+                } else {
+                    MESSAGE_OFFSET_BELOW_TOP_BAR
+                }
             )
         },
         messageBottom = messageBottom::value,

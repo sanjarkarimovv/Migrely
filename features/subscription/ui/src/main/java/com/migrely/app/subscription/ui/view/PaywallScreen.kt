@@ -90,6 +90,12 @@ private const val DAYS_PER_MONTH = 30
 private val CONTENT_MAX_WIDTH = 600.dp
 private val CARD_SHAPE = RoundedCornerShape(16.dp)
 
+/** With the host's own 8 dp, a message's top edge lies under the 56 dp Close row (BRD D158). */
+private val MESSAGE_BELOW_CLOSE_ROW = 48.dp
+
+/** Past the message's entry and exit; a person retrying a purchase is whom a longer guard blocks. */
+private const val MESSAGE_GUARD_MILLIS = 400L
+
 /** Callbacks from the paywall. */
 data class PaywallActions(
     val onClose: () -> Unit,
@@ -179,11 +185,18 @@ fun PaywallDependencies.Paywall(
             onContinue = { paywallViewModel.onContinueAction(presentationContext) }
         ),
         messages = {
-            MigrelySnackbarHost(message = message, reduceMotion = rememberReduceMotion()) { shown ->
+            MigrelySnackbarHost(
+                message = message,
+                reduceMotion = rememberReduceMotion(),
+                topOffset = MESSAGE_BELOW_CLOSE_ROW,
+                guardMillis = MESSAGE_GUARD_MILLIS
+            ) { shown ->
+                val behaviour = paywallMessageBehaviourUiMapper.toUi(shown.message)
                 MigrelySnackbar(
                     text = stringResource(shown.message.text()),
-                    tone = paywallMessageBehaviourUiMapper.toUi(shown.message).tone,
+                    tone = behaviour.tone,
                     action = null,
+                    hasTimeout = behaviour.baseDurationMillis != null,
                     dismissLabel = stringResource(R.string.subscription_message_dismiss),
                     onDismiss = { message = null }
                 )

@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -84,7 +85,41 @@ class MigrelySnackbarHostTest {
         assertEquals(1, tapsBeneath)
     }
 
-    private fun show() {
+    @Test
+    fun theDefaultGuardSwallowsATapJustBefore800Ms() {
+        assertEquals(false, tapReachesWhatIsBeneathAfter(millis = 700, guardMillis = null))
+    }
+
+    @Test
+    fun theDefaultGuardLetsATapThroughJustAfter800Ms() {
+        assertEquals(true, tapReachesWhatIsBeneathAfter(millis = 900, guardMillis = null))
+    }
+
+    @Test
+    fun aGuardOf400MsSwallowsATapJustBeforeItEnds() {
+        assertEquals(false, tapReachesWhatIsBeneathAfter(millis = 300, guardMillis = 400))
+    }
+
+    @Test
+    fun aGuardOf400MsLetsATapThroughJustAfterItEnds() {
+        assertEquals(true, tapReachesWhatIsBeneathAfter(millis = 500, guardMillis = 400))
+    }
+
+    private fun tapReachesWhatIsBeneathAfter(millis: Long, guardMillis: Long?): Boolean {
+        message = DELETED
+        show(guardMillis)
+        val messageCentre = messageCentre()
+        composeTestRule.mainClock.autoAdvance = false
+        message = null
+        composeTestRule.mainClock.advanceTimeByFrame()
+        composeTestRule.mainClock.advanceTimeBy(millis)
+
+        tapBeneathAt(messageCentre)
+
+        return tapsBeneath == 1
+    }
+
+    private fun show(guardMillis: Long? = null) {
         composeTestRule.setContent {
             MigrelyTheme {
                 Box(modifier = Modifier.fillMaxSize()) {
@@ -96,19 +131,31 @@ class MigrelySnackbarHostTest {
                             .testTag(BENEATH)
                             .clickable { tapsBeneath++ }
                     )
-                    MigrelySnackbarHost(message = message, reduceMotion = false) { text ->
-                        MigrelySnackbar(
-                            text = text,
-                            tone = SnackbarTone.Confirmation,
-                            action = SnackbarAction("Undo", "Undo the deletion") {},
-                            dismissLabel = "Dismiss",
-                            onDismiss = {}
-                        )
+                    if (guardMillis == null) {
+                        MigrelySnackbarHost(message = message, reduceMotion = false) { Message(it) }
+                    } else {
+                        MigrelySnackbarHost(
+                            message = message,
+                            reduceMotion = false,
+                            guardMillis = guardMillis
+                        ) { Message(it) }
                     }
                 }
             }
         }
         composeTestRule.waitForIdle()
+    }
+
+    @Composable
+    private fun Message(text: String) {
+        MigrelySnackbar(
+            text = text,
+            tone = SnackbarTone.Confirmation,
+            action = SnackbarAction("Undo", "Undo the deletion") {},
+            hasTimeout = true,
+            dismissLabel = "Dismiss",
+            onDismiss = {}
+        )
     }
 
     private fun messageCentre(): Offset {
