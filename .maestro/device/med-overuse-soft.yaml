@@ -8,7 +8,7 @@ appId: com.migrely.app
 - extendedWaitUntil:
     visible: "Painkillers on 13 of the last 30 days"
     timeout: 10000
-- assertVisible: "Taking them on 15 days or more a month can lead to more headaches\\..*"
+- assertVisible: "Taking them often can lead to more headaches\\. Worth keeping an eye on\\."
 - tapOn: "Got it"
 - extendedWaitUntil:
     notVisible: "Painkillers on 13 of the last 30 days"
