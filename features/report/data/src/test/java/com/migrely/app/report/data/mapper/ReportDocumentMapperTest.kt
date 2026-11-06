@@ -104,6 +104,20 @@ class ReportDocumentMapperTest {
     }
 
     @Test
+    fun `When mapping the summary then the overuse label names the threshold, not a limit`() {
+        val facts = blocks(report()).filterIsInstance<ReportBlockDataModel.Facts>().single().facts
+
+        assertEquals(
+            "30-day spans reaching an ICHD-3 8.2 medication-day threshold",
+            facts[3].label
+        )
+        assertEquals(
+            emptyList<String>(),
+            facts.map { it.label }.filter { it.contains("limit", ignoreCase = true) }
+        )
+    }
+
+    @Test
     fun `When mapping the summary then the doctor's numbers, read in words`() {
         val facts = blocks(report()).filterIsInstance<ReportBlockDataModel.Facts>().single().facts
 
