@@ -8,13 +8,18 @@ How Migrely's quality is checked before anything reaches Google Play. The requir
 | Layer | Where | Catches | Runs |
 |---|---|---|---|
 | Unit and architecture tests | each module's `test`, Konsist in `:app` | logic, mappers, Clean Architecture rules | the gate, every change |
-| Instrumented tests | `:datasource:implementation`, `:designsystem` | SQL, migrations, design-system components | per module, every change; on every release candidate in QA (D204) |
+| Instrumented tests | `:datasource:implementation`, `:designsystem`, `:features:attack:ui`, `:features:medication:ui` | SQL, migrations, design-system components, the limited text fields of the attack and medication forms | per module, every change; on every release candidate in QA (D204) |
 | **End-to-end flows** | `.maestro/` (Maestro) | a person's journeys, navigation, persistence, regressions between changes | `qa/maestro.sh` |
 | **Accessibility audit** | `qa/a11y_audit.sh` | contrast, touch targets, labels and keyboard reach on real pixels, at 100% and 200% font and in landscape, on every screen (D203) | before a release, after UI changes |
 | **Device scenarios** | `qa/device_scenarios.sh` | the clock, time zones, midnight, process death, exact double-tap gaps, upgrades with real data | before a release, after time, lifecycle or database changes |
 | **Robustness and privacy** | `qa/monkey.sh`, `qa/permission_audit.sh` | crashes and ANRs under random input, unexpected permissions (never `INTERNET`) | before a release |
 | **Split APKs** | `qa/split_apks.sh` | what Play installs from the bundle: language, density and ABI splits, in the profile's language (D117, D204) | every release candidate |
 | Exploratory testing | the QA session, by hand and through the Maestro MCP server | everything a script did not think of | every change |
+
+**Robolectric needs Maven on a cold cache.** The Compose tests in `src/testDebug` of `:designsystem`, `:features:attack:ui`
+and `:features:medication:ui` (#136) run on Robolectric, in the gate's `test` step. Robolectric downloads its Android jars
+from Maven the first time, into `~/.m2/repository/org/robolectric`. With an empty cache and no network the gate fails
+loudly, with test errors, so that failure says nothing about the code; run it once with network.
 
 Visual regression (Roborazzi screenshots of the `@Preview`s with pseudo-locales) comes in its own QA change (D42).
 The test levels, who owns each, and the risk left per capability are in `docs/qa/test-strategy.md` (D204).
