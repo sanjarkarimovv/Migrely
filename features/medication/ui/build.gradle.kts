@@ -67,4 +67,10 @@ dependencies {
 
     testImplementation(libs.test.junit)
     testImplementation(libs.test.mockito.kotlin)
+
+    androidTestImplementation(platform(libs.compose.bom))
+    androidTestImplementation(libs.test.compose.ui.junit4)
+    androidTestImplementation(libs.test.androidx.junit)
+    androidTestImplementation(libs.test.androidx.runner)
+    debugImplementation(libs.compose.ui.test.manifest)
 }

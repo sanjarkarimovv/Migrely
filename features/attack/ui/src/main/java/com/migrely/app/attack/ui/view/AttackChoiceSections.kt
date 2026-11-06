@@ -263,7 +263,11 @@ private fun ChoiceChip(
 
 /** The user's own symptom or trigger: 1 to 40 characters, input stops at 40 (BRD EC-ATK-12). */
 @Composable
-private fun CustomTagDialog(kind: TagKindUiModel, onAdd: (String) -> Unit, onDismiss: () -> Unit) {
+internal fun CustomTagDialog(
+    kind: TagKindUiModel,
+    onAdd: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
     var name by rememberSaveable { mutableStateOf("") }
     AlertDialog(
         onDismissRequest = onDismiss,
