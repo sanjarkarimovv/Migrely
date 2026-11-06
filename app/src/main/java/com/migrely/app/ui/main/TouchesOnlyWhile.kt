@@ -10,15 +10,18 @@ import androidx.compose.ui.platform.InspectorInfo
 import androidx.compose.ui.unit.IntSize
 
 /**
- * Consumes every touch on the content while [allowed] is false, read at the moment of each event.
- * A finger already down when it turns false therefore cancels instead of clicking. Semantics are
- * not touched, so screen readers and switch access keep working.
+ * Consumes the pointer input of this window on the content while [allowed] is false, read at the
+ * moment of each event. A finger already down when it turns false therefore cancels instead of
+ * clicking. Semantics are not touched, so screen readers and switch access keep working, and a
+ * dialog or popup is a window of its own, which this does not reach.
  *
  * The node must take part only in touches that hit something inside the content. A node that a
  * touch hits by itself ends the search there, and during a pop, where the leaving screen is on top,
  * the screen fading in below it would stop taking taps. Compose counts a node that a touch misses
  * only when a child is hit and the node intercepts out-of-bounds child events. So the node's own
- * bounds are moved one width aside, and the content is moved back by the same amount.
+ * bounds are moved one width aside, and the content is moved back by the same amount. This rests
+ * on Compose's hit testing (`NodeCoordinator.speculativeHit`, Compose 1.9.3).
+ * `LeavingScreenInputTest` fails if an upgrade changes it.
  */
 internal fun Modifier.touchesOnlyWhile(allowed: () -> Boolean): Modifier = this
     .shiftedByWidths(-1)

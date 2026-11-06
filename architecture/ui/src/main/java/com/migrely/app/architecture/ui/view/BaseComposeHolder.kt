@@ -37,10 +37,12 @@ abstract class BaseComposeHolder<VIEW_STATE : Any, NOTIFICATION : PresentationNo
     }
 
     /**
-     * A screen stays composed and clickable through the exit fade, so a second touch can still send
-     * an event after it has navigated. Only the top of the back stack may navigate; a screen fading
-     * in is the top already, so its first tap counts. Compared by id, because `launchSingleTop`
-     * replaces the top entry's object and keeps its id. Outside a `NavHost` there is no back stack.
+     * A screen stays composed through its exit fade, so a late async result, a semantics click or a
+     * touch sent just before the screen left can still reach here after it has navigated. Touches
+     * on a leaving screen are stopped in `:app`; this is what is left. Only the top of the back
+     * stack may navigate; a screen fading in is the top already. Compared by id, because
+     * `launchSingleTop` replaces the top entry's object and keeps its id. Outside a `NavHost` there
+     * is no back stack.
      */
     private fun isCurrentScreen(navController: NavController, screen: LifecycleOwner): Boolean {
         val entry = screen as? NavBackStackEntry ?: return true

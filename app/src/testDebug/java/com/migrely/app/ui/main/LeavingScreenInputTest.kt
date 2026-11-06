@@ -1,5 +1,8 @@
 package com.migrely.app.ui.main
 
+import android.app.Application
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -25,7 +28,6 @@ import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.DpRect
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
-import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import kotlinx.serialization.Serializable
@@ -33,6 +35,9 @@ import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 private const val OPEN = "open"
 private const val REMOVE = "remove"
@@ -41,27 +46,29 @@ private const val SAVE = "save"
 private const val ON_BOTH = "on-both"
 private const val SMALL = "small"
 private const val NO_SIZE = "no-size"
-private const val FADE_STARTED_MILLIS = 100L
-private const val LATE_IN_THE_FADE_MILLIS = 600L
-private const val AFTER_THE_FADE_MILLIS = 1_000L
+private const val FADE_STARTED_MILLIS = 50L
+private const val LATE_IN_THE_FADE_MILLIS = 150L
+private const val AFTER_THE_FADE_MILLIS = 300L
 
 @Serializable
-private data object ListRoute
+internal data object ListRoute
 
 @Serializable
-private data object EditorRoute
+internal data object EditorRoute
 
 @Serializable
-private data object PlainRoute
+internal data object PlainRoute
 
 @Serializable
-private data object WrappedRoute
+internal data object WrappedRoute
 
 /**
- * A real `NavHost` with its default 700 ms fade and a stopped clock. The list has a row that opens
- * the editor and a control that writes (Remove in My medications, Delete on details). Issue #142:
- * touches on a screen that is leaving must do nothing; the screen fading in must keep working.
+ * The app's `ScreenNavHost` and a stopped clock. The list has a row that opens the editor and a
+ * control that writes (Remove in My medications, Delete on details). Issue #142: touches on a
+ * screen that is leaving must do nothing; the screen fading in must keep working.
  */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [35], application = Application::class, qualifiers = "w400dp-h1200dp")
 class LeavingScreenInputTest {
     @get:Rule
     val composeRule = createComposeRule()
@@ -89,7 +96,7 @@ class LeavingScreenInputTest {
 
     @Composable
     private fun Host() {
-        NavHost(navController, startDestination = ListRoute) {
+        ScreenNavHost(navController, startDestination = ListRoute) {
             screen<ListRoute>(navController) {
                 Box(Modifier.fillMaxSize()) {
                     Control(OPEN, 0) { navController.navigate(EditorRoute) }
@@ -112,6 +119,22 @@ class LeavingScreenInputTest {
 
     private fun count(tag: String) {
         clicks.getValue(tag).intValue++
+    }
+
+    @Test
+    fun theLeavingScreenIsThereLateInTheFadeAndGoneAfterIt() {
+        tap(OPEN)
+        advance(LATE_IN_THE_FADE_MILLIS)
+        composeRule.onNodeWithTag(REMOVE).assertExists()
+
+        advance(AFTER_THE_FADE_MILLIS - LATE_IN_THE_FADE_MILLIS)
+
+        composeRule.onNodeWithTag(REMOVE).assertDoesNotExist()
+    }
+
+    @Test
+    fun theFadeIs200MillisecondsAndLinear() {
+        assertEquals(tween<Float>(200, easing = LinearEasing), SCREEN_FADE)
     }
 
     @Test

@@ -226,11 +226,18 @@ data must never be passed to any SDK.
 - `BaseComposeHolder.ViewModelObserver(navController)` collects `navigationEvent` and `notification` inside one
   `LaunchedEffect(Unit)` each. This deliberately deviates from the generated `collectAsState`, which drops two identical
   events in a row.
-- A navigation event navigates only while its screen is the current back-stack entry (`BaseComposeHolder`, issues #138,
-  #139). A screen stays composed and clickable through the 700 ms exit fade of `NavHost`, so a second touch can still send
-  an event after the first has navigated. A time-based tap guard cannot cover a resting finger, and a `RESUMED` check
-  would refuse a screen still fading in. The check reads the observer's screen, not the sender's, and actions that do not
-  navigate are not covered.
+- `ScreenNavHost` (`:app/ui/main/ScreenDestination.kt`) sets the one transition between all screens: a 200 ms linear fade
+  (issue #148).
+- `screen()` wraps every destination. A screen stays composed through its exit fade, so the pointer input of this window
+  on an entry that is not current is consumed, read at each event: a finger already down cancels (issue #142). Semantics
+  are untouched, and a dialog or popup is a window of its own, which this does not reach. During a pop the leaving screen
+  is on top, so a tap where it has a control or a scroll column does not reach the screen fading in below it. The node
+  joins a touch only when something inside the screen is hit, which rests on Compose's hit testing
+  (`NodeCoordinator.speculativeHit`, Compose 1.9.3); `LeavingScreenInputTest` fails if an upgrade changes it.
+- A navigation event navigates only while its observer's screen is the current back-stack entry (`BaseComposeHolder`,
+  issues #138, #139). That covers what the touch rule cannot: late async results, semantics clicks, and a click just before
+  the screen left. A time-based tap guard cannot do this, and a `RESUMED` check would refuse a screen still fading in. The
+  check reads the observer's screen, not the sender's.
 - `DeleteAllDataObserver` sits beside the `NavHost`, not on the delete screen: wiped data must restart the app whichever
   screen is on top, or with the delete screen gone.
 - ViewModels are stateless (skill rule 4). Text and selections the user is editing live in the composable

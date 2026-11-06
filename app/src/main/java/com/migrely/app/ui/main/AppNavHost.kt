@@ -3,7 +3,6 @@ package com.migrely.app.ui.main
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
-import androidx.navigation.compose.NavHost
 import androidx.navigation.toRoute
 import com.migrely.app.attack.ui.view.AddPastAttack
 import com.migrely.app.attack.ui.view.AttackDetails
@@ -67,7 +66,7 @@ fun AppNavHostDependencies.AppNavHost(
     modifier: Modifier = Modifier
 ) {
     deleteAllDataDependencies.DeleteAllDataObserver(navController)
-    NavHost(
+    ScreenNavHost(
         navController = navController,
         startDestination = startDestination,
         modifier = modifier
