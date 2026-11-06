@@ -3,10 +3,19 @@ appId: com.migrely.app
 ---
 - launchApp
 - tapOn: "Log medication"
+# Below all 50 medications, on both of these screens.
+- scrollUntilVisible:
+    element: "Manage medications"
+    direction: DOWN
+    timeout: 60000
 - tapOn: "Manage medications"
 - extendedWaitUntil:
     visible: "My medications"
     timeout: 5000
+- scrollUntilVisible:
+    element: "Add medication"
+    direction: DOWN
+    timeout: 60000
 - runFlow:
     file: ../subflows/add-medication.yaml
     env:
