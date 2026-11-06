@@ -34,6 +34,7 @@ import com.migrely.app.medication.domain.usecase.SaveMedicationUseCase
 import com.migrely.app.medication.presentation.mapper.MedicationDomainMapper
 import com.migrely.app.medication.presentation.mapper.MedicationPresentationMapper
 import com.migrely.app.medication.presentation.mapper.SaveProblemPresentationMapper
+import com.migrely.app.medication.presentation.model.EditMedicationViewState
 import com.migrely.app.medication.presentation.navigation.EditMedicationPresentationNavigationEvent
 import com.migrely.app.medication.presentation.viewmodel.EditMedicationViewModel
 import com.migrely.app.medication.ui.di.EditMedicationDependencies
@@ -46,11 +47,17 @@ import com.migrely.app.medication.ui.mapper.MedicationUiMapper
 import com.migrely.app.medication.ui.mapper.SaveProblemUiMapper
 import com.migrely.app.medication.ui.notification.MedicationEventPresenter
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.coroutines.CoroutineContext
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
+import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
@@ -59,6 +66,7 @@ private const val BETA = "med-b"
 private const val ALPHA_NAME = "Alphaprofen"
 private const val BETA_NAME = "Betatriptan"
 private const val SAVE = "Save"
+private const val NOT_FOUND = "This medication no longer exists."
 private const val WAIT_MILLIS = 5_000L
 
 /**
@@ -72,6 +80,44 @@ class EditMedicationIdTest {
     private val repository = FakeMedications()
     private val dependencies = editMedicationDependencies(repository)
     private var medicationId by mutableStateOf<String?>(ALPHA)
+    private val emitted = CopyOnWriteArrayList<EditMedicationViewState>()
+    private val listening = CoroutineScope(Dispatchers.Main.immediate)
+
+    @Before
+    fun listenToWhatTheViewModelEmits() {
+        listening.launch {
+            dependencies.editMedicationViewModel.viewState.collect { emitted += it }
+        }
+    }
+
+    @After
+    fun stopListening() {
+        listening.cancel()
+    }
+
+    private fun awaitEmitted(state: (EditMedicationViewState) -> Boolean) {
+        composeRule.waitUntil(WAIT_MILLIS) { emitted.any(state) }
+    }
+
+    private fun ready(id: String?): (EditMedicationViewState) -> Boolean = {
+        it is EditMedicationViewState.Ready && it.medication?.id == id
+    }
+
+    /** Switches the editor from a read still held for one medication to one held for another. */
+    private fun switchWhileReading(
+        from: String?,
+        to: String?
+    ): Pair<CountDownLatch?, CountDownLatch?> {
+        val fromRead = from?.let(repository::holdRead)
+        val toRead = to?.let(repository::holdRead)
+        medicationId = from
+        show()
+        from?.let(repository::awaitReadStarted)
+        composeRule.runOnUiThread { medicationId = to }
+        composeRule.waitForIdle()
+        to?.let(repository::awaitReadStarted)
+        return fromRead to toRead
+    }
 
     private fun show() {
         composeRule.setContent {
@@ -108,23 +154,99 @@ class EditMedicationIdTest {
 
     @Test
     fun aLateReadOfAnotherMedicationIsNotShownOrSaved() {
-        val alphaRead = repository.holdRead(ALPHA)
-        val betaRead = repository.holdRead(BETA)
-        show()
-        repository.awaitReadStarted(ALPHA)
-        composeRule.runOnUiThread { medicationId = BETA }
-        composeRule.waitForIdle()
-        repository.awaitReadStarted(BETA)
+        val (alphaRead, betaRead) = switchWhileReading(ALPHA, BETA)
 
-        alphaRead.countDown()
-        repository.awaitReadFinished(ALPHA)
+        checkNotNull(alphaRead).countDown()
+        awaitEmitted(ready(ALPHA))
         composeRule.waitForIdle()
         composeRule.onNodeWithText(SAVE).assertDoesNotExist()
 
-        betaRead.countDown()
+        checkNotNull(betaRead).countDown()
         assertFormShows(BETA_NAME)
         composeRule.onNodeWithText(SAVE).performClick()
         assertUpdated(UpdatedRow(BETA, BETA_NAME, MedicationKindDomainModel.Acute))
+    }
+
+    @Test
+    fun aLateReadInTheSameFrameAsTheRightOneDoesNotLeaveTheFormBlank() {
+        val (alphaRead, betaRead) = switchWhileReading(ALPHA, BETA)
+        composeRule.mainClock.autoAdvance = false
+
+        checkNotNull(betaRead).countDown()
+        awaitEmitted(ready(BETA))
+        checkNotNull(alphaRead).countDown()
+        awaitEmitted(ready(ALPHA))
+        composeRule.mainClock.advanceTimeByFrame()
+        composeRule.mainClock.autoAdvance = true
+
+        assertFormShows(BETA_NAME)
+        composeRule.onNodeWithText(SAVE).performClick()
+        assertUpdated(UpdatedRow(BETA, BETA_NAME, MedicationKindDomainModel.Acute))
+    }
+
+    @Test
+    fun aLateReadOfAMedicationDoesNotFillTheAddForm() {
+        val (alphaRead, _) = switchWhileReading(ALPHA, null)
+        awaitEmitted(ready(null))
+        composeRule.waitUntil(WAIT_MILLIS) { saveIsShown() }
+
+        checkNotNull(alphaRead).countDown()
+        awaitEmitted(ready(ALPHA))
+        composeRule.waitForIdle()
+
+        composeRule.onNode(hasSetTextAction() and hasText(ALPHA_NAME)).assertDoesNotExist()
+    }
+
+    @Test
+    fun aLateEmptyReadFromAddDoesNotBlankOrEmptyTheEditForm() {
+        val (_, betaRead) = switchWhileReading(null, BETA)
+        awaitEmitted(ready(null))
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText(SAVE).assertDoesNotExist()
+
+        checkNotNull(betaRead).countDown()
+
+        assertFormShows(BETA_NAME)
+    }
+
+    @Test
+    fun aMedicationThatNoLongerExistsSaysSoAndOffersNoSave() {
+        medicationId = "gone"
+        show()
+
+        composeRule.waitUntil(WAIT_MILLIS) {
+            composeRule.onAllNodes(hasText(NOT_FOUND)).fetchSemanticsNodes().isNotEmpty()
+        }
+
+        composeRule.onNodeWithText(SAVE).assertDoesNotExist()
+    }
+
+    @Test
+    fun aLateNotFoundOfAnotherMedicationBeforeTheRightReadDoesNotStay() {
+        val (goneRead, betaRead) = switchWhileReading("gone", BETA)
+
+        checkNotNull(goneRead).countDown()
+        awaitEmitted { it == EditMedicationViewState.NotFound }
+        composeRule.waitForIdle()
+        checkNotNull(betaRead).countDown()
+
+        assertFormShows(BETA_NAME)
+        composeRule.onNodeWithText(NOT_FOUND).assertDoesNotExist()
+    }
+
+    @Test
+    fun aLateNotFoundOfAnotherMedicationAfterTheRightReadDoesNotHideTheForm() {
+        val (goneRead, betaRead) = switchWhileReading("gone", BETA)
+
+        checkNotNull(betaRead).countDown()
+        assertFormShows(BETA_NAME)
+        checkNotNull(goneRead).countDown()
+        awaitEmitted { it == EditMedicationViewState.NotFound }
+        composeRule.waitForIdle()
+
+        assertFormShows(BETA_NAME)
+        composeRule.onNodeWithText(SAVE).assertExists()
+        composeRule.onNodeWithText(NOT_FOUND).assertDoesNotExist()
     }
 
     @Test
@@ -159,6 +281,9 @@ class EditMedicationIdTest {
         composeRule.waitUntil(WAIT_MILLIS) { repository.created.isNotEmpty() }
         assertEquals(listOf("New"), repository.created)
     }
+
+    private fun saveIsShown() =
+        composeRule.onAllNodes(hasText(SAVE)).fetchSemanticsNodes().isNotEmpty()
 
     private fun nameField(name: String) = composeRule.onNode(hasSetTextAction() and hasText(name))
 

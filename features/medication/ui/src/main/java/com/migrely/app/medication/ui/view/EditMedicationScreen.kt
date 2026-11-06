@@ -31,7 +31,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
@@ -49,7 +48,6 @@ import com.migrely.app.architecture.ui.view.ScreenEnterObserver
 import com.migrely.app.designsystem.icon.MigrelyIcons
 import com.migrely.app.designsystem.motion.rememberReduceMotion
 import com.migrely.app.designsystem.theme.MigrelyTheme
-import com.migrely.app.medication.presentation.model.EditMedicationViewState
 import com.migrely.app.medication.ui.R
 import com.migrely.app.medication.ui.di.EditMedicationDependencies
 import com.migrely.app.medication.ui.model.EditMedicationViewStateUiModel
@@ -80,28 +78,36 @@ private fun EditMedicationDependencies.MedicationEditor(
     medicationId: String?,
     modifier: Modifier
 ) {
-    ScreenEnterObserver { editMedicationViewModel.onEnter(medicationId) }
-    ViewModelObserver(navController)
-    val viewState by editMedicationViewModel.viewState.collectAsState(
-        EditMedicationViewState.Loading
-    )
-    val uiState by rememberSaveable(viewState) {
-        mutableStateOf(editMedicationViewStateUiMapper.toUi(viewState))
-    }
     var form by rememberSaveable { mutableStateOf<MedicationFormUiModel?>(null) }
+    var notFound by rememberSaveable { mutableStateOf(false) }
     var problem by rememberSaveable { mutableStateOf<SaveProblemUiModel?>(null) }
     // Not saved: a write still running when the screen is recreated must not leave Save disabled.
     var pending by remember { mutableStateOf(false) }
-    LaunchedEffect(uiState) {
-        val ready = uiState as? EditMedicationViewStateUiModel.Ready
-        // One ViewModel serves every editor, so a late read of another medication is ignored here:
-        // Save writes medicationId, and the form must only ever hold that row.
-        if (form == null && ready != null && ready.medication?.id == medicationId) {
-            form = ready.medication?.let {
-                MedicationFormUiModel(it.name, it.kind, it.category, it.defaultDose.orEmpty())
-            } ?: MedicationFormUiModel()
+    // One ViewModel serves every editor, so a late read of another medication can arrive here. Save
+    // writes medicationId, so the form only ever takes that row. Each read is taken as it comes: the
+    // screen asks once, so a conflated state could hide the right read behind a late one for good.
+    LaunchedEffect(editMedicationViewModel) {
+        editMedicationViewModel.viewState.collect { state ->
+            when (val read = editMedicationViewStateUiMapper.toUi(state)) {
+                is EditMedicationViewStateUiModel.Ready ->
+                    if (form == null && read.medication?.id == medicationId) {
+                        form = read.medication?.let {
+                            MedicationFormUiModel(
+                                it.name,
+                                it.kind,
+                                it.category,
+                                it.defaultDose.orEmpty()
+                            )
+                        } ?: MedicationFormUiModel()
+                    }
+
+                EditMedicationViewStateUiModel.NotFound -> notFound = true
+                EditMedicationViewStateUiModel.Loading -> Unit
+            }
         }
     }
+    ScreenEnterObserver { editMedicationViewModel.onEnter(medicationId) }
+    ViewModelObserver(navController)
     LaunchedEffect(medicationEventPresenter) {
         medicationEventPresenter.events.collect { event ->
             pending = false
@@ -111,7 +117,8 @@ private fun EditMedicationDependencies.MedicationEditor(
     val reduceMotion = rememberReduceMotion()
     EditMedicationContents(
         adding = medicationId == null,
-        notFound = uiState == EditMedicationViewStateUiModel.NotFound,
+        // Carries no id, so it may be another medication's: a form that loaded wins.
+        notFound = notFound && form == null,
         form = form,
         problem = problem,
         pending = pending,
