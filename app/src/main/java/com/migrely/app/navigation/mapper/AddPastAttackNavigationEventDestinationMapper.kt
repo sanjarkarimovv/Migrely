@@ -35,6 +35,7 @@ class AddPastAttackNavigationEventDestinationMapper :
             route,
             navOptions {
                 popUpTo<AddPastAttack> { inclusive = true }
+                // Add past attack is popped first, so a details screen below it is reused, not stacked.
                 launchSingleTop = true
             }
         )

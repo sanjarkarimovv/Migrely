@@ -38,6 +38,10 @@ android {
     buildFeatures {
         compose = true
     }
+
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
+    }
 }
 
 ktlint {
@@ -69,12 +73,12 @@ dependencies {
     testImplementation(libs.test.mockito.kotlin)
     testImplementation(libs.test.kotlinx.coroutines)
 
-    androidTestImplementation(platform(libs.compose.bom))
-    androidTestImplementation(libs.test.compose.ui.junit4)
-    androidTestImplementation(libs.test.androidx.junit)
-    androidTestImplementation(libs.test.androidx.runner)
-    androidTestImplementation(projects.features.settings.domain)
-    androidTestImplementation(projects.architecture.domain)
-    androidTestImplementation(projects.coroutine)
+    // Debug only: the Compose test rule needs the debug test manifest.
+    testDebugImplementation(platform(libs.compose.bom))
+    testDebugImplementation(libs.test.compose.ui.junit4)
+    testDebugImplementation(libs.test.robolectric)
+    testDebugImplementation(projects.features.settings.domain)
+    testDebugImplementation(projects.architecture.domain)
+    testDebugImplementation(projects.coroutine)
     debugImplementation(libs.compose.ui.test.manifest)
 }

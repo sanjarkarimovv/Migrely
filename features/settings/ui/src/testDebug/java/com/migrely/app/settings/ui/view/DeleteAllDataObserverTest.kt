@@ -1,6 +1,10 @@
 package com.migrely.app.settings.ui.view
 
+import android.os.Looper
 import androidx.compose.material3.Text
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
@@ -30,9 +34,12 @@ import java.util.concurrent.TimeUnit
 import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.Dispatchers
 import org.junit.Assert.assertEquals
-import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows.shadowOf
+import org.robolectric.annotation.Config
 
 private const val HOME = "home"
 private const val DELETE = "delete"
@@ -45,6 +52,8 @@ private const val WAIT_MILLIS = 5_000L
  * A real `NavHost` with the observer beside it, as `AppNavHost` has it. Once the data is wiped the
  * app must restart, whichever screen is on top and whether or not the delete screen still exists.
  */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [35], qualifiers = "w400dp-h800dp")
 class DeleteAllDataObserverTest {
     @get:Rule
     val composeRule = createComposeRule()
@@ -59,8 +68,7 @@ class DeleteAllDataObserverTest {
     )
     private val dependencies = dependencies(viewModel) { restarts++ }
 
-    @Before
-    fun setUp() {
+    private fun showTheDeleteScreen() {
         composeRule.setContent {
             navController = rememberNavController()
             dependencies.DeleteAllDataObserver(navController)
@@ -78,6 +86,7 @@ class DeleteAllDataObserverTest {
 
     @Test
     fun aDeletionEndingOnTheScreenRestartsOnce() {
+        showTheDeleteScreen()
         startDeleting()
 
         records.finish()
@@ -87,6 +96,7 @@ class DeleteAllDataObserverTest {
 
     @Test
     fun aDeletionEndingWhileTheScreenFadesOutRestarts() {
+        showTheDeleteScreen()
         startDeleting()
         leaveTheDeleteScreen()
         advance(FADE_STARTED_MILLIS)
@@ -98,6 +108,7 @@ class DeleteAllDataObserverTest {
 
     @Test
     fun aDeletionEndingAfterTheScreenIsGoneRestarts() {
+        showTheDeleteScreen()
         startDeleting()
         leaveTheDeleteScreen()
         advance(AFTER_THE_FADE_MILLIS)
@@ -109,6 +120,7 @@ class DeleteAllDataObserverTest {
 
     @Test
     fun backBeforeDeletingStillLeavesTheScreen() {
+        showTheDeleteScreen()
         composeRule.runOnUiThread { viewModel.onBackAction() }
         composeRule.waitForIdle()
 
@@ -118,9 +130,35 @@ class DeleteAllDataObserverTest {
         }
     }
 
+    /** After a recreation nothing was listening when it ended: the observer itself must ask. */
+    @Test
+    fun anObserverComposedAfterTheDeletionEndedRestarts() {
+        var composed by mutableStateOf(false)
+        composeRule.setContent {
+            if (composed) dependencies.DeleteAllDataObserver(rememberNavController())
+        }
+        composeRule.runOnUiThread { viewModel.onDeleteAction(WORD) }
+        records.finish()
+        waitFor { records.allStepsRan() }
+        composeRule.waitForIdle()
+        composeRule.runOnIdle { assertEquals(0, restarts) }
+
+        composeRule.runOnUiThread { composed = true }
+
+        assertRestartedOnce()
+    }
+
+    /** `waitUntil` runs the main thread's tasks only when its condition reads the semantics. */
+    private fun waitFor(condition: () -> Boolean) {
+        composeRule.waitUntil(WAIT_MILLIS) {
+            shadowOf(Looper.getMainLooper()).idle()
+            condition()
+        }
+    }
+
     private fun startDeleting() {
         composeRule.runOnUiThread { viewModel.onDeleteAction(WORD) }
-        records.awaitStarted()
+        waitFor { records.started() }
     }
 
     private fun leaveTheDeleteScreen() {
@@ -134,7 +172,7 @@ class DeleteAllDataObserverTest {
     }
 
     private fun assertRestartedOnce() {
-        composeRule.waitUntil(WAIT_MILLIS) { restarts > 0 }
+        waitFor { restarts > 0 }
         composeRule.waitForIdle()
         composeRule.runOnIdle { assertEquals(1, restarts) }
     }
@@ -147,8 +185,11 @@ private class HeldRecords :
     DeleteFilesRepository {
     private val started = CountDownLatch(1)
     private val finished = CountDownLatch(1)
+    private val lastStep = CountDownLatch(1)
 
-    fun awaitStarted() = check(started.await(WAIT_MILLIS, TimeUnit.MILLISECONDS)) { "Not started" }
+    fun started() = started.count == 0L
+
+    fun allStepsRan() = lastStep.count == 0L
 
     fun finish() = finished.countDown()
 
@@ -160,7 +201,10 @@ private class HeldRecords :
 
     override fun cancelReminders() = SettingsWriteResultDomainModel.Done
 
-    override fun deletePreferences() = SettingsWriteResultDomainModel.Done
+    override fun deletePreferences(): SettingsWriteResultDomainModel {
+        lastStep.countDown()
+        return SettingsWriteResultDomainModel.Done
+    }
 
     override fun deleteFiles() = SettingsWriteResultDomainModel.Done
 }

@@ -1,5 +1,6 @@
 package com.migrely.app.medication.ui.view
 
+import android.os.Looper
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -60,6 +61,10 @@ import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows.shadowOf
+import org.robolectric.annotation.Config
 
 private const val ALPHA = "med-a"
 private const val BETA = "med-b"
@@ -73,6 +78,8 @@ private const val WAIT_MILLIS = 5_000L
  * Whatever a route hands the editor, the form on screen and the row Save writes are the same
  * medication (#138). One ViewModel serves every editor, as in the app, so a read can come back late.
  */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [35], qualifiers = "w400dp-h1200dp")
 class EditMedicationIdTest {
     @get:Rule
     val composeRule = createComposeRule()
@@ -95,8 +102,18 @@ class EditMedicationIdTest {
         listening.cancel()
     }
 
+    /** `waitUntil` runs the main thread's tasks only when its condition reads the semantics. */
+    private fun waitFor(condition: () -> Boolean) {
+        composeRule.waitUntil(WAIT_MILLIS) {
+            shadowOf(Looper.getMainLooper()).idle()
+            condition()
+        }
+    }
+
+    private fun awaitReadStarted(id: String) = waitFor { repository.readStarted(id) }
+
     private fun awaitEmitted(state: (EditMedicationViewState) -> Boolean) {
-        composeRule.waitUntil(WAIT_MILLIS) { emitted.any(state) }
+        waitFor { emitted.any(state) }
     }
 
     private fun ready(id: String?): (EditMedicationViewState) -> Boolean = {
@@ -112,10 +129,10 @@ class EditMedicationIdTest {
         val toRead = to?.let(repository::holdRead)
         medicationId = from
         show()
-        from?.let(repository::awaitReadStarted)
+        from?.let(::awaitReadStarted)
         composeRule.runOnUiThread { medicationId = to }
         composeRule.waitForIdle()
-        to?.let(repository::awaitReadStarted)
+        to?.let(::awaitReadStarted)
         return fromRead to toRead
     }
 
@@ -198,15 +215,35 @@ class EditMedicationIdTest {
     }
 
     @Test
-    fun aLateEmptyReadFromAddDoesNotBlankOrEmptyTheEditForm() {
-        val (_, betaRead) = switchWhileReading(null, BETA)
+    fun aLateEmptyReadFromAddDoesNotFillTheEditForm() {
+        val betaRead = repository.holdRead(BETA)
+        medicationId = BETA
+        show()
+        awaitReadStarted(BETA)
+
+        // What an Add editor sharing this ViewModel leaves behind.
+        composeRule.runOnUiThread { dependencies.editMedicationViewModel.onEnter(null) }
         awaitEmitted(ready(null))
         composeRule.waitForIdle()
         composeRule.onNodeWithText(SAVE).assertDoesNotExist()
 
-        checkNotNull(betaRead).countDown()
+        betaRead.countDown()
 
         assertFormShows(BETA_NAME)
+    }
+
+    @Test
+    fun aSecondReadOfTheSameMedicationDoesNotOverwriteWhatWasTyped() {
+        show()
+        assertFormShows(ALPHA_NAME)
+        nameField(ALPHA_NAME).performTextReplacement("AlphaDraft")
+        emitted.clear()
+
+        composeRule.runOnUiThread { dependencies.editMedicationViewModel.onEnter(ALPHA) }
+        awaitEmitted(ready(ALPHA))
+        composeRule.waitForIdle()
+
+        nameField("AlphaDraft").assertExists()
     }
 
     @Test
@@ -278,7 +315,7 @@ class EditMedicationIdTest {
         composeRule.onNode(hasSetTextAction() and hasText("Name")).performTextReplacement("New")
         composeRule.onNodeWithText(SAVE).performClick()
 
-        composeRule.waitUntil(WAIT_MILLIS) { repository.created.isNotEmpty() }
+        waitFor { repository.created.isNotEmpty() }
         assertEquals(listOf("New"), repository.created)
     }
 
@@ -295,7 +332,7 @@ class EditMedicationIdTest {
     }
 
     private fun assertUpdated(row: UpdatedRow) {
-        composeRule.waitUntil(WAIT_MILLIS) { repository.updated.isNotEmpty() }
+        waitFor { repository.updated.isNotEmpty() }
         assertEquals(listOf(row), repository.updated)
     }
 }
@@ -324,29 +361,18 @@ private class FakeMedications :
         BETA to medication(BETA, BETA_NAME)
     )
     private val held = ConcurrentHashMap<String, CountDownLatch>()
-    private val started = ConcurrentHashMap<String, CountDownLatch>()
-    private val finished = ConcurrentHashMap<String, CountDownLatch>()
+    private val started = ConcurrentHashMap.newKeySet<String>()
 
     val updated = mutableListOf<UpdatedRow>()
     val created = mutableListOf<String>()
 
     fun holdRead(id: String): CountDownLatch = CountDownLatch(1).also { held[id] = it }
 
-    fun awaitReadStarted(id: String) = await(started, id)
-
-    fun awaitReadFinished(id: String) = await(finished, id)
-
-    private fun await(latches: ConcurrentHashMap<String, CountDownLatch>, id: String) {
-        check(latch(latches, id).await(WAIT_MILLIS, TimeUnit.MILLISECONDS)) { "No read of $id" }
-    }
-
-    private fun latch(latches: ConcurrentHashMap<String, CountDownLatch>, id: String) =
-        latches.getOrPut(id) { CountDownLatch(1) }
+    fun readStarted(id: String) = id in started
 
     override fun medication(medicationId: String): MedicationLookupResultDomainModel {
-        latch(started, medicationId).countDown()
+        started += medicationId
         held[medicationId]?.await(WAIT_MILLIS, TimeUnit.MILLISECONDS)
-        latch(finished, medicationId).countDown()
         return rows[medicationId]?.let(MedicationLookupResultDomainModel::Found)
             ?: MedicationLookupResultDomainModel.NotFound
     }
