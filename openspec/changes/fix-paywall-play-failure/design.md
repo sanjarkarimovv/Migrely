@@ -187,3 +187,64 @@ least tidy result, and it is accepted so that the order stays the same in every 
 ## Migration
 
 None. No data, no schema, no setting.
+
+## UX verdict (`ux-designer`, task 1.3)
+
+Read from code on 2026-11-06. Nothing here was seen on a device. Where this section differs from a decision above, this
+section is the design's position until `product-manager` carries it into D1, the BRD and the spec.
+
+**One change. Everything else in D1, D2, D3, D4 and D5 stands, including the line's exact text.**
+
+### The change: the unreachable notice also speaks about the diary
+
+| Key | Today | New |
+|---|---|---|
+| `subscription_unreachable_text` | `Check your connection, then try again.` | `Check your connection, then try again. Your diary works offline.` |
+
+The last row of the table above: Play's sheet closes, the reload fails, and the cards leave, so the line leaves with them.
+That person has just read "No internet connection" and is the one most likely to be offline, and the screen no longer
+says the diary is fine. The region notice already answers this question ("Everything else in Migrely works as before"),
+and this one does not. It is one string, the same words as the line, with no state and no layout effect on a buy button,
+since this state has none. This replaces the "unchanged" row for this text in D1.
+
+### Why the rest stands
+
+- **Copy.** Twelve words, and true in every state that shows it. "Purchases" keeps two jobs: it matches the "Restore
+  purchases" button under it, which needs Play too. "Buying" would lose that. "Works offline" is shorter and clearer than
+  "works without one". Starting with the diary would answer a question the person has not asked yet.
+- **Style.** Same as the terms, on purpose. The line shows to everyone, and most have a connection, so it stays quiet. The
+  person who needs it is looking for "internet", and those are the words they just read. A card or an icon would look like
+  a warning on a phone with nothing wrong, and would compete with the store disclosure. `Notice` also has a live region.
+  Contrast on `background`: 7.18:1 dark, 7.32:1 light (computed from `Color.kt`).
+- **Spacing.** Keep the column's 16dp. Tighter would read as more terms.
+- **Finding it.** At 100% on a phone it should be on screen under the button. At 200% it is not reliable, and in landscape
+  at 200% it will usually need a scroll. Accepted: the sheet has already named the cause, so a person who misses the line
+  loses reassurance, not the way forward.
+- **Restore.** Rejected: Restore in the top bar (it wraps at 200% and moves the button), and the line under Restore or at
+  the end (Restore stays put, but the line stops being found). A small gain from the swap: during loading, a tap aimed at
+  Restore can only land on a card once the prices arrive, because three cards are always taller than the loading text. It
+  can never land on the buy button. Choosing a card spends nothing.
+- **TalkBack.** Free user, counted from the code: Close, headline, lead, three cards, button, terms, line, Restore. The line
+  is stop 9 and Restore is stop 10. Today Restore is stop 15. No announcement is added when the sheet closes: Play's sheet
+  has already been read aloud, and an announcement would also fire on a person's own cancel.
+
+### Corrections to the wording above
+
+- The edge-case row "not focusable, since it is plain text" holds for the keyboard only. For TalkBack the line is a stop of
+  its own, not merged with the terms.
+- D4 says the top position means scroll cannot hide the message. True, but see the finding below.
+
+### Finding, not part of this change
+
+The paywall's message is drawn over the screen and does not use `onMessageBottomChanged`. From the code it covers Close
+while it shows, 8 seconds or longer with an accessibility timeout, with its own Dismiss about where Close is. At 200% it
+may also cover whatever is scrolled to the top, which can be the buy button. This applies today to `Failed` and to
+Restore's messages, and D4 adds one more path to it. It is not seen on a device yet. `qa-engineer` confirms it and, if
+real, files it. It does not block this change.
+
+### To judge on a device (tasks 3.3, 4.3, 5.3)
+
+- At 200%, portrait and landscape: how much of the line shows when the button has just scrolled into view.
+- Whether TalkBack returns to the buy button after Play's sheet, or starts again at Close.
+- Whether the line can be told apart from the terms at a glance, in dark and light. If it blends on the real phone, the one
+  allowed step is `onSurface` in place of `onSurfaceVariant` for the line: no layout change.
