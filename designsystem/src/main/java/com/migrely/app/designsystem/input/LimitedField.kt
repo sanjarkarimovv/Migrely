@@ -15,17 +15,19 @@ class LimitedField(val value: TextFieldValue, val onValueChange: (TextFieldValue
  * A text field holding at most [maxLength] units of a [text] stored by the caller. What is shown is what is stored: the
  * field only adds the cursor, and any other change of [text] (a load, a merge, another write in the same frame) puts
  * the cursor at the end. Edits go through [limitedEdit]. [onTextChange] hears a change of the text, never a cursor move
- * or a refused edit. Changing [keys] forgets the cursor.
+ * or a refused edit. The field opens with its cursor at the start, or at the end with [opensAtEnd]; changing [keys]
+ * opens it anew.
  */
 @Composable
 fun rememberLimitedField(
     text: String,
     maxLength: Int,
     vararg keys: Any?,
+    opensAtEnd: Boolean = false,
     onTextChange: (String) -> Unit
 ): LimitedField {
     var field by rememberSaveable(*keys, stateSaver = TextFieldValue.Saver) {
-        mutableStateOf(atTheEnd(text))
+        mutableStateOf(if (opensAtEnd) atTheEnd(text) else TextFieldValue(text))
     }
     val shown = if (field.text == text) field else atTheEnd(text)
     return LimitedField(shown) { edited ->

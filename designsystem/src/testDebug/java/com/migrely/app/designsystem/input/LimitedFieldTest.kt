@@ -37,8 +37,8 @@ class LimitedFieldTest {
     private val node get() = rule.onNode(hasSetTextAction())
 
     @Composable
-    private fun Field() {
-        val field = rememberLimitedField(stored, CAP, key) {
+    private fun Field(opensAtEnd: Boolean = true) {
+        val field = rememberLimitedField(stored, CAP, key, opensAtEnd = opensAtEnd) {
             heard += it
             stored = it
         }
@@ -51,8 +51,35 @@ class LimitedFieldTest {
         rule.waitForIdle()
     }
 
+    @Composable
+    private fun FieldOpeningAtTheStart() {
+        val field = rememberLimitedField(stored, CAP, key) { stored = it }
+        BasicTextField(value = field.value, onValueChange = field.onValueChange)
+    }
+
     @Test
-    fun whenShownThenTheCursorIsAtTheEnd() {
+    fun whenOpenedByDefaultThenTheCursorIsAtTheStart() {
+        stored = "abc"
+        rule.setContent { FieldOpeningAtTheStart() }
+
+        assertEquals("abc", node.text())
+        assertEquals(TextRange(0), node.selection())
+    }
+
+    @Test
+    fun givenItOpenedAtTheStartWhenTheStoredTextChangesElsewhereThenTheCursorIsAtTheEnd() {
+        stored = "abc"
+        rule.setContent { FieldOpeningAtTheStart() }
+
+        stored = "merged"
+        rule.waitForIdle()
+
+        assertEquals("merged", node.text())
+        assertEquals(TextRange(6), node.selection())
+    }
+
+    @Test
+    fun givenItOpensAtTheEndWhenOpenedThenTheCursorIsAtTheEnd() {
         show("abc")
 
         assertEquals("abc", node.text())

@@ -104,6 +104,7 @@ internal fun NoteSection(
         text = text,
         maxLength = MAXIMUM_NOTE_LENGTH,
         attackId,
+        opensAtEnd = true,
         onTextChange = onDraftChange
     )
     Column {

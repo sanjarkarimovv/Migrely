@@ -151,7 +151,9 @@ class MedicationFieldsLimitTest {
         }
 
         assertEquals("Ibuprofen", editName.text())
+        assertEquals(TextRange(0), editName.selection())
         assertEquals("400 mg", editDose.text())
+        assertEquals(TextRange(0), editDose.selection())
     }
 
     @Test
