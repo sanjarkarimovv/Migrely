@@ -37,22 +37,30 @@ back to it first.
 - [x] 6.3 Access: 200% font and landscape with "All attack medication: 16 days. Doctors watch for 10 or more days a month." (nothing cut). TalkBack: the row's node holds the whole text. Rotation and process death with the soft card showing. Restore the font scale and rotation. Verify: dumps.
 - [x] 6.4 Doctor report: make one with a span that reached the number and one without. Read the label and "None" in the PDF. Verify: the label is whole, and the first page still fits.
 - [x] 6.5 No permission change. Verify: `./gradlew :app:checkReleasePermissions` passes.
-- [ ] 6.6 Independent review by `code-reviewer`, then fixes.
-- [ ] 6.7 Handoff to `qa-engineer` with the final text and this list, then their independent check:
+- [x] 6.6 Independent review by `code-reviewer`, then fixes.
+- [x] 6.7 Handoff to `qa-engineer` with the final text and this list, then their independent check:
   - rows: `qa/device_scenarios.sh` lines 723, 727, 731, 732, 735, 736, 741 and the comments at 721–722; `.maestro/medication-overuse/history-medication-only.yaml:57`; `.maestro/month-stats/medication-days.yaml:55`. Rows no longer contain brackets or `+`, so the bracket escapes go; a reached row ends in a `.` to escape;
   - `qa/seed_backup.py`: the row at 626 is the count only; the at/over logic at 627–628 becomes the "Doctors watch for" sentence with `LIMITS`; `REACHED` at 83; `SOFT_BODY` at 81 and its `.format(LIMITS[chosen])` at 619 (no number now); the PDF label at 650; the description at 97;
   - the line: `.maestro/device/indicator-check.yaml:41`, and the `At this many days.*` negatives at `indicator-check.yaml:46` and `.maestro/month-stats/medication-days.yaml:59`, which would pass forever on the old wording unless changed;
   - the soft card: `.maestro/device/med-overuse-soft.yaml:11`;
   - new scenarios without coverage yet: "Before the number is reached", "A reached row brings its line", "One day below the number", "Reached is said in words", "Largest font", "No row says limit", "A list cap is not an overuse number", "The label does not say limit". The existing `# Covers:` lines keep working (design D5);
   - retest #135 against this text: rows below the number deliberately do not show the threshold.
-- [ ] 6.8 Check store screenshots and promo video for "limit". Verify: `team-lead` routes any hit to `aso-seo-specialist`. It is not a blocker for this change.
-- [ ] 6.9 `openspec archive fix-overuse-wording --yes`, then `openspec validate --specs --strict`. PR into `develop` with `Refs #135` (QA retests and closes).
+- [x] 6.8 Check store screenshots and promo video for "limit". Verify: `team-lead` routes any hit to `aso-seo-specialist`. It is not a blocker for this change.
+- [x] 6.9 `openspec archive fix-overuse-wording --yes`, then `openspec validate --specs --strict`. PR into `develop` with `Refs #135` (QA retests and closes).
 
 ## Verification record
 
-Head of the code: `2d1da37d`, on `f992f6e8`. Evidence: `migrely-work/walks/fix-overuse-wording/` (outside the repo). 6.6 to 6.9 are still open: `code-reviewer` and `qa-engineer` come next, and this change is not archived.
+The walk below is of `2d1da37d`, on `f992f6e8`. `qa-engineer`'s check is of `96b9f82a`, merged with `develop` at `75db9cbc`. Evidence is kept outside this repository.
 
 Task 2.1's verify no longer reads empty: `code-reviewer` asked for `OveruseStatusRowDomainModelTest`, which lives in the domain module. `git diff origin/develop --stat -- 'features/*/domain/src/main'` is empty, so the domain's code is unchanged. No device ran after review: the walk below is of `2d1da37d`. Since then this role added tests and this record, `product-manager` changed a BRD clause, and `develop` was merged in, which brought PR #136's changes to `LimitedField` and the medication and attack forms. Those do not touch this text, but the walk did not run on the merged build.
+
+### Review, QA and store assets
+
+- **6.6 Review.** `code-reviewer`'s verdict was fix, then merge. Its findings are closed: the row and line pairing had no test, closed by `OveruseIndicatorContentsTest`, which fails all 14 mutations; `reached` was unpinned, closed by `OveruseStatusRowDomainModelTest`; and "Reached is said in words" was overstated as a pass, corrected below to partial.
+- **6.7 QA.** `qa-engineer` gave GO on `96b9f82a`, and it retested and closed #135 against this text. 13 of 13 states on API 36 at 100% and at 200%, and on API 26. Flows 10 of 10 on each API. Upgrade from `75db9cbc`: data identical, new body, no fatal exception. TalkBack speech was not heard, so "Reached is said in words" stays partial. The R8 build goes to the 1.1.0 Go/No-Go.
+- **6.8 Store assets.** Checked by `team-lead`. Store screenshot 03 shows the old PDF label; redo from the release build; handled outside this repository. Screenshots 03 and 07 were seen by eye and the other 6 read by OCR only, which missed this one. The promo video is handled outside this repository too. Not a blocker.
+
+- **6.9 Archive.** `openspec archive fix-overuse-wording --yes` applied 1 added and 3 modified requirements. `openspec validate --specs --strict`: exit 0, 29 passed, 0 failed. `team-lead` merges the PR.
 
 ### Gate and tests
 
@@ -124,12 +132,11 @@ Data restored from the backup taken before the walk: database dump md5 `85c48a1a
 
 ### Not checked, and why
 
-- **TalkBack speech.** TalkBack was never turned on or heard. The brief asks for labels through `uiautomator dump`, which proves one node holds the text, not what the voice says. So "Reached is said in words" is partial, and every other scenario in the walk passes.
+- **TalkBack speech.** TalkBack was not turned on in this walk, and `qa-engineer` could not move its focus to the rows, so the rows were never heard. The brief asks for labels through `uiautomator dump`, which proves one node holds the text, not what the voice says. So "Reached is said in words" is partial, and every other scenario in the walk passes.
 - **The reached amber against a colour-blind view.** The words carry the state, so colour was only read, not simulated.
-- **A saved parcel from the old build being read.** `install -r` stops the app, so the upgrade run may have loaded fresh rather than read the old parcel. The upgrade row shows no crash, not that path.
+- **A saved parcel from the old build being read.** This walk's `install -r` could not show that path. `qa-engineer` measured it, with a control, on both APIs: the app's saved state does not survive `install -r`, so a restored parcel cannot crash an update.
 - **The old PDF's page count on the same data.** Only the new build was run. The label is on one line in both, so no extra line comes from it, but page counts were not compared.
 - **The soft card upright at 200%.** Not read. The longer doctor card was, whole, and the soft card was at 200% in landscape.
-- **API 26 and the owner's phone.** `emulator-5582` and the phone are not this role's. QA's check covers API 26.
+- **A real phone and the R8 build.** Neither this walk nor `qa-engineer`'s check ran on them. `qa-engineer`'s check covers API 26, and the R8 build goes to the 1.1.0 Go/No-Go.
 - **Rollover across midnight during a walk.** The counting did not change, and no walk crossed midnight.
-- **Store screenshots and promo video (task 6.8).** Not inspected: routed to `team-lead`.
-- **The soft card's text and the row's colour in a test.** `OveruseIndicatorContentsTest` holds the rows and the line, not the Home card and not amber. `MedicationPromptCard` has no test, so until `qa-engineer` updates `.maestro/` and `qa/` (task 6.7) the walk and the script above are the only checks of `overuse_body_soft`.
+- **The soft card's text and the row's colour in a test.** `OveruseIndicatorContentsTest` holds the rows and the line, not the Home card and not amber. `MedicationPromptCard` has no test, so in this repository's unit tests nothing holds `overuse_body_soft`. `qa-engineer`'s device checks read it and the colours.
