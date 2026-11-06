@@ -221,6 +221,20 @@ class LeavingScreenInputTest {
         assertClicks(REMOVE, 1)
     }
 
+    /** Issue #148: after Back, the leaving screen's own control must be out of the way by now. */
+    @Test
+    fun aTapAfterThePopFadeReachesAListControlTheEditorCovered() {
+        openEditorAndSettle()
+        composeRule.onNodeWithTag(ON_BOTH).assertExists()
+        composeRule.runOnUiThread { navController.popBackStack() }
+        composeRule.waitForIdle()
+        advance(AFTER_THE_FADE_MILLIS)
+
+        tap(ONLY_ON_LIST)
+
+        assertClicks(ONLY_ON_LIST, 1)
+    }
+
     @Test
     fun theSameControlWorksAgainOnReturningToTheScreen() {
         openEditorAndSettle()
