@@ -8,7 +8,7 @@
 #
 # Scenarios: long (72-hour check), history_death, past_death, details_kill, midnight, travel, travel_west, same_date,
 # zone_attack, zone_history, double_tap, med_effect, med_effect_attack, med_effect_skip, med_effect_late,
-# med_preventive, med_two_waiting, med_link_home, med_overuse, keyboard_home, keyboard_history, keyboard_rtl,
+# med_preventive, med_two_waiting, med_link_home, med_overuse, overuse_copy, keyboard_home, keyboard_history, keyboard_rtl,
 # landscape_band, mark_travel, mark_earliest_month, stats_counting, stats_chronic, stats_progress, reminder_daily,
 # reminder_permission, reminder_effect, reminder_replan (restarts the emulator), med_only_history,
 # message_tap_guard (#52), theme_check, onboarding_states, delete_all_data, privacy_link, backup_export, backup_import,
@@ -527,6 +527,39 @@ long_attack() { # $1 months back, $2 first day, $3 last day: a migraine from 10:
 long_undo_window() { adbq shell settings put secure accessibility_interactive_ui_timeout_ms 20000; }
 default_undo_window() { put_or_delete secure accessibility_interactive_ui_timeout_ms "$ORIGINAL_TIMEOUT"; }
 
+# History's "Last 30 days" on screen against the pairing that passed the medical check (D151), in both directions: a
+# reached row always comes with the line, and no line without a reached row (qa/overuse_rows.py).
+expect_overuse_pairing() {
+  adbq shell rm -f /sdcard/qa-rows.xml
+  adbq shell uiautomator dump /sdcard/qa-rows.xml >/dev/null
+  adbq exec-out cat /sdcard/qa-rows.xml | python3 -I "$ROOT/qa/overuse_rows.py"
+}
+check_indicator() { # $1 regex of a row that must show, $2 "true" when the doctor line belongs on screen, else "false"
+  run_flow_env indicator-check MONTHS_BACK=0 "ROW=$1" "DOCTOR=$2" || return 1
+  expect_overuse_pairing
+}
+expect_row_whole() { # $1 regex of a row, $2 its lines at least: on screen in full, wrapped and not cut off
+  local box
+  adbq shell rm -f /sdcard/qa-rows.xml
+  adbq shell uiautomator dump /sdcard/qa-rows.xml >/dev/null
+  box="$(adbq exec-out cat /sdcard/qa-rows.xml | python3 -I -c "import re, sys, xml.etree.ElementTree as ET
+nodes = list(ET.fromstring(sys.stdin.read()).iter('node'))
+for n in nodes:
+    if re.fullmatch(sys.argv[1], n.get('text') or ''):
+        b = [int(x) for x in re.findall(r'\d+', n.get('bounds'))]
+        print(b[1], b[3], max(int(re.findall(r'\d+', m.get('bounds'))[3]) for m in nodes)); break" "$1")"
+  [[ -n "$box" ]] || { echo "  FAILED: \"$1\" is not on screen"; return 1; }
+  local top bottom height
+  read -r top bottom height <<<"$box"
+  # At 200% a line is about 98 px; a cut-off node reports only the part on screen.
+  if (( bottom - top < $2 * 90 )) || (( bottom >= height )); then
+    echo "  FAILED: \"$1\" takes ${top}..${bottom} of ${height} px, expected $2 lines or more, whole"
+    return 1
+  fi
+  echo "    \"$1\" takes ${top}..${bottom} of ${height} px"
+  adbq exec-out screencap -p >"$out/row-$STEP.png"
+}
+
 # Each step ends the scenario on failure: a scenario runs inside "||", where set -e does not apply.
 scenario_long() {
   echo "Scenario long: an attack left open for days (EC-ATK-02, SAF-F3)"
@@ -701,6 +734,8 @@ scenario_med_link_home() {
 # Covers: medication-overuse › A standing indicator in History › A past month
 # Covers: medication-overuse › A standing indicator in History › No migraine logged
 # Covers: medication-overuse › A standing indicator in History › One day
+# Covers: medication-overuse › A standing indicator in History › One day below the number
+# Covers: medication-overuse › An overuse number is not a safe amount › No row says limit
 scenario_med_overuse() {
   echo "Scenario med_overuse: painkillers on 13 days warn softly, \"Got it\" hides it, 15 days warn about the doctor; History's \"Last 30 days\" (D59)"
   local d
@@ -712,36 +747,89 @@ scenario_med_overuse() {
     run_flow_env med-log-home NAME=Ibuprofen || return 1
   done
   run_flow med-overuse-soft || return 1
-  for d in 13 14; do
-    set_clock_millis "$(day_millis "$d")" || return 1
-    run_flow_env med-log-home NAME=Ibuprofen || return 1
-  done
+  set_clock_millis "$(day_millis 13)" || return 1
+  run_flow_env med-log-home NAME=Ibuprofen || return 1
+  # One day below the number: the count alone, neutral, and no doctor line.
+  set_clock_millis "$(( $(day_millis 0) + 3600000 ))" || return 1
+  check_indicator "Simple painkillers: 14 days" false || return 1
+  expect_colour "Simple painkillers: 14 days" neutral || return 1
+  set_clock_millis "$(day_millis 14)" || return 1
+  run_flow_env med-log-home NAME=Ibuprofen || return 1
   set_clock_millis "$(( $(day_millis 0) + 3600000 ))" || return 1
   run_flow med-overuse-doctor || return 1
-  # History's "Last 30 days" (D59), with no migraine logged yet (D99): at the limit with 15 days; a day 30 days back does
-  # not count, a day 29 back does; over the limit reads amber.
-  run_flow_env indicator-check MONTHS_BACK=0 "ROW=Simple painkillers: 15 days \(limit 15\), at the limit" DOCTOR=true || return 1
+  # History's "Last 30 days" (D59, D151), with no migraine logged yet (D99): reached with 15 days; a day 30 days back does
+  # not count, a day 29 back does; past the number still reads amber.
+  check_indicator "Simple painkillers: 15 days\. Doctors watch for 15 or more days a month\." true || return 1
   set_clock_millis "$(day_millis 30)" || return 1
   run_flow_env med-log-home NAME=Ibuprofen || return 1
   set_clock_millis "$(( $(day_millis 0) + 7200000 ))" || return 1
-  run_flow_env indicator-check MONTHS_BACK=0 "ROW=Simple painkillers: 15 days \(limit 15\), at the limit" DOCTOR=true || return 1
+  check_indicator "Simple painkillers: 15 days\. Doctors watch for 15 or more days a month\." true || return 1
   set_clock_millis "$(day_millis 29)" || return 1
   run_flow_env med-log-home NAME=Ibuprofen || return 1
   set_clock_millis "$(( $(day_millis 0) + 7200000 ))" || return 1
-  run_flow_env indicator-check MONTHS_BACK=0 "ROW=Simple painkillers: 16 days \(limit 15\), over the limit" DOCTOR=true || return 1
-  expect_colour "Simple painkillers: 16 days \(limit 15\), over the limit" amber || return 1
-  # A triptan in an attack today: two categories, and the union of days over its limit.
+  check_indicator "Simple painkillers: 16 days\. Doctors watch for 15 or more days a month\." true || return 1
+  expect_colour "Simple painkillers: 16 days\. Doctors watch for 15 or more days a month\." amber || return 1
+  # A triptan in an attack today: two categories, and the union of days past its number.
   run_flow med-add-triptan-in-attack || return 1
-  run_flow_env indicator-check MONTHS_BACK=0 "ROW=Triptans: 1 day \(limit 10\)" DOCTOR=true || return 1
-  run_flow_env indicator-check MONTHS_BACK=0 "ROW=All attack medication: 16 days \(limit 10\), over the limit" DOCTOR=true || return 1
+  check_indicator "Triptans: 1 day" true || return 1
+  check_indicator "All attack medication: 16 days\. Doctors watch for 10 or more days a month\." true || return 1
   # Deleting that attack and restoring it with Undo counts its triptan again.
   long_undo_window
   run_flow delete-attack-undo || { default_undo_window; return 1; }
   default_undo_window
-  run_flow_env indicator-check MONTHS_BACK=0 "ROW=Triptans: 1 day \(limit 10\)" DOCTOR=true || return 1
+  check_indicator "Triptans: 1 day" true || return 1
   # Last month (with a migraine of its own, so History reaches it) has no "Last 30 days" section.
   run_flow past-attack-last-month || return 1
   run_flow_env indicator-check MONTHS_BACK=1 ROW= DOCTOR=false || return 1
+}
+
+# Covers: medication-overuse › An overuse number is not a safe amount › Before the number is reached
+# Covers: medication-overuse › An overuse number is not a safe amount › A reached row brings its line
+# Covers: medication-overuse › A standing indicator in History › Largest font
+# Covers: medication-overuse › An overuse number is not a safe amount › A list cap is not an overuse number
+scenario_overuse_copy() {
+  echo "Scenario overuse_copy: no number before it is reached, the line in step with a reached row, the longest row at 200%, a list cap is not one (D151)"
+  run_flow clean || return 1
+  seed_import overuse-nine Import || return 1
+  run_flow_env home-text "TEXT=Triptans on 9 of the last 30 days" || return 1
+  run_flow_env home-text "TEXT=Taking them often can lead to more headaches\. Worth keeping an eye on\." || return 1
+  check_indicator "Triptans: 9 days" false || return 1
+  expect_colour "Triptans: 9 days" neutral || return 1
+  # Several rows, none reached: the other direction of the pairing with more than one row.
+  run_flow clean || return 1
+  seed_import overuse-below Import || return 1
+  check_indicator "All attack medication: 9 days" false || return 1
+  expect_colour "Simple painkillers: 7 days" neutral || return 1
+  expect_colour "All attack medication: 9 days" neutral || return 1
+  # Two rows reached, one not: the line once, after the rows, and the row below its number stays as it was.
+  run_flow clean || return 1
+  seed_import overuse-two-reached Import || return 1
+  check_indicator "Simple painkillers: 12 days" true || return 1
+  expect_colour "Simple painkillers: 12 days" neutral || return 1
+  expect_colour "Triptans: 12 days\. Doctors watch for 10 or more days a month\." amber || return 1
+  expect_colour "All attack medication: 24 days\. Doctors watch for 10 or more days a month\." amber || return 1
+  # The longest row at the largest font, upright and turned: it wraps and keeps every word.
+  run_flow clean || return 1
+  seed_import overuse-largest-font Import || return 1
+  local font rc=0 row="All attack medication: 16 days\. Doctors watch for 10 or more days a month\."
+  font="$(adbq shell settings get system font_scale | tr -d '\r')"
+  adbq shell settings put system font_scale 2.0
+  run_flow_env indicator-check MONTHS_BACK=0 "ROW=$row" DOCTOR=true || rc=1
+  [[ $rc == 0 ]] && { expect_row_whole "$row" 3 || rc=1; }
+  if [[ $rc == 0 ]]; then
+    adbq shell settings put system accelerometer_rotation 0
+    adbq shell settings put system user_rotation 1
+    run_flow_env indicator-check MONTHS_BACK=0 "ROW=$row" DOCTOR=true || rc=1
+    [[ $rc == 0 ]] && { expect_row_whole "$row" 3 || rc=1; }
+    qa_restore_setting system user_rotation "$ORIGINAL_USER_ROTATION"
+    qa_restore_setting system accelerometer_rotation "$ORIGINAL_AUTO_ROTATE"
+  fi
+  qa_restore_setting system font_scale "$font"
+  [[ $rc == 0 ]] || return 1
+  # The list cap keeps its own wording: a full list says so, with no overuse number in sight.
+  run_flow clean || return 1
+  seed_import medications-fifty Import || return 1
+  run_flow med-list-full || return 1
 }
 
 # Covers: day-markers › Accessible marks › Screen reader
@@ -1628,6 +1716,7 @@ scenario_report_three_months() {
 
 # Covers: doctor-report › The summary page › A month only partly in the period
 # Covers: doctor-report › Counting like the app › Logged in Tokyo
+# Covers: doctor-report › The summary page › The label does not say limit
 scenario_report_counting() {
   echo "Scenario report_counting: overuse spans across a month change, and an attack logged in Tokyo (D82, D83)"
   local seed period
@@ -1642,7 +1731,7 @@ scenario_report_counting() {
     run_flow_env report-make "PERIOD=$period" NOTES=false || return 1
     pull_report "$out/$seed.pdf" || return 1
     report_texts "$seed" || return 1
-    python3 -I "$ROOT/qa/report_pdf.py" "$out/$seed.pdf" --every-page "Patient-entered data. Not a diagnosis." \
+    python3 -I "$ROOT/qa/report_pdf.py" "$out/$seed.pdf" --every-page "Patient-entered data. Not a diagnosis." --absent limit \
       --text ${REPORT_TEXTS[@]+"${REPORT_TEXTS[@]}"} --regex ${REPORT_PATTERNS[@]+"${REPORT_PATTERNS[@]}"} | sed "s/^/    $seed: /"
     [[ "${PIPESTATUS[0]}" == 0 ]] || return 1
   done
@@ -2066,7 +2155,7 @@ mkdir -p "$out"
 if [[ $# -eq 0 ]]; then
   set -- long history_death past_death details_kill midnight travel travel_west same_date zone_attack zone_history \
     double_tap med_effect med_effect_attack med_effect_skip med_effect_late med_preventive med_two_waiting \
-    med_link_home med_overuse keyboard_home keyboard_history keyboard_rtl landscape_band mark_travel mark_earliest_month \
+    med_link_home med_overuse overuse_copy keyboard_home keyboard_history keyboard_rtl landscape_band mark_travel mark_earliest_month \
     stats_counting stats_chronic stats_progress reminder_daily reminder_permission reminder_effect reminder_replan \
     med_only_history message_tap_guard \
     theme_check onboarding_states delete_all_data privacy_link backup_export backup_import message_duration \

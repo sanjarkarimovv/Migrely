@@ -1,5 +1,6 @@
 # Device scenario step: History's "Last 30 days" section for this month (MONTHS_BACK "0") or last month ("1").
-# ROW (a regex) is a row that must show; "" means no section. DOCTOR "true" expects the doctor line, "false" not.
+# ROW (a regex) is a row that must show; "" means no section. DOCTOR "true" expects a reached row and the doctor line,
+# "false" neither. The pairing is what passed the medical check (D151), so both directions are asserted.
 # It leaves History open.
 appId: com.migrely.app
 ---
@@ -38,10 +39,12 @@ appId: com.migrely.app
     when:
       true: ${DOCTOR == "true"}
     commands:
-      - assertVisible: "At this many days, medication can make headaches more frequent\\. Talk to your doctor about it\\."
+      - assertVisible: "Taking medication this often, month after month, can make headaches more frequent\\. It's worth talking to your doctor\\."
+      - assertVisible: ".*\\. Doctors watch for 1[05] or more days a month\\."
 - runFlow:
     when:
       true: ${DOCTOR == "false"}
     commands:
-      - assertNotVisible: "At this many days.*"
+      - assertNotVisible: "Taking medication this often.*"
+      - assertNotVisible: ".*Doctors watch for.*"
 # The app stays open, so the script can read a row's colour.
