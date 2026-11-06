@@ -69,8 +69,7 @@ class MedicationPromptUiMappersTest {
                             OveruseWarningPresentationModel(
                                 category,
                                 OveruseLevelPresentationModel.Doctor,
-                                days = 10,
-                                thresholdDays = 10
+                                days = 10
                             )
                         )
                     )
