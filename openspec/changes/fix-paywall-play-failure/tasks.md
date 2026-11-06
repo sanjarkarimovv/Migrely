@@ -71,11 +71,65 @@ Do these in order. The baseline comes first, on the build before any of these ch
 
 ## Verification record
 
-To be filled in by `android-engineer`: the baseline and after tables from 3.1, 3.3, 3a.1 and 3a.5, the walk rows from 4.3, and what was not checked and why.
+Filled in by `android-engineer`, 2026-11-07. Evidence: `migrely-work/walks/bugfix-146/`. Tasks 3a.1 and 3a.5 are not measured yet.
+
+### 3.1 and 3.3: the paywall's geometry
+
+Emulator API 36, simulated store, Yearly, free user, doctor report's paywall. Base build c3d06f15 against the build with the line (d60dbb4c). "y" is the control's top in the scrolling content, in px, read from dumps with the scroll between them added up. Drag counts alone did not repeat between two runs of the same build, so y is the number compared. "Steps" are 200 px drags until the control is on screen.
+
+| Display, font, orientation | Buy y, base | Buy y, after | Steps, base and after | Restore y, base | Restore y, after | Steps, base and after | Line y, height |
+|---|---|---|---|---|---|---|---|
+| Default, 100%, portrait | 1177 | 1177 | 0, 0 | 2092 | 1718 | 0, 0 | 1571, 105 |
+| Default, 100%, landscape | 1112 | 1112 | 1, 1 | 1911 | 1595 | 6, 4 | 1448, 105 |
+| Default, 200%, portrait | 1982 | 1982 | 0, 0 | 3957 | 2945 | 10, 4 | 2610, 293 |
+| Default, 200%, landscape | 1566 | 1566 | 4, 4 | 3109 | 2425 | 12, 8 | 2090, 293 |
+| 360 x 640dp, 100%, portrait | 1300 | 1300 | 0, 0 | 2347 | 1841 | 5, 2 | 1694, 105 |
+| 360 x 640dp, 100%, landscape | 1112 | 1112 | 2, 2 | 1911 | 1595 | 6, 4 | 1448, 105 |
+| 360 x 640dp, 200%, portrait | 2168 | 2168 | 4, 4 | 4575 | 3339 | 17, 10 | 2900, 397 |
+| 360 x 640dp, 200%, landscape | 1566 | 1566 | 4, 4 | 3109 | 2425 | 13, 9 | 2090, 293 |
+
+The button's y is unchanged in 8 of 8 rows, and Restore's y is smaller in 8 of 8.
+
+At 200%, and in every row where the button needs a scroll, the line is not on screen when the button first comes into view, as the design accepted. At 100% portrait on the default display, line and button show together.
+
+### Mutation
+
+`PaywallViewModel`, `:features:subscription:presentation:test`, 46 tests: M1 the flag always false, 3 fail; M2 always true, 3 fail; M3 on `Cancelled`, 4 fail; M4 no check of the offers, 2 fail; M5 `else if` as `if`, 1 fails; M6 `notify` for `deliver`, 1 fails. Restored: 0 fail.
+
+The line and the order, `:features:subscription:ui:testDebugUnitTest`, 34 tests: L1 line outside `choice != null`, 2 fail; L2 rule inverted, 8 fail; L3 above the terms, 3 fail; L4 under Manage, 1 fails; L5 Restore back under the benefits, 4 fail; L6 one word of the line, 6 fail; L7 notice text back, 1 fails. Restored: 0 fail.
+
+The message, `MessagePlaceAndTapTest`, 17 tests: A1 host ignores `guardMillis`, 1 fails; A2 default 400, 1 fails; A3 host ignores `topOffset`, 3 fail; A4 no body tap, 1 fails; A5 body tap with an action, 1 fails; A6 body tap with no timeout, 1 fails; A7 body tap with semantics, 1 fails; A8 dismisses twice, 1 fails. Restored: 0 fail. These compare the two guards rather than exact times: under Robolectric each guard measured about twice its length (400 ms swallowed a tap at 576 and passed one at 1024; the default swallowed at 1520 and passed at 3024). The cause is not known. Exact times are in `MigrelySnackbarHostTest`, instrumented and not run yet.
+
+### 4.3 walk so far
+
+Merged build 3ddc80b9, except where a row says otherwise. All before D7's code.
+
+| Row | Result |
+|---|---|
+| Line on Yearly, Monthly, Lifetime | Same text, under each plan's terms (d60dbb4c) |
+| Cancel in the sheet | No message, and the button opens the sheet again (d60dbb4c) |
+| Store `unreachable`, buy | "The purchase didn't go through. Try again.", then the notice, no line (d60dbb4c) |
+| Notice text | "Google Play can't be reached right now", exactly "Check your connection, then try again. Your diary works offline.", "Try again", no line (d60dbb4c) |
+| Store `unavailable`, buy | Region notice only, no line, no message 3 s later |
+| Pending | "Payment pending" and the line both show |
+| Monthly subscriber from Settings | Line at y 1504, above Manage subscription at 1683 |
+| Lifetime owner | Settings offers no way to the plans, and the success screen has no button or line. The plans with nothing to choose are covered by `PaywallContentsTest` only |
+| Restore, store `unreachable` | Paywall: "Google Play can't be reached. Try again later." Settings: the same note |
+| 200% portrait and landscape | Line whole at 293 px, every part reached by scrolling |
+| Rotation with a message showing | **The message goes.** Gone 2.5 s after rotating; cards and line stay. On-screen messages are `remember`, so this reads as older than this change. Not run on the base build |
+| Process death, `kill -9`, paywall open | Reopens on Home. The next paywall shows the line |
+| Dark and light | Line reads as the terms in both; checked by eye on one screenshot each |
+| TalkBack order from the dump | Close, headline, lead, three cards, button, terms, line, Restore, benefits. The line is stop 9, Restore stop 10. TalkBack itself not run |
+| `Unavailable`, products offered (temporary one-line build, never committed) | Cards back, "Google Play can't be reached. Try again later.", gone by 9 s, and the button opens the sheet again |
+| Rotation during the sheet, same temporary build | The message shows on the rotated screen, gone by 9 s |
+| Controls under the message | Before D7: see #152. After D7: not measured yet |
+
+Not checked: a real Play sheet (task 5.3), buy under the message at 200% landscape, Try again and Restore under the message on 360 x 640dp.
+
 
 Known limits, already accepted in the design:
 
 - Emulators cannot run Play's sheet, so everything before 5.3 uses the simulated store.
-- `Unavailable` with products still offered is proven only by the view model test, because the simulated store fails both together.
+- `Unavailable` with products still offered is proven by the view model test, because the simulated store fails both together. A temporary local build also showed it on a device.
 - The buy button under the message is tested with Restore's message, not a failed purchase's, for the same reason. It is the same host and the same 8 seconds.
 - A real phone and real people: the message's limits in design D7 are not measured on people.
