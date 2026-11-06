@@ -33,6 +33,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -69,6 +70,16 @@ fun EditMedicationDependencies.EditMedication(
     medicationId: String?,
     modifier: Modifier = Modifier
 ) {
+    // All the screen holds belongs to one medication, so another id starts it afresh (issue #138).
+    key(medicationId) { MedicationEditor(navController, medicationId, modifier) }
+}
+
+@Composable
+private fun EditMedicationDependencies.MedicationEditor(
+    navController: NavController,
+    medicationId: String?,
+    modifier: Modifier
+) {
     ScreenEnterObserver { editMedicationViewModel.onEnter(medicationId) }
     ViewModelObserver(navController)
     val viewState by editMedicationViewModel.viewState.collectAsState(
@@ -83,7 +94,9 @@ fun EditMedicationDependencies.EditMedication(
     var pending by remember { mutableStateOf(false) }
     LaunchedEffect(uiState) {
         val ready = uiState as? EditMedicationViewStateUiModel.Ready
-        if (form == null && ready != null) {
+        // One ViewModel serves every editor, so a late read of another medication is ignored here:
+        // Save writes medicationId, and the form must only ever hold that row.
+        if (form == null && ready != null && ready.medication?.id == medicationId) {
             form = ready.medication?.let {
                 MedicationFormUiModel(it.name, it.kind, it.category, it.defaultDose.orEmpty())
             } ?: MedicationFormUiModel()
