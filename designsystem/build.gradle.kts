@@ -29,6 +29,7 @@ android {
     // version of Android every time the tests run.
     testOptions {
         targetSdk = libs.versions.targetSdk.get().toInt()
+        unitTests.isIncludeAndroidResources = true
     }
 
     compileOptions {
@@ -59,6 +60,11 @@ dependencies {
     debugImplementation(libs.compose.ui.tooling)
 
     testImplementation(libs.test.junit)
+
+    // Debug only: the Compose test rule needs the debug test manifest.
+    testDebugImplementation(platform(libs.compose.bom))
+    testDebugImplementation(libs.test.compose.ui.junit4)
+    testDebugImplementation(libs.test.robolectric)
 
     androidTestImplementation(platform(libs.compose.bom))
     androidTestImplementation(libs.test.compose.ui.junit4)

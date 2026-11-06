@@ -29,6 +29,7 @@ minSdk = "26"
 targetSdk = "36"
 ktor = "3.3.1"
 retrofit = "3.0.0"
+robolectric = "4.17"
 mockitoCore = "5.20.0"
 mockitoKotlin = "6.1.0"
 testKonsist = "0.17.3"
@@ -95,6 +96,7 @@ ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
 ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
 retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }
 okhttp3-logging-interceptor = { module = "com.squareup.okhttp3:logging-interceptor", version.ref = "okhttp3" }
+test-robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
 test-mockito-core = { module = "org.mockito:mockito-core", version.ref = "mockitoCore" }
 test-mockito-kotlin = { module = "org.mockito.kotlin:mockito-kotlin", version.ref = "mockitoKotlin" }
 test-konsist = { module = "com.lemonappdev:konsist", version.ref = "testKonsist" }
