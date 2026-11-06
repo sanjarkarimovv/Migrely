@@ -89,27 +89,26 @@
         <item quantity="one">Acute medications on %1$d of the last 30 days</item>
         <item quantity="other">Acute medications on %1$d of the last 30 days</item>
     </plurals>
-    <string name="overuse_body_soft">Taking them on %1$d days or more a month can lead to more headaches. Worth keeping an eye on.</string>
+    <string name="overuse_body_soft">Taking them often can lead to more headaches. Worth keeping an eye on.</string>
     <string name="overuse_body_doctor">Taking them this often can make headaches more frequent. It\'s worth talking to your doctor.</string>
     <string name="overuse_got_it">Got it</string>
     <string name="indicator_title">Last 30 days</string>
     <plurals name="indicator_row_simple">
-        <item quantity="one">Simple painkillers: %1$d day (limit %2$d)</item>
-        <item quantity="other">Simple painkillers: %1$d days (limit %2$d)</item>
+        <item quantity="one">Simple painkillers: %1$d day</item>
+        <item quantity="other">Simple painkillers: %1$d days</item>
     </plurals>
     <plurals name="indicator_row_triptan">
-        <item quantity="one">Triptans: %1$d day (limit %2$d)</item>
-        <item quantity="other">Triptans: %1$d days (limit %2$d)</item>
+        <item quantity="one">Triptans: %1$d day</item>
+        <item quantity="other">Triptans: %1$d days</item>
     </plurals>
     <plurals name="indicator_row_other">
-        <item quantity="one">Combination or other: %1$d day (limit %2$d)</item>
-        <item quantity="other">Combination or other: %1$d days (limit %2$d)</item>
+        <item quantity="one">Combination or other: %1$d day</item>
+        <item quantity="other">Combination or other: %1$d days</item>
     </plurals>
     <plurals name="indicator_row_multiple">
-        <item quantity="one">All attack medication: %1$d day (limit %2$d)</item>
-        <item quantity="other">All attack medication: %1$d days (limit %2$d)</item>
+        <item quantity="one">All attack medication: %1$d day</item>
+        <item quantity="other">All attack medication: %1$d days</item>
     </plurals>
-    <string name="indicator_at_limit">%1$s, at the limit</string>
-    <string name="indicator_over_limit">%1$s, over the limit</string>
-    <string name="indicator_reached">At this many days, medication can make headaches more frequent. Talk to your doctor about it.</string>
+    <string name="indicator_row_reached">%1$s. Doctors watch for %2$d or more days a month.</string>
+    <string name="indicator_reached">Taking medication this often, month after month, can make headaches more frequent. It\'s worth talking to your doctor.</string>
 </resources>

@@ -1,0 +1,30 @@
+# Device scenario step: My medications holds 50 (seed medications-fifty): a 51st is refused with the list cap's own words.
+appId: com.migrely.app
+---
+- launchApp
+- tapOn: "Log medication"
+# Below all 50 medications, on both of these screens.
+- scrollUntilVisible:
+    element: "Manage medications"
+    direction: DOWN
+    timeout: 60000
+- tapOn: "Manage medications"
+- extendedWaitUntil:
+    visible: "My medications"
+    timeout: 5000
+- scrollUntilVisible:
+    element: "Add medication"
+    direction: DOWN
+    timeout: 60000
+- runFlow:
+    file: ../subflows/add-medication.yaml
+    env:
+      NAME: "One too many"
+      KIND: "Preventive"
+      TYPE: ""
+      DOSE: ""
+- extendedWaitUntil:
+    visible: "You can keep up to 50 medications\\. Remove one you no longer take\\."
+    timeout: 5000
+- assertNotVisible: ".*Doctors watch for.*"
+- stopApp

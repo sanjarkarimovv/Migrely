@@ -105,7 +105,7 @@ class ReportDocumentMapper(private val reportDateTimeFormatter: ReportDateTimeFo
                         )
                     ),
                     ReportFactDataModel(
-                        "30-day spans at the medication-overuse limit",
+                        "30-day spans reaching an ICHD-3 8.2 medication-day threshold",
                         summary.overuseSpans.joinToString(", ") {
                             "${DATE.format(it.from)} to ${DATE.format(it.to)}"
                         }.ifEmpty { "None" }
