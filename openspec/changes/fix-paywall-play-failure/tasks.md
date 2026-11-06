@@ -11,8 +11,8 @@ the baseline in 3.1 from the current develop build.
 
 ## 2. Presentation
 
-- [ ] 2.1 `PaywallViewModel`, design D4: after a sheet answered `Unavailable`, once the reload has `PaywallOffersDomainModel.Loaded` and no `Unlocked` is being delivered, deliver `PlayUnreachable`. Correct the comment in `outcomeOf`. Verify: `./gradlew :features:subscription:presentation:test`.
-- [ ] 2.2 `PaywallViewModelTest`: `Unavailable` with products delivers `PlayUnreachable`; `Unavailable` with `PaywallOffersDomainModel.Unavailable` delivers nothing; with `Unreachable` delivers nothing; `Cancelled` delivers nothing; `Failed` still delivers `SomethingWentWrong`; an `Unavailable` outcome the screen missed is delivered once on `onResume`. Show a negative control: the first test fails with 2.1 reverted. Verify: same command, and record the failing run.
+- [x] 2.1 `PaywallViewModel`, design D4: after a sheet answered `Unavailable`, once the reload has `PaywallOffersDomainModel.Loaded` and no `Unlocked` is being delivered, deliver `PlayUnreachable`. Correct the comment in `outcomeOf`. Verify: `./gradlew :features:subscription:presentation:test`.
+- [x] 2.2 `PaywallViewModelTest`: `Unavailable` with products delivers `PlayUnreachable`; `Unavailable` with `PaywallOffersDomainModel.Unavailable` delivers nothing; with `Unreachable` delivers nothing; `Cancelled` delivers nothing; `Failed` still delivers `SomethingWentWrong`; an `Unavailable` outcome the screen missed is delivered once on `onResume`. Show a negative control: the first test fails with 2.1 reverted. Verify: same command, and record the failing run.
 
 ## 3. UI
 

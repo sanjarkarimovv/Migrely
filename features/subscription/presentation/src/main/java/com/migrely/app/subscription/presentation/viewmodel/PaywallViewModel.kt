@@ -4,6 +4,7 @@ import com.migrely.app.architecture.domain.UseCaseExecutor
 import com.migrely.app.architecture.presentation.viewmodel.BaseViewModel
 import com.migrely.app.subscription.domain.model.BillingAvailabilityDomainModel
 import com.migrely.app.subscription.domain.model.BuyPremiumResultDomainModel
+import com.migrely.app.subscription.domain.model.PaywallOffersDomainModel
 import com.migrely.app.subscription.domain.model.PremiumCheckDomainModel
 import com.migrely.app.subscription.domain.model.PremiumStatusDomainModel
 import com.migrely.app.subscription.domain.model.PurchaseOutcomeDomainModel
@@ -99,7 +100,10 @@ class PaywallViewModel(
             onResult = { result ->
                 inFlight--
                 outcomeOf(result)?.let(::deliver)
-                load(context)
+                load(
+                    context,
+                    sheetRefused = result.outcome == PurchaseOutcomeDomainModel.Unavailable
+                )
             },
             onException = { answered(context) }
         )
@@ -146,7 +150,8 @@ class PaywallViewModel(
                 premiumStatusPresentationMapper.toPresentation(result.status)
             )
             PurchaseOutcomeDomainModel.Failed -> PaywallPresentationNotification.SomethingWentWrong
-            // The paywall shows these itself once it loads again.
+            // Pending shows once the paywall loads again, and a cancel shows nothing (BRD D153).
+            // Unavailable waits for that load, which knows whether Play still offers the products.
             PurchaseOutcomeDomainModel.Pending,
             PurchaseOutcomeDomainModel.Cancelled,
             PurchaseOutcomeDomainModel.Unavailable -> null
@@ -176,8 +181,14 @@ class PaywallViewModel(
     /**
      * A premium user who reaches a feature's paywall, for example before the first check after an
      * install finished, sees its success and goes on; from Settings, a subscriber sees the plans.
+     * After a sheet Play refused, cards that come back say why the tap did nothing; with no cards,
+     * the paywall's own notice says it (BRD EC-BIL-16).
      */
-    private fun load(context: PaywallContextPresentationModel, celebrate: Boolean = false) {
+    private fun load(
+        context: PaywallContextPresentationModel,
+        celebrate: Boolean = false,
+        sheetRefused: Boolean = false
+    ) {
         if (working) {
             updateViewState(PaywallViewState.Working)
             return
@@ -194,6 +205,8 @@ class PaywallViewModel(
                                 premiumStatusPresentationMapper.toPresentation(paywall.status)
                             )
                         )
+                    } else if (sheetRefused && paywall.offers is PaywallOffersDomainModel.Loaded) {
+                        deliver(PaywallPresentationNotification.PlayUnreachable)
                     }
                 }
             }

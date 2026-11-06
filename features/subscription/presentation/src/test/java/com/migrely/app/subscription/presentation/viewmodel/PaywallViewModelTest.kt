@@ -36,6 +36,9 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -167,6 +170,139 @@ class PaywallViewModelTest :
             notificationOf { classUnderTest.onBuyAction(REPORT, YEARLY_CARD) }
         )
     }
+
+    private fun givenSheetAnswers(
+        outcome: PurchaseOutcomeDomainModel,
+        status: PremiumStatusDomainModel = PremiumStatusDomainModel.Free
+    ) {
+        buyPremiumUseCase.givenSuccessfulExecution(
+            YEARLY,
+            BuyPremiumResultDomainModel(outcome, status)
+        )
+    }
+
+    /** Every message [action] shows, each counted, once the collector has run. */
+    private fun TestScope.messagesOf(action: () -> Unit): List<PaywallPresentationNotification> {
+        val messages = mutableListOf<PaywallPresentationNotification>()
+        val collector = launch(start = UNDISPATCHED) {
+            classUnderTest.notification.toList(messages)
+        }
+        action()
+        runCurrent()
+        collector.cancel()
+        return messages
+    }
+
+    @Test
+    fun `Given the sheet answers Unavailable and Play still offers products then it says so`() =
+        runTest {
+            getPaywallUseCase.givenSuccessfulExecution(FREE_PAYWALL)
+            givenSheetAnswers(PurchaseOutcomeDomainModel.Unavailable)
+            val states = async(start = UNDISPATCHED) { classUnderTest.viewState.take(2).toList() }
+
+            val messages = messagesOf { classUnderTest.onBuyAction(REPORT, YEARLY_CARD) }
+
+            assertEquals(listOf(PaywallPresentationNotification.PlayUnreachable), messages)
+            assertEquals(listOf(PaywallViewState.Working, READY), states.await())
+        }
+
+    @Test
+    fun `Given the sheet answers Unavailable and Play offers no products then no message`() =
+        runTest {
+            getPaywallUseCase.givenSuccessfulExecution(
+                FREE_PAYWALL.copy(offers = PaywallOffersDomainModel.Unavailable)
+            )
+            givenSheetAnswers(PurchaseOutcomeDomainModel.Unavailable)
+
+            assertEquals(
+                emptyList<PaywallPresentationNotification>(),
+                messagesOf { classUnderTest.onBuyAction(REPORT, YEARLY_CARD) }
+            )
+        }
+
+    @Test
+    fun `Given the sheet answers Unavailable and reading products fails then no message`() =
+        runTest {
+            getPaywallUseCase.givenSuccessfulExecution(
+                FREE_PAYWALL.copy(offers = PaywallOffersDomainModel.Unreachable)
+            )
+            givenSheetAnswers(PurchaseOutcomeDomainModel.Unavailable)
+
+            assertEquals(
+                emptyList<PaywallPresentationNotification>(),
+                messagesOf { classUnderTest.onBuyAction(REPORT, YEARLY_CARD) }
+            )
+        }
+
+    @Test
+    fun `Given a cancelled sheet then no message`() = runTest {
+        getPaywallUseCase.givenSuccessfulExecution(FREE_PAYWALL)
+        givenSheetAnswers(PurchaseOutcomeDomainModel.Cancelled)
+
+        assertEquals(
+            emptyList<PaywallPresentationNotification>(),
+            messagesOf { classUnderTest.onBuyAction(REPORT, YEARLY_CARD) }
+        )
+    }
+
+    @Test
+    fun `Given the sheet answers Failed then only that message shows`() = runTest {
+        getPaywallUseCase.givenSuccessfulExecution(FREE_PAYWALL)
+        givenSheetAnswers(PurchaseOutcomeDomainModel.Failed)
+
+        assertEquals(
+            listOf(PaywallPresentationNotification.SomethingWentWrong),
+            messagesOf { classUnderTest.onBuyAction(REPORT, YEARLY_CARD) }
+        )
+    }
+
+    @Test
+    fun `Given the sheet answers Unavailable and the screen missed it then it shows once`() =
+        runTest {
+            getPaywallUseCase.givenSuccessfulExecution(FREE_PAYWALL)
+            givenSheetAnswers(PurchaseOutcomeDomainModel.Unavailable)
+            classUnderTest.onBuyAction(REPORT, YEARLY_CARD)
+
+            assertEquals(
+                listOf(PaywallPresentationNotification.PlayUnreachable),
+                messagesOf { classUnderTest.onResume(REPORT) }
+            )
+
+            classUnderTest.onOutcomeShownAction()
+            assertEquals(
+                emptyList<PaywallPresentationNotification>(),
+                messagesOf { classUnderTest.onResume(REPORT) }
+            )
+        }
+
+    @Test
+    fun `Given the sheet answers Unavailable and Premium is on then only its success shows`() =
+        runTest {
+            getPaywallUseCase.givenSuccessfulExecution(FREE_PAYWALL.copy(status = YEARLY_STATUS))
+            givenSheetAnswers(PurchaseOutcomeDomainModel.Unavailable, YEARLY_STATUS)
+
+            assertEquals(
+                listOf(UNLOCKED),
+                messagesOf { classUnderTest.onBuyAction(REPORT, YEARLY_CARD) }
+            )
+        }
+
+    @Test
+    fun `Given a subscriber moving plan from Settings answers Unavailable then it says so`() =
+        runTest {
+            getPaywallUseCase.givenSuccessfulExecution(FREE_PAYWALL.copy(status = YEARLY_STATUS))
+            givenSheetAnswers(PurchaseOutcomeDomainModel.Unavailable, YEARLY_STATUS)
+
+            assertEquals(
+                listOf(PaywallPresentationNotification.PlayUnreachable),
+                messagesOf {
+                    classUnderTest.onBuyAction(
+                        PaywallContextPresentationModel.Settings,
+                        YEARLY_CARD
+                    )
+                }
+            )
+        }
 
     @Test
     fun `Given a pending payment then the paywall reloads to show it, with no message`() = runTest {
