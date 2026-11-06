@@ -46,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.migrely.app.architecture.ui.view.ScreenEnterObserver
 import com.migrely.app.designsystem.icon.MigrelyIcons
+import com.migrely.app.designsystem.input.TapGuard
 import com.migrely.app.designsystem.input.rememberLimitedField
 import com.migrely.app.designsystem.motion.rememberReduceMotion
 import com.migrely.app.designsystem.theme.MigrelyTheme
@@ -60,6 +61,7 @@ import com.migrely.app.medication.ui.model.SaveProblemUiModel
 
 private const val MAXIMUM_NAME_LENGTH = 60
 private const val MAXIMUM_DOSE_LENGTH = 20
+private const val FORM_TAP_GUARD_MILLIS = 700L
 private val CONTENT_MAX_WIDTH = 600.dp
 
 /** Adds or edits a medication (BRD MED-F1, MED-F2, D35). [medicationId] is null when adding. */
@@ -219,6 +221,13 @@ fun EditMedicationContents(
                         form != null -> MedicationForm(form, problem, pending, onFormChange, onSave)
                     }
                 }
+                // A second tap meant for the list must not change the form replacing it (issue
+                // #140). As long as the fade from the list; the Back arrow stays free above it.
+                TapGuard(
+                    key = Unit,
+                    durationMillis = FORM_TAP_GUARD_MILLIS,
+                    modifier = Modifier.matchParentSize()
+                )
             }
         }
         messages()
