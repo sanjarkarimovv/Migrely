@@ -61,7 +61,8 @@ import com.migrely.app.medication.ui.model.SaveProblemUiModel
 
 private const val MAXIMUM_NAME_LENGTH = 60
 private const val MAXIMUM_DOSE_LENGTH = 20
-private const val FORM_TAP_GUARD_MILLIS = 700L
+private const val KIND_TAP_GUARD_MILLIS = 700L
+private val FORM_SPACING = 12.dp
 private val CONTENT_MAX_WIDTH = 600.dp
 
 /** Adds or edits a medication (BRD MED-F1, MED-F2, D35). [medicationId] is null when adding. */
@@ -201,7 +202,7 @@ fun EditMedicationContents(
             )
             Box(contentAlignment = Alignment.TopCenter, modifier = Modifier.fillMaxSize()) {
                 Column(
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(FORM_SPACING),
                     modifier = Modifier
                         .widthIn(max = CONTENT_MAX_WIDTH)
                         .fillMaxWidth()
@@ -221,13 +222,6 @@ fun EditMedicationContents(
                         form != null -> MedicationForm(form, problem, pending, onFormChange, onSave)
                     }
                 }
-                // A second tap meant for the list must not change the form replacing it (issue
-                // #140). As long as the fade from the list; the Back arrow stays free above it.
-                TapGuard(
-                    key = Unit,
-                    durationMillis = FORM_TAP_GUARD_MILLIS,
-                    modifier = Modifier.matchParentSize()
-                )
             }
         }
         messages()
@@ -268,40 +262,52 @@ private fun MedicationForm(
         modifier = Modifier.fillMaxWidth()
     )
     Text(stringResource(R.string.edit_kind), style = MaterialTheme.typography.labelLarge)
-    Column(Modifier.selectableGroup()) {
-        listOf(
-            MedicationKindUiModel.Acute to R.string.kind_acute,
-            MedicationKindUiModel.Preventive to R.string.kind_preventive
-        ).forEach { (kind, label) ->
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = 48.dp)
-                    .selectable(
-                        selected = form.kind == kind,
-                        role = Role.RadioButton,
-                        onClick = { onFormChange(form.copy(kind = kind)) }
-                    )
-            ) {
-                RadioButton(selected = form.kind == kind, onClick = null)
-                Text(
-                    stringResource(label),
-                    style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.padding(start = 12.dp)
-                )
+    Box(Modifier.fillMaxWidth()) {
+        Column(verticalArrangement = Arrangement.spacedBy(FORM_SPACING)) {
+            Column(Modifier.selectableGroup()) {
+                listOf(
+                    MedicationKindUiModel.Acute to R.string.kind_acute,
+                    MedicationKindUiModel.Preventive to R.string.kind_preventive
+                ).forEach { (kind, label) ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = 48.dp)
+                            .selectable(
+                                selected = form.kind == kind,
+                                role = Role.RadioButton,
+                                onClick = { onFormChange(form.copy(kind = kind)) }
+                            )
+                    ) {
+                        RadioButton(selected = form.kind == kind, onClick = null)
+                        Text(
+                            stringResource(label),
+                            style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier.padding(start = 12.dp)
+                        )
+                    }
+                }
+            }
+            if (form.kind == MedicationKindUiModel.Acute) {
+                CategoryChoices(
+                    form.category,
+                    MaterialTheme.colorScheme.onSurface,
+                    MaterialTheme.colorScheme.primary,
+                    48.dp
+                ) {
+                    onFormChange(form.copy(category = it))
+                }
             }
         }
-    }
-    if (form.kind == MedicationKindUiModel.Acute) {
-        CategoryChoices(
-            form.category,
-            MaterialTheme.colorScheme.onSurface,
-            MaterialTheme.colorScheme.primary,
-            48.dp
-        ) {
-            onFormChange(form.copy(category = it))
-        }
+        // A second tap meant for the list must not flip the kind or the category: Preventive leaves
+        // the overuse count (issue #140). Longer than the screen's fade, for the gaps measured up to
+        // 649 ms. Name, dose, Save and Back stay free.
+        TapGuard(
+            key = Unit,
+            durationMillis = KIND_TAP_GUARD_MILLIS,
+            modifier = Modifier.matchParentSize()
+        )
     }
     OutlinedTextField(
         value = doseField.value,

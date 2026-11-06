@@ -5,11 +5,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performTouchInput
 import com.migrely.app.medication.ui.model.MedicationCategoryUiModel
 import com.migrely.app.medication.ui.model.MedicationFormUiModel
@@ -18,18 +18,25 @@ import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 private const val PREVENTIVE = "Preventive"
-private const val ACUTE = "For an attack"
+private const val TRIPTAN = "Triptan"
 private const val BACK = "Back"
 private const val SAVE = "Save"
-private const val STILL_FADING_MILLIS = 400L
-private const val AFTER_THE_FADE_MILLIS = 800L
+private const val JUST_OPENED_MILLIS = 100L
+private const val AT_THE_MEASURED_GAP_MILLIS = 649L
+private const val AFTER_THE_GUARD_MILLIS = 800L
 
 /**
  * A second tap meant for the list lands on the editor that has just opened (issue #140). It must
- * not change the form, for adding or for editing; Back stays free, and the form works afterwards.
+ * not flip the kind or the category, on Add or Edit, up to the gaps measured. Everything else takes
+ * its first tap at once (issue #148).
  */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [35], qualifiers = "w400dp-h1200dp")
 class EditMedicationTapGuardTest {
     @get:Rule
     val composeRule = createComposeRule()
@@ -72,9 +79,9 @@ class EditMedicationTapGuardTest {
     }
 
     @Test
-    fun aTapOnEditWhileItFadesInDoesNotChangeTheKind() {
+    fun aTapOnEditAtTheMeasuredGapDoesNotChangeTheKind() {
         show()
-        advance(STILL_FADING_MILLIS)
+        advance(AT_THE_MEASURED_GAP_MILLIS)
 
         tap(PREVENTIVE)
 
@@ -82,10 +89,10 @@ class EditMedicationTapGuardTest {
     }
 
     @Test
-    fun aTapOnAddWhileItFadesInDoesNotChangeTheKind() {
+    fun aTapOnAddAtTheMeasuredGapDoesNotChangeTheKind() {
         adding = true
         show()
-        advance(STILL_FADING_MILLIS)
+        advance(AT_THE_MEASURED_GAP_MILLIS)
 
         tap(PREVENTIVE)
 
@@ -93,19 +100,63 @@ class EditMedicationTapGuardTest {
     }
 
     @Test
-    fun aTapOnSaveWhileItFadesInDoesNotSave() {
+    fun aTapAtTheMeasuredGapDoesNotChangeTheCategory() {
         show()
-        advance(STILL_FADING_MILLIS)
+        advance(AT_THE_MEASURED_GAP_MILLIS)
+
+        tap(TRIPTAN)
+
+        composeRule.runOnIdle {
+            assertEquals(MedicationCategoryUiModel.SimplePainkiller, form.category)
+        }
+    }
+
+    @Test
+    fun theKindAndCategoryTakeATapAfterTheGuard() {
+        show()
+        advance(AFTER_THE_GUARD_MILLIS)
+
+        tap(TRIPTAN)
+        composeRule.runOnIdle { assertEquals(MedicationCategoryUiModel.Triptan, form.category) }
+
+        tap(PREVENTIVE)
+        composeRule.runOnIdle { assertEquals(MedicationKindUiModel.Preventive, form.kind) }
+    }
+
+    @Test
+    fun theNameTakesAFirstTapJustAfterOpening() {
+        show()
+        advance(JUST_OPENED_MILLIS)
+
+        tapField(index = 0)
+
+        composeRule.onAllNodes(hasSetTextAction())[0].assertIsFocused()
+    }
+
+    @Test
+    fun theDoseTakesAFirstTapJustAfterOpening() {
+        show()
+        advance(JUST_OPENED_MILLIS)
+
+        tapField(index = 1)
+
+        composeRule.onAllNodes(hasSetTextAction())[1].assertIsFocused()
+    }
+
+    @Test
+    fun saveTakesAFirstTapJustAfterOpening() {
+        show()
+        advance(JUST_OPENED_MILLIS)
 
         tap(SAVE)
 
-        composeRule.runOnIdle { assertEquals(0, saves.intValue) }
+        composeRule.runOnIdle { assertEquals(1, saves.intValue) }
     }
 
     @Test
-    fun backStaysFreeWhileItFadesIn() {
+    fun backTakesAFirstTapJustAfterOpening() {
         show()
-        advance(STILL_FADING_MILLIS)
+        advance(JUST_OPENED_MILLIS)
 
         composeRule.onNode(hasContentDescription(BACK)).performTouchInput {
             down(center)
@@ -116,15 +167,12 @@ class EditMedicationTapGuardTest {
         composeRule.runOnIdle { assertEquals(1, backs.intValue) }
     }
 
-    @Test
-    fun theFormTakesATapAfterTheFade() {
-        show()
-        advance(AFTER_THE_FADE_MILLIS)
-
-        tap(PREVENTIVE)
-
-        composeRule.runOnIdle { assertEquals(MedicationKindUiModel.Preventive, form.kind) }
-        composeRule.onNodeWithText(ACUTE).assertExists()
+    private fun tapField(index: Int) {
+        composeRule.onAllNodes(hasSetTextAction())[index].performTouchInput {
+            down(center)
+            up()
+        }
+        advance(JUST_OPENED_MILLIS)
     }
 
     private fun tap(label: String) {
