@@ -26,9 +26,10 @@ on a device without a connection stops seeing it.
 | `BILLING_UNAVAILABLE` or `ITEM_UNAVAILABLE`, products still offered | Unavailable | "Google Play can't be reached. Try again later." | Cards, button and line | **Yes** |
 | The same, no products offered | Unavailable | None | "Premium isn't available in your region yet" | No |
 | Any other code | Failed | "The purchase didn't go through. Try again." | Cards, button and line | Line only |
-| Any answer, and reading the products then fails | As above | As above | "Google Play can't be reached right now", "Try again" | No |
+| Any answer, and reading the products then fails | As above | As above | "Google Play can't be reached right now", "Check your connection, then try again. Your diary works offline.", "Try again" | Notice text |
 
-The line is present in every row that has a buy button, so no row depends on knowing the code.
+The line is present in every row that has a buy button, and the last row says the same about the diary, so no row depends
+on knowing the code.
 
 ## Decisions
 
@@ -37,6 +38,7 @@ The line is present in every row that has a buy button, so no row depends on kno
 | Key | Text |
 |---|---|
 | `subscription_purchase_needs_play` (new) | `Purchases need Google Play and an internet connection. Your diary works offline.` |
+| `subscription_unreachable_text` (changed, was `Check your connection, then try again.`) | `Check your connection, then try again. Your diary works offline.` |
 
 Why this wording, and how it differs from the starting position ("everything else in Migrely works offline"):
 
@@ -48,6 +50,9 @@ Why this wording, and how it differs from the starting position ("everything els
 - **"Google Play" comes first.** The subject of "need" must be the purchase through Play, in an app whose promise is that
   it never uses the network. It does not say that Migrely uses the internet.
 - **Unconditional.** It does not say "you are offline", because the app cannot know. It is equally true with a connection.
+- **The unreachable notice says the same about the diary.** When Play's sheet closes and the reload fails, the cards leave
+  and the line leaves with them. That person has just read "No internet connection" and is the most likely to be offline,
+  so the notice carries "Your diary works offline." There is no buy button in this state, so no layout effect on one.
 - **No health claim and no promise of an outcome.**
 
 Unchanged, and checked against this line:
@@ -58,7 +63,7 @@ Unchanged, and checked against this line:
 | "Cancel before the trial ends and you won't be charged." | None |
 | "One payment. Nothing renews." | None |
 | "Logging, history, reminders, export and every safety warning stay free." | None. That line is about price, this one about offline |
-| "Google Play can't be reached right now" with "Check your connection, then try again." | None. It replaces the cards, so the line is not on screen with it |
+| "Google Play can't be reached right now", the notice's title. Its text changes, see the table above | None. It replaces the cards, so the line is not on screen with it |
 | "The purchase didn't go through. Try again." | None |
 
 ### D2. Where the line goes
@@ -77,8 +82,8 @@ the line                     <- new
   button. Store policy ranks above UX in the handbook's order of risk.
 - **Its own paragraph, not appended to `terms()`.** Yearly's terms are already two sentences. Four in one block would bury
   both the disclosure and the line.
-- **Style:** `bodyMedium`, `onSurfaceVariant`, as the terms. Spacing is the parent column's 16dp. `ux-designer` may adjust
-  the spacing.
+- **Style:** `bodyMedium`, `onSurfaceVariant`, as the terms. Spacing is the parent column's 16dp, which `ux-designer`
+  kept: tighter would read as more terms.
 - **No live region and no heading.** It does not change, so TalkBack reads it once in order, after the terms.
 - **No `maxLines`.** It wraps at any size.
 
@@ -164,7 +169,7 @@ least tidy result, and it is accepted so that the order stays the same in every 
 | Double tap | The `working` guard; unchanged |
 | Unordered reads | The new check runs in `load`'s result, inside the `!working` check that already guards it |
 | 200% font, small screen, landscape | D2, D5. The line can sit below the fold at 200%, see the risks |
-| TalkBack, keyboard | Read in order; not focusable, since it is plain text |
+| TalkBack, keyboard | TalkBack reads the line as a stop of its own, after the terms and not merged with them. Keyboard focus skips it, since it is plain text |
 | Right-to-left, locale | English only (D148). The text has no number or date |
 | Reduced motion, dark, light | No motion. Same colours as the terms |
 | Purchase: pending | The "Payment pending" notice and the line show together |
@@ -182,6 +187,9 @@ least tidy result, and it is accepted so that the order stays the same in every 
   not changed here. The real-phone check records it. If it happens, it gets its own issue.
 - **`Unavailable` with products still offered is not reachable on the simulated store,** which fails both together. A view
   model test covers it, and no walk can.
+- **The paywall's message may cover controls** while it shows, Close and, at 200%, possibly the buy button (UX verdict
+  finding). This predates this change, and D4 adds one more path to it. It is the category Google rejected on, so task 4.3
+  tests it. A control that does not answer goes to `team-lead` before the release is cut. No fix is designed here.
 - **Emulators cannot run Play's sheet.** So nothing before the real-phone check (task 5.3) shows this on a real sheet.
 
 ## Migration
@@ -192,6 +200,9 @@ None. No data, no schema, no setting.
 
 Read from code on 2026-11-06. Nothing here was seen on a device. Where this section differs from a decision above, this
 section is the design's position until `product-manager` carries it into D1, the BRD and the spec.
+
+Carried by `product-manager`: the notice text into D1, D153, EC-BIL-14 and the spec; the TalkBack correction into the
+edge-case checklist; the finding into the risks and task 4.3.
 
 **One change. Everything else in D1, D2, D3, D4 and D5 stands, including the line's exact text.**
 
@@ -241,6 +252,9 @@ while it shows, 8 seconds or longer with an accessibility timeout, with its own 
 may also cover whatever is scrolled to the top, which can be the buy button. This applies today to `Failed` and to
 Restore's messages, and D4 adds one more path to it. It is not seen on a device yet. `qa-engineer` confirms it and, if
 real, files it. It does not block this change.
+
+Lead's decision, which overrides the last two sentences: it is the category Google rejected on, so `android-engineer` tests
+it in task 4.3, and a control that does not answer goes to `team-lead` before the release is cut.
 
 ### To judge on a device (tasks 3.3, 4.3, 5.3)
 

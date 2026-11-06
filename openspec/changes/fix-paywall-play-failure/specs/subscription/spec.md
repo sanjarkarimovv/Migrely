@@ -27,8 +27,8 @@ internet connection. Your diary works offline." The line SHALL not depend on the
 Play, and the app SHALL NOT add a permission or a dialog for it (BRD §7.3, EC-BIL-14, EC-BIL-17, D153).
 
 #### Scenario: Google Play's own error
-- **WHEN** a free user taps the buy button, Google Play shows its own "No internet connection" sheet, and the user taps
-  OK
+- **WHEN** a free user taps the buy button, Google Play shows its own "No internet connection" sheet, the user taps OK, and
+  Google Play still returns the products
 - **THEN** the same paywall is back, its button works again, and the line is under the terms, whichever code Google Play
   returned
 
@@ -60,13 +60,13 @@ Play, and the app SHALL NOT add a permission or a dialog for it (BRD §7.3, EC-B
 
 #### Scenario: TalkBack
 - **WHEN** TalkBack moves through the paywall
-- **THEN** it reads the line once, after the terms, and does not announce it again when the paywall reloads
+- **THEN** it reads the line once, as a stop of its own after the terms, and does not announce it again when the paywall
+  reloads
 
 ### Requirement: When a purchase sheet does not complete
-After Google Play's sheet closes without a purchase, the app SHALL NOT try to tell Google Play's error from a person's
-cancel. A cancel or no answer SHALL show no message. `Failed` SHALL keep its message. `Unavailable` SHALL show "Google
-Play can't be reached. Try again later." only when Google Play still offers the products; otherwise the region notice
-stands alone (BRD EC-BIL-14, EC-BIL-15, EC-BIL-16, D153).
+After Google Play's sheet closes without a purchase, the app SHALL NOT try to tell Play's error from a cancel. A cancel or
+no answer SHALL show no message. `Failed` SHALL keep its message. `Unavailable` SHALL show "Google Play can't be reached.
+Try again later." only while Play still offers the products. If reading the products fails, the notice SHALL say "Check your connection, then try again. Your diary works offline." (BRD EC-BIL-14…16, D153).
 
 #### Scenario: A person's own cancel
 - **WHEN** the user closes Google Play's sheet themselves
@@ -87,6 +87,11 @@ stands alone (BRD EC-BIL-14, EC-BIL-15, EC-BIL-16, D153).
 #### Scenario: Unavailable with no products
 - **WHEN** Google Play returns `BILLING_UNAVAILABLE` for the sheet and then returns no products
 - **THEN** the paywall shows "Premium isn't available in your region yet", with no other message
+
+#### Scenario: The reload after a sheet fails
+- **WHEN** Google Play's sheet closes without a purchase and reading the products then fails, whichever code the sheet
+  returned
+- **THEN** the cards and the line leave, and the notice "Google Play can't be reached right now" says "Check your connection, then try again. Your diary works offline.", with "Try again"
 
 #### Scenario: A rotation during the sheet
 - **WHEN** the phone rotates while the sheet is open, and the sheet then closes as `Unavailable` with the products still

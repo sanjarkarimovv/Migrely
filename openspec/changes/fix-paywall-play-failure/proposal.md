@@ -23,6 +23,9 @@ stop being silent in the one case where its own code knows that Play refused and
 - **"Restore purchases" moves above "What Premium adds".** Adding the line then leaves both the buy button and Restore no
   lower than today, at every font size.
 
+- **The unreachable notice also speaks about the diary.** When the reload after a sheet fails, the cards and the line
+  leave, so its text becomes "Check your connection, then try again. Your diary works offline."
+
 The existing `Failed` message and Restore's messages do not change.
 
 ## Out of scope
@@ -49,7 +52,7 @@ None.
 ## Impact
 
 - `docs/BRD.md`: D153, EC-BIL-14…18, §7.3, §13 row 28.
-- `features/subscription/ui`: one string, one `Text`, two blocks swapped in `PaywallOffer`.
+- `features/subscription/ui`: one new string, one changed string, one `Text`, two blocks swapped in `PaywallOffer`.
 - `features/subscription/presentation`: `PaywallViewModel`, a few lines and tests.
 - `.maestro/`: `qa-engineer` updates `paywall-and-purchase.yaml`, which asserts the paywall without scrolling.
 - No permission, schema, price, datasource or domain change.
