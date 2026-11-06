@@ -68,4 +68,13 @@ dependencies {
     testImplementation(libs.test.junit)
     testImplementation(libs.test.mockito.kotlin)
     testImplementation(libs.test.kotlinx.coroutines)
+
+    androidTestImplementation(platform(libs.compose.bom))
+    androidTestImplementation(libs.test.compose.ui.junit4)
+    androidTestImplementation(libs.test.androidx.junit)
+    androidTestImplementation(libs.test.androidx.runner)
+    androidTestImplementation(projects.features.settings.domain)
+    androidTestImplementation(projects.architecture.domain)
+    androidTestImplementation(projects.coroutine)
+    debugImplementation(libs.compose.ui.test.manifest)
 }

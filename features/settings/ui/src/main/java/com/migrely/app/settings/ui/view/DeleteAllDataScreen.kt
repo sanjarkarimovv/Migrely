@@ -75,11 +75,7 @@ data class DeleteAllDataActions(
  * on to the restart (ARCHITECTURE section 13).
  */
 @Composable
-fun DeleteAllDataDependencies.DeleteAllData(
-    navController: NavController,
-    modifier: Modifier = Modifier
-) {
-    ViewModelObserver(navController)
+fun DeleteAllDataDependencies.DeleteAllData(modifier: Modifier = Modifier) {
     val viewState by deleteAllDataViewModel.viewState.collectAsState(
         DeleteAllDataViewState.Confirming
     )
@@ -121,6 +117,18 @@ fun DeleteAllDataDependencies.DeleteAllData(
         ),
         modifier = modifier
     )
+}
+
+/**
+ * Listens to the deletion for as long as the nav host is shown, whichever screen is on top: wiped
+ * data must restart the app even when a touch, a launcher shortcut or a fast Back has taken the
+ * screen away while it deleted (issue #138, review M1). `:app` puts it beside the nav host, so it
+ * belongs to no back-stack entry, and it asks where the deletion stands after a recreation too.
+ */
+@Composable
+fun DeleteAllDataDependencies.DeleteAllDataObserver(navController: NavController) {
+    ViewModelObserver(navController)
+    LaunchedEffect(deleteAllDataViewModel) { deleteAllDataViewModel.onEnter() }
 }
 
 /**

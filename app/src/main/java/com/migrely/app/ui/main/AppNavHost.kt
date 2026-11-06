@@ -26,6 +26,7 @@ import com.migrely.app.report.ui.view.Report
 import com.migrely.app.review.ui.view.ReviewPrompt
 import com.migrely.app.settings.ui.view.AboutMigrely
 import com.migrely.app.settings.ui.view.DeleteAllData
+import com.migrely.app.settings.ui.view.DeleteAllDataObserver
 import com.migrely.app.settings.ui.view.Licences
 import com.migrely.app.settings.ui.view.Privacy
 import com.migrely.app.settings.ui.view.Settings
@@ -66,6 +67,7 @@ fun AppNavHostDependencies.AppNavHost(
     startDestination: Any,
     modifier: Modifier = Modifier
 ) {
+    deleteAllDataDependencies.DeleteAllDataObserver(navController)
     NavHost(
         navController = navController,
         startDestination = startDestination,
@@ -170,7 +172,7 @@ fun AppNavHostDependencies.AppNavHost(
             settingsPageDependencies.Licences(navController)
         }
         composable<DeleteAllData> {
-            deleteAllDataDependencies.DeleteAllData(navController)
+            deleteAllDataDependencies.DeleteAllData()
         }
         composable<YourData> {
             yourDataDependencies.YourData(navController)
