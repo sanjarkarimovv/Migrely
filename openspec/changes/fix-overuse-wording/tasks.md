@@ -52,7 +52,7 @@ back to it first.
 
 Head of the code: `2d1da37d`, on `f992f6e8`. Evidence: `migrely-work/walks/fix-overuse-wording/` (outside the repo). 6.6 to 6.9 are still open: `code-reviewer` and `qa-engineer` come next, and this change is not archived.
 
-Task 2.1's verify no longer reads empty: `code-reviewer` asked for `OveruseStatusRowDomainModelTest`, which lives in the domain module. `git diff origin/develop --stat -- 'features/*/domain/src/main'` is empty, so the domain's code is unchanged. No device ran after review: the walk below is of `2d1da37d`, and only a test and this record changed since.
+Task 2.1's verify no longer reads empty: `code-reviewer` asked for `OveruseStatusRowDomainModelTest`, which lives in the domain module. `git diff origin/develop --stat -- 'features/*/domain/src/main'` is empty, so the domain's code is unchanged. No device ran after review: the walk below is of `2d1da37d`. Since then this role added tests and this record, `product-manager` changed a BRD clause, and `develop` was merged in, which brought PR #136's changes to `LimitedField` and the medication and attack forms. Those do not touch this text, but the walk did not run on the merged build.
 
 ### Gate and tests
 
@@ -60,6 +60,7 @@ Task 2.1's verify no longer reads empty: `code-reviewer` asked for `OveruseStatu
 |---|---|
 | `nice -n 19 ./gradlew --max-workers=2 assembleDebug test ktlintCheck detekt lint --rerun-tasks` | exit 0, BUILD SUCCESSFUL, 1841 tasks executed |
 | JVM tests in that run | 2319, 0 failed, 0 skipped (debug and release variants of the Android modules both count) |
+| The same gate, merged with `develop` at `75db9cbc`, with `OveruseIndicatorContentsTest`, without `--rerun-tasks` | exit 0, BUILD SUCCESSFUL, 28 of 1917 tasks executed, 2360 JVM tests, 0 failed |
 | The same gate after review's domain test, without `--rerun-tasks`, on `defc7baa` plus the test | exit 0, BUILD SUCCESSFUL, 23 of 1841 tasks executed, 2323 JVM tests, 0 failed |
 | `ANDROID_SERIAL=emulator-5570 ./gradlew :datasource:implementation:connectedDebugAndroidTest :designsystem:connectedDebugAndroidTest` | exit 0: 112 and 48 tests, 0 failed. Regression only: no module this change touches has instrumented tests, and `:app`'s one androidTest file does not reference this text, so `:app` was not run |
 | `:app:checkReleasePermissions` | exit 0. `android.permission.INTERNET`: 0 lines in the 4 merged debug and release manifests. No manifest or Gradle file changed |
@@ -73,6 +74,7 @@ Task 2.1's verify no longer reads empty: `code-reviewer` asked for `OveruseStatu
 | "No label says limit" can fail | A temporary "limit" in another label | Failed: `expected:<[]> but was:<[Migraines with bed rest, limit]>` |
 | Word-for-word against `design.md` | A script reads the Final copy table and compares it with every `strings.xml` and the mapper. Run before the change | Before: 14 of 17 differed, 1 of them the script's own bug (it read one module), fixed. After: 0 of 18 differ |
 | `reached` is exactly "N or more" (added after review) | `OveruseStatusRowDomainModel.reached` changed to `days >= limit - 1` and to `days > limit`, running only `:features:medication:domain:test` | Before `OveruseStatusRowDomainModelTest`: both survived, 89 tests, 0 failed. With it, 93 tests: the first fails the two "one day below" tests, the second fails the two "exactly" tests |
+| A reached row always brings the line, and a row below its number never does (added after review) | `OveruseIndicatorContentsTest` (7 tests, Robolectric, real resources, whole text). 14 mutations of `OveruseIndicator.kt` and, temporarily, `strings.xml`, running only that test | Unmutated: 7 passed. All 14 mutations fail it: line never, always, only when all reached, once per reached row; branch inverted; no number, every row a number; wrong number; swapped arguments; count shows the threshold; plural by the threshold; 3 changes to the resources. `check_copy.py` reads 0 of 18 differ afterwards |
 | Task 4.1's grep | `git grep -nP "\blimit\b"` on `strings.xml` | 10 lines on `develop`, 0 here |
 
 ### Walk on `emulator-5570`
@@ -130,4 +132,4 @@ Data restored from the backup taken before the walk: database dump md5 `85c48a1a
 - **API 26 and the owner's phone.** `emulator-5582` and the phone are not this role's. QA's check covers API 26.
 - **Rollover across midnight during a walk.** The counting did not change, and no walk crossed midnight.
 - **Store screenshots and promo video (task 6.8).** Not inspected: routed to `team-lead`.
-- **No automated UI test holds the text.** `OveruseIndicator` and the strings have no JVM or instrumented test in the repo. Until `qa-engineer` updates `.maestro/` and `qa/` (task 6.7), the walk and the script above are the only checks of this text, and those QA checks fail on the old text, as they should.
+- **The soft card's text and the row's colour in a test.** `OveruseIndicatorContentsTest` holds the rows and the line, not the Home card and not amber. `MedicationPromptCard` has no test, so until `qa-engineer` updates `.maestro/` and `qa/` (task 6.7) the walk and the script above are the only checks of `overuse_body_soft`.

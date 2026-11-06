@@ -46,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.migrely.app.architecture.ui.view.ScreenEnterObserver
 import com.migrely.app.designsystem.icon.MigrelyIcons
+import com.migrely.app.designsystem.input.rememberLimitedField
 import com.migrely.app.designsystem.motion.rememberReduceMotion
 import com.migrely.app.designsystem.theme.MigrelyTheme
 import com.migrely.app.medication.presentation.model.EditMedicationViewState
@@ -217,9 +218,15 @@ private fun MedicationForm(
             it is SaveProblemUiModel.ArchivedName ||
             it == SaveProblemUiModel.InvalidName
     }
+    val nameField = rememberLimitedField(form.name, MAXIMUM_NAME_LENGTH) {
+        onFormChange(form.copy(name = it))
+    }
+    val doseField = rememberLimitedField(form.dose, MAXIMUM_DOSE_LENGTH) {
+        onFormChange(form.copy(dose = it))
+    }
     OutlinedTextField(
-        value = form.name,
-        onValueChange = { onFormChange(form.copy(name = it.take(MAXIMUM_NAME_LENGTH))) },
+        value = nameField.value,
+        onValueChange = nameField.onValueChange,
         label = { Text(stringResource(R.string.edit_name)) },
         singleLine = true,
         isError = nameProblem != null,
@@ -268,8 +275,8 @@ private fun MedicationForm(
         }
     }
     OutlinedTextField(
-        value = form.dose,
-        onValueChange = { onFormChange(form.copy(dose = it.take(MAXIMUM_DOSE_LENGTH))) },
+        value = doseField.value,
+        onValueChange = doseField.onValueChange,
         label = { Text(stringResource(R.string.edit_dose)) },
         placeholder = { Text(stringResource(R.string.edit_dose_hint)) },
         singleLine = true,
