@@ -10,25 +10,39 @@ layer change: the rule is about touch and lives in `:app`.
 
 ## 2. The rule
 
-- [ ] 2.1 A pure class in `app/src/main/java/com/migrely/app/ui/main`, design D2: told about lifts, asked about presses, given the entry id, the event time, the position, the timeout and the distance. An ignored press stays ignored until its pointer lifts. Its lift updates the last lift and does not mark the entry. Verify: compiles with `./gradlew :app:compileDebugKotlin`.
-- [ ] 2.2 JVM tests first: gaps 0, 39, 40, 60, 100, 150, 299, 300, 301, 700 ms; under and over the distance; a new entry and a touched one; a burst of three, then a pause; no lift yet; two pointers. Verify: `./gradlew :app:testDebugUnitTest --tests '*SecondTap*'` passes, and fails first on an empty implementation.
+- [x] 2.1 A pure class in `app/src/main/java/com/migrely/app/ui/main`, design D2: told about lifts, asked about presses, given the entry id, the event time, the position, the timeout and the distance. An ignored press stays ignored until its pointer lifts. Its lift updates the last lift and does not mark the entry. Verify: compiles with `./gradlew :app:compileDebugKotlin`.
+- [x] 2.2 JVM tests first: gaps 0, 39, 40, 60, 100, 150, 299, 300, 301, 700 ms; under and over the distance; a new entry and a touched one; a burst of three, then a pause; no lift yet; two pointers. Verify: `./gradlew :app:testDebugUnitTest --tests '*SecondTap*'` passes, and fails first on an empty implementation.
 
 ## 3. UI and wiring
 
-- [ ] 3.1 `TouchesOnlyWhile.kt`: the node asks the class in the initial pass and consumes what it refuses. Consumption and hit testing stay as they are. No semantics. Verify: `git diff` shows no semantics modifier, and `./gradlew :app:testDebugUnitTest --tests '*LeavingScreenInputTest*'` passes or each failure is listed in the packet with its reason (design, Test plan).
-- [ ] 3.2 `ScreenDestination.kt`: one instance for the nav host; `screen()` passes the entry id, `LocalViewConfiguration.current.doubleTapTimeoutMillis` and `ViewConfiguration.get(context).scaledDoubleTapSlop`. No literal 300 or 100. Verify: `git grep -nP "\b(300|100)L?\b" -- app/src/main/java/com/migrely/app/ui/main/ScreenDestination.kt app/src/main/java/com/migrely/app/ui/main/TouchesOnlyWhile.kt` prints nothing, including in comments. Use `-P`: on this Mac `-E` with `\b` matches nothing whatever the file holds. Control: the same pattern on `features/home/ui/src/main/java/com/migrely/app/home/ui/view/AttackModeContents.kt` prints line 281 (`decorationHeight = 100`) at 2f800c71. Also `git grep -c "screen<" -- app/src/main/java/com/migrely/app/ui/main/AppNavHost.kt` still prints 20.
-- [ ] 3.3 Compose tests beside `LeavingScreenInputTest`, real `screen()` and nav host, a counter on a control under the finger: a second tap at 100, 150 and 299 ms does nothing; at 300 and 500 ms it counts; beyond the distance at 100 ms it counts; a touched screen after Back takes it as before; a screen with no lift before takes a press at once; a held press and a drag; the next gesture answers; `performSemanticsAction(OnClick)` at 50 ms runs; the semantics tree with and without the guard. Verify: `./gradlew :app:testDebugUnitTest --tests '*DoubleTap*'` passes.
-- [ ] 3.4 Negative control, local only: remove the node's call to the class, run 3.3, record which tests fail, and restore. Never commit it. Verify: the failing test names are in the packet, and `git diff --stat` is empty for that change afterwards.
+- [x] 3.1 `TouchesOnlyWhile.kt`: the node asks the class in the initial pass and consumes what it refuses. Consumption and hit testing stay as they are. No semantics. Verify: `git diff` shows no semantics modifier, and `./gradlew :app:testDebugUnitTest --tests '*LeavingScreenInputTest*'` passes or each failure is listed in the packet with its reason (design, Test plan).
+- [x] 3.2 `ScreenDestination.kt`: one instance for the nav host; `screen()` passes the entry id, `LocalViewConfiguration.current.doubleTapTimeoutMillis` and `ViewConfiguration.get(context).scaledDoubleTapSlop`. No literal 300 or 100. Verify: `git grep -nP "\b(300|100)L?\b" -- app/src/main/java/com/migrely/app/ui/main/ScreenDestination.kt app/src/main/java/com/migrely/app/ui/main/TouchesOnlyWhile.kt` prints nothing, including in comments. Use `-P`: on this Mac `-E` with `\b` matches nothing whatever the file holds. Control: the same pattern on `features/home/ui/src/main/java/com/migrely/app/home/ui/view/AttackModeContents.kt` prints line 281 (`decorationHeight = 100`) at 2f800c71. Also `git grep -c "screen<" -- app/src/main/java/com/migrely/app/ui/main/AppNavHost.kt` still prints 20.
+- [x] 3.3 Compose tests beside `LeavingScreenInputTest`, real `screen()` and nav host, a counter on a control under the finger: a second tap at 100, 150 and 299 ms does nothing; at 300 and 500 ms it counts; beyond the distance at 100 ms it counts; a touched screen after Back takes it as before; a screen with no lift before takes a press at once; a held press and a drag; the next gesture answers; `performSemanticsAction(OnClick)` at 50 ms runs; the semantics tree with and without the guard. Verify: `./gradlew :app:testDebugUnitTest --tests '*DoubleTap*'` passes.
+- [x] 3.4 Negative control, local only: remove the node's call to the class, run 3.3, record which tests fail, and restore. Never commit it. Verify: the failing test names are in the packet, and `git diff --stat` is empty for that change afterwards.
 
 ## 4. Docs
 
-- [ ] 4.1 `docs/ARCHITECTURE.md` section 8: the rule beside `touchesOnlyWhile`, and that a new destination is covered by `screen()`. Verify: `git grep -n "double-tap" docs/ARCHITECTURE.md` finds it.
+- [x] 4.1 `docs/ARCHITECTURE.md` section 8: the rule beside `touchesOnlyWhile`, and that a new destination is covered by `screen()`. Verify: `git grep -n "double-tap" docs/ARCHITECTURE.md` finds it.
 
 ## 5. Engineer's gate and walk
 
-- [ ] 5.1 Gate. Verify: `nice -n 19 ./gradlew --max-workers=2 assembleDebug test ktlintCheck detekt lint` exits 0.
-- [ ] 5.2 Walk on `emulator-5570`, debug: #156's steps, with an injected double tap at about 150 ms, then a single tap at 500 ms on the same point; a tap on the Back arrow of the new screen at 500 ms; "Medication taken" in attack mode. Timing evidence needs the emulator started with `-no-window -gpu swiftshader_indirect`; `-gpu host` on 5570 gives slow frames and does not count as timing evidence. Restore every setting. Verify: results in the packet, with how the emulator was started and what they do not prove.
-- [ ] 5.3 Permissions. Verify: `./gradlew :app:checkReleasePermissions` exits 0.
+- [x] 5.1 Gate. Verify: `nice -n 19 ./gradlew --max-workers=2 assembleDebug test ktlintCheck detekt lint` exits 0.
+- [x] 5.2 Walk on `emulator-5570`, debug: #156's steps, with an injected double tap at about 150 ms, then a single tap at 500 ms on the same point; a tap on the Back arrow of the new screen at 500 ms; "Medication taken" in attack mode. Timing evidence needs the emulator started with `-no-window -gpu swiftshader_indirect`; `-gpu host` on 5570 gives slow frames and does not count as timing evidence. Restore every setting. Verify: results in the packet, with how the emulator was started and what they do not prove.
+- [x] 5.3 Permissions. Verify: `./gradlew :app:checkReleasePermissions` exits 0.
+
+**Engineer's record (9ec33829).** Emulator `-no-window -gpu swiftshader_indirect`, debug, one injected finger at the same point, gaps read from `getevent`, every trial's `dumpsys gfxinfo` kept. This proves one finger on one emulator: not a human hand, not a real phone, not a rate, and not R8.
+
+| Route | Press gap | With the guard | Guard removed, local APK |
+|---|---|---|---|
+| Add medication, scrolled details, 4 medications | 92-98, 142-150, 244-247 ms | no intake, Log medication waits, 9/9. A later single tap at the point writes, 9/9 | 148-150 ms: intake, 3/3 |
+| The same | 491-506 ms | intake with Undo, 3/3 | |
+| Medication taken, attack mode, 8 medications | 100, 140-148, 243-245 ms | no intake, 6/6. A later single tap writes, 6/6 | 144-150 ms: intake 1 of 2 |
+| The same | 495-499 ms | intake with Undo, 2/2 | |
+| Reminders row in Settings | 142-143 ms | Reminders opens, nothing else, 2/2 | |
+| Reminders row in Settings | 493-497 ms | the tap lands on the reminder time, which opens its picker, 2/2. In this data the switch is not under the finger, so this says nothing about the switch | |
+| Back arrow of a new screen, far from the first tap | 488-499 ms | back on Home, 3/3 | |
+
+Frames while these ran: 2-8 janky of 16-58, 90th percentile 19-48 ms.
 
 ## 6. `qa-engineer`, independently (emulators, debug and R8)
 
