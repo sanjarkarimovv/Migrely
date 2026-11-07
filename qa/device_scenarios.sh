@@ -1264,6 +1264,8 @@ for n in ET.fromstring(sys.stdin.read()).iter('node'):
         print((x1 + x2) // 2, (y1 + y2) // 2); break" "$1"
 }
 
+# Covers: medication-list › The editor belongs to one medication › Two touches on My medications
+# Covers: app-shell › Only the current screen navigates › The same row twice
 # #138, #139, D154: a finger resting on one row while another taps a second row, and a double tap on a row of Home. A
 # gap counts only as read from getevent. On a build with either bug this fails, which is its negative control.
 scenario_two_touch() {
