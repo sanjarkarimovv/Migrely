@@ -6,6 +6,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.isDialog
@@ -33,7 +34,9 @@ internal class DialogWaitHarness(private val composeRule: ComposeContentTestRule
                 LocalDialogClock provides {
                     composeRule.mainClock.currentTime.also { appearedAtMillis = it }
                 },
-                LocalDialogLiftRule provides DialogLiftRule()
+                LocalDialogLiftRule provides DialogLiftRule(
+                    LocalViewConfiguration.current.doubleTapTimeoutMillis
+                )
             ) {
                 MaterialTheme { content?.invoke() }
             }

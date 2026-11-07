@@ -256,7 +256,9 @@ data must never be passed to any SDK.
   dialog with the first tap, and the second lands in another window: it is not that dialog's wait, and the second-tap rule
   of the main window never hears the lift. So `DialogLiftRule` (`:designsystem`, package `dialog`, because `app` depends on
   it and an older dialog has to ask too) keeps the last lift the wait let through. A press in any other window under
-  `DIALOG_WAIT_MILLIS`, not the second-tap rule's 300 ms, and within `scaledDoubleTapSlop` of it is ignored until it lifts. Both windows convert to the
+  `DIALOG_WAIT_MILLIS`, not the second-tap rule's 300 ms, and within `scaledDoubleTapSlop` of it is ignored until it lifts.
+  The lift of an ignored press moves the place and is judged by `doubleTapTimeoutMillis`, so retrying at an ordinary pace
+  answers. A dialog that appeared after the lift was not beneath it, so its own wait alone decides. Both windows convert to the
   screen with `localToScreen`, because their origins differ, and a wrong conversion fails toward writing. So
   `DialogLiftOnScreenTest` presses just inside and just outside the distance through real windows, from two corners of a
   card, and an offset larger than its 10 dp margin fails it. It needs a device and is not in the gate, so run it when this

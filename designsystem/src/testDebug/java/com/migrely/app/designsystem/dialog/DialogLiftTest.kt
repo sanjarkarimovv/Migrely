@@ -44,7 +44,11 @@ private const val NEW = "new"
 private const val DRAG_STEPS = 3
 private const val DRAG_STEP_PX = -60f
 private const val OLDER_PAGE_HEIGHT_DP = 3_000
-private const val PAST_THE_FIRST_LIFT = 520L
+private const val SECOND_TAP_EARLY = 150L
+private const val SECOND_TAP_LATE = 350L
+private const val JUST_AFTER_B_S_WAIT = DIALOG_WAIT_MILLIS + 10L
+private const val THIRD_TAP_AFTER_THE_SECONDS_LIFT = 300L
+private const val PAST_THE_SECONDS_LIFT = 520L
 private const val BEYOND_DP_AT_MDPI = 350f
 private const val XXHDPI = 3f
 private const val INSIDE_THE_SLOP_DP = 90f
@@ -251,24 +255,96 @@ class DialogLiftTest {
         assertTrue("the next drag", composeRule.runOnIdle { scroll.value } > 0)
     }
 
-    /**
-     * The upper dialog's button opens a new one under the finger, and a press on it is ignored
-     * twice over, by its wait and by the lift. That press's lift still moves the lift, so a press
-     * beneath past the limit after the first lift and under it after the second is the same burst.
-     */
-    @Test
-    fun aBurstInsideANewDialogsWaitKeepsTheLiftMoving() {
+    private fun tapNew() = harness.tap(harness.tagged(NEW))
+
+    private fun assertNewClicks(expected: Int) = composeRule.runOnIdle {
+        assertEquals(expected, newClicks)
+    }
+
+    /** A's button closes A and opens B under the finger, as Next does for the time step. */
+    private fun tapAThatOpensB() {
         upperCloses = true
         opensNew = true
-        val point = tapUpperPastTheWait()
-        val firstLiftAt = composeRule.mainClock.currentTime
+        tapUpperPastTheWait()
         frames()
-        harness.tap(harness.tagged(NEW))
-        composeRule.runOnIdle { assertEquals("in the new dialog's wait", 0, newClicks) }
+        harness.tagged(NEW).assertExists()
+    }
 
-        composeRule.runOnUiThread { newOpen = false }
+    /** Goes to [secondAt] after B appeared, taps B in its wait, then to [thirdAt], and taps B. */
+    private fun doubleTapOnAThenTapB(secondAt: Long, thirdAt: Long) {
+        tapAThatOpensB()
+        harness.goTo(secondAt)
+        tapNew()
+        assertNewClicks(0)
+        harness.goTo(thirdAt)
+        tapNew()
+    }
+
+    @Test
+    fun afterADoubleTapOnABJustAfterItsWaitAnswers() {
+        doubleTapOnAThenTapB(secondAt = SECOND_TAP_EARLY, thirdAt = JUST_AFTER_B_S_WAIT)
+
+        assertNewClicks(1)
+    }
+
+    /** The second tap late in B's wait, so that this press is under the burst limit of its lift. */
+    @Test
+    fun afterADoubleTapOnALateInBsWaitBJustAfterItsWaitAnswers() {
+        doubleTapOnAThenTapB(secondAt = SECOND_TAP_LATE, thirdAt = JUST_AFTER_B_S_WAIT)
+
+        assertNewClicks(1)
+    }
+
+    @Test
+    fun afterADoubleTapOnABThreeHundredAndThirtyAfterItsWaitAnswers() {
+        doubleTapOnAThenTapB(secondAt = SECOND_TAP_EARLY, thirdAt = DIALOG_WAIT_MILLIS + 330L)
+
+        assertNewClicks(1)
+    }
+
+    @Test
+    fun afterADoubleTapOnABAfterAPauseAnswers() {
+        doubleTapOnAThenTapB(secondAt = SECOND_TAP_EARLY, thirdAt = DIALOG_WAIT_MILLIS + 600L)
+
+        assertNewClicks(1)
+    }
+
+    @Test
+    fun afterASingleTapOnABJustAfterItsWaitAnswers() {
+        tapAThatOpensB()
+        harness.goTo(JUST_AFTER_B_S_WAIT)
+
+        tapNew()
+
+        assertNewClicks(1)
+    }
+
+    /**
+     * Why the node still tells the rule of a press it ignored twice over. A stays up under B, and a
+     * second tap reaches A before B's window is up, so that lift comes after B appeared. A third
+     * tap on B is then in B's wait and also within that lift. Its lift moves the lift, so a press
+     * beneath past the limit after the second's lift and under the burst's after the third's is
+     * held off.
+     */
+    @Test
+    fun aPressIgnoredByTheWaitAndTheRuleMovesTheLift() {
+        opensNew = true
+        tapUpperPastTheWait()
         frames()
-        after(firstLiftAt + PAST_THE_FIRST_LIFT - composeRule.mainClock.currentTime)
+        val point = upper().centreOnScreen()
+        harness.tap(upper())
+        val secondLiftAt = composeRule.mainClock.currentTime
+        composeRule.runOnIdle { assertEquals("A answers its own second tap", 2, upperClicks) }
+
+        after(THIRD_TAP_AFTER_THE_SECONDS_LIFT)
+        tapNew()
+        assertNewClicks(0)
+        composeRule.runOnUiThread {
+            newOpen = false
+            upperOpen = false
+        }
+        frames()
+        after(secondLiftAt + PAST_THE_SECONDS_LIFT - composeRule.mainClock.currentTime)
         pressOlderAt(point)
 
         assertOlderClicks(0)

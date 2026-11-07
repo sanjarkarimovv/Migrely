@@ -119,7 +119,8 @@ private class DialogWaitNode :
                 rule.isIgnored(pointerId) || lifts?.isIgnored(windowKey, pointerId) == true
             }
             if (change.changedToUpIgnoreConsumed()) {
-                // A press the wait ignored ran nothing, so it does not count as a lift on the card.
+                // A press only the wait ignored ran nothing, so it is no lift on the card. One the
+                // rule ignored as well moves the lift, as any it ignored does.
                 val letThrough =
                     !rule.isIgnored(pointerId) || lifts?.isIgnored(windowKey, pointerId) == true
                 rule.lift(pointerId)
@@ -136,7 +137,10 @@ private class DialogWaitNode :
         pointerId = change.id.value,
         atMillis = change.uptimeMillis,
         screenPosition = change.onScreen(),
-        distance = ViewConfiguration.get(currentValueOf(LocalContext)).scaledDoubleTapSlop.toFloat()
+        distance = ViewConfiguration.get(
+            currentValueOf(LocalContext)
+        ).scaledDoubleTapSlop.toFloat(),
+        windowAppearedAtMillis = appearedAtMillis
     )
 
     private fun PointerInputChange.onScreen() = requireLayoutCoordinates().localToScreen(position)

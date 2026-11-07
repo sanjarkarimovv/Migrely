@@ -10,6 +10,7 @@ import org.junit.runners.Parameterized
 
 private const val DISTANCE = 300f
 private const val LIFTED_AT = 1_000L
+private const val BURST = 300L
 private val POINT = Offset(500f, 900f)
 private val DIALOG = Any()
 private val OLDER_DIALOG = Any()
@@ -39,7 +40,7 @@ class DialogLiftRuleGapTest(private val gap: Long, private val expected: Boolean
 
     @Test
     fun aPressThisLongAfterALiftOnADialog() {
-        val rule = DialogLiftRule()
+        val rule = DialogLiftRule(BURST)
         rule.lift(DIALOG, 1, LIFTED_AT, POINT)
 
         assertEquals(expected, rule.mainPress(2, LIFTED_AT + gap))
@@ -47,7 +48,7 @@ class DialogLiftRuleGapTest(private val gap: Long, private val expected: Boolean
 }
 
 class DialogLiftRuleTest {
-    private val rule = DialogLiftRule()
+    private val rule = DialogLiftRule(BURST)
 
     @Test
     fun withNoLiftYetAPressAnswers() {
@@ -101,15 +102,52 @@ class DialogLiftRuleTest {
     }
 
     @Test
-    fun aBurstOfThreeStaysIgnoredAndAPauseEndsIt() {
+    fun aBurstsNextPressIsMeasuredFromTheIgnoredLift() {
         rule.lift(DIALOG, 1, LIFTED_AT, POINT)
-        assertTrue(rule.mainPress(2, LIFTED_AT + 150))
+        assertTrue(rule.mainPress(2, LIFTED_AT + 300))
+        rule.lift(null, 2, LIFTED_AT + 340, POINT)
+
+        assertTrue("past the first lift's limit", rule.mainPress(3, LIFTED_AT + 590))
+    }
+
+    @Test
+    fun aBurstsNextPressIsJudgedByTheBurstLimit() {
+        rule.lift(DIALOG, 1, LIFTED_AT, POINT)
+        rule.mainPress(2, LIFTED_AT + 150)
         rule.lift(null, 2, LIFTED_AT + 190, POINT)
 
-        assertTrue("the third, measured from the second's lift", rule.mainPress(3, LIFTED_AT + 600))
-        rule.lift(null, 3, LIFTED_AT + 640, POINT)
+        assertTrue("just under", rule.mainPress(3, LIFTED_AT + 190 + BURST - 1))
+        rule.lift(null, 3, LIFTED_AT + 500, POINT)
 
-        assertFalse("a pause", rule.mainPress(4, LIFTED_AT + 1_140))
+        assertFalse("at the limit", rule.mainPress(4, LIFTED_AT + 500 + BURST))
+    }
+
+    @Test
+    fun aDialogsOwnLiftIsJudgedByTheLongerLimit() {
+        rule.lift(DIALOG, 1, LIFTED_AT, POINT)
+
+        assertTrue(rule.mainPress(2, LIFTED_AT + BURST))
+    }
+
+    @Test
+    fun aDialogThatAppearedAfterTheLiftIsNotBeneathIt() {
+        rule.lift(DIALOG, 1, LIFTED_AT, POINT)
+
+        assertFalse(rule.press(OLDER_DIALOG, 2, LIFTED_AT + 100, POINT, DISTANCE, LIFTED_AT + 1))
+    }
+
+    @Test
+    fun aDialogThatAppearedAtTheLiftIsBeneathIt() {
+        rule.lift(DIALOG, 1, LIFTED_AT, POINT)
+
+        assertTrue(rule.press(OLDER_DIALOG, 2, LIFTED_AT + 100, POINT, DISTANCE, LIFTED_AT))
+    }
+
+    @Test
+    fun aDialogThatAppearedBeforeTheLiftIsBeneathIt() {
+        rule.lift(DIALOG, 1, LIFTED_AT, POINT)
+
+        assertTrue(rule.press(OLDER_DIALOG, 2, LIFTED_AT + 100, POINT, DISTANCE, LIFTED_AT - 1))
     }
 
     @Test

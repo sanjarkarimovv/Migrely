@@ -50,7 +50,8 @@ internal fun ScreenNavHost(
     builder: NavGraphBuilder.() -> Unit
 ) {
     val secondTapRule = remember { SecondTapRule() }
-    val dialogLiftRule = remember { DialogLiftRule() }
+    val doubleTapTimeoutMillis = LocalViewConfiguration.current.doubleTapTimeoutMillis
+    val dialogLiftRule = remember { DialogLiftRule(doubleTapTimeoutMillis) }
     CompositionLocalProvider(
         LocalSecondTapRule provides secondTapRule,
         LocalDialogLiftRule provides dialogLiftRule

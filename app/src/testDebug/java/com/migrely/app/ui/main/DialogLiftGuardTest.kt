@@ -47,7 +47,11 @@ private const val JUST_UNDER_THE_LIMIT = 499L
 private const val PAUSE = 600L
 private const val FADE_OVER = 400L
 private const val FAR_PX = 300f
-private const val THIRD_PRESS_AFTER_THE_DIALOGS_LIFT = 560L
+private const val SECOND_TAP_LATE = 350L
+private const val UNDER_THE_BURST_LIMIT = 250L
+private const val PAST_THE_BURST_LIMIT = 350L
+private const val WITHIN_THE_SLOP_PX = 80f
+private const val TWICE_WITHIN_THE_SLOP_PX = 160f
 private const val DRAG_STEPS = 3
 private const val DRAG_STEP_PX = -60f
 private const val NEXT_PAGE_HEIGHT_DP = 3_000
@@ -212,30 +216,66 @@ class DialogLiftGuardTest {
         assertPageClicks(1)
     }
 
-    /**
-     * The third press comes past the limit after the dialog's lift and under it after the
-     * second's, so it is ignored only if the second's lift moved the lift.
-     */
-    @Test
-    fun aThirdPressInABurstIsMeasuredFromTheSecondsLift() {
+    /** Up to the burst's second tap, this far after the dialog's lift. Returns when it lifted. */
+    private fun dialogLiftThenSecondTap(secondAt: Long): Long {
         touchTheScreenOnce()
-        val dialogLiftedAt = composeRule.mainClock.currentTime
-
-        dialogLifted(before = UNDER_THE_LIMIT)
+        dialogLifted(before = secondAt)
         page().tapAtCentre()
-        val thirdAt = dialogLiftedAt + THIRD_PRESS_AFTER_THE_DIALOGS_LIFT
+        assertPageClicks(0)
+        return composeRule.mainClock.currentTime
+    }
+
+    private fun goToAfter(from: Long, millis: Long) {
         composeRule.mainClock.advanceTimeBy(
-            thirdAt - composeRule.mainClock.currentTime,
+            from + millis - composeRule.mainClock.currentTime,
             ignoreFrameDuration = true
         )
         composeRule.waitForIdle()
+    }
+
+    /** Past the dialog's limit and under the burst's, so ignored only if the lift moved. */
+    @Test
+    fun aThirdPressPastTheDialogsLimitIsMeasuredFromTheSecondsLift() {
+        val secondLiftAt = dialogLiftThenSecondTap(secondAt = SECOND_TAP_LATE)
+
+        goToAfter(secondLiftAt, UNDER_THE_BURST_LIMIT)
         page().tapAtCentre()
+
+        assertPageClicks(0)
+    }
+
+    @Test
+    fun aThirdPressThreeHundredAndFiftyAfterTheSecondsLiftAnswers() {
+        val secondLiftAt = dialogLiftThenSecondTap(secondAt = UNDER_THE_LIMIT)
+
+        goToAfter(secondLiftAt, PAST_THE_BURST_LIMIT)
+        page().tapAtCentre()
+
+        assertPageClicks(1)
+    }
+
+    @Test
+    fun aThirdPressTwoHundredAndFiftyAfterTheSecondsLiftDoesNothing() {
+        val secondLiftAt = dialogLiftThenSecondTap(secondAt = UNDER_THE_LIMIT)
+
+        goToAfter(secondLiftAt, UNDER_THE_BURST_LIMIT)
+        page().tapAtCentre()
+
+        assertPageClicks(0)
+    }
+
+    @Test
+    fun aBurstsPlaceMovesWithTheIgnoredLift() {
+        touchTheScreenOnce()
+        dialogLifted(before = UNDER_THE_LIMIT)
+        page().tapAtCentre(Offset(0f, WITHIN_THE_SLOP_PX))
         assertPageClicks(0)
 
-        composeRule.mainClock.advanceTimeBy(PAUSE, ignoreFrameDuration = true)
+        composeRule.mainClock.advanceTimeBy(UNDER_THE_LIMIT, ignoreFrameDuration = true)
         composeRule.waitForIdle()
-        page().tapAtCentre()
-        assertPageClicks(1)
+        page().tapAtCentre(Offset(0f, TWICE_WITHIN_THE_SLOP_PX))
+
+        assertPageClicks(0)
     }
 
     private fun goToTheNextEntry() {
