@@ -28,7 +28,7 @@ stop being silent in the one case where its own code knows that Play refused and
 
 - **Messages stop covering the top bar (#152, D158).** On the paywall the message sits below the Close row, with a 400 ms
   guard. On every other screen with a top bar it sits below the bar; on Home Today, below the Settings row,
-  except in a short window, where it stays at the top so it cannot cover "Migraine started".
+  except in a short window, where it stays at the top so it does not cover "Migraine started" at 411 dp high.
 - **A tap on a message with a timeout and no action dismisses it.** A tap on the body of a message with Undo, or of "storage
   full", does nothing.
 
