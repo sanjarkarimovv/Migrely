@@ -1,13 +1,14 @@
 package com.migrely.app.attack.ui.view
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextInputSelection
 import androidx.compose.ui.text.TextRange
@@ -97,7 +98,8 @@ class CustomTagDialogLimitTest {
         showDialog()
         field.performTextInput("  Jaw pain ")
 
-        composeTestRule.onNodeWithText("Add").performClick()
+        // Its click action: a touch this soon after the dialog appears would land in its wait.
+        composeTestRule.onNodeWithText("Add").performSemanticsAction(SemanticsActions.OnClick)
 
         assertEquals("Jaw pain", added)
     }

@@ -56,7 +56,11 @@ internal class DialogWaitRule {
     }
 }
 
-/** The clock touch events use. Tests read theirs from the Compose test clock. */
+/**
+ * The clock touch events use. In a Compose test they use the test's clock, which is why this
+ * module's tests provide it. A test in another module cannot, so it presses a dialog's controls
+ * through their click action, which the wait leaves alone.
+ */
 internal val LocalDialogClock = staticCompositionLocalOf<() -> Long> { SystemClock::uptimeMillis }
 
 /**
