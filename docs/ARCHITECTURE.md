@@ -234,6 +234,14 @@ data must never be passed to any SDK.
   is on top, so a tap where it has a control or a scroll column does not reach the screen fading in below it. The node
   joins a touch only when something inside the screen is hit, which rests on Compose's hit testing
   (`NodeCoordinator.speculativeHit`, Compose 1.9.3); `LeavingScreenInputTest` fails if an upgrade changes it.
+- The same node refuses the second tap of a double tap (`SecondTapRule`, issue #156, BRD D159): a press on an entry no touch
+  has lifted on yet, under Android's double-tap timeout after the last lift and within its double-tap distance of it, is
+  ignored as a whole gesture. The values come from the platform and the times from the touch events. The mark that an entry
+  was touched is on the entry's own `SavedStateHandle`, because a screen's node goes when the screen leaves the composition:
+  so it survives a return, a recreation and process death, and it goes with a pop. That mark is what keeps Back and other
+  returns out. The last lift and the ignored pointers are not saved. A new destination is covered by `screen()` with no extra
+  code. `DoubleTapGuardTest`
+  and `SecondTapRuleTest` cover it.
 - A navigation event navigates only while its observer's screen is the current back-stack entry (`BaseComposeHolder`,
   issues #138, #139). That covers what the touch rule cannot: late async results, semantics clicks, and a click just before
   the screen left. A time-based tap guard cannot do this, and a `RESUMED` check would refuse a screen still fading in. The
