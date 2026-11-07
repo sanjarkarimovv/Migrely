@@ -11,7 +11,7 @@
 # med_preventive, med_two_waiting, med_link_home, med_overuse, overuse_copy, keyboard_home, keyboard_history, keyboard_rtl,
 # landscape_band, mark_travel, mark_earliest_month, stats_counting, stats_chronic, stats_progress, reminder_daily,
 # reminder_permission, reminder_effect, reminder_replan (restarts the emulator), med_only_history,
-# message_tap_guard (#52), theme_check, onboarding_states, delete_all_data, privacy_link, backup_export, backup_import,
+# message_tap_guard (#52), two_touch (#138, #139), theme_check, onboarding_states, delete_all_data, privacy_link, backup_export, backup_import,
 # message_duration (#56), premium_store_states, premium_no_products, premium_pending, premium_plans, premium_entitlement, premium_offline,
 # trial_banner, paywall_self_show, report_three_months, report_counting, report_heavy, insights, upgrade, release_apk.
 # On demand only: backup_android (bmgr).
@@ -1227,6 +1227,101 @@ for n in ET.fromstring(sys.stdin.read()).iter('node'):
 # History's Undo sits on top of the top-bar actions (#52). A tap there just after the message leaves must reach nothing
 # (a guard under the message, 800 ms); a tap later must open Doctor report as usual. Taps go through adb, timed from
 # the tap on "Delete migraine" (the undo message lasts 5 s), at the centre of "Doctor report" where Undo overlaps it.
+# Exact touches for two_touch: `adb emu` enters at the virtual touch hardware, so unlike `input tap` a second finger is
+# possible and the gaps can be read back from the kernel. Shell may read /dev/input, not write it (SELinux).
+touch_device() {
+  adbq shell getevent -pl 2>/dev/null | tr -d '\r' | awk '/^add device/ {d=$NF} /ABS_MT_POSITION_X/ {print d; exit}'
+}
+touch_raw() { # $1 screen x, $2 screen y: the 0..32767 values the touch device takes
+  local size w h
+  size="$(adbq shell wm size | tr -d '\r' | sed -n 's/^Physical size: //p')"
+  w="${size%x*}"; h="${size#*x}"
+  echo "$(($1 * 32767 / w)) $(($2 * 32767 / h))"
+}
+touch_down() { # $1 slot, $2 id, $3 x, $4 y
+  local raw
+  raw="$(touch_raw "$3" "$4")"
+  adbq emu event send "3:47:$1" "3:57:$2" "3:53:${raw% *}" "3:54:${raw#* }" 3:48:1280 3:58:1024 0:0:0 >/dev/null
+}
+touch_up() { adbq emu event send "3:47:$1" 3:58:0 3:57:-1 0:0:0 >/dev/null; } # $1 slot
+touch_times() { # $1 file written by getevent -t: one "D|U slot time" per finger going down or up
+  adbq exec-out cat "$1" | tr -d '\r' | python3 -I -c "import re, sys
+slot = 0
+for line in sys.stdin:
+    m = re.match(r'\[\s*([\d.]+)\]\s+0003\s+([0-9a-f]{4})\s+([0-9a-f]{8})', line.strip())
+    if not m: continue
+    t, code, value = float(m[1]), int(m[2], 16), int(m[3], 16)
+    if code == 0x2f: slot = value
+    if code == 0x39: print('U' if value == 0xffffffff else 'D', slot, t)"
+}
+desc_point() { # $1 regex on the content description: the centre of the first node that matches it in full
+  adbq shell rm -f /sdcard/qa-point.xml
+  adbq shell uiautomator dump /sdcard/qa-point.xml >/dev/null
+  adbq exec-out cat /sdcard/qa-point.xml | python3 -I -c "import re, sys, xml.etree.ElementTree as ET
+for n in ET.fromstring(sys.stdin.read()).iter('node'):
+    if re.fullmatch(sys.argv[1], n.get('content-desc', '')):
+        x1, y1, x2, y2 = map(int, n.get('bounds').replace('][', ',').strip('[]').split(','))
+        print((x1 + x2) // 2, (y1 + y2) // 2); break" "$1"
+}
+
+# Covers: medication-list › The editor belongs to one medication › Two touches on My medications
+# Covers: app-shell › Only the current screen navigates › The same row twice
+# #138, #139, D154: a finger resting on one row while another taps a second row, and a double tap on a row of Home. A
+# gap counts only as read from getevent. On a build with either bug this fails, which is its negative control.
+scenario_two_touch() {
+  echo "Scenario two_touch: touches on a screen that is leaving never reach it (#138, #139, D154), gaps from the kernel"
+  local ge=/data/local/tmp/qa-two-touch.txt device a b lift from=Alphaprofen to pid measured
+  device="$(touch_device)"
+  [[ -n "$device" ]] || { echo "  FAILED: no multi-touch device"; return 1; }
+  run_flow two-touch-ready || return 1
+  for lift in 100 300 600; do
+    a="$(desc_point "$from, Simple painkiller\\. Opens it to edit\\.")"
+    b="$(desc_point 'Betatriptan, 50 mg, Triptan\. Opens it to edit\.')"
+    [[ -n "$a" && -n "$b" ]] || { echo "  FAILED: the two rows were not found"; return 1; }
+    adbq shell "getevent -t $device > $ge & G=\$!; sleep 3; kill \$G" &
+    pid=$!
+    sleep 0.6
+    touch_down 1 "$((lift + 11))" ${b% *} ${b#* }
+    sleep 0.15
+    touch_down 0 "$((lift + 12))" ${a% *} ${a#* }
+    sleep 0.02
+    touch_up 0
+    sleep "$(python3 -I -c "print(max(0, $lift - 25) / 1000)")"
+    touch_up 1
+    adbq emu event send 3:47:0 0:0:0 >/dev/null
+    wait "$pid"
+    measured="$(touch_times "$ge" | python3 -I -c "import sys
+t = {tuple(l.split()[:2]): float(l.split()[2]) for l in sys.stdin}
+print(round((t['U', '1'] - t['U', '0']) * 1000))")"
+    echo "    finger on Betatriptan, tap on $from, the resting finger lifts $measured ms after the tap (asked $lift)"
+    # The fade is 200 ms and the old one was 700 ms: a gap outside its target proves nothing.
+    if ((measured < lift - 60 || measured > lift + 120)); then echo "  FAILED: the gap was not achieved"; return 1; fi
+    to="Alpha$lift"
+    run_flow_env two-touch-rename "FROM=$from" "TO=$to" || return 1
+    from="$to"
+  done
+  run_flow two-touch-home || return 1
+  a="$(desc_point 'Migraine from .*Opens its details\.')"
+  [[ -n "$a" ]] || { echo "  FAILED: the row on home was not found"; return 1; }
+  adbq shell "getevent -t $device > $ge & G=\$!; sleep 2.2; kill \$G" &
+  pid=$!
+  sleep 0.6
+  touch_down 0 21 ${a% *} ${a#* }
+  touch_up 0
+  sleep 0.03
+  touch_down 0 22 ${a% *} ${a#* }
+  touch_up 0
+  wait "$pid"
+  measured="$(touch_times "$ge" | python3 -I -c "import sys
+u = [float(l.split()[2]) for l in sys.stdin if l[0] == 'U']
+print(round((u[1] - u[0]) * 1000))")"
+  echo "    double tap on the row, $measured ms from click to click"
+  if ((measured > 130)); then echo "  FAILED: too slow to stack two screens on a build with #139, so this proves nothing"; return 1; fi
+  sleep 1
+  run_flow two-touch-delete || return 1
+  adbq shell rm -f "$ge"
+}
+
 scenario_message_tap_guard() {
   echo "Scenario message_tap_guard: a tap where Undo was, just after the message leaves, opens nothing (#52, D114)"
   local delete offset screen box point guarded=0
@@ -2157,7 +2252,7 @@ if [[ $# -eq 0 ]]; then
     double_tap med_effect med_effect_attack med_effect_skip med_effect_late med_preventive med_two_waiting \
     med_link_home med_overuse overuse_copy keyboard_home keyboard_history keyboard_rtl landscape_band mark_travel mark_earliest_month \
     stats_counting stats_chronic stats_progress reminder_daily reminder_permission reminder_effect reminder_replan \
-    med_only_history message_tap_guard \
+    med_only_history message_tap_guard two_touch \
     theme_check onboarding_states delete_all_data privacy_link backup_export backup_import message_duration \
     premium_store_states premium_no_products premium_pending premium_plans premium_entitlement premium_offline trial_banner paywall_self_show \
     report_three_months report_counting report_heavy insights

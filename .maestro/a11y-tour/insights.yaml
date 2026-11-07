@@ -1,4 +1,5 @@
-# Accessibility tour state: Insights with patterns, after buying Premium and adding 5 past migraines last month (D203).
+# Accessibility tour state: Insights with patterns, after buying Premium and adding 5 past migraines two months ago
+# (D203). Not last month: patterns need 30 days of entries, so days 15 to 21 of last month fail early in a month.
 # Needs the simulated store of the debug build (D201).
 appId: com.migrely.app
 tags: [simulated-store]
@@ -29,11 +30,11 @@ tags: [simulated-store]
     timeout: 5000
 # Days 15 to 21 are in the calendar's third or fourth row in every month. In landscape the date picker hides the first
 # row and squeezes the second (#101), so earlier days could not be picked there.
-- runFlow: {file: ../subflows/add-past-attack-on.yaml, env: {DAY: "15"}}
-- runFlow: {file: ../subflows/add-past-attack-on.yaml, env: {DAY: "16"}}
-- runFlow: {file: ../subflows/add-past-attack-on.yaml, env: {DAY: "18"}}
-- runFlow: {file: ../subflows/add-past-attack-on.yaml, env: {DAY: "19"}}
-- runFlow: {file: ../subflows/add-past-attack-on.yaml, env: {DAY: "21"}}
+- runFlow: {file: ../subflows/add-past-attack-two-months-ago.yaml, env: {DAY: "15"}}
+- runFlow: {file: ../subflows/add-past-attack-two-months-ago.yaml, env: {DAY: "16"}}
+- runFlow: {file: ../subflows/add-past-attack-two-months-ago.yaml, env: {DAY: "18"}}
+- runFlow: {file: ../subflows/add-past-attack-two-months-ago.yaml, env: {DAY: "19"}}
+- runFlow: {file: ../subflows/add-past-attack-two-months-ago.yaml, env: {DAY: "21"}}
 - tapOn: ".*\\. Opens History\\."
 - tapOn: "Insights"
 - extendedWaitUntil:

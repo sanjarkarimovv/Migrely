@@ -1,0 +1,28 @@
+# Device scenario step (two_touch, #138): a clean app, one ended migraine today, and My medications holding Alphaprofen
+# and Betatriptan (a triptan, 50 mg). No test code in the app, so this also runs on a release build.
+appId: com.migrely.app
+---
+- runFlow: ../subflows/launch-clean.yaml
+- runFlow: ../subflows/start-attack.yaml
+- tapOn: ".*Medication taken"
+- extendedWaitUntil:
+    visible: "Add and log"
+    timeout: 5000
+- runFlow:
+    file: ../subflows/add-first-medication.yaml
+    env:
+      NAME: "Alphaprofen"
+      TYPE: "Simple painkiller"
+- tapOn: "Done"
+- runFlow: ../subflows/end-attack.yaml
+- runFlow: ../subflows/open-my-medications.yaml
+- runFlow:
+    file: ../subflows/add-medication.yaml
+    env:
+      NAME: "Betatriptan"
+      KIND: "For an attack"
+      TYPE: "Triptan"
+      DOSE: "50 mg"
+- extendedWaitUntil:
+    visible: "Betatriptan, 50 mg, Triptan\\. Opens it to edit\\."
+    timeout: 5000
