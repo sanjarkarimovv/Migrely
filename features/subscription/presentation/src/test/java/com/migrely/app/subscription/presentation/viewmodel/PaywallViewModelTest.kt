@@ -44,6 +44,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.mockito.BDDMockito.willAnswer
 import org.mockito.Mock
 import org.mockito.junit.MockitoJUnitRunner
 import org.mockito.kotlin.any
@@ -66,6 +67,7 @@ private val FREE_PAYWALL = PaywallDomainModel(
     PremiumStatusDomainModel.Free,
     PaywallOffersDomainModel.Loaded(listOf(PaywallOfferDomainModel(YEARLY, false, true)))
 )
+private val UNREACHABLE_PAYWALL = FREE_PAYWALL.copy(offers = PaywallOffersDomainModel.Unreachable)
 private val READY = PaywallViewState.Ready(PremiumStatusPresentationModel.Free, listOf(YEARLY_CARD))
 private val YEARLY_STATUS = PremiumStatusDomainModel.Subscribed(PremiumPlanDomainModel.Yearly, null)
 private val REPORT = PaywallContextPresentationModel.Report
@@ -301,6 +303,235 @@ class PaywallViewModelTest :
                         YEARLY_CARD
                     )
                 }
+            )
+        }
+
+    /** Holds each reading of the paywall for the test to answer later. */
+    private fun readingsAnsweredLater(): List<(PaywallDomainModel) -> Unit> {
+        val answers = mutableListOf<(PaywallDomainModel) -> Unit>()
+        willAnswer { invocation ->
+            answers += invocation.getArgument<(PaywallDomainModel) -> Unit>(1)
+        }.given(useCaseExecutor).execute(
+            useCase = eq(getPaywallUseCase),
+            onResult = any(),
+            onException = any()
+        )
+        return answers
+    }
+
+    private fun TestScope.statesOf(action: () -> Unit): List<PaywallViewState> {
+        val states = mutableListOf<PaywallViewState>()
+        val collector = launch(start = UNDISPATCHED) { classUnderTest.viewState.toList(states) }
+        action()
+        runCurrent()
+        collector.cancel()
+        return states
+    }
+
+    @Test
+    fun `Given Play stays unreachable when trying again then it answers at once and says so`() =
+        runTest {
+            getPaywallUseCase.givenSuccessfulExecution(UNREACHABLE_PAYWALL)
+            val messages = mutableListOf<PaywallPresentationNotification>()
+            val collector = launch(start = UNDISPATCHED) {
+                classUnderTest.notification.toList(messages)
+            }
+
+            val states = statesOf { classUnderTest.onRetryAction(REPORT) }
+
+            assertEquals(listOf(PaywallViewState.Loading, PaywallViewState.Unreachable), states)
+            assertEquals(listOf(PaywallPresentationNotification.PlayUnreachable), messages)
+            collector.cancel()
+        }
+
+    @Test
+    fun `Given the products come back when trying again then the cards show, with no message`() =
+        runTest {
+            getPaywallUseCase.givenSuccessfulExecution(FREE_PAYWALL)
+
+            assertEquals(
+                emptyList<PaywallPresentationNotification>(),
+                messagesOf { classUnderTest.onRetryAction(REPORT) }
+            )
+            assertEquals(
+                listOf(PaywallViewState.Loading, READY),
+                statesOf { classUnderTest.onRetryAction(REPORT) }
+            )
+        }
+
+    @Test
+    fun `Given no region when trying again then only the notice shows`() = runTest {
+        getPaywallUseCase.givenSuccessfulExecution(
+            FREE_PAYWALL.copy(offers = PaywallOffersDomainModel.Unavailable)
+        )
+
+        assertEquals(
+            emptyList<PaywallPresentationNotification>(),
+            messagesOf { classUnderTest.onRetryAction(REPORT) }
+        )
+    }
+
+    @Test
+    fun `Given a reading is out when trying again then a second reading does not start`() =
+        runTest {
+            val readings = readingsAnsweredLater()
+
+            classUnderTest.onRetryAction(REPORT)
+            classUnderTest.onRetryAction(REPORT)
+
+            assertEquals(1, readings.size)
+        }
+
+    @Test
+    fun `Given a quick double tap when Play gives no answer then the message shows once`() =
+        runTest {
+            val readings = readingsAnsweredLater()
+
+            val messages = messagesOf {
+                classUnderTest.onRetryAction(REPORT)
+                classUnderTest.onRetryAction(REPORT)
+                readings.forEach { it(UNREACHABLE_PAYWALL) }
+            }
+
+            assertEquals(listOf(PaywallPresentationNotification.PlayUnreachable), messages)
+        }
+
+    @Test
+    fun `Given a reading answered when trying again then another tap gets the same answer`() =
+        runTest {
+            getPaywallUseCase.givenSuccessfulExecution(UNREACHABLE_PAYWALL)
+
+            val messages = messagesOf {
+                classUnderTest.onRetryAction(REPORT)
+                classUnderTest.onRetryAction(REPORT)
+            }
+
+            assertEquals(
+                listOf(
+                    PaywallPresentationNotification.PlayUnreachable,
+                    PaywallPresentationNotification.PlayUnreachable
+                ),
+                messages
+            )
+        }
+
+    @Test
+    fun `Given the reading throws when trying again then the notice returns and says so`() =
+        runTest {
+            getPaywallUseCase.givenFailedExecution(
+                com.migrely.app.architecture.domain.exception.UnknownDomainException(
+                    IllegalStateException("no reading")
+                )
+            )
+            val messages = mutableListOf<PaywallPresentationNotification>()
+            val collector = launch(start = UNDISPATCHED) {
+                classUnderTest.notification.toList(messages)
+            }
+
+            val states = statesOf { classUnderTest.onRetryAction(REPORT) }
+
+            assertEquals(listOf(PaywallViewState.Loading, PaywallViewState.Unreachable), states)
+            assertEquals(listOf(PaywallPresentationNotification.PlayUnreachable), messages)
+            collector.cancel()
+
+            // And the button works again.
+            assertEquals(
+                listOf(PaywallPresentationNotification.PlayUnreachable),
+                messagesOf { classUnderTest.onRetryAction(REPORT) }
+            )
+        }
+
+    @Test
+    fun `Given a rotation while getting prices then the message still shows, once`() = runTest {
+        val readings = readingsAnsweredLater()
+        classUnderTest.onRetryAction(REPORT)
+        classUnderTest.onResume(REPORT)
+
+        val messages = messagesOf { readings.forEach { it(UNREACHABLE_PAYWALL) } }
+
+        assertEquals(listOf(PaywallPresentationNotification.PlayUnreachable), messages)
+    }
+
+    @Test
+    fun `Given a retry from an earlier paywall when it ends on a new one then no message`() =
+        runTest {
+            val readings = readingsAnsweredLater()
+            classUnderTest.onRetryAction(REPORT)
+            classUnderTest.onEnter(REPORT)
+
+            assertEquals(
+                emptyList<PaywallPresentationNotification>(),
+                messagesOf { readings[0](UNREACHABLE_PAYWALL) }
+            )
+        }
+
+    @Test
+    fun `Given a refused sheet's reading from an earlier paywall then no message on a new one`() =
+        runTest {
+            val readings = readingsAnsweredLater()
+            givenSheetAnswers(PurchaseOutcomeDomainModel.Unavailable)
+            classUnderTest.onBuyAction(REPORT, YEARLY_CARD)
+            classUnderTest.onEnter(REPORT)
+
+            assertEquals(
+                emptyList<PaywallPresentationNotification>(),
+                messagesOf { readings[0](FREE_PAYWALL) }
+            )
+        }
+
+    @Test
+    fun `Given a reading from an earlier paywall then its state does not replace the new one's`() =
+        runTest {
+            val readings = readingsAnsweredLater()
+            classUnderTest.onRetryAction(REPORT)
+            classUnderTest.onEnter(REPORT)
+
+            val states = statesOf {
+                readings[1](FREE_PAYWALL)
+                readings[0](UNREACHABLE_PAYWALL)
+            }
+
+            assertEquals(listOf<PaywallViewState>(READY), states)
+        }
+
+    @Test
+    fun `Given Premium came on meanwhile then the new paywall's own reading shows it`() = runTest {
+        val readings = readingsAnsweredLater()
+        classUnderTest.onRetryAction(REPORT)
+        classUnderTest.onEnter(REPORT)
+
+        val messages = messagesOf {
+            readings[0](UNREACHABLE_PAYWALL)
+            readings[1](FREE_PAYWALL.copy(status = YEARLY_STATUS))
+        }
+
+        assertEquals(listOf(UNLOCKED), messages)
+    }
+
+    @Test
+    fun `Given a new paywall when trying again then the tap is not held by the earlier one`() =
+        runTest {
+            val readings = readingsAnsweredLater()
+            classUnderTest.onRetryAction(REPORT)
+            classUnderTest.onEnter(REPORT)
+
+            classUnderTest.onRetryAction(REPORT)
+
+            assertEquals(3, readings.size)
+        }
+
+    @Test
+    fun `Given an older message the screen missed when buying then a rotation does not show it`() =
+        runTest {
+            getPaywallUseCase.givenSuccessfulExecution(FREE_PAYWALL)
+            givenSheetAnswers(PurchaseOutcomeDomainModel.Failed)
+            classUnderTest.onBuyAction(REPORT, YEARLY_CARD)
+            givenSheetAnswers(PurchaseOutcomeDomainModel.Cancelled)
+            classUnderTest.onBuyAction(REPORT, YEARLY_CARD)
+
+            assertEquals(
+                emptyList<PaywallPresentationNotification>(),
+                messagesOf { classUnderTest.onResume(REPORT) }
             )
         }
 
