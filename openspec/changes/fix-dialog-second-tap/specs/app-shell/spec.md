@@ -39,13 +39,16 @@ change on screen during the wait or when it ends, and no text SHALL be added (BR
 - **THEN** it does nothing, and the next press answers
 
 #### Scenario: A tap just after the wait
-- **WHEN** the user taps a control just after the wait, on a dialog opened from the main window
+- **WHEN** the user taps a control in the dialog just after the wait
 - **THEN** the control answers, on the first tap
 
 #### Scenario: A tap just after the wait on a dialog opened from a dialog
-- **WHEN** a dialog opens from a lift on another dialog, as the time step does from Next, a second tap is ignored and lifts, and a
-  tap comes just after the wait, under the limit and within the distance of that lift
-- **THEN** that tap does nothing, because the lift moved, and a tap after a 500 ms pause answers
+- **WHEN** a dialog opens from a lift on another dialog, as the time step does from Next, a second tap is ignored by its wait, and a
+  tap comes just after the wait
+- **THEN** the control answers, because a dialog that appeared after the lift is not beneath it and its own wait alone decides
+- **AND** the wait counts from when the dialog appears, which is after the lift, so its end is later than the lift plus 500 ms, and
+  later still under load: on an emulator the time step attached 62 to 113 ms after the lift, and one tap at 587 ms after the first
+  lift did nothing at load 11
 
 #### Scenario: A person who is really fast
 - **WHEN** a person who has read nothing yet, or knows the dialog, taps a control inside the wait
@@ -157,7 +160,7 @@ switch access and a keyboard SHALL work at once (BRD EC-UX-27, D160).
 
 ### Requirement: A lift in a dialog counts for what is beneath it
 A touch that lifts on a dialog's card, once the wait has let it through, SHALL count as the first tap of a double tap for every
-other window. A press in another window, the main screen or an older dialog, SHALL be ignored as a whole gesture under the wait's
+window already there. A press in another window, the main screen or an older dialog, SHALL be ignored as a whole gesture under the wait's
 500 ms constant and within Android's double-tap distance of that lift, on a screen touched or not. The distance SHALL come from the
 platform and the times from the touch events. Every other press SHALL answer (BRD EC-UX-30, D161).
 
@@ -198,15 +201,6 @@ platform and the times from the touch events. Every other press SHALL answer (BR
   distance
 - **THEN** that press does nothing, which is the one case where a press on a touched screen is ignored, and Back and returns by a
   control of the main window stay as they are
-
-#### Scenario: Three quick taps
-- **WHEN** a third tap follows an ignored second tap, under the limit and within the distance
-- **THEN** it does nothing either, and the next press after a 500 ms pause answers
-
-#### Scenario: Tapping along a row
-- **WHEN** a first ignored press has come under the limit, and the user goes on tapping along a row of chips with each tap under
-  500 ms after the last and within the distance of it
-- **THEN** every one does nothing, because each ignored lift moves the time and the place, until a 500 ms pause
 
 #### Scenario: A whole gesture beneath
 - **WHEN** a drag, a hold or a fling starts beneath under the limit and within the distance
@@ -268,6 +262,35 @@ platform and the times from the touch events. Every other press SHALL answer (BR
 - **WHEN** the user long presses a custom tag and double taps Remove in its menu
 - **THEN** this rule does not act, because a menu is not a dialog, and what the second tap does is measured and is not called safe
 
+### Requirement: What the lift rule asks of a later press
+A dialog that appeared after the lift SHALL NOT be covered: its own wait alone decides, and an older dialog still asks. The lift of an
+ignored press SHALL move the time and the place, and the next press SHALL be judged by the platform's double-tap timeout, not 500 ms,
+so re-tapping at an ordinary pace answers. A third tap from that timeout up SHALL act, and that can write (BRD EC-UX-30, D161).
+
+#### Scenario: A burst's next press under the burst limit
+- **WHEN** a third tap follows an ignored second tap, under the platform's double-tap timeout, 300 ms today, after the second's lift
+  and within the distance of it
+- **THEN** it does nothing either, and the next press after that timeout answers
+
+#### Scenario: A burst's next press over the burst limit
+- **WHEN** a third tap comes at or after the platform's double-tap timeout after the second's lift, at the same place
+- **THEN** it acts, even if under 500 ms from the first lift, because a tap that does nothing invites another
+- **AND** that can write, which is accepted: a false location at about 350 ms, 4 of 4 on an emulator
+
+#### Scenario: Re-tapping twice a second
+- **WHEN** a person re-taps a control beneath at about two taps a second
+- **THEN** the tap after the first ignored one answers
+
+#### Scenario: Tapping along a row
+- **WHEN** a first ignored press has come under 500 ms, and the user goes on tapping along a row of chips with each tap under the
+  platform's double-tap timeout after the last and within the distance of it
+- **THEN** every one does nothing, because each ignored lift moves the time and the place, until a pause of that timeout
+
+#### Scenario: A press that reached the older dialog first
+- **WHEN** a dialog stays up under a new one, a second tap reaches the older one before the new window is up, and a third lands on the
+  new one under the platform's double-tap timeout, inside or just after its wait
+- **THEN** it does nothing, because the lift moved after the new window appeared, so that window asks too
+
 ### Requirement: The dialog check can fail
 The check SHALL include a negative control: with the guard removed, the tests on the guard SHALL fail, and QA's dialog rows SHALL
 write again on debug and on R8. A check SHALL fail if a dialog is opened other than through the helper. A person SHALL try it by
@@ -279,7 +302,7 @@ hand on the internal track. Reports SHALL say what emulator runs with injected t
 
 #### Scenario: Guard in place
 - **WHEN** QA's dialog rows run on the build under test
-- **THEN** no row writes inside the wait, and a tap just after it answers on a dialog opened from the main window
+- **THEN** no row writes inside the wait, and a tap just after it answers
 
 #### Scenario: A raw dialog
 - **WHEN** a production file outside the helper names a dialog from Compose or Material, by import or fully qualified

@@ -33,7 +33,8 @@ of the code, a picker over `AddPainDialog` has the same shape. `team-lead` put t
 - **The wait is the same whatever opened the dialog,** and starts again after a rotation or a restored process. A return from Home or Recents to
   a dialog still open does not wait again.
 - **A lift on a dialog's card counts for whatever is beneath it (D161).** A press in another window, under the wait's 500 ms and within Android's
-  double-tap distance (100 dp today) of that lift, is ignored. A tap after that is two taps and writes. D159's 300 ms stays.
+  double-tap distance (100 dp today) of that lift, is ignored. A tap after that is two taps and writes. After an ignored press the next is judged by
+  the platform's double-tap timeout, 300 ms today, so a third tap from then on acts. A dialog that appeared after the lift has only its own wait. D159's 300 ms stays.
 
 No new string, permission or schema.
 

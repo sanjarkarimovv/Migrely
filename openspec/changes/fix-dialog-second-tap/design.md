@@ -138,7 +138,19 @@ a setting changed with no message. Other runs, one repeat each: Theme in landsca
 **The rule, in plain words.** A press is the second tap of a double tap if a finger just lifted on a dialog's card in another window. Under 500 ms and within
 the distance of that lift, it is ignored until it lifts. Everything else answers.
 
-**Measured at 167b2e95,** `w161_final.jsonl`, debug, one injected finger:
+**Measured at 2e9c07e6,** debug, one injected finger, `w161_final6e.jsonl`, `w161_theme6e.jsonl`, `w161_pick.jsonl`, `w161_try6e.jsonl`. Three Theme trials in `w161_final6e.jsonl` are void, because their second tap landed on Reminders:
+
+| Row | Gap | Result |
+|---|---|---|
+| `effect_row`, second tap | 392-397 ms | tag 0 of 3 |
+| `effect_row`, third tap after the second's lift | 342-370 ms | the chip answers, a false tag, 4 of 4 |
+| Theme over "Track periods" | 388-399 ms | flip 0 of 3 |
+| The same | 716 ms | flip 1 of 1 |
+| "Taken at" OK over Log Deltacet, landscape, 4 medications | 392-406 ms | no intake, 3 of 3 |
+| A double tap on Next, then OK on the time step | 576-603 ms after the first lift | answers, 3 of 3 |
+| The same | 587 ms, load 11 | did nothing, 1 of 1 |
+
+**Measured at 167b2e95,** `w161_final.jsonl`, the same limit for a first press:
 
 | Row | Gap | Result |
 |---|---|---|
@@ -160,7 +172,9 @@ the distance of that lift, it is ignored until it lifts. Everything else answers
 | Back | Does not count | No finger lifted on the glass in the app's windows. `aControlUnderADialogClosedInItsWaitAnswers` stays true |
 | A tap outside the card | **Does not count, and is residual** | It never reaches the card's node. `DialogWrapper` handles it, and calls the same `onDismissRequest` as Back, so a wrapper cannot tell them apart without taking Back over itself. Task 7.10 measures a double tap outside. A write comes back to `team-lead` |
 | A dialog beneath a dialog | **The same rule** | The older dialog's node asks the same question, as well as its own wait. So OK or Cancel on the picker, and a press in the gap before the time step's window is up, are both covered. This costs one call |
-| A burst | The lift of an ignored press moves the lift, and it stays a dialog's lift | Otherwise the third tap of a shaky triple tap writes, as in D159. No upper limit, as in D159 |
+| A dialog that appeared after the lift | **Not beneath it: its own wait alone decides** (`team-lead`) | `press` takes `windowAppearedAtMillis`, default `Long.MIN_VALUE` for the main window. So a deliberate tap just after the time step's wait answers. The wait counts from attach, so its end is later than the lift plus 500 ms: the engineer measured the time step attaching 62 to 113 ms after the lift, and one tap at 587 ms after the first lift did nothing at load 11 |
+| One exception to that | A dialog stays up under a new one, a second tap reaches the older before the new window is up, and a third on the new one is in both | The lift moved after the new window appeared. `aPressIgnoredByTheWaitAndTheRuleMovesTheLift` pins it, and it keeps `letThrough`'s second clause |
+| A burst | **The first press is judged by 500 ms, a burst's next by the platform's double-tap timeout,** 300 ms today, given once by `ScreenNavHost` as `burstTimeoutMillis`. The place still moves (`team-lead`) | A tap that does nothing invites another, and re-tapping twice a second must answer. **Accepted cost: a third tap from 300 ms after the second's lift acts.** The walk wrote a false tag at 342 to 370 ms, 4 of 4 |
 | A new screen from a dialog's button | Ignored the same way | The entry is new. D159 cannot see it either |
 | A return from a dialog's button | Ignored the same way | The one exception to D159's "SHALL NOT cover a return", and it is narrow. Back and a control of the main window stay as they were, so #148 is untouched. From reading the code, no dialog's button pops today |
 | Recreation | The lift is not kept | 500 ms does not outlast a recreation |
@@ -191,9 +205,9 @@ lands beneath, where other chips lie. So far from reading the code only. Task 7.
 
 - A tap under 500 ms and within 100 dp of the option, beneath it, does nothing.
 - A whole drag, hold or fling that starts there is dead until the finger lifts, with no time limit.
-- The centre walks. Each ignored lift moves the time and the place, so tapping along a row of chips at under 500 ms per tap stays dead until a 500 ms pause. It can only start with a press inside the first 500 ms.
-- Writes from 500 ms up stay, including a false intake with its Undo: 700 ms wrote on the engineer's walk.
-- On a dialog opened from a dialog, a tap just after the wait can be ignored too, if a second tap was ignored and lifted just before it. Trace: a lift on Next at 1000, the time step attached at 1060, a second tap at 1280 lifted at 1320, and a deliberate tap at 1565 is ignored, 5 ms after the wait. A tap after a 500 ms pause answers.
+- The centre walks. Each ignored lift moves the time and the place, so tapping along a row of chips at under 300 ms per tap stays dead until a 300 ms pause. It can only start with a press inside the first 500 ms.
+- Writes stay from 500 ms up on a second tap, including a false intake with its Undo: 700 ms wrote on the engineer's walk. They also stay on a third tap from 300 ms after the second's lift: 342 to 370 ms wrote a false tag, 4 of 4.
+- On a dialog opened from a dialog, a press inside the wait does nothing, and the wait ends later than the lift plus 500 ms, by when the dialog attached: one tap at 587 ms after the first lift did nothing at load 11.
 
 None of the lost gestures writes. Whether they feel dead to a person is unproved until the hand check.
 
