@@ -252,6 +252,13 @@ data must never be passed to any SDK.
   nothing (issue #157, BRD D160). A press inside the wait is ignored until it lifts. Semantics are untouched, so a screen
   reader, switch access and a keyboard work at once, and Back closes at once. The screen's rule above cannot do this, since
   a dialog is a window of its own. `ArchitectureDialogsTest` (Konsist) fails on any other file that imports a raw dialog.
+- A lift on a dialog's card counts for what is beneath it (BRD D161). A double tap on a dialog's own option closes the
+  dialog with the first tap, and the second lands in another window: it is not that dialog's wait, and the second-tap rule
+  of the main window never hears the lift. So `DialogLiftRule` (`:designsystem`, package `dialog`, because `app` depends on
+  it and an older dialog has to ask too) keeps the last lift the wait let through. A press in any other window under
+  `doubleTapTimeoutMillis` and within `scaledDoubleTapSlop` of it is ignored until it lifts. Both windows convert to the
+  screen with `localToScreen`, because their origins differ, and a wrong conversion fails toward writing:
+  `DialogLiftOnScreenTest` proves it on a device. `ScreenNavHost` provides the one instance; with none nothing is ignored.
 - `DeleteAllDataObserver` sits beside the `NavHost`, not on the delete screen: wiped data must restart the app whichever
   screen is on top, or with the delete screen gone.
 - ViewModels are stateless (skill rule 4). Text and selections the user is editing live in the composable
