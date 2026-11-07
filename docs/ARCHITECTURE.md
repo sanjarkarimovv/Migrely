@@ -44,7 +44,7 @@ target API 37, whichever comes first. Until then, do not mix AGP 9 idioms into b
 | `:architecture:ui` | Android | `com.migrely.app.architecture.ui` | `BaseComposeHolder`, `UiDestination`, `NavigationEventDestinationMapper`, `ScreenEnterObserver`, notification contracts |
 | `:architecture:instrumentation-test` | Android | `com.migrely.app.test` | E2E test helpers (first used by a feature change) |
 | `:coroutine` | JVM | `com.migrely.app.coroutine` | `CoroutineContextProvider` |
-| `:designsystem` | Android | `com.migrely.app.designsystem.{theme,sky,motion,snackbar,picker,icon,input}` | `MigrelyTheme(dark)`, `MigrelyColors`, `MigrelyDarkRoom` / `DarkScreens`, `SkyCanvas` / `SkyAppearance`, `MonthSkyCalendar` / `MonthSkyLegend` / `DaySkyAppearance`, `rememberReduceMotion()`, `MigrelySnackbar`, `MigrelyDateTimePicker`, `MigrelyIcons`, `TapGuard`. Compose only; depends on no feature, presentation or domain module |
+| `:designsystem` | Android | `com.migrely.app.designsystem.{theme,sky,motion,snackbar,picker,dialog,icon,input}` | `MigrelyTheme(dark)`, `MigrelyColors`, `MigrelyDarkRoom` / `DarkScreens`, `SkyCanvas` / `SkyAppearance`, `MonthSkyCalendar` / `MonthSkyLegend` / `DaySkyAppearance`, `rememberReduceMotion()`, `MigrelySnackbar`, `MigrelyDateTimePicker`, `MigrelyAlertDialog` / `MigrelyDatePickerDialog` / `MigrelyDialog`, `MigrelyIcons`, `TapGuard`. Compose only; depends on no feature, presentation or domain module |
 | `:datasource:source` | JVM | `com.migrely.app.datasource.<resource>.{datasource,model,exception}` | datasource interfaces, `*DataModel` / `*LocalModel`, `*DataException` |
 | `:datasource:implementation` | Android (Room via KSP) | `com.migrely.app.datasource.<resource>.{datasource,model,dao,mapper}` and `com.migrely.app.datasource.database` | `*DataSourceImpl`, Room entities (`*LocalModel`), DAOs, `MigrelyDatabase`, `*LocalMapper` |
 | `:features:<feature>:domain` | JVM | `com.migrely.app.<feature>.domain` | `model/`, `repository/` (interfaces), `usecase/`, `exception/` |
@@ -238,6 +238,12 @@ data must never be passed to any SDK.
   issues #138, #139). That covers what the touch rule cannot: late async results, semantics clicks, and a click just before
   the screen left. A time-based tap guard cannot do this, and a `RESUMED` check would refuse a screen still fading in. The
   check reads the observer's screen, not the sender's.
+- Every dialog goes through `MigrelyAlertDialog`, `MigrelyDatePickerDialog` or `MigrelyDialog` (`:designsystem`, package
+  `dialog`). For `DIALOG_WAIT_MILLIS` from when it appears a dialog ignores a press on its content, judged by the press's
+  own event time, and a tap outside its card does not close it, so the second tap of the double tap that opened it runs
+  nothing (issue #157, BRD D160). A press inside the wait is ignored until it lifts. Semantics are untouched, so a screen
+  reader, switch access and a keyboard work at once, and Back closes at once. The screen's rule above cannot do this, since
+  a dialog is a window of its own. `ArchitectureDialogsTest` (Konsist) fails on any other file that imports a raw dialog.
 - `DeleteAllDataObserver` sits beside the `NavHost`, not on the delete screen: wiped data must restart the app whichever
   screen is on top, or with the delete screen gone.
 - ViewModels are stateless (skill rule 4). Text and selections the user is editing live in the composable
