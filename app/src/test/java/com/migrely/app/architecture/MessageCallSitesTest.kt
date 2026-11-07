@@ -10,8 +10,9 @@ private const val READING = "baseDurationMillis = READING_MILLIS,"
 private const val BELOW_BAR = "topOffset = MESSAGE_OFFSET_BELOW_TOP_BAR"
 
 /**
- * Pins, in the source, how each screen's message is set up (BRD D158). The behaviour of each value
- * is tested where it lives: a mapper's storage-full message has no duration in that mapper's test,
+ * A text pin, not a behaviour test: it reads the source to see how each screen's message is set up
+ * (BRD D158), and a rewording can fail it with no bug. The behaviour of each value is tested where
+ * it lives: Home's offset in MessageTopOffsetTest, a mapper's storage-full message has no duration in that mapper's test,
  * and a message with no duration ignores a tap on its body in MessagePlaceAndTapTest. These screens
  * have no test that draws their message, so this is the link between the two.
  */
@@ -76,8 +77,7 @@ class MessageCallSitesTest {
     @Test
     fun `Home decides its message's place with its tested rule`() {
         assertTrue(
-            "if (messagesClearSettingsRow(uiState.mode, isCompactHeight())) {" in
-                source("HomeScreen")
+            "topOffset = messageTopOffset(uiState.mode, isCompactHeight())" in source("HomeScreen")
         )
     }
 }

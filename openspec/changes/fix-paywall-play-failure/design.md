@@ -217,6 +217,18 @@ state. The button leaves the tree while prices are read, so where TalkBack's foc
 
 **Limits, accepted:**
 
+- **"Getting prices" lasts until the reading answers.** Only connecting to Google Play has a timeout (5 s). If a later step
+  of the reading never answers, the state stays, with Close and Restore available. `team-lead`, review N7.
+- **A throw inside a reading does not reach `onException`.** `BackgroundExecutingUseCase` runs the work in its own
+  coroutine, so a throw there does not come back to the executor. The `onException` branches on Try again and on Home cover
+  only what the executor itself reports. The use case does not change here. Review N3.
+- **A Restore or Buy answer can reach a reopened paywall.** Only readings are dropped on a new paywall. Such an answer is
+  truthful and rare. `team-lead`, review N5.
+- **Try again moves the page twice:** the notice leaves for "Getting prices", and returns. On a fast answer that can show as
+  a flicker. Task 5.3 looks at it on the real phone. `team-lead`, review N6.
+- **A failed reading after a migraine's start or end:** its message is told, and the error then replaces it on screen, as
+  before this change. Review N2.
+
 - A control still under a message needs a tap to dismiss first, then a second tap.
 - After that tap, a tap in the message's area does nothing for 400 ms on the paywall and 800 ms elsewhere.
 - On the paywall, two X icons are stacked at the right edge. The picture is in the record for `team-lead` to judge.

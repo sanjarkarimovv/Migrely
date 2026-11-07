@@ -416,30 +416,29 @@ class PaywallViewModelTest :
         }
 
     @Test
-    fun `Given the reading throws when trying again then the notice returns and says so`() =
-        runTest {
-            getPaywallUseCase.givenFailedExecution(
-                com.migrely.app.architecture.domain.exception.UnknownDomainException(
-                    IllegalStateException("no reading")
-                )
+    fun `Given the executor reports a failure on trying again then the notice returns`() = runTest {
+        getPaywallUseCase.givenFailedExecution(
+            com.migrely.app.architecture.domain.exception.UnknownDomainException(
+                IllegalStateException("no reading")
             )
-            val messages = mutableListOf<PaywallPresentationNotification>()
-            val collector = launch(start = UNDISPATCHED) {
-                classUnderTest.notification.toList(messages)
-            }
-
-            val states = statesOf { classUnderTest.onRetryAction(REPORT) }
-
-            assertEquals(listOf(PaywallViewState.Loading, PaywallViewState.Unreachable), states)
-            assertEquals(listOf(PaywallPresentationNotification.PlayUnreachable), messages)
-            collector.cancel()
-
-            // And the button works again.
-            assertEquals(
-                listOf(PaywallPresentationNotification.PlayUnreachable),
-                messagesOf { classUnderTest.onRetryAction(REPORT) }
-            )
+        )
+        val messages = mutableListOf<PaywallPresentationNotification>()
+        val collector = launch(start = UNDISPATCHED) {
+            classUnderTest.notification.toList(messages)
         }
+
+        val states = statesOf { classUnderTest.onRetryAction(REPORT) }
+
+        assertEquals(listOf(PaywallViewState.Loading, PaywallViewState.Unreachable), states)
+        assertEquals(listOf(PaywallPresentationNotification.PlayUnreachable), messages)
+        collector.cancel()
+
+        // And the button works again.
+        assertEquals(
+            listOf(PaywallPresentationNotification.PlayUnreachable),
+            messagesOf { classUnderTest.onRetryAction(REPORT) }
+        )
+    }
 
     @Test
     fun `Given a rotation while getting prices then the message still shows, once`() = runTest {

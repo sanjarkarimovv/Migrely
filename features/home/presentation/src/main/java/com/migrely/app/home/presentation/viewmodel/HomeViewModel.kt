@@ -210,15 +210,8 @@ class HomeViewModel(
 
     private fun presentUndo(result: UndoResultDomainModel) {
         when (result) {
-            UndoResultDomainModel.Undone -> {
-                notify(Undone)
-                loadToday()
-            }
-
-            UndoResultDomainModel.NotPossible -> {
-                notify(UndoNotPossible)
-                loadToday()
-            }
+            UndoResultDomainModel.Undone -> loadToday(thenTell = Undone)
+            UndoResultDomainModel.NotPossible -> loadToday(thenTell = UndoNotPossible)
 
             UndoResultDomainModel.Failed -> notify(SomethingWentWrong)
         }
@@ -229,7 +222,8 @@ class HomeViewModel(
      * deletion never replaces the undo of an action taken here. [keepPeriodToggle] keeps the "Period" toggle that was
      * just used; every other load offers it as today's result says (BRD D79). [thenTell] comes after
      * the new mode, so its message appears at that mode's place and does not jump when the mode
-     * arrives (BRD D158); a failed reading does not lose it.
+     * arrives (BRD D158). If the reading fails, it is still told, and the error then replaces it on
+     * screen, as before.
      */
     private fun loadToday(
         announceDeletion: Boolean = false,
@@ -266,6 +260,7 @@ class HomeViewModel(
                     }
                 }
             },
+            // Only what the executor reports: a throw inside a background use case does not get here.
             onException = { thenTell?.let(::notify) }
         )
     }

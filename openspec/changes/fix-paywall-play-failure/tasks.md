@@ -44,10 +44,10 @@ Do these in order. The baseline comes first, on the build before any of these ch
 
 ## 3b. Review of #154
 
-- [x] 3b.1 Try again (I1, BRD D153): `onRetryAction` shows `PaywallViewState.Loading` at once, ignores a second tap while a reading is out, and delivers `PlayUnreachable` if the reading is still `Unreachable`; a reading that throws returns the notice too. Verify: `PaywallViewModelTest` with mutants R1 to R5, and a live measure.
+- [x] 3b.1 Try again (I1, BRD D153): `onRetryAction` shows `PaywallViewState.Loading` at once, ignores a second tap while a reading is out, and delivers `PlayUnreachable` if the reading is still `Unreachable`. If the executor reports a failure the notice returns too; a throw inside `executeInBackground` does not reach that branch on a device, because `BackgroundExecutingUseCase` runs it in its own coroutine, so R5 proves the branch and not a device throw. Verify: `PaywallViewModelTest` with mutants R1 to R5, and a live measure.
 - [x] 3b.2 A reading from an earlier paywall (M3): `onEnter` invalidates it, so it delivers no message and no state on the new paywall, and the new paywall's own reading still shows Premium. A rotation does not invalidate it. Verify: `PaywallViewModelTest` with mutants V1 to V3.
 - [x] 3b.3 A buy tap clears an older message (M4): the screen's message and the view model's undelivered outcome. Verify: mutant B1 for the view model, and a live row for the screen, which has no test.
-- [x] 3b.4 A migraine's message comes after its mode (M2). Verify: `HomeViewModelTest` with mutants O1 to O4. The picture of the jump itself was not compared before and after.
+- [x] 3b.4 A migraine's message comes after its mode (M2), and so does an undo's (N4). On a failed reading the message is told and the error then replaces it, as before. Verify: `HomeViewModelTest` with mutants O1 to O6. These prove the order the screen hears, by unit test. The picture of the jump was not compared before and after, and the undo order was not walked.
 - [x] 3b.5 A dismiss acts only on the message still shown, on the four hosts that did not check (M5), and the paywall's always-true check goes (M7). Verify: by reading only: nothing drives a body tap on a message fading out.
 - [x] 3b.6 Each screen's message setup is pinned (I2). `MigrelySnackbar` takes `baseDurationMillis`, so no screen works it out. Verify: each mapper's storage full, and `MessageCallSitesTest` for each site, with a mutant for each.
 
@@ -71,7 +71,7 @@ Do these in order. The baseline comes first, on the build before any of these ch
 
 - [ ] 5.1 `qa-engineer`: `.maestro/subscription/paywall-and-purchase.yaml` asserts the paywall from the top with no scroll, and its order changes here (design D5). Update it, add the line's assertion and the `Covers:` lines, and check `.maestro/device/` and `.maestro/a11y-tour/paywall.yaml`. Show that the new assertion fails on a build without the line. Verify: the flow passes on `emulator-5580`.
 - [ ] 5.2 `code-reviewer` on `git diff origin/develop...bugfix/146-paywall-play-failure`, with fixes recorded here.
-- [ ] 5.3 Real phone, before the 1.1.0 Go/No-Go, on the route used in `docs/qa/go-no-go-1.0.0.md` ("Real Google Play"): main session, owner present, license tester. The owner's order of no Play Console uploads while the app is in review applies, so `team-lead` decides when a build can reach the phone. With airplane mode on and the paywall showing prices, tap each of the three plans and record for each: whether Play's sheet appears, and what the paywall shows after it. No message means a cancel or no answer, "didn't go through" means `Failed`, "can't be reached" means `Unavailable`. So this also answers the open question in #146 of which code comes back, with no logging. Then tap Restore and record what it says. Restore airplane mode after. Verify: the results are in the QA report for the release.
+- [ ] 5.3 Real phone, before the 1.1.0 Go/No-Go, on the route used in `docs/qa/go-no-go-1.0.0.md` ("Real Google Play"): main session, owner present, license tester. Also look at "Try again" when Play answers fast: the page moves twice (design D7). The owner's order of no Play Console uploads while the app is in review applies, so `team-lead` decides when a build can reach the phone. With airplane mode on and the paywall showing prices, tap each of the three plans and record for each: whether Play's sheet appears, and what the paywall shows after it. No message means a cancel or no answer, "didn't go through" means `Failed`, "can't be reached" means `Unavailable`. So this also answers the open question in #146 of which code comes back, with no logging. Then tap Restore and record what it says. Restore airplane mode after. Verify: the results are in the QA report for the release.
 
 ## 6. Finish
 
@@ -84,16 +84,16 @@ Filled in by `android-engineer`, 2026-11-07. Evidence: `migrely-work/walks/bugfi
 
 ### Gate
 
-On the tree of e45a8a0e, whose code this record does not change. The numbers in this section are the last full run; what the final head gets is in the PR's report.
+On the code of the delta review's commit. The instrumented row ran before that commit, and it changed nothing in `designsystem`.
 
 | Check | Result |
 |---|---|
-| `nice -n 19 ./gradlew --max-workers=2 assembleDebug test ktlintCheck detekt lint`, `set -o pipefail` | Exit 0. 2432 test results, debug and release variants both counted, 0 failures |
+| `nice -n 19 ./gradlew --max-workers=2 assembleDebug test ktlintCheck detekt lint`, `set -o pipefail` | Exit 0. 2437 test results, debug and release variants both counted, 0 failures |
 | `:app:testDebugUnitTest --rerun`, Konsist | Exit 0. Architecture 15, 0 failures. `MessageCallSitesTest` 4, 0 failures |
 | `:app:checkReleasePermissions` | Exit 0. Manifest and `app/build.gradle.kts` diff against `develop` empty |
 | `ANDROID_SERIAL=emulator-5570 :designsystem:connectedDebugAndroidTest` | Exit 0. 52, 0 failures |
 
-Module counts: `PaywallViewModelTest` 38, `HomeViewModelTest` 37, `MessagePlaceAndTapTest` 17, `PaywallContentsTest` 15, `MessagesClearSettingsRowTest` 3.
+Module counts: `PaywallViewModelTest` 38, `HomeViewModelTest` 40, `MessagePlaceAndTapTest` 17, `PaywallContentsTest` 15, `MessageTopOffsetTest` 4.
 
 ### 3.1 and 3.3: the paywall's geometry
 
@@ -130,20 +130,23 @@ The review's fixes, each mutant restored (`mutation-review.txt`), one run per mu
 | R2 no state at once | 3 |
 | R3 Try again says nothing | 4 |
 | R4 retrying never cleared | 2 |
-| R5 a throw leaves it stuck | 1 |
+| R5 a failure the executor reports leaves it stuck | 1 |
 | V1 enter does not invalidate | 4 |
 | V2 reading not checked against the visit | 4 |
 | V3 enter leaves retrying | 1 |
 | B1 buy keeps an undelivered outcome | 1 |
 | O1 start's message before the state | 1 |
 | O2 end's message before the state | 1 |
-| O3 a failed reading loses the message | 1 |
-| O4 a thrown reading loses the message | 1 |
+| O3 a failed reading tells only the error | 1 |
+| O4 a failure the executor reports loses the message | 1 |
+| O5 an undo's message before the state (`mutation-delta.txt`) | 2 |
+| O6 "not possible" before the state | 1 |
+| H1 attack gets the offset; H2 short window gets it; H3 Today gets none; H4 the constant is 48 dp | 1 each |
 | Each of 10 sites passes no duration: Home, Attack, History, Medication, Report, Your data, Reminders, Paywall, Settings, Onboarding | 1 each |
-| P1 paywall offset 40 dp; P2 paywall guard 800; P3 guard not passed; P4 Home ignores its rule | 1 each |
+| P1 paywall offset 40 dp; P2 paywall guard 800; P3 guard not passed; P4 Home does not use its rule (redone after N1) | 1 each |
 | Each of 7 mappers gives storage full a duration: Home, Attack, History, Medication, Report, Your data, Reminders | 1 each |
 
-`MessageCallSitesTest` pins source text. It proves each screen passes the right value, not that the screen draws it. The chain to a body tap is: the mapper's test, this pin, then `MessagePlaceAndTapTest`.
+`MessageCallSitesTest` pins source text. It proves each screen passes the right value, not that the screen draws it. The chain to a body tap is: the mapper's test, this pin, then `MessagePlaceAndTapTest`. R5 and O4 prove the `onException` branches, not a throw on a device: `BackgroundExecutingUseCase` keeps that from reaching them.
 
 ### 4.3 walk
 
@@ -264,7 +267,7 @@ Guard timing, device-measured gap between the two taps, on `-no-window -gpu swif
 
 The gap runs from the end of the first tap to the end of the second, on the device. A tap at 415 ms still being swallowed is about 15 ms past the guard's nominal end, within a frame or two. Robolectric's "about double" is not on the device.
 
-Instrumented: `:designsystem:connectedDebugAndroidTest`, 52 tests, 0 failures, including `MigrelySnackbarHostTest`'s four guard tests. Controls on the device: host ignores `guardMillis`, 1 of 7 fails (`aGuardOf400MsLetsATapThroughJustAfterItEnds`); default 400, 1 of 7 fails (`theDefaultGuardSwallowsATapJustBefore800Ms`). `MessagesClearSettingsRowTest`, 3 tests: no short-window condition, 1 fails; no attack condition, 1 fails.
+Instrumented: `:designsystem:connectedDebugAndroidTest`, 52 tests, 0 failures, including `MigrelySnackbarHostTest`'s four guard tests. Controls on the device: host ignores `guardMillis`, 1 of 7 fails (`aGuardOf400MsLetsATapThroughJustAfterItEnds`); default 400, 1 of 7 fails (`theDefaultGuardSwallowsATapJustBefore800Ms`). `MessageTopOffsetTest`: see the review's mutants.
 
 Other rows, on the final code:
 

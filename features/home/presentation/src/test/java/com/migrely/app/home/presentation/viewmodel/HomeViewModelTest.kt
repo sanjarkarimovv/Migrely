@@ -462,7 +462,7 @@ class HomeViewModelTest :
     }
 
     @Test
-    fun `Given reading today fails after a start then the start's message is not lost`() = runTest {
+    fun `Given reading today fails after a start then its message, then the error`() = runTest {
         startAttackUseCase.givenSuccessfulExecution(
             StartAttackResultDomainModel.Started(ATTACK)
         )
@@ -478,7 +478,7 @@ class HomeViewModelTest :
     }
 
     @Test
-    fun `Given reading today throws after a start then the start's message is not lost`() =
+    fun `Given the executor reports a failure after a start then its message is still told`() =
         runTest {
             startAttackUseCase.givenSuccessfulExecution(
                 StartAttackResultDomainModel.Started(ATTACK)
@@ -494,6 +494,40 @@ class HomeViewModelTest :
                 heard { classUnderTest.onStartAttackAction() }
             )
         }
+
+    @Test
+    fun `Given an undo then its message comes after the new mode`() = runTest {
+        undoAttackStartUseCase.givenSuccessfulExecution("a", UndoResultDomainModel.Undone)
+        givenToday(TodayDomainModel.Calm)
+
+        assertEquals(
+            listOf(HomeViewState.Today::class, HomePresentationNotification.Undone),
+            heard { classUnderTest.onUndoStartAction("a") }
+        )
+    }
+
+    @Test
+    fun `Given an undo that is no longer possible then its message comes after the mode`() =
+        runTest {
+            undoAttackEndUseCase.givenSuccessfulExecution("a", UndoResultDomainModel.NotPossible)
+            givenToday(TodayDomainModel.Calm)
+
+            assertEquals(
+                listOf(HomeViewState.Today::class, HomePresentationNotification.UndoNotPossible),
+                heard { classUnderTest.onUndoEndAction("a") }
+            )
+        }
+
+    @Test
+    fun `Given a deletion is restored then its message comes after the new mode`() = runTest {
+        restoreDeletedAttackUseCase.givenSuccessfulExecution("a", UndoResultDomainModel.Undone)
+        givenToday(TodayDomainModel.Calm)
+
+        assertEquals(
+            listOf(HomeViewState.Today::class, HomePresentationNotification.Undone),
+            heard { classUnderTest.onUndoDeleteAction("a") }
+        )
+    }
 
     /** Holds each answer of [useCase] for the test to give later, in any order. */
     private fun <RESULT> answeredLater(useCase: UseCase<Unit, RESULT>): List<(RESULT) -> Unit> {

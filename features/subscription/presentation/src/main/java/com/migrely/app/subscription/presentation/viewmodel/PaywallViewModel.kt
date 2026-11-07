@@ -219,7 +219,9 @@ class PaywallViewModel(
                     show(paywall, context, celebrate, unreachable)
                 }
             },
-            // It never stays on "Getting prices" after a tap (review M11).
+            // Only what the executor reports: a throw inside a background use case does not get
+            // here. "Getting prices" lasts until the reading answers, and only connecting to Google
+            // Play has a timeout, so Close and Restore stay available meanwhile.
             onException = {
                 if (retried && visitOfThisReading == visit) {
                     retrying = false
