@@ -39,16 +39,19 @@ text no brighter than `#C8CCD2`, on a dark surface with a thin outline (BRD EC-U
 - **THEN** its top edge is below the Settings row, and a tap on Settings opens Settings and does not undo
 
 #### Scenario: Home Today in a short window
-- **WHEN** a message with "Undo" shows on Home Today in a short window, the height that picks the two-column layout, such as
-  a phone in landscape, at 100%, 130% or 200% font
+- **WHEN** a message with "Undo" shows on Home Today in a window 411 dp high, short enough to pick the two-column layout, at
+  100%, 130% or 200% font
 - **THEN** it lies at the top where it did before, not below the Settings row, and clear of "Migraine started"
 - **AND** a tap on the top edge of "Migraine started" starts a migraine
+- **AND** a smaller window is the known exception, #153: at 274 dp high and 200% font the message lies over the top of the
+  button, and only a tap below the message starts a migraine
 
 #### Scenario: Settings under a message in a short window
-- **WHEN** a message with "Undo" lies over Settings on Home Today in a short window, at 100%, 130% or 200% font, and the user
-  taps Settings
-- **THEN** nothing happens and the action is not undone, which is the accepted cost of keeping "Migraine started" clear
-- **AND** Settings answers once the message has gone and its guard has ended
+- **WHEN** a message with "Undo" shows on Home Today in a window 411 or 274 dp high, at 100% or 200% font, and the user taps
+  Settings
+- **THEN** the tap does not fire "Undo"
+- **AND** if the message's body lies over Settings, nothing happens, which is the accepted cost of leaving the message at the
+  top, and Settings answers once the message has gone and its guard has ended
 
 #### Scenario: A screen with no top bar
 - **WHEN** a message shows on a screen with no top bar, such as onboarding
