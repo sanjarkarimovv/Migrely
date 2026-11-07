@@ -16,6 +16,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalAccessibilityManager
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
+import com.migrely.app.designsystem.snackbar.MESSAGE_OFFSET_BELOW_TOP_BAR
 import com.migrely.app.designsystem.snackbar.MigrelySnackbar
 import com.migrely.app.designsystem.snackbar.MigrelySnackbarHost
 import com.migrely.app.designsystem.snackbar.SnackbarAction
@@ -97,7 +98,8 @@ internal fun HistoryMessages(
     MigrelySnackbarHost(
         message = current,
         reduceMotion = reduceMotion,
-        modifier = modifier
+        modifier = modifier,
+        topOffset = MESSAGE_OFFSET_BELOW_TOP_BAR
     ) { visible ->
         val behaviour = behaviourMapper.toUi(visible.message)
         val timeout = timeoutMillis(behaviour)
@@ -121,6 +123,7 @@ internal fun HistoryMessages(
             } else {
                 null
             },
+            baseDurationMillis = behaviour.baseDurationMillis,
             dismissLabel = stringResource(R.string.history_snackbar_dismiss),
             onDismiss = { if (shown == visible) shown = null },
             timeLeft = if (!reduceMotion && behaviour.undoesDeletion && timeout != null) {

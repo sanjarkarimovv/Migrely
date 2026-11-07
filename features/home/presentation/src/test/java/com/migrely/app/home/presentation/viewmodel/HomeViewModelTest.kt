@@ -417,6 +417,118 @@ class HomeViewModelTest :
         notification.cancel()
     }
 
+    /** What the screen hears, in order: a state as its class, a message as itself. */
+    private fun TestScope.heard(action: () -> Unit): List<Any> {
+        val heard = mutableListOf<Any>()
+        val states = launch(start = UNDISPATCHED) {
+            classUnderTest.viewState.collect { heard += it::class }
+        }
+        val messages = launch(start = UNDISPATCHED) {
+            classUnderTest.notification.collect { heard += it }
+        }
+        action()
+        runCurrent()
+        states.cancel()
+        messages.cancel()
+        return heard
+    }
+
+    @Test
+    fun `Given a migraine starts then its message comes after attack mode`() = runTest {
+        startAttackUseCase.givenSuccessfulExecution(StartAttackResultDomainModel.Started(ATTACK))
+        givenToday(TodayDomainModel.AttackInProgress(ATTACK, longAttackCheckDue = false))
+
+        assertEquals(
+            listOf(
+                HomeViewState.AttackInProgress::class,
+                HomePresentationNotification.AttackStarted("a")
+            ),
+            heard { classUnderTest.onStartAttackAction() }
+        )
+    }
+
+    @Test
+    fun `Given a migraine ends then its message comes after Today`() = runTest {
+        endAttackUseCase.givenSuccessfulExecution(
+            EndAttackRequestDomainModel(null),
+            EndAttackResultDomainModel.Ended("a")
+        )
+        givenToday(TodayDomainModel.Calm)
+
+        val heard = heard { classUnderTest.onEndAttackAction() }
+
+        assertEquals(HomePresentationNotification.AttackEnded("a"), heard.last())
+        assertEquals(2, heard.size)
+    }
+
+    @Test
+    fun `Given reading today fails after a start then its message, then the error`() = runTest {
+        startAttackUseCase.givenSuccessfulExecution(
+            StartAttackResultDomainModel.Started(ATTACK)
+        )
+        getTodayUseCase.givenSuccessfulExecution(TodayResultDomainModel.Failed)
+
+        assertEquals(
+            listOf<Any>(
+                HomePresentationNotification.AttackStarted("a"),
+                HomePresentationNotification.SomethingWentWrong
+            ),
+            heard { classUnderTest.onStartAttackAction() }
+        )
+    }
+
+    @Test
+    fun `Given the executor reports a failure after a start then its message is still told`() =
+        runTest {
+            startAttackUseCase.givenSuccessfulExecution(
+                StartAttackResultDomainModel.Started(ATTACK)
+            )
+            getTodayUseCase.givenFailedExecution(
+                com.migrely.app.architecture.domain.exception.UnknownDomainException(
+                    IllegalStateException("no reading")
+                )
+            )
+
+            assertEquals(
+                listOf<Any>(HomePresentationNotification.AttackStarted("a")),
+                heard { classUnderTest.onStartAttackAction() }
+            )
+        }
+
+    @Test
+    fun `Given an undo then its message comes after the new mode`() = runTest {
+        undoAttackStartUseCase.givenSuccessfulExecution("a", UndoResultDomainModel.Undone)
+        givenToday(TodayDomainModel.Calm)
+
+        assertEquals(
+            listOf(HomeViewState.Today::class, HomePresentationNotification.Undone),
+            heard { classUnderTest.onUndoStartAction("a") }
+        )
+    }
+
+    @Test
+    fun `Given an undo that is no longer possible then its message comes after the mode`() =
+        runTest {
+            undoAttackEndUseCase.givenSuccessfulExecution("a", UndoResultDomainModel.NotPossible)
+            givenToday(TodayDomainModel.Calm)
+
+            assertEquals(
+                listOf(HomeViewState.Today::class, HomePresentationNotification.UndoNotPossible),
+                heard { classUnderTest.onUndoEndAction("a") }
+            )
+        }
+
+    @Test
+    fun `Given a deletion is restored then its message comes after the new mode`() = runTest {
+        restoreDeletedAttackUseCase.givenSuccessfulExecution("a", UndoResultDomainModel.Undone)
+        givenToday(TodayDomainModel.Calm)
+
+        assertEquals(
+            listOf(HomeViewState.Today::class, HomePresentationNotification.Undone),
+            heard { classUnderTest.onUndoDeleteAction("a") }
+        )
+    }
+
     /** Holds each answer of [useCase] for the test to give later, in any order. */
     private fun <RESULT> answeredLater(useCase: UseCase<Unit, RESULT>): List<(RESULT) -> Unit> {
         val answers = mutableListOf<(RESULT) -> Unit>()
