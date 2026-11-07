@@ -159,7 +159,8 @@ D155, D159).
 
 #### Scenario: A dialog
 - **WHEN** the first tap opens a dialog and the second lands on it
-- **THEN** this rule does not act, and #149 stays open
+- **THEN** this rule does not act, so the second tap reaches the dialog
+- **AND** this does not say the path is safe: it has not been measured, and a write there is a new issue
 
 ### Requirement: The double-tap check can fail
 The check for this rule SHALL include a negative control: with the guard removed, it SHALL fail on every route in #156's table,
@@ -178,3 +179,4 @@ injected taps do not prove what a human hand does (BRD D159).
 - **WHEN** 1.1.0 is on the internal track
 - **THEN** a person double taps the routes on a real phone, and then taps single deliberate taps on the new screen, and the
   result goes in the Go/No-Go with what it does not prove
+- **AND** a false intake from a natural double tap at or above the timeout goes back to `team-lead` before Production

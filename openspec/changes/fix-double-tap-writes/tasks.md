@@ -16,7 +16,7 @@ layer change: the rule is about touch and lives in `:app`.
 ## 3. UI and wiring
 
 - [ ] 3.1 `TouchesOnlyWhile.kt`: the node asks the class in the initial pass and consumes what it refuses. Consumption and hit testing stay as they are. No semantics. Verify: `git diff` shows no semantics modifier, and `./gradlew :app:testDebugUnitTest --tests '*LeavingScreenInputTest*'` passes or each failure is listed in the packet with its reason (design, Test plan).
-- [ ] 3.2 `ScreenDestination.kt`: one instance for the nav host; `screen()` passes the entry id, `LocalViewConfiguration.current.doubleTapTimeoutMillis` and `ViewConfiguration.get(context).scaledDoubleTapSlop`. No literal 300 or 100. Verify: `git grep -nE "\b(300|100)\b" -- app/src/main/java/com/migrely/app/ui/main/ScreenDestination.kt app/src/main/java/com/migrely/app/ui/main/TouchesOnlyWhile.kt` prints nothing, and `git grep -c "screen<" -- app/src/main/java/com/migrely/app/ui/main/AppNavHost.kt` still prints 20.
+- [ ] 3.2 `ScreenDestination.kt`: one instance for the nav host; `screen()` passes the entry id, `LocalViewConfiguration.current.doubleTapTimeoutMillis` and `ViewConfiguration.get(context).scaledDoubleTapSlop`. No literal 300 or 100. Verify: `git grep -nP "\b(300|100)L?\b" -- app/src/main/java/com/migrely/app/ui/main/ScreenDestination.kt app/src/main/java/com/migrely/app/ui/main/TouchesOnlyWhile.kt` prints nothing, including in comments. Use `-P`: on this Mac `-E` with `\b` matches nothing whatever the file holds. Control: the same pattern on `features/home/ui/src/main/java/com/migrely/app/home/ui/view/AttackModeContents.kt` prints line 281 (`decorationHeight = 100`) at 2f800c71. Also `git grep -c "screen<" -- app/src/main/java/com/migrely/app/ui/main/AppNavHost.kt` still prints 20.
 - [ ] 3.3 Compose tests beside `LeavingScreenInputTest`, real `screen()` and nav host, a counter on a control under the finger: a second tap at 100, 150 and 299 ms does nothing; at 300 and 500 ms it counts; beyond the distance at 100 ms it counts; a touched screen after Back takes it as before; a screen with no lift before takes a press at once; a held press and a drag; the next gesture answers; `performSemanticsAction(OnClick)` at 50 ms runs; the semantics tree with and without the guard. Verify: `./gradlew :app:testDebugUnitTest --tests '*DoubleTap*'` passes.
 - [ ] 3.4 Negative control, local only: remove the node's call to the class, run 3.3, record which tests fail, and restore. Never commit it. Verify: the failing test names are in the packet, and `git diff --stat` is empty for that change afterwards.
 
@@ -27,7 +27,7 @@ layer change: the rule is about touch and lives in `:app`.
 ## 5. Engineer's gate and walk
 
 - [ ] 5.1 Gate. Verify: `nice -n 19 ./gradlew --max-workers=2 assembleDebug test ktlintCheck detekt lint` exits 0.
-- [ ] 5.2 Walk on `emulator-5570`, debug: #156's steps, with an injected double tap at about 150 ms, then a single tap at 500 ms on the same point; a tap on the Back arrow of the new screen at 500 ms; "Medication taken" in attack mode. Restore every setting. Verify: results in the packet, with what they do not prove.
+- [ ] 5.2 Walk on `emulator-5570`, debug: #156's steps, with an injected double tap at about 150 ms, then a single tap at 500 ms on the same point; a tap on the Back arrow of the new screen at 500 ms; "Medication taken" in attack mode. Timing evidence needs the emulator started with `-no-window -gpu swiftshader_indirect`; `-gpu host` on 5570 gives slow frames and does not count as timing evidence. Restore every setting. Verify: results in the packet, with how the emulator was started and what they do not prove.
 - [ ] 5.3 Permissions. Verify: `./gradlew :app:checkReleasePermissions` exits 0.
 
 ## 6. `qa-engineer`, independently (emulators, debug and R8)
@@ -38,13 +38,14 @@ layer change: the rule is about touch and lives in `:app`.
 - [ ] 6.4 Back and returns. `t8_148.py` with the same asks as #148's table, against 2f800c71: no worse. A double tap on Back, on Done on Log medication and on Save on the editor: record what lands. Verify: the table is in the report. A write there is a new issue and is not called a pass.
 - [ ] 6.5 No first tap. Open from the reminder notification and from the "start migraine" shortcut, and tap a control straight away. Verify: the control answers, or the only wait is attack mode's own D32, shown by the same result without the guard.
 - [ ] 6.6 Animator scale 0, 200% font, landscape, TalkBack and switch access on a device: the click action on a new screen under the timeout. Restore every setting. Verify: results in the report.
-- [ ] 6.7 Retest and close #156 only under the reading in the design's Test plan. Verify: the issue's closing comment names what was measured and what was not.
+- [ ] 6.7 Retest #156 under the reading in the design's Test plan. QA judges the closure, and if it disagrees it brings evidence to `team-lead`. Verify: the issue's closing comment names what was measured and what was not, and the remaining writes from the timeout up are in the 1.1.0 Go/No-Go as residual risk.
+- [ ] 6.8 Dialogs: `team-lead` asks QA to measure this now, because the result could change the scope. This task stays open only if QA's run does not cover it. Double tap each control that opens a dialog in one tap and record what the second tap lands on: `EffectDialog`, `AddPainDialog`, `CustomTagDialog` (`features/attack/ui`), `ThemeDialog` (`SettingsDialogs.kt`), and the `Dialog`s in `RemindersScreen.kt` and `YourDataScreen.kt`. `MigrelyDateTimePicker.kt` also holds a dialog, so include it. `t5_write.py` has no dialog route, so it needs one. Verify: a table in the report, one row per dialog, saying which have a one-tap write and what a double tap did at measured gaps. A write is a new issue and is not called a pass.
 
 ## 7. Human hand, internal track
 
 - [ ] 7.1 `team-lead` adds this to the release guide's internal-track step (`reports/2026-11-06-chiqish-kuni-yoriqnomasi.md`, step 2). On a real phone, by hand, with a test migraine: double tap Add medication on details, Log medication on Home, the Reminders row and a row on Home's today list, five times each, as fast as natural. Note every write, and Undo it. Then on each new screen, tap one control as soon as it can be read: it must answer the first time. Verify: the step is in the guide, in Uzbek.
-- [ ] 7.2 `qa-engineer` puts the result in the Go/No-Go for 1.1.0, with what it does not prove: one person, one phone, few trials. Verify: it is in `docs/qa/`.
+- [ ] 7.2 `qa-engineer` puts the result in the Go/No-Go for 1.1.0, with what it does not prove: one person, one phone, few trials. A false intake from a natural double tap at or above the timeout goes back to `team-lead` before Production. Verify: it is in `docs/qa/`.
 
 ## Not done here
 
-- Double taps from 300 ms up, a slower hand, dialogs (#149), #148. See the proposal.
+- Double taps from 300 ms up, a slower hand, a first tap that opens a dialog (no issue yet, measured by task 6.8), #148. See the proposal.

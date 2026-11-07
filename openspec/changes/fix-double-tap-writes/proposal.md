@@ -36,7 +36,9 @@ No new visible text, layout, string, permission or schema.
   writes, by decision. Intake and pain level offer Undo. A slower hand is not helped by this change.
 - **A second press before the navigation has happened** (D155 point 5). The first event has not navigated, so the old screen
   still takes it.
-- **Dialogs, popups and other windows.** The first tap may open one and the second may land on it (#149).
+- **Dialogs, popups and other windows.** The first tap may open one and the second may land on it. This rule does not reach
+  them. That path has no issue and has not been measured, so it is not assumed safe. QA measures it now (task 6.8), and the
+  result could change this scope. #149 is a different path.
 - **A change inside one screen,** such as Today to attack mode. D32 and the existing `TapGuard`s stay as they are.
 - **Kind and Category's 700 ms** (D157) stay.
 - **Fixing #148,** which stays open. Taps after Back are not changed here.

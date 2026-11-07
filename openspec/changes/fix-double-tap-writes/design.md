@@ -143,7 +143,7 @@ Not run on a device: TalkBack, switch access or a keyboard against this rule.
 | Zone, clock, midnight, DST | Event uptime, so they do not apply |
 | Limits, unicode, duplicates, backup, upgrade | Not touched. No data or schema change. Nothing is kept on disk |
 | Undo | Not touched. Undo under the second tap on a new screen is ignored like any other control, under the timeout |
-| Deletion | Not touched. A double tap on Delete into a dialog is out of scope (#149) |
+| Deletion | Not touched. A first tap that opens a dialog, with a second tap landing on it, is not covered by this rule and is not assumed safe. It has no issue and has not been measured: `t5_write.py` has no dialog route. Task 6.8 measures it |
 | Rotation, process death | D4 |
 | Double tap | Between two taps with no new screen: both count. Same-screen rules D32 and D157 stay |
 | Unordered async | A navigation that comes after a second press begins: D155 cancels that press |
@@ -176,15 +176,21 @@ Not run on a device: TalkBack, switch access or a keyboard against this rule.
 | Black box, R8 | `t5r8.py` extended to every kind of write in the table, read from the screen, because R8 has no database read | `qa-engineer` |
 | Negative control | A build with only the guard removed, debug and R8, never pushed. The same runs must write. A JVM or Compose test must fail too | `qa-engineer`, `android-engineer` |
 | #148 | `t8_148.py` with the same asks: no worse than 2f800c71 | `qa-engineer` |
+| Dialogs | A double tap on each control that opens a dialog: what lands, and which have a one-tap write. A write is a new issue, and the result could change the scope | `qa-engineer` |
 | Human hand | Real phone, internal track, release guide's step 2 | `team-lead`, the owner |
 
 **Existing tests.** Some may tap the same point twice on a push under the timeout, such as tests of a first tap on a screen fading
 in, in `LeavingScreenInputTest`. Such a test now describes a second tap of a double tap. Where one fails, the engineer lists it
 in the packet and moves it past the distance or the timeout only if it still tests its own point. Never adjust one only to pass.
 
-**Reading the retest.** Run as before, #156's table will still write at gaps from 300 ms up. That is the decision and not a failed
-fix. S2 closes when no route writes under the timeout and the tap still answers from about 300 ms up. QA reads each trial by its
-measured gap, not the ask, and cells close to 300 ms are reported and not judged.
+**Reading the retest.** Run as before, #156's table will still write at gaps from 300 ms up. That is the decision (`team-lead`,
+2026-11-07) and not a failed fix: past the fade it is a plain tap on a visible control, and no app can tell the two apart. S2 closes
+when no route writes under the timeout and the tap still answers from about 300 ms up. QA reads each trial by its measured gap, not
+the ask, and cells close to 300 ms are reported and not judged. QA still judges the closure, and if it disagrees it brings evidence
+to `team-lead`.
+
+**What stays after it closes.** The remaining writes go into the 1.1.0 Go/No-Go as residual risk. If the hand check on the internal
+track shows a false intake from a natural double tap at or above the timeout, it goes back to `team-lead` before Production.
 
 ## Risks
 
@@ -192,7 +198,10 @@ measured gap, not the ask, and cells close to 300 ms are reported and not judged
   rejection was about controls that do not answer, so the internal-track step looks for this. If a person hits it, it goes back
   to `team-lead`.
 - **Writes remain from 300 ms up.** S2's wrong data is reduced and not removed. Intake and pain level are visible with Undo. A
-  chip or a switch has no message, only the changed control.
+  chip or a switch has no message, only the changed control. See "What stays after it closes".
+- **A first tap that opens a dialog.** The dialog is its own window, so this rule cannot reach it, and the second tap may land on
+  a button there. Not measured, no issue yet, and #149 is a different path: a long press through a navigation, and dialogs of a
+  screen that is leaving. Task 6.8 could change the scope.
 - **This branch stacks on PR #143 and PR #147.** It takes `develop` once they merge. `app-shell`'s "Touches only on the current
   screen" lives in an unarchived change, so this delta adds a requirement that says it comes first, rather than modifying that
   one. If that change is archived first, re-read its "A push" scenario and add a MODIFIED delta if it reads false.
