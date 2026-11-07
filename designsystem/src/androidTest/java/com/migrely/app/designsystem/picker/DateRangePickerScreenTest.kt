@@ -115,7 +115,8 @@ class DateRangePickerScreenTest {
     fun theRangeGivenIsKeptByDone() {
         showPicker(start = OCTOBER_5, end = OCTOBER_13, lastDate = OCTOBER_13)
 
-        // Its click action: a touch this soon after the dialog appears would land in its wait.
+        // Its click action: a touch would not answer here at any delay. A touch in this test runs
+        // on the test's clock, and the dialog reads SystemClock, so it is always inside the wait.
         done().performSemanticsAction(SemanticsActions.OnClick)
 
         assertEquals(OCTOBER_5 to OCTOBER_13, confirmed)

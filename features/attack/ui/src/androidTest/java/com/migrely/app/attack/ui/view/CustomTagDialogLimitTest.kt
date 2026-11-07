@@ -98,7 +98,8 @@ class CustomTagDialogLimitTest {
         showDialog()
         field.performTextInput("  Jaw pain ")
 
-        // Its click action: a touch this soon after the dialog appears would land in its wait.
+        // Its click action: a touch would not answer here at any delay. A touch in this test runs
+        // on the test's clock, and the dialog reads SystemClock, so it is always inside the wait.
         composeTestRule.onNodeWithText("Add").performSemanticsAction(SemanticsActions.OnClick)
 
         assertEquals("Jaw pain", added)

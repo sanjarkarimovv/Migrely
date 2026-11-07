@@ -13,6 +13,7 @@ import androidx.compose.ui.test.junit4.ComposeContentTestRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.printToString
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 
 private const val FRAMES_TO_APPEAR = 20
@@ -59,11 +60,22 @@ internal class DialogWaitHarness(private val composeRule: ComposeContentTestRule
     private fun isUp() = composeRule.onAllNodes(isDialog(), useUnmergedTree = true)
         .fetchSemanticsNodes().isNotEmpty()
 
+    /** Takes the dialog away and checks it went, or the next [show] would find this one up. */
     fun hide() {
         composeRule.runOnUiThread { content = {} }
-        composeRule.mainClock.advanceTimeByFrame()
-        composeRule.waitForIdle()
+        assertGone()
     }
+
+    fun assertGone() {
+        var frames = 0
+        while (isUp() && frames++ < FRAMES_TO_APPEAR) {
+            composeRule.mainClock.advanceTimeByFrame()
+            composeRule.waitForIdle()
+        }
+        assertFalse("the dialog did not go", isUp())
+    }
+
+    fun appearedAt(): Long = checkNotNull(appearedAtMillis)
 
     /** Moves the clock to exactly [millis] after the dialog appeared. */
     fun goTo(millis: Long) {

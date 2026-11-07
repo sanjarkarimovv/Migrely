@@ -6,9 +6,13 @@ import android.view.WindowManager
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.junit4.createComposeRule
 import com.migrely.app.designsystem.picker.DateRangePickerLabels
 import com.migrely.app.designsystem.picker.MigrelyDateRangePicker
@@ -24,6 +28,7 @@ import org.robolectric.shadows.ShadowDialog
 
 private const val IN_THE_WAIT = 300L
 private const val AFTER_THE_WAIT = 800L
+private const val UNDER = "under"
 
 /** What only the dialog's window decides: a press outside the card, and Back. */
 @RunWith(RobolectricTestRunner::class)
@@ -126,8 +131,36 @@ class DialogWaitWindowTest {
         assertDismissed(1)
     }
 
+    /**
+     * The main window is not this helper's to touch. This branch has no rule of its own there, so a
+     * fault in how the two rules meet can only show once `screen()`'s rule is on the same screen.
+     */
     @Test
-    fun theRangePickerKeepsItsKeyboardModeAfterItsWait() {
+    fun aControlUnderADialogClosedInItsWaitAnswers() {
+        var open by mutableStateOf(true)
+        var underClicks by mutableIntStateOf(0)
+        harness.show {
+            TextButton(onClick = { underClicks++ }, modifier = Modifier.testTag(UNDER)) {
+                Text("Under")
+            }
+            if (open) MigrelyAlertDialog(onDismissRequest = { open = false }, confirmButton = {})
+        }
+        harness.goTo(IN_THE_WAIT)
+
+        composeRule.runOnUiThread { ShadowDialog.getLatestDialog().onBackPressed() }
+        harness.assertGone()
+        harness.tap(harness.tagged(UNDER))
+
+        composeRule.runOnIdle { assertEquals(1, underClicks) }
+    }
+
+    /**
+     * Only guards the picker's own `SideEffect`. It cannot fail from the wait's change of
+     * properties, because the full-screen path has none, and a change of them with
+     * `decorFitsSystemWindows` true was run and leaves this mode alone.
+     */
+    @Test
+    fun theRangePickerSetsItsOwnKeyboardMode() {
         harness.show {
             MaterialTheme {
                 MigrelyDateRangePicker(
