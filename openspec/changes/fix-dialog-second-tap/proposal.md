@@ -17,9 +17,9 @@ QA measured this on an emulator with injected taps, in gaps of about 140 to 500 
 
 D159 (#156) does not reach this: a dialog is a window of its own, and that rule lives in the main window's `screen()`.
 
-**The same family the other way (T50 task 7.5).** A double tap on a dialog's own option: the first tap closes the dialog, and the second lands
-on the screen beneath. Neither D159 nor the wait stops it. Measured on 4bb7127a, debug, with D159: "Not at all" over the "Right side" chip adds a
-false location. Theme over "Track periods" turned that setting off and on, 3 of 3 double taps at 100%. Single taps did neither. By read
+**The same family the other way (#159, S2).** A double tap on a dialog's own option: the first tap closes the dialog, and the second lands
+on the screen beneath. Neither D159 nor the wait stops it. Measured on 4bb7127a, debug, with D159: the OK of Log medication's "Taken at" picker over a
+Log button writes a false intake, 6 of 6 in landscape with 4 medications. Add past's picker OK over "Add migraine" in landscape creates a migraine, 4 of 4. "Not at all" over the "Right side" chip adds a false location. Theme over "Track periods" turned that setting off and on, 3 of 3 double taps at 100%. Single taps did neither. By read
 of the code, a picker over `AddPainDialog` has the same shape. `team-lead` put this on this branch, for one QA pass.
 
 ## What Changes
@@ -32,8 +32,8 @@ of the code, a picker over `AddPainDialog` has the same shape. `team-lead` put t
 - **Touch only.** TalkBack, the click action of switch access and a keyboard work at once.
 - **The wait is the same whatever opened the dialog,** and starts again after a rotation or a restored process. A return from Home or Recents to
   a dialog still open does not wait again.
-- **A lift on a dialog's card counts for whatever is beneath it (D161).** A press in another window, under Android's double-tap timeout (300 ms
-  today) and within its distance (100 dp today) of that lift, is ignored. A tap after that is two taps and writes.
+- **A lift on a dialog's card counts for whatever is beneath it (D161).** A press in another window, under the wait's 500 ms and within Android's
+  double-tap distance (100 dp today) of that lift, is ignored. A tap after that is two taps and writes. D159's 300 ms stays.
 
 No new string, permission or schema.
 
@@ -41,8 +41,8 @@ No new string, permission or schema.
 
 - **A second tap after the wait.** From there it is a plain tap on a visible control, and it runs. QA measures where writes come back,
   and that is residual risk in the Go/No-Go.
-- **A second tap on a dialog's option at or after the timeout.** It is two taps and writes. Most of the writes measured are here: 19 of 41. That
-  is residual risk in the Go/No-Go.
+- **A second tap on a dialog's option from 500 ms up.** It is two taps and writes, including a false intake with its Undo. On `effect_row`, 11 of the
+  41 measured writes are here. That is residual risk in the Go/No-Go.
 - **A tap outside the card, or Back, as a first tap.** Neither lifts on the card. A double tap outside is measured (task 7.10) and not called safe.
 - **`DropdownMenu` on a custom tag.** It opens on a long press, so one tap cannot open it. A double tap on its Remove is measured (task 7.10), and
   the scope widens only if it writes. #149 stays open.
@@ -71,4 +71,4 @@ None.
 - `app/src/test`: a Konsist test.
 - `docs/ARCHITECTURE.md` section 8.
 - No health claim changes, so `medical-reviewer` is not needed. No visible text changes.
-- BRD ids: D160, D161, EC-UX-27, EC-UX-28, EC-UX-29, EC-UX-30. Issue #157, and T50 task 7.5 until QA files its issue.
+- BRD ids: D160, D161, EC-UX-27, EC-UX-28, EC-UX-29, EC-UX-30. Issues #157 and #159.

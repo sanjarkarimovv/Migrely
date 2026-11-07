@@ -1,7 +1,7 @@
 # Design
 
-D1 to D4, the wait, are built on this branch, and `tasks.md` holds the engineer's evidence. D5, a lift in a dialog, is a plan: nothing of it has
-been built or run. The measures come from issue #157, `recount_dialog.py` and QA's `t10b.jsonl`, on an emulator with injected taps. The Compose and
+D1 to D5 are built on this branch, and `tasks.md` holds the engineer's evidence. QA's independent run is still to come. The measures come from issues
+#157 and #159, `recount_dialog.py`, `recount_t10c.py` and QA's `t10b.jsonl`, on an emulator with injected taps. The Compose and
 Material facts are read from the sources of Compose UI 1.9.3 and Material 3 1.4.0.
 
 ## Context
@@ -115,34 +115,44 @@ events, and hover is not a press. The modifier adds no semantics. These are from
 7.3. A service that injects gestures, such as switch access's point scan, is a real touch and the wait applies to it, which at 500 ms from
 appearing should not be reached.
 
-### D5. A lift in a dialog counts for what is beneath it (BRD D161)
+### D5. A lift in a dialog counts for what is beneath it (BRD D161, #159)
 
 **The path.** A double tap on a dialog's own option. The first tap closes the dialog, and the second lands on the window beneath. D160 does not stop it,
 because that is not the dialog's wait. D159 does not, because a dialog is another window, so it never hears the lift, and opening the dialog already left a
 lift on the entry.
+
+**The worst case in #159** is the OK of Log medication's "Taken at" picker over a Log button: a false intake, 6 of 6 in landscape with 4 medications, at 142 to 522 ms (`recount_t10c.py`). Beside it, on a build whose app code equals `develop`: the OK of Add past's picker over "Add migraine" in landscape creates a migraine, 4 of 4 at 138 to 516 ms ("Change when it started" 2 of 2, "Change when it ended" 2 of 2), and details opens on it. Single taps wrote nothing. #159 stays S2, because both are visible, and the one has Undo and the other can be deleted.
 
 QA's run on 4bb7127a, debug, `t10b.jsonl`, `effect_row`, "Not at all" over "Right side", 48 double taps at one point, 100% and 200% portrait. By measured gap:
 
 | Gap, first lift to second press | Wrote a false location |
 |---|---|
 | Under 100 ms | 0 / 5 |
-| 100 to 150 ms | 5 / 6 |
-| 150 to 200 ms | 5 / 6 |
-| 200 to 300 ms | 12 / 12 |
-| 300 to 350 ms | 1 / 1 |
-| 350 to 900 ms | 18 / 18 |
+| 100 to 300 ms | 22 / 24 |
+| 300 to 500 ms | 8 / 8 |
+| 500 ms and up | 11 / 11 |
 
 The same file has Theme over "Track periods" at 100%: `period_tracking` flipped on all 3 double taps, at 146, 248 and 523 ms, and not on the single tap. That is
 a setting changed with no message. Other runs, one repeat each: Theme in landscape opened Your data, and Restore in landscape reopened its dialog from about 250 ms.
 
-**The rule, in plain words.** A press is the second tap of a double tap if a finger just lifted on a dialog's card in another window. Under the timeout and within
+**The rule, in plain words.** A press is the second tap of a double tap if a finger just lifted on a dialog's card in another window. Under 500 ms and within
 the distance of that lift, it is ignored until it lifts. Everything else answers.
+
+**Measured at 167b2e95,** `w161_final.jsonl`, debug, one injected finger:
+
+| Row | Gap | Result |
+|---|---|---|
+| `effect_row` | 157-162 ms, 391-399 ms | tag 0 of 3 each |
+| `effect_row` | 595-617 ms | the chip answers, tag 3 of 3 |
+| Theme over "Track periods" | 238-248 ms, 389-398 ms | flip 0 of 3 each |
+| "Taken at" OK over Log Deltacet, landscape, 4 medications | 239-244 ms, 395-398 ms | intake 0 of 3 each |
+| The same | 692-709 ms | intake 3 of 3, "Deltacet logged at…" |
 
 | Question | Decision | Why |
 |---|---|---|
-| The limit | **D159's: `doubleTapTimeoutMillis`, 300 ms today.** Not D160's 500 | D160's 500 gives a person a moment to see something new. What is beneath is not new, and a tap on it is a plain tap on a visible control. Longer would swallow more, and Google rejected "Unresponsive UI elements". The cost is stated: 19 of the 41 measured writes are from 300 ms up, and they stay |
+| The limit | **`DIALOG_WAIT_MILLIS`, 500 ms, in both nodes, read inside `DialogLiftRule`** (`team-lead`). D159's 300 ms stays | This plan first said 300, before the worst case was known. #159's worst case is a false intake, and the handbook's order puts wrong data feeding the overuse count above a lost gesture that costs one retry. D159 stays at 300 because a new screen's first tap is common and must answer, and that reason does not apply to a screen the person has just come back to. On `effect_row`, 30 of the 41 measured writes are under 500 ms, and 11 stay. The cost is under "What a person loses" |
 | Lower limit | None | As D159 |
-| Distance | **Yes, in screen coordinates,** with `scaledDoubleTapSlop`, 100 dp today | It is what makes this Android's own double tap, and a real double tap does not drift that far. Without it, every press in the window for 300 ms is lost, and the lead asked not to swallow more than needed. The two windows have different origins, so both nodes use `localToScreen`. A wrong conversion fails silently toward writing, so a test on `emulator-5570` proves it with a real offset (task 6a.5) and QA's table proves it again |
+| Distance | **Yes, in screen coordinates,** with `scaledDoubleTapSlop`, 100 dp today | It is what makes this Android's own double tap, and a real double tap does not drift that far. Without it, every press in the window for 500 ms is lost. The two windows have different origins, so both nodes use `localToScreen`. A wrong conversion fails silently toward writing, so a test on `emulator-5570` proves it with a real offset (task 6a.5) and QA's table proves it again |
 | D159's "no touch has lifted on this entry" | **Not asked on this path** | Opening the dialog left that lift, so asking would make the rule never act. D159's own path keeps the condition |
 | Which lift counts | **Any lift on the card that the wait let through.** An option, OK, Cancel, or one that closes nothing | The rule cannot know what a lift will close, since some close after async work. It need not: while the dialog stays, the window beneath takes no touch, so a lift that closes nothing costs nothing. It only asks about another window, so two days in one calendar both count |
 | A press the wait ignored | Does not count | Nothing ran. Otherwise a stray tap in the wait, then Back, would swallow the next tap |
@@ -153,7 +163,8 @@ the distance of that lift, it is ignored until it lifts. Everything else answers
 | A burst | The lift of an ignored press moves the lift, and it stays a dialog's lift | Otherwise the third tap of a shaky triple tap writes, as in D159. No upper limit, as in D159 |
 | A new screen from a dialog's button | Ignored the same way | The entry is new. D159 cannot see it either |
 | A return from a dialog's button | Ignored the same way | The one exception to D159's "SHALL NOT cover a return", and it is narrow. Back and a control of the main window stay as they were, so #148 is untouched. From reading the code, no dialog's button pops today |
-| Recreation | The lift is not kept | 300 ms does not outlast a recreation |
+| Recreation | The lift is not kept | 500 ms does not outlast a recreation |
+| A press's pointer | Ignored pointers are kept per window, and a dialog's key is an `Any()` for its node | A touch id means something only in its own window |
 
 **How `designsystem` tells `app`.** `app` depends on `designsystem`, not the other way, and the older-dialog case needs the question asked on both sides. So one small
 pure class goes in `designsystem`, in the dialog package, with a `staticCompositionLocalOf` whose default never ignores anything, so previews and feature tests
@@ -167,7 +178,7 @@ stays in `app` and gets one more input, and no class moves.
 | Option | Why |
 |---|---|
 | A wait on the main window when a dialog closes | It would ignore every press, at any point, and it needs a dialog-closed signal that Back also raises |
-| 500 ms, D160's length | See above. It would stop more writes and lose more deliberate taps. `team-lead`'s preference, and I agree |
+| 300 ms, D159's limit | This plan's first choice, and built first. It left a false intake at 300 to 500 ms. See the limit above |
 | No distance test | Simpler and it cannot fail silently, but it swallows a tap anywhere. Kept as the fallback if the coordinates prove unreliable: a change of one condition |
 | Wrapping the window's `Window.Callback` to see every touch, outside included | It would see outside taps and raw coordinates, but it is a second, non-Compose way into touch |
 | `dismissOnBackPress = false` with a `BackHandler`, to tell Back from outside | It takes over Back, which D160 promises is untouched, for a rare residue |
@@ -176,11 +187,20 @@ stays in `app` and gets one more input, and no class moves.
 **The menu.** `DropdownMenu` on a custom tag is a popup that opens on a long press, not through the helper. Its Remove closes it and archives the tag, and the second tap of a double tap
 lands beneath, where other chips lie. So far from reading the code only. Task 7.10 measures it, and the scope widens only if it writes.
 
-**What is lost for a real person.** A tap under 300 ms and within 100 dp of the option just tapped, beneath it, does nothing, and the next tap answers. Tapping on at speed in that spot gets no answer until a
-pause. Believed rare, and not measured.
+**What a person loses.** All of it:
+
+- A tap under 500 ms and within 100 dp of the option, beneath it, does nothing.
+- A whole drag, hold or fling that starts there is dead until the finger lifts, with no time limit.
+- The centre walks. Each ignored lift moves the time and the place, so tapping along a row of chips at under 500 ms per tap stays dead until a 500 ms pause. It can only start with a press inside the first 500 ms.
+- Writes from 500 ms up stay, including a false intake with its Undo: 700 ms wrote on the engineer's walk.
+- On a dialog opened from a dialog, a tap just after the wait can be ignored too, if a second tap was ignored and lifted just before it. Trace: a lift on Next at 1000, the time step attached at 1060, a second tap at 1280 lifted at 1320, and a deliberate tap at 1565 is ignored, 5 ms after the wait. A tap after a 500 ms pause answers.
+
+None of the lost gestures writes. Whether they feel dead to a person is unproved until the hand check.
 
 **What stays unproved.** A human hand, a real phone, and how often this happens. Whether a chip or switch lies under an option depends on scrolling, and QA's rows are one geometry for each, moved there on purpose.
-Writes from 300 ms up are not fixed. Nothing here proves that a person's natural double tap on an option is under 300 ms.
+Writes from 500 ms up are not fixed. Nothing here proves that a person's natural double tap on an option is under 500 ms.
+
+**Back.** Back lifts nothing on a card, so this rule does not act. A tap straight after Back can still be lost to the dialog's window closing: 0 of 5 landed at 0 ms after Back's command, 2 of 5 at 100 ms, and 15 of 15 from 200 ms, with and without the rule alike.
 
 ## Edge-case checklist
 

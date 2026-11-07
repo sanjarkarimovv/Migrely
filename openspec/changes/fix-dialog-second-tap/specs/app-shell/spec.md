@@ -39,8 +39,13 @@ change on screen during the wait or when it ends, and no text SHALL be added (BR
 - **THEN** it does nothing, and the next press answers
 
 #### Scenario: A tap just after the wait
-- **WHEN** the user taps a control in the dialog just after the wait
+- **WHEN** the user taps a control just after the wait, on a dialog opened from the main window
 - **THEN** the control answers, on the first tap
+
+#### Scenario: A tap just after the wait on a dialog opened from a dialog
+- **WHEN** a dialog opens from a lift on another dialog, as the time step does from Next, a second tap is ignored and lifts, and a
+  tap comes just after the wait, under the limit and within the distance of that lift
+- **THEN** that tap does nothing, because the lift moved, and a tap after a 500 ms pause answers
 
 #### Scenario: A person who is really fast
 - **WHEN** a person who has read nothing yet, or knows the dialog, taps a control inside the wait
@@ -152,52 +157,71 @@ switch access and a keyboard SHALL work at once (BRD EC-UX-27, D160).
 
 ### Requirement: A lift in a dialog counts for what is beneath it
 A touch that lifts on a dialog's card, once the wait has let it through, SHALL count as the first tap of a double tap for every
-other window. A press in another window, the main screen or an older dialog, SHALL be ignored as a whole gesture under Android's
-double-tap timeout and within its double-tap distance of that lift, on a screen touched or not. Both values SHALL come from the
+other window. A press in another window, the main screen or an older dialog, SHALL be ignored as a whole gesture under the wait's
+500 ms constant and within Android's double-tap distance of that lift, on a screen touched or not. The distance SHALL come from the
 platform and the times from the touch events. Every other press SHALL answer (BRD EC-UX-30, D161).
 
+#### Scenario: The OK of a picker over a Log button
+- **WHEN** the user double taps OK in the "Taken at" picker on Log medication, with a gap under the limit, in landscape with 4
+  medications or wherever a Log button lies under the finger
+- **THEN** the time is picked and no intake is written
+
+#### Scenario: The OK of a picker over "Add migraine"
+- **WHEN** the user double taps OK in the "Change when it started" or "Change when it ended" picker on Add past, in landscape, with a
+  gap under the limit, and "Add migraine" lies under the finger
+- **THEN** the time is picked, no migraine is created, and Add past stays open
+
 #### Scenario: An option over a location chip
-- **WHEN** the user double taps "Not at all" on the effect question with a gap under the timeout, at 100% or 200% font, and a
+- **WHEN** the user double taps "Not at all" on the effect question with a gap under the limit, at 100% or 200% font, and a
   location chip lies under the finger on the screen beneath
 - **THEN** the effect is written and no location is added
 
 #### Scenario: A theme over a setting
-- **WHEN** the user double taps a choice on the Theme dialog with a gap under the timeout, and the "Track periods" switch or
+- **WHEN** the user double taps a choice on the Theme dialog with a gap under the limit, and the "Track periods" switch or
   another row lies under the finger
 - **THEN** the theme changes, and the setting stays on and no screen opens
 
 #### Scenario: Restore over its own row
-- **WHEN** the user double taps Restore with a gap under the timeout, and "Restore the copy" lies under the finger
+- **WHEN** the user double taps Restore with a gap under the limit, and "Restore the copy" lies under the finger
 - **THEN** the copy is restored once, and the dialog does not open again
 
 #### Scenario: Cancel
-- **WHEN** the user double taps Cancel with a gap under the timeout
+- **WHEN** the user double taps Cancel with a gap under the limit
 - **THEN** the dialog closes and the second press does nothing, because a lift on Cancel is a lift on the card like any other
 
 #### Scenario: A screen just opened from a dialog
-- **WHEN** a dialog's button opens a new screen and the second press lands on it under the timeout and within the distance
+- **WHEN** a dialog's button opens a new screen and the second press lands on it under the limit and within the distance
 - **THEN** that press does nothing
 
 #### Scenario: A return from a dialog's button
-- **WHEN** a dialog's button returns to a touched screen and the second press lands on it under the timeout and within the
+- **WHEN** a dialog's button returns to a touched screen and the second press lands on it under the limit and within the
   distance
 - **THEN** that press does nothing, which is the one case where a press on a touched screen is ignored, and Back and returns by a
   control of the main window stay as they are
 
 #### Scenario: Three quick taps
-- **WHEN** a third tap follows an ignored second tap, under the timeout and within the distance
-- **THEN** it does nothing either, and the next press after a pause of the timeout answers
+- **WHEN** a third tap follows an ignored second tap, under the limit and within the distance
+- **THEN** it does nothing either, and the next press after a 500 ms pause answers
+
+#### Scenario: Tapping along a row
+- **WHEN** a first ignored press has come under the limit, and the user goes on tapping along a row of chips with each tap under
+  500 ms after the last and within the distance of it
+- **THEN** every one does nothing, because each ignored lift moves the time and the place, until a 500 ms pause
+
+#### Scenario: A whole gesture beneath
+- **WHEN** a drag, a hold or a fling starts beneath under the limit and within the distance
+- **THEN** it is dead until the finger lifts, with no time limit, and writes nothing
 
 #### Scenario: A tap after the limit
-- **WHEN** the second tap comes at or after the timeout and lands on a chip or a switch
-- **THEN** it writes, because that is two taps, which is the residual risk
+- **WHEN** the second tap comes at or after the limit and lands on a chip, a switch or a Log button
+- **THEN** it writes, including a false intake with its Undo, because that is two taps, which is the residual risk
 
 #### Scenario: A deliberate tap just after the limit
-- **WHEN** the user taps a control beneath, at the same point, just after the timeout
+- **WHEN** the user taps a control beneath, at the same point, just after the limit, with no press ignored in between
 - **THEN** the control answers, on the first tap
 
 #### Scenario: A tap farther away
-- **WHEN** a press lands beneath under the timeout but beyond the distance from the lift
+- **WHEN** a press lands beneath under the limit but beyond the distance from the lift
 - **THEN** the control answers
 
 #### Scenario: Taps inside one dialog
@@ -206,33 +230,35 @@ platform and the times from the touch events. Every other press SHALL answer (BR
 
 #### Scenario: A picker over a dialog
 - **WHEN** the user double taps OK or Cancel on `MigrelyDateTimePicker` opened from "Add pain level", and the second press lands
-  on the older dialog under the timeout and within the distance, at 100% or 200% font or in landscape
+  on the older dialog under the limit and within the distance, at 100% or 200% font or in landscape
 - **THEN** that press does nothing, and the older dialog's control does not run
 
 #### Scenario: Between the date step and the time step
-- **WHEN** the date step closes and a press lands on the older dialog before the time step's window is up, under the timeout and
+- **WHEN** the date step closes and a press lands on the older dialog before the time step's window is up, under the limit and
   within the distance of the lift on Next
 - **THEN** that press does nothing
 
 #### Scenario: A press ignored by the wait does not count
 - **WHEN** a press is ignored by the dialog's wait, lifts, and Back then closes the dialog, and the user presses a control beneath
-- **THEN** the control answers, because no lift was let through
+- **THEN** this rule does not act, because no lift was let through, and the control answers once the dialog's window has closed
 
 #### Scenario: A dialog closed during its wait
 - **WHEN** a dialog opened by a tap is closed by Back, and the user then presses a control under it in the main window
-- **THEN** the control answers, because no lift on the card was let through and a touch has already lifted on that screen
+- **THEN** this rule does not act, because no lift on the card was let through, and the control answers once the dialog's window
+  has closed
 
 #### Scenario: Back
-- **WHEN** a dialog is closed by Back after its wait, and the user presses a control beneath straight away
-- **THEN** the control answers, because Back lifts no finger on the card
+- **WHEN** a dialog is closed by Back after its wait, and the user presses a control beneath
+- **THEN** this rule does not act, because Back lifts no finger on the card, and the tap lands once the dialog's window has closed:
+  on an emulator 0 of 5 at 0 ms after Back's command, 2 of 5 at 100 ms, and 15 of 15 from 200 ms, with and without the rule alike
 
 #### Scenario: A tap outside the card
-- **WHEN** a tap outside the card closes the dialog after its wait, and a second tap lands beneath under the timeout
+- **WHEN** a tap outside the card closes the dialog after its wait, and a second tap lands beneath under the limit
 - **THEN** this rule does not act, because that tap never reaches the card, and what it does is measured and is not called safe
 
 #### Scenario: Screen readers and keyboards
 - **WHEN** an accessibility service's click action or a keyboard closes a dialog, and a touch presses a control beneath
-- **THEN** the control answers, because no finger lifted on the card, and semantics are not touched
+- **THEN** this rule does not act, because no finger lifted on the card, and semantics are not touched
 
 #### Scenario: A rotation or a restored process
 - **WHEN** the activity is recreated after a lift on a dialog's card
@@ -253,7 +279,7 @@ hand on the internal track. Reports SHALL say what emulator runs with injected t
 
 #### Scenario: Guard in place
 - **WHEN** QA's dialog rows run on the build under test
-- **THEN** no row writes inside the wait, and a tap just after it answers
+- **THEN** no row writes inside the wait, and a tap just after it answers on a dialog opened from the main window
 
 #### Scenario: A raw dialog
 - **WHEN** a production file outside the helper names a dialog from Compose or Material, by import or fully qualified
