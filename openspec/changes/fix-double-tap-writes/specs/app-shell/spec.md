@@ -1,7 +1,7 @@
 ## ADDED Requirements
 
 ### Requirement: The second tap of a double tap does not reach a new screen
-A press on a screen just entered SHALL be ignored, as a whole gesture, when it comes less than Android's double-tap timeout
+A press on a screen just entered SHALL be ignored, as a whole gesture except a text field's long press, when it comes less than Android's double-tap timeout
 after a touch lifted on the screen before, and within Android's double-tap distance of that lift. Both values SHALL come from
 the platform and the times from the touch events. This comes before the rule that a screen fading in takes touches (BRD
 EC-UX-24, D159).
@@ -52,9 +52,23 @@ EC-UX-24, D159).
 - **WHEN** a third tap follows an ignored second tap, under the timeout and within the distance
 - **THEN** it does nothing either, and the next press after a pause of the timeout answers
 
+#### Scenario: Repeated tapping
+- **WHEN** the user keeps tapping a control of a new screen, with every gap under the timeout and within the distance
+- **THEN** no tap answers, with no upper limit on how many, because a shaky third tap must not write
+- **AND** the next tap after a pause of the timeout answers
+
 #### Scenario: The ignored press is held or dragged
 - **WHEN** the ignored press is held or becomes a drag
 - **THEN** nothing clicks or scrolls for that gesture, and the next gesture answers
+
+#### Scenario: An ignored press held on a text field
+- **WHEN** the ignored press is held still on a text field for about half a second, Android's long-press time
+- **THEN** text selection, a magnifier and a haptic can show, because consuming the press cannot stop that long press
+- **AND** the text does not change and nothing is written, which is accepted as a residue
+
+#### Scenario: A short ignored tap on a text field
+- **WHEN** the ignored press is a short tap on a text field
+- **THEN** the field does not take focus, and the next tap focuses it
 
 #### Scenario: Remove animations
 - **WHEN** "Remove animations" is on and the user double taps a control that opens a screen
@@ -99,11 +113,11 @@ D159).
 
 #### Scenario: A first launch and after process death
 - **WHEN** the app starts or the process was killed and the user taps a control straight away
-- **THEN** the control answers, because the guard keeps nothing across them
+- **THEN** the control answers, because the time of the last lift is not kept across them
 
 #### Scenario: A rotation between two taps
-- **WHEN** the phone rotates after the first tap and the user taps a control
-- **THEN** the control answers, or it is ignored only if it is still under the timeout and within the distance
+- **WHEN** the phone rotates after the first tap, which recreates the activity, and the user taps a control
+- **THEN** the control answers, because the time of the last lift is not kept across it
 
 #### Scenario: A screen that opens itself just after a tap
 - **WHEN** a screen opens by itself, such as a paywall due on Home, just after a tap, and a press lands under the timeout and
@@ -115,13 +129,13 @@ D159).
 - **THEN** that finger's press answers
 
 #### Scenario: Nothing to see
-- **WHEN** a press is ignored
+- **WHEN** a press is ignored and it is not held on a text field
 - **THEN** no text, sound, haptic or layout change shows, and the new screen stays as it entered
 
 ### Requirement: Back and returns do not change
-The rule SHALL NOT cover a return to a screen where a touch has already lifted, by Back, Done, Save or `popUpTo`. Touches after
-a return SHALL behave as they did before this change, so the time before a tap lands after Back SHALL not grow (BRD EC-UX-26,
-D159).
+The rule SHALL NOT cover a return to a screen where a touch has already lifted, by Back, Done, Save or `popUpTo`, also after the
+activity was recreated or the process restored. Touches after a return SHALL behave as they did before this change, so the time
+before a tap lands after Back SHALL not grow (BRD EC-UX-26, D159).
 
 #### Scenario: A tap after Back
 - **WHEN** the user taps Back and then taps a row of the screen below
@@ -135,6 +149,11 @@ D159).
 #### Scenario: A double tap on Done or Save
 - **WHEN** the user double taps a control that returns to the screen before
 - **THEN** this rule does not act, and the leaving screen takes the second tap for at most the fade
+
+#### Scenario: A return after the activity was recreated
+- **WHEN** the user tapped to leave a screen, the phone rotates or the process is killed and restored, the user taps Back, and
+  presses under the timeout and within the distance of that tap
+- **THEN** the press answers, because which screens were touched survives the recreation
 
 #### Scenario: A return to a screen never touched
 - **WHEN** the user returns to a screen that a touch has never lifted on, such as one under a screen opened from a shortcut
@@ -180,3 +199,5 @@ injected taps do not prove what a human hand does (BRD D159).
 - **THEN** a person double taps the routes on a real phone, and then taps single deliberate taps on the new screen, and the
   result goes in the Go/No-Go with what it does not prove
 - **AND** a false intake from a natural double tap at or above the timeout goes back to `team-lead` before Production
+- **AND** after repeated tapping on a control of a new screen, the next tap after a short pause answers, and a screen that feels
+  frozen goes back to `team-lead` before Production

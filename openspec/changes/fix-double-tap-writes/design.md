@@ -80,10 +80,19 @@ such as Add past into details, are covered too. `NavController.currentBackStack`
 out, and comparing `previousBackStackEntry` would miss those `popUpTo` routes.
 
 **Three taps.** The lift of an ignored press updates the time and place of the last lift, and does not mark the entry. So a
-quick burst stays ignored until a pause of the timeout. Otherwise the third tap of a shaky triple tap would write.
+quick burst stays ignored until a pause of the timeout. Otherwise the third tap of a shaky triple tap would write. The burst has
+no upper limit: someone tapping a control that seems dead, with gaps under the timeout, gets no answer until they pause.
+`team-lead` keeps this, because a shaky third tap must not write. QA measures it on attack mode's routes (task 6.9), and the hand
+check tries it (task 7.1). If the screen feels frozen, it goes back to `team-lead` before Production.
 
 **The whole gesture.** Once ignored, a press stays ignored until its finger lifts, tracked by pointer id, as `touchesOnlyWhile`
 does. Another finger is judged by itself.
+
+One thing gets through, accepted by `team-lead` as a residue: an ignored press held still on a text field still starts long-press
+selection, because Compose's `SelectionGestures.kt` reads the press with `changedToDownIgnoreConsumed`, and consuming it cannot
+stop that. A hold of about half a second can show selection, a magnifier and a haptic (the reviewer's probe; Android's default
+long-press time is 400 ms in the API 36 source). The text does not change and nothing is written. A short ignored tap does not
+focus the field.
 
 ### D3. Where it lives
 
@@ -93,6 +102,14 @@ does. Another finger is judged by itself.
 - `screen()` passes the entry id, the timeout and the distance, read in composition. The engineer picks how the instance reaches
   `screen()`, with no edit at each of the 20 destinations if possible.
 - Positions are in the node's own coordinates. Both screens' nodes have the same shift and size, so they compare directly.
+- **Which entries were touched is saved instance state, and the rest is not.** Rotation recreates the activity, because the
+  manifest has no `configChanges`. With the marks in `remember`, a return to a touched screen after a recreation was covered, which
+  breaks "SHALL NOT cover a return" (review M1). So the marks survive recreation and process death, beside the nav controller's
+  saved back stack, whose entries keep their ids. The last lift and the ignored pointers are not saved: event times mean nothing
+  after a reboot, and 300 ms does not outlast a recreation.
+- **The saved marks stay bounded.** They go into the saved state, which has a size limit, so they must not grow for as long as the
+  activity lives. The engineer keeps only the most recent marks, more than any back stack reaches. A dropped mark means one return
+  counted as "never touched", which is already accepted. The marks are random entry ids and hold no health data.
 
 **What the node sees.** The node takes part only in touches that hit something inside the content. So a press on empty space on
 the new screen reaches no node, and there is nothing to guard. A first tap that hit no control opened no screen.
@@ -107,8 +124,11 @@ the new screen reaches no node, and there is nothing to guard. A first tap that 
 | Back arrow, Done, Save, `popUpTo` back to a touched screen | **This rule does nothing** | Point 3. D155 already has the leaving screen take a second tap at that point, up to the fade |
 | System Back | This rule does nothing | No pointer in this window at all |
 | Notification, launcher shortcut, first launch | This rule does not act | No lift in this window just before it. `ACTION_START_ATTACK` clears the stack with no touch. Attack mode's own wait (D32), if it applies there, is a separate rule and stays |
-| Rotation | The instance may not survive it. If it does not, the press answers | Nothing is worth saving for 300 ms |
-| Process death | Answers | Not saved |
+| Rotation, right after it | The press answers | The activity is recreated, and the last lift is not saved, so no lift is recent |
+| Rotation, later, a return to a touched screen | This rule does nothing | The marks are saved, so the entry still counts as touched |
+| Rotation, later, a new screen | As forward | The rule works as usual once a new lift has happened |
+| Process death and restore | As rotation | The marks are restored with the back stack |
+| Process killed and the app started fresh | The press answers | No saved state, no marks and no lift |
 
 **Back and #148.** #148's window comes from the fade, and this rule adds nothing to it, so it cannot get worse. The same point
 also means Back's own residue stays: a second tap on Back after the fade lands below, which can pop twice, and a second tap on
@@ -141,7 +161,7 @@ Not run on a device: TalkBack, switch access or a keyboard against this rule.
 | Premium and Free | Not touched. A second tap on a paywall's buy button under the timeout does nothing |
 | During an attack | Attack mode's route is in the table. Safety controls are not delayed: "Medication taken" opens on the first tap. A deliberate tap from 300 ms up answers |
 | Zone, clock, midnight, DST | Event uptime, so they do not apply |
-| Limits, unicode, duplicates, backup, upgrade | Not touched. No data or schema change. Nothing is kept on disk |
+| Limits, unicode, duplicates, backup, upgrade | Not touched. No data or schema change. The only thing kept is the bounded marks in saved instance state, which are random entry ids (D3) |
 | Undo | Not touched. Undo under the second tap on a new screen is ignored like any other control, under the timeout |
 | Deletion | Not touched. A first tap that opens a dialog, with a second tap landing on it, is not covered by this rule and is not assumed safe. It has no issue and has not been measured: `t5_write.py` has no dialog route. Task 6.8 measures it |
 | Rotation, process death | D4 |
