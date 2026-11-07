@@ -1,0 +1,12 @@
+# From home with no attack in progress: add a 2-hour past migraine at 10 AM on day ${DAY} of the month before last, then
+# return home. Any day of that month is over 30 days old whatever today is, which Insights' patterns need.
+appId: com.migrely.app
+---
+- tapOn: "Add a past migraine"
+- tapOn: "Change when it started, now .*"
+- tapOn: "Change to previous month"
+- tapOn: "Change to previous month"
+- runFlow:
+    file: add-past-attack-day-and-save.yaml
+    env:
+      DAY: "${DAY}"

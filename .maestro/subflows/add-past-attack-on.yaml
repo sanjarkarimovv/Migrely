@@ -5,36 +5,7 @@ appId: com.migrely.app
 - tapOn: "Add a past migraine"
 - tapOn: "Change when it started, now .*"
 - tapOn: "Change to previous month"
-# No {n} quantifier after ${DAY}: Maestro reads up to the last closing brace as the script ("DAY}, [0-9]{4").
-# Since #101 the calendar scrolls in landscape. A row cut at its bottom edge counts as visible to Maestro while it sits
-# beside Cancel and Next, where a tap misses it, so the day is brought to the middle first.
-- scrollUntilVisible:
-    element: "[A-Za-z]+, [A-Za-z]+ ${DAY}, [0-9]+"
-    direction: DOWN
-    centerElement: true
-- tapOn: "[A-Za-z]+, [A-Za-z]+ ${DAY}, [0-9]+"
-- tapOn: "Next"
-- tapOn:
-    text: "10 o.clock"
-    below: "Select minutes"
-- tapOn: "AM"
-# In landscape OK is below the dial and the dialog scrolls (#79). The swipe runs between the dial, which a drag would
-# turn, and the dialog's edge: on Migrely_QA_API_36 in landscape the dial ends at x 1536 px and the dialog at 1620, and
-# 66% is 1584.
 - runFlow:
-    when:
-      notVisible: "OK"
-    commands:
-      - swipe:
-          start: 66%, 85%
-          end: 66%, 15%
-- tapOn: "OK"
-- assertVisible: "Duration 2 h 0 min"
-- tapOn: "Add migraine"
-- extendedWaitUntil:
-    visible: "Not recorded"
-    timeout: 5000
-- back
-- extendedWaitUntil:
-    visible: "Migraine started"
-    timeout: 5000
+    file: add-past-attack-day-and-save.yaml
+    env:
+      DAY: "${DAY}"
