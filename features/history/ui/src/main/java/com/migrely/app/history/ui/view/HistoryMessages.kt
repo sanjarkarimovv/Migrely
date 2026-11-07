@@ -123,7 +123,7 @@ internal fun HistoryMessages(
             } else {
                 null
             },
-            hasTimeout = behaviour.baseDurationMillis != null,
+            baseDurationMillis = behaviour.baseDurationMillis,
             dismissLabel = stringResource(R.string.history_snackbar_dismiss),
             onDismiss = { if (shown == visible) shown = null },
             timeLeft = if (!reduceMotion && behaviour.undoesDeletion && timeout != null) {

@@ -186,9 +186,9 @@ fun ReportDependencies.Report(navController: NavController, modifier: Modifier =
                     text = stringResource(shown.message.text()),
                     tone = behaviour.tone,
                     action = null,
-                    hasTimeout = behaviour.baseDurationMillis != null,
+                    baseDurationMillis = behaviour.baseDurationMillis,
                     dismissLabel = stringResource(R.string.report_message_dismiss),
-                    onDismiss = { message = null }
+                    onDismiss = { if (message == shown) message = null }
                 )
             }
         },

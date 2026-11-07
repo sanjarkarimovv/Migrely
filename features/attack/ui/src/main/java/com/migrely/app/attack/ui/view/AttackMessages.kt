@@ -115,7 +115,7 @@ internal fun AttackMessages(
             text = messageText(message),
             tone = behaviour.tone,
             action = action,
-            hasTimeout = behaviour.baseDurationMillis != null,
+            baseDurationMillis = behaviour.baseDurationMillis,
             dismissLabel = stringResource(R.string.attack_snackbar_dismiss),
             onDismiss = { currentOnClear(visible) },
             timeLeft = if (!reduceMotion && behaviour.hasUndo && visibleTimeout != null) {

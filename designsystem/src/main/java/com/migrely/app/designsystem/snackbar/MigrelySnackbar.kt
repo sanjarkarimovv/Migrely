@@ -71,6 +71,7 @@ private const val EXIT_MILLIS = 200
 // How long a message's place keeps swallowing touches after it changes: past the slide in or fade out, plus the time a
 // finger already on its way takes to land (QA #52).
 private const val GUARD_MILLIS = 800L
+private const val PREVIEW_DURATION_MILLIS = 5_000L
 private const val TIME_LEFT_ALPHA = 0.45f
 private const val INLINE_MAX_LINES = 2
 private val MAX_WIDTH = 560.dp
@@ -93,16 +94,17 @@ val MESSAGE_OFFSET_BELOW_TOP_BAR = 56.dp
  * an [action] or a close button. It can be swiped away sideways. [timeLeft] returns the fraction of time left (1 to 0)
  * and draws a thin line along the bottom edge; pass null to hide it (reduce motion, or no time limit).
  *
- * A tap on a message with no [action] that [hasTimeout] dismisses it, by touch only, so screen readers still find the
- * close button and nothing new. A tap cannot take away the offer to undo, or a message with no timeout, which says the
- * last action was not saved (BRD D158).
+ * [baseDurationMillis] is the message's own duration, null when it stays until closed. A tap on a message with no
+ * [action] and a duration dismisses it, by touch only, so screen readers still find the close button and nothing new. A
+ * tap cannot take away the offer to undo, or a message with no duration, which says the last action was not saved
+ * (BRD D158).
  */
 @Composable
 fun MigrelySnackbar(
     text: String,
     tone: SnackbarTone,
     action: SnackbarAction?,
-    hasTimeout: Boolean,
+    baseDurationMillis: Long?,
     dismissLabel: String,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
@@ -113,7 +115,7 @@ fun MigrelySnackbar(
     LaunchedEffect(swipeState.currentValue) {
         if (swipeState.currentValue != SwipeToDismissBoxValue.Settled) currentOnDismiss()
     }
-    val bodyTap = if (action == null && hasTimeout) {
+    val bodyTap = if (action == null && baseDurationMillis != null) {
         Modifier.pointerInput(Unit) { detectTapGestures { currentOnDismiss() } }
     } else {
         Modifier
@@ -381,7 +383,7 @@ private fun SnackbarPreviewColumn() {
                 text = "Migraine started",
                 tone = SnackbarTone.Confirmation,
                 action = SnackbarAction("Undo", "Undo the start") {},
-                hasTimeout = true,
+                baseDurationMillis = PREVIEW_DURATION_MILLIS,
                 dismissLabel = "Dismiss",
                 onDismiss = {},
                 timeLeft = { 0.6f }
@@ -390,7 +392,7 @@ private fun SnackbarPreviewColumn() {
                 text = "Your previous migraine ended at 3:56 PM.",
                 tone = SnackbarTone.Information,
                 action = null,
-                hasTimeout = true,
+                baseDurationMillis = PREVIEW_DURATION_MILLIS,
                 dismissLabel = "Dismiss",
                 onDismiss = {},
                 modifier = Modifier.padding(top = 12.dp)
@@ -399,7 +401,7 @@ private fun SnackbarPreviewColumn() {
                 text = "Couldn't save. Your phone's storage is full.",
                 tone = SnackbarTone.Error,
                 action = null,
-                hasTimeout = false,
+                baseDurationMillis = null,
                 dismissLabel = "Dismiss",
                 onDismiss = {},
                 modifier = Modifier.padding(top = 12.dp)

@@ -138,7 +138,7 @@ fun SettingsDependencies.Settings(
                     text = stringResource(R.string.settings_not_saved),
                     tone = SnackbarTone.Error,
                     action = null,
-                    hasTimeout = true,
+                    baseDurationMillis = READING_MILLIS,
                     dismissLabel = stringResource(R.string.settings_message_dismiss),
                     onDismiss = { notSaved = false }
                 )

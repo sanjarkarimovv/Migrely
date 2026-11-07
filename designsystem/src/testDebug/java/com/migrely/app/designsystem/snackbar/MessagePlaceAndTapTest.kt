@@ -58,7 +58,7 @@ class MessagePlaceAndTapTest {
 
     private fun showHost(
         guardMillis: Long? = null,
-        hasTimeout: Boolean = true,
+        baseDurationMillis: Long? = 8_000L,
         undo: Boolean = false
     ) {
         rule.setContent {
@@ -81,7 +81,7 @@ class MessagePlaceAndTapTest {
                     )
                     if (guardMillis == null) {
                         MigrelySnackbarHost(message, reduceMotion = false, topOffset = topOffset) {
-                            Message(it, hasTimeout, undo)
+                            Message(it, baseDurationMillis, undo)
                         }
                     } else {
                         MigrelySnackbarHost(
@@ -90,7 +90,7 @@ class MessagePlaceAndTapTest {
                             topOffset = topOffset,
                             guardMillis = guardMillis
                         ) {
-                            Message(it, hasTimeout, undo)
+                            Message(it, baseDurationMillis, undo)
                         }
                     }
                 }
@@ -100,12 +100,12 @@ class MessagePlaceAndTapTest {
     }
 
     @Composable
-    private fun Message(text: String, hasTimeout: Boolean, undo: Boolean) {
+    private fun Message(text: String, baseDurationMillis: Long?, undo: Boolean) {
         MigrelySnackbar(
             text = text,
             tone = SnackbarTone.Error,
             action = if (undo) SnackbarAction("Undo", UNDO) { undos++ } else null,
-            hasTimeout = hasTimeout,
+            baseDurationMillis = baseDurationMillis,
             dismissLabel = DISMISS,
             onDismiss = {
                 dismissals++
@@ -269,7 +269,7 @@ class MessagePlaceAndTapTest {
 
     @Test
     fun `A tap on the body of a message with no timeout does nothing`() {
-        showHost(hasTimeout = false)
+        showHost(baseDurationMillis = null)
 
         rule.onNodeWithText(TEXT).performTouchInput { click() }
         rule.waitForIdle()
@@ -280,7 +280,7 @@ class MessagePlaceAndTapTest {
 
     @Test
     fun `A message with no timeout still closes with its button`() {
-        showHost(hasTimeout = false)
+        showHost(baseDurationMillis = null)
 
         rule.onNodeWithContentDescription(DISMISS).performClick()
         rule.waitForIdle()
@@ -290,7 +290,7 @@ class MessagePlaceAndTapTest {
 
     @Test
     fun `A message with no timeout still closes with a swipe`() {
-        showHost(hasTimeout = false)
+        showHost(baseDurationMillis = null)
 
         rule.onNodeWithText(TEXT).performTouchInput { swipeRight() }
         rule.waitForIdle()

@@ -174,6 +174,8 @@ fun PaywallDependencies.Paywall(
             onClose = onClose,
             onChoose = { chosen = it },
             onBuy = { product ->
+                // An older message is about an earlier tap, and must not outlast this one.
+                message = null
                 paywallViewModel.onBuyAction(
                     presentationContext,
                     paywallProductPresentationMapper.toPresentation(product)
@@ -196,9 +198,9 @@ fun PaywallDependencies.Paywall(
                     text = stringResource(shown.message.text()),
                     tone = behaviour.tone,
                     action = null,
-                    hasTimeout = behaviour.baseDurationMillis != null,
+                    baseDurationMillis = behaviour.baseDurationMillis,
                     dismissLabel = stringResource(R.string.subscription_message_dismiss),
-                    onDismiss = { message = null }
+                    onDismiss = { if (message == shown) message = null }
                 )
             }
         },

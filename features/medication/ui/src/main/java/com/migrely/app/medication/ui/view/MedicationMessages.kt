@@ -101,7 +101,7 @@ internal fun MedicationMessages(
                     }
                 )
             },
-            hasTimeout = behaviour.baseDurationMillis != null,
+            baseDurationMillis = behaviour.baseDurationMillis,
             dismissLabel = stringResource(R.string.medication_snackbar_dismiss),
             onDismiss = { if (shown == visible) shown = null },
             timeLeft = if (!reduceMotion && archived != null && currentTimeout != null) {

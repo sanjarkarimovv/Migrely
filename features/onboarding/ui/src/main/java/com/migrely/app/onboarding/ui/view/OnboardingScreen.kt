@@ -130,7 +130,7 @@ fun OnboardingDependencies.Onboarding(
                     text = stringResource(R.string.onboarding_not_saved),
                     tone = SnackbarTone.Error,
                     action = null,
-                    hasTimeout = true,
+                    baseDurationMillis = READING_MILLIS,
                     dismissLabel = stringResource(R.string.onboarding_message_dismiss),
                     onDismiss = { notSaved = false }
                 )

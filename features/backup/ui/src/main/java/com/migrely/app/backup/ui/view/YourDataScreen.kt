@@ -194,9 +194,9 @@ fun YourDataDependencies.YourData(navController: NavController, modifier: Modifi
                     text = shown.message.text(),
                     tone = behaviour.tone,
                     action = null,
-                    hasTimeout = behaviour.baseDurationMillis != null,
+                    baseDurationMillis = behaviour.baseDurationMillis,
                     dismissLabel = stringResource(R.string.your_data_message_dismiss),
-                    onDismiss = { message = null }
+                    onDismiss = { if (message == shown) message = null }
                 )
             }
         },

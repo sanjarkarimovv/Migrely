@@ -152,7 +152,7 @@ class MigrelySnackbarHostTest {
             text = text,
             tone = SnackbarTone.Confirmation,
             action = SnackbarAction("Undo", "Undo the deletion") {},
-            hasTimeout = true,
+            baseDurationMillis = 5_000L,
             dismissLabel = "Dismiss",
             onDismiss = {}
         )

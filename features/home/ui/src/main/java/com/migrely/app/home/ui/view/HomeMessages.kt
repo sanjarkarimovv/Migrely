@@ -175,7 +175,7 @@ private fun HomeSnackbar(
         text = messageText(shown.message, timeUiFormatter),
         tone = behaviour.tone,
         action = action,
-        hasTimeout = behaviour.baseDurationMillis != null,
+        baseDurationMillis = behaviour.baseDurationMillis,
         dismissLabel = stringResource(R.string.home_snackbar_dismiss),
         onDismiss = onDismiss,
         timeLeft = if (showTimeLeft && undoTarget != null && timeoutMillis != null) {

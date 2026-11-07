@@ -195,9 +195,9 @@ fun RemindersDependencies.Reminders(navController: NavController, modifier: Modi
                     text = stringResource(shown.text()),
                     tone = behaviour.tone,
                     action = null,
-                    hasTimeout = behaviour.baseDurationMillis != null,
+                    baseDurationMillis = behaviour.baseDurationMillis,
                     dismissLabel = stringResource(R.string.reminders_message_dismiss),
-                    onDismiss = { message = null }
+                    onDismiss = { if (message == shown) message = null }
                 )
             }
         },
