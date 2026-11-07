@@ -3,8 +3,8 @@
 ### Requirement: Messages appear at the top and stay dim
 Short messages SHALL appear at the top of the screen, inside the system bars and display cutouts, and never cover the
 large controls. On a screen with a top bar, the top edge SHALL sit below the bar; on the paywall, below the Close row; on
-Home Today, below the Settings row. A message SHALL never be the brightest element on screen: text no brighter than
-`#C8CCD2`, on a dark surface with a thin outline (BRD EC-UX-01, EC-UX-16, EC-UX-20, D158).
+Home Today, below the Settings row unless the window is short. A message SHALL never be the brightest element on screen:
+text no brighter than `#C8CCD2`, on a dark surface with a thin outline (BRD EC-UX-01, EC-UX-16, EC-UX-20, D158).
 
 #### Scenario: Message during attack mode
 - **WHEN** an attack is started and the "Migraine started" message appears
@@ -22,7 +22,8 @@ Home Today, below the Settings row. A message SHALL never be the brightest eleme
 
 #### Scenario: Landscape normal mode
 - **WHEN** a message appears in landscape with no attack in progress
-- **THEN** it is centred at the top of the screen, as in portrait, below the top bar or the Settings row
+- **THEN** it is centred at the top of the screen, as in portrait, below the top bar
+- **AND** on Home Today it is below the Settings row only if the window is not short
 
 #### Scenario: Close on the paywall
 - **WHEN** a message shows on the paywall, at 100% or 200% font, in portrait or landscape
@@ -33,8 +34,21 @@ Home Today, below the Settings row. A message SHALL never be the brightest eleme
 - **THEN** its top edge is below the bar, and Back and the bar's actions answer a first tap
 
 #### Scenario: Home Today
-- **WHEN** a message with "Undo" shows on Home Today with the date on one line and the screen not scrolled
+- **WHEN** a message with "Undo" shows on Home Today in a window that is not short, such as portrait, with the date on one
+  line and the screen not scrolled
 - **THEN** its top edge is below the Settings row, and a tap on Settings opens Settings and does not undo
+
+#### Scenario: Home Today in a short window
+- **WHEN** a message with "Undo" shows on Home Today in a short window, the height that picks the two-column layout, such as
+  a phone in landscape, at 100%, 130% or 200% font
+- **THEN** it lies at the top where it did before, not below the Settings row, and clear of "Migraine started"
+- **AND** a tap on the top edge of "Migraine started" starts a migraine
+
+#### Scenario: Settings under a message in a short window
+- **WHEN** a message with "Undo" lies over Settings on Home Today in a short window, at 100%, 130% or 200% font, and the user
+  taps Settings
+- **THEN** nothing happens and the action is not undone, which is the accepted cost of keeping "Migraine started" clear
+- **AND** Settings answers once the message has gone and its guard has ended
 
 #### Scenario: A screen with no top bar
 - **WHEN** a message shows on a screen with no top bar, such as onboarding
