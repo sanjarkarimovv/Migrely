@@ -54,10 +54,11 @@ None.
 ### Modified Capabilities
 
 - `app-shell`: which press a screen just entered takes.
+- `medication-list`: Name, Dose, Save and Back take a first touch at once, unless it is the second tap of a double tap.
 
 ## Impact
 
-- `docs/BRD.md`: D159, EC-UX-24 to 26, a note on D155, §13 row 30.
+- `docs/BRD.md`: D159, EC-UX-24 to 26, notes on D155 and D157, §13 row 30.
 - Code in `:app` only, beside `touchesOnlyWhile` and `screen()`. Every destination already goes through `screen()`.
 - Rests on PR #143 and PR #147, which merge first. This branch then takes `develop`.
 - `docs/ARCHITECTURE.md` section 8.

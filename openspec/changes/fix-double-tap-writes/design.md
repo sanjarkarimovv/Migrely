@@ -223,9 +223,10 @@ track shows a false intake from a natural double tap at or above the timeout, it
 - **A first tap that opens a dialog.** The dialog is its own window, so this rule cannot reach it, and the second tap may land on
   a button there. Not measured, no issue yet, and #149 is a different path: a long press through a navigation, and dialogs of a
   screen that is leaving. Task 6.8 could change the scope.
-- **This branch stacks on PR #143 and PR #147.** It takes `develop` once they merge. `app-shell`'s "Touches only on the current
-  screen" lives in an unarchived change, so this delta adds a requirement that says it comes first, rather than modifying that
-  one. If that change is archived first, re-read its "A push" scenario and add a MODIFIED delta if it reads false.
+- **What `fix-leaving-screen-input` archived.** Re-read after it was archived. Lines that said a first tap on an entering screen
+  always answers read false against this rule, so this change modifies them: `app-shell`'s "Only the current screen navigates" and
+  "Touches only on the current screen", and `medication-list`'s "Kind and Category while the form opens". The carve-outs change
+  no behaviour here. They say in those places what the second-tap requirement already says.
 - **A Compose upgrade** could change the hit testing. D155's test covers it, and this change's Compose test does too.
 - **A second press before the entry changes** is taken by the old screen. D155 cancels it if the navigation happens before it lifts.
   A full second click before that still runs (D155 point 5).
