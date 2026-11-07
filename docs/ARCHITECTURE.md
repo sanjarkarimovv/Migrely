@@ -226,6 +226,20 @@ data must never be passed to any SDK.
 - `BaseComposeHolder.ViewModelObserver(navController)` collects `navigationEvent` and `notification` inside one
   `LaunchedEffect(Unit)` each. This deliberately deviates from the generated `collectAsState`, which drops two identical
   events in a row.
+- `ScreenNavHost` (`:app/ui/main/ScreenDestination.kt`) sets the one transition between all screens: a 200 ms linear fade
+  (issue #148).
+- `screen()` wraps every destination. A screen stays composed through its exit fade, so the pointer input of this window
+  on an entry that is not current is consumed, read at each event: a finger already down cancels (issue #142). Semantics
+  are untouched, and a dialog or popup is a window of its own, which this does not reach. During a pop the leaving screen
+  is on top, so a tap where it has a control or a scroll column does not reach the screen fading in below it. The node
+  joins a touch only when something inside the screen is hit, which rests on Compose's hit testing
+  (`NodeCoordinator.speculativeHit`, Compose 1.9.3); `LeavingScreenInputTest` fails if an upgrade changes it.
+- A navigation event navigates only while its observer's screen is the current back-stack entry (`BaseComposeHolder`,
+  issues #138, #139). That covers what the touch rule cannot: late async results, semantics clicks, and a click just before
+  the screen left. A time-based tap guard cannot do this, and a `RESUMED` check would refuse a screen still fading in. The
+  check reads the observer's screen, not the sender's.
+- `DeleteAllDataObserver` sits beside the `NavHost`, not on the delete screen: wiped data must restart the app whichever
+  screen is on top, or with the delete screen gone.
 - ViewModels are stateless (skill rule 4). Text and selections the user is editing live in the composable
   (`rememberSaveable`) and are passed to `on…Action(...)` as parameters.
 - Every screen has a stateful `<Screen>()` (with `ScreenEnterObserver` and `ViewModelObserver`) and a stateless
@@ -331,7 +345,7 @@ defaults: an error fails the gate, and a warning is only reported (BRD D123). Th
 | Onboarding hosts the reminders feature's daily reminder offer through a slot that `:app` fills. The offer is not a screen, so it reads its view model's state and notifications itself, through its own UI mappers, and loads with `LaunchedEffect(viewModel)` | the offer reuses the Reminders screen's permission rules without onboarding depending on the reminders feature (BRD D80) | permanent |
 | `YourDataViewModel`, `ReportViewModel`, `PaywallViewModel` and `DeleteAllDataViewModel` are `@Singleton`s that keep, only for delivery, whether work is going on and its outcome: the last outcome the screen has not taken, or, for deleting all data, that it finished. `YourDataViewModel` also keeps the automatic copy it read last, so its row stays while work goes on | writing or reading a file, making a report, Google Play's purchase sheet or deleting all data can outlast a rotation; the base view model's flows do not replay, so a screen rebuilt mid-work would show its actions enabled and miss the outcome, and the deletion would miss the restart. The screen asks for both once it listens, and acknowledges each outcome | permanent |
 | `ReviewPromptViewModel` is a `@Singleton` that keeps, for the whole process, whether Google Play's review flow was launched | the flow may run at most once per process (BRD D130, EC-REV-08), and the navigation host's dependencies, which build the other view models, are made per activity, so a rotation would forget it. It holds no activity or context | permanent |
-| The "Delete all data" screen asks its view model where the deletion stands with a `LaunchedEffect` on every composition, after its listeners, instead of `ScreenEnterObserver` | the view model is app-wide and the deletion outlives a rotation; a rebuilt screen must hear of a failure it missed or be sent on to the restart, and asking once its listeners run means nothing is emitted before they listen | permanent |
+| The "Delete all data" screen asks its view model where the deletion stands with a `LaunchedEffect` on every composition, after its listeners, instead of `ScreenEnterObserver` | the view model is app-wide and the deletion outlives a rotation; a rebuilt screen must hear of a failure it missed, and asking once its listeners run means nothing is emitted before they listen. `DeleteAllDataObserver` beside the nav host asks too, so the restart does not need the screen | permanent |
 | The billing datasource has two implementations bound per build type: `PlayBillingDataSourceImpl` in `:datasource:implementation`, bound in `app/src/release`, and `SimulatedBillingDataSourceImpl` in `app/src/debug`. Both open what Google Play shows over the resumed activity, which `:app`'s `CurrentActivityHolder` (registered by `MigrelyApplication`) gives them. `:app`'s `PurchaseUpdatesWatcher`, also started by `MigrelyApplication`, collects `WatchPurchaseUpdatesUseCase` for as long as the app runs and signals the paywall and the Premium section to read the status again | a purchase sheet needs an activity, and features never see one; the simulator must never reach a release APK (BRD D113), and it shows its own sheets, which need the activity and app resources. Play's updates outside a sheet must be checked even when no screen shows, and a view model may not hold a flow use case (section 7, rule 6) | permanent |
 | `AttacksCsvMapper` (`:features:backup:data`) and `ReportDocumentMapper` and `ReportRecordsDomainMapper` (`:features:report:data`) hold the English words of the CSV and of the PDF | the CSV and the PDF are documents whose words must not change with the screen; resources are UI only | the app's first translation |
 | Further Konsist rule adaptations | recorded here when made | — |
