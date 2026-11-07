@@ -99,17 +99,17 @@ focus the field.
 - A small pure class in `:app`, `ui/main`, with no Android types apart from values passed in: told about lifts, asked about
   presses. One instance for the nav host, made in `ScreenNavHost`.
 - `touchesOnlyWhile`'s node asks it in the same initial pass. So the hit-testing trick and D155's rule stay in one place.
-- `screen()` passes the entry id, the timeout and the distance, read in composition. The engineer picks how the instance reaches
-  `screen()`, with no edit at each of the 20 destinations if possible.
+- `screen()` passes the entry, the timeout and the distance, read in composition. A composition local brings the instance to
+  `screen()`, with no edit at any of the 20 destinations.
 - Positions are in the node's own coordinates. Both screens' nodes have the same shift and size, so they compare directly.
-- **Which entries were touched is saved instance state, and the rest is not.** Rotation recreates the activity, because the
-  manifest has no `configChanges`. With the marks in `remember`, a return to a touched screen after a recreation was covered, which
-  breaks "SHALL NOT cover a return" (review M1). So the marks survive recreation and process death, beside the nav controller's
-  saved back stack, whose entries keep their ids. The last lift and the ignored pointers are not saved: event times mean nothing
-  after a reboot, and 300 ms does not outlast a recreation.
-- **The saved marks stay bounded.** They go into the saved state, which has a size limit, so they must not grow for as long as the
-  activity lives. The engineer keeps only the most recent marks, more than any back stack reaches. A dropped mark means one return
-  counted as "never touched", which is already accepted. The marks are random entry ids and hold no health data.
+- **The mark that an entry was touched is on the entry's own `SavedStateHandle`, and the rest is not saved.** Rotation recreates the
+  activity, because the manifest has no `configChanges`. With the marks in `remember`, a return to a touched screen after a recreation
+  was covered, which breaks "SHALL NOT cover a return" (review M1). The node sets the mark when a lift that was not ignored reaches it,
+  and passes it to the class at each press. So the mark is restored with the back stack, after a rotation and after process death. The
+  last lift and the ignored pointers are not saved: event times mean nothing later, and 300 ms does not outlast a recreation.
+- **The mark goes with its entry.** A popped entry takes its mark with it, so a new entry of the same destination has none, and nothing
+  grows for as long as the activity lives. So no cap and no list of ids is needed. A popped entry can take one last lift while it fades
+  out, so the node sets the mark only while the entry's lifecycle is at least `CREATED`. The mark is one flag and holds no health data.
 
 **What the node sees.** The node takes part only in touches that hit something inside the content. So a press on empty space on
 the new screen reaches no node, and there is nothing to guard. A first tap that hit no control opened no screen.
@@ -125,10 +125,11 @@ the new screen reaches no node, and there is nothing to guard. A first tap that 
 | System Back | This rule does nothing | No pointer in this window at all |
 | Notification, launcher shortcut, first launch | This rule does not act | No lift in this window just before it. `ACTION_START_ATTACK` clears the stack with no touch. Attack mode's own wait (D32), if it applies there, is a separate rule and stays |
 | Rotation, right after it | The press answers | The activity is recreated, and the last lift is not saved, so no lift is recent |
-| Rotation, later, a return to a touched screen | This rule does nothing | The marks are saved, so the entry still counts as touched |
+| Rotation, later, a return to a touched screen | This rule does nothing | The mark is on the entry's `SavedStateHandle`, so the entry still counts as touched |
 | Rotation, later, a new screen | As forward | The rule works as usual once a new lift has happened |
-| Process death and restore | As rotation | The marks are restored with the back stack |
-| Process killed and the app started fresh | The press answers | No saved state, no marks and no lift |
+| Process death and restore | As rotation | The mark is restored with the back stack |
+| Process killed and the app started fresh | The press answers | No saved state, no mark and no lift |
+| A new entry of the same destination after a pop | As forward | The old entry's mark went with the pop |
 
 **Back and #148.** #148's window comes from the fade, and this rule adds nothing to it, so it cannot get worse. The same point
 also means Back's own residue stays: a second tap on Back after the fade lands below, which can pop twice, and a second tap on
@@ -161,7 +162,7 @@ Not run on a device: TalkBack, switch access or a keyboard against this rule.
 | Premium and Free | Not touched. A second tap on a paywall's buy button under the timeout does nothing |
 | During an attack | Attack mode's route is in the table. Safety controls are not delayed: "Medication taken" opens on the first tap. A deliberate tap from 300 ms up answers |
 | Zone, clock, midnight, DST | Event uptime, so they do not apply |
-| Limits, unicode, duplicates, backup, upgrade | Not touched. No data or schema change. The only thing kept is the bounded marks in saved instance state, which are random entry ids (D3) |
+| Limits, unicode, duplicates, backup, upgrade | Not touched. No data or schema change. The only thing kept is one flag on each touched entry's `SavedStateHandle`, which goes with the entry (D3) |
 | Undo | Not touched. Undo under the second tap on a new screen is ignored like any other control, under the timeout |
 | Deletion | Not touched. A first tap that opens a dialog, with a second tap landing on it, is not covered by this rule and is not assumed safe. It has no issue and has not been measured: `t5_write.py` has no dialog route. Task 6.8 measures it |
 | Rotation, process death | D4 |
