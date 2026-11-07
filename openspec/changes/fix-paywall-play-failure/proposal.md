@@ -31,8 +31,14 @@ stop being silent in the one case where its own code knows that Play refused and
   except in a short window, where it stays at the top so it does not cover "Migraine started" at 411 dp high.
 - **A tap on a message with a timeout and no action dismisses it.** A tap on the body of a message with Undo, or of "storage
   full", does nothing.
+- **"Try again" answers at once (D153).** While Play stays unreachable the tap got no answer for up to 5 s. It now shows the
+  existing "Getting prices from Google Play" at once, then the notice and "Google Play can't be reached. Try again later."
+- **A paywall's message answers that paywall (D153).** A buy tap clears any older message, and a reload still running from
+  an earlier paywall delivers nothing on a new one where nothing was tapped.
+- **The first row under the bar may lie under a message (D158).** Accepted for My medications' Remove on row 1, History's
+  month chevrons, the trial banner's close button and the title of the safety card on Attack details.
 
-The existing `Failed` message and Restore's messages do not change.
+The text of the existing `Failed` message and of Restore's messages does not change.
 
 ## Out of scope
 
@@ -46,6 +52,7 @@ The existing `Failed` message and Restore's messages do not change.
 - Translation: the app is English only (D148).
 - A message's duration, top position, dim look and copy, and the 800 ms guard on other screens.
 - Portrait attack mode, landscape attack mode (D52) and screens with no top bar.
+- Moving messages again to clear the first row under the bar: that would put them back over the top bar.
 
 ## Capabilities
 

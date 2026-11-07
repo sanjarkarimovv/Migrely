@@ -98,6 +98,66 @@ Try again later." only while Play still offers the products. If reading the prod
   offered
 - **THEN** the message shows once on the rotated screen
 
+### Requirement: "Try again" answers at once
+On a tap on "Try again" the paywall SHALL show "Getting prices from Google Play" at once. If Google Play stays unreachable,
+the notice "Google Play can't be reached right now" SHALL return and the message "Google Play can't be reached. Try again
+later." SHALL show. If Google Play answers, the paywall SHALL show that answer with no message (BRD EC-BIL-14, D153).
+
+#### Scenario: Still unreachable
+- **WHEN** the notice shows, the user taps "Try again", and Google Play gives no answer
+- **THEN** "Getting prices from Google Play" shows at once, in place of the notice
+- **AND** the notice and "Try again" return, and the message says "Google Play can't be reached. Try again later."
+
+#### Scenario: Try again more than once
+- **WHEN** the user taps "Try again" again after that message, and Google Play still gives no answer
+- **THEN** that tap gets the same answer: "Getting prices from Google Play" at once, then the notice and the message
+
+#### Scenario: The products come back
+- **WHEN** the user taps "Try again" and Google Play returns the products
+- **THEN** the cards, the buy button and the line show, with no message
+
+#### Scenario: Google Play answers with no products
+- **WHEN** the user taps "Try again" and Google Play reports billing unavailable
+- **THEN** the paywall shows "Premium isn't available in your region yet", with no other message
+
+#### Scenario: A quick double tap
+- **WHEN** the user taps "Try again" twice quickly and Google Play gives no answer
+- **THEN** the message shows once
+
+#### Scenario: A rotation while getting prices
+- **WHEN** the phone rotates after a tap on "Try again", and Google Play then gives no answer
+- **THEN** the notice shows and the message shows once on the rotated screen
+
+#### Scenario: TalkBack on Try again
+- **WHEN** TalkBack is on, the user activates "Try again", and Google Play gives no answer
+- **THEN** it reads "Getting prices from Google Play", then the message
+
+### Requirement: A paywall's message answers that paywall
+A tap on a buy button SHALL clear any older message on screen, so none is left when the sheet closes. A reload still running
+from an earlier paywall SHALL deliver nothing on a new paywall where nothing was tapped (BRD EC-BIL-15, EC-BIL-16, D153).
+
+#### Scenario: A buy tap clears an older message
+- **WHEN** a message shows, the user taps the buy button, and then closes Google Play's sheet themselves
+- **THEN** the older message is gone when the sheet opens, and no message shows after the sheet closes
+- **AND** a rotation during the sheet does not bring it back
+
+#### Scenario: A buy tap that fails again
+- **WHEN** a message shows, the user taps the buy button, and Google Play returns a code that maps to `Failed`
+- **THEN** the only message after the sheet closes is the one for this tap
+
+#### Scenario: A reload from an earlier paywall
+- **WHEN** a reload after a refused sheet or after "Try again" is still running, the user closes the paywall and opens it
+  again, taps nothing, and that reload then ends
+- **THEN** no message from it shows on the new paywall
+
+#### Scenario: A purchase is not lost with it
+- **WHEN** a reload from an earlier paywall delivers nothing on a new one, and Premium has come on meanwhile
+- **THEN** Premium stays on, and the new paywall shows what its own reading finds
+
+#### Scenario: A rotation is the same paywall
+- **WHEN** the phone rotates while a reload is running
+- **THEN** that reload's message still shows, once
+
 ### Requirement: Restore and Manage without Google Play
 "Restore purchases" SHALL open no Google Play sheet. When Google Play gives no answer, it SHALL say "Google Play can't be
 reached. Try again later.", on the paywall and in Settings. "Manage subscription" SHALL open Google Play's page outside
