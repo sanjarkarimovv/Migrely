@@ -125,29 +125,32 @@ readers, keyboards and switch access SHALL be unaffected (BRD EC-UX-16, D114, D1
 
 ### Requirement: The first row under the bar may lie under a message
 The first row under a top bar or the Settings row SHALL be allowed to lie under a message for the message's duration, only
-where it is visible and either reversible or temporary. Messages SHALL NOT move back over the top bar to avoid it. My
-medications' Remove is measured in `tasks.md`; the other cases come from reading the code until measured there (BRD D158).
+where it is visible and either reversible or temporary. Messages SHALL NOT move back over the top bar to avoid it. Each case
+below is measured with a message with "Undo"; longer messages over the safety card are not measured (BRD D158).
 
 #### Scenario: Remove on row 1 of My medications
 - **WHEN** a message with "Undo" shows on My medications, at any font and orientation, and the user taps Remove on row 1
 - **THEN** the tap can land on "Undo" instead, which restores the last removal and shows "Undone"
 
 #### Scenario: History's month chevrons
-- **WHEN** a message with "Undo" shows on History and the user taps a month chevron under it
-- **THEN** "Next month" can lie under "Undo", so the tap restores the deletion and shows "Undone"
-- **AND** "Previous month" under the message does nothing
+- **WHEN** a message with "Undo" shows on History, in portrait at 100% or 200% font, and the user taps a month chevron under it
+- **THEN** "Next month" lies under "Undo", so the tap restores the deletion and shows "Undone"
+- **AND** "Previous month" lies under the message's body, so nothing happens and the message stays
 - **AND** both answer once the message has gone and its guard has ended
 
 #### Scenario: The trial banner's close button
-- **WHEN** a message lies over the close button of the trial banner on Home Today and the user taps it
-- **THEN** the tap reaches the message and not the button, and the banner stays
+- **WHEN** "Migraine ended" with "Undo" lies over the close button of the trial banner on Home Today, in portrait at 100% or
+  200% font, and the user taps it
+- **THEN** the tap reaches "Undo": it shows "Undone" and returns to attack mode, and the banner is not closed
 - **AND** the button answers once the message has gone and its guard has ended
 
 #### Scenario: The safety card on Attack details
-- **WHEN** a message shows on Attack details with the safety card on screen and scrolled to the top, and its title lies under
-  the message
-- **THEN** the card stays until it is dismissed, it can be scrolled, and its live region still reads it
+- **WHEN** a message with "Undo" shows on Attack details, in portrait at 100% or 200% font, with the safety card on screen and
+  scrolled to the top
+- **THEN** the message covers the card's title at 100% or its first line at 200%, and the body and "Got it" stay clear
+- **AND** the card stays until it is dismissed, it can be scrolled, and its live region still reads it
 
 #### Scenario: "Storage full" over the safety card
-- **WHEN** "storage full" shows over the title of the safety card
-- **THEN** it can cover the title until it is closed, and its close button and a swipe still close it
+- **WHEN** "storage full" shows over the safety card
+- **THEN** it stays over the card until it is closed, and its close button and a swipe still close it
+- **AND** how far it reaches is not measured: at 200% font it is taller than a message with "Undo" and may reach the body
