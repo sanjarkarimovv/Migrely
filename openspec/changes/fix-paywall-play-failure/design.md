@@ -117,7 +117,8 @@ connection. It reads the code Play already returned and the offers the reload al
 - `outcomeOf` keeps returning `null` for it, and its comment is corrected.
 
 The message appears only after the reload, so the region notice and "can't be reached" never show together. Delivery uses
-the existing `undelivered` path, so a rotation does not lose it and it shows once. The snackbar sits at the top of the
+the existing `undelivered` path, so a rotation before the screen has taken it does not lose it, and it shows once. Once
+delivered it is the screen's own and goes on rotation, measured on the paywall. The snackbar sits at the top of the
 screen (EC-UX-16), so scroll position does not hide it, and its duration follows the accessibility timeout.
 
 The `PlayUnreachable` text says "Try again later", which respects review M10 ("an unavailable item is not try again"),
@@ -194,11 +195,31 @@ Onboarding have an 8-second timeout, so a tap dismisses them.
 
 **Everything else stays:** duration, top position, dim look, copy, other screens' 800 ms.
 
+**The first row under the bar may lie under a message (`team-lead`).** Moving a message back over the bar to free that row
+would undo this decision. So, measured and accepted, because each is visible and either reversible or temporary:
+
+| Row | Under a message with Undo | Tap at the control's centre |
+|---|---|---|
+| My medications, Remove on row 1, every font and orientation | Undo | Undo fires, "Undone" |
+| History, Next month | Undo | Undo fires, "Undone" |
+| History, Previous month | The message's body | Nothing, and the message stays |
+| Trial banner's "Dismiss the reminder", 100% and 200%, last day of a trial only | Undo | Undo fires and the migraine reopens |
+| Safety card on Attack details, top of the scroll | The title at 100%, its first line at 200% | Body and "Got it" stay clear |
+
+A real "storage full" over the safety card, read on a full disk at the top of the scroll, covers the title and about 17 px
+of the body at 100%, and leaves the body clear at 200%. Accepted: one tap on Dismiss clears it, the card stays until "Got
+it", and it takes a scroll plus a full disk. Its height at other scrolls is not measured.
+
+**Try again answers at once (`team-lead`, BRD D153).** A bare reload gave no answer for up to 5 s while Play stayed
+unreachable, so "Try again" was itself a control that did not answer. It now shows the existing "Getting prices from Google
+Play", and if Play stays unreachable the notice returns with `subscription_message_unreachable`. No new wording and no new
+state. The button leaves the tree while prices are read, so where TalkBack's focus goes is not known: TalkBack did not run.
+
 **Limits, accepted:**
 
 - A control still under a message needs a tap to dismiss first, then a second tap.
 - After that tap, a tap in the message's area does nothing for 400 ms on the paywall and 800 ms elsewhere.
-- On the paywall, two X icons are stacked at the right edge. This is to be checked by eye.
+- On the paywall, two X icons are stacked at the right edge. The picture is in the record for `team-lead` to judge.
 - People can dismiss a message with a timeout unread.
 - A control under "storage full" does not answer until the message is closed with Dismiss or a swipe. It has no timeout, so
   this lasts until they do.
@@ -228,7 +249,7 @@ Onboarding have an 8-second timeout, so a tap dismisses them.
 | Offline | Always. The line does not depend on the connection |
 | Full storage | No new write |
 | Time, zone, backup, restore, undo, deletion | Not touched. The line and message hold no data, and no upgrade step is needed |
-| Rotation | The line is static. The message survives through `undelivered` |
+| Rotation | The line is static. A message the screen has not taken yet survives through `undelivered`. One already on screen goes on rotation (measured; a `remember` in the screen, older than this change) |
 | Process death | An undelivered message is lost, as any message is today. The line remains |
 | App killed mid-purchase | EC-BIL-13; unchanged |
 | Double tap | The `working` guard; unchanged |

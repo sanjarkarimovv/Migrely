@@ -24,11 +24,11 @@ the baseline in 3.1 from the current develop build.
 
 Do these in order. The baseline comes first, on the build before any of these changes.
 
-- [x] 3a.1 Baseline on the current build, `emulator-5570`, debug. Measure #152's second table as "before": Home Today, History, My medications, Your data, Log medication, Attack details, Add past attack, Edit medication, Doctor report. At 100% and 200%, portrait and landscape, with a message showing, record the message's bounds, each control under it, and what a tap at that control's centre does. Verify: the "before" table is in the verification record. Restore every device setting.
+- [ ] 3a.1 (partial: Attack details at 100% landscape not measured; Add past migraine and Doctor report cannot raise a message in normal use) Baseline on the current build, `emulator-5570`, debug. Measure #152's second table as "before": Home Today, History, My medications, Your data, Log medication, Attack details, Add past attack, Edit medication, Doctor report. At 100% and 200%, portrait and landscape, with a message showing, record the message's bounds, each control under it, and what a tap at that control's centre does. Verify: the "before" table is in the verification record. Restore every device setting.
 - [x] 3a.2 `MigrelySnackbarHost`: one top offset parameter, default none, and one guard parameter, default 800 ms. Paywall: 48 dp and 400 ms. Every other screen with a top bar, and Home Today: the offset of design D7. Landscape attack mode, portrait attack mode and screens with no top bar: unchanged. Verify: `./gradlew :designsystem:assembleDebug :app:assembleDebug`, and `git grep -n "MigrelySnackbarHost(" -- 'features/*.kt'` reviewed call by call.
 - [x] 3a.3 `MigrelySnackbar`: a tap on the body of a message with a timeout and no action calls `onDismiss`, by touch only with no new semantics. With an action, or with no timeout ("storage full"), a body tap does nothing. Each caller says so from `baseDurationMillis`, not from `timeLeft`, which is null for every message with no action. Verify: a `uiautomator dump` shows no new clickable node, and the Dismiss button is still there.
 - [x] 3a.4 Tests. The guard parameter: 800 ms by default and 400 ms when passed, each with a tap just before and just after. The body tap: with a timeout and no action it dismisses; with an action it does nothing, and Undo itself still works; with no timeout and no action it does nothing, and Dismiss and a swipe still close it. A check that every "storage full" mapping reaches the snackbar as no timeout. Show a negative control for each. Verify: `:designsystem:connectedDebugAndroidTest` with `ANDROID_SERIAL=emulator-5570`, `MigrelySnackbarHostTest`, with counts recorded.
-- [x] 3a.5 "After" measure, the same table as 3a.1 at 100% and 200%, portrait and landscape, plus:
+- [ ] 3a.5 (partial: re-tap at 200, 400 and 600 ms was run on the paywall and Your data only, not every screen; the rest is in the record) "After" measure, the same table as 3a.1 at 100% and 200%, portrait and landscape, plus:
   - Paywall: a first tap on Close closes it while the message shows.
   - Paywall: the buy button scrolled under the message: tap the message, then re-tap the button at 200, 400 and 600 ms, and record each.
   - Every screen in the table: tap a message with a timeout and no action, and re-tap the control under it at 200, 400 and 600 ms where a control lies under it.
@@ -42,11 +42,20 @@ Do these in order. The baseline comes first, on the build before any of these ch
   - By eye, on the paywall: the two X icons at the right edge.
   Verify: the "after" table is beside "before" in the verification record. A control the message still covers is listed with what a tap did. If the message overlaps "Migraine started", send it to `team-lead` before the release is cut. Restore every device setting.
 
+## 3b. Review of #154
+
+- [x] 3b.1 Try again (I1, BRD D153): `onRetryAction` shows `PaywallViewState.Loading` at once, ignores a second tap while a reading is out, and delivers `PlayUnreachable` if the reading is still `Unreachable`; a reading that throws returns the notice too. Verify: `PaywallViewModelTest` with mutants R1 to R5, and a live measure.
+- [x] 3b.2 A reading from an earlier paywall (M3): `onEnter` invalidates it, so it delivers no message and no state on the new paywall, and the new paywall's own reading still shows Premium. A rotation does not invalidate it. Verify: `PaywallViewModelTest` with mutants V1 to V3.
+- [x] 3b.3 A buy tap clears an older message (M4): the screen's message and the view model's undelivered outcome. Verify: mutant B1 for the view model, and a live row for the screen, which has no test.
+- [x] 3b.4 A migraine's message comes after its mode (M2). Verify: `HomeViewModelTest` with mutants O1 to O4. The picture of the jump itself was not compared before and after.
+- [x] 3b.5 A dismiss acts only on the message still shown, on the four hosts that did not check (M5), and the paywall's always-true check goes (M7). Verify: by reading only: nothing drives a body tap on a message fading out.
+- [x] 3b.6 Each screen's message setup is pinned (I2). `MigrelySnackbar` takes `baseDurationMillis`, so no screen works it out. Verify: each mapper's storage full, and `MessageCallSitesTest` for each site, with a mutant for each.
+
 ## 4. Gate and walk
 
 - [x] 4.1 Gate. Verify: `./gradlew assembleDebug test ktlintCheck detekt lint`, with exit code and test count recorded.
 - [x] 4.2 No permission change. Verify: `./gradlew :app:checkReleasePermissions` passes, and `git diff origin/develop... -- '*AndroidManifest.xml' 'app/build.gradle.kts'` is empty.
-- [x] 4.3 Walk on `emulator-5570` with the simulated store, one row per scenario:
+- [ ] 4.3 (partial: Try again and Restore under the message on 360 x 640dp and buy at 200% landscape not run, TalkBack itself not run, most rows predate D7) Walk on `emulator-5570` with the simulated store, one row per scenario:
   - The line under the terms for Yearly, Monthly and Lifetime, and identical on each.
   - Cancel in the simulated sheet: no message, the button works again.
   - Store set to `unreachable` with the paywall open, then buy: "The purchase didn't go through. Try again." and then the unreachable notice with no line.
@@ -72,6 +81,19 @@ Do these in order. The baseline comes first, on the build before any of these ch
 ## Verification record
 
 Filled in by `android-engineer`, 2026-11-07. Evidence: `migrely-work/walks/bugfix-146/`.
+
+### Gate
+
+On the tree of e45a8a0e, whose code this record does not change. The numbers in this section are the last full run; what the final head gets is in the PR's report.
+
+| Check | Result |
+|---|---|
+| `nice -n 19 ./gradlew --max-workers=2 assembleDebug test ktlintCheck detekt lint`, `set -o pipefail` | Exit 0. 2432 test results, debug and release variants both counted, 0 failures |
+| `:app:testDebugUnitTest --rerun`, Konsist | Exit 0. Architecture 15, 0 failures. `MessageCallSitesTest` 4, 0 failures |
+| `:app:checkReleasePermissions` | Exit 0. Manifest and `app/build.gradle.kts` diff against `develop` empty |
+| `ANDROID_SERIAL=emulator-5570 :designsystem:connectedDebugAndroidTest` | Exit 0. 52, 0 failures |
+
+Module counts: `PaywallViewModelTest` 38, `HomeViewModelTest` 37, `MessagePlaceAndTapTest` 17, `PaywallContentsTest` 15, `MessagesClearSettingsRowTest` 3.
 
 ### 3.1 and 3.3: the paywall's geometry
 
@@ -99,6 +121,29 @@ At 200%, and in every row where the button needs a scroll, the line is not on sc
 The line and the order, `:features:subscription:ui:testDebugUnitTest`, 34 tests: L1 line outside `choice != null`, 2 fail; L2 rule inverted, 8 fail; L3 above the terms, 3 fail; L4 under Manage, 1 fails; L5 Restore back under the benefits, 4 fail; L6 one word of the line, 6 fail; L7 notice text back, 1 fails. Restored: 0 fail.
 
 The message, `MessagePlaceAndTapTest`, 17 tests: A1 host ignores `guardMillis`, 1 fails; A2 default 400, 1 fails; A3 host ignores `topOffset`, 3 fail; A4 no body tap, 1 fails; A5 body tap with an action, 1 fails; A6 body tap with no timeout, 1 fails; A7 body tap with semantics, 1 fails; A8 dismisses twice, 1 fails. Restored: 0 fail. These compare the two guards rather than exact times: under Robolectric each guard measured about twice its length (400 ms swallowed a tap at 576 and passed one at 1024; the default swallowed at 1520 and passed at 3024). The cause is not known. Exact times are in `MigrelySnackbarHostTest`, instrumented and not run yet.
+
+The review's fixes, each mutant restored (`mutation-review.txt`), one run per mutant:
+
+| Mutant | Tests failing |
+|---|---|
+| R1 no guard on a second Try again | 2 |
+| R2 no state at once | 3 |
+| R3 Try again says nothing | 4 |
+| R4 retrying never cleared | 2 |
+| R5 a throw leaves it stuck | 1 |
+| V1 enter does not invalidate | 4 |
+| V2 reading not checked against the visit | 4 |
+| V3 enter leaves retrying | 1 |
+| B1 buy keeps an undelivered outcome | 1 |
+| O1 start's message before the state | 1 |
+| O2 end's message before the state | 1 |
+| O3 a failed reading loses the message | 1 |
+| O4 a thrown reading loses the message | 1 |
+| Each of 10 sites passes no duration: Home, Attack, History, Medication, Report, Your data, Reminders, Paywall, Settings, Onboarding | 1 each |
+| P1 paywall offset 40 dp; P2 paywall guard 800; P3 guard not passed; P4 Home ignores its rule | 1 each |
+| Each of 7 mappers gives storage full a duration: Home, Attack, History, Medication, Report, Your data, Reminders | 1 each |
+
+`MessageCallSitesTest` pins source text. It proves each screen passes the right value, not that the screen draws it. The chain to a body tap is: the mapper's test, this pin, then `MessagePlaceAndTapTest`.
 
 ### 4.3 walk
 
@@ -227,12 +272,12 @@ Other rows, on the final code:
 |---|---|
 | Undo: a body tap, then Undo, with no dump between | The point comes back and "Undone" shows, the same as with no body tap |
 | No new clickable node | `The body tap adds nothing a screen reader can act on` (Robolectric), with a mutant; a live dump keeps Dismiss |
-| Storage full | By test only: body tap does nothing, Dismiss and a swipe close it. The walk cannot produce a full disk |
-| Reduce motion, animator scale 0 | Attack details: message at y 341-388, its final place; a first tap on Back answers; a body tap on a message with no action dismisses it. Guard timing not repeated under it |
+| Storage full, a real full disk, 100% and 200% | A body tap leaves it up, and Dismiss closes it. A swipe by test only |
+| Reduce motion, animator scale 0 | Attack details: message at y 341-388, its final place; a first tap on Back answers; a body tap on a message with no action dismisses it. Guard timing in its own table |
 | Home Today, 200%, date wraps ("Wednesday, September 30", y 170-359) | Settings y 203-329, its centre above the message's top edge at about y 297, so a tap at its centre opens Settings. Its bottom 32 px lie under the message |
-| Home Today, after scrolling | **Not measured.** The drag during the mode's tap guard did not scroll |
+| Home Today, after scrolling, 100% and 200% | Settings scrolled off. The message stays at its place and lies over whatever is there; in the 100% picture, the "Period" chip and the top of "Logged today". `shots/scrolled-1.0.png`, `scrolled-2.0.png` |
 | Portrait and landscape attack mode (D52) | Same bounds before and after at 100% and 200% |
-| Two X icons on the paywall, by eye | Close's X and Dismiss's X are stacked at the right edge with the message's top below Close's row. Seen only in the d60dbb4c shot and from bounds; **not looked at on the final code** |
+| Two X icons on the paywall, final code, 100% | Close y 140-266, Dismiss y 297-423, both at the right edge. Picture for `team-lead`: `migrely-work/walks/bugfix-146/shots/two-x-icons-100.png` |
 
 
 Known limits, already accepted in the design:
@@ -241,3 +286,51 @@ Known limits, already accepted in the design:
 - `Unavailable` with products still offered is proven by the view model test, because the simulated store fails both together. A temporary local build also showed it on a device.
 - The buy button under the message is tested with Restore's message, not a failed purchase's, for the same reason. It is the same host and the same 8 seconds.
 - A real phone and real people: the message's limits in design D7 are not measured on people.
+
+### The review's measures, final code
+
+Headless, `-no-window -gpu swiftshader_indirect`, 1080x2400, portrait, a real Undo message unless a row says otherwise. No dump stands between a message and its tap, and a screencap proves the message at the moment of the tap. Those APKs were built before a formatter pass and a comment merge, so with the same logic.
+
+| Row | Font | Control | Undo | Live tap | Result |
+|---|---|---|---|---|---|
+| History, Previous month | 100%, 200% | y 297-423, x 43-169 | | Centre | Message stays, no "Undone" |
+| History, Next month | 100%, 200% | y 297-423, x 913-1039 | | Centre | **Undo fires** |
+| Trial banner's close | 100% | x 913-1039, y 313-439 | x 875-1027, y 301-427 | (976,376) | **Undo fires**, migraine reopens. Accepted |
+| Trial banner's close | 200% | x 913-1039, y 351-477 | x 797-1027, y 307-433 | (976,414) | **Undo fires**, migraine reopens. Accepted |
+
+The month chevrons' title is covered too, so "Previous" did nothing is read from the message staying and no "Undone", not from the title. Whether the banner's close answers once the message and guard have gone is not measured. Pictures: `shots/chevron-*.png`, `shots/banner-*.png`.
+
+Safety card on Attack details, top of the scroll, which is its natural place because it is the screen's first block:
+
+| Message | Font | Message's text | Title | Body | "Got it" |
+|---|---|---|---|---|---|
+| "Pain level removed", Undo y 301-427 | 100% | y 341-388 | y 370-427, covered | y 448-633, clear | y 633-759, clear |
+| "Pain level removed", Undo y 307-433 | 200% | y 328-413 | y 396-601, visible from 445 | y 622-1049, clear | y 1049-1196, clear |
+| "Couldn't save", full disk, Dismiss y 318-444 | 100% | y 328-433 | Covered | y 448-633, visible from 465: **about 17 px covered**. Accepted | y 633-759, clear |
+| "Couldn't save", full disk, Dismiss y 360-486 | 200% | y 328-517 | y 396-601, visible from 549 | y 622-1049, clear | y 1049-1196, clear |
+
+Read from code and not measured: its live region, and the card staying through a scroll. A first 10 that fails to save, on a full disk at 100%: the message shows and no card appears, which is older behaviour, filed separately by `team-lead`. Pictures: `shots/safety-*.png`, `shots/fullcard-*.png`; the two full-disk pictures are partly white, because the screencap had no room, so their bounds come from dumps.
+
+Guard timing under Reduce motion, animator scale 0, device-measured gap:
+
+| Guard | Control | Gap | Result | p90 frame time |
+|---|---|---|---|---|
+| Paywall, 400 ms | Buy, 200% portrait | 246 ms | Swallowed | 34 ms |
+| | | 427 ms | Swallowed | 32 ms |
+| | | 527 ms | Sheet opens | 46 ms |
+| Default, 800 ms | Your data's first row, 100% portrait | 632 ms | Swallowed | 32 ms |
+| | | 737 ms | Swallowed | 32 ms |
+| | | 944 ms | Reaches the row | 32 ms |
+
+Try again with Play unreachable, on a temporary build whose simulated store takes 5 s to fail, never committed:
+
+| Measure | Result |
+|---|---|
+| Tap to first visible change | 0.13 s, by comparing screencaps |
+| Node tree while reading | "Getting prices from Google Play" present, "Try again" absent |
+| Notice, Try again and the message back | Read at 6.2 s after the tap |
+| TalkBack | **Did not run.** The text's polite live region is read from code. Where focus goes when the button leaves the tree is not known |
+
+A buy tap with Restore's message showing: the sheet opens with the message gone, and after Cancel no message shows. A double tap on Try again, a rotation during the reading, and a body tap on a fading message are not run on the device; the first two have view model tests.
+
+Not checked on the final code: rerunning the before and after table, which ran on the code of f6f9ce9e. The fixes since do not change a message's place, but this was not re-measured.
