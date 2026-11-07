@@ -1,7 +1,8 @@
 # Design
 
-Plan only. Nothing here has been built or run. The measures come from issue #157 and `recount_dialog.py`, on an emulator with
-injected taps. The Compose and Material facts are read from the sources of Compose UI 1.9.3 and Material 3 1.4.0.
+D1 to D4, the wait, are built on this branch, and `tasks.md` holds the engineer's evidence. D5, a lift in a dialog, is a plan: nothing of it has
+been built or run. The measures come from issue #157, `recount_dialog.py` and QA's `t10b.jsonl`, on an emulator with injected taps. The Compose and
+Material facts are read from the sources of Compose UI 1.9.3 and Material 3 1.4.0.
 
 ## Context
 
@@ -22,7 +23,8 @@ every one, from `git grep -nP '\b(AlertDialog|BasicAlertDialog|Dialog|DatePicker
 | Date range, used by Report's `RangeDialog` | `MigrelyDateRangePicker.kt` | `Dialog`, full screen | Yes, Done |
 
 The brief's `RangeDialog` is a wrapper of the date range picker, not a dialog of its own. `DropdownMenu` on a custom tag is a popup that
-opens on a long press, and it is not covered (#149). No `AlertDialog.Builder`, `DialogFragment` or bottom sheet is in the app.
+opens on a long press, and it is not covered (#149). No `DialogFragment` or bottom sheet is in the app. The only `MaterialAlertDialogBuilder` is
+`app/src/debug/.../DialogSimulatedSheet.kt`, the debug build's stand-in for Play's sheet, which is not in a release.
 
 ## Goals and non-goals
 
@@ -62,10 +64,10 @@ In `designsystem`, one file:
 A wrapper rather than something each dialog must remember to add, so a new dialog has the wait by using the only dialog available.
 
 **A check that a dialog uses it.** Konsist is already in the project and runs in the gate. A new test in
-`app/src/test/.../architecture`, with `Konsist.scopeFromProduction()`: outside the helper's file, no file imports
+`app/src/test/.../architecture`, with `Konsist.scopeFromProduction()`: outside the helper's file, no file's text names
 `androidx.compose.ui.window.Dialog`, or `AlertDialog`, `BasicAlertDialog`, `DatePickerDialog`, `TimePickerDialog` or `ModalBottomSheet` from
-`androidx.compose.material3`. It is a real test: a raw dialog must fail it, and it names the file. It reads imports, so a fully
-qualified call would get past it, and the gate's review has to catch that.
+`androidx.compose.material3`. So an import and a fully qualified call both fail it, and it names the file. A wildcard import would get past it,
+and ktlint refuses one.
 
 ### D3. The length: 500 ms for all
 
@@ -97,21 +99,88 @@ tap past the wait, that goes back to `team-lead` before Production, and a longer
 | 5 | A dialog with no first tap | **The same wait, no exception** | The rule gives a person a moment to see the dialog, so it does not ask how the dialog came. It also covers a real path: a double tap on a file in the system picker lands on `ImportDialog`, whose second tap could run Replace (not measured, task 7.4) |
 | 6 | A really fast person | **The press does nothing and the next works.** No ripple, text or sound | Any feedback in 500 ms would be a flash on the screen for someone in pain, and it adds a string. The cost is real: a known dialog tapped under 500 ms. Hand check, task 8.1 |
 | 7 | A press that begins in the wait and lifts after | Ignored until it lifts | Otherwise holding a finger down would get past the wait |
-| 8 | Text field | A short tap in the wait does not focus. No dialog requests focus by itself (`FocusRequester` is not used in any dialog), so no keyboard opens by itself. After the wait a tap focuses as before | Consumption reaches the tap. An open keyboard is a window of its own, so typing goes on during a new wait after a rotation, and the wait reaches only the card |
+| 8 | Text field | A short tap in the wait does not focus. No dialog requests focus by itself (`FocusRequester` is not used in any dialog), so no keyboard opens by itself. After the wait a tap focuses as before | Consumption reaches the tap. The wait reaches only the card, and a keyboard is a window of its own. Nothing requests focus in `CustomTagDialog`, so whether a keyboard is still open after a recreation is not known. Task 7.8 records it |
 | 9 | A press held on a text field | Long-press selection can still start, with a haptic. The text does not change | The same residue as D159: `SelectionGestures.kt` reads `changedToDownIgnoreConsumed`. Accepted |
 | 10 | Slider, clock dial, calendar days | Must write nothing. Task 3.2 records for each whether a consumed press still moves it | Some of Material's controls can read a press with `requireUnconsumed = false`. I have not checked each. A slider or dial moving writes nothing until a confirm button, so it is a look, not a loss |
-| 11 | The main window after a dialog | **The two rules stay separate.** Touches in a dialog's window never reach `SecondTapRule`. After a dialog closes, the press on the main window answers, because a touch lifted on that screen when it opened the dialog | D159's third condition. So the wait neither adds to nor takes from D159 |
-| 12 | A double tap on a dialog's own button | **Neither rule reaches the second tap.** The first closes the dialog, and the second lands on the screen under it, where it could toggle a chip or open a dialog | Not measured. It is not assumed safe. Task 7.5 measures it, and a write is a new issue that could change the scope |
+| 11 | The main window after a dialog closed with no lift on its card | The press answers, because a touch lifted on that screen when it opened the dialog | D159's third condition. So the wait neither adds to nor takes from D159 |
+| 12 | A double tap on a dialog's own button | **Measured, and it writes.** The first closes the dialog, and the second lands beneath | D5 |
+| 13 | A return from Home or Recents to a dialog still open | **The wait does not start again.** The window was never gone, so nothing is re-attached, and no code handles this | The person has seen the dialog. A double tap on a Recents card landing on a dialog's button is residual risk. Task 7.8 measures it. A write would bring new code back to `team-lead` |
 
-**How the outside-tap change can bite.** Changing `DialogProperties` makes the dialog call `updateParameters` once more, and that sets the
-window's soft input mode. `MigrelyDateRangePicker` sets its own mode, `ADJUST_RESIZE`, in a `SideEffect`, because a pan once hid Done under
-the status bar. So a change there would undo that. The date range picker is full screen and has no outside, so the helper leaves its
-properties alone. Task 3.3 tests the rest. A property change is not expected to redraw anything, and task 7.3 looks for that.
+**Why the full-screen dialog keeps its properties.** It has no outside to hold off, so there is nothing to change. An earlier version of this
+document said a change would undo the date range picker's `ADJUST_RESIZE`. That was wrong: with `decorFitsSystemWindows` true, `updateParameters` passes
+mode 0, and `Window.setSoftInputMode` then leaves the attribute alone. A property change is not expected to redraw anything, and task 7.3 looks for that.
 
 **TalkBack, switch access, keyboard.** A click action goes through semantics and reaches `onClick` with no pointer event, keyboards send key
 events, and hover is not a press. The modifier adds no semantics. These are from reading the code, and are not run on a device until task
 7.3. A service that injects gestures, such as switch access's point scan, is a real touch and the wait applies to it, which at 500 ms from
 appearing should not be reached.
+
+### D5. A lift in a dialog counts for what is beneath it (BRD D161)
+
+**The path.** A double tap on a dialog's own option. The first tap closes the dialog, and the second lands on the window beneath. D160 does not stop it,
+because that is not the dialog's wait. D159 does not, because a dialog is another window, so it never hears the lift, and opening the dialog already left a
+lift on the entry.
+
+QA's run on 4bb7127a, debug, `t10b.jsonl`, `effect_row`, "Not at all" over "Right side", 48 double taps at one point, 100% and 200% portrait. By measured gap:
+
+| Gap, first lift to second press | Wrote a false location |
+|---|---|
+| Under 100 ms | 0 / 5 |
+| 100 to 150 ms | 5 / 6 |
+| 150 to 200 ms | 5 / 6 |
+| 200 to 300 ms | 12 / 12 |
+| 300 to 350 ms | 1 / 1 |
+| 350 to 900 ms | 18 / 18 |
+
+The same file has Theme over "Track periods" at 100%: `period_tracking` flipped on all 3 double taps, at 146, 248 and 523 ms, and not on the single tap. That is
+a setting changed with no message. Other runs, one repeat each: Theme in landscape opened Your data, and Restore in landscape reopened its dialog from about 250 ms.
+
+**The rule, in plain words.** A press is the second tap of a double tap if a finger just lifted on a dialog's card in another window. Under the timeout and within
+the distance of that lift, it is ignored until it lifts. Everything else answers.
+
+| Question | Decision | Why |
+|---|---|---|
+| The limit | **D159's: `doubleTapTimeoutMillis`, 300 ms today.** Not D160's 500 | D160's 500 gives a person a moment to see something new. What is beneath is not new, and a tap on it is a plain tap on a visible control. Longer would swallow more, and Google rejected "Unresponsive UI elements". The cost is stated: 19 of the 41 measured writes are from 300 ms up, and they stay |
+| Lower limit | None | As D159 |
+| Distance | **Yes, in screen coordinates,** with `scaledDoubleTapSlop`, 100 dp today | It is what makes this Android's own double tap, and a real double tap does not drift that far. Without it, every press in the window for 300 ms is lost, and the lead asked not to swallow more than needed. The two windows have different origins, so both nodes use `localToScreen`. A wrong conversion fails silently toward writing, so a test on `emulator-5570` proves it with a real offset (task 6a.5) and QA's table proves it again |
+| D159's "no touch has lifted on this entry" | **Not asked on this path** | Opening the dialog left that lift, so asking would make the rule never act. D159's own path keeps the condition |
+| Which lift counts | **Any lift on the card that the wait let through.** An option, OK, Cancel, or one that closes nothing | The rule cannot know what a lift will close, since some close after async work. It need not: while the dialog stays, the window beneath takes no touch, so a lift that closes nothing costs nothing. It only asks about another window, so two days in one calendar both count |
+| A press the wait ignored | Does not count | Nothing ran. Otherwise a stray tap in the wait, then Back, would swallow the next tap |
+| Cancel | Counts | The second tap lands beneath the same way |
+| Back | Does not count | No finger lifted on the glass in the app's windows. `aControlUnderADialogClosedInItsWaitAnswers` stays true |
+| A tap outside the card | **Does not count, and is residual** | It never reaches the card's node. `DialogWrapper` handles it, and calls the same `onDismissRequest` as Back, so a wrapper cannot tell them apart without taking Back over itself. Task 7.10 measures a double tap outside. A write comes back to `team-lead` |
+| A dialog beneath a dialog | **The same rule** | The older dialog's node asks the same question, as well as its own wait. So OK or Cancel on the picker, and a press in the gap before the time step's window is up, are both covered. This costs one call |
+| A burst | The lift of an ignored press moves the lift, and it stays a dialog's lift | Otherwise the third tap of a shaky triple tap writes, as in D159. No upper limit, as in D159 |
+| A new screen from a dialog's button | Ignored the same way | The entry is new. D159 cannot see it either |
+| A return from a dialog's button | Ignored the same way | The one exception to D159's "SHALL NOT cover a return", and it is narrow. Back and a control of the main window stay as they were, so #148 is untouched. From reading the code, no dialog's button pops today |
+| Recreation | The lift is not kept | 300 ms does not outlast a recreation |
+
+**How `designsystem` tells `app`.** `app` depends on `designsystem`, not the other way, and the older-dialog case needs the question asked on both sides. So one small
+pure class goes in `designsystem`, in the dialog package, with a `staticCompositionLocalOf` whose default never ignores anything, so previews and feature tests
+need nothing. `ScreenNavHost` provides the one instance. Composition locals reach a dialog's content, because a dialog's composition has its caller as parent. `SecondTapRule`
+stays in `app` and gets one more input, and no class moves.
+
+**Why not one rule for both.** Moving `SecondTapRule` into `designsystem` would widen #156's diff for no gain, and the entry mark belongs to Navigation.
+
+**What was dropped.**
+
+| Option | Why |
+|---|---|
+| A wait on the main window when a dialog closes | It would ignore every press, at any point, and it needs a dialog-closed signal that Back also raises |
+| 500 ms, D160's length | See above. It would stop more writes and lose more deliberate taps. `team-lead`'s preference, and I agree |
+| No distance test | Simpler and it cannot fail silently, but it swallows a tap anywhere. Kept as the fallback if the coordinates prove unreliable: a change of one condition |
+| Wrapping the window's `Window.Callback` to see every touch, outside included | It would see outside taps and raw coordinates, but it is a second, non-Compose way into touch |
+| `dismissOnBackPress = false` with a `BackHandler`, to tell Back from outside | It takes over Back, which D160 promises is untouched, for a rare residue |
+| A debounce on each write control | Same reasons as D159's D1: missed routes |
+
+**The menu.** `DropdownMenu` on a custom tag is a popup that opens on a long press, not through the helper. Its Remove closes it and archives the tag, and the second tap of a double tap
+lands beneath, where other chips lie. So far from reading the code only. Task 7.10 measures it, and the scope widens only if it writes.
+
+**What is lost for a real person.** A tap under 300 ms and within 100 dp of the option just tapped, beneath it, does nothing, and the next tap answers. Tapping on at speed in that spot gets no answer until a
+pause. Believed rare, and not measured.
+
+**What stays unproved.** A human hand, a real phone, and how often this happens. Whether a chip or switch lies under an option depends on scrolling, and QA's rows are one geometry for each, moved there on purpose.
+Writes from 300 ms up are not fixed. Nothing here proves that a person's natural double tap on an option is under 300 ms.
 
 ## Edge-case checklist
 
@@ -151,7 +220,9 @@ appearing should not be reached.
 | Negative control | The modifier and the outside-tap rule removed in turn, locally: these tests must fail | `android-engineer` |
 | Konsist | No raw dialog. A raw dialog added locally must fail it | `android-engineer` |
 | Black box, debug and R8 | `t9_dialog.py`'s rows with and without the guard, at gaps both sides, a tap just after the wait, 100% and 200%, landscape | `qa-engineer` |
-| The paths not measured | Import after the picker, a double tap on a dialog's own button, the rows #157 lists as not proved | `qa-engineer` |
+| A lift in a dialog | JVM and Compose tests of D5 with a negative control on each part, and a walk on 5570 | `android-engineer` |
+| The paths not measured | Import after the picker, the rows #157 lists as not proved, the stacked picker, a double tap outside the card, the menu | `qa-engineer` |
+| A double tap on a dialog's option | `t10b.py`'s rows with the rule and without it, debug and R8, read by measured gap | `qa-engineer` |
 | Human hand | Real phone, internal track | `team-lead`, the owner |
 
 **Reading the retest.** Run as before, `t9_dialog.py` used asks up to 500 ms, and a wait from appearing should cover those. So asks above that
@@ -167,7 +238,9 @@ go into the 1.1.0 Go/No-Go as residual risk.
   not been measured. Once this merges, it needs one line. Task 6.3.
 - **The wait in the helper rests on Material's `modifier` staying on the card's box.** A Material upgrade could move it. The Compose tests fail if a
   press stops being ignored.
-- **A fully qualified dialog call** gets past the Konsist test.
+- **Screen coordinates across windows** fail silently toward writing if they are wrong. D5.
+- **This branch now builds on `feature/fix-double-tap-writes`,** which must merge to `develop` first. If #156 changes, this rule moves with it.
+- **A tap outside the card, and the menu,** are not covered by D161. If QA measures a write, the scope goes back to `team-lead`.
 
 ## Migration
 

@@ -17,6 +17,11 @@ QA measured this on an emulator with injected taps, in gaps of about 140 to 500 
 
 D159 (#156) does not reach this: a dialog is a window of its own, and that rule lives in the main window's `screen()`.
 
+**The same family the other way (T50 task 7.5).** A double tap on a dialog's own option: the first tap closes the dialog, and the second lands
+on the screen beneath. Neither D159 nor the wait stops it. Measured on 4bb7127a, debug, with D159: "Not at all" over the "Right side" chip adds a
+false location. Theme over "Track periods" turned that setting off and on, 3 of 3 double taps at 100%. Single taps did neither. By read
+of the code, a picker over `AddPainDialog` has the same shape. `team-lead` put this on this branch, for one QA pass.
+
 ## What Changes
 
 - **Every dialog ignores touches on its content for 500 ms from when it appears.** All 10 of them, not only the measured ones, so a
@@ -25,7 +30,10 @@ D159 (#156) does not reach this: a dialog is a window of its own, and that rule 
 - **A tap outside the card does not close the dialog during the wait.** Back closes it at once.
 - **Nothing changes on screen,** during the wait or when it ends. No dimming, no flicker and no text.
 - **Touch only.** TalkBack, the click action of switch access and a keyboard work at once.
-- **The wait is the same however the dialog appeared,** and starts again after a rotation or a restored process.
+- **The wait is the same whatever opened the dialog,** and starts again after a rotation or a restored process. A return from Home or Recents to
+  a dialog still open does not wait again.
+- **A lift on a dialog's card counts for whatever is beneath it (D161).** A press in another window, under Android's double-tap timeout (300 ms
+  today) and within its distance (100 dp today) of that lift, is ignored. A tap after that is two taps and writes.
 
 No new string, permission or schema.
 
@@ -33,11 +41,13 @@ No new string, permission or schema.
 
 - **A second tap after the wait.** From there it is a plain tap on a visible control, and it runs. QA measures where writes come back,
   and that is residual risk in the Go/No-Go.
-- **A double tap on a dialog's own button, where the second tap lands on the screen under it.** Neither rule reaches it. It has not
-  been measured, so it is not assumed safe. QA measures it now (task 7.5), and the result could change this scope.
-- **`DropdownMenu` on a custom tag.** It opens on a long press, so one tap cannot open it. #149 stays open.
+- **A second tap on a dialog's option at or after the timeout.** It is two taps and writes. Most of the writes measured are here: 19 of 41. That
+  is residual risk in the Go/No-Go.
+- **A tap outside the card, or Back, as a first tap.** Neither lifts on the card. A double tap outside is measured (task 7.10) and not called safe.
+- **`DropdownMenu` on a custom tag.** It opens on a long press, so one tap cannot open it. A double tap on its Remove is measured (task 7.10), and
+  the scope widens only if it writes. #149 stays open.
 - **Dialogs of a leaving screen** (#149).
-- **D159 and #156,** a separate change. Neither depends on the other, and whichever merges second keeps the BRD in numeric order.
+- **#156 itself,** a separate change that merges to `develop` first. This branch merges it in, because D161 builds on its rule.
 - **Changing what a dialog says or asks,** or adding a typed confirmation to Restore.
 - **`TapGuard`'s existing uses** (D32, D114, D157) stay as they are.
 - **Measuring how often people double tap,** or how fast people act on a dialog.
@@ -50,14 +60,15 @@ None.
 
 ### Modified Capabilities
 
-- `app-shell`: every dialog waits before it takes a touch.
+- `app-shell`: every dialog waits before it takes a touch, and a lift on a dialog's card counts for what is beneath it.
 
 ## Impact
 
-- `docs/BRD.md`: D160, EC-UX-27 to 29, §13 row 31.
+- `docs/BRD.md`: D160, D161, EC-UX-27 to 30, §13 row 31.
+- `app`: `ScreenDestination.kt` and `TouchesOnlyWhile.kt`, from `feature/fix-double-tap-writes`, ask about a lift in a dialog.
 - `designsystem`: the helper, the constant, and `MigrelyDateTimePicker` and `MigrelyDateRangePicker`.
 - `features/attack/ui`, `features/backup/ui`, `features/reminders/ui`, `features/settings/ui`: their dialogs go through the helper.
 - `app/src/test`: a Konsist test.
 - `docs/ARCHITECTURE.md` section 8.
 - No health claim changes, so `medical-reviewer` is not needed. No visible text changes.
-- BRD ids: D160, EC-UX-27, EC-UX-28, EC-UX-29. Issue #157.
+- BRD ids: D160, D161, EC-UX-27, EC-UX-28, EC-UX-29, EC-UX-30. Issue #157, and T50 task 7.5 until QA files its issue.

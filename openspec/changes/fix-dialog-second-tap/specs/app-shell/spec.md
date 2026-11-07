@@ -83,9 +83,9 @@ change on screen during the wait or when it ends, and no text SHALL be added (BR
 - **THEN** the wait is unchanged, because it does not follow the clock
 
 ### Requirement: A dialog with no first tap waits the same
-The wait SHALL be the same however a dialog came to appear, because it gives a person a moment to see the dialog. It SHALL
-start again when a dialog is shown again by a rotation or a restored process. What was typed or chosen in the dialog SHALL be
-kept as it is today (BRD EC-UX-29, D160).
+The wait SHALL be the same whatever opened a dialog, with a tap or without, because it gives a person a moment to see it. It
+SHALL start again when a dialog is shown again by a rotation or a restored process. It SHALL NOT start again on a return from
+Home or Recents to a dialog still open. What was typed or chosen SHALL be kept as it is today (BRD EC-UX-29, D160).
 
 #### Scenario: After the file picker
 - **WHEN** the system file picker returns a file, the import dialog appears, and a tap lands on it inside the wait
@@ -101,7 +101,13 @@ kept as it is today (BRD EC-UX-29, D160).
 
 #### Scenario: What was typed
 - **WHEN** a name is typed in "Add your own" and the phone rotates
-- **THEN** the name stays and an open keyboard still types during the wait, because the keyboard is a window of its own
+- **THEN** the name stays, and the wait reaches only the card
+- **AND** nothing in that dialog requests focus, so whether a keyboard is still open after the rotation is what QA records
+
+#### Scenario: A return from Recents
+- **WHEN** the user leaves a dialog open, comes back from Home or Recents, and taps a control straight away
+- **THEN** the control answers, because the dialog was already seen, and a double tap on a Recents card landing on a dialog's
+  button is residual risk
 
 ### Requirement: Leaving a dialog during the wait
 During the wait a tap outside the dialog's card SHALL NOT close it. Back SHALL close it at once. After the wait a tap outside
@@ -144,19 +150,97 @@ switch access and a keyboard SHALL work at once (BRD EC-UX-27, D160).
 - **WHEN** a dialog goes through the helper
 - **THEN** its semantics tree and its size and place are the same as without it
 
-### Requirement: The main window after a dialog
-The dialog wait and the rule for the second tap of a double tap SHALL stay separate: touches in a dialog's window SHALL NOT
-count as lifts for the main window's rule. Nothing here SHALL claim that a double tap on a dialog's own button is safe (BRD
-EC-UX-27, D159, D160).
+### Requirement: A lift in a dialog counts for what is beneath it
+A touch that lifts on a dialog's card, once the wait has let it through, SHALL count as the first tap of a double tap for every
+other window. A press in another window, the main screen or an older dialog, SHALL be ignored as a whole gesture under Android's
+double-tap timeout and within its double-tap distance of that lift, on a screen touched or not. Both values SHALL come from the
+platform and the times from the touch events. Every other press SHALL answer (BRD EC-UX-30, D161).
+
+#### Scenario: An option over a location chip
+- **WHEN** the user double taps "Not at all" on the effect question with a gap under the timeout, at 100% or 200% font, and a
+  location chip lies under the finger on the screen beneath
+- **THEN** the effect is written and no location is added
+
+#### Scenario: A theme over a setting
+- **WHEN** the user double taps a choice on the Theme dialog with a gap under the timeout, and the "Track periods" switch or
+  another row lies under the finger
+- **THEN** the theme changes, and the setting stays on and no screen opens
+
+#### Scenario: Restore over its own row
+- **WHEN** the user double taps Restore with a gap under the timeout, and "Restore the copy" lies under the finger
+- **THEN** the copy is restored once, and the dialog does not open again
+
+#### Scenario: Cancel
+- **WHEN** the user double taps Cancel with a gap under the timeout
+- **THEN** the dialog closes and the second press does nothing, because a lift on Cancel is a lift on the card like any other
+
+#### Scenario: A screen just opened from a dialog
+- **WHEN** a dialog's button opens a new screen and the second press lands on it under the timeout and within the distance
+- **THEN** that press does nothing
+
+#### Scenario: A return from a dialog's button
+- **WHEN** a dialog's button returns to a touched screen and the second press lands on it under the timeout and within the
+  distance
+- **THEN** that press does nothing, which is the one case where a press on a touched screen is ignored, and Back and returns by a
+  control of the main window stay as they are
+
+#### Scenario: Three quick taps
+- **WHEN** a third tap follows an ignored second tap, under the timeout and within the distance
+- **THEN** it does nothing either, and the next press after a pause of the timeout answers
+
+#### Scenario: A tap after the limit
+- **WHEN** the second tap comes at or after the timeout and lands on a chip or a switch
+- **THEN** it writes, because that is two taps, which is the residual risk
+
+#### Scenario: A deliberate tap just after the limit
+- **WHEN** the user taps a control beneath, at the same point, just after the timeout
+- **THEN** the control answers, on the first tap
+
+#### Scenario: A tap farther away
+- **WHEN** a press lands beneath under the timeout but beyond the distance from the lift
+- **THEN** the control answers
+
+#### Scenario: Taps inside one dialog
+- **WHEN** the user taps twice quickly inside one dialog, such as two days in a calendar, or a lift closes nothing
+- **THEN** both taps count as before, because the rule asks only about another window
+
+#### Scenario: A picker over a dialog
+- **WHEN** the user double taps OK or Cancel on `MigrelyDateTimePicker` opened from "Add pain level", and the second press lands
+  on the older dialog under the timeout and within the distance, at 100% or 200% font or in landscape
+- **THEN** that press does nothing, and the older dialog's control does not run
+
+#### Scenario: Between the date step and the time step
+- **WHEN** the date step closes and a press lands on the older dialog before the time step's window is up, under the timeout and
+  within the distance of the lift on Next
+- **THEN** that press does nothing
+
+#### Scenario: A press ignored by the wait does not count
+- **WHEN** a press is ignored by the dialog's wait, lifts, and Back then closes the dialog, and the user presses a control beneath
+- **THEN** the control answers, because no lift was let through
 
 #### Scenario: A dialog closed during its wait
 - **WHEN** a dialog opened by a tap is closed by Back, and the user then presses a control under it in the main window
-- **THEN** the control answers, because a touch has already lifted on that screen
+- **THEN** the control answers, because no lift on the card was let through and a touch has already lifted on that screen
 
-#### Scenario: A double tap on a dialog's own button
-- **WHEN** the user double taps a dialog's button after the wait, the first tap closes the dialog, and the second lands on the
-  screen under it
-- **THEN** neither rule acts, and what it does is measured, and a write there is a new issue and not a pass
+#### Scenario: Back
+- **WHEN** a dialog is closed by Back after its wait, and the user presses a control beneath straight away
+- **THEN** the control answers, because Back lifts no finger on the card
+
+#### Scenario: A tap outside the card
+- **WHEN** a tap outside the card closes the dialog after its wait, and a second tap lands beneath under the timeout
+- **THEN** this rule does not act, because that tap never reaches the card, and what it does is measured and is not called safe
+
+#### Scenario: Screen readers and keyboards
+- **WHEN** an accessibility service's click action or a keyboard closes a dialog, and a touch presses a control beneath
+- **THEN** the control answers, because no finger lifted on the card, and semantics are not touched
+
+#### Scenario: A rotation or a restored process
+- **WHEN** the activity is recreated after a lift on a dialog's card
+- **THEN** the lift is not kept, and the next press answers
+
+#### Scenario: A menu on a custom tag
+- **WHEN** the user long presses a custom tag and double taps Remove in its menu
+- **THEN** this rule does not act, because a menu is not a dialog, and what the second tap does is measured and is not called safe
 
 ### Requirement: The dialog check can fail
 The check SHALL include a negative control: with the guard removed, the tests on the guard SHALL fail, and QA's dialog rows SHALL
@@ -172,10 +256,10 @@ hand on the internal track. Reports SHALL say what emulator runs with injected t
 - **THEN** no row writes inside the wait, and a tap just after it answers
 
 #### Scenario: A raw dialog
-- **WHEN** a file outside the helper calls a dialog from Compose or Material directly
+- **WHEN** a production file outside the helper names a dialog from Compose or Material, by import or fully qualified
 - **THEN** the check fails and names the file
 
 #### Scenario: By hand on the internal track
 - **WHEN** 1.1.0 is on the internal track
-- **THEN** a person double taps the rows on a real phone, and taps a dialog's control as soon as it can be read, and a dialog that
-  feels dead or a write from a natural double tap goes back to `team-lead` before Production
+- **THEN** a person double taps the rows on a real phone, double taps a dialog's option, and taps a dialog's control as soon as it
+  can be read, and a dialog that feels dead or a write from a natural double tap goes back to `team-lead` before Production
