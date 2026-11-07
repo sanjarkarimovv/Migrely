@@ -128,7 +128,6 @@ private class TouchesOnlyWhileNode(var allowed: () -> Boolean, var secondTap: Se
         pointerId = change.id.value,
         atMillis = change.uptimeMillis,
         screenPosition = change.onScreen(),
-        timeoutMillis = secondTap.limits.timeoutMillis,
         distance = secondTap.limits.distance
     ) == true
 

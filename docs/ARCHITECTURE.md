@@ -256,9 +256,12 @@ data must never be passed to any SDK.
   dialog with the first tap, and the second lands in another window: it is not that dialog's wait, and the second-tap rule
   of the main window never hears the lift. So `DialogLiftRule` (`:designsystem`, package `dialog`, because `app` depends on
   it and an older dialog has to ask too) keeps the last lift the wait let through. A press in any other window under
-  `doubleTapTimeoutMillis` and within `scaledDoubleTapSlop` of it is ignored until it lifts. Both windows convert to the
-  screen with `localToScreen`, because their origins differ, and a wrong conversion fails toward writing:
-  `DialogLiftOnScreenTest` proves it on a device. `ScreenNavHost` provides the one instance; with none nothing is ignored.
+  `DIALOG_WAIT_MILLIS`, not the second-tap rule's 300 ms, and within `scaledDoubleTapSlop` of it is ignored until it lifts. Both windows convert to the
+  screen with `localToScreen`, because their origins differ, and a wrong conversion fails toward writing. So
+  `DialogLiftOnScreenTest` presses just inside and just outside the distance through real windows, from two corners of a
+  card, and an offset larger than its 10 dp margin fails it. It needs a device and is not in the gate, so run it when this
+  changes. It shows one AVD in portrait: not API 26, a cutout, a dialog panned by a keyboard or split screen.
+  `ScreenNavHost` provides the one instance; with none nothing is ignored.
 - `DeleteAllDataObserver` sits beside the `NavHost`, not on the delete screen: wiped data must restart the app whichever
   screen is on top, or with the delete screen gone.
 - ViewModels are stateless (skill rule 4). Text and selections the user is editing live in the composable

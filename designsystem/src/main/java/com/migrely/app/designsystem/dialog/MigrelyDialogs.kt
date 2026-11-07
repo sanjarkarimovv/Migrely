@@ -26,7 +26,6 @@ import androidx.compose.ui.node.currentValueOf
 import androidx.compose.ui.node.requireLayoutCoordinates
 import androidx.compose.ui.platform.InspectorInfo
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -95,6 +94,7 @@ private class DialogWaitNode :
     PointerInputModifierNode,
     CompositionLocalConsumerModifierNode {
     private val rule = DialogWaitRule()
+    private val windowKey = Any()
     private var appearedAtMillis = 0L
 
     override fun onAttach() {
@@ -111,29 +111,31 @@ private class DialogWaitNode :
         pointerEvent.changes.forEach { change ->
             val pointerId = change.id.value
             val ignored = if (change.changedToDownIgnoreConsumed()) {
-                // Both are told, and each keeps its own pointers. An older dialog is beneath a lift.
+                // Both are told, each keeps its own pointers. An older dialog is beneath a lift.
                 val inTheWait = rule.press(pointerId, change.uptimeMillis, appearedAtMillis)
                 val afterALift = lifts?.let { pressAfterALift(it, change) } == true
                 inTheWait || afterALift
             } else {
-                rule.isIgnored(pointerId) || lifts?.isIgnored(pointerId) == true
+                rule.isIgnored(pointerId) || lifts?.isIgnored(windowKey, pointerId) == true
             }
             if (change.changedToUpIgnoreConsumed()) {
                 // A press the wait ignored ran nothing, so it does not count as a lift on the card.
-                val letThrough = !rule.isIgnored(pointerId) || lifts?.isIgnored(pointerId) == true
+                val letThrough =
+                    !rule.isIgnored(pointerId) || lifts?.isIgnored(windowKey, pointerId) == true
                 rule.lift(pointerId)
-                if (letThrough) lifts?.lift(this, pointerId, change.uptimeMillis, change.onScreen())
+                if (letThrough) {
+                    lifts?.lift(windowKey, pointerId, change.uptimeMillis, change.onScreen())
+                }
             }
             if (ignored) change.consume()
         }
     }
 
     private fun pressAfterALift(lifts: DialogLiftRule, change: PointerInputChange) = lifts.press(
-        windowKey = this,
+        windowKey = windowKey,
         pointerId = change.id.value,
         atMillis = change.uptimeMillis,
         screenPosition = change.onScreen(),
-        timeoutMillis = currentValueOf(LocalViewConfiguration).doubleTapTimeoutMillis,
         distance = ViewConfiguration.get(currentValueOf(LocalContext)).scaledDoubleTapSlop.toFloat()
     )
 
