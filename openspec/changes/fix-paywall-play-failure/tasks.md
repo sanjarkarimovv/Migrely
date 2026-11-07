@@ -24,11 +24,11 @@ the baseline in 3.1 from the current develop build.
 
 Do these in order. The baseline comes first, on the build before any of these changes.
 
-- [ ] 3a.1 Baseline on the current build, `emulator-5570`, debug. Measure #152's second table as "before": Home Today, History, My medications, Your data, Log medication, Attack details, Add past attack, Edit medication, Doctor report. At 100% and 200%, portrait and landscape, with a message showing, record the message's bounds, each control under it, and what a tap at that control's centre does. Verify: the "before" table is in the verification record. Restore every device setting.
-- [ ] 3a.2 `MigrelySnackbarHost`: one top offset parameter, default none, and one guard parameter, default 800 ms. Paywall: 48 dp and 400 ms. Every other screen with a top bar, and Home Today: the offset of design D7. Landscape attack mode, portrait attack mode and screens with no top bar: unchanged. Verify: `./gradlew :designsystem:assembleDebug :app:assembleDebug`, and `git grep -n "MigrelySnackbarHost(" -- 'features/*.kt'` reviewed call by call.
-- [ ] 3a.3 `MigrelySnackbar`: a tap on the body of a message with a timeout and no action calls `onDismiss`, by touch only with no new semantics. With an action, or with no timeout ("storage full"), a body tap does nothing. Each caller says so from `baseDurationMillis`, not from `timeLeft`, which is null for every message with no action. Verify: a `uiautomator dump` shows no new clickable node, and the Dismiss button is still there.
-- [ ] 3a.4 Tests. The guard parameter: 800 ms by default and 400 ms when passed, each with a tap just before and just after. The body tap: with a timeout and no action it dismisses; with an action it does nothing, and Undo itself still works; with no timeout and no action it does nothing, and Dismiss and a swipe still close it. A check that every "storage full" mapping reaches the snackbar as no timeout. Show a negative control for each. Verify: `:designsystem:connectedDebugAndroidTest` with `ANDROID_SERIAL=emulator-5570`, `MigrelySnackbarHostTest`, with counts recorded.
-- [ ] 3a.5 "After" measure, the same table as 3a.1 at 100% and 200%, portrait and landscape, plus:
+- [x] 3a.1 Baseline on the current build, `emulator-5570`, debug. Measure #152's second table as "before": Home Today, History, My medications, Your data, Log medication, Attack details, Add past attack, Edit medication, Doctor report. At 100% and 200%, portrait and landscape, with a message showing, record the message's bounds, each control under it, and what a tap at that control's centre does. Verify: the "before" table is in the verification record. Restore every device setting.
+- [x] 3a.2 `MigrelySnackbarHost`: one top offset parameter, default none, and one guard parameter, default 800 ms. Paywall: 48 dp and 400 ms. Every other screen with a top bar, and Home Today: the offset of design D7. Landscape attack mode, portrait attack mode and screens with no top bar: unchanged. Verify: `./gradlew :designsystem:assembleDebug :app:assembleDebug`, and `git grep -n "MigrelySnackbarHost(" -- 'features/*.kt'` reviewed call by call.
+- [x] 3a.3 `MigrelySnackbar`: a tap on the body of a message with a timeout and no action calls `onDismiss`, by touch only with no new semantics. With an action, or with no timeout ("storage full"), a body tap does nothing. Each caller says so from `baseDurationMillis`, not from `timeLeft`, which is null for every message with no action. Verify: a `uiautomator dump` shows no new clickable node, and the Dismiss button is still there.
+- [x] 3a.4 Tests. The guard parameter: 800 ms by default and 400 ms when passed, each with a tap just before and just after. The body tap: with a timeout and no action it dismisses; with an action it does nothing, and Undo itself still works; with no timeout and no action it does nothing, and Dismiss and a swipe still close it. A check that every "storage full" mapping reaches the snackbar as no timeout. Show a negative control for each. Verify: `:designsystem:connectedDebugAndroidTest` with `ANDROID_SERIAL=emulator-5570`, `MigrelySnackbarHostTest`, with counts recorded.
+- [x] 3a.5 "After" measure, the same table as 3a.1 at 100% and 200%, portrait and landscape, plus:
   - Paywall: a first tap on Close closes it while the message shows.
   - Paywall: the buy button scrolled under the message: tap the message, then re-tap the button at 200, 400 and 600 ms, and record each.
   - Every screen in the table: tap a message with a timeout and no action, and re-tap the control under it at 200, 400 and 600 ms where a control lies under it.
@@ -44,9 +44,9 @@ Do these in order. The baseline comes first, on the build before any of these ch
 
 ## 4. Gate and walk
 
-- [ ] 4.1 Gate. Verify: `./gradlew assembleDebug test ktlintCheck detekt lint`, with exit code and test count recorded.
-- [ ] 4.2 No permission change. Verify: `./gradlew :app:checkReleasePermissions` passes, and `git diff origin/develop... -- '*AndroidManifest.xml' 'app/build.gradle.kts'` is empty.
-- [ ] 4.3 Walk on `emulator-5570` with the simulated store, one row per scenario:
+- [x] 4.1 Gate. Verify: `./gradlew assembleDebug test ktlintCheck detekt lint`, with exit code and test count recorded.
+- [x] 4.2 No permission change. Verify: `./gradlew :app:checkReleasePermissions` passes, and `git diff origin/develop... -- '*AndroidManifest.xml' 'app/build.gradle.kts'` is empty.
+- [x] 4.3 Walk on `emulator-5570` with the simulated store, one row per scenario:
   - The line under the terms for Yearly, Monthly and Lifetime, and identical on each.
   - Cancel in the simulated sheet: no message, the button works again.
   - Store set to `unreachable` with the paywall open, then buy: "The purchase didn't go through. Try again." and then the unreachable notice with no line.
@@ -71,7 +71,7 @@ Do these in order. The baseline comes first, on the build before any of these ch
 
 ## Verification record
 
-Filled in by `android-engineer`, 2026-11-07. Evidence: `migrely-work/walks/bugfix-146/`. Tasks 3a.1 and 3a.5 are not measured yet.
+Filled in by `android-engineer`, 2026-11-07. Evidence: `migrely-work/walks/bugfix-146/`.
 
 ### 3.1 and 3.3: the paywall's geometry
 
@@ -100,9 +100,9 @@ The line and the order, `:features:subscription:ui:testDebugUnitTest`, 34 tests:
 
 The message, `MessagePlaceAndTapTest`, 17 tests: A1 host ignores `guardMillis`, 1 fails; A2 default 400, 1 fails; A3 host ignores `topOffset`, 3 fail; A4 no body tap, 1 fails; A5 body tap with an action, 1 fails; A6 body tap with no timeout, 1 fails; A7 body tap with semantics, 1 fails; A8 dismisses twice, 1 fails. Restored: 0 fail. These compare the two guards rather than exact times: under Robolectric each guard measured about twice its length (400 ms swallowed a tap at 576 and passed one at 1024; the default swallowed at 1520 and passed at 3024). The cause is not known. Exact times are in `MigrelySnackbarHostTest`, instrumented and not run yet.
 
-### 4.3 walk so far
+### 4.3 walk
 
-Merged build 3ddc80b9, except where a row says otherwise. All before D7's code.
+Merged build 3ddc80b9, except where a row says otherwise. These rows ran before D7's code. The rows D7 can change are confirmed in 3a below on the final code.
 
 | Row | Result |
 |---|---|
@@ -122,9 +122,117 @@ Merged build 3ddc80b9, except where a row says otherwise. All before D7's code.
 | TalkBack order from the dump | Close, headline, lead, three cards, button, terms, line, Restore, benefits. The line is stop 9, Restore stop 10. TalkBack itself not run |
 | `Unavailable`, products offered (temporary one-line build, never committed) | Cards back, "Google Play can't be reached. Try again later.", gone by 9 s, and the button opens the sheet again |
 | Rotation during the sheet, same temporary build | The message shows on the rotated screen, gone by 9 s |
-| Controls under the message | Before D7: see #152. After D7: not measured yet |
+| Close under the message, final code | Failed purchase: a first tap on Close closes the paywall at 100% and 200%, portrait and landscape |
+| Try again and Restore, final code, 200% portrait, default display | At maximum scroll they stay at y 591 and 780, below the message (text ends at 496). Tap the message, then Try again: the cards come back |
 
-Not checked: a real Play sheet (task 5.3), buy under the message at 200% landscape, Try again and Restore under the message on 360 x 640dp.
+Not checked: a real Play sheet (task 5.3), buy under the message at 200% landscape, Try again and Restore under the message on 360 x 640dp (the driver could not open the paywall at that size).
+
+### 3a.1 and 3a.5: messages, before and after
+
+Emulator API 36, 1080x2400, debug. Before is 3ddc80b9; after is the code of f6f9ce9e. Each cell restores a seed, raises a real message, proves it by a dump, and taps the control's centre. "Covered" means the control has no node in the dump while the message shows. "Tap" names the screen afterwards, so "home" after Back on a screen reached from Home means Back answered. "Message after" was read 3 to 5 s later, because a dump takes up to 3 s, so "None" after a tap that did nothing can be the timeout.
+
+| Screen | Font | Orientation | Control | Before | After |
+|---|---|---|---|---|---|
+| details | 100% | land | Back | control not on screen | control not on screen |
+| details | 100% | port | Back | covered; text y 194-241; tap: attack details; message after: None | not covered; text y 341-388; tap: home; message after: None |
+| details | 200% | land | Back | not covered; text y 116-201; tap: home; message after: None | not covered; text y 263-348; tap: home; message after: None |
+| details | 200% | port | Back | covered; text y 181-266; tap: attack details; message after: None | not covered; text y 328-413; tap: home; message after: None |
+| edit | 100% | land | Back | not covered; text y 116-221; tap: my medications; message after: None | not covered; text y 263-368; tap: my medications; message after: None |
+| edit | 100% | port | Back | covered; text y 181-286; tap: edit medication; message after: You can keep up to 50 | not covered; text y 328-433; tap: my medications; message after: None |
+| edit | 200% | land | Back | not covered; text y 116-305; tap: my medications; message after: None | not covered; text y 263-452; tap: my medications; message after: None |
+| edit | 200% | port | Back | covered; text y 181-474; tap: edit medication; message after: You can keep up to 50 | not covered; text y 328-621; tap: my medications; message after: None |
+| history | 100% | land | Back | not covered; text y 129-176; tap: home; message after: Migraine deleted | not covered; text y 276-323; tap: home; message after: Migraine deleted |
+| history | 100% | land | Doctor report | not covered; text y 129-176; tap: doctor report; message after: None | not covered; text y 276-323; tap: doctor report; message after: None |
+| history | 100% | port | Back | covered; text y 194-241; tap: history; message after: None | not covered; text y 341-388; tap: home; message after: Migraine deleted |
+| history | 100% | port | Doctor report | covered; text y 194-241; tap: history; message after: Undone | not covered; text y 341-388; tap: doctor report; message after: None |
+| history | 200% | land | Back | not covered; text y 116-201; tap: home; message after: Migraine deleted | not covered; text y 263-348; tap: home; message after: Migraine deleted |
+| history | 200% | land | Doctor report | not covered; text y 116-201; tap: ?Back,Doctor report; message after: None | not covered; text y 263-348; tap: ?Back,Doctor report; message after: None |
+| history | 200% | port | Back | covered; text y 181-266; tap: history; message after: None | not covered; text y 328-413; tap: home; message after: Migraine deleted |
+| history | 200% | port | Doctor report | covered; text y 181-266; tap: ?Sunday, November 22,Monday, November 23; message after: Undone | not covered; text y 328-413; tap: doctor report; message after: None |
+| home | 100% | land | Settings | covered; text y 129-176; tap: home; message after: None | covered; text y 129-176; tap: home; message after: None |
+| home | 100% | port | Settings | covered; text y 194-241; tap: attack mode; message after: Undone | not covered; text y 341-388; tap: settings; message after: None |
+| home | 200% | land | Settings | covered; text y 116-201; tap: home; message after: None | covered; text y 116-201; tap: ?Back,Settings; message after: None |
+| home | 200% | port | Settings | covered; text y 181-266; tap: attack mode; message after: Undone | not covered; text y 328-413; tap: settings; message after: None |
+| log | 100% | land | Back | not covered; text y 129-176; tap: home; message after: None | not covered; text y 276-323; tap: home; message after: None |
+| log | 100% | port | Back | covered; text y 194-241; tap: log medication; message after: Pick a | not covered; text y 341-388; tap: home; message after: None |
+| log | 200% | land | Back | not covered; text y 116-201; tap: home; message after: None | not covered; text y 263-348; tap: home; message after: None |
+| log | 200% | port | Back | covered; text y 181-266; tap: log medication; message after: Pick a | not covered; text y 328-413; tap: home; message after: None |
+| medications | 100% | land | Back | not covered; text y 129-176; tap: log medication; message after: None | not covered; text y 276-323; tap: log medication; message after: None |
+| medications | 100% | land | Remove | not covered; text y 129-176; tap: my medications; message after: Medication removed | not covered; text y 276-323; tap: my medications; message after: Undone |
+| medications | 100% | port | Back | covered; text y 194-241; tap: my medications; message after: None | not covered; text y 341-388; tap: log medication; message after: None |
+| medications | 100% | port | Remove | not covered; text y 194-241; tap: my medications; message after: Medication removed | not covered; text y 341-388; tap: my medications; message after: Undone |
+| medications | 200% | land | Back | not covered; text y 116-201; tap: log medication; message after: None | not covered; text y 263-348; tap: log medication; message after: None |
+| medications | 200% | land | Remove | not covered; text y 116-201; tap: my medications; message after: Medication removed | not covered; text y 263-348; tap: my medications; message after: Undone |
+| medications | 200% | port | Back | covered; text y 181-370; tap: my medications; message after: None | not covered; text y 328-517; tap: log medication; message after: None |
+| medications | 200% | port | Remove | not covered; text y 181-370; tap: my medications; message after: Medication removed | not covered; text y 328-517; tap: my medications; message after: Undone |
+| yourdata | 100% | land | Back | not covered; text y 129-176; tap: settings; message after: None | not covered; text y 276-323; tap: settings; message after: None |
+| yourdata | 100% | port | Back | covered; text y 181-286; tap: your data; message after: This phone has no | not covered; text y 328-433; tap: settings; message after: None |
+| yourdata | 200% | land | Back | not covered; text y 116-305; tap: ?Back,Settings; message after: None | not covered; text y 263-452; tap: ?Back,Settings; message after: None |
+| yourdata | 200% | port | Back | covered; text y 181-370; tap: your data; message after: This phone has no | not covered; text y 328-517; tap: settings; message after: None |
+
+How to read it:
+
+- **Home Today, window 480 dp or taller:** before, a tap at Settings hit Undo and reopened the migraine at 100% and 200%. After, it opens Settings. True to #152.
+- **History:** before, Doctor report hit Undo, and Back did nothing. After, both answer. True to #152. Insights, measured at 100% portrait before D7, also hit Undo.
+- **Your data, Log medication, Attack details, Edit medication, My medications:** before, Back did nothing in portrait. After, it answers. In landscape it already answered: the bar's corners lie outside a message 560 dp wide. So #152's "up to 8 s" holds in portrait only.
+- **My medications, Remove on row 1:** #152's "200%" row was false before D7: the Remove's centre lay below the message and removed the row. After D7 Undo lies over it, and a tap at its centre hits Undo at 100% and 200%, portrait and landscape (message after: Undone). Design D7 accepted this for 100%. The "not covered" in those four rows is the driver matching another row's Remove; `remove` measured row 1 alone: no node in the dump, and the tap undid.
+- **Doctor report and Add past migraine:** no message can be raised in normal use. Create report with nothing logged shows inline text, and the pickers refuse a wrong time. With the clock moved back, a future time shows an inline field error. Only storage full and generic failures reach these hosts, so their offset is read from the code and not measured. Report's after cells were not run.
+- **Attack details, 100% landscape:** not measured on either build, because the driver found no Back there. 200% landscape is in the table.
+
+Paywall, a first tap on Close with a failed purchase's message showing:
+
+| Font, orientation | Before | After |
+|---|---|---|
+| 100% portrait | Close covered; stays on the paywall | Close in the dump, message text at y 307-412; closes |
+| 100% landscape | Close in the dump; closes | Same; closes |
+| 200% portrait | Close covered; stays on the paywall | Close in the dump, message text at y 307-496; closes |
+| 200% landscape | Close in the dump; closes | Same; closes |
+
+Home Today in a window under 480 dp, against "Migraine started", "Migraine ended" with Undo showing:
+
+| Build, window, font | Undo | Button | Live tap | Result |
+|---|---|---|---|---|
+| D7 with the offset, 411 dp high, 200% | y 242-368 | y 314-503 | Centre, y 408 | Starts a migraine |
+| Same | Same | Same | Top edge under Undo | Undo fires |
+| Same | Same | Same | Top edge under the body | Nothing |
+| Final, 411 dp high, 100% | y 89-215 | y 372-561 | Top edge | Starts a migraine |
+| Final, 411 dp high, 130% | y 89-215 | y 342-531 | Top edge | Starts a migraine |
+| Final, 411 dp high, 200% | y 95-221 | y 314-503 | Top edge | Starts a migraine |
+| Final, 274 dp high, 100% | y 89-215 | y 221-363 | Not tapped | 6 px gap |
+| Final, 274 dp high, 200% (#153) | y 95-221 | y 63-305 | Under Undo; under the body; below the message | Undo fires; nothing; starts a migraine |
+
+A tap on Settings while that message shows, in those windows: 411 dp at 100%, 130%, 200% and 274 dp at 100%, 200%. Settings does not open and Undo does not fire: Undo starts at x 1317 or more, and Settings ends at x 1233 or less. One 411 dp, 200% read did open Settings, 5.3 s after the message was seen, which is past its 5 s. #153, filed by `team-lead`, holds the 274 dp case; it predates D7, since the offset there is 0.
+
+Guard timing, device-measured gap between the two taps, on `-no-window -gpu swiftshader_indirect`:
+
+| Guard | Control | Gap | Result | p90 frame time |
+|---|---|---|---|---|
+| Paywall, 400 ms | Buy, 200% portrait, under Restore's message | 228 ms | Swallowed | 25 ms |
+| | | 415 ms | Swallowed | 29 ms |
+| | | 514 ms | Sheet opens | 36 ms |
+| | | 619 ms | Sheet opens | 32 ms |
+| Default, 800 ms | Your data's first row, 100% portrait | 213 ms | Swallowed | 24 ms |
+| | | 412 ms | Swallowed | 28 ms |
+| | | 615 ms | Swallowed | 25 ms |
+| | | 715 ms | Swallowed | 23 ms |
+| | | 920 ms | Reaches the row | 26 ms |
+
+The gap runs from the end of the first tap to the end of the second, on the device. A tap at 415 ms still being swallowed is about 15 ms past the guard's nominal end, within a frame or two. Robolectric's "about double" is not on the device.
+
+Instrumented: `:designsystem:connectedDebugAndroidTest`, 52 tests, 0 failures, including `MigrelySnackbarHostTest`'s four guard tests. Controls on the device: host ignores `guardMillis`, 1 of 7 fails (`aGuardOf400MsLetsATapThroughJustAfterItEnds`); default 400, 1 of 7 fails (`theDefaultGuardSwallowsATapJustBefore800Ms`). `MessagesClearSettingsRowTest`, 3 tests: no short-window condition, 1 fails; no attack condition, 1 fails.
+
+Other rows, on the final code:
+
+| Row | Result |
+|---|---|
+| Undo: a body tap, then Undo, with no dump between | The point comes back and "Undone" shows, the same as with no body tap |
+| No new clickable node | `The body tap adds nothing a screen reader can act on` (Robolectric), with a mutant; a live dump keeps Dismiss |
+| Storage full | By test only: body tap does nothing, Dismiss and a swipe close it. The walk cannot produce a full disk |
+| Reduce motion, animator scale 0 | Attack details: message at y 341-388, its final place; a first tap on Back answers; a body tap on a message with no action dismisses it. Guard timing not repeated under it |
+| Home Today, 200%, date wraps ("Wednesday, September 30", y 170-359) | Settings y 203-329, its centre above the message's top edge at about y 297, so a tap at its centre opens Settings. Its bottom 32 px lie under the message |
+| Home Today, after scrolling | **Not measured.** The drag during the mode's tap guard did not scroll |
+| Portrait and landscape attack mode (D52) | Same bounds before and after at 100% and 200% |
+| Two X icons on the paywall, by eye | Close's X and Dismiss's X are stacked at the right edge with the message's top below Close's row. Seen only in the d60dbb4c shot and from bounds; **not looked at on the final code** |
 
 
 Known limits, already accepted in the design:

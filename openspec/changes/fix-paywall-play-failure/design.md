@@ -165,8 +165,8 @@ nothing happens. A buy button under the message opens no sheet. System Back clos
 |---|---|---|
 | Paywall | Below the Close row: 48 dp on the host, so 56 dp under the inset | Close is 48 dp with 4 dp of padding, so it is never covered, moved or guarded |
 | Every other screen with a top bar | Below the bar | Back, Insights and Doctor report answer, and a tap cannot hit Undo instead |
-| Home Today, portrait | Below the Settings row | Settings answers, and a tap cannot hit Undo and reopen the migraine |
-| Home Today, landscape | Unchanged, no offset (`team-lead`, 2026-11-07) | "Migraine started" is the safety control, and the spec says a message never covers it. Measured with the offset at 200%: Undo at y 242 to 368 over the button at y 314 to 503. A tap at the button's top edge under Undo undid instead of starting (result "Undone"), and one under the message's body did nothing |
+| Home Today, window 480 dp or taller, such as a phone in portrait | Below the Settings row | Settings answers, and a tap cannot hit Undo and reopen the migraine |
+| Home Today, window under 480 dp, such as a phone in landscape | Unchanged, no offset (`team-lead`, 2026-11-07) | "Migraine started" is the safety control, and the spec says a message never covers it. Measured with the offset at 200%: Undo at y 242 to 368 over the button at y 314 to 503. A tap at the button's top edge under Undo undid instead of starting (result "Undone"), and one under the message's body did nothing. Without the offset it is measured clear of the button at 100%, 130% and 200% on a window 411 dp high. Known exception, #153: at 274 dp high and 200%, a cramped layout, the message lies over the button's top, as it has since before D7 |
 | Landscape attack mode | As D52 | The start column already moves below the message |
 | Portrait attack mode | Unchanged | Undo over the rain card is accepted: that card is the screen's content, not a top-bar control. Known limit |
 | No top bar, such as onboarding | Unchanged | Nothing to clear |
@@ -213,8 +213,9 @@ Onboarding have an 8-second timeout, so a tap dismisses them.
   Undo near its Remove. A tap on Remove there hits Undo. This was a 200% case in #152 and becomes a 100% case. Accepted by
   `team-lead`, because it is visible and reversible, as long as task 3a.5 measures it.
 - **Landscape Home Today. Measured, and decided in the table above.** With the offset the message overlapped "Migraine
-  started" at 200%, so Today in landscape has no offset. The rule is one condition on state Home already has,
-  `isCompactHeight()`, the same one that picks the two-column layout. The cost is what every release has had: in landscape
+  started" at 200%, so Today has no offset when the window is under 480 dp high. The rule is one condition on state Home already has,
+  `isCompactHeight()`, the same one that picks the two-column layout. It reads the window's height, not the orientation.
+  The cost is what every release has had: in such a window
   the message may cover the top row for up to 5 seconds.
 
 ## Edge-case checklist
