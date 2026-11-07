@@ -77,7 +77,7 @@ internal inline fun <reified ROUTE : Any> NavGraphBuilder.screen(
         Box(
             modifier = Modifier.touchesOnlyWhile(
                 allowed = { navController.currentBackStackEntry?.id == entry.id },
-                entry = SecondTapEntry(entry.id, LocalSecondTapRule.current, secondTapLimits())
+                secondTap = SecondTapEntry(entry, LocalSecondTapRule.current, secondTapLimits())
             ),
             propagateMinConstraints = true
         ) {

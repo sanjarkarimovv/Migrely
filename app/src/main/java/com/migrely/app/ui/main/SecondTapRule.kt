@@ -11,36 +11,41 @@ internal data class SecondTapLimits(val timeoutMillis: Long, val distance: Float
 /**
  * Whether a press is the second tap of a double tap, landing on a screen the first tap opened (issue
  * #156, BRD D159). It is if it comes under the timeout after the last lift, within the distance of
- * that lift, on an entry no touch has lifted on yet. So a return to a screen the user tapped to
- * leave is never covered. One instance serves the nav host, because a screen's node does not outlive
- * the screen leaving the composition and the entry's mark must.
+ * that lift, on an entry no touch has lifted on yet. Which entries were touched is kept on the entry
+ * itself, so that it survives a recreation and goes with a pop; this class is told it. So a return to
+ * a screen the user tapped to leave is never covered. The last lift and the ignored pointers are not
+ * saved: touch event times mean nothing later, and this window does not outlast a recreation.
  *
  * An ignored press stays ignored until its pointer lifts. Its lift moves the last lift, so a quick
- * burst stays ignored until a pause, and does not mark the entry, so the screen stays new.
+ * burst stays ignored until a pause, and does not count as a touch on the entry, so the screen stays
+ * new. A pointer cancelled by the system never lifts and its id stays here: touch ids are not reused
+ * and a later press of the same id decides afresh, so that is only a few stale numbers.
  */
 internal class SecondTapRule {
     private var lastLift: TouchPoint? = null
-    private val touchedEntries = mutableSetOf<String>()
     private val ignoredPointers = mutableSetOf<Long>()
 
     /** True when this press is to be ignored. */
-    fun press(entryId: String, pointerId: Long, at: TouchPoint, limits: SecondTapLimits): Boolean {
+    fun press(
+        pointerId: Long,
+        at: TouchPoint,
+        limits: SecondTapLimits,
+        entryTouched: Boolean
+    ): Boolean {
         val lift = lastLift
         val ignored = lift != null &&
-            entryId !in touchedEntries &&
+            !entryTouched &&
             at.uptimeMillis - lift.uptimeMillis < limits.timeoutMillis &&
             hypot(at.x - lift.x, at.y - lift.y) < limits.distance
-        if (ignored) ignoredPointers += pointerId
+        if (ignored) ignoredPointers += pointerId else ignoredPointers -= pointerId
         return ignored
     }
 
-    fun lift(entryId: String, pointerId: Long, at: TouchPoint) {
+    /** True when this lift counts as a touch on the entry: it was not an ignored press. */
+    fun lift(pointerId: Long, at: TouchPoint): Boolean {
         lastLift = at
-        if (!ignoredPointers.remove(pointerId)) touchedEntries += entryId
+        return !ignoredPointers.remove(pointerId)
     }
 
     fun isIgnored(pointerId: Long): Boolean = pointerId in ignoredPointers
-
-    /** The system took the touches back: nothing will lift. */
-    fun forgetPresses() = ignoredPointers.clear()
 }

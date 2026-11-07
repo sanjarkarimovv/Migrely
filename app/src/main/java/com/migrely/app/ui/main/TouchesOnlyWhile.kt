@@ -11,6 +11,8 @@ import androidx.compose.ui.node.ModifierNodeElement
 import androidx.compose.ui.node.PointerInputModifierNode
 import androidx.compose.ui.platform.InspectorInfo
 import androidx.compose.ui.unit.IntSize
+import androidx.lifecycle.Lifecycle
+import androidx.navigation.NavBackStackEntry
 
 /**
  * Consumes the pointer input of this window on the content while [allowed] is false, read at the
@@ -29,18 +31,32 @@ import androidx.compose.ui.unit.IntSize
  * on Compose's hit testing (`NodeCoordinator.speculativeHit`, Compose 1.9.3).
  * `LeavingScreenInputTest` fails if an upgrade changes it.
  */
-internal fun Modifier.touchesOnlyWhile(allowed: () -> Boolean, entry: SecondTapEntry): Modifier =
-    this
-        .shiftedByWidths(-1)
-        .then(TouchesOnlyWhileElement(allowed, entry))
-        .shiftedByWidths(1)
+internal fun Modifier.touchesOnlyWhile(
+    allowed: () -> Boolean,
+    secondTap: SecondTapEntry
+): Modifier = this
+    .shiftedByWidths(-1)
+    .then(TouchesOnlyWhileElement(allowed, secondTap))
+    .shiftedByWidths(1)
 
 /** Which entry this is, for [SecondTapRule], which is asked in the same pass. */
 internal data class SecondTapEntry(
-    val id: String,
+    val entry: NavBackStackEntry,
     val rule: SecondTapRule,
     val limits: SecondTapLimits
 )
+
+private const val TOUCHED_KEY = "com.migrely.app.second_tap.touched"
+
+/** On the entry's own saved state: restored with the back stack, gone when the entry is popped. */
+private fun NavBackStackEntry.wasTouched() = savedStateHandle.contains(TOUCHED_KEY)
+
+private fun NavBackStackEntry.markTouched() {
+    // A popped entry can take one last lift while it fades out, and it will not come back.
+    if (lifecycle.currentState.isAtLeast(Lifecycle.State.CREATED)) {
+        savedStateHandle[TOUCHED_KEY] = true
+    }
+}
 
 private fun Modifier.shiftedByWidths(widths: Int): Modifier = layout { measurable, constraints ->
     val placeable = measurable.measure(constraints)
@@ -49,13 +65,15 @@ private fun Modifier.shiftedByWidths(widths: Int): Modifier = layout { measurabl
     }
 }
 
-private data class TouchesOnlyWhileElement(val allowed: () -> Boolean, val entry: SecondTapEntry) :
-    ModifierNodeElement<TouchesOnlyWhileNode>() {
-    override fun create() = TouchesOnlyWhileNode(allowed, entry)
+private data class TouchesOnlyWhileElement(
+    val allowed: () -> Boolean,
+    val secondTap: SecondTapEntry
+) : ModifierNodeElement<TouchesOnlyWhileNode>() {
+    override fun create() = TouchesOnlyWhileNode(allowed, secondTap)
 
     override fun update(node: TouchesOnlyWhileNode) {
         node.allowed = allowed
-        node.entry = entry
+        node.secondTap = secondTap
     }
 
     override fun InspectorInfo.inspectableProperties() {
@@ -63,7 +81,7 @@ private data class TouchesOnlyWhileElement(val allowed: () -> Boolean, val entry
     }
 }
 
-private class TouchesOnlyWhileNode(var allowed: () -> Boolean, var entry: SecondTapEntry) :
+private class TouchesOnlyWhileNode(var allowed: () -> Boolean, var secondTap: SecondTapEntry) :
     Modifier.Node(),
     PointerInputModifierNode {
     override fun onPointerEvent(
@@ -80,21 +98,27 @@ private class TouchesOnlyWhileNode(var allowed: () -> Boolean, var entry: Second
 
     private fun shouldConsume(change: PointerInputChange, current: Boolean): Boolean {
         val pointerId = change.id.value
-        val ignored = when {
-            change.changedToDownIgnoreConsumed() ->
-                current && entry.rule.press(entry.id, pointerId, change.touchPoint(), entry.limits)
-
-            else -> entry.rule.isIgnored(pointerId)
+        val ignored = if (change.changedToDownIgnoreConsumed()) {
+            current && secondTap.rule.press(
+                pointerId,
+                change.touchPoint(),
+                secondTap.limits,
+                entryTouched = secondTap.entry.wasTouched()
+            )
+        } else {
+            secondTap.rule.isIgnored(pointerId)
         }
-        if (change.changedToUpIgnoreConsumed()) {
-            entry.rule.lift(entry.id, pointerId, change.touchPoint())
+        if (change.changedToUpIgnoreConsumed() &&
+            secondTap.rule.lift(pointerId, change.touchPoint())
+        ) {
+            secondTap.entry.markTouched()
         }
         return !current || ignored
     }
 
     private fun PointerInputChange.touchPoint() = TouchPoint(uptimeMillis, position.x, position.y)
 
-    override fun onCancelPointerInput() = entry.rule.forgetPresses()
+    override fun onCancelPointerInput() = Unit
 
     override fun interceptOutOfBoundsChildEvents() = true
 }

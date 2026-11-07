@@ -11,16 +11,28 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.hapticfeedback.HapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.changedToDownIgnoreConsumed
 import androidx.compose.ui.input.pointer.changedToUpIgnoreConsumed
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.test.assertIsFocused
+import androidx.compose.ui.test.assertIsNotFocused
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onRoot
@@ -48,6 +60,11 @@ private const val BACK = "back"
 private const val BELOW_BACK = "below-back"
 private const val PAGE = "page"
 private const val OPEN_PAGE = "open-page"
+private const val STAY = "stay"
+private const val UNDER_STAY = "under-stay"
+private const val REST = "rest"
+private const val OPEN_FIELD = "open-field"
+private const val FIELD = "field"
 private const val FADE_OVER_MILLIS = 300L
 private const val AFTER_THE_TIMEOUT_MILLIS = 500L
 private const val FAR_DP = 400
@@ -55,6 +72,10 @@ private const val PAGE_POINT_X_DP = 200
 private const val OPEN_PAGE_CENTRE_Y_DP = 440
 private const val DRAG_PX = -300f
 private const val HOLD_MILLIS = 2_000L
+private const val STAY_TOP_DP = 600
+private const val REST_TOP_DP = 800
+private const val OPEN_FIELD_TOP_DP = 1000
+private const val BURST_TAPS = 10
 
 @Serializable
 internal data object FirstScreenRoute
@@ -64,6 +85,9 @@ internal data object NextScreenRoute
 
 @Serializable
 internal data object PageRoute
+
+@Serializable
+internal data object FieldRoute
 
 @Serializable
 internal data object PlainTreeRoute
@@ -87,8 +111,17 @@ class DoubleTapGuardTest {
     private val clicks = mapOf(
         UNDER to mutableIntStateOf(0),
         ELSEWHERE to mutableIntStateOf(0),
-        BELOW_BACK to mutableIntStateOf(0)
+        BELOW_BACK to mutableIntStateOf(0),
+        STAY to mutableIntStateOf(0),
+        UNDER_STAY to mutableIntStateOf(0),
+        REST to mutableIntStateOf(0)
     )
+    private var haptics = 0
+    private val fakeHaptics = object : HapticFeedback {
+        override fun performHapticFeedback(hapticFeedbackType: HapticFeedbackType) {
+            haptics++
+        }
+    }
     private var lastLift = 0L
     private var lastPress = 0L
 
@@ -109,7 +142,7 @@ class DoubleTapGuardTest {
                 },
                 propagateMinConstraints = true
             ) {
-                Host()
+                CompositionLocalProvider(LocalHapticFeedback provides fakeHaptics) { Host() }
             }
         }
         composeRule.waitForIdle()
@@ -124,6 +157,9 @@ class DoubleTapGuardTest {
                     Control(OPEN, 0) { navController.navigate(NextScreenRoute) }
                     Control(BELOW_BACK, 200) { count(BELOW_BACK) }
                     Control(OPEN_PAGE, 400) { navController.navigate(PageRoute) }
+                    Control(STAY, STAY_TOP_DP) { count(STAY) }
+                    Control(REST, REST_TOP_DP) { count(REST) }
+                    Control(OPEN_FIELD, OPEN_FIELD_TOP_DP) { navController.navigate(FieldRoute) }
                 }
             }
             screen<NextScreenRoute>(navController) {
@@ -131,12 +167,26 @@ class DoubleTapGuardTest {
                     Control(UNDER, 0) { count(UNDER) }
                     Control(BACK, 200) { navController.popBackStack() }
                     Control(ELSEWHERE, FAR_DP) { count(ELSEWHERE) }
+                    Control(UNDER_STAY, STAY_TOP_DP) { count(UNDER_STAY) }
                 }
             }
             screen<PageRoute>(navController) {
                 scroll = rememberScrollState()
                 Column(Modifier.fillMaxSize().verticalScroll(scroll).testTag(PAGE)) {
                     Box(Modifier.fillMaxWidth().height(3_000.dp))
+                }
+            }
+            screen<FieldRoute>(navController) {
+                var text by remember { mutableStateOf("text") }
+                Box(Modifier.fillMaxSize()) {
+                    OutlinedTextField(
+                        value = text,
+                        onValueChange = { text = it },
+                        modifier = Modifier
+                            .offset(y = OPEN_FIELD_TOP_DP.dp)
+                            .fillMaxWidth()
+                            .testTag(FIELD)
+                    )
                 }
             }
             composable<PlainTreeRoute> { TreeContent() }
@@ -325,6 +375,137 @@ class DoubleTapGuardTest {
         assertClicks(UNDER, 2)
     }
 
+    /** Issue #156 review M3: one screen's cancel must not free a press ignored on another. */
+    @Test
+    fun aFingerRestingOnTheLeavingScreenDoesNotFreeAnIgnoredDrag() {
+        node(REST).performTouchInput { down(1, center) }
+        composeRule.waitForIdle()
+        tap(OPEN_PAGE)
+        advanceToGap(100)
+        val press = pageNearTheTap()
+        composeRule.onRoot().performTouchInput { down(2, press) }
+        composeRule.waitForIdle()
+        advance(AFTER_THE_TIMEOUT_MILLIS)
+        node(REST).assertDoesNotExist()
+
+        composeRule.onRoot().performTouchInput {
+            moveBy(2, Offset(0f, DRAG_PX / 2))
+            moveBy(2, Offset(0f, DRAG_PX / 2))
+            up(2)
+        }
+        composeRule.waitForIdle()
+        val scrolledWhileIgnored = scrolled()
+        composeRule.onRoot().performTouchInput { up(1) }
+        composeRule.waitForIdle()
+
+        assertEquals(0, scrolledWhileIgnored)
+    }
+
+    /** The mark is written on the entry: its saved state must not be read after it is destroyed. */
+    @Test
+    fun aFingerLiftedOnAPoppedScreenDuringItsFadeDoesNotClickOrCrash() {
+        tap(OPEN)
+        advance(AFTER_THE_TIMEOUT_MILLIS)
+        node(UNDER).performTouchInput { down(1, center) }
+        composeRule.waitForIdle()
+        tap(BACK)
+        advance(100)
+
+        composeRule.onRoot().performTouchInput { up(1) }
+        composeRule.waitForIdle()
+        advance(FADE_OVER_MILLIS)
+
+        assertClicks(UNDER, 0)
+    }
+
+    @Test
+    fun aScreenThatOpensItselfJustAfterATapIgnoresThePressAndTheNextAnswers() {
+        tap(STAY)
+        assertClicks(STAY, 1)
+        composeRule.runOnUiThread { navController.navigate(NextScreenRoute) }
+        composeRule.waitForIdle()
+        tapAfter(UNDER_STAY, 100)
+        assertClicks(UNDER_STAY, 0)
+
+        tapAfter(UNDER_STAY, 300)
+
+        assertClicks(UNDER_STAY, 1)
+    }
+
+    @Test
+    fun aReturnToAScreenNeverTouchedIgnoresOnePressAndTheNextAnswers() {
+        composeRule.runOnUiThread { navController.navigate(NextScreenRoute) }
+        composeRule.waitForIdle()
+        advance(FADE_OVER_MILLIS)
+        tap(BACK)
+        tapAfter(BELOW_BACK, FADE_OVER_MILLIS - 1)
+        assertClicks(BELOW_BACK, 0)
+
+        tapAfter(BELOW_BACK, 300)
+
+        assertClicks(BELOW_BACK, 1)
+    }
+
+    @Test
+    fun anotherFingerFarAwayAnswersWhileTheIgnoredPressIsDown() {
+        tap(OPEN)
+        advanceToGap(100)
+        node(UNDER).performTouchInput { down(1, center) }
+        composeRule.waitForIdle()
+
+        tap(ELSEWHERE)
+        node(UNDER).performTouchInput { up(1) }
+        composeRule.waitForIdle()
+
+        assertClicks(ELSEWHERE, 1)
+        assertClicks(UNDER, 0)
+    }
+
+    @Test
+    fun repeatedTappingAt100MillisecondsAnswersOnlyAfterAPause() = assertBurst(100)
+
+    @Test
+    fun repeatedTappingAt250MillisecondsAnswersOnlyAfterAPause() = assertBurst(250)
+
+    private fun assertBurst(gap: Long) {
+        tap(OPEN)
+        repeat(BURST_TAPS) { tapAfter(UNDER, gap) }
+        assertClicks(UNDER, 0)
+
+        tapAfter(UNDER, 300)
+
+        assertClicks(UNDER, 1)
+    }
+
+    @Test
+    fun aShortIgnoredTapDoesNotFocusATextFieldAndTheNextDoes() {
+        tap(OPEN_FIELD)
+        tapAfter(FIELD, 100)
+        node(FIELD).assertIsNotFocused()
+
+        tapAfter(FIELD, 300)
+
+        node(FIELD).assertIsFocused()
+    }
+
+    @Test
+    fun anIgnoredPressShowsNothing() {
+        tap(OPEN)
+        advance(100)
+        val before = tree()
+        val bounds = node(UNDER).getUnclippedBoundsInRoot()
+
+        node(UNDER).performTouchInput { down(center) }
+        composeRule.waitForIdle()
+        assertEquals(before, tree())
+        node(UNDER).performTouchInput { up() }
+        composeRule.waitForIdle()
+
+        assertEquals(before, tree())
+        assertEquals(bounds, node(UNDER).getUnclippedBoundsInRoot())
+        assertEquals(0, haptics)
+    }
+
     @Test
     fun theSemanticsTreeIsTheSameWithAndWithoutTheGuard() {
         val plain = treeOf(PlainTreeRoute)
@@ -340,9 +521,11 @@ class DoubleTapGuardTest {
         }
         composeRule.waitForIdle()
         advance(FADE_OVER_MILLIS)
-        return composeRule.onRoot(useUnmergedTree = true).printToString(Int.MAX_VALUE)
-            .replace(Regex("Node #\\d+"), "Node")
+        return tree()
     }
+
+    private fun tree() = composeRule.onRoot(useUnmergedTree = true).printToString(Int.MAX_VALUE)
+        .replace(Regex("Node #\\d+"), "Node")
 
     private fun pageNearTheTap() = with(composeRule.density) {
         Offset(PAGE_POINT_X_DP.dp.toPx(), OPEN_PAGE_CENTRE_Y_DP.dp.toPx())
