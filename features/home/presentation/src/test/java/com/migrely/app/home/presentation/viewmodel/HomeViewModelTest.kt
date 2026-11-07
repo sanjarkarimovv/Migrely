@@ -417,6 +417,84 @@ class HomeViewModelTest :
         notification.cancel()
     }
 
+    /** What the screen hears, in order: a state as its class, a message as itself. */
+    private fun TestScope.heard(action: () -> Unit): List<Any> {
+        val heard = mutableListOf<Any>()
+        val states = launch(start = UNDISPATCHED) {
+            classUnderTest.viewState.collect { heard += it::class }
+        }
+        val messages = launch(start = UNDISPATCHED) {
+            classUnderTest.notification.collect { heard += it }
+        }
+        action()
+        runCurrent()
+        states.cancel()
+        messages.cancel()
+        return heard
+    }
+
+    @Test
+    fun `Given a migraine starts then its message comes after attack mode`() = runTest {
+        startAttackUseCase.givenSuccessfulExecution(StartAttackResultDomainModel.Started(ATTACK))
+        givenToday(TodayDomainModel.AttackInProgress(ATTACK, longAttackCheckDue = false))
+
+        assertEquals(
+            listOf(
+                HomeViewState.AttackInProgress::class,
+                HomePresentationNotification.AttackStarted("a")
+            ),
+            heard { classUnderTest.onStartAttackAction() }
+        )
+    }
+
+    @Test
+    fun `Given a migraine ends then its message comes after Today`() = runTest {
+        endAttackUseCase.givenSuccessfulExecution(
+            EndAttackRequestDomainModel(null),
+            EndAttackResultDomainModel.Ended("a")
+        )
+        givenToday(TodayDomainModel.Calm)
+
+        val heard = heard { classUnderTest.onEndAttackAction() }
+
+        assertEquals(HomePresentationNotification.AttackEnded("a"), heard.last())
+        assertEquals(2, heard.size)
+    }
+
+    @Test
+    fun `Given reading today fails after a start then the start's message is not lost`() = runTest {
+        startAttackUseCase.givenSuccessfulExecution(
+            StartAttackResultDomainModel.Started(ATTACK)
+        )
+        getTodayUseCase.givenSuccessfulExecution(TodayResultDomainModel.Failed)
+
+        assertEquals(
+            listOf<Any>(
+                HomePresentationNotification.AttackStarted("a"),
+                HomePresentationNotification.SomethingWentWrong
+            ),
+            heard { classUnderTest.onStartAttackAction() }
+        )
+    }
+
+    @Test
+    fun `Given reading today throws after a start then the start's message is not lost`() =
+        runTest {
+            startAttackUseCase.givenSuccessfulExecution(
+                StartAttackResultDomainModel.Started(ATTACK)
+            )
+            getTodayUseCase.givenFailedExecution(
+                com.migrely.app.architecture.domain.exception.UnknownDomainException(
+                    IllegalStateException("no reading")
+                )
+            )
+
+            assertEquals(
+                listOf<Any>(HomePresentationNotification.AttackStarted("a")),
+                heard { classUnderTest.onStartAttackAction() }
+            )
+        }
+
     /** Holds each answer of [useCase] for the test to give later, in any order. */
     private fun <RESULT> answeredLater(useCase: UseCase<Unit, RESULT>): List<(RESULT) -> Unit> {
         val answers = mutableListOf<(RESULT) -> Unit>()
