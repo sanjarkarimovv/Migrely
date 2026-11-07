@@ -1,6 +1,7 @@
 package com.migrely.app.designsystem.dialog
 
 import android.os.SystemClock
+import android.view.ViewConfiguration
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.material3.AlertDialog
@@ -15,13 +16,17 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.PointerEvent
 import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.input.pointer.changedToDownIgnoreConsumed
 import androidx.compose.ui.input.pointer.changedToUpIgnoreConsumed
 import androidx.compose.ui.node.CompositionLocalConsumerModifierNode
 import androidx.compose.ui.node.ModifierNodeElement
 import androidx.compose.ui.node.PointerInputModifierNode
 import androidx.compose.ui.node.currentValueOf
+import androidx.compose.ui.node.requireLayoutCoordinates
 import androidx.compose.ui.platform.InspectorInfo
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -102,17 +107,37 @@ private class DialogWaitNode :
         bounds: IntSize
     ) {
         if (pass != PointerEventPass.Initial) return
+        val lifts = currentValueOf(LocalDialogLiftRule)
         pointerEvent.changes.forEach { change ->
             val pointerId = change.id.value
             val ignored = if (change.changedToDownIgnoreConsumed()) {
-                rule.press(pointerId, change.uptimeMillis, appearedAtMillis)
+                // Both are told, and each keeps its own pointers. An older dialog is beneath a lift.
+                val inTheWait = rule.press(pointerId, change.uptimeMillis, appearedAtMillis)
+                val afterALift = lifts?.let { pressAfterALift(it, change) } == true
+                inTheWait || afterALift
             } else {
-                rule.isIgnored(pointerId)
+                rule.isIgnored(pointerId) || lifts?.isIgnored(pointerId) == true
             }
-            if (change.changedToUpIgnoreConsumed()) rule.lift(pointerId)
+            if (change.changedToUpIgnoreConsumed()) {
+                // A press the wait ignored ran nothing, so it does not count as a lift on the card.
+                val letThrough = !rule.isIgnored(pointerId) || lifts?.isIgnored(pointerId) == true
+                rule.lift(pointerId)
+                if (letThrough) lifts?.lift(this, pointerId, change.uptimeMillis, change.onScreen())
+            }
             if (ignored) change.consume()
         }
     }
+
+    private fun pressAfterALift(lifts: DialogLiftRule, change: PointerInputChange) = lifts.press(
+        windowKey = this,
+        pointerId = change.id.value,
+        atMillis = change.uptimeMillis,
+        screenPosition = change.onScreen(),
+        timeoutMillis = currentValueOf(LocalViewConfiguration).doubleTapTimeoutMillis,
+        distance = ViewConfiguration.get(currentValueOf(LocalContext)).scaledDoubleTapSlop.toFloat()
+    )
+
+    private fun PointerInputChange.onScreen() = requireLayoutCoordinates().localToScreen(position)
 
     override fun onCancelPointerInput() = Unit
 }

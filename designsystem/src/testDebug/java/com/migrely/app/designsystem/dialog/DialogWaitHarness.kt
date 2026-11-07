@@ -32,7 +32,8 @@ internal class DialogWaitHarness(private val composeRule: ComposeContentTestRule
             CompositionLocalProvider(
                 LocalDialogClock provides {
                     composeRule.mainClock.currentTime.also { appearedAtMillis = it }
-                }
+                },
+                LocalDialogLiftRule provides DialogLiftRule()
             ) {
                 MaterialTheme { content?.invoke() }
             }
