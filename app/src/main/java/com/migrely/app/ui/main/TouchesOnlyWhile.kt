@@ -52,7 +52,10 @@ private const val TOUCHED_KEY = "com.migrely.app.second_tap.touched"
 private fun NavBackStackEntry.wasTouched() = savedStateHandle.contains(TOUCHED_KEY)
 
 private fun NavBackStackEntry.markTouched() {
-    // A popped entry can take one last lift while it fades out, and it will not come back.
+    // A popped entry can take one last lift while it fades out, and it will not come back. That lift
+    // can even come after the entry is destroyed, when the handle throws: a pop landing after the
+    // frame where the enter fade finishes and before NavHost's completion effect runs completes the
+    // entry at once, and it stays composed until the next frame.
     if (lifecycle.currentState.isAtLeast(Lifecycle.State.CREATED)) {
         savedStateHandle[TOUCHED_KEY] = true
     }

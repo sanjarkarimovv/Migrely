@@ -3,6 +3,8 @@ package com.migrely.app.ui.main
 import android.app.Application
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -496,14 +498,38 @@ class DoubleTapGuardTest {
         val bounds = node(UNDER).getUnclippedBoundsInRoot()
 
         node(UNDER).performTouchInput { down(center) }
-        composeRule.waitForIdle()
+        drawAFrame()
+        pressMark(UNDER).assertDoesNotExist()
         assertEquals(before, tree())
         node(UNDER).performTouchInput { up() }
-        composeRule.waitForIdle()
+        drawAFrame()
 
         assertEquals(before, tree())
         assertEquals(bounds, node(UNDER).getUnclippedBoundsInRoot())
         assertEquals(0, haptics)
+    }
+
+    /** What the test above looks for does show on a press that answers. */
+    @Test
+    fun aPressThatAnswersShowsThePress() {
+        tap(OPEN)
+        advance(AFTER_THE_TIMEOUT_MILLIS)
+
+        node(UNDER).performTouchInput { down(center) }
+        drawAFrame()
+
+        pressMark(UNDER).assertExists()
+        node(UNDER).performTouchInput { up() }
+    }
+
+    /** The control merges its children's semantics, so the mark shows only in the unmerged tree. */
+    private fun pressMark(tag: String) =
+        composeRule.onNodeWithTag(pressedMark(tag), useUnmergedTree = true)
+
+    private fun drawAFrame() {
+        composeRule.waitForIdle()
+        composeRule.mainClock.advanceTimeByFrame()
+        composeRule.waitForIdle()
     }
 
     @Test
@@ -582,16 +608,22 @@ class DoubleTapGuardTest {
     }
 }
 
+private fun pressedMark(tag: String) = "$tag-pressed"
+
 @Composable
 private fun Control(tag: String, topDp: Int, onClick: () -> Unit) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val pressed by interactionSource.collectIsPressedAsState()
     Box(
         Modifier
             .offset(y = topDp.dp)
             .fillMaxWidth()
             .height(80.dp)
             .testTag(tag)
-            .clickable(onClick = onClick)
-    )
+            .clickable(interactionSource, indication = null, onClick = onClick)
+    ) {
+        if (pressed) Box(Modifier.testTag(pressedMark(tag)))
+    }
 }
 
 @Composable
