@@ -147,11 +147,10 @@ fun HomeDependencies.Home(
                 onUndoEnd = homeViewModel::onUndoEndAction,
                 onUndoDelete = homeViewModel::onUndoDeleteAction,
                 onMessageBottomChanged = { messageBottom.value = it },
-                // Below the Settings row on Today; attack mode keeps its own place (BRD D52, D158).
-                topOffset = if (uiState is HomeViewStateUiModel.AttackInProgress) {
-                    0.dp
-                } else {
+                topOffset = if (messagesClearSettingsRow(uiState.mode, isCompactHeight())) {
                     MESSAGE_OFFSET_BELOW_TOP_BAR
+                } else {
+                    0.dp
                 }
             )
         },
@@ -192,6 +191,13 @@ internal fun guardsTaps(previous: HomeMode, next: HomeMode): Boolean =
  */
 internal fun messagesBesideControls(mode: HomeMode, compactHeight: Boolean): Boolean =
     mode == HomeMode.Attack && compactHeight
+
+/**
+ * Whether a message moves below the Settings row (BRD D158). Not in attack mode, which keeps its
+ * own place (BRD D52), and not in a short window, where it would cover "Migraine started".
+ */
+internal fun messagesClearSettingsRow(mode: HomeMode, compactHeight: Boolean): Boolean =
+    mode != HomeMode.Attack && !compactHeight
 
 private val HomeViewStateUiModel.mode: HomeMode
     get() = when (this) {
