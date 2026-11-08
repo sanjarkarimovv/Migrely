@@ -1,0 +1,22 @@
+# Device scenario step (message_tap_guard): migraines two months ago and on the 12th of last month; the second one's
+# details opened from History's last month and scrolled so "Delete migraine" is on screen. The older migraine keeps
+# History on last month after the delete (with no migraine left History resets to this month, where "Next month" is
+# off), so "Next month" answers and lies under the message's Undo (D158): a tap that got through the guard would
+# change the month. The script taps "Delete migraine" with adb, so the time of the tap is exact.
+appId: com.migrely.app
+---
+- runFlow: ../subflows/launch-clean.yaml
+- runFlow:
+    file: ../subflows/add-past-attack-two-months-ago.yaml
+    env:
+      DAY: "10"
+- runFlow: ../subflows/add-past-attack-last-month.yaml
+- tapOn: ".*\\. Opens History\\."
+- tapOn: "Previous month"
+- scrollUntilVisible:
+    element: ".*Opens its details\\."
+    direction: DOWN
+- tapOn: ".*Opens its details\\."
+- scrollUntilVisible:
+    element: "Delete migraine"
+    direction: DOWN
