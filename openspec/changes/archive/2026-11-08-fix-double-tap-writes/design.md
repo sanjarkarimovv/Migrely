@@ -164,7 +164,7 @@ Not run on a device: TalkBack, switch access or a keyboard against this rule.
 | Zone, clock, midnight, DST | Event uptime, so they do not apply |
 | Limits, unicode, duplicates, backup, upgrade | Not touched. No data or schema change. The only thing kept is one flag on each touched entry's `SavedStateHandle`, which goes with the entry (D3) |
 | Undo | Not touched. Undo under the second tap on a new screen is ignored like any other control, under the timeout |
-| Deletion | Not touched. A first tap that opens a dialog, with a second tap landing on it, is not covered by this rule and is not assumed safe. It has no issue and has not been measured: `t5_write.py` has no dialog route. Task 6.8 measures it |
+| Deletion | Not touched. A first tap that opens a dialog, with a second tap landing on it, is not covered by this rule and is not assumed safe. Task 6.8 measured it: it writes, #157 and #159 |
 | Rotation, process death | D4 |
 | Double tap | Between two taps with no new screen: both count. Same-screen rules D32 and D157 stay |
 | Unordered async | A navigation that comes after a second press begins: D155 cancels that press |
@@ -221,7 +221,7 @@ track shows a false intake from a natural double tap at or above the timeout, it
 - **Writes remain from 300 ms up.** S2's wrong data is reduced and not removed. Intake and pain level are visible with Undo. A
   chip or a switch has no message, only the changed control. See "What stays after it closes".
 - **A first tap that opens a dialog.** The dialog is its own window, so this rule cannot reach it, and the second tap may land on
-  a button there. Not measured, no issue yet, and #149 is a different path: a long press through a navigation, and dialogs of a
+  a button there. Since measured: it writes, #157 and #159. #149 is a different path: a long press through a navigation, and dialogs of a
   screen that is leaving. Task 6.8 could change the scope.
 - **What `fix-leaving-screen-input` archived.** Re-read after it was archived. Lines that said a first tap on an entering screen
   always answers read false against this rule, so this change modifies them: `app-shell`'s "Only the current screen navigates" and

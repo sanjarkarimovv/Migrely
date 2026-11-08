@@ -179,7 +179,7 @@ D155, D159).
 #### Scenario: A dialog
 - **WHEN** the first tap opens a dialog and the second lands on it
 - **THEN** this rule does not act, so the second tap reaches the dialog
-- **AND** this does not say the path is safe: it has not been measured, and a write there is a new issue
+- **AND** this rule does not make that path safe: it was measured separately and it writes (#157, #159)
 
 ### Requirement: The double-tap check can fail
 The check for this rule SHALL include a negative control: with the guard removed, it SHALL fail on every route in #156's table,

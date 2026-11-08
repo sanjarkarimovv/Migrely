@@ -178,8 +178,8 @@ NotFound, which carries no id (BRD EC-MED-14, D157).
 
 ### Requirement: Kind and Category while the form opens
 On Add and Edit, Kind and Category SHALL ignore touches for 700 ms after the form appears. Name, Dose, Save and Back SHALL
-take a first touch at once. A deliberate first touch on Kind or Category in that time SHALL be ignored with no feedback, and
-a rotation SHALL arm it again. Screen readers, switch access and keyboards SHALL NOT be affected (BRD EC-MED-15, D157).
+take a first touch at once, unless it is ignored as the second tap of a double tap. A deliberate first touch on Kind or Category in that time SHALL be ignored with no feedback, and
+a rotation SHALL arm it again. Screen readers, switch access and keyboards SHALL NOT be affected (BRD EC-MED-15, D157, D159).
 
 #### Scenario: A stray tap on Edit
 - **WHEN** the user taps a row of My medications, and a second tap lands on "Preventive" within 700 ms of the form appearing
@@ -199,7 +199,7 @@ a rotation SHALL arm it again. Screen readers, switch access and keyboards SHALL
 
 #### Scenario: Name, Dose, Save and Back are free
 - **WHEN** the user's first tap just after the form appears is on Name, Dose, Save or Back
-- **THEN** that control answers
+- **THEN** that control answers, unless the press is ignored as the second tap of a double tap (D159)
 
 #### Scenario: A deliberate tap in the guard
 - **WHEN** the user deliberately taps Kind within 700 ms of the form appearing

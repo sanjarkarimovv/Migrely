@@ -1,0 +1,8 @@
+# Device scenario step (two_touch, #139): back on home, one ended migraine under "Logged today".
+appId: com.migrely.app
+---
+- back
+- back
+- extendedWaitUntil:
+    visible: "Migraine from .*Opens its details\\."
+    timeout: 5000
