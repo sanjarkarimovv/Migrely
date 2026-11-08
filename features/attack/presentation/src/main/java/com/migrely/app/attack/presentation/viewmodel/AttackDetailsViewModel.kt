@@ -188,26 +188,21 @@ class AttackDetailsViewModel(
                 intensityPointDomainMapper.toDomain(point)
             ),
             onResult = { result ->
+                // The card comes first, whether or not the 10 was saved; the outcome's own message
+                // follows (BRD SAF-F2, D163).
+                if (result.firstMaximum) notify(FirstMaximumRecorded)
                 when (result) {
-                    is AddIntensityPointResultDomainModel.Added ->
-                        if (result.firstMaximum) {
-                            succeeded(attackId, FirstMaximumRecorded)
-                        } else {
-                            loadDetails(
-                                attackId
-                            )
-                        }
-
-                    AddIntensityPointResultDomainModel.OutsideAttack ->
+                    is AddIntensityPointResultDomainModel.Added -> loadDetails(attackId)
+                    is AddIntensityPointResultDomainModel.OutsideAttack ->
                         notify(PointRejected(PointRejectionPresentationModel.OutsideAttack))
 
-                    AddIntensityPointResultDomainModel.InFuture ->
+                    is AddIntensityPointResultDomainModel.InFuture ->
                         notify(PointRejected(PointRejectionPresentationModel.InFuture))
 
                     AddIntensityPointResultDomainModel.NotFound ->
                         updateViewState(AttackDetailsViewState.NotFound)
-                    AddIntensityPointResultDomainModel.StorageFull -> notify(StorageFull)
-                    AddIntensityPointResultDomainModel.Failed -> notify(SomethingWentWrong)
+                    is AddIntensityPointResultDomainModel.StorageFull -> notify(StorageFull)
+                    is AddIntensityPointResultDomainModel.Failed -> notify(SomethingWentWrong)
                 }
             }
         )
@@ -232,13 +227,13 @@ class AttackDetailsViewModel(
             onResult = { result ->
                 when (result) {
                     is AddIntensityPointResultDomainModel.Added -> succeeded(attackId, Undone)
-                    AddIntensityPointResultDomainModel.OutsideAttack,
-                    AddIntensityPointResultDomainModel.InFuture,
+                    is AddIntensityPointResultDomainModel.OutsideAttack,
+                    is AddIntensityPointResultDomainModel.InFuture,
                     AddIntensityPointResultDomainModel.NotFound ->
                         succeeded(attackId, UndoNotPossible)
 
-                    AddIntensityPointResultDomainModel.StorageFull -> notify(StorageFull)
-                    AddIntensityPointResultDomainModel.Failed -> notify(SomethingWentWrong)
+                    is AddIntensityPointResultDomainModel.StorageFull -> notify(StorageFull)
+                    is AddIntensityPointResultDomainModel.Failed -> notify(SomethingWentWrong)
                 }
             }
         )
