@@ -271,6 +271,7 @@ so re-tapping at an ordinary pace answers. A third tap from that timeout up SHAL
 - **WHEN** a third tap follows an ignored second tap, under the platform's double-tap timeout, 300 ms today, after the second's lift
   and within the distance of it
 - **THEN** it does nothing either, and the next press after that timeout answers
+- **AND** a burst goes on only while every gap stays under that timeout, with no limit on how many taps
 
 #### Scenario: A burst's next press over the burst limit
 - **WHEN** a third tap comes at or after the platform's double-tap timeout after the second's lift, at the same place
