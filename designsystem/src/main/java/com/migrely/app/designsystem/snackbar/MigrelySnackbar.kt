@@ -10,6 +10,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
@@ -45,6 +46,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
@@ -69,6 +71,7 @@ private const val EXIT_MILLIS = 200
 // How long a message's place keeps swallowing touches after it changes: past the slide in or fade out, plus the time a
 // finger already on its way takes to land (QA #52).
 private const val GUARD_MILLIS = 800L
+private const val PREVIEW_DURATION_MILLIS = 5_000L
 private const val TIME_LEFT_ALPHA = 0.45f
 private const val INLINE_MAX_LINES = 2
 private val MAX_WIDTH = 560.dp
@@ -81,15 +84,27 @@ private val MIN_HEIGHT = 52.dp
 private val TIME_LEFT_STROKE = 2.dp
 
 /**
+ * [MigrelySnackbarHost]'s top offset on a screen with a top bar: with the host's own 8 dp it sets a message's top edge at
+ * the bottom of Material's default 64 dp bar, so the bar's controls stay uncovered (BRD D158).
+ */
+val MESSAGE_OFFSET_BELOW_TOP_BAR = 56.dp
+
+/**
  * A short message at the top of the screen (BRD EC-UX-16): dim, with an icon whose shape tells the [tone], and either
  * an [action] or a close button. It can be swiped away sideways. [timeLeft] returns the fraction of time left (1 to 0)
  * and draws a thin line along the bottom edge; pass null to hide it (reduce motion, or no time limit).
+ *
+ * [baseDurationMillis] is the message's own duration, null when it stays until closed. A tap on a message with no
+ * [action] and a duration dismisses it, by touch only, so screen readers still find the close button and nothing new. A
+ * tap cannot take away the offer to undo, or a message with no duration, which says the last action was not saved
+ * (BRD D158).
  */
 @Composable
 fun MigrelySnackbar(
     text: String,
     tone: SnackbarTone,
     action: SnackbarAction?,
+    baseDurationMillis: Long?,
     dismissLabel: String,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
@@ -100,7 +115,16 @@ fun MigrelySnackbar(
     LaunchedEffect(swipeState.currentValue) {
         if (swipeState.currentValue != SwipeToDismissBoxValue.Settled) currentOnDismiss()
     }
-    SwipeToDismissBox(state = swipeState, backgroundContent = {}, modifier = modifier) {
+    val bodyTap = if (action == null && baseDurationMillis != null) {
+        Modifier.pointerInput(Unit) { detectTapGestures { currentOnDismiss() } }
+    } else {
+        Modifier
+    }
+    SwipeToDismissBox(
+        state = swipeState,
+        backgroundContent = {},
+        modifier = modifier.then(bodyTap)
+    ) {
         SnackbarSurface(text, tone, action, dismissLabel, onDismiss, timeLeft)
     }
 }
@@ -269,12 +293,18 @@ private fun SnackbarLayout(
  * shows, as it moves; a screen measures its own content the same way to keep it clear of the message (BRD D52). The
  * area grows with the message's slide in and shrinks only once its fade out ends, so what follows it never slides under
  * a message still on screen.
+ *
+ * [topOffset] moves the message down, past a top bar for example, and [guardMillis] is how long its place keeps
+ * swallowing touches after it changes (BRD D158).
  */
+@Suppress("LongParameterList")
 @Composable
 fun <T : Any> MigrelySnackbarHost(
     message: T?,
     reduceMotion: Boolean,
     modifier: Modifier = Modifier,
+    topOffset: Dp = 0.dp,
+    guardMillis: Long = GUARD_MILLIS,
     onMessageBottomChanged: (Dp) -> Unit = {},
     content: @Composable (T) -> Unit
 ) {
@@ -288,6 +318,7 @@ fun <T : Any> MigrelySnackbarHost(
             .windowInsetsPadding(
                 WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)
             )
+            .padding(top = topOffset)
             .padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
         // Below the message, so the message itself stays tappable at once, but above what the screen draws under it:
@@ -295,7 +326,7 @@ fun <T : Any> MigrelySnackbarHost(
         // underneath (QA #52).
         TapGuard(
             key = message ?: NoMessage,
-            durationMillis = GUARD_MILLIS,
+            durationMillis = guardMillis,
             modifier = Modifier
                 .widthIn(max = MAX_WIDTH)
                 .fillMaxWidth()
@@ -352,6 +383,7 @@ private fun SnackbarPreviewColumn() {
                 text = "Migraine started",
                 tone = SnackbarTone.Confirmation,
                 action = SnackbarAction("Undo", "Undo the start") {},
+                baseDurationMillis = PREVIEW_DURATION_MILLIS,
                 dismissLabel = "Dismiss",
                 onDismiss = {},
                 timeLeft = { 0.6f }
@@ -360,6 +392,7 @@ private fun SnackbarPreviewColumn() {
                 text = "Your previous migraine ended at 3:56 PM.",
                 tone = SnackbarTone.Information,
                 action = null,
+                baseDurationMillis = PREVIEW_DURATION_MILLIS,
                 dismissLabel = "Dismiss",
                 onDismiss = {},
                 modifier = Modifier.padding(top = 12.dp)
@@ -368,6 +401,7 @@ private fun SnackbarPreviewColumn() {
                 text = "Couldn't save. Your phone's storage is full.",
                 tone = SnackbarTone.Error,
                 action = null,
+                baseDurationMillis = null,
                 dismissLabel = "Dismiss",
                 onDismiss = {},
                 modifier = Modifier.padding(top = 12.dp)

@@ -32,6 +32,7 @@ import androidx.navigation.NavController
 import com.migrely.app.architecture.ui.view.ScreenEnterObserver
 import com.migrely.app.designsystem.input.TapGuard
 import com.migrely.app.designsystem.motion.rememberReduceMotion
+import com.migrely.app.designsystem.snackbar.MESSAGE_OFFSET_BELOW_TOP_BAR
 import com.migrely.app.designsystem.theme.MigrelyColors
 import com.migrely.app.designsystem.theme.MigrelyDarkRoom
 import com.migrely.app.home.presentation.model.HomeViewState
@@ -145,7 +146,8 @@ fun HomeDependencies.Home(
                 onUndoStart = homeViewModel::onUndoStartAction,
                 onUndoEnd = homeViewModel::onUndoEndAction,
                 onUndoDelete = homeViewModel::onUndoDeleteAction,
-                onMessageBottomChanged = { messageBottom.value = it }
+                onMessageBottomChanged = { messageBottom.value = it },
+                topOffset = messageTopOffset(uiState.mode, isCompactHeight())
             )
         },
         messageBottom = messageBottom::value,
@@ -185,6 +187,13 @@ internal fun guardsTaps(previous: HomeMode, next: HomeMode): Boolean =
  */
 internal fun messagesBesideControls(mode: HomeMode, compactHeight: Boolean): Boolean =
     mode == HomeMode.Attack && compactHeight
+
+/**
+ * How far a message moves down, to below the Settings row (BRD D158). Not in attack mode, which
+ * keeps its own place (BRD D52), and not in a short window, where it would cover "Migraine started".
+ */
+internal fun messageTopOffset(mode: HomeMode, compactHeight: Boolean): Dp =
+    if (mode == HomeMode.Attack || compactHeight) 0.dp else MESSAGE_OFFSET_BELOW_TOP_BAR
 
 private val HomeViewStateUiModel.mode: HomeMode
     get() = when (this) {

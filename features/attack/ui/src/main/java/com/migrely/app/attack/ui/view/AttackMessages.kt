@@ -18,6 +18,7 @@ import com.migrely.app.attack.ui.model.AttackMessageBehaviourUiModel
 import com.migrely.app.attack.ui.model.AttackMessageUiModel
 import com.migrely.app.attack.ui.model.ShownAttackMessageUiModel
 import com.migrely.app.attack.ui.model.TimesUndoUiModel
+import com.migrely.app.designsystem.snackbar.MESSAGE_OFFSET_BELOW_TOP_BAR
 import com.migrely.app.designsystem.snackbar.MigrelySnackbar
 import com.migrely.app.designsystem.snackbar.MigrelySnackbarHost
 import com.migrely.app.designsystem.snackbar.SnackbarAction
@@ -68,7 +69,8 @@ internal fun AttackMessages(
     MigrelySnackbarHost(
         message = shown,
         reduceMotion = reduceMotion,
-        modifier = modifier
+        modifier = modifier,
+        topOffset = MESSAGE_OFFSET_BELOW_TOP_BAR
     ) { visible ->
         val behaviour = behaviourMapper.toUi(visible.message)
         val visibleTimeout = timeoutMillis(behaviour)
@@ -113,6 +115,7 @@ internal fun AttackMessages(
             text = messageText(message),
             tone = behaviour.tone,
             action = action,
+            baseDurationMillis = behaviour.baseDurationMillis,
             dismissLabel = stringResource(R.string.attack_snackbar_dismiss),
             onDismiss = { currentOnClear(visible) },
             timeLeft = if (!reduceMotion && behaviour.hasUndo && visibleTimeout != null) {
