@@ -15,11 +15,11 @@ Base: `bugfix/155-safety-card-on-failed-save` from `origin/release/1.1.0` (94730
 ## 3. Gate and device
 
 - [x] 3.1 Gate. Verify: `nice -n 19 ./gradlew --max-workers=2 assembleDebug test ktlintCheck detekt lint` exits 0.
-- [x] 3.2 On `emulator-5570`, debug, with TalkBack on: a first 10 that fails on storage full. Record what TalkBack speaks, in order, from its speech log. Verify: both the message and the card's text are spoken in full, the message first. If the card cuts off the message, make the card's live region polite in this failed case only (design D2), say so in the packet, and record again. Restore every setting.
+- [x] 3.2 On `emulator-5570`, debug, with TalkBack on: a first 10 that fails on storage full. Record what TalkBack speaks, in order, from its speech log. Verify: both the message and the card's text are spoken in full. If the card cuts off the message, make the card's live region polite in this failed case only (design D2), say so in the packet, and record again. Restore every setting. Result: the message and the card's body sentence were spoken in full, the message first, which is observed and not set by the code (design D2). At 100% the message covers the card's title, which was neither in the tree nor spoken: accepted for 1.1.0 by `team-lead`, and QA files the follow-up issue after measuring. No fallback was needed.
 
 ## 4. QA
 
-- [ ] 4.1 `qa-engineer`, a real full disk as in #155's measure (data partition filled to about 16 MB free), debug and R8: a first 10 shows the card and "Couldn't save"; after freeing space the same 10 saves and the card shows again; a later 10 shows none; rotation keeps both; TalkBack speaks both in full, the message first. Verify: a table in the report; restore the disk and every setting.
+- [ ] 4.1 `qa-engineer`, a real full disk as in #155's measure (data partition filled to about 16 MB free), debug and R8: a first 10 shows the card and "Couldn't save"; after freeing space the same 10 saves and the card shows again; a later 10 shows none; rotation keeps both; TalkBack speaks the message and the card's body sentence in full, recording the order; at 100% and 200%, whether the message covers the card's title, so QA can file the follow-up issue that moves the message off the card. Verify: a table in the report; restore the disk and every setting.
 
 ## Verification record
 
@@ -66,10 +66,10 @@ After the fix: `AddIntensityPointUseCaseTest` 17 and `AttackDetailsViewModelTest
 
 | Row | Result |
 |---|---|
-| Card on a failed first 10 | Shown with "Couldn't save. Your phone's storage is full.": message text y 328-433, Dismiss y 318-444; card body y 465-633 visible, "Got it" y 633-759 |
-| TalkBack, read from its own verbose log (`talkback-speech.log`) | 16.038 s: "Couldn't save. Your phone's storage is full." starts, then "Dismiss", "Button" to 19.7 s. The card's speech is queued "waiting for talkback_3", not interrupting it. 20.352 s: "If this pain came on suddenly and is the worst of your life, call emergency services now." starts, then "Got it", "Button" to 26.5 s |
+| Card on a failed first 10 | Shown with "Couldn't save. Your phone's storage is full.": message text y 328-433, Dismiss y 318-444; card body y 465-633 visible, "Got it" y 633-759. The card's title "Sudden, worst-ever pain?" is absent from the tree (`walk.tsv`: `title absent`): the message covers it at 100% |
+| TalkBack, read from its own verbose log (`talkback-speech.log`) | 16.038 s: "Couldn't save. Your phone's storage is full." starts, then "Dismiss", "Button" to 19.7 s. The card's speech is queued "waiting for talkback_3", not interrupting it. 20.352 s: "If this pain came on suddenly and is the worst of your life, call emergency services now." starts, then "Got it", "Button" to 26.5 s. The title is never spoken: 0 lines with "Sudden". The message's event came 36 ms before the card's (16.036 s and 16.072 s) |
 
-So TalkBack speaks the message first and the card after it, each in full. Both stay assertive, and the card's live region is unchanged.
+So TalkBack spoke the message first and the card's body sentence after it, each in full, on this one run; the order is observed, not set by the code, which notifies the card first. The card's title was not spoken, because the message covers it at 100% (accepted for 1.1.0, design D2). Both stay assertive, and the card's live region is unchanged.
 
 Restored: the filler files removed (free space back to 8.39 GB), TalkBack off and its data cleared, because this was its first run on this AVD. Also app data (database and every preference file equal the snapshot by md5), font 1.0, rotation 0, auto-rotate 1, `wm size` 1080x2400, and the clock in step with the host. 5570 is off.
 

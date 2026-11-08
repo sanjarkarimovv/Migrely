@@ -17,6 +17,7 @@ saved or not, and when the saved 10s cannot be read. The card SHALL be dismissib
 #### Scenario: A first 10 that fails to save
 - **WHEN** no saved attack has a 10, the user adds a 10, and the phone's storage is full
 - **THEN** the safety card appears, and "Couldn't save. Your phone's storage is full." shows as it does today
+- **AND** the card's warning sentence is visible, even where the message covers the card's title
 
 #### Scenario: A first 10 that fails for another reason
 - **WHEN** no saved attack has a 10, the user adds a 10, and the save fails for another reason or the entry is refused for its time
@@ -40,8 +41,9 @@ saved or not, and when the saved 10s cannot be read. The card SHALL be dismissib
 
 #### Scenario: TalkBack hears both
 - **WHEN** TalkBack is on and a first 10 fails to save
-- **THEN** it speaks "Couldn't save. Your phone's storage is full." and then the card's text, each in full, and both stay on screen
-  and reachable until dismissed
+- **THEN** it speaks the message and the card's text, each in full, and both stay on screen until dismissed
+- **AND** at 100% font the message covers the card's title until it is dismissed, so the title is neither seen nor spoken, which is
+  accepted for 1.1.0 because the warning sentence is
 
 #### Scenario: Rotation
 - **WHEN** the phone rotates with the card and the message showing
