@@ -16,7 +16,7 @@ put it in 1.1.0, as a fix on `release/1.1.0`.
 - **The message still shows** as it does today, and both are spoken to TalkBack (design D2).
 
 The card's text and its dismissal do not change. When the card shows is a behaviour question, so `team-lead` sent D163 to
-`medical-reviewer`; its verdict goes into D163 before this change is archived.
+`medical-reviewer`: NOT BLOCKING on all three questions, recorded in D163 (4). It is not clinical sign-off, which T31 still needs.
 
 ## Out of scope
 

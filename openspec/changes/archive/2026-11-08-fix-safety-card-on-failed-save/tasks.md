@@ -19,6 +19,8 @@ Base: `bugfix/155-safety-card-on-failed-save` from `origin/release/1.1.0` (94730
 
 ## 4. QA
 
+The change is archived with 4.1 open: QA runs it on the release candidate.
+
 - [ ] 4.1 `qa-engineer`, a real full disk as in #155's measure (data partition filled to about 16 MB free), debug and R8: a first 10 shows the card and "Couldn't save"; after freeing space the same 10 saves and the card shows again; a later 10 shows none; rotation keeps both; TalkBack speaks the message and the card's body sentence in full, recording the order; at 100% and 200%, whether the message covers the card's title, so QA can file the follow-up issue that moves the message off the card. Verify: a table in the report; restore the disk and every setting.
 
 ## Verification record
