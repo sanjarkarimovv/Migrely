@@ -7,6 +7,8 @@
 # Covers: app-settings › Premium in Settings › A subscriber
 # Covers: subscription › Changing plans › Monthly to yearly
 # Covers: quality-gates › Premium is checked through the simulated store › A purchase from the paywall
+# Covers: subscription › The paywall › Restore comes before what Premium adds
+# Covers: subscription › What a purchase depends on › Every plan
 # A free user's taps on Doctor report and Insights open the paywall with their own headlines; closing it returns to
 # History. Monthly is bought through the simulated store and the report screen opens; then Change plan moves to yearly
 # (D120), and Settings reads "Premium · yearly".
@@ -31,12 +33,23 @@ tags: [regression, subscription, simulated-store]
 - assertVisible: "Lifetime\\. .* · one payment\\."
 - assertVisible: "Start free trial"
 - assertVisible: "Renews automatically\\. Cancel anytime in Google Play\\. Cancel before the trial ends and you won.t be charged\\."
-- assertVisible: "What Premium adds"
+# Under the terms, wherever a buy button shows: what a purchase depends on (#154, D153).
+- assertVisible: "Purchases need Google Play and an internet connection\\. Your diary works offline\\."
+# Restore comes before what Premium adds (#154): asserted by their order on the page, so the page is scrolled to both.
+- scrollUntilVisible:
+    element: "What Premium adds"
+    direction: DOWN
+- assertVisible:
+    text: "What Premium adds"
+    below: "Restore purchases"
 - assertVisible: "Logging, history, reminders, export and every safety warning stay free\\."
-- assertVisible: "Restore purchases"
+- scrollUntilVisible:
+    element: "Lifetime\\. .*"
+    direction: UP
 - tapOn: "Lifetime\\. .*"
 - assertVisible: "Buy once"
 - assertVisible: "One payment\\. Nothing renews\\."
+- assertVisible: "Purchases need Google Play and an internet connection\\. Your diary works offline\\."
 - tapOn: "Close"
 - extendedWaitUntil:
     visible: "History"
