@@ -101,6 +101,9 @@ android {
         compose = true
         buildConfig = true
     }
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
+    }
     packaging {
         resources.pickFirsts += "META-INF/versions/9/OSGI-INF/MANIFEST.MF"
     }
@@ -136,6 +139,10 @@ dependencies {
     testImplementation(libs.test.junit)
     testImplementation(libs.test.konsist)
     testImplementation(libs.test.mockito.kotlin)
+    // Debug only: the Compose test rule needs the debug test manifest.
+    testDebugImplementation(platform(libs.compose.bom))
+    testDebugImplementation(libs.test.compose.ui.junit4)
+    testDebugImplementation(libs.test.robolectric)
     androidTestImplementation(libs.test.androidx.junit)
     androidTestImplementation(libs.test.androidx.espresso.core)
     implementation(projects.features.home.ui)

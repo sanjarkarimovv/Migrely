@@ -1,0 +1,15 @@
+# Device scenario step (two_touch, #139): a double tap on the row opened the details. Delete must land on home with Undo.
+# On a build with #139 two details screens are stacked, and Delete lands on "This migraine no longer exists".
+appId: com.migrely.app
+---
+- scrollUntilVisible:
+    element: "Delete migraine"
+    direction: DOWN
+- tapOn:
+    text: "Delete migraine"
+    waitToSettleTimeoutMs: 0
+    retryTapIfNoChange: false
+- assertNotVisible: "This migraine no longer exists"
+- extendedWaitUntil:
+    visible: "Undo the deletion"
+    timeout: 5000

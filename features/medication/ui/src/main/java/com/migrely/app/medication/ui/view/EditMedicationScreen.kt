@@ -31,8 +31,8 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -46,10 +46,10 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.migrely.app.architecture.ui.view.ScreenEnterObserver
 import com.migrely.app.designsystem.icon.MigrelyIcons
+import com.migrely.app.designsystem.input.TapGuard
 import com.migrely.app.designsystem.input.rememberLimitedField
 import com.migrely.app.designsystem.motion.rememberReduceMotion
 import com.migrely.app.designsystem.theme.MigrelyTheme
-import com.migrely.app.medication.presentation.model.EditMedicationViewState
 import com.migrely.app.medication.ui.R
 import com.migrely.app.medication.ui.di.EditMedicationDependencies
 import com.migrely.app.medication.ui.model.EditMedicationViewStateUiModel
@@ -61,6 +61,8 @@ import com.migrely.app.medication.ui.model.SaveProblemUiModel
 
 private const val MAXIMUM_NAME_LENGTH = 60
 private const val MAXIMUM_DOSE_LENGTH = 20
+private const val KIND_TAP_GUARD_MILLIS = 700L
+private val FORM_SPACING = 12.dp
 private val CONTENT_MAX_WIDTH = 600.dp
 
 /** Adds or edits a medication (BRD MED-F1, MED-F2, D35). [medicationId] is null when adding. */
@@ -70,26 +72,46 @@ fun EditMedicationDependencies.EditMedication(
     medicationId: String?,
     modifier: Modifier = Modifier
 ) {
-    ScreenEnterObserver { editMedicationViewModel.onEnter(medicationId) }
-    ViewModelObserver(navController)
-    val viewState by editMedicationViewModel.viewState.collectAsState(
-        EditMedicationViewState.Loading
-    )
-    val uiState by rememberSaveable(viewState) {
-        mutableStateOf(editMedicationViewStateUiMapper.toUi(viewState))
-    }
+    // All the screen holds belongs to one medication, so another id starts it afresh (issue #138).
+    key(medicationId) { MedicationEditor(navController, medicationId, modifier) }
+}
+
+@Composable
+private fun EditMedicationDependencies.MedicationEditor(
+    navController: NavController,
+    medicationId: String?,
+    modifier: Modifier
+) {
     var form by rememberSaveable { mutableStateOf<MedicationFormUiModel?>(null) }
+    var notFound by rememberSaveable { mutableStateOf(false) }
     var problem by rememberSaveable { mutableStateOf<SaveProblemUiModel?>(null) }
     // Not saved: a write still running when the screen is recreated must not leave Save disabled.
     var pending by remember { mutableStateOf(false) }
-    LaunchedEffect(uiState) {
-        val ready = uiState as? EditMedicationViewStateUiModel.Ready
-        if (form == null && ready != null) {
-            form = ready.medication?.let {
-                MedicationFormUiModel(it.name, it.kind, it.category, it.defaultDose.orEmpty())
-            } ?: MedicationFormUiModel()
+    // One ViewModel serves every editor, so a late read of another medication can arrive here. Save
+    // writes medicationId, so the form only ever takes that row. Each read is taken as it comes: the
+    // screen asks once, so a conflated state could hide the right read behind a late one for good.
+    LaunchedEffect(editMedicationViewModel) {
+        editMedicationViewModel.viewState.collect { state ->
+            when (val read = editMedicationViewStateUiMapper.toUi(state)) {
+                is EditMedicationViewStateUiModel.Ready ->
+                    if (form == null && read.medication?.id == medicationId) {
+                        form = read.medication?.let {
+                            MedicationFormUiModel(
+                                it.name,
+                                it.kind,
+                                it.category,
+                                it.defaultDose.orEmpty()
+                            )
+                        } ?: MedicationFormUiModel()
+                    }
+
+                EditMedicationViewStateUiModel.NotFound -> notFound = true
+                EditMedicationViewStateUiModel.Loading -> Unit
+            }
         }
     }
+    ScreenEnterObserver { editMedicationViewModel.onEnter(medicationId) }
+    ViewModelObserver(navController)
     LaunchedEffect(medicationEventPresenter) {
         medicationEventPresenter.events.collect { event ->
             pending = false
@@ -99,7 +121,8 @@ fun EditMedicationDependencies.EditMedication(
     val reduceMotion = rememberReduceMotion()
     EditMedicationContents(
         adding = medicationId == null,
-        notFound = uiState == EditMedicationViewStateUiModel.NotFound,
+        // Carries no id, so it may be another medication's: a form that loaded wins.
+        notFound = notFound && form == null,
         form = form,
         problem = problem,
         pending = pending,
@@ -179,7 +202,7 @@ fun EditMedicationContents(
             )
             Box(contentAlignment = Alignment.TopCenter, modifier = Modifier.fillMaxSize()) {
                 Column(
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(FORM_SPACING),
                     modifier = Modifier
                         .widthIn(max = CONTENT_MAX_WIDTH)
                         .fillMaxWidth()
@@ -239,40 +262,52 @@ private fun MedicationForm(
         modifier = Modifier.fillMaxWidth()
     )
     Text(stringResource(R.string.edit_kind), style = MaterialTheme.typography.labelLarge)
-    Column(Modifier.selectableGroup()) {
-        listOf(
-            MedicationKindUiModel.Acute to R.string.kind_acute,
-            MedicationKindUiModel.Preventive to R.string.kind_preventive
-        ).forEach { (kind, label) ->
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = 48.dp)
-                    .selectable(
-                        selected = form.kind == kind,
-                        role = Role.RadioButton,
-                        onClick = { onFormChange(form.copy(kind = kind)) }
-                    )
-            ) {
-                RadioButton(selected = form.kind == kind, onClick = null)
-                Text(
-                    stringResource(label),
-                    style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.padding(start = 12.dp)
-                )
+    Box(Modifier.fillMaxWidth()) {
+        Column(verticalArrangement = Arrangement.spacedBy(FORM_SPACING)) {
+            Column(Modifier.selectableGroup()) {
+                listOf(
+                    MedicationKindUiModel.Acute to R.string.kind_acute,
+                    MedicationKindUiModel.Preventive to R.string.kind_preventive
+                ).forEach { (kind, label) ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = 48.dp)
+                            .selectable(
+                                selected = form.kind == kind,
+                                role = Role.RadioButton,
+                                onClick = { onFormChange(form.copy(kind = kind)) }
+                            )
+                    ) {
+                        RadioButton(selected = form.kind == kind, onClick = null)
+                        Text(
+                            stringResource(label),
+                            style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier.padding(start = 12.dp)
+                        )
+                    }
+                }
+            }
+            if (form.kind == MedicationKindUiModel.Acute) {
+                CategoryChoices(
+                    form.category,
+                    MaterialTheme.colorScheme.onSurface,
+                    MaterialTheme.colorScheme.primary,
+                    48.dp
+                ) {
+                    onFormChange(form.copy(category = it))
+                }
             }
         }
-    }
-    if (form.kind == MedicationKindUiModel.Acute) {
-        CategoryChoices(
-            form.category,
-            MaterialTheme.colorScheme.onSurface,
-            MaterialTheme.colorScheme.primary,
-            48.dp
-        ) {
-            onFormChange(form.copy(category = it))
-        }
+        // A second tap meant for the list must not flip the kind or the category: Preventive leaves
+        // the overuse count (issue #140). Longer than the screen's fade, for the gaps measured up to
+        // 649 ms. Name, dose, Save and Back stay free.
+        TapGuard(
+            key = Unit,
+            durationMillis = KIND_TAP_GUARD_MILLIS,
+            modifier = Modifier.matchParentSize()
+        )
     }
     OutlinedTextField(
         value = doseField.value,

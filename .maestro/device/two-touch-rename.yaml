@@ -1,0 +1,23 @@
+# Device scenario step (two_touch, #138): two touches have just landed on the list. The editor must show FROM. Rename it
+# to TO and save: the list must show TO, and Betatriptan as it was. On a build with #138 the save is refused or
+# overwrites Betatriptan, so one of these fails.
+appId: com.migrely.app
+---
+- extendedWaitUntil:
+    visible: "Edit medication"
+    timeout: 5000
+- extendedWaitUntil:
+    visible: "${FROM}"
+    timeout: 5000
+- tapOn: "${FROM}"
+- eraseText: 40
+- inputText: "${TO}"
+- hideKeyboard
+- scrollUntilVisible:
+    element: "Save"
+    direction: DOWN
+- tapOn: "Save"
+- extendedWaitUntil:
+    visible: "${TO}, Simple painkiller\\. Opens it to edit\\."
+    timeout: 5000
+- assertVisible: "Betatriptan, 50 mg, Triptan\\. Opens it to edit\\."
