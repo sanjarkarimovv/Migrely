@@ -8,10 +8,10 @@
 #
 # Scenarios: long (72-hour check), history_death, past_death, details_kill, midnight, travel, travel_west, same_date,
 # zone_attack, zone_history, double_tap, med_effect, med_effect_attack, med_effect_skip, med_effect_late,
-# med_preventive, med_two_waiting, med_link_home, med_overuse, keyboard_home, keyboard_history, keyboard_rtl,
+# med_preventive, med_two_waiting, med_link_home, med_overuse, overuse_copy, keyboard_home, keyboard_history, keyboard_rtl,
 # landscape_band, mark_travel, mark_earliest_month, stats_counting, stats_chronic, stats_progress, reminder_daily,
 # reminder_permission, reminder_effect, reminder_replan (restarts the emulator), med_only_history,
-# message_tap_guard (#52), theme_check, onboarding_states, delete_all_data, privacy_link, backup_export, backup_import,
+# message_tap_guard (#52), two_touch (#138, #139), theme_check, onboarding_states, delete_all_data, privacy_link, backup_export, backup_import,
 # message_duration (#56), premium_store_states, premium_no_products, premium_pending, premium_plans, premium_entitlement, premium_offline,
 # trial_banner, paywall_self_show, report_three_months, report_counting, report_heavy, insights, upgrade, release_apk.
 # On demand only: backup_android (bmgr).
@@ -527,6 +527,39 @@ long_attack() { # $1 months back, $2 first day, $3 last day: a migraine from 10:
 long_undo_window() { adbq shell settings put secure accessibility_interactive_ui_timeout_ms 20000; }
 default_undo_window() { put_or_delete secure accessibility_interactive_ui_timeout_ms "$ORIGINAL_TIMEOUT"; }
 
+# History's "Last 30 days" on screen against the pairing that passed the medical check (D151), in both directions: a
+# reached row always comes with the line, and no line without a reached row (qa/overuse_rows.py).
+expect_overuse_pairing() {
+  adbq shell rm -f /sdcard/qa-rows.xml
+  adbq shell uiautomator dump /sdcard/qa-rows.xml >/dev/null
+  adbq exec-out cat /sdcard/qa-rows.xml | python3 -I "$ROOT/qa/overuse_rows.py"
+}
+check_indicator() { # $1 regex of a row that must show, $2 "true" when the doctor line belongs on screen, else "false"
+  run_flow_env indicator-check MONTHS_BACK=0 "ROW=$1" "DOCTOR=$2" || return 1
+  expect_overuse_pairing
+}
+expect_row_whole() { # $1 regex of a row, $2 its lines at least: on screen in full, wrapped and not cut off
+  local box
+  adbq shell rm -f /sdcard/qa-rows.xml
+  adbq shell uiautomator dump /sdcard/qa-rows.xml >/dev/null
+  box="$(adbq exec-out cat /sdcard/qa-rows.xml | python3 -I -c "import re, sys, xml.etree.ElementTree as ET
+nodes = list(ET.fromstring(sys.stdin.read()).iter('node'))
+for n in nodes:
+    if re.fullmatch(sys.argv[1], n.get('text') or ''):
+        b = [int(x) for x in re.findall(r'\d+', n.get('bounds'))]
+        print(b[1], b[3], max(int(re.findall(r'\d+', m.get('bounds'))[3]) for m in nodes)); break" "$1")"
+  [[ -n "$box" ]] || { echo "  FAILED: \"$1\" is not on screen"; return 1; }
+  local top bottom height
+  read -r top bottom height <<<"$box"
+  # At 200% a line is about 98 px; a cut-off node reports only the part on screen.
+  if (( bottom - top < $2 * 90 )) || (( bottom >= height )); then
+    echo "  FAILED: \"$1\" takes ${top}..${bottom} of ${height} px, expected $2 lines or more, whole"
+    return 1
+  fi
+  echo "    \"$1\" takes ${top}..${bottom} of ${height} px"
+  adbq exec-out screencap -p >"$out/row-$STEP.png"
+}
+
 # Each step ends the scenario on failure: a scenario runs inside "||", where set -e does not apply.
 scenario_long() {
   echo "Scenario long: an attack left open for days (EC-ATK-02, SAF-F3)"
@@ -701,6 +734,8 @@ scenario_med_link_home() {
 # Covers: medication-overuse › A standing indicator in History › A past month
 # Covers: medication-overuse › A standing indicator in History › No migraine logged
 # Covers: medication-overuse › A standing indicator in History › One day
+# Covers: medication-overuse › A standing indicator in History › One day below the number
+# Covers: medication-overuse › An overuse number is not a safe amount › No row says limit
 scenario_med_overuse() {
   echo "Scenario med_overuse: painkillers on 13 days warn softly, \"Got it\" hides it, 15 days warn about the doctor; History's \"Last 30 days\" (D59)"
   local d
@@ -712,36 +747,89 @@ scenario_med_overuse() {
     run_flow_env med-log-home NAME=Ibuprofen || return 1
   done
   run_flow med-overuse-soft || return 1
-  for d in 13 14; do
-    set_clock_millis "$(day_millis "$d")" || return 1
-    run_flow_env med-log-home NAME=Ibuprofen || return 1
-  done
+  set_clock_millis "$(day_millis 13)" || return 1
+  run_flow_env med-log-home NAME=Ibuprofen || return 1
+  # One day below the number: the count alone, neutral, and no doctor line.
+  set_clock_millis "$(( $(day_millis 0) + 3600000 ))" || return 1
+  check_indicator "Simple painkillers: 14 days" false || return 1
+  expect_colour "Simple painkillers: 14 days" neutral || return 1
+  set_clock_millis "$(day_millis 14)" || return 1
+  run_flow_env med-log-home NAME=Ibuprofen || return 1
   set_clock_millis "$(( $(day_millis 0) + 3600000 ))" || return 1
   run_flow med-overuse-doctor || return 1
-  # History's "Last 30 days" (D59), with no migraine logged yet (D99): at the limit with 15 days; a day 30 days back does
-  # not count, a day 29 back does; over the limit reads amber.
-  run_flow_env indicator-check MONTHS_BACK=0 "ROW=Simple painkillers: 15 days \(limit 15\), at the limit" DOCTOR=true || return 1
+  # History's "Last 30 days" (D59, D151), with no migraine logged yet (D99): reached with 15 days; a day 30 days back does
+  # not count, a day 29 back does; past the number still reads amber.
+  check_indicator "Simple painkillers: 15 days\. Doctors watch for 15 or more days a month\." true || return 1
   set_clock_millis "$(day_millis 30)" || return 1
   run_flow_env med-log-home NAME=Ibuprofen || return 1
   set_clock_millis "$(( $(day_millis 0) + 7200000 ))" || return 1
-  run_flow_env indicator-check MONTHS_BACK=0 "ROW=Simple painkillers: 15 days \(limit 15\), at the limit" DOCTOR=true || return 1
+  check_indicator "Simple painkillers: 15 days\. Doctors watch for 15 or more days a month\." true || return 1
   set_clock_millis "$(day_millis 29)" || return 1
   run_flow_env med-log-home NAME=Ibuprofen || return 1
   set_clock_millis "$(( $(day_millis 0) + 7200000 ))" || return 1
-  run_flow_env indicator-check MONTHS_BACK=0 "ROW=Simple painkillers: 16 days \(limit 15\), over the limit" DOCTOR=true || return 1
-  expect_colour "Simple painkillers: 16 days \(limit 15\), over the limit" amber || return 1
-  # A triptan in an attack today: two categories, and the union of days over its limit.
+  check_indicator "Simple painkillers: 16 days\. Doctors watch for 15 or more days a month\." true || return 1
+  expect_colour "Simple painkillers: 16 days\. Doctors watch for 15 or more days a month\." amber || return 1
+  # A triptan in an attack today: two categories, and the union of days past its number.
   run_flow med-add-triptan-in-attack || return 1
-  run_flow_env indicator-check MONTHS_BACK=0 "ROW=Triptans: 1 day \(limit 10\)" DOCTOR=true || return 1
-  run_flow_env indicator-check MONTHS_BACK=0 "ROW=All attack medication: 16 days \(limit 10\), over the limit" DOCTOR=true || return 1
+  check_indicator "Triptans: 1 day" true || return 1
+  check_indicator "All attack medication: 16 days\. Doctors watch for 10 or more days a month\." true || return 1
   # Deleting that attack and restoring it with Undo counts its triptan again.
   long_undo_window
   run_flow delete-attack-undo || { default_undo_window; return 1; }
   default_undo_window
-  run_flow_env indicator-check MONTHS_BACK=0 "ROW=Triptans: 1 day \(limit 10\)" DOCTOR=true || return 1
+  check_indicator "Triptans: 1 day" true || return 1
   # Last month (with a migraine of its own, so History reaches it) has no "Last 30 days" section.
   run_flow past-attack-last-month || return 1
   run_flow_env indicator-check MONTHS_BACK=1 ROW= DOCTOR=false || return 1
+}
+
+# Covers: medication-overuse › An overuse number is not a safe amount › Before the number is reached
+# Covers: medication-overuse › An overuse number is not a safe amount › A reached row brings its line
+# Covers: medication-overuse › A standing indicator in History › Largest font
+# Covers: medication-overuse › An overuse number is not a safe amount › A list cap is not an overuse number
+scenario_overuse_copy() {
+  echo "Scenario overuse_copy: no number before it is reached, the line in step with a reached row, the longest row at 200%, a list cap is not one (D151)"
+  run_flow clean || return 1
+  seed_import overuse-nine Import || return 1
+  run_flow_env home-text "TEXT=Triptans on 9 of the last 30 days" || return 1
+  run_flow_env home-text "TEXT=Taking them often can lead to more headaches\. Worth keeping an eye on\." || return 1
+  check_indicator "Triptans: 9 days" false || return 1
+  expect_colour "Triptans: 9 days" neutral || return 1
+  # Several rows, none reached: the other direction of the pairing with more than one row.
+  run_flow clean || return 1
+  seed_import overuse-below Import || return 1
+  check_indicator "All attack medication: 9 days" false || return 1
+  expect_colour "Simple painkillers: 7 days" neutral || return 1
+  expect_colour "All attack medication: 9 days" neutral || return 1
+  # Two rows reached, one not: the line once, after the rows, and the row below its number stays as it was.
+  run_flow clean || return 1
+  seed_import overuse-two-reached Import || return 1
+  check_indicator "Simple painkillers: 12 days" true || return 1
+  expect_colour "Simple painkillers: 12 days" neutral || return 1
+  expect_colour "Triptans: 12 days\. Doctors watch for 10 or more days a month\." amber || return 1
+  expect_colour "All attack medication: 24 days\. Doctors watch for 10 or more days a month\." amber || return 1
+  # The longest row at the largest font, upright and turned: it wraps and keeps every word.
+  run_flow clean || return 1
+  seed_import overuse-largest-font Import || return 1
+  local font rc=0 row="All attack medication: 16 days\. Doctors watch for 10 or more days a month\."
+  font="$(adbq shell settings get system font_scale | tr -d '\r')"
+  adbq shell settings put system font_scale 2.0
+  run_flow_env indicator-check MONTHS_BACK=0 "ROW=$row" DOCTOR=true || rc=1
+  [[ $rc == 0 ]] && { expect_row_whole "$row" 3 || rc=1; }
+  if [[ $rc == 0 ]]; then
+    adbq shell settings put system accelerometer_rotation 0
+    adbq shell settings put system user_rotation 1
+    run_flow_env indicator-check MONTHS_BACK=0 "ROW=$row" DOCTOR=true || rc=1
+    [[ $rc == 0 ]] && { expect_row_whole "$row" 3 || rc=1; }
+    qa_restore_setting system user_rotation "$ORIGINAL_USER_ROTATION"
+    qa_restore_setting system accelerometer_rotation "$ORIGINAL_AUTO_ROTATE"
+  fi
+  qa_restore_setting system font_scale "$font"
+  [[ $rc == 0 ]] || return 1
+  # The list cap keeps its own wording: a full list says so, with no overuse number in sight.
+  run_flow clean || return 1
+  seed_import medications-fifty Import || return 1
+  run_flow med-list-full || return 1
 }
 
 # Covers: day-markers › Accessible marks › Screen reader
@@ -1136,6 +1224,101 @@ for n in ET.fromstring(sys.stdin.read()).iter('node'):
 
 # Covers: in-app-messages › A message never passes taps to what lies under it › Undo just as the message goes
 # Covers: in-app-messages › A message never passes taps to what lies under it › Afterwards
+# Exact touches for two_touch: `adb emu` enters at the virtual touch hardware, so unlike `input tap` a second finger is
+# possible and the gaps can be read back from the kernel. Shell may read /dev/input, not write it (SELinux).
+touch_device() {
+  adbq shell getevent -pl 2>/dev/null | tr -d '\r' | awk '/^add device/ {d=$NF} /ABS_MT_POSITION_X/ {print d; exit}'
+}
+touch_raw() { # $1 screen x, $2 screen y: the 0..32767 values the touch device takes
+  local size w h
+  size="$(adbq shell wm size | tr -d '\r' | sed -n 's/^Physical size: //p')"
+  w="${size%x*}"; h="${size#*x}"
+  echo "$(($1 * 32767 / w)) $(($2 * 32767 / h))"
+}
+touch_down() { # $1 slot, $2 id, $3 x, $4 y
+  local raw
+  raw="$(touch_raw "$3" "$4")"
+  adbq emu event send "3:47:$1" "3:57:$2" "3:53:${raw% *}" "3:54:${raw#* }" 3:48:1280 3:58:1024 0:0:0 >/dev/null
+}
+touch_up() { adbq emu event send "3:47:$1" 3:58:0 3:57:-1 0:0:0 >/dev/null; } # $1 slot
+touch_times() { # $1 file written by getevent -t: one "D|U slot time" per finger going down or up
+  adbq exec-out cat "$1" | tr -d '\r' | python3 -I -c "import re, sys
+slot = 0
+for line in sys.stdin:
+    m = re.match(r'\[\s*([\d.]+)\]\s+0003\s+([0-9a-f]{4})\s+([0-9a-f]{8})', line.strip())
+    if not m: continue
+    t, code, value = float(m[1]), int(m[2], 16), int(m[3], 16)
+    if code == 0x2f: slot = value
+    if code == 0x39: print('U' if value == 0xffffffff else 'D', slot, t)"
+}
+desc_point() { # $1 regex on the content description: the centre of the first node that matches it in full
+  adbq shell rm -f /sdcard/qa-point.xml
+  adbq shell uiautomator dump /sdcard/qa-point.xml >/dev/null
+  adbq exec-out cat /sdcard/qa-point.xml | python3 -I -c "import re, sys, xml.etree.ElementTree as ET
+for n in ET.fromstring(sys.stdin.read()).iter('node'):
+    if re.fullmatch(sys.argv[1], n.get('content-desc', '')):
+        x1, y1, x2, y2 = map(int, n.get('bounds').replace('][', ',').strip('[]').split(','))
+        print((x1 + x2) // 2, (y1 + y2) // 2); break" "$1"
+}
+
+# Covers: medication-list › The editor belongs to one medication › Two touches on My medications
+# Covers: app-shell › Only the current screen navigates › The same row twice
+# #138, #139, D154: a finger resting on one row while another taps a second row, and a double tap on a row of Home. A
+# gap counts only as read from getevent. On a build with either bug this fails, which is its negative control.
+scenario_two_touch() {
+  echo "Scenario two_touch: touches on a screen that is leaving never reach it (#138, #139, D154), gaps from the kernel"
+  local ge=/data/local/tmp/qa-two-touch.txt device a b lift from=Alphaprofen to pid measured
+  device="$(touch_device)"
+  [[ -n "$device" ]] || { echo "  FAILED: no multi-touch device"; return 1; }
+  run_flow two-touch-ready || return 1
+  for lift in 100 300 600; do
+    a="$(desc_point "$from, Simple painkiller\\. Opens it to edit\\.")"
+    b="$(desc_point 'Betatriptan, 50 mg, Triptan\. Opens it to edit\.')"
+    [[ -n "$a" && -n "$b" ]] || { echo "  FAILED: the two rows were not found"; return 1; }
+    adbq shell "getevent -t $device > $ge & G=\$!; sleep 3; kill \$G" &
+    pid=$!
+    sleep 0.6
+    touch_down 1 "$((lift + 11))" ${b% *} ${b#* }
+    sleep 0.15
+    touch_down 0 "$((lift + 12))" ${a% *} ${a#* }
+    sleep 0.02
+    touch_up 0
+    sleep "$(python3 -I -c "print(max(0, $lift - 25) / 1000)")"
+    touch_up 1
+    adbq emu event send 3:47:0 0:0:0 >/dev/null
+    wait "$pid"
+    measured="$(touch_times "$ge" | python3 -I -c "import sys
+t = {tuple(l.split()[:2]): float(l.split()[2]) for l in sys.stdin}
+print(round((t['U', '1'] - t['U', '0']) * 1000))")"
+    echo "    finger on Betatriptan, tap on $from, the resting finger lifts $measured ms after the tap (asked $lift)"
+    # The fade is 200 ms and the old one was 700 ms: a gap outside its target proves nothing.
+    if ((measured < lift - 60 || measured > lift + 120)); then echo "  FAILED: the gap was not achieved"; return 1; fi
+    to="Alpha$lift"
+    run_flow_env two-touch-rename "FROM=$from" "TO=$to" || return 1
+    from="$to"
+  done
+  run_flow two-touch-home || return 1
+  a="$(desc_point 'Migraine from .*Opens its details\.')"
+  [[ -n "$a" ]] || { echo "  FAILED: the row on home was not found"; return 1; }
+  adbq shell "getevent -t $device > $ge & G=\$!; sleep 2.2; kill \$G" &
+  pid=$!
+  sleep 0.6
+  touch_down 0 21 ${a% *} ${a#* }
+  touch_up 0
+  sleep 0.03
+  touch_down 0 22 ${a% *} ${a#* }
+  touch_up 0
+  wait "$pid"
+  measured="$(touch_times "$ge" | python3 -I -c "import sys
+u = [float(l.split()[2]) for l in sys.stdin if l[0] == 'U']
+print(round((u[1] - u[0]) * 1000))")"
+  echo "    double tap on the row, $measured ms from click to click"
+  if ((measured > 130)); then echo "  FAILED: too slow to stack two screens on a build with #139, so this proves nothing"; return 1; fi
+  sleep 1
+  run_flow two-touch-delete || return 1
+  adbq shell rm -f "$ge"
+}
+
 # History's Undo sits on top of the top-bar actions (#52). A tap there just after the message leaves must reach nothing
 # (a guard under the message, 800 ms); a tap later must open Doctor report as usual. Taps go through adb, timed from
 # the tap on "Delete migraine" (the undo message lasts 5 s), at the centre of "Doctor report" where Undo overlaps it.
@@ -1628,6 +1811,7 @@ scenario_report_three_months() {
 
 # Covers: doctor-report › The summary page › A month only partly in the period
 # Covers: doctor-report › Counting like the app › Logged in Tokyo
+# Covers: doctor-report › The summary page › The label does not say limit
 scenario_report_counting() {
   echo "Scenario report_counting: overuse spans across a month change, and an attack logged in Tokyo (D82, D83)"
   local seed period
@@ -1642,7 +1826,7 @@ scenario_report_counting() {
     run_flow_env report-make "PERIOD=$period" NOTES=false || return 1
     pull_report "$out/$seed.pdf" || return 1
     report_texts "$seed" || return 1
-    python3 -I "$ROOT/qa/report_pdf.py" "$out/$seed.pdf" --every-page "Patient-entered data. Not a diagnosis." \
+    python3 -I "$ROOT/qa/report_pdf.py" "$out/$seed.pdf" --every-page "Patient-entered data. Not a diagnosis." --absent limit \
       --text ${REPORT_TEXTS[@]+"${REPORT_TEXTS[@]}"} --regex ${REPORT_PATTERNS[@]+"${REPORT_PATTERNS[@]}"} | sed "s/^/    $seed: /"
     [[ "${PIPESTATUS[0]}" == 0 ]] || return 1
   done
@@ -2066,9 +2250,9 @@ mkdir -p "$out"
 if [[ $# -eq 0 ]]; then
   set -- long history_death past_death details_kill midnight travel travel_west same_date zone_attack zone_history \
     double_tap med_effect med_effect_attack med_effect_skip med_effect_late med_preventive med_two_waiting \
-    med_link_home med_overuse keyboard_home keyboard_history keyboard_rtl landscape_band mark_travel mark_earliest_month \
+    med_link_home med_overuse overuse_copy keyboard_home keyboard_history keyboard_rtl landscape_band mark_travel mark_earliest_month \
     stats_counting stats_chronic stats_progress reminder_daily reminder_permission reminder_effect reminder_replan \
-    med_only_history message_tap_guard \
+    med_only_history message_tap_guard two_touch \
     theme_check onboarding_states delete_all_data privacy_link backup_export backup_import message_duration \
     premium_store_states premium_no_products premium_pending premium_plans premium_entitlement premium_offline trial_banner paywall_self_show \
     report_three_months report_counting report_heavy insights

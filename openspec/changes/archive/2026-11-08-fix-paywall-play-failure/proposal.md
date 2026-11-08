@@ -1,0 +1,78 @@
+# Proposal
+
+## Why
+
+Google rejected 1.0.1 under "Broken Functionality: unresponsive UI elements" (#146). The reviewer tapped Yearly, Monthly
+and Lifetime on the paywall. Each time a white sheet from Google Play said "Error. No internet connection." with OK, and
+then the same paywall was back with nothing to explain it.
+
+The sheet belongs to Google Play: its text is not in this repository, and the app cannot remove or restyle it. The app
+has no `INTERNET` and no `ACCESS_NETWORK_STATE`, and that stays, so it cannot detect a connection. Which response code
+Play returns after the sheet is not measured and may be `USER_CANCELED`, so the fix cannot depend on the code.
+
+What the app can do is say, in plain words on the screen, what buying depends on and what keeps working. It can also
+stop being silent in the one case where its own code knows that Play refused and still shows nothing.
+
+## What Changes
+
+- **One line that is always there.** Wherever a buy button shows, under the terms: "Purchases need Google Play and an
+  internet connection. Your diary works offline." It has no state and no detection, and it opens no dialog.
+- **A person's own cancel stays silent.** The app shows nothing, because backing out is not an error.
+- **`Unavailable` after a sheet no longer ends in silence.** If Play still offers the products, the paywall says "Google
+  Play can't be reached. Try again later." If it offers none, only the existing region notice shows.
+- **"Restore purchases" moves above "What Premium adds".** Adding the line then leaves both the buy button and Restore no
+  lower than today, at every font size.
+
+- **The unreachable notice also speaks about the diary.** When the reload after a sheet fails, the cards and the line
+  leave, so its text becomes "Check your connection, then try again. Your diary works offline."
+
+- **Messages stop covering the top bar (#152, D158).** On the paywall the message sits below the Close row, with a 400 ms
+  guard. On every other screen with a top bar it sits below the bar; on Home Today, below the Settings row,
+  except in a short window, where it stays at the top so it does not cover "Migraine started" at 411 dp high.
+- **A tap on a message with a timeout and no action dismisses it.** A tap on the body of a message with Undo, or of "storage
+  full", does nothing.
+- **"Try again" answers at once (D153).** While Play stays unreachable the tap got no answer for up to 5 s. It now shows the
+  existing "Getting prices from Google Play" at once, then the notice and "Google Play can't be reached. Try again later."
+- **A paywall's message answers that paywall (D153).** A buy tap clears any older message, and a reload still running from
+  an earlier paywall delivers nothing on a new one where nothing was tapped.
+- **The first row under the bar may lie under a message (D158).** Accepted for My medications' Remove on row 1, History's
+  month chevrons, the trial banner's close button and the title of the safety card on Attack details.
+
+The text of the existing `Failed` message and of Restore's messages does not change.
+
+## Out of scope
+
+- `INTERNET`, `ACCESS_NETWORK_STATE`, or any way of detecting a connection.
+- Google Play's own sheet, which cannot be changed.
+- Play Console text, including the review instructions. These are handled outside this repository.
+- Dialogs, new screens, new view states.
+- Prices, plans and the purchase flow. `sheetResultOf` and `BuyPremiumUseCase` stay as they are.
+- Telling Play's error apart from a person's cancel.
+- Restore saying "No purchases were found" if Play answers from its cache while offline. See the design's risks.
+- Translation: the app is English only (D148).
+- A message's duration, top position, dim look and copy, and the 800 ms guard on other screens.
+- Portrait attack mode, landscape attack mode (D52) and screens with no top bar.
+- Moving messages again to clear the first row under the bar: that would put them back over the top bar.
+
+## Capabilities
+
+### New Capabilities
+
+None.
+
+### Modified Capabilities
+
+- `subscription`: what the paywall shows, and what it says after a sheet that did not complete.
+- `in-app-messages`: where a message sits, how it is dismissed, and the paywall's guard.
+
+## Impact
+
+- `docs/BRD.md`: D153, D158, EC-BIL-14…18, EC-UX-16, a note on D114, §7.3, §13 rows 28 and 28a.
+- `designsystem`: `MigrelySnackbar` and `MigrelySnackbarHost`, two host parameters and a body tap.
+- The screens that show messages: one offset each.
+- `features/subscription/ui`: one new string, one changed string, one `Text`, two blocks swapped in `PaywallOffer`.
+- `features/subscription/presentation`: `PaywallViewModel`, a few lines and tests.
+- `.maestro/`: `qa-engineer` updates `paywall-and-purchase.yaml`, which asserts the paywall without scrolling.
+- No permission, schema, price, datasource or domain change.
+- No health claim, so `medical-reviewer` is not needed. `ux-designer` reads the copy before the code.
+- Target release: 1.1.0.

@@ -165,10 +165,8 @@ class HomeViewModel(
         startAttackUseCase(
             onResult = { result ->
                 when (result) {
-                    is StartAttackResultDomainModel.Started -> {
-                        notify(AttackStarted(result.attack.id))
-                        loadToday()
-                    }
+                    is StartAttackResultDomainModel.Started ->
+                        loadToday(thenTell = AttackStarted(result.attack.id))
 
                     is StartAttackResultDomainModel.AlreadyInProgress -> loadToday()
                     StartAttackResultDomainModel.StorageFull -> notify(StorageFull)
@@ -183,10 +181,8 @@ class HomeViewModel(
             value = EndAttackRequestDomainModel(end),
             onResult = { result ->
                 when (result) {
-                    is EndAttackResultDomainModel.Ended -> {
-                        notify(AttackEnded(result.attackId))
-                        loadToday()
-                    }
+                    is EndAttackResultDomainModel.Ended ->
+                        loadToday(thenTell = AttackEnded(result.attackId))
 
                     EndAttackResultDomainModel.NotInProgress -> loadToday()
                     EndAttackResultDomainModel.EndOutOfRange -> notify(EndTimeOutOfRange)
@@ -214,15 +210,8 @@ class HomeViewModel(
 
     private fun presentUndo(result: UndoResultDomainModel) {
         when (result) {
-            UndoResultDomainModel.Undone -> {
-                notify(Undone)
-                loadToday()
-            }
-
-            UndoResultDomainModel.NotPossible -> {
-                notify(UndoNotPossible)
-                loadToday()
-            }
+            UndoResultDomainModel.Undone -> loadToday(thenTell = Undone)
+            UndoResultDomainModel.NotPossible -> loadToday(thenTell = UndoNotPossible)
 
             UndoResultDomainModel.Failed -> notify(SomethingWentWrong)
         }
@@ -231,9 +220,16 @@ class HomeViewModel(
     /**
      * Loads today. Only a load on entering or returning to the screen announces a recent deletion, so the undo of a
      * deletion never replaces the undo of an action taken here. [keepPeriodToggle] keeps the "Period" toggle that was
-     * just used; every other load offers it as today's result says (BRD D79).
+     * just used; every other load offers it as today's result says (BRD D79). [thenTell] comes after
+     * the new mode, so its message appears at that mode's place and does not jump when the mode
+     * arrives (BRD D158). If the reading fails, it is still told, and the error then replaces it on
+     * screen, as before.
      */
-    private fun loadToday(announceDeletion: Boolean = false, keepPeriodToggle: Boolean = false) {
+    private fun loadToday(
+        announceDeletion: Boolean = false,
+        keepPeriodToggle: Boolean = false,
+        thenTell: HomePresentationNotification? = null
+    ) {
         val request = ++todayRequest
         getTodayUseCase(
             onResult = { result ->
@@ -251,15 +247,21 @@ class HomeViewModel(
                                 )
                             )
                         }
+                        thenTell?.let(::notify)
                         val deleted = result.recentlyDeleted
                         if (announceDeletion && deleted != null) {
                             notify(AttackDeleted(deleted.id, deleted.deletedAt))
                         }
                     }
 
-                    TodayResultDomainModel.Failed -> if (newest) notify(SomethingWentWrong)
+                    TodayResultDomainModel.Failed -> {
+                        thenTell?.let(::notify)
+                        if (newest) notify(SomethingWentWrong)
+                    }
                 }
-            }
+            },
+            // Only what the executor reports: a throw inside a background use case does not get here.
+            onException = { thenTell?.let(::notify) }
         )
     }
 }

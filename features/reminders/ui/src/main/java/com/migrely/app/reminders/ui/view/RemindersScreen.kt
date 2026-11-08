@@ -60,12 +60,13 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.navigation.NavController
 import com.migrely.app.architecture.ui.view.ScreenEnterObserver
+import com.migrely.app.designsystem.dialog.MigrelyDialog
 import com.migrely.app.designsystem.icon.MigrelyIcons
 import com.migrely.app.designsystem.motion.rememberReduceMotion
+import com.migrely.app.designsystem.snackbar.MESSAGE_OFFSET_BELOW_TOP_BAR
 import com.migrely.app.designsystem.snackbar.MigrelySnackbar
 import com.migrely.app.designsystem.snackbar.MigrelySnackbarHost
 import com.migrely.app.designsystem.snackbar.messageTimeoutMillis
@@ -184,13 +185,19 @@ fun RemindersDependencies.Reminders(navController: NavController, modifier: Modi
             }
         ),
         messages = {
-            MigrelySnackbarHost(message = message, reduceMotion = rememberReduceMotion()) { shown ->
+            MigrelySnackbarHost(
+                message = message,
+                reduceMotion = rememberReduceMotion(),
+                topOffset = MESSAGE_OFFSET_BELOW_TOP_BAR
+            ) { shown ->
+                val behaviour = remindersMessageBehaviourUiMapper.toUi(shown)
                 MigrelySnackbar(
                     text = stringResource(shown.text()),
-                    tone = remindersMessageBehaviourUiMapper.toUi(shown).tone,
+                    tone = behaviour.tone,
                     action = null,
+                    baseDurationMillis = behaviour.baseDurationMillis,
                     dismissLabel = stringResource(R.string.reminders_message_dismiss),
-                    onDismiss = { message = null }
+                    onDismiss = { if (message == shown) message = null }
                 )
             }
         },
@@ -409,7 +416,7 @@ private fun TimeDialog(minuteOfDay: Int, onPick: (Int) -> Unit, onDismiss: () ->
     )
     // The whole dialog scrolls, as the design system's picker does, so in landscape the title and buttons leave room
     // to drag outside the dial (QA #79).
-    Dialog(onDismissRequest = onDismiss) {
+    MigrelyDialog(onDismissRequest = onDismiss) {
         Surface(
             shape = RoundedCornerShape(28.dp),
             color = MaterialTheme.colorScheme.surfaceContainerHigh

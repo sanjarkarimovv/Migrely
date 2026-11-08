@@ -1,0 +1,46 @@
+{
+  "/": {
+    "lastmod": "2026-11-05",
+    "sha256": "6fb9b33eca927d630f66c038020851d85173770fbbfb87912843cb2123bf10d5"
+  },
+  "/about/": {
+    "lastmod": "2026-11-05",
+    "sha256": "d894340dc5c6e7ce07b534e53d55332b6c8575a176cf458519c095847ec36f6c"
+  },
+  "/compare/": {
+    "lastmod": "2026-11-05",
+    "sha256": "0e61e43a727cefb36d74bfed95d5f51c722ad88fd4bc52b9b5137d11ddb5c86b"
+  },
+  "/delete-data/": {
+    "lastmod": "2026-11-05",
+    "sha256": "931102e109ce414328e7265c7e8f88681bcf9841d52825785145ed4f08511779"
+  },
+  "/headache-diary/": {
+    "lastmod": "2026-11-05",
+    "sha256": "9dcd50275b646a54fdae724f2c186c71a321c85686595164e50029d97d89255b"
+  },
+  "/medication-overuse-headache/": {
+    "lastmod": "2026-11-05",
+    "sha256": "7718b0d047822f05d75e6fd448e0f7bc03b10316d2e5ab88d891a694a2366859"
+  },
+  "/menstrual-migraine/": {
+    "lastmod": "2026-11-05",
+    "sha256": "fba9ca4692fc077aad182179d2f616b6974f1629b3fcd593814ccb8905e7a246"
+  },
+  "/privacy-check/": {
+    "lastmod": "2026-11-05",
+    "sha256": "4a9ed6ae60880c9057235b0a509db9bc5d7a6a37b067c0793ec91a1cf25bf11c"
+  },
+  "/privacy/": {
+    "lastmod": "2026-11-05",
+    "sha256": "65d2538f202b3ede0b5317881cfb90993e87431bd0088c5701904fd2b778f6ab"
+  },
+  "/support/": {
+    "lastmod": "2026-11-05",
+    "sha256": "bbf1604a1647b45d60516030f828c5ae203d46c7009d2b33ed01be70d624c746"
+  },
+  "/va-migraine-log/": {
+    "lastmod": "2026-11-05",
+    "sha256": "7afa4821c641c0a1399792dcfa078bb618f4ba882e8144c89ce3e87176ad8e55"
+  }
+}

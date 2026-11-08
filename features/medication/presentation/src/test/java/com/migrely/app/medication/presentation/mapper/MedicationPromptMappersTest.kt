@@ -47,22 +47,21 @@ class MedicationPromptMappersTest {
     }
 
     @Test
-    fun `When mapping each warning then its category, level and threshold`() {
+    fun `When mapping each warning then its category and level`() {
         listOf(
             OveruseCategoryDomainModel.SimplePainkiller to
-                (OveruseCategoryPresentationModel.SimplePainkiller to 15),
-            OveruseCategoryDomainModel.Triptan to (OveruseCategoryPresentationModel.Triptan to 10),
+                OveruseCategoryPresentationModel.SimplePainkiller,
+            OveruseCategoryDomainModel.Triptan to OveruseCategoryPresentationModel.Triptan,
             OveruseCategoryDomainModel.CombinationOrOther to
-                (OveruseCategoryPresentationModel.CombinationOrOther to 10),
-            OveruseCategoryDomainModel.Multiple to (OveruseCategoryPresentationModel.Multiple to 10)
+                OveruseCategoryPresentationModel.CombinationOrOther,
+            OveruseCategoryDomainModel.Multiple to OveruseCategoryPresentationModel.Multiple
         ).forEach { (domain, expected) ->
             assertEquals(
                 MedicationPromptViewState.OveruseWarning(
                     OveruseWarningPresentationModel(
-                        expected.first,
+                        expected,
                         OveruseLevelPresentationModel.Soft,
-                        days = 8,
-                        thresholdDays = expected.second
+                        days = 8
                     )
                 ),
                 presentationMapper.toPresentation(

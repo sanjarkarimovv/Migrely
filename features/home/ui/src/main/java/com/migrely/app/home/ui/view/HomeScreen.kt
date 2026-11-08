@@ -32,6 +32,7 @@ import androidx.navigation.NavController
 import com.migrely.app.architecture.ui.view.ScreenEnterObserver
 import com.migrely.app.designsystem.input.TapGuard
 import com.migrely.app.designsystem.motion.rememberReduceMotion
+import com.migrely.app.designsystem.snackbar.MESSAGE_OFFSET_BELOW_TOP_BAR
 import com.migrely.app.designsystem.theme.MigrelyColors
 import com.migrely.app.designsystem.theme.MigrelyDarkRoom
 import com.migrely.app.home.presentation.model.HomeViewState
@@ -64,10 +65,12 @@ internal fun isCompactHeight(): Boolean =
  * (change add-attack-history, design D1). [medicationPrompt] is drawn right under today's card;
  * `:app` fills it with the medication card (BRD D46). [trialBanner] is drawn under the day's header
  * and [paywallTrigger] draws nothing: `:app` fills them with the subscription feature's trial
- * reminder and its paywall after the 5th migraine (change add-subscription, BRD D110, D111). All
- * receive the number of view states home has received, so they can load again whenever home does:
- * after every action and on every resume. Attack mode shows none of them (G4), so no paywall shows
- * itself during an attack.
+ * reminder and its paywall after the 5th migraine (change add-subscription, BRD D110, D111).
+ * [reviewPrompt] draws nothing either: `:app` fills it with the review feature's request for a
+ * rating (change add-in-app-review, BRD D130, D132). All receive the number of view states home has
+ * received, so they can load again whenever home does: after every action and on every resume.
+ * Attack mode shows none of them (G4), so no paywall and no request for a rating shows itself
+ * during an attack.
  */
 @Composable
 fun HomeDependencies.Home(
@@ -77,7 +80,8 @@ fun HomeDependencies.Home(
     monthCalendar: @Composable (refreshKey: Int) -> Unit = {},
     medicationPrompt: @Composable (refreshKey: Int) -> Unit = {},
     trialBanner: @Composable (refreshKey: Int) -> Unit = {},
-    paywallTrigger: @Composable (refreshKey: Int) -> Unit = {}
+    paywallTrigger: @Composable (refreshKey: Int) -> Unit = {},
+    reviewPrompt: @Composable (refreshKey: Int) -> Unit = {}
 ) {
     ScreenEnterObserver { homeViewModel.onEnter(startAttackRequested) }
     LifecycleResumeEffect(homeViewModel) {
@@ -132,6 +136,7 @@ fun HomeDependencies.Home(
         medicationPrompt = { medicationPrompt(homeLoads) },
         trialBanner = { trialBanner(homeLoads) },
         paywallTrigger = { paywallTrigger(homeLoads) },
+        reviewPrompt = { reviewPrompt(homeLoads) },
         messages = {
             HomeMessages(
                 presenter = homeMessagePresenter,
@@ -141,7 +146,8 @@ fun HomeDependencies.Home(
                 onUndoStart = homeViewModel::onUndoStartAction,
                 onUndoEnd = homeViewModel::onUndoEndAction,
                 onUndoDelete = homeViewModel::onUndoDeleteAction,
-                onMessageBottomChanged = { messageBottom.value = it }
+                onMessageBottomChanged = { messageBottom.value = it },
+                topOffset = messageTopOffset(uiState.mode, isCompactHeight())
             )
         },
         messageBottom = messageBottom::value,
@@ -182,6 +188,13 @@ internal fun guardsTaps(previous: HomeMode, next: HomeMode): Boolean =
 internal fun messagesBesideControls(mode: HomeMode, compactHeight: Boolean): Boolean =
     mode == HomeMode.Attack && compactHeight
 
+/**
+ * How far a message moves down, to below the Settings row (BRD D158). Not in attack mode, which
+ * keeps its own place (BRD D52), and not in a short window, where it would cover "Migraine started".
+ */
+internal fun messageTopOffset(mode: HomeMode, compactHeight: Boolean): Dp =
+    if (mode == HomeMode.Attack || compactHeight) 0.dp else MESSAGE_OFFSET_BELOW_TOP_BAR
+
 private val HomeViewStateUiModel.mode: HomeMode
     get() = when (this) {
         HomeViewStateUiModel.Loading -> HomeMode.Loading
@@ -207,7 +220,8 @@ fun HomeContents(
     monthCalendar: @Composable () -> Unit = {},
     medicationPrompt: @Composable () -> Unit = {},
     trialBanner: @Composable () -> Unit = {},
-    paywallTrigger: @Composable () -> Unit = {}
+    paywallTrigger: @Composable () -> Unit = {},
+    reviewPrompt: @Composable () -> Unit = {}
 ) {
     // Decided from the target mode in the same pass as the switch, so a quick switch back (for example Undo) can never
     // leave a stale previous mode behind (BRD EC-UX-18, D32).
@@ -275,8 +289,12 @@ fun HomeContents(
             }
         }
         // Only while today's mode is the one shown or coming, never while it fades out into attack
-        // mode: a paywall the trigger asks for after that is dropped with it (BRD D110).
-        if (mode == HomeMode.Today) paywallTrigger()
+        // mode: a paywall the trigger asks for after that is dropped with it (BRD D110), and so is a
+        // request for a rating still waiting for home to settle (BRD D130, EC-REV-07).
+        if (mode == HomeMode.Today) {
+            paywallTrigger()
+            reviewPrompt()
+        }
         // Above both modes and below the messages, so Undo always stays tappable.
         if (guardTaps) {
             TapGuard(

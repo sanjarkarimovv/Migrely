@@ -9,8 +9,8 @@ import com.migrely.app.ui.main.route.AttackDetails
 
 /**
  * Leaving the add screen pops it. A new or merged attack replaces it with its details, so back from there returns to
- * the screen that opened the add screen, home or History (BRD D26, D30); a late second event updates that details
- * screen instead of stacking another one.
+ * the screen that opened the add screen, home or History (BRD D26, D30). A late second event from the add screen is
+ * dropped once it has left (`ViewModelObserver`, issue #138), so the first details screen stays.
  */
 class AddPastAttackNavigationEventDestinationMapper :
     NavigationEventDestinationMapper<AddPastAttackPresentationNavigationEvent>(
@@ -35,6 +35,7 @@ class AddPastAttackNavigationEventDestinationMapper :
             route,
             navOptions {
                 popUpTo<AddPastAttack> { inclusive = true }
+                // Add past attack is popped first, so a details screen below it is reused, not stacked.
                 launchSingleTop = true
             }
         )

@@ -44,7 +44,7 @@ target API 37, whichever comes first. Until then, do not mix AGP 9 idioms into b
 | `:architecture:ui` | Android | `com.migrely.app.architecture.ui` | `BaseComposeHolder`, `UiDestination`, `NavigationEventDestinationMapper`, `ScreenEnterObserver`, notification contracts |
 | `:architecture:instrumentation-test` | Android | `com.migrely.app.test` | E2E test helpers (first used by a feature change) |
 | `:coroutine` | JVM | `com.migrely.app.coroutine` | `CoroutineContextProvider` |
-| `:designsystem` | Android | `com.migrely.app.designsystem.{theme,sky,motion,snackbar,picker,icon,input}` | `MigrelyTheme(dark)`, `MigrelyColors`, `MigrelyDarkRoom` / `DarkScreens`, `SkyCanvas` / `SkyAppearance`, `MonthSkyCalendar` / `MonthSkyLegend` / `DaySkyAppearance`, `rememberReduceMotion()`, `MigrelySnackbar`, `MigrelyDateTimePicker`, `MigrelyIcons`, `TapGuard`. Compose only; depends on no feature, presentation or domain module |
+| `:designsystem` | Android | `com.migrely.app.designsystem.{theme,sky,motion,snackbar,picker,dialog,icon,input}` | `MigrelyTheme(dark)`, `MigrelyColors`, `MigrelyDarkRoom` / `DarkScreens`, `SkyCanvas` / `SkyAppearance`, `MonthSkyCalendar` / `MonthSkyLegend` / `DaySkyAppearance`, `rememberReduceMotion()`, `MigrelySnackbar`, `MigrelyDateTimePicker`, `MigrelyAlertDialog` / `MigrelyDatePickerDialog` / `MigrelyDialog`, `MigrelyIcons`, `TapGuard`. Compose only; depends on no feature, presentation or domain module |
 | `:datasource:source` | JVM | `com.migrely.app.datasource.<resource>.{datasource,model,exception}` | datasource interfaces, `*DataModel` / `*LocalModel`, `*DataException` |
 | `:datasource:implementation` | Android (Room via KSP) | `com.migrely.app.datasource.<resource>.{datasource,model,dao,mapper}` and `com.migrely.app.datasource.database` | `*DataSourceImpl`, Room entities (`*LocalModel`), DAOs, `MigrelyDatabase`, `*LocalMapper` |
 | `:features:<feature>:domain` | JVM | `com.migrely.app.<feature>.domain` | `model/`, `repository/` (interfaces), `usecase/`, `exception/` |
@@ -55,6 +55,7 @@ target API 37, whichever comes first. Until then, do not mix AGP 9 idioms into b
 | `:features:settings:*` | JVM / Android | `com.migrely.app.settings.*` | The Settings screen in sections, with "Track periods" and the theme; the Warning signs, About Migrely, Privacy and Open-source licences pages, which share one view model; and the "Delete all data" confirmation, a screen of its own (BRD D70, D79, D93–D97), like any feature |
 | `:features:onboarding:*` | JVM / Android | `com.migrely.app.onboarding.*` | Onboarding on a new user's first start (change add-onboarding, BRD D76–D80), like any feature |
 | `:features:subscription:*` | JVM / Android | `com.migrely.app.subscription.*` | Migrely Premium (change add-subscription, BRD D105–D113): the paywall and the gate after onboarding, which are screens, and the Premium section, the trial banner and the 5th-migraine trigger, which `:app` puts into Settings and home through slots. History reads the entitlement through its own repository |
+| `:features:review:*` | JVM / Android | `com.migrely.app.review.*` | The request for a Google Play rating on home (change add-in-app-review, BRD D129–D132): the rules for when to ask, a view model that `:app` keeps for the process, and a slot on home that draws nothing. Google Play's flow opens through `ReviewDataSource` |
 | `:app` `start/` | Android | `com.migrely.app.start` | `StartEntryPoint`, through which `MainActivity` asks, behind the splash, whether onboarding comes first and which theme to draw in (BRD D76, D94), and `MigrelyApplication` runs the start-up clean-ups: cut-off reports and expired deletions (EC-REP-03, D118); `restartApp`, which starts a new process after all data is deleted (D96) |
 | `:app` `reminder/` and `datasource/` | Android | `com.migrely.app.reminder`, `com.migrely.app.datasource.{schedule,notification}.datasource` | `ReminderWorker`, `ReminderActionReceiver`, `TimeChangeReceiver`, `ReminderEntryPoint`; and the implementations of `ReminderScheduleDataSource` (WorkManager) and `NotificationDataSource` (NotificationManagerCompat) |
 | `:features:<feature>:presentation` | JVM | `com.migrely.app.<feature>.presentation` | `viewmodel/`, `model/`, `navigation/`, `mapper/` |
@@ -62,7 +63,7 @@ target API 37, whichever comes first. Until then, do not mix AGP 9 idioms into b
 | `:features:<feature>:ui` | Android | `com.migrely.app.<feature>.ui` | `view/`, `model/`, `mapper/`, `di/` (`*Dependencies`, plain classes, no Hilt) |
 
 - Datasources share one `source`/`implementation` pair, one package per resource (`database`, `attack`, `tag`, `medication`,
-  `preferences`, `billing`, `scheduler`, `pdf`, `file`, `analytics`, `clock`, `appinfo`), as in the sample. The pair may be split later only for build-time
+  `preferences`, `billing`, `review`, `scheduler`, `pdf`, `file`, `analytics`, `clock`, `appinfo`), as in the sample. The pair may be split later only for build-time
   reasons.
 - Features: `home` (today's sky, attack mode, quick actions), `attack`, `history` and `medication`. They read the
   shared `AttackDataSource` and `MedicationDataSource` through their own models and repositories.
@@ -125,7 +126,8 @@ The binding follows the skill's `bindings/nav2.md`.
 
 None. The app declares no `INTERNET` permission. Billing is the Play Billing Library, which talks to the Play Store app
 over IPC (change add-subscription, BRD D105); the `INTERNET` and `ACCESS_NETWORK_STATE` that its usage logging declares
-are removed in the manifest, and the permission check keeps them out. An analytics SDK (TelemetryDeck) would be the only
+are removed in the manifest, and the permission check keeps them out. Google Play's in-app review library talks to the
+Play Store app the same way and declares no permission (change add-in-app-review, BRD D129). An analytics SDK (TelemetryDeck) would be the only
 code allowed to use the network; the change that adds it also adds `INTERNET` and updates the `app-shell` spec. Health
 data must never be passed to any SDK.
 
@@ -224,6 +226,46 @@ data must never be passed to any SDK.
 - `BaseComposeHolder.ViewModelObserver(navController)` collects `navigationEvent` and `notification` inside one
   `LaunchedEffect(Unit)` each. This deliberately deviates from the generated `collectAsState`, which drops two identical
   events in a row.
+- `ScreenNavHost` (`:app/ui/main/ScreenDestination.kt`) sets the one transition between all screens: a 200 ms linear fade
+  (issue #148).
+- `screen()` wraps every destination. A screen stays composed through its exit fade, so the pointer input of this window
+  on an entry that is not current is consumed, read at each event: a finger already down cancels (issue #142). Semantics
+  are untouched, and a dialog or popup is a window of its own, which this does not reach. During a pop the leaving screen
+  is on top, so a tap where it has a control or a scroll column does not reach the screen fading in below it. The node
+  joins a touch only when something inside the screen is hit, which rests on Compose's hit testing
+  (`NodeCoordinator.speculativeHit`, Compose 1.9.3); `LeavingScreenInputTest` fails if an upgrade changes it.
+- The same node refuses the second tap of a double tap (`SecondTapRule`, issue #156, BRD D159): a press on an entry no touch
+  has lifted on yet, under Android's double-tap timeout after the last lift and within its double-tap distance of it, is
+  ignored as a whole gesture. The values come from the platform and the times from the touch events. The mark that an entry
+  was touched is on the entry's own `SavedStateHandle`, because a screen's node goes when the screen leaves the composition:
+  so it survives a return, a recreation and process death, and it goes with a pop. That mark is what keeps Back and other
+  returns out. The last lift and the ignored pointers are not saved. A new destination is covered by `screen()` with no extra
+  code. `DoubleTapGuardTest`
+  and `SecondTapRuleTest` cover it.
+- A navigation event navigates only while its observer's screen is the current back-stack entry (`BaseComposeHolder`,
+  issues #138, #139). That covers what the touch rule cannot: late async results, semantics clicks, and a click just before
+  the screen left. A time-based tap guard cannot do this, and a `RESUMED` check would refuse a screen still fading in. The
+  check reads the observer's screen, not the sender's.
+- Every dialog goes through `MigrelyAlertDialog`, `MigrelyDatePickerDialog` or `MigrelyDialog` (`:designsystem`, package
+  `dialog`). For `DIALOG_WAIT_MILLIS` from when it appears a dialog ignores a press on its content, judged by the press's
+  own event time, and a tap outside its card does not close it, so the second tap of the double tap that opened it runs
+  nothing (issue #157, BRD D160). A press inside the wait is ignored until it lifts. Semantics are untouched, so a screen
+  reader, switch access and a keyboard work at once, and Back closes at once. The screen's rule above cannot do this, since
+  a dialog is a window of its own. `ArchitectureDialogsTest` (Konsist) fails on any other file that imports a raw dialog.
+- A lift on a dialog's card counts for what is beneath it (BRD D161). A double tap on a dialog's own option closes the
+  dialog with the first tap, and the second lands in another window: it is not that dialog's wait, and the second-tap rule
+  of the main window never hears the lift. So `DialogLiftRule` (`:designsystem`, package `dialog`, because `app` depends on
+  it and an older dialog has to ask too) keeps the last lift the wait let through. A press in any other window under
+  `DIALOG_WAIT_MILLIS`, not the second-tap rule's 300 ms, and within `scaledDoubleTapSlop` of it is ignored until it lifts.
+  The lift of an ignored press moves the place and is judged by `doubleTapTimeoutMillis`, so retrying at an ordinary pace
+  answers. A dialog that appeared after the lift was not beneath it, so its own wait alone decides. Both windows convert to the
+  screen with `localToScreen`, because their origins differ, and a wrong conversion fails toward writing. So
+  `DialogLiftOnScreenTest` presses just inside and just outside the distance through real windows, from two corners of a
+  card, and an offset larger than its 10 dp margin fails it. It needs a device and is not in the gate, so run it when this
+  changes. It shows one AVD in portrait: not API 26, a cutout, a dialog panned by a keyboard or split screen.
+  `ScreenNavHost` provides the one instance; with none nothing is ignored.
+- `DeleteAllDataObserver` sits beside the `NavHost`, not on the delete screen: wiped data must restart the app whichever
+  screen is on top, or with the delete screen gone.
 - ViewModels are stateless (skill rule 4). Text and selections the user is editing live in the composable
   (`rememberSaveable`) and are passed to `on…Action(...)` as parameters.
 - Every screen has a stateful `<Screen>()` (with `ScreenEnterObserver` and `ViewModelObserver`) and a stateless
@@ -324,11 +366,12 @@ defaults: an error fails the gate, and a warning is only reported (BRD D123). Th
 | Konsist: the four "models are suffixed with …Model" rules scan production code only (`scopeFromProduction()`) | unit tests for a model belong in the model's package (for example `AttackDomainModelTest`); the skill forbids renaming classes to dodge a rule | permanent |
 | The add-past-attack screen asks for its defaults with `LaunchedEffect` while its saveable times are empty, instead of `ScreenEnterObserver` | after process death before the defaults arrived, `ScreenEnterObserver` would never ask again and leave the screen empty; once picked, the saved times win | permanent |
 | The add screen carries the end along with a new start and caps it at the current minute in `PastAttackDraftUiModel` | an editing convenience of the form, like the picker bounds; the domain validates the times again | permanent |
-| Home hosts History's month card, the medication card, and the subscription's trial banner and 5th-migraine paywall trigger; History hosts the overuse indicator; Settings hosts the subscription's Premium section; all through composable slots that `:app` fills. Each loads when its refresh key changes, or on Settings' resume for the Premium section, instead of using `ScreenEnterObserver` | one calendar implementation without a feature depending on another; the sample has no screen composed of two features. The key is home's view-state count, so the card follows every home load, including an undo on home | permanent |
+| Home hosts History's month card, the medication card, the subscription's trial banner and 5th-migraine paywall trigger, and the review feature's request for a rating; History hosts the overuse indicator; Settings hosts the subscription's Premium section; all through composable slots that `:app` fills. Each loads when its refresh key changes, or on Settings' resume for the Premium section, instead of using `ScreenEnterObserver` | one calendar implementation without a feature depending on another; the sample has no screen composed of two features. The key is home's view-state count, so the card follows every home load, including an undo on home | permanent |
 | The schedule and notification datasource implementations live in `:app`, not `:datasource:implementation`, and so does `PremiumCheckScheduleDataSourceImpl`, which plans `PremiumCheckWorker` while a payment is pending or unacknowledged | they need `MainActivity`, the workers, the receivers and the notification copy, which `:datasource:implementation` cannot see; they keep the datasource package names, so the architecture tests still place them | permanent |
 | Onboarding hosts the reminders feature's daily reminder offer through a slot that `:app` fills. The offer is not a screen, so it reads its view model's state and notifications itself, through its own UI mappers, and loads with `LaunchedEffect(viewModel)` | the offer reuses the Reminders screen's permission rules without onboarding depending on the reminders feature (BRD D80) | permanent |
 | `YourDataViewModel`, `ReportViewModel`, `PaywallViewModel` and `DeleteAllDataViewModel` are `@Singleton`s that keep, only for delivery, whether work is going on and its outcome: the last outcome the screen has not taken, or, for deleting all data, that it finished. `YourDataViewModel` also keeps the automatic copy it read last, so its row stays while work goes on | writing or reading a file, making a report, Google Play's purchase sheet or deleting all data can outlast a rotation; the base view model's flows do not replay, so a screen rebuilt mid-work would show its actions enabled and miss the outcome, and the deletion would miss the restart. The screen asks for both once it listens, and acknowledges each outcome | permanent |
-| The "Delete all data" screen asks its view model where the deletion stands with a `LaunchedEffect` on every composition, after its listeners, instead of `ScreenEnterObserver` | the view model is app-wide and the deletion outlives a rotation; a rebuilt screen must hear of a failure it missed or be sent on to the restart, and asking once its listeners run means nothing is emitted before they listen | permanent |
+| `ReviewPromptViewModel` is a `@Singleton` that keeps, for the whole process, whether Google Play's review flow was launched | the flow may run at most once per process (BRD D130, EC-REV-08), and the navigation host's dependencies, which build the other view models, are made per activity, so a rotation would forget it. It holds no activity or context | permanent |
+| The "Delete all data" screen asks its view model where the deletion stands with a `LaunchedEffect` on every composition, after its listeners, instead of `ScreenEnterObserver` | the view model is app-wide and the deletion outlives a rotation; a rebuilt screen must hear of a failure it missed, and asking once its listeners run means nothing is emitted before they listen. `DeleteAllDataObserver` beside the nav host asks too, so the restart does not need the screen | permanent |
 | The billing datasource has two implementations bound per build type: `PlayBillingDataSourceImpl` in `:datasource:implementation`, bound in `app/src/release`, and `SimulatedBillingDataSourceImpl` in `app/src/debug`. Both open what Google Play shows over the resumed activity, which `:app`'s `CurrentActivityHolder` (registered by `MigrelyApplication`) gives them. `:app`'s `PurchaseUpdatesWatcher`, also started by `MigrelyApplication`, collects `WatchPurchaseUpdatesUseCase` for as long as the app runs and signals the paywall and the Premium section to read the status again | a purchase sheet needs an activity, and features never see one; the simulator must never reach a release APK (BRD D113), and it shows its own sheets, which need the activity and app resources. Play's updates outside a sheet must be checked even when no screen shows, and a view model may not hold a flow use case (section 7, rule 6) | permanent |
 | `AttacksCsvMapper` (`:features:backup:data`) and `ReportDocumentMapper` and `ReportRecordsDomainMapper` (`:features:report:data`) hold the English words of the CSV and of the PDF | the CSV and the PDF are documents whose words must not change with the screen; resources are UI only | the app's first translation |
 | Further Konsist rule adaptations | recorded here when made | — |

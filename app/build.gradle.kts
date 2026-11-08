@@ -57,8 +57,8 @@ android {
         applicationId = "com.migrely.app"
         minSdk = libs.versions.minSdk.get().toInt()
         targetSdk = libs.versions.targetSdk.get().toInt()
-        versionCode = 7
-        versionName = "1.0.2"
+        versionCode = 8
+        versionName = "1.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "PLAY_LICENSE_KEY", "\"$playLicenseKey\"")
@@ -101,6 +101,9 @@ android {
         compose = true
         buildConfig = true
     }
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
+    }
     packaging {
         resources.pickFirsts += "META-INF/versions/9/OSGI-INF/MANIFEST.MF"
     }
@@ -136,8 +139,14 @@ dependencies {
     testImplementation(libs.test.junit)
     testImplementation(libs.test.konsist)
     testImplementation(libs.test.mockito.kotlin)
+    // Debug only: the Compose test rule needs the debug test manifest.
+    testDebugImplementation(platform(libs.compose.bom))
+    testDebugImplementation(libs.test.compose.ui.junit4)
+    testDebugImplementation(libs.test.robolectric)
     androidTestImplementation(libs.test.androidx.junit)
     androidTestImplementation(libs.test.androidx.espresso.core)
+    androidTestImplementation(platform(libs.compose.bom))
+    androidTestImplementation(libs.test.compose.ui.junit4)
     implementation(projects.features.home.ui)
     implementation(projects.features.home.presentation)
     implementation(projects.features.home.domain)
@@ -183,6 +192,12 @@ dependencies {
     implementation(projects.features.subscription.domain)
     implementation(projects.features.subscription.data)
     implementation(libs.androidx.work.runtime)
+    implementation(projects.features.review.ui)
+    implementation(projects.features.review.presentation)
+    implementation(projects.features.review.domain)
+    implementation(projects.features.review.data)
+    // Google's FakeReviewManager, for debug builds only (BRD D132).
+    debugImplementation(libs.play.review)
 }
 
 /**

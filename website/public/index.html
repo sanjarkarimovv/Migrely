@@ -21,14 +21,14 @@
 <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="preload" href="/assets/fonts/fraunces-600.woff" as="font" type="font/woff" crossorigin>
-<link rel="stylesheet" href="/assets/site.css">
-<script type="application/ld+json">{"@context": "https://schema.org", "@type": "MobileApplication", "name": "Migrely: Migraine Tracker", "operatingSystem": "Android", "applicationCategory": "HealthApplication", "url": "https://migrely.health/", "downloadUrl": "https://play.google.com/store/apps/details?id=com.migrely.app", "image": "https://migrely.health/assets/img/icon-512.png", "description": "A calm, private migraine diary: log in seconds, see your patterns, and share a report with your doctor.", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "publisher": {"@type": "Organization", "name": "Sulton UzDev"}}</script>
+<link rel="stylesheet" href="/assets/site.css?v=0cc5b80ce2">
+<script type="application/ld+json">{"@context": "https://schema.org", "@graph": [{"@type": "Organization", "@id": "https://migrely.health/#organization", "name": "Migrely", "url": "https://migrely.health/", "logo": "https://migrely.health/assets/img/icon-512.png", "email": "support@migrely.health", "contactPoint": {"@type": "ContactPoint", "contactType": "customer support", "email": "support@migrely.health"}, "sameAs": ["https://www.youtube.com/@migrely"]}, {"@type": "WebSite", "@id": "https://migrely.health/#website", "name": "Migrely", "url": "https://migrely.health/", "publisher": {"@id": "https://migrely.health/#organization"}}, {"@type": "MobileApplication", "name": "Migrely: Migraine Tracker", "operatingSystem": "Android", "applicationCategory": "HealthApplication", "url": "https://migrely.health/", "downloadUrl": "https://play.google.com/store/apps/details?id=com.migrely.app", "image": "https://migrely.health/assets/img/icon-512.png", "description": "A calm, private migraine diary: log in seconds, see your patterns, and share a report with your doctor.", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "publisher": {"@type": "Organization", "name": "Sulton UzDev"}}, {"@type": "VideoObject", "name": "Migrely in 30 seconds", "description": "Migrely's screens with sample data: logging a migraine in three taps, the month as a sky, the doctor report and Insights (Premium), and Android's permission list with no network access.", "thumbnailUrl": "https://migrely.health/assets/video/migrely-promo-v3-poster.jpg", "contentUrl": "https://migrely.health/assets/video/migrely-promo-v3.mp4", "uploadDate": "2026-10-30T12:00:00+05:00", "duration": "PT30S", "publisher": {"@id": "https://migrely.health/#organization"}}, {"@type": "FAQPage", "@id": "https://migrely.health/#questions", "url": "https://migrely.health/", "name": "Questions before you install", "inLanguage": "en", "isPartOf": {"@id": "https://migrely.health/#website"}, "publisher": {"@id": "https://migrely.health/#organization"}, "mainEntity": [{"@type": "Question", "name": "Is Migrely free?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Logging, your whole history, medications, reminders, export and every safety warning are free, for good. Premium is optional: it adds the doctor report and Insights, and its yearly plan starts with a 7-day free trial."}}, {"@type": "Question", "name": "Does Migrely need the internet?", "acceptedAnswer": {"@type": "Answer", "text": "No. Migrely has no internet permission, so Android stops it from connecting. Logging, your history, reminders and export all work in airplane mode. Only Premium (buying, checking and restoring it) and rating the app go through Google Play, which goes online."}}, {"@type": "Question", "name": "Is Migrely only for Android?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Migrely is for Android phones with Android 8 or later, and you install it from Google Play."}}, {"@type": "Question", "name": "Is my diary backed up?", "acceptedAnswer": {"@type": "Answer", "text": "If your phone's backup is on, Android backs up Migrely's entries to your Google account. On Android 9 and later Migrely allows this only end-to-end encrypted, which needs a screen lock; without one, the entries move only by direct transfer to a new phone. On Android 8 they are backed up like other apps' data. You can also export a backup file yourself in Settings, Your data."}}, {"@type": "Question", "name": "What does Premium add?", "acceptedAnswer": {"@type": "Answer", "text": "A PDF report for your doctor, with a summary, a calendar and every migraine and medication, and Insights: triggers often logged with your migraines, the days and hours they come, the days around your period and what helped. Safety warnings are never Premium."}}]}]}</script>
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
 <header class="top"><div class="wrap bar">
   <a class="brand" href="/"><img src="/favicon.svg" alt="" width="32" height="32"><span>Migrely</span></a>
-  <nav aria-label="Main"><a href="/" aria-current="page">Home</a><a href="/support/">Help</a><a href="/privacy/">Privacy</a></nav>
+  <nav aria-label="Main"><a href="/" aria-current="page">Home</a><a href="/about/">About</a><a href="/support/">Help</a><a href="/privacy/">Privacy</a></nav>
 </div></header>
 <main id="main">
 
@@ -38,10 +38,23 @@
     <h1>A calm, private migraine diary</h1>
     <p class="lead">Log a migraine in seconds, see your months as a quiet night sky, and bring a clear report to your
       doctor. No account, no internet, no ads.</p>
-    <div class="cta"><a class="play" href="https://play.google.com/store/apps/details?id=com.migrely.app"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M4 2.6v18.8c0 .5.5.8.9.6l16.3-9.4c.4-.2.4-.9 0-1.1L4.9 2.1c-.4-.2-.9.1-.9.5z"/></svg><span>Get it on Google Play</span></a><a class="quiet" href="/privacy/">How your data stays private</a></div>
+    <div class="cta"><a class="play" href="https://play.google.com/store/apps/details?id=com.migrely.app&amp;referrer=utm_source%3Dmigrely.health%26utm_medium%3Dwebsite%26utm_campaign%3Dhome"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M4 2.6v18.8c0 .5.5.8.9.6l16.3-9.4c.4-.2.4-.9 0-1.1L4.9 2.1c-.4-.2-.9.1-.9.5z"/></svg><span>Get it on Google Play</span></a><a class="quiet" href="/privacy/">How your data stays private</a></div>
   </div>
   <img class="hero-icon" src="/assets/img/icon-512.png" alt="The Migrely icon: a white calendar with a crescent moon on violet" width="256" height="256">
 </div></section>
+
+<section class="wrap block measure"><h2>What is Migrely?</h2><p>Migrely is a migraine and headache diary for Android. Log an attack in a few taps, see each month as a calm night sky, and get your medicine days counted. With no account and no internet permission, nothing you enter can leave your phone through the app. Logging is free; Premium adds a doctor report and Insights.</p></section>
+
+<section class="wrap block video"><h2 id="video-title">See Migrely in 30 seconds</h2>
+  <figure>
+    <video controls preload="none" playsinline width="1280" height="720" poster="/assets/video/migrely-promo-v3-poster.jpg"
+      aria-labelledby="video-title" aria-describedby="video-scenes"><source src="/assets/video/migrely-promo-v3.mp4"
+      type="video/mp4"></video>
+    <figcaption id="video-scenes"><p>Migrely's screens with sample data, with music and no speech. What each scene
+      shows and says:</p><ol><li>&quot;Log a migraine in 3 taps. Even in a dark room. We&#x27;ll keep the time while you rest.&quot; The taps are &quot;Migraine started&quot;, a severity, then &quot;Migraine ended&quot;.</li><li>&quot;Your month as a calm sky. Every day is drawn from what you logged.&quot; The month on the Home screen.</li><li>&quot;For your doctor, Premium. A report your doctor can read. A PDF with your summary, calendar, every migraine and medication.&quot; &quot;Create report&quot;, then the PDF&#x27;s pages.</li><li>&quot;Premium Insights. Know what comes with your migraines. Triggers often logged with your migraines, when they come, and what helped.&quot; Insights in the app.</li><li>&quot;Private by design. No internet permission. Android lists every app&#x27;s permissions. Migrely&#x27;s has no network access. No account. No ads. Check it yourself: migrely.health/privacy-check.&quot; Android&#x27;s list of Migrely&#x27;s permissions.</li><li>&quot;Migrely. A calm migraine diary. Free on Google Play. migrely.health&quot;</li></ol>
+      <p><a href="/assets/video/migrely-promo-v3.mp4">Download the video (MP4, 2 MB)</a></p></figcaption>
+  </figure>
+</section>
 
 <section class="shots" aria-label="Screens from Migrely"><div class="wrap strip"><figure><img src="/assets/img/01-log.webp" alt="Attack mode: Rest now, we will keep time" width="360" height="640" loading="lazy"></figure><figure><img src="/assets/img/02-sky.webp" alt="Your month as a calm night sky" width="360" height="640" loading="lazy"></figure><figure><img src="/assets/img/03-report.webp" alt="A clear report for your doctor" width="360" height="640" loading="lazy"></figure><figure><img src="/assets/img/04-insights.webp" alt="Triggers and patterns in your migraines" width="360" height="640" loading="lazy"></figure></div></section>
 
@@ -52,10 +65,14 @@
   <ul class="ticks">
     <li>Migrely has no internet access. Nothing you enter can leave your phone through the app.</li>
     <li>No account to make, no tracking, no ads.</li>
-    <li>Your entries stay on your phone, and in Android's own backup, end-to-end encrypted on Android 9 and later.</li>
+    <li>Your entries stay on your phone, and in Android's own backup if it is on: on Android 9 and later only
+      end-to-end encrypted, which needs a screen lock.</li>
     <li>Export a backup or a spreadsheet, or delete everything, whenever you like.</li>
   </ul>
+  <p><a class="quiet" href="/privacy-check/">Check it yourself in two minutes</a></p>
 </div></section>
+
+<section class="wrap block"><h2>Free guides</h2><div class="features"><article><h3><a href="/headache-diary/">Free headache diary</a></h3><p>What to write down and for how long, with a free printable 8-week template in A4 and US Letter.</p></article><article><h3><a href="/medication-overuse-headache/">Medication-overuse headache</a></h3><p>How headache and medicine days are counted, why those counts aren&#x27;t safe limits, and how it is treated.</p></article><article><h3><a href="/menstrual-migraine/">Menstrual migraine</a></h3><p>The window around your period that doctors use, how long to track it, and keeping period data private.</p></article><article><h3><a href="/va-migraine-log/">Migraine log for a VA claim</a></h3><p>What to record about each attack, and where veterans get free help. Migrely is not affiliated with VA.</p></article><article><h3><a href="/compare/">Compare migraine apps</a></h3><p>Android migraine diaries side by side, on facts from each app&#x27;s own listing, website and policy.</p></article></div></section>
 
 <section class="wrap block two">
   <div><h2>Free, and Premium when you want more</h2>
@@ -66,13 +83,18 @@
       helps you keep a record and talk to your doctor.</p></div>
 </section>
 
-<section class="wrap block final"><h2>Start your diary today</h2><a class="play" href="https://play.google.com/store/apps/details?id=com.migrely.app"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M4 2.6v18.8c0 .5.5.8.9.6l16.3-9.4c.4-.2.4-.9 0-1.1L4.9 2.1c-.4-.2-.9.1-.9.5z"/></svg><span>Get it on Google Play</span></a></section>
+<section class="wrap block measure faq"><h2>Questions before you install</h2><h3>Is Migrely free?</h3><p>Yes. Logging, your whole history, medications, reminders, export and every safety warning are free, for good. Premium is optional: it adds the doctor report and Insights, and its yearly plan starts with a 7-day free trial.</p><h3>Does Migrely need the internet?</h3><p>No. Migrely has no internet permission, so Android stops it from connecting. Logging, your history, reminders and export all work in airplane mode. Only Premium (buying, checking and restoring it) and rating the app go through Google Play, which goes online.</p><h3>Is Migrely only for Android?</h3><p>Yes. Migrely is for Android phones with Android 8 or later, and you install it from Google Play.</p><h3>Is my diary backed up?</h3><p>If your phone&#x27;s backup is on, Android backs up Migrely&#x27;s entries to your Google account. On Android 9 and later Migrely allows this only end-to-end encrypted, which needs a screen lock; without one, the entries move only by direct transfer to a new phone. On Android 8 they are backed up like other apps&#x27; data. You can also export a backup file yourself in Settings, Your data.</p><h3>What does Premium add?</h3><p>A PDF report for your doctor, with a summary, a calendar and every migraine and medication, and Insights: triggers often logged with your migraines, the days and hours they come, the days around your period and what helped. Safety warnings are never Premium.</p>
+  <p>More answers, from moving to a new phone to cancelling, are on the <a href="/support/">help page</a>.</p></section>
+
+<section class="wrap block final"><h2>Start your diary today</h2><a class="play" href="https://play.google.com/store/apps/details?id=com.migrely.app&amp;referrer=utm_source%3Dmigrely.health%26utm_medium%3Dwebsite%26utm_campaign%3Dhome"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M4 2.6v18.8c0 .5.5.8.9.6l16.3-9.4c.4-.2.4-.9 0-1.1L4.9 2.1c-.4-.2-.9.1-.9.5z"/></svg><span>Get it on Google Play</span></a></section>
 
 </main>
 <footer class="foot"><div class="wrap">
   <p>Migrely is a diary. It is not a medical device and does not diagnose, treat or prevent any condition. Talk to a doctor about your headaches.</p>
-  <p class="links"><a href="/support/">Help</a><a href="/privacy/">Privacy policy</a><a href="/delete-data/">Delete your data</a>
-    <a href="https://play.google.com/store/apps/details?id=com.migrely.app">Google Play</a></p>
+  <nav class="links" aria-label="Guides"><a href="/headache-diary/">Free headache diary</a><a href="/medication-overuse-headache/">Medication-overuse headache</a><a href="/menstrual-migraine/">Menstrual migraine</a><a href="/va-migraine-log/">Migraine log for a VA claim</a><a href="/compare/">Compare migraine apps</a></nav>
+  <p class="links"><a href="/support/">Help</a><a href="/about/">About</a><a href="/privacy/">Privacy policy</a>
+    <a href="/privacy-check/">Check our privacy</a><a href="/delete-data/">Delete your data</a>
+    <a href="https://play.google.com/store/apps/details?id=com.migrely.app&amp;referrer=utm_source%3Dmigrely.health%26utm_medium%3Dwebsite%26utm_campaign%3Dhome">Google Play</a><a href="https://www.youtube.com/@migrely" rel="me">YouTube</a></p>
   <p>© 2026 Migrely, published by Sulton UzDev · <a href="mailto:support@migrely.health">support@migrely.health</a></p>
 </div></footer>
 </body>

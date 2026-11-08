@@ -16,12 +16,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
@@ -113,7 +115,9 @@ class DateRangePickerScreenTest {
     fun theRangeGivenIsKeptByDone() {
         showPicker(start = OCTOBER_5, end = OCTOBER_13, lastDate = OCTOBER_13)
 
-        done().performClick()
+        // Its click action: a touch would not answer here at any delay. A touch in this test runs
+        // on the test's clock, and the dialog reads SystemClock, so it is always inside the wait.
+        done().performSemanticsAction(SemanticsActions.OnClick)
 
         assertEquals(OCTOBER_5 to OCTOBER_13, confirmed)
     }

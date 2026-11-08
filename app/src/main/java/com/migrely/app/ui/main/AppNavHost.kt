@@ -3,8 +3,6 @@ package com.migrely.app.ui.main
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
 import com.migrely.app.attack.ui.view.AddPastAttack
 import com.migrely.app.attack.ui.view.AttackDetails
@@ -23,8 +21,10 @@ import com.migrely.app.onboarding.ui.view.Onboarding
 import com.migrely.app.reminders.ui.view.DailyReminderOffer
 import com.migrely.app.reminders.ui.view.Reminders
 import com.migrely.app.report.ui.view.Report
+import com.migrely.app.review.ui.view.ReviewPrompt
 import com.migrely.app.settings.ui.view.AboutMigrely
 import com.migrely.app.settings.ui.view.DeleteAllData
+import com.migrely.app.settings.ui.view.DeleteAllDataObserver
 import com.migrely.app.settings.ui.view.Licences
 import com.migrely.app.settings.ui.view.Privacy
 import com.migrely.app.settings.ui.view.Settings
@@ -65,12 +65,13 @@ fun AppNavHostDependencies.AppNavHost(
     startDestination: Any,
     modifier: Modifier = Modifier
 ) {
-    NavHost(
+    deleteAllDataDependencies.DeleteAllDataObserver(navController)
+    ScreenNavHost(
         navController = navController,
         startDestination = startDestination,
         modifier = modifier
     ) {
-        composable<Home> { entry ->
+        screen<Home>(navController) { entry ->
             homeDependencies.Home(
                 navController,
                 startAttackRequested = entry.toRoute<Home>().startAttack,
@@ -86,10 +87,12 @@ fun AppNavHostDependencies.AppNavHost(
                 trialBanner = { refreshKey -> trialBannerDependencies.TrialBanner(refreshKey) },
                 paywallTrigger = { refreshKey ->
                     paywallTriggerDependencies.PaywallTrigger(navController, refreshKey)
-                }
+                },
+                // And the review feature's request for a rating (BRD D130, D132).
+                reviewPrompt = { refreshKey -> reviewPromptDependencies.ReviewPrompt(refreshKey) }
             )
         }
-        composable<AttackDetails> { entry ->
+        screen<AttackDetails>(navController) { entry ->
             val route = entry.toRoute<AttackDetails>()
             attackDetailsDependencies.AttackDetails(
                 attackId = route.attackId,
@@ -97,13 +100,13 @@ fun AppNavHostDependencies.AppNavHost(
                 navController = navController
             )
         }
-        composable<AddPastAttack> { entry ->
+        screen<AddPastAttack>(navController) { entry ->
             addPastAttackDependencies.AddPastAttack(
                 navController,
                 day = entry.toRoute<AddPastAttack>().epochDay?.let(LocalDate::ofEpochDay)
             )
         }
-        composable<LogMedication> { entry ->
+        screen<LogMedication>(navController) { entry ->
             val route = entry.toRoute<LogMedication>()
             logMedicationDependencies.LogMedication(
                 navController,
@@ -111,19 +114,19 @@ fun AppNavHostDependencies.AppNavHost(
                 darkRoom = route.darkRoom
             )
         }
-        composable<Medications> {
+        screen<Medications>(navController) {
             medicationsDependencies.Medications(navController)
         }
-        composable<EditMedication> { entry ->
+        screen<EditMedication>(navController) { entry ->
             editMedicationDependencies.EditMedication(
                 navController,
                 medicationId = entry.toRoute<EditMedication>().medicationId
             )
         }
-        composable<Reminders> {
+        screen<Reminders>(navController) {
             remindersDependencies.Reminders(navController)
         }
-        composable<Onboarding> {
+        screen<Onboarding>(navController) {
             onboardingDependencies.Onboarding(
                 navController,
                 // Onboarding offers the reminders feature's daily reminder without knowing it (BRD D80).
@@ -132,47 +135,47 @@ fun AppNavHostDependencies.AppNavHost(
                 }
             )
         }
-        composable<Report> {
+        screen<Report>(navController) {
             reportDependencies.Report(navController)
         }
-        composable<Insights> {
+        screen<Insights>(navController) {
             insightsDependencies.Insights(navController)
         }
-        composable<Paywall> { entry ->
+        screen<Paywall>(navController) { entry ->
             paywallDependencies.Paywall(
                 navController,
                 context = paywallOriginUiMapper.toUi(entry.toRoute<Paywall>().origin)
             )
         }
-        composable<PaywallGate> {
+        screen<PaywallGate>(navController) {
             paywallGateDependencies.PaywallGate(navController)
         }
-        composable<Settings> {
+        screen<Settings>(navController) {
             settingsDependencies.Settings(
                 navController,
                 // Settings shows the subscription's Premium section first (BRD D112).
                 premiumSection = { premiumSectionDependencies.PremiumSection(navController) }
             )
         }
-        composable<WarningSigns> {
+        screen<WarningSigns>(navController) {
             settingsPageDependencies.WarningSigns(navController)
         }
-        composable<AboutMigrely> {
+        screen<AboutMigrely>(navController) {
             settingsPageDependencies.AboutMigrely(navController)
         }
-        composable<Privacy> {
+        screen<Privacy>(navController) {
             settingsPageDependencies.Privacy(navController)
         }
-        composable<Licences> {
+        screen<Licences>(navController) {
             settingsPageDependencies.Licences(navController)
         }
-        composable<DeleteAllData> {
-            deleteAllDataDependencies.DeleteAllData(navController)
+        screen<DeleteAllData>(navController) {
+            deleteAllDataDependencies.DeleteAllData()
         }
-        composable<YourData> {
+        screen<YourData>(navController) {
             yourDataDependencies.YourData(navController)
         }
-        composable<History> { entry ->
+        screen<History>(navController) { entry ->
             historyDependencies.History(
                 navController,
                 initialDay = entry.toRoute<History>().epochDay?.let(LocalDate::ofEpochDay),

@@ -23,8 +23,8 @@
 | Screen state | Compose UI test under Robolectric on `*Contents` | QA | gate | **none** (0 of 32 screens) | audit C3, after C1 adds the test dependencies |
 | Visual | Roborazzi goldens of the `@Preview`s, `en-XA`, `ar-XB` | QA | gate | **none**; D42 promised it as a QA change | audit C4, after C1 |
 | Instrumented | `connectedDebugAndroidTest`: DAO SQL, Room migrations, design system | dev; QA on each candidate | when a datasource changes; Go/No-Go line 1b | 138 tests, run by QA on a candidate since 2026-10-27 | also in CI (audit C5) |
-| End-to-end | Maestro flows with `# Covers:` lines | QA | per QA change (D63); full regression per candidate | 267 of 520 scenarios (51%) | every high-risk capability at 80% or more (QA 13d) |
-| Device scenarios | `qa/device_scenarios.sh`: clock, zone, kill, keyboard, files, billing states | QA | per candidate | 54 scenarios: 52 by default, plus `upgrade` and `release_apk` on demand | grows with 13c and 13d |
+| End-to-end | Maestro flows with `# Covers:` lines | QA | per QA change (D63); full regression per candidate | 274 of 654 scenarios (42%) | every high-risk capability at 80% or more (QA 13d) |
+| Device scenarios | `qa/device_scenarios.sh`: clock, zone, kill, keyboard, files, billing states | QA | per candidate | 55 scenarios: 53 by default, plus `upgrade` and `release_apk` on demand | grows with 13c and 13d |
 | Device audits | a11y audit, monkey, permission audit, R8 APK, backup rules | QA | per candidate | the a11y tour has 22 states; the 12 that QA 13c adds are not yet run on a build | every screen (D203) |
 | Split APKs | `qa/split_apks.sh` on the bundle (D204) | QA | per candidate | from build 4 | as today |
 | Exploratory | charters and sweeps on the candidate | QA | per candidate | since build 4 | as today |
@@ -43,13 +43,13 @@
 | Capability | E2E | Unit | Not checked end to end | User risk | Follow-up |
 |---|---|---|---|---|---|
 | attack-logging | 21/36 (58%) | attack | launcher shortcut; first and later intensity; attack across midnight and a daylight-saving change; storage full | high | build 4 sweep; QA 13d |
-| attack-details | 6/41 (15%) | attack | time correction and its limits; overlaps and merge; pain entries outside new times; the safety card; delete with undo; medications in the details | high | build 4 sweep; QA 13d |
+| attack-details | 6/46 (13%) | attack | time correction and its limits; overlaps and merge; pain entries outside new times; the safety card; delete with undo; medications in the details; the fields at their caps (#136, D152) sit in instrumented and Robolectric tests, walked by hand on API 36 and 26, with no flow | high | build 4 sweep; QA 13d |
 | past-attacks | 7/30 (23%) | attack | defaults; past-only times; overlaps and merge of three; long merged notes; double tap; rotation; add for a chosen day | high | build 4 sweep; QA 13d |
 | attack-mode | 5/14 (36%) | home | elapsed time; medication taken; transitions; haptics; screen reader and largest font | high | build 4 sweep; QA 13d |
 | attack-history | 19/30 (63%) | history | newest first; attack across two months; time moved to another day; screen reader | high | build 4 sweep; QA 13d |
 | medication-intakes | 4/14 (29%) | medication | logging during an attack; a future time; links to their attack across undo, merge and zones; rotation keeps the time | high | build 4 sweep; QA 13d |
-| medication-overuse | 11/22 (50%) | medication | two categories in one day; "Not sure"; preventives; the doctor warning; several categories; "Got it" over 30 days | high (safety warning) | sweep 2 on build 4; QA 13d |
-| medication-list | 8/11 (73%) | medication | rename; recently used first; limit reached | medium | QA 13d |
+| medication-overuse | 17/29 (59%) | medication | two categories in one day; "Not sure"; preventives; the doctor warning; several categories; "Got it" over 30 days; a reached row spoken by TalkBack (by hand, no flow, D151) | high (safety warning) | sweep 2 on build 4; QA 13d; the row and line pairing is held in both directions by `qa/overuse_rows.py` (`med_overuse`, `overuse_copy`) |
+| medication-list | 8/20 (40%) | medication | rename; recently used first; limit reached; the fields at their caps (#136, D152) sit in instrumented and Robolectric tests, walked by hand on API 36 and 26, with no flow | medium | QA 13d |
 | medication-effect | 10/13 (77%) | medication | answer later; screen reader; largest font | medium | a11y audit (D203) |
 | data-backup | 13/17 (76%) | backup | Replace after a deletion and during an undo; Android backup to a new phone | high (data loss) | sweep 2; the new-phone case needs a phone with a Google backup |
 | in-app-messages | 7/24 (29%) | home, history | messages in attack mode and landscape; kinds by shape; undo window with reduce motion; durations; storage full; rotation | high (undo of a delete) | sweep 2; QA 13d |
@@ -57,13 +57,15 @@
 | month-sky | 12/36 (33%) | history, attackdays | the day rules: worst attack, unrecorded pain, medication-only and preventive days, period days | medium | unit tests hold the rules (attackdays); sweep 2 samples them; screenshots in C4 |
 | month-stats | 17/20 (85%) | history | the current month; progress message edge cases | medium | QA 13d |
 | day-markers | 18/19 (95%) | home, history | the disabled switch read by a screen reader | medium | a11y audit (D203); QA 13d |
-| custom-tags | 2/7 (29%) | attack | name too long or empty; archived match; 100 limit; remove a used tag | medium | sweep 2; QA 13d |
+| custom-tags | 2/11 (18%) | attack | name too long or empty; archived match; 100 limit; remove a used tag; the fields at their caps (#136, D152) sit in instrumented and Robolectric tests, walked by hand on API 36 and 26, with no flow | medium | sweep 2; QA 13d |
 | app-shell | 5/16 (31%) | app | oldest Android install and a device below it; rotation on home; light/dark system; network traffic on launch; English dates on ru/en phones | high (data leaving the phone) | release_apk and permission audit hold the network promise; split APKs (D204) hold the language rules; QA 13d |
 | app-settings | 10/10 (100%) | settings | — | medium | — |
 | onboarding | 9/9 (100%) | onboarding | — | medium | — |
 | reminders | 12/13 (92%) | reminders | permission refused during onboarding | medium | QA 13d |
-| subscription | 20/21 (95%) | subscription | grace period; "asked again at most once an hour" with no products (unit tests only) | high (money) | the grace period needs Play itself |
-| doctor-report | 12/12 (100%) | report | — | high (shared with a doctor) | — |
+| subscription | 20/24 (83%) | subscription | grace period; "asked again at most once an hour" with no products (unit tests only); a purchase completed while the app was closed (#105): retested by hand, no scenario yet | high (money) | the grace period needs Play itself; #105 as a device scenario in QA 13d |
+| doctor-report | 13/16 (81%) | report | the full-screen custom range (#102, D127): retested by hand on develop 7f65d0e5, no flow yet | high (shared with a doctor) | QA 13d |
+| in-app-review | 0/18 (0%) | review | every rule: after the 3rd migraine, never in an attack, never within 3 days of a paywall or after a crash, at most once per 120 days and 3 times in all (EC-REV-01…12); the debug build uses Google's FakeReviewManager, so only `review_request_count` and `review_last_requested` can be read | medium (a store prompt at a bad moment) | device scenarios in the 1.1.0 test change; the real card only on an internal-testing install |
+| website | 0/84 (0%) | — | the migrely.health pages and their claims (not part of the app) | medium (trust and claims) | a link and content check in the website's own pipeline; not an Android E2E flow |
 | trigger-insights | 8/8 (100%) | insights, patterns | — | medium | — |
 | app-identity | 0/3 (0%) | app | name, icon and package checked by hand at each release | low | a release-checklist line in QA 13d |
 | brand-typography | 0/5 (0%) | designsystem | fonts and type scale | low | audit C4 (visual) |

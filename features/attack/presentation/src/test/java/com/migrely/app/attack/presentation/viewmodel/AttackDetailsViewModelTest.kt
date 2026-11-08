@@ -85,7 +85,9 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -386,12 +388,121 @@ class AttackDetailsViewModelTest :
         )
     }
 
+    /** Every message [action] shows, in order, once the collector has run. */
+    private fun TestScope.messagesOf(
+        action: () -> Unit
+    ): List<AttackDetailsPresentationNotification> {
+        val messages = mutableListOf<AttackDetailsPresentationNotification>()
+        val collector = launch(start = UNDISPATCHED) {
+            classUnderTest.notification.toList(messages)
+        }
+        action()
+        runCurrent()
+        collector.cancel()
+        return messages
+    }
+
+    private fun TestScope.messagesWhenAdding10(
+        result: AddIntensityPointResultDomainModel,
+        at: Instant = START.plusSeconds(60)
+    ): List<AttackDetailsPresentationNotification> {
+        addIntensityPointUseCase.givenSuccessfulExecution(
+            AddIntensityPointRequestDomainModel("a", IntensityPointDomainModel(at, 10)),
+            result
+        )
+        givenDetails()
+        return messagesOf {
+            classUnderTest.onAddPointAction("a", IntensityPointPresentationModel(at, 10))
+        }
+    }
+
+    @Test
+    fun `Given a first 10 saved then the card shows, with no other message`() = runTest {
+        assertEquals(
+            listOf(AttackDetailsPresentationNotification.FirstMaximumRecorded),
+            messagesWhenAdding10(AddIntensityPointResultDomainModel.Added(firstMaximum = true))
+        )
+    }
+
+    @Test
+    fun `Given a first 10 hits a full disk then the card shows, then storage full`() = runTest {
+        assertEquals(
+            listOf(
+                AttackDetailsPresentationNotification.FirstMaximumRecorded,
+                AttackDetailsPresentationNotification.StorageFull
+            ),
+            messagesWhenAdding10(
+                AddIntensityPointResultDomainModel.StorageFull(firstMaximum = true)
+            )
+        )
+    }
+
+    @Test
+    fun `Given a first 10 fails to save then the card shows, then the failure`() = runTest {
+        assertEquals(
+            listOf(
+                AttackDetailsPresentationNotification.FirstMaximumRecorded,
+                AttackDetailsPresentationNotification.SomethingWentWrong
+            ),
+            messagesWhenAdding10(AddIntensityPointResultDomainModel.Failed(firstMaximum = true))
+        )
+    }
+
+    @Test
+    fun `Given a first 10 outside the attack then the card shows, then the rejection`() = runTest {
+        assertEquals(
+            listOf(
+                AttackDetailsPresentationNotification.FirstMaximumRecorded,
+                AttackDetailsPresentationNotification.PointRejected(
+                    PointRejectionPresentationModel.OutsideAttack
+                )
+            ),
+            messagesWhenAdding10(
+                AddIntensityPointResultDomainModel.OutsideAttack(firstMaximum = true),
+                END.plusSeconds(60)
+            )
+        )
+    }
+
+    @Test
+    fun `Given a first 10 in the future then the card shows, then the rejection`() = runTest {
+        assertEquals(
+            listOf(
+                AttackDetailsPresentationNotification.FirstMaximumRecorded,
+                AttackDetailsPresentationNotification.PointRejected(
+                    PointRejectionPresentationModel.InFuture
+                )
+            ),
+            messagesWhenAdding10(AddIntensityPointResultDomainModel.InFuture(firstMaximum = true))
+        )
+    }
+
+    @Test
+    fun `Given a later 10 hits a full disk then only storage full shows`() = runTest {
+        assertEquals(
+            listOf(AttackDetailsPresentationNotification.StorageFull),
+            messagesWhenAdding10(
+                AddIntensityPointResultDomainModel.StorageFull(firstMaximum = false)
+            )
+        )
+    }
+
+    @Test
+    fun `Given the attack is gone when adding a 10 then no card`() = runTest {
+        val state = nextViewState()
+
+        val messages = messagesWhenAdding10(AddIntensityPointResultDomainModel.NotFound)
+
+        assertEquals(emptyList<AttackDetailsPresentationNotification>(), messages)
+        assertEquals(AttackDetailsViewState.NotFound, state.await())
+    }
+
     @Test
     fun `Given a time outside the attack when adding a point then rejects it`() = runTest {
         val at = END.plusSeconds(60)
         addIntensityPointUseCase.givenSuccessfulExecution(
             AddIntensityPointRequestDomainModel("a", IntensityPointDomainModel(at, 5)),
-            AddIntensityPointResultDomainModel.OutsideAttack
+            AddIntensityPointResultDomainModel.OutsideAttack(firstMaximum = false)
         )
         val notification = nextNotification()
 

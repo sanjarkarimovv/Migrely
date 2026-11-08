@@ -12,6 +12,71 @@ python3 website/build.py
 This writes `website/public/`. It needs Pillow and `cwebp`. The images come from `docs/release/store/` and
 `docs/release/icon/`.
 
+- **The permission list on `/privacy-check/`** must match what the app ships (BRD D134, EC-WEB-01). The build compares
+  it with `app/build/reports/permissions/release.txt` and stops when they differ, so run
+  `./gradlew :app:checkReleasePermissions` first. Without the report it prints a note and skips the check.
+- **`website/lastmod.json`** keeps each page's hash and the date its HTML last changed. The sitemap's `lastmod` comes
+  from it (BRD D136). The build updates it, and it is committed with the site.
+- **The headache diary template** (`/headache-diary/*.pdf`, BRD D139, D140) is made by
+  `python3 website/make_diary_pdf.py`, which prints it with Google Chrome as A4 and US Letter (macOS path; set `CHROME`
+  for another) and checks that each PDF has 6 pages. Run it when the template changes and commit the PDFs. `build.py`
+  only checks that they exist. When the page's facts are checked again, update `DIARY_REVIEWED` in `build.py`, which
+  dates both the page and the PDFs' footer, and remake the PDFs.
+- **Medical pages** (`/headache-diary/`, `/medication-overuse-headache/`, `/menstrual-migraine/`) share
+  `urgent_help()`, `reviewed_block()` and `medical_ld()`. Each has its own review date (`DIARY_REVIEWED`,
+  `MOH_REVIEWED`, `MENSTRUAL_REVIEWED`): update it when the page's facts are checked against its sources again.
+  Their facts come from fact packs in `marketing/research/2026-11-04-*-facts.md` (outside the repo). Each claim there
+  has its source and an exact quote, so re-read those sources before moving a date (BRD D149).
+  - Every question heading (H2 or H3) on these pages opens with a 40- to 60-word direct answer;
+    `check_direct_answers()` stops the build otherwise. The app and privacy sections and "Sources" are exempt
+    (`ANSWER_EXEMPT`).
+  - A figure from one study or review names it in the sentence (EC-WEB-24). Where sources disagree on how to stop a
+    medicine, the page leaves it to the doctor (EC-WEB-23).
+  - `urgent_help()` names every sign in the NHS migraine page's "Call 999" list: check that list again when you
+    review any medical page.
+- **VA page** (`/va-migraine-log/`) uses `urgent_help()` with the Veterans Crisis Line, `reviewed_block()` with
+  `VA_DISCLAIMER`, and a `WebPage` JSON-LD. It quotes 38 CFR 4.124a (DC 8100), VA's Headaches DBQ and VA's
+  representative FAQ word for word. Before updating `VA_REVIEWED`, re-read all three and check the Federal Register
+  for a final rule under RIN 2900-AQ73.
+- **Comparison** (`/compare/`, BRD D144) is data in `COMPARE_APPS`: only facts read from each app's own listing,
+  permission list, Data safety, website or policy. A fact that can't be verified gets no row. Before updating
+  `COMPARE_REVIEWED`, re-read every source on the cards; prices and Data safety change often.
+- **Guides** (BRD D145) are listed once in `GUIDES`: the home page's "Free guides" cards and every footer's "Guides"
+  navigation come from it. Add a new guide there, with a summary that claims nothing the page doesn't. The build stops
+  when a sitemap page can't be reached by following links from the home page (EC-WEB-19).
+- **Promo video** (BRD D146): `/assets/video/` holds the home page's 30-second cut and its poster, named in
+  `PROMO_VIDEO`. It plays from the site itself: never embed YouTube, which would load Google's scripts and cookies. The
+  player has no autoplay and `preload="none"`, and `PROMO_SCENES` is its text alternative. The video is made in
+  `marketing/video/promo-v3` (outside the repo) from real app screens. `/assets/` is cached for a year, so a new cut
+  gets a new file name (EC-WEB-20). Update `PROMO_VIDEO`, `PROMO_UPLOADED` and `PROMO_SCENES` with it. The build stops
+  when either file is missing. `_headers` allows `media-src 'self'` for it.
+- **CSP and PDFs:** `_headers` detaches the CSP from the two PDFs so browsers' PDF viewers can open them. After a
+  deploy, open both on a phone and in Chrome, Safari and Firefox.
+- **Stylesheet:** pages link `site.css?v=<hash>`, because `/assets/` is cached for a year. The hash changes with the
+  file.
+- **Google Play links** carry `utm_source=migrely.health`, `utm_medium=website` and `utm_campaign=<page>` inside
+  `referrer` (BRD D137). Play Console shows them under the store listing's acquisition report, as UTM source and
+  campaign. The link in `/llms.txt` uses the campaign `llms`.
+- **Answers** (BRD D147): `WHAT_IS` is the home page's 40–60-word definition and `/llms.txt`'s summary. `HOME_FAQ`
+  holds the questions asked before installing (home page) and `FAQ` those asked after (`/support/`). Each answer
+  starts with the direct answer, and both lists are published as `FAQPage`. A question may sit in only one list, or the
+  build stops (EC-WEB-21). `PREMIUM_PRICES` feeds `/compare/`, `/support/` and `/llms.txt`.
+- **Structured data and breadcrumbs** (BRD D147):
+  - every inner page gets its JSON-LD from `page_ld()`: the `Organization`, the page node and its `BreadcrumbList`;
+  - the visible "Home › page" trail and the `BreadcrumbList` both take the page's name from `GUIDES` or `TRUST_PAGES`;
+  - `CHECK_STEPS` and `DELETE_STEPS` are both the visible steps and the `HowTo`.
+  - Add `reviewedBy`, a named `author` or `aggregateRating` only when the page shows the same reviewer, person or real
+    Play rating.
+- **Official profiles** (BRD D150): `SOCIAL_PROFILES` (name, URL) feeds the `Organization`'s `sameAs`, a plain footer
+  link with `rel="me"` and `/llms.txt`. Add a profile only when it is Migrely's own, public and presented as Migrely.
+  An empty list removes all three.
+- **`/llms.txt`** (llmstxt.org) is built from `WHAT_IS`, the app's facts, `GUIDES` and `TRUST_PAGES`. The build stops
+  when a sitemap page is missing from it, so a new trust page goes into `TRUST_PAGES`.
+- **Android version:** the site says "Android 8 and later" (`MIN_SDK`, `MIN_ANDROID`). The build stops when
+  `minSdk` in `gradle/libs.versions.toml` differs (EC-WEB-22).
+- **Languages** (BRD D148): the site is in English, like the app. A language gets its own pages, with `hreflang`, only
+  once the app ships in that language and a native-speaking clinician has checked the medical text.
+
 ## How it is deployed
 
 Live since 26 October 2026:
@@ -50,14 +115,21 @@ Live since 26 October 2026:
 7. **DMARC:** add a TXT record `_dmarc` with `v=DMARC1; p=reject; sp=reject; adkim=s; aspf=s;`. The domain receives mail
    only, so nobody may send as it.
 8. **Check:**
-   - `https://migrely.health`, `/privacy/`, `/support/` and `/delete-data/` answer 200, and a missing page answers 404;
+   - `https://migrely.health`, `/about/`, `/privacy-check/`, `/headache-diary/` (and its two PDFs),
+     `/medication-overuse-headache/`, `/menstrual-migraine/`, `/va-migraine-log/`, `/compare/`, `/privacy/`,
+     `/support/` and `/delete-data/` answer 200,
+     and a missing page answers 404;
    - `www` and `http` redirect with 301;
    - the response headers include the `Content-Security-Policy` from `_headers`;
    - the pages show `support@` and `privacy@` as plain addresses, with no `email-decode` script;
    - an email from another mailbox to each address arrives.
 
-To update the site, run `python3 website/build.py`, zip `website/public` again with its files at the root, then
-Deployments → **Create deployment** → upload.
+To update the site:
+
+1. Run `./gradlew :app:checkReleasePermissions`, then `python3 website/build.py`.
+2. Commit `website/public` and `website/lastmod.json`.
+3. Zip `website/public` again with its files at the root.
+4. Deployments → **Create deployment** → upload.
 
 ## Google Play
 

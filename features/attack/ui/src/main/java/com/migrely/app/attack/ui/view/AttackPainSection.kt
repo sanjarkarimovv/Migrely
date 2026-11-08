@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -38,6 +37,7 @@ import com.migrely.app.attack.ui.R
 import com.migrely.app.attack.ui.mapper.AttackTimeUiFormatter
 import com.migrely.app.attack.ui.model.AttackDetailsUiModel
 import com.migrely.app.attack.ui.model.IntensityPointUiModel
+import com.migrely.app.designsystem.dialog.MigrelyAlertDialog
 import com.migrely.app.designsystem.icon.MigrelyIcons
 import com.migrely.app.designsystem.picker.MigrelyDateTimePicker
 import kotlin.math.roundToInt
@@ -176,7 +176,7 @@ private fun AddPainDialog(
         details.startEpochMillis,
         details.startZoneId
     )
-    AlertDialog(
+    MigrelyAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.pain_dialog_title)) },
         text = {

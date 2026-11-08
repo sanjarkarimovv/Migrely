@@ -10,7 +10,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DatePickerState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -33,7 +32,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
+import com.migrely.app.designsystem.dialog.MigrelyDatePickerDialog
+import com.migrely.app.designsystem.dialog.MigrelyDialog
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
@@ -120,7 +120,7 @@ private fun DateStep(
             override fun isSelectableYear(year: Int) = year in firstDate.year..lastDate.year
         }
     )
-    DatePickerDialog(
+    MigrelyDatePickerDialog(
         onDismissRequest = onDismiss,
         confirmButton = {
             TextButton(
@@ -178,7 +178,7 @@ private fun TimeStep(
     // The picker works in whole minutes while the bounds may carry seconds: the minute that holds the lower bound is
     // allowed and the result is clamped to the exact bound, so a boundary can always be picked.
     val inRange = pickedEpochMillis in pickableRange(range)
-    Dialog(onDismissRequest = onDismiss) {
+    MigrelyDialog(onDismissRequest = onDismiss) {
         Surface(
             shape = RoundedCornerShape(28.dp),
             color = MaterialTheme.colorScheme.surfaceContainerHigh

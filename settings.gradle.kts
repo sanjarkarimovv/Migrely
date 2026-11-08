@@ -137,3 +137,12 @@ setOf(
 ).forEach { module ->
     include(":features:subscription:$module")
 }
+
+setOf(
+    "ui",
+    "presentation",
+    "domain",
+    "data"
+).forEach { module ->
+    include(":features:review:$module")
+}

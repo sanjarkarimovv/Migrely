@@ -90,6 +90,12 @@ private const val DAYS_PER_MONTH = 30
 private val CONTENT_MAX_WIDTH = 600.dp
 private val CARD_SHAPE = RoundedCornerShape(16.dp)
 
+/** With the host's own 8 dp, a message's top edge lies under the 56 dp Close row (BRD D158). */
+private val MESSAGE_BELOW_CLOSE_ROW = 48.dp
+
+/** Past the message's entry and exit; a person retrying a purchase is whom a longer guard blocks. */
+private const val MESSAGE_GUARD_MILLIS = 400L
+
 /** Callbacks from the paywall. */
 data class PaywallActions(
     val onClose: () -> Unit,
@@ -105,10 +111,11 @@ data class PaywallActions(
 private data class ShownMessage(val message: PaywallMessageUiModel, val number: Int)
 
 /**
- * The paywall (BRD §7.3, SUB-F1, D109): a headline for [context], what Premium adds, the three
- * products at Google Play's prices with yearly chosen first, a button that names the action, the
- * terms, "Restore purchases", and a close button from the first frame. Back closes it as the close
- * button does. Its outcomes arrive only while it is shown, and one it missed is asked for again.
+ * The paywall (BRD §7.3, SUB-F1, D109, D153): a headline for [context], the three products at
+ * Google Play's prices with yearly chosen first, a button that names the action, the terms, what a
+ * purchase depends on, "Restore purchases", what Premium adds, and a close button from the first
+ * frame. Back closes it as the close button does. Its outcomes arrive only while it is shown, and
+ * one it missed is asked for again.
  */
 @Composable
 fun PaywallDependencies.Paywall(
@@ -167,6 +174,8 @@ fun PaywallDependencies.Paywall(
             onClose = onClose,
             onChoose = { chosen = it },
             onBuy = { product ->
+                // An older message is about an earlier tap, and must not outlast this one.
+                message = null
                 paywallViewModel.onBuyAction(
                     presentationContext,
                     paywallProductPresentationMapper.toPresentation(product)
@@ -178,13 +187,20 @@ fun PaywallDependencies.Paywall(
             onContinue = { paywallViewModel.onContinueAction(presentationContext) }
         ),
         messages = {
-            MigrelySnackbarHost(message = message, reduceMotion = rememberReduceMotion()) { shown ->
+            MigrelySnackbarHost(
+                message = message,
+                reduceMotion = rememberReduceMotion(),
+                topOffset = MESSAGE_BELOW_CLOSE_ROW,
+                guardMillis = MESSAGE_GUARD_MILLIS
+            ) { shown ->
+                val behaviour = paywallMessageBehaviourUiMapper.toUi(shown.message)
                 MigrelySnackbar(
                     text = stringResource(shown.message.text()),
-                    tone = paywallMessageBehaviourUiMapper.toUi(shown.message).tone,
+                    tone = behaviour.tone,
                     action = null,
+                    baseDurationMillis = behaviour.baseDurationMillis,
                     dismissLabel = stringResource(R.string.subscription_message_dismiss),
-                    onDismiss = { message = null }
+                    onDismiss = { if (message == shown) message = null }
                 )
             }
         },
@@ -307,7 +323,7 @@ private fun PaywallOffer(
 
         else -> Plans(offers, chosen, working, actions)
     }
-    Benefits()
+    // Above the benefits, so the line under the terms never pushes Restore lower (BRD D153).
     TextButton(
         onClick = actions.onRestore,
         enabled = !working && viewState != PaywallViewStateUiModel.Unavailable,
@@ -315,6 +331,7 @@ private fun PaywallOffer(
     ) {
         Text(stringResource(R.string.subscription_restore))
     }
+    Benefits()
 }
 
 @Composable
@@ -365,7 +382,10 @@ private fun Benefits() {
     }
 }
 
-/** The cards, the button that names the action, and the terms under it (design D7). */
+/**
+ * The cards, the button that names the action, the terms under it (design D7), and what a purchase
+ * depends on, which holds with or without a connection (BRD D153).
+ */
 @Composable
 private fun Plans(
     offers: PaywallOffersUiModel,
@@ -405,6 +425,11 @@ private fun Plans(
         }
         Text(
             terms(choice),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            stringResource(R.string.subscription_purchase_needs_play),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )

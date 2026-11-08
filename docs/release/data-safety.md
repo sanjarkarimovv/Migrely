@@ -15,6 +15,10 @@ whenever a permission, a library or the billing changes.
   Play's purchase token, and, while Play's sheet is open, the plan and trial asked for. None of it leaves the phone,
   and none of it is in Android's backup (D115). The library bundles Google's own usage logging, which needs the
   INTERNET permission; the app removes that permission and leaves the logs out of backups, so nothing is sent.
+- **Ratings:** the app may ask Google Play to show its in-app rating window (BRD D129). Google Play's review library
+  talks to the Play Store app over IPC and declares no permission. A rating goes to Google Play, under its policy, and
+  Play does not tell the app whether one was given. The app keeps only how many times it asked and when it last did
+  (D131), in the settings, which are backed up with them.
 - **Android's own backup** is an operating-system service that the user controls, not the app. From Android 9 the app
   allows only end-to-end encrypted cloud backup, which Play's guidance exempts from "collection" when no one but the
   user can read it. On Android 8 the system, not the app, sends the backup.

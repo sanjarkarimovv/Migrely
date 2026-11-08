@@ -21,7 +21,6 @@ sealed interface MedicationPromptUiModel : Parcelable {
     data class OveruseWarning(
         val category: OveruseCategoryUiModel,
         val level: OveruseLevelUiModel,
-        val days: Int,
-        val thresholdDays: Int
+        val days: Int
     ) : MedicationPromptUiModel
 }

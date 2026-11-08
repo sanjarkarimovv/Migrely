@@ -1,11 +1,18 @@
-# From home with no attack in progress: add a 2-hour past migraine at 10 AM on day ${DAY} of last month, then return
-# home. Like add-past-attack-last-month.yaml, with the day as a parameter, so several can be added without overlaps.
+# From home with no attack in progress: add a 2-hour past migraine at 10 AM on day ${DAY} of the month before last, then
+# return home. Any day of that month is over 30 days old whatever today is, which Insights' patterns need.
 appId: com.migrely.app
 ---
 - tapOn: "Add a past migraine"
 - tapOn: "Change when it started, now .*"
 - tapOn: "Change to previous month"
+- tapOn: "Change to previous month"
 # No {n} quantifier after ${DAY}: Maestro reads up to the last closing brace as the script ("DAY}, [0-9]{4").
+# Since #101 the calendar scrolls in landscape. A row cut at its bottom edge counts as visible to Maestro while it sits
+# beside Cancel and Next, where a tap misses it, so the day is brought to the middle first.
+- scrollUntilVisible:
+    element: "[A-Za-z]+, [A-Za-z]+ ${DAY}, [0-9]+"
+    direction: DOWN
+    centerElement: true
 - tapOn: "[A-Za-z]+, [A-Za-z]+ ${DAY}, [0-9]+"
 - tapOn: "Next"
 - tapOn:

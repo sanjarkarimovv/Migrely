@@ -22,8 +22,7 @@ class MedicationPromptPresentationMapper(
                 OveruseWarningPresentationModel(
                     category = overuseCategoryPresentationMapper.toPresentation(prompt.category),
                     level = level(prompt.level),
-                    days = prompt.days,
-                    thresholdDays = prompt.category.thresholdDays
+                    days = prompt.days
                 )
             )
         }

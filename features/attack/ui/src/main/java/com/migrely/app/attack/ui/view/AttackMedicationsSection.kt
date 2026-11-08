@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -37,6 +36,7 @@ import com.migrely.app.attack.ui.mapper.AttackTimeUiFormatter
 import com.migrely.app.attack.ui.model.AttackDetailsUiModel
 import com.migrely.app.attack.ui.model.AttackIntakeEffectUiModel
 import com.migrely.app.attack.ui.model.AttackIntakeUiModel
+import com.migrely.app.designsystem.dialog.MigrelyAlertDialog
 import com.migrely.app.designsystem.icon.MigrelyIcons
 
 /**
@@ -154,7 +154,7 @@ private fun EffectDialog(
     onChoose: (AttackIntakeEffectUiModel) -> Unit,
     onDismiss: () -> Unit
 ) {
-    AlertDialog(
+    MigrelyAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.medication_effect_title, intake.medicationName)) },
         text = {

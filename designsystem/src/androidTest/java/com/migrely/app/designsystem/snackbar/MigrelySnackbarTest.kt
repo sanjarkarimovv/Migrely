@@ -146,6 +146,7 @@ class MigrelySnackbarTest {
                             } else {
                                 null
                             },
+                            baseDurationMillis = 5_000L,
                             dismissLabel = "Dismiss",
                             onDismiss = { dismissals++ },
                             timeLeft = timeLeft?.let { fraction -> { fraction } }

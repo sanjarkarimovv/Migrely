@@ -63,8 +63,10 @@ The exit status comes from passes 1 and 2 only.
 | Process death | Not with `killApp` (a force stop clears saved state). Use `qa/device_scenarios.sh` |
 | Double tap | `doubleTapOn` (both taps in one quick gesture on the device). Exact gaps between taps need adb: `qa/device_scenarios.sh double_tap` |
 | A fixed wait | `extendedWaitUntil` on a text that never appears, with `optional: true`; `waitForAnimationToEnd` returns early once the screen settles |
+| Tapping a choice in a dialog just after it appears | Every dialog ignores taps for 500 ms after it appears (D160), and a press within 500 ms and 100 dp of a lift on a dialog is ignored on the screen beneath (D161). Wait the dialog out first with the fixed wait above (`timeout: 700`), as `device/import-step.yaml` does. A flow that taps through `tapOn` with retries usually gets past it, but not with `retryTapIfNoChange: false` |
 | Copying a label | `copyTextFrom` the element, then `evalScript` to cut it, for example the day of a calendar cell |
 | Turning the screen | Put `setOrientation: PORTRAIT` in `onFlowComplete`, so a failed flow never leaves the device in landscape |
+| A tap with the keyboard up | `tapOn` right after `inputText` can only hide the keyboard and miss its target. Use `hideKeyboard` first. Before filing a swallowed tap, try one `adb shell input tap` on the same point (#115 was this) |
 | Keyboard focus | `pressKey: Tab` works, but `focused: true` misses labels on a child of the focused node. Check keys in `qa/device_scenarios.sh` (`expect_focus`, `tab_until`) |
 | Below the month | History's chosen day, its marks and "Show all of …" sit below the month summary: `scrollUntilVisible` before tapping or asserting them |
 | Home's today card | It is one label, "Today: <sky>. <title>. <subtitle>."; assert the whole label, not "Pain-free today" alone |

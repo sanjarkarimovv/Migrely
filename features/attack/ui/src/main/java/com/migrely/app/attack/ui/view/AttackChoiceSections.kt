@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
@@ -35,6 +34,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import com.migrely.app.attack.ui.R
 import com.migrely.app.attack.ui.model.AttackDetailsUiModel
@@ -43,6 +43,8 @@ import com.migrely.app.attack.ui.model.HeadLocationUiModel
 import com.migrely.app.attack.ui.model.SymptomUiModel
 import com.migrely.app.attack.ui.model.TagKindUiModel
 import com.migrely.app.attack.ui.model.TriggerUiModel
+import com.migrely.app.designsystem.dialog.MigrelyAlertDialog
+import com.migrely.app.designsystem.input.limitedEdit
 
 private const val MAXIMUM_TAG_NAME_LENGTH = 40
 
@@ -263,9 +265,11 @@ private fun ChoiceChip(
 
 /** The user's own symptom or trigger: 1 to 40 characters, input stops at 40 (BRD EC-ATK-12). */
 @Composable
-private fun CustomTagDialog(kind: TagKindUiModel, onAdd: (String) -> Unit, onDismiss: () -> Unit) {
-    var name by rememberSaveable { mutableStateOf("") }
-    AlertDialog(
+internal fun CustomTagDialog(kind: TagKindUiModel, onAdd: (String) -> Unit, onDismiss: () -> Unit) {
+    var name by rememberSaveable(stateSaver = TextFieldValue.Saver) {
+        mutableStateOf(TextFieldValue())
+    }
+    MigrelyAlertDialog(
         onDismissRequest = onDismiss,
         title = {
             Text(
@@ -280,16 +284,16 @@ private fun CustomTagDialog(kind: TagKindUiModel, onAdd: (String) -> Unit, onDis
         text = {
             OutlinedTextField(
                 value = name,
-                onValueChange = { name = it.take(MAXIMUM_TAG_NAME_LENGTH) },
+                onValueChange = { name = limitedEdit(name, it, MAXIMUM_TAG_NAME_LENGTH) },
                 label = { Text(stringResource(R.string.custom_dialog_label)) },
                 supportingText = {
-                    Text(stringResource(R.string.custom_dialog_counter, name.length))
+                    Text(stringResource(R.string.custom_dialog_counter, name.text.length))
                 },
                 singleLine = true
             )
         },
         confirmButton = {
-            TextButton(onClick = { onAdd(name.trim()) }, enabled = name.isNotBlank()) {
+            TextButton(onClick = { onAdd(name.text.trim()) }, enabled = name.text.isNotBlank()) {
                 Text(stringResource(R.string.custom_dialog_add))
             }
         },

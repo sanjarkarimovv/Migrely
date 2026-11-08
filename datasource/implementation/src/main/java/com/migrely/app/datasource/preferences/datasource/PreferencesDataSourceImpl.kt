@@ -8,6 +8,7 @@ import com.migrely.app.datasource.preferences.model.EntitlementKindDataModel
 import com.migrely.app.datasource.preferences.model.GoalDataModel
 import com.migrely.app.datasource.preferences.model.LaunchedPurchaseDataModel
 import com.migrely.app.datasource.preferences.model.PaywallTriggerDataModel
+import com.migrely.app.datasource.preferences.model.ReviewRequestsDataModel
 import com.migrely.app.datasource.preferences.model.ThemeDataModel
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -35,6 +36,8 @@ private const val LAUNCHED_TRIAL = "launched_trial"
 private const val LAUNCHED_AT = "launched_at"
 private const val PAYWALL_SHOWN_PREFIX = "paywall_shown_"
 private const val PAYWALL_LAST_SHOWN = "paywall_last_shown"
+private const val REVIEW_REQUEST_COUNT = "review_request_count"
+private const val REVIEW_LAST_REQUESTED = "review_last_requested"
 private const val TRIAL_BANNER_DISMISSED = "trial_banner_dismissed"
 
 /**
@@ -164,6 +167,17 @@ class PreferencesDataSourceImpl(
     override fun dismissTrialBanner(trialEndMillis: Long) =
         write { putLong(TRIAL_BANNER_DISMISSED, trialEndMillis) }
 
+    override fun reviewRequests() = ReviewRequestsDataModel(
+        count = preferences.getInt(REVIEW_REQUEST_COUNT, 0),
+        lastMillis = preferences.longOrNull(REVIEW_LAST_REQUESTED)
+    )
+
+    // One commit, so the count never moves without its time.
+    override fun markReviewRequested(atMillis: Long) = write {
+        putInt(REVIEW_REQUEST_COUNT, preferences.getInt(REVIEW_REQUEST_COUNT, 0) + 1)
+        putLong(REVIEW_LAST_REQUESTED, atMillis)
+    }
+
     /** The entitlement first, so whatever stops this leaves no Premium behind (BRD D112). */
     override fun clear() {
         entitlementPreferences.write { clear() }
@@ -185,7 +199,7 @@ class PreferencesDataSourceImpl(
     }
 
     companion object {
-        /** The settings, paywall marks and trial banner: backed up with the diary (BRD D74). */
+        /** The settings, paywall and review marks and trial banner: backed up with the diary (BRD D74, D131). */
         const val FILE = "migrely_preferences"
 
         /** The premium entitlement, never backed up (BRD D115; res/xml/backup_rules.xml). */

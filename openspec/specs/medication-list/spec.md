@@ -81,3 +81,134 @@ without clipped text (BRD EC-UX-03, EC-UX-04, EC-UX-19).
 - **WHEN** TalkBack focuses "Ibuprofen · 400 mg"
 - **THEN** it reads the name, the dose and the category, for example "Ibuprofen, 400 mg, simple painkiller. Opens it to
   edit."
+
+### Requirement: Names and doses at their caps
+An edit that does not fit the medication name (60 characters, in the edit form or when adding one while logging) or the
+dose (20 characters) SHALL insert only the whole characters that fit. It SHALL never remove text elsewhere in the field
+or split a character such as an emoji. When nothing fits, the text and the cursor SHALL stay as they were. Text and
+cursor SHALL survive recreation of the screen (BRD EC-MED-13, D35).
+
+#### Scenario: Typing in the middle of a full name
+- **WHEN** the name has 60 characters, in the edit form or when adding one while logging, and the user types a letter in
+  the middle
+- **THEN** the name is unchanged, its last character included, and the cursor stays where it was
+
+#### Scenario: Typing in the middle of a full dose
+- **WHEN** the dose has 20 characters and the user types a letter in the middle
+- **THEN** the dose is unchanged, its last character included, and the cursor stays where it was
+
+#### Scenario: An emoji that does not fit
+- **WHEN** the name has 59 characters or the dose has 19 and the user types "👍", which takes two
+- **THEN** the field is unchanged, and no half of the emoji is stored
+
+#### Scenario: Pasting across the cap
+- **WHEN** the dose has 16 characters and the user pastes "abc👍👍", where each "👍" takes two
+- **THEN** "abc" is inserted, the dose has 19 characters, and the cursor is after "abc"
+
+#### Scenario: The screen is recreated
+- **WHEN** a name or dose holds typed text with the cursor in the middle and the screen is recreated
+- **THEN** the text and the cursor are as they were
+
+### Requirement: The edit form shows what it saves
+A stored name or dose SHALL open with the cursor at its start, because a person recognises a medication by the start of
+its name. What the form shows SHALL be what it saves: when two inputs race in one frame, the losing edit SHALL be dropped
+from the field as well as from the save. A cursor move or a refused edit SHALL NOT change the form, so it SHALL NOT clear
+a shown save problem (BRD EC-MED-13, D152).
+
+#### Scenario: A long stored name
+- **WHEN** a medication with a name wider than the field is opened for editing
+- **THEN** the cursor is at the start of the name and dose, and the start of the name is on screen
+
+#### Scenario: Typing and tapping a kind in one frame
+- **WHEN** a letter typed in the name or dose and a tap on a kind arrive before the next frame
+- **THEN** the kind changes, the field shows the same text that "Save" would store, and typing the letter again keeps it
+
+#### Scenario: Deleting and retyping in one frame
+- **WHEN** the cursor was moved, and a deletion and a retype in the name or dose arrive before the next frame
+- **THEN** the field shows the same text that "Save" would store
+
+#### Scenario: A cursor move or a refused edit
+- **WHEN** a save problem shows and the user moves the cursor, or types in a full field
+- **THEN** the form does not change and the save problem stays
+
+### Requirement: The editor belongs to one medication
+The medication editor SHALL hold one medication's id: another id SHALL start it afresh, and the form and the row Save writes
+SHALL always be the same medication. A read of another medication SHALL NOT fill the form. A loaded form SHALL win over
+NotFound, which carries no id (BRD EC-MED-14, D157).
+
+#### Scenario: Two touches on My medications
+- **WHEN** the user touches two rows within a fade, by two taps or a resting finger, then renames and saves
+- **THEN** only the medication on the form changes, and the other row, its intakes and its overuse warnings stay
+
+#### Scenario: A late read of another medication
+- **WHEN** a read of medication A arrives while the editor is open for medication B
+- **THEN** the form stays on B, and Save writes B
+
+#### Scenario: Two reads in one frame
+- **WHEN** the right read and a late read of another medication arrive in one frame
+- **THEN** the form shows the right medication and is not blank
+
+#### Scenario: A late read on Add
+- **WHEN** a late read of a medication arrives on the Add form
+- **THEN** the form does not take it
+
+#### Scenario: A late empty read on Edit
+- **WHEN** a late empty read from Add arrives on the Edit form
+- **THEN** the form does not take it
+
+#### Scenario: A second read of the same medication
+- **WHEN** a second read of the same medication arrives after the user has typed
+- **THEN** what was typed stays
+
+#### Scenario: A late NotFound before the right read
+- **WHEN** a NotFound of another medication arrives before the right read
+- **THEN** the form shows once the right read arrives
+
+#### Scenario: A late NotFound after the right read
+- **WHEN** a NotFound of another medication arrives after the right read
+- **THEN** the form stays on screen
+
+#### Scenario: A medication that no longer exists
+- **WHEN** the edited medication no longer exists
+- **THEN** the editor says so and offers no Save
+
+#### Scenario: Recreation
+- **WHEN** the editor is rotated or its process killed after the form has loaded
+- **THEN** what was typed stays, and Save writes the same medication
+
+### Requirement: Kind and Category while the form opens
+On Add and Edit, Kind and Category SHALL ignore touches for 700 ms after the form appears. Name, Dose, Save and Back SHALL
+take a first touch at once, unless it is ignored as the second tap of a double tap. A deliberate first touch on Kind or Category in that time SHALL be ignored with no feedback, and
+a rotation SHALL arm it again. Screen readers, switch access and keyboards SHALL NOT be affected (BRD EC-MED-15, D157, D159).
+
+#### Scenario: A stray tap on Edit
+- **WHEN** the user taps a row of My medications, and a second tap lands on "Preventive" within 700 ms of the form appearing
+- **THEN** the kind does not change
+
+#### Scenario: A stray tap on Add
+- **WHEN** a tap lands on "Preventive" within 700 ms of the Add form appearing
+- **THEN** it is not chosen
+
+#### Scenario: A stray tap on a category
+- **WHEN** a tap lands on a category within 700 ms of the form appearing
+- **THEN** the category does not change
+
+#### Scenario: After the guard
+- **WHEN** the user taps Kind or Category after 700 ms
+- **THEN** the choice changes
+
+#### Scenario: Name, Dose, Save and Back are free
+- **WHEN** the user's first tap just after the form appears is on Name, Dose, Save or Back
+- **THEN** that control answers, unless the press is ignored as the second tap of a double tap (D159)
+
+#### Scenario: A deliberate tap in the guard
+- **WHEN** the user deliberately taps Kind within 700 ms of the form appearing
+- **THEN** nothing changes and nothing says so, and a second tap after 700 ms works
+
+#### Scenario: A rotation
+- **WHEN** the editor is rotated
+- **THEN** Kind and Category ignore touches for 700 ms again, and the form is kept
+
+#### Scenario: A screen reader in the guard
+- **WHEN** TalkBack activates Kind within 700 ms of the form appearing
+- **THEN** the choice changes

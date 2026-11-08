@@ -50,10 +50,11 @@ tags: [regression, month-stats]
 - scrollUntilVisible:
     element: "Days with attack medication: 1"
     direction: DOWN
-# One day of a simple painkiller: below its limit, with no doctor line.
+# One day of a simple painkiller: below its number, so no number and no doctor line.
 - scrollUntilVisible:
-    element: "Simple painkillers: 1 day \\(limit 15\\)"
+    element: "Simple painkillers: 1 day"
     direction: DOWN
     centerElement: true
 - assertVisible: "Last 30 days"
-- assertNotVisible: "At this many days.*"
+- assertNotVisible: "Taking medication this often.*"
+- assertNotVisible: ".*Doctors watch for.*"
