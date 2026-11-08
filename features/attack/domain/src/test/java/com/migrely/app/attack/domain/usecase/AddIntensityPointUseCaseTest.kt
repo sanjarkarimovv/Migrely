@@ -79,14 +79,17 @@ class AddIntensityPointUseCaseTest {
 
     @Test
     fun `Given a time after the end when adding then outside the attack`() {
-        assertEquals(AddIntensityPointResultDomainModel.OutsideAttack, add(END.plusSeconds(60), 5))
+        assertEquals(
+            AddIntensityPointResultDomainModel.OutsideAttack(firstMaximum = false),
+            add(END.plusSeconds(60), 5)
+        )
         verify(addIntensityPointRepository, never()).addIntensityPoint(any(), any())
     }
 
     @Test
     fun `Given a time before the start when adding then outside the attack`() {
         assertEquals(
-            AddIntensityPointResultDomainModel.OutsideAttack,
+            AddIntensityPointResultDomainModel.OutsideAttack(firstMaximum = false),
             add(FIXTURE_START.minusSeconds(1), 5)
         )
     }
@@ -96,7 +99,7 @@ class AddIntensityPointUseCaseTest {
         givenAttack(end = null)
 
         assertEquals(
-            AddIntensityPointResultDomainModel.InFuture,
+            AddIntensityPointResultDomainModel.InFuture(firstMaximum = false),
             add(FIXTURE_NOW.plus(Duration.ofMinutes(6)), 5)
         )
     }
@@ -118,16 +121,124 @@ class AddIntensityPointUseCaseTest {
         )
     }
 
+    private fun givenNoTenSaved() {
+        given(
+            getMaximumRecordedRepository.maximumRecorded()
+        ).willReturn(MaximumRecordedResultDomainModel.NotRecorded)
+    }
+
     @Test
-    fun `Given the check fails when adding 10 then the card is not shown`() {
+    fun `Given the saved 10s cannot be read when adding 10 then first maximum`() {
         given(
             getMaximumRecordedRepository.maximumRecorded()
         ).willReturn(MaximumRecordedResultDomainModel.Failed)
 
+        assertEquals(AddIntensityPointResultDomainModel.Added(firstMaximum = true), add(INSIDE, 10))
+    }
+
+    @Test
+    fun `Given storage is full when adding a first 10 then the outcome carries the card`() {
+        givenNoTenSaved()
+        given(
+            addIntensityPointRepository.addIntensityPoint(any(), any())
+        ).willReturn(WriteResultDomainModel.StorageFull)
+
         assertEquals(
-            AddIntensityPointResultDomainModel.Added(firstMaximum = false),
+            AddIntensityPointResultDomainModel.StorageFull(firstMaximum = true),
             add(INSIDE, 10)
         )
+    }
+
+    @Test
+    fun `Given the write fails when adding a first 10 then the outcome carries the card`() {
+        givenNoTenSaved()
+        given(
+            addIntensityPointRepository.addIntensityPoint(any(), any())
+        ).willReturn(WriteResultDomainModel.Failed)
+
+        assertEquals(
+            AddIntensityPointResultDomainModel.Failed(firstMaximum = true),
+            add(INSIDE, 10)
+        )
+    }
+
+    @Test
+    fun `Given the attack cannot be read when adding a first 10 then it carries the card`() {
+        givenNoTenSaved()
+        given(getAttackDetailsRepository.attackDetails("a"))
+            .willReturn(AttackDetailsLookupResultDomainModel.Failed)
+
+        assertEquals(
+            AddIntensityPointResultDomainModel.Failed(firstMaximum = true),
+            add(INSIDE, 10)
+        )
+    }
+
+    @Test
+    fun `Given a time after the end when adding a first 10 then the outcome carries the card`() {
+        givenNoTenSaved()
+
+        assertEquals(
+            AddIntensityPointResultDomainModel.OutsideAttack(firstMaximum = true),
+            add(END.plusSeconds(60), 10)
+        )
+    }
+
+    @Test
+    fun `Given a time before the start when adding a first 10 then the outcome carries the card`() {
+        givenNoTenSaved()
+
+        assertEquals(
+            AddIntensityPointResultDomainModel.OutsideAttack(firstMaximum = true),
+            add(FIXTURE_START.minusSeconds(1), 10)
+        )
+    }
+
+    @Test
+    fun `Given a time in the future when adding a first 10 then the outcome carries the card`() {
+        givenNoTenSaved()
+        givenAttack(end = null)
+
+        assertEquals(
+            AddIntensityPointResultDomainModel.InFuture(firstMaximum = true),
+            add(FIXTURE_NOW.plus(Duration.ofMinutes(6)), 10)
+        )
+    }
+
+    @Test
+    fun `Given the attack is gone when adding a first 10 then no card`() {
+        givenNoTenSaved()
+        given(getAttackDetailsRepository.attackDetails("a"))
+            .willReturn(AttackDetailsLookupResultDomainModel.NotFound)
+
+        assertEquals(AddIntensityPointResultDomainModel.NotFound, add(INSIDE, 10))
+        assertEquals(false, add(INSIDE, 10).firstMaximum)
+    }
+
+    @Test
+    fun `Given storage is full when adding a later 10 then no card`() {
+        given(
+            addIntensityPointRepository.addIntensityPoint(any(), any())
+        ).willReturn(WriteResultDomainModel.StorageFull)
+
+        assertEquals(
+            AddIntensityPointResultDomainModel.StorageFull(firstMaximum = false),
+            add(INSIDE, 10)
+        )
+    }
+
+    @Test
+    fun `Given storage is full when adding a 9 then no card, and history is not read`() {
+        givenNoTenSaved()
+        given(
+            addIntensityPointRepository.addIntensityPoint(any(), any())
+        ).willReturn(WriteResultDomainModel.StorageFull)
+
+        assertEquals(
+            AddIntensityPointResultDomainModel.StorageFull(firstMaximum = false),
+            add(INSIDE, 9)
+        )
+        verify(getMaximumRecordedRepository, never()).maximumRecorded()
     }
 
     @Test(expected = IllegalArgumentException::class)
