@@ -55,6 +55,15 @@ tags: [regression, medication-list, a11y-timeout]
     visible: "Medication removed"
     timeout: 5000
 - assertNotVisible: "Sumatriptan, 50 mg, .*"
+# Row 1 may lie under the message while it shows (D158): wait until it has gone, 20 s in the a11y-timeout pass, and its
+# 0.8 s guard has ended.
+- extendedWaitUntil:
+    notVisible: "Medication removed"
+    timeout: 30000
+- extendedWaitUntil:
+    visible: "QA: never shown, a pause for the message's 0.8 s guard"
+    timeout: 1000
+    optional: true
 - tapOn: "Ibuprofen.*Opens it to edit\\."
 - tapOn: "Ibuprofen"
 - eraseText: 20

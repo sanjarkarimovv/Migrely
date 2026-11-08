@@ -1319,45 +1319,78 @@ print(round((u[1] - u[0]) * 1000))")"
   adbq shell rm -f "$ge"
 }
 
-# History's Undo sits on top of the top-bar actions (#52). A tap there just after the message leaves must reach nothing
-# (a guard under the message, 800 ms); a tap later must open Doctor report as usual. Taps go through adb, timed from
-# the tap on "Delete migraine" (the undo message lasts 5 s), at the centre of "Doctor report" where Undo overlaps it.
+# A tap on Undo's place just after the message leaves must reach nothing (#52, D114: a guard under the message, 800 ms);
+# a tap later must reach what lies there as usual. Since D158 the message sits below History's top bar, so it no longer
+# covers "Doctor report": Undo now lies on the month row's "Next month". History shows last month (an older migraine
+# keeps it there after the delete), where "Next month" answers, so a tap that got through changes the month. Undo's
+# place is read from the screen while the message shows, never assumed. Taps go through adb, timed from the tap on
+# "Delete migraine" (the undo message lasts 5 s).
 scenario_message_tap_guard() {
-  echo "Scenario message_tap_guard: a tap where Undo was, just after the message leaves, opens nothing (#52, D114)"
-  local delete offset screen box point guarded=0
-  run_flow history-open || return 1
-  box="$(node_bounds "Doctor report")"
-  [[ -n "$box" ]] || { echo "  FAILED: no \"Doctor report\" in History's top bar"; return 1; }
-  set -- $box
-  point="$((($1 + $3) / 2)) $((($2 + $4) / 2))"
-  for offset in 5.2 5.5 5.8 7.5; do
-    run_flow history-delete-ready || return 1
+  echo "Scenario message_tap_guard: a tap where Undo was, just after the message leaves, reaches nothing (#52, D114, D158)"
+  local delete offset screen box="" point="" last="" guarded=0 i
+  for offset in measure 5.2 5.5 5.8 7.5; do
+    run_flow history-delete-ready-last-month || return 1
     delete="$(point_in 'Delete migraine' 0.5)"
     [[ -n "$delete" ]] || { echo "  FAILED: \"Delete migraine\" not found"; return 1; }
+    if [[ "$offset" == measure ]]; then
+      # uiautomator waits for an idle screen, and the message's time-left line moves for its whole 5 s: the first dump
+      # after a delete came back at +5.1 s, with the message leaving. So Undo is measured in a 20 s window (the
+      # accessibility timeout, EC-UX-16), and the timed taps below use the default 5 s again.
+      long_undo_window
+      adbq shell input tap $delete
+      for i in 1 2 3; do
+        box="$(node_bounds 'Undo the deletion')"
+        [[ -n "$box" ]] && break
+      done
+      [[ -n "$box" ]] || { default_undo_window; echo "  FAILED: no Undo on screen after the delete"; return 1; }
+      set -- $box
+      point="$((($1 + $3) / 2)) $((($2 + $4) / 2))"
+      adbq shell input tap $point
+      default_undo_window
+      sleep 2
+      screen="$(history_month_state "")"
+      # The "Undone" message covers the month row, and a covered title is not in the dump: wait until it goes.
+      for i in 1 2 3 4 5 6 7 8; do
+        last="$(history_month_title)"
+        [[ -n "$last" ]] && break
+        sleep 2
+      done
+      [[ -n "$last" ]] || { echo "  FAILED: no month title on History"; return 1; }
+      echo "    Undo at [$1,$2][$3,$4] on $last; a tap at ($point) while the message shows: $screen"
+      [[ "$screen" == "history (undone)" ]] || { echo "  FAILED: the tap on Undo's place did not undo"; return 1; }
+      continue
+    fi
     adbq shell "input tap $delete; sleep $offset; input tap $point"
     sleep 2
-    screen="$(focused_screen)"
+    screen="$(history_month_state "$last")"
     echo "    tap at ($point) ${offset} s after the delete: $screen"
     case "$screen" in
-      "doctor report") [[ "$offset" == "7.5" ]] || { echo "  FAILED: the tap reached Doctor report under the message (#52)"; return 1; } ;;
+      "next month") [[ "$offset" == "7.5" ]] || { echo "  FAILED: the tap reached Next month under the message (#52)"; return 1; } ;;
       "history (deleted)") [[ "$offset" != "7.5" ]] && guarded=$((guarded + 1)) ;;
       "history (undone)") ;;
       *) echo "  FAILED: an unexpected screen after the tap"; return 1 ;;
     esac
-    [[ "$offset" != "7.5" || "$screen" == "doctor report" ]] || { echo "  FAILED: the late tap did not open Doctor report (control)"; return 1; }
+    [[ "$offset" != "7.5" || "$screen" == "next month" ]] || { echo "  FAILED: the late tap did not reach Next month (control)"; return 1; }
   done
   [[ $guarded -ge 1 ]] || { echo "  FAILED: every early tap landed on Undo, so the guard was never reached"; return 1; }
 }
 
-focused_screen() { # "doctor report", "history (undone)", "history (deleted)" or "unknown", from what is on screen
+history_month_title() { # the month History shows, for example "October 2026"
+  adbq shell rm -f /sdcard/qa-screen.xml
+  adbq shell uiautomator dump /sdcard/qa-screen.xml >/dev/null
+  adbq exec-out cat /sdcard/qa-screen.xml | grep -oE 'text="[A-Z][a-z]+ [0-9]{4}"' | head -1 | cut -d'"' -f2
+}
+
+history_month_state() { # $1 the month the delete happened in: "next month", "history (undone)", "history (deleted)",
+  # "doctor report" or "unknown", from what is on screen
   local xml
   adbq shell rm -f /sdcard/qa-screen.xml
   adbq shell uiautomator dump /sdcard/qa-screen.xml >/dev/null
   xml="$(adbq exec-out cat /sdcard/qa-screen.xml)"
-  # A free user's tap on Doctor report opens its paywall (D108); for the guard either means the tap got through.
   if grep -qE 'text="(Create report|A report for your doctor)"' <<<"$xml"; then echo "doctor report"
-  elif grep -q 'Opens its details' <<<"$xml"; then echo "history (undone)"
-  elif grep -q 'text="Log your first migraine"' <<<"$xml"; then echo "history (deleted)"
+  elif [[ -n "$1" ]] && grep -qE 'text="[A-Z][a-z]+ [0-9]{4}"' <<<"$xml" && ! grep -q "text=\"$1\"" <<<"$xml"; then echo "next month"
+  elif grep -qE 'content-desc="[A-Za-z]+, [A-Za-z]+ 12: [a-z]+\. 1 migraine' <<<"$xml"; then echo "history (undone)"
+  elif grep -qE 'content-desc="[A-Za-z]+, [A-Za-z]+ 12: nothing logged\.' <<<"$xml"; then echo "history (deleted)"
   else echo "unknown"; fi
 }
 
