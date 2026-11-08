@@ -145,6 +145,8 @@ dependencies {
     testDebugImplementation(libs.test.robolectric)
     androidTestImplementation(libs.test.androidx.junit)
     androidTestImplementation(libs.test.androidx.espresso.core)
+    androidTestImplementation(platform(libs.compose.bom))
+    androidTestImplementation(libs.test.compose.ui.junit4)
     implementation(projects.features.home.ui)
     implementation(projects.features.home.presentation)
     implementation(projects.features.home.domain)

@@ -21,7 +21,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -68,6 +67,7 @@ import com.migrely.app.backup.ui.model.BackupSummaryUiModel
 import com.migrely.app.backup.ui.model.PendingImportUiModel
 import com.migrely.app.backup.ui.model.YourDataEventUiModel
 import com.migrely.app.backup.ui.model.YourDataMessageUiModel
+import com.migrely.app.designsystem.dialog.MigrelyAlertDialog
 import com.migrely.app.designsystem.icon.MigrelyIcons
 import com.migrely.app.designsystem.motion.rememberReduceMotion
 import com.migrely.app.designsystem.snackbar.MigrelySnackbar
@@ -360,7 +360,7 @@ private fun ImportDialog(
     onImport: (ImportModePresentationModel) -> Unit,
     onDismiss: () -> Unit
 ) {
-    AlertDialog(
+    MigrelyAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.your_data_confirm_title)) },
         text = {
@@ -408,7 +408,7 @@ private fun RestoreDialog(
     onRestore: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    AlertDialog(
+    MigrelyAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.your_data_restore_title, copy.madeAtText())) },
         text = {

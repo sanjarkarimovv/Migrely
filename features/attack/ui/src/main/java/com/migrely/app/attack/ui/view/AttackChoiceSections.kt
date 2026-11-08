@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
@@ -44,6 +43,7 @@ import com.migrely.app.attack.ui.model.HeadLocationUiModel
 import com.migrely.app.attack.ui.model.SymptomUiModel
 import com.migrely.app.attack.ui.model.TagKindUiModel
 import com.migrely.app.attack.ui.model.TriggerUiModel
+import com.migrely.app.designsystem.dialog.MigrelyAlertDialog
 import com.migrely.app.designsystem.input.limitedEdit
 
 private const val MAXIMUM_TAG_NAME_LENGTH = 40
@@ -269,7 +269,7 @@ internal fun CustomTagDialog(kind: TagKindUiModel, onAdd: (String) -> Unit, onDi
     var name by rememberSaveable(stateSaver = TextFieldValue.Saver) {
         mutableStateOf(TextFieldValue())
     }
-    AlertDialog(
+    MigrelyAlertDialog(
         onDismissRequest = onDismiss,
         title = {
             Text(
