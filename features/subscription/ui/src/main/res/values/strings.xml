@@ -46,6 +46,7 @@
     <string name="subscription_terms_renews">Renews automatically. Cancel anytime in Google Play.</string>
     <string name="subscription_terms_trial">Cancel before the trial ends and you won\'t be charged.</string>
     <string name="subscription_terms_once">One payment. Nothing renews.</string>
+    <string name="subscription_purchase_needs_play">Purchases need Google Play and an internet connection. Your diary works offline.</string>
     <string name="subscription_restore">Restore purchases</string>
     <string name="subscription_loading">Getting prices from Google Play</string>
     <string name="subscription_working">Waiting for Google Play</string>
@@ -54,7 +55,7 @@
     <string name="subscription_unavailable">Premium isn\'t available in your region yet</string>
     <string name="subscription_unavailable_text">Everything else in Migrely works as before.</string>
     <string name="subscription_unreachable">Google Play can\'t be reached right now</string>
-    <string name="subscription_unreachable_text">Check your connection, then try again.</string>
+    <string name="subscription_unreachable_text">Check your connection, then try again. Your diary works offline.</string>
     <string name="subscription_try_again">Try again</string>
     <string name="subscription_success_title">You have Premium</string>
     <string name="subscription_success_trial_title">Your free trial has started</string>

@@ -66,6 +66,7 @@ import com.migrely.app.architecture.ui.view.ScreenEnterObserver
 import com.migrely.app.designsystem.dialog.MigrelyDialog
 import com.migrely.app.designsystem.icon.MigrelyIcons
 import com.migrely.app.designsystem.motion.rememberReduceMotion
+import com.migrely.app.designsystem.snackbar.MESSAGE_OFFSET_BELOW_TOP_BAR
 import com.migrely.app.designsystem.snackbar.MigrelySnackbar
 import com.migrely.app.designsystem.snackbar.MigrelySnackbarHost
 import com.migrely.app.designsystem.snackbar.messageTimeoutMillis
@@ -184,13 +185,19 @@ fun RemindersDependencies.Reminders(navController: NavController, modifier: Modi
             }
         ),
         messages = {
-            MigrelySnackbarHost(message = message, reduceMotion = rememberReduceMotion()) { shown ->
+            MigrelySnackbarHost(
+                message = message,
+                reduceMotion = rememberReduceMotion(),
+                topOffset = MESSAGE_OFFSET_BELOW_TOP_BAR
+            ) { shown ->
+                val behaviour = remindersMessageBehaviourUiMapper.toUi(shown)
                 MigrelySnackbar(
                     text = stringResource(shown.text()),
-                    tone = remindersMessageBehaviourUiMapper.toUi(shown).tone,
+                    tone = behaviour.tone,
                     action = null,
+                    baseDurationMillis = behaviour.baseDurationMillis,
                     dismissLabel = stringResource(R.string.reminders_message_dismiss),
-                    onDismiss = { message = null }
+                    onDismiss = { if (message == shown) message = null }
                 )
             }
         },
