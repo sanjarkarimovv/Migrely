@@ -25,15 +25,20 @@ internal class SecondTapRule {
     private var lastLift: TouchPoint? = null
     private val ignoredPointers = mutableSetOf<Long>()
 
-    /** True when this press is to be ignored. */
+    /**
+     * True when this press is to be ignored. [afterADialogLift] is `DialogLiftRule`'s answer (BRD
+     * D161): it is ignored like any other here, so the entry stays unmarked.
+     */
     fun press(
         pointerId: Long,
         at: TouchPoint,
         limits: SecondTapLimits,
-        entryTouched: Boolean
+        entryTouched: Boolean,
+        afterADialogLift: Boolean = false
     ): Boolean {
         val lift = lastLift
-        val ignored = lift != null &&
+        val ignored = afterADialogLift ||
+            lift != null &&
             !entryTouched &&
             at.uptimeMillis - lift.uptimeMillis < limits.timeoutMillis &&
             hypot(at.x - lift.x, at.y - lift.y) < limits.distance

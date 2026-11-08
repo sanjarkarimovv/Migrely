@@ -1224,9 +1224,6 @@ for n in ET.fromstring(sys.stdin.read()).iter('node'):
 
 # Covers: in-app-messages › A message never passes taps to what lies under it › Undo just as the message goes
 # Covers: in-app-messages › A message never passes taps to what lies under it › Afterwards
-# History's Undo sits on top of the top-bar actions (#52). A tap there just after the message leaves must reach nothing
-# (a guard under the message, 800 ms); a tap later must open Doctor report as usual. Taps go through adb, timed from
-# the tap on "Delete migraine" (the undo message lasts 5 s), at the centre of "Doctor report" where Undo overlaps it.
 # Exact touches for two_touch: `adb emu` enters at the virtual touch hardware, so unlike `input tap` a second finger is
 # possible and the gaps can be read back from the kernel. Shell may read /dev/input, not write it (SELinux).
 touch_device() {
@@ -1322,6 +1319,9 @@ print(round((u[1] - u[0]) * 1000))")"
   adbq shell rm -f "$ge"
 }
 
+# History's Undo sits on top of the top-bar actions (#52). A tap there just after the message leaves must reach nothing
+# (a guard under the message, 800 ms); a tap later must open Doctor report as usual. Taps go through adb, timed from
+# the tap on "Delete migraine" (the undo message lasts 5 s), at the centre of "Doctor report" where Undo overlaps it.
 scenario_message_tap_guard() {
   echo "Scenario message_tap_guard: a tap where Undo was, just after the message leaves, opens nothing (#52, D114)"
   local delete offset screen box point guarded=0

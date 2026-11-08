@@ -31,9 +31,8 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.DialogWindowProvider
+import com.migrely.app.designsystem.dialog.MigrelyDialog
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
@@ -74,10 +73,7 @@ fun MigrelyDateRangePicker(
         yearRange = yearRange,
         selectableDates = selectableDates
     )
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
-    ) {
+    MigrelyDialog(onDismissRequest = onDismiss, fullScreen = true) {
         // The screen makes room for the keyboard itself. A dialog's window pans by default, which pushed Cancel and
         // Done under the status bar while a date field was focused in landscape.
         val window = (LocalView.current.parent as? DialogWindowProvider)?.window

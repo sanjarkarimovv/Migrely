@@ -20,6 +20,8 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.migrely.app.designsystem.dialog.DialogLiftRule
+import com.migrely.app.designsystem.dialog.LocalDialogLiftRule
 
 private const val SCREEN_FADE_MILLIS = 200
 
@@ -48,7 +50,12 @@ internal fun ScreenNavHost(
     builder: NavGraphBuilder.() -> Unit
 ) {
     val secondTapRule = remember { SecondTapRule() }
-    CompositionLocalProvider(LocalSecondTapRule provides secondTapRule) {
+    val doubleTapTimeoutMillis = LocalViewConfiguration.current.doubleTapTimeoutMillis
+    val dialogLiftRule = remember { DialogLiftRule(doubleTapTimeoutMillis) }
+    CompositionLocalProvider(
+        LocalSecondTapRule provides secondTapRule,
+        LocalDialogLiftRule provides dialogLiftRule
+    ) {
         NavHost(
             navController = navController,
             startDestination = startDestination,
@@ -77,7 +84,12 @@ internal inline fun <reified ROUTE : Any> NavGraphBuilder.screen(
         Box(
             modifier = Modifier.touchesOnlyWhile(
                 allowed = { navController.currentBackStackEntry?.id == entry.id },
-                secondTap = SecondTapEntry(entry, LocalSecondTapRule.current, secondTapLimits())
+                secondTap = SecondTapEntry(
+                    entry,
+                    LocalSecondTapRule.current,
+                    secondTapLimits(),
+                    LocalDialogLiftRule.current
+                )
             ),
             propagateMinConstraints = true
         ) {

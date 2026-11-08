@@ -9,10 +9,12 @@ import androidx.compose.ui.input.pointer.changedToUpIgnoreConsumed
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.node.ModifierNodeElement
 import androidx.compose.ui.node.PointerInputModifierNode
+import androidx.compose.ui.node.requireLayoutCoordinates
 import androidx.compose.ui.platform.InspectorInfo
 import androidx.compose.ui.unit.IntSize
 import androidx.lifecycle.Lifecycle
 import androidx.navigation.NavBackStackEntry
+import com.migrely.app.designsystem.dialog.DialogLiftRule
 
 /**
  * Consumes the pointer input of this window on the content while [allowed] is false, read at the
@@ -20,8 +22,9 @@ import androidx.navigation.NavBackStackEntry
  * clicking. Semantics are not touched, so screen readers and switch access keep working, and a
  * dialog or popup is a window of its own, which this does not reach.
  *
- * It also consumes what [SecondTapRule] refuses, in the same pass, so that rule has the same hit
- * testing and the same untouched semantics.
+ * It also consumes what [SecondTapRule] refuses, and a press just after a lift on a dialog's card
+ * ([DialogLiftRule], BRD D161), in the same pass, so they have the same hit testing and the same
+ * untouched semantics.
  *
  * The node must take part only in touches that hit something inside the content. A node that a
  * touch hits by itself ends the search there, and during a pop, where the leaving screen is on top,
@@ -43,7 +46,8 @@ internal fun Modifier.touchesOnlyWhile(
 internal data class SecondTapEntry(
     val entry: NavBackStackEntry,
     val rule: SecondTapRule,
-    val limits: SecondTapLimits
+    val limits: SecondTapLimits,
+    val dialogLifts: DialogLiftRule?
 )
 
 private const val TOUCHED_KEY = "com.migrely.app.second_tap.touched"
@@ -106,18 +110,29 @@ private class TouchesOnlyWhileNode(var allowed: () -> Boolean, var secondTap: Se
                 pointerId,
                 change.touchPoint(),
                 secondTap.limits,
-                entryTouched = secondTap.entry.wasTouched()
+                entryTouched = secondTap.entry.wasTouched(),
+                afterADialogLift = isAfterADialogLift(change)
             )
         } else {
             secondTap.rule.isIgnored(pointerId)
         }
-        if (change.changedToUpIgnoreConsumed() &&
-            secondTap.rule.lift(pointerId, change.touchPoint())
-        ) {
-            secondTap.entry.markTouched()
+        if (change.changedToUpIgnoreConsumed()) {
+            secondTap.dialogLifts?.lift(null, pointerId, change.uptimeMillis, change.onScreen())
+            if (secondTap.rule.lift(pointerId, change.touchPoint())) secondTap.entry.markTouched()
         }
         return !current || ignored
     }
+
+    private fun isAfterADialogLift(change: PointerInputChange) = secondTap.dialogLifts?.press(
+        windowKey = null,
+        pointerId = change.id.value,
+        atMillis = change.uptimeMillis,
+        screenPosition = change.onScreen(),
+        distance = secondTap.limits.distance
+    ) == true
+
+    /** On the screen, because a dialog's lift is in another window with another origin. */
+    private fun PointerInputChange.onScreen() = requireLayoutCoordinates().localToScreen(position)
 
     private fun PointerInputChange.touchPoint() = TouchPoint(uptimeMillis, position.x, position.y)
 
