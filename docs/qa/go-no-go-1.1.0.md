@@ -25,7 +25,7 @@
 
 ## Decision
 
-**QA's verdict, 2026-11-09 at 05:00: GO for `release/1.1.0` @ 8f275034, with the risks below open.**
+**QA's verdict, 2026-11-09 at 04:42: GO for `release/1.1.0` @ 8f275034, with the risks below open.**
 - **Lines 1–10 all pass on 8f275034** (versionCode 8), and no S1 or S2 is open. The two S2s that gated it, #146 and
   #152 (the fix for Google's rejection), were retested on this SHA's own build and closed.
 - **Lines 3, 5, 9 and 10 pass with PR #164's QA files** (head cfd1d3a6): two flows (`unique-names`, the paywall) and
