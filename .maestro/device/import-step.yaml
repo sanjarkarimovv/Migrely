@@ -25,6 +25,11 @@ appId: com.migrely.app
       - extendedWaitUntil:
           visible: "It holds ${HOLDS}\\."
           timeout: 10000
+      # Every dialog ignores taps for 500 ms after it appears (D160), and this tap does not retry: wait that out first.
+      - extendedWaitUntil:
+          visible: "QA: never shown, a pause for the 500 ms dialog wait"
+          timeout: 700
+          optional: true
       # No settle wait: the result message is short until #56 is fixed.
       - tapOn:
           text: "${CHOICE}"
