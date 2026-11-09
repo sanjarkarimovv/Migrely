@@ -24,8 +24,8 @@ import java.time.ZoneId
  * One run of the visit reminder planned for the visit on its date (BRD D168, design D3), in order:
  * 1. a date that is not the next visit any more, 2. one already reminded of, and 3. a visit day that has ended post
  * nothing; 4. during an attack it waits for 10:00 the next day, up to the visit day, so it never comes at night
- * (EC-REM-12); 5. with nothing logged in the report's default period it posts nothing, and the card covers an entry
- * made later (EC-REM-13); 6. otherwise it posts once and remembers that.
+ * (EC-REM-12); 5. with nothing logged in the report's default period it posts nothing and is done for that date, and
+ * the card covers an entry made later (EC-REM-13); 6. otherwise it posts once and remembers that.
  */
 @Suppress("LongParameterList")
 class RunVisitReminderUseCase(
@@ -76,7 +76,11 @@ class RunVisitReminderUseCase(
         )
         return when (logged) {
             AnythingLoggedDomainModel.Failed -> VisitReminderRunDomainModel.Failed
-            AnythingLoggedDomainModel.NothingLogged -> VisitReminderRunDomainModel.Skipped
+            // Done for that date, so no later start plans a run that could post at night (design D3 step 5).
+            AnythingLoggedDomainModel.NothingLogged -> {
+                setVisitRemindedRepository.setVisitReminded(request)
+                VisitReminderRunDomainModel.Skipped
+            }
             AnythingLoggedDomainModel.Logged -> {
                 showVisitReminderRepository.showVisitReminder(request, dayEnd)
                 setVisitRemindedRepository.setVisitReminded(request)

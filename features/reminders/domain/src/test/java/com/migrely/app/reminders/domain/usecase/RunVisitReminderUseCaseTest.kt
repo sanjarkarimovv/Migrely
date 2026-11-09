@@ -210,15 +210,15 @@ class RunVisitReminderUseCaseTest {
     }
 
     @Test
-    fun `Given nothing was logged in the period when it runs then nothing posts (5)`() {
+    fun `Given nothing was logged in the period when it runs then nothing posts, and it is done (5)`() {
         given(getAnythingLoggedRepository.anythingLogged(any(), any(), any()))
             .willReturn(AnythingLoggedDomainModel.NothingLogged)
 
-        assertEquals(
-            VisitReminderRunDomainModel.Skipped,
-            classUnderTest.executeInBackground(NOVEMBER_20)
-        )
-        assertNothingPosted()
+        assertEquals(VisitReminderRunDomainModel.Skipped, classUnderTest.executeInBackground(NOVEMBER_20))
+        verify(showVisitReminderRepository, never()).showVisitReminder(any(), any())
+        // Handled for that date, so a later start or clock change plans nothing that could post at night; the
+        // card covers an entry made later.
+        verify(setVisitRemindedRepository).setVisitReminded(NOVEMBER_20)
     }
 
     @Test
