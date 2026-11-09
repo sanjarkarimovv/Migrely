@@ -53,11 +53,24 @@ class ReminderScheduleDataSourceImpl(
         workDataOf(
             ReminderWorker.KEY_KIND to ReminderWorker.KIND_VISIT,
             ReminderWorker.KEY_DATE to visit.toString()
-        )
+        ),
+        tag = visitTag(visit)
     )
 
     override fun cancelVisit() {
         workManager.cancelUniqueWork(VISIT_WORK)
+    }
+
+    // Blocks briefly, on a background thread, like cancelAll; a store that cannot be read counts as nothing planned.
+    override fun isVisitPlanned(visit: LocalDate): Boolean = try {
+        workManager.getWorkInfosForUniqueWork(VISIT_WORK).get().any {
+            !it.state.isFinished && visitTag(visit) in it.tags
+        }
+    } catch (_: ExecutionException) {
+        false
+    } catch (_: InterruptedException) {
+        Thread.currentThread().interrupt()
+        false
     }
 
     override fun planAgain() = enqueue(
@@ -81,16 +94,19 @@ class ReminderScheduleDataSourceImpl(
 
     // REPLACE also covers the daily run planning its own next run: WorkManager marks the running work cancelled but
     // never interrupts a Worker's doWork, which finishes normally (androidx.work.Worker).
-    private fun enqueue(name: String, at: Instant, input: Data) {
+    private fun enqueue(name: String, at: Instant, input: Data, tag: String? = null) {
         val delay = Duration.between(clockDataSource.now(), at).coerceAtLeast(Duration.ZERO)
         val request = OneTimeWorkRequestBuilder<ReminderWorker>()
             .setInitialDelay(delay)
             .setInputData(input)
+            .apply { tag?.let(::addTag) }
             .build()
         workManager.enqueueUniqueWork(name, ExistingWorkPolicy.REPLACE, request)
     }
 
     private fun effectWork(intakeId: String) = "$EFFECT_WORK_PREFIX$intakeId"
+
+    private fun visitTag(visit: LocalDate) = "$VISIT_WORK-$visit"
 
     private companion object {
         const val DAILY_WORK = "daily"

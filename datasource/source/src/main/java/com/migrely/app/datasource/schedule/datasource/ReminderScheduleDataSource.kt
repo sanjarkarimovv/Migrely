@@ -23,6 +23,9 @@ interface ReminderScheduleDataSource {
 
     fun cancelVisit()
 
+    /** Whether a run of the reminder for the visit on [visit] is waiting or running. */
+    fun isVisitPlanned(visit: LocalDate): Boolean
+
     /** Plans the reminders again as soon as possible, after an import changed what they depend on. */
     fun planAgain()
 

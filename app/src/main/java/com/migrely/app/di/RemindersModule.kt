@@ -193,6 +193,7 @@ internal object RemindersModule {
         visits,
         visits,
         visits,
+        visits,
         coroutines
     )
 

@@ -19,6 +19,7 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -148,5 +149,16 @@ class VisitWorkTest {
             ReminderWorker.KIND_IMPORTED,
             inputs.single().getString(ReminderWorker.KEY_KIND)
         )
+    }
+
+    @Test
+    fun `When asked if a visit's run is planned then only for its own date, until cancelled`() {
+        classUnderTest.scheduleVisit(NOW.plus(Duration.ofDays(8)), NOVEMBER_20)
+
+        assertTrue(classUnderTest.isVisitPlanned(NOVEMBER_20))
+        assertFalse(classUnderTest.isVisitPlanned(NOVEMBER_27))
+
+        classUnderTest.cancelVisit()
+        assertFalse(classUnderTest.isVisitPlanned(NOVEMBER_20))
     }
 }

@@ -19,6 +19,7 @@ import com.migrely.app.reminders.domain.repository.GetAnythingLoggedRepository
 import com.migrely.app.reminders.domain.repository.GetAttackInProgressRepository
 import com.migrely.app.reminders.domain.repository.GetDoctorVisitsRepository
 import com.migrely.app.reminders.domain.repository.GetVisitChannelOffRepository
+import com.migrely.app.reminders.domain.repository.GetVisitReminderPlannedRepository
 import com.migrely.app.reminders.domain.repository.RemoveNextVisitRepository
 import com.migrely.app.reminders.domain.repository.RestoreNextVisitRepository
 import com.migrely.app.reminders.domain.repository.ScheduleVisitReminderRepository
@@ -56,7 +57,8 @@ class VisitReminderRepository(
     ShowVisitReminderRepository,
     GetAttackInProgressRepository,
     GetAnythingLoggedRepository,
-    GetVisitChannelOffRepository {
+    GetVisitChannelOffRepository,
+    GetVisitReminderPlannedRepository {
     override fun doctorVisits(today: LocalDate): DoctorVisitsResultDomainModel = try {
         val visits = doctorVisitDataSource.visits(today)
         DoctorVisitsResultDomainModel.Loaded(
@@ -103,6 +105,9 @@ class VisitReminderRepository(
         reminderScheduleDataSource.scheduleVisit(at, visit)
 
     override fun cancelVisitReminder() = reminderScheduleDataSource.cancelVisit()
+
+    override fun visitReminderPlanned(visit: LocalDate): Boolean =
+        reminderScheduleDataSource.isVisitPlanned(visit)
 
     override fun dismissVisitReminder() = notificationDataSource.cancelVisitReminder()
 

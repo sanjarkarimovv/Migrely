@@ -11,6 +11,7 @@ import com.migrely.app.reminders.domain.repository.CancelVisitReminderRepository
 import com.migrely.app.reminders.domain.repository.GetCurrentTimeRepository
 import com.migrely.app.reminders.domain.repository.GetDoctorVisitsRepository
 import com.migrely.app.reminders.domain.repository.GetReminderSettingsRepository
+import com.migrely.app.reminders.domain.repository.GetVisitReminderPlannedRepository
 import com.migrely.app.reminders.domain.repository.ScheduleVisitReminderRepository
 import com.migrely.app.reminders.domain.repository.SetVisitRemindedRepository
 import java.time.LocalDate
@@ -48,6 +49,7 @@ class PlanRemindersAfterImportUseCaseTest {
     private val setVisitRemindedRepository: SetVisitRemindedRepository = mock {
         on { setVisitReminded(any()) } doReturn ReminderWriteResultDomainModel.Done
     }
+    private val getVisitReminderPlannedRepository: GetVisitReminderPlannedRepository = mock()
     private val scheduleVisitReminderRepository: ScheduleVisitReminderRepository = mock()
     private val cancelVisitReminderRepository: CancelVisitReminderRepository = mock()
     private lateinit var classUnderTest: PlanRemindersAfterImportUseCase
@@ -58,6 +60,7 @@ class PlanRemindersAfterImportUseCaseTest {
             getReminderSettingsRepository,
             getCurrentTimeRepository,
             getDoctorVisitsRepository,
+            getVisitReminderPlannedRepository,
             setVisitRemindedRepository,
             scheduleVisitReminderRepository,
             cancelVisitReminderRepository,
@@ -84,6 +87,48 @@ class PlanRemindersAfterImportUseCaseTest {
     @Test
     fun `Given an imported visit not yet due when planned then it is planned (control)`() {
         givenNow("2026-11-18T09:00")
+
+        classUnderTest.executeInBackground(Unit)
+
+        verify(setVisitRemindedRepository, never()).setVisitReminded(any())
+        verify(
+            scheduleVisitReminderRepository
+        ).scheduleVisitReminder(at("2026-11-18T10:00"), NOVEMBER_20)
+    }
+
+    private fun givenPostponedTo(day: LocalDate) {
+        given(getReminderSettingsRepository.reminderSettings()).willReturn(
+            ReminderSettingsResultDomainModel.Loaded(
+                ReminderSettingsDomainModel(
+                    false,
+                    LocalTime.of(20, 0),
+                    true,
+                    null,
+                    null,
+                    visitPostponedTo = day
+                )
+            )
+        )
+    }
+
+    @Test
+    fun `Given an attack postponed it to tomorrow when an import lands then it still comes`() {
+        givenNow("2026-11-18T15:00")
+        givenPostponedTo(LocalDate.of(2026, 11, 19))
+        given(getVisitReminderPlannedRepository.visitReminderPlanned(NOVEMBER_20)).willReturn(true)
+
+        classUnderTest.executeInBackground(Unit)
+
+        verify(setVisitRemindedRepository, never()).setVisitReminded(any())
+        verify(
+            scheduleVisitReminderRepository
+        ).scheduleVisitReminder(at("2026-11-19T10:00"), NOVEMBER_20)
+    }
+
+    @Test
+    fun `Given Doze delayed the 10 AM run when an import lands then the visit is not marked`() {
+        givenNow("2026-11-18T10:30")
+        given(getVisitReminderPlannedRepository.visitReminderPlanned(NOVEMBER_20)).willReturn(true)
 
         classUnderTest.executeInBackground(Unit)
 
