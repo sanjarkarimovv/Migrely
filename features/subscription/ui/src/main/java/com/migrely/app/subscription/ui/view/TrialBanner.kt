@@ -15,17 +15,22 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.migrely.app.designsystem.icon.MigrelyIcons
 import com.migrely.app.designsystem.theme.MigrelyTheme
-import com.migrely.app.subscription.presentation.model.TrialBannerViewState
 import com.migrely.app.subscription.ui.R
 import com.migrely.app.subscription.ui.di.TrialBannerDependencies
 import com.migrely.app.subscription.ui.model.TrialBannerViewStateUiModel
@@ -38,13 +43,23 @@ import java.time.Instant
  */
 @Composable
 fun TrialBannerDependencies.TrialBanner(refreshKey: Int, modifier: Modifier = Modifier) {
+    var banner by remember { mutableStateOf<TrialBannerViewStateUiModel.Shown?>(null) }
+    // Counts the offline notes, so a second tap is a new note that TalkBack speaks again (D166).
+    var offlineNote by remember { mutableIntStateOf(0) }
+    LaunchedEffect(trialBannerViewModel) {
+        trialBannerViewModel.viewState.collect { viewState ->
+            val shown = trialBannerViewStateUiMapper.toUi(viewState) as?
+                TrialBannerViewStateUiModel.Shown
+            if (shown?.offlineToManage == true) offlineNote++
+            banner = shown
+        }
+    }
     LaunchedEffect(refreshKey) { trialBannerViewModel.onEnter() }
-    val viewState by trialBannerViewModel.viewState.collectAsState(TrialBannerViewState.Hidden)
-    val shown = trialBannerViewStateUiMapper.toUi(viewState) as? TrialBannerViewStateUiModel.Shown
-        ?: return
+    val shown = banner ?: return
     TrialBannerContents(
         endsToday = shown.endsToday,
         renews = shown.renews,
+        offlineNote = offlineNote.takeIf { shown.offlineToManage },
         onManage = trialBannerViewModel::onManageAction,
         onDismiss = {
             trialBannerViewModel.onDismissAction(Instant.ofEpochMilli(shown.trialEndMillis))
@@ -53,11 +68,17 @@ fun TrialBannerDependencies.TrialBanner(refreshKey: Int, modifier: Modifier = Mo
     )
 }
 
-/** The banner itself: its words are one node, and "Manage" and dismissing are buttons. */
+/**
+ * The banner itself: its words are one node, and "Manage" and dismissing are buttons. With an
+ * [offlineNote], "Manage" was tapped offline, and the note under it says so as a polite live region;
+ * each new number is a new note (BRD D166).
+ */
+@Suppress("LongParameterList")
 @Composable
 fun TrialBannerContents(
     endsToday: Boolean,
     renews: Boolean,
+    offlineNote: Int?,
     onManage: () -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier
@@ -103,6 +124,18 @@ fun TrialBannerContents(
             TextButton(onClick = onManage, modifier = Modifier.heightIn(min = 48.dp)) {
                 Text(stringResource(R.string.subscription_trial_manage))
             }
+            offlineNote?.let { note ->
+                key(note) {
+                    Text(
+                        text = stringResource(R.string.subscription_offline_manage),
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(end = 16.dp, bottom = 8.dp)
+                            .semantics { liveRegion = LiveRegionMode.Polite }
+                    )
+                }
+            }
         }
     }
 }
@@ -118,7 +151,13 @@ private fun titleOf(endsToday: Boolean, renews: Boolean) = when {
 @Composable
 private fun TrialBannerPreview() {
     MigrelyTheme {
-        TrialBannerContents(endsToday = false, renews = true, onManage = {}, onDismiss = {})
+        TrialBannerContents(
+            endsToday = false,
+            renews = true,
+            offlineNote = null,
+            onManage = {},
+            onDismiss = {}
+        )
     }
 }
 
@@ -126,6 +165,12 @@ private fun TrialBannerPreview() {
 @Composable
 private fun TrialBannerLightPreview() {
     MigrelyTheme(dark = false) {
-        TrialBannerContents(endsToday = true, renews = false, onManage = {}, onDismiss = {})
+        TrialBannerContents(
+            endsToday = true,
+            renews = false,
+            offlineNote = 1,
+            onManage = {},
+            onDismiss = {}
+        )
     }
 }

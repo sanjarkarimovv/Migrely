@@ -71,7 +71,10 @@ sealed interface PaywallViewStateUiModel {
 enum class PaywallMessageUiModel {
     NothingToRestore,
     PlayUnreachable,
-    SomethingWentWrong
+    SomethingWentWrong,
+    OfflineToBuy,
+    OfflineToRestore,
+    OfflineToManage
 }
 
 /**
@@ -86,17 +89,19 @@ sealed interface PaywallEventUiModel {
     data class Message(val message: PaywallMessageUiModel) : PaywallEventUiModel
 }
 
-enum class RestoreNoteUiModel {
+enum class PremiumNoteUiModel {
     Restored,
     NothingFound,
     Pending,
     Unreachable,
-    Unavailable
+    Unavailable,
+    OfflineToRestore,
+    OfflineToManage
 }
 
 /** What the Premium section shows; kept across a rotation, so a check keeps the last status. */
 @Parcelize
-data class PremiumSectionUiModel(val status: PremiumStatusUiModel, val note: RestoreNoteUiModel?) :
+data class PremiumSectionUiModel(val status: PremiumStatusUiModel, val note: PremiumNoteUiModel?) :
     Parcelable
 
 sealed interface PremiumSectionViewStateUiModel {
@@ -110,6 +115,10 @@ sealed interface PremiumSectionViewStateUiModel {
 sealed interface TrialBannerViewStateUiModel {
     data object Hidden : TrialBannerViewStateUiModel
 
-    data class Shown(val trialEndMillis: Long, val endsToday: Boolean, val renews: Boolean) :
-        TrialBannerViewStateUiModel
+    data class Shown(
+        val trialEndMillis: Long,
+        val endsToday: Boolean,
+        val renews: Boolean,
+        val offlineToManage: Boolean
+    ) : TrialBannerViewStateUiModel
 }

@@ -680,6 +680,9 @@ private fun PaywallMessageUiModel.text() = when (this) {
     PaywallMessageUiModel.NothingToRestore -> R.string.subscription_message_nothing_to_restore
     PaywallMessageUiModel.PlayUnreachable -> R.string.subscription_message_unreachable
     PaywallMessageUiModel.SomethingWentWrong -> R.string.subscription_message_failed
+    PaywallMessageUiModel.OfflineToBuy -> R.string.subscription_offline_buy
+    PaywallMessageUiModel.OfflineToRestore -> R.string.subscription_offline_restore
+    PaywallMessageUiModel.OfflineToManage -> R.string.subscription_offline_manage
 }
 
 private val PREVIEW_OFFERS = PaywallOffersUiModel(
