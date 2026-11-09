@@ -73,23 +73,29 @@ internal val LocalDialogClock = staticCompositionLocalOf<() -> Long> { SystemClo
  * is a `modifier`, on the box around the card. It adds no semantics, so a screen reader's or switch
  * access's click action and a keyboard work at once, and it draws nothing.
  */
-private fun Modifier.dialogWait(): Modifier = this.then(DialogWaitElement)
+private fun Modifier.dialogWait(): Modifier = this.then(CardTouchesElement(withWait = true))
 
-private object DialogWaitElement : ModifierNodeElement<DialogWaitNode>() {
-    override fun create() = DialogWaitNode()
+/**
+ * D161's lift half alone, for a window that has no wait, such as a popup menu (BRD D164): a lift
+ * on its card counts for the windows beneath, and a press on it is asked about an older lift.
+ */
+internal fun Modifier.liftOnCard(): Modifier = this.then(CardTouchesElement(withWait = false))
 
-    override fun update(node: DialogWaitNode) = Unit
+private data class CardTouchesElement(val withWait: Boolean) :
+    ModifierNodeElement<CardTouchesNode>() {
+    override fun create() = CardTouchesNode(withWait)
 
-    override fun hashCode() = "dialogWait".hashCode()
-
-    override fun equals(other: Any?) = other === this
+    override fun update(node: CardTouchesNode) {
+        node.withWait = withWait
+    }
 
     override fun InspectorInfo.inspectableProperties() {
-        name = "dialogWait"
+        name = if (withWait) "dialogWait" else "liftOnCard"
     }
 }
 
-private class DialogWaitNode :
+/** D160's wait when [withWait], and D161's lift always, on one window's card. */
+private class CardTouchesNode(var withWait: Boolean) :
     Modifier.Node(),
     PointerInputModifierNode,
     CompositionLocalConsumerModifierNode {
@@ -112,7 +118,8 @@ private class DialogWaitNode :
             val pointerId = change.id.value
             val ignored = if (change.changedToDownIgnoreConsumed()) {
                 // Both are told, each keeps its own pointers. An older dialog is beneath a lift.
-                val inTheWait = rule.press(pointerId, change.uptimeMillis, appearedAtMillis)
+                val inTheWait =
+                    withWait && rule.press(pointerId, change.uptimeMillis, appearedAtMillis)
                 val afterALift = lifts?.let { pressAfterALift(it, change) } == true
                 inTheWait || afterALift
             } else {
