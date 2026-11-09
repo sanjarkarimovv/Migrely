@@ -141,4 +141,16 @@ class ReportPeriodChoiceTest {
         verify(writeReportRepository).writeReport(report.capture())
         assertEquals(ReportDatesDomainModel(AUGUST_20, NOVEMBER_18), report.firstValue.dates)
     }
+
+    @Test
+    fun `Given a visit on November 9 and a later one when opened November 10 then since November 9`() {
+        val november9 = LocalDate.of(2026, 11, 9)
+        val november10 = LocalDate.of(2026, 11, 10)
+        givenToday(november10, november9, LocalDate.of(2026, 11, 27))
+
+        val ready = ready(ReportPeriodDomainModel.Default)
+
+        assertEquals(ReportPeriodDomainModel.SinceLastVisit(november9), ready.period)
+        assertEquals(ReportDatesDomainModel(november9, november10), ready.dates)
+    }
 }

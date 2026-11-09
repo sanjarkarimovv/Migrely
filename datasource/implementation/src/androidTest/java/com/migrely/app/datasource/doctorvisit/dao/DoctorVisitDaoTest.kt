@@ -75,6 +75,57 @@ class DoctorVisitDaoTest {
     }
 
     @Test
+    fun givenAVisitToday_whenALaterDateIsSaved_thenTodaysStaysAndTheLaterIsNext() {
+        classUnderTest.insert(DoctorVisitLocalModel("today", TODAY))
+
+        classUnderTest.replaceUpcoming(DoctorVisitLocalModel("later", "2026-11-27"), TODAY)
+
+        assertEquals(listOf(TODAY, "2026-11-27"), dates())
+        assertEquals("later", classUnderTest.next(TODAY)?.id)
+        // From the next day on, today's visit is the last one, which the report starts from.
+        assertEquals(TODAY, classUnderTest.lastDate("2026-11-11"))
+    }
+
+    @Test
+    fun givenOnlyAVisitToday_whenRemoved_thenItStaysAsTheVisitOfToday() {
+        classUnderTest.insert(DoctorVisitLocalModel("today", TODAY))
+
+        assertNull(classUnderTest.removeUpcoming(TODAY))
+
+        assertEquals(listOf(TODAY), dates())
+        assertEquals("today", classUnderTest.next(TODAY)?.id)
+    }
+
+    @Test
+    fun givenAVisitTodayAndALaterOne_whenRemoved_thenOnlyTheLaterGoes() {
+        classUnderTest.insert(DoctorVisitLocalModel("today", TODAY))
+        classUnderTest.insert(DoctorVisitLocalModel("later", "2026-11-27"))
+
+        assertEquals("later", classUnderTest.removeUpcoming(TODAY)?.id)
+
+        assertEquals(listOf(TODAY), dates())
+    }
+
+    @Test
+    fun givenTheClockSetBackToAVisitDay_whenANewDateIsSaved_thenThatVisitStays() {
+        // The visit was on November 20; the clock now reads November 20 again.
+        classUnderTest.insert(DoctorVisitLocalModel("past", "2026-11-20"))
+
+        classUnderTest.replaceUpcoming(DoctorVisitLocalModel("new", "2026-11-27"), "2026-11-20")
+
+        assertEquals(listOf("2026-11-20", "2026-11-27"), dates())
+    }
+
+    @Test
+    fun givenANextVisit_whenAPastVisitIsPutBack_thenTheNextOneStays() {
+        classUnderTest.insert(DoctorVisitLocalModel("next", "2026-11-27"))
+
+        classUnderTest.replaceUpcoming(DoctorVisitLocalModel("past", "2026-11-08"), TODAY)
+
+        assertEquals(listOf("2026-11-08", "2026-11-27"), dates())
+    }
+
+    @Test
     fun givenTwoUpcoming_whenTheNextIsRemoved_thenBothGoAndTheFirstIsReturned() {
         classUnderTest.insert(DoctorVisitLocalModel("old1", "2026-11-20"))
         classUnderTest.insert(DoctorVisitLocalModel("old2", "2026-12-01"))

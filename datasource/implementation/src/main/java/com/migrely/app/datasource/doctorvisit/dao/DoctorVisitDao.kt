@@ -7,32 +7,45 @@ import androidx.room.Query
 import androidx.room.Transaction
 import com.migrely.app.datasource.doctorvisit.model.DoctorVisitLocalModel
 
-/** Doctor visit queries (database version 7, design D2). Dates are ISO text, so they compare in order. */
+/**
+ * Doctor visit queries (database version 7, design D2). Dates are ISO text, so they compare in order. A visit dated
+ * today or earlier is never deleted here: on its day it stays the visit of today, and from the next day on it is the
+ * last visit a report starts from. Upcoming means after today.
+ */
 @Dao
 abstract class DoctorVisitDao {
-    @Query("SELECT * FROM doctor_visit WHERE date >= :today ORDER BY date LIMIT 1")
+    /** The first upcoming visit, or else today's. */
+    @Query(
+        "SELECT * FROM doctor_visit WHERE date >= :today ORDER BY (date = :today), date LIMIT 1"
+    )
     abstract fun next(today: String): DoctorVisitLocalModel?
 
     @Query("SELECT MAX(date) FROM doctor_visit WHERE date < :today")
     abstract fun lastDate(today: String): String?
 
-    @Query("DELETE FROM doctor_visit WHERE date >= :today")
+    @Query("SELECT * FROM doctor_visit WHERE date > :today ORDER BY date LIMIT 1")
+    abstract fun firstUpcoming(today: String): DoctorVisitLocalModel?
+
+    @Query("DELETE FROM doctor_visit WHERE date > :today")
     abstract fun deleteUpcoming(today: String)
 
     /** A row with the same ID or date gives way. */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     abstract fun insert(visit: DoctorVisitLocalModel)
 
-    /** [visit] becomes the only visit on or after [today]. */
+    /**
+     * [visit] becomes the next visit: the upcoming ones give way to one dated today or later. A visit put back that is
+     * already past, after midnight during an Undo, takes nothing away.
+     */
     @Transaction
     open fun replaceUpcoming(visit: DoctorVisitLocalModel, today: String) {
-        deleteUpcoming(today)
+        if (visit.date >= today) deleteUpcoming(today)
         insert(visit)
     }
 
-    /** Every visit on or after [today] goes; the one that was next is returned. */
+    /** Every upcoming visit goes; the first of them is returned. Today's visit stays. */
     @Transaction
-    open fun removeUpcoming(today: String): DoctorVisitLocalModel? = next(today)?.also {
+    open fun removeUpcoming(today: String): DoctorVisitLocalModel? = firstUpcoming(today)?.also {
         deleteUpcoming(today)
     }
 

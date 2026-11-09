@@ -35,7 +35,7 @@ private const val STACKED_FONT_SCALE = 1.3f
 
 /**
  * The "Doctor visit" section (BRD D168, design D9): its heading, summary, the one "Next visit" row, "Remove" when a date
- * is set, and why the reminder may show only on Home. With no date, nothing is added under the row.
+ * after today is set, and why the reminder may show only on Home. With no date, nothing is added under the row.
  */
 @Suppress("LongParameterList")
 @Composable
@@ -63,7 +63,8 @@ internal fun DoctorVisitSection(
             modifier = Modifier.padding(horizontal = 16.dp)
         )
         NextVisitRow(nextVisit, rowFocus, onPick)
-        if (nextVisit != null) {
+        // On its day a visit is not removed: it stays as the last visit a report starts from (BRD EC-REP-04).
+        if (nextVisit != null && nextVisit.isAfter(LocalDate.now())) {
             val removeDescription = stringResource(R.string.reminders_visit_remove_description)
             TextButton(
                 onClick = {
@@ -78,6 +79,8 @@ internal fun DoctorVisitSection(
             ) {
                 Text(stringResource(R.string.reminders_visit_remove))
             }
+        }
+        if (nextVisit != null) {
             when {
                 // The screen's own notice above already has "Open settings" (design D9).
                 !notificationsAllowed -> HomeOnlyLine()

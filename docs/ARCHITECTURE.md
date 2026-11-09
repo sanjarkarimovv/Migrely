@@ -194,9 +194,10 @@ data must never be passed to any SDK.
   - Version 5 is an additive `AutoMigration(4, 5)`, covered by `MigrationTest` 4→5 and 1→5.
 - **Doctor visits (version 7, change `add-doctor-visit-mode`, BRD D168).**
   - `doctor_visit` holds `id` (UUID) and a unique ISO `date` with no zone, like `day_mark`. The next visit is the
-    first date on or after today, the last the latest before it, both by the phone's local date.
-    `DoctorVisitDao.replaceUpcoming` deletes every upcoming row and inserts the new one in one transaction, so there is
-    at most one next visit.
+    first date after today, or else today's, and the last the latest before today, by the phone's local date.
+    `DoctorVisitDao.replaceUpcoming` deletes the rows after today and inserts the new one in one transaction, so there
+    is at most one upcoming visit. A row dated today or earlier is never deleted: on its day it stays, and from the next
+    day on it is the last visit a report starts from.
   - `reminder_settings` gains `visit_reminded_for`, `visit_card_closed_for` and `visit_postponed_to`, ISO dates keyed by
     the visit, so a new date starts clean. They are device state: backups leave them out and Replace keeps them.
   - `DoctorVisitDao.anythingLogged` asks D81's question (an attack, an intake or a pain-free mark in a period) for the

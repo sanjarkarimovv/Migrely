@@ -123,6 +123,13 @@ class DoctorVisitScreenTest {
     }
 
     @Test
+    fun givenTheVisitIsToday_thenNoRemove_sinceTodaysVisitStaysAsTheLastOne() {
+        show(nextVisit = LocalDate.now())
+
+        composeTestRule.onAllNodesWithText("Remove").assertCountEquals(0)
+    }
+
+    @Test
     fun givenAVisitAndAppNotificationsOff_thenTheLineWithoutAButton_andNoChannelNotice() {
         show(nextVisit = VISIT, allowed = false, channelOff = true)
 
