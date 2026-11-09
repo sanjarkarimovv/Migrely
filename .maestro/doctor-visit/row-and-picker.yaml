@@ -1,0 +1,43 @@
+# Covers: doctor-visit › Setting the next visit › Setting a date
+# Covers: doctor-visit › Accessible everywhere › The picker opens
+# Fails on 1.1.1 and older, which have no "Doctor visit" section (the negative control of T21 task 8.2).
+appId: com.migrely.app
+name: The Doctor visit section comes first on Reminders; the picker sets a date, Cancel and an early Done change nothing
+tags: [regression, reminders, doctor-visit]
+---
+- runFlow: ../subflows/launch-clean.yaml
+- runFlow: ../subflows/open-reminders.yaml
+- assertVisible:
+    text: "Doctor visit"
+    above: "Daily reminder"
+- assertVisible: "A reminder two days before, to make a report for your doctor"
+- assertVisible: "Next visit, not set\\. Set a date\\."
+- assertNotVisible: "Remove the next visit"
+# Done is off until a day is picked: a tap on it leaves the picker open. Cancel closes it and sets nothing.
+- tapOn: "Next visit, not set\\. Set a date\\."
+- extendedWaitUntil:
+    visible: "Pick a day"
+    timeout: 5000
+- assertVisible: "Cancel"
+- tapOn: "Done"
+- assertVisible: "Pick a day"
+- tapOn: "Cancel"
+- extendedWaitUntil:
+    visible: "Next visit, not set\\. Set a date\\."
+    timeout: 5000
+# A date 20 days ahead (often the next month): the row speaks the full date and offers Remove.
+- runFlow:
+    file: ../subflows/set-visit.yaml
+    env:
+      OFFSET: 20
+      DATE: ""
+- assertVisible: "Remove the next visit"
+# The picker opens on the saved date: the headline shows a date, not "Pick a day".
+- tapOn: "Next visit, ${output.visitSpoken}\\. Change it\\."
+- extendedWaitUntil:
+    visible: "Cancel"
+    timeout: 5000
+- assertNotVisible: "Pick a day"
+- assertVisible: "${output.visitSpoken}"
+- tapOn: "Cancel"
+- assertVisible: "Next visit, ${output.visitSpoken}\\. Change it\\."

@@ -1,0 +1,42 @@
+# Covers: doctor-visit › The home card › Two days before
+# Covers: doctor-visit › A visit too close to remind › Tomorrow
+# Covers: doctor-visit › Opening the report from the reminder › Free
+# Fails on 1.1.1 and older, which have no "Doctor visit" section.
+appId: com.migrely.app
+name: With nothing logged no card; after a migraine the card names the visit; a free "Make a report" opens the paywall
+tags: [regression, doctor-visit, subscription]
+---
+- runFlow: ../subflows/launch-clean.yaml
+- runFlow: ../subflows/open-reminders.yaml
+# Tomorrow is too close for a notification, so only the card reminds (EC-REM-08).
+- runFlow:
+    file: ../subflows/set-visit.yaml
+    env:
+      OFFSET: 1
+      DATE: ""
+- back
+- back
+- extendedWaitUntil:
+    visible: "Today: .*"
+    timeout: 5000
+# An empty diary: no card (EC-REM-13).
+- assertNotVisible: "Your doctor visit is on .*"
+- runFlow: ../subflows/log-attack-today.yaml
+- extendedWaitUntil:
+    visible: "Your doctor visit is on ${output.visitSpoken}\\."
+    timeout: 5000
+- assertVisible: "Close the visit reminder"
+- tapOn: "Make a report"
+- extendedWaitUntil:
+    visible: "A report for your doctor"
+    timeout: 10000
+- tapOn: "Close"
+- extendedWaitUntil:
+    visible: "History"
+    timeout: 5000
+- back
+# Tapped once, the card stays away for that date.
+- extendedWaitUntil:
+    visible: "Today: .*"
+    timeout: 5000
+- assertNotVisible: "Your doctor visit is on .*"

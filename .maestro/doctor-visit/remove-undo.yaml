@@ -1,0 +1,38 @@
+# Covers: doctor-visit › Removing a visit › Remove
+# Covers: doctor-visit › Removing a visit › Undo
+# Fails on 1.1.1 and older, which have no "Doctor visit" section.
+appId: com.migrely.app
+name: Remove offers Undo, Undo brings the date back with "Undone.", and a Remove left alone stands
+tags: [regression, reminders, doctor-visit, a11y-timeout]
+# Runs with a 20 s accessibility timeout (qa/maestro.sh pass 2): it checks what Undo does, not how long it lasts.
+---
+- runFlow: ../subflows/launch-clean.yaml
+- runFlow: ../subflows/open-reminders.yaml
+- runFlow:
+    file: ../subflows/set-visit.yaml
+    env:
+      OFFSET: 12
+      DATE: ""
+- tapOn:
+    text: "Remove the next visit"
+    waitToSettleTimeoutMs: 0
+    retryTapIfNoChange: false
+- tapOn:
+    text: "Undo removing the visit"
+    waitToSettleTimeoutMs: 0
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible: "Undone\\."
+    timeout: 5000
+- assertVisible: "Next visit, ${output.visitSpoken}\\. Change it\\."
+# Removed and left alone: the message goes and the row stays "not set".
+- tapOn: "Remove the next visit"
+- extendedWaitUntil:
+    visible: "Visit removed"
+    timeout: 5000
+- assertVisible: "Next visit, not set\\. Set a date\\."
+- extendedWaitUntil:
+    notVisible: "Visit removed"
+    timeout: 40000
+- assertVisible: "Next visit, not set\\. Set a date\\."
+- assertNotVisible: "Remove the next visit"
