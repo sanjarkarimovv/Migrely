@@ -3,6 +3,22 @@
 Each release's text for Play Console › Create new release › Release notes. Play allows at most 500 characters per
 language. en-US is the default, and other languages fall back to it.
 
+## 1.2.0 (versionCode 10)
+
+The doctor visit reminder (D168), private lock screen notifications (D169) and the fixes for #161 (D164) and
+#166, #167 (D165).
+
+```
+<en-US>
+New:
+• Doctor visit: set your next visit's date in Reminders. Two days before, Migrely reminds you to make a report for your doctor. The Doctor report can cover the time since your last visit.
+• Lock screen reminders no longer show a medication's name or whether you logged a migraine.
+Fixes:
+• A quick second tap on Remove in a custom tag's menu no longer selects what was under it.
+• On the Migraine screen, a message no longer covers the safety card, and "Couldn't save" clears once a save works.
+</en-US>
+```
+
 ## 1.1.1 (versionCode 9)
 
 The hotfix for Google's rejection of 1.0.1 (D166) and the safety card (D167).
