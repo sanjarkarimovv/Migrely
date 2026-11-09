@@ -13,6 +13,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -33,11 +35,11 @@ import com.migrely.app.designsystem.icon.MigrelyIcons
 import com.migrely.app.designsystem.theme.MigrelyTheme
 import com.migrely.app.subscription.ui.R
 import com.migrely.app.subscription.ui.di.PremiumSectionDependencies
+import com.migrely.app.subscription.ui.model.PremiumNoteUiModel
 import com.migrely.app.subscription.ui.model.PremiumPlanUiModel
 import com.migrely.app.subscription.ui.model.PremiumSectionUiModel
 import com.migrely.app.subscription.ui.model.PremiumSectionViewStateUiModel
 import com.migrely.app.subscription.ui.model.PremiumStatusUiModel
-import com.migrely.app.subscription.ui.model.RestoreNoteUiModel
 
 private val ROW_MIN_HEIGHT = 56.dp
 
@@ -77,16 +79,21 @@ fun PremiumSectionDependencies.PremiumSection(
     // Each new view state is resolved once, as it comes: resolving the last one held again at every
     // composition brought a restore's note back after Settings had dropped it.
     var checking by remember { mutableStateOf(false) }
+    // Counts the notes that come with an answer, so the same note twice is spoken twice (D166).
+    var noteNumber by remember { mutableIntStateOf(0) }
     LaunchedEffect(premiumSectionViewModel) {
         premiumSectionViewModel.viewState.collect { viewState ->
             val uiState = premiumSectionViewStateUiMapper.toUi(viewState)
             checking = uiState == PremiumSectionViewStateUiModel.Checking
+            val answer = (uiState as? PremiumSectionViewStateUiModel.Ready)?.section
+            if (answer?.note != null) noteNumber++
             shown = premiumSectionShownResolver.resolve(shown, uiState)
         }
     }
     PremiumSectionContents(
         section = shown,
         checking = checking,
+        noteNumber = noteNumber,
         actions = PremiumSectionActions(
             onStatus = premiumSectionViewModel::onStatusAction,
             onRestore = premiumSectionViewModel::onRestoreAction,
@@ -96,13 +103,18 @@ fun PremiumSectionDependencies.PremiumSection(
     )
 }
 
-/** The section itself, without its view model. Each row is one labelled node (EC-UX-04). */
+/**
+ * The section itself, without its view model. Each row is one labelled node (EC-UX-04). Each new
+ * [noteNumber] makes the note a new live region, which TalkBack speaks even when its text is the
+ * same as before.
+ */
 @Composable
 fun PremiumSectionContents(
     section: PremiumSectionUiModel?,
     checking: Boolean,
     actions: PremiumSectionActions,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    noteNumber: Int = 0
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
         Text(
@@ -142,15 +154,17 @@ fun PremiumSectionContents(
             opensScreen = false
         )
         section?.note?.takeUnless { checking }?.let { note ->
-            Text(
-                text = stringResource(note.text()),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 4.dp)
-                    .semantics { liveRegion = LiveRegionMode.Polite }
-            )
+            key(noteNumber) {
+                Text(
+                    text = stringResource(note.text()),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 4.dp)
+                        .semantics { liveRegion = LiveRegionMode.Polite }
+                )
+            }
         }
     }
 }
@@ -237,12 +251,14 @@ private fun PremiumStatusUiModel.managed() = when (this) {
     is PremiumStatusUiModel.Lifetime -> subscriptionRenewsToo
 }
 
-private fun RestoreNoteUiModel.text() = when (this) {
-    RestoreNoteUiModel.Restored -> R.string.subscription_note_restored
-    RestoreNoteUiModel.NothingFound -> R.string.subscription_note_nothing
-    RestoreNoteUiModel.Pending -> R.string.subscription_note_pending
-    RestoreNoteUiModel.Unreachable -> R.string.subscription_note_unreachable
-    RestoreNoteUiModel.Unavailable -> R.string.subscription_note_unavailable
+private fun PremiumNoteUiModel.text() = when (this) {
+    PremiumNoteUiModel.Restored -> R.string.subscription_note_restored
+    PremiumNoteUiModel.NothingFound -> R.string.subscription_note_nothing
+    PremiumNoteUiModel.Pending -> R.string.subscription_note_pending
+    PremiumNoteUiModel.Unreachable -> R.string.subscription_note_unreachable
+    PremiumNoteUiModel.Unavailable -> R.string.subscription_note_unavailable
+    PremiumNoteUiModel.OfflineToRestore -> R.string.subscription_offline_restore
+    PremiumNoteUiModel.OfflineToManage -> R.string.subscription_offline_manage
 }
 
 private val PREVIEW_ACTIONS = PremiumSectionActions({}, {}, {})
@@ -269,7 +285,7 @@ private fun PremiumSectionFreeLightPreview() {
         PremiumSectionContents(
             section = PremiumSectionUiModel(
                 PremiumStatusUiModel.Free,
-                RestoreNoteUiModel.NothingFound
+                PremiumNoteUiModel.NothingFound
             ),
             checking = false,
             actions = PREVIEW_ACTIONS

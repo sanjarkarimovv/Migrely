@@ -5,6 +5,7 @@ import com.migrely.app.coroutine.CoroutineContextProvider
 import com.migrely.app.subscription.domain.model.BuyPremiumResultDomainModel
 import com.migrely.app.subscription.domain.model.EntitlementKindDomainModel
 import com.migrely.app.subscription.domain.model.LaunchedPurchaseDomainModel
+import com.migrely.app.subscription.domain.model.NetworkStateDomainModel
 import com.migrely.app.subscription.domain.model.PremiumPlanDomainModel
 import com.migrely.app.subscription.domain.model.PremiumProductDomainModel
 import com.migrely.app.subscription.domain.model.PremiumStatusDomainModel
@@ -14,6 +15,7 @@ import com.migrely.app.subscription.domain.model.PurchaseSheetResultDomainModel
 import com.migrely.app.subscription.domain.model.PurchaseStateDomainModel
 import com.migrely.app.subscription.domain.repository.GetCurrentTimeRepository
 import com.migrely.app.subscription.domain.repository.GetEntitlementRepository
+import com.migrely.app.subscription.domain.repository.GetNetworkStateRepository
 import com.migrely.app.subscription.domain.repository.LaunchPurchaseRepository
 import com.migrely.app.subscription.domain.repository.SaveLaunchedPurchaseRepository
 
@@ -28,10 +30,13 @@ import com.migrely.app.subscription.domain.repository.SaveLaunchedPurchaseReposi
  *   always what Play holds: a completed purchase is checked, acknowledged and unlocks at once, a
  *   pending one unlocks nothing, and a cancelled sheet changes nothing;
  * - the plan and the trial of a purchase made here are kept, since Google Play does not report
- *   them.
+ *   them;
+ * - when no network on the phone has internet, the sheet does not open at all, since Google Play
+ *   would only show its own error there (BRD D166, EC-BIL-19).
  */
 @Suppress("LongParameterList")
 class BuyPremiumUseCase(
+    private val getNetworkStateRepository: GetNetworkStateRepository,
     private val getEntitlementRepository: GetEntitlementRepository,
     private val saveLaunchedPurchaseRepository: SaveLaunchedPurchaseRepository,
     private val getCurrentTimeRepository: GetCurrentTimeRepository,
@@ -45,6 +50,12 @@ class BuyPremiumUseCase(
     override fun executeInBackground(
         request: PremiumProductDomainModel
     ): BuyPremiumResultDomainModel {
+        if (getNetworkStateRepository.networkState() == NetworkStateDomainModel.Offline) {
+            return BuyPremiumResultDomainModel(
+                PurchaseOutcomeDomainModel.Offline,
+                premiumChecker.kept()
+            )
+        }
         val entitlement = getEntitlementRepository.entitlement()
         val replaced = entitlement.purchaseToken.takeIf {
             entitlement.kind == EntitlementKindDomainModel.Subscription &&

@@ -3,16 +3,18 @@ package com.migrely.app.subscription.presentation.viewmodel
 import com.migrely.app.architecture.domain.UseCaseExecutor
 import com.migrely.app.architecture.presentation.viewmodel.BaseViewModel
 import com.migrely.app.subscription.domain.model.BillingAvailabilityDomainModel
+import com.migrely.app.subscription.domain.model.ManageSubscriptionResultDomainModel
 import com.migrely.app.subscription.domain.model.PremiumCheckDomainModel
 import com.migrely.app.subscription.domain.model.PremiumStatusDomainModel
 import com.migrely.app.subscription.domain.model.RefreshPremiumRequestDomainModel
+import com.migrely.app.subscription.domain.model.RestorePurchasesResultDomainModel
 import com.migrely.app.subscription.domain.usecase.ManageSubscriptionUseCase
 import com.migrely.app.subscription.domain.usecase.RefreshPremiumUseCase
 import com.migrely.app.subscription.domain.usecase.RestorePurchasesUseCase
 import com.migrely.app.subscription.presentation.mapper.PremiumStatusPresentationMapper
+import com.migrely.app.subscription.presentation.model.PremiumNotePresentationModel
 import com.migrely.app.subscription.presentation.model.PremiumSectionPresentationNotification
 import com.migrely.app.subscription.presentation.model.PremiumSectionViewState
-import com.migrely.app.subscription.presentation.model.RestoreNotePresentationModel
 import com.migrely.app.subscription.presentation.navigation.PremiumSectionPresentationNavigationEvent
 
 /**
@@ -45,26 +47,46 @@ class PremiumSectionViewModel(
 
     fun onRestoreAction() {
         updateViewState(PremiumSectionViewState.Checking)
-        restorePurchasesUseCase(onResult = { check -> show(check.status, noteOf(check)) })
+        restorePurchasesUseCase(
+            onResult = { result ->
+                when (result) {
+                    is RestorePurchasesResultDomainModel.Checked ->
+                        show(result.check.status, noteOf(result.check))
+                    is RestorePurchasesResultDomainModel.Offline ->
+                        show(result.status, PremiumNotePresentationModel.OfflineToRestore)
+                }
+            }
+        )
     }
 
     fun onManageAction() {
-        manageSubscriptionUseCase(onResult = { status -> show(status, note = null) })
+        manageSubscriptionUseCase(
+            onResult = { result ->
+                when (result) {
+                    is ManageSubscriptionResultDomainModel.Opened -> show(
+                        result.status,
+                        note = null
+                    )
+                    is ManageSubscriptionResultDomainModel.Offline ->
+                        show(result.status, PremiumNotePresentationModel.OfflineToManage)
+                }
+            }
+        )
     }
 
-    private fun noteOf(check: PremiumCheckDomainModel): RestoreNotePresentationModel =
+    private fun noteOf(check: PremiumCheckDomainModel): PremiumNotePresentationModel =
         when (check.billing) {
-            BillingAvailabilityDomainModel.Unavailable -> RestoreNotePresentationModel.Unavailable
-            BillingAvailabilityDomainModel.Unknown -> RestoreNotePresentationModel.Unreachable
+            BillingAvailabilityDomainModel.Unavailable -> PremiumNotePresentationModel.Unavailable
+            BillingAvailabilityDomainModel.Unknown -> PremiumNotePresentationModel.Unreachable
             BillingAvailabilityDomainModel.Available -> when (check.status) {
-                PremiumStatusDomainModel.Free -> RestoreNotePresentationModel.NothingFound
-                PremiumStatusDomainModel.Pending -> RestoreNotePresentationModel.Pending
+                PremiumStatusDomainModel.Free -> PremiumNotePresentationModel.NothingFound
+                PremiumStatusDomainModel.Pending -> PremiumNotePresentationModel.Pending
                 is PremiumStatusDomainModel.Subscribed,
-                is PremiumStatusDomainModel.Lifetime -> RestoreNotePresentationModel.Restored
+                is PremiumStatusDomainModel.Lifetime -> PremiumNotePresentationModel.Restored
             }
         }
 
-    private fun show(status: PremiumStatusDomainModel, note: RestoreNotePresentationModel?) =
+    private fun show(status: PremiumStatusDomainModel, note: PremiumNotePresentationModel?) =
         updateViewState(
             PremiumSectionViewState.Ready(
                 premiumStatusPresentationMapper.toPresentation(status),

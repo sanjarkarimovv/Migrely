@@ -57,8 +57,8 @@ android {
         applicationId = "com.migrely.app"
         minSdk = libs.versions.minSdk.get().toInt()
         targetSdk = libs.versions.targetSdk.get().toInt()
-        versionCode = 8
-        versionName = "1.1.0"
+        versionCode = 9
+        versionName = "1.1.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "PLAY_LICENSE_KEY", "\"$playLicenseKey\"")
@@ -201,12 +201,13 @@ dependencies {
 }
 
 /**
- * Permissions Migrely must never ship, whichever library declares them (issue #36): no network of any kind, no exact
- * alarms (BRD EC-REM-03), no foreground work, no storage, location, contacts, camera, microphone or advertising ID.
+ * Permissions Migrely must never ship, whichever library declares them (issue #36): no internet, no Wi-Fi state, no
+ * change of network state, no exact alarms (BRD EC-REM-03), no foreground work, no storage, location, contacts,
+ * camera, microphone or advertising ID. ACCESS_NETWORK_STATE is allowed since 1.1.1, only for the offline check of
+ * buy, Restore and Manage (BRD D166).
  */
 val forbiddenPermissions = listOf(
     "android.permission.INTERNET",
-    "android.permission.ACCESS_NETWORK_STATE",
     "android.permission.ACCESS_WIFI_STATE",
     "android.permission.CHANGE_NETWORK_STATE",
     "android.permission.FOREGROUND_SERVICE",

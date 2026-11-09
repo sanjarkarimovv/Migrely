@@ -125,8 +125,10 @@ The binding follows the skill's `bindings/nav2.md`.
 ## 6. Network binding
 
 None. The app declares no `INTERNET` permission. Billing is the Play Billing Library, which talks to the Play Store app
-over IPC (change add-subscription, BRD D105); the `INTERNET` and `ACCESS_NETWORK_STATE` that its usage logging declares
-are removed in the manifest, and the permission check keeps them out. Google Play's in-app review library talks to the
+over IPC (change add-subscription, BRD D105); the `INTERNET` that its usage logging declares is removed in the manifest,
+and the permission check keeps it out. `ACCESS_NETWORK_STATE`, which the same logging and WorkManager declare, is kept
+since 1.1.1, only for the offline check before buy, Restore and Manage (change fix-offline-play-sheet, BRD D166): a
+`NetworkStateDataSource` reads it at the tap, with no cache and no listener, and fails open. Google Play's in-app review library talks to the
 Play Store app the same way and declares no permission (change add-in-app-review, BRD D129). An analytics SDK (TelemetryDeck) would be the only
 code allowed to use the network; the change that adds it also adds `INTERNET` and updates the `app-shell` spec. Health
 data must never be passed to any SDK.
