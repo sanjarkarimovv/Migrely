@@ -68,8 +68,8 @@ PROMO_SCENES = [
     'medication." "Create report", then the PDF\'s pages.',
     '"Premium Insights. Know what comes with your migraines. Triggers often logged with your migraines, when they '
     'come, and what helped." Insights in the app.',
-    '"Private by design. No internet permission. Android lists every app\'s permissions. Migrely\'s has no network '
-    'access. No account. No ads. Check it yourself: migrely.health/privacy-check." Android\'s list of Migrely\'s '
+    '"Private by design. No internet permission. Android lists every app\'s permissions. Migrely\'s has no internet '
+    'permission. No account. No ads. Check it yourself: migrely.health/privacy-check." Android\'s list of Migrely\'s '
     'permissions.',
     '"Migrely. A calm migraine diary. Free on Google Play. migrely.health"',
 ]
@@ -166,6 +166,11 @@ PERMISSIONS = [
      'Lets Migrely ask the Google Play app on your phone whether Premium is on, and open Google Play\'s purchase '
      'screen. Migrely talks only to the Google Play app, never to the internet; Google Play itself goes online to '
      'complete a purchase.'),
+    ('“view network connections”', 'android.permission.ACCESS_NETWORK_STATE',
+     'From version 1.1.1. When you tap to buy, restore or manage Premium, Migrely checks whether your phone is online, '
+     'so it can tell you it is offline instead of opening a Google Play screen that cannot load. It reads this on '
+     'your phone and sends nothing. It does not let Migrely go on the internet: Migrely has no internet permission, in '
+     'every version.'),
     ('An internal AndroidX permission', 'com.migrely.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION',
      'AndroidX, Google\'s standard library for Android apps, adds it so that on older Android versions only Migrely '
      'can send messages to its own parts. Settings does not list it.'),
@@ -460,7 +465,7 @@ def home():
                'publisher': BY_MIGRELY}
     video = {'@type': 'VideoObject', 'name': 'Migrely in 30 seconds',
              'description': 'Migrely\'s screens with sample data: logging a migraine in three taps, the month as a sky, the doctor '
-                            'report and Insights (Premium), and Android\'s permission list with no network access.',
+                            'report and Insights (Premium), and Android\'s permission list with no internet permission.',
              'thumbnailUrl': f'{BASE}/assets/video/{PROMO_VIDEO[1]}', 'contentUrl': f'{BASE}/assets/video/{PROMO_VIDEO[0]}',
              'uploadDate': PROMO_UPLOADED, 'duration': 'PT30S', 'publisher': BY_MIGRELY}
     faq = {'@type': 'FAQPage', '@id': f'{BASE}/#questions', 'url': f'{BASE}/', 'name': 'Questions before you install',
@@ -590,7 +595,10 @@ def privacy_check():
     Buying or restoring Premium, and rating Migrely, need Google Play to be online.</p>
   <h2>What are Migrely's {count} permissions for?</h2>
   <p>These are all the permissions Migrely asks for. Those in quotes appear in the list under those names. On
-    phones with Google Play, billing may be listed too.</p>
+    phones with Google Play, billing may be listed too. “View network connections” is asked for only from version
+    1.1.1; earlier versions ask for the other five.</p>
+  <p>“View network connections” is not the internet permission. It only lets an app see whether the phone is online;
+    it cannot connect. “Have full network access” is the internet permission, and Migrely does not have it.</p>
   <div class="perms">{cards}</div>
   <h2>What can still leave my phone?</h2>
   <p>Without the internet permission, Migrely itself sends nothing. Three things are up to Android, Google Play or
@@ -607,7 +615,7 @@ def privacy_check():
   <h2>How can a developer check it?</h2>
   <p>With USB debugging on and Migrely installed, run:</p>
   <pre><code>adb shell dumpsys package com.migrely.app | grep -A{len(PERMISSIONS)} "requested permissions"</code></pre>
-  <p>It prints the same {count} permissions. To look for the internet permission alone, run:</p>
+  <p>It prints the permissions above ({count} from version 1.1.1, one fewer before). To look for the internet permission alone, run:</p>
   <pre><code>adb shell dumpsys package com.migrely.app | grep INTERNET</code></pre>
   <p>It prints nothing.</p>
   <p>{play_button(path)}</p></section>'''
