@@ -11,8 +11,9 @@ Under load, run Gradle as `nice -n 19 ./gradlew --max-workers=2 …`. With pipes
 
 ## 0. Design first
 
-- [ ] 0.1 `ux-designer`: the row states, the picker, "Visit removed", the notification and its public version, the home card and its place, and the "Since last visit" label, within design D5 and D8 and the "Accessible everywhere" requirement. Verify: the design note lists every state named in `specs/doctor-visit/spec.md` and the copy for each.
-- [ ] 0.2 `medical-reviewer`: read the final copy. Verify: a written "no health claim" or the named fixes, saved with the design note.
+- [x] 0.1 `ux-designer`: the row states, the picker, "Visit removed", the notification and its public version, the home card and its place, and the "Since" label. Verify: the design note lists every state named in `specs/doctor-visit/spec.md` and the copy for each. Done: `migrely-work/t21/ux-spec.md`, folded into design D5, D8, D9, D10 and "Copy (final)".
+- [x] 0.2 `medical-reviewer`: read the final copy. Verify: a written "no health claim" or the named fixes, saved with the design note. Done: PASS on all 33 lines, 2026-11-09. The notes are in design "Medical review".
+- [ ] 0.3 Implement `fix-notification-privacy` (#178, D169) first, on this branch, in its own commits with `Refs #178`, because this change reuses its `notification_public_title` and touches the same `NotificationDataSourceImpl`. Verify: that change's `tasks.md` is all checked before 5.2 here starts.
 
 ## 1. Domain
 
@@ -22,7 +23,7 @@ Under load, run Gradle as `nice -n 19 ./gradlew --max-workers=2 …`. With pipes
 
 ## 2. Presentation
 
-- [ ] 2.1 `RemindersViewModel`: the visit row state (not set, set, notifications off, channel off), pick, the same date doing nothing, remove with Undo, the permission request through the existing 30-day rule, and saving errors. Verify: `./gradlew :features:reminders:presentation:test`, including a late first read that does not overwrite a newer save.
+- [ ] 2.1 `RemindersViewModel`: the visit row state (not set, set, app notifications off, channel off, both off), pick, the same date doing nothing, remove with Undo and "Undone.", the permission request through the existing 30-day rule and the timing of design D10 (pending in `SavedStateHandle`, 500 ms after the lift on Done, only while resumed, dropped on leaving with no 30-day stamp), and saving errors. Verify: `./gradlew :features:reminders:presentation:test`, including a late first read that does not overwrite a newer save.
 - [ ] 2.2 `VisitCardViewModel`: show or hide by the D3 and D8 rules, close, and the open-report event. Verify: `./gradlew :features:reminders:presentation:test`.
 - [ ] 2.3 `ReportViewModel`: "Since last visit" first and chosen when known. Verify: `./gradlew :features:report:presentation:test`.
 - [ ] 2.4 `HistoryViewModel`: `openReport` runs `onReportAction()` once, consumed in `SavedStateHandle`. Verify: `./gradlew :features:history:presentation:test`, covering rotation and restore with no second open.
@@ -36,8 +37,9 @@ Under load, run Gradle as `nice -n 19 ./gradlew --max-workers=2 …`. With pipes
 
 ## 4. UI
 
-- [ ] 4.1 The "Doctor visit" section on the Reminders screen, the full-screen picker (the D127 rules, one day), "Remove", the notice with "Open settings" (the app's settings, or the channel's settings when only the channel is off). Verify: `./gradlew :features:reminders:ui:test`, with Compose tests for each row state, one merged TalkBack node, disabled past days, and 200% font in landscape showing two weeks.
-- [ ] 4.2 The home visit card composable, without animation, with buttons for report and close. Verify: `./gradlew :features:reminders:ui:test`.
+- [ ] 4.0 `designsystem/picker/MigrelyDatePicker`, one day, a sibling of `MigrelyDateRangePicker`, per design D9: the top row, the headline live region, disabled days, compact-height scrolling under a fixed top row, and D127's keyboard rules. Verify: `./gradlew :designsystem:test`, plus a Compose test at 200% font in a landscape-sized window (about 411 dp high) asserting that the weekday row, 14 day cells and Done are displayed without scrolling.
+- [ ] 4.1 The "Doctor visit" section first on the Reminders screen (design D9), with the copy from design "Copy (final)", the full-screen picker (the D127 rules, one day), "Remove", the notice with "Open settings" (the app's settings, or the channel's settings when only the channel is off). Verify: `./gradlew :features:reminders:ui:test`, with Compose tests for each row state, one merged TalkBack node, disabled past days, and 200% font in landscape showing two weeks.
+- [ ] 4.2 The home visit card composable (design D8), without animation, with "Make a report" and close, and its labels. Verify: `./gradlew :features:reminders:ui:test`.
 - [ ] 4.3 The "Since last visit" option on the Doctor report screen. Verify: `./gradlew :features:report:ui:test`.
 
 ## 5. Wiring (`:app`)
@@ -61,6 +63,6 @@ Under load, run Gradle as `nice -n 19 ./gradlew --max-workers=2 …`. With pipes
 
 ## 8. Independent QA (`qa-engineer`)
 
-- [ ] 8.1 Run A1 to A16 from design "Acceptance for QA", each with its negative control, on `Migrely_QA_API_36` and `_26`. Verify: a Go/No-Go for this change only in `docs/qa/`, with each check's command and result, and what the checks do not prove.
+- [ ] 8.1 Run A1 to A26 from design "Acceptance for QA", each with its negative control, on `Migrely_QA_API_36` and `_26`. Verify: a Go/No-Go for this change only in `docs/qa/`, with each check's command and result, and what the checks do not prove.
 - [ ] 8.2 Maestro flows for the spec scenarios that a device can drive (the row, picker, remove and Undo, card, tap to paywall, tap to report). Verify: `maestro test .maestro/<doctor-visit flows>` passes, and each flow fails on the 1.1.1 build, which has no visit row (the negative control).
 - [ ] 8.3 Then archive the change and merge into `develop` (`android-engineer`). Verify: `openspec list` no longer shows `add-doctor-visit-mode`.

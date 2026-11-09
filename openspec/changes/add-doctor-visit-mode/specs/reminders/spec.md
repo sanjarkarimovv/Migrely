@@ -2,14 +2,18 @@
 
 ### Requirement: The Reminders screen
 Home SHALL show a "Settings" button in its header in normal mode only, and Settings SHALL list "Reminders". It SHALL
-open a screen with "Daily reminder", off by default, with its time (20:00 by default), "Ask if a medication helped",
-and a "Doctor visit" section whose "Next visit" reads "Not set" until a date is saved (BRD D65, D66, D67, D70, D168,
-REM-F4, EC-UX-13).
+open a screen with, first, a "Doctor visit" section: its heading, "A reminder two days before, to make a report for
+your doctor", and "Next visit" reading "Not set" until a date is saved; then "Daily reminder", off by default, with
+its time (20:00 by default), and "Ask if a medication helped" (BRD D65, D66, D67, D70, D168, REM-F4, EC-UX-13).
 
 #### Scenario: Opening Reminders
 - **WHEN** the user taps "Settings" on home, then "Reminders"
-- **THEN** the Reminders screen shows "Daily reminder" off at 8:00 PM, "Ask if a medication helped", and "Next visit"
-  reading "Not set"
+- **THEN** the screen shows the "Doctor visit" heading with "Next visit" reading "Not set", then "Daily reminder" off at
+  8:00 PM and "Ask if a medication helped"
+
+#### Scenario: A heading for navigation
+- **WHEN** a TalkBack user moves by headings on the Reminders screen
+- **THEN** "Doctor visit" is a heading
 
 #### Scenario: Attack mode
 - **WHEN** an attack is in progress
