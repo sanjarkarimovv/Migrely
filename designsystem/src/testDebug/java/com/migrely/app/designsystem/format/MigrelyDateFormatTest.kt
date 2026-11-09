@@ -44,4 +44,14 @@ class MigrelyDateFormatTest {
     fun `When a day is spoken then in full, with the year`() {
         assertEquals("Friday, November 20, 2026", MigrelyDateFormat.spoken(NOVEMBER_20, Locale.US))
     }
+
+    @Test
+    fun `Given a day this year when shown as month and day then no weekday`() {
+        assertEquals("Aug 20", MigrelyDateFormat.monthDay(LocalDate.of(2026, 8, 20), TODAY, Locale.US))
+    }
+
+    @Test
+    fun `Given a day in another year when shown as month and day then with its year`() {
+        assertEquals("Aug 20, 2025", MigrelyDateFormat.monthDay(LocalDate.of(2025, 8, 20), TODAY, Locale.US))
+    }
 }

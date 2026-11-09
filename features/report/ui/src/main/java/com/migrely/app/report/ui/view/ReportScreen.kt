@@ -363,7 +363,10 @@ fun ReportContents(
     }
 }
 
-/** "Since Aug 20", read as "Since your last visit, Thursday, August 20, 2026" (BRD EC-REP-04, D168). */
+/**
+ * "Since Aug 20", or "Since Aug 20, 2025" in another year, read as "Since your last visit, Thursday, August 20, 2026"
+ * (BRD EC-REP-04, D168).
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SinceVisitChip(
@@ -386,7 +389,7 @@ private fun SinceVisitChip(
             Text(
                 stringResource(
                     R.string.report_since_visit,
-                    MigrelyDateFormat.short(lastVisit, LocalDate.now(), locale)
+                    MigrelyDateFormat.monthDay(lastVisit, LocalDate.now(), locale)
                 ),
                 modifier = Modifier.clearAndSetSemantics { contentDescription = description }
             )
