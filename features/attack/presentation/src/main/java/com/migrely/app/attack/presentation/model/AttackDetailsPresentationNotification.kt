@@ -34,6 +34,12 @@ sealed interface AttackDetailsPresentationNotification : PresentationNotificatio
 
     data object UndoNotPossible : AttackDetailsPresentationNotification
 
+    /**
+     * A write saved and has no message of its own. Not a message: the screen uses it to replace an error that the
+     * write has made untrue (BRD D165 (4), EC-UX-34).
+     */
+    data object Saved : AttackDetailsPresentationNotification
+
     data object StorageFull : AttackDetailsPresentationNotification
 
     data object SomethingWentWrong : AttackDetailsPresentationNotification

@@ -37,6 +37,7 @@ import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -98,7 +99,11 @@ val MESSAGE_OFFSET_BELOW_TOP_BAR = 56.dp
  * [action] and a duration dismisses it, by touch only, so screen readers still find the close button and nothing new. A
  * tap cannot take away the offer to undo, or a message with no duration, which says the last action was not saved
  * (BRD D158).
+ *
+ * TalkBack reads an error at once and anything else politely. [announcePolitely] makes an error polite too, so it waits
+ * for an assertive announcement already running, such as the first-10 safety card (BRD D165 (3)).
  */
+@Suppress("LongParameterList")
 @Composable
 fun MigrelySnackbar(
     text: String,
@@ -108,7 +113,8 @@ fun MigrelySnackbar(
     dismissLabel: String,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
-    timeLeft: (() -> Float)? = null
+    timeLeft: (() -> Float)? = null,
+    announcePolitely: Boolean = false
 ) {
     val currentOnDismiss by rememberUpdatedState(onDismiss)
     val swipeState = rememberSwipeToDismissBoxState()
@@ -125,7 +131,7 @@ fun MigrelySnackbar(
         backgroundContent = {},
         modifier = modifier.then(bodyTap)
     ) {
-        SnackbarSurface(text, tone, action, dismissLabel, onDismiss, timeLeft)
+        SnackbarSurface(text, tone, action, dismissLabel, onDismiss, timeLeft, announcePolitely)
     }
 }
 
@@ -136,12 +142,11 @@ private fun SnackbarSurface(
     action: SnackbarAction?,
     dismissLabel: String,
     onDismiss: () -> Unit,
-    timeLeft: (() -> Float)?
+    timeLeft: (() -> Float)?,
+    announcePolitely: Boolean
 ) {
     val lineColor = MaterialTheme.colorScheme.primary.copy(alpha = TIME_LEFT_ALPHA)
-    val liveRegionMode = if (tone ==
-        SnackbarTone.Error
-    ) {
+    val liveRegionMode = if (tone == SnackbarTone.Error && !announcePolitely) {
         LiveRegionMode.Assertive
     } else {
         LiveRegionMode.Polite
@@ -296,6 +301,11 @@ private fun SnackbarLayout(
  *
  * [topOffset] moves the message down, past a top bar for example, and [guardMillis] is how long its place keeps
  * swallowing touches after it changes (BRD D158).
+ *
+ * With [replaceInPlace] a message that replaces another one switches at once instead of fading. A node that fades in
+ * starts transparent, and Android's accessibility tree hides a transparent node, so a polite live region would be
+ * announced with no text: a retry with the same text was not spoken (BRD D165 (3), QA TB12). A message that arrives
+ * when none shows still slides in.
  */
 @Suppress("LongParameterList")
 @Composable
@@ -306,6 +316,7 @@ fun <T : Any> MigrelySnackbarHost(
     topOffset: Dp = 0.dp,
     guardMillis: Long = GUARD_MILLIS,
     onMessageBottomChanged: (Dp) -> Unit = {},
+    replaceInPlace: Boolean = false,
     content: @Composable (T) -> Unit
 ) {
     val density = LocalDensity.current
@@ -353,6 +364,9 @@ fun <T : Any> MigrelySnackbarHost(
                         }
                 }
             },
+            // In place, every message shares one slot, so a replacement is no transition at all: key() below swaps
+            // the node within one frame, and the new one is never transparent.
+            contentKey = { shown -> if (replaceInPlace && shown != null) InPlace else shown },
             contentAlignment = Alignment.TopCenter,
             label = "snackbar",
             modifier = Modifier.onGloballyPositioned { coordinates ->
@@ -369,7 +383,7 @@ fun <T : Any> MigrelySnackbarHost(
                         .onSizeChanged { size ->
                             if (size.height > 0) guardHeight = with(density) { size.height.toDp() }
                         }
-                ) { content(shown) }
+                ) { key(shown) { content(shown) } }
             }
         }
     }
@@ -431,3 +445,6 @@ private fun SnackbarLargeFontPreview() = SnackbarPreviewColumn()
 
 /** The guard's key while no message shows, so a message leaving re-arms it like one arriving. */
 private object NoMessage
+
+/** The one content key of every message shown in place. */
+private object InPlace

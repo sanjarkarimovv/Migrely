@@ -61,6 +61,11 @@ class AttackNotificationUiMapperTest(
                     )
                 )
             ),
+            // Not a message: the screen decides whether it replaces an error (BRD D165 (4)).
+            arrayOf<Any>(
+                AttackDetailsPresentationNotification.Saved,
+                AttackDetailsEventUiModel.Saved
+            ),
             arrayOf<Any>(
                 AttackDetailsPresentationNotification.AttacksMerged,
                 AttackDetailsEventUiModel.Message(AttackMessageUiModel.AttacksMerged)

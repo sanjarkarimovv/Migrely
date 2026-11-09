@@ -29,7 +29,8 @@ class AttackMessageBehaviourUiMapper {
                 baseDurationMillis = READING_MILLIS
             )
 
-        AttackMessageUiModel.AttacksMerged ->
+        AttackMessageUiModel.AttacksMerged,
+        AttackMessageUiModel.Saved ->
             AttackMessageBehaviourUiModel(
                 SnackbarTone.Confirmation,
                 hasUndo = false,
