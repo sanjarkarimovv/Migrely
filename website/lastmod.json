@@ -1,7 +1,7 @@
 {
   "/": {
-    "lastmod": "2026-11-05",
-    "sha256": "6fb9b33eca927d630f66c038020851d85173770fbbfb87912843cb2123bf10d5"
+    "lastmod": "2026-11-09",
+    "sha256": "33eebf5753bf939b5d69bddbd974bae824b03f57edbd2b892520f3496fa81db6"
   },
   "/about/": {
     "lastmod": "2026-11-05",
@@ -28,12 +28,12 @@
     "sha256": "fba9ca4692fc077aad182179d2f616b6974f1629b3fcd593814ccb8905e7a246"
   },
   "/privacy-check/": {
-    "lastmod": "2026-11-05",
-    "sha256": "4a9ed6ae60880c9057235b0a509db9bc5d7a6a37b067c0793ec91a1cf25bf11c"
+    "lastmod": "2026-11-09",
+    "sha256": "3f98f6f321a47f83cbf2e4a1537129c55aa8a6ebe7ab9c838ec0ea266778f6e9"
   },
   "/privacy/": {
-    "lastmod": "2026-11-05",
-    "sha256": "65d2538f202b3ede0b5317881cfb90993e87431bd0088c5701904fd2b778f6ab"
+    "lastmod": "2026-11-09",
+    "sha256": "d418aadace12cf63e86c3498b57b12f0c7d2272e22c9b06b53be62dea9a56ff5"
   },
   "/support/": {
     "lastmod": "2026-11-05",
