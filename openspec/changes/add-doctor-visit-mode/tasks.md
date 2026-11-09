@@ -1,0 +1,66 @@
+# Tasks
+
+Base: `feature/add-doctor-visit-mode` from `origin/develop` 3170865b. BRD D168. Ownership:
+- `ux-designer`: section 0, and the copy and states that tasks 2 and 4 use;
+- `android-engineer`: sections 1 to 7;
+- `code-reviewer`: before merge;
+- `qa-engineer`: section 8, with the Go/No-Go for this change only;
+- `medical-reviewer`: the final copy in 0.2.
+
+Under load, run Gradle as `nice -n 19 ./gradlew --max-workers=2 …`. With pipes, use `set -o pipefail`.
+
+## 0. Design first
+
+- [ ] 0.1 `ux-designer`: the row states, the picker, "Visit removed", the notification and its public version, the home card and its place, and the "Since last visit" label, within design D5 and D8 and the "Accessible everywhere" requirement. Verify: the design note lists every state named in `specs/doctor-visit/spec.md` and the copy for each.
+- [ ] 0.2 `medical-reviewer`: read the final copy. Verify: a written "no health claim" or the named fixes, saved with the design note.
+
+## 1. Domain
+
+- [ ] 1.1 `features/reminders/domain`: visit models, the next and last visit rule, the reminder time (`10:00` on `max(visit - 2, postponed_to)`), the too-close rule, and `DefaultReportPeriod`. Verify: `./gradlew :features:reminders:domain:test`, with cases for DST, a zone change, the visit day, the day after, and the shared period table.
+- [ ] 1.2 Use cases: `GetDoctorVisitUseCase`, `SetDoctorVisitUseCase` (with the too-close mark and a permission request outcome), `RemoveDoctorVisitUseCase` and `RestoreDoctorVisitUseCase`, `RunVisitReminderUseCase` (steps 1 to 6 of design D3), `CloseVisitCardUseCase`, `GetVisitCardUseCase`, and `RescheduleRemindersUseCase`, which also plans `visit`. Verify: `./gradlew :features:reminders:domain:test`. Each step of D3 has a test, including an old date, already reminded, a day that has ended, an attack giving a postponement, nothing logged, and a failed read giving retry.
+- [ ] 1.3 `features/report/domain`: a `SinceLastVisit` period and its default rule (design D4), and the 24-month cut-off. Verify: `./gradlew :features:report:domain:test`, with the same period table as 1.1.
+
+## 2. Presentation
+
+- [ ] 2.1 `RemindersViewModel`: the visit row state (not set, set, notifications off, channel off), pick, the same date doing nothing, remove with Undo, the permission request through the existing 30-day rule, and saving errors. Verify: `./gradlew :features:reminders:presentation:test`, including a late first read that does not overwrite a newer save.
+- [ ] 2.2 `VisitCardViewModel`: show or hide by the D3 and D8 rules, close, and the open-report event. Verify: `./gradlew :features:reminders:presentation:test`.
+- [ ] 2.3 `ReportViewModel`: "Since last visit" first and chosen when known. Verify: `./gradlew :features:report:presentation:test`.
+- [ ] 2.4 `HistoryViewModel`: `openReport` runs `onReportAction()` once, consumed in `SavedStateHandle`. Verify: `./gradlew :features:history:presentation:test`, covering rotation and restore with no second open.
+
+## 3. Data and datasource
+
+- [ ] 3.1 `doctor_visit` entity and DAO, and the three `reminder_settings` columns. DB v7, `AutoMigration(6, 7)`, schema `7.json` exported. Verify: `./gradlew :datasource:implementation:test`, and the Room migration test 6 to 7 (and the chain from 1) in `datasource/implementation/src/androidTest` on `emulator-5570`, with `ANDROID_SERIAL=emulator-5570`.
+- [ ] 3.2 `DoctorVisitDataSource`, plus the "anything logged between" query. A new next visit replaces every upcoming row in one transaction. Verify: `./gradlew :datasource:implementation:test`, including two upcoming rows from an old state collapsing to one.
+- [ ] 3.3 Repositories in `features/reminders/data` and `features/report/data`. Verify: `./gradlew :features:reminders:data:test :features:report:data:test`.
+- [ ] 3.4 Backup: `BACKUP_SCHEMA_VERSION = 7`, `doctorVisits` optional on decode, and the Replace and Add rules (design D7), then a reschedule after commit. Verify: `./gradlew :features:backup:data:test :datasource:implementation:test`, with a schema 6 fixture importing with no error, and Add keeping one next visit.
+
+## 4. UI
+
+- [ ] 4.1 The "Doctor visit" section on the Reminders screen, the full-screen picker (the D127 rules, one day), "Remove", the notice with "Open settings" (the app's settings, or the channel's settings when only the channel is off). Verify: `./gradlew :features:reminders:ui:test`, with Compose tests for each row state, one merged TalkBack node, disabled past days, and 200% font in landscape showing two weeks.
+- [ ] 4.2 The home visit card composable, without animation, with buttons for report and close. Verify: `./gradlew :features:reminders:ui:test`.
+- [ ] 4.3 The "Since last visit" option on the Doctor report screen. Verify: `./gradlew :features:report:ui:test`.
+
+## 5. Wiring (`:app`)
+
+- [ ] 5.1 `ReminderWorker` kind `visit`, and `ReminderScheduleDataSourceImpl` gets `scheduleVisit` and `cancelVisit` (unique `visit`, `REPLACE`). Verify: an instrumented test with `WorkManagerTestInitHelper`. The work is enqueued with the expected delay, then replaced and cancelled.
+- [ ] 5.2 `NotificationDataSourceImpl`: the `visit` channel, `VISIBILITY_PRIVATE`, the public version "Reminder", `setTimeoutAfter`, a fixed id, a content intent with `EXTRA_OPEN_DOCTOR_REPORT`, and a channel-blocked read. Verify: `./gradlew :app:testDebugUnitTest` for the mapping, and on `emulator-5570`, `adb shell dumpsys notification --noredact | grep -A3 com.migrely.app` shows `vis=PRIVATE` and the channel `visit`.
+- [ ] 5.3 `MainActivity`: the extra opens Home, then History with `openReport`, and is ignored during an attack. Verify: a walk on `emulator-5570` (Free, Premium, attack in progress), with screenshots in `migrely-work/walks/doctor-visit/`.
+- [ ] 5.4 The home slot for the card, and DI for every new use case and repository. Verify: `./gradlew assembleDebug`.
+- [ ] 5.5 Permissions are unchanged. Verify: `./gradlew :app:checkReleasePermissions` passes, and its report diffed with the 1.1.1 list in design "Context" shows no line added or removed.
+
+## 6. Docs
+
+- [ ] 6.1 `docs/ARCHITECTURE.md`: DB v7, the `doctor_visit` table, the `visit` work and channel. Verify: `grep -n doctor_visit docs/ARCHITECTURE.md`.
+- [ ] 6.2 Data safety and the site's permission pages need no change (no permission and nothing sent). `team-lead` tells `aso-seo-specialist`, in case the site lists notification channels. Verify: the PR body has a line that says so.
+
+## 7. Gate and walk
+
+- [ ] 7.1 The local gate. Verify: `set -o pipefail; ./gradlew assembleDebug test ktlintCheck detekt lint` exits 0.
+- [ ] 7.2 Device walk on `emulator-5570`, API 36, following design A1 to A16 at the engineer's level: set a visit, the reminder by clock, too close, move, remove and Undo, refuse permission, attack, Free and Premium taps, 200% landscape, TalkBack. Restore the device settings afterwards. Verify: `migrely-work/walks/doctor-visit/WALK.md` lists each step with a result and a screenshot path.
+- [ ] 7.3 `openspec validate add-doctor-visit-mode --strict` exits 0. Then `code-reviewer`.
+
+## 8. Independent QA (`qa-engineer`)
+
+- [ ] 8.1 Run A1 to A16 from design "Acceptance for QA", each with its negative control, on `Migrely_QA_API_36` and `_26`. Verify: a Go/No-Go for this change only in `docs/qa/`, with each check's command and result, and what the checks do not prove.
+- [ ] 8.2 Maestro flows for the spec scenarios that a device can drive (the row, picker, remove and Undo, card, tap to paywall, tap to report). Verify: `maestro test .maestro/<doctor-visit flows>` passes, and each flow fails on the 1.1.1 build, which has no visit row (the negative control).
+- [ ] 8.3 Then archive the change and merge into `develop` (`android-engineer`). Verify: `openspec list` no longer shows `add-doctor-visit-mode`.
