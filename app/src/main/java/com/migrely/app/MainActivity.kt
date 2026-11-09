@@ -40,6 +40,8 @@ import com.migrely.app.start.StartEntryPoint
 import com.migrely.app.subscription.domain.model.RefreshPremiumRequestDomainModel
 import com.migrely.app.ui.main.AppNavHost
 import com.migrely.app.ui.main.di.AppNavHostDependencies
+import com.migrely.app.ui.main.VisitTapAction
+import com.migrely.app.ui.main.VisitTapRule
 import com.migrely.app.ui.main.route.History
 import com.migrely.app.ui.main.route.Home
 import com.migrely.app.ui.main.route.Onboarding
@@ -98,6 +100,8 @@ class MainActivity : ComponentActivity() {
     private var appearance = AppearanceUiModel(AppThemeUiModel.Dark, attackInProgress = false)
 
     private val darkThemeUiResolver = DarkThemeUiResolver()
+
+    private val visitTapRule = VisitTapRule()
 
     private val premiumStartChecks = PremiumStartChecks(
         refresh = {
@@ -364,15 +368,14 @@ class MainActivity : ComponentActivity() {
 
     /**
      * The visit reminder's tap (design D6): Home, then History, which opens the report through its own premium gate.
-     * During an attack it opens attack mode alone, with neither the report nor the paywall (BRD EC-REM-12, EC-UX-12).
+     * During an attack the app only comes to the front, so attack mode and an unfinished form stay (BRD EC-REM-12). A
+     * visit is set only after onboarding, and "Delete all data" takes every notification away, so the tap never meets
+     * onboarding.
      */
     private fun openDoctorReport(controller: NavHostController) {
-        // A visit is set only after onboarding, and "Delete all data" takes every notification away, so the tap never
-        // meets onboarding; how this activity started does not tell whether onboarding still shows.
-        if (appearance.attackInProgress) {
-            controller.navigate(Home()) { popUpTo(controller.graph.id) { inclusive = true } }
-        } else {
-            controller.navigate(History(openReport = true)) {
+        when (visitTapRule.actionFor(appearance.attackInProgress)) {
+            VisitTapAction.BringToFront -> Unit
+            VisitTapAction.OpenReportThroughHistory -> controller.navigate(History(openReport = true)) {
                 popUpTo<Home>()
                 launchSingleTop = true
             }
