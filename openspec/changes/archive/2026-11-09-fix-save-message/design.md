@@ -84,7 +84,7 @@ The engineer picks the mechanism, and tests both sides.
 |---|---|---|
 | 1 | Loading, not found, attack deleted | No card, no card mode (D163 (5)) |
 | 2 | Card, no message | Card first, D167 scrolls it if needed |
-| 3 | A failed first 10 | Card, then the message one frame later and polite, content pushed. Both spoken whole, card first |
+| 3 | A failed first 10 | Card, then the message 200 ms after the card is a live region (D3), polite, content pushed. Both spoken whole, card first |
 | 4 | Card showing, then an Undo, information or error message | Card mode: pushed, nothing covered, wherever the person has scrolled |
 | 5 | "Got it" while a message shows | The card goes, the message stays put, and the content stays below it until it leaves (P2) |
 | 6 | The message leaves in card mode | 200 ms fade, then 250 ms close, with the 0.8 s guard |
@@ -98,6 +98,8 @@ The engineer picks the mechanism, and tests both sides.
 | 14 | A late success event after leaving | The screen is not current, so nothing shows. On return the error is already cleared |
 | 15 | Free and Premium | Identical. Safety is never Premium |
 | 16 | During an attack | The same screen and theme. Nothing new is bright. Attack mode and Dark room are untouched |
+| 17 | A message replaces another in card mode (a failed retry, "Saved.") | The host swaps it in place (`replaceInPlace`, keyed per message, no cross-fade), so the new node is never transparent and TalkBack never announces an empty live region (QA TB12, fixed in febbfad3). A message that arrives when none shows still slides in. Outside card mode the fade is unchanged |
+| 18 | A tap on the message's area during the 200 ms hold | Ignored. Only the previous message, if any, is on screen, and Dismiss, a body tap and Undo act only on the stored message, which is the held new one (`isShown`, `onClear`). The new message shows when the hold ends |
 | 17 | Dark and light, right to left | No new colours. The push is vertical, so the layout mirrors as before |
 | 18 | 100, 130, 200% and landscape | Nothing is covered, by construction. A 200% "Couldn't save" in a 411 dp landscape window leaves a short content area, which still scrolls, and "Dismiss" frees it |
 | 19 | "Remove animations" | The message, the push and the scroll all happen at once |

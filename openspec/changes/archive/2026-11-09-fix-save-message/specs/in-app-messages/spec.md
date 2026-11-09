@@ -65,6 +65,15 @@ the card is on screen. The card's title SHALL be a heading. Outside card mode, e
 - **WHEN** an error shows on a screen with no safety card
 - **THEN** TalkBack speaks it at once, as before this change
 
+#### Scenario: A tap while the message waits for the card
+- **WHEN** one action brings the card and a message, and the user taps the message's area during the 200 ms wait
+- **THEN** the tap does nothing: the message shown before, if any, neither closes nor undoes, and the new message shows when the
+  wait ends
+
+#### Scenario: A replaced message in card mode has text
+- **WHEN** the card shows and a new message replaces the one on screen
+- **THEN** the new one appears in place with no cross-fade, and TalkBack speaks its text, never an empty announcement
+
 #### Scenario: Heading navigation
 - **WHEN** a TalkBack user moves by headings while the card shows
 - **THEN** the card's title is one of the headings, and its text is unchanged

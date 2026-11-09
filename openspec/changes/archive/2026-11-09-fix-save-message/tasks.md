@@ -9,8 +9,8 @@ filed both issues and retests them. No domain or data change.
   `git show origin/develop:docs/BRD.md | grep -c "^| D165 "` prints 0.
 - [x] 1.2 Proposal, design, the two deltas, tasks. Verify: `openspec validate fix-save-message --strict` exits 0.
 - [x] 1.3 P8 moved to hotfix 1.1.1 as D167 (#171). Verify: `grep -c "D167" docs/BRD.md` prints at least 1.
-- [ ] 1.4 `team-lead` files the follow-up issue for the 9 screens and D130's condition (D165 (7), (8)). Verify: its number is in this file's "Not done
-  here".
+- [x] 1.4 `team-lead` files the follow-up issue for the 9 screens and D130's condition (D165 (7), (8)). Verify: its number is in this file's "Not done
+  here". Done: #181, filed by `team-lead`.
 
 ## 2. Presentation
 
@@ -52,18 +52,23 @@ filed both issues and retests them. No domain or data change.
 - [x] 7.2 `:app:checkReleasePermissions`. Verify: exit 0, no permission added.
 - [x] 7.3 A walk on `emulator-5570`, debug: checks 1, 5, 10 and 14 of design "Acceptance" at 100% and 200%, with the disk filled and then freed. Restore
   storage, font scale and animator scale. Verify: the results are in the packet, with what a walk does not prove.
-- [ ] 7.4 `code-reviewer` reviews. Fixes go on the same branch. Verify: no open blocker in the review packet.
+- [x] 7.4 `code-reviewer` reviews. Fixes go on the same branch. Verify: no open blocker in the review packet. Done: 3 rounds, the last a delta review
+  of 524709a1..febbfad3, no open blocker. Engineer gate on febbfad3 exit 0 (`migrely-work/walks/t53/gate.exit`, `gate.sha`).
 
 ## 8. QA (independent)
 
-- [ ] 8.1 `qa-engineer` runs design "Acceptance" checks 1–17 and 19–23 and negative controls N1–N8, debug and R8. Verify: the table is in `docs/qa/` with
-  trial counts and what it does not prove, and #166 and #167 get the retest comments.
-- [ ] 8.2 If TalkBack drops the polite message (check 2), the design D3 fallback is built and check 2 is run again. Verify: check 2 passes on the
-  fallback, or the result goes to `team-lead`.
+- [x] 8.1 `qa-engineer` runs design "Acceptance" checks 1–17 and 19–23 and negative controls N1–N8, debug and R8. Verify: the table is in `docs/qa/` with
+  trial counts and what it does not prove, and #166 and #167 get the retest comments. Done: QA verdict **GO at febbfad3** (2026-11-09, about 20:30),
+  debug and R8. Not run: check 21 (RTL, no mirroring locale in this English-only app), switch access live (proxy only), 130% landscape on febbfad3.
+  TalkBack order card then message, 15 of 15. TB12 (an identical retry on a full disk) spoken again: 2 of 2 at 100%, 1 of 1 at 200%, 3 of 3 scrolled;
+  control 3f2ca3fb silent, 2 of 2. #166 and #167 retested and closed by QA. Evidence `migrely-work/qa-t53b/` (`logs/rows.jsonl`, counted by
+  `table.py`). The `docs/qa/` table comes in a separate QA PR after this one.
+- [x] 8.2 If TalkBack drops the polite message (check 2), the design D3 fallback is built and check 2 is run again. Verify: check 2 passes on the
+  fallback, or the result goes to `team-lead`. Not needed: in check 2 TalkBack spoke the polite message in every row, so the fallback was not built.
 
 ## 9. Close
 
-- [ ] 9.1 Archive the change, then open a PR into `develop` with `Refs #166` and `Refs #167`, and merge it with a merge commit. If
+- [ ] 9.1 Archive the change (done by `product-manager` on this branch; the PR and merge are `team-lead`'s), then open a PR into `develop` with `Refs #166` and `Refs #167`, and merge it with a merge commit. If
   `bugfix/161-menu-second-tap` merged first and took a number this branch uses, renumber. Verify: `openspec validate --specs --strict` exits 0 after the
   archive, and `gh pr view` shows it merged.
 
@@ -136,5 +141,10 @@ Settings, TalkBack preferences and app data were restored to the baseline, and 5
 
 ## Not done here
 
-The other 9 screens and D130's condition (follow-up issue: number pending, task 1.4); "Got it" removing the card at once; #88, #153; the "storage full"
-wording. See the proposal.
+The other 9 screens and D130's condition (#181, task 1.4); "Got it" removing the card at once; #88, #153; the "storage full" wording. See the proposal.
+
+Follow-ups found during this change:
+
+- #183 (S3): TalkBack may announce a fading-in message as empty on other screens (the cause fixed here by `replaceInPlace`, only in Attack details'
+  card mode).
+- #185 (S3): on Attack details a message's Dismiss is last in the Tab order.
