@@ -324,6 +324,14 @@ data must never be passed to any SDK.
     `LocalAccessibilityManager.calculateRecommendedTimeoutMillis`. The home feature's `HomeMessages` is the reference.
   - Screens whose messages have no "Undo" stretch it with `:designsystem`'s `messageTimeoutMillis`, which counts the
     close button as a control. No screen hard-codes how long a message stays (QA #56).
+  - Content that must never lie under a message takes `Modifier.clearOfMessage` before its `verticalScroll`, fed by
+    the host's `onMessageBottomChanged` (BRD D52). Attack details does this in "card mode", while the first-10 safety
+    card shows and until a message that came then leaves; there its messages are polite (`announcePolitely`) and wait
+    for the card's announcement (D165 (1), (3)).
+  - An error belongs to the last write and to the visit (D165 (4), (5)). The ViewModel sends a `Saved` notification
+    when a write saves with no message of its own; the screen alone decides to replace an error with "Saved.". The
+    screen clears an error with `ScreenLeaveObserver`, which reads the back stack, not the lifecycle, so Home and
+    Android Settings keep it. Attack details is the pattern for the other screens.
 
 ## 11. Testing
 
