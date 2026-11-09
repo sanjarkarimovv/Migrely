@@ -13,7 +13,7 @@ Fixes:
 • With no internet connection, Premium's buttons now tell you you're offline instead of opening Google Play.
 • Restore purchases no longer says no purchases were found when you're offline.
 • The safety card after a first pain of 10 now scrolls into view.
-Migrely now reads whether the phone is online ("view network connections"), only for this. It still has no internet permission.
+Migrely now checks whether the phone is online ("view network connections") before opening Google Play. It still has no internet permission.
 </en-US>
 ```
 

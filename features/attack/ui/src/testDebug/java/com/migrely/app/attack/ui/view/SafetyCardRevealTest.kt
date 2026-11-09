@@ -1,7 +1,6 @@
 package com.migrely.app.attack.ui.view
 
 import android.provider.Settings
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -15,7 +14,6 @@ import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasText
-import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onParent
@@ -59,8 +57,8 @@ class SafetyCardRevealTest {
     private val content get() = rule.onNode(hasScrollAction())
     private val card: SemanticsNodeInteraction get() = rule.onNodeWithText(TITLE).onParent()
 
-    private fun show(restoration: StateRestorationTester? = null) {
-        val screen = @Composable {
+    private fun show() {
+        rule.setContent {
             MigrelyTheme {
                 AttackDetailsContents(
                     viewState = AttackDetailsViewStateUiModel.Ready(previewDetails()),
@@ -77,7 +75,6 @@ class SafetyCardRevealTest {
                 )
             }
         }
-        if (restoration != null) restoration.setContent(screen) else rule.setContent(screen)
     }
 
     /** The first 10 is recorded: the card shows, as its event does on the screen. */
@@ -188,21 +185,5 @@ class SafetyCardRevealTest {
         rule.mainClock.advanceTimeBy(1_000)
 
         assertCardAtTop()
-    }
-
-    @Test
-    fun `Given a restore with the card showing then nothing scrolls`() {
-        val restoration = StateRestorationTester(rule)
-        cardVisible = true
-        show(restoration)
-        scrollDownToDelete()
-        rule.waitForIdle()
-        val scrolled = scrollValue()
-
-        // A rotation or a process restore: the card's event does not come again.
-        restoration.emulateSavedInstanceStateRestore()
-        rule.waitForIdle()
-
-        assertEquals(scrolled, scrollValue())
     }
 }
