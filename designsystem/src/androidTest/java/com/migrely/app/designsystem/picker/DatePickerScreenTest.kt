@@ -178,7 +178,10 @@ class DatePickerScreenTest {
      */
     private fun weekdayRowInView(): Boolean {
         val screenBottom = with(composeTestRule.density) { LANDSCAPE.height.toPx() }
-        return composeTestRule.onAllNodes(hasText("M"), useUnmergedTree = true).fetchSemanticsNodes()
+        return composeTestRule.onAllNodes(
+            hasText("M"),
+            useUnmergedTree = true
+        ).fetchSemanticsNodes()
             .any { it.boundsInRoot.top >= 0f && it.boundsInRoot.bottom <= screenBottom }
     }
 
