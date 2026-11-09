@@ -1,5 +1,7 @@
 package com.migrely.app.attack.ui.view
 
+import android.view.View
+import android.view.ViewGroup
 import androidx.activity.ComponentActivity
 import androidx.compose.material3.Text
 import androidx.compose.runtime.CompositionLocalProvider
@@ -29,6 +31,7 @@ import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpRect
+import androidx.core.view.ViewCompat
 import androidx.lifecycle.Lifecycle
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
@@ -398,6 +401,43 @@ class SaveMessageTest {
         assertEquals("frames with no message: $frames", 0, frames.count { it == 0 })
         settle()
         rule.onNodeWithText(SAVED).assertExists()
+    }
+
+    private fun composeViewIn(view: View): View? = when {
+        view.javaClass.simpleName == "AndroidComposeView" -> view
+        view is ViewGroup -> (0 until view.childCount).firstNotNullOfOrNull {
+            composeViewIn(view.getChildAt(it))
+        }
+        else -> null
+    }
+
+    /** How many nodes with [text] Android's accessibility tree hides now: a transparent node is hidden (Compose). */
+    private fun hiddenFromAccessibility(text: String): Int {
+        val composeView = composeViewIn(rule.activity.window.decorView)!!
+        val provider = ViewCompat.getAccessibilityDelegate(composeView)!!
+            .getAccessibilityNodeProvider(composeView)!!
+        return rule.onAllNodes(hasText(text)).fetchSemanticsNodes().count { node ->
+            provider.createAccessibilityNodeInfo(node.id)?.isVisibleToUser != true
+        }
+    }
+
+    /**
+     * A failed retry while the card shows: the new error must be in the accessibility tree from its first frame, or
+     * the polite live region is announced with no text and TalkBack stays silent (QA TB12).
+     */
+    @Test
+    fun `Given an error when a retry of the 10 fails again then the new error is never hidden`() {
+        show()
+        failedFirstTen()
+        scrollDown()
+
+        failedFirstTen(settleAfter = false)
+
+        val hidden = List(50) {
+            rule.mainClock.advanceTimeByFrame()
+            hiddenFromAccessibility(STORAGE_FULL)
+        }
+        assertEquals("frames with a hidden error: $hidden", 0, hidden.count { it > 0 })
     }
 
     /**
