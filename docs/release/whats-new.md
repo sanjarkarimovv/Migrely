@@ -3,6 +3,20 @@
 Each release's text for Play Console › Create new release › Release notes. Play allows at most 500 characters per
 language. en-US is the default, and other languages fall back to it.
 
+## 1.1.1 (versionCode 9)
+
+The hotfix for Google's rejection of 1.0.1 (D166) and the safety card (D167).
+
+```
+<en-US>
+Fixes:
+• With no internet connection, Premium's buttons now tell you you're offline instead of opening Google Play.
+• Restore purchases no longer says no purchases were found when you're offline.
+• The safety card after a first pain of 10 now scrolls into view.
+Migrely now reads whether the phone is online ("view network connections"), only for this. It still has no internet permission.
+</en-US>
+```
+
 ## 1.1.0 (versionCode 8)
 
 1.0.2 was tagged but never shipped, so 1.1.0's notes cover everything since 1.0.1.
