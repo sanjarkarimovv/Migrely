@@ -13,29 +13,45 @@ in `designsystem`. `Refs #161` in every commit and in the PR, never a closing ke
 
 ## 2. The helper (designsystem)
 
-- [ ] 2.1 Compose tests first, through `MigrelyDropdownMenu`, with an item over a clickable in the main window, in Robolectric if popup windows work
+- [x] 2.1 Compose tests first, through `MigrelyDropdownMenu`, with an item over a clickable in the main window, in Robolectric if popup windows work
   there, otherwise `androidTest`; say which. The rows are in design "Test plan", Compose row: under 500 ms; at 500; beyond the distance; burst under
   and over the burst timeout; the item's first tap at once; a semantics click is no lift; tree and bounds as a raw menu; a second tap on the closing
   menu. Verify: `./gradlew :designsystem:testDebugUnitTest --tests '*Menu*'` fails first against a helper that only calls `DropdownMenu`.
-- [ ] 2.2 Share the lift part of `DialogWaitNode` (design D3), and add `MigrelyDropdownMenu` in package `dialog`, with no wait, no semantics, Initial
+  Done: Robolectric, popup windows work there (the menu is found with `isPopup()`, tapped and closed). `MigrelyDropdownMenuTest`, 11 tests, over an
+  older full-screen dialog because the main window's side is in `app`; plus `MenuLiftGuardTest` in `app/src/testDebug`, 2 tests, over the real
+  `ScreenNavHost` main window. Against a helper that only called `DropdownMenu`: 11 run, 5 failed (every "does nothing" row). The rows that pass on
+  both are the "answers" rows, the tree, the first tap, the click action and the closing menu.
+- [x] 2.2 Share the lift part of `DialogWaitNode` (design D3), and add `MigrelyDropdownMenu` in package `dialog`, with no wait, no semantics, Initial
   pass. Dialog behaviour does not change. Verify: `./gradlew :designsystem:testDebugUnitTest` passes, the 2.1 tests included, and every existing
   `DialogWait*` and `DialogLift*` test is unchanged in `git diff --stat origin/develop -- designsystem/src/test*`.
-- [ ] 2.3 Negative control, local only: remove the lift modifier from the helper, run 2.1, record which tests fail, and restore it. Never commit it.
+  Done: the dialog node takes the wait as a flag (`CardTouchesNode(withWait)`); `Modifier.liftOnCard()` is the lift half alone, used by
+  `MigrelyMenus.kt`. `:designsystem:testDebugUnitTest` 141 tests, 0 failed. `git diff --stat origin/develop -- designsystem/src/test*` lists only
+  `MigrelyDropdownMenuTest.kt`.
+- [x] 2.3 Negative control, local only: remove the lift modifier from the helper, run 2.1, record which tests fail, and restore it. Never commit it.
   Verify: the failing test names are in the packet, and `git status --short` is clean afterwards.
+  Done: helper with `modifier = Modifier`: 5 of 11 menu tests fail (under the limit, just under, item took the menu away, burst under, burst over's
+  precondition) and `MenuLiftGuardTest`'s under-the-limit row. Also the menu given the dialog wait: 9 of 11 fail, `theItemAnswersItsFirstTapAtOnce`
+  among them. Restored; `git status --short` clean.
 
 ## 3. UI wiring
 
-- [ ] 3.1 `ChoiceChip` in `AttackChoiceSections.kt` calls `MigrelyDropdownMenu` and keeps `DropdownMenuItem`. `menuOpen`, the long press and the
+- [x] 3.1 `ChoiceChip` in `AttackChoiceSections.kt` calls `MigrelyDropdownMenu` and keeps `DropdownMenuItem`. `menuOpen`, the long press and the
   chip's custom action stay as they are. Verify: `git grep -nP 'material3\.DropdownMenu\b' -- '*.kt'` finds only the helper's file, and
   `./gradlew :features:attack:ui:testDebugUnitTest` passes.
+  Done: only `MigrelyMenus.kt` names `material3.DropdownMenu` in production (an untracked file is not in `git grep`, so checked with `grep -r`).
+  `:features:attack:ui:testDebugUnitTest` 50 tests, 0 failed.
 
 ## 4. The check
 
-- [ ] 4.1 A popup test next to `ArchitectureDialogsTest`, design D3's list with `\b`, and a KDoc saying what to do when it fails (D164). Verify:
+- [x] 4.1 A popup test next to `ArchitectureDialogsTest`, design D3's list with `\b`, and a KDoc saying what to do when it fails (D164). Verify:
   `./gradlew :app:testDebugUnitTest --tests '*Architecture*'` passes.
-- [ ] 4.2 Negative control, local only: add `import androidx.compose.material3.DropdownMenu` to a feature file, run 4.1, see it fail and name that
+  Done: `ArchitecturePopupsTest`. `:app:testDebugUnitTest --tests '*Architecture*'` 17 tests, 0 failed.
+- [x] 4.2 Negative control, local only: add `import androidx.compose.material3.DropdownMenu` to a feature file, run 4.1, see it fail and name that
   file, and restore it. Then the same with `DropdownMenuItem` alone, which must pass. Verify: both results are in the packet, and `git status --short`
   is clean.
+  Done: on develop's `AttackChoiceSections.kt`, before the migration: fails and names `AttackChoiceSections.kt`. An `import
+  androidx.compose.material3.DropdownMenu` in `SettingsDialogs.kt`: fails and names it. `import androidx.compose.ui.window.Popup`: fails and names
+  it. `DropdownMenuItem` and `PopupProperties` imports alone: passes. Each restored; `git status --short` clean.
 
 ## 5. Real windows
 
@@ -45,8 +61,9 @@ in `designsystem`. `Refs #161` in every commit and in the PR, never a closing ke
 
 ## 6. Docs
 
-- [ ] 6.1 `docs/ARCHITECTURE.md`: the dialog bullet names `MigrelyDropdownMenu` and the popup check. Verify: `grep -n "MigrelyDropdownMenu"
+- [x] 6.1 `docs/ARCHITECTURE.md`: the dialog bullet names `MigrelyDropdownMenu` and the popup check. Verify: `grep -n "MigrelyDropdownMenu"
   docs/ARCHITECTURE.md` prints a line.
+  Done: the menu bullet after the D161 bullet, and the module table.
 
 ## 7. Gate and walk
 
