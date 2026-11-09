@@ -57,7 +57,7 @@ Under load, run Gradle as `nice -n 19 ./gradlew --max-workers=2 …`. With pipes
 
 ## 7. Gate and walk
 
-- [ ] 7.1 The local gate. Verify: `set -o pipefail; ./gradlew assembleDebug test ktlintCheck detekt lint` exits 0.
+- [x] 7.1 The local gate. Verify: `set -o pipefail; ./gradlew assembleDebug test ktlintCheck detekt lint` exits 0. Done: `assembleDebug test ktlintCheck detekt lint :app:checkReleasePermissions` exit 0 at 1935a835 plus the 5.1 test (`migrely-work/walks/t21/gate.exit`); 1186 JVM tests, 0 failures.
 - [ ] 7.2 Device walk on `emulator-5570`, API 36, following design A1 to A16 at the engineer's level: set a visit, the reminder by clock, too close, move, remove and Undo, refuse permission, attack, Free and Premium taps, 200% landscape, TalkBack. Restore the device settings afterwards. Verify: `migrely-work/walks/doctor-visit/WALK.md` lists each step with a result and a screenshot path.
 - [ ] 7.3 `openspec validate add-doctor-visit-mode --strict` exits 0. Then `code-reviewer`.
 
