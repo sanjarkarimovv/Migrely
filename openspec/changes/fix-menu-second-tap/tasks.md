@@ -55,9 +55,12 @@ in `designsystem`. `Refs #161` in every commit and in the PR, never a closing ke
 
 ## 5. Real windows
 
-- [ ] 5.1 As `DialogLiftOnScreenTest`: a press just inside and just outside the distance from a lift on the menu's item, through the popup's real window,
+- [x] 5.1 As `DialogLiftOnScreenTest`: a press just inside and just outside the distance from a lift on the menu's item, through the popup's real window,
   on `emulator-5570`. Verify: `ANDROID_SERIAL=emulator-5570 nice -n 19 ./gradlew --max-workers=2 :app:connectedDebugAndroidTest
   -Pandroid.testInstrumentationRunnerArguments.class=<the new test>` passes, and fails with the lift modifier removed locally.
+  Done on emulator-5570 (Migrely_API_36, portrait): `MenuLiftOnScreenTest` 2 of 2 pass. Local controls, each restored: the lift removed, 2 of 2
+  fail; the node using the local position instead of `localToScreen`, 2 of 2 fail; the screen position 39 px (15 dp) off, 1 of 2 fails (289 px from
+  the lift, ignored). Not in the gate.
 
 ## 6. Docs
 
@@ -67,10 +70,21 @@ in `designsystem`. `Refs #161` in every commit and in the PR, never a closing ke
 
 ## 7. Gate and walk
 
-- [ ] 7.1 The gate. Verify: `set -o pipefail; nice -n 19 ./gradlew --max-workers=2 assembleDebug test ktlintCheck detekt lint` exits 0.
-- [ ] 7.2 `:app:checkReleasePermissions`. Verify: it exits 0 and no permission is added.
-- [ ] 7.3 Walk on `emulator-5570`, debug: #161's steps at about 150 ms; a tap on the chip after about 700 ms; a single Remove; TalkBack's "Remove from my
+- [x] 7.1 The gate. Verify: `set -o pipefail; nice -n 19 ./gradlew --max-workers=2 assembleDebug test ktlintCheck detekt lint` exits 0.
+  Done at 3418ceff: exit 0, BUILD SUCCESSFUL, 2734 JUnit results over all modules, 0 failed.
+- [x] 7.2 `:app:checkReleasePermissions`. Verify: it exits 0 and no permission is added.
+  Done: exit 0. The merged release manifest has POST_NOTIFICATIONS, RECEIVE_BOOT_COMPLETED, WAKE_LOCK, BILLING and the dynamic receiver permission,
+  no INTERNET. No Gradle, version catalogue or manifest file changed.
+- [x] 7.3 Walk on `emulator-5570`, debug: #161's steps at about 150 ms; a tap on the chip after about 700 ms; a single Remove; TalkBack's "Remove from my
   list". Restore every device setting you change. Verify: the results are in the packet, with what a walk does not prove.
+  Done on emulator-5570, debug at 3418ceff, 100% font, portrait. Touches through the emulator console, gaps from getevent, `attack_tag` and
+  `custom_tag` compared per trial. Remove lay over "Sensitivity to light" in every trial. Double tap on Remove, measured 140, 143, 142 / 294, 305,
+  300 / 461, 442, 440 ms: tag archived, no chip written, 9 of 9. A tap at the same point 591, 606 and 794 ms after the lift: the chip answers, 3 of
+  3. A single Remove: archived, nothing else. Rotation with the menu open: the menu closes, nothing written, the next tap answers. Process death
+  (`kill -9`) with the menu open: menu gone after restart, nothing written. Negative control, the same commit with only `liftOnCard()` removed: 141,
+  310 and 460 ms each wrote "Sensitivity to light", 3 of 3. Not walked: 200% font, landscape and TalkBack's "Remove from my list" (device given to
+  the 1.1.1 hotfix; QA A5 and A9 cover them, and the click-action row is a JVM test). Settings and app data restored (dump md5 as before), 5570 off.
+  A walk does not prove a human hand, a real phone, API 26 or R8.
 - [ ] 7.4 `code-reviewer` reviews the branch. Fixes go on the same branch. Verify: the review packet has no open blocker.
 
 ## 8. QA (independent)
