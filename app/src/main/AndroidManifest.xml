@@ -6,22 +6,25 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <!--
-        WorkManager declares these for network constraints and foreground work, and Migrely uses neither: it has no
-        network at all, and its reminders are plain one-time work (BRD EC-REM-03, issue #36). The build checks that no
-        library brings them back (app/build.gradle.kts, checkDebugPermissions).
+        Only to tell, at a tap on buy, Restore or Manage, whether any network on the phone has internet, so that Google
+        Play's sheet does not open offline (BRD D166, issue #36). It reads a status on the phone and sends nothing:
+        Migrely still has no INTERNET. WorkManager and Play Billing's datatransport declare it too, and the merge keeps
+        that one entry.
     -->
-    <uses-permission
-        android:name="android.permission.ACCESS_NETWORK_STATE"
-        tools:node="remove" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!--
+        WorkManager declares this for foreground work, and Migrely has none: its reminders are plain one-time work
+        (BRD EC-REM-03, issue #36). The build checks that no library brings it back (app/build.gradle.kts,
+        checkDebugPermissions).
+    -->
     <uses-permission
         android:name="android.permission.FOREGROUND_SERVICE"
         tools:node="remove" />
     <!--
-        Play Billing brings Google's datatransport, which declares INTERNET (and
-        ACCESS_NETWORK_STATE, removed above) only to upload the library's own usage logs. Billing
-        itself talks to the Play Store app over IPC and needs only com.android.vending.BILLING, so
-        Migrely still sends nothing (BRD D44, D105). Without the permissions the uploads fail
-        quietly: datatransport catches the failure on its own threads.
+        Play Billing brings Google's datatransport, which declares INTERNET only to upload the library's own usage
+        logs. Billing itself talks to the Play Store app over IPC and needs only com.android.vending.BILLING, so
+        Migrely still sends nothing (BRD D44, D105). Without INTERNET the uploads fail quietly: datatransport
+        catches the failure on its own threads.
     -->
     <uses-permission
         android:name="android.permission.INTERNET"

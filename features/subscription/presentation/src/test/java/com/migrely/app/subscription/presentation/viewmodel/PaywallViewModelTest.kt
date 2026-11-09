@@ -3,6 +3,7 @@ package com.migrely.app.subscription.presentation.viewmodel
 import com.migrely.app.architecture.presentation.viewmodel.BaseViewModelTest
 import com.migrely.app.subscription.domain.model.BillingAvailabilityDomainModel
 import com.migrely.app.subscription.domain.model.BuyPremiumResultDomainModel
+import com.migrely.app.subscription.domain.model.ManageSubscriptionResultDomainModel
 import com.migrely.app.subscription.domain.model.PaywallDomainModel
 import com.migrely.app.subscription.domain.model.PaywallOfferDomainModel
 import com.migrely.app.subscription.domain.model.PaywallOffersDomainModel
@@ -12,6 +13,7 @@ import com.migrely.app.subscription.domain.model.PremiumPlanDomainModel
 import com.migrely.app.subscription.domain.model.PremiumProductDomainModel
 import com.migrely.app.subscription.domain.model.PremiumStatusDomainModel
 import com.migrely.app.subscription.domain.model.PurchaseOutcomeDomainModel
+import com.migrely.app.subscription.domain.model.RestorePurchasesResultDomainModel
 import com.migrely.app.subscription.domain.usecase.BuyPremiumUseCase
 import com.migrely.app.subscription.domain.usecase.GetPaywallUseCase
 import com.migrely.app.subscription.domain.usecase.ManageSubscriptionUseCase
@@ -567,9 +569,11 @@ class PaywallViewModelTest :
     fun `Given nothing was bought when restoring then the paywall says so`() = runTest {
         getPaywallUseCase.givenSuccessfulExecution(FREE_PAYWALL)
         restorePurchasesUseCase.givenSuccessfulExecution(
-            PremiumCheckDomainModel(
-                PremiumStatusDomainModel.Free,
-                BillingAvailabilityDomainModel.Available
+            RestorePurchasesResultDomainModel.Checked(
+                PremiumCheckDomainModel(
+                    PremiumStatusDomainModel.Free,
+                    BillingAvailabilityDomainModel.Available
+                )
             )
         )
 
@@ -583,9 +587,11 @@ class PaywallViewModelTest :
     fun `Given Play does not answer when restoring then the paywall says so`() = runTest {
         getPaywallUseCase.givenSuccessfulExecution(FREE_PAYWALL)
         restorePurchasesUseCase.givenSuccessfulExecution(
-            PremiumCheckDomainModel(
-                PremiumStatusDomainModel.Free,
-                BillingAvailabilityDomainModel.Unknown
+            RestorePurchasesResultDomainModel.Checked(
+                PremiumCheckDomainModel(
+                    PremiumStatusDomainModel.Free,
+                    BillingAvailabilityDomainModel.Unknown
+                )
             )
         )
 
@@ -599,7 +605,9 @@ class PaywallViewModelTest :
     fun `Given a purchase on another phone when restoring then Premium unlocks`() = runTest {
         getPaywallUseCase.givenSuccessfulExecution(FREE_PAYWALL)
         restorePurchasesUseCase.givenSuccessfulExecution(
-            PremiumCheckDomainModel(YEARLY_STATUS, BillingAvailabilityDomainModel.Available)
+            RestorePurchasesResultDomainModel.Checked(
+                PremiumCheckDomainModel(YEARLY_STATUS, BillingAvailabilityDomainModel.Available)
+            )
         )
 
         assertEquals(UNLOCKED, notificationOf { classUnderTest.onRestoreAction(REPORT) })
@@ -628,7 +636,9 @@ class PaywallViewModelTest :
     fun `Given lifetime over a subscription when managing it then the success shows again`() =
         runTest {
             val lifetime = PremiumStatusDomainModel.Lifetime(subscriptionRenewsToo = false)
-            manageSubscriptionUseCase.givenSuccessfulExecution(lifetime)
+            manageSubscriptionUseCase.givenSuccessfulExecution(
+                ManageSubscriptionResultDomainModel.Opened(lifetime)
+            )
 
             assertEquals(
                 PaywallPresentationNotification.Unlocked(
@@ -637,6 +647,74 @@ class PaywallViewModelTest :
                 notificationOf { classUnderTest.onManageAction() }
             )
         }
+
+    @Test
+    fun `Given the phone is offline when buying then it says so and the cards come back`() =
+        runTest {
+            getPaywallUseCase.givenSuccessfulExecution(FREE_PAYWALL)
+            buyPremiumUseCase.givenSuccessfulExecution(
+                YEARLY,
+                BuyPremiumResultDomainModel(
+                    PurchaseOutcomeDomainModel.Offline,
+                    PremiumStatusDomainModel.Free
+                )
+            )
+            val states = async(start = UNDISPATCHED) { classUnderTest.viewState.take(2).toList() }
+
+            assertEquals(
+                PaywallPresentationNotification.OfflineToBuy,
+                notificationOf { classUnderTest.onBuyAction(REPORT, YEARLY_CARD) }
+            )
+            assertEquals(listOf(PaywallViewState.Working, READY), states.await())
+        }
+
+    @Test
+    fun `Given the phone is offline when buying twice then each tap says so`() = runTest {
+        getPaywallUseCase.givenSuccessfulExecution(FREE_PAYWALL)
+        buyPremiumUseCase.givenSuccessfulExecution(
+            YEARLY,
+            BuyPremiumResultDomainModel(
+                PurchaseOutcomeDomainModel.Offline,
+                PremiumStatusDomainModel.Free
+            )
+        )
+
+        assertEquals(
+            listOf(
+                PaywallPresentationNotification.OfflineToBuy,
+                PaywallPresentationNotification.OfflineToBuy
+            ),
+            messagesOf {
+                classUnderTest.onBuyAction(REPORT, YEARLY_CARD)
+                classUnderTest.onBuyAction(REPORT, YEARLY_CARD)
+            }
+        )
+    }
+
+    @Test
+    fun `Given the phone is offline when restoring then it says so, not nothing found`() = runTest {
+        getPaywallUseCase.givenSuccessfulExecution(FREE_PAYWALL)
+        restorePurchasesUseCase.givenSuccessfulExecution(
+            RestorePurchasesResultDomainModel.Offline(PremiumStatusDomainModel.Free)
+        )
+
+        assertEquals(
+            PaywallPresentationNotification.OfflineToRestore,
+            notificationOf { classUnderTest.onRestoreAction(REPORT) }
+        )
+    }
+
+    @Test
+    fun `Given the phone is offline when managing then the paywall says so`() = runTest {
+        manageSubscriptionUseCase.givenSuccessfulExecution(
+            ManageSubscriptionResultDomainModel.Offline(YEARLY_STATUS)
+        )
+
+        assertEquals(
+            PaywallPresentationNotification.OfflineToManage,
+            notificationOf { classUnderTest.onManageAction() }
+        )
+    }
 
     @Test
     fun `When closing or continuing then the context goes with the event`() = runTest {

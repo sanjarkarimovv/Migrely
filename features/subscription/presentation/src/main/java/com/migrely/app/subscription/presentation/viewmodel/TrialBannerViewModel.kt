@@ -2,6 +2,7 @@ package com.migrely.app.subscription.presentation.viewmodel
 
 import com.migrely.app.architecture.domain.UseCaseExecutor
 import com.migrely.app.architecture.presentation.viewmodel.BaseViewModel
+import com.migrely.app.subscription.domain.model.ManageSubscriptionResultDomainModel
 import com.migrely.app.subscription.domain.model.TrialReminderDomainModel
 import com.migrely.app.subscription.domain.usecase.DismissTrialReminderUseCase
 import com.migrely.app.subscription.domain.usecase.GetTrialReminderUseCase
@@ -20,17 +21,16 @@ class TrialBannerViewModel(
     private val manageSubscriptionUseCase: ManageSubscriptionUseCase,
     useCaseExecutor: UseCaseExecutor
 ) : BaseViewModel<TrialBannerViewState, TrialBannerPresentationNotification>(useCaseExecutor) {
-    fun onEnter() {
-        getTrialReminderUseCase(
-            onResult = { reminder ->
-                updateViewState(
-                    when (reminder) {
-                        TrialReminderDomainModel.None -> TrialBannerViewState.Hidden
-                        is TrialReminderDomainModel.EndsSoon -> TrialBannerViewState.Shown(
-                            trialEnd = reminder.trialEnd,
-                            endsToday = reminder.endsToday,
-                            renews = reminder.renews
-                        )
+    fun onEnter() = showReminder(offlineToManage = false)
+
+    /** Offline, the banner says so under "Manage" until home is left or the banner loads again. */
+    fun onManageAction() {
+        manageSubscriptionUseCase(
+            onResult = { result ->
+                showReminder(
+                    offlineToManage = when (result) {
+                        is ManageSubscriptionResultDomainModel.Opened -> false
+                        is ManageSubscriptionResultDomainModel.Offline -> true
                     }
                 )
             }
@@ -43,7 +43,21 @@ class TrialBannerViewModel(
         dismissTrialReminderUseCase(value = trialEnd)
     }
 
-    fun onManageAction() {
-        manageSubscriptionUseCase(onResult = { onEnter() })
+    private fun showReminder(offlineToManage: Boolean) {
+        getTrialReminderUseCase(
+            onResult = { reminder ->
+                updateViewState(
+                    when (reminder) {
+                        TrialReminderDomainModel.None -> TrialBannerViewState.Hidden
+                        is TrialReminderDomainModel.EndsSoon -> TrialBannerViewState.Shown(
+                            trialEnd = reminder.trialEnd,
+                            endsToday = reminder.endsToday,
+                            renews = reminder.renews,
+                            offlineToManage = offlineToManage
+                        )
+                    }
+                )
+            }
+        )
     }
 }

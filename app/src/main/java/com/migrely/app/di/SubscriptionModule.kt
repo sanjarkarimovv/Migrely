@@ -5,6 +5,7 @@ import com.migrely.app.coroutine.CoroutineContextProvider
 import com.migrely.app.datasource.attack.datasource.AttackDataSource
 import com.migrely.app.datasource.billing.datasource.BillingDataSource
 import com.migrely.app.datasource.clock.datasource.ClockDataSource
+import com.migrely.app.datasource.network.datasource.NetworkStateDataSource
 import com.migrely.app.datasource.preferences.datasource.PreferencesDataSource
 import com.migrely.app.datasource.schedule.datasource.PremiumCheckScheduleDataSource
 import com.migrely.app.navigation.mapper.PaywallGateNavigationEventDestinationMapper
@@ -12,7 +13,9 @@ import com.migrely.app.navigation.mapper.PaywallNavigationEventDestinationMapper
 import com.migrely.app.navigation.mapper.PaywallTriggerNavigationEventDestinationMapper
 import com.migrely.app.navigation.mapper.PremiumSectionNavigationEventDestinationMapper
 import com.migrely.app.premium.PurchaseUpdatesWatcher
+import com.migrely.app.subscription.data.mapper.NetworkStateDomainMapper
 import com.migrely.app.subscription.data.mapper.SubscriptionDataMappers
+import com.migrely.app.subscription.data.repository.NetworkStateRepository
 import com.migrely.app.subscription.data.repository.SubscriptionRepository
 import com.migrely.app.subscription.domain.usecase.BuyPremiumUseCase
 import com.migrely.app.subscription.domain.usecase.DismissTrialReminderUseCase
@@ -105,6 +108,10 @@ internal object SubscriptionModule {
     )
 
     @Provides
+    fun providesNetworkStateRepository(networkStateDataSource: NetworkStateDataSource) =
+        NetworkStateRepository(networkStateDataSource, NetworkStateDomainMapper())
+
+    @Provides
     fun providesRefreshPremiumUseCase(
         premiumChecker: PremiumChecker,
         coroutines: CoroutineContextProvider
@@ -112,16 +119,18 @@ internal object SubscriptionModule {
 
     @Provides
     fun providesRestorePurchasesUseCase(
+        networkStateRepository: NetworkStateRepository,
         premiumChecker: PremiumChecker,
         coroutines: CoroutineContextProvider
-    ) = RestorePurchasesUseCase(premiumChecker, coroutines)
+    ) = RestorePurchasesUseCase(networkStateRepository, premiumChecker, coroutines)
 
     @Provides
     fun providesManageSubscriptionUseCase(
+        networkStateRepository: NetworkStateRepository,
         repository: SubscriptionRepository,
         premiumChecker: PremiumChecker,
         coroutines: CoroutineContextProvider
-    ) = ManageSubscriptionUseCase(repository, premiumChecker, coroutines)
+    ) = ManageSubscriptionUseCase(networkStateRepository, repository, premiumChecker, coroutines)
 
     @Provides
     fun providesShouldShowPaywallUseCase(
@@ -170,6 +179,7 @@ internal object SubscriptionModule {
     @Singleton
     fun providesPaywallViewModel(
         repository: SubscriptionRepository,
+        networkStateRepository: NetworkStateRepository,
         premiumChecker: PremiumChecker,
         restorePurchasesUseCase: RestorePurchasesUseCase,
         manageSubscriptionUseCase: ManageSubscriptionUseCase,
@@ -180,6 +190,7 @@ internal object SubscriptionModule {
         PaywallUseCases(
             getPaywallUseCase = GetPaywallUseCase(premiumChecker, repository, coroutines),
             buyPremiumUseCase = BuyPremiumUseCase(
+                getNetworkStateRepository = networkStateRepository,
                 getEntitlementRepository = repository,
                 saveLaunchedPurchaseRepository = repository,
                 getCurrentTimeRepository = repository,

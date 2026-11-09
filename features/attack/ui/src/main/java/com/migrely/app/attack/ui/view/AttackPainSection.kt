@@ -231,10 +231,14 @@ private fun AddPainDialog(
 
 /**
  * Shown the first time the user records a 10 (BRD SAF-F2). It never blocks the screen: the rest stays usable and the
- * card can be dismissed.
+ * card can be dismissed. It is an assertive live region once [announced], which waits until it is in view (D167).
  */
 @Composable
-internal fun SafetyCard(onDismiss: () -> Unit) {
+internal fun SafetyCard(
+    onDismiss: () -> Unit,
+    announced: Boolean = true,
+    modifier: Modifier = Modifier
+) {
     Surface(
         shape = RoundedCornerShape(20.dp),
         color = MaterialTheme.colorScheme.tertiaryContainer,
@@ -242,7 +246,8 @@ internal fun SafetyCard(onDismiss: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(top = 8.dp)
-            .semantics { liveRegion = LiveRegionMode.Assertive }
+            .then(modifier)
+            .semantics { if (announced) liveRegion = LiveRegionMode.Assertive }
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
