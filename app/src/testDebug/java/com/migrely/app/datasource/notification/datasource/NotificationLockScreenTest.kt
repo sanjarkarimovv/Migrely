@@ -4,8 +4,10 @@ import android.app.Application
 import android.app.Notification
 import android.app.NotificationManager
 import androidx.core.app.NotificationCompat
+import java.time.Instant
 import java.time.LocalDate
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -56,7 +58,7 @@ class NotificationLockScreenTest {
 
         val notification = posted().single()
         assertPrivate(notification)
-        assertEquals("Not marked. Today already has an entry.", notification.title())
+        assertEquals("Not marked. Open Migrely to see today.", notification.title())
     }
 
     @Test
@@ -67,5 +69,25 @@ class NotificationLockScreenTest {
         assertPrivate(notification)
         assertEquals("Did it help?", notification.title())
         assertEquals("Tap to answer in Migrely.", notification.text())
+    }
+
+    @Test
+    fun `When the visit reminder is posted then it is private and names no health word or channel`() {
+        classUnderTest.showVisitReminder(LocalDate.parse("2099-11-20"), Instant.now().plusSeconds(3_600))
+
+        val notification = posted().single()
+        assertPrivate(notification)
+        assertEquals("Your visit is on Fri, Nov 20, 2099", notification.title())
+        assertEquals("Make a report to bring.", notification.text())
+        assertTrue(notification.actions.isNullOrEmpty())
+        val shown = listOfNotNull(
+            notification.title(),
+            notification.text(),
+            notification.publicVersion.title(),
+            notification.publicVersion.text()
+        ).joinToString(" ").lowercase()
+        listOf("doctor", "migraine", "headache", "premium").forEach { word ->
+            assertFalse("\"$word\" shows: $shown", shown.contains(word))
+        }
     }
 }
