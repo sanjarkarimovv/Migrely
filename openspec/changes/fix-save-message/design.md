@@ -44,9 +44,15 @@ branch's work on it and keep D167's tests green.
 
 - `MigrelySnackbar` gets one optional parameter that overrides the live region (polite). `AttackMessages` passes it while card mode is on. Every other
   caller is unchanged, so errors elsewhere stay assertive.
-- **The message comes after the card.** When `FirstMaximumRecorded` and a message come from one action, the screen holds the message until the card has
-  been composed and laid out, one frame (for example `withFrameNanos` after the card is set), and then sets `shownMessage`. The order of the events from
-  the ViewModel does not change.
+- **The message comes after the card (as shipped, 970de3a6).** When `FirstMaximumRecorded` and a message come from one action, and that includes
+  "Saved.", the screen stores the message at once and holds only its display. It shows the message 200 ms after the card becomes a live region.
+  - The card becomes a live region after D167's 300 ms scroll when D167 scrolls the content back to its top first, and otherwise one frame after the card
+    is laid out.
+  - The message's 8 s, or an Undo's 5 s, starts when it becomes visible, not when it was stored.
+  - A rotation during the hold shows the stored message at once. Leaving the screen clears it, as design D5 says.
+  - The order of the events from the ViewModel does not change.
+  - **Why 200 ms and not one frame:** Compose 1.9.3 sends accessibility events in 100 ms batches, and in one batch TalkBack spoke the message first
+    (#166, 36 ms). Measured on `emulator-5570`: "Saved." spoken 274 ms after the card (W1), that is 200 ms plus the 100 ms batching.
 - `SafetyCard`'s title gets `semantics { heading() }`. No text changes.
 - **Fallback, decided now:** if QA finds that TalkBack *drops* a polite message after the assertive card (dropped, not delayed), the message goes back to
   assertive and is posted only after the card's announcement has started, and QA measures again. The card is never delayed.

@@ -35,7 +35,8 @@ filed both issues and retests them. No domain or data change.
   `./gradlew :features:attack:ui:testDebugUnitTest --tests '*AttackDetails*'` passes, and fails with the padding removed locally (N5).
 - [x] 5.2 Once `hotfix/1.1.1` is in `develop`, merge it here and keep D167's card scroll working with card mode (its target is below the
   message). Verify: D167's tests pass on this branch.
-- [x] 5.3 TalkBack order (design D3): the message one frame after the card, polite in card mode, the card's title a heading. Verify: a test that the
+- [x] 5.3 TalkBack order (design D3): the message stored at once and shown 200 ms after the card becomes a live region (after D167's 300 ms
+  scroll, or one frame after layout), its time counted from when it shows, polite in card mode, the card's title a heading. Verify: a test that the
   message's state is set after the card's, and a semantics test for `heading()` and the live regions.
 - [x] 5.4 The error replaced on success, never on the attempt (design D4), and cleared on leave but not on Home, a dialog or a rotation (design D5).
   Verify: tests for scenarios C1–C5 in the `in-app-messages` delta pass, and the leave test fails with a lifecycle `ON_STOP` clear in its place.
@@ -120,6 +121,18 @@ crashed in its own WorkManager (`SQLiteFullException`), so the driver now starts
 `ar-XB` (21); "Remove animations" (22); the 60 fps flash capture (23); the 0.8 s guard after Dismiss in card mode (7); light theme; a note, a tag and an
 effect as the later save (11, covered per path by ViewModel tests and once on the device by a location chip under TalkBack); D158's top-bar date line
 lies under the message's top edge at 200%, as before this change. These are QA's checks in 8.1. A real phone and human hands are not covered.
+
+### Review walk (970de3a6), task 9.1 record
+
+`migrely-work/walks/t53/review-walk.txt`, `emulator-5570`, API 36, 1080x2400, debug APK of 970de3a6.
+
+| Row | Check | Result |
+|---|---|---|
+| W1 | Check 10 with TalkBack: failed first 10, disk freed, the same 10 again (card and "Saved." from one action) | Pass. Title, sentence, "Got it", then "Saved." (QUEUE). "Saved." spoken 274 ms after the card. "Peak 10/10" stored |
+| W2 | Rotation during the hold, scrolled down (D167's 300 ms scroll plus 200 ms) | Pass. "Couldn't save" present after the recreation, in landscape and back in portrait, with the content below it. Inside the hold by timing only, not seen directly |
+| W3 | Going forward during the hold | Not walked: three attempts were void (taps too close, then a full disk took down system processes, with no Migrely crash). The proof is the unit test `SaveMessageTest` "Given an error held behind the card when the user goes forward then it is gone after", red on 3f2ca3fb and green on 970de3a6 |
+
+Settings, TalkBack preferences and app data were restored to the baseline, and 5570 is off.
 
 ## Not done here
 
