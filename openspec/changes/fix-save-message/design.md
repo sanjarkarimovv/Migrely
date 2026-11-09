@@ -34,19 +34,11 @@ minus the column's own top in root coordinates, never less than 0. Outside card 
 
 Rejected options, as `ux-designer` lists them: a larger offset, the message in the column, and the message at the bottom (D165 (1)).
 
-### D2. The card comes into view (P8)
+### D2. The card comes into view: D167, not here
 
-A `LaunchedEffect` keyed on the card appearing through the event, not on restoring it, runs once the card has been laid out. If the card's bounds are not
-fully inside the visible content area (the column's viewport less the card-mode padding), it calls `animateScrollTo` with a 300 ms ease-in-out tween, so
-the card's top lands at the area's top. With "Remove animations" it calls `scrollTo`. A card taller than the area gets its top aligned. Accessibility focus
-is not touched.
-
-**Written to stand either way.** `qa-t53` is measuring whether the card can appear off-screen today (ux check 5). If it never does, this code never
-scrolls, and it guards future layouts. If it does, this is the safety part of the change, and `team-lead` re-rates the severity. The requirement is the
-same in both cases.
-
-**Why not on restore.** After a rotation or a process restore, the person has already seen the card, and scrolling back would take their place away.
-`rememberScrollState` already restores the position.
+P8 ships in hotfix 1.1.1 as D167 (#171, S1, change `fix-safety-card-into-view`). This change keeps that behaviour as it is. In card mode, D167's
+scroll target, the top of the content area, is below the message, because the content starts there. When the hotfix merges into `develop`, rebase this
+branch's work on it and keep D167's tests green.
 
 ### D3. TalkBack order (A1–A5)
 
@@ -85,7 +77,7 @@ The engineer picks the mechanism, and tests both sides.
 | # | Case | Decision |
 |---|---|---|
 | 1 | Loading, not found, attack deleted | No card, no card mode (D163 (5)) |
-| 2 | Card, no message | Card first, D2 scrolls it if needed |
+| 2 | Card, no message | Card first, D167 scrolls it if needed |
 | 3 | A failed first 10 | Card, then the message one frame later and polite, content pushed. Both spoken whole, card first |
 | 4 | Card showing, then an Undo, information or error message | Card mode: pushed, nothing covered, wherever the person has scrolled |
 | 5 | "Got it" while a message shows | The card goes, the message stays put, and the content stays below it until it leaves (P2) |
@@ -130,7 +122,7 @@ Checks 1–17 and 19–23 are ux §6's, with the same pass conditions. Check 18 
 | 2 | Speech: the full title and sentence come first, then the full message, and neither cuts the other off |
 | 3 | A successful first 10 while "Pain level removed / Undo" shows: the card is not covered, and Undo works |
 | 4 | Scrolled away, remove a point: Undo is visible and works, and scrolling back, the card is not covered |
-| 5 | P8 at 200%, scrolled to Pain's Add, a first 10 that saves and one that fails: within 1 s the card's top is at the content's top. With "Remove animations", no in-between frames. **QA runs this first** |
+| 5 | D167's rows still pass with card mode on: scrolled down, a failed first 10 brings the card's top below the message |
 | 6 | "Got it" while the message shows: the message does not move (±1 px), and the content stays below it until it is dismissed |
 | 7 | Dismiss in card mode, then tap its place within 0.8 s: the "Started" picker does not open. After 0.8 s it does |
 | 8 | Landscape, 100% and 200%: 1 and 2 hold. Record the content height left at 200% in the 609 x 274 dp window |
@@ -155,7 +147,6 @@ Checks 1–17 and 19–23 are ux §6's, with the same pass conditions. Check 18 
 | N1 | Base c2761cba, debug | Check 1 at 100% | The title is not in the tree, as #166 says. If it is, check 1 proves nothing |
 | N2 | Base | Check 10 | "Couldn't save" stays after the successful save, as #167 says |
 | N3 | Base | Check 14 | The error comes back after the forward trip. That shows D5 does something |
-| N4 | Base | Check 5 | Record whether the card appears off-screen. This is `qa-t53`'s current measurement, and it decides the severity |
 | N5 | This change with only the card-mode padding removed, local | Check 1 at 100% | The title leaves the tree again |
 | N6 | This change with only the polite override removed, local | Check 2 | Record the order. This shows what A2 and A3 buy |
 | N7 | This change | Check 17 | No "Saved.", the control for D4 |
@@ -174,7 +165,6 @@ Checks 1–17 and 19–23 are ux §6's, with the same pass conditions. Check 18 
 - **A clear on leave that fires on Home** would break #167's main path. Checks 15 and 14 test both sides, and D5 says to use navigation, not lifecycle.
 - **Padding from root coordinates** could be off when the window has insets or is in landscape. Check 1 is run in landscape, and N5 shows the check can
   fail.
-- **The scroll could move the person on a restore.** D2 keys it to the event, and check 16 looks for it.
 - **The BRD numbers clash with `bugfix/161-menu-second-tap`** only if the same numbers are taken. That branch has D164, EC-UX-31/32 and row 33, and this one
   has D165, EC-UX-33/34 and row 34. Whichever merges second keeps numeric order.
 

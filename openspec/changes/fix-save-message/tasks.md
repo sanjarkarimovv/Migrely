@@ -8,8 +8,7 @@ filed both issues and retests them. No domain or data change.
 - [x] 1.1 BRD: D165, EC-UX-33, EC-UX-34, EC-ATK-22, §13 row 34. Verify: `grep -c "^| D165 " docs/BRD.md` prints 1, and
   `git show origin/develop:docs/BRD.md | grep -c "^| D165 "` prints 0.
 - [x] 1.2 Proposal, design, the two deltas, tasks. Verify: `openspec validate fix-save-message --strict` exits 0.
-- [ ] 1.3 `qa-t53`'s P8 result (ux check 5 on c2761cba) goes into design D2 and the packet to `team-lead`, who re-rates the severity if the card appears
-  off-screen. Verify: the result and its evidence path are in design D2.
+- [x] 1.3 P8 moved to hotfix 1.1.1 as D167 (#171). Verify: `grep -c "D167" docs/BRD.md` prints at least 1.
 - [ ] 1.4 `team-lead` files the follow-up issue for the 9 screens and D130's condition (D165 (7), (8)). Verify: its number is in this file's "Not done
   here".
 
@@ -34,8 +33,8 @@ filed both issues and retests them. No domain or data change.
 - [ ] 5.1 Card mode padding from `onMessageBottomChanged` (design D1), held until the message leaves. Compose tests: the message and card bounds do not
   intersect at 100% and 200%; "Got it" with a message keeps the content below it; no card, no padding. Verify:
   `./gradlew :features:attack:ui:testDebugUnitTest --tests '*AttackDetails*'` passes, and fails with the padding removed locally (N5).
-- [ ] 5.2 The card comes into view (design D2): scrolled away, it scrolls once; already visible, nothing moves; a restore does not scroll; jump with
-  reduced motion. Verify: the same command, with tests for each case.
+- [ ] 5.2 Once `hotfix/1.1.1` is in `develop`, merge it here and keep D167's card scroll working with card mode (its target is below the
+  message). Verify: D167's tests pass on this branch.
 - [ ] 5.3 TalkBack order (design D3): the message one frame after the card, polite in card mode, the card's title a heading. Verify: a test that the
   message's state is set after the card's, and a semantics test for `heading()` and the live regions.
 - [ ] 5.4 The error replaced on success, never on the attempt (design D4), and cleared on leave but not on Home, a dialog or a rotation (design D5).

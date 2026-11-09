@@ -48,37 +48,6 @@ EC-UX-33, D165).
 - **WHEN** the layout is right to left, or the theme is light or dark
 - **THEN** the message and the card mirror or recolour with the layout, and neither covers the other
 
-### Requirement: The safety card comes into view when it appears
-When the safety card appears and is not fully inside the visible content area, the content SHALL scroll so that the card's top
-is at the top of that area, below a message if one shows. A card taller than the area SHALL have its top aligned. It SHALL
-ease over 300 ms, or jump with "Remove animations". Accessibility focus SHALL NOT move. A card restored by a rotation or a
-process SHALL NOT scroll (BRD EC-UX-33, D165).
-
-#### Scenario: Scrolled down to Pain at 200%
-- **WHEN** at 200% font the user has scrolled until Pain's Add is on screen and the card's place is above the view, and adds a
-  first 10 that saves or fails
-- **THEN** within 1 second the card's top is at the top of the content area
-
-#### Scenario: The card is already in view
-- **WHEN** the card appears fully inside the visible content area
-- **THEN** nothing scrolls
-
-#### Scenario: A card taller than the area
-- **WHEN** the card is taller than the visible content area, as at 200% in landscape
-- **THEN** its top is at the top of the area, and the rest can be scrolled
-
-#### Scenario: Remove animations
-- **WHEN** "Remove animations" is on and the card appears out of view
-- **THEN** the content jumps to it, with no frames in between
-
-#### Scenario: Accessibility focus
-- **WHEN** TalkBack is on and the card scrolls into view
-- **THEN** focus stays where it was, and the card's live region speaks it
-
-#### Scenario: A restored card
-- **WHEN** the phone rotates or the process is restored while the card shows
-- **THEN** the content keeps the place the user scrolled to
-
 ### Requirement: TalkBack hears the safety card before a message
 While the safety card shows, TalkBack SHALL speak the card's title and sentence before a message, and each in full. The card
 SHALL stay assertive, and while it shows a message SHALL be polite. When one action brings both, the message SHALL appear after

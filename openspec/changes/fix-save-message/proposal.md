@@ -26,8 +26,8 @@ On **Attack details** only:
 - **Push, don't cover (D165 (1)).** While the safety card shows, a message stays in its usual place, and the scrolling content starts below the message's
   bottom edge. It uses D52's existing `onMessageBottomChanged`. This "card mode" holds until that message leaves, even if "Got it" closes the card first.
   The message never moves. With no card, D158's overlay is unchanged.
-- **The card comes into view (D165 (2)).** When the card appears and is not fully visible, the content scrolls so that the card's top is at the top of the
-  visible area. The scroll eases over 300 ms, or jumps with "Remove animations". Focus is not moved, and a restored card does not scroll.
+- **The card coming into view is not here.** It ships in hotfix 1.1.1 as D167 (#171, change `fix-safety-card-into-view`). In card mode, D167's
+  "top of the content area" starts below the message.
 - **TalkBack order (D165 (3)).**
   - The card is spoken first and in full, then the message.
   - The card stays assertive, and in card mode a message is polite.
@@ -66,7 +66,6 @@ None.
 
 - `in-app-messages`:
   - a message never covers the safety card;
-  - the card comes into view;
   - TalkBack hears the card first;
   - an error on Attack details goes on a later success and belongs to the visit;
   - "Saved." lasts 8 s;
