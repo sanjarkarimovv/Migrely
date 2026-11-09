@@ -1,23 +1,35 @@
 package com.migrely.app.reminders.presentation.viewmodel
 
 import com.migrely.app.architecture.presentation.viewmodel.BaseViewModelTest
+import com.migrely.app.reminders.domain.model.DoctorVisitDomainModel
 import com.migrely.app.reminders.domain.model.ReminderWriteResultDomainModel
 import com.migrely.app.reminders.domain.model.RemindersDomainModel
 import com.migrely.app.reminders.domain.model.RemindersResultDomainModel
+import com.migrely.app.reminders.domain.model.RemoveDoctorVisitResultDomainModel
 import com.migrely.app.reminders.domain.model.SetDailyReminderRequestDomainModel
+import com.migrely.app.reminders.domain.model.SetDoctorVisitResultDomainModel
 import com.migrely.app.reminders.domain.usecase.GetRemindersUseCase
 import com.migrely.app.reminders.domain.usecase.RecordPermissionAskedUseCase
+import com.migrely.app.reminders.domain.usecase.RemoveDoctorVisitUseCase
+import com.migrely.app.reminders.domain.usecase.RestoreDoctorVisitUseCase
 import com.migrely.app.reminders.domain.usecase.SetDailyReminderUseCase
+import com.migrely.app.reminders.domain.usecase.SetDoctorVisitUseCase
 import com.migrely.app.reminders.domain.usecase.SetEffectReminderUseCase
+import com.migrely.app.reminders.presentation.mapper.DoctorVisitPresentationMapper
 import com.migrely.app.reminders.presentation.mapper.RemindersPresentationMapper
+import com.migrely.app.reminders.presentation.model.DoctorVisitPresentationModel
 import com.migrely.app.reminders.presentation.model.ReminderKindPresentationModel
 import com.migrely.app.reminders.presentation.model.RemindersPresentationModel
 import com.migrely.app.reminders.presentation.model.RemindersPresentationNotification
 import com.migrely.app.reminders.presentation.model.RemindersViewState
+import java.time.LocalDate
 import java.time.LocalTime
 import kotlinx.coroutines.CoroutineStart.UNDISPATCHED
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -26,12 +38,17 @@ import org.junit.runner.RunWith
 import org.mockito.Mock
 import org.mockito.junit.MockitoJUnitRunner
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.never
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 
 private val EIGHT_PM = LocalTime.of(20, 0)
+private val NOVEMBER_20: LocalDate = LocalDate.of(2026, 11, 20)
+private val NOVEMBER_27: LocalDate = LocalDate.of(2026, 11, 27)
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(MockitoJUnitRunner::class)
 class RemindersViewModelTest :
     BaseViewModelTest<RemindersViewState, RemindersPresentationNotification, RemindersViewModel>() {
@@ -43,6 +60,12 @@ class RemindersViewModelTest :
 
     @Mock private lateinit var recordPermissionAskedUseCase: RecordPermissionAskedUseCase
 
+    @Mock private lateinit var setDoctorVisitUseCase: SetDoctorVisitUseCase
+
+    @Mock private lateinit var removeDoctorVisitUseCase: RemoveDoctorVisitUseCase
+
+    @Mock private lateinit var restoreDoctorVisitUseCase: RestoreDoctorVisitUseCase
+
     @Before
     fun setUp() {
         classUnderTest = RemindersViewModel(
@@ -50,7 +73,11 @@ class RemindersViewModelTest :
             setDailyReminderUseCase,
             setEffectReminderUseCase,
             recordPermissionAskedUseCase,
+            setDoctorVisitUseCase,
+            removeDoctorVisitUseCase,
+            restoreDoctorVisitUseCase,
             RemindersPresentationMapper(),
+            DoctorVisitPresentationMapper(),
             useCaseExecutor
         )
     }
@@ -171,4 +198,140 @@ class RemindersViewModelTest :
 
         verifyDailySet(on = true)
     }
+
+    @Test
+    fun `Given notifications off when a visit is saved then permission is asked for it`() =
+        runTest {
+            givenReminders(allowed = false)
+            setDoctorVisitUseCase.givenSuccessfulExecution(
+                NOVEMBER_20,
+                SetDoctorVisitResultDomainModel.Saved(askForPermission = true)
+            )
+            val notification = async(start = UNDISPATCHED) { classUnderTest.notification.first() }
+
+            classUnderTest.onVisitDateAction(NOVEMBER_20)
+
+            assertEquals(
+                RemindersPresentationNotification.AskForPermission(
+                    ReminderKindPresentationModel.Visit
+                ),
+                notification.await()
+            )
+        }
+
+    @Test
+    fun `Given the same date when picked then nothing is said and the screen reads again`() =
+        runTest {
+            givenReminders(allowed = true)
+            setDoctorVisitUseCase.givenSuccessfulExecution(
+                NOVEMBER_20,
+                SetDoctorVisitResultDomainModel.Unchanged
+            )
+            val notifications = mutableListOf<RemindersPresentationNotification>()
+            val collecting = launch(start = UNDISPATCHED) {
+                classUnderTest.notification.collect { notifications += it }
+            }
+
+            classUnderTest.onVisitDateAction(NOVEMBER_20)
+            runCurrent()
+
+            assertEquals(emptyList<RemindersPresentationNotification>(), notifications)
+            verify(
+                useCaseExecutor
+            ).execute(useCase = eq(getRemindersUseCase), onResult = any(), onException = any())
+            collecting.cancel()
+        }
+
+    @Test
+    fun `Given storage is full when a visit is saved then it says so`() = runTest {
+        givenReminders(allowed = true)
+        setDoctorVisitUseCase.givenSuccessfulExecution(
+            NOVEMBER_20,
+            SetDoctorVisitResultDomainModel.StorageFull
+        )
+        val notification = async(start = UNDISPATCHED) { classUnderTest.notification.first() }
+
+        classUnderTest.onVisitDateAction(NOVEMBER_20)
+
+        assertEquals(RemindersPresentationNotification.StorageFull, notification.await())
+    }
+
+    @Test
+    fun `When the visit is removed then Visit removed with it, and Undo puts it back`() = runTest {
+        givenReminders(allowed = true)
+        removeDoctorVisitUseCase.givenSuccessfulExecution(
+            RemoveDoctorVisitResultDomainModel.Removed(DoctorVisitDomainModel("v", NOVEMBER_20))
+        )
+        restoreDoctorVisitUseCase.givenSuccessfulExecution(
+            DoctorVisitDomainModel("v", NOVEMBER_20),
+            ReminderWriteResultDomainModel.Done
+        )
+        val removed = async(start = UNDISPATCHED) { classUnderTest.notification.first() }
+
+        classUnderTest.onRemoveVisitAction()
+
+        assertEquals(
+            RemindersPresentationNotification.VisitRemoved(
+                DoctorVisitPresentationModel("v", NOVEMBER_20)
+            ),
+            removed.await()
+        )
+        val undone = async(start = UNDISPATCHED) { classUnderTest.notification.first() }
+
+        classUnderTest.onUndoRemoveVisitAction(DoctorVisitPresentationModel("v", NOVEMBER_20))
+
+        assertEquals(RemindersPresentationNotification.Undone, undone.await())
+    }
+
+    @Test
+    fun `Given the visit asked when permission is granted then no reminder is turned on`() {
+        givenReminders(allowed = true)
+        recordPermissionAskedUseCase.givenSuccessfulExecution(ReminderWriteResultDomainModel.Done)
+
+        classUnderTest.onPermissionResultAction(true, ReminderKindPresentationModel.Visit, EIGHT_PM)
+
+        verifyDailyNotSet()
+        verify(useCaseExecutor, never()).execute(
+            useCase = eq(setEffectReminderUseCase),
+            value = any(),
+            onResult = any(),
+            onException = any()
+        )
+    }
+
+    @Test
+    fun `Given the first read answers after a newer one when shown then the newer one stays`() =
+        runTest {
+            val reads = argumentCaptor<(RemindersResultDomainModel) -> Unit>()
+            val states = mutableListOf<RemindersViewState>()
+            val collecting = launch(start = UNDISPATCHED) {
+                classUnderTest.viewState.collect {
+                    states +=
+                        it
+                }
+            }
+
+            classUnderTest.onEnter()
+            classUnderTest.onResume()
+            verify(useCaseExecutor, times(2)).execute(
+                useCase = eq(getRemindersUseCase),
+                onResult = reads.capture(),
+                onException = any()
+            )
+            reads.secondValue(loaded(nextVisit = NOVEMBER_27))
+            reads.firstValue(loaded(nextVisit = null))
+            runCurrent()
+
+            assertEquals(
+                listOf(NOVEMBER_27),
+                states.map {
+                    (it as RemindersViewState.Ready).reminders.nextVisit
+                }
+            )
+            collecting.cancel()
+        }
+
+    private fun loaded(nextVisit: LocalDate?) = RemindersResultDomainModel.Loaded(
+        RemindersDomainModel(false, EIGHT_PM, true, true, true, nextVisit = nextVisit)
+    )
 }

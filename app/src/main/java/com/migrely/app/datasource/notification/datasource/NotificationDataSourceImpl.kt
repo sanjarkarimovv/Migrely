@@ -169,7 +169,9 @@ class NotificationDataSourceImpl(private val context: Context) : NotificationDat
         /** Set on the visit reminder's intent: the app opens the doctor report through History (design D6). */
         const val EXTRA_OPEN_DOCTOR_REPORT = "com.migrely.app.OPEN_DOCTOR_REPORT"
         private const val VISIT_ID = 2
-        private const val CHANNEL_VISIT = "visit"
+
+        /** The "Doctor visit" channel, whose settings page the Reminders screen opens. */
+        const val CHANNEL_VISIT = "visit"
         private const val CHANNEL_DAILY = "daily"
         private const val CHANNEL_EFFECT = "effect"
         private const val EFFECT_ID_BASE = 1000

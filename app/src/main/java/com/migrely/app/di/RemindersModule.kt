@@ -3,6 +3,7 @@ package com.migrely.app.di
 import android.content.Context
 import androidx.work.WorkManager
 import com.migrely.app.architecture.domain.UseCaseExecutor
+import com.migrely.app.architecture.ui.notification.mapper.NoNotificationUiMapper
 import com.migrely.app.coroutine.CoroutineContextProvider
 import com.migrely.app.datasource.attack.datasource.AttackDataSource
 import com.migrely.app.datasource.clock.datasource.ClockDataSource
@@ -14,6 +15,7 @@ import com.migrely.app.datasource.reminder.datasource.ReminderSettingsDataSource
 import com.migrely.app.datasource.schedule.datasource.ReminderScheduleDataSource
 import com.migrely.app.datasource.schedule.datasource.ReminderScheduleDataSourceImpl
 import com.migrely.app.navigation.mapper.RemindersNavigationEventDestinationMapper
+import com.migrely.app.navigation.mapper.VisitCardNavigationEventDestinationMapper
 import com.migrely.app.reminders.data.mapper.DoctorVisitDomainMapper
 import com.migrely.app.reminders.data.mapper.ReminderSettingsDomainMapper
 import com.migrely.app.reminders.data.mapper.ReminderZoneDomainMapper
@@ -33,13 +35,17 @@ import com.migrely.app.reminders.domain.usecase.SetDailyReminderUseCase
 import com.migrely.app.reminders.domain.usecase.SetDoctorVisitUseCase
 import com.migrely.app.reminders.domain.usecase.SetEffectReminderUseCase
 import com.migrely.app.reminders.domain.usecase.ShowAttackLoggedTodayUseCase
+import com.migrely.app.reminders.presentation.mapper.DoctorVisitPresentationMapper
 import com.migrely.app.reminders.presentation.mapper.RemindersPresentationMapper
 import com.migrely.app.reminders.presentation.viewmodel.DailyReminderOfferViewModel
 import com.migrely.app.reminders.presentation.viewmodel.RemindersViewModel
+import com.migrely.app.reminders.presentation.viewmodel.VisitCardViewModel
 import com.migrely.app.reminders.ui.di.DailyReminderOfferDependencies
 import com.migrely.app.reminders.ui.di.RemindersDependencies
+import com.migrely.app.reminders.ui.di.VisitCardDependencies
 import com.migrely.app.reminders.ui.mapper.DailyReminderOfferEventUiMapper
 import com.migrely.app.reminders.ui.mapper.DailyReminderOfferUiMapper
+import com.migrely.app.reminders.ui.mapper.DoctorVisitUiToPresentationMapper
 import com.migrely.app.reminders.ui.mapper.ReminderKindUiToPresentationMapper
 import com.migrely.app.reminders.ui.mapper.RemindersEventPresenter
 import com.migrely.app.reminders.ui.mapper.RemindersMessageBehaviourUiMapper
@@ -255,20 +261,43 @@ internal object RemindersModule {
         coroutines: CoroutineContextProvider
     ) = DismissDailyReminderUseCase(repository, coroutines)
 
+    @Suppress("LongParameterList")
     @Provides
     fun providesRemindersViewModel(
         getRemindersUseCase: GetRemindersUseCase,
         setDailyReminderUseCase: SetDailyReminderUseCase,
         setEffectReminderUseCase: SetEffectReminderUseCase,
         recordPermissionAskedUseCase: RecordPermissionAskedUseCase,
+        setDoctorVisitUseCase: SetDoctorVisitUseCase,
+        removeDoctorVisitUseCase: RemoveDoctorVisitUseCase,
+        restoreDoctorVisitUseCase: RestoreDoctorVisitUseCase,
         useCaseExecutor: UseCaseExecutor
     ) = RemindersViewModel(
         getRemindersUseCase,
         setDailyReminderUseCase,
         setEffectReminderUseCase,
         recordPermissionAskedUseCase,
+        setDoctorVisitUseCase,
+        removeDoctorVisitUseCase,
+        restoreDoctorVisitUseCase,
         RemindersPresentationMapper(),
+        DoctorVisitPresentationMapper(),
         useCaseExecutor
+    )
+
+    @Provides
+    fun providesVisitCardDependencies(
+        getVisitCardUseCase: GetVisitCardUseCase,
+        closeVisitCardUseCase: CloseVisitCardUseCase,
+        useCaseExecutor: UseCaseExecutor
+    ) = VisitCardDependencies(
+        visitCardViewModel = VisitCardViewModel(
+            getVisitCardUseCase,
+            closeVisitCardUseCase,
+            useCaseExecutor
+        ),
+        navigationMapper = VisitCardNavigationEventDestinationMapper(),
+        notificationMapper = NoNotificationUiMapper()
     )
 
     @Provides
@@ -299,6 +328,8 @@ internal object RemindersModule {
             remindersEventPresenter = presenter,
             remindersMessageBehaviourUiMapper = RemindersMessageBehaviourUiMapper(),
             reminderKindUiToPresentationMapper = ReminderKindUiToPresentationMapper(),
+            doctorVisitUiToPresentationMapper = DoctorVisitUiToPresentationMapper(),
+            visitNotificationChannelId = NotificationDataSourceImpl.CHANNEL_VISIT,
             navigationMapper = RemindersNavigationEventDestinationMapper(),
             notificationMapper = RemindersNotificationUiMapper(presenter)
         )

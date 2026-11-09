@@ -12,7 +12,9 @@ class RemindersPresentationMapper {
                 dailyTime = result.reminders.dailyTime,
                 effectEnabled = result.reminders.effectEnabled,
                 notificationsAllowed = result.reminders.notificationsAllowed,
-                mayAskPermission = result.reminders.mayAskPermission
+                mayAskPermission = result.reminders.mayAskPermission,
+                nextVisit = result.reminders.nextVisit,
+                visitChannelOff = result.reminders.visitChannelOff
             )
         )
         RemindersResultDomainModel.Failed -> RemindersViewState.Unavailable

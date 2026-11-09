@@ -19,4 +19,28 @@
     <string name="reminders_message_dismiss">Dismiss</string>
     <string name="reminders_offer_turn_on">Turn on at %1$s</string>
     <string name="reminders_offer_not_now">Not now</string>
+    <!-- Doctor visit (BRD D168, design copy table). -->
+    <string name="reminders_visit_title">Doctor visit</string>
+    <string name="reminders_visit_summary">A reminder two days before, to make a report for your doctor</string>
+    <string name="reminders_visit_next">Next visit</string>
+    <string name="reminders_visit_not_set">Not set</string>
+    <string name="reminders_visit_description">Next visit, %1$s. Change it.</string>
+    <string name="reminders_visit_description_not_set">Next visit, not set. Set a date.</string>
+    <string name="reminders_visit_remove">Remove</string>
+    <string name="reminders_visit_remove_description">Remove the next visit</string>
+    <string name="reminders_visit_home_only">This reminder can show only on Home.</string>
+    <string name="reminders_visit_channel_off">Doctor visit notifications are off, so this reminder can show only on Home.</string>
+    <string name="reminders_open_settings_description">Open notification settings</string>
+    <string name="reminders_message_visit_removed">Visit removed</string>
+    <string name="reminders_snackbar_undo">Undo</string>
+    <string name="reminders_snackbar_undo_visit_description">Undo removing the visit</string>
+    <string name="reminders_message_undone">Undone.</string>
+    <string name="reminders_visit_picker_title">Next visit</string>
+    <string name="reminders_visit_picker_none">Pick a day</string>
+    <string name="reminders_visit_picker_done">Done</string>
+    <string name="reminders_visit_picker_cancel">Cancel</string>
+    <!-- Home's visit card. In the app "doctor" is fine: the lock-screen rule does not apply here. -->
+    <string name="reminders_visit_card_text">Your doctor visit is on %1$s.</string>
+    <string name="reminders_visit_card_report">Make a report</string>
+    <string name="reminders_visit_card_close_description">Close the visit reminder</string>
 </resources>

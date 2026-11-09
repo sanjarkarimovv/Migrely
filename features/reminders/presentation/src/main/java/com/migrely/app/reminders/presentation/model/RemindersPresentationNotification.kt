@@ -7,6 +7,13 @@ sealed interface RemindersPresentationNotification : PresentationNotification {
     data class AskForPermission(val kind: ReminderKindPresentationModel) :
         RemindersPresentationNotification
 
+    /** "Visit removed" with Undo, which puts [visit] back (BRD EC-REM-10). */
+    data class VisitRemoved(val visit: DoctorVisitPresentationModel) :
+        RemindersPresentationNotification
+
+    /** Undo put the visit back. */
+    data object Undone : RemindersPresentationNotification
+
     data object StorageFull : RemindersPresentationNotification
 
     data object SomethingWentWrong : RemindersPresentationNotification

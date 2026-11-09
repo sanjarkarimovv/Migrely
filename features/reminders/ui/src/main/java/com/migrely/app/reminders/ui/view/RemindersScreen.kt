@@ -2,22 +2,30 @@ package com.migrely.app.reminders.ui.view
 
 import android.Manifest
 import android.content.ActivityNotFoundException
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
+import android.os.SystemClock
 import android.provider.Settings
+import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
@@ -42,15 +50,19 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -60,15 +72,21 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LifecycleResumeEffect
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavController
 import com.migrely.app.architecture.ui.view.ScreenEnterObserver
 import com.migrely.app.designsystem.dialog.MigrelyDialog
 import com.migrely.app.designsystem.icon.MigrelyIcons
 import com.migrely.app.designsystem.motion.rememberReduceMotion
+import com.migrely.app.designsystem.picker.DatePickerLabels
+import com.migrely.app.designsystem.picker.MigrelyDatePicker
 import com.migrely.app.designsystem.snackbar.MESSAGE_OFFSET_BELOW_TOP_BAR
 import com.migrely.app.designsystem.snackbar.MigrelySnackbar
 import com.migrely.app.designsystem.snackbar.MigrelySnackbarHost
+import com.migrely.app.designsystem.snackbar.SnackbarAction
 import com.migrely.app.designsystem.snackbar.messageTimeoutMillis
 import com.migrely.app.designsystem.theme.MigrelyTheme
 import com.migrely.app.reminders.presentation.model.RemindersViewState
@@ -79,6 +97,7 @@ import com.migrely.app.reminders.ui.model.RemindersEventUiModel
 import com.migrely.app.reminders.ui.model.RemindersMessageUiModel
 import com.migrely.app.reminders.ui.model.RemindersUiModel
 import com.migrely.app.reminders.ui.model.RemindersViewStateUiModel
+import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -87,6 +106,10 @@ import kotlinx.coroutines.delay
 private const val MINUTES_PER_HOUR = 60
 private const val DEFAULT_MINUTE_OF_DAY = 20 * MINUTES_PER_HOUR
 private val CONTENT_MAX_WIDTH = 600.dp
+private const val PICKABLE_DAYS = 365L
+
+/** D161: a second tap within this of Done's lift must not reach the system dialog (design D10). */
+private const val VISIT_ASK_WAIT_MILLIS = 500L
 
 /** Callbacks from the Reminders screen to its view model. */
 data class RemindersActions(
@@ -94,12 +117,17 @@ data class RemindersActions(
     val onDaily: (on: Boolean) -> Unit,
     val onDailyTime: (minuteOfDay: Int) -> Unit,
     val onEffect: (on: Boolean) -> Unit,
-    val onOpenSettings: () -> Unit
+    val onOpenSettings: () -> Unit,
+    val onVisitDate: (LocalDate) -> Unit = {},
+    val onRemoveVisit: () -> Unit = {},
+    val onOpenVisitChannelSettings: () -> Unit = {}
 )
 
 /**
  * The Reminders screen (BRD D65–D68). Notification permission is asked for only when a switch is turned on
- * (EC-REM-01); Android 12 and older have no such request, so a refusal there means notifications are off in settings.
+ * (EC-REM-01) or a doctor visit is set (EC-REM-11); Android 12 and older have no such request, so a refusal there means
+ * notifications are off in settings. After a visit is set, the system dialog waits until the picker's window has gone
+ * and 500 ms have passed since the lift on Done, so a second tap cannot answer it (design D10).
  */
 @Composable
 fun RemindersDependencies.Reminders(navController: NavController, modifier: Modifier = Modifier) {
@@ -129,17 +157,37 @@ fun RemindersDependencies.Reminders(navController: NavController, modifier: Modi
             asking?.let { answer(granted, it) }
             asking = null
         }
+    // The lift on the picker's Done; lost with a rotation, which starts the wait again (design D10).
+    var visitPickedAt by remember { mutableLongStateOf(0L) }
+    var visitAskPending by rememberSaveable { mutableStateOf(false) }
+    DropVisitRequestOnLeaving { visitAskPending = false }
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    LaunchedEffect(visitAskPending) {
+        if (!visitAskPending) return@LaunchedEffect
+        val start = visitPickedAt.takeIf { it > 0L } ?: SystemClock.uptimeMillis()
+        delay((start + VISIT_ASK_WAIT_MILLIS - SystemClock.uptimeMillis()).coerceAtLeast(0L))
+        visitAskPending = false
+        // Only while Reminders is the screen in front; otherwise nothing is asked and nothing stamped.
+        if (lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
+            asking = ReminderKindUiModel.Visit
+            launcher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
     var message by remember { mutableStateOf<RemindersMessageUiModel?>(null) }
     LaunchedEffect(remindersEventPresenter) {
         remindersEventPresenter.events.collect { event ->
             when (event) {
-                is RemindersEventUiModel.AskForPermission ->
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                is RemindersEventUiModel.AskForPermission -> when {
+                    Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU -> answer(
+                        false,
+                        event.kind
+                    )
+                    event.kind == ReminderKindUiModel.Visit -> visitAskPending = true
+                    else -> {
                         asking = event.kind
                         launcher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                    } else {
-                        answer(false, event.kind)
                     }
+                }
                 is RemindersEventUiModel.Message -> message = event.message
             }
         }
@@ -169,19 +217,25 @@ fun RemindersDependencies.Reminders(navController: NavController, modifier: Modi
                 )
             },
             onEffect = remindersViewModel::onEffectReminderAction,
+            onVisitDate = { date ->
+                visitPickedAt = SystemClock.uptimeMillis()
+                remindersViewModel.onVisitDateAction(date)
+            },
+            onRemoveVisit = remindersViewModel::onRemoveVisitAction,
+            onOpenVisitChannelSettings = {
+                openSettings(
+                    context,
+                    Intent(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS)
+                        .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                        .putExtra(Settings.EXTRA_CHANNEL_ID, visitNotificationChannelId)
+                )
+            },
             onOpenSettings = {
-                try {
-                    context.startActivity(
-                        Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
-                            .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
-                    )
-                } catch (_: ActivityNotFoundException) {
-                    // Some builds lack the notification screen; the app's own settings page always exists.
-                    context.startActivity(
-                        Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
-                            .setData(Uri.fromParts("package", context.packageName, null))
-                    )
-                }
+                openSettings(
+                    context,
+                    Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                        .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                )
             }
         ),
         messages = {
@@ -191,13 +245,37 @@ fun RemindersDependencies.Reminders(navController: NavController, modifier: Modi
                 topOffset = MESSAGE_OFFSET_BELOW_TOP_BAR
             ) { shown ->
                 val behaviour = remindersMessageBehaviourUiMapper.toUi(shown)
+                val removed = shown as? RemindersMessageUiModel.VisitRemoved
                 MigrelySnackbar(
                     text = stringResource(shown.text()),
                     tone = behaviour.tone,
-                    action = null,
+                    action = removed?.let {
+                        SnackbarAction(
+                            label = stringResource(R.string.reminders_snackbar_undo),
+                            spokenLabel = stringResource(
+                                R.string.reminders_snackbar_undo_visit_description
+                            ),
+                            onClick = {
+                                // Acts only while this is still the message on screen, so it never undoes twice.
+                                if (message == shown) {
+                                    message = null
+                                    remindersViewModel.onUndoRemoveVisitAction(
+                                        doctorVisitUiToPresentationMapper.toPresentation(it.visit)
+                                    )
+                                }
+                            }
+                        )
+                    },
                     baseDurationMillis = behaviour.baseDurationMillis,
                     dismissLabel = stringResource(R.string.reminders_message_dismiss),
-                    onDismiss = { if (message == shown) message = null }
+                    onDismiss = { if (message == shown) message = null },
+                    timeLeft = if (removed != null && messageTimeout != null &&
+                        !rememberReduceMotion()
+                    ) {
+                        rememberTimeLeft(shown, messageTimeout)
+                    } else {
+                        null
+                    }
                 )
             }
         },
@@ -278,8 +356,28 @@ fun RemindersContents(
 @Composable
 private fun ReminderRows(reminders: RemindersUiModel, actions: RemindersActions) {
     var picking by rememberSaveable { mutableStateOf(false) }
+    var pickingVisit by rememberSaveable { mutableStateOf(false) }
+    val visitRowFocus = remember { FocusRequester() }
+    val nextVisit = reminders.nextVisitEpochDay?.let(LocalDate::ofEpochDay)
     val allowed = reminders.notificationsAllowed
-    if (!allowed) NotificationsOffNotice(onOpenSettings = actions.onOpenSettings)
+    if (!allowed) {
+        NotificationsOffNotice(
+            text = stringResource(R.string.reminders_notifications_off),
+            openSettingsDescription = null,
+            onOpenSettings = actions.onOpenSettings
+        )
+    }
+    // First, since only this screen sets a visit (design D9).
+    DoctorVisitSection(
+        nextVisit = nextVisit,
+        notificationsAllowed = allowed,
+        channelOff = reminders.visitChannelOff,
+        rowFocus = visitRowFocus,
+        onPick = { pickingVisit = true },
+        onRemove = actions.onRemoveVisit,
+        onOpenChannelSettings = actions.onOpenVisitChannelSettings
+    )
+    Spacer(Modifier.height(12.dp))
     // A switch shows on only while its reminder can arrive.
     SwitchRow(
         title = stringResource(R.string.reminders_daily_title),
@@ -324,6 +422,25 @@ private fun ReminderRows(reminders: RemindersUiModel, actions: RemindersActions)
         checked = reminders.effectEnabled && allowed,
         onCheckedChange = actions.onEffect
     )
+    if (pickingVisit) {
+        val today = LocalDate.now()
+        MigrelyDatePicker(
+            initial = nextVisit,
+            firstDate = today,
+            lastDate = today.plusDays(PICKABLE_DAYS),
+            labels = DatePickerLabels(
+                title = stringResource(R.string.reminders_visit_picker_title),
+                confirm = stringResource(R.string.reminders_visit_picker_done),
+                cancel = stringResource(R.string.reminders_visit_picker_cancel),
+                none = stringResource(R.string.reminders_visit_picker_none)
+            ),
+            onConfirm = { date ->
+                pickingVisit = false
+                actions.onVisitDate(date)
+            },
+            onDismiss = { pickingVisit = false }
+        )
+    }
     if (picking) {
         TimeDialog(
             minuteOfDay = reminders.dailyMinuteOfDay,
@@ -373,7 +490,11 @@ private fun SwitchRow(
 }
 
 @Composable
-private fun NotificationsOffNotice(onOpenSettings: () -> Unit) {
+internal fun NotificationsOffNotice(
+    text: String,
+    openSettingsDescription: String?,
+    onOpenSettings: () -> Unit
+) {
     Surface(
         shape = RoundedCornerShape(16.dp),
         color = MaterialTheme.colorScheme.surfaceContainer,
@@ -388,7 +509,7 @@ private fun NotificationsOffNotice(onOpenSettings: () -> Unit) {
                     modifier = Modifier.padding(end = 12.dp)
                 )
                 Text(
-                    text = stringResource(R.string.reminders_notifications_off),
+                    text = text,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface
                 )
@@ -398,6 +519,13 @@ private fun NotificationsOffNotice(onOpenSettings: () -> Unit) {
                 modifier = Modifier
                     .align(Alignment.End)
                     .heightIn(min = 48.dp)
+                    .then(
+                        if (openSettingsDescription == null) {
+                            Modifier
+                        } else {
+                            Modifier.semantics { contentDescription = openSettingsDescription }
+                        }
+                    )
             ) {
                 Text(stringResource(R.string.reminders_open_settings))
             }
@@ -454,6 +582,52 @@ private fun Int.toLocalTime(): LocalTime = LocalTime.of(
 private fun RemindersMessageUiModel.text() = when (this) {
     RemindersMessageUiModel.StorageFull -> R.string.reminders_message_storage_full
     RemindersMessageUiModel.SomethingWentWrong -> R.string.reminders_message_something_went_wrong
+    is RemindersMessageUiModel.VisitRemoved -> R.string.reminders_message_visit_removed
+    RemindersMessageUiModel.Undone -> R.string.reminders_message_undone
+}
+
+/** Some builds lack a settings page; the app's own details page always exists. */
+private fun openSettings(context: Context, intent: Intent) {
+    try {
+        context.startActivity(intent)
+    } catch (_: ActivityNotFoundException) {
+        context.startActivity(
+            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                .setData(Uri.fromParts("package", context.packageName, null))
+        )
+    }
+}
+
+/**
+ * A request waiting after the picker is dropped when the screen is left, but kept across a rotation, whose wait starts
+ * again (design D10).
+ */
+@Composable
+private fun DropVisitRequestOnLeaving(drop: () -> Unit) {
+    val owner = LocalLifecycleOwner.current
+    val activity = LocalActivity.current
+    val currentDrop by rememberUpdatedState(drop)
+    DisposableEffect(owner, activity) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_STOP &&
+                activity?.isChangingConfigurations != true
+            ) {
+                currentDrop()
+            }
+        }
+        owner.lifecycle.addObserver(observer)
+        onDispose { owner.lifecycle.removeObserver(observer) }
+    }
+}
+
+// The line under "Visit removed" runs down with its time (BRD EC-UX-16).
+@Composable
+private fun rememberTimeLeft(shown: RemindersMessageUiModel, timeoutMillis: Long): () -> Float {
+    val fraction = remember(shown, timeoutMillis) { Animatable(1f) }
+    LaunchedEffect(fraction) {
+        fraction.animateTo(0f, tween(timeoutMillis.toInt(), easing = LinearEasing))
+    }
+    return { fraction.value }
 }
 
 private val previewActions = RemindersActions({}, {}, {}, {}, {})

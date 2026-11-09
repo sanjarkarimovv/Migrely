@@ -15,6 +15,7 @@ import com.migrely.app.medication.ui.di.OveruseIndicatorDependencies
 import com.migrely.app.onboarding.ui.di.OnboardingDependencies
 import com.migrely.app.reminders.ui.di.DailyReminderOfferDependencies
 import com.migrely.app.reminders.ui.di.RemindersDependencies
+import com.migrely.app.reminders.ui.di.VisitCardDependencies
 import com.migrely.app.report.ui.di.ReportDependencies
 import com.migrely.app.review.ui.di.ReviewPromptDependencies
 import com.migrely.app.settings.ui.di.DeleteAllDataDependencies
@@ -38,6 +39,7 @@ data class AppNavHostDependencies(
     val medicationPromptDependencies: MedicationPromptDependencies,
     val overuseIndicatorDependencies: OveruseIndicatorDependencies,
     val remindersDependencies: RemindersDependencies,
+    val visitCardDependencies: VisitCardDependencies,
     val settingsDependencies: SettingsDependencies,
     val settingsPageDependencies: SettingsPageDependencies,
     val deleteAllDataDependencies: DeleteAllDataDependencies,

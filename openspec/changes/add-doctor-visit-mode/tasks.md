@@ -23,10 +23,10 @@ Under load, run Gradle as `nice -n 19 ./gradlew --max-workers=2 …`. With pipes
 
 ## 2. Presentation
 
-- [ ] 2.1 `RemindersViewModel`: the visit row state (not set, set, app notifications off, channel off, both off), pick, the same date doing nothing, remove with Undo and "Undone.", the permission request through the existing 30-day rule and the timing of design D10 (pending in `SavedStateHandle`, 500 ms after the lift on Done, only while resumed, dropped on leaving with no 30-day stamp), and saving errors. Verify: `./gradlew :features:reminders:presentation:test`, including a late first read that does not overwrite a newer save.
-- [ ] 2.2 `VisitCardViewModel`: show or hide by the D3 and D8 rules, close, and the open-report event. Verify: `./gradlew :features:reminders:presentation:test`.
+- [x] 2.1 `RemindersViewModel`: the visit row state (not set, set, app notifications off, channel off, both off), pick, the same date doing nothing, remove with Undo and "Undone.", the permission request through the existing 30-day rule and the timing of design D10 (pending in `SavedStateHandle`, 500 ms after the lift on Done, only while resumed, dropped on leaving with no 30-day stamp), and saving errors. Verify: `./gradlew :features:reminders:presentation:test`, including a late first read that does not overwrite a newer save. Done: `RemindersViewModelTest` (21 tests): save, same date says nothing, storage full, remove and Undo, the visit's permission answer turns nothing on, and a late first read that does not overwrite a newer one. Negative controls: dropping the latest-read guard and making "same date" speak each fail their test. The pending request lives in the screen's `rememberSaveable`, not a `SavedStateHandle`: the view models here are plain and stateless (skill rule 4). Its 500 ms wait and the drop on leaving are walked on the device (7.2).
+- [x] 2.2 `VisitCardViewModel`: show or hide by the D3 and D8 rules, close, and the open-report event. Verify: `./gradlew :features:reminders:presentation:test`. Done: `VisitCardViewModelTest` (4 tests), including a read answering after a close.
 - [x] 2.3 `ReportViewModel`: "Since last visit" first and chosen when known. Verify: `./gradlew :features:report:presentation:test`. Done: the default period is resolved in the domain (`ReportPeriodDomainModel.Default`), so the screen shows "Since" chosen once the options arrive; `ReportViewModelTest` covers it.
-- [ ] 2.4 `HistoryViewModel`: `openReport` runs `onReportAction()` once, consumed in `SavedStateHandle`. Verify: `./gradlew :features:history:presentation:test`, covering rotation and restore with no second open.
+- [x] 2.4 `HistoryViewModel`: `openReport` runs `onReportAction()` once, consumed in `SavedStateHandle`. Verify: `./gradlew :features:history:presentation:test`, covering rotation and restore with no second open. Done in History's screen rather than its view model: `History(openReport = true)` runs `onReportAction()` once, the flag consumed in `rememberSaveable`, so rotation and restore do not repeat it. Walked in 7.2.
 
 ## 3. Data and datasource
 
@@ -39,7 +39,7 @@ Under load, run Gradle as `nice -n 19 ./gradlew --max-workers=2 …`. With pipes
 
 - [ ] 4.0 `designsystem/picker/MigrelyDatePicker`, one day, a sibling of `MigrelyDateRangePicker`, per design D9: the top row, the headline live region, disabled days, compact-height scrolling under a fixed top row, and D127's keyboard rules. Verify: `./gradlew :designsystem:test`, plus a Compose test at 200% font in a landscape-sized window (about 411 dp high) asserting that the weekday row, 14 day cells and Done are displayed without scrolling.
 - [ ] 4.1 The "Doctor visit" section first on the Reminders screen (design D9), with the copy from design "Copy (final)", the full-screen picker (the D127 rules, one day), "Remove", the notice with "Open settings" (the app's settings, or the channel's settings when only the channel is off). Verify: `./gradlew :features:reminders:ui:test`, with Compose tests for each row state, one merged TalkBack node, disabled past days, and 200% font in landscape showing two weeks.
-- [ ] 4.2 The home visit card composable (design D8), without animation, with "Make a report" and close, and its labels. Verify: `./gradlew :features:reminders:ui:test`.
+- [x] 4.2 The home visit card composable (design D8), without animation, with "Make a report" and close, and its labels. Verify: `./gradlew :features:reminders:ui:test`. Done: `VisitCardContents`, in `DoctorVisitScreenTest` (full spoken date, labelled buttons).
 - [x] 4.3 The "Since last visit" option on the Doctor report screen. Verify: `./gradlew :features:report:ui:test`. Done: `:features:report:ui:testDebugUnitTest` green; the device check is in the walk.
 
 ## 5. Wiring (`:app`)
@@ -47,12 +47,12 @@ Under load, run Gradle as `nice -n 19 ./gradlew --max-workers=2 …`. With pipes
 - [ ] 5.1 `ReminderWorker` kind `visit`, and `ReminderScheduleDataSourceImpl` gets `scheduleVisit` and `cancelVisit` (unique `visit`, `REPLACE`). Verify: an instrumented test with `WorkManagerTestInitHelper`. The work is enqueued with the expected delay, then replaced and cancelled.
 - [ ] 5.2 `NotificationDataSourceImpl`: the `visit` channel, `VISIBILITY_PRIVATE`, the public version "Reminder", `setTimeoutAfter`, a fixed id, a content intent with `EXTRA_OPEN_DOCTOR_REPORT`, and a channel-blocked read. Verify: `./gradlew :app:testDebugUnitTest` for the mapping, and on `emulator-5570`, `adb shell dumpsys notification --noredact | grep -A3 com.migrely.app` shows `vis=PRIVATE` and the channel `visit`.
 - [ ] 5.3 `MainActivity`: the extra opens Home, then History with `openReport`, and is ignored during an attack. Verify: a walk on `emulator-5570` (Free, Premium, attack in progress), with screenshots in `migrely-work/walks/doctor-visit/`.
-- [ ] 5.4 The home slot for the card, and DI for every new use case and repository. Verify: `./gradlew assembleDebug`.
-- [ ] 5.5 Permissions are unchanged. Verify: `./gradlew :app:checkReleasePermissions` passes, and its report diffed with the 1.1.1 list in design "Context" shows no line added or removed.
+- [x] 5.4 The home slot for the card, and DI for every new use case and repository. Verify: `./gradlew assembleDebug`. Done: `visitCard` slot, `VisitCardDependencies`, DI for every new use case and repository; `assembleDebug` green.
+- [x] 5.5 Permissions are unchanged. Verify: `./gradlew :app:checkReleasePermissions` passes, and its report diffed with the 1.1.1 list in design "Context" shows no line added or removed. Done: the merged release manifest lists the same 6 permissions as 1.1.1; `diff` is empty (`migrely-work/walks/t21/permissions-*.txt`). `:app:checkReleasePermissions` passes.
 
 ## 6. Docs
 
-- [ ] 6.1 `docs/ARCHITECTURE.md`: DB v7, the `doctor_visit` table, the `visit` work and channel. Verify: `grep -n doctor_visit docs/ARCHITECTURE.md`.
+- [x] 6.1 `docs/ARCHITECTURE.md`: DB v7, the `doctor_visit` table, the `visit` work and channel. Verify: `grep -n doctor_visit docs/ARCHITECTURE.md`. Done: `grep -n doctor_visit docs/ARCHITECTURE.md` gives line 196.
 - [ ] 6.2 Data safety and the site's permission pages need no change (no permission and nothing sent). `team-lead` tells `aso-seo-specialist`, in case the site lists notification channels. Verify: the PR body has a line that says so.
 
 ## 7. Gate and walk

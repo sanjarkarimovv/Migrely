@@ -50,7 +50,7 @@ target API 37, whichever comes first. Until then, do not mix AGP 9 idioms into b
 | `:features:<feature>:domain` | JVM | `com.migrely.app.<feature>.domain` | `model/`, `repository/` (interfaces), `usecase/`, `exception/` |
 | `:features:attackdays:domain` | JVM | `com.migrely.app.attackdays.domain` | `AttackDays`: the one rule for which dates an attack touches, and the zone margin for reading them (BRD D57). A shared domain module, used by home's and History's domains; it has no models, repositories or use cases of its own |
 | `:features:patterns:domain` | JVM | `com.migrely.app.patterns.domain` | `PatternsReadiness`: the one rule for when Insights have enough to show patterns (BRD D88), and the months they open on. A shared domain module, used by Insights' domain and by the subscription's paywall after the 5th migraine (D110), so the paywall never promises patterns Insights cannot show; it has no models, repositories or use cases of its own |
-| `:features:reminders:*` | JVM / Android | `com.migrely.app.reminders.*` | The Reminders screen, the daily reminder and its runs (change add-reminders, BRD D65–D68), like any feature |
+| `:features:reminders:*` | JVM / Android | `com.migrely.app.reminders.*` | The Reminders screen, the daily reminder and its runs (change add-reminders, BRD D65–D68), and the doctor visit: its date, reminder and home card (change add-doctor-visit-mode, BRD D168), like any feature |
 | `:features:backup:*` | JVM / Android | `com.migrely.app.backup.*` | Your data: JSON and CSV exports and the import (change add-data-export-import, BRD D71–D73), like any feature |
 | `:features:settings:*` | JVM / Android | `com.migrely.app.settings.*` | The Settings screen in sections, with "Track periods" and the theme; the Warning signs, About Migrely, Privacy and Open-source licences pages, which share one view model; and the "Delete all data" confirmation, a screen of its own (BRD D70, D79, D93–D97), like any feature |
 | `:features:onboarding:*` | JVM / Android | `com.migrely.app.onboarding.*` | Onboarding on a new user's first start (change add-onboarding, BRD D76–D80), like any feature |
@@ -83,6 +83,9 @@ target API 37, whichever comes first. Until then, do not mix AGP 9 idioms into b
     `Home(medicationPrompt: @Composable (refreshKey: Int) -> Unit)` under today's card;
   - `GetMedicationPromptUseCase` picks the one card: an overuse warning first, then "Did it help?";
   - the card neither navigates nor shows messages, so its `Dependencies` has no observer;
+  - `reminders` fills `Home(visitCard: @Composable (refreshKey: Int) -> Unit)` right under it with the doctor visit
+    card (BRD D168), so a safety card is always above. Its "Make a report" navigates to `History(openReport = true)`,
+    which opens the report through History's own premium gate once, the flag consumed in `rememberSaveable`;
   - History's standing overuse indicator works the same way (change `add-overuse-indicator`, BRD D59):
     `OveruseIndicatorDependencies` fills the slot `History(overuseIndicator: @Composable (refreshKey: Int) -> Unit)`,
     which History's month summary shows for the current month only. The key counts History's view states, so the
@@ -189,6 +192,22 @@ data must never be passed to any SDK.
   - The domain decides the rest: a pain-free mark counts only while no attack touches the day, and is refused on such
     a day (EC-DAY-01).
   - Version 5 is an additive `AutoMigration(4, 5)`, covered by `MigrationTest` 4→5 and 1→5.
+- **Doctor visits (version 7, change `add-doctor-visit-mode`, BRD D168).**
+  - `doctor_visit` holds `id` (UUID) and a unique ISO `date` with no zone, like `day_mark`. The next visit is the
+    first date on or after today, the last the latest before it, both by the phone's local date.
+    `DoctorVisitDao.replaceUpcoming` deletes every upcoming row and inserts the new one in one transaction, so there is
+    at most one next visit.
+  - `reminder_settings` gains `visit_reminded_for`, `visit_card_closed_for` and `visit_postponed_to`, ISO dates keyed by
+    the visit, so a new date starts clean. They are device state: backups leave them out and Replace keeps them.
+  - `DoctorVisitDao.anythingLogged` asks D81's question (an attack, an intake or a pain-free mark in a period) for the
+    visit reminder and card. The report reads the visits with its records through `BackupDataSource.records()`.
+  - JSON backups carry `doctorVisits` from `schemaVersion` 7; older files decode with none. "Add" skips a visit with the
+    same ID or date and adds an upcoming one only when the phone has none.
+  - The reminder is WorkManager unique work `visit` (`ReminderWorker` kind `visit`, `REPLACE`), planned by
+    `RescheduleRemindersUseCase` at app start, on zone and clock changes and after every change of the visit. An import
+    plans every reminder again through an immediate run of kind `reschedule`, since the backup feature cannot call the
+    reminders feature. It posts in its own channel `visit`, private, with the shared public version "Reminder".
+  - Version 7 is an additive `AutoMigration(6, 7)`, covered by `MigrationTest` 6→7 and 1→7.
 - **Range reads (History).** A month is read with `overlapping(null, from, to)`, which returns every attack touching
   the range, the one in progress included, with a margin of two days on each side so that attacks logged in other
   zones are found. The first month that can be shown is the earliest of the months of `earliestStart()`,

@@ -171,7 +171,7 @@ internal fun DateRangePickerScreen(
 }
 
 /** Below this height in text input mode, the header and the date fields do not both fit at 200% font. */
-private val ROOM_FOR_HEADER_WHILE_TYPING = 240.dp
+internal val ROOM_FOR_HEADER_WHILE_TYPING = 240.dp
 
-private fun Long.utcDate(): LocalDate =
+internal fun Long.utcDate(): LocalDate =
     Instant.ofEpochMilli(this).atOffset(ZoneOffset.UTC).toLocalDate()

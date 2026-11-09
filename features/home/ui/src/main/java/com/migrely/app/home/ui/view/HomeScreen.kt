@@ -66,6 +66,8 @@ internal fun isCompactHeight(): Boolean =
  * `:app` fills it with the medication card (BRD D46). [trialBanner] is drawn under the day's header
  * and [paywallTrigger] draws nothing: `:app` fills them with the subscription feature's trial
  * reminder and its paywall after the 5th migraine (change add-subscription, BRD D110, D111).
+ * [visitCard] is drawn under [medicationPrompt], so a safety card is always above it; `:app` fills it
+ * with the reminders feature's doctor visit card (change add-doctor-visit-mode, BRD D168).
  * [reviewPrompt] draws nothing either: `:app` fills it with the review feature's request for a
  * rating (change add-in-app-review, BRD D130, D132). All receive the number of view states home has
  * received, so they can load again whenever home does: after every action and on every resume.
@@ -80,6 +82,7 @@ fun HomeDependencies.Home(
     monthCalendar: @Composable (refreshKey: Int) -> Unit = {},
     medicationPrompt: @Composable (refreshKey: Int) -> Unit = {},
     trialBanner: @Composable (refreshKey: Int) -> Unit = {},
+    visitCard: @Composable (refreshKey: Int) -> Unit = {},
     paywallTrigger: @Composable (refreshKey: Int) -> Unit = {},
     reviewPrompt: @Composable (refreshKey: Int) -> Unit = {}
 ) {
@@ -135,6 +138,7 @@ fun HomeDependencies.Home(
         monthCalendar = { monthCalendar(homeLoads) },
         medicationPrompt = { medicationPrompt(homeLoads) },
         trialBanner = { trialBanner(homeLoads) },
+        visitCard = { visitCard(homeLoads) },
         paywallTrigger = { paywallTrigger(homeLoads) },
         reviewPrompt = { reviewPrompt(homeLoads) },
         messages = {
@@ -220,6 +224,7 @@ fun HomeContents(
     monthCalendar: @Composable () -> Unit = {},
     medicationPrompt: @Composable () -> Unit = {},
     trialBanner: @Composable () -> Unit = {},
+    visitCard: @Composable () -> Unit = {},
     paywallTrigger: @Composable () -> Unit = {},
     reviewPrompt: @Composable () -> Unit = {}
 ) {
@@ -275,7 +280,8 @@ fun HomeContents(
                     onSettings = actions.onSettings,
                     monthCalendar = monthCalendar,
                     medicationPrompt = medicationPrompt,
-                    trialBanner = trialBanner
+                    trialBanner = trialBanner,
+                    visitCard = visitCard
                 )
 
                 is HomeViewStateUiModel.AttackInProgress -> AttackModeContents(

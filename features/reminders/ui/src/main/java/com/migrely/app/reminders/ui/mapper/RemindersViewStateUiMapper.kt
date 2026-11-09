@@ -16,7 +16,9 @@ class RemindersViewStateUiMapper {
                     viewState.reminders.dailyTime.minute,
                 effectEnabled = viewState.reminders.effectEnabled,
                 notificationsAllowed = viewState.reminders.notificationsAllowed,
-                mayAskPermission = viewState.reminders.mayAskPermission
+                mayAskPermission = viewState.reminders.mayAskPermission,
+                nextVisitEpochDay = viewState.reminders.nextVisit?.toEpochDay(),
+                visitChannelOff = viewState.reminders.visitChannelOff
             )
         )
         RemindersViewState.Unavailable -> RemindersViewStateUiModel.Unavailable

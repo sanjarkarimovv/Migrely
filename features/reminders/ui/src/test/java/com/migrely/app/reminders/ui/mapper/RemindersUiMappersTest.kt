@@ -1,14 +1,17 @@
 package com.migrely.app.reminders.ui.mapper
 
+import com.migrely.app.reminders.presentation.model.DoctorVisitPresentationModel
 import com.migrely.app.reminders.presentation.model.ReminderKindPresentationModel
 import com.migrely.app.reminders.presentation.model.RemindersPresentationModel
 import com.migrely.app.reminders.presentation.model.RemindersPresentationNotification
 import com.migrely.app.reminders.presentation.model.RemindersViewState
+import com.migrely.app.reminders.ui.model.DoctorVisitUiModel
 import com.migrely.app.reminders.ui.model.ReminderKindUiModel
 import com.migrely.app.reminders.ui.model.RemindersEventUiModel
 import com.migrely.app.reminders.ui.model.RemindersMessageUiModel
 import com.migrely.app.reminders.ui.model.RemindersUiModel
 import com.migrely.app.reminders.ui.model.RemindersViewStateUiModel
+import java.time.LocalDate
 import java.time.LocalTime
 import kotlinx.coroutines.CoroutineStart.UNDISPATCHED
 import kotlinx.coroutines.async
@@ -61,4 +64,38 @@ class RemindersUiMappersTest {
                 second.await()
             )
         }
+
+    @Test
+    fun `When Visit removed or a visit request is presented then the screen gets them`() = runTest {
+        val presenter = RemindersEventPresenter()
+        val classUnderTest = RemindersNotificationUiMapper(presenter)
+        val removed = async(start = UNDISPATCHED) { presenter.events.first() }
+
+        classUnderTest.toUi(
+            RemindersPresentationNotification.VisitRemoved(
+                DoctorVisitPresentationModel("v", LocalDate.ofEpochDay(20_777L))
+            )
+        ).present()
+
+        assertEquals(
+            RemindersEventUiModel.Message(
+                RemindersMessageUiModel.VisitRemoved(DoctorVisitUiModel("v", 20_777L))
+            ),
+            removed.await()
+        )
+        val ask = async(start = UNDISPATCHED) { presenter.events.first() }
+        classUnderTest.toUi(
+            RemindersPresentationNotification.AskForPermission(
+                ReminderKindPresentationModel.Visit
+            )
+        ).present()
+        assertEquals(
+            RemindersEventUiModel.AskForPermission(ReminderKindUiModel.Visit),
+            ask.await()
+        )
+        assertEquals(
+            DoctorVisitPresentationModel("v", LocalDate.ofEpochDay(20_777L)),
+            DoctorVisitUiToPresentationMapper().toPresentation(DoctorVisitUiModel("v", 20_777L))
+        )
+    }
 }
