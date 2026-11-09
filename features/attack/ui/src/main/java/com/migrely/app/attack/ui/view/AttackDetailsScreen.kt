@@ -32,7 +32,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -91,7 +93,8 @@ data class AttackDetailsActions(
 
 /**
  * Everything the screen keeps for itself between the ViewModel's states: inline errors, the safety card and the note
- * being typed.
+ * being typed. [safetyCardArrivals] counts the safety card's events since the screen was composed, not since it was
+ * restored, so a card that just appeared is brought into view and a restored one is not (BRD D167).
  */
 data class AttackDetailsLocalState(
     val timeError: TimeErrorUiModel?,
@@ -99,7 +102,8 @@ data class AttackDetailsLocalState(
     val onDismissSafetyCard: () -> Unit,
     val onTimeErrorShown: () -> Unit,
     val noteDraft: String? = null,
-    val onNoteDraft: (String) -> Unit = {}
+    val onNoteDraft: (String) -> Unit = {},
+    val safetyCardArrivals: Int = 0
 )
 
 @Composable
@@ -127,6 +131,8 @@ fun AttackDetailsDependencies.AttackDetails(
     }
     var timeError by rememberSaveable(attackId) { mutableStateOf<TimeErrorUiModel?>(null) }
     var safetyCardVisible by rememberSaveable(attackId) { mutableStateOf(false) }
+    // Not saved: a rotation or a process restore brings the card back, but not its event (BRD D167).
+    var safetyCardArrivals by remember(attackId) { mutableIntStateOf(0) }
     var noteDraft by rememberSaveable(attackId) { mutableStateOf<String?>(null) }
     var shownMessage by rememberSaveable(attackId) {
         mutableStateOf<ShownAttackMessageUiModel?>(null)
@@ -136,7 +142,10 @@ fun AttackDetailsDependencies.AttackDetails(
         attackDetailsEventPresenter.events.collect { event ->
             when (event) {
                 is AttackDetailsEventUiModel.TimeRejected -> timeError = event.error
-                AttackDetailsEventUiModel.FirstMaximumRecorded -> safetyCardVisible = true
+                AttackDetailsEventUiModel.FirstMaximumRecorded -> {
+                    safetyCardVisible = true
+                    safetyCardArrivals++
+                }
                 is AttackDetailsEventUiModel.Message ->
                     shownMessage = ShownAttackMessageUiModel(
                         event.message,
@@ -246,7 +255,8 @@ fun AttackDetailsDependencies.AttackDetails(
                 onDismissSafetyCard = { safetyCardVisible = false },
                 onTimeErrorShown = { timeError = null },
                 noteDraft = noteDraft,
-                onNoteDraft = { noteDraft = it }
+                onNoteDraft = { noteDraft = it },
+                safetyCardArrivals = safetyCardArrivals
             ),
             actions = actions
         )
@@ -345,17 +355,32 @@ private fun ReadyContents(
     localState: AttackDetailsLocalState,
     actions: AttackDetailsActions
 ) {
+    val scrollState = rememberScrollState()
+    val arrivals = localState.safetyCardArrivals
+    val reveal = rememberSafetyCardReveal(scrollState, arrivals)
+    val reduceMotion = rememberReduceMotion()
+    // Keyed on the card's event, not on its restored visibility (BRD D167).
+    LaunchedEffect(arrivals) {
+        if (arrivals > 0) reveal.reveal(arrivals, reduceMotion)
+    }
     Box(contentAlignment = Alignment.TopCenter, modifier = Modifier.fillMaxSize()) {
         Column(
             verticalArrangement = Arrangement.spacedBy(28.dp),
             modifier = Modifier
                 .widthIn(max = CONTENT_MAX_WIDTH)
                 .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
+                .then(reveal.viewportModifier)
+                .verticalScroll(scrollState)
                 .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal))
                 .padding(horizontal = 16.dp)
         ) {
-            if (localState.safetyCardVisible) SafetyCard(onDismiss = localState.onDismissSafetyCard)
+            if (localState.safetyCardVisible) {
+                SafetyCard(
+                    onDismiss = localState.onDismissSafetyCard,
+                    announced = reveal.announces(arrivals),
+                    modifier = reveal.cardModifier
+                )
+            }
             TimeSection(details, timeUiFormatter, localState.timeError, actions)
             PainSection(details, timeUiFormatter, actions)
             MedicationsSection(details, timeUiFormatter, actions)
@@ -417,7 +442,7 @@ private fun NotFoundContents(onBack: () -> Unit) {
     }
 }
 
-private val previewActions = AttackDetailsActions(
+internal val previewActions = AttackDetailsActions(
     onBack = {},
     onStartPicked = {},
     onEndPicked = {},
