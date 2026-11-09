@@ -12,6 +12,7 @@ import com.migrely.app.attack.domain.model.AttackIntakeDomainModel
 import com.migrely.app.attack.domain.model.AttackIntakeEffectDomainModel
 import com.migrely.app.attack.domain.model.AttackRangeDomainModel
 import com.migrely.app.attack.domain.model.AttackTagDomainModel
+import com.migrely.app.attack.domain.model.CustomTagDomainModel
 import com.migrely.app.attack.domain.model.HeadLocationDomainModel
 import com.migrely.app.attack.domain.model.IntensityPointDomainModel
 import com.migrely.app.attack.domain.model.MergeAttacksRequestDomainModel
@@ -19,6 +20,7 @@ import com.migrely.app.attack.domain.model.MergeAttacksResultDomainModel
 import com.migrely.app.attack.domain.model.RemoveIntensityPointRequestDomainModel
 import com.migrely.app.attack.domain.model.RestoreIntakeRequestDomainModel
 import com.migrely.app.attack.domain.model.SelectAttackTagRequestDomainModel
+import com.migrely.app.attack.domain.model.SetFunctionalImpactRequestDomainModel
 import com.migrely.app.attack.domain.model.SetIntakeEffectRequestDomainModel
 import com.migrely.app.attack.domain.model.TagKindDomainModel
 import com.migrely.app.attack.domain.model.TimeFieldDomainModel
@@ -417,9 +419,12 @@ class AttackDetailsViewModelTest :
     }
 
     @Test
-    fun `Given a first 10 saved then the card shows, with no other message`() = runTest {
+    fun `Given a first 10 saved then the card shows, then the save`() = runTest {
         assertEquals(
-            listOf(AttackDetailsPresentationNotification.FirstMaximumRecorded),
+            listOf(
+                AttackDetailsPresentationNotification.FirstMaximumRecorded,
+                AttackDetailsPresentationNotification.Saved
+            ),
             messagesWhenAdding10(AddIntensityPointResultDomainModel.Added(firstMaximum = true))
         )
     }
@@ -822,4 +827,167 @@ class AttackDetailsViewModelTest :
 
             assertEquals(AttackDetailsPresentationNotification.Undone, notification.await())
         }
+
+    // A write that saves with no message of its own says so, so the screen can replace an error with
+    // "Saved." (BRD D165 (4), EC-UX-34; #167). One test per write path.
+
+    private fun TestScope.assertSavedOnly(action: () -> Unit) {
+        assertEquals(listOf(AttackDetailsPresentationNotification.Saved), messagesOf(action))
+    }
+
+    @Test
+    fun `Given a point saves when adding it then says it saved`() = runTest {
+        val at = START.plusSeconds(60)
+        addIntensityPointUseCase.givenSuccessfulExecution(
+            AddIntensityPointRequestDomainModel("a", IntensityPointDomainModel(at, 6)),
+            AddIntensityPointResultDomainModel.Added(firstMaximum = false)
+        )
+        givenDetails()
+
+        assertSavedOnly {
+            classUnderTest.onAddPointAction("a", IntensityPointPresentationModel(at, 6))
+        }
+    }
+
+    @Test
+    fun `Given new times save with no point left out then says it saved`() = runTest {
+        val newStart = START.minusSeconds(600)
+        givenTimes(
+            newStart,
+            END,
+            UpdateAttackTimesResultDomainModel.Updated(START, END, emptyList())
+        )
+        givenDetails()
+
+        assertSavedOnly {
+            classUnderTest.onTimesAction("a", TimeFieldPresentationModel.Start, newStart, END)
+        }
+    }
+
+    @Test
+    fun `Given nothing overlaps any more when merging then says it saved`() = runTest {
+        givenMerge(START, END, MergeAttacksResultDomainModel.Saved("a"))
+        givenDetails()
+
+        assertSavedOnly { classUnderTest.onMergeAction("a", START, END, note = null) }
+    }
+
+    @Test
+    fun `Given the note saves then says it saved`() = runTest {
+        updateAttackNoteUseCase.givenSuccessfulExecution(
+            UpdateAttackNoteRequestDomainModel("a", "Note"),
+            UpdateAttackNoteResultDomainModel.Saved
+        )
+        givenDetails()
+
+        assertSavedOnly { classUnderTest.onNoteAction("a", "Note") }
+    }
+
+    @Test
+    fun `Given a tag saves then says it saved`() = runTest {
+        selectAttackTagUseCase.givenSuccessfulExecution(
+            SelectAttackTagRequestDomainModel(
+                "a",
+                AttackTagDomainModel.Location(HeadLocationDomainModel.Forehead),
+                true
+            ),
+            WriteResultDomainModel.Written
+        )
+        givenDetails()
+
+        assertSavedOnly {
+            classUnderTest.onTagAction(
+                "a",
+                AttackTagPresentationModel.Location(HeadLocationPresentationModel.Forehead),
+                selected = true
+            )
+        }
+    }
+
+    @Test
+    fun `Given the impact saves then says it saved`() = runTest {
+        setFunctionalImpactUseCase.givenSuccessfulExecution(
+            SetFunctionalImpactRequestDomainModel("a", null),
+            WriteResultDomainModel.Written
+        )
+        givenDetails()
+
+        assertSavedOnly { classUnderTest.onImpactAction("a", null) }
+    }
+
+    @Test
+    fun `Given an intake's effect saves then says it saved`() = runTest {
+        setIntakeEffectUseCase.givenSuccessfulExecution(
+            SetIntakeEffectRequestDomainModel("i", AttackIntakeEffectDomainModel.ALot),
+            WriteResultDomainModel.Written
+        )
+        givenDetails()
+
+        assertSavedOnly {
+            classUnderTest.onIntakeEffectAction("a", "i", AttackIntakeEffectPresentationModel.ALot)
+        }
+    }
+
+    @Test
+    fun `Given a custom tag saves then says it saved`() = runTest {
+        addCustomTagUseCase.givenSuccessfulExecution(
+            AddCustomTagRequestDomainModel("a", TagKindDomainModel.Trigger, "Perfume"),
+            AddCustomTagResultDomainModel.Added(
+                CustomTagDomainModel("t", TagKindDomainModel.Trigger, "Perfume", archived = false)
+            )
+        )
+        givenDetails()
+
+        assertSavedOnly {
+            classUnderTest.onAddCustomTagAction("a", TagKindPresentationModel.Trigger, "Perfume")
+        }
+    }
+
+    @Test
+    fun `Given a custom tag is archived then says it saved`() = runTest {
+        archiveCustomTagUseCase.givenSuccessfulExecution("t", WriteResultDomainModel.Written)
+        givenDetails()
+
+        assertSavedOnly { classUnderTest.onArchiveCustomTagAction("a", "t") }
+    }
+
+    @Test
+    fun `Given a write with its own message then it does not also say it saved`() = runTest {
+        val point = IntensityPointPresentationModel(START.plusSeconds(60), 6)
+        removeIntensityPointUseCase.givenSuccessfulExecution(
+            RemoveIntensityPointRequestDomainModel("a", IntensityPointDomainModel(point.at, 6)),
+            WriteResultDomainModel.Written
+        )
+        givenDetails()
+
+        assertEquals(
+            listOf(AttackDetailsPresentationNotification.PointRemoved("a", point)),
+            messagesOf { classUnderTest.onRemovePointAction("a", point) }
+        )
+    }
+
+    @Test
+    fun `Given a write fails then it does not say it saved`() = runTest {
+        updateAttackNoteUseCase.givenSuccessfulExecution(
+            UpdateAttackNoteRequestDomainModel("a", "Note"),
+            UpdateAttackNoteResultDomainModel.StorageFull
+        )
+
+        assertEquals(
+            listOf(AttackDetailsPresentationNotification.StorageFull),
+            messagesOf { classUnderTest.onNoteAction("a", "Note") }
+        )
+    }
+
+    @Test
+    fun `When the details only reload on resume then nothing says it saved`() = runTest {
+        givenDetails()
+
+        assertEquals(
+            emptyList<AttackDetailsPresentationNotification>(),
+            messagesOf {
+                classUnderTest.onResume("a")
+            }
+        )
+    }
 }

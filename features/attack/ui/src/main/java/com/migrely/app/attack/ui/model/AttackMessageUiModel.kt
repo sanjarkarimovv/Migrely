@@ -32,6 +32,10 @@ sealed interface AttackMessageUiModel : Parcelable {
     @Parcelize
     data object UndoNotPossible : AttackMessageUiModel
 
+    /** Replaces an error once a later write on the screen saved (BRD D165 (4)). */
+    @Parcelize
+    data object Saved : AttackMessageUiModel
+
     @Parcelize
     data object StorageFull : AttackMessageUiModel
 

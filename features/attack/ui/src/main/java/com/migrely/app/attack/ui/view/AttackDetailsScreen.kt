@@ -30,23 +30,29 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.navigation.NavController
 import com.migrely.app.architecture.ui.view.ScreenEnterObserver
+import com.migrely.app.architecture.ui.view.ScreenLeaveObserver
 import com.migrely.app.attack.presentation.model.AttackDetailsViewState
 import com.migrely.app.attack.presentation.model.TimeFieldPresentationModel
 import com.migrely.app.attack.ui.R
@@ -57,6 +63,7 @@ import com.migrely.app.attack.ui.model.AttackDetailsUiModel
 import com.migrely.app.attack.ui.model.AttackDetailsViewStateUiModel
 import com.migrely.app.attack.ui.model.AttackIntakeEffectUiModel
 import com.migrely.app.attack.ui.model.AttackIntakeUiModel
+import com.migrely.app.attack.ui.model.AttackMessageUiModel
 import com.migrely.app.attack.ui.model.AttackTagUiModel
 import com.migrely.app.attack.ui.model.FunctionalImpactUiModel
 import com.migrely.app.attack.ui.model.IntensityPointUiModel
@@ -65,11 +72,21 @@ import com.migrely.app.attack.ui.model.TagKindUiModel
 import com.migrely.app.attack.ui.model.TimeErrorUiModel
 import com.migrely.app.designsystem.icon.MigrelyIcons
 import com.migrely.app.designsystem.motion.rememberReduceMotion
+import com.migrely.app.designsystem.snackbar.clearOfMessage
 import com.migrely.app.designsystem.theme.MigrelyTheme
 import java.time.Instant
 import java.util.Locale
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 
 private val CONTENT_MAX_WIDTH = 640.dp
+
+/**
+ * How long a message from the same action waits once the safety card has become a live region. Compose sends
+ * accessibility events in 100 ms batches, and in one batch TalkBack spoke the message first (#166, 36 ms). Two batches
+ * put the card's announcement in an earlier one (BRD D165 (3)).
+ */
+private const val CARD_FIRST_MILLIS = 200L
 
 /** Callbacks from the details screen; each already knows the attack it belongs to. */
 data class AttackDetailsActions(
@@ -94,7 +111,9 @@ data class AttackDetailsActions(
 /**
  * Everything the screen keeps for itself between the ViewModel's states: inline errors, the safety card and the note
  * being typed. [safetyCardArrivals] counts the safety card's events since the screen was composed, not since it was
- * restored, so a card that just appeared is brought into view and a restored one is not (BRD D167).
+ * restored, so a card that just appeared is brought into view and a restored one is not (BRD D167);
+ * [onSafetyCardAnnounced] is told once the card of an event is a live region. [messageClearance] is where a message
+ * ends in root coordinates while the content must start below it, and 0 dp while it may lie over it (BRD D165 (1)).
  */
 data class AttackDetailsLocalState(
     val timeError: TimeErrorUiModel?,
@@ -103,7 +122,9 @@ data class AttackDetailsLocalState(
     val onTimeErrorShown: () -> Unit,
     val noteDraft: String? = null,
     val onNoteDraft: (String) -> Unit = {},
-    val safetyCardArrivals: Int = 0
+    val safetyCardArrivals: Int = 0,
+    val onSafetyCardAnnounced: (arrivals: Int) -> Unit = {},
+    val messageClearance: () -> Dp = { 0.dp }
 )
 
 @Composable
@@ -134,9 +155,17 @@ fun AttackDetailsDependencies.AttackDetails(
     // Not saved: a rotation or a process restore brings the card back, but not its event (BRD D167).
     var safetyCardArrivals by remember(attackId) { mutableIntStateOf(0) }
     var noteDraft by rememberSaveable(attackId) { mutableStateOf<String?>(null) }
+    var safetyCardAnnounced by remember(attackId) { mutableIntStateOf(0) }
     var shownMessage by rememberSaveable(attackId) {
         mutableStateOf<ShownAttackMessageUiModel?>(null)
     }
+    val messageBottom = remember { mutableStateOf(0.dp) }
+    // Read by the event collector, which outlives each state.
+    val ready by rememberUpdatedState(uiState is AttackDetailsViewStateUiModel.Ready)
+
+    // An error belongs to the visit and to the last write (BRD D165 (4), (5)); Undo and information stay.
+    fun errorShown(): Boolean =
+        shownMessage?.let { attackMessageBehaviourUiMapper.toUi(it.message).isError } == true
 
     LaunchedEffect(attackDetailsEventPresenter) {
         attackDetailsEventPresenter.events.collect { event ->
@@ -146,14 +175,35 @@ fun AttackDetailsDependencies.AttackDetails(
                     safetyCardVisible = true
                     safetyCardArrivals++
                 }
-                is AttackDetailsEventUiModel.Message ->
+                is AttackDetailsEventUiModel.Message -> {
+                    // The card is spoken first: its message follows its announcement (BRD D165 (3)). One at a time,
+                    // so a later message never lands before an earlier one.
+                    if (safetyCardAnnounced < safetyCardArrivals) {
+                        snapshotFlow { safetyCardAnnounced >= safetyCardArrivals || !ready }
+                            .first { it }
+                        delay(CARD_FIRST_MILLIS)
+                    }
                     shownMessage = ShownAttackMessageUiModel(
                         event.message,
                         System.currentTimeMillis()
                     )
+                }
+                // Cleared on success, never on the attempt, so a retry that fails shows no flash.
+                AttackDetailsEventUiModel.Saved -> if (errorShown()) {
+                    shownMessage = ShownAttackMessageUiModel(
+                        AttackMessageUiModel.Saved,
+                        System.currentTimeMillis()
+                    )
+                }
             }
         }
     }
+    ScreenLeaveObserver(navController) { if (errorShown()) shownMessage = null }
+
+    val cardMode = rememberCardMode(
+        cardShown = safetyCardVisible && uiState is AttackDetailsViewStateUiModel.Ready,
+        messageOnScreen = remember { derivedStateOf { messageBottom.value > 0.dp } }.value
+    )
 
     val details = (uiState as? AttackDetailsViewStateUiModel.Ready)?.details
     val viewModel = attackDetailsViewModel
@@ -256,7 +306,9 @@ fun AttackDetailsDependencies.AttackDetails(
                 onTimeErrorShown = { timeError = null },
                 noteDraft = noteDraft,
                 onNoteDraft = { noteDraft = it },
-                safetyCardArrivals = safetyCardArrivals
+                safetyCardArrivals = safetyCardArrivals,
+                onSafetyCardAnnounced = { safetyCardAnnounced = it },
+                messageClearance = { if (cardMode) messageBottom.value else 0.dp }
             ),
             actions = actions
         )
@@ -264,6 +316,8 @@ fun AttackDetailsDependencies.AttackDetails(
             shown = shownMessage,
             behaviourMapper = attackMessageBehaviourUiMapper,
             reduceMotion = rememberReduceMotion(),
+            announcePolitely = cardMode,
+            onMessageBottomChanged = { messageBottom.value = it },
             isShown = { message -> shownMessage == message },
             onClear = { message -> if (shownMessage == message) shownMessage = null },
             onUndoTimes = { undo ->
@@ -286,6 +340,19 @@ fun AttackDetailsDependencies.AttackDetails(
             }
         )
     }
+}
+
+/**
+ * "Card mode" (BRD D165 (1)): on while the safety card shows, and held while a message that came in it is still on
+ * screen, even once "Got it" closed the card, so the content never slides back under that message. Recomputed from
+ * the restored state after a rotation or a process restore.
+ */
+@Composable
+private fun rememberCardMode(cardShown: Boolean, messageOnScreen: Boolean): Boolean {
+    var held by remember { mutableStateOf(false) }
+    val on = cardShown || (held && messageOnScreen)
+    SideEffect { held = on }
+    return on
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -361,7 +428,10 @@ private fun ReadyContents(
     val reduceMotion = rememberReduceMotion()
     // Keyed on the card's event, not on its restored visibility (BRD D167).
     LaunchedEffect(arrivals) {
-        if (arrivals > 0) reveal.reveal(arrivals, reduceMotion)
+        if (arrivals > 0) {
+            reveal.reveal(arrivals, reduceMotion)
+            localState.onSafetyCardAnnounced(arrivals)
+        }
     }
     Box(contentAlignment = Alignment.TopCenter, modifier = Modifier.fillMaxSize()) {
         Column(
@@ -369,6 +439,8 @@ private fun ReadyContents(
             modifier = Modifier
                 .widthIn(max = CONTENT_MAX_WIDTH)
                 .fillMaxWidth()
+                // Before the reveal's area, so in card mode "the top of the content" is below the message (D165 (2)).
+                .clearOfMessage(localState.messageClearance)
                 .then(reveal.viewportModifier)
                 .verticalScroll(scrollState)
                 .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal))

@@ -75,6 +75,8 @@ class AttackNotificationUiMapper(
             AttackDetailsPresentationNotification.UndoNotPossible ->
                 AttackDetailsEventUiModel.Message(AttackMessageUiModel.UndoNotPossible)
 
+            AttackDetailsPresentationNotification.Saved -> AttackDetailsEventUiModel.Saved
+
             AttackDetailsPresentationNotification.StorageFull ->
                 AttackDetailsEventUiModel.Message(AttackMessageUiModel.StorageFull)
 

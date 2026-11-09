@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalAccessibilityManager
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
 import com.migrely.app.attack.ui.R
 import com.migrely.app.attack.ui.mapper.AttackMessageBehaviourUiMapper
 import com.migrely.app.attack.ui.model.AttackMessageBehaviourUiModel
@@ -27,7 +28,8 @@ import kotlinx.coroutines.delay
 /**
  * The details screen's messages, following the home screen's pattern (profile section 10): the newest message replaces
  * the one on screen, it keeps its remaining time across rotation, and its duration stretches to the accessibility
- * timeout (BRD EC-UX-16).
+ * timeout (BRD EC-UX-16). With [announcePolitely] an error waits for what TalkBack is saying, such as the safety card,
+ * and [onMessageBottomChanged] tells where the message ends (BRD D165 (1), (3)).
  */
 @Suppress("LongParameterList")
 @Composable
@@ -40,6 +42,8 @@ internal fun AttackMessages(
     onUndoTimes: (TimesUndoUiModel) -> Unit,
     onUndoPoint: (AttackMessageUiModel.PointRemoved) -> Unit,
     onUndoIntake: (AttackMessageUiModel.IntakeRemoved) -> Unit = {},
+    announcePolitely: Boolean = false,
+    onMessageBottomChanged: (Dp) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val accessibilityManager = LocalAccessibilityManager.current
@@ -70,7 +74,8 @@ internal fun AttackMessages(
         message = shown,
         reduceMotion = reduceMotion,
         modifier = modifier,
-        topOffset = MESSAGE_OFFSET_BELOW_TOP_BAR
+        topOffset = MESSAGE_OFFSET_BELOW_TOP_BAR,
+        onMessageBottomChanged = onMessageBottomChanged
     ) { visible ->
         val behaviour = behaviourMapper.toUi(visible.message)
         val visibleTimeout = timeoutMillis(behaviour)
@@ -122,7 +127,8 @@ internal fun AttackMessages(
                 rememberTimeLeft(visible, visibleTimeout)
             } else {
                 null
-            }
+            },
+            announcePolitely = announcePolitely
         )
     }
 }
@@ -157,6 +163,7 @@ private fun messageText(message: AttackMessageUiModel): String = when (message) 
     AttackMessageUiModel.UndoNotPossible -> stringResource(
         R.string.attack_message_undo_not_possible
     )
+    AttackMessageUiModel.Saved -> stringResource(R.string.attack_message_saved)
     AttackMessageUiModel.StorageFull -> stringResource(R.string.attack_message_storage_full)
     AttackMessageUiModel.SomethingWentWrong -> stringResource(R.string.attack_message_generic)
 }
