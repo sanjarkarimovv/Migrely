@@ -8,6 +8,7 @@ import com.migrely.app.datasource.attack.model.IntensityPointDataModel
 import com.migrely.app.datasource.backup.model.BackupAttackDataModel
 import com.migrely.app.datasource.backup.model.BackupCustomTagDataModel
 import com.migrely.app.datasource.backup.model.BackupDayMarkDataModel
+import com.migrely.app.datasource.backup.model.BackupDoctorVisitDataModel
 import com.migrely.app.datasource.backup.model.BackupIntakeDataModel
 import com.migrely.app.datasource.backup.model.BackupMedicationDataModel
 import com.migrely.app.datasource.backup.model.BackupRecordsDataModel
@@ -113,5 +114,9 @@ val RECORDS = BackupRecordsDataModel(
     dayMarks = listOf(
         BackupDayMarkDataModel(LocalDate.of(2026, 10, 18), period = true, painFree = true, START),
         BackupDayMarkDataModel(LocalDate.of(2026, 10, 19), period = false, painFree = true, START)
+    ),
+    doctorVisits = listOf(
+        BackupDoctorVisitDataModel("v1", LocalDate.of(2026, 8, 20)),
+        BackupDoctorVisitDataModel("v2", LocalDate.of(2026, 11, 20))
     )
 )

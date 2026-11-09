@@ -81,7 +81,8 @@ class ReportRecordsDomainMapper {
                     )
                 }
             },
-            painFreeDates = records.dayMarks.filter { it.painFree }.map { it.date }.toSet()
+            painFreeDates = records.dayMarks.filter { it.painFree }.map { it.date }.toSet(),
+            visitDates = records.doctorVisits.map { it.date }.toSet()
         )
     }
 

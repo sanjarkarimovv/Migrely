@@ -15,7 +15,9 @@ data class BackupFileLocalModel(
     val customTags: List<BackupFileCustomTagLocalModel> = emptyList(),
     val medications: List<BackupFileMedicationLocalModel> = emptyList(),
     val intakes: List<BackupFileIntakeLocalModel> = emptyList(),
-    val dayMarks: List<BackupFileDayMarkLocalModel> = emptyList()
+    val dayMarks: List<BackupFileDayMarkLocalModel> = emptyList(),
+    /** From schema 7 (BRD D168); older files have none. */
+    val doctorVisits: List<BackupFileDoctorVisitLocalModel> = emptyList()
 )
 
 /** Read first, so a file from a newer version is told apart from one that is not a backup at all. */
@@ -87,3 +89,7 @@ data class BackupFileDayMarkLocalModel(
     val painFree: Boolean = false,
     val updatedEpochMillis: Long
 )
+
+/** [date] is ISO `yyyy-MM-dd`. */
+@Serializable
+data class BackupFileDoctorVisitLocalModel(val id: String, val date: String)

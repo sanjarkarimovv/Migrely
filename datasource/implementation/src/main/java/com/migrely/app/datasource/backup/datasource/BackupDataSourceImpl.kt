@@ -5,14 +5,16 @@ import com.migrely.app.datasource.backup.mapper.BackupLocalMapper
 import com.migrely.app.datasource.backup.model.AddedRecordsDataModel
 import com.migrely.app.datasource.backup.model.BackupRecordsDataModel
 import com.migrely.app.datasource.database.database
+import java.time.LocalDate
 
 /**
  * [deleteEverything] is `MigrelyDatabase.deleteEverything`: every table, including those added later, in one go, and the
- * AUTOINCREMENT counters.
+ * AUTOINCREMENT counters. [today] is the phone's local date, which tells an upcoming visit from a past one.
  */
 class BackupDataSourceImpl(
     private val backupDao: BackupDao,
     private val backupLocalMapper: BackupLocalMapper,
+    private val today: () -> LocalDate = { LocalDate.now() },
     private val deleteEverything: () -> Unit
 ) : BackupDataSource {
     override fun records(): BackupRecordsDataModel = database {
@@ -26,7 +28,7 @@ class BackupDataSourceImpl(
     }
 
     override fun add(records: BackupRecordsDataModel): AddedRecordsDataModel = database {
-        val added = backupDao.add(backupLocalMapper.toLocal(records))
+        val added = backupDao.add(backupLocalMapper.toLocal(records), today().toString())
         AddedRecordsDataModel(
             addedAttacks = added.addedAttacks,
             skippedAttacks = added.skippedAttacks,

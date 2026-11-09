@@ -1,0 +1,8 @@
+# From home: Settings, then Reminders.
+appId: com.migrely.app
+---
+- tapOn: "Settings"
+- tapOn: "Reminders"
+- extendedWaitUntil:
+    visible: "Next visit, .*"
+    timeout: 5000

@@ -9,6 +9,9 @@
     </plurals>
     <string name="report_custom">Custom</string>
     <string name="report_covers">%1$s to %2$s</string>
+    <string name="report_since_visit">Since %1$s</string>
+    <string name="report_since_visit_description">Since your last visit, %1$s</string>
+    <string name="report_covers_since_visit">Since your last visit: %1$s to %2$s</string>
     <string name="report_notes">Include notes</string>
     <string name="report_notes_summary">Your notes on each migraine. They are personal, so they are left out unless you choose.</string>
     <string name="report_create">Create report</string>

@@ -15,6 +15,7 @@ import com.migrely.app.medication.ui.di.OveruseIndicatorDependencies
 import com.migrely.app.onboarding.ui.di.OnboardingDependencies
 import com.migrely.app.reminders.ui.di.DailyReminderOfferDependencies
 import com.migrely.app.reminders.ui.di.RemindersDependencies
+import com.migrely.app.reminders.ui.di.VisitCardDependencies
 import com.migrely.app.report.ui.di.ReportDependencies
 import com.migrely.app.review.ui.di.ReviewPromptDependencies
 import com.migrely.app.settings.ui.di.DeleteAllDataDependencies
@@ -47,6 +48,7 @@ internal object AppNavHostModule {
         medicationPromptDependencies: MedicationPromptDependencies,
         overuseIndicatorDependencies: OveruseIndicatorDependencies,
         remindersDependencies: RemindersDependencies,
+        visitCardDependencies: VisitCardDependencies,
         settingsDependencies: SettingsDependencies,
         settingsPageDependencies: SettingsPageDependencies,
         deleteAllDataDependencies: DeleteAllDataDependencies,
@@ -73,6 +75,7 @@ internal object AppNavHostModule {
         medicationPromptDependencies = medicationPromptDependencies,
         overuseIndicatorDependencies = overuseIndicatorDependencies,
         remindersDependencies = remindersDependencies,
+        visitCardDependencies = visitCardDependencies,
         settingsDependencies = settingsDependencies,
         settingsPageDependencies = settingsPageDependencies,
         deleteAllDataDependencies = deleteAllDataDependencies,

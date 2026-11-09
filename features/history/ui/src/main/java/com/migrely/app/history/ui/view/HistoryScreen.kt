@@ -91,7 +91,8 @@ fun HistoryDependencies.History(
     navController: NavController,
     initialDay: LocalDate?,
     overuseIndicator: @Composable (refreshKey: Int) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    openReport: Boolean = false
 ) {
     var requestedMonth by rememberSaveable {
         mutableStateOf(initialDay?.let { YearMonth.from(it).toString() })
@@ -105,6 +106,7 @@ fun HistoryDependencies.History(
         onPauseOrDispose { }
     }
     ViewModelObserver(navController)
+    OpenReportOnce(openReport, onOpen = historyViewModel::onReportAction)
 
     val viewState by historyViewModel.viewState.collectAsState(HistoryViewState.Loading)
     // Counts History's loads, so the overuse indicator loads with each of them, an undo or a resume included (D59).

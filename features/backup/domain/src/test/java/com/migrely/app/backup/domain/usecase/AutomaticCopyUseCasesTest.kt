@@ -6,6 +6,7 @@ import com.migrely.app.backup.domain.model.PhoneRecordsDomainModel
 import com.migrely.app.backup.domain.model.RestoreResultDomainModel
 import com.migrely.app.backup.domain.repository.GetAutomaticCopyRepository
 import com.migrely.app.backup.domain.repository.GetPhoneRecordsRepository
+import com.migrely.app.backup.domain.repository.PlanRemindersAgainRepository
 import com.migrely.app.backup.domain.repository.RestoreAutomaticCopyRepository
 import com.migrely.app.coroutine.CoroutineContextProvider
 import java.time.Instant
@@ -27,6 +28,7 @@ class AutomaticCopyUseCasesTest {
     private val restore = RestoreAutomaticCopyUseCase(
         getPhoneRecordsRepository,
         restoreAutomaticCopyRepository,
+        mock<PlanRemindersAgainRepository>(),
         CoroutineContextProvider.Default
     )
 

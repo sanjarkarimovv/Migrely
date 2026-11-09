@@ -5,13 +5,19 @@ import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId
 
-/** The period a report covers (BRD REP-F1, D81). */
+/** The period a report covers (BRD REP-F1, D81, D168). */
 sealed interface ReportPeriodDomainModel {
     /** The last [months] months, today included. */
     data class LastMonths(val months: Int) : ReportPeriodDomainModel
 
     /** A chosen range; a part after today is left out. */
     data class Range(val from: LocalDate, val to: LocalDate) : ReportPeriodDomainModel
+
+    /** From the day of the last doctor visit, [from], to today (EC-REP-04). */
+    data class SinceLastVisit(val from: LocalDate) : ReportPeriodDomainModel
+
+    /** Nothing chosen yet: since the last visit when it was within 24 months, otherwise 3 months (design D4). */
+    data object Default : ReportPeriodDomainModel
 }
 
 data class ReportDatesDomainModel(val from: LocalDate, val to: LocalDate)
@@ -30,7 +36,8 @@ data class CreateReportRequestDomainModel(
 data class ReportRecordsDomainModel(
     val attacks: List<ReportAttackDomainModel>,
     val intakes: List<ReportIntakeDomainModel>,
-    val painFreeDates: Set<LocalDate>
+    val painFreeDates: Set<LocalDate>,
+    val visitDates: Set<LocalDate> = emptySet()
 )
 
 data class ReportAttackDomainModel(
@@ -148,9 +155,17 @@ sealed interface ReportRecordsResultDomainModel {
 }
 
 sealed interface ReportOptionsDomainModel {
-    /** [anythingLogged] is false when the period holds no attack, intake or pain-free mark (BRD EC-REP-01). */
-    data class Ready(val dates: ReportDatesDomainModel, val anythingLogged: Boolean) :
-        ReportOptionsDomainModel
+    /**
+     * [anythingLogged] is false when the period holds no attack, intake or pain-free mark (BRD EC-REP-01). [period] is
+     * the one asked for, with [ReportPeriodDomainModel.Default] made concrete, and [lastVisit] is the last doctor visit
+     * when "Since last visit" is offered (EC-REP-04).
+     */
+    data class Ready(
+        val dates: ReportDatesDomainModel,
+        val anythingLogged: Boolean,
+        val period: ReportPeriodDomainModel,
+        val lastVisit: LocalDate? = null
+    ) : ReportOptionsDomainModel
 
     data object Failed : ReportOptionsDomainModel
 }

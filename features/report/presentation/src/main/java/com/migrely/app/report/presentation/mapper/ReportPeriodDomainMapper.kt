@@ -12,5 +12,8 @@ class ReportPeriodDomainMapper {
             period.from,
             period.to
         )
+        is ReportPeriodPresentationModel.SinceLastVisit ->
+            ReportPeriodDomainModel.SinceLastVisit(period.from)
+        ReportPeriodPresentationModel.Default -> ReportPeriodDomainModel.Default
     }
 }

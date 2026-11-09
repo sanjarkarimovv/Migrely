@@ -1,0 +1,12 @@
+# Device scenario step: after a tap on the visit notification, a free user sees the report's paywall; Close leaves
+# History.
+appId: com.migrely.app
+---
+- extendedWaitUntil:
+    visible: "A report for your doctor"
+    timeout: 10000
+- tapOn: "Close"
+- extendedWaitUntil:
+    visible: "History"
+    timeout: 5000
+- pressKey: Home

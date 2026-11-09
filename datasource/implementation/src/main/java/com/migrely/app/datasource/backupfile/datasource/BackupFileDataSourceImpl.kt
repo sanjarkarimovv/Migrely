@@ -18,7 +18,7 @@ import kotlinx.serialization.json.Json
 const val BACKUP_FORMAT = "migrely-backup"
 
 /** The database version. Each backup carries the one it was written with (BRD D71). */
-const val BACKUP_SCHEMA_VERSION = 6
+const val BACKUP_SCHEMA_VERSION = 7
 
 private const val AUTOMATIC_DIRECTORY = "backups"
 private const val AUTOMATIC_PREFIX = "migrely-auto-"

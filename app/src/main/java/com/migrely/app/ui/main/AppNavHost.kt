@@ -20,6 +20,7 @@ import com.migrely.app.navigation.mapper.PaywallOriginUiMapper
 import com.migrely.app.onboarding.ui.view.Onboarding
 import com.migrely.app.reminders.ui.view.DailyReminderOffer
 import com.migrely.app.reminders.ui.view.Reminders
+import com.migrely.app.reminders.ui.view.VisitCard
 import com.migrely.app.report.ui.view.Report
 import com.migrely.app.review.ui.view.ReviewPrompt
 import com.migrely.app.settings.ui.view.AboutMigrely
@@ -85,6 +86,10 @@ fun AppNavHostDependencies.AppNavHost(
                 },
                 // And the subscription's trial reminder and 5th-migraine paywall (BRD D110, D111).
                 trialBanner = { refreshKey -> trialBannerDependencies.TrialBanner(refreshKey) },
+                // And the reminders feature's doctor visit card, under the medication card (BRD D168).
+                visitCard = { refreshKey ->
+                    visitCardDependencies.VisitCard(navController, refreshKey)
+                },
                 paywallTrigger = { refreshKey ->
                     paywallTriggerDependencies.PaywallTrigger(navController, refreshKey)
                 },
@@ -176,9 +181,11 @@ fun AppNavHostDependencies.AppNavHost(
             yourDataDependencies.YourData(navController)
         }
         screen<History>(navController) { entry ->
+            val route = entry.toRoute<History>()
             historyDependencies.History(
                 navController,
-                initialDay = entry.toRoute<History>().epochDay?.let(LocalDate::ofEpochDay),
+                initialDay = route.epochDay?.let(LocalDate::ofEpochDay),
+                openReport = route.openReport,
                 // History hosts the medication feature's standing overuse indicator without knowing it (BRD D59).
                 overuseIndicator = { refreshKey ->
                     overuseIndicatorDependencies.OveruseIndicator(refreshKey)

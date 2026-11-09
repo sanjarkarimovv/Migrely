@@ -7,6 +7,7 @@ import com.migrely.app.backup.domain.model.ImportResultDomainModel
 import com.migrely.app.backup.domain.model.PhoneRecordsDomainModel
 import com.migrely.app.backup.domain.repository.AddBackupRepository
 import com.migrely.app.backup.domain.repository.GetPhoneRecordsRepository
+import com.migrely.app.backup.domain.repository.PlanRemindersAgainRepository
 import com.migrely.app.backup.domain.repository.ReplaceWithBackupRepository
 import com.migrely.app.coroutine.CoroutineContextProvider
 import org.junit.Assert.assertEquals
@@ -24,10 +25,12 @@ class ImportBackupUseCaseTest {
     private val getPhoneRecordsRepository: GetPhoneRecordsRepository = mock()
     private val replaceWithBackupRepository: ReplaceWithBackupRepository = mock()
     private val addBackupRepository: AddBackupRepository = mock()
+    private val planRemindersAgainRepository: PlanRemindersAgainRepository = mock()
     private val classUnderTest = ImportBackupUseCase(
         getPhoneRecordsRepository,
         replaceWithBackupRepository,
         addBackupRepository,
+        planRemindersAgainRepository,
         CoroutineContextProvider.Default
     )
 
@@ -43,6 +46,18 @@ class ImportBackupUseCaseTest {
         ).willReturn(REPLACED)
 
         assertEquals(REPLACED, replace())
+        verify(planRemindersAgainRepository).planRemindersAgain()
+    }
+
+    @Test
+    fun `Given an import that changed nothing then the reminders are not planned again`() {
+        given(getPhoneRecordsRepository.phoneRecords()).willReturn(PhoneRecordsDomainModel.None)
+        given(replaceWithBackupRepository.replaceWithBackup(URI, saveCopyFirst = false))
+            .willReturn(ImportResultDomainModel.StorageFull)
+
+        replace()
+
+        verify(planRemindersAgainRepository, never()).planRemindersAgain()
     }
 
     @Test

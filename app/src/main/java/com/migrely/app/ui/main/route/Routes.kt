@@ -20,9 +20,12 @@ data class AttackDetails(val attackId: String, val announceMerge: Boolean = fals
 @Serializable
 data class AddPastAttack(val epochDay: Long? = null)
 
-/** History (change add-attack-history). [epochDay] is the day chosen on home's calendar, or null for this month. */
+/**
+ * History (change add-attack-history). [epochDay] is the day chosen on home's calendar, or null for this month.
+ * [openReport] opens the doctor report through History's premium gate once, from the visit reminder (BRD D168).
+ */
 @Serializable
-data class History(val epochDay: Long? = null)
+data class History(val epochDay: Long? = null, val openReport: Boolean = false)
 
 /**
  * "Medication taken" (change add-medication-tracking, BRD D34): for [attackId] or on its own when null; [darkRoom] when

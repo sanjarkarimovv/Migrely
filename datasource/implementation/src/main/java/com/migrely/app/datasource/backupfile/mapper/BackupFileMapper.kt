@@ -7,12 +7,14 @@ import com.migrely.app.datasource.attack.model.IntensityPointDataModel
 import com.migrely.app.datasource.backup.model.BackupAttackDataModel
 import com.migrely.app.datasource.backup.model.BackupCustomTagDataModel
 import com.migrely.app.datasource.backup.model.BackupDayMarkDataModel
+import com.migrely.app.datasource.backup.model.BackupDoctorVisitDataModel
 import com.migrely.app.datasource.backup.model.BackupIntakeDataModel
 import com.migrely.app.datasource.backup.model.BackupMedicationDataModel
 import com.migrely.app.datasource.backup.model.BackupRecordsDataModel
 import com.migrely.app.datasource.backupfile.model.BackupFileAttackLocalModel
 import com.migrely.app.datasource.backupfile.model.BackupFileCustomTagLocalModel
 import com.migrely.app.datasource.backupfile.model.BackupFileDayMarkLocalModel
+import com.migrely.app.datasource.backupfile.model.BackupFileDoctorVisitLocalModel
 import com.migrely.app.datasource.backupfile.model.BackupFileIntakeLocalModel
 import com.migrely.app.datasource.backupfile.model.BackupFileIntensityPointLocalModel
 import com.migrely.app.datasource.backupfile.model.BackupFileLocalModel
@@ -46,7 +48,10 @@ class BackupFileMapper(
         customTags = records.customTags.map(::toLocal),
         medications = records.medications.map(::toLocal),
         intakes = records.intakes.map(::toLocal),
-        dayMarks = records.dayMarks.map(::toLocal)
+        dayMarks = records.dayMarks.map(::toLocal),
+        doctorVisits = records.doctorVisits.map {
+            BackupFileDoctorVisitLocalModel(it.id, it.date.toString())
+        }
     )
 
     fun toData(file: BackupFileLocalModel) = BackupRecordsDataModel(
@@ -54,7 +59,10 @@ class BackupFileMapper(
         customTags = file.customTags.map(::toData),
         medications = file.medications.map(::toData),
         intakes = file.intakes.map(::toData),
-        dayMarks = file.dayMarks.map(::toData)
+        dayMarks = file.dayMarks.map(::toData),
+        doctorVisits = file.doctorVisits.map {
+            BackupDoctorVisitDataModel(it.id, LocalDate.parse(it.date))
+        }
     )
 
     data class Header(val format: String, val schemaVersion: Int, val exportedAt: Instant)

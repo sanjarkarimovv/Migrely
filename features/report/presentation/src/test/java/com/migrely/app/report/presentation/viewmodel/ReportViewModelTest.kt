@@ -41,7 +41,9 @@ private val READY = ReportViewState.Ready(
     ReportOptionsPresentationModel(
         LocalDate.of(2026, 7, 26),
         LocalDate.of(2026, 10, 25),
-        anythingLogged = true
+        anythingLogged = true,
+        period = THREE,
+        lastVisit = null
     )
 )
 
@@ -75,7 +77,7 @@ class ReportViewModelTest :
         runTest {
             getReportOptionsUseCase.givenSuccessfulExecution(
                 THREE_DOMAIN,
-                ReportOptionsDomainModel.Ready(DATES, true)
+                ReportOptionsDomainModel.Ready(DATES, true, THREE_DOMAIN)
             )
             val state = async(start = UNDISPATCHED) { classUnderTest.viewState.first() }
 
@@ -101,7 +103,7 @@ class ReportViewModelTest :
     fun `When creating then working, then share it and read the options again`() = runTest {
         getReportOptionsUseCase.givenSuccessfulExecution(
             THREE_DOMAIN,
-            ReportOptionsDomainModel.Ready(DATES, true)
+            ReportOptionsDomainModel.Ready(DATES, true, THREE_DOMAIN)
         )
         createReportUseCase.givenSuccessfulExecution(
             CreateReportRequestDomainModel(THREE_DOMAIN, includeNotes = true),
@@ -120,7 +122,7 @@ class ReportViewModelTest :
     fun `Given the report cannot be made then why`() = runTest {
         getReportOptionsUseCase.givenSuccessfulExecution(
             THREE_DOMAIN,
-            ReportOptionsDomainModel.Ready(DATES, true)
+            ReportOptionsDomainModel.Ready(DATES, true, THREE_DOMAIN)
         )
         mapOf(
             CreateReportResultDomainModel.NothingLogged to
@@ -147,7 +149,7 @@ class ReportViewModelTest :
         runTest {
             getReportOptionsUseCase.givenSuccessfulExecution(
                 THREE_DOMAIN,
-                ReportOptionsDomainModel.Ready(DATES, true)
+                ReportOptionsDomainModel.Ready(DATES, true, THREE_DOMAIN)
             )
             createReportUseCase.givenSuccessfulExecution(
                 CreateReportRequestDomainModel(THREE_DOMAIN, false),
@@ -190,7 +192,7 @@ class ReportViewModelTest :
         runTest {
             getReportOptionsUseCase.givenSuccessfulExecution(
                 THREE_DOMAIN,
-                ReportOptionsDomainModel.Ready(DATES, true)
+                ReportOptionsDomainModel.Ready(DATES, true, THREE_DOMAIN)
             )
             createReportUseCase.givenSuccessfulExecution(
                 CreateReportRequestDomainModel(THREE_DOMAIN, false),
@@ -203,5 +205,36 @@ class ReportViewModelTest :
             classUnderTest.onResume(THREE)
 
             assertEquals(READY, state.await())
+        }
+
+    @Test
+    fun `Given a last visit when opened with the default period then since it is chosen`() =
+        runTest {
+            val august20 = LocalDate.of(2026, 8, 20)
+            getReportOptionsUseCase.givenSuccessfulExecution(
+                ReportPeriodDomainModel.Default,
+                ReportOptionsDomainModel.Ready(
+                    ReportDatesDomainModel(august20, LocalDate.of(2026, 10, 25)),
+                    true,
+                    ReportPeriodDomainModel.SinceLastVisit(august20),
+                    august20
+                )
+            )
+            val state = async(start = UNDISPATCHED) { classUnderTest.viewState.first() }
+
+            classUnderTest.onEnter(ReportPeriodPresentationModel.Default)
+
+            assertEquals(
+                ReportViewState.Ready(
+                    ReportOptionsPresentationModel(
+                        august20,
+                        LocalDate.of(2026, 10, 25),
+                        anythingLogged = true,
+                        period = ReportPeriodPresentationModel.SinceLastVisit(august20),
+                        lastVisit = august20
+                    )
+                ),
+                state.await()
+            )
         }
 }

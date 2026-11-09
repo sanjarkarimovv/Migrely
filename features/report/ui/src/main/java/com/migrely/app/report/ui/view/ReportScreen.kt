@@ -54,6 +54,7 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
@@ -65,6 +66,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavController
 import com.migrely.app.architecture.ui.view.ScreenEnterObserver
+import com.migrely.app.designsystem.format.MigrelyDateFormat
 import com.migrely.app.designsystem.icon.MigrelyIcons
 import com.migrely.app.designsystem.motion.rememberReduceMotion
 import com.migrely.app.designsystem.picker.DateRangePickerLabels
@@ -90,7 +92,7 @@ import kotlinx.coroutines.flow.onSubscription
 
 private val CONTENT_MAX_WIDTH = 600.dp
 private val MONTH_CHOICES = listOf(1, 3, 6, 12)
-private val DEFAULT_PERIOD = ReportPeriodUiModel.LastMonths(3)
+private val DEFAULT_PERIOD: ReportPeriodUiModel = ReportPeriodUiModel.Default
 
 /** Callbacks from the report screen. */
 data class ReportActions(
@@ -273,10 +275,34 @@ fun ReportContents(
                         style = MaterialTheme.typography.titleMedium,
                         modifier = Modifier.semantics { heading() }
                     )
+                    // The dates stay while a report is made, so the screen does not jump (walk B1).
+                    var shownOptions by rememberSaveable {
+                        mutableStateOf<ReportOptionsUiModel?>(null)
+                    }
+                    val options = (viewState as? ReportViewStateUiModel.Ready)?.options
+                    if (options != null) shownOptions = options
+                    // Until a period is chosen, the one the options made of the default is shown chosen (EC-REP-04).
+                    val chosen = if (period ==
+                        ReportPeriodUiModel.Default
+                    ) {
+                        shownOptions?.period
+                    } else {
+                        period
+                    }
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        shownOptions?.lastVisitEpochDay?.let { lastVisit ->
+                            SinceVisitChip(
+                                lastVisit = LocalDate.ofEpochDay(lastVisit),
+                                selected = chosen is ReportPeriodUiModel.SinceLastVisit,
+                                enabled = !working,
+                                onClick = {
+                                    actions.onPeriod(ReportPeriodUiModel.SinceLastVisit(lastVisit))
+                                }
+                            )
+                        }
                         MONTH_CHOICES.forEach { months ->
                             FilterChip(
-                                selected = period == ReportPeriodUiModel.LastMonths(months),
+                                selected = chosen == ReportPeriodUiModel.LastMonths(months),
                                 onClick = {
                                     actions.onPeriod(ReportPeriodUiModel.LastMonths(months))
                                 },
@@ -294,19 +320,13 @@ fun ReportContents(
                             )
                         }
                         FilterChip(
-                            selected = period is ReportPeriodUiModel.Range,
+                            selected = chosen is ReportPeriodUiModel.Range,
                             onClick = actions.onCustom,
                             enabled = !working,
                             label = { Text(stringResource(R.string.report_custom)) },
                             modifier = Modifier.heightIn(min = 48.dp)
                         )
                     }
-                    // The dates stay while a report is made, so the screen does not jump (walk B1).
-                    var shownOptions by rememberSaveable {
-                        mutableStateOf<ReportOptionsUiModel?>(null)
-                    }
-                    val options = (viewState as? ReportViewStateUiModel.Ready)?.options
-                    if (options != null) shownOptions = options
                     shownOptions?.let { Covers(it) }
                     if (viewState == ReportViewStateUiModel.Unavailable) {
                         Text(
@@ -343,6 +363,41 @@ fun ReportContents(
     }
 }
 
+/**
+ * "Since Aug 20", or "Since Aug 20, 2025" in another year, read as "Since your last visit, Thursday, August 20, 2026"
+ * (BRD EC-REP-04, D168).
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SinceVisitChip(
+    lastVisit: LocalDate,
+    selected: Boolean,
+    enabled: Boolean,
+    onClick: () -> Unit
+) {
+    val locale = LocalConfiguration.current.locales[0]
+    val description = stringResource(
+        R.string.report_since_visit_description,
+        MigrelyDateFormat.spoken(lastVisit, locale)
+    )
+    FilterChip(
+        selected = selected,
+        onClick = onClick,
+        enabled = enabled,
+        label = {
+            // One label for TalkBack: the full one replaces the short text, so the chip is not read twice.
+            Text(
+                stringResource(
+                    R.string.report_since_visit,
+                    MigrelyDateFormat.monthDay(lastVisit, LocalDate.now(), locale)
+                ),
+                modifier = Modifier.clearAndSetSemantics { contentDescription = description }
+            )
+        },
+        modifier = Modifier.heightIn(min = 48.dp)
+    )
+}
+
 @Composable
 private fun Covers(options: ReportOptionsUiModel) {
     // The activity's formatting locale, English with the phone's region (BRD D117).
@@ -350,7 +405,11 @@ private fun Covers(options: ReportOptionsUiModel) {
         .withLocale(LocalConfiguration.current.locales[0])
     Text(
         stringResource(
-            R.string.report_covers,
+            if (options.period is ReportPeriodUiModel.SinceLastVisit) {
+                R.string.report_covers_since_visit
+            } else {
+                R.string.report_covers
+            },
             LocalDate.ofEpochDay(options.fromEpochDay).format(format),
             LocalDate.ofEpochDay(options.toEpochDay).format(format)
         ),

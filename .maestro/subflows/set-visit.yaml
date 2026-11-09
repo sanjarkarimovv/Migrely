@@ -1,0 +1,26 @@
+# On the Reminders screen: opens the visit picker from the "Next visit" row, picks DATE (ISO) or else today + OFFSET
+# days, and taps Done.
+# Leaves output.visitSpoken set (see visit-date.js). Notifications are already allowed (launchApp grants them), so no
+# system dialog follows.
+appId: com.migrely.app
+---
+- runScript:
+    file: visit-date.js
+    env:
+      OFFSET: ${OFFSET}
+      DATE: ${DATE}
+- tapOn: "Next visit, .*"
+- extendedWaitUntil:
+    visible: "Change to next month"
+    timeout: 5000
+- repeat:
+    while:
+      notVisible: "(Today, )?${output.visitSpoken}"
+    times: 13
+    commands:
+      - tapOn: "Change to next month"
+- tapOn: "(Today, )?${output.visitSpoken}"
+- tapOn: "Done"
+- extendedWaitUntil:
+    visible: "Next visit, ${output.visitSpoken}\\. Change it\\."
+    timeout: 5000

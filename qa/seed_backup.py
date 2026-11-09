@@ -1177,7 +1177,7 @@ def problems(data, today, zone):
 def run_backup_check(path, data):
     counts = [str(len(data[kind])) for kind in ("attacks", "medications", "dayMarks")]
     result = subprocess.run([sys.executable, "-I", str(Path(__file__).with_name("backup_files.py")), "json",
-                             str(path), *counts], capture_output=True, text=True)
+                             str(path), *counts, "--schema", str(SCHEMA_VERSION)], capture_output=True, text=True)
     return [] if result.returncode == 0 and result.stdout.startswith("JSON ok") else [result.stdout.strip()]
 
 

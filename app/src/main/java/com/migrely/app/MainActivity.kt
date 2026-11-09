@@ -16,6 +16,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -38,7 +39,10 @@ import com.migrely.app.premium.PremiumStartChecks
 import com.migrely.app.start.StartEntryPoint
 import com.migrely.app.subscription.domain.model.RefreshPremiumRequestDomainModel
 import com.migrely.app.ui.main.AppNavHost
+import com.migrely.app.ui.main.VisitTapAction
+import com.migrely.app.ui.main.VisitTapRule
 import com.migrely.app.ui.main.di.AppNavHostDependencies
+import com.migrely.app.ui.main.route.History
 import com.migrely.app.ui.main.route.Home
 import com.migrely.app.ui.main.route.Onboarding
 import com.migrely.app.ui.theme.mapper.AppThemeUiMapper
@@ -85,6 +89,9 @@ class MainActivity : ComponentActivity() {
     /** The shortcut arrived while the start was still being decided. */
     private var pendingStartAttack = false
 
+    /** The visit reminder was tapped; the report opens once the screens are shown (design D6). */
+    private var pendingDoctorReport = false
+
     /**
      * How the app was drawn last (BRD D94): the chosen theme, and whether an attack is in progress, which makes every
      * screen dark. It is read behind the splash and kept across a recreation, so the first frame is always right; the
@@ -93,6 +100,8 @@ class MainActivity : ComponentActivity() {
     private var appearance = AppearanceUiModel(AppThemeUiModel.Dark, attackInProgress = false)
 
     private val darkThemeUiResolver = DarkThemeUiResolver()
+
+    private val visitTapRule = VisitTapRule()
 
     private val premiumStartChecks = PremiumStartChecks(
         refresh = {
@@ -148,6 +157,8 @@ class MainActivity : ComponentActivity() {
         applySystemBars(dark = true)
         super.onCreate(savedInstanceState)
         dismissDailyReminderIfAsked(intent)
+        // A recreated activity restores its back stack instead, and one opened from recents is not a new tap.
+        pendingDoctorReport = savedInstanceState == null && opensDoctorReport(intent)
         premiumStartChecks.paymentMessagesAsked =
             savedInstanceState?.getBoolean(PAYMENT_MESSAGES_ASKED) == true
         startsWithOnboarding = savedInstanceState
@@ -262,6 +273,12 @@ class MainActivity : ComponentActivity() {
                             navController = controller,
                             startDestination = start
                         )
+                        LaunchedEffect(controller) {
+                            if (pendingDoctorReport) {
+                                pendingDoctorReport = false
+                                openDoctorReport(controller)
+                            }
+                        }
                     }
                 }
             }
@@ -325,6 +342,10 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         dismissDailyReminderIfAsked(intent)
+        if (opensDoctorReport(intent)) {
+            val controller = navController
+            if (controller == null) pendingDoctorReport = true else openDoctorReport(controller)
+        }
         if (intent.action == ACTION_START_ATTACK) {
             val controller = navController
             if (controller == null) {
@@ -335,6 +356,30 @@ class MainActivity : ComponentActivity() {
                 controller.navigate(Home(startAttack = true)) {
                     popUpTo(controller.graph.id) { inclusive = true }
                 }
+            }
+        }
+    }
+
+    private fun opensDoctorReport(intent: Intent?): Boolean = intent?.getBooleanExtra(
+        NotificationDataSourceImpl.EXTRA_OPEN_DOCTOR_REPORT,
+        false
+    ) == true &&
+        intent.flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY == 0
+
+    /**
+     * The visit reminder's tap (design D6): Home, then History, which opens the report through its own premium gate.
+     * During an attack the app only comes to the front, so attack mode and an unfinished form stay (BRD EC-REM-12). A
+     * visit is set only after onboarding, and "Delete all data" takes every notification away, so the tap never meets
+     * onboarding.
+     */
+    private fun openDoctorReport(controller: NavHostController) {
+        when (visitTapRule.actionFor(appearance.attackInProgress)) {
+            VisitTapAction.BringToFront -> Unit
+            VisitTapAction.OpenReportThroughHistory -> controller.navigate(
+                History(openReport = true)
+            ) {
+                popUpTo<Home>()
+                launchSingleTop = true
             }
         }
     }

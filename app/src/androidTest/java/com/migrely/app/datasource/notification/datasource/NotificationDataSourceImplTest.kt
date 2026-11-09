@@ -58,7 +58,7 @@ class NotificationDataSourceImplTest {
     @Test
     fun whenEverythingIsCancelled_thenNoMigrelyNotificationStays() {
         classUnderTest.showDailyReminder(LocalDate.now())
-        classUnderTest.showEffectQuestion("intake-1", "Ibuprofen")
+        classUnderTest.showEffectQuestion("intake-1")
         waitForActive(2)
         assertTrue(manager.activeNotifications.size >= 2)
 

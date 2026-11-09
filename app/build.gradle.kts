@@ -143,6 +143,8 @@ dependencies {
     testDebugImplementation(platform(libs.compose.bom))
     testDebugImplementation(libs.test.compose.ui.junit4)
     testDebugImplementation(libs.test.robolectric)
+    // The visit reminder's unique work, tested against a real WorkManager (change add-doctor-visit-mode).
+    testDebugImplementation(libs.androidx.work.testing)
     androidTestImplementation(libs.test.androidx.junit)
     androidTestImplementation(libs.test.androidx.espresso.core)
     androidTestImplementation(platform(libs.compose.bom))

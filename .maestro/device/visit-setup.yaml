@@ -1,0 +1,13 @@
+# Device scenario step: a clean install with a migraine logged today sets the next visit to DATE (ISO, the device's
+# calendar), then goes to the home screen. Not stopApp: a force stop cancels the reminder the app planned.
+appId: com.migrely.app
+---
+- runFlow: ../subflows/launch-clean.yaml
+- runFlow: ../subflows/log-attack-today.yaml
+- runFlow: ../subflows/open-reminders.yaml
+- runFlow:
+    file: ../subflows/set-visit.yaml
+    env:
+      OFFSET: 0
+      DATE: ${DATE}
+- pressKey: Home

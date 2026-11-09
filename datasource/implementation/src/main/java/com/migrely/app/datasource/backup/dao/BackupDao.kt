@@ -11,11 +11,12 @@ import com.migrely.app.datasource.attack.model.IntensityPointLocalModel
 import com.migrely.app.datasource.backup.model.AddedLocalModel
 import com.migrely.app.datasource.backup.model.BackupLocalModel
 import com.migrely.app.datasource.daymark.model.DayMarkLocalModel
+import com.migrely.app.datasource.doctorvisit.model.DoctorVisitLocalModel
 import com.migrely.app.datasource.medication.model.MedicationIntakeLocalModel
 import com.migrely.app.datasource.medication.model.MedicationLocalModel
 import com.migrely.app.datasource.tag.model.CustomTagLocalModel
 
-/** Reads and writes every health table at once (database version 6, change add-data-export-import). */
+/** Reads and writes every health table at once (database version 7, change add-data-export-import, BRD D168). */
 @Dao
 abstract class BackupDao {
     @Query("SELECT * FROM attack WHERE deleted_epoch_millis IS NULL ORDER BY start_epoch_millis")
@@ -52,6 +53,9 @@ abstract class BackupDao {
     @Query("SELECT * FROM day_mark ORDER BY date")
     abstract fun dayMarks(): List<DayMarkLocalModel>
 
+    @Query("SELECT * FROM doctor_visit ORDER BY date")
+    abstract fun doctorVisits(): List<DoctorVisitLocalModel>
+
     @Transaction
     open fun records() = BackupLocalModel(
         attacks = attacks(),
@@ -60,14 +64,15 @@ abstract class BackupDao {
         customTags = customTags(),
         medications = medications(),
         intakes = intakes(),
-        dayMarks = dayMarks()
+        dayMarks = dayMarks(),
+        doctorVisits = doctorVisits()
     )
 
     /** An intake always has a medication, so medications stand for intakes here. */
     @Query(
         "SELECT EXISTS(SELECT 1 FROM attack WHERE deleted_epoch_millis IS NULL) " +
             "OR EXISTS(SELECT 1 FROM medication) OR EXISTS(SELECT 1 FROM custom_tag) " +
-            "OR EXISTS(SELECT 1 FROM day_mark)"
+            "OR EXISTS(SELECT 1 FROM day_mark) OR EXISTS(SELECT 1 FROM doctor_visit)"
     )
     abstract fun hasRecords(): Boolean
 
@@ -86,6 +91,9 @@ abstract class BackupDao {
 
     @Query("DELETE FROM day_mark")
     abstract fun deleteDayMarks()
+
+    @Query("DELETE FROM doctor_visit")
+    abstract fun deleteDoctorVisits()
 
     @Insert
     abstract fun insertCustomTags(tags: List<CustomTagLocalModel>)
@@ -107,6 +115,15 @@ abstract class BackupDao {
 
     @Insert
     abstract fun insertDayMarks(marks: List<DayMarkLocalModel>)
+
+    @Insert
+    abstract fun insertDoctorVisits(visits: List<DoctorVisitLocalModel>)
+
+    @Query("SELECT EXISTS(SELECT 1 FROM doctor_visit WHERE id = :visitId OR date = :date)")
+    abstract fun hasDoctorVisit(visitId: String, date: String): Boolean
+
+    @Query("SELECT EXISTS(SELECT 1 FROM doctor_visit WHERE date >= :today)")
+    abstract fun hasUpcomingDoctorVisit(today: String): Boolean
 
     /** The new row's ID, or -1 when the date was already marked. */
     @Insert(onConflict = OnConflictStrategy.IGNORE)
@@ -171,6 +188,7 @@ abstract class BackupDao {
         deleteMedications()
         deleteCustomTags()
         deleteDayMarks()
+        deleteDoctorVisits()
         insertCustomTags(records.customTags)
         insertMedications(records.medications)
         insertAttacks(records.attacks)
@@ -178,11 +196,15 @@ abstract class BackupDao {
         insertAttackTags(records.attackTags)
         insertIntakes(records.intakes)
         insertDayMarks(records.dayMarks)
+        insertDoctorVisits(records.doctorVisits)
     }
 
-    /** Writes what the phone does not have yet (BRD D73 "Add"); the rules are on `BackupDataSource.add`. */
+    /**
+     * Writes what the phone does not have yet (BRD D73 "Add"); the rules are on `BackupDataSource.add`. [today] is ISO,
+     * for the visits.
+     */
     @Transaction
-    open fun add(records: BackupLocalModel): AddedLocalModel {
+    open fun add(records: BackupLocalModel, today: String): AddedLocalModel {
         var addedOthers = 0
         val tagIds = records.customTags.associate { tag ->
             val onPhone = customTagIdOnPhone(tag)
@@ -247,11 +269,24 @@ abstract class BackupDao {
             }
         }
         addedOthers += records.dayMarks.count { insertDayMarkIfAbsent(it) != -1L }
+        addDoctorVisits(records.doctorVisits, today)
         return AddedLocalModel(
             addedAttacks = added,
             skippedAttacks = records.attacks.size - added,
             addedOthers = addedOthers
         )
+    }
+
+    /**
+     * A visit already on the phone, by ID or date, is skipped, and an upcoming one is added only while the phone has
+     * none, so there is never a second next visit (BRD EC-BAK-06). Visits are not counted: the summary is unchanged.
+     */
+    private fun addDoctorVisits(visits: List<DoctorVisitLocalModel>, today: String) {
+        visits.forEach { visit ->
+            val skipped = hasDoctorVisit(visit.id, visit.date) ||
+                (visit.date >= today && hasUpcomingDoctorVisit(today))
+            if (!skipped) insertDoctorVisits(listOf(visit))
+        }
     }
 
     /** The phone's tag this one stands for, by ID or by name, or null when the phone has none. */

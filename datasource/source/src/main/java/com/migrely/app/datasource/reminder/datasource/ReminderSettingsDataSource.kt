@@ -17,4 +17,13 @@ interface ReminderSettingsDataSource {
 
     /** Records that the daily reminder showed on [date], so it never shows twice in one day. */
     fun setDailyShown(date: LocalDate)
+
+    /** The visit on [visit] needs no notification any more (BRD D168). */
+    fun setVisitReminded(visit: LocalDate)
+
+    /** The home card of the visit on [visit] was tapped or closed. */
+    fun setVisitCardClosed(visit: LocalDate)
+
+    /** The visit reminder waits for 10:00 on [day] after an attack (BRD EC-REM-12). */
+    fun setVisitPostponed(day: LocalDate)
 }

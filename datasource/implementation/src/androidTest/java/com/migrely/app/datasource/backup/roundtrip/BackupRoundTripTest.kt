@@ -18,6 +18,8 @@ import com.migrely.app.datasource.backupfile.validator.BackupRecordsValidator
 import com.migrely.app.datasource.database.MigrelyDatabase
 import com.migrely.app.datasource.daymark.mapper.DayMarkLocalMapper
 import com.migrely.app.datasource.daymark.model.DayMarkLocalModel
+import com.migrely.app.datasource.doctorvisit.mapper.DoctorVisitLocalMapper
+import com.migrely.app.datasource.doctorvisit.model.DoctorVisitLocalModel
 import com.migrely.app.datasource.medication.mapper.MedicationLocalMapper
 import com.migrely.app.datasource.medication.model.MedicationIntakeLocalModel
 import com.migrely.app.datasource.medication.model.MedicationLocalModel
@@ -68,7 +70,8 @@ class BackupRoundTripTest {
         AttackTagLocalMapper(),
         CustomTagLocalMapper(),
         MedicationLocalMapper(),
-        DayMarkLocalMapper()
+        DayMarkLocalMapper(),
+        DoctorVisitLocalMapper()
     )
     private val files = BackupFileDataSourceImpl(
         File(context.cacheDir, "round-trip"),
@@ -132,6 +135,7 @@ class BackupRoundTripTest {
         phone.dayMarkDao().upsert(
             DayMarkLocalModel("2026-10-18", period = true, painFree = true, 1L)
         )
+        phone.doctorVisitDao().insert(DoctorVisitLocalModel("v1", "2026-08-20"))
     }
 
     @After
@@ -142,16 +146,26 @@ class BackupRoundTripTest {
 
     @Test
     fun whenExportedReadAndRestored_thenTheSameRecords_andAddingThemBackChangesNothing() {
-        val source = BackupDataSourceImpl(phone.backupDao(), localMapper, phone::deleteEverything)
+        val source =
+            BackupDataSourceImpl(
+                phone.backupDao(),
+                localMapper,
+                deleteEverything = phone::deleteEverything
+            )
         val exported = source.records()
         assertEquals(listOf("ended", "now"), exported.attacks.map { it.id })
         assertEquals(listOf("i2", "i1"), exported.intakes.map { it.id })
+        assertEquals(listOf("v1"), exported.doctorVisits.map { it.id })
 
         val decoded = files.decode(files.encode(exported, Instant.EPOCH))
-        assertEquals(BackupDecodedDataModel.Records(exported, 6), decoded)
+        assertEquals(BackupDecodedDataModel.Records(exported, 7), decoded)
 
         val restored =
-            BackupDataSourceImpl(newPhone.backupDao(), localMapper, newPhone::deleteEverything)
+            BackupDataSourceImpl(
+                newPhone.backupDao(),
+                localMapper,
+                deleteEverything = newPhone::deleteEverything
+            )
         restored.replaceAll((decoded as BackupDecodedDataModel.Records).records)
         assertEquals(exported, restored.records())
 
@@ -168,7 +182,12 @@ class BackupRoundTripTest {
      */
     @Test
     fun givenAMigraineDeletedAfterTheExport_whenAddingTheBackup_thenItIsBack() {
-        val source = BackupDataSourceImpl(phone.backupDao(), localMapper, phone::deleteEverything)
+        val source =
+            BackupDataSourceImpl(
+                phone.backupDao(),
+                localMapper,
+                deleteEverything = phone::deleteEverything
+            )
         val backup = files.decode(files.encode(source.records(), Instant.EPOCH))
             as BackupDecodedDataModel.Records
         phone.attackDao().softDelete("ended", 40 * HOUR)
@@ -188,7 +207,12 @@ class BackupRoundTripTest {
     fun whenEverythingIsDeleted_thenNoTableKeepsARow() {
         phone.reminderSettingsDao().update { it.copy(dailyEnabled = true) }
         phone.medicationDao().upsertOveruseNotice(OveruseNoticeLocalModel("SIMPLE", "SOFT", 1L))
-        val source = BackupDataSourceImpl(phone.backupDao(), localMapper, phone::deleteEverything)
+        val source =
+            BackupDataSourceImpl(
+                phone.backupDao(),
+                localMapper,
+                deleteEverything = phone::deleteEverything
+            )
         phone.query("SELECT COUNT(*) FROM sqlite_sequence", null).use { cursor ->
             cursor.moveToFirst()
             assertEquals(1, cursor.getInt(0))
