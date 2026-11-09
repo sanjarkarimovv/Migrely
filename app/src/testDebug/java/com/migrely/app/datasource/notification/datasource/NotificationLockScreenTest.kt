@@ -73,7 +73,10 @@ class NotificationLockScreenTest {
 
     @Test
     fun `When the visit reminder is posted then it is private and names no health word or channel`() {
-        classUnderTest.showVisitReminder(LocalDate.parse("2099-11-20"), Instant.now().plusSeconds(3_600))
+        classUnderTest.showVisitReminder(
+            LocalDate.parse("2099-11-20"),
+            Instant.now().plusSeconds(3_600)
+        )
 
         val notification = posted().single()
         assertPrivate(notification)

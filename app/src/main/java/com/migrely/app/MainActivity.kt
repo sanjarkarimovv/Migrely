@@ -39,9 +39,9 @@ import com.migrely.app.premium.PremiumStartChecks
 import com.migrely.app.start.StartEntryPoint
 import com.migrely.app.subscription.domain.model.RefreshPremiumRequestDomainModel
 import com.migrely.app.ui.main.AppNavHost
-import com.migrely.app.ui.main.di.AppNavHostDependencies
 import com.migrely.app.ui.main.VisitTapAction
 import com.migrely.app.ui.main.VisitTapRule
+import com.migrely.app.ui.main.di.AppNavHostDependencies
 import com.migrely.app.ui.main.route.History
 import com.migrely.app.ui.main.route.Home
 import com.migrely.app.ui.main.route.Onboarding
@@ -375,7 +375,9 @@ class MainActivity : ComponentActivity() {
     private fun openDoctorReport(controller: NavHostController) {
         when (visitTapRule.actionFor(appearance.attackInProgress)) {
             VisitTapAction.BringToFront -> Unit
-            VisitTapAction.OpenReportThroughHistory -> controller.navigate(History(openReport = true)) {
+            VisitTapAction.OpenReportThroughHistory -> controller.navigate(
+                History(openReport = true)
+            ) {
                 popUpTo<Home>()
                 launchSingleTop = true
             }

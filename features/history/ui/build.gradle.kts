@@ -39,6 +39,10 @@ android {
     buildFeatures {
         compose = true
     }
+    // Compose tests on the JVM (change add-doctor-visit-mode).
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
+    }
 }
 
 ktlint {
@@ -67,4 +71,9 @@ dependencies {
 
     testImplementation(libs.test.junit)
     testImplementation(libs.test.mockito.kotlin)
+    // Debug only: the Compose test rule needs the debug test manifest.
+    testDebugImplementation(platform(libs.compose.bom))
+    testDebugImplementation(libs.test.compose.ui.junit4)
+    testDebugImplementation(libs.test.robolectric)
+    debugImplementation(libs.compose.ui.test.manifest)
 }

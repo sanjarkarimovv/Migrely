@@ -106,15 +106,7 @@ fun HistoryDependencies.History(
         onPauseOrDispose { }
     }
     ViewModelObserver(navController)
-    // Opened by the doctor visit reminder: the report through the top bar's own premium gate, once, so a rotation,
-    // a process restore or coming back from the report does not open it again (BRD D168, design D6).
-    var reportOpened by rememberSaveable { mutableStateOf(false) }
-    LaunchedEffect(openReport) {
-        if (openReport && !reportOpened) {
-            reportOpened = true
-            historyViewModel.onReportAction()
-        }
-    }
+    OpenReportOnce(openReport, onOpen = historyViewModel::onReportAction)
 
     val viewState by historyViewModel.viewState.collectAsState(HistoryViewState.Loading)
     // Counts History's loads, so the overuse indicator loads with each of them, an undo or a resume included (D59).

@@ -144,6 +144,9 @@ class VisitWorkTest {
     fun `When reminders are planned again after an import then the run is of the import kind`() {
         classUnderTest.planAgain()
 
-        assertEquals(ReminderWorker.KIND_IMPORTED, inputs.single().getString(ReminderWorker.KEY_KIND))
+        assertEquals(
+            ReminderWorker.KIND_IMPORTED,
+            inputs.single().getString(ReminderWorker.KEY_KIND)
+        )
     }
 }

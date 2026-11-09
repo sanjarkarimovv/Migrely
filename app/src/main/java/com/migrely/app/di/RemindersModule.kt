@@ -25,8 +25,8 @@ import com.migrely.app.reminders.domain.usecase.CloseVisitCardUseCase
 import com.migrely.app.reminders.domain.usecase.DismissDailyReminderUseCase
 import com.migrely.app.reminders.domain.usecase.GetRemindersUseCase
 import com.migrely.app.reminders.domain.usecase.GetVisitCardUseCase
-import com.migrely.app.reminders.domain.usecase.RecordPermissionAskedUseCase
 import com.migrely.app.reminders.domain.usecase.PlanRemindersAfterImportUseCase
+import com.migrely.app.reminders.domain.usecase.RecordPermissionAskedUseCase
 import com.migrely.app.reminders.domain.usecase.RemoveDoctorVisitUseCase
 import com.migrely.app.reminders.domain.usecase.RescheduleRemindersUseCase
 import com.migrely.app.reminders.domain.usecase.RestoreDoctorVisitUseCase
@@ -186,7 +186,15 @@ internal object RemindersModule {
         repository: RemindersRepository,
         visits: VisitReminderRepository,
         coroutines: CoroutineContextProvider
-    ) = PlanRemindersAfterImportUseCase(repository, repository, visits, visits, visits, visits, coroutines)
+    ) = PlanRemindersAfterImportUseCase(
+        repository,
+        repository,
+        visits,
+        visits,
+        visits,
+        visits,
+        coroutines
+    )
 
     @Provides
     fun providesGetVisitCardUseCase(
