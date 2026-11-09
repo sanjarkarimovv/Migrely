@@ -12,7 +12,7 @@ The doctor visit reminder (D168), private lock screen notifications (D169) and t
 <en-US>
 New:
 • Doctor visit: set your next visit's date in Reminders. Two days before, Migrely reminds you to make a report for your doctor. The Doctor report can cover the time since your last visit.
-• Lock screen reminders no longer show a medication's name or whether you logged a migraine.
+• Lock screen reminders no longer name a medication or say that you logged a migraine.
 Fixes:
 • A quick second tap on Remove in a custom tag's menu no longer selects what was under it.
 • On the Migraine screen, a message no longer covers the safety card, and "Couldn't save" clears once a save works.
