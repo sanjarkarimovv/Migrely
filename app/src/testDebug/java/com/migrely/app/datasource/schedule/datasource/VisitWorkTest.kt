@@ -1,9 +1,15 @@
 package com.migrely.app.datasource.schedule.datasource
 
 import android.app.Application
+import android.content.Context
 import androidx.work.Configuration
+import androidx.work.Data
+import androidx.work.ListenableWorker
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
+import androidx.work.Worker
+import androidx.work.WorkerFactory
+import androidx.work.WorkerParameters
 import androidx.work.testing.SynchronousExecutor
 import androidx.work.testing.WorkManagerTestInitHelper
 import com.migrely.app.datasource.clock.datasource.ClockDataSource
@@ -37,12 +43,30 @@ class VisitWorkTest {
     private lateinit var workManager: WorkManager
     private lateinit var classUnderTest: ReminderScheduleDataSourceImpl
 
+    /** What each run would be given; the factory stands in for the app's worker, which needs Hilt. */
+    private val inputs = mutableListOf<Data>()
+    private val recordingFactory = object : WorkerFactory() {
+        override fun createWorker(
+            appContext: Context,
+            workerClassName: String,
+            workerParameters: WorkerParameters
+        ): ListenableWorker = object : Worker(appContext, workerParameters) {
+            override fun doWork(): Result {
+                inputs += inputData
+                return Result.success()
+            }
+        }
+    }
+
     @Before
     fun setUp() {
         val context = RuntimeEnvironment.getApplication()
         WorkManagerTestInitHelper.initializeTestWorkManager(
             context,
-            Configuration.Builder().setExecutor(SynchronousExecutor()).build()
+            Configuration.Builder()
+                .setExecutor(SynchronousExecutor())
+                .setWorkerFactory(recordingFactory)
+                .build()
         )
         workManager = WorkManager.getInstance(context)
         classUnderTest = ReminderScheduleDataSourceImpl(
@@ -102,5 +126,24 @@ class VisitWorkTest {
         classUnderTest.planAgain()
 
         assertEquals(0L, work("imported").single().initialDelayMillis)
+    }
+
+    @Test
+    fun `When the planned visit run comes then it is given its kind and the visit date`() {
+        classUnderTest.scheduleVisit(NOW.plus(Duration.ofDays(8)), NOVEMBER_20)
+
+        WorkManagerTestInitHelper.getTestDriver(RuntimeEnvironment.getApplication())!!
+            .setInitialDelayMet(work("visit").single().id)
+
+        val input = inputs.single()
+        assertEquals(ReminderWorker.KIND_VISIT, input.getString(ReminderWorker.KEY_KIND))
+        assertEquals("2026-11-20", input.getString(ReminderWorker.KEY_DATE))
+    }
+
+    @Test
+    fun `When reminders are planned again after an import then the run is of the import kind`() {
+        classUnderTest.planAgain()
+
+        assertEquals(ReminderWorker.KIND_IMPORTED, inputs.single().getString(ReminderWorker.KEY_KIND))
     }
 }
