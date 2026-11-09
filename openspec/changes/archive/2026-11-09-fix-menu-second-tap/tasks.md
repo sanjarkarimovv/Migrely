@@ -9,7 +9,7 @@ in `designsystem`. `Refs #161` in every commit and in the PR, never a closing ke
   `git show origin/develop:docs/BRD.md | grep -c "^| D164 "` prints 0.
 - [x] 1.2 Proposal, design, delta and tasks. Verify: `openspec validate fix-menu-second-tap --strict` exits 0.
 - [ ] 1.3 `ux-designer` confirms there is no visual change, no copy, and the states and a11y rows of design D5. Verify: their packet names this
-  change and says either no change or the rows to change.
+  change and says either no change or the rows to change. Not recorded in the files the product manager can see. `team-lead` confirms or runs it before the merge.
 
 ## 2. The helper (designsystem)
 
@@ -92,19 +92,24 @@ in `designsystem`. `Refs #161` in every commit and in the PR, never a closing ke
   310 and 460 ms each wrote "Sensitivity to light", 3 of 3. Not walked: 200% font, landscape and TalkBack's "Remove from my list" (device given to
   the 1.1.1 hotfix; QA A5 and A9 cover them, and the click-action row is a JVM test). Settings and app data restored (dump md5 as before), 5570 off.
   A walk does not prove a human hand, a real phone, API 26 or R8.
-- [ ] 7.4 `code-reviewer` reviews the branch. Fixes go on the same branch. Verify: the review packet has no open blocker.
+- [ ] 7.4 `code-reviewer` reviews the branch. Fixes go on the same branch. Verify: the review packet has no open blocker. No review is recorded on PR #172 (0 reviews). `team-lead` confirms before the merge.
 
 ## 8. QA (independent)
 
-- [ ] 8.1 `qa-engineer` runs design "Acceptance" A1 to A10, debug and R8, A2 on a negative-control build of the same commit. Verify: the table is in
-  `docs/qa/` with trial counts, measured gaps and what it does not prove, and #161 gets the retest comment.
+- [x] 8.1 `qa-engineer` runs design "Acceptance" A1 to A10, debug and R8, A2 on a negative-control build of the same commit. Verify: the table is in
+  `docs/qa/` with trial counts, measured gaps and what it does not prove, and #161 gets the retest comment. Done: QA passed on e09767c2, `migrely-work/qa-t51/` (`logs/count-final.txt`, `close161.md`). 72 trials. A1 debug 9/9 and R8 9/9 (139–460 ms); A2 negative control wrote 9/9; A3 9/9; A4 3/3;
+  A5 3/3 in each layout; A6 under 300 ms 6/6 nothing, at about 366 ms wrote 3/3 (accepted cost); A8 3/3; A9 both routes; A10 6/6. D160 and D161 regression
+  passed. **A7, accepted residual:** a double tap outside the open menu toggles the chip under the second tap, 6/6, as D161 (5) and design D5 row 2
+  decide; it is in 8.2. **Follow-up #179** (S3, already there before this change): in a short window at 200% font the menu opens over its own chip.
+  #161 closed by QA.
 - [ ] 8.2 The residual rows go into the next release's Go/No-Go: a second tap from 500 ms, a third from 300 ms after the second's lift, and A7's tap
-  outside. Verify: they are in that Go/No-Go.
+  outside. Verify: they are in that Go/No-Go. Open until the next release's Go/No-Go: the rows are a second tap from 500 ms, a third from 300 ms after the second's lift (A6), and the
+  tap outside (A7, 6/6).
 
 ## 9. Close
 
 - [ ] 9.1 Archive the change, then open a PR into `develop` with `Refs #161`, and merge it with a merge commit. Verify: `openspec validate --specs
-  --strict` exits 0 after the archive, and `gh pr view` shows it merged.
+  --strict` exits 0 after the archive, and `gh pr view` shows it merged. Archived on this branch. The PR merge is `team-lead`'s.
 - [ ] 9.2 `team-lead` adds the hand check on the internal track: double tap Remove in a custom tag's menu, naturally, and note anything that changes
   beneath. Verify: the row is in the release guide.
 
