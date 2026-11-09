@@ -51,6 +51,7 @@ import com.migrely.app.attack.presentation.model.AttackDetailsPresentationNotifi
 import com.migrely.app.attack.presentation.model.AttackDetailsPresentationNotification.PointRejected
 import com.migrely.app.attack.presentation.model.AttackDetailsPresentationNotification.PointRemoved
 import com.migrely.app.attack.presentation.model.AttackDetailsPresentationNotification.PointsRemovedByTimeChange
+import com.migrely.app.attack.presentation.model.AttackDetailsPresentationNotification.Saved
 import com.migrely.app.attack.presentation.model.AttackDetailsPresentationNotification.SomethingWentWrong
 import com.migrely.app.attack.presentation.model.AttackDetailsPresentationNotification.StorageFull
 import com.migrely.app.attack.presentation.model.AttackDetailsPresentationNotification.TagLimitReached
@@ -73,7 +74,8 @@ import java.time.Instant
 
 /**
  * Stateless (skill rule 4): every action takes the attack id and what it needs as parameters, and every successful
- * write reloads the details. Undo payloads travel inside the notifications and come back with the undo action.
+ * write reloads the details. A write with no message of its own sends [Saved], and the screen decides what it means
+ * (BRD D165 (4)). Undo payloads travel inside the notifications and come back with the undo action.
  */
 @Suppress("LongParameterList", "TooManyFunctions")
 class AttackDetailsViewModel(
@@ -137,7 +139,7 @@ class AttackDetailsViewModel(
                     is MergeAttacksResultDomainModel.Merged ->
                         succeeded(result.attackId, AttacksMerged)
 
-                    is MergeAttacksResultDomainModel.Saved -> loadDetails(result.attackId)
+                    is MergeAttacksResultDomainModel.Saved -> saved(result.attackId)
                     is MergeAttacksResultDomainModel.InFuture -> notify(
                         TimeRejected(
                             timeFieldPresentationMapper.toPresentation(result.field),
@@ -192,7 +194,7 @@ class AttackDetailsViewModel(
                 // follows (BRD SAF-F2, D163).
                 if (result.firstMaximum) notify(FirstMaximumRecorded)
                 when (result) {
-                    is AddIntensityPointResultDomainModel.Added -> loadDetails(attackId)
+                    is AddIntensityPointResultDomainModel.Added -> saved(attackId)
                     is AddIntensityPointResultDomainModel.OutsideAttack ->
                         notify(PointRejected(PointRejectionPresentationModel.OutsideAttack))
 
@@ -306,7 +308,7 @@ class AttackDetailsViewModel(
             value = UpdateAttackNoteRequestDomainModel(attackId, note),
             onResult = { result ->
                 when (result) {
-                    UpdateAttackNoteResultDomainModel.Saved -> loadDetails(attackId)
+                    UpdateAttackNoteResultDomainModel.Saved -> saved(attackId)
                     UpdateAttackNoteResultDomainModel.StorageFull -> notify(StorageFull)
                     UpdateAttackNoteResultDomainModel.TooLong,
                     UpdateAttackNoteResultDomainModel.Failed -> notify(SomethingWentWrong)
@@ -324,7 +326,7 @@ class AttackDetailsViewModel(
             ),
             onResult = { result ->
                 when (result) {
-                    is AddCustomTagResultDomainModel.Added -> loadDetails(attackId)
+                    is AddCustomTagResultDomainModel.Added -> saved(attackId)
                     AddCustomTagResultDomainModel.LimitReached -> notify(TagLimitReached)
                     AddCustomTagResultDomainModel.StorageFull -> notify(StorageFull)
                     AddCustomTagResultDomainModel.Invalid,
@@ -370,7 +372,7 @@ class AttackDetailsViewModel(
         when (result) {
             is UpdateAttackTimesResultDomainModel.Updated ->
                 if (result.removedPoints.isEmpty()) {
-                    loadDetails(attackId)
+                    saved(attackId)
                 } else {
                     succeeded(
                         attackId,
@@ -422,12 +424,15 @@ class AttackDetailsViewModel(
     ) {
         when (result) {
             WriteResultDomainModel.Written ->
-                if (onWritten == null) loadDetails(attackId) else succeeded(attackId, onWritten)
+                if (onWritten == null) saved(attackId) else succeeded(attackId, onWritten)
 
             WriteResultDomainModel.StorageFull -> notify(StorageFull)
             WriteResultDomainModel.Failed -> notify(SomethingWentWrong)
         }
     }
+
+    /** A write saved with no message of its own (BRD D165 (4)). */
+    private fun saved(attackId: String) = succeeded(attackId, Saved)
 
     private fun succeeded(attackId: String, notification: AttackDetailsPresentationNotification) {
         notify(notification)

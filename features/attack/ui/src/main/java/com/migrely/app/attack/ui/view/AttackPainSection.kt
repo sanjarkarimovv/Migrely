@@ -29,6 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
@@ -257,11 +258,14 @@ internal fun SafetyCard(
                     tint = MaterialTheme.colorScheme.tertiary,
                     modifier = Modifier.size(20.dp)
                 )
+                // A heading, so heading navigation lands on it; the text is unchanged (BRD D165 (3)).
                 Text(
                     text = stringResource(R.string.safety_title),
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onTertiaryContainer,
-                    modifier = Modifier.padding(start = 10.dp)
+                    modifier = Modifier
+                        .padding(start = 10.dp)
+                        .semantics { heading() }
                 )
             }
             Text(
