@@ -14,7 +14,9 @@ import com.migrely.app.reminders.domain.repository.GetVisitChannelOffRepository
 
 /**
  * The Reminders screen (BRD D65–D68, D168): permission may be asked for again 30 days after it was last asked
- * (EC-REM-02), and the next doctor visit with whether its own channel is off.
+ * (EC-REM-02), and the next doctor visit with whether its own channel is off. Only a visit after today may be removed:
+ * on its day it stays as the last visit a report starts from, as the database keeps it (BRD EC-REP-04). "Today" is the
+ * injected clock's, read again at every read, so a screen kept open past midnight or across a zone change follows it.
  */
 class GetRemindersUseCase(
     private val getReminderSettingsRepository: GetReminderSettingsRepository,
@@ -45,7 +47,9 @@ class GetRemindersUseCase(
                     settings.permissionAskedAt,
                     now.instant
                 ),
+                today = today,
                 nextVisit = visits.next?.date,
+                visitRemovable = visits.next?.date?.isAfter(today) == true,
                 visitChannelOff = getVisitChannelOffRepository.visitChannelOff()
             )
         )

@@ -47,6 +47,7 @@ import org.mockito.kotlin.verify
 private val EIGHT_PM = LocalTime.of(20, 0)
 private val NOVEMBER_20: LocalDate = LocalDate.of(2026, 11, 20)
 private val NOVEMBER_27: LocalDate = LocalDate.of(2026, 11, 27)
+private val TODAY: LocalDate = LocalDate.of(2026, 11, 10)
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(MockitoJUnitRunner::class)
@@ -85,7 +86,7 @@ class RemindersViewModelTest :
     private fun givenReminders(allowed: Boolean, mayAsk: Boolean = true) {
         getRemindersUseCase.givenSuccessfulExecution(
             RemindersResultDomainModel.Loaded(
-                RemindersDomainModel(false, EIGHT_PM, true, allowed, mayAsk)
+                RemindersDomainModel(false, EIGHT_PM, true, allowed, mayAsk, TODAY)
             )
         )
     }
@@ -116,7 +117,9 @@ class RemindersViewModelTest :
         classUnderTest.onEnter()
 
         assertEquals(
-            RemindersViewState.Ready(RemindersPresentationModel(false, EIGHT_PM, true, true, true)),
+            RemindersViewState.Ready(
+                RemindersPresentationModel(false, EIGHT_PM, true, true, true, TODAY)
+            ),
             state.await()
         )
     }
@@ -331,7 +334,57 @@ class RemindersViewModelTest :
             collecting.cancel()
         }
 
-    private fun loaded(nextVisit: LocalDate?) = RemindersResultDomainModel.Loaded(
-        RemindersDomainModel(false, EIGHT_PM, true, true, true, nextVisit = nextVisit)
-    )
+    /** Issue #187: the screen shows past midnight, so the clock's change reads again and the visit day has no Remove. */
+    @Test
+    fun `Given the screen shows when the clock changes then it reads again and shows the new day`() =
+        runTest {
+            val reads = argumentCaptor<(RemindersResultDomainModel) -> Unit>()
+            val states = mutableListOf<RemindersViewState>()
+            val collecting = launch(start = UNDISPATCHED) {
+                classUnderTest.viewState.collect { states += it }
+            }
+
+            classUnderTest.onEnter()
+            verify(useCaseExecutor).execute(
+                useCase = eq(getRemindersUseCase),
+                onResult = reads.capture(),
+                onException = any()
+            )
+            reads.lastValue(loaded(nextVisit = NOVEMBER_20, today = NOVEMBER_20.minusDays(1)))
+            runCurrent()
+            classUnderTest.onClockChanged()
+            verify(useCaseExecutor, times(2)).execute(
+                useCase = eq(getRemindersUseCase),
+                onResult = reads.capture(),
+                onException = any()
+            )
+            reads.lastValue(loaded(nextVisit = NOVEMBER_20, today = NOVEMBER_20))
+            runCurrent()
+
+            assertEquals(
+                listOf(
+                    NOVEMBER_20.minusDays(1) to true,
+                    NOVEMBER_20 to false
+                ),
+                states.map {
+                    val reminders = (it as RemindersViewState.Ready).reminders
+                    reminders.today to reminders.visitRemovable
+                }
+            )
+            collecting.cancel()
+        }
+
+    private fun loaded(nextVisit: LocalDate?, today: LocalDate = TODAY) =
+        RemindersResultDomainModel.Loaded(
+            RemindersDomainModel(
+                false,
+                EIGHT_PM,
+                true,
+                true,
+                true,
+                today = today,
+                nextVisit = nextVisit,
+                visitRemovable = nextVisit?.isAfter(today) == true
+            )
+        )
 }

@@ -17,7 +17,9 @@ class RemindersViewStateUiMapper {
                 effectEnabled = viewState.reminders.effectEnabled,
                 notificationsAllowed = viewState.reminders.notificationsAllowed,
                 mayAskPermission = viewState.reminders.mayAskPermission,
+                todayEpochDay = viewState.reminders.today.toEpochDay(),
                 nextVisitEpochDay = viewState.reminders.nextVisit?.toEpochDay(),
+                visitRemovable = viewState.reminders.visitRemovable,
                 visitChannelOff = viewState.reminders.visitChannelOff
             )
         )

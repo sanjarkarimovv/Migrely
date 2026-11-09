@@ -69,6 +69,7 @@ dependencies {
     implementation(libs.compose.ui.tooling.preview)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.core.ktx)
 
     testImplementation(libs.test.junit)
     testImplementation(libs.test.mockito.kotlin)

@@ -34,13 +34,16 @@ import java.time.LocalDate
 private const val STACKED_FONT_SCALE = 1.3f
 
 /**
- * The "Doctor visit" section (BRD D168, design D9): its heading, summary, the one "Next visit" row, "Remove" when a date
- * after today is set, and why the reminder may show only on Home. With no date, nothing is added under the row.
+ * The "Doctor visit" section (BRD D168, design D9): its heading, summary, the one "Next visit" row, "Remove" when the
+ * domain says the visit is [removable] (after today), and why the reminder may show only on Home. With no date, nothing
+ * is added under the row. It reads no clock: [today] comes with the state, so a screen kept past midnight follows it.
  */
 @Suppress("LongParameterList")
 @Composable
 internal fun DoctorVisitSection(
+    today: LocalDate,
     nextVisit: LocalDate?,
+    removable: Boolean,
     notificationsAllowed: Boolean,
     channelOff: Boolean,
     rowFocus: FocusRequester,
@@ -62,9 +65,9 @@ internal fun DoctorVisitSection(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = 16.dp)
         )
-        NextVisitRow(nextVisit, rowFocus, onPick)
+        NextVisitRow(today, nextVisit, rowFocus, onPick)
         // On its day a visit is not removed: it stays as the last visit a report starts from (BRD EC-REP-04).
-        if (nextVisit != null && nextVisit.isAfter(LocalDate.now())) {
+        if (nextVisit != null && removable) {
             val removeDescription = stringResource(R.string.reminders_visit_remove_description)
             TextButton(
                 onClick = {
@@ -98,9 +101,14 @@ internal fun DoctorVisitSection(
 
 /** One Button node, like the daily "Time" row (EC-UX-19): "Next visit, Friday, November 20, 2026. Change it." */
 @Composable
-private fun NextVisitRow(nextVisit: LocalDate?, rowFocus: FocusRequester, onPick: () -> Unit) {
+private fun NextVisitRow(
+    today: LocalDate,
+    nextVisit: LocalDate?,
+    rowFocus: FocusRequester,
+    onPick: () -> Unit
+) {
     val locale = LocalConfiguration.current.locales[0]
-    val value = nextVisit?.let { MigrelyDateFormat.short(it, LocalDate.now(), locale) }
+    val value = nextVisit?.let { MigrelyDateFormat.short(it, today, locale) }
         ?: stringResource(R.string.reminders_visit_not_set)
     val description = nextVisit?.let {
         stringResource(R.string.reminders_visit_description, MigrelyDateFormat.spoken(it, locale))
