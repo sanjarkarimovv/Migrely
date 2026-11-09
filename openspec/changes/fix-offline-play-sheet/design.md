@@ -31,9 +31,12 @@ VALIDATED is not asked: a captive portal or a validation in progress would other
 | Restore, paywall | The same | "You're offline. Connect to the internet to restore purchases. Your diary works offline." |
 | Restore, Settings | The Premium section's note, where "Google Play can't be reached" shows today | The same restore text |
 | Manage, paywall and Settings | As Restore in each place | "You're offline. Connect to the internet to manage your subscription. Your diary works offline." |
-| Manage, trial banner on Home Today | Home's message host. `ux-designer` confirms the place in a light check | The manage text |
+| Manage, trial banner on Home Today | An inline polite note under the banner's Manage (`team-lead` decision) | The manage text |
 
 Information kind ("i"), polite, 8 s stretched by the accessibility timeout, and a body tap closes it. No haptic. The newest message wins. No health claim.
+
+**Residual, accepted:** if the same offline text is posted again while TalkBack is still speaking, TalkBack may drop the identical repeat. The text is
+already on screen, and the first one was spoken.
 
 ## D3. Edge cases
 
