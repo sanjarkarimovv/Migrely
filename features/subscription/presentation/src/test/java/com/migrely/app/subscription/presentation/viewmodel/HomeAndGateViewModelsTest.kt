@@ -1,7 +1,9 @@
 package com.migrely.app.subscription.presentation.viewmodel
 
 import com.migrely.app.architecture.presentation.viewmodel.BaseViewModelTest
+import com.migrely.app.subscription.domain.model.ManageSubscriptionResultDomainModel
 import com.migrely.app.subscription.domain.model.PaywallTriggerDomainModel
+import com.migrely.app.subscription.domain.model.PremiumStatusDomainModel
 import com.migrely.app.subscription.domain.model.TrialReminderDomainModel
 import com.migrely.app.subscription.domain.usecase.DismissTrialReminderUseCase
 import com.migrely.app.subscription.domain.usecase.GetTrialReminderUseCase
@@ -63,10 +65,65 @@ class TrialBannerViewModelTest :
         classUnderTest.onEnter()
 
         assertEquals(
-            TrialBannerViewState.Shown(TRIAL_END, endsToday = false, renews = false),
+            TrialBannerViewState.Shown(
+                TRIAL_END,
+                endsToday = false,
+                renews = false,
+                offlineToManage = false
+            ),
             state.await()
         )
     }
+
+    @Test
+    fun `Given the phone is offline when managing then the banner says so under Manage`() =
+        runTest {
+            create()
+            manageSubscriptionUseCase.givenSuccessfulExecution(
+                ManageSubscriptionResultDomainModel.Offline(PremiumStatusDomainModel.Free)
+            )
+            getTrialReminderUseCase.givenSuccessfulExecution(
+                TrialReminderDomainModel.EndsSoon(TRIAL_END, endsToday = true, renews = true)
+            )
+            val state = async(start = UNDISPATCHED) { classUnderTest.viewState.first() }
+
+            classUnderTest.onManageAction()
+
+            assertEquals(
+                TrialBannerViewState.Shown(
+                    TRIAL_END,
+                    endsToday = true,
+                    renews = true,
+                    offlineToManage = true
+                ),
+                state.await()
+            )
+        }
+
+    @Test
+    fun `Given Play's page opened when managing then the banner loads again with no note`() =
+        runTest {
+            create()
+            manageSubscriptionUseCase.givenSuccessfulExecution(
+                ManageSubscriptionResultDomainModel.Opened(PremiumStatusDomainModel.Free)
+            )
+            getTrialReminderUseCase.givenSuccessfulExecution(
+                TrialReminderDomainModel.EndsSoon(TRIAL_END, endsToday = true, renews = false)
+            )
+            val state = async(start = UNDISPATCHED) { classUnderTest.viewState.first() }
+
+            classUnderTest.onManageAction()
+
+            assertEquals(
+                TrialBannerViewState.Shown(
+                    TRIAL_END,
+                    endsToday = true,
+                    renews = false,
+                    offlineToManage = false
+                ),
+                state.await()
+            )
+        }
 
     @Test
     fun `When dismissing then it hides at once and the dismissal is kept`() = runTest {

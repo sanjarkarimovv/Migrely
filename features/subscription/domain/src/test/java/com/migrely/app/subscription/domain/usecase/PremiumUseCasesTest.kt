@@ -2,6 +2,8 @@ package com.migrely.app.subscription.domain.usecase
 
 import com.migrely.app.coroutine.CoroutineContextProvider
 import com.migrely.app.subscription.domain.model.BillingAvailabilityDomainModel
+import com.migrely.app.subscription.domain.model.ManageSubscriptionResultDomainModel
+import com.migrely.app.subscription.domain.model.NetworkStateDomainModel
 import com.migrely.app.subscription.domain.model.PaywallDomainModel
 import com.migrely.app.subscription.domain.model.PaywallOfferDomainModel
 import com.migrely.app.subscription.domain.model.PaywallOffersDomainModel
@@ -11,8 +13,10 @@ import com.migrely.app.subscription.domain.model.PremiumPlanDomainModel
 import com.migrely.app.subscription.domain.model.PremiumProductsResultDomainModel
 import com.migrely.app.subscription.domain.model.PremiumStatusDomainModel
 import com.migrely.app.subscription.domain.model.RefreshPremiumRequestDomainModel
+import com.migrely.app.subscription.domain.model.RestorePurchasesResultDomainModel
 import com.migrely.app.subscription.domain.repository.GetAttackInProgressRepository
 import com.migrely.app.subscription.domain.repository.GetCurrentTimeRepository
+import com.migrely.app.subscription.domain.repository.GetNetworkStateRepository
 import com.migrely.app.subscription.domain.repository.GetPremiumProductsRepository
 import com.migrely.app.subscription.domain.repository.ManageSubscriptionRepository
 import com.migrely.app.subscription.domain.repository.MarkPaywallShownRepository
@@ -36,6 +40,9 @@ private val CHECKED = PremiumCheckDomainModel(
 class PremiumUseCasesTest {
     private val premiumChecker: PremiumChecker = mock { on { check(null) } doReturn CHECKED }
     private val coroutines = CoroutineContextProvider.Default
+    private val online: GetNetworkStateRepository = mock {
+        on { networkState() } doReturn NetworkStateDomainModel.Online
+    }
 
     @Test
     fun `Given a refresh that is not forced then the checker decides whether to ask Play`() {
@@ -59,8 +66,8 @@ class PremiumUseCasesTest {
     @Test
     fun `When restoring purchases then Play is asked again`() {
         assertEquals(
-            CHECKED,
-            RestorePurchasesUseCase(premiumChecker, coroutines).executeInBackground(Unit)
+            RestorePurchasesResultDomainModel.Checked(CHECKED),
+            RestorePurchasesUseCase(online, premiumChecker, coroutines).executeInBackground(Unit)
         )
     }
 
@@ -68,14 +75,14 @@ class PremiumUseCasesTest {
     fun `When managing the subscription then its page opens and the status is read again`() {
         val repository: ManageSubscriptionRepository = mock()
 
-        val status = ManageSubscriptionUseCase(repository, premiumChecker, coroutines)
+        val result = ManageSubscriptionUseCase(online, repository, premiumChecker, coroutines)
             .executeInBackground(Unit)
 
         inOrder(repository, premiumChecker) {
             verify(repository).manageSubscription()
             verify(premiumChecker).check(null)
         }
-        assertEquals(CHECKED.status, status)
+        assertEquals(ManageSubscriptionResultDomainModel.Opened(CHECKED.status), result)
     }
 
     @Test

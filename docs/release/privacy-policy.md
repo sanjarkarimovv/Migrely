@@ -1,6 +1,6 @@
 # Migrely privacy policy
 
-Effective date: 28 October 2026.
+Effective date: 9 November 2026.
 
 Migrely is a headache diary for Android, published on Google Play by Sulton UzDev ("we"). This policy explains what
 happens to the information you enter. In short: **Migrely has no internet access, and we never receive your entries.**
@@ -23,6 +23,13 @@ so it cannot send anything to us or to anyone else. It contains no analytics, ad
 The Google Play billing library it uses for Premium includes Google's usage logging, which cannot send anything
 either without the internet permission. Google Play's rating library, which Migrely uses to ask for a rating, needs no
 permission at all.
+
+**Checking whether you are online.** From version 1.1.1, Migrely asks Android for one network permission, shown on
+your phone as "view network connections". When you tap to buy Premium, restore a purchase or manage a subscription,
+Migrely checks at that moment whether your phone has any network that reaches the internet. If it has none, Migrely
+tells you that you are offline instead of opening a Google Play screen that cannot load. Migrely does not keep the
+result, does not send it anywhere, and does not use it for anything else. This permission does not let Migrely go on
+the internet: Migrely has no internet permission, in every version.
 
 ## Android's own backup
 

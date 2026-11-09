@@ -55,6 +55,14 @@ class PremiumChecker(
         }
     }
 
+    /** The status as last kept, without asking Google Play, as when the phone is offline (BRD D166). */
+    fun kept(): PremiumStatusDomainModel = synchronized(lock) {
+        entitlementRules.status(
+            getEntitlementRepository.entitlement(),
+            getCurrentTimeRepository.now()
+        )
+    }
+
     /**
      * Asks Google Play now. [bought] is a purchase just made here, whose plan and trial are kept.
      */

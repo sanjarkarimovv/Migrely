@@ -7,6 +7,7 @@ import com.migrely.app.subscription.domain.model.BuyPremiumResultDomainModel
 import com.migrely.app.subscription.domain.model.EntitlementDomainModel
 import com.migrely.app.subscription.domain.model.EntitlementKindDomainModel
 import com.migrely.app.subscription.domain.model.LaunchedPurchaseDomainModel
+import com.migrely.app.subscription.domain.model.NetworkStateDomainModel
 import com.migrely.app.subscription.domain.model.PremiumCheckDomainModel
 import com.migrely.app.subscription.domain.model.PremiumPlanDomainModel
 import com.migrely.app.subscription.domain.model.PremiumStatusDomainModel
@@ -17,6 +18,7 @@ import com.migrely.app.subscription.domain.model.PurchaseSheetResultDomainModel
 import com.migrely.app.subscription.domain.model.PurchaseStateDomainModel
 import com.migrely.app.subscription.domain.repository.GetCurrentTimeRepository
 import com.migrely.app.subscription.domain.repository.GetEntitlementRepository
+import com.migrely.app.subscription.domain.repository.GetNetworkStateRepository
 import com.migrely.app.subscription.domain.repository.LaunchPurchaseRepository
 import com.migrely.app.subscription.domain.repository.SaveLaunchedPurchaseRepository
 import java.time.Period
@@ -46,6 +48,10 @@ class BuyPremiumUseCaseTest {
             NOW
     }
     private val classUnderTest = BuyPremiumUseCase(
+        mock<GetNetworkStateRepository> {
+            on { networkState() } doReturn
+                NetworkStateDomainModel.Online
+        },
         getEntitlementRepository,
         saveLaunchedPurchaseRepository,
         getCurrentTimeRepository,

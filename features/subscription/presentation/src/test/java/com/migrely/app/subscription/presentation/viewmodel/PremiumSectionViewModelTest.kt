@@ -2,20 +2,22 @@ package com.migrely.app.subscription.presentation.viewmodel
 
 import com.migrely.app.architecture.presentation.viewmodel.BaseViewModelTest
 import com.migrely.app.subscription.domain.model.BillingAvailabilityDomainModel
+import com.migrely.app.subscription.domain.model.ManageSubscriptionResultDomainModel
 import com.migrely.app.subscription.domain.model.PremiumCheckDomainModel
 import com.migrely.app.subscription.domain.model.PremiumPlanDomainModel
 import com.migrely.app.subscription.domain.model.PremiumStatusDomainModel
 import com.migrely.app.subscription.domain.model.RefreshPremiumRequestDomainModel
+import com.migrely.app.subscription.domain.model.RestorePurchasesResultDomainModel
 import com.migrely.app.subscription.domain.usecase.ManageSubscriptionUseCase
 import com.migrely.app.subscription.domain.usecase.RefreshPremiumUseCase
 import com.migrely.app.subscription.domain.usecase.RestorePurchasesUseCase
 import com.migrely.app.subscription.presentation.mapper.PremiumPlanPresentationMapper
 import com.migrely.app.subscription.presentation.mapper.PremiumStatusPresentationMapper
+import com.migrely.app.subscription.presentation.model.PremiumNotePresentationModel
 import com.migrely.app.subscription.presentation.model.PremiumPlanPresentationModel
 import com.migrely.app.subscription.presentation.model.PremiumSectionPresentationNotification
 import com.migrely.app.subscription.presentation.model.PremiumSectionViewState
 import com.migrely.app.subscription.presentation.model.PremiumStatusPresentationModel
-import com.migrely.app.subscription.presentation.model.RestoreNotePresentationModel
 import com.migrely.app.subscription.presentation.navigation.PremiumSectionPresentationNavigationEvent
 import kotlinx.coroutines.CoroutineStart.UNDISPATCHED
 import kotlinx.coroutines.async
@@ -79,9 +81,11 @@ class PremiumSectionViewModelTest :
     @Test
     fun `When restoring then Play is asked and what it found shows`() = runTest {
         restorePurchasesUseCase.givenSuccessfulExecution(
-            PremiumCheckDomainModel(
-                PremiumStatusDomainModel.Free,
-                BillingAvailabilityDomainModel.Available
+            RestorePurchasesResultDomainModel.Checked(
+                PremiumCheckDomainModel(
+                    PremiumStatusDomainModel.Free,
+                    BillingAvailabilityDomainModel.Available
+                )
             )
         )
         val states = async(start = UNDISPATCHED) { classUnderTest.viewState.take(2).toList() }
@@ -93,7 +97,7 @@ class PremiumSectionViewModelTest :
                 PremiumSectionViewState.Checking,
                 PremiumSectionViewState.Ready(
                     PremiumStatusPresentationModel.Free,
-                    RestoreNotePresentationModel.NothingFound
+                    PremiumNotePresentationModel.NothingFound
                 )
             ),
             states.await()
@@ -103,9 +107,11 @@ class PremiumSectionViewModelTest :
     @Test
     fun `Given Play does not answer when restoring then the note says so`() = runTest {
         restorePurchasesUseCase.givenSuccessfulExecution(
-            PremiumCheckDomainModel(
-                PremiumStatusDomainModel.Lifetime(false),
-                BillingAvailabilityDomainModel.Unknown
+            RestorePurchasesResultDomainModel.Checked(
+                PremiumCheckDomainModel(
+                    PremiumStatusDomainModel.Lifetime(false),
+                    BillingAvailabilityDomainModel.Unknown
+                )
             )
         )
         val states = async(start = UNDISPATCHED) { classUnderTest.viewState.take(2).toList() }
@@ -115,7 +121,7 @@ class PremiumSectionViewModelTest :
         assertEquals(
             PremiumSectionViewState.Ready(
                 PremiumStatusPresentationModel.Lifetime(false),
-                RestoreNotePresentationModel.Unreachable
+                PremiumNotePresentationModel.Unreachable
             ),
             states.await().last()
         )
@@ -123,7 +129,9 @@ class PremiumSectionViewModelTest :
 
     @Test
     fun `When managing the subscription then the status is read again`() = runTest {
-        manageSubscriptionUseCase.givenSuccessfulExecution(PremiumStatusDomainModel.Free)
+        manageSubscriptionUseCase.givenSuccessfulExecution(
+            ManageSubscriptionResultDomainModel.Opened(PremiumStatusDomainModel.Free)
+        )
         val state = async(start = UNDISPATCHED) { classUnderTest.viewState.first() }
 
         classUnderTest.onManageAction()
@@ -133,6 +141,52 @@ class PremiumSectionViewModelTest :
             state.await()
         )
     }
+
+    @Test
+    fun `Given the phone is offline when restoring then the note says so with the kept status`() =
+        runTest {
+            restorePurchasesUseCase.givenSuccessfulExecution(
+                RestorePurchasesResultDomainModel.Offline(PremiumStatusDomainModel.Free)
+            )
+            val states = async(start = UNDISPATCHED) { classUnderTest.viewState.take(2).toList() }
+
+            classUnderTest.onRestoreAction()
+
+            assertEquals(
+                listOf(
+                    PremiumSectionViewState.Checking,
+                    PremiumSectionViewState.Ready(
+                        PremiumStatusPresentationModel.Free,
+                        PremiumNotePresentationModel.OfflineToRestore
+                    )
+                ),
+                states.await()
+            )
+        }
+
+    @Test
+    fun `Given the phone is offline when managing then the note says so with the kept status`() =
+        runTest {
+            manageSubscriptionUseCase.givenSuccessfulExecution(
+                ManageSubscriptionResultDomainModel.Offline(
+                    PremiumStatusDomainModel.Subscribed(PremiumPlanDomainModel.Yearly, null)
+                )
+            )
+            val state = async(start = UNDISPATCHED) { classUnderTest.viewState.first() }
+
+            classUnderTest.onManageAction()
+
+            assertEquals(
+                PremiumSectionViewState.Ready(
+                    PremiumStatusPresentationModel.Subscribed(
+                        PremiumPlanPresentationModel.Yearly,
+                        null
+                    ),
+                    PremiumNotePresentationModel.OfflineToManage
+                ),
+                state.await()
+            )
+        }
 
     @Test
     fun `When tapping the status then the paywall opens`() = runTest {

@@ -7,11 +7,11 @@ import com.migrely.app.subscription.presentation.model.PaywallContextPresentatio
 import com.migrely.app.subscription.presentation.model.PaywallPresentationNotification
 import com.migrely.app.subscription.presentation.model.PaywallProductPresentationModel
 import com.migrely.app.subscription.presentation.model.PaywallViewState
+import com.migrely.app.subscription.presentation.model.PremiumNotePresentationModel
 import com.migrely.app.subscription.presentation.model.PremiumPlanPresentationModel
 import com.migrely.app.subscription.presentation.model.PremiumSectionPresentationNotification
 import com.migrely.app.subscription.presentation.model.PremiumSectionViewState
 import com.migrely.app.subscription.presentation.model.PremiumStatusPresentationModel
-import com.migrely.app.subscription.presentation.model.RestoreNotePresentationModel
 import com.migrely.app.subscription.presentation.model.TrialBannerViewState
 import com.migrely.app.subscription.ui.model.PaywallContextUiModel
 import com.migrely.app.subscription.ui.model.PaywallEventUiModel
@@ -20,11 +20,11 @@ import com.migrely.app.subscription.ui.model.PaywallMessageUiModel
 import com.migrely.app.subscription.ui.model.PaywallOffersUiModel
 import com.migrely.app.subscription.ui.model.PaywallProductUiModel
 import com.migrely.app.subscription.ui.model.PaywallViewStateUiModel
+import com.migrely.app.subscription.ui.model.PremiumNoteUiModel
 import com.migrely.app.subscription.ui.model.PremiumPlanUiModel
 import com.migrely.app.subscription.ui.model.PremiumSectionUiModel
 import com.migrely.app.subscription.ui.model.PremiumSectionViewStateUiModel
 import com.migrely.app.subscription.ui.model.PremiumStatusUiModel
-import com.migrely.app.subscription.ui.model.RestoreNoteUiModel
 import com.migrely.app.subscription.ui.model.TrialBannerViewStateUiModel
 import com.migrely.app.subscription.ui.model.TrialLengthUiModel
 import java.time.Period
@@ -111,11 +111,15 @@ class PaywallContextPresentationMapper {
 
 /**
  * Tone and timing of each paywall message (BRD EC-UX-16; QA #56): 8 s each, stretched to the
- * accessibility timeout. Finding no purchase is information; the others are errors.
+ * accessibility timeout. Finding no purchase and being offline (D166) are information; the others
+ * are errors.
  */
 class PaywallMessageBehaviourUiMapper {
     fun toUi(message: PaywallMessageUiModel): PaywallMessageBehaviourUiModel = when (message) {
-        PaywallMessageUiModel.NothingToRestore ->
+        PaywallMessageUiModel.NothingToRestore,
+        PaywallMessageUiModel.OfflineToBuy,
+        PaywallMessageUiModel.OfflineToRestore,
+        PaywallMessageUiModel.OfflineToManage ->
             PaywallMessageBehaviourUiModel(SnackbarTone.Information, READING_MILLIS)
 
         PaywallMessageUiModel.PlayUnreachable,
@@ -156,6 +160,12 @@ class PaywallNotificationUiMapper(
                 PaywallEventUiModel.Message(PaywallMessageUiModel.PlayUnreachable)
             PaywallPresentationNotification.SomethingWentWrong ->
                 PaywallEventUiModel.Message(PaywallMessageUiModel.SomethingWentWrong)
+            PaywallPresentationNotification.OfflineToBuy ->
+                PaywallEventUiModel.Message(PaywallMessageUiModel.OfflineToBuy)
+            PaywallPresentationNotification.OfflineToRestore ->
+                PaywallEventUiModel.Message(PaywallMessageUiModel.OfflineToRestore)
+            PaywallPresentationNotification.OfflineToManage ->
+                PaywallEventUiModel.Message(PaywallMessageUiModel.OfflineToManage)
         }
         return UiNotification { presenter.show(event) }
     }
@@ -174,12 +184,14 @@ class PremiumSectionViewStateUiMapper(private val premiumStatusUiMapper: Premium
             PremiumSectionViewState.Checking -> PremiumSectionViewStateUiModel.Checking
         }
 
-    private fun note(note: RestoreNotePresentationModel): RestoreNoteUiModel = when (note) {
-        RestoreNotePresentationModel.Restored -> RestoreNoteUiModel.Restored
-        RestoreNotePresentationModel.NothingFound -> RestoreNoteUiModel.NothingFound
-        RestoreNotePresentationModel.Pending -> RestoreNoteUiModel.Pending
-        RestoreNotePresentationModel.Unreachable -> RestoreNoteUiModel.Unreachable
-        RestoreNotePresentationModel.Unavailable -> RestoreNoteUiModel.Unavailable
+    private fun note(note: PremiumNotePresentationModel): PremiumNoteUiModel = when (note) {
+        PremiumNotePresentationModel.Restored -> PremiumNoteUiModel.Restored
+        PremiumNotePresentationModel.NothingFound -> PremiumNoteUiModel.NothingFound
+        PremiumNotePresentationModel.Pending -> PremiumNoteUiModel.Pending
+        PremiumNotePresentationModel.Unreachable -> PremiumNoteUiModel.Unreachable
+        PremiumNotePresentationModel.Unavailable -> PremiumNoteUiModel.Unavailable
+        PremiumNotePresentationModel.OfflineToRestore -> PremiumNoteUiModel.OfflineToRestore
+        PremiumNotePresentationModel.OfflineToManage -> PremiumNoteUiModel.OfflineToManage
     }
 }
 
@@ -196,7 +208,8 @@ class TrialBannerViewStateUiMapper {
         is TrialBannerViewState.Shown -> TrialBannerViewStateUiModel.Shown(
             trialEndMillis = viewState.trialEnd.toEpochMilli(),
             endsToday = viewState.endsToday,
-            renews = viewState.renews
+            renews = viewState.renews,
+            offlineToManage = viewState.offlineToManage
         )
     }
 }

@@ -4,11 +4,13 @@ import com.migrely.app.architecture.domain.UseCaseExecutor
 import com.migrely.app.architecture.presentation.viewmodel.BaseViewModel
 import com.migrely.app.subscription.domain.model.BillingAvailabilityDomainModel
 import com.migrely.app.subscription.domain.model.BuyPremiumResultDomainModel
+import com.migrely.app.subscription.domain.model.ManageSubscriptionResultDomainModel
 import com.migrely.app.subscription.domain.model.PaywallDomainModel
 import com.migrely.app.subscription.domain.model.PaywallOffersDomainModel
 import com.migrely.app.subscription.domain.model.PremiumCheckDomainModel
 import com.migrely.app.subscription.domain.model.PremiumStatusDomainModel
 import com.migrely.app.subscription.domain.model.PurchaseOutcomeDomainModel
+import com.migrely.app.subscription.domain.model.RestorePurchasesResultDomainModel
 import com.migrely.app.subscription.domain.usecase.BuyPremiumUseCase
 import com.migrely.app.subscription.domain.usecase.GetPaywallUseCase
 import com.migrely.app.subscription.domain.usecase.ManageSubscriptionUseCase
@@ -132,9 +134,9 @@ class PaywallViewModel(
         inFlight++
         updateViewState(PaywallViewState.Working)
         useCases.restorePurchasesUseCase(
-            onResult = { check ->
+            onResult = { result ->
                 inFlight--
-                deliver(restoredOf(check))
+                deliver(restoredOf(result))
                 load(context)
             },
             onException = { answered(context) }
@@ -144,13 +146,17 @@ class PaywallViewModel(
     /** Google Play's page, to cancel a subscription that renews under lifetime (BRD EC-BIL-09). */
     fun onManageAction() {
         useCases.manageSubscriptionUseCase(
-            onResult = { status ->
-                if (status.unlocks()) {
-                    deliver(
-                        PaywallPresentationNotification.Unlocked(
-                            premiumStatusPresentationMapper.toPresentation(status)
+            onResult = { result ->
+                when (result) {
+                    is ManageSubscriptionResultDomainModel.Opened -> if (result.status.unlocks()) {
+                        deliver(
+                            PaywallPresentationNotification.Unlocked(
+                                premiumStatusPresentationMapper.toPresentation(result.status)
+                            )
                         )
-                    )
+                    }
+                    is ManageSubscriptionResultDomainModel.Offline ->
+                        deliver(PaywallPresentationNotification.OfflineToManage)
                 }
             }
         )
@@ -168,12 +174,19 @@ class PaywallViewModel(
                 premiumStatusPresentationMapper.toPresentation(result.status)
             )
             PurchaseOutcomeDomainModel.Failed -> PaywallPresentationNotification.SomethingWentWrong
+            PurchaseOutcomeDomainModel.Offline -> PaywallPresentationNotification.OfflineToBuy
             // Pending shows once the paywall loads again, and a cancel shows nothing (BRD D153).
             // Unavailable waits for that load, which knows whether Play still offers the products.
             PurchaseOutcomeDomainModel.Pending,
             PurchaseOutcomeDomainModel.Cancelled,
             PurchaseOutcomeDomainModel.Unavailable -> null
         }
+
+    private fun restoredOf(result: RestorePurchasesResultDomainModel) = when (result) {
+        is RestorePurchasesResultDomainModel.Checked -> restoredOf(result.check)
+        is RestorePurchasesResultDomainModel.Offline ->
+            PaywallPresentationNotification.OfflineToRestore
+    }
 
     private fun restoredOf(check: PremiumCheckDomainModel): PaywallPresentationNotification = when {
         check.status.unlocks() -> PaywallPresentationNotification.Unlocked(

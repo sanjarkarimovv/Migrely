@@ -15,7 +15,7 @@
 ## Guides
 
 - [Free headache diary](https://migrely.health/headache-diary/): What to write down and for how long, with a free printable 8-week template in A4 and US Letter.
-- [Medication-overuse headache](https://migrely.health/medication-overuse-headache/): How headache and medicine days are counted, why those counts aren't safe limits, and how it is treated.
+- [Medication-overuse headache](https://migrely.health/medication-overuse-headache/): How headache and medicine days are counted, how they compare with NHS advice, and how it is treated.
 - [Menstrual migraine](https://migrely.health/menstrual-migraine/): The window around your period that doctors use, how long to track it, and keeping period data private.
 - [Migraine log for a VA claim](https://migrely.health/va-migraine-log/): What to record about each attack, and where veterans get free help. Migrely is not affiliated with VA.
 - [Compare migraine apps](https://migrely.health/compare/): Android migraine diaries side by side, on facts from each app's own listing, website and policy.

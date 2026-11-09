@@ -5,10 +5,10 @@ import com.migrely.app.subscription.presentation.model.PaywallContextPresentatio
 import com.migrely.app.subscription.presentation.model.PaywallPresentationNotification
 import com.migrely.app.subscription.presentation.model.PaywallProductPresentationModel
 import com.migrely.app.subscription.presentation.model.PaywallViewState
+import com.migrely.app.subscription.presentation.model.PremiumNotePresentationModel
 import com.migrely.app.subscription.presentation.model.PremiumPlanPresentationModel
 import com.migrely.app.subscription.presentation.model.PremiumSectionViewState
 import com.migrely.app.subscription.presentation.model.PremiumStatusPresentationModel
-import com.migrely.app.subscription.presentation.model.RestoreNotePresentationModel
 import com.migrely.app.subscription.presentation.model.TrialBannerViewState
 import com.migrely.app.subscription.ui.model.PaywallContextUiModel
 import com.migrely.app.subscription.ui.model.PaywallEventUiModel
@@ -17,11 +17,11 @@ import com.migrely.app.subscription.ui.model.PaywallMessageUiModel
 import com.migrely.app.subscription.ui.model.PaywallOffersUiModel
 import com.migrely.app.subscription.ui.model.PaywallProductUiModel
 import com.migrely.app.subscription.ui.model.PaywallViewStateUiModel
+import com.migrely.app.subscription.ui.model.PremiumNoteUiModel
 import com.migrely.app.subscription.ui.model.PremiumPlanUiModel
 import com.migrely.app.subscription.ui.model.PremiumSectionUiModel
 import com.migrely.app.subscription.ui.model.PremiumSectionViewStateUiModel
 import com.migrely.app.subscription.ui.model.PremiumStatusUiModel
-import com.migrely.app.subscription.ui.model.RestoreNoteUiModel
 import com.migrely.app.subscription.ui.model.TrialBannerViewStateUiModel
 import com.migrely.app.subscription.ui.model.TrialLengthUiModel
 import java.time.Instant
@@ -29,6 +29,8 @@ import java.time.Period
 import kotlinx.coroutines.CoroutineStart.UNDISPATCHED
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.take
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -167,18 +169,18 @@ class SubscriptionUiMappersTest {
 
         assertEquals(
             PremiumSectionViewStateUiModel.Ready(
-                PremiumSectionUiModel(PremiumStatusUiModel.Free, RestoreNoteUiModel.Unreachable)
+                PremiumSectionUiModel(PremiumStatusUiModel.Free, PremiumNoteUiModel.Unreachable)
             ),
             mapper.toUi(
                 PremiumSectionViewState.Ready(
                     PremiumStatusPresentationModel.Free,
-                    RestoreNotePresentationModel.Unreachable
+                    PremiumNotePresentationModel.Unreachable
                 )
             )
         )
         assertEquals(
-            RestoreNoteUiModel.entries,
-            RestoreNotePresentationModel.entries.map {
+            PremiumNoteUiModel.entries,
+            PremiumNotePresentationModel.entries.map {
                 val ready = mapper.toUi(
                     PremiumSectionViewState.Ready(PremiumStatusPresentationModel.Free, it)
                 ) as PremiumSectionViewStateUiModel.Ready
@@ -210,12 +212,68 @@ class SubscriptionUiMappersTest {
     }
 
     @Test
+    fun `When mapping an offline message then it is information for 8 seconds`() {
+        // Information is polite for TalkBack (BRD D166).
+        val mapper = PaywallMessageBehaviourUiMapper()
+
+        listOf(
+            PaywallMessageUiModel.OfflineToBuy,
+            PaywallMessageUiModel.OfflineToRestore,
+            PaywallMessageUiModel.OfflineToManage
+        ).forEach { message ->
+            assertEquals(
+                message.name,
+                PaywallMessageBehaviourUiModel(SnackbarTone.Information, 8_000L),
+                mapper.toUi(message)
+            )
+        }
+    }
+
+    @Test
+    fun `When an offline notification is presented then the screen gets its message`() = runTest {
+        val presenter = PaywallEventPresenter()
+        val mapper = PaywallNotificationUiMapper(presenter, STATUS_MAPPER)
+        val events = async(start = UNDISPATCHED) { presenter.events.take(3).toList() }
+
+        mapper.toUi(PaywallPresentationNotification.OfflineToBuy).present()
+        mapper.toUi(PaywallPresentationNotification.OfflineToRestore).present()
+        mapper.toUi(PaywallPresentationNotification.OfflineToManage).present()
+
+        assertEquals(
+            listOf(
+                PaywallEventUiModel.Message(PaywallMessageUiModel.OfflineToBuy),
+                PaywallEventUiModel.Message(PaywallMessageUiModel.OfflineToRestore),
+                PaywallEventUiModel.Message(PaywallMessageUiModel.OfflineToManage)
+            ),
+            events.await()
+        )
+    }
+
+    @Test
     fun `Given the trial banner state when mapping then its end is in milliseconds`() {
         val mapper = TrialBannerViewStateUiMapper()
 
         assertEquals(
-            TrialBannerViewStateUiModel.Shown(TRIAL_END.toEpochMilli(), true, false),
-            mapper.toUi(TrialBannerViewState.Shown(TRIAL_END, endsToday = true, renews = false))
+            TrialBannerViewStateUiModel.Shown(TRIAL_END.toEpochMilli(), true, false, false),
+            mapper.toUi(
+                TrialBannerViewState.Shown(
+                    TRIAL_END,
+                    endsToday = true,
+                    renews = false,
+                    offlineToManage = false
+                )
+            )
+        )
+        assertEquals(
+            TrialBannerViewStateUiModel.Shown(TRIAL_END.toEpochMilli(), false, true, true),
+            mapper.toUi(
+                TrialBannerViewState.Shown(
+                    TRIAL_END,
+                    endsToday = false,
+                    renews = true,
+                    offlineToManage = true
+                )
+            )
         )
         assertEquals(TrialBannerViewStateUiModel.Hidden, mapper.toUi(TrialBannerViewState.Hidden))
     }
