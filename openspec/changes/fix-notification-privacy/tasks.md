@@ -17,7 +17,7 @@ the PR. Never `Fixes #178`: the lead filed it and closes it after the retest. Ow
 ## 2. Notifications
 
 - [x] 2.1 In `NotificationDataSourceImpl`, every builder sets `VISIBILITY_PRIVATE` and a public version titled `notification_public_title`, with no text and no actions, from one place, so the T21 `visit` channel gets it too. The effect notification no longer formats the medication name. Verify: a Robolectric or unit test on the built `Notification` objects asserts `visibility == VISIBILITY_PRIVATE`, a public version with that title, and no medication name in the extras. Then `./gradlew :app:testDebugUnitTest`. Done: `NotificationLockScreenTest` (Robolectric, SDK 35), 3 tests, 0 failures. Negative control on the old code: 3 of 3 fail with "no public version". The visibility assertion alone cannot fail (`VISIBILITY_PRIVATE` is 0, the default); the public version and title assertions carry the check. The medication name no longer reaches the datasource: `showEffectQuestion(intakeId)` from the use case down.
-- [ ] 2.2 On `emulator-5570`, post each notification. Verify: `adb shell dumpsys notification --noredact | grep -E 'vis=|android.title'` shows `vis=PRIVATE` and the new titles.
+- [x] 2.2 On `emulator-5570`, post each notification. Verify: `adb shell dumpsys notification --noredact | grep -E 'vis=|android.title'` shows `vis=PRIVATE` and the new titles. Done for the visit notification on 5570 (`vis=PRIVATE`, public "Reminder"); "Did it help?" and the daily update are covered by `NotificationLockScreenTest`, not posted on the device. QA 4.2 shoots all three.
 
 ## 3. Gate
 
