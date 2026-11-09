@@ -46,9 +46,14 @@ because features do not depend on each other (BRD §12).
   visit date whose notification was shown, or whose card was tapped or closed, and `visit_postponed_to` (D3). Keying
   by date means a new date resets them on its own. They are device state: the backup leaves them out, and Replace
   keeps them. The same AutoMigration 6 to 7 adds them.
-- Next visit = `MIN(date) WHERE date >= today`. Last visit = `MAX(date) WHERE date < today`. "today" is the phone's
-  current local date. Saving a new next visit, in one transaction, deletes every row with `date >= today` and inserts
-  the new one. That keeps at most one upcoming row, even when an older install had more.
+- **Shipped after code review (lead decision, data loss over UX, D168 (13)).** Upcoming means `date > today`. Next
+  visit = the earliest row with `date > today`, or today's row when none is later
+  (`WHERE date >= :today ORDER BY (date = :today), date LIMIT 1`). Last visit = `MAX(date) WHERE date < today`.
+  "today" is the phone's current local date. Saving a new next visit, in one transaction, deletes only rows with
+  `date > today` and inserts the new one, so a visit dated today or earlier is never deleted. On the visit day a later
+  date becomes next, and today's row stays and is the last visit from the next day. "Remove" is not offered on the
+  visit day. Undo re-inserts its row and deletes nothing. Accepted residual: if the clock is set back by 2 or more
+  days to before a past visit's day, that visit counts as upcoming again, and a save then replaces it.
 - `DoctorVisitDataSource` in `datasource/source`, with the Room implementation in `datasource/implementation`. It
   offers a Flow of the next and last visits, `setNextVisit(date)`, `removeNextVisit()` (it returns the removed row for
   Undo) and `restore(row)`.
@@ -75,8 +80,9 @@ because features do not depend on each other (BRD §12).
   3. The visit day has ended: do nothing.
   4. An attack is in progress: when tomorrow is on or before the visit day, set `visit_postponed_to = tomorrow` and
      plan again, else do nothing.
-  5. Nothing logged in the default report period (D4): do nothing. A later run after an entry is not planned; the
-     card covers that case.
+  5. Nothing logged in the default report period (D4): set `visit_reminded_for = date` and do nothing. The date is
+     handled: no later start or reschedule plans it again, which otherwise could post at 03:00 after a reboot. The
+     card covers a later entry (review 2).
   6. Post, then set `visit_reminded_for = date`.
 
   A failed read returns `retry`, as the daily run does. An app start or a zone change after an attack keeps
@@ -116,8 +122,9 @@ Undo goes through the same save path, so its too-close check (D3) applies as wel
 
 ### D6. From the tap to the report or the paywall
 
-- `MainActivity` (onCreate and onNewIntent) reads the extra. When an attack is in progress, it ignores the extra, and
-  the normal attack-mode start runs (EC-REM-12). Otherwise it navigates Home, then History with
+- `MainActivity` (onCreate and onNewIntent) reads the extra. When an attack is in progress, it ignores the extra and
+  only brings the app forward: the back stack is left as it was, because clearing it could throw away an unfinished
+  form opened from attack mode (`VisitTapRule`, review 4, EC-REM-12). Otherwise it navigates Home, then History with
   `openReport = true`.
 - `HistoryViewModel` runs `onReportAction()` once when `openReport` is set, and the flag is consumed in
   `SavedStateHandle` so rotation and process restore do not repeat it. This is the same gate as the top-bar button, so
@@ -132,9 +139,12 @@ Undo goes through the same save path, so its too-close check (D3) applies as wel
 - `BACKUP_SCHEMA_VERSION = 7`, and `BackupRecordsDataModel` gets `doctorVisits: List<BackupDoctorVisitDataModel>`
   (`id`, `date`). The field is optional when decoding, so schema 1 to 6 files decode to an empty list.
 - Replace: the visits are cleared and the file's are inserted, in the import transaction.
-- Add: insert where neither the id nor the date exists. Insert a row with `date >= today` only when the phone has no
-  row with `date >= today`.
-- After commit, call `RescheduleRemindersUseCase`.
+- Add: insert where neither the id nor the date exists. Insert a row with `date > today` only when the phone has no
+  row with `date > today`.
+- After commit, the worker's `imported` kind runs `PlanRemindersAfterImportUseCase`. It applies EC-REM-08 first: an
+  imported next visit whose reminder time has passed is marked reminded before planning, so nothing posts at once,
+  and the card shows it (review 3). Accepted residual: if that mark cannot be written (full storage), planning fails open
+  and the reminder posts at once.
 - 1.1.x apps reject schema 7 with "Update the app" (EC-BAK-02). That is accepted: the file stays whole, and nothing is
   dropped without a word.
 
@@ -289,7 +299,7 @@ suggestions.
 | Home card | `visit_card_text_description` | Your doctor visit is on %1$s. (spoken date) |
 | Home card | `visit_card_report` | Make a report |
 | Home card | `visit_card_close_description` | Close the visit reminder |
-| Report | `report_since_visit` | Since %1$s |
+| Report | `report_since_visit` | Since %1$s ("Since Aug 20"; "Since Aug 20, 2025" in another year, `MigrelyDateFormat.monthDay`) |
 | Report | `report_since_visit_description` | Since your last visit, %1$s |
 | Report | `report_covers_since_visit` | Since your last visit: %1$s to %2$s |
 

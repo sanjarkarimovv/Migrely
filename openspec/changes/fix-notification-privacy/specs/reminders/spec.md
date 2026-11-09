@@ -2,7 +2,7 @@
 
 ### Requirement: Answering from the notification
 "Pain-free day" SHALL mark today pain-free by History's rule, without opening the app. If an attack touches today, it
-SHALL not mark it, and the notification SHALL read "Not marked. Today already has an entry.", which does not say that
+SHALL not mark it, and the notification SHALL read "Not marked. Open Migrely to see today.", which does not say that
 a migraine was logged. "Log a migraine" SHALL open home (BRD EC-REM-06, EC-REM-21, EC-DAY-01, D66, D169).
 
 #### Scenario: Pain-free day
@@ -11,7 +11,7 @@ a migraine was logged. "Log a migraine" SHALL open home (BRD EC-REM-06, EC-REM-2
 
 #### Scenario: An attack today
 - **WHEN** the user taps "Pain-free day" and an attack is logged today
-- **THEN** no mark is set, and the notification reads "Not marked. Today already has an entry."
+- **THEN** no mark is set, and the notification reads "Not marked. Open Migrely to see today."
 
 ### Requirement: "Did it help?" notification
 Two hours after an attack-medication intake, if its question is still open and "Ask if a medication helped" is on with

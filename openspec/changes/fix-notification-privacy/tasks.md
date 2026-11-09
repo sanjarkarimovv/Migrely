@@ -8,7 +8,7 @@ the PR. Never `Fixes #178`: the lead filed it and closes it after the retest. Ow
 
 ## 0. Copy
 
-- [ ] 0.1 `ux-designer` confirms, and `medical-reviewer` passes, the one new line "Not marked. Today already has an entry." (the other strings already passed on 2026-11-09). Verify: their written OK, or a replacement line that `product-manager` puts into `specs/reminders/spec.md`.
+- [x] 0.1 `ux-designer` confirms, and `medical-reviewer` passes, the one new line. Verify: their written OK, or a replacement line that `product-manager` puts into `specs/reminders/spec.md`. Done: ux chose "Not marked. Open Migrely to see today.", which replaces "Not marked. Today already has an entry." because that one hinted at an attack. The lead agreed and medical-reviewer passed it by the same criteria. It shipped in 0596755c (`app/src/main/res/values/strings.xml:12`), and the spec is updated.
 
 ## 1. Strings
 

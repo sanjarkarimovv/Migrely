@@ -20,8 +20,8 @@ D71, D168).
 ### Requirement: Doctor visits on import
 A backup without `doctorVisits`, from schema 6 or older, SHALL import as before with no visit. "Replace" SHALL keep
 the file's visits only. "Add" SHALL skip a visit with the same id or date, and SHALL add the file's upcoming visit
-only when the phone has none. After an import the visit reminder SHALL be planned again (BRD EC-BAK-03, EC-BAK-06,
-D168).
+only when the phone has none after today. After an import the reminder SHALL be planned again, an imported visit
+already too close counting as reminded (BRD EC-BAK-03, EC-BAK-06, EC-REM-08, D168).
 
 #### Scenario: An older file
 - **WHEN** the user imports a schema 6 backup of 10 attacks

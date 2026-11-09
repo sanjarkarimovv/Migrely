@@ -33,8 +33,8 @@ EC-REP-04, D81, D168).
 - **THEN** the period chosen is the same as when opened from History
 
 #### Scenario: A visit last year
-- **WHEN** on January 10 the last visit was December 15 of last year
-- **THEN** the chip shows the date with its year
+- **WHEN** on January 10, 2027 the last visit was December 15, 2026
+- **THEN** the chip reads "Since Dec 15, 2026", and TalkBack reads the full date
 
 #### Scenario: A cancelled visit left in place
 - **WHEN** a visit date passed without the visit, and the user did not remove it

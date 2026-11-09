@@ -13,7 +13,7 @@ Under load, run Gradle as `nice -n 19 ./gradlew --max-workers=2 …`. With pipes
 
 - [x] 0.1 `ux-designer`: the row states, the picker, "Visit removed", the notification and its public version, the home card and its place, and the "Since" label. Verify: the design note lists every state named in `specs/doctor-visit/spec.md` and the copy for each. Done: `migrely-work/t21/ux-spec.md`, folded into design D5, D8, D9, D10 and "Copy (final)".
 - [x] 0.2 `medical-reviewer`: read the final copy. Verify: a written "no health claim" or the named fixes, saved with the design note. Done: PASS on all 33 lines, 2026-11-09. The notes are in design "Medical review".
-- [ ] 0.3 Implement `fix-notification-privacy` (#178, D169) first, on this branch, in its own commits with `Refs #178`, because this change reuses its `notification_public_title` and touches the same `NotificationDataSourceImpl`. Verify: that change's `tasks.md` is all checked before 5.2 here starts.
+- [x] 0.3 Implement `fix-notification-privacy` (#178, D169) first, on this branch, in its own commits with `Refs #178`, because this change reuses its `notification_public_title` and touches the same `NotificationDataSourceImpl`. Verify: that change's `tasks.md` is all checked before 5.2 here starts. Done: 3cd91c49 "Keep health data off the lock screen (D169)" is an ancestor of the first T21 code commit 97967bba (`git merge-base --is-ancestor`), and `fix-notification-privacy` tasks 1.1 to 3.1 are checked.
 
 ## 1. Domain
 
@@ -59,7 +59,7 @@ Under load, run Gradle as `nice -n 19 ./gradlew --max-workers=2 …`. With pipes
 
 - [x] 7.1 The local gate. Verify: `set -o pipefail; ./gradlew assembleDebug test ktlintCheck detekt lint` exits 0. Done: `assembleDebug test ktlintCheck detekt lint :app:checkReleasePermissions` exit 0 at 1935a835 plus the 5.1 test (`migrely-work/walks/t21/gate.exit`); 1186 JVM tests, 0 failures.
 - [x] 7.2 Device walk on `emulator-5570`, API 36, following design A1 to A16 at the engineer's level: set a visit, the reminder by clock, too close, move, remove and Undo, refuse permission, attack, Free and Premium taps, 200% landscape, TalkBack. Restore the device settings afterwards. Verify: `migrely-work/walks/doctor-visit/WALK.md` lists each step with a result and a screenshot path. Done: `migrely-work/walks/t21/WALK.md` (25 steps, screenshots in `shots/`, what was not checked, device restored and diffed). Two defects found and fixed (d638b960).
-- [ ] 7.3 `openspec validate add-doctor-visit-mode --strict` exits 0. Then `code-reviewer`.
+- [x] 7.3 `openspec validate add-doctor-visit-mode --strict` exits 0. Then `code-reviewer`. Done: `code-reviewer` findings 1 to 6 are fixed in 0978a056, a84021bb, 5a594319, f562dc99, 5638616e and 0596755c, with the follow-ups d87616ce, de27710e and 40b3dc5b. The gate on 73715e84 exits 0 (`migrely-work/walks/t21/gate.exit`, `gate.sha`). The spec text for the review outcomes is recorded in D168 (13), with strict validate exit 0 on both changes. Instrumented: datasource 125/125 (`instrumented.log`, 17:02; that run's exit 1 is the designsystem picker test, fixed in 2aab6ee4 and rerun 58/58 at 17:15, `instrumented-designsystem.exit` = 0).
 
 ## 8. Independent QA (`qa-engineer`)
 

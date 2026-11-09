@@ -21,9 +21,9 @@ installed, and the app name already says that. D168 applies the strict form of t
 
 - "Did it help?" notification title: "Did it help?", with no medication name. The text stays "Tap to answer in
   Migrely.". The in-app card still names the medication.
-- The daily reminder's update after "Pain-free day" on a day with an attack: "Not marked. Today already has an entry."
-  in place of "A migraine is logged today.". This line is a proposal: it goes to `ux-designer` and `medical-reviewer`
-  before the code.
+- The daily reminder's update after "Pain-free day" on a day with an attack: "Not marked. Open Migrely to see today."
+  in place of "A migraine is logged today.". `ux-designer` chose it and the lead agreed. `medical-reviewer` passed it
+  by the same criteria. The first proposal, "Today already has an entry", was dropped because it hinted at an attack.
 - Every channel (`daily`, `effect`, and `visit` once T21 lands) posts with `VISIBILITY_PRIVATE` and a public version
   titled "Reminder", with no text, from one shared string, `notification_public_title`.
 - Unchanged: the daily reminder's "How was today?", "Mark a pain-free day, or log a migraine.", and the "Pain-free
