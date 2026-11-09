@@ -22,11 +22,22 @@ class ReportViewStateUiMapper {
             ReportOptionsUiModel(
                 viewState.options.from.toEpochDay(),
                 viewState.options.to.toEpochDay(),
-                viewState.options.anythingLogged
+                viewState.options.anythingLogged,
+                toUi(viewState.options.period),
+                viewState.options.lastVisit?.toEpochDay()
             )
         )
         ReportViewState.Working -> ReportViewStateUiModel.Working
         ReportViewState.Unavailable -> ReportViewStateUiModel.Unavailable
+    }
+
+    private fun toUi(period: ReportPeriodPresentationModel): ReportPeriodUiModel = when (period) {
+        is ReportPeriodPresentationModel.LastMonths -> ReportPeriodUiModel.LastMonths(period.months)
+        is ReportPeriodPresentationModel.Range ->
+            ReportPeriodUiModel.Range(period.from.toEpochDay(), period.to.toEpochDay())
+        is ReportPeriodPresentationModel.SinceLastVisit ->
+            ReportPeriodUiModel.SinceLastVisit(period.from.toEpochDay())
+        ReportPeriodPresentationModel.Default -> ReportPeriodUiModel.Default
     }
 }
 
@@ -37,6 +48,9 @@ class ReportPeriodPresentationMapper {
             LocalDate.ofEpochDay(period.fromEpochDay),
             LocalDate.ofEpochDay(period.toEpochDay)
         )
+        is ReportPeriodUiModel.SinceLastVisit ->
+            ReportPeriodPresentationModel.SinceLastVisit(LocalDate.ofEpochDay(period.fromEpochDay))
+        ReportPeriodUiModel.Default -> ReportPeriodPresentationModel.Default
     }
 }
 

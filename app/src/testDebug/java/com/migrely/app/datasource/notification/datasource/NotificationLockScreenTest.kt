@@ -1,7 +1,7 @@
 package com.migrely.app.datasource.notification.datasource
 
-import android.app.Notification
 import android.app.Application
+import android.app.Notification
 import android.app.NotificationManager
 import androidx.core.app.NotificationCompat
 import java.time.LocalDate
@@ -29,9 +29,11 @@ class NotificationLockScreenTest {
 
     private fun posted(): List<Notification> = manager.activeNotifications.map { it.notification }
 
-    private fun Notification.title() = extras.getCharSequence(NotificationCompat.EXTRA_TITLE)?.toString()
+    private fun Notification.title() =
+        extras.getCharSequence(NotificationCompat.EXTRA_TITLE)?.toString()
 
-    private fun Notification.text() = extras.getCharSequence(NotificationCompat.EXTRA_TEXT)?.toString()
+    private fun Notification.text() =
+        extras.getCharSequence(NotificationCompat.EXTRA_TEXT)?.toString()
 
     private fun assertPrivate(notification: Notification) {
         assertEquals(NotificationCompat.VISIBILITY_PRIVATE, notification.visibility)

@@ -170,7 +170,8 @@ class CreateReportUseCaseTest {
                     LocalDate.of(2026, 9, 26),
                     LocalDate.of(2026, 10, 25)
                 ),
-                anythingLogged = true
+                anythingLogged = true,
+                period = ReportPeriodDomainModel.LastMonths(1)
             ),
             options.executeInBackground(ReportPeriodDomainModel.LastMonths(1))
         )

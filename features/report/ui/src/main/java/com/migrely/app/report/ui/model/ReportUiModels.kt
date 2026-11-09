@@ -10,13 +10,24 @@ sealed interface ReportPeriodUiModel : Parcelable {
 
     @Parcelize
     data class Range(val fromEpochDay: Long, val toEpochDay: Long) : ReportPeriodUiModel
+
+    /** From the last doctor visit's day to today (BRD EC-REP-04). */
+    @Parcelize
+    data class SinceLastVisit(val fromEpochDay: Long) : ReportPeriodUiModel
+
+    /** Nothing chosen yet: the options say which period that is. */
+    @Parcelize
+    data object Default : ReportPeriodUiModel
 }
 
+/** [period] is the one the dates are for; [lastVisitEpochDay] is set when "Since last visit" is offered. */
 @Parcelize
 data class ReportOptionsUiModel(
     val fromEpochDay: Long,
     val toEpochDay: Long,
-    val anythingLogged: Boolean
+    val anythingLogged: Boolean,
+    val period: ReportPeriodUiModel = ReportPeriodUiModel.Default,
+    val lastVisitEpochDay: Long? = null
 ) : Parcelable
 
 sealed interface ReportViewStateUiModel {

@@ -20,6 +20,7 @@ import com.migrely.app.datasource.document.datasource.DocumentDataSource
 import com.migrely.app.datasource.exception.DatabaseDataException
 import com.migrely.app.datasource.exception.FileDataException
 import com.migrely.app.datasource.exception.StorageFullDataException
+import com.migrely.app.datasource.schedule.datasource.ReminderScheduleDataSource
 import java.time.Instant
 import java.util.Locale
 import org.junit.Assert.assertEquals
@@ -66,6 +67,7 @@ class BackupRepositoryTest {
         backupFileDataSource,
         documentDataSource,
         clockDataSource,
+        mock<ReminderScheduleDataSource>(),
         AttacksCsvMapper(),
         BackupSummaryDomainMapper()
     ) { locale }

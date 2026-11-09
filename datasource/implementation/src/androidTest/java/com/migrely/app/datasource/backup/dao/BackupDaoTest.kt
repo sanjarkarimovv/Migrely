@@ -10,6 +10,7 @@ import com.migrely.app.datasource.backup.model.AddedLocalModel
 import com.migrely.app.datasource.backup.model.BackupLocalModel
 import com.migrely.app.datasource.database.MigrelyDatabase
 import com.migrely.app.datasource.daymark.model.DayMarkLocalModel
+import com.migrely.app.datasource.doctorvisit.model.DoctorVisitLocalModel
 import com.migrely.app.datasource.medication.model.MedicationIntakeLocalModel
 import com.migrely.app.datasource.medication.model.MedicationLocalModel
 import com.migrely.app.datasource.medication.model.OveruseNoticeLocalModel
@@ -53,8 +54,23 @@ private fun records(
     customTags: List<CustomTagLocalModel> = emptyList(),
     medications: List<MedicationLocalModel> = emptyList(),
     intakes: List<MedicationIntakeLocalModel> = emptyList(),
-    dayMarks: List<DayMarkLocalModel> = emptyList()
-) = BackupLocalModel(attacks, points, tags, customTags, medications, intakes, dayMarks)
+    dayMarks: List<DayMarkLocalModel> = emptyList(),
+    doctorVisits: List<DoctorVisitLocalModel> = emptyList()
+) = BackupLocalModel(
+    attacks,
+    points,
+    tags,
+    customTags,
+    medications,
+    intakes,
+    dayMarks,
+    doctorVisits
+)
+
+private const val TODAY = "2026-11-10"
+
+/** "Add" on November 10, 2026, as far as the visits care. */
+private fun BackupDao.add(records: BackupLocalModel) = add(records, TODAY)
 
 /** Backups read and write every health table at once (change add-data-export-import). */
 @RunWith(AndroidJUnit4::class)
@@ -427,5 +443,64 @@ class BackupDaoTest {
         }
 
         assertEquals(before, classUnderTest.records())
+    }
+
+    @Test
+    fun givenAVisitOnly_whenAskingForRecords_thenItCounts() {
+        assertEquals(false, classUnderTest.hasRecords())
+
+        database.doctorVisitDao().insert(DoctorVisitLocalModel("v", "2026-11-20"))
+
+        assertEquals(true, classUnderTest.hasRecords())
+    }
+
+    @Test
+    fun givenANextVisitOnThePhone_whenReplacing_thenTheBackupsVisitsAreLeft() {
+        database.doctorVisitDao().insert(DoctorVisitLocalModel("p", "2026-11-20"))
+
+        classUnderTest.replaceAll(
+            records(
+                doctorVisits = listOf(
+                    DoctorVisitLocalModel("b1", "2026-08-20"),
+                    DoctorVisitLocalModel("b2", "2026-12-03")
+                )
+            )
+        )
+
+        assertEquals(listOf("b1", "b2"), classUnderTest.records().doctorVisits.map { it.id })
+    }
+
+    @Test
+    fun givenANextVisitOnThePhone_whenAdding_thenItStaysTheOnlyNextAndPastVisitsAreAdded() {
+        database.doctorVisitDao().insert(DoctorVisitLocalModel("p", "2026-11-20"))
+
+        classUnderTest.add(
+            records(
+                doctorVisits = listOf(
+                    DoctorVisitLocalModel("b1", "2026-08-20"),
+                    DoctorVisitLocalModel("b2", "2026-12-03"),
+                    DoctorVisitLocalModel("p", "2026-11-20")
+                )
+            )
+        )
+
+        assertEquals(
+            listOf("2026-08-20", "2026-11-20"),
+            classUnderTest.records().doctorVisits.map { it.date }
+        )
+    }
+
+    @Test
+    fun givenNoVisitOnThePhone_whenAdding_thenOneNextVisitIsAdded() {
+        classUnderTest.add(
+            records(
+                doctorVisits = listOf(
+                    DoctorVisitLocalModel("b2", "2026-12-03"),
+                    DoctorVisitLocalModel("b3", "2027-01-05")
+                )
+            )
+        )
+
+        assertEquals(listOf("2026-12-03"), classUnderTest.records().doctorVisits.map { it.date })
     }
 }

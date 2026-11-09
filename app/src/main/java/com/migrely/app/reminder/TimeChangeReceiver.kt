@@ -7,7 +7,7 @@ import dagger.hilt.android.EntryPointAccessors
 import kotlin.concurrent.thread
 
 /**
- * Plans the daily reminder again by the new local time when the time zone or the clock changes (BRD EC-REM-05). Both
+ * Plans the daily and visit reminders again by the new local time when the time zone or the clock changes (BRD EC-REM-05). Both
  * broadcasts may be received by a manifest receiver on every Android version.
  */
 class TimeChangeReceiver : BroadcastReceiver() {

@@ -11,7 +11,8 @@ private const val MAXIMUM_IMPACT = 3
 /**
  * Checks what the database and the app rely on, so a broken or hand-edited file is refused as a whole (BRD EC-BAK-01)
  * instead of failing halfway: unique IDs and names, intakes pointing at records in the file, values in range, and at
- * most one attack in progress. A backup the app wrote itself always passes.
+ * most one attack in progress, and one doctor visit to an ID and to a date. A backup the app wrote itself always
+ * passes.
  */
 class BackupRecordsValidator {
     fun isValid(records: BackupRecordsDataModel): Boolean =
@@ -22,9 +23,11 @@ class BackupRecordsValidator {
         records.attacks.map { it.id },
         records.customTags.map { it.id },
         records.medications.map { it.id },
-        records.intakes.map { it.id }
+        records.intakes.map { it.id },
+        records.doctorVisits.map { it.id }
     ).all { ids -> ids.none(String::isBlank) && ids.toSet().size == ids.size } &&
-        records.dayMarks.map { it.date }.let { it.toSet().size == it.size }
+        records.dayMarks.map { it.date }.let { it.toSet().size == it.size } &&
+        records.doctorVisits.map { it.date }.let { it.toSet().size == it.size }
 
     private fun namesAreUnique(records: BackupRecordsDataModel): Boolean {
         val tagNames = records.customTags.map { it.kind to keyOf(it.name) }

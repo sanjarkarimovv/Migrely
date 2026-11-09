@@ -1,5 +1,6 @@
 package com.migrely.app.datasource.notification.datasource
 
+import java.time.Instant
 import java.time.LocalDate
 
 /**
@@ -22,6 +23,14 @@ interface NotificationDataSource {
     fun showEffectQuestion(intakeId: String)
 
     fun cancelEffectQuestion(intakeId: String)
+
+    /** "Your visit is on <date>" for the visit on [visit]; it goes by itself at [until] (BRD D168). */
+    fun showVisitReminder(visit: LocalDate, until: Instant)
+
+    fun cancelVisitReminder()
+
+    /** Whether the user turned the "Doctor visit" channel off in Android's settings. */
+    fun isVisitChannelOff(): Boolean
 
     /** Removes every notification Migrely shows (BRD D96). */
     fun cancelAll()

@@ -4,10 +4,11 @@ import android.content.Context
 import androidx.work.Worker
 import androidx.work.WorkerParameters
 import com.migrely.app.reminders.domain.model.DailyReminderRunDomainModel
+import com.migrely.app.reminders.domain.model.VisitReminderRunDomainModel
 import dagger.hilt.android.EntryPointAccessors
 import java.time.LocalDate
 
-/** Runs a planned reminder on WorkManager's background thread (BRD D66, D67). */
+/** Runs a planned reminder on WorkManager's background thread (BRD D66, D67, D168). */
 class ReminderWorker(context: Context, parameters: WorkerParameters) : Worker(context, parameters) {
     private val entryPoint =
         EntryPointAccessors.fromApplication(
@@ -27,6 +28,22 @@ class ReminderWorker(context: Context, parameters: WorkerParameters) : Worker(co
                 Result.success()
             }
         }
+        KIND_VISIT -> {
+            val date = inputData.getString(KEY_DATE)?.let(LocalDate::parse)
+            if (date != null &&
+                entryPoint.runVisitReminderUseCase().executeInBackground(date) ==
+                VisitReminderRunDomainModel.Failed
+            ) {
+                Result.retry()
+            } else {
+                Result.success()
+            }
+        }
+        // After an import, which may have brought a doctor visit or taken one away (design D7).
+        KIND_RESCHEDULE -> {
+            entryPoint.rescheduleRemindersUseCase().executeInBackground(Unit)
+            Result.success()
+        }
         KIND_EFFECT -> {
             inputData.getString(
                 KEY_INTAKE_ID
@@ -42,5 +59,7 @@ class ReminderWorker(context: Context, parameters: WorkerParameters) : Worker(co
         const val KEY_DATE = "date"
         const val KIND_DAILY = "daily"
         const val KIND_EFFECT = "effect"
+        const val KIND_VISIT = "visit"
+        const val KIND_RESCHEDULE = "reschedule"
     }
 }

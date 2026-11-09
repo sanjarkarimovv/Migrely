@@ -4,6 +4,7 @@ import com.migrely.app.datasource.attack.model.AttackLocalModel
 import com.migrely.app.datasource.attack.model.AttackTagLocalModel
 import com.migrely.app.datasource.attack.model.IntensityPointLocalModel
 import com.migrely.app.datasource.daymark.model.DayMarkLocalModel
+import com.migrely.app.datasource.doctorvisit.model.DoctorVisitLocalModel
 import com.migrely.app.datasource.medication.model.MedicationIntakeLocalModel
 import com.migrely.app.datasource.medication.model.MedicationLocalModel
 import com.migrely.app.datasource.tag.model.CustomTagLocalModel
@@ -16,5 +17,6 @@ data class BackupLocalModel(
     val customTags: List<CustomTagLocalModel>,
     val medications: List<MedicationLocalModel>,
     val intakes: List<MedicationIntakeLocalModel>,
-    val dayMarks: List<DayMarkLocalModel>
+    val dayMarks: List<DayMarkLocalModel>,
+    val doctorVisits: List<DoctorVisitLocalModel> = emptyList()
 )

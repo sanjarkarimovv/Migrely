@@ -31,11 +31,16 @@ class CreateReportUseCase(
         cleanUpReportsRepository.cleanUpReports()
         val now = getCurrentTimeRepository.currentTime()
         val today = now.instant.atZone(now.zone).toLocalDate()
-        val dates = request.period.datesOn(today)
         val records = when (val read = getReportRecordsRepository.reportRecords()) {
             is ReportRecordsResultDomainModel.Loaded -> read.records
             ReportRecordsResultDomainModel.Failed -> return CreateReportResultDomainModel.Failed
         }
+        // The default by the same rule as the options shown, so the report covers the dates the screen said.
+        val dates = DefaultReportPeriod.resolve(
+            request.period,
+            DefaultReportPeriod.lastVisit(records.visitDates, today),
+            today
+        ).datesOn(today)
         val calculator = ReportCalculator(dates, now.instant)
         if (!calculator.anythingLogged(records)) return CreateReportResultDomainModel.NothingLogged
         val report = ReportDomainModel(

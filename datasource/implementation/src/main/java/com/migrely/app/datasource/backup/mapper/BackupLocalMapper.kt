@@ -8,12 +8,15 @@ import com.migrely.app.datasource.attack.model.IntensityPointLocalModel
 import com.migrely.app.datasource.backup.model.BackupAttackDataModel
 import com.migrely.app.datasource.backup.model.BackupCustomTagDataModel
 import com.migrely.app.datasource.backup.model.BackupDayMarkDataModel
+import com.migrely.app.datasource.backup.model.BackupDoctorVisitDataModel
 import com.migrely.app.datasource.backup.model.BackupIntakeDataModel
 import com.migrely.app.datasource.backup.model.BackupLocalModel
 import com.migrely.app.datasource.backup.model.BackupMedicationDataModel
 import com.migrely.app.datasource.backup.model.BackupRecordsDataModel
 import com.migrely.app.datasource.daymark.mapper.DayMarkLocalMapper
 import com.migrely.app.datasource.daymark.model.DayMarkLocalModel
+import com.migrely.app.datasource.doctorvisit.mapper.DoctorVisitLocalMapper
+import com.migrely.app.datasource.doctorvisit.model.DoctorVisitLocalModel
 import com.migrely.app.datasource.medication.mapper.MedicationLocalMapper
 import com.migrely.app.datasource.medication.model.IntakeEffectDataModel
 import com.migrely.app.datasource.medication.model.MedicationIntakeLocalModel
@@ -32,7 +35,8 @@ class BackupLocalMapper(
     private val attackTagLocalMapper: AttackTagLocalMapper,
     private val customTagLocalMapper: CustomTagLocalMapper,
     private val medicationLocalMapper: MedicationLocalMapper,
-    private val dayMarkLocalMapper: DayMarkLocalMapper
+    private val dayMarkLocalMapper: DayMarkLocalMapper,
+    private val doctorVisitLocalMapper: DoctorVisitLocalMapper
 ) {
     fun toData(local: BackupLocalModel): BackupRecordsDataModel {
         val pointsByAttack = local.intensityPoints.groupBy(IntensityPointLocalModel::attackId)
@@ -48,7 +52,12 @@ class BackupLocalMapper(
             customTags = local.customTags.mapNotNull(::toData),
             medications = local.medications.map(::toData),
             intakes = local.intakes.map(::toData),
-            dayMarks = local.dayMarks.mapNotNull(::toData)
+            dayMarks = local.dayMarks.mapNotNull(::toData),
+            doctorVisits = local.doctorVisits.mapNotNull { visit ->
+                doctorVisitLocalMapper.toData(visit)?.let {
+                    BackupDoctorVisitDataModel(it.id, it.date)
+                }
+            }
         )
     }
 
@@ -69,7 +78,10 @@ class BackupLocalMapper(
         customTags = records.customTags.map(::toLocal),
         medications = records.medications.map(::toLocal),
         intakes = records.intakes.map(::toLocal),
-        dayMarks = records.dayMarks.map(::toLocal)
+        dayMarks = records.dayMarks.map(::toLocal),
+        doctorVisits = records.doctorVisits.map {
+            DoctorVisitLocalModel(it.id, doctorVisitLocalMapper.toLocal(it.date))
+        }
     )
 
     private fun toData(

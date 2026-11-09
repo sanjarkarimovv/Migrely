@@ -32,6 +32,18 @@ class BackupRecordsValidatorTest {
     }
 
     @Test
+    fun `Given two visits with one ID or one date then refused`() {
+        RECORDS.copy(doctorVisits = RECORDS.doctorVisits.map { it.copy(id = "v") }).refused()
+        RECORDS.copy(
+            doctorVisits = RECORDS.doctorVisits.map {
+                it.copy(date = RECORDS.doctorVisits[0].date)
+            }
+        )
+            .refused()
+        RECORDS.copy(doctorVisits = RECORDS.doctorVisits.take(1).map { it.copy(id = "") }).refused()
+    }
+
+    @Test
     fun `Given two names that differ only in case or spaces then refused`() {
         RECORDS.copy(
             medications = RECORDS.medications.mapIndexed { index, it ->

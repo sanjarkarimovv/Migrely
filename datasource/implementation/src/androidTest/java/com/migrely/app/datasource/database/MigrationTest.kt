@@ -279,4 +279,75 @@ class MigrationTest {
         }
         migrated.close()
     }
+
+    @Test
+    fun migrating6To7_keepsReminderSettings_andAddsNoVisit() {
+        // Given a version 6 database with an attack and the daily reminder on at 21:00
+        helper.createDatabase(TEST_DATABASE, 6).apply {
+            execSQL(
+                "INSERT INTO attack (id, start_epoch_millis, start_zone_id, end_epoch_millis, " +
+                    "long_check_confirmed_epoch_millis, long_check_disabled, " +
+                    "created_epoch_millis, updated_epoch_millis) " +
+                    "VALUES ('a', 1000, 'Asia/Tashkent', 5000, NULL, 0, 1000, 5000)"
+            )
+            execSQL(
+                "INSERT INTO reminder_settings (id, daily_enabled, daily_minute_of_day, " +
+                    "effect_enabled, " +
+                    "permission_asked_epoch_millis, daily_last_shown_date) " +
+                    "VALUES (1, 1, 1260, 0, 7000, '2026-10-20')"
+            )
+            close()
+        }
+
+        // When
+        val migrated = helper.runMigrationsAndValidate(TEST_DATABASE, 7, true)
+
+        // Then the settings are kept, the visit state is empty, and no visit exists (BRD EC-STO-03)
+        migrated.query(
+            "SELECT daily_enabled, daily_minute_of_day, effect_enabled, daily_last_shown_date, " +
+                "visit_reminded_for, visit_card_closed_for, visit_postponed_to FROM reminder_settings"
+        ).use { cursor ->
+            cursor.moveToFirst()
+            assertEquals(1, cursor.getInt(0))
+            assertEquals(1260, cursor.getInt(1))
+            assertEquals(0, cursor.getInt(2))
+            assertEquals("2026-10-20", cursor.getString(3))
+            assertNull(cursor.getString(4))
+            assertNull(cursor.getString(5))
+            assertNull(cursor.getString(6))
+        }
+        migrated.query("SELECT COUNT(*) FROM attack").use { cursor ->
+            cursor.moveToFirst()
+            assertEquals(1, cursor.getInt(0))
+        }
+        migrated.query("SELECT COUNT(*) FROM doctor_visit").use { cursor ->
+            cursor.moveToFirst()
+            assertEquals(0, cursor.getInt(0))
+        }
+        migrated.close()
+    }
+
+    @Test
+    fun migrating1To7_keepsAttacks_throughEveryStep() {
+        // Given a version 1 database with an ended attack
+        helper.createDatabase(TEST_DATABASE, 1).apply {
+            execSQL(
+                "INSERT INTO attack (id, start_epoch_millis, start_zone_id, end_epoch_millis, " +
+                    "long_check_confirmed_epoch_millis, long_check_disabled, " +
+                    "created_epoch_millis, updated_epoch_millis) " +
+                    "VALUES ('a', 1000, 'Asia/Tashkent', 5000, NULL, 0, 1000, 5000)"
+            )
+            close()
+        }
+
+        // When
+        val migrated = helper.runMigrationsAndValidate(TEST_DATABASE, 7, true)
+
+        // Then
+        migrated.query("SELECT end_epoch_millis FROM attack WHERE id = 'a'").use { cursor ->
+            cursor.moveToFirst()
+            assertEquals(5000L, cursor.getLong(0))
+        }
+        migrated.close()
+    }
 }

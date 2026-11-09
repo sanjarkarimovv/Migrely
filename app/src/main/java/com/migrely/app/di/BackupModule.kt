@@ -34,9 +34,11 @@ import com.migrely.app.datasource.backupfile.validator.BackupRecordsValidator
 import com.migrely.app.datasource.clock.datasource.ClockDataSource
 import com.migrely.app.datasource.database.MigrelyDatabase
 import com.migrely.app.datasource.daymark.mapper.DayMarkLocalMapper
+import com.migrely.app.datasource.doctorvisit.mapper.DoctorVisitLocalMapper
 import com.migrely.app.datasource.document.datasource.DocumentDataSource
 import com.migrely.app.datasource.document.datasource.DocumentDataSourceImpl
 import com.migrely.app.datasource.medication.mapper.MedicationLocalMapper
+import com.migrely.app.datasource.schedule.datasource.ReminderScheduleDataSource
 import com.migrely.app.datasource.tag.mapper.CustomTagLocalMapper
 import com.migrely.app.navigation.mapper.YourDataNavigationEventDestinationMapper
 import dagger.Module
@@ -61,9 +63,10 @@ internal object BackupModule {
                 AttackTagLocalMapper(),
                 CustomTagLocalMapper(),
                 MedicationLocalMapper(),
-                DayMarkLocalMapper()
+                DayMarkLocalMapper(),
+                DoctorVisitLocalMapper()
             ),
-            database::deleteEverything
+            deleteEverything = database::deleteEverything
         )
 
     @Provides
@@ -88,12 +91,14 @@ internal object BackupModule {
         backupDataSource: BackupDataSource,
         backupFileDataSource: BackupFileDataSource,
         documentDataSource: DocumentDataSource,
-        clockDataSource: ClockDataSource
+        clockDataSource: ClockDataSource,
+        reminderScheduleDataSource: ReminderScheduleDataSource
     ) = BackupRepository(
         backupDataSource,
         backupFileDataSource,
         documentDataSource,
         clockDataSource,
+        reminderScheduleDataSource,
         AttacksCsvMapper(),
         BackupSummaryDomainMapper(),
         // The phone's own language, not the formatting locale (BRD D117): the CSV opens in a spreadsheet of the
@@ -112,9 +117,9 @@ internal object BackupModule {
         ExportBackupUseCase(repository, coroutines),
         ExportCsvUseCase(repository, coroutines),
         ReadBackupUseCase(repository, repository, coroutines),
-        ImportBackupUseCase(repository, repository, repository, coroutines),
+        ImportBackupUseCase(repository, repository, repository, repository, coroutines),
         GetAutomaticCopyUseCase(repository, coroutines),
-        RestoreAutomaticCopyUseCase(repository, repository, coroutines),
+        RestoreAutomaticCopyUseCase(repository, repository, repository, coroutines),
         BackupSummaryPresentationMapper(),
         AutomaticCopyPresentationMapper(BackupSummaryPresentationMapper()),
         ImportModeDomainMapper(),

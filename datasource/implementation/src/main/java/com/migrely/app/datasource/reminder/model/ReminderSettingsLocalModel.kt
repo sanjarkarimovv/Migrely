@@ -7,7 +7,10 @@ import androidx.room.PrimaryKey
 internal const val REMINDER_SETTINGS_ID = 1
 internal const val DEFAULT_DAILY_MINUTE_OF_DAY = 20 * 60
 
-/** The one row of reminder settings (database version 6, BRD D68); [id] is always [REMINDER_SETTINGS_ID]. */
+/**
+ * The one row of reminder settings (database version 6, BRD D68); [id] is always [REMINDER_SETTINGS_ID]. Version 7 adds
+ * the visit reminder's state, ISO dates keyed by the visit (BRD D168, design D2).
+ */
 @Entity(tableName = "reminder_settings")
 data class ReminderSettingsLocalModel(
     @PrimaryKey @ColumnInfo(name = "id") val id: Int,
@@ -16,5 +19,8 @@ data class ReminderSettingsLocalModel(
     @ColumnInfo(name = "effect_enabled", defaultValue = "1") val effectEnabled: Boolean,
     @ColumnInfo(name = "permission_asked_epoch_millis") val permissionAskedEpochMillis: Long?,
     /** ISO `yyyy-MM-dd`. */
-    @ColumnInfo(name = "daily_last_shown_date") val dailyLastShownDate: String?
+    @ColumnInfo(name = "daily_last_shown_date") val dailyLastShownDate: String?,
+    @ColumnInfo(name = "visit_reminded_for") val visitRemindedFor: String? = null,
+    @ColumnInfo(name = "visit_card_closed_for") val visitCardClosedFor: String? = null,
+    @ColumnInfo(name = "visit_postponed_to") val visitPostponedTo: String? = null
 )

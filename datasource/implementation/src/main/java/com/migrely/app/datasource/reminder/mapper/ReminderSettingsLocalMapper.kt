@@ -14,7 +14,10 @@ class ReminderSettingsLocalMapper {
             dailyMinuteOfDay = local?.dailyMinuteOfDay ?: DEFAULT_DAILY_MINUTE_OF_DAY,
             effectEnabled = local?.effectEnabled ?: true,
             permissionAskedAt = local?.permissionAskedEpochMillis?.let(Instant::ofEpochMilli),
-            dailyLastShownOn = local?.dailyLastShownDate?.let(::toDate)
+            dailyLastShownOn = local?.dailyLastShownDate?.let(::toDate),
+            visitRemindedFor = local?.visitRemindedFor?.let(::toDate),
+            visitCardClosedFor = local?.visitCardClosedFor?.let(::toDate),
+            visitPostponedTo = local?.visitPostponedTo?.let(::toDate)
         )
 
     fun toLocal(date: LocalDate): String = date.toString()

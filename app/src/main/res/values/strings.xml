@@ -14,4 +14,9 @@
     <string name="notification_effect_text">Tap to answer in Migrely.</string>
     <!-- The lock screen's version of every notification when it hides sensitive content (BRD D169). -->
     <string name="notification_public_title">Reminder</string>
+    <!-- The doctor visit reminder (BRD D168). "visit", never "doctor" or a health word, since it can show on a lock screen. -->
+    <string name="notification_channel_visit">Doctor visit</string>
+    <string name="notification_channel_visit_description">A reminder two days before your next visit</string>
+    <string name="notification_visit_title">Your visit is on %1$s</string>
+    <string name="notification_visit_text">Make a report to bring.</string>
 </resources>

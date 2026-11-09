@@ -47,6 +47,25 @@ class ReminderScheduleDataSourceImpl(
         workManager.cancelUniqueWork(effectWork(intakeId))
     }
 
+    override fun scheduleVisit(at: Instant, visit: LocalDate) = enqueue(
+        VISIT_WORK,
+        at,
+        workDataOf(
+            ReminderWorker.KEY_KIND to ReminderWorker.KIND_VISIT,
+            ReminderWorker.KEY_DATE to visit.toString()
+        )
+    )
+
+    override fun cancelVisit() {
+        workManager.cancelUniqueWork(VISIT_WORK)
+    }
+
+    override fun planAgain() = enqueue(
+        RESCHEDULE_WORK,
+        clockDataSource.now(),
+        workDataOf(ReminderWorker.KEY_KIND to ReminderWorker.KIND_RESCHEDULE)
+    )
+
     // WorkManager tags every request with its worker's class name, so this also reaches runs planned by older
     // versions. Waiting for the result makes the cancellation stored before the app may stop.
     override fun cancelAll() {
@@ -76,5 +95,7 @@ class ReminderScheduleDataSourceImpl(
     private companion object {
         const val DAILY_WORK = "daily"
         const val EFFECT_WORK_PREFIX = "effect-"
+        const val VISIT_WORK = "visit"
+        const val RESCHEDULE_WORK = "reschedule"
     }
 }

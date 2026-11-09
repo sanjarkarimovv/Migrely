@@ -34,4 +34,22 @@ class ReminderSettingsDataSourceImpl(
             it.copy(dailyLastShownDate = reminderSettingsLocalMapper.toLocal(date))
         }
     }
+
+    override fun setVisitReminded(visit: LocalDate) = database {
+        reminderSettingsDao.update {
+            it.copy(visitRemindedFor = reminderSettingsLocalMapper.toLocal(visit))
+        }
+    }
+
+    override fun setVisitCardClosed(visit: LocalDate) = database {
+        reminderSettingsDao.update {
+            it.copy(visitCardClosedFor = reminderSettingsLocalMapper.toLocal(visit))
+        }
+    }
+
+    override fun setVisitPostponed(day: LocalDate) = database {
+        reminderSettingsDao.update {
+            it.copy(visitPostponedTo = reminderSettingsLocalMapper.toLocal(day))
+        }
+    }
 }

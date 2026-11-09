@@ -24,6 +24,8 @@ interface BackupDataSource {
      * - An intake already present, by ID or by medication and time, is skipped. An intake of an attack that was skipped
      *   for overlapping is kept without the link.
      * - A date already marked keeps its marks.
+     * - A doctor visit whose ID or date is present is skipped, and one on or after today is added only when the phone
+     *   has none, so there is never a second next visit (BRD EC-BAK-06).
      * - An attack being deleted, or an intake hidden with one, does not count as present. When [records] holds it (an
      *   intake also by medication and time), it goes for good with what hangs on it, and the backup's copy is added by
      *   the rules above (BRD D118).

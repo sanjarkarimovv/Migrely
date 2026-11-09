@@ -15,6 +15,9 @@ class ReminderSettingsDomainMapper {
         ),
         effectEnabled = settings.effectEnabled,
         permissionAskedAt = settings.permissionAskedAt,
-        dailyLastShownOn = settings.dailyLastShownOn
+        dailyLastShownOn = settings.dailyLastShownOn,
+        visitRemindedFor = settings.visitRemindedFor,
+        visitCardClosedFor = settings.visitCardClosedFor,
+        visitPostponedTo = settings.visitPostponedTo
     )
 }
