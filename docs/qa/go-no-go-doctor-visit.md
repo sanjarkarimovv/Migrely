@@ -3,7 +3,7 @@
 ## Decision
 
 **QA's verdict, 2026-11-10: GO for PR #182 at d29ffb82f9713b5bdc7f5542ebe0d409ab9b0906** (plus QA's own commits,
-which change no product file), with the risks below open. **API 26 is not proven** (see below).
+which change no product file), with the risks below open. **API 26 was added on 2026-11-10** (section "API 26").
 
 - **No S1 or S2 found.** One S3 was filed: **#187**, a stale "Remove" on the visit day that does nothing (no data loss).
   It does not block a GO.
@@ -21,9 +21,11 @@ which change no product file), with the risks below open. **API 26 is not proven
   1.1.1 shows "Did Ibuprofen help?" (the control).
 - **The merge rows on d29ffb82** pass: "Visit removed", Undo, a second message, the TalkBack speech of both messages
   in full (2/2, #183's empty announcement not seen), the card with a home message, and the picker.
-- **API 26 not proven:** after a cold boot the `Migrely_QA_API_26` clock stood at 1970-01-01, with no way to set it
-  (`cmd alarm set-time` has no effect there, no root, no network time), so its WorkManager timing, notification
-  visibility and picker rows were all void. The 5582 settings were left unchanged (diff 0 lines).
+- **API 26 proven since (2026-11-10, see "API 26 (Android 8.0)"):** the clock was fixed with root and
+  `IAlarmManager.setTime`. On d29ffb82 the reminder fires by itself at 10:00 two days before, nothing posts when too
+  close, the lock screen shows no medication name and "Reminder" under Hide sensitive, and 1.1.1 to the candidate keeps
+  every record. The picker rows pass on d29ffb82 and a600ba4f. 80 of 82 valid runs pass; the 2 fails are the #187
+  controls on d29ffb82, which must fail.
 - **Not proven:** landscape on a device, TalkBack focus speech of the labels, the full-disk mark (b), real OEM
   timing. See below.
 
@@ -178,6 +180,79 @@ Counts are valid passes over valid runs, recounted from `logs/rows.jsonl`; "void
 | Control on 1.1.1 | v1.1.1 tree | fails at `visit-setup` |
 
 
+## API 26 (Android 8.0), added 2026-11-10
+
+Run by `qa-engineer` (qa-t21-api26) on `Migrely_QA_API_26` (emulator-5582), en-US, Asia/Tashkent. These are the API 26
+rows the first run could not prove (its 5582 rows stay void).
+
+**How the clock was fixed.** The AVD is the AOSP `default` image (`ro.build.type=userdebug`, no Play Store), so `adb root`
+works. As root, `service call alarm 2 i64 <epoch ms>` calls `IAlarmManager.setTime`. That is the call `cmd alarm set-time`
+makes on newer Android: it sets the clock and broadcasts TIME_SET (logcat shows WorkManager's `RescheduleReceiver` and
+the app's receiver get it). The zone is set the same way (`service call alarm 3 s16 <zone>`). On API 26, `cmd alarm` has
+no shell implementation, and as the shell user (uid 2000) `setTime` is refused (SET_TIME). No wipe, no snapshot change.
+adbd was put back to non-root at the end. The driver is `migrely-work/qa-t21-26/s26.py`, which reuses qa-t21's scripts.
+
+**Builds:** `debug-40172b1f.apk` sha256 5f476810… (byte-identical to `debug-d29ffb82.apk`; `git diff d29ffb82 40172b1f`
+changes no product file), `debug-a600ba4f.apk` sha256 74065e8b… (the PR head after the #187 fix; `git diff d29ffb82
+a600ba4f` changes product files under `features/reminders/` only), and the 1.1.1 control `debug-eeb6.apk`.
+The WorkManager, notification, lock-screen and upgrade rows ran on d29ffb82. The #187 fix does not reach their code:
+no worker, notification, DB or lock-screen file changed. The picker and #187 rows ran on a600ba4f.
+
+**Counts** (`qa-t21-26/recount.py`, `logs/rows.jsonl`): **80 of 82 valid runs pass. The 2 fails are the #187 negative
+controls on d29ffb82, which must fail.** 9 runs void (below), 0 harness errors.
+
+| Row | SHA | Valid | What was seen |
+|---|---|---|---|
+| A1 plan | d29ffb82 | 3/3 | visit Nov 15 set on Nov 10 12:00: one `visit` work, due 2026-11-13 10:00 +05, tag `visit-2026-11-15` |
+| A1 fires by itself | d29ffb82 | 2/2 | clock to 09:55 on Nov 13, no forced run: posted at **10:00:02** device time both times, nothing before 10:00 |
+| A1 content | d29ffb82 | 2/2 | "Your visit is on Sun, Nov 15" / "Make a report to bring.", channel `visit`, `vis=PRIVATE`, public version present, no actions |
+| A1 marked, once | d29ffb82 | 3/3, 2/2 | reminded date stored, work gone; jobs forced again: still one notification |
+| A1 control: already reminded | d29ffb82 | 3/3 | clock back to 09:55: nothing planned |
+| A2 too close (today, tomorrow, +2 after 10:00) | d29ffb82 | 2/2 each | the date is saved; no work, nothing posted after the jobs are forced |
+| A2 card | d29ffb82 | 3/3 | "Your doctor visit is on Thursday, November 12, 2026." |
+| A2 control: +2 days at 09:00 | d29ffb82 | 3/3 planned, 2/2 arrives | planned for 10:00 today; posted at 10:00:02 |
+| A25 visit, Show all / Hide sensitive (PIN) | d29ffb82 | 1/1, 1/1 | "Your visit is on Thu, Nov 12 · Make a report to bring." / "Reminder" only |
+| A25 effect, Show all / Hide | d29ffb82 | 1/1, 1/1 | "Did it help? · Tap to answer in Migrely." (no medication name) / "Reminder" only |
+| F2 + A25 daily update, Show all / Hide | d29ffb82 | 1/1 each | "Not marked. Open Migrely to see today." (no "migraine is logged") / "Reminder" only |
+| A8 control: 1.1.1 under Show all | v1.1.1 tree | 1/1 | "Did Ibuprofen help?" on the lock screen: the leak the fix removes is visible on the old build |
+| A20 Done off before a pick (attribute and tap), 100 % and 200 % | d29ffb82, a600ba4f | 1/1 each | the clickable Done container is `enabled=false`; a tap leaves the picker open |
+| A20 control: Done on after a pick | d29ffb82, a600ba4f | 1/1 each | `enabled=true` once a day is picked |
+| A20 +365 days on, +366 off, a tap on +366 ignored, 100 % and 200 % | d29ffb82, a600ba4f | 1/1 each | Wed Nov 10, 2027 enabled; Thu Nov 11, 2027 disabled and not selected after a tap |
+| A12 upgrade 1.1.1 → candidate | d29ffb82 | 2/2 | DB 6 → 7; 2 attacks, 1 intensity point, 1 tag kept; `upgrade-kept` passes; a new visit saves and plans |
+| #187 retest (S1 real midnight, S2 background jump, S3 zone change, Remove works and Undo restores) | a600ba4f | 14/14 | see #187; every row asserts the visit is still in `doctor_visit` |
+| #187 control | d29ffb82 | S1 0/1, S2 0/1 (intended) | the stale "Remove" is shown after midnight and after the background jump: the bug |
+
+**Void, not counted (harness slips, each rerun):**
+- 6 notification rows from the first pass (A1 fires and once, A2 control arrives, A2 too-close ×3). API 26 prints
+  `channel=visit:` with a colon, so the harness's channel filter never matched. The too-close passes could not fail, and
+  the timing fails were false: A1 marked showed the worker had run. Fixed by stripping the colon; the F2 row's raw
+  `channel: "daily:"` is the proof.
+- 2 A20 "Done off" attribute rows read the child TextView "Done", which is always enabled. A dump showed the clickable
+  parent `enabled=false` before a pick and `true` after. The check now reads the container.
+- 1 A12 run lost all records. Disproved as a harness condition (rows `ISO26-*`). On this AVD, when the app's first launch
+  after install is Maestro `launchApp: clearState: true`, the next `adb install -r` empties `databases/`, and only that
+  folder. This also happens for 1.1.1 installed over itself, with no app process running (wiped 3/3). With one launcher
+  launch first: kept 6/6. `pm clear` without Maestro: kept 2/2. Maestro without clearState: kept 4/4. On API 36 the
+  same harness kept the data. The cause inside Maestro or installd was not found; no user path reaches it. The run
+  still shows the A12 check can fail.
+
+**Controls:** A1 already reminded; A2 +2 days at 09:00 arrives; A8 on 1.1.1; A20 Done on after a pick and +365 vs +366;
+#187 S1 and S2 on d29ffb82; A12's voided run shows the count check fails when records go.
+
+**What the API 26 rows do not prove:**
+- One emulator image (AOSP arm64, Android 8.0.0), not OEM builds with their own battery or job rules. The clock was set,
+  not lived through (except about 75 s across midnight in #187 S1). There was no real reboot.
+- The lock-screen privacy rows ran once each (1/1) on API 26. Their wording is checked against the API 36 copy.
+- The picker ran in portrait only on API 26. Landscape at 200 % was proven on API 36 only.
+- #187's zone-change rows (S3) do not tell the builds apart: d29ffb82 also hides Remove after a zone change. They show
+  no regression. The fix itself is shown by S1 and S2.
+- The upgrade trap above is unexplained. It is a QA-only path (Maestro clearState as the first launch), but it means
+  any future API 26 upgrade row must launch the old build once by the launcher first.
+
+**Device state:** settings diff against `qa-t21/baseline-5582.txt`: 0 lines. A stray `system_locales=en-US` was
+removed, and `auto_time` is back to 1 (it boots as 0 on this AVD). No PIN, font 1.0, TalkBack off, Asia/Tashkent.
+adbd is non-root and emulator-5582 is off.
+
 ## Negative controls
 
 Each check below was shown able to fail:
@@ -214,6 +289,8 @@ animation) were not run.
   changed (found on 85997737, reproduced 2/2 on d29ffb82; after a cold start Remove is correctly absent, 2/2). A tap
   does nothing: no message, the visit is kept. No data is lost (the DAO deletes only rows after today).
   `DoctorVisitSection.kt` reads `LocalDate.now()` during composition.
+  **Fixed in a600ba4f; retested on API 26 and closed by QA 2026-11-10:** 14/14 (real midnight with the screen open,
+  background clock jump, zone change, Remove then Undo); control d29ffb82 shows the stale Remove (S1 0/1, S2 0/1).
 - No S1 or S2 found.
 
 
@@ -257,10 +334,8 @@ animation) were not run.
 
 ## Residual risks
 
-- **API 26 (Android 8.0) not checked on a device for this change:** WorkManager timing, `VISIBILITY_PRIVATE`
-  with a public version, and the picker. The code paths are the same API calls (minSdk 26 supports all of them), and
-  the Robolectric `NotificationLockScreenTest` and `VisitWorkTest` run on the JVM. The next API 26 smoke needs the
-  emulator's clock fixed first (snapshot boot or host time).
+- **API 26 (Android 8.0):** now checked on one AOSP emulator image (see its section): a set clock rather than lived
+  time, no OEM job rules, lock-screen rows 1/1, the picker in portrait only.
 - **(a) The clock set back by 2 or more days** (accepted, D168 (13)), measured on 85997737: clock back to the visit
   day kept a past visit; clock back to the day before it, then a new date, deleted it (`lost: true`). Rare, and the
   report can still use another period. In the register.
