@@ -3,11 +3,11 @@
 ## Decision
 
 **QA's verdict, 2026-11-10: GO for PR #182 at d29ffb82f9713b5bdc7f5542ebe0d409ab9b0906** (plus QA's own commits,
-which change no product file), with the risks below open. API 26: API26_LINE
+which change no product file), with the risks below open. **API 26 is not proven** (see below).
 
 - **No S1 or S2 found.** One S3 was filed: **#187**, a stale "Remove" on the visit day that does nothing (no data loss).
   It does not block a GO.
-- **Counts** (`recount.py`, valid passes over valid runs): RECOUNT_LINE. Harness slips were voided and rerun; each
+- **Counts** (`recount.py`, valid passes over valid runs): 133 of 134 valid runs pass on API 36; the one fail is #187 (`DL-no-remove-on-visit-day`). Harness slips were voided and rerun; each
   void names its reason in `rows.jsonl`.
 - **The reminder works as specified on API 36:** it fires by itself at about 10:00 two days before (10:03 and 10:01
   device time), once, private with a public "Reminder" version. It stays away when too close or when nothing is
@@ -21,6 +21,9 @@ which change no product file), with the risks below open. API 26: API26_LINE
   1.1.1 shows "Did Ibuprofen help?" (the control).
 - **The merge rows on d29ffb82** pass: "Visit removed", Undo, a second message, the TalkBack speech of both messages
   in full (2/2, #183's empty announcement not seen), the card with a home message, and the picker.
+- **API 26 not proven:** after a cold boot the `Migrely_QA_API_26` clock stood at 1970-01-01, with no way to set it
+  (`cmd alarm set-time` has no effect there, no root, no network time), so its WorkManager timing, notification
+  visibility and picker rows were all void. The 5582 settings were left unchanged (diff 0 lines).
 - **Not proven:** landscape on a device, TalkBack focus speech of the labels, the full-disk mark (b), real OEM
   timing. See below.
 
@@ -254,6 +257,10 @@ animation) were not run.
 
 ## Residual risks
 
+- **API 26 (Android 8.0) not checked on a device for this change:** WorkManager timing, `VISIBILITY_PRIVATE`
+  with a public version, and the picker. The code paths are the same API calls (minSdk 26 supports all of them), and
+  the Robolectric `NotificationLockScreenTest` and `VisitWorkTest` run on the JVM. The next API 26 smoke needs the
+  emulator's clock fixed first (snapshot boot or host time).
 - **(a) The clock set back by 2 or more days** (accepted, D168 (13)), measured on 85997737: clock back to the visit
   day kept a past visit; clock back to the day before it, then a new date, deleted it (`lost: true`). Rare, and the
   report can still use another period. In the register.
