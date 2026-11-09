@@ -44,7 +44,7 @@ target API 37, whichever comes first. Until then, do not mix AGP 9 idioms into b
 | `:architecture:ui` | Android | `com.migrely.app.architecture.ui` | `BaseComposeHolder`, `UiDestination`, `NavigationEventDestinationMapper`, `ScreenEnterObserver`, notification contracts |
 | `:architecture:instrumentation-test` | Android | `com.migrely.app.test` | E2E test helpers (first used by a feature change) |
 | `:coroutine` | JVM | `com.migrely.app.coroutine` | `CoroutineContextProvider` |
-| `:designsystem` | Android | `com.migrely.app.designsystem.{theme,sky,motion,snackbar,picker,dialog,icon,input}` | `MigrelyTheme(dark)`, `MigrelyColors`, `MigrelyDarkRoom` / `DarkScreens`, `SkyCanvas` / `SkyAppearance`, `MonthSkyCalendar` / `MonthSkyLegend` / `DaySkyAppearance`, `rememberReduceMotion()`, `MigrelySnackbar`, `MigrelyDateTimePicker`, `MigrelyAlertDialog` / `MigrelyDatePickerDialog` / `MigrelyDialog`, `MigrelyIcons`, `TapGuard`. Compose only; depends on no feature, presentation or domain module |
+| `:designsystem` | Android | `com.migrely.app.designsystem.{theme,sky,motion,snackbar,picker,dialog,icon,input}` | `MigrelyTheme(dark)`, `MigrelyColors`, `MigrelyDarkRoom` / `DarkScreens`, `SkyCanvas` / `SkyAppearance`, `MonthSkyCalendar` / `MonthSkyLegend` / `DaySkyAppearance`, `rememberReduceMotion()`, `MigrelySnackbar`, `MigrelyDateTimePicker`, `MigrelyAlertDialog` / `MigrelyDatePickerDialog` / `MigrelyDialog`, `MigrelyDropdownMenu`, `MigrelyIcons`, `TapGuard`. Compose only; depends on no feature, presentation or domain module |
 | `:datasource:source` | JVM | `com.migrely.app.datasource.<resource>.{datasource,model,exception}` | datasource interfaces, `*DataModel` / `*LocalModel`, `*DataException` |
 | `:datasource:implementation` | Android (Room via KSP) | `com.migrely.app.datasource.<resource>.{datasource,model,dao,mapper}` and `com.migrely.app.datasource.database` | `*DataSourceImpl`, Room entities (`*LocalModel`), DAOs, `MigrelyDatabase`, `*LocalMapper` |
 | `:features:<feature>:domain` | JVM | `com.migrely.app.<feature>.domain` | `model/`, `repository/` (interfaces), `usecase/`, `exception/` |
@@ -266,6 +266,12 @@ data must never be passed to any SDK.
   card, and an offset larger than its 10 dp margin fails it. It needs a device and is not in the gate, so run it when this
   changes. It shows one AVD in portrait: not API 26, a cutout, a dialog panned by a keyboard or split screen.
   `ScreenNavHost` provides the one instance; with none nothing is ignored.
+- A lift on a popup menu's card counts the same way (issue #161, BRD D164). Every popup menu goes through
+  `MigrelyDropdownMenu` (`:designsystem`, package `dialog`), which puts the lift half of the dialog node
+  (`Modifier.liftOnCard()`) on Material's card and has no wait: the menu opens on a long press, so the person sees it before
+  the next tap. Same rule, same numbers, no new constant. `ArchitecturePopupsTest` (Konsist) fails on any other file that
+  names a raw popup (`DropdownMenu`, `ExposedDropdownMenuBox`, `TooltipBox`, `Popup`, the View popups); a new kind of popup
+  gets its own helper with `liftOnCard()`. `MenuLiftOnScreenTest` is the menu's real-window check, as above.
 - `DeleteAllDataObserver` sits beside the `NavHost`, not on the delete screen: wiped data must restart the app whichever
   screen is on top, or with the delete screen gone.
 - ViewModels are stateless (skill rule 4). Text and selections the user is editing live in the composable
