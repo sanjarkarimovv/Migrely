@@ -117,8 +117,8 @@ def how_to():
     who, for more than 3 months, have taken: triptans, ergots, opioids or combination painkillers on 10 or more days a
     month; a mix of these kinds, or of these and simple painkillers, on 10 or more days in total; or simple painkillers
     alone (one or several) on 15 or more days.</p>
-  <p>These are diagnostic thresholds, not safe limits: the NHS advises taking painkillers on no more than 2 days a
-    week. Talk to your doctor, and don't stop or change medicines on your own.</p>
+  <p>These counts are for diagnosis; the everyday advice is lower: the NHS suggests not taking painkillers on more than
+    2 days a week. Talk to your doctor, and don't stop or change medicines on your own.</p>
 </div></div>
 {foot(1)}</section>'''
 
