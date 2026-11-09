@@ -77,7 +77,7 @@ class RunEffectQuestionUseCaseTest {
             takenFrom = Instant.parse("2026-10-23T11:00:00Z"),
             takenTo = Instant.parse("2026-10-24T09:00:00Z")
         )
-        verify(showEffectQuestionRepository).showEffectQuestion("i", "Ibuprofen")
+        verify(showEffectQuestionRepository).showEffectQuestion("i")
     }
 
     @Test
@@ -89,7 +89,7 @@ class RunEffectQuestionUseCaseTest {
         given(getNotificationsAllowedRepository.notificationsAllowed()).willReturn(false)
         classUnderTest.executeInBackground("i")
 
-        verify(showEffectQuestionRepository, never()).showEffectQuestion(any(), any())
+        verify(showEffectQuestionRepository, never()).showEffectQuestion(any())
     }
 
     @Test
@@ -99,7 +99,7 @@ class RunEffectQuestionUseCaseTest {
 
         classUnderTest.executeInBackground("i")
 
-        verify(showEffectQuestionRepository, never()).showEffectQuestion(any(), any())
+        verify(showEffectQuestionRepository, never()).showEffectQuestion(any())
     }
 
     @Test
@@ -112,6 +112,6 @@ class RunEffectQuestionUseCaseTest {
 
         classUnderTest.executeInBackground("i")
 
-        verify(showEffectQuestionRepository, never()).showEffectQuestion(any(), any())
+        verify(showEffectQuestionRepository, never()).showEffectQuestion(any())
     }
 }

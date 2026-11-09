@@ -37,6 +37,6 @@ class EffectReminderRepository(
 
     override fun notificationsAllowed(): Boolean = notificationDataSource.areEnabled()
 
-    override fun showEffectQuestion(intakeId: String, medicationName: String) =
-        notificationDataSource.showEffectQuestion(intakeId, medicationName)
+    override fun showEffectQuestion(intakeId: String) =
+        notificationDataSource.showEffectQuestion(intakeId)
 }

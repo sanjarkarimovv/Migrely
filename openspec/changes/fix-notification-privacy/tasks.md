@@ -12,11 +12,11 @@ the PR. Never `Fixes #178`: the lead filed it and closes it after the retest. Ow
 
 ## 1. Strings
 
-- [ ] 1.1 `notification_effect_title` becomes "Did it help?" with no argument. `notification_attack_logged` becomes the line from 0.1. Add `notification_public_title` = "Reminder". Verify: `grep -n 'notification_effect_title\|notification_attack_logged\|notification_public_title' app/src/main/res/values/strings.xml` shows the three lines, and `./gradlew :app:lintDebug` reports no unused or format-argument warning for them.
+- [x] 1.1 `notification_effect_title` becomes "Did it help?" with no argument. `notification_attack_logged` becomes the line from 0.1. Add `notification_public_title` = "Reminder". Verify: `grep -n 'notification_effect_title\|notification_attack_logged\|notification_public_title' app/src/main/res/values/strings.xml` shows the three lines, and `./gradlew :app:lintDebug` reports no unused or format-argument warning for them.
 
 ## 2. Notifications
 
-- [ ] 2.1 In `NotificationDataSourceImpl`, every builder sets `VISIBILITY_PRIVATE` and a public version titled `notification_public_title`, with no text and no actions, from one place, so the T21 `visit` channel gets it too. The effect notification no longer formats the medication name. Verify: a Robolectric or unit test on the built `Notification` objects asserts `visibility == VISIBILITY_PRIVATE`, a public version with that title, and no medication name in the extras. Then `./gradlew :app:testDebugUnitTest`.
+- [x] 2.1 In `NotificationDataSourceImpl`, every builder sets `VISIBILITY_PRIVATE` and a public version titled `notification_public_title`, with no text and no actions, from one place, so the T21 `visit` channel gets it too. The effect notification no longer formats the medication name. Verify: a Robolectric or unit test on the built `Notification` objects asserts `visibility == VISIBILITY_PRIVATE`, a public version with that title, and no medication name in the extras. Then `./gradlew :app:testDebugUnitTest`. Done: `NotificationLockScreenTest` (Robolectric, SDK 35), 3 tests, 0 failures. Negative control on the old code: 3 of 3 fail with "no public version". The visibility assertion alone cannot fail (`VISIBILITY_PRIVATE` is 0, the default); the public version and title assertions carry the check. The medication name no longer reaches the datasource: `showEffectQuestion(intakeId)` from the use case down.
 - [ ] 2.2 On `emulator-5570`, post each notification. Verify: `adb shell dumpsys notification --noredact | grep -E 'vis=|android.title'` shows `vis=PRIVATE` and the new titles.
 
 ## 3. Gate

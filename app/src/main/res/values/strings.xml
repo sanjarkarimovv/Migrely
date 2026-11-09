@@ -9,7 +9,9 @@
     <string name="notification_daily_text">Mark a pain-free day, or log a migraine.</string>
     <string name="notification_daily_pain_free">Pain-free day</string>
     <string name="notification_daily_log">Log a migraine</string>
-    <string name="notification_attack_logged">A migraine is logged today.</string>
-    <string name="notification_effect_title">Did %1$s help?</string>
+    <string name="notification_attack_logged">Not marked. Today already has an entry.</string>
+    <string name="notification_effect_title">Did it help?</string>
     <string name="notification_effect_text">Tap to answer in Migrely.</string>
+    <!-- The lock screen's version of every notification when it hides sensitive content (BRD D169). -->
+    <string name="notification_public_title">Reminder</string>
 </resources>

@@ -15,7 +15,8 @@ import java.time.LocalDate
 
 /**
  * Migrely's notifications (BRD D66, D67), in two channels so the user can silence one kind in system settings. Nothing
- * is posted while notifications are off, so Android 13's permission is never needed at the moment of posting.
+ * is posted while notifications are off, so Android 13's permission is never needed at the moment of posting. Every
+ * one is private, and the lock screen that hides sensitive content shows only "Reminder" (BRD D169).
  */
 class NotificationDataSourceImpl(private val context: Context) : NotificationDataSource {
     private val manager = NotificationManagerCompat.from(context)
@@ -55,10 +56,10 @@ class NotificationDataSourceImpl(private val context: Context) : NotificationDat
 
     override fun cancelDailyReminder() = manager.cancel(DAILY_ID)
 
-    override fun showEffectQuestion(intakeId: String, medicationName: String) = notify(
+    override fun showEffectQuestion(intakeId: String) = notify(
         effectId(intakeId),
         builder(CHANNEL_EFFECT, R.string.notification_channel_effect)
-            .setContentTitle(context.getString(R.string.notification_effect_title, medicationName))
+            .setContentTitle(context.getString(R.string.notification_effect_title))
             .setContentText(context.getString(R.string.notification_effect_text))
     )
 
@@ -79,7 +80,15 @@ class NotificationDataSourceImpl(private val context: Context) : NotificationDat
             .setSmallIcon(R.drawable.ic_notification)
             .setContentIntent(openApp())
             .setAutoCancel(true)
+            .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
+            .setPublicVersion(publicVersion(channelId))
     }
+
+    // One version for every channel: no text, no action, no channel name (BRD D169, EC-REM-21).
+    private fun publicVersion(channelId: String) = NotificationCompat.Builder(context, channelId)
+        .setSmallIcon(R.drawable.ic_notification)
+        .setContentTitle(context.getString(R.string.notification_public_title))
+        .build()
 
     // An action button does not clear its notification, so "Log a migraine" asks the app to (its own request code).
     private fun openApp(dismissDaily: Boolean = false): PendingIntent = PendingIntent.getActivity(
