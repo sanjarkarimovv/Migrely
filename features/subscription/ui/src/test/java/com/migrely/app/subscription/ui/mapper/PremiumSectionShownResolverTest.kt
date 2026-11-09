@@ -1,16 +1,16 @@
 package com.migrely.app.subscription.ui.mapper
 
+import com.migrely.app.subscription.ui.model.PremiumNoteUiModel
 import com.migrely.app.subscription.ui.model.PremiumPlanUiModel
 import com.migrely.app.subscription.ui.model.PremiumSectionUiModel
 import com.migrely.app.subscription.ui.model.PremiumSectionViewStateUiModel
 import com.migrely.app.subscription.ui.model.PremiumStatusUiModel
-import com.migrely.app.subscription.ui.model.RestoreNoteUiModel
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
 private val FREE = PremiumStatusUiModel.Free
 private val LIFETIME = PremiumStatusUiModel.Lifetime(subscriptionRenewsToo = false)
-private val NOTHING_FOUND = PremiumSectionUiModel(FREE, RestoreNoteUiModel.NothingFound)
+private val NOTHING_FOUND = PremiumSectionUiModel(FREE, PremiumNoteUiModel.NothingFound)
 
 private fun ready(section: PremiumSectionUiModel) = PremiumSectionViewStateUiModel.Ready(section)
 
@@ -42,7 +42,7 @@ class PremiumSectionShownResolverTest {
             PremiumPlanUiModel.Yearly,
             trialEndMillis = null
         )
-        val shown = PremiumSectionUiModel(trial, RestoreNoteUiModel.Restored)
+        val shown = PremiumSectionUiModel(trial, PremiumNoteUiModel.Restored)
 
         val resolved = classUnderTest.resolve(shown, ready(PremiumSectionUiModel(ended, null)))
 
@@ -51,7 +51,7 @@ class PremiumSectionShownResolverTest {
 
     @Test
     fun `Given a new restore when it answers then its own note shows`() {
-        val answer = PremiumSectionUiModel(FREE, RestoreNoteUiModel.Unreachable)
+        val answer = PremiumSectionUiModel(FREE, PremiumNoteUiModel.Unreachable)
 
         assertEquals(answer, classUnderTest.resolve(NOTHING_FOUND, ready(answer)))
     }

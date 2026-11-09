@@ -145,6 +145,18 @@ class PremiumCheckerTest {
     }
 
     @Test
+    fun `Given an old check when asking for the kept status then Play is still not asked`() {
+        // Offline, nothing may reach Google Play (BRD D166).
+        given(getEntitlementRepository.entitlement())
+            .willReturn(subscription(lastCheck = NOW.minus(Duration.ofHours(1))))
+
+        val status = classUnderTest.kept()
+
+        verifyNoInteractions(getOwnedPurchasesRepository, saveEntitlementRepository)
+        assertEquals(PremiumStatusDomainModel.Subscribed(MONTHLY.plan, null), status)
+    }
+
+    @Test
     fun `Given an old check when asking for the current status then Play is asked`() {
         given(getEntitlementRepository.entitlement())
             .willReturn(subscription(lastCheck = NOW.minus(Duration.ofHours(1))))

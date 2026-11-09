@@ -198,7 +198,10 @@ enum class PurchaseOutcomeDomainModel {
     Pending,
     Cancelled,
     Unavailable,
-    Failed
+    Failed,
+
+    /** No network on the phone has internet, so Google Play's sheet did not open (BRD D166). */
+    Offline
 }
 
 /** How buying went, and the status after it. */
@@ -212,6 +215,33 @@ data class PremiumCheckDomainModel(
     val status: PremiumStatusDomainModel,
     val billing: BillingAvailabilityDomainModel
 )
+
+/**
+ * Whether any network on the phone has internet (BRD D166). Only [Offline] stops a call to Google
+ * Play: [Unknown], when Android does not say, never blocks a purchase that could work (EC-BIL-20).
+ */
+enum class NetworkStateDomainModel {
+    Online,
+    Offline,
+    Unknown
+}
+
+/** How "Restore purchases" went (BRD EC-BIL-18, D166). */
+sealed interface RestorePurchasesResultDomainModel {
+    data class Checked(val check: PremiumCheckDomainModel) : RestorePurchasesResultDomainModel
+
+    /** No network has internet, so Google Play was not asked; [status] is the one kept. */
+    data class Offline(val status: PremiumStatusDomainModel) : RestorePurchasesResultDomainModel
+}
+
+/** How "Manage subscription" went (BRD EC-BIL-18, D166). */
+sealed interface ManageSubscriptionResultDomainModel {
+    /** Google Play's page opened, and [status] is what Play said afterwards. */
+    data class Opened(val status: PremiumStatusDomainModel) : ManageSubscriptionResultDomainModel
+
+    /** No network has internet, so the page did not open; [status] is the one kept. */
+    data class Offline(val status: PremiumStatusDomainModel) : ManageSubscriptionResultDomainModel
+}
 
 data class RefreshPremiumRequestDomainModel(val force: Boolean)
 

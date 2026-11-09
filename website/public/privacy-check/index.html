@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Check Migrely&#x27;s privacy yourself · Migrely</title>
-<meta name="description" content="Migrely has no internet permission. Check it on your own phone in two minutes, and see what each of its five permissions is for.">
+<meta name="description" content="Migrely has no internet permission. Check it on your own phone in two minutes, and see what each of its six permissions is for.">
 <link rel="canonical" href="https://migrely.health/privacy-check/">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#5B50D6">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Migrely">
 <meta property="og:title" content="Check Migrely&#x27;s privacy yourself · Migrely">
-<meta property="og:description" content="Migrely has no internet permission. Check it on your own phone in two minutes, and see what each of its five permissions is for.">
+<meta property="og:description" content="Migrely has no internet permission. Check it on your own phone in two minutes, and see what each of its six permissions is for.">
 <meta property="og:url" content="https://migrely.health/privacy-check/">
 <meta property="og:image" content="https://migrely.health/assets/img/og.png">
 <meta property="og:image:width" content="1200">
@@ -47,10 +47,13 @@
   <p>It shows half of it. Turn on airplane mode and Migrely works as usual: logging, your history, reminders and export
     all work offline. That shows Migrely does not need the internet; the permission list shows it cannot use it.
     Buying or restoring Premium, and rating Migrely, need Google Play to be online.</p>
-  <h2>What are Migrely's five permissions for?</h2>
+  <h2>What are Migrely's six permissions for?</h2>
   <p>These are all the permissions Migrely asks for. Those in quotes appear in the list under those names. On
-    phones with Google Play, billing may be listed too.</p>
-  <div class="perms"><article><h3>“show notifications”</h3><p><code>android.<wbr>permission.<wbr>POST_<wbr>NOTIFICATIONS</code></p><p>Reminders and the “Did it help?” question. On Android 13 and later, Android asks you first. On any version you can turn notifications off in Settings.</p></article><article><h3>“run at startup”</h3><p><code>android.<wbr>permission.<wbr>RECEIVE_<wbr>BOOT_<wbr>COMPLETED</code></p><p>Puts your reminders back after the phone restarts. It comes with WorkManager, the Android library Migrely uses to schedule reminders.</p></article><article><h3>“prevent phone from sleeping”</h3><p><code>android.<wbr>permission.<wbr>WAKE_<wbr>LOCK</code></p><p>Lets WorkManager keep the phone awake for the moments it takes to run a reminder.</p></article><article><h3>Google Play billing</h3><p><code>com.<wbr>android.<wbr>vending.<wbr>BILLING</code></p><p>Lets Migrely ask the Google Play app on your phone whether Premium is on, and open Google Play&#x27;s purchase screen. Migrely talks only to the Google Play app, never to the internet; Google Play itself goes online to complete a purchase.</p></article><article><h3>An internal AndroidX permission</h3><p><code>com.<wbr>migrely.<wbr>app.<wbr>DYNAMIC_<wbr>RECEIVER_<wbr>NOT_<wbr>EXPORTED_<wbr>PERMISSION</code></p><p>AndroidX, Google&#x27;s standard library for Android apps, adds it so that on older Android versions only Migrely can send messages to its own parts. Settings does not list it.</p></article></div>
+    phones with Google Play, billing may be listed too. “View network connections” is asked for only from version
+    1.1.1; earlier versions ask for the other five.</p>
+  <p>“View network connections” is not the internet permission. It only lets an app see whether the phone is online;
+    it cannot connect. “Have full network access” is the internet permission, and Migrely does not have it.</p>
+  <div class="perms"><article><h3>“show notifications”</h3><p><code>android.<wbr>permission.<wbr>POST_<wbr>NOTIFICATIONS</code></p><p>Reminders and the “Did it help?” question. On Android 13 and later, Android asks you first. On any version you can turn notifications off in Settings.</p></article><article><h3>“run at startup”</h3><p><code>android.<wbr>permission.<wbr>RECEIVE_<wbr>BOOT_<wbr>COMPLETED</code></p><p>Puts your reminders back after the phone restarts. It comes with WorkManager, the Android library Migrely uses to schedule reminders.</p></article><article><h3>“prevent phone from sleeping”</h3><p><code>android.<wbr>permission.<wbr>WAKE_<wbr>LOCK</code></p><p>Lets WorkManager keep the phone awake for the moments it takes to run a reminder.</p></article><article><h3>Google Play billing</h3><p><code>com.<wbr>android.<wbr>vending.<wbr>BILLING</code></p><p>Lets Migrely ask the Google Play app on your phone whether Premium is on, and open Google Play&#x27;s purchase screen. Migrely talks only to the Google Play app, never to the internet; Google Play itself goes online to complete a purchase.</p></article><article><h3>“view network connections”</h3><p><code>android.<wbr>permission.<wbr>ACCESS_<wbr>NETWORK_<wbr>STATE</code></p><p>From version 1.1.1. When you tap to buy, restore or manage Premium, Migrely checks whether your phone is online, so it can tell you it is offline instead of opening a Google Play screen that cannot load. It reads this on your phone and sends nothing. It does not let Migrely go on the internet: Migrely has no internet permission, in every version.</p></article><article><h3>An internal AndroidX permission</h3><p><code>com.<wbr>migrely.<wbr>app.<wbr>DYNAMIC_<wbr>RECEIVER_<wbr>NOT_<wbr>EXPORTED_<wbr>PERMISSION</code></p><p>AndroidX, Google&#x27;s standard library for Android apps, adds it so that on older Android versions only Migrely can send messages to its own parts. Settings does not list it.</p></article></div>
   <h2>What can still leave my phone?</h2>
   <p>Without the internet permission, Migrely itself sends nothing. Three things are up to Android, Google Play or
     you:</p>
@@ -65,8 +68,8 @@
   <p>The <a href="/privacy/">privacy policy</a> has the details.</p>
   <h2>How can a developer check it?</h2>
   <p>With USB debugging on and Migrely installed, run:</p>
-  <pre><code>adb shell dumpsys package com.migrely.app | grep -A5 "requested permissions"</code></pre>
-  <p>It prints the same five permissions. To look for the internet permission alone, run:</p>
+  <pre><code>adb shell dumpsys package com.migrely.app | grep -A6 "requested permissions"</code></pre>
+  <p>It prints the permissions above (six from version 1.1.1, one fewer before). To look for the internet permission alone, run:</p>
   <pre><code>adb shell dumpsys package com.migrely.app | grep INTERNET</code></pre>
   <p>It prints nothing.</p>
   <p><a class="play" href="https://play.google.com/store/apps/details?id=com.migrely.app&amp;referrer=utm_source%3Dmigrely.health%26utm_medium%3Dwebsite%26utm_campaign%3Dprivacy-check"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M4 2.6v18.8c0 .5.5.8.9.6l16.3-9.4c.4-.2.4-.9 0-1.1L4.9 2.1c-.4-.2-.9.1-.9.5z"/></svg><span>Get it on Google Play</span></a></p></section>

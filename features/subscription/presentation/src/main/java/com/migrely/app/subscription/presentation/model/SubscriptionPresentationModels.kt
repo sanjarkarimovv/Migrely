@@ -74,15 +74,27 @@ sealed interface PaywallPresentationNotification : PresentationNotification {
     data object PlayUnreachable : PaywallPresentationNotification
 
     data object SomethingWentWrong : PaywallPresentationNotification
+
+    /** The phone has no network with internet, so Google Play was not opened (BRD D166). */
+    data object OfflineToBuy : PaywallPresentationNotification
+
+    data object OfflineToRestore : PaywallPresentationNotification
+
+    data object OfflineToManage : PaywallPresentationNotification
 }
 
-/** What "Restore purchases" in Settings found (BRD SUB-F2). */
-enum class RestoreNotePresentationModel {
+/**
+ * The note under the Premium section's rows (BRD SUB-F2): what "Restore purchases" found, or that
+ * the phone is offline for Restore or Manage (D166).
+ */
+enum class PremiumNotePresentationModel {
     Restored,
     NothingFound,
     Pending,
     Unreachable,
-    Unavailable
+    Unavailable,
+    OfflineToRestore,
+    OfflineToManage
 }
 
 sealed interface PremiumSectionViewState {
@@ -90,7 +102,7 @@ sealed interface PremiumSectionViewState {
 
     data class Ready(
         val status: PremiumStatusPresentationModel,
-        val note: RestoreNotePresentationModel?
+        val note: PremiumNotePresentationModel?
     ) : PremiumSectionViewState
 
     /** Google Play is being asked again. */
@@ -103,9 +115,16 @@ sealed interface PremiumSectionPresentationNotification : PresentationNotificati
 sealed interface TrialBannerViewState {
     data object Hidden : TrialBannerViewState
 
-    /** [renews] is false once the subscription is cancelled: Premium then ends with the trial. */
-    data class Shown(val trialEnd: Instant, val endsToday: Boolean, val renews: Boolean) :
-        TrialBannerViewState
+    /**
+     * [renews] is false once the subscription is cancelled: Premium then ends with the trial.
+     * [offlineToManage] when "Manage" was just tapped with no network that has internet (BRD D166).
+     */
+    data class Shown(
+        val trialEnd: Instant,
+        val endsToday: Boolean,
+        val renews: Boolean,
+        val offlineToManage: Boolean
+    ) : TrialBannerViewState
 }
 
 /** The trial banner shows no messages of its own. */

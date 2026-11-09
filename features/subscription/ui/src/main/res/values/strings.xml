@@ -69,6 +69,10 @@
     <string name="subscription_message_unreachable">Google Play can\'t be reached. Try again later.</string>
     <string name="subscription_message_failed">The purchase didn\'t go through. Try again.</string>
     <string name="subscription_message_dismiss">Dismiss</string>
+    <!-- Offline, Google Play is not opened (D166); the paywall, Settings and the trial banner share these. -->
+    <string name="subscription_offline_buy">You\'re offline. Connect to the internet to buy Premium. Your diary works offline.</string>
+    <string name="subscription_offline_restore">You\'re offline. Connect to the internet to restore purchases. Your diary works offline.</string>
+    <string name="subscription_offline_manage">You\'re offline. Connect to the internet to manage your subscription. Your diary works offline.</string>
 
     <!-- Settings → Premium (D112) -->
     <string name="subscription_section_title">Premium</string>
