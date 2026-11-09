@@ -15,7 +15,6 @@
 - **Not proved here:**
   - H9's forced datatransport job;
   - buy and Manage on the R8 build (no Play billing on the emulator image);
-  - the API 26 row of H1;
   - 200% landscape (S6);
   - H10, the real Play build on the owner's phone, which is `team-lead`'s after upload.
 - **Release steps (D125):** PR #173 into `main`, an annotated tag `v1.1.1`, then QA checks that `git diff d7376af0 v1.1.1` is empty. Uploads only with the owner's permission (standing order: none while the app is in review).
@@ -89,7 +88,7 @@ The network state of every row is Android's own (`dumpsys connectivity`: airplan
 | **H7, negative control** (same SHA, only the permission removed) | ✅ the check can fail and fails open: offline, every buy tap opened the sheet (airplane ×3, Wi-Fi and mobile off ×2, H6a), 6/6; online and airplane with Wi-Fi as normal. Its later rows are void: with the sheet open offline, the many-taps row completed a simulated trial purchase | 6/6 |
 | R8 (`r8-a3f2`) | ⚠️ partly. With no Play billing on the image, the paywall shows "Premium isn't available in your region yet", so **buy and Manage cannot be reached on R8 here**. Settings Restore offline shows the offline message 1/1, so the check works in the minified build. The R8 paywall Restore rows are void (the static region line matched the watcher) | 1/1 |
 | H9 logcat | ✅ no `FATAL` and no Migrely crash in any H row, debug or R8. **Not proved:** the forced datatransport job. `h9.sh` found no Migrely job to force on R8, so no upload was attempted; 0 datatransport lines and 0 "Status Code: 200" | `logs/step-r8h9.out`, `h9-r8-a3f2-logcat.txt` |
-| API 26 row | **Not run.** `team-lead` asked to finish fast; it is about 10 minutes on emulator-5582 | |
+| API 26 row (emulator-5582, Android 8.0, `debug-eeb6`: eeb69f8a, whose product code equals d7376af0), run 14:03–14:12 after the first verdict at `team-lead`'s request | ✅ H3 online (mobile): the sheet opens 1/1. H1 airplane mode (set through Settings' own screen; API 26 has no shell command): Yearly, Monthly, Lifetime give the offline message, no sheet, 3/3. H2 Wi-Fi and data off: the offline message 1/1. H6 back online: the sheet opens 1/1. So Android 8 does not report "offline" by mistake, and does report it when there is no network. **H5 (airplane with Wi-Fi) not run:** Wi-Fi cannot be turned on on this image (`wifi_on` stays 0, Wi-Fi network `available: false`). The row's own network log shows no active network, so its offline message was right. No FATAL | 6/6 valid rows, `logs/step-api26.out`, `h111.jsonl` (build `debug-eeb6-api26`) |
 
 All rows: `logs/h111.jsonl`, listed by `count.py` (`logs/count-h-debug.txt`). Frames: `shots/<build>-<row>-<net>.png`.
 
@@ -149,7 +148,7 @@ The product diff from v1.1.0 is the offline check (subscription domain, data, pr
 
 | Row | Passing it does not show |
 |---|---|
-| H rows | the real Google Play sheet, account or network: the "sheet" is the debug build's simulator after the same check. On R8 only Settings Restore was reachable. A captive portal, VPN, work profile or Data Saver (D3) were not run. One emulator (API 36); not API 26 |
+| H rows | the real Google Play sheet, account or network: the "sheet" is the debug build's simulator after the same check. On R8 only Settings Restore was reachable. A captive portal, VPN, work profile or Data Saver (D3) were not run. API 36, and on API 26 the H1, H2, H3 and H6 rows only |
 | H7 | that a real phone that strips the permission fails open: only that this build does |
 | H9 | that datatransport's upload job fails quietly: no job was forced |
 | S rows | a human hand, a real phone, other screen sizes and other TalkBack versions; 200% landscape |
@@ -159,7 +158,7 @@ The product diff from v1.1.0 is the offline check (subscription domain, data, pr
 ## Residual risks
 
 - **H10 is not done:** the real Play build on the owner's phone, offline and online, with the owner present (`team-lead`, after upload). Until then the check is proved only against the simulator. Separately, the lead's probe on the owner's phone gave the right offline/online verdict 5/5 (`migrely-work/hotfix-111/phone-probe.txt`).
-- **API 26:** the network check was not run on Android 8. A false "offline" there would block a purchase.
+- **API 26:** H1, H2, H3 and H6 pass on Android 8 (6/6). H5 (airplane with Wi-Fi) could not run there: the image has no working Wi-Fi.
 - **datatransport (H9):** with `ACCESS_NETWORK_STATE`, Play Billing's logger may schedule uploads that fail without INTERNET. No crash was seen, but no job was forced.
 - **#166 (S3, open, 1.2):** on a failed first 10, "Couldn't save" covers the card's title at 100% and 200%. QA corrected the 200% row in the issue. The sentence is visible and spoken.
 - **TalkBack duplicate filter (accepted by `team-lead`):** an identical offline note that arrives mid-speech is dropped.
