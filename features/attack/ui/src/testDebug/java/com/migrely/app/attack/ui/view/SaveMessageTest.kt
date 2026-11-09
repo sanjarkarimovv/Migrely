@@ -3,6 +3,11 @@ package com.migrely.app.attack.ui.view
 import androidx.activity.ComponentActivity
 import androidx.compose.material3.Text
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.SemanticsProperties
@@ -306,6 +311,59 @@ class SaveMessageTest {
     }
 
     @Test
+    fun `Given an error when the 10 is added again and saves then Saved waits for the card`() {
+        show()
+        storageFull()
+
+        events.show(AttackDetailsEventUiModel.FirstMaximumRecorded)
+        events.show(AttackDetailsEventUiModel.Saved)
+        repeat(3) { rule.mainClock.advanceTimeByFrame() }
+
+        assertEquals(LiveRegionMode.Assertive, liveRegionOf(card))
+        rule.onNodeWithText(SAVED).assertDoesNotExist()
+        rule.mainClock.advanceTimeBy(120)
+        rule.onNodeWithText(SAVED).assertDoesNotExist()
+        settle()
+        rule.onNodeWithText(SAVED).assertExists()
+        rule.onNodeWithText(STORAGE_FULL).assertDoesNotExist()
+    }
+
+    @Test
+    fun `Given a message held behind the card when the screen is rebuilt then it still shows`() {
+        var composed by mutableStateOf(true)
+        rule.setContent {
+            val saved = rememberSaveableStateHolder()
+            MigrelyTheme {
+                // Torn down and rebuilt with its saved state, as on an activity recreation.
+                if (composed) {
+                    saved.SaveableStateProvider("details") {
+                        dependencies.AttackDetails(
+                            attackId = "a",
+                            announceMerge = false,
+                            navController = NavController(rule.activity)
+                        )
+                    }
+                }
+            }
+        }
+        settle()
+
+        events.show(AttackDetailsEventUiModel.FirstMaximumRecorded)
+        events.show(AttackDetailsEventUiModel.Message(AttackMessageUiModel.StorageFull))
+        repeat(2) { rule.mainClock.advanceTimeByFrame() }
+        rule.onNodeWithText(STORAGE_FULL).assertDoesNotExist()
+        composed = false
+        Snapshot.sendApplyNotifications()
+        repeat(2) { rule.mainClock.advanceTimeByFrame() }
+        composed = true
+        Snapshot.sendApplyNotifications()
+        settle()
+
+        rule.onNodeWithText(TITLE).assertExists()
+        rule.onNodeWithText(STORAGE_FULL).assertExists()
+    }
+
+    @Test
     fun `Given the card shows then an error is polite`() {
         show()
 
@@ -417,6 +475,20 @@ class SaveMessageTest {
         show()
         failedFirstTen()
 
+        goForwardAndBack()
+
+        rule.onNodeWithText(STORAGE_FULL).assertDoesNotExist()
+        rule.onNodeWithText(TITLE).assertExists()
+    }
+
+    @Test
+    fun `Given an error held behind the card when the user goes forward then it is gone after`() {
+        show()
+
+        events.show(AttackDetailsEventUiModel.FirstMaximumRecorded)
+        events.show(AttackDetailsEventUiModel.Message(AttackMessageUiModel.StorageFull))
+        repeat(2) { rule.mainClock.advanceTimeByFrame() }
+        rule.onNodeWithText(STORAGE_FULL).assertDoesNotExist()
         goForwardAndBack()
 
         rule.onNodeWithText(STORAGE_FULL).assertDoesNotExist()

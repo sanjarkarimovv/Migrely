@@ -82,9 +82,9 @@ import kotlinx.coroutines.flow.first
 private val CONTENT_MAX_WIDTH = 640.dp
 
 /**
- * How long a message from the same action waits once the safety card has become a live region. Compose sends
- * accessibility events in 100 ms batches, and in one batch TalkBack spoke the message first (#166, 36 ms). Two batches
- * put the card's announcement in an earlier one (BRD D165 (3)).
+ * How long a message stays hidden once the safety card has become a live region. Compose sends accessibility events in
+ * 100 ms batches, and in one batch TalkBack spoke the message first (#166, 36 ms). Two batches put the card's
+ * announcement in an earlier one (BRD D165 (3)).
  */
 private const val CARD_FIRST_MILLIS = 200L
 
@@ -163,9 +163,29 @@ fun AttackDetailsDependencies.AttackDetails(
     // Read by the event collector, which outlives each state.
     val ready by rememberUpdatedState(uiState is AttackDetailsViewStateUiModel.Ready)
 
+    // Not saved: after a rotation or a process restore the card's event is gone, so the message shows at once.
+    var messageHeld by remember(attackId) { mutableStateOf(false) }
+
     // An error belongs to the visit and to the last write (BRD D165 (4), (5)); Undo and information stay.
     fun errorShown(): Boolean =
         shownMessage?.let { attackMessageBehaviourUiMapper.toUi(it.message).isError } == true
+
+    // Stored at once, so a rotation or a leave during the wait neither loses it nor brings it back. While the card of
+    // an event has not been announced, it stays hidden: TalkBack speaks the card first (BRD D165 (3)).
+    fun post(message: AttackMessageUiModel) {
+        shownMessage = ShownAttackMessageUiModel(message, System.currentTimeMillis())
+        if (safetyCardAnnounced < safetyCardArrivals) messageHeld = true
+    }
+
+    LaunchedEffect(messageHeld) {
+        if (messageHeld) {
+            snapshotFlow { safetyCardAnnounced >= safetyCardArrivals || !ready }.first { it }
+            delay(CARD_FIRST_MILLIS)
+            // Its time starts when it can be seen.
+            shownMessage = shownMessage?.copy(shownAtEpochMillis = System.currentTimeMillis())
+            messageHeld = false
+        }
+    }
 
     LaunchedEffect(attackDetailsEventPresenter) {
         attackDetailsEventPresenter.events.collect { event ->
@@ -175,24 +195,11 @@ fun AttackDetailsDependencies.AttackDetails(
                     safetyCardVisible = true
                     safetyCardArrivals++
                 }
-                is AttackDetailsEventUiModel.Message -> {
-                    // The card is spoken first: its message follows its announcement (BRD D165 (3)). One at a time,
-                    // so a later message never lands before an earlier one.
-                    if (safetyCardAnnounced < safetyCardArrivals) {
-                        snapshotFlow { safetyCardAnnounced >= safetyCardArrivals || !ready }
-                            .first { it }
-                        delay(CARD_FIRST_MILLIS)
-                    }
-                    shownMessage = ShownAttackMessageUiModel(
-                        event.message,
-                        System.currentTimeMillis()
-                    )
-                }
+                is AttackDetailsEventUiModel.Message -> post(event.message)
                 // Cleared on success, never on the attempt, so a retry that fails shows no flash.
                 AttackDetailsEventUiModel.Saved -> if (errorShown()) {
-                    shownMessage = ShownAttackMessageUiModel(
-                        AttackMessageUiModel.Saved,
-                        System.currentTimeMillis()
+                    post(
+                        AttackMessageUiModel.Saved
                     )
                 }
             }
@@ -313,7 +320,7 @@ fun AttackDetailsDependencies.AttackDetails(
             actions = actions
         )
         AttackMessages(
-            shown = shownMessage,
+            shown = shownMessage.takeUnless { messageHeld },
             behaviourMapper = attackMessageBehaviourUiMapper,
             reduceMotion = rememberReduceMotion(),
             announcePolitely = cardMode,
