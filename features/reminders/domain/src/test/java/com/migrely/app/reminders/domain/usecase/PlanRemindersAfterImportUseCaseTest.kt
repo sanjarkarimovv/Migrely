@@ -66,7 +66,9 @@ class PlanRemindersAfterImportUseCaseTest {
     }
 
     private fun givenNow(text: String) {
-        given(getCurrentTimeRepository.currentTime()).willReturn(CurrentTimeDomainModel(at(text), TASHKENT))
+        given(
+            getCurrentTimeRepository.currentTime()
+        ).willReturn(CurrentTimeDomainModel(at(text), TASHKENT))
     }
 
     @Test
@@ -80,12 +82,14 @@ class PlanRemindersAfterImportUseCaseTest {
     }
 
     @Test
-    fun `Given an imported visit not yet due when planned then its reminder is planned (control)`() {
+    fun `Given an imported visit not yet due when planned then it is planned (control)`() {
         givenNow("2026-11-18T09:00")
 
         classUnderTest.executeInBackground(Unit)
 
         verify(setVisitRemindedRepository, never()).setVisitReminded(any())
-        verify(scheduleVisitReminderRepository).scheduleVisitReminder(at("2026-11-18T10:00"), NOVEMBER_20)
+        verify(
+            scheduleVisitReminderRepository
+        ).scheduleVisitReminder(at("2026-11-18T10:00"), NOVEMBER_20)
     }
 }

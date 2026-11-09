@@ -47,11 +47,17 @@ class MigrelyDateFormatTest {
 
     @Test
     fun `Given a day this year when shown as month and day then no weekday`() {
-        assertEquals("Aug 20", MigrelyDateFormat.monthDay(LocalDate.of(2026, 8, 20), TODAY, Locale.US))
+        assertEquals(
+            "Aug 20",
+            MigrelyDateFormat.monthDay(LocalDate.of(2026, 8, 20), TODAY, Locale.US)
+        )
     }
 
     @Test
     fun `Given a day in another year when shown as month and day then with its year`() {
-        assertEquals("Aug 20, 2025", MigrelyDateFormat.monthDay(LocalDate.of(2025, 8, 20), TODAY, Locale.US))
+        assertEquals(
+            "Aug 20, 2025",
+            MigrelyDateFormat.monthDay(LocalDate.of(2025, 8, 20), TODAY, Locale.US)
+        )
     }
 }

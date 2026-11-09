@@ -14,6 +14,9 @@ enum class VisitTapAction {
  * intent already brings the app to the front, as the other notifications' taps do, so nothing more happens.
  */
 class VisitTapRule {
-    fun actionFor(attackInProgress: Boolean): VisitTapAction =
-        if (attackInProgress) VisitTapAction.BringToFront else VisitTapAction.OpenReportThroughHistory
+    fun actionFor(attackInProgress: Boolean): VisitTapAction = if (attackInProgress) {
+        VisitTapAction.BringToFront
+    } else {
+        VisitTapAction.OpenReportThroughHistory
+    }
 }

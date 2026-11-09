@@ -143,7 +143,7 @@ class ReportPeriodChoiceTest {
     }
 
     @Test
-    fun `Given a visit on November 9 and a later one when opened November 10 then since November 9`() {
+    fun `Given visits November 9 and 27 when opened November 10 then since November 9`() {
         val november9 = LocalDate.of(2026, 11, 9)
         val november10 = LocalDate.of(2026, 11, 10)
         givenToday(november10, november9, LocalDate.of(2026, 11, 27))

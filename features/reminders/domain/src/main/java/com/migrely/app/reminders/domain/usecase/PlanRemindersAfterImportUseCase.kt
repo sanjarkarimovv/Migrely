@@ -37,8 +37,9 @@ class PlanRemindersAfterImportUseCase(
                 ReminderSettingsResultDomainModel.Loaded
             )?.settings ?: return
         val now = getCurrentTimeRepository.currentTime()
-        val visits = getDoctorVisitsRepository.doctorVisits(now.instant.atZone(now.zone).toLocalDate()) as?
-            DoctorVisitsResultDomainModel.Loaded ?: return
+        val visits =
+            getDoctorVisitsRepository.doctorVisits(now.instant.atZone(now.zone).toLocalDate()) as?
+                DoctorVisitsResultDomainModel.Loaded ?: return
         val next = visits.next?.date
         val marked = next != null &&
             settings.visitRemindedFor != next &&

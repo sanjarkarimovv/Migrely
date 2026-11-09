@@ -8,12 +8,15 @@ class VisitTapRuleTest {
     private val classUnderTest = VisitTapRule()
 
     @Test
-    fun `Given an attack in progress when the reminder is tapped then the app only comes to the front`() {
+    fun `Given an attack when the reminder is tapped then the app only comes to the front`() {
         assertEquals(VisitTapAction.BringToFront, classUnderTest.actionFor(attackInProgress = true))
     }
 
     @Test
     fun `Given no attack when the reminder is tapped then the report opens through History`() {
-        assertEquals(VisitTapAction.OpenReportThroughHistory, classUnderTest.actionFor(attackInProgress = false))
+        assertEquals(
+            VisitTapAction.OpenReportThroughHistory,
+            classUnderTest.actionFor(attackInProgress = false)
+        )
     }
 }
