@@ -52,6 +52,13 @@ in `designsystem`. `Refs #161` in every commit and in the PR, never a closing ke
   Done: on develop's `AttackChoiceSections.kt`, before the migration: fails and names `AttackChoiceSections.kt`. An `import
   androidx.compose.material3.DropdownMenu` in `SettingsDialogs.kt`: fails and names it. `import androidx.compose.ui.window.Popup`: fails and names
   it. `DropdownMenuItem` and `PopupProperties` imports alone: passes. Each restored; `git status --short` clean.
+  Review fix (PR #172, two Minor): both checks exempt their helper by its project path, not by file name. The popup list adds every name on the
+  classpath that opens a popup window: Material 3 `ExpandedDockedSearchBar`, foundation `BasicTooltipBox`, the View spinners and auto-complete
+  fields of `android.widget`, AppCompat and Material Components, and AppCompat's `PopupMenu` and `ListPopupWindow`. The dialog list adds
+  `ExpandedFullScreenSearchBar` and `ModalWideNavigationRail`, each traced to a dialog in Material 1.4.0's sources. Probes, local only: one file per
+  new name and a `MigrelyMenus.kt` and a `MigrelyDialogs.kt` in another package are each named (12 by the popup check, 3 by the dialog check), a
+  `DropdownMenuItem` import alone is not, and the two misplaced helpers passed the old name-based checks. The debug-only
+  `MaterialAlertDialogBuilder` in `DialogSimulatedSheet.kt` is a View dialog, not on the list, and stays as it is.
 
 ## 5. Real windows
 

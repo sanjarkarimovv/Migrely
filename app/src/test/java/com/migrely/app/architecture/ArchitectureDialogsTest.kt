@@ -4,7 +4,9 @@ import com.lemonappdev.konsist.api.Konsist
 import com.lemonappdev.konsist.api.verify.assertFalse
 import org.junit.Test
 
-private const val HELPER_FILE = "MigrelyDialogs"
+/** By its place in the project, so a file of the same name elsewhere is checked like any other. */
+private const val HELPER_PATH =
+    "/designsystem/src/main/java/com/migrely/app/designsystem/dialog/MigrelyDialogs.kt"
 
 /** Read in the file's text, which holds an import and a fully qualified call alike. */
 private val RAW_DIALOGS = listOf(
@@ -13,7 +15,9 @@ private val RAW_DIALOGS = listOf(
     "androidx.compose.material3.BasicAlertDialog",
     "androidx.compose.material3.DatePickerDialog",
     "androidx.compose.material3.TimePickerDialog",
-    "androidx.compose.material3.ModalBottomSheet"
+    "androidx.compose.material3.ModalBottomSheet",
+    "androidx.compose.material3.ExpandedFullScreenSearchBar",
+    "androidx.compose.material3.ModalWideNavigationRail"
 ).map { name -> Regex(Regex.escape(name) + "\\b") }
 
 /**
@@ -26,7 +30,7 @@ class ArchitectureDialogsTest {
     fun `only the helper's file names a raw dialog`() {
         Konsist.scopeFromProduction()
             .files
-            .filter { it.name != HELPER_FILE }
+            .filter { it.projectPath != HELPER_PATH }
             .assertFalse { file -> RAW_DIALOGS.any { it.containsMatchIn(file.text) } }
     }
 }
