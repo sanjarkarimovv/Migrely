@@ -17,11 +17,13 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
 
-/** The ease of the scroll to the card: Material's standard ease in-out (BRD D167). */
+/** The ease of the scroll back to the top: Material's standard ease in-out (BRD D167). */
 private const val REVEAL_MILLIS = 300
 
 /**
- * Brings the first-10 safety card into the visible content area when it appears (BRD D167, EC-ATK-23; #171). TalkBack
+ * Brings the first-10 safety card into the visible content area when it appears (BRD D167, EC-ATK-23; #171). The card
+ * is the scrolling column's first child, so the content goes back to its top: the card is then exactly where the
+ * unscrolled screen puts it, and a message over a failed save covers no more of it than in 1.1.0 (#174). TalkBack
  * does not speak a live region that is out of view, so the card becomes one only once it is in view: [announces] is
  * false from the card's event until the scroll ends. The scroll holds a touch off while it runs, so it always ends
  * with the card in view, and a restored card does not scroll, because its event does not come again.
@@ -42,12 +44,12 @@ internal class SafetyCardReveal(private val scrollState: ScrollState, revealedAr
     fun announces(arrivals: Int): Boolean = revealedArrivals >= arrivals
 
     /**
-     * After the card's [arrivals]th event: once it is laid out, scrolls its top to the top of the area when it is not
+     * After the card's [arrivals]th event: once it is laid out, scrolls the content back to its top when the card is not
      * fully inside, easing or, with [reduceMotion], at once; then lets TalkBack speak it.
      */
     suspend fun reveal(arrivals: Int, reduceMotion: Boolean) {
         withFrameNanos { }
-        val distance = distanceToCard()
+        val distance = if (cardFullyInside()) 0f else -scrollState.value.toFloat()
         if (distance != 0f) {
             scrollState.scroll(MutatePriority.PreventUserInput) {
                 if (reduceMotion) {
@@ -64,13 +66,12 @@ internal class SafetyCardReveal(private val scrollState: ScrollState, revealedAr
         revealedArrivals = arrivals
     }
 
-    /** How far the content scrolls to bring the card's top to the area's top, or 0 when it is fully inside. */
-    private fun distanceToCard(): Float {
-        val area = viewport?.takeIf { it.isAttached } ?: return 0f
-        val shown = card?.takeIf { it.isAttached } ?: return 0f
+    /** Whether the card lies fully inside the area; true when either is not laid out, so nothing moves. */
+    private fun cardFullyInside(): Boolean {
+        val area = viewport?.takeIf { it.isAttached } ?: return true
+        val shown = card?.takeIf { it.isAttached } ?: return true
         val top = area.localPositionOf(shown, Offset.Zero).y
-        val bottom = top + shown.size.height
-        return if (top >= 0f && bottom <= area.size.height) 0f else top
+        return top >= 0f && top + shown.size.height <= area.size.height
     }
 }
 

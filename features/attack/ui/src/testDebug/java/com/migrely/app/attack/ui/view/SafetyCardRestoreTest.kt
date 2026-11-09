@@ -9,7 +9,6 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onParent
 import androidx.compose.ui.test.performScrollToNode
-import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.test.core.app.ApplicationProvider
 import com.migrely.app.attack.presentation.model.AttackDetailsViewState
@@ -23,7 +22,6 @@ import com.migrely.app.designsystem.theme.MigrelyTheme
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flowOf
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -99,8 +97,9 @@ class SafetyCardRestoreTest {
         content.performScrollToNode(hasText(DELETE))
         events.show(AttackDetailsEventUiModel.FirstMaximumRecorded)
         rule.mainClock.advanceTimeBy(1_000)
-        // The event brought the card into view, as on a phone.
-        assertTrue("card top ${cardTopFromContentTop()}", cardTopFromContentTop() in (-1).dp..1.dp)
+        // The event brought the content back to its top, with the card at its natural place (#174).
+        assertEquals(0f, scrollValue())
+        assertEquals(8f, cardTopFromContentTop().value, 0.5f)
         content.performScrollToNode(hasText(DELETE))
         rule.waitForIdle()
         val scrolledAway = scrollValue()

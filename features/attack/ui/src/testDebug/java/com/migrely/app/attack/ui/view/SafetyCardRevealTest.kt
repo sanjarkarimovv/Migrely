@@ -40,6 +40,9 @@ private val ANNOUNCED =
     SemanticsMatcher.expectValue(SemanticsProperties.LiveRegion, LiveRegionMode.Assertive)
 private val SILENT = SemanticsMatcher.keyNotDefined(SemanticsProperties.LiveRegion)
 
+/** The card's own top padding: its place in the unscrolled column. */
+private val NATURAL_TOP = 8.dp
+
 /**
  * The first-10 safety card comes into view when it appears, and only then is a live region (BRD D167, EC-ATK-23;
  * #171).
@@ -93,8 +96,14 @@ class SafetyCardRevealTest {
     private fun cardTopFromContentTop() =
         card.getUnclippedBoundsInRoot().top - content.getUnclippedBoundsInRoot().top
 
-    private fun assertCardAtTop() =
-        assertTrue("card top ${cardTopFromContentTop()}", cardTopFromContentTop() in (-1).dp..1.dp)
+    /**
+     * The content is back at its top, so the card is where the unscrolled layout puts it: the column's first child, under
+     * its own 8 dp. The message on a failed save then covers only what it covers in 1.1.0 (#174).
+     */
+    private fun assertCardAtNaturalPlace() {
+        assertEquals(0f, scrollValue())
+        assertEquals(NATURAL_TOP.value, cardTopFromContentTop().value, 0.5f)
+    }
 
     private fun animationsRemoved(removed: Boolean) = Settings.Global.putFloat(
         ApplicationProvider.getApplicationContext<android.content.Context>().contentResolver,
@@ -103,14 +112,14 @@ class SafetyCardRevealTest {
     )
 
     @Test
-    fun `Given the content is scrolled down when the card appears then its top comes to the top`() {
+    fun `Given the content is scrolled down when the card appears then it goes to its top`() {
         show()
         scrollDownToDelete()
 
         firstTen()
         rule.mainClock.advanceTimeBy(1_000)
 
-        assertCardAtTop()
+        assertCardAtNaturalPlace()
         card.assert(ANNOUNCED)
     }
 
@@ -123,6 +132,8 @@ class SafetyCardRevealTest {
         rule.waitForIdle()
 
         assertEquals(before, scrollValue())
+        // The unscrolled layout, which a reveal must reproduce.
+        assertEquals(NATURAL_TOP.value, cardTopFromContentTop().value, 0.5f)
         card.assert(ANNOUNCED)
     }
 
@@ -139,7 +150,7 @@ class SafetyCardRevealTest {
         card.assert(SILENT)
         rule.mainClock.advanceTimeBy(1_000)
         card.assert(ANNOUNCED)
-        assertCardAtTop()
+        assertCardAtNaturalPlace()
     }
 
     @Test
@@ -153,7 +164,7 @@ class SafetyCardRevealTest {
         repeat(3) { rule.mainClock.advanceTimeByFrame() }
         assertTrue("mid-scroll", cardTopFromContentTop() < (-1).dp)
         rule.mainClock.advanceTimeBy(1_000)
-        assertCardAtTop()
+        assertCardAtNaturalPlace()
     }
 
     @Test
@@ -167,7 +178,7 @@ class SafetyCardRevealTest {
             firstTen()
             repeat(3) { rule.mainClock.advanceTimeByFrame() }
 
-            assertCardAtTop()
+            assertCardAtNaturalPlace()
         } finally {
             animationsRemoved(false)
         }
@@ -184,6 +195,6 @@ class SafetyCardRevealTest {
         content.performTouchInput { swipeUp() }
         rule.mainClock.advanceTimeBy(1_000)
 
-        assertCardAtTop()
+        assertCardAtNaturalPlace()
     }
 }
