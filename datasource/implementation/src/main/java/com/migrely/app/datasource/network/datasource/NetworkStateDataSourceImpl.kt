@@ -1,5 +1,6 @@
 package com.migrely.app.datasource.network.datasource
 
+import android.annotation.SuppressLint
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
@@ -21,6 +22,9 @@ class NetworkStateDataSourceImpl(private val connectivityManager: ConnectivityMa
         NetworkStateDataModel.Unknown
     }
 
+    // The app's manifest declares ACCESS_NETWORK_STATE (BRD D166). Without it these calls throw a SecurityException,
+    // which networkState() turns into Unknown, so a missing permission never blocks a purchase.
+    @SuppressLint("MissingPermission")
     private fun stateOf(manager: ConnectivityManager): NetworkStateDataModel {
         // There is no synchronous replacement for allNetworks that needs no listener.
         @Suppress("DEPRECATION")
@@ -29,6 +33,7 @@ class NetworkStateDataSourceImpl(private val connectivityManager: ConnectivityMa
         return if (online) NetworkStateDataModel.Online else NetworkStateDataModel.Offline
     }
 
+    @SuppressLint("MissingPermission")
     private fun hasInternet(manager: ConnectivityManager, network: Network?): Boolean =
         network != null &&
             manager.getNetworkCapabilities(network)
