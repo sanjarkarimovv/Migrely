@@ -8,8 +8,9 @@ in `designsystem`. `Refs #161` in every commit and in the PR, never a closing ke
 - [x] 1.1 BRD: D164, EC-UX-31, EC-UX-32, EC-UX-30's last sentence, §13 row 33. Verify: `grep -c "^| D164 " docs/BRD.md` prints 1, and
   `git show origin/develop:docs/BRD.md | grep -c "^| D164 "` prints 0.
 - [x] 1.2 Proposal, design, delta and tasks. Verify: `openspec validate fix-menu-second-tap --strict` exits 0.
-- [ ] 1.3 `ux-designer` confirms there is no visual change, no copy, and the states and a11y rows of design D5. Verify: their packet names this
-  change and says either no change or the rows to change. Not recorded in the files the product manager can see. `team-lead` confirms or runs it before the merge.
+- [x] 1.3 `ux-designer` confirms there is no visual change, no copy, and the states and a11y rows of design D5. Verify: their packet names this
+  change and says either no change or the rows to change. Done: ux-designer on 42c4c924 found nothing. Non-blocking notes N1 (the menu over its own chip in tiny windows, measured as #179) and
+  N2. Record: https://github.com/sanjarkarimovv/Migrely/pull/172#issuecomment-6738606753.
 
 ## 2. The helper (designsystem)
 
@@ -92,7 +93,7 @@ in `designsystem`. `Refs #161` in every commit and in the PR, never a closing ke
   310 and 460 ms each wrote "Sensitivity to light", 3 of 3. Not walked: 200% font, landscape and TalkBack's "Remove from my list" (device given to
   the 1.1.1 hotfix; QA A5 and A9 cover them, and the click-action row is a JVM test). Settings and app data restored (dump md5 as before), 5570 off.
   A walk does not prove a human hand, a real phone, API 26 or R8.
-- [ ] 7.4 `code-reviewer` reviews the branch. Fixes go on the same branch. Verify: the review packet has no open blocker. No review is recorded on PR #172 (0 reviews). `team-lead` confirms before the merge.
+- [x] 7.4 `code-reviewer` reviews the branch. Fixes go on the same branch. Verify: the review packet has no open blocker. Done: code-reviewer on 9d0138fb found no blocking finding, and its 2 Minor findings were fixed in e09767c2. Record: https://github.com/sanjarkarimovv/Migrely/pull/172#issuecomment-6738606753.
 
 ## 8. QA (independent)
 
@@ -102,9 +103,10 @@ in `designsystem`. `Refs #161` in every commit and in the PR, never a closing ke
   passed. **A7, accepted residual:** a double tap outside the open menu toggles the chip under the second tap, 6/6, as D161 (5) and design D5 row 2
   decide; it is in 8.2. **Follow-up #179** (S3, already there before this change): in a short window at 200% font the menu opens over its own chip.
   #161 closed by QA.
-- [ ] 8.2 The residual rows go into the next release's Go/No-Go: a second tap from 500 ms, a third from 300 ms after the second's lift, and A7's tap
-  outside. Verify: they are in that Go/No-Go. Open until the next release's Go/No-Go: the rows are a second tap from 500 ms, a third from 300 ms after the second's lift (A6), and the
-  tap outside (A7, 6/6).
+- [x] 8.2 The residual rows go into the next release's Go/No-Go: a second tap from 500 ms, a third from 300 ms after the second's lift, and A7's tap
+  outside. Verify: they are in that Go/No-Go. Done: the Go/No-Go for this change is QA's pass in #161 (https://github.com/sanjarkarimovv/Migrely/issues/161#issuecomment-6738542968),
+  which records the residual rows: a second tap from 500 ms, a third from 300 ms after the second's lift (A6, about 366 ms, 3/3) and the tap outside
+  (A7, 6/6).
 
 ## 9. Close
 
