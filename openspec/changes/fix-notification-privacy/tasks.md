@@ -21,7 +21,7 @@ the PR. Never `Fixes #178`: the lead filed it and closes it after the retest. Ow
 
 ## 3. Gate
 
-- [ ] 3.1 Verify: `set -o pipefail; ./gradlew assembleDebug test ktlintCheck detekt lint` exits 0, and `openspec validate fix-notification-privacy --strict` exits 0.
+- [x] 3.1 Verify: `set -o pipefail; ./gradlew assembleDebug test ktlintCheck detekt lint` exits 0, and `openspec validate fix-notification-privacy --strict` exits 0. Done: gate exit 0 (`migrely-work/walks/t21/gate.exit`), 1186 JVM tests, 0 failures; both `openspec validate --strict` exit 0.
 
 ## 4. QA (`qa-engineer`)
 
