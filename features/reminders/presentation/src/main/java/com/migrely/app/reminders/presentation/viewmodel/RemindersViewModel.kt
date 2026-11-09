@@ -198,12 +198,9 @@ class RemindersViewModel(
     private fun load() {
         val load = ++latestLoad
         getRemindersUseCase(
-            onResult = {
-                if (load ==
-                    latestLoad
-                ) {
-                    updateViewState(remindersPresentationMapper.toPresentation(it))
-                }
+            onResult = { result ->
+                val latest = load == latestLoad
+                if (latest) updateViewState(remindersPresentationMapper.toPresentation(result))
             }
         )
     }
