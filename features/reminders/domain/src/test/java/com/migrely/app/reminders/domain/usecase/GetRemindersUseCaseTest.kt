@@ -135,7 +135,7 @@ class GetRemindersUseCaseTest {
 
     /** Issue #187: the screen stays open past midnight; the same visit read again must not look the same. */
     @Test
-    fun `Given the visit is tomorrow when the date changes to its day then the screen reads differently`() {
+    fun `Given the visit is tomorrow when midnight passes then the screen reads differently`() {
         givenTheVisitOnTheTwelfth()
 
         val before = readAt(Instant.parse("2026-11-11T18:59:00Z"), TASHKENT)
@@ -146,7 +146,7 @@ class GetRemindersUseCaseTest {
 
     /** Issue #187: a flight east moves the phone's date to the visit day at the same instant. */
     @Test
-    fun `Given the visit is tomorrow when the zone moves the date to its day then the screen reads differently`() {
+    fun `Given the visit is tomorrow when the zone makes it today then it reads differently`() {
         givenTheVisitOnTheTwelfth()
         val instant = Instant.parse("2026-11-11T20:30:00Z")
 
