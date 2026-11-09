@@ -1,24 +1,25 @@
 ## ADDED Requirements
 
 ### Requirement: The safety card comes into view when it appears
-When the first-10 safety card appears and is not fully inside the visible content area, the content SHALL scroll so the
-card's top is at the top of that area; a taller card SHALL have its top aligned. The scroll SHALL ease over 300 ms, or jump
+When the first-10 safety card appears and is not fully inside the visible content area, the content SHALL scroll back to
+its top, where the card is the first item, so the card sits at its unscrolled place. The scroll SHALL ease over 300 ms, or jump
 with "Remove animations", and a touch SHALL NOT stop it. Accessibility focus SHALL NOT move. A card restored by a rotation or a
-process SHALL NOT scroll (BRD EC-ATK-23, D167).
+process SHALL NOT scroll (BRD EC-ATK-23, D167, #174).
 
 #### Scenario: Scrolled down to Pain, a first 10 that saves
 - **WHEN** the user has scrolled until Pain's Add is on screen and the card's place is above the view, at 100% or 200% font,
   and adds a first 10 that saves
-- **THEN** within 1 second the card's top is at the top of the content area, and its title, sentence and "Got it" show
+- **THEN** within 1 second the content is back at its top, and the card's title, sentence and "Got it" show
 
 #### Scenario: Scrolled down, a first 10 that fails to save
 - **WHEN** the same, and the save fails because storage is full
-- **THEN** within 1 second the card's top is at the top of the content area, and its sentence and "Got it" show, with the
-  message lying over the title at 100% as in 1.1.0 (#166)
+- **THEN** within 1 second the content is back at its top, and the card's sentence and "Got it" show
+- **AND** the message covers no more of the card than in 1.1.0: the title at 100% (#166), and never the first line of the
+  sentence (#174)
 
 #### Scenario: Landscape and a card taller than the area
 - **WHEN** the phone is in landscape, at 100% or 200% font, and the card appears out of view, taller than the area or not
-- **THEN** its top is at the top of the area, and the rest can be scrolled
+- **THEN** the content is back at its top, the card's top shows, and the rest can be scrolled
 
 #### Scenario: The card is already in view
 - **WHEN** the card appears fully inside the visible content area

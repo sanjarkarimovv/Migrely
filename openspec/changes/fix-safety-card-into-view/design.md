@@ -8,7 +8,10 @@ The code is read from `main` 50a6775e. `SafetyCard` is the first child of `Ready
 - Hoist the column's `ScrollState`.
 - A `LaunchedEffect` on the event, not on restored state, waits until the card is laid out and reads its bounds in the viewport.
 - If the card is not fully inside, call `scroll(MutatePriority.PreventUserInput) { … }`. Inside it, drive `scrollBy` from a 300 ms ease-in-out animation
-  (for example `androidx.compose.animation.core.animate`) to bring the card's top to the viewport's top, or call `scrollBy` once with reduced motion. A taller card gets its top aligned.
+  (for example `androidx.compose.animation.core.animate`) back to scroll 0, the content's top, or call `scrollBy` once with reduced motion. The card
+  is the column's first child, so at 0 it sits at its unscrolled place, and a failed save's message covers no more of it than in 1.1.0.
+- **#174 (S2, QA):** the first version scrolled the card's top to the viewport's top, which lifted it 21 px, so "Couldn't save" also hid the first line
+  of the sentence. Fixed in eeb69f8a by scrolling to 0 instead.
 - If the card is already inside, do nothing.
 - `PreventUserInput` holds a drag off for those 300 ms, so the scroll always ends with the card in view. That is safety over UX for 0.3 s.
 - A restore does not scroll, because `rememberScrollState` already restores the position and the event does not repeat.

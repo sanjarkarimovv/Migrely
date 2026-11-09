@@ -13,8 +13,8 @@
 
 ## What Changes
 
-- When the card appears and is not fully in view, the content scrolls so the card's top is at the top of the content area. A taller card has its top
-  aligned.
+- When the card appears and is not fully in view, the content scrolls back to its top, where the card is the first item. The card sits at its
+  unscrolled place, so a failed save's message covers no more of it than in 1.1.0 (#174).
 - The scroll eases over 300 ms, or jumps with "Remove animations". A touch does not stop it.
 - Focus does not move, and a restored card does not scroll.
 - TalkBack speaks the card's title and sentence once the card is in view.
