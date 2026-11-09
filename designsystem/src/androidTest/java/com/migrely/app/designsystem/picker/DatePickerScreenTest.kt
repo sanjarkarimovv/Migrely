@@ -57,12 +57,11 @@ class DatePickerScreenTest {
 
         val weeks = weeksInFull()
         assertTrue("only $weeks weeks show in full", weeks >= 2)
-        composeTestRule.onNode(
-            hasText("S") or hasText("Sunday", substring = true),
-            useUnmergedTree = true
-        )
-            .assertExists()
-        done().assertIsDisplayed()
+        assertTrue("the weekday row is not in view", weekdayRowInView())
+        // Within the box's height; the box is wider than the upright test window, so only the walk sees it whole.
+        val done = done().fetchSemanticsNode().boundsInRoot
+        val screenBottom = with(composeTestRule.density) { LANDSCAPE.height.toPx() }
+        assertTrue("Done is at $done", done.top >= 0f && done.bottom <= screenBottom)
     }
 
     @Test
@@ -171,6 +170,16 @@ class DatePickerScreenTest {
             .map { it.top }
             .distinct()
             .size
+    }
+
+    /**
+     * The weekday row's letter for Monday lies within the screen's height. Only the height counts: the 860 dp box is
+     * centred in a test window held upright, and the month pager keeps its other pages beside the shown one.
+     */
+    private fun weekdayRowInView(): Boolean {
+        val screenBottom = with(composeTestRule.density) { LANDSCAPE.height.toPx() }
+        return composeTestRule.onAllNodes(hasText("M"), useUnmergedTree = true).fetchSemanticsNodes()
+            .any { it.boundsInRoot.top >= 0f && it.boundsInRoot.bottom <= screenBottom }
     }
 
     private fun day(date: LocalDate) =
