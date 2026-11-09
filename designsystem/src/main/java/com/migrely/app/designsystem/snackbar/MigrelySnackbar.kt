@@ -98,7 +98,11 @@ val MESSAGE_OFFSET_BELOW_TOP_BAR = 56.dp
  * [action] and a duration dismisses it, by touch only, so screen readers still find the close button and nothing new. A
  * tap cannot take away the offer to undo, or a message with no duration, which says the last action was not saved
  * (BRD D158).
+ *
+ * TalkBack reads an error at once and anything else politely. [announcePolitely] makes an error polite too, so it waits
+ * for an assertive announcement already running, such as the first-10 safety card (BRD D165 (3)).
  */
+@Suppress("LongParameterList")
 @Composable
 fun MigrelySnackbar(
     text: String,
@@ -108,7 +112,8 @@ fun MigrelySnackbar(
     dismissLabel: String,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
-    timeLeft: (() -> Float)? = null
+    timeLeft: (() -> Float)? = null,
+    announcePolitely: Boolean = false
 ) {
     val currentOnDismiss by rememberUpdatedState(onDismiss)
     val swipeState = rememberSwipeToDismissBoxState()
@@ -125,7 +130,7 @@ fun MigrelySnackbar(
         backgroundContent = {},
         modifier = modifier.then(bodyTap)
     ) {
-        SnackbarSurface(text, tone, action, dismissLabel, onDismiss, timeLeft)
+        SnackbarSurface(text, tone, action, dismissLabel, onDismiss, timeLeft, announcePolitely)
     }
 }
 
@@ -136,12 +141,11 @@ private fun SnackbarSurface(
     action: SnackbarAction?,
     dismissLabel: String,
     onDismiss: () -> Unit,
-    timeLeft: (() -> Float)?
+    timeLeft: (() -> Float)?,
+    announcePolitely: Boolean
 ) {
     val lineColor = MaterialTheme.colorScheme.primary.copy(alpha = TIME_LEFT_ALPHA)
-    val liveRegionMode = if (tone ==
-        SnackbarTone.Error
-    ) {
+    val liveRegionMode = if (tone == SnackbarTone.Error && !announcePolitely) {
         LiveRegionMode.Assertive
     } else {
         LiveRegionMode.Polite
