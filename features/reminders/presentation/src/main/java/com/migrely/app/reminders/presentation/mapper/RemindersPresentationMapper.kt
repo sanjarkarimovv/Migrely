@@ -13,7 +13,9 @@ class RemindersPresentationMapper {
                 effectEnabled = result.reminders.effectEnabled,
                 notificationsAllowed = result.reminders.notificationsAllowed,
                 mayAskPermission = result.reminders.mayAskPermission,
+                today = result.reminders.today,
                 nextVisit = result.reminders.nextVisit,
+                visitRemovable = result.reminders.visitRemovable,
                 visitChannelOff = result.reminders.visitChannelOff
             )
         )

@@ -50,6 +50,11 @@ SHALL delete nothing. A removal SHALL stand if the process ends first (BRD EC-RE
 - **WHEN** it is November 20 and the next visit is November 20
 - **THEN** the row shows November 20 and no "Remove" is offered
 
+#### Scenario: Screen kept open into the visit day
+- **WHEN** the Reminders screen shows a visit for November 20 with "Remove" on November 19, and stays open while
+  midnight passes, the time is set by hand to November 20, or the time zone changes so that it is November 20
+- **THEN** "Remove" is no longer offered, and the row still shows November 20 (issue #187)
+
 #### Scenario: Undo across midnight
 - **WHEN** a visit for November 20 was removed at 23:59:58 on November 19 and Undo is tapped at 00:00:02
 - **THEN** November 20 is restored as today's visit, and no other visit is deleted

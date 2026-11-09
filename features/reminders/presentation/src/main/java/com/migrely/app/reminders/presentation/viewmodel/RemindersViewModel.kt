@@ -50,6 +50,9 @@ class RemindersViewModel(
 
     fun onResume() = load()
 
+    /** The phone's date may have moved while the screen shows: midnight, a time set by hand, a new zone (issue #187). */
+    fun onClockChanged() = load()
+
     fun onBackAction() = emitNavigationEvent(RemindersPresentationNavigationEvent.OnBack)
 
     fun onDailyReminderAction(on: Boolean, time: LocalTime) {

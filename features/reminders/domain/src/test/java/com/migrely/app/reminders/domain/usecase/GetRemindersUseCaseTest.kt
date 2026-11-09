@@ -18,6 +18,7 @@ import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Before
 import org.junit.Test
 import org.mockito.kotlin.any
@@ -26,6 +27,8 @@ import org.mockito.kotlin.given
 import org.mockito.kotlin.mock
 
 private val NOW: Instant = Instant.parse("2026-10-24T10:00:00Z")
+private val TASHKENT: ZoneId = ZoneId.of("Asia/Tashkent")
+private val VISIT_DAY: LocalDate = LocalDate.of(2026, 11, 12)
 
 class GetRemindersUseCaseTest {
     private val getReminderSettingsRepository: GetReminderSettingsRepository = mock()
@@ -110,5 +113,89 @@ class GetRemindersUseCaseTest {
         )
 
         assertEquals(RemindersResultDomainModel.Failed, classUnderTest.executeInBackground(Unit))
+    }
+
+    private fun givenTheVisitOnTheTwelfth() {
+        given(getReminderSettingsRepository.reminderSettings()).willReturn(
+            ReminderSettingsResultDomainModel.Loaded(
+                ReminderSettingsDomainModel(false, LocalTime.of(20, 0), true, null, null)
+            )
+        )
+        // The first visit on or after either day read: the visit itself (EC-REM-15).
+        given(getDoctorVisitsRepository.doctorVisits(any())).willReturn(
+            DoctorVisitsResultDomainModel.Loaded(DoctorVisitDomainModel("v", VISIT_DAY), null)
+        )
+    }
+
+    private fun readAt(instant: Instant, zone: ZoneId): RemindersResultDomainModel {
+        given(getCurrentTimeRepository.currentTime())
+            .willReturn(CurrentTimeDomainModel(instant, zone))
+        return classUnderTest.executeInBackground(Unit)
+    }
+
+    /** Issue #187: the screen stays open past midnight; the same visit read again must not look the same. */
+    @Test
+    fun `Given the visit is tomorrow when midnight passes then the screen reads differently`() {
+        givenTheVisitOnTheTwelfth()
+
+        val before = readAt(Instant.parse("2026-11-11T18:59:00Z"), TASHKENT)
+        val after = readAt(Instant.parse("2026-11-11T19:01:00Z"), TASHKENT)
+
+        assertNotEquals(before, after)
+    }
+
+    /** Issue #187: a flight east moves the phone's date to the visit day at the same instant. */
+    @Test
+    fun `Given the visit is tomorrow when the zone makes it today then it reads differently`() {
+        givenTheVisitOnTheTwelfth()
+        val instant = Instant.parse("2026-11-11T20:30:00Z")
+
+        val before = readAt(instant, ZoneId.of("Europe/London"))
+        val after = readAt(instant, TASHKENT)
+
+        assertNotEquals(before, after)
+    }
+
+    /** D168 (13): Remove only for a visit after today, by the injected clock in the phone's zone, as the DAO deletes. */
+    @Test
+    fun `Given the visit is after today then Remove is offered, and on its day it is not`() {
+        givenTheVisitOnTheTwelfth()
+
+        val eve = readAt(Instant.parse("2026-11-11T18:59:00Z"), TASHKENT)
+            as RemindersResultDomainModel.Loaded
+        val day = readAt(Instant.parse("2026-11-11T19:00:00Z"), TASHKENT)
+            as RemindersResultDomainModel.Loaded
+
+        assertEquals(LocalDate.of(2026, 11, 11), eve.reminders.today)
+        assertEquals(true, eve.reminders.visitRemovable)
+        assertEquals(VISIT_DAY, day.reminders.today)
+        assertEquals(VISIT_DAY, day.reminders.nextVisit)
+        assertEquals(false, day.reminders.visitRemovable)
+    }
+
+    @Test
+    fun `Given the zone moves the date to the visit day then Remove is no longer offered`() {
+        givenTheVisitOnTheTwelfth()
+        val instant = Instant.parse("2026-11-11T20:30:00Z")
+
+        val london = readAt(
+            instant,
+            ZoneId.of("Europe/London")
+        ) as RemindersResultDomainModel.Loaded
+        val tashkent = readAt(instant, TASHKENT) as RemindersResultDomainModel.Loaded
+
+        assertEquals(true, london.reminders.visitRemovable)
+        assertEquals(false, tashkent.reminders.visitRemovable)
+    }
+
+    @Test
+    fun `Given no visit when read then nothing to remove`() {
+        mayAsk(null)
+
+        val result = classUnderTest.executeInBackground(Unit) as RemindersResultDomainModel.Loaded
+
+        assertEquals(LocalDate.of(2026, 10, 24), result.reminders.today)
+        assertEquals(null, result.reminders.nextVisit)
+        assertEquals(false, result.reminders.visitRemovable)
     }
 }

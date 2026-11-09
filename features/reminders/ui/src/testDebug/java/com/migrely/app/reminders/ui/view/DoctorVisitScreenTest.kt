@@ -1,7 +1,11 @@
 package com.migrely.app.reminders.ui.view
 
 import android.app.Application
+import android.content.Intent
+import android.os.Looper
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.State
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsProperties
@@ -22,15 +26,21 @@ import com.migrely.app.designsystem.theme.MigrelyTheme
 import com.migrely.app.reminders.ui.model.RemindersUiModel
 import com.migrely.app.reminders.ui.model.RemindersViewStateUiModel
 import java.time.LocalDate
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 
-/** Next year's November 20, so the row shows a date with its year whatever day the test runs. */
-private val VISIT: LocalDate = LocalDate.now().plusYears(1).withMonth(11).withDayOfMonth(20)
+/** The day the screen was read for; the screen reads no clock of its own (issue #187). */
+private val TODAY: LocalDate = LocalDate.of(2026, 11, 10)
+
+/** Next year's November 20, so the row shows a date with its year. */
+private val VISIT: LocalDate = LocalDate.of(2027, 11, 20)
 private val SPOKEN = "${VISIT.dayOfWeek.name.lowercase().replaceFirstChar(
     Char::titlecase
 )}, November 20, ${VISIT.year}"
@@ -47,28 +57,41 @@ class DoctorVisitScreenTest {
 
     private var removed = 0
 
+    private fun reminders(
+        nextVisit: LocalDate?,
+        today: LocalDate = TODAY,
+        allowed: Boolean = true,
+        channelOff: Boolean = false
+    ) = RemindersUiModel(
+        dailyEnabled = false,
+        dailyMinuteOfDay = 1200,
+        effectEnabled = true,
+        notificationsAllowed = allowed,
+        mayAskPermission = true,
+        todayEpochDay = today.toEpochDay(),
+        nextVisitEpochDay = nextVisit?.toEpochDay(),
+        // As GetRemindersUseCase decides it.
+        visitRemovable = nextVisit?.isAfter(today) == true,
+        visitChannelOff = channelOff
+    )
+
     private fun show(
         nextVisit: LocalDate?,
         allowed: Boolean = true,
         channelOff: Boolean = false,
         fontScale: Float = 1f
-    ) {
+    ) = show(
+        mutableStateOf(reminders(nextVisit, allowed = allowed, channelOff = channelOff)),
+        fontScale
+    )
+
+    private fun show(shown: State<RemindersUiModel>, fontScale: Float = 1f) {
         composeTestRule.setContent {
             val density = LocalDensity.current
             CompositionLocalProvider(LocalDensity provides Density(density.density, fontScale)) {
                 MigrelyTheme {
                     RemindersContents(
-                        viewState = RemindersViewStateUiModel.Ready(
-                            RemindersUiModel(
-                                dailyEnabled = false,
-                                dailyMinuteOfDay = 1200,
-                                effectEnabled = true,
-                                notificationsAllowed = allowed,
-                                mayAskPermission = true,
-                                nextVisitEpochDay = nextVisit?.toEpochDay(),
-                                visitChannelOff = channelOff
-                            )
-                        ),
+                        viewState = RemindersViewStateUiModel.Ready(shown.value),
                         actions = RemindersActions(
                             onBack = {},
                             onDaily = {},
@@ -124,9 +147,52 @@ class DoctorVisitScreenTest {
 
     @Test
     fun givenTheVisitIsToday_thenNoRemove_sinceTodaysVisitStaysAsTheLastOne() {
-        show(nextVisit = LocalDate.now())
+        show(nextVisit = TODAY)
 
         composeTestRule.onAllNodesWithText("Remove").assertCountEquals(0)
+    }
+
+    /** Issue #187: the state's day decides, not the device's clock, which here is a year before the visit. */
+    @Test
+    fun givenTheStateIsReadOnTheVisitDay_thenNoRemove_whateverTheDeviceClockSays() {
+        show(mutableStateOf(reminders(nextVisit = VISIT, today = VISIT)))
+
+        composeTestRule.onNode(
+            hasContentDescription("Next visit, $SPOKEN. Change it.") and isButton()
+        ).assertIsDisplayed()
+        composeTestRule.onAllNodesWithText("Remove").assertCountEquals(0)
+    }
+
+    /** Issue #187: the screen stays open past midnight; the new read takes Remove away, and the row stays. */
+    @Test
+    fun givenTheScreenStaysOpen_whenTheVisitDayStarts_thenRemoveGoes() {
+        val shown = mutableStateOf(reminders(nextVisit = VISIT, today = VISIT.minusDays(1)))
+        show(shown)
+        composeTestRule.onAllNodesWithText("Remove").assertCountEquals(1)
+
+        shown.value = reminders(nextVisit = VISIT, today = VISIT)
+
+        composeTestRule.onAllNodesWithText("Remove").assertCountEquals(0)
+        composeTestRule.onNode(
+            hasContentDescription("Next visit, $SPOKEN. Change it.") and isButton()
+        ).assertIsDisplayed()
+    }
+
+    /** Issue #187: midnight, a time set by hand and a new zone each make the screen read again. */
+    @Test
+    fun givenTheScreenIsStarted_whenTheDateTimeOrZoneChanges_thenItIsToldEachTime() {
+        var changes = 0
+        composeTestRule.setContent { ClockChangeEffect { changes++ } }
+        val application = RuntimeEnvironment.getApplication()
+
+        listOf(
+            Intent.ACTION_DATE_CHANGED,
+            Intent.ACTION_TIME_CHANGED,
+            Intent.ACTION_TIMEZONE_CHANGED
+        ).forEach { application.sendBroadcast(Intent(it)) }
+        shadowOf(Looper.getMainLooper()).idle()
+
+        composeTestRule.runOnIdle { assertEquals(3, changes) }
     }
 
     @Test

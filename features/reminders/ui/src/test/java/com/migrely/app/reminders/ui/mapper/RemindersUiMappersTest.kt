@@ -25,17 +25,65 @@ class RemindersUiMappersTest {
     fun `When mapping a ready state then the time as minutes after midnight`() {
         assertEquals(
             RemindersViewStateUiModel.Ready(
-                RemindersUiModel(true, 21 * 60 + 30, false, true, false)
+                RemindersUiModel(true, 21 * 60 + 30, false, true, false, 20_767L)
             ),
             RemindersViewStateUiMapper().toUi(
                 RemindersViewState.Ready(
-                    RemindersPresentationModel(true, LocalTime.of(21, 30), false, true, false)
+                    RemindersPresentationModel(
+                        true,
+                        LocalTime.of(21, 30),
+                        false,
+                        true,
+                        false,
+                        LocalDate.ofEpochDay(20_767L)
+                    )
                 )
             )
         )
         assertEquals(
             RemindersViewStateUiModel.Unavailable,
             RemindersViewStateUiMapper().toUi(RemindersViewState.Unavailable)
+        )
+    }
+
+    /** Issue #187: the screen draws the day it was read for and whether Remove is offered, never its own clock. */
+    @Test
+    fun `When mapping a visit then today, the visit and whether it may be removed`() {
+        val reminders = RemindersPresentationModel(
+            dailyEnabled = false,
+            dailyTime = LocalTime.of(20, 0),
+            effectEnabled = true,
+            notificationsAllowed = true,
+            mayAskPermission = true,
+            today = LocalDate.ofEpochDay(20_769L),
+            nextVisit = LocalDate.ofEpochDay(20_769L),
+            visitRemovable = false,
+            visitChannelOff = true
+        )
+
+        assertEquals(
+            RemindersViewStateUiModel.Ready(
+                RemindersUiModel(
+                    dailyEnabled = false,
+                    dailyMinuteOfDay = 20 * 60,
+                    effectEnabled = true,
+                    notificationsAllowed = true,
+                    mayAskPermission = true,
+                    todayEpochDay = 20_769L,
+                    nextVisitEpochDay = 20_769L,
+                    visitRemovable = false,
+                    visitChannelOff = true
+                )
+            ),
+            RemindersViewStateUiMapper().toUi(RemindersViewState.Ready(reminders))
+        )
+        assertEquals(
+            true,
+            (
+                RemindersViewStateUiMapper().toUi(
+                    RemindersViewState.Ready(reminders.copy(visitRemovable = true))
+                ) as RemindersViewStateUiModel.Ready
+                ).reminders.visitRemovable
         )
     }
 

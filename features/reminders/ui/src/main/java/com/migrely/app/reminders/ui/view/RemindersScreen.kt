@@ -136,6 +136,7 @@ fun RemindersDependencies.Reminders(navController: NavController, modifier: Modi
         remindersViewModel.onResume()
         onPauseOrDispose { }
     }
+    ClockChangeEffect(remindersViewModel::onClockChanged)
     ViewModelObserver(navController)
     val viewState by remindersViewModel.viewState.collectAsState(RemindersViewState.Loading)
     val uiState by rememberSaveable(viewState) {
@@ -358,6 +359,7 @@ private fun ReminderRows(reminders: RemindersUiModel, actions: RemindersActions)
     var picking by rememberSaveable { mutableStateOf(false) }
     var pickingVisit by rememberSaveable { mutableStateOf(false) }
     val visitRowFocus = remember { FocusRequester() }
+    val today = LocalDate.ofEpochDay(reminders.todayEpochDay)
     val nextVisit = reminders.nextVisitEpochDay?.let(LocalDate::ofEpochDay)
     val allowed = reminders.notificationsAllowed
     if (!allowed) {
@@ -369,7 +371,9 @@ private fun ReminderRows(reminders: RemindersUiModel, actions: RemindersActions)
     }
     // First, since only this screen sets a visit (design D9).
     DoctorVisitSection(
+        today = today,
         nextVisit = nextVisit,
+        removable = reminders.visitRemovable,
         notificationsAllowed = allowed,
         channelOff = reminders.visitChannelOff,
         rowFocus = visitRowFocus,
@@ -423,7 +427,7 @@ private fun ReminderRows(reminders: RemindersUiModel, actions: RemindersActions)
         onCheckedChange = actions.onEffect
     )
     if (pickingVisit) {
-        val today = LocalDate.now()
+        // The same "today" the save checks against (SetDoctorVisitUseCase), not a clock read here.
         MigrelyDatePicker(
             initial = nextVisit,
             firstDate = today,
@@ -631,6 +635,7 @@ private fun rememberTimeLeft(shown: RemindersMessageUiModel, timeoutMillis: Long
 }
 
 private val previewActions = RemindersActions({}, {}, {}, {}, {})
+private val PREVIEW_TODAY = LocalDate.of(2026, 11, 10).toEpochDay()
 
 @Preview(name = "Reminders")
 @Composable
@@ -638,7 +643,7 @@ private fun RemindersPreview() {
     MigrelyTheme {
         RemindersContents(
             viewState = RemindersViewStateUiModel.Ready(
-                RemindersUiModel(true, DEFAULT_MINUTE_OF_DAY, true, true, true)
+                RemindersUiModel(true, DEFAULT_MINUTE_OF_DAY, true, true, true, PREVIEW_TODAY)
             ),
             actions = previewActions,
             messages = {}
@@ -652,7 +657,7 @@ private fun RemindersOffPreview() {
     MigrelyTheme {
         RemindersContents(
             viewState = RemindersViewStateUiModel.Ready(
-                RemindersUiModel(false, DEFAULT_MINUTE_OF_DAY, true, false, false)
+                RemindersUiModel(false, DEFAULT_MINUTE_OF_DAY, true, false, false, PREVIEW_TODAY)
             ),
             actions = previewActions,
             messages = {}
