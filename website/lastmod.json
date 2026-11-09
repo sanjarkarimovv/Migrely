@@ -1,11 +1,11 @@
 {
   "/": {
     "lastmod": "2026-11-09",
-    "sha256": "33eebf5753bf939b5d69bddbd974bae824b03f57edbd2b892520f3496fa81db6"
+    "sha256": "bf905eb85e01a12328f84e318bc66f8dedea3eaf9a9373a917c0f470571ff85a"
   },
   "/about/": {
     "lastmod": "2026-11-09",
-    "sha256": "692ee28e2dc3458fd0f66e2aad53bad3e80bc4ec83b9865af2b56cf3e1371545"
+    "sha256": "856b53aab41bdf6bf274756300aa61bae20b798e4f24cb895b40c2a2bcc9474b"
   },
   "/compare/": {
     "lastmod": "2026-11-05",
@@ -16,12 +16,12 @@
     "sha256": "931102e109ce414328e7265c7e8f88681bcf9841d52825785145ed4f08511779"
   },
   "/headache-diary/": {
-    "lastmod": "2026-11-05",
-    "sha256": "9dcd50275b646a54fdae724f2c186c71a321c85686595164e50029d97d89255b"
+    "lastmod": "2026-11-09",
+    "sha256": "9388d7c7bb8c30f5b903cd8baeeb31ee0fe32f44e37158eb9382ba2bee6c4386"
   },
   "/medication-overuse-headache/": {
-    "lastmod": "2026-11-05",
-    "sha256": "7718b0d047822f05d75e6fd448e0f7bc03b10316d2e5ab88d891a694a2366859"
+    "lastmod": "2026-11-09",
+    "sha256": "da9ef507d15fd6ee101fb11e98be8067e30f42c53c0970c52c0530f2ebb4103e"
   },
   "/menstrual-migraine/": {
     "lastmod": "2026-11-05",
