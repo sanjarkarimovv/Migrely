@@ -55,6 +55,7 @@ private const val GOT_IT = "Got it"
 private const val STORAGE_FULL = "Couldn't save. Your phone's storage is full."
 private const val SAVED = "Saved."
 private const val POINT_REMOVED = "Pain level removed"
+private const val TAG_LIMIT = "Your list is full. Remove one to add another."
 private const val DISMISS = "Dismiss"
 private const val DELETE = "Delete migraine"
 private const val DETAILS_ROUTE = "details"
@@ -130,10 +131,11 @@ class SaveMessageTest {
     }
 
     /** A first 10 on a full disk: the card's event, then the outcome's message, as the ViewModel sends them. */
-    private fun failedFirstTen() = send(
-        AttackDetailsEventUiModel.FirstMaximumRecorded,
-        AttackDetailsEventUiModel.Message(AttackMessageUiModel.StorageFull)
-    )
+    private fun failedFirstTen(settleAfter: Boolean = true) {
+        events.show(AttackDetailsEventUiModel.FirstMaximumRecorded)
+        events.show(AttackDetailsEventUiModel.Message(AttackMessageUiModel.StorageFull))
+        if (settleAfter) settle()
+    }
 
     private fun storageFull() =
         send(AttackDetailsEventUiModel.Message(AttackMessageUiModel.StorageFull))
@@ -361,6 +363,60 @@ class SaveMessageTest {
 
         rule.onNodeWithText(TITLE).assertExists()
         rule.onNodeWithText(STORAGE_FULL).assertExists()
+    }
+
+    private fun countOf(text: String) = rule.onAllNodes(hasText(text)).fetchSemanticsNodes().size
+
+    /** Frame by frame while a new message is held behind a new card event: what lies on screen. */
+    private fun framesWhile(vararg texts: String, frames: Int = 50): List<Int> = List(frames) {
+        rule.mainClock.advanceTimeByFrame()
+        texts.sumOf(::countOf)
+    }
+
+    @Test
+    fun `Given an error when a retry of the 10 fails again scrolled then the error never leaves`() {
+        show()
+        failedFirstTen()
+        scrollDown()
+
+        failedFirstTen(settleAfter = false)
+
+        val frames = framesWhile(STORAGE_FULL)
+        assertEquals("frames without the error: $frames", 0, frames.count { it == 0 })
+    }
+
+    @Test
+    fun `Given an error when the 10 saves again scrolled then Saved replaces it with no gap`() {
+        show()
+        failedFirstTen()
+        scrollDown()
+
+        events.show(AttackDetailsEventUiModel.FirstMaximumRecorded)
+        events.show(AttackDetailsEventUiModel.Saved)
+
+        val frames = framesWhile(STORAGE_FULL, SAVED)
+        assertEquals("frames with no message: $frames", 0, frames.count { it == 0 })
+        settle()
+        rule.onNodeWithText(SAVED).assertExists()
+    }
+
+    /**
+     * A message posted with a new card event while the previous hold is ending still shows. The second post is swept
+     * across the moment the first one is released, so one of them lands between the release and the next frame.
+     */
+    @Test
+    fun `Given messages posted as a hold ends then every one of them shows`() {
+        show()
+        for (offset in 150L..290L step 2) {
+            events.show(AttackDetailsEventUiModel.FirstMaximumRecorded)
+            events.show(AttackDetailsEventUiModel.Message(AttackMessageUiModel.StorageFull))
+            // Exact, not rounded up to a frame: the release lies between two frames.
+            rule.mainClock.advanceTimeBy(offset, ignoreFrameDuration = true)
+            events.show(AttackDetailsEventUiModel.FirstMaximumRecorded)
+            events.show(AttackDetailsEventUiModel.Message(AttackMessageUiModel.TagLimitReached))
+            rule.mainClock.advanceTimeBy(700)
+            assertEquals("offset $offset ms", 1, countOf(TAG_LIMIT))
+        }
     }
 
     @Test

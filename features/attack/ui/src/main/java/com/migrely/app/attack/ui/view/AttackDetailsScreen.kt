@@ -40,7 +40,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -77,7 +76,6 @@ import com.migrely.app.designsystem.theme.MigrelyTheme
 import java.time.Instant
 import java.util.Locale
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.first
 
 private val CONTENT_MAX_WIDTH = 640.dp
 
@@ -163,27 +161,38 @@ fun AttackDetailsDependencies.AttackDetails(
     // Read by the event collector, which outlives each state.
     val ready by rememberUpdatedState(uiState is AttackDetailsViewStateUiModel.Ready)
 
-    // Not saved: after a rotation or a process restore the card's event is gone, so the message shows at once.
-    var messageHeld by remember(attackId) { mutableStateOf(false) }
+    // The card event a new message waits for, and the last one whose wait is over. Not saved: after a rotation or a
+    // process restore the card's event is gone, so the message shows at once (BRD D165 (3)).
+    var messageHeldFor by remember(attackId) { mutableIntStateOf(0) }
+    var messageReleasedFor by remember(attackId) { mutableIntStateOf(0) }
+    // What stays on screen while a new message waits: the one already there, so nothing blinks out (BRD D165 (4)).
+    var shownBeforeHold by remember(attackId) { mutableStateOf<ShownAttackMessageUiModel?>(null) }
+
+    fun messageHeld(): Boolean = ready && messageHeldFor > messageReleasedFor
 
     // An error belongs to the visit and to the last write (BRD D165 (4), (5)); Undo and information stay.
     fun errorShown(): Boolean =
         shownMessage?.let { attackMessageBehaviourUiMapper.toUi(it.message).isError } == true
 
-    // Stored at once, so a rotation or a leave during the wait neither loses it nor brings it back. While the card of
-    // an event has not been announced, it stays hidden: TalkBack speaks the card first (BRD D165 (3)).
+    // Stored at once, so a rotation or a leave during the wait neither loses it nor brings it back. Until the card
+    // of the latest event has been announced, plus CARD_FIRST_MILLIS, it is not shown: TalkBack speaks the card first.
     fun post(message: AttackMessageUiModel) {
+        if (!messageHeld()) shownBeforeHold = shownMessage
         shownMessage = ShownAttackMessageUiModel(message, System.currentTimeMillis())
-        if (safetyCardAnnounced < safetyCardArrivals) messageHeld = true
+        if (messageReleasedFor < safetyCardArrivals) messageHeldFor = safetyCardArrivals
     }
 
-    LaunchedEffect(messageHeld) {
-        if (messageHeld) {
-            snapshotFlow { safetyCardAnnounced >= safetyCardArrivals || !ready }.first { it }
+    // Driven by the card's announcement alone, so a message posted at any moment is released with the card it waits
+    // for, and never stays hidden.
+    LaunchedEffect(safetyCardAnnounced) {
+        val announced = safetyCardAnnounced
+        if (announced > messageReleasedFor) {
             delay(CARD_FIRST_MILLIS)
             // Its time starts when it can be seen.
-            shownMessage = shownMessage?.copy(shownAtEpochMillis = System.currentTimeMillis())
-            messageHeld = false
+            if (messageHeld() && messageHeldFor <= announced) {
+                shownMessage = shownMessage?.copy(shownAtEpochMillis = System.currentTimeMillis())
+            }
+            messageReleasedFor = announced
         }
     }
 
@@ -320,7 +329,7 @@ fun AttackDetailsDependencies.AttackDetails(
             actions = actions
         )
         AttackMessages(
-            shown = shownMessage.takeUnless { messageHeld },
+            shown = if (messageHeld()) shownBeforeHold else shownMessage,
             behaviourMapper = attackMessageBehaviourUiMapper,
             reduceMotion = rememberReduceMotion(),
             announcePolitely = cardMode,
