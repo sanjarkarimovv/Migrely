@@ -40,8 +40,8 @@ class ReminderWorker(context: Context, parameters: WorkerParameters) : Worker(co
             }
         }
         // After an import, which may have brought a doctor visit or taken one away (design D7).
-        KIND_RESCHEDULE -> {
-            entryPoint.rescheduleRemindersUseCase().executeInBackground(Unit)
+        KIND_IMPORTED -> {
+            entryPoint.planRemindersAfterImportUseCase().executeInBackground(Unit)
             Result.success()
         }
         KIND_EFFECT -> {
@@ -60,6 +60,6 @@ class ReminderWorker(context: Context, parameters: WorkerParameters) : Worker(co
         const val KIND_DAILY = "daily"
         const val KIND_EFFECT = "effect"
         const val KIND_VISIT = "visit"
-        const val KIND_RESCHEDULE = "reschedule"
+        const val KIND_IMPORTED = "imported"
     }
 }

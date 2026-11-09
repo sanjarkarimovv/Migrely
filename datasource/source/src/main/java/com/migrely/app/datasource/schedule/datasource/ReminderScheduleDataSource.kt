@@ -23,7 +23,7 @@ interface ReminderScheduleDataSource {
 
     fun cancelVisit()
 
-    /** Plans every reminder again as soon as possible, as after an import that changed what they depend on. */
+    /** Plans the reminders again as soon as possible, after an import changed what they depend on. */
     fun planAgain()
 
     /**

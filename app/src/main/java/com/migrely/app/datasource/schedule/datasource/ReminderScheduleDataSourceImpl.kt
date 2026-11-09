@@ -61,9 +61,9 @@ class ReminderScheduleDataSourceImpl(
     }
 
     override fun planAgain() = enqueue(
-        RESCHEDULE_WORK,
+        IMPORTED_WORK,
         clockDataSource.now(),
-        workDataOf(ReminderWorker.KEY_KIND to ReminderWorker.KIND_RESCHEDULE)
+        workDataOf(ReminderWorker.KEY_KIND to ReminderWorker.KIND_IMPORTED)
     )
 
     // WorkManager tags every request with its worker's class name, so this also reaches runs planned by older
@@ -96,6 +96,6 @@ class ReminderScheduleDataSourceImpl(
         const val DAILY_WORK = "daily"
         const val EFFECT_WORK_PREFIX = "effect-"
         const val VISIT_WORK = "visit"
-        const val RESCHEDULE_WORK = "reschedule"
+        const val IMPORTED_WORK = "imported"
     }
 }

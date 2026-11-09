@@ -206,8 +206,9 @@ data must never be passed to any SDK.
     same ID or date and adds an upcoming one only when the phone has none.
   - The reminder is WorkManager unique work `visit` (`ReminderWorker` kind `visit`, `REPLACE`), planned by
     `RescheduleRemindersUseCase` at app start, on zone and clock changes and after every change of the visit. An import
-    plans every reminder again through an immediate run of kind `reschedule`, since the backup feature cannot call the
-    reminders feature. It posts in its own channel `visit`, private, with the shared public version "Reminder".
+    plans the visit again through an immediate run of kind `imported` (`PlanRemindersAfterImportUseCase`), since the
+    backup feature cannot call the reminders feature; an imported visit already too close is marked as a UI save would.
+    It posts in its own channel `visit`, private, with the shared public version "Reminder".
   - Version 7 is an additive `AutoMigration(6, 7)`, covered by `MigrationTest` 6→7 and 1→7.
 - **Range reads (History).** A month is read with `overlapping(null, from, to)`, which returns every attack touching
   the range, the one in progress included, with a margin of two days on each side so that attacks logged in other

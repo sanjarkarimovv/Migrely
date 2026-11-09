@@ -101,6 +101,6 @@ class VisitWorkTest {
     fun `When everything is planned again after an import then one immediate run`() {
         classUnderTest.planAgain()
 
-        assertEquals(0L, work("reschedule").single().initialDelayMillis)
+        assertEquals(0L, work("imported").single().initialDelayMillis)
     }
 }
