@@ -54,6 +54,7 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
@@ -381,16 +382,16 @@ private fun SinceVisitChip(
         onClick = onClick,
         enabled = enabled,
         label = {
+            // One label for TalkBack: the full one replaces the short text, so the chip is not read twice.
             Text(
                 stringResource(
                     R.string.report_since_visit,
                     MigrelyDateFormat.short(lastVisit, LocalDate.now(), locale)
-                )
+                ),
+                modifier = Modifier.clearAndSetSemantics { contentDescription = description }
             )
         },
-        modifier = Modifier
-            .heightIn(min = 48.dp)
-            .semantics { contentDescription = description }
+        modifier = Modifier.heightIn(min = 48.dp)
     )
 }
 

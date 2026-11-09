@@ -367,12 +367,12 @@ class MainActivity : ComponentActivity() {
      * During an attack it opens attack mode alone, with neither the report nor the paywall (BRD EC-REM-12, EC-UX-12).
      */
     private fun openDoctorReport(controller: NavHostController) {
-        when {
-            startsWithOnboarding == true -> Unit
-            appearance.attackInProgress -> controller.navigate(Home()) {
-                popUpTo(controller.graph.id) { inclusive = true }
-            }
-            else -> controller.navigate(History(openReport = true)) {
+        // A visit is set only after onboarding, and "Delete all data" takes every notification away, so the tap never
+        // meets onboarding; how this activity started does not tell whether onboarding still shows.
+        if (appearance.attackInProgress) {
+            controller.navigate(Home()) { popUpTo(controller.graph.id) { inclusive = true } }
+        } else {
+            controller.navigate(History(openReport = true)) {
                 popUpTo<Home>()
                 launchSingleTop = true
             }
