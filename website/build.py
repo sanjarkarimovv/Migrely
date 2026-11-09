@@ -92,7 +92,7 @@ GUIDES = [
     ('/headache-diary/', 'Free headache diary',
      'What to write down and for how long, with a free printable 8-week template in A4 and US Letter.'),
     ('/medication-overuse-headache/', 'Medication-overuse headache',
-     'How headache and medicine days are counted, why those counts aren\'t safe limits, and how it is treated.'),
+     'How headache and medicine days are counted, how they compare with NHS advice, and how it is treated.'),
     ('/menstrual-migraine/', 'Menstrual migraine',
      'The window around your period that doctors use, how long to track it, and keeping period data private.'),
     ('/va-migraine-log/', 'Migraine log for a VA claim',
@@ -548,12 +548,14 @@ def about():
   <ul><li>Ask for internet access.</li><li>Ask you to make an account.</li>
     <li>Show ads, or carry analytics or tracking code of its own.</li>
     <li>Put a safety warning behind Premium.</li></ul>
-  <h2>Where do the medication limits come from?</h2>
+  <h2>Where do the medication day counts come from?</h2>
   <p>Migrely is a diary, not a medical device. Its medication note uses the day counts for
     <a href="/medication-overuse-headache/">medication-overuse headache</a> in the International Classification of
-    Headache Disorders (ICHD-3): 15 or more days a month
-    with simple painkillers, or 10 or more with triptans, combination painkillers or other medicines for attacks.
-    Migrely counts your days over the last 30 and suggests talking to your doctor. It does not diagnose.</p>
+    Headache Disorders (ICHD-3): medicine on 15 or more days a month with simple painkillers alone, or on 10 or more
+    with triptans, combination painkillers, other medicines for attacks, or a mix of kinds in total, for more than 3
+    months. Doctors use these counts, with headache on 15 or more days a month, to diagnose it. The NHS suggests trying
+    not to take painkillers on more than 2 days a week. Migrely counts your days over the last 30 and, once you reach
+    one of these counts, suggests talking to your doctor. It does not diagnose.</p>
   <h2>How can I contact you?</h2>
   <p>Help and questions: <a href="mailto:{SUPPORT}">{SUPPORT}</a>. Privacy:
     <a href="mailto:{PRIVACY_MAIL}">{PRIVACY_MAIL}</a>. Answers to common questions are on the
@@ -785,8 +787,8 @@ def headache_diary():
     <li>a mix of these kinds, or of these and simple painkillers, on 10 or more days a month in total;</li>
     <li>simple painkillers alone, such as paracetamol, aspirin or ibuprofen, one or several, on 15 or more days a
       month.</li></ul>
-  <p>These are diagnostic thresholds, not safe limits: the NHS suggests not taking painkillers on more than 2 days a
-    week. Don't stop or change medicines without talking to your doctor.
+  <p>These counts are for diagnosis; the everyday advice is lower: the NHS suggests not taking painkillers on more than
+    2 days a week. Don't stop or change medicines without talking to your doctor.
     <a href="/medication-overuse-headache/">More on medication-overuse headache</a>.</p>
   <h2>What does a doctor look for in a headache diary?</h2>
   <p>A doctor can use your diary to see what kind of headache you have, how many headache days you have a month, how
@@ -900,8 +902,8 @@ def medication_overuse():
   <p>Days, not doses. ICHD-3 counts the days each month you take a medicine. A day with two doses counts once. A day
     with a triptan and paracetamol counts once for each kind, and once in the total. Days you take these medicines for
     other pain, such as period or back pain, count too.</p>
-  <h2>Are these safe limits?</h2>
-  <p>No. They are the counts doctors use to diagnose it, not a safe amount. The NHS suggests not taking painkillers on
+  <h2>How do these counts compare with everyday advice?</h2>
+  <p>The everyday advice is lower. These are the counts doctors use to diagnose it, not a safe amount. The NHS suggests not taking painkillers on
     more than 2 days a week, and NICE asks doctors to explain the risk to anyone using medicine for headache
     attacks.</p>
   <p>ICHD-3 itself says its day counts come from expert opinion rather than formal evidence.</p>
@@ -954,7 +956,7 @@ def medication_overuse():
     ld = medical_ld(path, MOH_TITLE, MOH_REVIEWED, {'@type': 'MedicalCondition', 'name': 'Medication-overuse headache',
                                                     'alternateName': 'Rebound headache'})
     return page(path, 'Medication-overuse headache: 10 and 15 days · Migrely',
-                'Medication-overuse (rebound) headache: the ICHD-3 day counts, why they aren\'t safe limits, its '
+                'Medication-overuse (rebound) headache: the ICHD-3 day counts, how they compare with NHS advice, its '
                 'signs, how it is treated and whether it comes back.', body, ld)
 
 
