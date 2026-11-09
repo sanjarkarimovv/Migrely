@@ -137,7 +137,7 @@ The product diff from v1.1.0 is the offline check (subscription domain, data, pr
 
 | 1.1.0 line | Carried over because |
 |---|---|
-| 2, 2a smoke on API 26 and split APKs | No resource other than 3 English strings, no locale or split config changed. **The API 26 offline row was not run** (above) |
+| 2, 2a smoke on API 26 and split APKs | No resource other than 3 English strings, no locale or split config changed. The API 26 offline rows ran (above) |
 | 3, 10 full regression, debug and R8 | The owner's rule: the whole-app regression runs nightly. The diff reaches the paywall, Settings' Premium section, Home's trial banner and the details screen, all covered by the H and S rows here |
 | 4 accessibility audit | Touched UI: 3 notes (polite live regions; TalkBack speech measured above) and the card's scroll. Their contrast and size were not audited |
 | 5, 6, 6a device scenarios, monkey, upgrade | No DB, migration, backup, reminder or navigation code changed. Upgrade from 1.1.0 with data kept was not run |
