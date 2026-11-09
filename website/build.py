@@ -956,7 +956,7 @@ def medication_overuse():
     ld = medical_ld(path, MOH_TITLE, MOH_REVIEWED, {'@type': 'MedicalCondition', 'name': 'Medication-overuse headache',
                                                     'alternateName': 'Rebound headache'})
     return page(path, 'Medication-overuse headache: 10 and 15 days · Migrely',
-                'Medication-overuse (rebound) headache: the ICHD-3 day counts, why they aren\'t safe limits, its '
+                'Medication-overuse (rebound) headache: the ICHD-3 day counts, how they compare with NHS advice, its '
                 'signs, how it is treated and whether it comes back.', body, ld)
 
 
