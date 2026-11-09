@@ -548,12 +548,13 @@ def about():
   <ul><li>Ask for internet access.</li><li>Ask you to make an account.</li>
     <li>Show ads, or carry analytics or tracking code of its own.</li>
     <li>Put a safety warning behind Premium.</li></ul>
-  <h2>Where do the medication limits come from?</h2>
+  <h2>Where do the medication day counts come from?</h2>
   <p>Migrely is a diary, not a medical device. Its medication note uses the day counts for
     <a href="/medication-overuse-headache/">medication-overuse headache</a> in the International Classification of
     Headache Disorders (ICHD-3): 15 or more days a month
     with simple painkillers, or 10 or more with triptans, combination painkillers or other medicines for attacks.
-    Migrely counts your days over the last 30 and suggests talking to your doctor. It does not diagnose.</p>
+    Migrely counts your days over the last 30 and, once you reach one of these counts, suggests talking to your doctor.
+    It does not diagnose.</p>
   <h2>How can I contact you?</h2>
   <p>Help and questions: <a href="mailto:{SUPPORT}">{SUPPORT}</a>. Privacy:
     <a href="mailto:{PRIVACY_MAIL}">{PRIVACY_MAIL}</a>. Answers to common questions are on the
