@@ -7,37 +7,37 @@ Base: `develop` ad422d7f, branch `bugfix/193-code-cache-after-clear`. `Refs #193
 
 - [x] 1.1 BRD D170, EC-STO-06…10, EC-REM-22, EC-REM-23, §13 row 39; this change. Verify: `grep -c "^| D170 " docs/BRD.md` prints 1, and
   `openspec validate fix-code-cache-after-clear --strict` passes.
-- [ ] 1.2 Read API 26's `ContextImpl.getCodeCacheDir` and `ensurePrivateCacheDirExists` (`sdkmanager "sources;android-26"`, or AOSP `oreo-release`)
+- [x] 1.2 Read API 26's `ContextImpl.getCodeCacheDir` and `ensurePrivateCacheDirExists` (`sdkmanager "sources;android-26"`, or AOSP `oreo-release`)
   and record whether it writes `user.inode_code_cache` when it creates the folder. Verify: the quoted lines and the file path are in the packet; if it
   does not write the mark, design D2 is in scope.
 
 ## 2. Tests first (JVM)
 
-- [ ] 2.1 `CodeCacheMark` tests over a fake `CodeCacheFolder` (design D3): ensure is called; every throwing step is caught; and, if D2 is in scope, no
+- [x] 2.1 `CodeCacheMark` tests over a fake `CodeCacheFolder` (design D3): ensure is called; every throwing step is caught; and, if D2 is in scope, no
   mark → no write, equal → no write, different → one write of the folder's inode, stat failure → no write. Verify: `./gradlew :app:testDebugUnitTest
   --tests '*CodeCacheMark*'` fails first (no class), then passes.
 
 ## 3. Platform and wiring
 
-- [ ] 3.1 The Android `CodeCacheFolder` (`Context.codeCacheDir`; for D2, `Os.getxattr`, `Os.stat`, `Os.setxattr`, 8 bytes native order) and
+- [x] 3.1 The Android `CodeCacheFolder` (`Context.codeCacheDir`; for D2, `Os.getxattr`, `Os.stat`, `Os.setxattr`, 8 bytes native order) and
   `CodeCacheMark` in `:app`. Verify: 2.1 passes; Konsist (`./gradlew :app:testDebugUnitTest --tests '*Architecture*'`) passes.
-- [ ] 3.2 Call it from `MigrelyApplication.attachBaseContext` after `super`, or from the first line of `onCreate` (design D3). Verify: `git diff
+- [x] 3.2 Call it from `MigrelyApplication.attachBaseContext` after `super`, or from the first line of `onCreate` (design D3). Verify: `git diff
   origin/develop -- app/src/main/AndroidManifest.xml app/src/main/java/com/migrely/app/reminder` is empty.
-- [ ] 3.3 Instrumented test on `emulator-5570` (API 36): delete `codeCacheDir`, run the check, then `Os.getxattr(dataDir, …)` equals `Os.stat
+- [x] 3.3 Instrumented test on `emulator-5570` (API 36): delete `codeCacheDir`, run the check, then `Os.getxattr(dataDir, …)` equals `Os.stat
   (codeCacheDir).st_ino`. Verify: `ANDROID_SERIAL=emulator-5570 ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments
   .class=<the test>` passes; with the call removed it fails (negative control, then put it back).
 
 ## 4. Docs
 
-- [ ] 4.1 KDoc on the new class cites BRD D170 and EC-STO-06. No release notes here: they are written on `release/1.2.1`, where the 1.2.0 block is
+- [x] 4.1 KDoc on the new class cites BRD D170 and EC-STO-06. No release notes here: they are written on `release/1.2.1`, where the 1.2.0 block is
   already 495 of 500 characters, so it needs trimming and a `medical-reviewer` recheck. Verify: `git diff --stat origin/develop` shows no `whats-new`
   file.
 
 ## 5. Verify
 
-- [ ] 5.1 The gate. Verify: `nice -n 19 ./gradlew --max-workers=2 assembleDebug test ktlintCheck detekt lint` exit 0 (with `set -o pipefail`).
-- [ ] 5.2 No new permission. Verify: `./gradlew :app:checkReleasePermissions` exit 0.
-- [ ] 5.3 Device walk on `emulator-5570` (API 36), debug build: `pm clear com.migrely.app`; launch; then the inode of `code_cache` (`adb shell run-as
+- [x] 5.1 The gate. Verify: `nice -n 19 ./gradlew --max-workers=2 assembleDebug test ktlintCheck detekt lint` exit 0 (with `set -o pipefail`).
+- [x] 5.2 No new permission. Verify: `./gradlew :app:checkReleasePermissions` exit 0.
+- [x] 5.3 Device walk on `emulator-5570` (API 36), debug build: `pm clear com.migrely.app`; launch; then the inode of `code_cache` (`adb shell run-as
   com.migrely.app stat -c %i code_cache`) and the mark (`getfattr -n user.inode_code_cache -e hex .` if toybox has it, else the test from 3.3)
   match, and the app opens normally. Negative control: the develop build shows no mark after the same clear and reopen (QA saw none in 4 of 4).
   Restore any device setting changed.
@@ -53,4 +53,68 @@ Base: `develop` ad422d7f, branch `bugfix/193-code-cache-after-clear`. `Refs #193
 
 ## Verification record
 
-(filled by `android-engineer`)
+(filled by `android-engineer`, 2026-11-10, branch `bugfix/193-code-cache-after-clear`, code at a026f241)
+
+**1.2 API 26 source.** `sdkmanager "sources;android-26"` (sources-26_r01), file
+`~/Library/Android/sdk/sources/android-26/android/app/ContextImpl.java`. `getCodeCacheDir()` (l. 651–657) calls
+`ensurePrivateCacheDirExists(mCodeCacheDir, XATTR_INODE_CODE_CACHE)`, and `ensurePrivateDirExists` (l. 558–587), when
+`!file.exists()`, does `Os.mkdir`, then:
+
+```java
+final StructStat stat = Os.stat(file.getAbsolutePath());
+final byte[] value = new byte[8];
+Memory.pokeLong(value, 0, stat.st_ino, ByteOrder.nativeOrder());
+Os.setxattr(file.getParentFile().getAbsolutePath(), xattr, value, 0);
+```
+
+So API 26 writes the mark when it creates the folder, as API 29 and 36 do. **D2 is out of scope**; 3.3 and 5.3 found no
+case of an existing folder with a wrong mark.
+
+**Code.** `app/.../storage/CodeCacheMark.kt` (catches any `Exception`, logs only `code_cache check failed: <kind>`),
+`CodeCacheFolder.kt` (seam), `ContextCodeCacheFolder.kt` (`context.codeCacheDir`), called from
+`MigrelyApplication.attachBaseContext` after `super`, with the base context. Deviation from design D3: `keep()` returns
+`Unit`. The failure result is the one warning line, which the JVM tests read, because no caller acts on a result.
+
+**Tests.**
+- 2.1 red: `:app:testDebugUnitTest --tests '*CodeCacheMark*'` exit 1, "Unresolved reference 'CodeCacheMark'".
+  Green: 5/5 `CodeCacheMarkTest` (ensure called once and nothing logged; IllegalStateException, SecurityException and
+  IOException caught with only the kind logged; a message with a path and a drug name never reaches the log). Konsist
+  17/17.
+- 3.3 `ANDROID_SERIAL=emulator-5570 ./gradlew :app:connectedDebugAndroidTest
+  -Pandroid.testInstrumentationRunnerArguments.class=com.migrely.app.storage.ContextCodeCacheFolderTest`: exit 0, 2/2
+  (missing folder → re-created, `Os.getxattr(dataDir)` == `Os.stat(code_cache).st_ino`; existing folder → inode, a file
+  inside and the mark unchanged). Negative control, `ensure()` emptied: exit 1, 1 of 2 failed, the missing-folder test
+  (AssertionError). The existing-folder test passes either way, correctly (installd made the folder at install).
+  Restored: exit 0, 2/2.
+- 5.1 `nice -n 19 ./gradlew --max-workers=2 assembleDebug test ktlintCheck detekt lint` (pipefail): exit 0; 466 suites,
+  3009 tests, 0 failures, 0 errors, 0 skipped (debug and release unit-test variants).
+- 5.2 `:app:checkReleasePermissions` exit 0. `git diff origin/develop -- app/src/main/AndroidManifest.xml
+  app/src/main/java/com/migrely/app/reminder` is empty. No `whats-new` file in the diff.
+
+**5.3 walk, emulator-5570 (API 36).** Script and output: `migrely-work/walks/193/` (`walk.py`, `*.out`). Mark read as
+root with `getfattr --only-values -n user.inode_code_cache <data> | od -tu8` (toybox has no `-e hex`).
+
+| Arm | Fix debug a026f241 | Fix R8 a026f241 (debug-signed) | Develop control `debug-9d453bb5` (code == develop) |
+|---|---|---|---|
+| Fresh install, launch | mark == code_cache | mark == code_cache | mark == code_cache |
+| `pm clear` | folder and mark gone | folder and mark gone | folder and mark gone |
+| Launch after clear | **MATCH**, MainActivity resumed | **MATCH**, onboarding shown (screenshot) | code_cache absent, no mark; `databases/` took the old inode |
+| Clear, then start by explicit `TIME_SET` broadcast, no activity | **MATCH** | **MATCH** | absent, no mark |
+| `kill -9`, relaunch | folder inode and mark unchanged | unchanged | — |
+| Stale mark (old inode put back after clear, as on 8.0), launch, `install -r` | **MATCH** 3/3 before update, no "Mismatched", `migrely.db` kept | **MATCH** 1/1, kept | mark stays stale 3/3, `databases/` took it 3/3, installd "Mismatched … overwriting" 3/3, `migrely.db` kept |
+| `code_cache check failed` warnings / crashes | 0 / 0 | 0 / 0 | 0 / 0 |
+
+R8 run: `databases/` took the old inode (591205) and the mark followed the new `code_cache` (591203), D1's "order does
+not matter" case. The R8 dex still calls `getCodeCacheDir`. The develop stale arm shows that **API 36's installd does
+not delete by a stale mark** (it re-creates `code_cache` by name and overwrites the mark), so 5570 cannot reproduce the
+deletion. That proof is QA's API 26 work (5.5).
+
+**Not checked here:** API 26 at all (no device for this role; 5.5); Android 8.1–15; an exception on a real device (the
+catch is JVM-tested only); a work profile or second user; a start from a WorkManager job or a provider (only an
+activity and a receiver); timing of the extra syscalls (not measured; it adds no thread and no I/O beyond one `stat`,
+and a `mkdir` plus `setxattr` only when the folder is missing); the real upload-signed AAB.
+
+**Device state.** 5570 was off at the start with a broken `com.migrely.app` record (vc9, no APK on disk, empty data).
+After the walk: fix debug build installed, `baseline12` restored with `walks/fix66/restore.sh` (dump md5
+c3cfd32487171b7886baf9725dce7594), mark == code_cache, no setting changed (font 1.0, auto-rotate 1, auto_time 1), adbd
+unrooted, emulator off.
