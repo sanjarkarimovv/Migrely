@@ -52,8 +52,8 @@ Never write a mark that was not there: without one, installd uses the name, whic
 - Seam: a small pure-Kotlin class in `:app` (suggested `com.migrely.app.storage.CodeCacheMark`) with one method, for example `keep()`, over an interface
   for the platform (suggested `CodeCacheFolder`: `ensure()`, and for D2 `markedInode(): Long?`, `folderInode(): Long?`, `mark(inode: Long)`). The
   Android implementation uses `Context` and `android.system.Os`. Names must satisfy the Konsist rules in `app/src/test/.../architecture`.
-- JVM tests with a fake (`app/src/test`): `ensure()` is called; each step that throws is caught and `keep()` returns normally with a failure result;
-  and for D2: no mark → no write; equal → no write; different → exactly one write of the folder's inode; a failed stat → no write.
+- JVM tests with a fake (`app/src/test`): `ensure()` is called; each step that throws is caught and `keep()` returns normally. `keep()` returns
+  `Unit`: the one warning line below is the only failure signal, because no caller acts on a result (as built, review 2026-11-10); and for D2: no mark → no write; equal → no write; different → exactly one write of the folder's inode; a failed stat → no write.
 - Log at most `Log.w(tag, "code_cache check failed: ${e.javaClass.simpleName}")`. No path, no message text from user data.
 
 ### D4. No reminder change in 1.2.1

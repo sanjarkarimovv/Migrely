@@ -81,11 +81,15 @@ case of an existing folder with a wrong mark.
   IOException caught with only the kind logged; a message with a path and a drug name never reaches the log). Konsist
   17/17.
 - 3.3 `ANDROID_SERIAL=emulator-5570 ./gradlew :app:connectedDebugAndroidTest
-  -Pandroid.testInstrumentationRunnerArguments.class=com.migrely.app.storage.ContextCodeCacheFolderTest`: exit 0, 2/2
-  (missing folder → re-created, `Os.getxattr(dataDir)` == `Os.stat(code_cache).st_ino`; existing folder → inode, a file
-  inside and the mark unchanged). Negative control, `ensure()` emptied: exit 1, 1 of 2 failed, the missing-folder test
-  (AssertionError). The existing-folder test passes either way, correctly (installd made the folder at install).
-  Restored: exit 0, 2/2.
+  -Pandroid.testInstrumentationRunnerArguments.class=com.migrely.app.storage.ContextCodeCacheFolderTest`. After review
+  (Minor 2) the missing-folder test first writes a stale mark from the app process (the data folder's own inode, which
+  `code_cache` can never take), asserts it is there, then asserts after `keep()` that the mark changed and equals the
+  new folder's inode. The existing-folder test checks that inode, a file inside and the mark are unchanged. An `@After`
+  re-creates the folder and writes the true mark, so a failure never leaves 5570 with no `code_cache` and a stale mark.
+  Exit 0, 2/2. Negative control, `ensure()` emptied: exit 1, 1 of 2 failed, on the mark assertion itself
+  (`ContextCodeCacheFolderTest.kt:48`, `assertNotEquals`: "Values should be different. Actual: 591201"). The
+  existing-folder test passes either way, correctly (installd made the folder at install). Call put back: exit 0, 2/2.
+  (The first version, at a026f241, had no stale mark: its control failed on `isDirectory`, not on the mark.)
 - 5.1 `nice -n 19 ./gradlew --max-workers=2 assembleDebug test ktlintCheck detekt lint` (pipefail): exit 0; 466 suites,
   3009 tests, 0 failures, 0 errors, 0 skipped (debug and release unit-test variants).
 - 5.2 `:app:checkReleasePermissions` exit 0. `git diff origin/develop -- app/src/main/AndroidManifest.xml
@@ -101,13 +105,24 @@ root with `getfattr --only-values -n user.inode_code_cache <data> | od -tu8` (to
 | Launch after clear | **MATCH**, MainActivity resumed | **MATCH**, onboarding shown (screenshot) | code_cache absent, no mark; `databases/` took the old inode |
 | Clear, then start by explicit `TIME_SET` broadcast, no activity | **MATCH** | **MATCH** | absent, no mark |
 | `kill -9`, relaunch | folder inode and mark unchanged | unchanged | — |
-| Stale mark (old inode put back after clear, as on 8.0), launch, `install -r` | **MATCH** 3/3 before update, no "Mismatched", `migrely.db` kept | **MATCH** 1/1, kept | mark stays stale 3/3, `databases/` took it 3/3, installd "Mismatched … overwriting" 3/3, `migrely.db` kept |
+| Stale mark (old inode put back after clear, as on 8.0), launch, `install -r` | mark == code_cache 4/4 (1 full-arm run + 3), but `code_cache` took back the exact marked inode (591205) each time, so this shows **no repair**: the mark would match with no write. No "Mismatched", `migrely.db` kept | **real overwrite** 1/1: mark 591203 → 591212 (the new `code_cache`); `databases/` did not take the old inode (591215); no "Mismatched", `migrely.db` kept | mark stays stale 3/3, `databases/` took it 3/3, installd "Mismatched … overwriting" 3/3, `migrely.db` kept |
 | `code_cache check failed` warnings / crashes | 0 / 0 | 0 / 0 | 0 / 0 |
 
-R8 run: `databases/` took the old inode (591205) and the mark followed the new `code_cache` (591203), D1's "order does
-not matter" case. The R8 dex still calls `getCodeCacheDir`. The develop stale arm shows that **API 36's installd does
-not delete by a stale mark** (it re-creates `code_cache` by name and overwrites the mark), so 5570 cannot reproduce the
-deletion. That proof is QA's API 26 work (5.5).
+What each arm shows, and what it does not:
+- Launch after clear and the receiver start: on API 36 the clear already removed the mark, so nothing was stale. These
+  arms show only that the fix re-creates `code_cache` and writes a mark where there was none (develop leaves both
+  absent). In the R8 plain run `databases/` took the freed inode (591205) and the mark named the new `code_cache`
+  (591203). With no mark before, that is not design D1's "order does not matter" case.
+- Stale arm, fix debug (4 runs): no repair proven, because the mark already named the inode that `code_cache` got back.
+- Stale arm, fix R8 (1 run): the one real overwrite of a stale mark on a device (591203 → 591212). `databases/` did not
+  take the old inode in that run, so D1's ordering case was still not shown on a device.
+- Instrumented test 3.3 (after review): a stale mark written from the app process is replaced by the new folder's
+  inode, and its negative control fails on that assertion. That is the deterministic repair proof on API 36.
+- Develop stale arm: **API 36's installd does not delete by a stale mark**. It re-creates `code_cache` by name and
+  overwrites the mark, so 5570 cannot reproduce the deletion.
+- The R8 dex still calls `getCodeCacheDir`.
+
+The proof that the repair prevents the deletion on API 26 is QA's (5.5).
 
 **Not checked here:** API 26 at all (no device for this role; 5.5); Android 8.1–15; an exception on a real device (the
 catch is JVM-tested only); a work profile or second user; a start from a WorkManager job or a provider (only an
@@ -117,4 +132,7 @@ and a `mkdir` plus `setxattr` only when the folder is missing); the real upload-
 **Device state.** 5570 was off at the start with a broken `com.migrely.app` record (vc9, no APK on disk, empty data).
 After the walk: fix debug build installed, `baseline12` restored with `walks/fix66/restore.sh` (dump md5
 c3cfd32487171b7886baf9725dce7594), mark == code_cache, no setting changed (font 1.0, auto-rotate 1, auto_time 1), adbd
-unrooted, emulator off.
+unrooted, emulator off. Same again after the review fixes: the connected test uninstalled the app, so the debug build
+(main code unchanged since a026f241) and `baseline12` were put back (md5 c3cfd324…), mark == code_cache, adbd unrooted,
+emulator off. After a cold boot `pm path` printed nothing for a while although the data was there; the connected test
+reinstalled cleanly.
