@@ -20,22 +20,33 @@ Safety comes first in the team's risk order. The lead put the fix in release 1.2
 
 ## What Changes
 
-- The Warning signs page gets two headed parts. The first keeps the emergency-number advice, now with the NHS "Call 999" signs and
-  no waiting condition. The second says to get medical advice today and lists the NHS urgent signs, which apply during a migraine
-  attack. The exact strings are in the spec and in BRD D171, as passed by `medical-reviewer`.
-- `settings_about_urgent` on About Migrely changes, because today it sends anyone with "any of the warning signs" to the emergency
-  number. With a second tier that would include the urgent-only signs (D171 (4)).
-- Nothing else: no dial button (D95 stays), no new screen, no data, no permission.
+- The Warning signs page gets two headed parts:
+  - **First part:** call the local emergency number if a headache comes with any of nine signs from the NHS "Call 999"
+    lists. No sign has a waiting condition. The part ends with "Don't drive yourself to hospital. Call your local
+    emergency number."
+  - **Second part:** get urgent medical advice if a migraine attack has lasted longer than 72 hours, aura symptoms last
+    longer than 1 hour at a time, or the person is pregnant or has just had a baby.
+  - **Last line:** any other worrying symptom needs urgent medical advice.
+
+  The exact strings are in the spec and in BRD D171, as passed by `medical-reviewer`.
+- Two strings outside the page change, because today they contradict it (BRD D171 (4)):
+  - `settings_about_urgent` sends "any of the warning signs" to the emergency number, which would now include the
+    second part;
+  - `long_check_body` (SAF-F3) reads as a routine doctor visit, while the page puts more than 72 hours under urgent
+    advice.
+- Nothing else changes: no dial button (D95 stays), no new screen, no data, no permission.
 
 ## Out of scope
 
-- The SAF-F2 card (`safety_title`, `safety_body`): it does not contradict the new list, so it stays unchanged.
-- The SAF-F3 card text (`long_check_body`): it changes only if `medical-reviewer` judges it a contradiction (D171 (4)). Otherwise it is a
-  logged follow-up, not part of 1.2.1, because each extra string widens the 1.2.1 QA scope.
+- The SAF-F2 card (`safety_title`, `safety_body`). It does not contradict the new list. Matching its "worst of your
+  life" to "extremely bad pain that came on suddenly" is a follow-up after 1.2.1.
 - Country-specific numbers, "999", "GP" or "NHS 111" in the app, and dialling or linking any number.
-- The website and the printable diary: they already carry the full NHS lists (D149).
+- Numbness on its own as an emergency sign. The NHS migraine page treats it as aura; the NHS headaches page lists it
+  under 999. This is a question for the clinician (T31).
+- The website and the printable diary. They already carry the NHS lists (D149). Matching their head-injury and rash
+  wording is a separate follow-up for `aso-seo-specialist`.
 - `docs/release/whats-new.md` for 1.2.1 (495 of 500 characters): no change.
-- Clinician sign-off (T31): open residual, not a blocker (D171 (5)).
+- Clinician sign-off (T31): an open residual, not a blocker (D171 (7)).
 - `.maestro/` and `qa/` flows that assert the old text: `qa-engineer` updates them.
 
 ## Capabilities
@@ -46,12 +57,17 @@ None.
 
 ### Modified Capabilities
 
-- `app-settings`: the Warning signs requirement (new list, second tier, headings) and the About requirement's urgent line.
+- `app-settings`: the Warning signs requirement (new list, the "Don't drive" line, headings). Added requirements for the
+  urgent part, the last line, About's urgent line, and readability.
+- `attack-logging`: the 72-hour check uses the urgent-advice wording.
 
 ## Impact
 
-- `features/settings/ui`: `strings.xml` (the call line, the list, the new heading and list for the second tier, `settings_about_urgent`)
-  and `SettingsPages.kt` `WarningSignsContents` (a second heading and list, heading semantics).
+- `features/settings/ui`:
+  - `strings.xml`: the call line, the list, the "Don't drive" line, the urgent heading and list, the last line, and
+    `settings_about_urgent`;
+  - `SettingsPages.kt` `WarningSignsContents`: the second heading and list, heading semantics, two paragraphs.
+- `features/home/ui`: `strings.xml` `long_check_body` only.
 - No domain, data, database, backup or manifest change. Free and Premium alike. Works offline.
 - Releases: 1.1.1, now in review, keeps the old text. 1.2.1 replaces it.
-- BRD: SAF-F1, D95 (pointer), D171, EC-SAF-01…10, §13 row 40.
+- BRD: SAF-F1, SAF-F3, D95 (pointer), D171, EC-SAF-01…10, §13 row 40.
