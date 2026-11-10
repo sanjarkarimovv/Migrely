@@ -1,16 +1,22 @@
 package com.migrely.app
 
 import android.app.Application
+import android.content.Context
 import android.content.res.Configuration
+import android.util.Log
 import com.migrely.app.activity.CurrentActivityHolder
 import com.migrely.app.locale.FormattingLocales
 import com.migrely.app.premium.PurchaseUpdatesWatcher
 import com.migrely.app.reminder.ReminderEntryPoint
 import com.migrely.app.start.StartEntryPoint
+import com.migrely.app.storage.CodeCacheMark
+import com.migrely.app.storage.ContextCodeCacheFolder
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
 import kotlin.concurrent.thread
+
+private const val LOG_TAG = "Migrely"
 
 @HiltAndroidApp
 class MigrelyApplication : Application() {
@@ -21,6 +27,13 @@ class MigrelyApplication : Application() {
     lateinit var purchaseUpdatesWatcher: PurchaseUpdatesWatcher
 
     private val formattingLocales = FormattingLocales()
+
+    override fun attachBaseContext(base: Context) {
+        super.attachBaseContext(base)
+        // Before any content provider makes a folder, so an update after Clear storage empties only `code_cache`, never
+        // the diary or the reminders (BRD D170, EC-STO-06). Runs at every process start, whatever component starts it.
+        CodeCacheMark(ContextCodeCacheFolder(base)) { Log.w(LOG_TAG, it) }.keep()
+    }
 
     override fun onCreate() {
         // Dates and times in English with the phone's region (BRD D117), before anything formats one.
