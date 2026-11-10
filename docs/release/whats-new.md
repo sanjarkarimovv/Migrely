@@ -3,7 +3,27 @@
 Each release's text for Play Console › Create new release › Release notes. Play allows at most 500 characters per
 language. en-US is the default, and other languages fall back to it.
 
-## 1.2.0 (versionCode 10)
+## 1.2.1 (versionCode 11)
+
+Replaces 1.2.0, which was tagged but never uploaded (D170). Users never saw 1.2.0, so these notes are its notes,
+unchanged and already checked by `medical-reviewer`. 1.2.1 also keeps the diary and reminders across an update after
+"Clear storage" on Android 8.0 (#193, #189). That fix is not announced: the 1.2.0 text is 495 of 500 characters, and it
+needs no action from users.
+
+```
+<en-US>
+New:
+• Doctor visit: set your next visit's date in Reminders. Two days before, Migrely reminds you to make a report for your doctor. The Doctor report can cover the time since your last visit.
+• Lock screen reminders no longer name a medication or say that you logged a migraine.
+Fixes:
+• A quick second tap on Remove in a custom tag's menu no longer selects what was under it.
+• On the Migraine screen, a message no longer covers the safety card, and "Couldn't save" clears once a save works.
+</en-US>
+```
+
+## 1.2.0 (versionCode 10), not published
+
+Superseded by 1.2.1 (D170): tagged `v1.2.0`, never uploaded. Kept for the record.
 
 The doctor visit reminder (D168), private lock screen notifications (D169) and the fixes for #161 (D164) and
 #166, #167 (D165).
