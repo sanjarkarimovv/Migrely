@@ -41,15 +41,15 @@ Base: `develop` ad422d7f, branch `bugfix/193-code-cache-after-clear`. `Refs #193
   com.migrely.app stat -c %i code_cache`) and the mark (`getfattr -n user.inode_code_cache -e hex .` if toybox has it, else the test from 3.3)
   match, and the app opens normally. Negative control: the develop build shows no mark after the same clear and reopen (QA saw none in 4 of 4).
   Restore any device setting changed.
-- [ ] 5.4 Independent review (`code-reviewer`) on `git diff origin/develop...HEAD`, briefed with this change and the Risks in `design.md`. Verify:
+- [x] 5.4 Independent review (`code-reviewer`) on `git diff origin/develop...HEAD`, briefed with this change and the Risks in `design.md`. Verify:
   findings and fixes recorded below.
-- [ ] 5.5 `qa-engineer` acceptance (only this diff's reach, owner rule 2026-11-09), on R8 builds:
+- [x] 5.5 `qa-engineer` acceptance (only this diff's reach, owner rule 2026-11-09), on R8 builds:
   - API 26 (`emulator-5582`), churn1: `migrely.db` kept 3 of 3 with the fix build; negative control 1.2.0 R8 deletes it (today 3 of 3);
   - API 26, plain clear: WorkManager's database and the planned reminder jobs are kept;
   - API 36 (`emulator-5580`): the same arms as a control, everything kept, mark true after a reopen;
   - the residual: a clear and reopen on 1.1.1 R8, then an update to the fix build, recorded as not protected (EC-STO-10).
   Verify: rows in QA's log and the 1.2.1 Go/No-Go.
-- [ ] 5.6 Archive: `openspec archive fix-code-cache-after-clear --yes`, then `openspec validate --specs --strict`. Verify: exit 0.
+- [x] 5.6 Archive: `openspec archive fix-code-cache-after-clear --yes`, then `openspec validate --specs --strict`. Verify: exit 0.
 
 ## Verification record
 
@@ -96,7 +96,9 @@ case of an existing folder with a wrong mark.
   app/src/main/java/com/migrely/app/reminder` is empty. No `whats-new` file in the diff.
 
 **5.3 walk, emulator-5570 (API 36).** Script and output: `migrely-work/walks/193/` (`walk.py`, `*.out`). Mark read as
-root with `getfattr --only-values -n user.inode_code_cache <data> | od -tu8` (toybox has no `-e hex`).
+root with `getfattr --only-values -n user.inode_code_cache <data> | od -tu8` (toybox has no `-e hex`). toybox prints the value up to
+its first zero byte (QA, `migrely-work/qa-193/HANDOVER.md`) and `od` pads with zeros, so the reads are right for every
+inode seen here (591201–591239, `0x0905xx`: no zero byte below the top).
 
 | Arm | Fix debug a026f241 | Fix R8 a026f241 (debug-signed) | Develop control `debug-9d453bb5` (code == develop) |
 |---|---|---|---|
@@ -136,3 +138,30 @@ unrooted, emulator off. Same again after the review fixes: the connected test un
 (main code unchanged since a026f241) and `baseline12` were put back (md5 c3cfd324…), mark == code_cache, adbd unrooted,
 emulator off. After a cold boot `pm path` printed nothing for a while although the data was there; the connected test
 reinstalled cleanly.
+
+**5.4 review.** `code-reviewer` on `origin/develop...93f8c00f`: no Critical or Important findings, four Minors. Fixed
+on this branch with no `app/src/main` change, so QA's R8 rows on 93f8c00f stand (`git diff 93f8c00f 62185b46 --
+app/src/main` is empty):
+- 1: the walk wording above now says what each arm shows (62185b46);
+- 2: the instrumented test writes a stale mark and its negative control fails on the mark assertion (8c9e3d96);
+- 3: design D3 says `keep()` returns `Unit` (62185b46).
+Minor 4 was left unfixed by the lead's decision (fix 1–3 only). The lead gate on 62185b46: exit 0, permissions the same as 1.2.0.
+
+**5.5 QA acceptance.** By `qa-engineer` on R8 `r8-93f8c00f` (sha256 4876b65cb708f98c…, debug-signed R8 like the
+controls), against the 1.2.0 control `r8-9d453bb5` and the 1.1.1 residual base `r8-eeb6`. Evidence:
+`migrely-work/qa-193/` (`rows.jsonl`, `count.py`, `HANDOVER.md`); comments #193 issuecomment-6766525545 and #189
+issuecomment-6766526120. The lead recounted the rows by APK hash.
+- API 26 (emulator-5582), fix: churn1 kept 3/3; hold (forced dangerous state, mark rewritten old → new) kept 3/3; plain
+  kept 3/3 (`migrely.db`, WorkManager's database, WorkSpec rows and jobs); first start by a receiver kept 2/2; no clear
+  kept 2/2; the timed daily reminder was posted on time 1/1. churn1 kept because `code_cache` took the old inode back, so
+  it proves existence, not the write; hold, plain and receiver prove the rewrite.
+- API 26, 1.2.0 control: lost 3/3 (churn1, `migrely.db`), 2/2 (hold), 3/3 (plain, WorkManager's database), 1/1
+  (receiver) and 1/1 (timed: no reminder).
+- API 36 (emulator-5580), fix: everything kept, mark true after every reopen. 1.2.0 control: kept, no mark after reopen.
+- Residual EC-STO-10 (clear and reopen on 1.1.1, then update to the fix): `migrely.db` lost 3/3, as expected. A second
+  update lost nothing 3/3.
+- FATAL 0, ANR 0, "code_cache check failed" 0.
+- The 1.2.1 Go/No-Go reuses these rows if the app code on `release/1.2.1` equals 93f8c00f's.
+
+**5.6 archive.** `openspec archive fix-code-cache-after-clear --yes` and `openspec validate --specs --strict` (results
+in the PR).
