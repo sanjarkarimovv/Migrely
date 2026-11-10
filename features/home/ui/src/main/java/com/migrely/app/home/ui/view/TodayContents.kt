@@ -72,7 +72,8 @@ fun TodayContents(
     medicationPrompt: @Composable () -> Unit = {},
     onPeriodToday: (marked: Boolean) -> Unit = {},
     onSettings: () -> Unit = {},
-    trialBanner: @Composable () -> Unit = {}
+    trialBanner: @Composable () -> Unit = {},
+    visitCard: @Composable () -> Unit = {}
 ) {
     val screenModifier = modifier
         .fillMaxSize()
@@ -92,6 +93,7 @@ fun TodayContents(
                 TodaySkyCard(today = today, appearance = appearance)
                 if (today.periodOffered) PeriodToday(today.periodToday, onPeriodToday)
                 medicationPrompt()
+                visitCard()
                 TodayAttackList(today.attacks, nowMillis, timeUiFormatter, onAttackDetails)
                 monthCalendar()
                 Spacer(Modifier.height(24.dp))
@@ -120,6 +122,7 @@ fun TodayContents(
                 TodaySkyCard(today = today, appearance = appearance)
                 if (today.periodOffered) PeriodToday(today.periodToday, onPeriodToday)
                 medicationPrompt()
+                visitCard()
                 TodayAttackList(today.attacks, nowMillis, timeUiFormatter, onAttackDetails)
                 monthCalendar()
                 Spacer(Modifier.height(8.dp))

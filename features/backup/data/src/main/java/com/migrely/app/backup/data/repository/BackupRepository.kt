@@ -13,6 +13,7 @@ import com.migrely.app.backup.domain.repository.ExportBackupRepository
 import com.migrely.app.backup.domain.repository.ExportCsvRepository
 import com.migrely.app.backup.domain.repository.GetAutomaticCopyRepository
 import com.migrely.app.backup.domain.repository.GetPhoneRecordsRepository
+import com.migrely.app.backup.domain.repository.PlanRemindersAgainRepository
 import com.migrely.app.backup.domain.repository.ReadBackupRepository
 import com.migrely.app.backup.domain.repository.ReplaceWithBackupRepository
 import com.migrely.app.backup.domain.repository.RestoreAutomaticCopyRepository
@@ -24,6 +25,7 @@ import com.migrely.app.datasource.clock.datasource.ClockDataSource
 import com.migrely.app.datasource.document.datasource.DocumentDataSource
 import com.migrely.app.datasource.exception.DataException
 import com.migrely.app.datasource.exception.StorageFullDataException
+import com.migrely.app.datasource.schedule.datasource.ReminderScheduleDataSource
 import java.text.DecimalFormatSymbols
 import java.time.Instant
 import java.util.Locale
@@ -41,6 +43,7 @@ class BackupRepository(
     private val backupFileDataSource: BackupFileDataSource,
     private val documentDataSource: DocumentDataSource,
     private val clockDataSource: ClockDataSource,
+    private val reminderScheduleDataSource: ReminderScheduleDataSource,
     private val attacksCsvMapper: AttacksCsvMapper,
     private val backupSummaryDomainMapper: BackupSummaryDomainMapper,
     private val locale: () -> Locale
@@ -51,7 +54,8 @@ class BackupRepository(
     ReplaceWithBackupRepository,
     AddBackupRepository,
     GetAutomaticCopyRepository,
-    RestoreAutomaticCopyRepository {
+    RestoreAutomaticCopyRepository,
+    PlanRemindersAgainRepository {
     override fun exportBackup(uri: String) = write {
         documentDataSource.write(uri, encodedRecords())
     }
@@ -123,6 +127,8 @@ class BackupRepository(
         val added = backupDataSource.add(records)
         ImportResultDomainModel.Added(added.addedAttacks, added.skippedAttacks, added.addedOthers)
     }
+
+    override fun planRemindersAgain() = reminderScheduleDataSource.planAgain()
 
     private fun encodedRecords() =
         backupFileDataSource.encode(backupDataSource.records(), clockDataSource.now())

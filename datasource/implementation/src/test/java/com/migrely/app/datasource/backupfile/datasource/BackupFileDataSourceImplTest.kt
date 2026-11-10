@@ -47,16 +47,19 @@ class BackupFileDataSourceImplTest {
         val text = classUnderTest.encode(RECORDS, EXPORTED_AT)
 
         assertTrue(text.contains("\"format\":\"migrely-backup\""))
-        assertTrue(text.contains("\"schemaVersion\":6"))
+        assertTrue(text.contains("\"schemaVersion\":7"))
+        assertTrue(text.contains("\"doctorVisits\":[{\"id\":\"v1\",\"date\":\"2026-08-20\"}"))
+        // A visit reminder's shown state is device state, never part of a backup (BRD D168).
+        assertFalse(text.contains("reminded"))
         assertTrue(text.contains("\"exportedAt\":\"2026-10-25T08:00:00Z\""))
-        assertEquals(BackupDecodedDataModel.Records(RECORDS, 6), classUnderTest.decode(text))
+        assertEquals(BackupDecodedDataModel.Records(RECORDS, 7), classUnderTest.decode(text))
     }
 
     @Test
     fun `Given a byte-order mark when reading then it is ignored`() {
         val text = Char(0xFEFF) + classUnderTest.encode(RECORDS, EXPORTED_AT)
 
-        assertEquals(BackupDecodedDataModel.Records(RECORDS, 6), classUnderTest.decode(text))
+        assertEquals(BackupDecodedDataModel.Records(RECORDS, 7), classUnderTest.decode(text))
     }
 
     @Test
@@ -81,7 +84,7 @@ class BackupFileDataSourceImplTest {
         assertEquals(
             BackupDecodedDataModel.Newer,
             classUnderTest.decode(
-                "{\"format\":\"migrely-backup\",\"schemaVersion\":7,\"attacks\":{\"new\":true}}"
+                "{\"format\":\"migrely-backup\",\"schemaVersion\":8,\"attacks\":{\"new\":true}}"
             )
         )
     }
@@ -109,6 +112,23 @@ class BackupFileDataSourceImplTest {
         assertEquals("Ibuprofen", decoded.records.medications.single().name)
         assertEquals(null, decoded.records.intakes.single().effect)
         assertEquals(emptyList<Any>(), decoded.records.dayMarks)
+        assertEquals(emptyList<Any>(), decoded.records.doctorVisits)
+    }
+
+    @Test
+    fun `Given a schema 6 backup when reading then it imports with no visit`() {
+        val text = """
+            {"format":"migrely-backup","schemaVersion":6,"exportedAt":"2026-11-01T00:00:00Z",
+             "attacks":[{"id":"a","startEpochMillis":1000,"startZoneId":"Asia/Tashkent",
+               "endEpochMillis":5000,"createdEpochMillis":1000,"updatedEpochMillis":5000}],
+             "dayMarks":[{"date":"2026-10-20","painFree":true,"updatedEpochMillis":1}]}
+        """.trimIndent()
+
+        val decoded = classUnderTest.decode(text) as BackupDecodedDataModel.Records
+
+        assertEquals(6, decoded.schemaVersion)
+        assertEquals(1, decoded.records.attacks.size)
+        assertEquals(emptyList<Any>(), decoded.records.doctorVisits)
     }
 
     @Test
@@ -120,7 +140,9 @@ class BackupFileDataSourceImplTest {
             "\"date\":\"2026-10-18\"" to "\"date\":\"18.10.2026\"",
             "\"kind\":\"ACUTE\"" to "\"kind\":\"RESCUE\"",
             "\"effect\":\"A_LOT\"" to "\"effect\":\"SOMEWHAT\"",
-            "\"medicationId\":\"m1\"" to "\"medicationId\":\"missing\""
+            "\"medicationId\":\"m1\"" to "\"medicationId\":\"missing\"",
+            "\"date\":\"2026-11-20\"" to "\"date\":\"20.11.2026\"",
+            "\"date\":\"2026-11-20\"" to "\"date\":\"2026-08-20\""
         ).forEach { (from, to) ->
             assertTrue(from, text.contains(from))
             assertEquals(
@@ -237,7 +259,7 @@ class BackupFileDataSourceImplTest {
             BackupRecordsDataModel(emptyList(), emptyList(), emptyList(), emptyList(), emptyList())
 
         assertEquals(
-            BackupDecodedDataModel.Records(empty, 6),
+            BackupDecodedDataModel.Records(empty, 7),
             classUnderTest.decode(classUnderTest.encode(empty, EXPORTED_AT))
         )
     }

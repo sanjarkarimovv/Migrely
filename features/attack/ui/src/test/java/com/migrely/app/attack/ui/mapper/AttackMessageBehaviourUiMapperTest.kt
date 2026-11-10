@@ -44,6 +44,11 @@ class AttackMessageBehaviourUiMapperTest(
                 AttackMessageUiModel.AttacksMerged,
                 AttackMessageBehaviourUiModel(SnackbarTone.Confirmation, false, 8_000L)
             ),
+            // Polite, 8 s, and a tap on its text closes it (BRD D165 (4)).
+            arrayOf<Any>(
+                AttackMessageUiModel.Saved,
+                AttackMessageBehaviourUiModel(SnackbarTone.Confirmation, false, 8_000L)
+            ),
             arrayOf<Any>(
                 AttackMessageUiModel.SomethingWentWrong,
                 AttackMessageBehaviourUiModel(SnackbarTone.Error, false, 8_000L)

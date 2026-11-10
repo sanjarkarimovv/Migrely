@@ -5,6 +5,7 @@ import com.migrely.app.datasource.attack.model.AttackTagLocalModel
 import com.migrely.app.datasource.backupfile.RECORDS
 import com.migrely.app.datasource.daymark.mapper.DayMarkLocalMapper
 import com.migrely.app.datasource.daymark.model.DayMarkLocalModel
+import com.migrely.app.datasource.doctorvisit.mapper.DoctorVisitLocalMapper
 import com.migrely.app.datasource.medication.mapper.MedicationLocalMapper
 import com.migrely.app.datasource.tag.mapper.CustomTagLocalMapper
 import org.junit.Assert.assertEquals
@@ -15,7 +16,8 @@ class BackupLocalMapperTest {
         AttackTagLocalMapper(),
         CustomTagLocalMapper(),
         MedicationLocalMapper(),
-        DayMarkLocalMapper()
+        DayMarkLocalMapper(),
+        DoctorVisitLocalMapper()
     )
 
     @Test

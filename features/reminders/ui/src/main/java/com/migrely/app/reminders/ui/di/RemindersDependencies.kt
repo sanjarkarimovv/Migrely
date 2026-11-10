@@ -7,6 +7,7 @@ import com.migrely.app.reminders.presentation.model.RemindersPresentationNotific
 import com.migrely.app.reminders.presentation.model.RemindersViewState
 import com.migrely.app.reminders.presentation.navigation.RemindersPresentationNavigationEvent
 import com.migrely.app.reminders.presentation.viewmodel.RemindersViewModel
+import com.migrely.app.reminders.ui.mapper.DoctorVisitUiToPresentationMapper
 import com.migrely.app.reminders.ui.mapper.ReminderKindUiToPresentationMapper
 import com.migrely.app.reminders.ui.mapper.RemindersEventPresenter
 import com.migrely.app.reminders.ui.mapper.RemindersMessageBehaviourUiMapper
@@ -18,6 +19,9 @@ class RemindersDependencies(
     val remindersEventPresenter: RemindersEventPresenter,
     val remindersMessageBehaviourUiMapper: RemindersMessageBehaviourUiMapper,
     val reminderKindUiToPresentationMapper: ReminderKindUiToPresentationMapper,
+    val doctorVisitUiToPresentationMapper: DoctorVisitUiToPresentationMapper,
+    /** The "Doctor visit" notification channel, whose own settings page "Open settings" opens. */
+    val visitNotificationChannelId: String,
     navigationMapper: NavigationEventDestinationMapper<RemindersPresentationNavigationEvent>,
     notificationMapper: NotificationUiMapper<RemindersPresentationNotification>
 ) : BaseComposeHolder<RemindersViewState, RemindersPresentationNotification>(

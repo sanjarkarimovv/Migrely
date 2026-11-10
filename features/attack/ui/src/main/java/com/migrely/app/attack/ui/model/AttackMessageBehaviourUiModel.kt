@@ -7,4 +7,7 @@ data class AttackMessageBehaviourUiModel(
     val tone: SnackbarTone,
     val hasUndo: Boolean,
     val baseDurationMillis: Long?
-)
+) {
+    /** An error belongs to the visit and goes when a later write saves (BRD D165 (4), (5)). */
+    val isError: Boolean get() = tone == SnackbarTone.Error
+}

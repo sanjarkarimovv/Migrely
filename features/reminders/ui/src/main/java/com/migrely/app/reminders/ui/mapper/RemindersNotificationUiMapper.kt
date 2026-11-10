@@ -4,6 +4,7 @@ import com.migrely.app.architecture.ui.notification.mapper.NotificationUiMapper
 import com.migrely.app.architecture.ui.notification.model.UiNotification
 import com.migrely.app.reminders.presentation.model.ReminderKindPresentationModel
 import com.migrely.app.reminders.presentation.model.RemindersPresentationNotification
+import com.migrely.app.reminders.ui.model.DoctorVisitUiModel
 import com.migrely.app.reminders.ui.model.ReminderKindUiModel
 import com.migrely.app.reminders.ui.model.RemindersEventUiModel
 import com.migrely.app.reminders.ui.model.RemindersMessageUiModel
@@ -17,8 +18,16 @@ class RemindersNotificationUiMapper(private val presenter: RemindersEventPresent
                     when (notification.kind) {
                         ReminderKindPresentationModel.Daily -> ReminderKindUiModel.Daily
                         ReminderKindPresentationModel.Effect -> ReminderKindUiModel.Effect
+                        ReminderKindPresentationModel.Visit -> ReminderKindUiModel.Visit
                     }
                 )
+            is RemindersPresentationNotification.VisitRemoved -> RemindersEventUiModel.Message(
+                RemindersMessageUiModel.VisitRemoved(
+                    DoctorVisitUiModel(notification.visit.id, notification.visit.date.toEpochDay())
+                )
+            )
+            RemindersPresentationNotification.Undone ->
+                RemindersEventUiModel.Message(RemindersMessageUiModel.Undone)
             RemindersPresentationNotification.StorageFull ->
                 RemindersEventUiModel.Message(RemindersMessageUiModel.StorageFull)
             RemindersPresentationNotification.SomethingWentWrong ->

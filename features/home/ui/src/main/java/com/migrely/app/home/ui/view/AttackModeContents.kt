@@ -40,9 +40,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.layout
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -50,16 +47,14 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.constrainHeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.isUnspecified
-import androidx.compose.ui.unit.offset
 import com.migrely.app.designsystem.icon.MigrelyIcons
 import com.migrely.app.designsystem.input.TapGuard
 import com.migrely.app.designsystem.picker.DateTimePickerLabels
 import com.migrely.app.designsystem.picker.MigrelyDateTimePicker
 import com.migrely.app.designsystem.sky.SkyAppearance
 import com.migrely.app.designsystem.sky.SkyCanvas
+import com.migrely.app.designsystem.snackbar.clearOfMessage
 import com.migrely.app.designsystem.theme.MigrelyColors
 import com.migrely.app.designsystem.theme.MigrelyDarkRoom
 import com.migrely.app.designsystem.theme.MigrelyTheme
@@ -149,14 +144,6 @@ private fun StackedAttackLayout(
     }
 }
 
-/**
- * The space kept above the guidance column in landscape attack mode, so a message shown over it never covers a line
- * (BRD D52): from the column's top to the message's bottom, both in root coordinates. None with no message, or before
- * the column is placed. The column's own top space then separates its first line from the message.
- */
-internal fun guidanceTopPadding(messageBottom: Dp, columnTop: Dp): Dp =
-    if (columnTop.isUnspecified) 0.dp else (messageBottom - columnTop).coerceAtLeast(0.dp)
-
 // Two columns of equal weight: HomeContents keeps messages to the start half because the controls column begins just
 // past it (design D4 of fix-today-zone-and-landscape-message). Change the split and the message area together.
 @Composable
@@ -168,30 +155,16 @@ private fun SideBySideAttackLayout(
     actions: HomeActions,
     modifier: Modifier
 ) {
-    val density = LocalDensity.current
-    var columnTop by remember { mutableStateOf(Dp.Unspecified) }
     // Whole dp, so it changes only while the message moves (BRD D52).
     val messageMove by remember { derivedStateOf { messageBottom().value.roundToInt() } }
     Row(horizontalArrangement = Arrangement.spacedBy(24.dp), modifier = modifier) {
         Box(modifier = Modifier.weight(1f)) {
             // While a message shows over this column, the column's visible part starts below it, so no line is
-            // covered, scrolled or not (BRD D52). Read in the layout phase, so it follows the message frame by frame
-            // without recomposing.
+            // covered, scrolled or not (BRD D52). The column's own top space then separates its first line from the
+            // message.
             Column(
                 modifier = Modifier
-                    .onGloballyPositioned {
-                        columnTop = with(density) { it.positionInRoot().y.toDp() }
-                    }
-                    .layout { measurable, constraints ->
-                        val top = guidanceTopPadding(messageBottom(), columnTop).roundToPx()
-                        val placeable = measurable.measure(constraints.offset(vertical = -top))
-                        layout(
-                            placeable.width,
-                            constraints.constrainHeight(placeable.height + top)
-                        ) {
-                            placeable.place(0, top)
-                        }
-                    }
+                    .clearOfMessage(messageBottom)
                     .verticalScroll(rememberScrollState())
             ) {
                 Spacer(Modifier.height(16.dp))

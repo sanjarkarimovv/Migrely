@@ -10,6 +10,7 @@ import com.migrely.app.reminders.domain.usecase.RecordPermissionAskedUseCase
 import com.migrely.app.reminders.domain.usecase.SetDailyReminderUseCase
 import com.migrely.app.reminders.presentation.model.DailyReminderOfferPresentationNotification
 import com.migrely.app.reminders.presentation.model.DailyReminderOfferViewState
+import java.time.LocalDate
 import java.time.LocalTime
 import kotlinx.coroutines.CoroutineStart.UNDISPATCHED
 import kotlinx.coroutines.async
@@ -27,6 +28,7 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 
 private val EIGHT_PM = LocalTime.of(20, 0)
+private val TODAY: LocalDate = LocalDate.of(2026, 11, 10)
 private val ON_AT_EIGHT = SetDailyReminderRequestDomainModel(true, EIGHT_PM)
 
 @RunWith(MockitoJUnitRunner::class)
@@ -59,7 +61,7 @@ class DailyReminderOfferViewModelTest :
     ) {
         getRemindersUseCase.givenSuccessfulExecution(
             RemindersResultDomainModel.Loaded(
-                RemindersDomainModel(false, time, true, allowed, mayAsk)
+                RemindersDomainModel(false, time, true, allowed, mayAsk, TODAY)
             )
         )
     }

@@ -4,7 +4,6 @@ import com.migrely.app.datasource.attack.datasource.AttackDataSource
 import com.migrely.app.datasource.clock.datasource.ClockDataSource
 import com.migrely.app.datasource.daymark.datasource.DayMarkDataSource
 import com.migrely.app.datasource.exception.DataException
-import com.migrely.app.datasource.exception.StorageFullDataException
 import com.migrely.app.datasource.notification.datasource.NotificationDataSource
 import com.migrely.app.datasource.reminder.datasource.ReminderSettingsDataSource
 import com.migrely.app.datasource.schedule.datasource.ReminderScheduleDataSource
@@ -13,7 +12,6 @@ import com.migrely.app.reminders.data.mapper.ReminderZoneDomainMapper
 import com.migrely.app.reminders.domain.model.CurrentTimeDomainModel
 import com.migrely.app.reminders.domain.model.ReminderAttackDomainModel
 import com.migrely.app.reminders.domain.model.ReminderSettingsResultDomainModel
-import com.migrely.app.reminders.domain.model.ReminderWriteResultDomainModel
 import com.migrely.app.reminders.domain.model.TodayEntriesResultDomainModel
 import com.migrely.app.reminders.domain.repository.CancelDailyReminderRepository
 import com.migrely.app.reminders.domain.repository.DismissDailyReminderRepository
@@ -74,22 +72,22 @@ class RemindersRepository(
 
     override fun notificationsAllowed(): Boolean = notificationDataSource.areEnabled()
 
-    override fun setDailyReminder(enabled: Boolean, time: LocalTime) = write {
+    override fun setDailyReminder(enabled: Boolean, time: LocalTime) = reminderWrite {
         reminderSettingsDataSource.setDaily(
             enabled,
             time.hour * MINUTES_PER_HOUR + time.minute
         )
     }
 
-    override fun setEffectReminder(enabled: Boolean) = write {
+    override fun setEffectReminder(enabled: Boolean) = reminderWrite {
         reminderSettingsDataSource.setEffect(enabled)
     }
 
-    override fun setPermissionAsked(at: Instant) = write {
+    override fun setPermissionAsked(at: Instant) = reminderWrite {
         reminderSettingsDataSource.setPermissionAsked(at)
     }
 
-    override fun setDailyShown(date: LocalDate) = write {
+    override fun setDailyShown(date: LocalDate) = reminderWrite {
         reminderSettingsDataSource.setDailyShown(date)
     }
 
@@ -121,14 +119,5 @@ class RemindersRepository(
         )
     } catch (_: DataException) {
         TodayEntriesResultDomainModel.Failed
-    }
-
-    private inline fun write(block: () -> Unit): ReminderWriteResultDomainModel = try {
-        block()
-        ReminderWriteResultDomainModel.Done
-    } catch (_: StorageFullDataException) {
-        ReminderWriteResultDomainModel.StorageFull
-    } catch (_: DataException) {
-        ReminderWriteResultDomainModel.Failed
     }
 }

@@ -7,5 +7,6 @@ class ReminderKindUiToPresentationMapper {
     fun toPresentation(kind: ReminderKindUiModel) = when (kind) {
         ReminderKindUiModel.Daily -> ReminderKindPresentationModel.Daily
         ReminderKindUiModel.Effect -> ReminderKindPresentationModel.Effect
+        ReminderKindUiModel.Visit -> ReminderKindPresentationModel.Visit
     }
 }

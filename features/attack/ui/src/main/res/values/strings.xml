@@ -82,6 +82,8 @@
     <string name="message_point_outside">That time is outside this migraine.</string>
     <string name="message_tag_limit">Your list is full. Remove one to add another.</string>
     <string name="attack_message_undone">Undone.</string>
+    <!-- Replaces "Couldn't save" once a later save on the screen worked (BRD D165 (4)). -->
+    <string name="attack_message_saved">Saved.</string>
     <string name="attack_message_undo_not_possible">This can no longer be undone.</string>
     <string name="attack_message_storage_full">Couldn\'t save. Your phone\'s storage is full.</string>
     <string name="attack_message_generic">Something went wrong. Please try again.</string>

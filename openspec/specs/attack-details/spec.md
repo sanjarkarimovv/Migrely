@@ -121,7 +121,7 @@ and entries (BRD EC-ATK-09).
 When the user enters a pain level of 10 and no saved attack has a 10, the details screen SHALL show a card that does not block the
 screen: "If this pain came on suddenly and is the worst of your life, call emergency services now." It SHALL show whether the entry is
 saved or not, and when the saved 10s cannot be read. The card SHALL be dismissible and SHALL NOT appear once a 10 is saved
-(BRD SAF-F2, EC-ATK-22, D163).
+(BRD SAF-F2, EC-ATK-22, D163, D165).
 
 #### Scenario: First 10
 - **WHEN** no attack has ever had a pain entry of 10 and the user adds one
@@ -133,8 +133,8 @@ saved or not, and when the saved 10s cannot be read. The card SHALL be dismissib
 
 #### Scenario: A first 10 that fails to save
 - **WHEN** no saved attack has a 10, the user adds a 10, and the phone's storage is full
-- **THEN** the safety card appears, and "Couldn't save. Your phone's storage is full." shows as it does today
-- **AND** the card's warning sentence is visible, even where the message covers the card's title
+- **THEN** the safety card appears, and "Couldn't save. Your phone's storage is full." shows under the top bar
+- **AND** the card's title, warning sentence and "Got it" are all visible below the message, at any font and orientation
 
 #### Scenario: A first 10 that fails for another reason
 - **WHEN** no saved attack has a 10, the user adds a 10, and the save fails for another reason or the entry is refused for its time
@@ -147,6 +147,7 @@ saved or not, and when the saved 10s cannot be read. The card SHALL be dismissib
 #### Scenario: The same 10 saved later
 - **WHEN** a first 10 failed to save, the person frees space, and adds the 10 again, and it saves
 - **THEN** the safety card appears again, because the stored history now has its first 10
+- **AND** "Saved." replaces "Couldn't save"
 
 #### Scenario: A failed 10 does not count as saved
 - **WHEN** a first 10 failed to save and the user adds another 10 that also fails
@@ -158,13 +159,13 @@ saved or not, and when the saved 10s cannot be read. The card SHALL be dismissib
 
 #### Scenario: TalkBack hears both
 - **WHEN** TalkBack is on and a first 10 fails to save
-- **THEN** it speaks the message and the card's text, each in full, and both stay on screen until dismissed
-- **AND** at 100% font the message covers the card's title until it is dismissed, so the title is neither seen nor spoken, which is
-  accepted for 1.1.0 because the warning sentence is
+- **THEN** it speaks the card's title and warning sentence first, and then the message, each in full
+- **AND** the card stays until "Got it", and the message stays until it is closed, a later save succeeds, or the user leaves the
+  screen
 
 #### Scenario: Rotation
 - **WHEN** the phone rotates with the card and the message showing
-- **THEN** both are still there
+- **THEN** both are still there, and the message does not cover the card
 
 ### Requirement: Where it hurts, symptoms and triggers
 The user SHALL be able to select any number of locations, symptoms and triggers for an attack. The built-in choices

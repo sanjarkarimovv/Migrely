@@ -21,4 +21,11 @@ internal fun ReportPeriodDomainModel.datesOn(today: LocalDate): ReportDatesDomai
                 to
             )
         }
+        // Offered only for a visit within 24 months, from that day whole (design D4).
+        is ReportPeriodDomainModel.SinceLastVisit -> ReportDatesDomainModel(
+            minOf(from, today),
+            today
+        )
+        // Made concrete with the visits first; unresolved, it is the default with no visit.
+        ReportPeriodDomainModel.Default -> DefaultReportPeriod.of(null, today).datesOn(today)
     }

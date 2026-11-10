@@ -18,6 +18,17 @@ interface ReminderScheduleDataSource {
 
     fun cancelEffectQuestion(intakeId: String)
 
+    /** Plans the visit reminder's run for the visit on [visit] at about [at], replacing any run already planned. */
+    fun scheduleVisit(at: Instant, visit: LocalDate)
+
+    fun cancelVisit()
+
+    /** Whether a run of the reminder for the visit on [visit] is waiting or running. */
+    fun isVisitPlanned(visit: LocalDate): Boolean
+
+    /** Plans the reminders again as soon as possible, after an import changed what they depend on. */
+    fun planAgain()
+
     /**
      * Cancels every run planned for reminders, of every kind, and returns once that is stored, so it holds even if the
      * app stops right after (BRD D96).

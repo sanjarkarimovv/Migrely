@@ -10,7 +10,7 @@
 # zone_attack, zone_history, double_tap, med_effect, med_effect_attack, med_effect_skip, med_effect_late,
 # med_preventive, med_two_waiting, med_link_home, med_overuse, overuse_copy, keyboard_home, keyboard_history, keyboard_rtl,
 # landscape_band, mark_travel, mark_earliest_month, stats_counting, stats_chronic, stats_progress, reminder_daily,
-# reminder_permission, reminder_effect, reminder_replan (restarts the emulator), med_only_history,
+# reminder_permission, reminder_effect, reminder_replan (restarts the emulator), visit_reminder, med_only_history,
 # message_tap_guard (#52), two_touch (#138, #139), theme_check, onboarding_states, delete_all_data, privacy_link, backup_export, backup_import,
 # message_duration (#56), premium_store_states, premium_no_products, premium_pending, premium_plans, premium_entitlement, premium_offline,
 # trial_banner, paywall_self_show, report_three_months, report_counting, report_heavy, insights, upgrade, release_apk.
@@ -285,6 +285,20 @@ expect_no_notification() {
   if [[ -z "$found" ]]; then echo "    no notification"; return 0; fi
   echo "  FAILED: unexpected notification '$found'"
   return 1
+}
+expect_no_notification_matching() { # $1 extended regex that no notification's "title | text | actions" may match
+  local found
+  found="$(app_notifications)"
+  if grep -Eq "$1" <<<"$found"; then echo "  FAILED: a notification shows /$1/: $(grep -E "$1" <<<"$found" | head -1)"; return 1; fi
+  echo "    no notification shows /$1/"
+}
+expect_private_notifications() { # every notification of the app is private, with a public version titled "Reminder" (D169)
+  adbq shell dumpsys notification --noredact | python3 -I -c "import re, sys
+blocks = [b for b in re.split(r'\n\s*NotificationRecord\(', sys.stdin.read())[1:] if 'pkg=$APP' in b[:400]]
+bad = [b.split(chr(10))[0][:80] for b in blocks if not re.search(r'vis=PRIVATE', b) or not re.search(r'publicVersion=Notification|mPublicVersion|publicVersion', b)]
+if not blocks or bad:
+    print('  FAILED: not every notification is private with a public version:', bad or 'no notification'); sys.exit(1)
+print('    private with a public version:', len(blocks), 'notification(s)')"
 }
 tap_notification_action() { # $1 the action's label, $2 the notification's title (regex); tapped in the open shade
   local point title attempt
@@ -1078,7 +1092,10 @@ scenario_reminder_daily() {
   expect_notification "^How was today\?" || return 1
   run_flow attack-log-keep || return 1
   tap_notification_action "Pain-free day" "How was today\?" || return 1
-  expect_notification "A migraine is logged today\." || return 1
+  # The update says nothing about the day's entries on the lock screen (D169, #178 F2): no "migraine is logged".
+  expect_notification "^Not marked\. Open Migrely to see today\. \|" || return 1
+  expect_no_notification_matching "[Mm]igraine is logged" || return 1
+  expect_private_notifications || return 1
   # No mark was set: today's "Pain-free day" stays off (and disabled) in History.
   run_flow history-today || return 1
   expect_switch "Pain-free day" false || return 1
@@ -1179,7 +1196,10 @@ scenario_reminder_effect() {
   expect_job_in 120 || return 1
   set_clock_millis "$(when_millis 0 15 16:01)" || return 1
   run_app_jobs 1 || return 1
-  expect_notification "^Did Ibuprofen help\?" || return 1
+  # The title no longer names the medication (D169, #178): it can show on a lock screen.
+  expect_notification "^Did it help\? \| Tap to answer in Migrely\. \|" || return 1
+  expect_no_notification_matching "Ibuprofen" || return 1
+  expect_private_notifications || return 1
   adbq shell am force-stop "$APP"
   # The 16th: an attack starts after the intake; nothing is sent, and home asks once it ends.
   set_clock_millis "$(when_millis 0 16 14:00)" || return 1
@@ -1200,6 +1220,31 @@ scenario_reminder_effect() {
   set_clock_millis "$(when_millis 0 17 16:01)" || return 1
   run_app_jobs
   expect_no_notification || return 1
+}
+
+# Covers: doctor-visit › The visit reminder › Two days before
+# Covers: doctor-visit › The visit reminder › Once per date
+# Covers: doctor-visit › A private notification › A lock screen that shows all content
+# Covers: doctor-visit › Opening the report from the reminder › Free
+scenario_visit_reminder() {
+  echo "Scenario visit_reminder: the visit reminder planned for 10:00 two days before, posted once, private, and its tap (D168)"
+  notifications_permission grant
+  # The 14th at 09:00, visit on the 17th: the reminder is planned for 10:00 on the 15th.
+  set_clock_millis "$(when_millis 0 14 09:00)" || return 1
+  local visit
+  visit="$(adbq shell date +%Y-%m-17 | tr -d '\r')"
+  run_flow_env visit-setup "DATE=$visit" || return 1
+  expect_job_in "$(( ($(when_millis 0 15 10:00) / 1000 - $(device_seconds)) / 60 ))" || return 1
+  set_clock_millis "$(when_millis 0 15 10:01)" || return 1
+  run_app_jobs 1 || return 1
+  expect_notification "^Your visit is on [A-Z][a-z]{2}, [A-Z][a-z]{2} 17 \| Make a report to bring\. \| *$" || return 1
+  expect_no_notification_matching "[Mm]igraine|[Hh]eadache|[Dd]octor|Ibuprofen|Premium" || return 1
+  expect_private_notifications || return 1
+  # Once per date: nothing more is planned for it, and running every job again adds no second one.
+  run_app_jobs
+  [[ "$(app_notifications | grep -c '^Your visit is on')" == "1" ]] || { echo "  FAILED: not exactly one visit notification"; return 1; }
+  tap_notification_action "Your visit is on .*" "Your visit is on" || return 1
+  run_flow visit-paywall || return 1
 }
 
 # Covers: attack-history › Month by month › Medication before any attack
@@ -1319,45 +1364,78 @@ print(round((u[1] - u[0]) * 1000))")"
   adbq shell rm -f "$ge"
 }
 
-# History's Undo sits on top of the top-bar actions (#52). A tap there just after the message leaves must reach nothing
-# (a guard under the message, 800 ms); a tap later must open Doctor report as usual. Taps go through adb, timed from
-# the tap on "Delete migraine" (the undo message lasts 5 s), at the centre of "Doctor report" where Undo overlaps it.
+# A tap on Undo's place just after the message leaves must reach nothing (#52, D114: a guard under the message, 800 ms);
+# a tap later must reach what lies there as usual. Since D158 the message sits below History's top bar, so it no longer
+# covers "Doctor report": Undo now lies on the month row's "Next month". History shows last month (an older migraine
+# keeps it there after the delete), where "Next month" answers, so a tap that got through changes the month. Undo's
+# place is read from the screen while the message shows, never assumed. Taps go through adb, timed from the tap on
+# "Delete migraine" (the undo message lasts 5 s).
 scenario_message_tap_guard() {
-  echo "Scenario message_tap_guard: a tap where Undo was, just after the message leaves, opens nothing (#52, D114)"
-  local delete offset screen box point guarded=0
-  run_flow history-open || return 1
-  box="$(node_bounds "Doctor report")"
-  [[ -n "$box" ]] || { echo "  FAILED: no \"Doctor report\" in History's top bar"; return 1; }
-  set -- $box
-  point="$((($1 + $3) / 2)) $((($2 + $4) / 2))"
-  for offset in 5.2 5.5 5.8 7.5; do
-    run_flow history-delete-ready || return 1
+  echo "Scenario message_tap_guard: a tap where Undo was, just after the message leaves, reaches nothing (#52, D114, D158)"
+  local delete offset screen box="" point="" last="" guarded=0 i
+  for offset in measure 5.2 5.5 5.8 7.5; do
+    run_flow history-delete-ready-last-month || return 1
     delete="$(point_in 'Delete migraine' 0.5)"
     [[ -n "$delete" ]] || { echo "  FAILED: \"Delete migraine\" not found"; return 1; }
+    if [[ "$offset" == measure ]]; then
+      # uiautomator waits for an idle screen, and the message's time-left line moves for its whole 5 s: the first dump
+      # after a delete came back at +5.1 s, with the message leaving. So Undo is measured in a 20 s window (the
+      # accessibility timeout, EC-UX-16), and the timed taps below use the default 5 s again.
+      long_undo_window
+      adbq shell input tap $delete
+      for i in 1 2 3; do
+        box="$(node_bounds 'Undo the deletion')"
+        [[ -n "$box" ]] && break
+      done
+      [[ -n "$box" ]] || { default_undo_window; echo "  FAILED: no Undo on screen after the delete"; return 1; }
+      set -- $box
+      point="$((($1 + $3) / 2)) $((($2 + $4) / 2))"
+      adbq shell input tap $point
+      default_undo_window
+      sleep 2
+      screen="$(history_month_state "")"
+      # The "Undone" message covers the month row, and a covered title is not in the dump: wait until it goes.
+      for i in 1 2 3 4 5 6 7 8; do
+        last="$(history_month_title)"
+        [[ -n "$last" ]] && break
+        sleep 2
+      done
+      [[ -n "$last" ]] || { echo "  FAILED: no month title on History"; return 1; }
+      echo "    Undo at [$1,$2][$3,$4] on $last; a tap at ($point) while the message shows: $screen"
+      [[ "$screen" == "history (undone)" ]] || { echo "  FAILED: the tap on Undo's place did not undo"; return 1; }
+      continue
+    fi
     adbq shell "input tap $delete; sleep $offset; input tap $point"
     sleep 2
-    screen="$(focused_screen)"
+    screen="$(history_month_state "$last")"
     echo "    tap at ($point) ${offset} s after the delete: $screen"
     case "$screen" in
-      "doctor report") [[ "$offset" == "7.5" ]] || { echo "  FAILED: the tap reached Doctor report under the message (#52)"; return 1; } ;;
+      "next month") [[ "$offset" == "7.5" ]] || { echo "  FAILED: the tap reached Next month under the message (#52)"; return 1; } ;;
       "history (deleted)") [[ "$offset" != "7.5" ]] && guarded=$((guarded + 1)) ;;
       "history (undone)") ;;
       *) echo "  FAILED: an unexpected screen after the tap"; return 1 ;;
     esac
-    [[ "$offset" != "7.5" || "$screen" == "doctor report" ]] || { echo "  FAILED: the late tap did not open Doctor report (control)"; return 1; }
+    [[ "$offset" != "7.5" || "$screen" == "next month" ]] || { echo "  FAILED: the late tap did not reach Next month (control)"; return 1; }
   done
   [[ $guarded -ge 1 ]] || { echo "  FAILED: every early tap landed on Undo, so the guard was never reached"; return 1; }
 }
 
-focused_screen() { # "doctor report", "history (undone)", "history (deleted)" or "unknown", from what is on screen
+history_month_title() { # the month History shows, for example "October 2026"
+  adbq shell rm -f /sdcard/qa-screen.xml
+  adbq shell uiautomator dump /sdcard/qa-screen.xml >/dev/null
+  adbq exec-out cat /sdcard/qa-screen.xml | grep -oE 'text="[A-Z][a-z]+ [0-9]{4}"' | head -1 | cut -d'"' -f2
+}
+
+history_month_state() { # $1 the month the delete happened in: "next month", "history (undone)", "history (deleted)",
+  # "doctor report" or "unknown", from what is on screen
   local xml
   adbq shell rm -f /sdcard/qa-screen.xml
   adbq shell uiautomator dump /sdcard/qa-screen.xml >/dev/null
   xml="$(adbq exec-out cat /sdcard/qa-screen.xml)"
-  # A free user's tap on Doctor report opens its paywall (D108); for the guard either means the tap got through.
   if grep -qE 'text="(Create report|A report for your doctor)"' <<<"$xml"; then echo "doctor report"
-  elif grep -q 'Opens its details' <<<"$xml"; then echo "history (undone)"
-  elif grep -q 'text="Log your first migraine"' <<<"$xml"; then echo "history (deleted)"
+  elif [[ -n "$1" ]] && grep -qE 'text="[A-Z][a-z]+ [0-9]{4}"' <<<"$xml" && ! grep -q "text=\"$1\"" <<<"$xml"; then echo "next month"
+  elif grep -qE 'content-desc="[A-Za-z]+, [A-Za-z]+ 12: [a-z]+\. 1 migraine' <<<"$xml"; then echo "history (undone)"
+  elif grep -qE 'content-desc="[A-Za-z]+, [A-Za-z]+ 12: nothing logged\.' <<<"$xml"; then echo "history (deleted)"
   else echo "unknown"; fi
 }
 
@@ -2252,7 +2330,7 @@ if [[ $# -eq 0 ]]; then
     double_tap med_effect med_effect_attack med_effect_skip med_effect_late med_preventive med_two_waiting \
     med_link_home med_overuse overuse_copy keyboard_home keyboard_history keyboard_rtl landscape_band mark_travel mark_earliest_month \
     stats_counting stats_chronic stats_progress reminder_daily reminder_permission reminder_effect reminder_replan \
-    med_only_history message_tap_guard two_touch \
+    visit_reminder med_only_history message_tap_guard two_touch \
     theme_check onboarding_states delete_all_data privacy_link backup_export backup_import message_duration \
     premium_store_states premium_no_products premium_pending premium_plans premium_entitlement premium_offline trial_banner paywall_self_show \
     report_three_months report_counting report_heavy insights

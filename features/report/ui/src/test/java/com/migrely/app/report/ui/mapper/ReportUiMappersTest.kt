@@ -22,14 +22,22 @@ class ReportUiMappersTest {
     fun `When mapping the state then the dates as epoch days`() {
         assertEquals(
             ReportViewStateUiModel.Ready(
-                ReportOptionsUiModel(20_660, 20_751, anythingLogged = true)
+                ReportOptionsUiModel(
+                    20_660,
+                    20_751,
+                    anythingLogged = true,
+                    period = ReportPeriodUiModel.SinceLastVisit(20_660),
+                    lastVisitEpochDay = 20_660
+                )
             ),
             ReportViewStateUiMapper().toUi(
                 ReportViewState.Ready(
                     ReportOptionsPresentationModel(
                         LocalDate.ofEpochDay(20_660),
                         LocalDate.ofEpochDay(20_751),
-                        true
+                        true,
+                        ReportPeriodPresentationModel.SinceLastVisit(LocalDate.ofEpochDay(20_660)),
+                        LocalDate.ofEpochDay(20_660)
                     )
                 )
             )
@@ -49,6 +57,14 @@ class ReportUiMappersTest {
         assertEquals(
             ReportPeriodPresentationModel.Range(LocalDate.ofEpochDay(1), LocalDate.ofEpochDay(2)),
             ReportPeriodPresentationMapper().toPresentation(ReportPeriodUiModel.Range(1, 2))
+        )
+        assertEquals(
+            ReportPeriodPresentationModel.SinceLastVisit(LocalDate.ofEpochDay(3)),
+            ReportPeriodPresentationMapper().toPresentation(ReportPeriodUiModel.SinceLastVisit(3))
+        )
+        assertEquals(
+            ReportPeriodPresentationModel.Default,
+            ReportPeriodPresentationMapper().toPresentation(ReportPeriodUiModel.Default)
         )
     }
 

@@ -10,10 +10,12 @@ import com.migrely.app.datasource.backup.model.AddedLocalModel
 import com.migrely.app.datasource.backup.model.AddedRecordsDataModel
 import com.migrely.app.datasource.backupfile.RECORDS
 import com.migrely.app.datasource.daymark.mapper.DayMarkLocalMapper
+import com.migrely.app.datasource.doctorvisit.mapper.DoctorVisitLocalMapper
 import com.migrely.app.datasource.exception.DatabaseDataException
 import com.migrely.app.datasource.exception.StorageFullDataException
 import com.migrely.app.datasource.medication.mapper.MedicationLocalMapper
 import com.migrely.app.datasource.tag.mapper.CustomTagLocalMapper
+import java.time.LocalDate
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
 import org.junit.Test
@@ -28,11 +30,16 @@ class BackupDataSourceImplTest {
         AttackTagLocalMapper(),
         CustomTagLocalMapper(),
         MedicationLocalMapper(),
-        DayMarkLocalMapper()
+        DayMarkLocalMapper(),
+        DoctorVisitLocalMapper()
     )
     private var tablesCleared = 0
     private var clearFailure: RuntimeException? = null
-    private val classUnderTest = BackupDataSourceImpl(backupDao, backupLocalMapper) {
+    private val classUnderTest = BackupDataSourceImpl(
+        backupDao,
+        backupLocalMapper,
+        today = { LocalDate.of(2026, 11, 10) }
+    ) {
         clearFailure?.let { throw it }
         tablesCleared++
     }
@@ -49,7 +56,7 @@ class BackupDataSourceImplTest {
     @Test
     fun `When replacing or adding then the rows go to the database in one call`() {
         given(
-            backupDao.add(any())
+            backupDao.add(any(), any())
         ).willReturn(AddedLocalModel(addedAttacks = 1, skippedAttacks = 1, addedOthers = 2))
 
         classUnderTest.replaceAll(RECORDS)
@@ -59,13 +66,13 @@ class BackupDataSourceImplTest {
         )
 
         verify(backupDao).replaceAll(backupLocalMapper.toLocal(RECORDS))
-        verify(backupDao).add(backupLocalMapper.toLocal(RECORDS))
+        verify(backupDao).add(backupLocalMapper.toLocal(RECORDS), "2026-11-10")
     }
 
     @Test
     fun `Given the database fails when writing then storage full or a database failure`() {
         given(backupDao.replaceAll(any())).willThrow(SQLiteFullException())
-        given(backupDao.add(any())).willThrow(SQLiteConstraintException())
+        given(backupDao.add(any(), any())).willThrow(SQLiteConstraintException())
 
         assertThrows(StorageFullDataException::class.java) { classUnderTest.replaceAll(RECORDS) }
         assertThrows(DatabaseDataException::class.java) { classUnderTest.add(RECORDS) }

@@ -18,6 +18,7 @@ flows:
   - "month-sky/*"
   - "month-stats/*"
   - "reminders/*"
+  - "doctor-visit/*"
   - "medication-overuse/*"
   - "onboarding/*"
   - "app-settings/*"

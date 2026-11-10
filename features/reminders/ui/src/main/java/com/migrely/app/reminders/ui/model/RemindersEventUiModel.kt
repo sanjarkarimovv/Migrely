@@ -7,7 +7,16 @@ sealed interface RemindersEventUiModel {
     data class Message(val message: RemindersMessageUiModel) : RemindersEventUiModel
 }
 
-enum class RemindersMessageUiModel {
-    StorageFull,
-    SomethingWentWrong
+sealed interface RemindersMessageUiModel {
+    data object StorageFull : RemindersMessageUiModel
+
+    data object SomethingWentWrong : RemindersMessageUiModel
+
+    /** "Visit removed", whose Undo puts [visit] back (BRD EC-REM-10). */
+    data class VisitRemoved(val visit: DoctorVisitUiModel) : RemindersMessageUiModel
+
+    data object Undone : RemindersMessageUiModel
 }
+
+/** A removed visit, held by its message for Undo. */
+data class DoctorVisitUiModel(val id: String, val epochDay: Long)

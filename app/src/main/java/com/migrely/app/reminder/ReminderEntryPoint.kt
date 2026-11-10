@@ -4,8 +4,10 @@ import com.migrely.app.datasource.clock.datasource.ClockDataSource
 import com.migrely.app.history.domain.usecase.SetDayMarkUseCase
 import com.migrely.app.medication.domain.usecase.RunEffectQuestionUseCase
 import com.migrely.app.reminders.domain.usecase.DismissDailyReminderUseCase
+import com.migrely.app.reminders.domain.usecase.PlanRemindersAfterImportUseCase
 import com.migrely.app.reminders.domain.usecase.RescheduleRemindersUseCase
 import com.migrely.app.reminders.domain.usecase.RunDailyReminderUseCase
+import com.migrely.app.reminders.domain.usecase.RunVisitReminderUseCase
 import com.migrely.app.reminders.domain.usecase.ShowAttackLoggedTodayUseCase
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
@@ -20,6 +22,10 @@ interface ReminderEntryPoint {
     fun rescheduleRemindersUseCase(): RescheduleRemindersUseCase
 
     fun runEffectQuestionUseCase(): RunEffectQuestionUseCase
+
+    fun runVisitReminderUseCase(): RunVisitReminderUseCase
+
+    fun planRemindersAfterImportUseCase(): PlanRemindersAfterImportUseCase
 
     fun setDayMarkUseCase(): SetDayMarkUseCase
 

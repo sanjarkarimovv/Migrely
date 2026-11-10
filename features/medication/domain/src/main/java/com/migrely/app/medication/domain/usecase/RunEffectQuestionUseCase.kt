@@ -49,10 +49,7 @@ class RunEffectQuestionUseCase(
             takenTo = now.minus(QUESTION_FROM)
         )
         if (result is PendingEffectQuestionResultDomainModel.Found) {
-            showEffectQuestionRepository.showEffectQuestion(
-                result.question.intakeId,
-                result.question.medicationName
-            )
+            showEffectQuestionRepository.showEffectQuestion(result.question.intakeId)
         }
     }
 }

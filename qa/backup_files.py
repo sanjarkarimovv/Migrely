@@ -1,11 +1,14 @@
 """Check Migrely's exported files and write files to import (D200).
 
-    python3 -I qa/backup_files.py json <file.json> [attacks medications day_marks]
+    python3 -I qa/backup_files.py json <file.json> [attacks medications day_marks] [--visits N] [--schema N]
     python3 -I qa/backup_files.py csv <file.csv> <separator , or ;> [--rows N] [--formula NOTE ...] [--text TEXT]
     python3 -I qa/backup_files.py fixtures <real-export.json> <out-dir>
 
-json: the file is a Migrely backup (format "migrely-backup", schemaVersion 6, an id on every entry, times in epoch
-milliseconds) and, when given, holds exactly that many attacks, medications and day marks (spec data-backup, D71).
+json: the file is a Migrely backup (format "migrely-backup", schemaVersion 7, an id on every entry, times in epoch
+milliseconds, each doctor visit an id and an ISO date, and no reminder or device state such as the visit reminder's
+marks: D168) and, when given, holds exactly that many attacks, medications and day marks (spec data-backup, D71), and
+with --visits that many doctor visits. --schema checks an older schemaVersion instead (the seeds are files of
+schema 6 on purpose: a 1.2 app imports them as older files, EC-BAK-03).
 csv: UTF-8 with a byte-order mark, CRLF line ends outside quoted cells, the expected header and separator, N rows
 (one per attack), each --formula note written with a ' in front (so a spreadsheet shows it as text), and --text
 present as written, for example non-Latin letters (D72).
@@ -25,10 +28,13 @@ import io
 import json
 import sys
 import uuid
+from datetime import date
 from pathlib import Path
 
 FORMAT = "migrely-backup"
-SCHEMA_VERSION = 6
+SCHEMA_VERSION = 7
+# Device state the backup leaves out on purpose (D168, design D2): a key holding one of these words fails the file.
+DEVICE_STATE = ("remind", "postpone", "cardclosed", "permission", "daily")
 HEADER = ["Start", "End", "Duration (minutes)", "Time zone", "Peak pain", "Pain level", "Where it hurts", "Symptoms",
           "Triggers", "Medications", "Impact", "Note"]
 EPOCH_MILLIS = range(10 ** 12, 10 ** 14)
@@ -40,12 +46,12 @@ def fail(message):
     sys.exit(1)
 
 
-def check_json(path, counts):
+def check_json(path, counts, visits=None, schema=SCHEMA_VERSION):
     data = json.loads(Path(path).read_text(encoding="utf-8"))
     if data.get("format") != FORMAT:
         fail(f"format is {data.get('format')!r}, not {FORMAT!r}")
-    if data.get("schemaVersion") != SCHEMA_VERSION:
-        fail(f"schemaVersion is {data.get('schemaVersion')!r}, not {SCHEMA_VERSION}")
+    if data.get("schemaVersion") != schema:
+        fail(f"schemaVersion is {data.get('schemaVersion')!r}, not {schema}")
     for kind in ("attacks", "customTags", "medications", "intakes"):
         for entry in data.get(kind, []):
             if not entry.get("id"):
@@ -53,10 +59,32 @@ def check_json(path, counts):
             for key, value in entry.items():
                 if key.endswith("EpochMillis") and value is not None and value not in EPOCH_MILLIS:
                     fail(f"{kind} {key}={value} is not epoch milliseconds")
+    for entry in data.get("doctorVisits", []):
+        if not entry.get("id") or set(entry) != {"id", "date"}:
+            fail(f"a doctor visit is not exactly an id and a date: {entry}")
+        try:
+            date.fromisoformat(entry["date"])
+        except (TypeError, ValueError):
+            fail(f"a doctor visit's date is not an ISO date: {entry}")
+    keys = set()
+    stack = [data]
+    while stack:
+        item = stack.pop()
+        if isinstance(item, dict):
+            keys.update(item)
+            stack.extend(item.values())
+        elif isinstance(item, list):
+            stack.extend(item)
+    for found_key in sorted(keys):
+        if any(word in found_key.lower() for word in DEVICE_STATE):
+            fail(f"the file holds device state ({found_key!r}), which a backup leaves out")
+    if visits is not None and len(data.get("doctorVisits", [])) != visits:
+        fail(f"holds {len(data.get('doctorVisits', []))} doctor visits; expected {visits}")
     found = (len(data.get("attacks", [])), len(data.get("medications", [])), len(data.get("dayMarks", [])))
     if counts and list(found) != [int(n) for n in counts]:
         fail(f"holds {found[0]} attacks, {found[1]} medications, {found[2]} day marks; expected {' '.join(counts)}")
-    print(f"JSON ok: {FORMAT} v{SCHEMA_VERSION}, {found[0]} attacks, {found[1]} medications, {found[2]} day marks")
+    print(f"JSON ok: {FORMAT} v{schema}, {found[0]} attacks, {found[1]} medications, {found[2]} day marks, "
+          f"{len(data.get('doctorVisits', []))} doctor visits")
 
 
 def bare_line_feed(text):
@@ -134,7 +162,13 @@ def main():
         sys.exit(__doc__)
     mode = sys.argv[1]
     if mode == "json":
-        check_json(sys.argv[2], sys.argv[3:6])
+        rest = sys.argv[3:]
+        options = {}
+        for name in ("--visits", "--schema"):
+            if name in rest:
+                options[name] = int(rest[rest.index(name) + 1])
+                rest = rest[:rest.index(name)] + rest[rest.index(name) + 2:]
+        check_json(sys.argv[2], rest[:3], options.get("--visits"), options.get("--schema", SCHEMA_VERSION))
     elif mode == "csv":
         parser = argparse.ArgumentParser()
         parser.add_argument("path")

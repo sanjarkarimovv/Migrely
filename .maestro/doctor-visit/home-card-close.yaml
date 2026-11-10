@@ -1,0 +1,28 @@
+# Covers: doctor-visit › The home card › Closed
+# Fails on 1.1.1 and older, which have no "Doctor visit" section.
+appId: com.migrely.app
+name: Closing the visit card hides it for that date, also after the app starts again
+tags: [regression, doctor-visit]
+---
+- runFlow: ../subflows/launch-clean.yaml
+- runFlow: ../subflows/log-attack-today.yaml
+- runFlow: ../subflows/open-reminders.yaml
+- runFlow:
+    file: ../subflows/set-visit.yaml
+    env:
+      OFFSET: 2
+      DATE: ""
+- back
+- back
+- extendedWaitUntil:
+    visible: "Your doctor visit is on ${output.visitSpoken}\\."
+    timeout: 5000
+- tapOn: "Close the visit reminder"
+- extendedWaitUntil:
+    notVisible: "Your doctor visit is on .*"
+    timeout: 5000
+- launchApp
+- extendedWaitUntil:
+    visible: "Today: .*"
+    timeout: 10000
+- assertNotVisible: "Your doctor visit is on .*"
