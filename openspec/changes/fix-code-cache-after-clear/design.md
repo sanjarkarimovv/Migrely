@@ -12,14 +12,11 @@ Code read from `develop` ad422d7f (= the v1.2.0 tree plus `docs/qa/go-no-go-1.2.
 - Nothing in Migrely calls `getCodeCacheDir()`; Android's own start code touches only the device-encrypted `code_cache`.
 - `ContextImpl.getCodeCacheDir()` → `ensurePrivateCacheDirExists(file, XATTR_INODE_CODE_CACHE)`: when the folder is missing it creates it and writes
   the mark with the new inode, and logs a warning on `ErrnoException` (SDK sources android-29, android-36). API 26 is not checked yet (task 1.1).
-- `MigrelyApplication.onCreate` already re-plans the daily and visit reminders on a thread at every process start (`RescheduleRemindersUseCase`).
-  Planning is unique work with `ExistingWorkPolicy.REPLACE`; the daily time is the first one strictly after now (`DailyReminderTime.next`).
-- `TimeChangeReceiver` (non-exported) re-plans on `TIMEZONE_CHANGED` and `TIME_SET` with `goAsync`.
+- `MigrelyApplication.onCreate` already re-plans the daily and visit reminders on a thread at every process start. This change does not touch it.
 
 ## Goals and non-goals
 
-Goals: an update never clears anything but `code_cache`, for any clear made on 1.2.1 or later; reminders return right after an update that lost them;
-no crash, no UI, no permission. Non-goals: the out-of-scope list in `proposal.md`.
+Goals: an update never clears anything but `code_cache`, for any clear made on 1.2.1 or later; no crash, no UI, no permission, no manifest change. Non-goals: the out-of-scope list in `proposal.md`.
 
 ## Decisions
 
@@ -59,32 +56,18 @@ Never write a mark that was not there: without one, installd uses the name, whic
   and for D2: no mark → no write; equal → no write; different → exactly one write of the folder's inode; a failed stat → no write.
 - Log at most `Log.w(tag, "code_cache check failed: ${e.javaClass.simpleName}")`. No path, no message text from user data.
 
-### D4. `MY_PACKAGE_REPLACED`
+### D4. No reminder change in 1.2.1
 
-- Add `<action android:name="android.intent.action.MY_PACKAGE_REPLACED" />` to `TimeChangeReceiver`'s filter; it stays `exported="false"` (the
-  system delivers to it, as for `TIME_SET`). No permission is needed.
-- In `onReceive`, the update action plans nothing: the process start that delivered it already ran D3 and the start re-plan. One plan per process
-  start avoids two quick `REPLACE`s of a visit run due now, which could post the visit reminder twice. Time actions keep planning as today.
-- Update the receiver's KDoc. Renaming the class is optional and not needed.
-- Seam: the decision "plan for this action" as a pure function or a small Robolectric test (`testDebug`), so `TIME_SET` and `TIMEZONE_CHANGED`
-  plan, `MY_PACKAGE_REPLACED` and anything else do not.
-- After a Play update the old process is killed, so `MY_PACKAGE_REPLACED` always arrives in a fresh process. An app in the stopped state may not get
-  it; then nothing changes from today (spec scenario).
-
-### D5. Idempotence of the re-plan (checked by reading the code)
-
-- Daily: `REPLACE` keeps one run; `next(now)` is strictly after now, so the re-plan never posts for a passed time and never twice.
-- Visit: `VisitReminderPlan` cancels when reminded of or the day has ended; a passed time runs once (EC-REM-14). `setOnlyAlertOnce(true)` and a fixed
-  notification id limit a race to one visible notification.
+`MY_PACKAGE_REPLACED` is out of 1.2.1 (lead decision 2026-11-10, after the PM objection; BRD D170 (3b), EC-REM-22). It does not help D1, because
+installd re-marks `code_cache` by name at every update. It would only help the small EC-STO-10 group sooner, and it would add a reminder path to the
+diff and to the Go/No-Go. `TimeChangeReceiver`, the manifest and the start re-plan stay as they are.
 
 ## Risks
 
 - **API 26 `ContextImpl` may not write the mark.** Task 1.1 reads the source; QA's API 26 acceptance proves it. Fallback D2.
 - **A folder made before `MigrelyApplication` without the mark.** QA's acceptance reads the mark after a clear and reopen; D2 covers it.
-- **Pre-existing, made a little more frequent:** any process start re-plans with `REPLACE`, so a daily run whose time passed but which JobScheduler
-  has not run yet (Doze) moves to tomorrow. `MY_PACKAGE_REPLACED` adds one more process start per update. Not fixed here; `product-manager`
-  recommends a follow-up issue (keep an unfinished daily run for today instead of replacing it). Not verified on a device.
-- **Process killed before the start re-plan finishes** after the receiver returns: the thread takes milliseconds; the next start re-plans.
+- **Suspected, pre-existing, not changed here:** any process start re-plans with `REPLACE`, so a daily run whose time passed but which
+  JobScheduler has not run yet (Doze) may move to tomorrow. From code reading, not verified on a device; posted on #189 for QA or the engineer.
 - **Residual (EC-STO-10):** a clear made before 1.2.1 and followed by an update is not protected. Proven on 8.0, absent on 16, unknown on 8.1–15.
 - **Auto Backup restore mode** starts the process without `MigrelyApplication`; the check runs at the next normal start, before any update.
 - Not provable here: real phones, vendor installd, f2fs, Android 8.1–15.

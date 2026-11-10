@@ -27,17 +27,18 @@ uploaded (BRD D170).
   through Android's own `codeCacheDir`, so the mark equals the real folder's inode before any later update. No SDK-version branch. If API 26's
   `ContextImpl` does not write the mark, an explicit check and repair does it (design D2).
 - The start check never crashes the app, never blocks it noticeably and never logs health data.
-- The existing non-exported `TimeChangeReceiver` also receives `MY_PACKAGE_REPLACED`, so the process starts right after an update. The re-plan that
-  `onCreate` already runs then brings the daily and visit reminders back without waiting for the user to open the app. The receiver does not plan a
-  second time for that action.
+- Nothing else: no reminder, receiver, manifest, UI or copy change.
 
 ## Out of scope
 
+- `MY_PACKAGE_REPLACED` and planning reminders right after an update (lead decision 2026-11-10 after the PM objection; BRD D170 (3b),
+  EC-REM-22; stays in #189 as S3 follow-up work). Reminders lost in the EC-STO-10 residual come back at the next process start, as today.
 - Re-planning open "Did it help?" questions after an update (BRD EC-REM-23; stays in #189 as S3 follow-up work).
 - Any notice that the diary vanished; any UI, copy, channel or permission change. No `medical-reviewer` or `ux-designer` work.
 - Protecting a clear made on a version before 1.2.1 and followed by an update: installd deletes during the update, before new code runs (BRD
   EC-STO-10, documented residual).
-- The pre-existing chance that a re-plan at any process start moves an overdue, not yet run daily reminder to tomorrow (design, Risks).
+- The suspected, pre-existing chance that a re-plan at any process start moves an overdue, not yet run daily reminder to tomorrow (from code
+  reading, not verified; comment on #189).
 - Version bump, release notes, the release branch: `android-engineer` on `release/1.2.1`.
 
 ## Capabilities
@@ -49,11 +50,10 @@ None.
 ### Modified Capabilities
 
 - `app-shell`: the app keeps installd's `code_cache` mark true at every process start, safely.
-- `reminders`: reminders are planned again right after an app update, once.
 
 ## Impact
 
-- `app`: `MigrelyApplication.kt` (the start call), a small class for the check with a JVM-testable seam (design D3), `reminder/TimeChangeReceiver.kt`
-  (the action), `AndroidManifest.xml` (one intent-filter action). No new permission (`:app:checkReleasePermissions`), no new dependency, no
+- `app`: `MigrelyApplication.kt` (the start call) and a small class for the check with a JVM-testable seam (design D3). No manifest change, no new
+  permission (`:app:checkReleasePermissions`), no new dependency, no
   schema change.
-- BRD: D170, EC-STO-06…10, EC-REM-22, EC-REM-23, §13 row 39. Issues #193 and #189 (`Refs #193`, `Refs #189`; QA retests and closes).
+- BRD: D170, EC-STO-06…10, §13 row 39 (EC-REM-22, EC-REM-23 record what stays out). Issues #193 and #189 (`Refs #193`, `Refs #189`; QA retests and closes).
