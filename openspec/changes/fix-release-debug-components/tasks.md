@@ -54,7 +54,7 @@ Gradle under load: `nice -n 19 ./gradlew --max-workers=2 …`, never `--stop`. U
   `androidx.compose.ui.tooling.PreviewActivity`. Verify: `grep -c 'androidx.compose.ui.tooling.PreviewActivity'` on it prints 1 or more.
 - [ ] 5.4 Independent review (`code-reviewer`) on `git diff origin/develop...HEAD`, briefed with this change and design Risks. Verify: findings and
   fixes recorded below.
-- [ ] 5.5 `qa-engineer` acceptance, only this diff's reach (owner rule 2026-11-09): rerun 5.1 and one of 5.2 b or c on its own worktree; a smoke
+- [x] 5.5 `qa-engineer` acceptance, only this diff's reach (owner rule 2026-11-09): rerun 5.1 and one of 5.2 b or c on its own worktree; a smoke
   launch of the release build on `emulator-5580` shows the app starts. Verify: rows in QA's log.
 - [ ] 5.6 Archive: `openspec archive fix-release-debug-components --yes`, then `openspec validate --specs --strict`. Verify: exit 0.
 
@@ -84,3 +84,25 @@ the bundle used the public licence key already in `gradle.properties`.
 
 Not checked: the EC-REL-06 `tools:node="remove"` case was not built (the merged manifest leaves removed nodes out, so they never reach the
 check); a device walk (the shipped code equals 24bdf68b's walk on emulator-5570; only the build guard changed); the AAB signed with the upload key.
+
+## QA record (5.5)
+
+(filled by `qa-engineer`; full record `docs/qa/fix-release-debug-components.md`, evidence `migrely-work/qa-195/`)
+
+**PASS on ceb6bb30, 2026-11-11.** R8 release APKs debug-signed (D102): candidate `fb41d716…`, v1.2.1 control `7f41f34c…` (entries equal to
+the 1.2.1 GO APK, so R8 is deterministic); debug APK `1455aad5…` byte-identical to v1.2.1's.
+
+| Row | Result |
+|---|---|
+| 5.1 rerun (QA worktree `assembleRelease`) | exit 0; `debug-components/release.txt` 24 names, 0 listed; permissions unchanged (6, no INTERNET); `qa/release_apk.py` passes |
+| 5.2 b/c | not rerun: waived by the lead's brief (engineer round 2 and code-reviewer proved a–d); QA's control is the device row below |
+| `am start` PreviewActivity, candidate R8 | "does not exist" 2/2 on API 36, 2/2 on API 26 |
+| Control, v1.2.1 R8 | process started for PreviewActivity 2/2 + 2/2, then "Application is not debuggable", closes |
+| Debug build | PreviewActivity, ComponentActivity, SimulatedBillingReceiver declared; PreviewActivity resumed on 36 and 26 |
+| Release classpath | only M2 `material` and `ui-tooling`/`ui-tooling-data` 1.9.3 removed; no other version moved; keep rules differ only by PreviewActivity's |
+| Full regression on R8, API 36 | 56/56 (3 simulated-store flows skipped); monkey 5000 events 0 crash 0 ANR |
+| Smoke on R8, API 26 | 15/15 (2 geometry flows skipped) |
+| Update v1.2.1 R8 → candidate R8, app not opened | 36 and 26: DB v7 and every table equal, "Did it help?" and daily notifications post, kept flow passes; 36: v1.2.1 backup imports equal; launcher shortcut labels resolve after 486 string IDs shifted |
+
+Not proved: Premium and the simulated-store flows on R8, the full regression on API 26, the AAB (engineer's 5.1), the upload key, real
+phones, an update from versions other than v1.2.1.
