@@ -78,6 +78,7 @@ ICHD_MOH = ('https://ichd-3.org/8-headache-attributed-to-a-substance-or-its-with
             '8-2-medication-overuse-headache-moh/')
 ICHD_CHRONIC = 'https://ichd-3.org/1-migraine/1-3-chronic-migraine/'
 NHS_MIGRAINE = 'https://www.nhs.uk/conditions/migraine/'
+NHS_HEADACHES = 'https://www.nhs.uk/symptoms/headaches/'
 MOH_REVIEWED = ('2026-11-04', '4 November 2026')
 MOH_TITLE = 'Medication-overuse headache: the 10- and 15-day rules'
 MENSTRUAL_REVIEWED = ('2026-11-04', '4 November 2026')
@@ -116,7 +117,7 @@ TRUST_PAGES = [
 CRUMBS = {path: name for path, name, _ in GUIDES + TRUST_PAGES}
 # The last line of a reviewed page's sources (BRD D143): the medical pages and the VA page say who did not review them.
 MEDICAL_DISCLAIMER = 'not reviewed by a clinician. Educational only, not medical advice.'
-VA_DISCLAIMER = 'not reviewed by a lawyer or by VA. General information, not legal or medical advice.'
+VA_DISCLAIMER = 'not reviewed by a lawyer, a clinician or VA. General information, not legal or medical advice.'
 NICE_CG150 = 'https://www.nice.org.uk/guidance/cg150/chapter/Recommendations'
 MT_MENSTRUAL = 'https://migrainetrust.org/understand-migraine/types-of-migraine/menstrual-migraine/'
 DIARY_SOURCES = [
@@ -127,6 +128,7 @@ DIARY_SOURCES = [
     ('ICHD-3, 1.3 Chronic migraine', ICHD_CHRONIC),
     ('ICHD-3, 8.2 Medication-overuse headache', ICHD_MOH),
     ('NHS, Migraine', NHS_MIGRAINE),
+    ('NHS, Headaches', NHS_HEADACHES),
     ('The Migraine Trust, Keeping a headache diary',
      'https://migrainetrust.org/live-with-migraine/self-management/keeping-a-migraine-diary/'),
     ('The Migraine Trust, Migraine attack triggers',
@@ -380,8 +382,8 @@ FAQ = [
      ('Delete your data', '/delete-data/')),
     ('Is Migrely a medical device?',
      'No. Migrely is a diary that helps you keep a record and talk to your doctor. It does not diagnose or treat. If a '
-     'headache comes with any warning sign, call your local emergency number. The Warning signs page in Settings '
-     'lists them.'),
+     'headache comes with any of the emergency signs that our guides list, call your local emergency number.',
+     ('When to get help straight away', '/headache-diary/')),
 ]
 
 
@@ -678,10 +680,10 @@ def privacy():
 
 
 def urgent_help(extra=''):
-    """The same urgent-help section on the medical pages and the VA page, with an optional extra line. It carries the app's Warning
-    signs page word for word (BRD D171)."""
+    """The same urgent-help section on the medical pages and the VA page, with an optional extra line. It carries
+    the app's Warning signs page word for word (BRD D171)."""
     return f'''<h2>When should I get help straight away?</h2>
-  <p>Call your local emergency number if a headache comes with any of these:</p>
+  <h3>Call your local emergency number if a headache comes with any of these:</h3>
   <ul><li>Extremely bad pain that came on suddenly</li>
     <li>Weakness or loss of movement on one side of your body or face</li>
     <li>Problems speaking or remembering things</li>
@@ -692,12 +694,14 @@ def urgent_help(extra=''):
     <li>A rash that doesn't fade when you press a glass against it</li>
     <li>A head injury in the last 3 months</li></ul>
   <p>Don't drive yourself to hospital. Call your local emergency number.</p>
-  <p><strong>Get urgent medical advice if you have a migraine attack and:</strong></p>
+  <h3>Get urgent medical advice if you have a migraine attack and:</h3>
   <ul><li>It has lasted longer than 72 hours</li>
     <li>Aura symptoms last longer than 1 hour at a time</li>
     <li>You're pregnant or have just had a baby</li></ul>
   <p>If you have any other symptoms you're worried about, get urgent medical advice.</p>
-  <p>The <a href="{NHS_MIGRAINE}">NHS migraine page</a> also lists when to get an urgent GP appointment.</p>{extra}'''
+  <p>These lists follow the NHS <a href="{NHS_MIGRAINE}">migraine</a> and
+    <a href="{NHS_HEADACHES}">headaches</a> pages. In the UK, urgent medical advice means an urgent GP appointment or
+    NHS 111.</p>{extra}'''
 
 
 def reviewed_block(sources, reviewed, disclaimer=MEDICAL_DISCLAIMER):
@@ -851,6 +855,7 @@ MOH_SOURCES = [
     ('ICHD-3, 1.3 Chronic migraine', ICHD_CHRONIC),
     ('NICE CG150, Headaches in over 12s: recommendations 1.1.4, 1.2.7, 1.3.6, 1.3.17 and 1.3.42 to 1.3.48', NICE_CG150),
     ('NHS, Migraine', NHS_MIGRAINE),
+    ('NHS, Headaches', NHS_HEADACHES),
     ('NHS, Headaches', 'https://www.nhs.uk/symptoms/headaches/'),
     ('The Migraine Trust, Medication overuse headache',
      'https://migrainetrust.org/understand-migraine/types-of-migraine/medication-overuse-headache/'),
@@ -990,6 +995,7 @@ MENSTRUAL_SOURCES = [
     ('ICHD-3, 1.1 Migraine without aura, comments', 'https://ichd-3.org/1-migraine/1-1-migraine-without-aura/'),
     ('NICE CG150, Headaches in over 12s: recommendations 1.1.4, 1.2.5, 1.2.6, 1.3.30 and 1.3.31', NICE_CG150),
     ('NHS, Migraine', NHS_MIGRAINE),
+    ('NHS, Headaches', NHS_HEADACHES),
     ('NHS, Symptoms of menopause and perimenopause',
      'https://www.nhs.uk/conditions/menopause-and-perimenopause/symptoms/'),
     ('The Migraine Trust, Menstrual migraine', MT_MENSTRUAL),
@@ -1150,6 +1156,8 @@ DC_8100 = [
     ('0%', 'With less frequent attacks'),
 ]
 VA_SOURCES = [
+    ('NHS, Migraine', NHS_MIGRAINE),
+    ('NHS, Headaches', NHS_HEADACHES),
     ('38 CFR 4.124a, Schedule of ratings: neurological conditions and convulsive disorders, diagnostic code 8100 '
      '(eCFR)', ECFR_4124A),
     ('VA, Headaches (including migraine headaches) Disability Benefits Questionnaire, updated 9 July 2024', VA_DBQ),
@@ -1476,9 +1484,13 @@ def check_diary_pdfs():
 
 
 # The guides whose question headings open with a 40- to 60-word answer, and the headings that are not answers to a
-# search: the app sections, the privacy section and the sources (BRD D149).
+# search: the app sections, the privacy section, the sources and the urgent-help section, whose headings are the
+# app's Warning signs wording and cannot be shortened (BRD D149, D171).
 ANSWER_PAGES = ['/headache-diary/', '/medication-overuse-headache/', '/menstrual-migraine/']
-ANSWER_EXEMPT = {'When should I get help straight away?', 'Would you rather use your phone?', 'How can I keep count?', 'Is my period data private in Migrely?',
+ANSWER_EXEMPT = {'When should I get help straight away?',
+                 'Call your local emergency number if a headache comes with any of these:',
+                 'Get urgent medical advice if you have a migraine attack and:',
+                 'Would you rather use your phone?', 'How can I keep count?', 'Is my period data private in Migrely?',
                  'Sources'}
 
 

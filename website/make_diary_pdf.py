@@ -1,6 +1,6 @@
 """Prints the 8-week headache diary template to PDF, A4 and US Letter (BRD D139, D140).
 
-Run from the repo root when the template or DIARY_REVIEWED changes, then commit the PDFs:
+Run from the repo root when the template changes, then commit the PDFs:
 python3 website/make_diary_pdf.py
 It needs Google Chrome, at its macOS path unless CHROME names another. The site build only checks that the PDFs
 exist, so it needs no Chrome itself.
@@ -13,7 +13,7 @@ import sys
 import tempfile
 from pathlib import Path
 
-from build import DIARY_PDFS, DIARY_REVIEWED
+from build import DIARY_PDFS
 
 ROOT = Path(__file__).resolve().parents[1]
 FONTS = ROOT / 'website' / 'public' / 'assets' / 'fonts'
@@ -21,7 +21,8 @@ OUT = ROOT / 'website' / 'public' / 'headache-diary'
 CHROME = os.environ.get('CHROME', '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome')
 SIZES = {'a4': 'A4 landscape', 'letter': 'letter landscape'}
 PAGES = 6
-FOOTER = f'Free from migrely.health · A diary, not a medical device · Reviewed {DIARY_REVIEWED[1]}'
+FOOTER = ('Free from migrely.health · A diary, not a medical device · Not reviewed by a clinician · '
+          'Updated 11 November 2026')
 
 # The daily log's columns: heading, hint under it, width in percent.
 COLUMNS = [
@@ -54,6 +55,7 @@ ol, ul { margin: 0 0 2mm; padding-left: 5mm; }
 li { margin-bottom: 0.8mm; }
 .box { border: 1.2pt solid #000; border-radius: 2mm; padding: 2.5mm 4mm; margin-top: 1.5mm; }
 .box ul { margin-bottom: 1mm; }
+.box h2 { font: 600 11pt/1.25 Figtree, Arial, sans-serif; }
 table { width: 100%; border-collapse: collapse; table-layout: fixed; }
 th, td { border: 0.75pt solid #888; padding: 1mm 1.5mm; vertical-align: top; }
 th { font-weight: 600; font-size: 8.5pt; text-align: left; line-height: 1.15; }
@@ -101,7 +103,7 @@ def how_to():
       <li>A rash that doesn't fade when you press a glass against it</li>
       <li>A head injury in the last 3 months</li></ul>
     <p>Don't drive yourself to hospital. Call your local emergency number.</p>
-    <p><b>Get urgent medical advice if you have a migraine attack and:</b></p>
+    <h2>Get urgent medical advice if you have a migraine attack and:</h2>
     <ul><li>It has lasted longer than 72 hours</li>
       <li>Aura symptoms last longer than 1 hour at a time</li>
       <li>You're pregnant or have just had a baby</li></ul>
