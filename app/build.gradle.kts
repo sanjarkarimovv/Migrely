@@ -4,7 +4,9 @@ import java.security.KeyFactory
 import java.security.spec.X509EncodedKeySpec
 import java.util.Base64
 import java.util.Properties
+import javax.xml.parsers.DocumentBuilderFactory
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.w3c.dom.Element
 
 plugins {
     alias(libs.plugins.android.application)
@@ -254,53 +256,56 @@ abstract class CheckPermissionsTask : DefaultTask() {
 }
 
 /**
- * Debug-only libraries a release build must never ship (issue #195): ui-tooling adds an exported
- * PreviewActivity and ui-test-manifest an exported test activity. Modules declare them with
- * debugImplementation.
+ * Components a release build must never declare (issue #195, BRD D172). The check reads the merged
+ * manifest, so it holds whatever artifact name or dependency path brings a component in.
  */
-val debugOnlyLibraries = listOf(
-    "androidx.compose.ui:ui-tooling",
-    "androidx.compose.ui:ui-test-manifest"
+val debugOnlyComponents = listOf(
+    // androidx.compose.ui:ui-tooling (any artifact name): Android Studio previews, exported.
+    "androidx.compose.ui.tooling.PreviewActivity",
+    // androidx.compose.ui:ui-test-manifest: the host activity of the Compose test rule, exported.
+    "androidx.activity.ComponentActivity",
+    // app/src/debug/AndroidManifest.xml (BRD D113): the simulated store could unlock Premium.
+    "com.migrely.app.datasource.billing.datasource.SimulatedBillingReceiver"
 )
 
-/** Fails the build when the runtime classpath holds a debug-only library. */
-abstract class CheckDebugOnlyLibrariesTask : DefaultTask() {
-    @get:Input
-    abstract val runtimeGraph: Property<ResolvedComponentResult>
+/** Fails the build when the merged manifest declares a debug-only component. */
+abstract class CheckDebugComponentsTask : DefaultTask() {
+    @get:InputFile
+    abstract val mergedManifest: RegularFileProperty
 
     @get:Input
-    abstract val debugOnly: ListProperty<String>
+    abstract val forbidden: ListProperty<String>
 
     @get:OutputFile
     abstract val report: RegularFileProperty
 
     @TaskAction
     fun check() {
-        val modules = moduleNames(runtimeGraph.get())
-        val found = debugOnly.get().filter { it in modules }
+        val declared = componentNames(mergedManifest.get().asFile)
+        val found = forbidden.get().filter { it in declared }
         if (found.isNotEmpty()) {
             throw GradleException(
-                "The runtime classpath holds debug-only libraries: $found. " +
-                    "Declare them with debugImplementation."
+                "The release manifest declares debug-only components: $found. Declare the " +
+                    "library with debugImplementation, or keep the component in src/debug."
             )
         }
-        report.get().asFile.writeText(modules.sorted().joinToString("\n"))
+        report.get().asFile.writeText(declared.sorted().joinToString("\n"))
     }
 
-    /** Every module ("group:name") reachable from [root]. */
-    private fun moduleNames(root: ResolvedComponentResult): Set<String> {
-        val seen = mutableSetOf<ResolvedComponentResult>()
-        val pending = ArrayDeque(listOf(root))
-        while (pending.isNotEmpty()) {
-            val component = pending.removeFirst()
-            if (seen.add(component)) {
-                component.dependencies.filterIsInstance<ResolvedDependencyResult>()
-                    .forEach { pending.add(it.selected) }
+    /** The `android:name` of every activity, alias, service, receiver and provider. */
+    private fun componentNames(manifest: File): Set<String> {
+        val document = DocumentBuilderFactory.newInstance().apply {
+            isNamespaceAware = true
+            setFeature("http://apache.org/xml/features/disallow-doctype-decl", true)
+        }.newDocumentBuilder().parse(manifest)
+        val tags = listOf("activity", "activity-alias", "service", "receiver", "provider")
+        return tags.flatMap { tag ->
+            val elements = document.getElementsByTagName(tag)
+            (0 until elements.length).map { index ->
+                (elements.item(index) as Element)
+                    .getAttributeNS("http://schemas.android.com/apk/res/android", "name")
             }
-        }
-        return seen.mapNotNull { component ->
-            component.moduleVersion?.let { module -> "${module.group}:${module.name}" }
-        }.toSet()
+        }.filter(String::isNotEmpty).toSet()
     }
 }
 
@@ -312,14 +317,12 @@ androidComponents {
             forbidden.set(forbiddenPermissions)
             report.set(layout.buildDirectory.file("reports/permissions/${variant.name}.txt"))
         }
-        val debugOnlyCheck = if (variant.buildType == "release") {
-            tasks.register<CheckDebugOnlyLibrariesTask>("check${name}DebugOnlyLibraries") {
-                runtimeGraph.set(
-                    variant.runtimeConfiguration.incoming.resolutionResult.rootComponent
-                )
-                debugOnly.set(debugOnlyLibraries)
+        val componentCheck = if (variant.buildType != "debug") {
+            tasks.register<CheckDebugComponentsTask>("check${name}DebugComponents") {
+                mergedManifest.set(variant.artifacts.get(SingleArtifact.MERGED_MANIFEST))
+                forbidden.set(debugOnlyComponents)
                 report.set(
-                    layout.buildDirectory.file("reports/runtime-modules/${variant.name}.txt")
+                    layout.buildDirectory.file("reports/debug-components/${variant.name}.txt")
                 )
             }
         } else {
@@ -327,7 +330,7 @@ androidComponents {
         }
         // The bundle that goes to Play does not depend on assemble, so it gets the check too (BRD D44).
         tasks.matching { it.name == "assemble$name" || it.name == "bundle$name" }
-            .configureEach { dependsOn(listOfNotNull(check, debugOnlyCheck)) }
+            .configureEach { dependsOn(listOfNotNull(check, componentCheck)) }
     }
 }
 
