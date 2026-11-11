@@ -253,6 +253,57 @@ abstract class CheckPermissionsTask : DefaultTask() {
     }
 }
 
+/**
+ * Debug-only libraries a release build must never ship (issue #195): ui-tooling adds an exported
+ * PreviewActivity and ui-test-manifest an exported test activity. Modules declare them with
+ * debugImplementation.
+ */
+val debugOnlyLibraries = listOf(
+    "androidx.compose.ui:ui-tooling",
+    "androidx.compose.ui:ui-test-manifest"
+)
+
+/** Fails the build when the runtime classpath holds a debug-only library. */
+abstract class CheckDebugOnlyLibrariesTask : DefaultTask() {
+    @get:Input
+    abstract val runtimeGraph: Property<ResolvedComponentResult>
+
+    @get:Input
+    abstract val debugOnly: ListProperty<String>
+
+    @get:OutputFile
+    abstract val report: RegularFileProperty
+
+    @TaskAction
+    fun check() {
+        val modules = moduleNames(runtimeGraph.get())
+        val found = debugOnly.get().filter { it in modules }
+        if (found.isNotEmpty()) {
+            throw GradleException(
+                "The runtime classpath holds debug-only libraries: $found. " +
+                    "Declare them with debugImplementation."
+            )
+        }
+        report.get().asFile.writeText(modules.sorted().joinToString("\n"))
+    }
+
+    /** Every module ("group:name") reachable from [root]. */
+    private fun moduleNames(root: ResolvedComponentResult): Set<String> {
+        val seen = mutableSetOf<ResolvedComponentResult>()
+        val pending = ArrayDeque(listOf(root))
+        while (pending.isNotEmpty()) {
+            val component = pending.removeFirst()
+            if (seen.add(component)) {
+                component.dependencies.filterIsInstance<ResolvedDependencyResult>()
+                    .forEach { pending.add(it.selected) }
+            }
+        }
+        return seen.mapNotNull { component ->
+            component.moduleVersion?.let { module -> "${module.group}:${module.name}" }
+        }.toSet()
+    }
+}
+
 androidComponents {
     onVariants { variant ->
         val name = variant.name.replaceFirstChar(Char::uppercase)
@@ -261,9 +312,22 @@ androidComponents {
             forbidden.set(forbiddenPermissions)
             report.set(layout.buildDirectory.file("reports/permissions/${variant.name}.txt"))
         }
+        val debugOnlyCheck = if (variant.buildType == "release") {
+            tasks.register<CheckDebugOnlyLibrariesTask>("check${name}DebugOnlyLibraries") {
+                runtimeGraph.set(
+                    variant.runtimeConfiguration.incoming.resolutionResult.rootComponent
+                )
+                debugOnly.set(debugOnlyLibraries)
+                report.set(
+                    layout.buildDirectory.file("reports/runtime-modules/${variant.name}.txt")
+                )
+            }
+        } else {
+            null
+        }
         // The bundle that goes to Play does not depend on assemble, so it gets the check too (BRD D44).
         tasks.matching { it.name == "assemble$name" || it.name == "bundle$name" }
-            .configureEach { dependsOn(check) }
+            .configureEach { dependsOn(listOfNotNull(check, debugOnlyCheck)) }
     }
 }
 
