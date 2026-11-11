@@ -8,15 +8,16 @@ language. en-US is the default, and other languages fall back to it.
 Replaces 1.2.0, which was tagged but never uploaded (D170). Users never saw 1.2.0. 1.2.1 also rewrote the in-app
 Warning signs page to follow the NHS emergency and urgent lists (D171, #194), so the notes now say so. They were
 written for 1.2.0 and changed after the `v1.2.1` tag: the copy of this file in the tag is the 1.2.0 text, and the owner
-pastes the notes from `develop` at upload. The new text has not been through `medical-reviewer` yet, and it does not say
-"medically reviewed" or "approved" (the clinician sign-off, T31, is open). 1.2.1 also keeps the diary and reminders
+pastes the notes from `develop` at upload. `medical-reviewer` checked the text on 2026-11-11, word for word against the v1.2.1
+code and BRD D168, D169 and D171. It does not say "medically reviewed" or "approved" (the clinician sign-off, T31, is
+open). 1.2.1 also keeps the diary and reminders
 across an update after "Clear storage" on Android 8.0 (#193, #189). That fix is not announced: it needs no action from
-users. The text is 486 of 500 characters.
+users. The text is 496 of 500 characters.
 
 ```
 <en-US>
 New:
-• Doctor visit: set your next visit's date in Reminders. Two days before, Migrely reminds you to make a report for your doctor.
+• Doctor visit: set your next visit's date in Reminders. Two days before, Migrely reminds you to make a report for your doctor (Premium).
 • Lock screen reminders no longer name a medication or say that you logged a migraine.
 • Settings, Warning signs, now follows NHS lists: when to call your local emergency number and when to get urgent medical advice.
 Fixes:
