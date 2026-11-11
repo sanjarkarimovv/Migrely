@@ -28,12 +28,12 @@ This writes `website/public/`. It needs Pillow and `cwebp`. The images come from
   Their facts come from fact packs in `marketing/research/2026-11-04-*-facts.md` (outside the repo). Each claim there
   has its source and an exact quote, so re-read those sources before moving a date (BRD D149).
   - Every question heading (H2 or H3) on these pages opens with a 40- to 60-word direct answer;
-    `check_direct_answers()` stops the build otherwise. The app and privacy sections and "Sources" are exempt
-    (`ANSWER_EXEMPT`).
+    `check_direct_answers()` stops the build otherwise. The app and privacy sections, "Sources" and the urgent-help
+    section's three headings (the app's Warning signs wording) are exempt (`ANSWER_EXEMPT`).
   - A figure from one study or review names it in the sentence (EC-WEB-24). Where sources disagree on how to stop a
     medicine, the page leaves it to the doctor (EC-WEB-23).
-  - `urgent_help()` names every sign in the NHS migraine page's "Call 999" list: check that list again when you
-    review any medical page.
+  - `urgent_help()` and the diary PDF's box carry the app's Warning signs page word for word (BRD D171, #199); change
+    them only when `settings_warning_signs_*` in the app changes, and send every changed word to `medical-reviewer`.
 - **VA page** (`/va-migraine-log/`) uses `urgent_help()` with the Veterans Crisis Line, `reviewed_block()` with
   `VA_DISCLAIMER`, and a `WebPage` JSON-LD. It quotes 38 CFR 4.124a (DC 8100), VA's Headaches DBQ and VA's
   representative FAQ word for word. Before updating `VA_REVIEWED`, re-read all three and check the Federal Register
