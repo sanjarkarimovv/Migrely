@@ -24,43 +24,64 @@ Ownership:
 
 ## 1. Domain, presentation, data
 
-- [ ] 1.1 None. Verify: `git diff --stat origin/develop -- '*/domain/*' '*/presentation/*' '*/data/*' '*.kts' '*.toml' app/src/main`
+- [x] 1.1 None. Verify: `git diff --stat origin/develop -- '*/domain/*' '*/presentation/*' '*/data/*' '*.kts' '*.toml' app/src/main`
   is empty.
+  Record (android-engineer, 2026-11-11): the diff is empty.
 
 ## 2. UI strings
 
-- [ ] 2.1 `features/attack/ui/src/main/res/values/strings.xml`: set `safety_title` and `safety_body` exactly as the spec's "Card
+- [x] 2.1 `features/attack/ui/src/main/res/values/strings.xml`: set `safety_title` and `safety_body` exactly as the spec's "Card
   text" scenario. `safety_dismiss` stays. Verify: `grep -nE 'worst|emergency services' features/attack/ui/src/main/res/values/strings.xml`
   prints nothing.
-- [ ] 2.2 `features/settings/ui/src/main/res/values/strings.xml`: item 8 of `settings_warning_signs_list` exactly as the spec's
+  Record: both strings set from D173 (8); the grep prints nothing (exit 1).
+- [x] 2.2 `features/settings/ui/src/main/res/values/strings.xml`: item 8 of `settings_warning_signs_list` exactly as the spec's
   "Reading them" scenario, with the apostrophe escaped (`\'`). Add D173 to the comment above the list. No other item changes.
   Verify: `grep -c '<item>' features/settings/ui/src/main/res/values/strings.xml` is unchanged, and `grep -n 'brown or black skin'`
   prints one line.
-- [ ] 2.3 In `AttackPainSection.kt`, update the comment on the title that says "the text is unchanged (BRD D165 (3))" so it cites
+  Record: item 8 set with `\'`, D173 added to the comment; `<item>` count 27 before and after; one `brown or black skin` line.
+- [x] 2.3 In `AttackPainSection.kt`, update the comment on the title that says "the text is unchanged (BRD D165 (3))" so it cites
   D173. Change no code: no `LineBreak`, alignment, padding or `maxLines` change in `SafetyCard` (ux review: a lone "pain?" on
   320 dp at 100% is accepted). Verify: `git diff features/attack/ui/src/main/java` shows only comment lines.
+  Record: one comment line, now "worded as Warning signs (BRD D173)"; no code line changed.
 
 ## 3. Tests (each must fail on 3d098049)
 
-- [ ] 3.1 Update the `TITLE` constant in `SafetyCardRevealTest`, `SafetyCardRestoreTest` and `SaveMessageTest`. Add an exact-text
+- [x] 3.1 Update the `TITLE` constant in `SafetyCardRevealTest`, `SafetyCardRestoreTest` and `SaveMessageTest`. Add an exact-text
   check of the title and sentence to one of them. Verify: `./gradlew :features:attack:ui:testDebugUnitTest` passes.
-- [ ] 3.2 Update item 8 in `WarningSignsContentsTest`. Keep its order, its 16 text nodes after the title, its two headings and its
+  Record: the three constants updated; `SaveMessageTest` "The card reads the spec's title, sentence and button word for
+  word" added. Green: 40 tests in the three classes, 0 failures.
+- [x] 3.2 Update item 8 in `WarningSignsContentsTest`. Keep its order, its 16 text nodes after the title, its two headings and its
   no-glyph checks. Add a check that no node contains "numb". Verify: `./gradlew :features:settings:ui:testDebugUnitTest` passes.
-- [ ] 3.3 Add a Robolectric test in `app/src/testDebug` (design D5). It reads `safety_body` and `settings_warning_signs_list[0]`.
+  Record: item 8 updated; "no text names numbness" added. It matches `numb`/`numbness` as a word: a first version
+  matched "number" and failed on the headings, so it was fixed before use. Green: 5 tests, 0 failures. Its own negative
+  control: with a temporary "Numbness in your face or body" item it fails with exactly that text (restored after).
+- [x] 3.3 Add a Robolectric test in `app/src/testDebug` (design D5). It reads `safety_body` and `settings_warning_signs_list[0]`.
   It asserts that the sentence contains the item in lower case, and that neither card string contains "worst" or "emergency
   services". Verify: `./gradlew :app:testDebugUnitTest` passes.
-- [ ] 3.4 Negative control. Put back only the two old string files (`git checkout 3d098049 -- features/attack/ui/src/main/res/values/strings.xml
+  Record: `app/src/testDebug/.../ui/safety/SafetyCopyParityTest.kt`, 2 tests, 0 failures.
+- [x] 3.4 Negative control. Put back only the two old string files (`git checkout 3d098049 -- features/attack/ui/src/main/res/values/strings.xml
   features/settings/ui/src/main/res/values/strings.xml`), run 3.1 to 3.3, then restore them (`git checkout HEAD -- …`). Verify: each
   new or changed assertion fails on the old files. Paste the failing test names into the packet, and `git status` is clean after.
+  Record: on the 3d098049 files 23 tests fail: the 20 attack tests that find the card by its title (the new exact-text
+  test among them), `WarningSignsContentsTest` "every text reads in the spec's order", and both `SafetyCopyParityTest`
+  tests ("…should contain \"extremely bad pain that came on suddenly\"" and the three old-word hits). The numbness test
+  passes there, as it should: the old page has no numbness sign; its control is in 3.2. `git status` showed only this
+  change's files after the restore. Log: `migrely-work/walks/200/neg-control-3.4.log`.
 
 ## 4. Wiring
 
-- [ ] 4.1 None: no route, entry, ViewModel or DI changes. Verify: the 1.1 diff is empty.
+- [x] 4.1 None: no route, entry, ViewModel or DI changes. Verify: the 1.1 diff is empty.
+  Record: none; the 1.1 diff is empty.
 
 ## 5. Gate
 
-- [ ] 5.1 Verify: `set -o pipefail; nice -n 19 ./gradlew --max-workers=2 assembleDebug test ktlintCheck detekt lint` exits 0, and
+- [x] 5.1 Verify: `set -o pipefail; nice -n 19 ./gradlew --max-workers=2 assembleDebug test ktlintCheck detekt lint` exits 0, and
   `:app:checkReleasePermissions` is unchanged.
+  Record: first run exit 1 on `:app:ktlintTestDebugSourceSetCheck` (import order and one long line in the new parity
+  test); fixed, the parity test's negative control rerun (2 of 2 fail on 3d098049), then the gate exits 0: 3017 tests,
+  0 failures, 0 skipped, 53 modules. `:app:checkReleasePermissions` exits 0; the merged release manifest has
+  ACCESS_NETWORK_STATE, BIND_JOB_SERVICE, DUMP, POST_NOTIFICATIONS, RECEIVE_BOOT_COMPLETED, WAKE_LOCK and no INTERNET;
+  this diff touches no manifest or Gradle file. Logs: `migrely-work/walks/200/gate2.log`, `perms.log`.
 
 ## 6. Walk (`emulator-5570`)
 

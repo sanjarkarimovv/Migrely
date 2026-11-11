@@ -258,7 +258,7 @@ internal fun SafetyCard(
                     tint = MaterialTheme.colorScheme.tertiary,
                     modifier = Modifier.size(20.dp)
                 )
-                // A heading, so heading navigation lands on it; the text is unchanged (BRD D165 (3)).
+                // A heading, so heading navigation lands on it; worded as Warning signs (BRD D173).
                 Text(
                     text = stringResource(R.string.safety_title),
                     style = MaterialTheme.typography.titleMedium,
