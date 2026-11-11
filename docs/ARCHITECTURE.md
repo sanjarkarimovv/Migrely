@@ -109,7 +109,11 @@ After generating a feature:
 2. Rename the generated `<Feature>Screen()` and `<Feature>ScreenContent()` composables to `<Screen>()` and
    `<Screen>Contents()` (sample naming).
 3. Register the feature in `:app`: DI modules, navigation mapper, route and nav host entry (section 5).
-4. Add the tests that skill rule 12 requires before the change is considered done.
+4. Declare `libs.compose.ui.tooling` and `libs.compose.ui.test.manifest` with `debugImplementation` only; `@Preview`
+   needs just `libs.compose.ui.tooling.preview`. `:app:checkReleaseDebugComponents` fails the release build when the
+   release merged manifest declares a listed debug-only component, such as ui-tooling's exported `PreviewActivity`
+   (issue #195, BRD D172).
+5. Add the tests that skill rule 12 requires before the change is considered done.
 
 ## 5. Navigation binding: Navigation Compose 2, type-safe
 
