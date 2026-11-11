@@ -5,19 +5,24 @@ language. en-US is the default, and other languages fall back to it.
 
 ## 1.2.1 (versionCode 11)
 
-Replaces 1.2.0, which was tagged but never uploaded (D170). Users never saw 1.2.0, so these notes are its notes,
-unchanged and already checked by `medical-reviewer`. 1.2.1 also keeps the diary and reminders across an update after
-"Clear storage" on Android 8.0 (#193, #189). That fix is not announced: the 1.2.0 text is 495 of 500 characters, and it
-needs no action from users.
+Replaces 1.2.0, which was tagged but never uploaded (D170). Users never saw 1.2.0. 1.2.1 also rewrote the in-app
+Warning signs page to follow the NHS emergency and urgent lists (D171, #194), so the notes now say so. They were
+written for 1.2.0 and changed after the `v1.2.1` tag: the copy of this file in the tag is the 1.2.0 text, and the owner
+pastes the notes from `develop` at upload. `medical-reviewer` checked the text on 2026-11-11, word for word against the v1.2.1
+code and BRD D168, D169 and D171. It does not say "medically reviewed" or "approved" (the clinician sign-off, T31, is
+open). 1.2.1 also keeps the diary and reminders
+across an update after "Clear storage" on Android 8.0 (#193, #189). That fix is not announced: it needs no action from
+users. The text is 496 of 500 characters.
 
 ```
 <en-US>
 New:
-• Doctor visit: set your next visit's date in Reminders. Two days before, Migrely reminds you to make a report for your doctor. The Doctor report can cover the time since your last visit.
+• Doctor visit: set your next visit's date in Reminders. Two days before, Migrely reminds you to make a report for your doctor (Premium).
 • Lock screen reminders no longer name a medication or say that you logged a migraine.
+• Settings, Warning signs, now follows NHS lists: when to call your local emergency number and when to get urgent medical advice.
 Fixes:
-• A quick second tap on Remove in a custom tag's menu no longer selects what was under it.
-• On the Migraine screen, a message no longer covers the safety card, and "Couldn't save" clears once a save works.
+• A quick second tap on Remove in a tag's menu no longer selects what was under it.
+• A message no longer covers the safety card.
 </en-US>
 ```
 

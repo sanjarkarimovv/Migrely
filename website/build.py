@@ -316,7 +316,7 @@ FEATURES = [
     ('A report for your doctor', 'A clear PDF with a summary, a calendar and every migraine and medication, ready to '
      'share at your appointment.'),
     ('See what your migraines share', 'Triggers often logged with your migraines, the days and hours they come, the '
-     'days around your period and what helped.'),
+     'days around your period and how you rated your medicines.'),
     ('Gentle on your eyes', 'Dark by default, light if you like, and always dark during a migraine. Large text, '
      'TalkBack and keyboards work throughout.'),
 ]
@@ -338,8 +338,8 @@ HOME_FAQ = [
      'can also export a backup file yourself in Settings, Your data.'),
     ('What does Premium add?',
      'A PDF report for your doctor, with a summary, a calendar and every migraine and medication, and Insights: '
-     'triggers often logged with your migraines, the days and hours they come, the days around your period and what '
-     'helped. Safety warnings are never Premium.'),
+     'triggers often logged with your migraines, the days and hours they come, the days around your period and how '
+     'you rated your medicines. Safety warnings are never Premium.'),
 ]
 
 # Questions asked once Migrely is installed, answered on /support/ (BRD D147): question, answer, and an optional
