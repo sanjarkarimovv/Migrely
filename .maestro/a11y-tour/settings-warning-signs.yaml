@@ -9,5 +9,5 @@ appId: com.migrely.app
     centerElement: true
 - tapOn: "Warning signs.*"
 - extendedWaitUntil:
-    visible: "Call your local emergency number if any of these happen\\."
+    visible: "Call your local emergency number if a headache comes with any of these:"
     timeout: 5000
