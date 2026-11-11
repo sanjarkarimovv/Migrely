@@ -380,8 +380,8 @@ FAQ = [
      ('Delete your data', '/delete-data/')),
     ('Is Migrely a medical device?',
      'No. Migrely is a diary that helps you keep a record and talk to your doctor. It does not diagnose or treat. If a '
-     'headache comes with any warning sign, such as the worst pain of your life or weakness that does not pass, call '
-     'your local emergency number.'),
+     'headache comes with any warning sign, call your local emergency number. The Warning signs page in Settings '
+     'lists them.'),
 ]
 
 
@@ -678,13 +678,25 @@ def privacy():
 
 
 def urgent_help(extra=''):
-    """The same urgent-help section on the medical pages and the VA page, with an optional extra line. It names every
-    sign in the "Call 999" list of the NHS migraine page (BRD D149)."""
+    """The same urgent-help section on the medical pages and the VA page, with an optional extra line. It carries the app's Warning
+    signs page word for word (BRD D171)."""
     return f'''<h2>When should I get help straight away?</h2>
-  <p>Call your emergency number if a headache comes on suddenly and is extremely painful, follows a recent head injury,
-    or comes with weakness or loss of movement on one side of the body or face, problems speaking or remembering, loss
-    of vision, blurred or double vision, drowsiness or confusion, a seizure, or a very high temperature with signs of
-    meningitis.</p>
+  <p>Call your local emergency number if a headache comes with any of these:</p>
+  <ul><li>Extremely bad pain that came on suddenly</li>
+    <li>Weakness or loss of movement on one side of your body or face</li>
+    <li>Problems speaking or remembering things</li>
+    <li>Losing your vision, or blurred or double vision</li>
+    <li>Feeling drowsy or confused</li>
+    <li>A seizure or fit</li>
+    <li>A very high temperature and signs of meningitis, such as a stiff neck</li>
+    <li>A rash that doesn't fade when you press a glass against it</li>
+    <li>A head injury in the last 3 months</li></ul>
+  <p>Don't drive yourself to hospital. Call your local emergency number.</p>
+  <p><strong>Get urgent medical advice if you have a migraine attack and:</strong></p>
+  <ul><li>It has lasted longer than 72 hours</li>
+    <li>Aura symptoms last longer than 1 hour at a time</li>
+    <li>You're pregnant or have just had a baby</li></ul>
+  <p>If you have any other symptoms you're worried about, get urgent medical advice.</p>
   <p>The <a href="{NHS_MIGRAINE}">NHS migraine page</a> also lists when to get an urgent GP appointment.</p>{extra}'''
 
 
@@ -1466,7 +1478,7 @@ def check_diary_pdfs():
 # The guides whose question headings open with a 40- to 60-word answer, and the headings that are not answers to a
 # search: the app sections, the privacy section and the sources (BRD D149).
 ANSWER_PAGES = ['/headache-diary/', '/medication-overuse-headache/', '/menstrual-migraine/']
-ANSWER_EXEMPT = {'Would you rather use your phone?', 'How can I keep count?', 'Is my period data private in Migrely?',
+ANSWER_EXEMPT = {'When should I get help straight away?', 'Would you rather use your phone?', 'How can I keep count?', 'Is my period data private in Migrely?',
                  'Sources'}
 
 

@@ -74,8 +74,7 @@ def foot(n):
 
 
 def how_to():
-    # The warning signs are the NHS migraine page's, unsoftened; numbness and a stiff neck alone are ordinary migraine
-    # symptoms there, so they are not listed as emergencies (review C1).
+    # The warning signs are the app's Warning signs page word for word (BRD D171, issue #199).
     return f'''<section class="page">
 <div class="top"><h1>Headache diary · 8 weeks</h1>
   <div class="fill">Name <span></span> Start date <span></span></div></div>
@@ -91,16 +90,22 @@ def how_to():
       another copy.</li></ol>
   <p>UK guidance (NICE CG150) suggests keeping a headache diary for at least 8 weeks: how often, how long and how bad;
     other symptoms; all medicines; possible triggers; and any link to your period.</p>
-  <div class="box"><h2>Don't wait: call your emergency number</h2>
-    <p>if you have a headache and:</p>
-    <ul><li>it came on suddenly and is extremely painful;</li>
-      <li>you cannot move, or have weakness in, an arm or leg on one side, or one side of your face;</li>
-      <li>you have problems speaking or remembering things, loss of vision, or blurred or double vision;</li>
-      <li>you feel drowsy or confused, or have a seizure;</li>
-      <li>you have a very high temperature with a stiff neck, or a rash that does not fade under a glass;</li>
-      <li>you have recently had a head injury.</li></ul>
-    <p>See a doctor the same day (in the UK, NHS 111) if an attack lasts more than 72 hours, aura lasts more than
-      1 hour, or you are pregnant or have just had a baby.</p></div>
+  <div class="box"><h2>Call your local emergency number if a headache comes with any of these:</h2>
+    <ul><li>Extremely bad pain that came on suddenly</li>
+      <li>Weakness or loss of movement on one side of your body or face</li>
+      <li>Problems speaking or remembering things</li>
+      <li>Losing your vision, or blurred or double vision</li>
+      <li>Feeling drowsy or confused</li>
+      <li>A seizure or fit</li>
+      <li>A very high temperature and signs of meningitis, such as a stiff neck</li>
+      <li>A rash that doesn't fade when you press a glass against it</li>
+      <li>A head injury in the last 3 months</li></ul>
+    <p>Don't drive yourself to hospital. Call your local emergency number.</p>
+    <p><b>Get urgent medical advice if you have a migraine attack and:</b></p>
+    <ul><li>It has lasted longer than 72 hours</li>
+      <li>Aura symptoms last longer than 1 hour at a time</li>
+      <li>You're pregnant or have just had a baby</li></ul>
+    <p>If you have any other symptoms you're worried about, get urgent medical advice.</p></div>
 </div><div>
   <h2>Key</h2>
   <table class="key"><tbody>
