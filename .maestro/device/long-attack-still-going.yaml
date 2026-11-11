@@ -7,7 +7,8 @@ appId: com.migrely.app
 - extendedWaitUntil:
     visible: "Still going?"
     timeout: 10000
-- assertVisible: "Attacks longer than 72 hours should be checked by a doctor."
+# The same urgency as the Warning signs page's urgent part (BRD SAF-F3, D171).
+- assertVisible: "If it.s still going after 72 hours, get urgent medical advice\\."
 - assertVisible: "It has ended"
 - assertVisible: "Don't ask again for this attack"
 - takeScreenshot: time-72h-prompt

@@ -29,13 +29,46 @@ tags: [regression, app-settings]
 - tapOn: "Warning signs.*"
 # The page's own lines: the Settings row has the title too.
 - extendedWaitUntil:
-    visible: "Call your local emergency number if any of these happen\\."
+    visible: "Call your local emergency number if a headache comes with any of these:"
     timeout: 5000
-- assertVisible: "Sudden pain that is the worst of your life"
-- assertVisible: "Pain after a head injury"
-- assertVisible: "A stiff neck with a fever"
-- assertVisible: "Weakness, numbness or trouble speaking that doesn.t pass"
-- assertVisible: "A first headache after the age of 50"
+# The NHS emergency and urgent lists (BRD SAF-F1, D171). Order is checked from a UI dump in the Go/No-Go, not here.
+- assertVisible: "Extremely bad pain that came on suddenly"
+- assertVisible: "Weakness or loss of movement on one side of your body or face"
+- assertVisible: "Problems speaking or remembering things"
+- assertVisible: "Losing your vision, or blurred or double vision"
+- assertVisible: "Feeling drowsy or confused"
+- assertVisible: "A seizure or fit"
+- scrollUntilVisible:
+    element: "A very high temperature and signs of meningitis, such as a stiff neck"
+    direction: DOWN
+- scrollUntilVisible:
+    element: "A rash that doesn.t fade when you press a glass against it"
+    direction: DOWN
+- scrollUntilVisible:
+    element: "A head injury in the last 3 months"
+    direction: DOWN
+- scrollUntilVisible:
+    element: "Don.t drive yourself to hospital\\. Call your local emergency number\\."
+    direction: DOWN
+- scrollUntilVisible:
+    element: "Get urgent medical advice if you have a migraine attack and:"
+    direction: DOWN
+- scrollUntilVisible:
+    element: "It has lasted longer than 72 hours"
+    direction: DOWN
+- scrollUntilVisible:
+    element: "Aura symptoms last longer than 1 hour at a time"
+    direction: DOWN
+- scrollUntilVisible:
+    element: "You.re pregnant or have just had a baby"
+    direction: DOWN
+- scrollUntilVisible:
+    element: "If you have any other symptoms you.re worried about, get urgent medical advice\\."
+    direction: DOWN
+# The old list must be gone: a wait condition ("doesn't pass") and a sign the NHS does not list (D171).
+- assertNotVisible: ".*doesn.t pass.*"
+- assertNotVisible: "A first headache after the age of 50"
+- assertNotVisible: "Sudden pain that is the worst of your life"
 - back
 # Delete all data: nothing happens until DELETE is typed exactly.
 - scrollUntilVisible:
