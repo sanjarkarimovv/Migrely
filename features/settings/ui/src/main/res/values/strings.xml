@@ -45,21 +45,34 @@
     <string name="settings_deleting">Deleting your data</string>
     <string name="settings_not_deleted">Couldn\'t delete everything. Try again.</string>
 
-    <!-- Warning signs (BRD SAF-F1, D95). -->
-    <string name="settings_warning_signs_call">Call your local emergency number if any of these happen.</string>
+    <!-- Warning signs (BRD SAF-F1, D95, D171): the NHS emergency and urgent lists. -->
+    <string name="settings_warning_signs_call">Call your local emergency number if a headache comes with any of these:</string>
     <string-array name="settings_warning_signs_list">
-        <item>Sudden pain that is the worst of your life</item>
-        <item>Pain after a head injury</item>
-        <item>A stiff neck with a fever</item>
-        <item>Weakness, numbness or trouble speaking that doesn\'t pass</item>
-        <item>A first headache after the age of 50</item>
+        <item>Extremely bad pain that came on suddenly</item>
+        <item>Weakness or loss of movement on one side of your body or face</item>
+        <item>Problems speaking or remembering things</item>
+        <item>Losing your vision, or blurred or double vision</item>
+        <item>Feeling drowsy or confused</item>
+        <item>A seizure or fit</item>
+        <item>A very high temperature and signs of meningitis, such as a stiff neck</item>
+        <item>A rash that doesn\'t fade when you press a glass against it</item>
+        <item>A head injury in the last 3 months</item>
     </string-array>
+    <string name="settings_warning_signs_no_drive">Don\'t drive yourself to hospital. Call your local emergency number.</string>
+    <string name="settings_warning_signs_urgent">Get urgent medical advice if you have a migraine attack and:</string>
+    <string-array name="settings_warning_signs_urgent_list">
+        <item>It has lasted longer than 72 hours</item>
+        <item>Aura symptoms last longer than 1 hour at a time</item>
+        <item>You\'re pregnant or have just had a baby</item>
+    </string-array>
+    <string name="settings_warning_signs_other">If you have any other symptoms you\'re worried about, get urgent medical advice.</string>
 
     <!-- About Migrely: the full disclaimer (BRD D97). -->
     <string name="settings_about_diary">Migrely is a headache diary. It helps you keep a record of your migraines, the medications you take and what might set them off, so you can see patterns and talk them over with your doctor.</string>
     <string name="settings_about_not_medical">Migrely is not a medical device. It doesn\'t diagnose, treat or prevent any condition, and nothing in it is medical advice. Its counts and patterns come only from what you logged.</string>
     <string name="settings_about_doctor">Talk to a doctor about your headaches, and before you start, stop or change a medication.</string>
-    <string name="settings_about_urgent">If a headache comes with any of the warning signs, call your local emergency number.</string>
+    <!-- Only the emergency part goes to the emergency number (BRD D171). -->
+    <string name="settings_about_urgent">If a headache comes with any of the emergency signs on the Warning signs page, call your local emergency number.</string>
 
     <!-- Privacy (BRD D97). -->
     <string name="settings_privacy_offline">Migrely has no internet access, so it sends nothing anywhere. There\'s no account to make and nothing to sign in to.</string>

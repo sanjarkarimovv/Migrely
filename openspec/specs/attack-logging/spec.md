@@ -108,13 +108,13 @@ says the end can no longer be undone (BRD ATK-F2, EC-UX-16, EC-ATK-20).
 
 ### Requirement: Check attacks open for 72 hours
 An attack SHALL never be closed automatically. When the app is opened while an attack has been in progress for 72 hours
-or more, the app SHALL ask whether it is still going and show that attacks longer than 72 hours should be discussed
-with a doctor. The user SHALL be able to answer "Still going", "It has ended" or "Don't ask again for this attack"
-(BRD EC-ATK-02, SAF-F3).
+or more, the app SHALL ask whether it is still going and say that, if it is, the person should get urgent medical
+advice, in the words of the Warning signs page. The user SHALL be able to answer "Still going", "It has ended" or "Don't
+ask again for this attack" (BRD EC-ATK-02, SAF-F3, D171, EC-SAF-10).
 
 #### Scenario: Prompt after 72 hours
 - **WHEN** the app is opened and the attack in progress started 73 hours ago
-- **THEN** the app asks whether the attack is still going and shows the 72-hour doctor note
+- **THEN** the app asks "Still going?" and shows "If it's still going after 72 hours, get urgent medical advice."
 
 #### Scenario: Still going
 - **WHEN** the user answers "Still going"
