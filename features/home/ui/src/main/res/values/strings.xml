@@ -41,8 +41,9 @@
     <string name="move_start_description">Move the start %1$s earlier</string>
     <string name="end_attack">Migraine ended</string>
 
+    <!-- The same urgency as the Warning signs page's urgent part (BRD SAF-F3, D171). -->
     <string name="long_check_title">Still going?</string>
-    <string name="long_check_body">Attacks longer than 72 hours should be checked by a doctor.</string>
+    <string name="long_check_body">If it\'s still going after 72 hours, get urgent medical advice.</string>
     <string name="long_check_still_going">Still going</string>
     <string name="long_check_ended">It has ended</string>
     <string name="long_check_dont_ask">Don\'t ask again for this attack</string>
