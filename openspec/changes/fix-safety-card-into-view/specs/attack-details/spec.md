@@ -39,7 +39,8 @@ process SHALL NOT scroll (BRD EC-ATK-23, D167, #174).
 
 #### Scenario: Card text
 - **WHEN** the card shows
-- **THEN** its title, sentence and "Got it" are the same as in 1.1.0
+- **THEN** this change leaves its title, sentence and "Got it" as they are (their words are set by "First maximum pain safety
+  card", BRD D173)
 
 ### Requirement: TalkBack speaks the card once it is in view
 When the card scrolls into view, TalkBack SHALL speak its title and its sentence, each in full, once the card is in view,
@@ -48,8 +49,7 @@ still be spoken in full (BRD EC-ATK-23, D167, D163).
 
 #### Scenario: A first 10 that saves, scrolled down
 - **WHEN** TalkBack is on, the user has scrolled down to Pain, and adds a first 10 that saves
-- **THEN** TalkBack speaks "Sudden, worst-ever pain?" and "If this pain came on suddenly and is the worst of your life, call
-  emergency services now." in full
+- **THEN** TalkBack speaks the card's title and sentence in full
 
 #### Scenario: A first 10 that fails, scrolled down, at 200%
 - **WHEN** TalkBack is on at 200% font, scrolled down, and a first 10 fails to save
