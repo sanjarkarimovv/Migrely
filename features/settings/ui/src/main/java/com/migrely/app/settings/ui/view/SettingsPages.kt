@@ -50,7 +50,13 @@ import com.migrely.app.settings.ui.di.SettingsPageDependencies
 /** Decoration only: each sign is read on its own, without it. */
 private const val BULLET = "•"
 
-/** "Warning signs" (BRD SAF-F1, D95): the signs that need urgent care. No number is dialled; it differs by country. */
+/** Added to the page's 16 dp spacing, it makes the 24 dp break between Warning signs parts. */
+private val PART_GAP_EXTRA = 8.dp
+
+/**
+ * "Warning signs" (BRD SAF-F1, D95, D171): the signs to call the emergency number for, then those
+ * that need urgent medical advice. No number is dialled; it differs by country.
+ */
 @Composable
 fun SettingsPageDependencies.WarningSigns(
     navController: NavController,
@@ -102,12 +108,33 @@ fun WarningSignsContents(onBack: () -> Unit, modifier: Modifier = Modifier) = Se
     onBack = onBack,
     modifier = modifier
 ) {
-    Text(
-        text = stringResource(R.string.settings_warning_signs_call),
-        style = MaterialTheme.typography.titleMedium,
-        color = MaterialTheme.colorScheme.onSurface
-    )
+    PartHeading(stringResource(R.string.settings_warning_signs_call))
     stringArrayResource(R.array.settings_warning_signs_list).forEach { sign -> Bullet(sign) }
+    Paragraph(stringResource(R.string.settings_warning_signs_no_drive))
+    PartHeading(
+        text = stringResource(R.string.settings_warning_signs_urgent),
+        modifier = Modifier.padding(top = PART_GAP_EXTRA)
+    )
+    stringArrayResource(R.array.settings_warning_signs_urgent_list).forEach { sign -> Bullet(sign) }
+    Paragraph(
+        text = stringResource(R.string.settings_warning_signs_other),
+        modifier = Modifier.padding(top = PART_GAP_EXTRA)
+    )
+}
+
+/**
+ * A part of the Warning signs page (BRD D171): a heading, so TalkBack users can jump from the
+ * emergency part to the urgent one. Not `titleLarge`, the serif, which is harder to read with
+ * blurred vision and too big at 200%.
+ */
+@Composable
+private fun PartHeading(text: String, modifier: Modifier = Modifier) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.titleMedium,
+        color = MaterialTheme.colorScheme.onSurface,
+        modifier = modifier.semantics { heading() }
+    )
 }
 
 @Composable
@@ -251,11 +278,12 @@ private fun SettingsPage(
 }
 
 @Composable
-private fun Paragraph(text: String) {
+private fun Paragraph(text: String, modifier: Modifier = Modifier) {
     Text(
         text = text,
         style = MaterialTheme.typography.bodyLarge,
-        color = MaterialTheme.colorScheme.onSurface
+        color = MaterialTheme.colorScheme.onSurface,
+        modifier = modifier
     )
 }
 
@@ -292,6 +320,18 @@ private fun LicenceGroup(licence: String, names: Array<String>) {
 @Preview(name = "Warning signs")
 @Composable
 private fun WarningSignsPreview() {
+    MigrelyTheme { WarningSignsContents(onBack = {}) }
+}
+
+@Preview(name = "Warning signs, light")
+@Composable
+private fun WarningSignsLightPreview() {
+    MigrelyTheme(dark = false) { WarningSignsContents(onBack = {}) }
+}
+
+@Preview(name = "Warning signs, 200%, 320 dp", fontScale = 2f, widthDp = 320, heightDp = 640)
+@Composable
+private fun WarningSignsLargeFontPreview() {
     MigrelyTheme { WarningSignsContents(onBack = {}) }
 }
 
