@@ -45,7 +45,7 @@
     <string name="settings_deleting">Deleting your data</string>
     <string name="settings_not_deleted">Couldn\'t delete everything. Try again.</string>
 
-    <!-- Warning signs (BRD SAF-F1, D95, D171): the NHS migraine page's two lists, emergency then urgent. -->
+    <!-- Warning signs (BRD SAF-F1, D95, D171): the NHS emergency and urgent lists. -->
     <string name="settings_warning_signs_call">Call your local emergency number if a headache comes with any of these:</string>
     <string-array name="settings_warning_signs_list">
         <item>Extremely bad pain that came on suddenly</item>
