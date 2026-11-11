@@ -20,7 +20,7 @@ Ownership:
 ## 2. UI
 
 - [x] 2.1 Copy each string exactly as the spec gives it. Edit `features/settings/ui/src/main/res/values/strings.xml`:
-  - `settings_warning_signs_call`: the H1 text, which is unchanged in words;
+  - `settings_warning_signs_call`: the H1 text. Its words change, from "Call your local emergency number if any of these happen." to the spec's H1 (review N1 corrected this record, which said "unchanged");
   - `settings_warning_signs_list`: the 9 items, in the spec's order;
   - add `settings_warning_signs_no_drive`, `settings_warning_signs_urgent`, `settings_warning_signs_urgent_list` (3 items) and `settings_warning_signs_other`;
   - `settings_about_urgent`: the new text;
@@ -36,7 +36,7 @@ Ownership:
 
   Verify: a Compose UI or Robolectric test asserts:
   - two heading nodes;
-  - 14 text nodes after the title, in the spec's order;
+  - 16 text nodes after the title, in the spec's order (H1, 9 signs, the "Don't drive" line, H2, 3 signs, the last line; review S1);
   - no node with the bullet glyph.
 
   Then run `./gradlew :features:settings:ui:testDebugUnitTest`. Negative control: the test fails on e7e6a002.
@@ -94,14 +94,21 @@ Ownership:
 
 ## 5. Review
 
-- [ ] 5.1 `code-reviewer` reviews the diff against this spec. Verify: written review with no open blocking finding.
+- [x] 5.1 `code-reviewer` reviews the diff against this spec. Verify: a written review with no open blocking finding.
+  Done on db1a23ad. Verdict: "no blocking; fix then merge". The three docs findings, S1 (TalkBack and node counts),
+  S2 (a third Maestro flow) and N1 (the H1 record), are fixed in this docs-only commit. Checks:
+  - Negative control: `WarningSignsContentsTest` on e7e6a002 fails 3 of 4.
+  - Mutation run: 3 of 4 fail.
+  - The strings compared with the spec by script: 8 of 8 groups equal.
+
+  Evidence is in `migrely-work/walks/194/review/` (`old.log`, `mut.log`, `test2.log`, `cmp.py`).
 
 ## 6. QA (`qa-engineer`, diff scope only, owner rule 2026-11-09)
 
-- [ ] 6.1 Update the flows that assert the old text: `.maestro/app-settings/sections-and-pages.yaml` (lines 32-38) and `.maestro/a11y-tour/settings-warning-signs.yaml` (line 12). Verify: both pass on `Migrely_QA_API_36` on the candidate SHA.
+- [ ] 6.1 Update the three flows that assert the old text: `.maestro/app-settings/sections-and-pages.yaml` (lines 32-38), `.maestro/a11y-tour/settings-warning-signs.yaml` (line 12) and `.maestro/device/long-attack-still-going.yaml` (line 10, the old 72-hour text; review S2). Verify: all three pass on `Migrely_QA_API_36` on the candidate SHA.
 - [ ] 6.2 Text and order: every line on the page, About's last paragraph and the 72-hour card text equal the spec, character for character. Verify: a dump of the UI hierarchy compared with the spec. Negative control: e7e6a002 shows the old five items and the old 72-hour text, and fails.
 - [ ] 6.3 TalkBack on API 36:
-  - 17 stops in the spec's order;
+  - 18 stops in the spec's order (review S1);
   - both part headings announced as headings;
   - heading navigation jumps from H1 to H2;
   - no bullet glyph spoken.

@@ -89,7 +89,7 @@ The second heading is "Get urgent medical advice if you have a migraine attack a
   - The two headings start with different verbs ("Call", "Get"), which keeps the parts distinct.
 - **Nothing else:** no colour coding, icon, divider, card, or sub-groups inside the list. Red in a dark room adds alarm,
   not information, and red text loses contrast on dark.
-- **TalkBack:** 17 stops, in this order:
+- **TalkBack:** 18 stops, in this order (the ux count of 17 missed one; review S1):
   - back;
   - "Warning signs" (heading);
   - H1 (heading) and the 9 signs;

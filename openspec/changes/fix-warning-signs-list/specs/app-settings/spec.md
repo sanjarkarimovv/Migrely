@@ -68,7 +68,7 @@ EC-UX-03).
 
 #### Scenario: TalkBack
 - **WHEN** TalkBack reads the page from the top
-- **THEN** it stops 17 times, in this order: back, "Warning signs" (heading), the first heading, the nine signs, the
+- **THEN** it stops 18 times, in this order: back, "Warning signs" (heading), the first heading, the nine signs, the
   "Don't drive" line, the second heading, the three signs of the second part, the last line
 - **AND** each heading is announced as a heading, no bullet glyph is read, and moving by headings goes from the first
   heading to the second in one step
