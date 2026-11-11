@@ -52,11 +52,11 @@ Gradle under load: `nice -n 19 ./gradlew --max-workers=2 …`, never `--stop`. U
   `git status --short` shows only the intended changes of tasks 2 and 3.
 - [x] 5.3 Debug keeps previews: after 4.1, `app/build/intermediates/merged_manifests/debug/processDebugManifest/AndroidManifest.xml` declares
   `androidx.compose.ui.tooling.PreviewActivity`. Verify: `grep -c 'androidx.compose.ui.tooling.PreviewActivity'` on it prints 1 or more.
-- [ ] 5.4 Independent review (`code-reviewer`) on `git diff origin/develop...HEAD`, briefed with this change and design Risks. Verify: findings and
+- [x] 5.4 Independent review (`code-reviewer`) on `git diff origin/develop...HEAD`, briefed with this change and design Risks. Verify: findings and
   fixes recorded below.
 - [x] 5.5 `qa-engineer` acceptance, only this diff's reach (owner rule 2026-11-09): rerun 5.1 and one of 5.2 b or c on its own worktree; a smoke
   launch of the release build on `emulator-5580` shows the app starts. Verify: rows in QA's log.
-- [ ] 5.6 Archive: `openspec archive fix-release-debug-components --yes`, then `openspec validate --specs --strict`. Verify: exit 0.
+- [x] 5.6 Archive: `openspec archive fix-release-debug-components --yes`, then `openspec validate --specs --strict`. Verify: exit 0.
 
 ## Verification record
 
@@ -84,6 +84,13 @@ the bundle used the public licence key already in `gradle.properties`.
 
 Not checked: the EC-REL-06 `tools:node="remove"` case was not built (the merged manifest leaves removed nodes out, so they never reach the
 check); a device walk (the shipped code equals 24bdf68b's walk on emulator-5570; only the build guard changed); the AAB signed with the upload key.
+
+## Review record (5.4)
+
+- 24bdf68b: `code-reviewer` passed it for merge with 2 minors: the artifact-name guard missed `ui-tooling-android`, and there was no
+  BRD/OpenSpec. Both resolved by D172 (959f3bb5) and the manifest guard (ceb6bb30).
+- ceb6bb30 delta: no findings, merge. Gate exit 0, 3013 tests; the configuration-cache problem in `checkPlayLicenseKey` already exists
+  on develop.
 
 ## QA record (5.5)
 
