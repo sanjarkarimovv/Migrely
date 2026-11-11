@@ -28,7 +28,8 @@ whether the entry is saved or not, and when the saved 10s cannot be read. The ca
 #### Scenario: A first 10 that fails to save
 - **WHEN** no saved attack has a 10, the user adds a 10, and the phone's storage is full
 - **THEN** the safety card appears, and "Couldn't save. Your phone's storage is full." shows under the top bar
-- **AND** the card's title, warning sentence and "Got it" are all visible below the message, at any font and orientation
+- **AND** at any font and orientation, no part of the card is under the message and no line is clipped; when the card is taller
+  than the area below the message, the rest is reached by scrolling (D167 (1))
 
 #### Scenario: A first 10 that fails for another reason
 - **WHEN** no saved attack has a 10, the user adds a 10, and the save fails for another reason or the entry is refused for its time
@@ -66,8 +67,10 @@ whether the entry is saved or not, and when the saved 10s cannot be read. The ca
 #### Scenario: The card stays whole at 200% font
 - **WHEN** the font is 200%, the screen is 320 dp wide or in landscape, the user has scrolled down to Pain, and a first 10 fails to
   save
-- **THEN** the card scrolls into view as before, and its title, its whole sentence and "Got it" are visible below the message, with
-  no line cut off
+- **THEN** the card scrolls into view as before: its top, with the title, is at the top of the content area, just below the
+  message, and no part of the card is under the message
+- **AND** the title, the whole sentence and "Got it" are all shown with no line clipped or shortened; when the card is taller
+  than the area, the rest is reached by scrolling, as D167 (1) allows
 
 #### Scenario: Rotation
 - **WHEN** the phone rotates with the card and the message showing

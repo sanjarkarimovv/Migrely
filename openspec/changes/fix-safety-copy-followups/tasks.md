@@ -13,11 +13,13 @@ Ownership:
 
 ## 0. Copy and layout (before any code)
 
-- [ ] 0.1 `medical-reviewer` checks every new string word by word against its source quote in design D1 and D2, and answers the
+- [x] 0.1 `medical-reviewer` checks every new string word by word against its source quote in design D1 and D2, and answers the
   three open questions there. Verify: a PASS or a list of exact changes in the packet. Nothing says "medically reviewed".
-- [ ] 0.2 `ux-designer` checks the card (title 27 characters, sentence 89) and the longer rash item at 100% and 200% font, 320 dp
+  Record: PASS 2026-11-11 on the 3 strings and the numbness decision, with fixes A–C to the plan's source wording (BRD D173 (7)).
+- [x] 0.2 `ux-designer` checks the card (title 27 characters, sentence 89) and the longer rash item at 100% and 200% font, 320 dp
   and landscape, the dark room and TalkBack order. Verify: a packet that names any layout change, or says "none".
-- [ ] 0.3 `product-manager` folds any change from 0.1 or 0.2 into the spec, design D1/D2 and BRD D173 (8), and quotes the PASS in
+  Record: OK 2026-11-11, no copy or layout change (`migrely-work/ux-200/review.md`); its walk rows are in 6.1 and 6.2.
+- [x] 0.3 `product-manager` folds any change from 0.1 or 0.2 into the spec, design D1/D2 and BRD D173 (8), and quotes the PASS in
   D173 (7). Verify: `openspec validate fix-safety-copy-followups --strict` exits 0, and the strings in the specs equal those in D173.
 
 ## 1. Domain, presentation, data
@@ -35,7 +37,8 @@ Ownership:
   Verify: `grep -c '<item>' features/settings/ui/src/main/res/values/strings.xml` is unchanged, and `grep -n 'brown or black skin'`
   prints one line.
 - [ ] 2.3 In `AttackPainSection.kt`, update the comment on the title that says "the text is unchanged (BRD D165 (3))" so it cites
-  D173. Change no code. Verify: `git diff features/attack/ui/src/main/java` shows only comment lines.
+  D173. Change no code: no `LineBreak`, alignment, padding or `maxLines` change in `SafetyCard` (ux review: a lone "pain?" on
+  320 dp at 100% is accepted). Verify: `git diff features/attack/ui/src/main/java` shows only comment lines.
 
 ## 3. Tests (each must fail on 3d098049)
 
@@ -61,14 +64,40 @@ Ownership:
 
 ## 6. Walk (`emulator-5570`)
 
-- [ ] 6.1 Start an attack and scroll down to Pain. Add a first 10 at 100% and 200% font, in portrait and landscape and on 320 dp,
-  once saved and once with storage full. Check the card comes into view whole (title, sentence, "Got it") below any message.
-  Verify: screenshots in `migrely-work/walks/200/`.
-- [ ] 6.2 With TalkBack on: the card is spoken once it is in view, the title as a heading and then the sentence, with focus not moved.
-  On Settings › Warning signs the rash item is one stop read with its bracket, out of 18 stops. Verify: the TalkBack log lines in
-  the packet.
-- [ ] 6.3 Restore font scale, rotation, TalkBack, storage and animator scale. Verify: `adb shell settings get system font_scale`
-  shows `1.0`, and TalkBack is off.
+Setup: AVD `Migrely_API_36`, 1080 × 2400, dark theme, Free user. For 320 dp wide: `adb -s emulator-5570 shell wm density 540`
+(1080 px ÷ 3.375 = 320 dp, 711 dp tall). Landscape runs at the default density (411 dp tall, like a real phone). Font:
+`settings put system font_scale 1.0` or `2.0`. For each card row: start an attack, scroll down to Pain, add a first 10 with no
+saved 10. Pass means the spec's "The card stays whole at 200% font": card top just below the message, nothing under it, nothing
+clipped, the rest reached by scrolling. Whether "Got it" is in view without scrolling is data, not pass or fail.
+
+- [ ] 6.1 Card rows, screenshots in `migrely-work/walks/200/`:
+  - C1: 100%, 411 dp portrait, saved. Card scrolls into view; title and sentence exact; "Got it" visible; no old words.
+  - C2: 200%, 411 dp portrait, storage full. Message under the top bar; the whole card below it; nothing under the message.
+  - C3: 200%, 320 dp portrait, storage full. Card top right below the message. Record the title's line count (3 expected) and
+    "Got it in view y/n". If n, one scroll reaches it and nothing is clipped.
+  - C4: 100%, 320 dp portrait, saved. Record title lines (1 or 2; a lone "pain?" is accepted). Nothing clipped.
+  - C5: 200%, landscape, storage full. Card top below the message; the visible part shows the title and the start of "Call your
+    local emergency number now"; the rest scrolls, nothing clipped. Record "Got it in view y/n".
+  - C6: 200%, landscape, saved. As C5 without the message.
+  - C9: 200%, rotate portrait → landscape with the card and message showing (storage full). Both stay; the message does not cover
+    the card; no new scroll. A screenshot pair.
+  - C10: 100%, 411 dp, "Remove animations" on. The reveal jumps with no ease; text as C1.
+
+  Warning signs rows: W1 100% 411 dp portrait, item 8 reads with the full bracket exactly as the spec, items 1–7 and 9 unchanged.
+  W2 200% 320 dp portrait, item 8 wraps (about 6–7 lines), no line clipped, the closing ")" visible, scroll to the last line.
+  W3 200% landscape, the same. W5 (optional) forced RTL layout: ")" at the end of the item, the bullet mirrored.
+  Verify: one screenshot per row, the C3/C4 line counts and the C3/C5 "Got it in view y/n" in the packet.
+- [ ] 6.2 TalkBack rows, log lines in the packet:
+  - C7: 100%, 411 dp portrait, saved. Spoken once in view: the title (heading), then the sentence in full. Focus not moved.
+  - C8: 200%, 320 dp portrait, storage full. As C7, then the message after the card (D165). The card is partly out of view here;
+    confirm it is still spoken, and record "Got it in view y/n".
+  - W4: 100%, 411 dp, Settings › Warning signs. Swipe the whole page and count the stops: 18, in D171's order. Item 8 is one stop,
+    spoken in full with its note. Record how the brackets are spoken at default punctuation.
+
+  Verify: the log lines, the stop count of 18, and the bracket speech in the packet.
+- [ ] 6.3 Restore: `wm density reset`, `wm size reset`, font scale `1.0`, rotation back to auto and portrait, TalkBack off, forced
+  RTL off, animator scales back, storage freed. Verify: `adb shell wm density` and `adb shell wm size` show no override,
+  `adb shell settings get system font_scale` shows `1.0`, and TalkBack is off.
 
 ## 7. Site (`aso-seo-specialist`, after 0.1 passes)
 
@@ -92,6 +121,12 @@ Ownership:
   - the card text at 100% and 200%, portrait and landscape, saved and storage full, scrolled down;
   - TalkBack on the card and on the rash item;
   - the Warning signs page to its last line.
+
+  In `sections-and-pages.yaml` the item text is a regex: escape the new brackets as `\\(this may be harder to see on brown or
+  black skin\\)`, as the file already does with `\\.`. Unescaped, `(…)` is a group and the literal brackets do not match. Add an
+  `assertNotVisible` for the old item 8 only if Maestro matches the whole text there. No flow reads the card text today, so the
+  card's negative control is task 3.4 plus a manual C1 on 3d098049. Run the starred rows of the ux review: C1, C2, C3, C5, C7, W1,
+  W2, W4.
 
   Negative control: `3d098049` shows the old words. Verify: a Go/No-Go note in `docs/qa/` that states what it does not prove:
   clinical truth (T31), and comprehension by a person in pain.
