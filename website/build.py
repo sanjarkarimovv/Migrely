@@ -856,7 +856,6 @@ MOH_SOURCES = [
     ('NICE CG150, Headaches in over 12s: recommendations 1.1.4, 1.2.7, 1.3.6, 1.3.17 and 1.3.42 to 1.3.48', NICE_CG150),
     ('NHS, Migraine', NHS_MIGRAINE),
     ('NHS, Headaches', NHS_HEADACHES),
-    ('NHS, Headaches', 'https://www.nhs.uk/symptoms/headaches/'),
     ('The Migraine Trust, Medication overuse headache',
      'https://migrainetrust.org/understand-migraine/types-of-migraine/medication-overuse-headache/'),
     ('American Migraine Foundation, Medication overuse headache',
