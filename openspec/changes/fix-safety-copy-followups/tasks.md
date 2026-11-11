@@ -74,8 +74,10 @@ Ownership:
 
 - [ ] 7.1 Add the bracket to the rash item in `website/build.py` `urgent_help()` and in `website/make_diary_pdf.py`. Rebuild the four
   pages (`headache-diary`, `medication-overuse-headache`, `menstrual-migraine`, `va-migraine-log`) and both PDFs, keeping each
-  under 300 KB. Add [Men] to those pages' sources if it is missing, and move their "Last reviewed" dates as the website spec
-  requires. Verify: `grep -rl 'brown or black skin' website/public` lists all four pages, and the PDFs' text has it too.
+  under 300 KB. Add [Men] to those pages' sources if it is missing. Do not move any `*_REVIEWED` date unless every fact on that
+  page has been re-checked against its sources that day. The PDF footer's "Updated <date>" may move. Verify: `grep -rl 'brown
+  or black skin' website/public` lists all four pages, the PDFs' text has it too, and `git diff -- website/build.py | grep
+  _REVIEWED` prints nothing unless the packet names the full re-check.
 - [ ] 7.2 `medical-reviewer` checks the site diff. Deploying is the owner's step (handbook section 5). Verify: the PASS in the packet
   and a deploy request to `team-lead`.
 

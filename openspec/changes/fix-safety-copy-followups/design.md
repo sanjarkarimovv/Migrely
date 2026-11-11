@@ -15,7 +15,8 @@ the first words, maybe the first line. The card must say what to do first and wh
 uses, so that the two never look like two different signs.
 
 The person on Help › Warning signs is usually calmer and reading to decide. The rash sign's only instruction is the glass test.
-On brown or black skin that test is harder to read, and the NHS puts that warning inside its own emergency bullet.
+On brown or black skin that test is harder to read, and the NHS adds that note to the rash in its list of meningitis symptoms,
+and again under its rash pictures.
 
 ## Goals / Non-Goals
 
@@ -39,7 +40,8 @@ Options considered:
 - **A. Keep the card.** Rejected: two names for one sign; "worst of your life" comes only from [MP] ("Your headache is 'the worst
   ever'"), which sends it to "seek medical help right away", not 911; and it narrows the condition for people who have had worse.
 - **B. [M] verbatim, "came on suddenly and is extremely painful".** Rejected: true to the source, but then the card and the page
-  use two wordings again. The page's "extremely bad pain" already passed medical review as the same sign.
+  use two wordings again. The page's "extremely bad pain" already passed medical-reviewer's source check on 2026-11-10 (not a
+  clinical review).
 - **C. The page's item 1 inside a call-to-action sentence.** Chosen. The phrase "extremely bad pain that came on suddenly" is
   identical on both surfaces. "Your local emergency number" replaces "emergency services" (EC-SAF-04). The sentence starts with
   the action, like the page's first heading. The title keeps the question form, so the condition is read first and not every 10
@@ -52,7 +54,7 @@ Length: the title grows from 24 to 27 characters. The sentence stays at 89. The 
 
 | | Old | New | Source |
 |---|---|---|---|
-| `settings_warning_signs_list` item 8 | "A rash that doesn't fade when you press a glass against it" | "A rash that doesn't fade when you press a glass against it (this may be harder to see on brown or black skin)" | [Men] emergency list: "spots or a rash that does not fade when pressed with a glass (this may be harder to see on brown or black skin)" |
+| `settings_warning_signs_list` item 8 | "A rash that doesn't fade when you press a glass against it" | "A rash that doesn't fade when you press a glass against it (this may be harder to see on brown or black skin)" | [Men] "Symptoms of meningitis" list: "spots or a rash that does not fade when pressed with a glass (this may be harder to see on brown or black skin)"; its "Call 999" list has "has a rash that does not fade when you press it" |
 
 Options considered:
 
@@ -62,7 +64,7 @@ Options considered:
   one line.
 - **Add where to look** ([Men]: "Check paler areas, such as the palms of the hands, soles of the feet, roof of the mouth, whites of
   the eyes or inside the eyelids"). Rejected for now. It would triple the item at 200% font, turn a list of signs into a how-to,
-  and the NHS emergency bullet does not carry it. Logged for the clinician (T31).
+  and the NHS symptom bullet does not carry it. Logged for the clinician (T31).
 
 The item stays one bullet, one TalkBack stop. The page keeps 18 stops (EC-SAF-07). At 200% on 320 dp it wraps to more lines and
 the page already scrolls (EC-SAF-06).
@@ -96,8 +98,10 @@ The exact-text tests stay in each module. The negative control: the same tests o
 ### D6. The site
 
 `website/build.py` `urgent_help()` and `website/make_diary_pdf.py` carry the page word for word (#199). `aso-seo-specialist` adds
-the bracket to both. They rebuild the four generated pages and both PDFs, add [Men] to the sources of each page that carries the
-section, and move each "Last reviewed" date as the website spec requires. medical-reviewer checks the site text. The owner deploys
+the bracket to both. They rebuild the four generated pages and both PDFs, and add [Men] to the sources of each page that carries
+the section. A page's "Last reviewed" date moves only when every fact on that page has been re-checked against its sources on
+that date; adding this note alone does not move it. The PDF footer's "Updated <date>" may move when the PDF changes. The
+website spec's "The sources change" scenario is modified to say the same. medical-reviewer checks the site text. The owner deploys
 (handbook section 5). The site may run ahead of the shipped app by this one note. The difference only adds a warning, so it is
 accepted (EC-SAF-15).
 
@@ -116,7 +120,17 @@ datasource, DI or navigation change.
   (EC-SAF-16).
 - **Not a clinical sign-off.** T31 stays open.
 
-## Open questions for medical-reviewer
+## Questions for the clinician (T31)
+
+Not blocking this change. They go to the named clinician with the whole Warning signs page:
+
+1. Should "suddenly" be defined? [NICE] 1.1.1: "sudden-onset headache reaching maximum intensity within 5 minutes".
+2. Numbness alone: [M] counts it as aura, [H] sends "numbness or weakness in the body or face" to 999 (D3).
+3. [Men] sends "has symptoms you're worried might be meningitis" to 999, while the page's last line sends "any other symptoms
+   you're worried about" to urgent medical advice.
+4. Where to look for a rash on brown or black skin (D2).
+
+## Open questions for medical-reviewer (answered 2026-11-11: all strings PASS)
 
 1. Is "Call your local emergency number now if this is extremely bad pain that came on suddenly." a faithful, non-softened
    rendering of [M]'s first 999 item, with the action before the condition?

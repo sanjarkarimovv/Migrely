@@ -9,8 +9,9 @@
    local emergency number". The NHS migraine page says "have a headache that came on suddenly and is extremely painful". "Worst
    ever" comes only from MedlinePlus, and there it is on the "seek medical help right away" list, not the 911 one. "The worst of your
    life" is also a narrower condition: a migraine patient who has had worse may read a sudden 10 as "not me".
-2. **The rash sign relies on a glass test that is harder to read on brown or black skin.** The NHS meningitis page's own emergency
-   bullet carries the note "(this may be harder to see on brown or black skin)". Migrely's audience is worldwide.
+2. **The rash sign relies on a glass test that is harder to read on brown or black skin.** The NHS meningitis page adds the note
+   "(this may be harder to see on brown or black skin)" to the rash in its list of meningitis symptoms, and again under its rash
+   pictures. Its "Call 999" list says only "has a rash that does not fade when you press it". Migrely's audience is worldwide.
 3. **Numbness alone.** The NHS migraine page counts it as aura; the NHS headaches page lists it under 999. D171 left it out. It
    needs an explicit decision so that it does not drift in or out by accident.
 
@@ -37,7 +38,7 @@ bind them.
 
 - When the card shows, its colours, its "Got it" button, the D167 scroll and the D165 message position.
 - A link from the card to the Warning signs page, a dial button or any country's number (D95).
-- Where to look for a rash on darker skin (palms, soles, roof of the mouth, eyes). It would triple the item, and the NHS emergency
+- Where to look for a rash on darker skin (palms, soles, roof of the mouth, eyes). It would triple the item, and the NHS symptom
   bullet itself carries only the short note. A question for the clinician (T31).
 - Numbness alone as an emergency sign (T31).
 - Any other Warning signs, About or 72-hour string.
@@ -57,7 +58,8 @@ None.
   TalkBack, 200% font, the dark room and an upgrade.
 - `app-settings`: "Warning signs" gets the rash note and an explicit numbness-alone scenario.
 - `website`: an added requirement that the site's urgent-help section and the printable diary follow the app's Warning signs
-  word for word, the rash note included.
+  word for word, the rash note included. "Headache diary page" is modified so that "Last reviewed" moves only after a full
+  re-check, not whenever a source is added.
 
 ## Impact
 
@@ -66,7 +68,8 @@ None.
 - `features/settings/ui`: `strings.xml` (`settings_warning_signs_list` item 8) and `WarningSignsContentsTest`.
 - No domain, data, database, backup, manifest, permission or Gradle change. Free and Premium alike. Works offline.
 - Site (`aso-seo-specialist`): `website/build.py` (`urgent_help`), `website/make_diary_pdf.py`, both PDFs in
-  `website/public/headache-diary/`, the four generated pages, and the pages' sources and "Last reviewed" dates.
+  `website/public/headache-diary/`, the four generated pages, and the pages' sources. "Last reviewed" dates move only after a full
+  re-check of a page; the PDF footer's "Updated <date>" may move.
 - QA: `.maestro/app-settings/sections-and-pages.yaml` (line 45 matches the old rash text) and
   `.maestro/a11y-tour/settings-warning-signs.yaml` if it reads the rash item.
 - BRD: SAF-F1, SAF-F2, D173, EC-SAF-05, EC-SAF-10 (pointers), EC-SAF-11…17, §13 row 42.
