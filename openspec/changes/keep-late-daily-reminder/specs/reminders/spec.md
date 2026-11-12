@@ -37,11 +37,11 @@ planned run. When the reminder is off, a start SHALL cancel any planned daily ru
 
 ### Requirement: A day that has not had its reminder is not skipped
 When a start finds no daily run planned, and when the clock or time zone changes, the daily reminder SHALL be planned for
-today's time if it is still ahead; otherwise at once for today, if today's reminder has not been handled; otherwise for
+today's time if it is still ahead; otherwise at once for today, if today's reminder has not posted; otherwise for
 tomorrow's time. A run SHALL NOT post about a date that is no longer today (BRD D176, EC-REM-25, EC-REM-26).
 
 #### Scenario: Nothing planned, after the time
-- **WHEN** a start after 8:00 PM finds no daily run planned, today's reminder has not been handled, Migrely is not on screen,
+- **WHEN** a start after 8:00 PM finds no daily run planned, today's reminder has not posted, Migrely is not on screen,
   and nothing is logged today
 - **THEN** "How was today?" posts once, within a few minutes
 
@@ -49,13 +49,13 @@ tomorrow's time. A run SHALL NOT post about a date that is no longer today (BRD 
 - **WHEN** a start at 7:00 PM finds no daily run planned
 - **THEN** a run is planned for 8:00 PM today
 
-#### Scenario: Nothing planned, today already handled
-- **WHEN** a start after 8:00 PM finds no daily run planned and today's reminder has already been handled
+#### Scenario: Nothing planned, today already posted
+- **WHEN** a start after 8:00 PM finds no daily run planned and today's reminder has already posted
 - **THEN** a run is planned for 8:00 PM tomorrow and nothing posts today
 
-#### Scenario: Clock or zone change after the time, today not handled
+#### Scenario: Clock or zone change after the time, today not posted
 - **WHEN** at 8:30 PM the clock is set or the time zone changes, the new local time is still after 8:00 PM, and today's
-  reminder has not been handled
+  reminder has not posted
 - **THEN** a run is planned at once for today and "How was today?" posts once, unless today is answered
 
 #### Scenario: Clock moved back after a post
@@ -79,32 +79,63 @@ tomorrow's time. A run SHALL NOT post about a date that is no longer today (BRD 
 - **THEN** it does not post, and the next run is planned
 
 ### Requirement: No daily reminder while Migrely is on screen
-A daily run that comes while Migrely is on screen with the screen on, including while it is opening, SHALL NOT post, and
-that date's reminder SHALL count as handled. With the screen off or locked, or Migrely in the background, it SHALL post as
-before. At most one daily reminder SHALL post for a date (BRD D176, EC-REM-27).
+A daily run that comes while Migrely is on screen with the screen on, including while it is opening, SHALL NOT post and
+SHALL NOT mark the date as handled. It SHALL plan that date's run again 30 minutes later, replacing the planned run (BRD
+D176, EC-REM-27).
 
 #### Scenario: On home at the time
 - **WHEN** the person is on Migrely's home at 8:00 PM and today is not answered
-- **THEN** no notification posts, and none posts later that day
+- **THEN** no notification posts while they are on screen, and the date is not marked as handled
+- **AND** if they leave without answering, "How was today?" posts once about 30 minutes later that day
+
+#### Scenario: Opened, browsed History, left without logging
+- **WHEN** a late run comes while the person browses History, and they leave Migrely without logging today
+- **THEN** "How was today?" posts once about 30 minutes after that run, that day
 
 #### Scenario: Logging an attack when the late run comes
-- **WHEN** a late run comes while the person is logging an attack in Migrely
-- **THEN** no notification posts
+- **WHEN** a late run comes while the person is logging an attack in Migrely, and they save it
+- **THEN** no notification posts, and the run 30 minutes later does not post because today has an attack
 
 #### Scenario: Opening the app when the run comes
 - **WHEN** the person's tap starts Migrely's process and the daily run comes before the first screen has appeared
-- **THEN** no notification posts
+- **THEN** no notification posts, and that date's run is planned about 30 minutes later
+
+#### Scenario: Staying in the app
+- **WHEN** the person is still on screen when the postponed run comes
+- **THEN** it does not post and is postponed another 30 minutes
+
+#### Scenario: Postponed past midnight
+- **WHEN** a postponed run comes after midnight
+- **THEN** it does not post, and the next run is at 8:00 PM on the new date
+
+#### Scenario: A clock change after an on-screen skip
+- **WHEN** a run was skipped because Migrely was on screen, and later that day the clock or zone changes
+- **THEN** the date is not handled, so a run is planned at once for today
+- **AND** it does not post if Migrely is on screen (it is postponed again); otherwise it posts once unless today is answered
+
+### Requirement: A postponed daily run follows the normal rules
+That run follows the normal rules: no post if the date is answered, notifications are off, or the date is no longer today;
+no post if Migrely is on screen, which postpones it again. Otherwise it posts once. With the screen off or locked, or
+Migrely in the background, it posts as before. At most one daily reminder SHALL post for a date (BRD D176, EC-REM-27).
 
 #### Scenario: Locked screen
 - **WHEN** Migrely was the last app on screen and the screen is off or locked at 8:00 PM
 - **THEN** "How was today?" posts once
 
-#### Scenario: A clock change after an on-screen skip
-- **WHEN** a run was skipped because Migrely was on screen, and later that day the clock or zone changes
-- **THEN** nothing posts that day
+#### Scenario: Lock screen right after the power key
+- **WHEN** the person presses the power key and the lock screen shows with Migrely behind it when the run comes
+- **THEN** "How was today?" posts once
+
+#### Scenario: Split screen
+- **WHEN** Migrely is visible in split screen with another app when the run comes
+- **THEN** it counts as on screen: no post, and the run is postponed 30 minutes
+
+#### Scenario: Notification shade over Migrely
+- **WHEN** the notification shade is pulled down over Migrely when the run comes
+- **THEN** it counts as on screen: no post, and the run is postponed 30 minutes
 
 #### Scenario: One per date
-- **WHEN** a clock change re-plans while today's run is posting
+- **WHEN** a clock change re-plans while today's run is posting, or a postponed run comes after a post
 - **THEN** the person sees at most one "How was today?" for that date
 
 #### Scenario: Notifications off, or today answered
@@ -156,7 +187,9 @@ question SHALL stay on home's card when its notification is lost. No receiver an
 
 #### Scenario: Restored from a backup
 - **WHEN** Migrely is restored on a new phone with the daily reminder on, and first opened after the time
-- **THEN** a daily run is planned, nothing posts while the person is in the app, and the next day's reminder posts at R
+- **THEN** a daily run is planned and nothing posts while the person is in the app
+- **AND** if they leave without answering, "How was today?" posts once about 30 minutes later that day, and the next day's
+  reminder posts at R
 
 #### Scenario: The process dies while planning
 - **WHEN** the process is killed while the reminders are being planned

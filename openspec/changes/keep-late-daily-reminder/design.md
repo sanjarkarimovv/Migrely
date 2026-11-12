@@ -20,13 +20,15 @@ in pain. Two things go wrong today:
 | Time set, turned on | `SetDailyReminderUseCase` | REPLACE, `next()` | unchanged |
 | Turned off; start while off | `SetDailyReminderUseCase`, `RescheduleRemindersUseCase` | cancel | unchanged |
 | Each daily run | `ReminderWorker` → `RunDailyReminderUseCase` | REPLACE, `after(date)` | unchanged, plus the on-screen rule |
+| Run comes while Migrely is on screen | `RunDailyReminderUseCase` | posts | **REPLACE**, same date, now + 30 min |
 | Reboot | WorkManager's `RescheduleReceiver` restores runs, the start runs `onCreate` | REPLACE at start | KEEP at start |
 | Import | `planAgain` → `PlanRemindersAfterImportUseCase` | visit only | unchanged |
 | Visit reminder, "Did it help?" | `VisitReminderPlan`, `LogIntakeUseCase` | REPLACE | unchanged |
 
 Every path that must still REPLACE: the time setting and turning on (the old run is at the wrong time), a clock or zone
-change (the run's instant must move to the new local time), and a run planning its own next run (WorkManager marks the
-running work cancelled but never interrupts `doWork`). Every other caller of the daily plan is the start-up path.
+change (the run's instant must move to the new local time), a run planning its own next run (WorkManager marks the
+running work cancelled but never interrupts `doWork`), and a run postponing itself because Migrely is on screen (D3).
+Every other caller of the daily plan is the start-up path.
 
 ## Decisions
 
@@ -57,16 +59,29 @@ with REPLACE at a clock or zone change. Option (b) alone at every start would re
 make every after-the-time open run a job at once. Option (a) alone leaves the clock change, which must REPLACE, dropping
 today; Android also sends `TIME_SET` for network time corrections. Both together cover every start.
 
-`handledOn` is `ReminderSettingsDomainModel.dailyLastShownOn`. Its Room column stays; its KDoc changes
-to "the date the daily reminder last showed, or was skipped because Migrely was on screen".
+`handledOn` is `ReminderSettingsDomainModel.dailyLastShownOn`, unchanged in storage and meaning: the date the daily
+reminder last showed. An on-screen skip does not set it (D3).
 
-### D3. No daily notification while Migrely is on screen
+### D3. No daily notification while Migrely is on screen: postpone 30 minutes
 
-In `RunDailyReminderUseCase`, after the existing checks (date is today, notifications allowed, not already handled, not
-answered): if Migrely is on screen, mark the date handled (`setDailyShown`) and return `Skipped` without posting. The next run
-was already planned at the top of the run, so the chain continues.
+ux-designer's rule, accepted by team-lead (task 1.1), word for word in the spec, EC-REM-27 and D176 (3):
 
-Why mark it: so a later clock change the same evening does not post it after all. One outcome per date.
+> A daily run that comes while Migrely is on screen with the screen on, including while it is opening, SHALL NOT post and
+> SHALL NOT mark the date as handled. It SHALL plan that date's run again 30 minutes later, replacing the planned run. That
+> run follows the normal rules: no post if the date is answered, notifications are off, or the date is no longer today; no
+> post if Migrely is on screen, which postpones it again. Otherwise it posts once. With the screen off or locked, or
+> Migrely in the background, it posts as before. At most one daily reminder SHALL post for a date.
+
+In `RunDailyReminderUseCase`, after the existing checks (date is today, notifications allowed, not already shown, not
+answered): if Migrely is on screen, plan the same date again at now + 30 minutes through `ScheduleDailyReminderRepository`
+(REPLACE), do not call `setDailyShown`, and return `Skipped`. This replaces the next run the use case planned at its top;
+the postponed run plans the next day again when it runs. A postponed run that comes after midnight does not post and plans
+the next day (existing rule). A start keeps it (KEEP, D1).
+
+Why not mark the date: a person who opens the app, browses History and leaves without logging would lose the day's
+reminder, which is worse than 74095b8d. Why 30 minutes: long enough not to post while they are still in the app, short
+enough to stay in the evening. A clock change after a skip finds the date not shown and runs at once (D2); the same
+on-screen rule then applies.
 
 "On screen" must be true from the instant a tap starts the process, before any activity resumes: the start-up plan and a
 held job can run in that first second. `CurrentActivityHolder` is empty until `onResume`, so it races. Use the process's
@@ -100,18 +115,24 @@ everyone and an update path to every Go/No-Go.
 
 | Case | 74095b8d | After |
 |---|---|---|
-| Doze-held run, app opened after the time (EC-REM-24) | today lost | kept; on screen: no post, handled; left the app: posts once |
+| Doze-held run, app opened after the time (EC-REM-24) | today lost | kept; on screen: postponed 30 min; left the app: posts once |
 | Doze-held run, another Migrely job or a reboot starts the process | today lost | kept; posts once when it runs, if still today |
 | Job cold-starts the process (R2) | posted 10/10, 1–7 ms margin | posts; no race (KEEP) |
-| Clock or zone change after the time, today not handled (EC-REM-25) | today lost | runs at once for today |
+| Clock or zone change after the time, today not shown (EC-REM-25) | today lost | runs at once for today |
 | Clock change after today was shown | next is tomorrow | unchanged |
 | Clock moved back below the time after a post | one post | one post (`dailyLastShownOn`) |
 | Clock moved back to yesterday | tomorrow's time | asks about the phone's "today" once |
 | Zone change east past midnight | asks about the new date | unchanged: the old date has ended |
 | DST gap or overlap | `at()` moves forward | unchanged |
-| Nothing planned at start, after the time (EC-REM-26): #197, restore, failed chain | tomorrow | at once for today, unless handled |
-| Restore, first open after the time | tomorrow | the run comes while on screen: no post, handled |
-| Run while Migrely on screen, any time (EC-REM-27) | posts in the app | no post, handled |
+| Nothing planned at start, after the time (EC-REM-26): #197, restore, failed chain | tomorrow | at once for today, unless shown |
+| Restore, first open after the time | tomorrow | the run comes while on screen: postponed; posts 30 min later if they left unanswered |
+| Run while Migrely on screen, any time (EC-REM-27) | posts in the app | no post, not marked, postponed 30 min (REPLACE) |
+| Still on screen at the postponed run | posts in the app | postponed again |
+| Opened, browsed History, left without logging | posts in the app | posts once about 30 min after the skip |
+| Postponed run after midnight | n/a | no post, next day planned |
+| Clock change after an on-screen skip | n/a | runs at once (not shown); on screen: postponed again |
+| Lock screen right after the power key, Migrely behind | posts | posts (probe 2.9, 4.3b) |
+| Split screen with Migrely visible; shade pulled over Migrely | posts | counts as on screen: postponed (probe 2.9, 4.3b) |
 | Screen locked or off with Migrely on top | posts | posts |
 | Time set today (EC-REM-28) | strictly after now | unchanged |
 | Reminder turned on after the time, then a clock change | nothing today | may post today at once (accepted) |
@@ -119,7 +140,7 @@ everyone and an update path to every Go/No-Go.
 | Today answered (pain-free, attack) | no post | unchanged |
 | Notifications off | no post | unchanged, a catch-up run just skips |
 | Midnight between plan and run | run skips, plans next | unchanged |
-| Two runs for one date (clock change during a run) | guarded by `dailyLastShownOn` | same guard; same notification id |
+| Two runs for one date (clock change during a run, a postponed run after a post) | guarded by `dailyLastShownOn` | same guard; same notification id |
 | Upgrade with a run planned by any shipped version | replaced at first start | kept; old runs without a date ask about the run's day |
 | Process death while planning | next start plans | next start keeps or plans |
 | Visit reminder (D168), "Did it help?", import | unchanged | unchanged |
@@ -129,9 +150,11 @@ everyone and an update path to every Go/No-Go.
 ## Risks
 
 - **R1. Importance at cold start.** D3 relies on `IMPORTANCE_FOREGROUND` being set before the app's code runs. Checked on
-  device by the engineer (2.9) and QA (4.4). If false, the fallback is not ours to pick in code review: back to the
+  device by the engineer (2.9) and QA (4.3a, 4.3b), including the lock screen, split screen and notification shade. If false, the fallback is not ours to pick in code review: back to the
   product-manager.
-- **R2. Store review.** A reviewer who sets the time a minute ahead and waits inside the app sees nothing. It posts when the
-  app is in the background or the screen locks. Accepted.
+- **R2. Store review.** A reviewer who sets the time a minute ahead and waits inside the app sees nothing then. It posts
+  within about 30 minutes after they leave the app or lock the screen. Accepted.
+- **R5. Postpone loop.** A person who keeps Migrely on screen for hours gets a re-plan every 30 minutes until midnight: one
+  job each, no post. Harmless.
 - **R3. A catch-up run at a clock change** posts at once on a day the reminder was turned on after its time. Rare, harmless.
 - **R4. Evidence is from emulators** with forced idle. Real Doze windows and vendor job batching are not covered.

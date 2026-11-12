@@ -27,8 +27,9 @@ notification that pops up while they are already in the app, perhaps logging an 
   changes, the target is today's time if still ahead; otherwise at once for today if today's reminder has not been handled;
   otherwise tomorrow. With #197's lost database, the stale job's own start now brings today's reminder back.
 - **No daily notification while Migrely is on screen.** A daily run that comes while Migrely is on screen (screen on,
-  including while it is opening) does not post and counts as that day's reminder. Locked, dark screen or background: it posts
-  as before. At most one daily reminder per date.
+  including while it is opening) does not post and does not mark the date; it plans that date's run again 30 minutes later
+  (REPLACE). That run follows the normal rules and postpones again if Migrely is still on screen. Locked, dark screen or
+  background: it posts as before. At most one daily reminder per date (ux-designer's rule, task 1.1).
 - **BRD:** D176 (new), D175 restated, EC-REM-22 rewritten, EC-REM-24 to EC-REM-28 added, EC-STO-10 points to D176, §13 row 44
   renamed and rewritten.
 - **OpenSpec:** the #197 change `pin-reminder-replan-every-start` is renamed to `keep-late-daily-reminder` and now carries both
@@ -42,7 +43,8 @@ notification that pops up while they are already in the app, perhaps logging an 
 - A new cut-off for late daily runs. The existing one stays: a run never asks about a day that has ended (D176 (4)).
 - `SetDailyReminderUseCase` keeps "the first time strictly after now" (D66). The person is in the app when they change it.
 - Any notification text, screen, setting, permission, manifest entry, dependency or Room schema change. `dailyLastShownOn`
-  keeps its column; only its meaning widens to "shown, or skipped because Migrely was on screen".
+  keeps its column and its meaning ("shown").
+- Posting a run that Doze held for hours without sound (ux-designer's follow-up (c)); `team-lead` tracks it separately.
 - Dismissing an already posted daily notification when the day is answered in the app (pre-existing).
 - Android 8.1–15 (no emulator image), real phones, vendor Doze variants.
 
@@ -53,7 +55,7 @@ notification that pops up while they are already in the app, perhaps logging an 
 ## Impact
 
 - Domain `features/reminders/domain`: `DailyReminderTime` (a target that can be "now, for today"), `RescheduleRemindersUseCase`
-  (a request saying whether this is an app start or a clock change), `RunDailyReminderUseCase` (on-screen rule), two new
+  (a request saying whether this is an app start or a clock change), `RunDailyReminderUseCase` (on-screen postpone), two new
   repository interfaces (plan only if none is planned; is Migrely on screen).
 - Data `features/reminders/data`: `RemindersRepository` implements them.
 - Data source: `ReminderScheduleDataSource(Impl)` gains a KEEP enqueue for "daily"; a new on-screen data source in `app`.

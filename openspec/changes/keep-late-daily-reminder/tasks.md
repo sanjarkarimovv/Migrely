@@ -19,9 +19,9 @@ No medical-reviewer: no health sentence changes. No new copy.
 
 ## 1. Flow check (`ux-designer`)
 
-- [ ] 1.1 Confirm the on-screen rule (design D3) and that no copy, screen or setting changes; say whether the Reminders
-  screen needs any line about it (the plan says no). Verify: a reply to `product-manager` in the handoff form; any copy
-  proposal goes back to the plan first.
+- [x] 1.1 Confirm the on-screen rule (design D3) and that no copy, screen or setting changes. Done: ux-designer changed the
+  rule (a skip does not mark the date; it postpones 30 minutes), team-lead accepted it, and the plan now uses its text word
+  for word. Follow-up (c), a silent post for a run Doze held for hours, is out of scope (team-lead tracks it).
 
 ## 2. Code (`android-engineer`)
 
@@ -40,13 +40,17 @@ compile are fine), then passing. Record both runs in the handoff.
   REPLACE); clock change after the time, not handled, plans now through REPLACE; handled → tomorrow; off → cancel; the visit
   is planned exactly as before for both requests. Verify: `./gradlew :features:reminders:domain:test --tests
   '*RescheduleRemindersUseCaseTest'`.
-- [ ] 2.3 Domain, `RunDailyReminderUseCase`: after the existing checks, when on screen mark the date handled and return
-  `Skipped` without showing; the next run is still planned first. **Red** tests: on screen → no show, `setDailyShown(today)`,
-  next run planned; off screen → shows once; answered and on screen → no show, no mark; handled already → no show. Existing
-  tests stay green. Verify: `./gradlew :features:reminders:domain:test --tests '*RunDailyReminderUseCaseTest'`.
-- [ ] 2.4 Domain KDoc: `ReminderSettingsDomainModel.dailyLastShownOn` means "showed, or skipped because Migrely was on
-  screen"; `RescheduleRemindersUseCase` and `DailyReminderTime` KDoc name D176. Verify: `git grep -n 'D176'
-  features/reminders/domain/src/main` lists both files.
+- [ ] 2.3 Domain, `RunDailyReminderUseCase` (design D3): after the existing checks, when on screen plan the same date again
+  at now + 30 minutes through `ScheduleDailyReminderRepository` (REPLACE), never call `setDailyShown`, and return `Skipped`.
+  **Red** tests: on screen → no show, no `setDailyShown`, the last daily plan is (now + 30 min, today) with REPLACE; a
+  postponed run (request = today), off screen, not answered → shows once and marks today; a postponed run, answered → no
+  show; a postponed run, still on screen → postponed again; a postponed run after midnight → no show, next day planned;
+  already shown → no show. Existing tests stay green. Verify: `./gradlew :features:reminders:domain:test --tests
+  '*RunDailyReminderUseCaseTest'`.
+- [ ] 2.4 Domain KDoc: `RescheduleRemindersUseCase`, `DailyReminderTime` and `RunDailyReminderUseCase` name D176.
+  `dailyLastShownOn` keeps its meaning ("shown"); its KDoc does not change. Verify: `git grep -n 'D176'
+  features/reminders/domain/src/main` lists the three files, and `git diff origin/develop --
+  features/reminders/domain/src/main/java/com/migrely/app/reminders/domain/model/ReminderSettingsDomainModel.kt` is empty.
 - [ ] 2.5 Data, `RemindersRepository` implements both interfaces. Tests in `RemindersRepositoryTest` that each delegates to
   its data source. Verify: `./gradlew :features:reminders:data:test --tests '*RemindersRepositoryTest'`.
 - [ ] 2.6 Data source: `ReminderScheduleDataSource.scheduleDailyIfNone(at, date)` with `ExistingWorkPolicy.KEEP` on the same
@@ -66,19 +70,22 @@ compile are fine), then passing. Record both runs in the handoff.
 - [ ] 2.9 Device walk on emulator-5570 (API 36), debug build, with `migrely-work/walks/r2/bin/iter.sh`:
   `late` mode 3 runs → posted=1 each (74095b8d gave 0/3); `kill` mode 3 runs → posted=1; `alive` 1 run → posted=1. Two new
   probes: (a) a `late` run from a copy of `iter.sh` without the second HOME key, so the app stays on screen when idle is
-  unforced → posted=0 and
-  `adb shell run-as com.migrely.app` shows `daily_last_shown_date` = that date, jobscheduler shows tomorrow's job; (b) R1:
-  log `getMyMemoryState().importance` in a debug-only line from `Application.onCreate` for a tap start (expect 100) and
-  for a job start (expect above 100), then remove the log. Verify: the RESULT lines and the two probe outputs in the
-  handoff. If (b) is not 100 for a tap start, stop and send it to `product-manager`.
+  unforced → posted=0, `daily_last_shown_date` is not that date (read with `adb shell run-as com.migrely.app`), and
+  jobscheduler shows a daily job about 30 minutes ahead; then HOME → posted=1 once when that job runs; (b) R1: log
+  `getMyMemoryState().importance` in a debug-only line, at `Application.onCreate` and in the daily run, for: a tap start
+  (expect 100), a job start in the background (expect above 100), the lock screen right after the power key with Migrely
+  behind it (expect above 100), split screen with Migrely visible (expect 100), the notification shade pulled over
+  Migrely (expect 100). Remove the log after. Verify: the RESULT lines and the probe outputs in the handoff. If any of (b)
+  differs from the expectation, stop and send it to `product-manager`.
 - [ ] 2.10 Build for QA: the debug APK (for the r2 scripts) and the R8 release APK from this branch, plus 74095b8d's debug
   and R8 APKs as the negative control. Record the four SHAs and paths in the handoff.
 
 ## 3. Review (`code-reviewer`)
 
 - [ ] 3.1 Check: the only REPLACE callers of the daily plan are `SetDailyReminderUseCase`, the clock-change request and
-  `RunDailyReminderUseCase` (`git grep -n 'scheduleDailyReminder\|scheduleDaily(' -- '*.kt'`); the start-up path reaches only
-  KEEP; the on-screen check cannot block a post when the screen is off; visit, effect and import paths are unchanged
+  `RunDailyReminderUseCase` (its next run and its on-screen postpone) (`git grep -n 'scheduleDailyReminder\|scheduleDaily(' -- '*.kt'`); the start-up path reaches only
+  KEEP; the on-screen check cannot block a post when the screen is off, and
+  an on-screen skip never calls `setDailyShown`; visit, effect and import paths are unchanged
   (`git diff origin/develop -- features/reminders/domain/src/main/java/com/migrely/app/reminders/domain/usecase/VisitReminderPlan.kt`
   is empty); each **red** test really fails without its production change. Verify: verdict with file:line references.
 
@@ -92,11 +99,20 @@ deviceidle, rotation, font and airplane mode after each session. Any failed run 
 
 - [ ] 4.1 **The bug, fixed (API 36 and API 26).** `late` mode, app sent home before idle is unforced. New build: posted=1, 3
   runs on each API. **Negative control:** 74095b8d, same script: posted=0, 1 run on each API.
-- [ ] 4.2 **On screen (API 36).** `late` mode without the second HOME key, so the app stays on home when idle is unforced: posted=0, `daily_last_shown_date`
-  is today, tomorrow's job planned. 2 runs. **Control:** `alive` mode with the app on home at 20:00: posted=0; `alive` with
-  the app in the background: posted=1. Then lock the screen with the app on top before 20:00: posted=1.
-- [ ] 4.3 **Opening when the run comes (API 36).** `late` mode, then `am start` and `deviceidle unforce` in one shell
-  command, the app stays on screen: posted=0. 5 runs. A post in any run is a failure of design D3 (send to `product-manager`).
+- [ ] 4.2 **On screen (API 36).** `late` mode without the second HOME key, so the app stays on home when idle is unforced:
+  posted=0, `daily_last_shown_date` is not today, and a "daily" job about 30 minutes ahead. 2 runs. Extend the wait past
+  the postponed time (or move the clock forward 31 minutes with `cmd alarm set-time` while the app stays on screen): still
+  posted=0 and a new job about 30 minutes ahead. **Controls:** `alive` mode with the app on home at 20:00: posted=0;
+  `alive` with the app in the background: posted=1.
+- [ ] 4.3 **Left after the skip (API 36).** As 4.2, then press HOME (launcher) after the skip, force idle and unforce it
+  when the postponed job is due: posted=1, exactly once for that date, and `daily_last_shown_date` is today. 2 runs.
+- [ ] 4.3a **Opening when the run comes (API 36).** `late` mode, then `am start` and `deviceidle unforce` in one shell
+  command, the app stays on screen: posted=0 and a job about 30 minutes ahead. 5 runs. A post in any run is a failure of
+  design D3 (send to `product-manager`).
+- [ ] 4.3b **Screen-state probes (API 36), 1 run each, app on screen before 20:00:** lock screen right after the power key
+  with Migrely behind it at 20:00 → posted=1; split screen with Migrely visible at 20:00 → posted=0, job about 30 minutes
+  ahead; notification shade pulled over Migrely at 20:00 (hold it with `adb shell cmd statusbar expand-notifications`) →
+  posted=0, job about 30 minutes ahead. Any other result goes to `product-manager`.
 - [ ] 4.4 **Cold start by the job, R2 (API 36 and API 26).** `kill` mode: posted=1. 5 runs on API 36, 3 on API 26.
 - [ ] 4.5 **Clock change after the time (API 36).** Plan 20:00, kill the process, force idle; at 20:01 set the clock forward
   by 2 minutes with `cmd alarm set-time`; unforce: posted=1. **Negative control:** 74095b8d: posted=0. 1 + 1 runs.
