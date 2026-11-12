@@ -31,7 +31,7 @@ tags: [regression, app-settings]
 - extendedWaitUntil:
     visible: "Call your local emergency number if a headache comes with any of these:"
     timeout: 5000
-# The NHS emergency and urgent lists (BRD SAF-F1, D171). Order is checked from a UI dump in the Go/No-Go, not here.
+# The NHS emergency and urgent lists (BRD SAF-F1, D171, D173). Order is checked from a UI dump in the Go/No-Go, not here.
 - assertVisible: "Extremely bad pain that came on suddenly"
 - assertVisible: "Weakness or loss of movement on one side of your body or face"
 - assertVisible: "Problems speaking or remembering things"
@@ -41,9 +41,12 @@ tags: [regression, app-settings]
 - scrollUntilVisible:
     element: "A very high temperature and signs of meningitis, such as a stiff neck"
     direction: DOWN
+# The rash sign carries the NHS meningitis page's note in brackets (D173); escaped, because the text is a regex.
 - scrollUntilVisible:
-    element: "A rash that doesn.t fade when you press a glass against it"
+    element: "A rash that doesn.t fade when you press a glass against it \\(this may be harder to see on brown or black skin\\)"
     direction: DOWN
+# Maestro matches the whole text, so the sign without its note (before D173) must not be on screen.
+- assertNotVisible: "A rash that doesn.t fade when you press a glass against it"
 - scrollUntilVisible:
     element: "A head injury in the last 3 months"
     direction: DOWN

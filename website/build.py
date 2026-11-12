@@ -79,6 +79,7 @@ ICHD_MOH = ('https://ichd-3.org/8-headache-attributed-to-a-substance-or-its-with
 ICHD_CHRONIC = 'https://ichd-3.org/1-migraine/1-3-chronic-migraine/'
 NHS_MIGRAINE = 'https://www.nhs.uk/conditions/migraine/'
 NHS_HEADACHES = 'https://www.nhs.uk/symptoms/headaches/'
+NHS_MENINGITIS = 'https://www.nhs.uk/conditions/meningitis/'
 MOH_REVIEWED = ('2026-11-04', '4 November 2026')
 MOH_TITLE = 'Medication-overuse headache: the 10- and 15-day rules'
 MENSTRUAL_REVIEWED = ('2026-11-04', '4 November 2026')
@@ -129,6 +130,7 @@ DIARY_SOURCES = [
     ('ICHD-3, 8.2 Medication-overuse headache', ICHD_MOH),
     ('NHS, Migraine', NHS_MIGRAINE),
     ('NHS, Headaches', NHS_HEADACHES),
+    ('NHS, Meningitis', NHS_MENINGITIS),
     ('The Migraine Trust, Keeping a headache diary',
      'https://migrainetrust.org/live-with-migraine/self-management/keeping-a-migraine-diary/'),
     ('The Migraine Trust, Migraine attack triggers',
@@ -691,7 +693,7 @@ def urgent_help(extra=''):
     <li>Feeling drowsy or confused</li>
     <li>A seizure or fit</li>
     <li>A very high temperature and signs of meningitis, such as a stiff neck</li>
-    <li>A rash that doesn't fade when you press a glass against it</li>
+    <li>A rash that doesn't fade when you press a glass against it (this may be harder to see on brown or black skin)</li>
     <li>A head injury in the last 3 months</li></ul>
   <p>Don't drive yourself to hospital. Call your local emergency number.</p>
   <h3>Get urgent medical advice if you have a migraine attack and:</h3>
@@ -699,9 +701,9 @@ def urgent_help(extra=''):
     <li>Aura symptoms last longer than 1 hour at a time</li>
     <li>You're pregnant or have just had a baby</li></ul>
   <p>If you have any other symptoms you're worried about, get urgent medical advice.</p>
-  <p>These lists follow the NHS <a href="{NHS_MIGRAINE}">migraine</a> and
-    <a href="{NHS_HEADACHES}">headaches</a> pages. In the UK, urgent medical advice means an urgent GP appointment or
-    NHS 111.</p>{extra}'''
+  <p>These lists follow the NHS <a href="{NHS_MIGRAINE}">migraine</a>, <a href="{NHS_HEADACHES}">headaches</a> and
+    <a href="{NHS_MENINGITIS}">meningitis</a> pages. In the UK, urgent medical advice means an urgent GP appointment
+    or NHS 111.</p>{extra}'''
 
 
 def reviewed_block(sources, reviewed, disclaimer=MEDICAL_DISCLAIMER):
@@ -856,6 +858,7 @@ MOH_SOURCES = [
     ('NICE CG150, Headaches in over 12s: recommendations 1.1.4, 1.2.7, 1.3.6, 1.3.17 and 1.3.42 to 1.3.48', NICE_CG150),
     ('NHS, Migraine', NHS_MIGRAINE),
     ('NHS, Headaches', NHS_HEADACHES),
+    ('NHS, Meningitis', NHS_MENINGITIS),
     ('The Migraine Trust, Medication overuse headache',
      'https://migrainetrust.org/understand-migraine/types-of-migraine/medication-overuse-headache/'),
     ('American Migraine Foundation, Medication overuse headache',
@@ -995,6 +998,7 @@ MENSTRUAL_SOURCES = [
     ('NICE CG150, Headaches in over 12s: recommendations 1.1.4, 1.2.5, 1.2.6, 1.3.30 and 1.3.31', NICE_CG150),
     ('NHS, Migraine', NHS_MIGRAINE),
     ('NHS, Headaches', NHS_HEADACHES),
+    ('NHS, Meningitis', NHS_MENINGITIS),
     ('NHS, Symptoms of menopause and perimenopause',
      'https://www.nhs.uk/conditions/menopause-and-perimenopause/symptoms/'),
     ('The Migraine Trust, Menstrual migraine', MT_MENSTRUAL),
@@ -1157,6 +1161,7 @@ DC_8100 = [
 VA_SOURCES = [
     ('NHS, Migraine', NHS_MIGRAINE),
     ('NHS, Headaches', NHS_HEADACHES),
+    ('NHS, Meningitis', NHS_MENINGITIS),
     ('38 CFR 4.124a, Schedule of ratings: neurological conditions and convulsive disorders, diagnostic code 8100 '
      '(eCFR)', ECFR_4124A),
     ('VA, Headaches (including migraine headaches) Disability Benefits Questionnaire, updated 9 July 2024', VA_DBQ),

@@ -201,10 +201,16 @@ The site SHALL serve `/headache-diary/`. Under question headings it explains why
 
 #### Scenario: The sources change
 
-- **WHEN** a source changes and the page is updated
-- **THEN** `DIARY_REVIEWED` is updated, which changes the "Last reviewed" date, `lastReviewed` and the date in the PDFs'
-  footer, and the PDFs are made again
+- **WHEN** a source changes, the page is updated, and every fact on the page is re-checked against its sources that day
+- **THEN** `DIARY_REVIEWED` is updated, which changes the "Last reviewed" date and `lastReviewed`, and the PDFs are made
+  again with their footer's "Updated <date>"
 - **AND** the sitemap's `lastmod` moves, because the HTML changed
+
+#### Scenario: A change without a full re-check
+
+- **WHEN** the page or the PDFs change, but not every fact on the page is re-checked that day (BRD D173)
+- **THEN** `DIARY_REVIEWED` stays, and the PDF footer's "Updated <date>" may move
+- **AND** the sitemap's `lastmod` moves if the HTML changed
 
 ### Requirement: Printable headache diary template
 
@@ -630,3 +636,29 @@ On `/headache-diary/`, `/medication-overuse-headache/` and `/menstrual-migraine/
 - **WHEN** a reader asks whether they can take HRT with migraine
 - **THEN** the page says, citing the Migraine Trust, that migraine, aura included, does not rule HRT out, that the
   doctor goes through the benefits and risks, and names no product or dose
+
+### Requirement: The site's warning signs follow the app
+The urgent-help section of the medical pages and the VA page, and page 1 of both printable diary PDFs, SHALL carry the app's
+Warning signs items word for word, the rash note included. A page that gains a new source SHALL list it. Its "Last reviewed" date SHALL move only when
+every fact on the page has been re-checked against its sources on that date. The site SHALL never warn less than the app (BRD
+D173, EC-SAF-15).
+
+#### Scenario: The rash note on the site
+- **WHEN** a visitor reads "When should I get help straight away?" on any medical page or the VA page
+- **THEN** the rash sign reads "A rash that doesn't fade when you press a glass against it (this may be harder to see on brown or
+  black skin)"
+- **AND** the page lists the NHS meningitis page among its sources
+
+#### Scenario: The rash note on paper
+- **WHEN** a reader prints page 1 of the A4 or US Letter diary
+- **THEN** the rash sign carries the same bracket, the PDF stays under 300 KB, and nothing is cut off at the page edge
+
+#### Scenario: The site is deployed before the app ships
+- **WHEN** the site is live with the note and the installed app is an earlier version without it
+- **THEN** the only difference is the added note, and no sign on the site is weaker than in the app
+
+#### Scenario: A new source without a full re-check
+- **WHEN** the NHS meningitis page is added to a page's sources for the rash note, and the page's other facts are not re-checked
+  that day
+- **THEN** the page's "Last reviewed" date and `lastReviewed` stay as they were
+- **AND** the PDF footer's "Updated <date>" may move, because the PDF changed

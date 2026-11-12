@@ -22,7 +22,7 @@ CHROME = os.environ.get('CHROME', '/Applications/Google Chrome.app/Contents/MacO
 SIZES = {'a4': 'A4 landscape', 'letter': 'letter landscape'}
 PAGES = 6
 FOOTER = ('Free from migrely.health · A diary, not a medical device · Not reviewed by a clinician · '
-          'Updated 11 November 2026')
+          'Updated 12 November 2026')
 
 # The daily log's columns: heading, hint under it, width in percent.
 COLUMNS = [
@@ -92,23 +92,6 @@ def how_to():
       another copy.</li></ol>
   <p>UK guidance (NICE CG150) suggests keeping a headache diary for at least 8 weeks: how often, how long and how bad;
     other symptoms; all medicines; possible triggers; and any link to your period.</p>
-  <div class="box"><h2>Call your local emergency number if a headache comes with any of these:</h2>
-    <ul><li>Extremely bad pain that came on suddenly</li>
-      <li>Weakness or loss of movement on one side of your body or face</li>
-      <li>Problems speaking or remembering things</li>
-      <li>Losing your vision, or blurred or double vision</li>
-      <li>Feeling drowsy or confused</li>
-      <li>A seizure or fit</li>
-      <li>A very high temperature and signs of meningitis, such as a stiff neck</li>
-      <li>A rash that doesn't fade when you press a glass against it</li>
-      <li>A head injury in the last 3 months</li></ul>
-    <p>Don't drive yourself to hospital. Call your local emergency number.</p>
-    <h2>Get urgent medical advice if you have a migraine attack and:</h2>
-    <ul><li>It has lasted longer than 72 hours</li>
-      <li>Aura symptoms last longer than 1 hour at a time</li>
-      <li>You're pregnant or have just had a baby</li></ul>
-    <p>If you have any other symptoms you're worried about, get urgent medical advice.</p></div>
-</div><div>
   <h2>Key</h2>
   <table class="key"><tbody>
     <tr><th>Symptoms</th><td>N nausea or vomiting · L light bothers you · S sound bothers you<br>A aura: warning signs
@@ -118,6 +101,24 @@ def how_to():
       O other medicine for the attack: opioid, ergot or another (write its name)</td></tr>
     <tr><th>Helped?</th><td>Y yes · S somewhat · N no</td></tr>
     <tr><th>Period</th><td>tick days you have your period</td></tr></tbody></table>
+</div><div>
+  <div class="box"><h2>Call your local emergency number if a headache comes with any of these:</h2>
+    <ul><li>Extremely bad pain that came on suddenly</li>
+      <li>Weakness or loss of movement on one side of your body or face</li>
+      <li>Problems speaking or remembering things</li>
+      <li>Losing your vision, or blurred or double vision</li>
+      <li>Feeling drowsy or confused</li>
+      <li>A seizure or fit</li>
+      <li>A very high temperature and signs of meningitis, such as a stiff neck</li>
+      <li>A rash that doesn't fade when you press a glass against it (this may be harder to see on brown or
+        black skin)</li>
+      <li>A head injury in the last 3 months</li></ul>
+    <p>Don't drive yourself to hospital. Call your local emergency number.</p>
+    <h2>Get urgent medical advice if you have a migraine attack and:</h2>
+    <ul><li>It has lasted longer than 72 hours</li>
+      <li>Aura symptoms last longer than 1 hour at a time</li>
+      <li>You're pregnant or have just had a baby</li></ul>
+    <p>If you have any other symptoms you're worried about, get urgent medical advice.</p></div>
   <h2>Why count medicine days?</h2>
   <p>Taking medicine for attacks on many days a month can make headaches more frequent. The international
     classification (ICHD-3) describes medication-overuse headache in people with headache on 15 or more days a month
@@ -176,6 +177,12 @@ def main():
             pages = len(re.findall(rb'/Type\s*/Page(?!s)', target.read_bytes()))
             if pages != PAGES:
                 sys.exit(f'{target.name} has {pages} pages, not {PAGES}.')
+            # The page-1 footer must stay on page 1: a box that grows too long pushes it off while the page count
+            # stays the same (#200).
+            first = subprocess.run(['pdftotext', '-f', '1', '-l', '1', str(target), '-'], capture_output=True,
+                                   text=True).stdout
+            if FOOTER.split(' · ')[-1] not in first:
+                sys.exit(f'{target.name}: the footer is not on page 1. Page 1 overflows: rebalance its columns.')
             print('wrote', target.relative_to(ROOT))
 
 

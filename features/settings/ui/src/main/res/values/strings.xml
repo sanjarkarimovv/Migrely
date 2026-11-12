@@ -45,7 +45,7 @@
     <string name="settings_deleting">Deleting your data</string>
     <string name="settings_not_deleted">Couldn\'t delete everything. Try again.</string>
 
-    <!-- Warning signs (BRD SAF-F1, D95, D171): the NHS emergency and urgent lists. -->
+    <!-- Warning signs (BRD SAF-F1, D95, D171, D173): the NHS emergency and urgent lists. -->
     <string name="settings_warning_signs_call">Call your local emergency number if a headache comes with any of these:</string>
     <string-array name="settings_warning_signs_list">
         <item>Extremely bad pain that came on suddenly</item>
@@ -55,7 +55,7 @@
         <item>Feeling drowsy or confused</item>
         <item>A seizure or fit</item>
         <item>A very high temperature and signs of meningitis, such as a stiff neck</item>
-        <item>A rash that doesn\'t fade when you press a glass against it</item>
+        <item>A rash that doesn\'t fade when you press a glass against it (this may be harder to see on brown or black skin)</item>
         <item>A head injury in the last 3 months</item>
     </string-array>
     <string name="settings_warning_signs_no_drive">Don\'t drive yourself to hospital. Call your local emergency number.</string>
