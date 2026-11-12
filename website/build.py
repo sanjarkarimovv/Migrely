@@ -701,9 +701,9 @@ def urgent_help(extra=''):
     <li>Aura symptoms last longer than 1 hour at a time</li>
     <li>You're pregnant or have just had a baby</li></ul>
   <p>If you have any other symptoms you're worried about, get urgent medical advice.</p>
-  <p>These lists follow the NHS <a href="{NHS_MIGRAINE}">migraine</a> and
-    <a href="{NHS_HEADACHES}">headaches</a> pages. In the UK, urgent medical advice means an urgent GP appointment or
-    NHS 111.</p>{extra}'''
+  <p>These lists follow the NHS <a href="{NHS_MIGRAINE}">migraine</a>, <a href="{NHS_HEADACHES}">headaches</a> and
+    <a href="{NHS_MENINGITIS}">meningitis</a> pages. In the UK, urgent medical advice means an urgent GP appointment
+    or NHS 111.</p>{extra}'''
 
 
 def reviewed_block(sources, reviewed, disclaimer=MEDICAL_DISCLAIMER):
