@@ -56,20 +56,20 @@ DIARY_REVIEWED = ('2026-11-04', '4 November 2026')
 DIARY_PDFS = {'a4': 'migrely-headache-diary-a4.pdf', 'letter': 'migrely-headache-diary-letter.pdf'}
 # The home page's promo video and its poster in /assets/video/ (BRD D146). /assets/ is cached for a year, so a new cut
 # gets a new name (EC-WEB-20). It is made in marketing/video/promo-v3, outside the repo, from real app screens only.
-PROMO_VIDEO = ('migrely-promo-v3.mp4', 'migrely-promo-v3-poster.jpg')
-PROMO_UPLOADED = '2026-10-30T12:00:00+05:00'
-PROMO_SIZE = '2 MB'
+PROMO_VIDEO = ('migrely-promo-v3-2.mp4', 'migrely-promo-v3-2-poster.jpg')
+PROMO_UPLOADED = '2026-11-12T12:00:00+05:00'
+PROMO_SIZE = '2.6 MB'
 # What each scene shows and says, for people who can't see the video, which has music and no speech (WCAG 1.2.1).
 PROMO_SCENES = [
     '"Log a migraine in 3 taps. Even in a dark room. We\'ll keep the time while you rest." The taps are "Migraine '
     'started", a severity, then "Migraine ended".',
     '"Your month as a calm sky. Every day is drawn from what you logged." The month on the Home screen.',
     '"For your doctor, Premium. A report your doctor can read. A PDF with your summary, calendar, every migraine and '
-    'medication." "Create report", then the PDF\'s pages.',
+    'medication." "Create report", then the PDF\'s pages. "Sample data, not a real patient."',
     '"Premium Insights. Know what comes with your migraines. Triggers often logged with your migraines, when they '
-    'come, and what helped." Insights in the app.',
-    '"Private by design. No internet permission. Android lists every app\'s permissions. Migrely\'s has no internet '
-    'permission. No account. No ads. Check it yourself: migrely.health/privacy-check." Android\'s list of Migrely\'s '
+    'come, and how you rated your medications." Insights in the app. "Sample data, not a real patient."',
+    '"Private by design. No internet permission. Android lists every app\'s permissions. Internet is not on Migrely\'s '
+    'list. No account. No ads. Check it yourself: migrely.health/privacy-check." Android\'s list of Migrely\'s '
     'permissions.',
     '"Migrely. A calm migraine diary. Free on Google Play. migrely.health"',
 ]
