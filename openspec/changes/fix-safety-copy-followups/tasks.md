@@ -172,7 +172,7 @@ clipped, the rest reached by scrolling. Whether "Got it" is in view without scro
 
 ## 9. QA (scope: this diff only)
 
-- [ ] 9.1 `qa-engineer` updates `.maestro/app-settings/sections-and-pages.yaml` (line 45 matches the old rash text) and
+- [x] 9.1 `qa-engineer` updates `.maestro/app-settings/sections-and-pages.yaml` (line 45 matches the old rash text) and
   `.maestro/a11y-tour/settings-warning-signs.yaml` if it reads item 8. Then they run:
   - the card text at 100% and 200%, portrait and landscape, saved and storage full, scrolled down;
   - TalkBack on the card and on the rash item;
@@ -186,6 +186,21 @@ clipped, the rest reached by scrolling. Whether "Got it" is in view without scro
 
   Negative control: `3d098049` shows the old words. Verify: a Go/No-Go note in `docs/qa/` that states what it does not prove:
   clinical truth (T31), and comprehension by a person in pain.
+  Record (qa-engineer, 2026-11-12): **PASS** for b10c8781 (app code 623df09b). Details, APK hashes and what this does not prove:
+  `docs/qa/fix-safety-copy-followups.md`. Evidence in `migrely-work/qa-200/` (`logs/*.jsonl`, `shots/`, `m-*.log`).
+  - Maestro: `sections-and-pages.yaml` now expects item 8 with the escaped bracket and adds `assertNotVisible` for the old
+    item 8, because Maestro matches the whole text (proved: the old flow fails on this branch at the rash item). The a11y
+    tour state only opens the page and reads no item text, so it is unchanged. No other `.maestro/` or `qa/` line has the old
+    card or rash text. The new flow passes 3 of 3 on debug and 1 of 1 on R8 (API 36). Controls: the new flow fails on
+    3d098049 at the rash item; its `assertNotVisible` fails there; the old flow passes there; an unescaped bracket fails on
+    this branch.
+  - Rows, API 36 (debug unless named): C1, C2, C3, C5, C7, W1, W2, W4 pass. API 26 (R8): C1, C2, W1 pass. C3: title 3 lines,
+    Got it in view n (45 of 135 px), whole after one scroll. C5: title 1 line, whole sentence, Got it in view n (70 of 105
+    px), whole after one scroll; both accepted by D167 (1). C7: TalkBack speaks the title, the full sentence and "Got it"
+    first. W4: 18 stops (Back, the title, 16 texts in D171's order); item 8 is one stop, spoken with its bracket.
+  - Card negative control: C1 and C2 on 3d098049 (API 36) and C1 (API 26) show "Sudden, worst-ever pain?" and the old
+    sentence, and no new words; W1 there shows the old item 8.
+  - R8, API 36: smoke 17 of 17 (14 + 3). Debug, API 36: a11y audit `settings-warning-signs` 0 failures in 3 states.
 
 ## 10. Close
 
