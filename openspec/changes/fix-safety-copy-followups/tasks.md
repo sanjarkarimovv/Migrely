@@ -91,7 +91,7 @@ Setup: AVD `Migrely_API_36`, 1080 × 2400, dark theme, Free user. For 320 dp wid
 saved 10. Pass means the spec's "The card stays whole at 200% font": card top just below the message, nothing under it, nothing
 clipped, the rest reached by scrolling. Whether "Got it" is in view without scrolling is data, not pass or fail.
 
-- [ ] 6.1 Card rows, screenshots in `migrely-work/walks/200/`:
+- [x] 6.1 Card rows, screenshots in `migrely-work/walks/200/`:
   - C1: 100%, 411 dp portrait, saved. Card scrolls into view; title and sentence exact; "Got it" visible; no old words.
   - C2: 200%, 411 dp portrait, storage full. Message under the top bar; the whole card below it; nothing under the message.
   - C3: 200%, 320 dp portrait, storage full. Card top right below the message. Record the title's line count (3 expected) and
@@ -103,22 +103,57 @@ clipped, the rest reached by scrolling. Whether "Got it" is in view without scro
   - C9: 200%, rotate portrait → landscape with the card and message showing (storage full). Both stay; the message does not cover
     the card; no new scroll. A screenshot pair.
   - C10: 100%, 411 dp, "Remove animations" on. The reveal jumps with no ease; text as C1.
+  Record (android-engineer, 2026-11-11/12, debug APK of 392a349b, sha256 722d0518…, dark theme, Free; evidence in
+  `migrely-work/walks/200/`: `walk-card.jsonl`, `walk-w.jsonl`, `shots/`). Card: every row shows the exact title and sentence
+  and no old words; the card never sits under the message. "Got it in view" is data: y = whole button inside the viewport.
+  - C1 pass: card scrolled into view from below Pain; title 1 line; Got it in view y.
+  - C2 pass: message y 328-517 under the top bar, card title from y 623; title 2 lines; Got it in view y.
+  - C3 pass: message y 385-763, content from 966, card title from 1061; title 3 lines; Got it in view n (45 of 135 px at
+    the screen edge). One scroll: Got it whole at y 1843-1978, sentence whole, message unchanged.
+  - C4 pass: title 2 lines with a lone "pain?" (accepted); Got it in view y; nothing clipped.
+  - C5 pass: message y 263-452, card title from 558; title 1 line; whole sentence visible; Got it in view n (70 of 105 px).
+  - C6 pass: card at the content top (title y 331); Got it in view y.
+  - C9 pass: after portrait to landscape both stay, no overlap; the card keeps the same 74 px below the content top (no
+    new scroll). Pair: `C9-portrait.png`, `C9-landscape.png`.
+  - C10 pass: end state as C1. The jump itself is not visible in a screenshot; the Robolectric test "Given Remove
+    animations then the content jumps to the card" covers it.
+  - W1 pass: 16 texts in the spec's order, item 8 exact with the full bracket (3 lines), items 1-7 and 9 unchanged.
+  - W2 pass: item 8 wraps to 7 lines, none clipped, ")" visible; the last line is reached by scrolling (run W2b).
+  - W3 pass: landscape, item 8 3 lines, ")" visible, last line reached.
+  - W5 not run (optional): the app is English only and the ux review reads it from the code.
+  Harness notes: the Mac slept repeatedly during the walk (`caffeinate -i` does not stop it), so rows took 15-50 min of
+  wall time; first runs of C3, C5, C6, W1 and W2 failed in the scripts (Home dump hang at 200% on 320 dp, Back-gesture
+  edge, wrong landscape touch mapping, clipped-bounds check) and were rerun; no app defect behind any of them.
 
   Warning signs rows: W1 100% 411 dp portrait, item 8 reads with the full bracket exactly as the spec, items 1–7 and 9 unchanged.
   W2 200% 320 dp portrait, item 8 wraps (about 6–7 lines), no line clipped, the closing ")" visible, scroll to the last line.
   W3 200% landscape, the same. W5 (optional) forced RTL layout: ")" at the end of the item, the bullet mirrored.
   Verify: one screenshot per row, the C3/C4 line counts and the C3/C5 "Got it in view y/n" in the packet.
-- [ ] 6.2 TalkBack rows, log lines in the packet:
+- [x] 6.2 TalkBack rows, log lines in the packet:
   - C7: 100%, 411 dp portrait, saved. Spoken once in view: the title (heading), then the sentence in full. Focus not moved.
   - C8: 200%, 320 dp portrait, storage full. As C7, then the message after the card (D165). The card is partly out of view here;
     confirm it is still spoken, and record "Got it in view y/n".
   - W4: 100%, 411 dp, Settings › Warning signs. Swipe the whole page and count the stops: 18, in D171's order. Item 8 is one stop,
     spoken in full with its note. Record how the brackets are spoken at default punctuation.
+  Record (TalkBack log VERBOSE for the rows, back to ERROR after):
+  - C7 pass: after "Add, Button", TalkBack says "Sudden, extremely bad pain?", then "Call your local emergency number now
+    if this is extremely bad pain that came on suddenly.", then "Got it, Button"; then "Migrely", "Back", the
+    usual focus return when the sheet closes. The word "Heading" is not spoken at default verbosity; the heading role is
+    covered by `SaveMessageTest` "The card's title is a heading" and by W4 ("Warning signs, Heading").
+  - C8 pass: card first (title, sentence, "Got it, Button"), then "Couldn't save. Your phone's storage is full.",
+    "Dismiss, Button" (D165). The card is partly out of view; Got it in view n (45 px).
+  - W4 pass: 18 stops. Right swipes from TalkBack's start speak the title ("Warning signs, Heading") and the 16 texts in
+    D171's order; one left swipe from the title speaks "Back, Button" (stop 1). Item 8 is one stop, spoken in full with
+    its note. Brackets: TalkBack's spoken text keeps "(" and ")" as written, so at default punctuation it does not turn
+    them into words; the emulator runs with no audio, so how the voice renders them was not heard.
 
   Verify: the log lines, the stop count of 18, and the bracket speech in the packet.
-- [ ] 6.3 Restore: `wm density reset`, `wm size reset`, font scale `1.0`, rotation back to auto and portrait, TalkBack off, forced
+- [x] 6.3 Restore: `wm density reset`, `wm size reset`, font scale `1.0`, rotation back to auto and portrait, TalkBack off, forced
   RTL off, animator scales back, storage freed. Verify: `adb shell wm density` and `adb shell wm size` show no override,
   `adb shell settings get system font_scale` shows `1.0`, and TalkBack is off.
+  Record: font 1.0, density 420 and size 1080x2400 with no override, accelerometer_rotation 1 and user_rotation 0,
+  animator scales 1/1/1, accessibility off (no service, touch exploration 0), TalkBack log ERROR, night mode no (as
+  found), no filler files, app data restored from the pre-walk backup (`diff -rq` empty). 5570 turned off.
 
 ## 7. Site (`aso-seo-specialist`, after 0.1 passes)
 
