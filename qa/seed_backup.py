@@ -721,7 +721,7 @@ def insights_lines(view, with_trends):
                    "    " + ", ".join(f"{day} {n} of {total}" for day, n in zip(WEEKDAYS, view["weekdays"])),
                    "  By time of day:", f"    {view['busiest_time']}",
                    "    " + ", ".join(f"{label} {n} of {total}" for (label, _), n in zip(TIMES_OF_DAY, view["times"]))]
-                + cycle + ["  What helped:"] + [f"    {line}" for line in medications])
+                + cycle + ["  How you rated your medications:"] + [f"    {line}" for line in medications])
     trend = (["  The last 12 months, as TalkBack reads each row (month names as on an English phone):"]
              + [f"    {line}" for line in view["trends"]]) if with_trends else []
     return [head] + body + trend

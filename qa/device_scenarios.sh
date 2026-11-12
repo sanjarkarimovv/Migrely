@@ -2010,13 +2010,15 @@ print(f'old notes: the latest {n} of 900 migraines, \"Notes from the latest {n} 
 
 # Covers: trigger-insights › Triggers, never causes › Stress
 # Covers: trigger-insights › When migraines come › Mondays
-# Covers: trigger-insights › What helped › Ibuprofen
+# Covers: trigger-insights › How you rated your medications › Ibuprofen
+# Covers: trigger-insights › How you rated your medications › The heading
+# Covers: trigger-insights › How you rated your medications › Fewer than three answers
 # Covers: trigger-insights › Around the period › Tracking off
 # Covers: trigger-insights › Twelve months › A screen reader
 # Covers: trigger-insights › Enough to go on › Three migraines so far
 # Covers: trigger-insights › The period › Opening Insights
 scenario_insights() {
-  echo "Scenario insights: triggers, days and times, what helped, the period, the 12 months for TalkBack, the N-more card (D87-D92)"
+  echo "Scenario insights: triggers, days and times, how you rated your medications, the period, the 12 months for TalkBack, the N-more card (D87-D92)"
   local seed
   for seed in insights-patterns insights-three; do
     run_flow clean || return 1
@@ -2038,6 +2040,9 @@ scenario_insights() {
     expect_seen "$out/insights-$seed.want" "$out/insights-$seed.seen" || return 1
     if grep -q "Around your period" "$out/insights-$seed.seen"; then echo "  FAILED: a period section with Track periods off"; return 1; fi
     if grep -qiE "caus|leads? to" "$out/insights-$seed.seen"; then echo "  FAILED: a text says a trigger causes migraines"; return 1; fi
+    # The medication section names the person's ratings, not a relief claim (D174), in any letter case. The pattern is
+    # written with [[:space:]]+ so that grepping qa/ for the old heading finds only stale expectations, not this guard.
+    if grep -qiE "what[[:space:]]+helped" "$out/insights-$seed.seen"; then echo "  FAILED: a text names the old heading (D174)"; return 1; fi
     echo "    $seed, Track periods off: $(wc -l <"$out/insights-$seed.want" | tr -d ' ') texts seen; no period section; nothing says \"cause\""
   done
 }
