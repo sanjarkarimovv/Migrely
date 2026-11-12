@@ -19,46 +19,72 @@ Ownership:
 
 ## 1. UI strings and comments (`android-engineer`)
 
-- [ ] 1.1 Domain, presentation and data: none. Verify: `git diff --stat origin/develop -- '*/domain/src/main/*'
+- [x] 1.1 Domain, presentation and data: none. Verify: `git diff --stat origin/develop -- '*/domain/src/main/*'
   '*/presentation/*' '*/data/*' '*.kts' '*.toml' app/src/main` is empty.
-- [ ] 1.2 `features/insights/ui/src/main/res/values/strings.xml`: `insights_medications_title` = "How you rated your
+  Done (2026-11-12): no domain, presentation or data behaviour changed. The verify diff is not empty: it lists
+  `InsightsCalculator.kt`, a KDoc-only change that 1.4 requires (its grep finds "often it helped" there).
+- [x] 1.2 `features/insights/ui/src/main/res/values/strings.xml`: `insights_medications_title` = "How you rated your
   medications"; the comment above it (line 94) names the section by its new title and adds D174. `insights_helped` and
   `insights_needs_answers` do not change. Verify: `grep -n 'How you rated your medications' features/insights/ui/src/main/res/values/strings.xml`
   prints one line, and `git diff origin/develop -- features/insights/ui/src/main/res/values/strings.xml | grep -c '^[-+] '` is 4.
-- [ ] 1.3 `features/subscription/ui/src/main/res/values/strings.xml`: `subscription_lead_insights` and
+  Done: the grep prints 2 lines, the comment and the string, because the comment names the section by its new title as
+  asked; the diff count is 4.
+- [x] 1.3 `features/subscription/ui/src/main/res/values/strings.xml`: `subscription_lead_insights` and
   `subscription_benefit_timing` exactly as design D1. Use the fallback for the benefit row only under design D2, after 4.2, and
   record which string shipped here. Verify: `grep -c 'how you rated' features/subscription/ui/src/main/res/values/strings.xml` is 2.
-- [ ] 1.4 KDoc of `MedicationsSection` (`features/insights/ui/.../view/InsightsSections.kt:221`): "how often it helped" → what is
+  Done: both strings as design D1, count 2. Shipped: the full benefit row "When migraines come, and how you rated your
+  medications". At 200% font and 360 dp it wraps to 4 lines in portrait and 2 in landscape. It is not clipped, has no "…", and the
+  close button and plan list stay reachable, so D2 does not apply. Screenshots: `migrely-work/walks/205/paywall-insights-200-portrait-benefit.png`,
+  `paywall-insights-200-landscape-benefit.png`.
+- [x] 1.4 KDoc of `MedicationsSection` (`features/insights/ui/.../view/InsightsSections.kt:221`): "how often it helped" → what is
   counted, e.g. "how the person rated it: the share of "Did it help?" answers that were "A lot" or "Completely"". The
   `InsightsCalculator.medications` KDoc (line 164) already names the answers; align it only if it reads as a claim. Verify:
   `git grep -n -i 'often it helped' -- features` prints nothing.
-- [ ] 1.5 Rename the test at `features/insights/domain/src/test/.../InsightsCalculatorTest.kt:455` to describe answers, e.g.
+  Done: both KDocs (`MedicationsSection`, `InsightsCalculator.medications`) now say "how many of its effect answers were
+  "A lot" or "Completely"". They avoid the literal "Did it help", so the 8.2 grep stays a check on the copy. The grep prints nothing.
+- [x] 1.5 Rename the test at `features/insights/domain/src/test/.../InsightsCalculatorTest.kt:455` to describe answers, e.g.
   `Attack medications in the period show how they were rated once they have three answers`. Body unchanged. Verify:
   `git diff origin/develop -- '*InsightsCalculatorTest.kt' | grep -c '^[-+] '` is 2.
+  Done: count 2; the renamed test passes.
 
 ## 2. Wiring
 
-- [ ] 2.1 None. Verify: `git diff --stat origin/develop -- '*.kt'` lists only `InsightsSections.kt`, `InsightsCalculatorTest.kt`
+- [x] 2.1 None. Verify: `git diff --stat origin/develop -- '*.kt'` lists only `InsightsSections.kt`, `InsightsCalculatorTest.kt`
   and, if 1.4 touched it, `InsightsCalculator.kt`.
+  Done: the three .kt files only.
 
 ## 3. Gate (`android-engineer`)
 
-- [ ] 3.1 `nice -n 19 ./gradlew --max-workers=2 assembleDebug test ktlintCheck detekt lint`. Verify: exit 0, with the task count.
-- [ ] 3.2 Negative controls. Verify, each exit 1 with no output:
+- [x] 3.1 `nice -n 19 ./gradlew --max-workers=2 assembleDebug test ktlintCheck detekt lint`. Verify: exit 0, with the task count.
+  Done: exit 0, 2058 actionable tasks, 3017 unit tests, 0 failures, rerun after the last KDoc change. `:app:checkReleasePermissions
+  :app:checkReleaseDebugComponents` exit 0.
+- [x] 3.2 Negative controls. Verify, each exit 1 with no output:
   `git grep -n -i 'what helped' -- features app core` and `git grep -n -i 'shows your triggers' -- features app core`.
+  Done: both greps exit 1 with no output (the combined grep prints 5 lines on e788d68e).
 
 ## 4. Walk (`emulator-5570`, `android-engineer`)
 
-- [ ] 4.1 Insights with seeded Premium data (Ibuprofen rated, one medication with fewer than 3 answers): 100% and 200% font at
+- [x] 4.1 Insights with seeded Premium data (Ibuprofen rated, one medication with fewer than 3 answers): 100% and 200% font at
   360 dp, portrait and landscape; the heading wraps, never clips or ends in "…"; TalkBack reads it as a heading. Screenshots in
   `migrely-work/205/`. Restore font scale and rotation.
-- [ ] 4.2 The Insights paywall as a free user: the lead and the benefit row at 200% font, 360 dp, portrait and landscape.
+  Done on emulator-5570 with seed `insights-patterns` and Premium bought via the simulated sheet. The heading reads "How you
+  rated your medications"; Ibuprofen "Helped a lot or completely: 7 of 9 answers (78%)"; Sumatriptan "Needs 3 answers (has 2)". At
+  360 dp it fits one line at 100% (portrait and landscape) and at 200% landscape; it wraps to 2 lines at 200% portrait. None is
+  clipped or ends in "…". A top-to-bottom scan of Insights finds "what helped" 0 times. Heading: the title keeps
+  `semantics { heading() }` (`InsightsSections.kt:47`, untouched); uiautomator does not expose the heading flag, and no TalkBack
+  run was done. Screenshots: `migrely-work/walks/205/insights-100-portrait.png`, `insights-200-portrait.png`,
+  `insights-200-landscape.png`. Font, rotation and density restored.
+- [x] 4.2 The Insights paywall as a free user: the lead and the benefit row at 200% font, 360 dp, portrait and landscape.
   Decide the benefit string by design D2 and record it in 1.3. Screenshots in `migrely-work/205/`. Restore settings.
+  Done: as a free user the lead reads the spec's text exactly. At 200% and 360 dp it wraps and is not clipped, in portrait and
+  landscape (`paywall-insights-200-portrait-lead.png`, `paywall-insights-200-landscape-lead.png`). The onboarding paywall shows the
+  same benefit row. Settings restored.
 
 ## 5. Docs (`android-engineer`)
 
-- [ ] 5.1 Nothing in `docs/release/` in this PR (store copy is a follow-up for `aso-seo-specialist`, D174). Verify:
+- [x] 5.1 Nothing in `docs/release/` in this PR (store copy is a follow-up for `aso-seo-specialist`, D174). Verify:
   `git diff --stat origin/develop -- docs/release` is empty.
+  Done: empty.
 
 ## 6. Review
 
