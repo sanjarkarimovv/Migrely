@@ -157,18 +157,26 @@ clipped, the rest reached by scrolling. Whether "Got it" is in view without scro
 
 ## 7. Site (`aso-seo-specialist`, after 0.1 passes)
 
-- [ ] 7.1 Add the bracket to the rash item in `website/build.py` `urgent_help()` and in `website/make_diary_pdf.py`. Rebuild the four
+- [x] 7.1 Add the bracket to the rash item in `website/build.py` `urgent_help()` and in `website/make_diary_pdf.py`. Rebuild the four
   pages (`headache-diary`, `medication-overuse-headache`, `menstrual-migraine`, `va-migraine-log`) and both PDFs, keeping each
   under 300 KB. Add [Men] to those pages' sources if it is missing. Do not move any `*_REVIEWED` date unless every fact on that
   page has been re-checked against its sources that day. The PDF footer's "Updated <date>" may move. Verify: `grep -rl 'brown
   or black skin' website/public` lists all four pages, the PDFs' text has it too, and `git diff -- website/build.py | grep
   _REVIEWED` prints nothing unless the packet names the full re-check.
-- [ ] 7.2 `medical-reviewer` checks the site diff. Deploying is the owner's step (handbook section 5). Verify: the PASS in the packet
+  Record (product-manager, 2026-11-12, at 1f3f1110; work in 43825a59 and b10c8781): `grep -rl 'brown or black skin' website/public`
+  lists the four pages; `pdftotext` finds the note in both PDFs (A4 88,469 bytes, Letter 88,323 bytes, under 300 KB);
+  `git diff 3d098049 HEAD -- website/build.py | grep _REVIEWED` prints nothing, so no "Last reviewed" date moved.
+- [x] 7.2 `medical-reviewer` checks the site diff. Deploying is the owner's step (handbook section 5). Verify: the PASS in the packet
   and a deploy request to `team-lead`.
+  Record: medical-reviewer PASS on the site at b10c8781, after the fix that credits the NHS meningitis page in the urgent-help
+  line. The deploy to migrely.health is still the owner's step and is not part of this change.
 
 ## 8. Review
 
-- [ ] 8.1 `code-reviewer` reviews the diff against this change. Verify: findings resolved or answered in the PR.
+- [x] 8.1 `code-reviewer` reviews the diff against this change. Verify: findings resolved or answered in the PR.
+  Record: code-reviewer on 623df09b: fix-then-merge, no Critical or Important findings. The Maestro order finding was fixed
+  by QA in 0e7eb2e4. The difference between the walk record and the raw flags is explained in the walk record. Nit, left as
+  is: the `TITLE` constants repeat the title text in three tests.
 
 ## 9. QA (scope: this diff only)
 
@@ -204,6 +212,15 @@ clipped, the rest reached by scrolling. Whether "Got it" is in view without scro
 
 ## 10. Close
 
-- [ ] 10.1 `product-manager` checks acceptance, and the change is archived. The pending `fix-safety-card-into-view` may be archived
+- [x] 10.1 `product-manager` checks acceptance, and the change is archived. The pending `fix-safety-card-into-view` may be archived
   before or after this one: its scenarios no longer quote the card's words (design D4). Verify:
   `grep -n 'worst' openspec/specs/attack-details/spec.md` prints nothing after archiving.
+  Record (product-manager, 2026-11-12): accepted. Code review is fix-then-merge with nothing open, medical-reviewer passed the
+  strings (0.1) and the site (7.2), ux-designer gave OK (0.2), and QA 9 is PASS.
+  - EC-SAF-16 ("Upgraded with a 10 already saved") has no task, test or walk row of its own (code-reviewer). It is covered by
+    reasoning: this change touches no data, migration or logic, only resource text. The "later 10" path is covered by
+    `AddIntensityPointUseCaseTest:219` and `AttackDetailsViewModelTest:486`, and the page's words by `WarningSignsContentsTest`.
+  - No upgrade walk from an earlier version was run.
+  - Verify result: `grep -rn "worst of your life\|worst-ever" openspec/specs` prints nothing. The narrower
+    `grep -n 'worst' openspec/specs/attack-details/spec.md` prints one line, 135, which is the rule that the card must not
+    contain "worst", not the old words.
