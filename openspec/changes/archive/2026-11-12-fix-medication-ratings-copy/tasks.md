@@ -20,7 +20,9 @@ Ownership:
 ## 1. UI strings and comments (`android-engineer`)
 
 - [x] 1.1 Domain, presentation and data: none. Verify: `git diff --stat origin/develop -- '*/domain/src/main/*'
-  '*/presentation/*' '*/data/*' '*.kts' '*.toml' app/src/main` is empty.
+  '*/presentation/*' '*/data/*' '*.kts' '*.toml' app/src/main` lists nothing, or only `InsightsCalculator.kt` when its change
+  is KDoc only (allowed by 1.4): `git diff origin/develop -- '*InsightsCalculator.kt' | grep '^[-+] ' | grep -v '^[-+] *\*'`
+  prints nothing.
   Done (2026-11-12): no domain, presentation or data behaviour changed. The verify diff is not empty: it lists
   `InsightsCalculator.kt`, a KDoc-only change that 1.4 requires (its grep finds "often it helped" there).
 - [x] 1.2 `features/insights/ui/src/main/res/values/strings.xml`: `insights_medications_title` = "How you rated your
@@ -66,7 +68,7 @@ Ownership:
 
 - [x] 4.1 Insights with seeded Premium data (Ibuprofen rated, one medication with fewer than 3 answers): 100% and 200% font at
   360 dp, portrait and landscape; the heading wraps, never clips or ends in "…"; TalkBack reads it as a heading. Screenshots in
-  `migrely-work/205/`. Restore font scale and rotation.
+  `migrely-work/walks/205/`. Restore font scale and rotation.
   Done on emulator-5570 with seed `insights-patterns` and Premium bought via the simulated sheet. The heading reads "How you
   rated your medications"; Ibuprofen "Helped a lot or completely: 7 of 9 answers (78%)"; Sumatriptan "Needs 3 answers (has 2)". At
   360 dp it fits one line at 100% (portrait and landscape) and at 200% landscape; it wraps to 2 lines at 200% portrait. None is
@@ -74,8 +76,12 @@ Ownership:
   `semantics { heading() }` (`InsightsSections.kt:47`, untouched); uiautomator does not expose the heading flag, and no TalkBack
   run was done. Screenshots: `migrely-work/walks/205/insights-100-portrait.png`, `insights-200-portrait.png`,
   `insights-200-landscape.png`. Font, rotation and density restored.
+  Correction (code-reviewer, Minor; recorded by product-manager in 9.1): this task was ticked without two of its checks.
+  `android-engineer` ran no TalkBack check and kept no 100% landscape screenshot. Both are covered by QA in 8.3, not here:
+  TalkBack reads "How you rated your medications. Heading" at 100% and 200%, with a control heading, and 8.3 checks the
+  heading at 100% in landscape. The screenshots are in `migrely-work/walks/205/`, not `migrely-work/205/`.
 - [x] 4.2 The Insights paywall as a free user: the lead and the benefit row at 200% font, 360 dp, portrait and landscape.
-  Decide the benefit string by design D2 and record it in 1.3. Screenshots in `migrely-work/205/`. Restore settings.
+  Decide the benefit string by design D2 and record it in 1.3. Screenshots in `migrely-work/walks/205/`. Restore settings.
   Done: as a free user the lead reads the spec's text exactly. At 200% and 360 dp it wraps and is not clipped, in portrait and
   landscape (`paywall-insights-200-portrait-lead.png`, `paywall-insights-200-landscape-lead.png`). The onboarding paywall shows the
   same benefit row. Settings restored.
@@ -88,7 +94,9 @@ Ownership:
 
 ## 6. Review
 
-- [ ] 6.1 `code-reviewer` on the diff. Verify: a packet with findings or "none", and every finding closed.
+- [x] 6.1 `code-reviewer` on the diff. Verify: a packet with findings or "none", and every finding closed.
+  Done: two Minor findings, both in this record only (4.1's missing TalkBack and 100% landscape checks and its path; 1.1's
+  Verify step against 1.4's KDoc change). Closed in 9.1 by the notes under 1.1 and 4.1. No product code changed for them.
 
 ## 7. QA files (`qa-engineer`)
 
@@ -131,6 +139,6 @@ Ownership:
 
 ## 9. Close (`product-manager`)
 
-- [ ] 9.1 Record in BRD D174 which benefit string shipped (from 1.3), mark EC-INS-04…06 ✅, archive the change. Verify:
+- [x] 9.1 Record in BRD D174 which benefit string shipped (from 1.3), mark EC-INS-04…06 ✅, archive the change. Verify:
   `openspec archive fix-medication-ratings-copy -y` leaves `openspec/specs/trigger-insights/spec.md` with "How you rated your
   medications" and no "What helped", and `openspec validate --all --strict` exits 0.
