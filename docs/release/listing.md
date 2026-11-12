@@ -43,7 +43,7 @@ FOR YOUR DOCTOR (PREMIUM)
 • A PDF migraine diary report: a summary, a calendar and every migraine and medication, ready to share with your doctor or neurologist
 
 UNDERSTAND YOUR PATTERNS (PREMIUM)
-• Triggers often logged with your migraines, the days and hours they come, the days around your period for menstrual migraine, what helped, and the last 12 months
+• Triggers often logged with your migraines, the days and hours they come, the days around your period for menstrual migraine, how you rated your medications, and the last 12 months
 
 MIGRELY PREMIUM
 • Premium adds the doctor report and Insights: yearly, with a 7-day free trial for new subscribers, monthly, or a single lifetime payment, all through Google Play
@@ -64,7 +64,7 @@ SAFETY FIRST
 Migrely is a diary. It is not a medical device and does not diagnose, treat, cure or prevent any medical condition. Talk to a doctor or other healthcare professional about your headaches, and before you start, stop or change a medication. If a headache comes with any of the warning signs, call your local emergency number.
 ```
 
-The text is 2,577 characters. Paste it as it is: each paragraph is one line, because Play keeps line breaks.
+The text is 2,596 characters. Paste it as it is: each paragraph is one line, because Play keeps line breaks.
 
 ## Graphics
 
