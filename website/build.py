@@ -56,20 +56,20 @@ DIARY_REVIEWED = ('2026-11-04', '4 November 2026')
 DIARY_PDFS = {'a4': 'migrely-headache-diary-a4.pdf', 'letter': 'migrely-headache-diary-letter.pdf'}
 # The home page's promo video and its poster in /assets/video/ (BRD D146). /assets/ is cached for a year, so a new cut
 # gets a new name (EC-WEB-20). It is made in marketing/video/promo-v3, outside the repo, from real app screens only.
-PROMO_VIDEO = ('migrely-promo-v3.mp4', 'migrely-promo-v3-poster.jpg')
-PROMO_UPLOADED = '2026-10-30T12:00:00+05:00'
-PROMO_SIZE = '2 MB'
+PROMO_VIDEO = ('migrely-promo-v3-2.mp4', 'migrely-promo-v3-2-poster.jpg')
+PROMO_UPLOADED = '2026-11-12T12:00:00+05:00'
+PROMO_SIZE = '2.6 MB'
 # What each scene shows and says, for people who can't see the video, which has music and no speech (WCAG 1.2.1).
 PROMO_SCENES = [
     '"Log a migraine in 3 taps. Even in a dark room. We\'ll keep the time while you rest." The taps are "Migraine '
     'started", a severity, then "Migraine ended".',
     '"Your month as a calm sky. Every day is drawn from what you logged." The month on the Home screen.',
     '"For your doctor, Premium. A report your doctor can read. A PDF with your summary, calendar, every migraine and '
-    'medication." "Create report", then the PDF\'s pages.',
+    'medication." "Create report", then the PDF\'s pages. "Sample data, not a real patient."',
     '"Premium Insights. Know what comes with your migraines. Triggers often logged with your migraines, when they '
-    'come, and what helped." Insights in the app.',
-    '"Private by design. No internet permission. Android lists every app\'s permissions. Migrely\'s has no internet '
-    'permission. No account. No ads. Check it yourself: migrely.health/privacy-check." Android\'s list of Migrely\'s '
+    'come, and how you rated your medications." Insights in the app. "Sample data, not a real patient."',
+    '"Private by design. No internet permission. Android lists every app\'s permissions. Internet is not on Migrely\'s '
+    'list. No account. No ads. Check it yourself: migrely.health/privacy-check." Android\'s list of Migrely\'s '
     'permissions.',
     '"Migrely. A calm migraine diary. Free on Google Play. migrely.health"',
 ]
@@ -393,8 +393,8 @@ def home():
     shots = ''.join(
         f'<figure><img src="/assets/img/{name}.webp" alt="{esc(alt)}" width="360" height="640" loading="lazy"></figure>'
         for name, alt in [('01-log', 'Attack mode: Rest now, we will keep time'),
-                          ('02-sky', 'Your month as a calm night sky'),
-                          ('03-report', 'A clear report for your doctor'),
+                          ('02-sky-v2', 'Your month as a calm night sky'),
+                          ('03-report-v2', 'A clear report for your doctor'),
                           ('04-insights', 'Triggers and patterns in your migraines')])
     features = ''.join(f'<article><h3>{esc(t)}</h3><p>{esc(d)}</p></article>' for t, d in FEATURES)
     scenes = ''.join(f'<li>{esc(scene)}</li>' for scene in PROMO_SCENES)
@@ -1396,8 +1396,10 @@ def not_found():
 def images():
     img = ASSETS / 'img'
     img.mkdir(parents=True, exist_ok=True)
-    for name in ['01-log', '02-sky', '03-report', '04-insights']:
-        src = STORE_ART / 'screenshots' / f'{name}.png'
+    # /assets/ is immutable for a year, so a changed picture gets a new name (EC-WEB-20): 02-sky-v2 and 03-report-v2 are the store
+    # screenshot 02-sky without the green "fewer migraine days" line (#209). Bump the suffix for the next change.
+    for name in ['01-log', '02-sky-v2', '03-report-v2', '04-insights']:
+        src = STORE_ART / 'screenshots' / f'{name.removesuffix("-v2")}.png'
         tmp = img / f'{name}.png'
         Image.open(src).convert('RGB').resize((720, 1280), Image.LANCZOS).save(tmp)
         subprocess.run(['cwebp', '-quiet', '-q', '80', str(tmp), '-o', str(img / f'{name}.webp')], check=True)
