@@ -91,8 +91,8 @@
     </plurals>
     <string name="insights_cycle_text">%1$s %2$s</string>
     <string name="insights_cycle_window">The days around your period run from 2 days before it starts through its third day.</string>
-    <!-- What helped (BRD INS-F4, D92). -->
-    <string name="insights_medications_title">What helped</string>
+    <!-- How you rated your medications (BRD INS-F4, D92, D174). -->
+    <string name="insights_medications_title">How you rated your medications</string>
     <plurals name="insights_helped">
         <item quantity="one">Helped a lot or completely: %1$d of %2$d answer (%3$s)</item>
         <item quantity="other">Helped a lot or completely: %1$d of %2$d answers (%3$s)</item>

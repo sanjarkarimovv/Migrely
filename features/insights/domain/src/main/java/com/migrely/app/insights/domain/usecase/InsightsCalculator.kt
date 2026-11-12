@@ -161,8 +161,9 @@ class InsightsCalculator(private val dates: InsightsDatesDomainModel, private va
     }
 
     /**
-     * Each attack medication taken in the period, the most taken first, with how often it helped "A lot" or
-     * "Completely" once it has 3 answers (BRD D92). Preventive medications are left out.
+     * Each attack medication taken in the period, the most taken first, with how many of its effect
+     * answers were "A lot" or "Completely" once it has 3 answers (BRD D92, D174). Preventive
+     * medications are left out.
      */
     fun medications(records: InsightsRecordsDomainModel): List<InsightsMedicationDomainModel> =
         records.intakes

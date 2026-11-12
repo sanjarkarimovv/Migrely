@@ -452,7 +452,7 @@ class InsightsCalculatorTest {
     }
 
     @Test
-    fun `Attack medications in the period show what helped once they have three answers`() {
+    fun `Attack medications in the period show how they were rated once they have three answers`() {
         val ibuprofen = listOf(A_LOT, A_LOT, A_LOT, A_LOT, COMPLETELY, COMPLETELY, COMPLETELY) +
             listOf(InsightsEffectDomainModel.ALittle, NOT_AT_ALL, null)
         val intakes = ibuprofen.mapIndexed { day, effect ->
