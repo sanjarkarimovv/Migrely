@@ -92,23 +92,42 @@ Ownership:
 
 ## 7. QA files (`qa-engineer`)
 
-- [ ] 7.1 `.maestro/subscription/paywall-and-purchase.yaml:62`: assert the new lead (escape the final `.`).
-- [ ] 7.2 `qa/device_scenarios.sh:2013` `# Covers: trigger-insights › How you rated your medications › Ibuprofen`, and line 2019's
+- [x] 7.1 `.maestro/subscription/paywall-and-purchase.yaml:62`: assert the new lead (escape the final `.`).
+  Done (qa-engineer, 2026-11-12): the new lead, then the benefit row, each followed by an `assertNotVisible` of
+  `(?i).*(what\s+helped|shows\s+your\s+triggers).*`; Covers "The Insights lead" and "The benefit row". 2 of 2 pass on
+  8dd0c04c; fails on e788d68e. Record: `docs/qa/fix-medication-ratings-copy.md`.
+- [x] 7.2 `qa/device_scenarios.sh:2013` `# Covers: trigger-insights › How you rated your medications › Ibuprofen`, and line 2019's
   echo; `qa/seed_backup.py:724` the section label. Verify: `git grep -n -i 'what helped' -- .maestro qa` prints nothing.
+  Done: the grep exits 1. Also `qa/seed_expect.py:11-12` (the phrase split by a line break, which `git grep` misses); the
+  heading is now an expected screen text, with a case-insensitive guard against the old one; new on-demand scenario
+  `insights_upgrade` (Covers "Upgrade or restore"). `e2e_coverage.py` exit 0; `seed_backup.py --self-test` ok.
 
 ## 8. Acceptance (`qa-engineer`, scope: this diff only)
 
-- [ ] 8.1 Strings: `git grep -n -i 'what helped' -- features app core` and `git grep -n -i 'shows your triggers' -- features app
+- [x] 8.1 Strings: `git grep -n -i 'what helped' -- features app core` and `git grep -n -i 'shows your triggers' -- features app
   core` each exit 1. Negative control: the same greps on `origin/develop` (e788d68e) print 5 and 1 lines.
-- [ ] 8.2 Unchanged on purpose: `git diff origin/develop -- features | grep -E '^[-+].*(insights_helped|insights_needs_answers|Did it help)'`
+  Done: exit 1 and 1 on 8dd0c04c; 5 and 1 lines on e788d68e. The APK scan (resources and dex, any case) finds 0 in the
+  candidate debug and R8 APKs and 3 in the base APK.
+- [x] 8.2 Unchanged on purpose: `git diff origin/develop -- features | grep -E '^[-+].*(insights_helped|insights_needs_answers|Did it help)'`
   prints nothing, and the Ibuprofen line reads "Helped a lot or completely: 7 of 9 answers (78%)" on the device.
-- [ ] 8.3 Insights heading "How you rated your medications" on device, at 100% and 200% font, 360 dp, portrait and landscape,
+  Done: the grep prints nothing (exit 1); on emulator-5580 the insights scenario sees the Ibuprofen line and "Needs 3
+  answers (has 2)" for Sumatriptan.
+- [x] 8.3 Insights heading "How you rated your medications" on device, at 100% and 200% font, 360 dp, portrait and landscape,
   not clipped; TalkBack reads it as a heading and reads each medication with its answers line.
-- [ ] 8.4 Insights paywall (free user): the lead reads exactly the spec's "The Insights lead"; the benefit row reads the string
+  Done: 1 line at 100% (portrait and landscape) and at 200% landscape, 2 lines at 200% portrait; none clipped or cut with
+  "…". TalkBack 16 (100% and 200%): "How you rated your medications. Heading"; right swipes give "Ibuprofen. Helped a lot
+  or completely: 7 of 9 answers (78%)", "Sumatriptan. Needs 3 answers (has 2)", then the next heading. This is the real
+  TalkBack check that task 4.1 did not run.
+- [x] 8.4 Insights paywall (free user): the lead reads exactly the spec's "The Insights lead"; the benefit row reads the string
   recorded in 1.3; the Maestro paywall flow passes on this SHA and fails on e788d68e (negative control).
-- [ ] 8.5 Upgrade: install e788d68e, seed rated intakes, update to this SHA without clearing data; the same counts and percentages
+  Done: 2 of 2 pass on 8dd0c04c; on e788d68e it fails at the new lead, the old flow passes, and each guard fails alone.
+- [x] 8.5 Upgrade: install e788d68e, seed rated intakes, update to this SHA without clearing data; the same counts and percentages
   show under the new heading.
-- [ ] 8.6 Go/No-Go packet, saying what these checks do not prove (other surfaces: store, site, video, posts are follow-ups).
+  Done: `QA_OLD_APK=<e788d68e> qa/device_scenarios.sh insights_upgrade`, 2 of 2 pass: the same 23 texts before and after,
+  with "What helped" before and "How you rated your medications" after, data and Premium kept. Control: e788d68e over
+  itself fails after the update.
+- [x] 8.6 Go/No-Go packet, saying what these checks do not prove (other surfaces: store, site, video, posts are follow-ups).
+  Done: `docs/qa/fix-medication-ratings-copy.md`, PASS, with what the checks do not prove.
 
 ## 9. Close (`product-manager`)
 
