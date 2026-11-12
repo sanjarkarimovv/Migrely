@@ -21,4 +21,4 @@ what causes migraines or which medication works (BRD INS-F6, D174).
 
 #### Scenario: No claim on any paywall
 - **WHEN** any paywall shows, for a free user, offline or online
-- **THEN** no text on it says "what helped" or "shows your triggers" (BRD EC-INS-06)
+- **THEN** no text on it says "what helped" or "shows your triggers", in any letter case (BRD EC-INS-06)

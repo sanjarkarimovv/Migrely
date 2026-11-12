@@ -1,6 +1,7 @@
 # Design
 
-BRD D174, issue #205. Copy verdicts: ux-designer, then medical-reviewer, 2026-11-12. Not reopened here.
+BRD D174, issue #205. Copy verdicts: ux-designer, then medical-reviewer, 2026-11-12. These are copy and source checks, not clinical sign-off: T31
+is open, and nothing says "medically reviewed".
 
 ## Context
 
@@ -15,7 +16,7 @@ app cannot answer: which medicine works. The numbers under it are the person's o
 | String | Old | New | Verdict |
 |---|---|---|---|
 | `insights_medications_title` | "What helped" | "How you rated your medications" | PASS |
-| `subscription_lead_insights` | "Premium shows your triggers, when migraines come, and what helped." | "Premium shows triggers often logged with your migraines, when they come, and how you rated your medications." | old FAIL (causation, INS-F6); new matches the benefit line and the site |
+| `subscription_lead_insights` | "Premium shows your triggers, when migraines come, and what helped." | "Premium shows triggers often logged with your migraines, when they come, and how you rated your medications." | PASS; old FAIL (causation, INS-F6); new matches the benefit line and the site |
 | `subscription_benefit_timing` | "When migraines come, and what helped" | "When migraines come, and how you rated your medications" | PASS ("your" matches the heading) |
 | fallback for the row above | | "When migraines come, and how you rated medications" | PASS |
 
@@ -27,6 +28,9 @@ The benefit row is an icon and a `Text` with no `maxLines`, so it wraps rather t
 font and 360 dp, the row is clipped, ends in "…", or pushes the close button or the plan list out of reach. Wrapping to more lines
 alone is not a reason. `android-engineer` records which string shipped, with the screenshot path, in tasks 1.3 and BRD D174 via
 `product-manager`.
+
+Outcome (2026-11-12): the full row shipped. At 200% font and 360 dp it wraps to 4 lines in portrait and 2 in landscape, with no
+clipping and no "…", so D2 did not trigger and the fallback is unused.
 
 ### D3. What stays
 

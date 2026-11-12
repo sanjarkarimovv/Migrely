@@ -12,7 +12,7 @@ Ownership:
 
 ## 0. Copy (before any code)
 
-- [x] 0.1 `ux-designer`, then `medical-reviewer`, give the copy. Record (2026-11-12): heading PASS; Insights lead: old FAIL
+- [x] 0.1 `ux-designer`, then `medical-reviewer`, give the copy. Record (2026-11-12): heading PASS; Insights lead: PASS, old FAIL
   (causation), new matches the benefit line and the site; benefit row PASS; fallback PASS (BRD D174 (1)–(3)).
 - [x] 0.2 `product-manager`: BRD INS-F4, §7.1, REM-F2, D174, EC-INS-04…06, §13 row 43; this change; the `medication-effect`
   Purpose. Verify: `openspec validate fix-medication-ratings-copy --strict` exits 0.

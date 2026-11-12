@@ -17,7 +17,7 @@ answers it SHALL say how many it has. It SHALL never say which medication works 
 #### Scenario: The heading
 - **WHEN** Insights shows the medication section
 - **THEN** its heading reads "How you rated your medications"
-- **AND** no text on the Insights screen says "What helped"
+- **AND** no text on the Insights screen says "what helped", in any letter case
 
 #### Scenario: Fewer than three answers
 - **WHEN** Sumatriptan has 2 answers to "Did it help?" in the period
