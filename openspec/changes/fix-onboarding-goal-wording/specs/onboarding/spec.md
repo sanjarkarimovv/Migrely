@@ -28,7 +28,7 @@ No goal SHALL suggest taking less medicine or promise a result. The medicine goa
 #### Scenario: TalkBack and keyboard
 - **WHEN** a TalkBack, keyboard or Switch Access user moves through step 1
 - **THEN** the third choice is announced as "Keep track of my medication days" and is actionable
-- **AND** the order stays: title, the three choices, disclaimer, "Restore from a backup file", "Skip" (BRD EC-ONB-03)
+- **AND** the order stays: step counter, "Skip", title, the three choices, disclaimer, "Restore from a backup file" (BRD EC-ONB-03)
 
 #### Scenario: Skip and Back on step 1
 - **WHEN** the user taps "Skip" on step 1
