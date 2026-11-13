@@ -32,17 +32,21 @@ Ownership:
 
 ## 2. Domain, presentation and data (`android-engineer`)
 
-- [ ] 2.1 None. The stored value `fewer_painkillers`, `GoalDataModel`, `OnboardingGoalDomainModel`,
+- [x] 2.1 None. The stored value `fewer_painkillers`, `GoalDataModel`, `OnboardingGoalDomainModel`,
   `OnboardingGoalPresentationModel` and their mappers do not change (design D2). Verify:
   `git diff --stat origin/develop -- '*/domain/*' '*/presentation/*' '*/data/*' datasource '*.kts' '*.toml' app/src/main`
   prints nothing.
+  Record (eng-192, 2026-11-13): the command printed nothing. No test, preview or Maestro flow asserts the old label
+  (`git grep -n -i 'take fewer\|fewer painkillers'` outside docs and openspec: only the string itself and two unrelated
+  website sentences), so no test changed.
 
 ## 3. UI string (`android-engineer`)
 
-- [ ] 3.1 `features/onboarding/ui/src/main/res/values/strings.xml`: `onboarding_goal_painkillers` = "Keep track of my medication
+- [x] 3.1 `features/onboarding/ui/src/main/res/values/strings.xml`: `onboarding_goal_painkillers` = "Keep track of my medication
   days". The resource id stays. Verify:
   - `grep -c '>Keep track of my medication days<' features/onboarding/ui/src/main/res/values/strings.xml` is 1;
   - `git diff origin/develop -- features/onboarding/ui/src/main/res/values/strings.xml | grep -c '^[-+] '` is 2.
+  Record (eng-192, 2026-11-13): 1 and 2. Only `values/` exists, so there are no translations to update.
 
 ## 4. Gate (`android-engineer`)
 
