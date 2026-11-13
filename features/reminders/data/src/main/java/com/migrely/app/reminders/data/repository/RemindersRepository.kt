@@ -7,6 +7,7 @@ import com.migrely.app.datasource.exception.DataException
 import com.migrely.app.datasource.notification.datasource.NotificationDataSource
 import com.migrely.app.datasource.reminder.datasource.ReminderSettingsDataSource
 import com.migrely.app.datasource.schedule.datasource.ReminderScheduleDataSource
+import com.migrely.app.datasource.screen.datasource.AppOnScreenDataSource
 import com.migrely.app.reminders.data.mapper.ReminderSettingsDomainMapper
 import com.migrely.app.reminders.data.mapper.ReminderZoneDomainMapper
 import com.migrely.app.reminders.domain.model.CurrentTimeDomainModel
@@ -15,10 +16,12 @@ import com.migrely.app.reminders.domain.model.ReminderSettingsResultDomainModel
 import com.migrely.app.reminders.domain.model.TodayEntriesResultDomainModel
 import com.migrely.app.reminders.domain.repository.CancelDailyReminderRepository
 import com.migrely.app.reminders.domain.repository.DismissDailyReminderRepository
+import com.migrely.app.reminders.domain.repository.GetAppOnScreenRepository
 import com.migrely.app.reminders.domain.repository.GetCurrentTimeRepository
 import com.migrely.app.reminders.domain.repository.GetNotificationsAllowedRepository
 import com.migrely.app.reminders.domain.repository.GetReminderSettingsRepository
 import com.migrely.app.reminders.domain.repository.GetTodayEntriesRepository
+import com.migrely.app.reminders.domain.repository.PlanDailyReminderIfNoneRepository
 import com.migrely.app.reminders.domain.repository.ScheduleDailyReminderRepository
 import com.migrely.app.reminders.domain.repository.SetDailyReminderRepository
 import com.migrely.app.reminders.domain.repository.SetDailyShownRepository
@@ -44,6 +47,7 @@ class RemindersRepository(
     private val attackDataSource: AttackDataSource,
     private val dayMarkDataSource: DayMarkDataSource,
     private val clockDataSource: ClockDataSource,
+    private val appOnScreenDataSource: AppOnScreenDataSource,
     private val reminderSettingsDomainMapper: ReminderSettingsDomainMapper,
     private val reminderZoneDomainMapper: ReminderZoneDomainMapper
 ) : GetCurrentTimeRepository,
@@ -54,6 +58,8 @@ class RemindersRepository(
     SetPermissionAskedRepository,
     SetDailyShownRepository,
     ScheduleDailyReminderRepository,
+    PlanDailyReminderIfNoneRepository,
+    GetAppOnScreenRepository,
     CancelDailyReminderRepository,
     ShowDailyReminderRepository,
     ShowAttackLoggedTodayRepository,
@@ -93,6 +99,11 @@ class RemindersRepository(
 
     override fun scheduleDailyReminder(at: Instant, date: LocalDate) =
         reminderScheduleDataSource.scheduleDaily(at, date)
+
+    override fun planDailyReminderIfNone(at: Instant, date: LocalDate) =
+        reminderScheduleDataSource.scheduleDailyIfNone(at, date)
+
+    override fun appOnScreen(): Boolean = appOnScreenDataSource.isOnScreen()
 
     override fun cancelDailyReminder() = reminderScheduleDataSource.cancelDaily()
 

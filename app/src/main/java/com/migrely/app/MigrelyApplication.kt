@@ -8,6 +8,7 @@ import com.migrely.app.activity.CurrentActivityHolder
 import com.migrely.app.locale.FormattingLocales
 import com.migrely.app.premium.PurchaseUpdatesWatcher
 import com.migrely.app.reminder.ReminderEntryPoint
+import com.migrely.app.reminders.domain.model.RescheduleRemindersRequestDomainModel
 import com.migrely.app.start.StartEntryPoint
 import com.migrely.app.storage.CodeCacheMark
 import com.migrely.app.storage.ContextCodeCacheFolder
@@ -43,12 +44,13 @@ class MigrelyApplication : Application() {
         registerActivityLifecycleCallbacks(currentActivityHolder)
         // A payment completed while the app runs unlocks Premium at once (review I1).
         purchaseUpdatesWatcher.start()
-        // Keeps the daily reminder planned whatever happened while the app was not running: a restored backup brings
-        // the settings back but not WorkManager's own records (BRD D66). Planning again is safe to repeat.
+        // The reminders are planned here, at every process start, whatever starts it: a restored backup or a lost
+        // WorkManager store brings the settings back but no planned run (BRD D66, D175, EC-REM-22). A daily run already
+        // planned is kept, even a late one, so the start never loses today's reminder (D176, EC-REM-24).
         thread {
             EntryPointAccessors.fromApplication(this, ReminderEntryPoint::class.java)
                 .rescheduleRemindersUseCase()
-                .executeInBackground(Unit)
+                .executeInBackground(RescheduleRemindersRequestDomainModel.AppStart)
             val start = EntryPointAccessors.fromApplication(this, StartEntryPoint::class.java)
             // A report cut off by the app closing leaves a partial file; it goes now (BRD EC-REP-03).
             start.cleanUpReportsUseCase().executeInBackground(Unit)

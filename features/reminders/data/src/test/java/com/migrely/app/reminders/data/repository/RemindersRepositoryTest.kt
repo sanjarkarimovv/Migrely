@@ -11,6 +11,7 @@ import com.migrely.app.datasource.notification.datasource.NotificationDataSource
 import com.migrely.app.datasource.reminder.datasource.ReminderSettingsDataSource
 import com.migrely.app.datasource.reminder.model.ReminderSettingsDataModel
 import com.migrely.app.datasource.schedule.datasource.ReminderScheduleDataSource
+import com.migrely.app.datasource.screen.datasource.AppOnScreenDataSource
 import com.migrely.app.reminders.data.mapper.ReminderSettingsDomainMapper
 import com.migrely.app.reminders.data.mapper.ReminderZoneDomainMapper
 import com.migrely.app.reminders.domain.model.ReminderAttackDomainModel
@@ -41,6 +42,7 @@ class RemindersRepositoryTest {
     private val attackDataSource: AttackDataSource = mock()
     private val dayMarkDataSource: DayMarkDataSource = mock()
     private val clockDataSource: ClockDataSource = mock()
+    private val appOnScreenDataSource: AppOnScreenDataSource = mock()
     private val classUnderTest = RemindersRepository(
         reminderSettingsDataSource,
         reminderScheduleDataSource,
@@ -48,6 +50,7 @@ class RemindersRepositoryTest {
         attackDataSource,
         dayMarkDataSource,
         clockDataSource,
+        appOnScreenDataSource,
         ReminderSettingsDomainMapper(),
         ReminderZoneDomainMapper()
     )
@@ -124,5 +127,21 @@ class RemindersRepositoryTest {
 
         verify(reminderScheduleDataSource).scheduleDaily(TO, DATE)
         verify(notificationDataSource).cancelDailyReminder()
+    }
+
+    @Test
+    fun `When planning the daily reminder only if none then the schedule datasource keeps one`() {
+        classUnderTest.planDailyReminderIfNone(TO, DATE)
+
+        verify(reminderScheduleDataSource).scheduleDailyIfNone(TO, DATE)
+    }
+
+    @Test
+    fun `When asking whether Migrely is on screen then the screen datasource answers`() {
+        given(appOnScreenDataSource.isOnScreen()).willReturn(true)
+        assertEquals(true, classUnderTest.appOnScreen())
+
+        given(appOnScreenDataSource.isOnScreen()).willReturn(false)
+        assertEquals(false, classUnderTest.appOnScreen())
     }
 }

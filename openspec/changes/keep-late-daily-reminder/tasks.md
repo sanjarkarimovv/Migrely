@@ -28,11 +28,14 @@ No medical-reviewer: no health sentence changes. No new copy.
 Write each test first. For every test marked **red**, show it failing with its production change reverted (minimal stubs to
 compile are fine), then passing. Record both runs in the handoff.
 
-- [ ] 2.1 Domain, `DailyReminderTime.due(now, time, handledOn)` per design D2. **Red** tests in `DailyReminderTimeTest`:
+- [x] 2.1 Domain, `DailyReminderTime.due(now, time, handledOn)` per design D2. **Red** tests in `DailyReminderTimeTest`:
   before the time → today at the time; after the time, not handled → now, date today; after the time, handled → tomorrow;
   exactly at the time → now for today if not handled; DST gap; `handledOn` in the future (clock moved back) → today's
   rule. Verify: `./gradlew :features:reminders:domain:test --tests '*DailyReminderTimeTest'`.
-- [ ] 2.2 Domain, two repository interfaces: plan the daily reminder only if none is planned; is Migrely on screen.
+  Done (android-engineer): six `due()` tests. Red with `due()` returning `next()` (74095b8d's start target): 4 of 6
+  fail (after the time not handled, exactly at the time, DST, clock moved back); the 2 that pass are unchanged
+  behaviour (before the time, handled → tomorrow). Green: `DailyReminderTimeTest` 12/12.
+- [x] 2.2 Domain, two repository interfaces: plan the daily reminder only if none is planned; is Migrely on screen.
   `RescheduleRemindersUseCase` takes a request (app start or clock change). App start: `due()` through the plan-if-none
   repository. Clock change: `due()` through `ScheduleDailyReminderRepository` (REPLACE). Off: cancel, both. Visit planning
   unchanged. **Red** tests in `RescheduleRemindersUseCaseTest`: app start after the time with today not handled plans
@@ -40,28 +43,46 @@ compile are fine), then passing. Record both runs in the handoff.
   REPLACE); clock change after the time, not handled, plans now through REPLACE; handled → tomorrow; off → cancel; the visit
   is planned exactly as before for both requests. Verify: `./gradlew :features:reminders:domain:test --tests
   '*RescheduleRemindersUseCaseTest'`.
-- [ ] 2.3 Domain, `RunDailyReminderUseCase` (design D3): after the existing checks, when on screen plan the same date again
+  Done: `PlanDailyReminderIfNoneRepository`, `GetAppOnScreenRepository`, `RescheduleRemindersRequestDomainModel {
+  AppStart, ClockChange }`. Red with the use case unchanged but taking the request: 4 of 11 fail (app start now /
+  today's time through plan-if-none, clock change now, shown → tomorrow); off and visit tests pass on both. Green:
+  11/11.
+- [x] 2.3 Domain, `RunDailyReminderUseCase` (design D3): after the existing checks, when on screen plan the same date again
   at now + 30 minutes through `ScheduleDailyReminderRepository` (REPLACE), never call `setDailyShown`, and return `Skipped`.
   **Red** tests: on screen → no show, no `setDailyShown`, the last daily plan is (now + 30 min, today) with REPLACE; a
   postponed run (request = today), off screen, not answered → shows once and marks today; a postponed run, answered → no
   show; a postponed run, still on screen → postponed again; a postponed run after midnight → no show, next day planned;
   already shown → no show. Existing tests stay green. Verify: `./gradlew :features:reminders:domain:test --tests
   '*RunDailyReminderUseCaseTest'`.
-- [ ] 2.4 Domain KDoc: `RescheduleRemindersUseCase`, `DailyReminderTime` and `RunDailyReminderUseCase` name D176.
+  Done: postpone `now + 30 min` for the same date through `ScheduleDailyReminderRepository`, no `setDailyShown`,
+  `Skipped`. Red with the repository unused: 2 of 6 new fail (on screen; still on screen → again); the other 4 encode
+  rules 74095b8d already had. Green: `RunDailyReminderUseCaseTest` 14/14 (8 existing unchanged).
+- [x] 2.4 Domain KDoc: `RescheduleRemindersUseCase`, `DailyReminderTime` and `RunDailyReminderUseCase` name D176.
   `dailyLastShownOn` keeps its meaning ("shown"); its KDoc does not change. Verify: `git grep -n 'D176'
   features/reminders/domain/src/main` lists the three files, and `git diff origin/develop --
   features/reminders/domain/src/main/java/com/migrely/app/reminders/domain/model/ReminderSettingsDomainModel.kt` is empty.
-- [ ] 2.5 Data, `RemindersRepository` implements both interfaces. Tests in `RemindersRepositoryTest` that each delegates to
+  Done: D176 in the KDoc of the three files; `git diff origin/develop -- …/ReminderSettingsDomainModel.kt` prints 0 lines.
+- [x] 2.5 Data, `RemindersRepository` implements both interfaces. Tests in `RemindersRepositoryTest` that each delegates to
   its data source. Verify: `./gradlew :features:reminders:data:test --tests '*RemindersRepositoryTest'`.
-- [ ] 2.6 Data source: `ReminderScheduleDataSource.scheduleDailyIfNone(at, date)` with `ExistingWorkPolicy.KEEP` on the same
+  Done: `RemindersRepository` implements both; 2 new delegation tests. `:features:reminders:data:test`
+  `RemindersRepositoryTest` 7/7.
+- [x] 2.6 Data source: `ReminderScheduleDataSource.scheduleDailyIfNone(at, date)` with `ExistingWorkPolicy.KEEP` on the same
   unique name "daily" and the same input data; `scheduleDaily` stays REPLACE. A data source for "Migrely is on screen" in
   `app`, using `ActivityManager.getMyMemoryState` and `IMPORTANCE_FOREGROUND` (design D3), wired through `datasource/source`.
   **Red** test in `ReminderScheduleDataSourceImplTest`: `scheduleDailyIfNone` enqueues "daily" with KEEP; `scheduleDaily`
   with REPLACE. Verify: `./gradlew :app:testDebugUnitTest --tests '*ReminderScheduleDataSourceImplTest'`.
-- [ ] 2.7 Wiring: `MigrelyApplication.onCreate` passes "app start", `TimeChangeReceiver` passes "clock change";
+  Done: `scheduleDailyIfNone` (KEEP, same name and input); `AppOnScreenDataSource` in `datasource/source`,
+  `AppOnScreenDataSourceImpl` in `app`. Red with `scheduleDailyIfNone` delegating to `scheduleDaily`:
+  `ReminderScheduleDataSourceImplTest` 1 of 4 fails (KEEP), and the new Robolectric `DailyWorkTest` (real WorkManager)
+  1 of 3 fails (a waiting run is kept). Green: 4/4 and 3/3. `AppOnScreenDataSourceImplTest` (Robolectric) 2/2;
+  negative control (`<= IMPORTANCE_FOREGROUND_SERVICE`): 1 of 2 fails.
+- [x] 2.7 Wiring: `MigrelyApplication.onCreate` passes "app start", `TimeChangeReceiver` passes "clock change";
   `RemindersModule` and `ReminderEntryPoint` provide the new pieces. The comment above the start-up call names D175, D176
   and EC-REM-22: the plan stays here, at every process start, and keeps a planned run. Verify: `git grep -n 'D176'
   app/src/main/java/com/migrely/app/MigrelyApplication.kt` prints 1 line.
+  Done: `MigrelyApplication` passes `AppStart`, `TimeChangeReceiver` passes `ClockChange`, `RemindersModule` provides
+  the data source and the new arguments; `ReminderEntryPoint` needed nothing new (it hands out the use cases). `git
+  grep -n D176 app/src/main/java/com/migrely/app/MigrelyApplication.kt` prints 1 line.
 - [ ] 2.8 Gate: `nice -n 19 ./gradlew --max-workers=2 assembleDebug test ktlintCheck detekt lint
   :app:checkReleasePermissions`. Verify: exit 0, the task count, and the same 6 release permissions as 1.2.1:
   `POST_NOTIFICATIONS`, `ACCESS_NETWORK_STATE`, `BILLING`, `WAKE_LOCK`, `RECEIVE_BOOT_COMPLETED`,
