@@ -11,7 +11,11 @@ import android.app.ActivityManager.RunningAppProcessInfo
  */
 class AppOnScreenDataSourceImpl : AppOnScreenDataSource {
     override fun isOnScreen(): Boolean {
-        val state = RunningAppProcessInfo()
+        // A new RunningAppProcessInfo says foreground; start from gone, so a state the system leaves unfilled lets the
+        // reminder post rather than postpone it until midnight (code review, cr-213).
+        val state = RunningAppProcessInfo().apply {
+            importance = RunningAppProcessInfo.IMPORTANCE_GONE
+        }
         ActivityManager.getMyMemoryState(state)
         return state.importance == RunningAppProcessInfo.IMPORTANCE_FOREGROUND
     }

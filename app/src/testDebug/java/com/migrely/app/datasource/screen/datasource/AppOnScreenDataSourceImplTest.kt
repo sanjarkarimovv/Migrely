@@ -54,4 +54,14 @@ class AppOnScreenDataSourceImplTest {
             assertEquals("importance $it", false, classUnderTest.isOnScreen())
         }
     }
+
+    @Test
+    fun `Given the system leaves the memory state unfilled then not on screen, so it posts`() {
+        // No entry for this process: Robolectric, like a system that answers nothing, fills in no importance.
+        shadowOf(
+            RuntimeEnvironment.getApplication().getSystemService(ActivityManager::class.java)
+        ).setProcesses(emptyList())
+
+        assertEquals(false, classUnderTest.isOnScreen())
+    }
 }
