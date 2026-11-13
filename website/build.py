@@ -147,7 +147,8 @@ DIARY_SOURCES = [
 ]
 # Migrely's own official profiles, by name and URL (BRD D150). Only a profile that is Migrely's, public and presented as
 # Migrely belongs here; it becomes the Organization's sameAs, a footer link and a line in /llms.txt (EC-WEB-06).
-SOCIAL_PROFILES = [('YouTube', 'https://www.youtube.com/@migrely')]
+SOCIAL_PROFILES = [('YouTube', 'https://www.youtube.com/@migrely'),
+                   ('Instagram', 'https://www.instagram.com/migrely.health/')]
 # One object for the home page and /about/ (BRD D135).
 ORGANIZATION = {'@type': 'Organization', '@id': f'{BASE}/#organization', 'name': 'Migrely', 'url': f'{BASE}/',
                 'logo': f'{BASE}/assets/img/icon-512.png', 'email': SUPPORT,

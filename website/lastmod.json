@@ -1,46 +1,46 @@
 {
   "/": {
-    "lastmod": "2026-11-12",
-    "sha256": "49dbe4ad1746ab74a0ca60089493a3873bf22424d113f745667b4a6ecbedc8f4"
+    "lastmod": "2026-11-13",
+    "sha256": "80d26c5de8ead6d378d95d7cd64d13bd86b4550ddc0b8b71e42ab5fabc7a7784"
   },
   "/about/": {
-    "lastmod": "2026-11-09",
-    "sha256": "856b53aab41bdf6bf274756300aa61bae20b798e4f24cb895b40c2a2bcc9474b"
+    "lastmod": "2026-11-13",
+    "sha256": "625916b968dc668d39b24a2ea7bf019671a32a4217186c6ab249f746d0fa356e"
   },
   "/compare/": {
-    "lastmod": "2026-11-05",
-    "sha256": "0e61e43a727cefb36d74bfed95d5f51c722ad88fd4bc52b9b5137d11ddb5c86b"
+    "lastmod": "2026-11-13",
+    "sha256": "bb58ed73c49dc4df54d589d12cd785250f1385f83b3b9a32ce10a16e0c47bb77"
   },
   "/delete-data/": {
-    "lastmod": "2026-11-05",
-    "sha256": "931102e109ce414328e7265c7e8f88681bcf9841d52825785145ed4f08511779"
+    "lastmod": "2026-11-13",
+    "sha256": "79f3ae933faec6b7c970d60feecb6b34f9b551042e5461f226898211b7c902e5"
   },
   "/headache-diary/": {
-    "lastmod": "2026-11-12",
-    "sha256": "a614b7aec69490dcba35de975d338ba7234087286f60a4d4c6764b1ea32c03d8"
+    "lastmod": "2026-11-13",
+    "sha256": "223f705a47fbb7122615a3488852e4aa270f39bcec4941c7f984a94461d400ff"
   },
   "/medication-overuse-headache/": {
-    "lastmod": "2026-11-12",
-    "sha256": "b19be96a1159b4740e8f9377c478cc101fed09df2590acbf2db9e89697d4085d"
+    "lastmod": "2026-11-13",
+    "sha256": "c338c5fa56f27e66ca781f3d7084b67bb2afff17376d9fef74c265f0e7d687e0"
   },
   "/menstrual-migraine/": {
-    "lastmod": "2026-11-12",
-    "sha256": "de10fc5c76f79e8755a65fb2fc913fd81676b3290d542d9c71a1ad139e68dd6b"
+    "lastmod": "2026-11-13",
+    "sha256": "a384289eb29908e4ecec7d491a67ad4d0195b432cade4ecf8ba6ccbfe69c8483"
   },
   "/privacy-check/": {
-    "lastmod": "2026-11-09",
-    "sha256": "3f98f6f321a47f83cbf2e4a1537129c55aa8a6ebe7ab9c838ec0ea266778f6e9"
+    "lastmod": "2026-11-13",
+    "sha256": "dc2d58454890781a65eecc4410b1dd8f03a7e60f057f89e87f8f212f870e10f0"
   },
   "/privacy/": {
-    "lastmod": "2026-11-09",
-    "sha256": "d418aadace12cf63e86c3498b57b12f0c7d2272e22c9b06b53be62dea9a56ff5"
+    "lastmod": "2026-11-13",
+    "sha256": "241395ef4c4ae324bcca4102b02ef38689551b4ee2530e94b431e128b8915ac1"
   },
   "/support/": {
-    "lastmod": "2026-11-11",
-    "sha256": "de5d2ad9e41bef820cbfc26b1af25f00372d6145fe9b250e4670a0e39802ad22"
+    "lastmod": "2026-11-13",
+    "sha256": "f026fe8f21d08deafea2513716780203aabb1c55ab0388f7a00a137c8217a803"
   },
   "/va-migraine-log/": {
-    "lastmod": "2026-11-12",
-    "sha256": "325e49a9bf8ce766b9d961cb39e845b8614e75754705bd400ec07e982a1bbc08"
+    "lastmod": "2026-11-13",
+    "sha256": "87f8a1d9bb47a2b6597e76ada4d19f3e4c8878ac1102331a57940f658e9027cd"
   }
 }
