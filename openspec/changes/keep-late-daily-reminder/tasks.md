@@ -135,6 +135,13 @@ compile are fine), then passing. Record both runs in the handoff.
   dex matches a rebuild of the commit except one Hilt debug-info parameter name), `r8-909561bd.apk` 933fb5ddba46ddcd…
   (mapping beside it), `debug-74095b8d.apk` 1f5fb00d0797c27a…, `r8-74095b8d.apk` 5144c7297d7ee918… (built in a
   detached worktree at 74095b8d, since removed). Full SHA-256 in the handoff.
+- [x] 2.11 Review hardening (code-reviewer cr-213, optional): `AppOnScreenDataSourceImpl` starts from `IMPORTANCE_GONE`,
+  since a new `RunningAppProcessInfo` reports foreground; a memory state the system leaves unfilled now posts instead of
+  postponing until midnight. Commit 84d1f86f. New test in `AppOnScreenDataSourceImplTest` (no entry for this process, so
+  nothing is filled): red on 909561bd, 1 of 3 failing; green 3/3. Gate exit 0, 2058 tasks, 3047 unit test results, 0
+  failed; `:app:checkReleasePermissions :app:checkReleaseDebugComponents` exit 0, the same 6 permissions. APKs in
+  `migrely-work/walks/r2/eng213/apk/`, the 909561bd ones kept: `debug-84d1f86f.apk` c74881584e60fa4b…, `r8-84d1f86f.apk`
+  ca29a45384e5d5fb… (debug-signed R8, mapping beside it). No device walk (QA 4.3 probes cover it).
 
 ## 3. Review (`code-reviewer`)
 
