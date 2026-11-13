@@ -56,9 +56,9 @@ DIARY_REVIEWED = ('2026-11-04', '4 November 2026')
 DIARY_PDFS = {'a4': 'migrely-headache-diary-a4.pdf', 'letter': 'migrely-headache-diary-letter.pdf'}
 # The home page's promo video and its poster in /assets/video/ (BRD D146). /assets/ is cached for a year, so a new cut
 # gets a new name (EC-WEB-20). It is made in marketing/video/promo-v3, outside the repo, from real app screens only.
-PROMO_VIDEO = ('migrely-promo-v3-2.mp4', 'migrely-promo-v3-2-poster.jpg')
-PROMO_UPLOADED = '2026-11-12T12:00:00+05:00'
-PROMO_SIZE = '2.6 MB'
+PROMO_VIDEO = ('migrely-promo-v3-3.mp4', 'migrely-promo-v3-3-poster.jpg')
+PROMO_UPLOADED = '2026-11-13T12:00:00+05:00'
+PROMO_SIZE = '2.0 MB'
 # What each scene shows and says, for people who can't see the video, which has music and no speech (WCAG 1.2.1).
 PROMO_SCENES = [
     '"Log a migraine in 3 taps. Even in a dark room. We\'ll keep the time while you rest." The taps are "Migraine '
@@ -72,6 +72,7 @@ PROMO_SCENES = [
     'list. No account. No ads. Check it yourself: migrely.health/privacy-check." Android\'s list of Migrely\'s '
     'permissions.',
     '"Migrely. A calm migraine diary. Free on Google Play. migrely.health"',
+    'Music: Erik Satie, Gymnopédie No. 1, played by Robin Alciatore (Musopen), public domain.',
 ]
 DIARY_TITLE = 'Headache diary: what to write down, with a free printable template'
 ICHD_MOH = ('https://ichd-3.org/8-headache-attributed-to-a-substance-or-its-withdrawal/'
