@@ -83,12 +83,17 @@ compile are fine), then passing. Record both runs in the handoff.
   Done: `MigrelyApplication` passes `AppStart`, `TimeChangeReceiver` passes `ClockChange`, `RemindersModule` provides
   the data source and the new arguments; `ReminderEntryPoint` needed nothing new (it hands out the use cases). `git
   grep -n D176 app/src/main/java/com/migrely/app/MigrelyApplication.kt` prints 1 line.
-- [ ] 2.8 Gate: `nice -n 19 ./gradlew --max-workers=2 assembleDebug test ktlintCheck detekt lint
+- [x] 2.8 Gate: `nice -n 19 ./gradlew --max-workers=2 assembleDebug test ktlintCheck detekt lint
   :app:checkReleasePermissions`. Verify: exit 0, the task count, and the same 6 release permissions as 1.2.1:
   `POST_NOTIFICATIONS`, `ACCESS_NETWORK_STATE`, `BILLING`, `WAKE_LOCK`, `RECEIVE_BOOT_COMPLETED`,
   `DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`. `git diff --stat origin/develop -- '**/AndroidManifest.xml' '*.toml' '*.kts'`
   prints nothing.
-- [ ] 2.9 Device walk on emulator-5570 (API 36), debug build, with `migrely-work/walks/r2/bin/iter.sh`:
+  Done: `nice -n 19 ./gradlew --max-workers=2 assembleDebug test ktlintCheck detekt lint` exit 0, BUILD SUCCESSFUL,
+  2058 actionable tasks, 3046 unit test results, 0 failed (first run failed on ktlint function-signature in the new
+  `DailyWorkTest`, fixed). `:app:checkReleasePermissions :app:checkReleaseDebugComponents` exit 0; the merged release
+  manifest lists exactly the 6 permissions above, no INTERNET. `git diff --stat origin/develop --
+  '**/AndroidManifest.xml' '*.toml' '*.kts'` prints nothing.
+- [x] 2.9 Device walk on emulator-5570 (API 36), debug build, with `migrely-work/walks/r2/bin/iter.sh`:
   `late` mode 3 runs → posted=1 each (74095b8d gave 0/3); `kill` mode 3 runs → posted=1; `alive` 1 run → posted=1. Two new
   probes: (a) a `late` run from a copy of `iter.sh` without the second HOME key, so the app stays on screen when idle is
   unforced → posted=0, `daily_last_shown_date` is not that date (read with `adb shell run-as com.migrely.app`), and
@@ -98,8 +103,33 @@ compile are fine), then passing. Record both runs in the handoff.
   behind it (expect above 100), split screen with Migrely visible (expect 100), the notification shade pulled over
   Migrely (expect 100). Remove the log after. Verify: the RESULT lines and the probe outputs in the handoff. If any of (b)
   differs from the expectation, stop and send it to `product-manager`.
-- [ ] 2.10 Build for QA: the debug APK (for the r2 scripts) and the R8 release APK from this branch, plus 74095b8d's debug
+  Done (emulator-5570, API 36, debug 909561bd; scripts and runs in `migrely-work/walks/r2/eng213/`, copies of r2 with
+  uid u0a336, plus `waitpost.sh`/`full.sh` and `probe.sh`). Finding, accepted by team-lead: in `late` mode the 20:01
+  tap starts the process and WorkManager's GreedyScheduler runs the kept, overdue work about 1 s later, while Migrely
+  is opening, so D3 skips it and posts about 30 min later; the expected "posted=1" by 20:07 above is wrong
+  (product-manager amends). `late` 3/3 (L1214–L1216) posted=0 by 20:07, date not marked, daily job +29m59s; full
+  `late` runs that wait for the postponed run 3/3 posted=1 once (L1216 20:31:19, L1217 20:32:39, L1218 20:36:11), date
+  marked, next run tomorrow (74095b8d: 0/3, `walks/r2/results.txt` L23, L1130, L1201). `kill` 3/3 posted=1
+  (K1220–K1222, 20:00). `alive` 1/1 posted=1 (A1223). (a) `lateon` 1 run (O1219): posted=0 at 20:07 with the app on
+  screen, `daily_last_shown_date` 2026-12-18 (not the run date), job +29m59s; HOME, then posted=1 once at 20:33:21,
+  date marked. (b) Importance, temporary debug-only log in `Application.onCreate` and `AppOnScreenDataSourceImpl`,
+  removed before the APKs below (daily job forced with `cmd jobscheduler run -f -n androidx.work.systemjobscheduler`):
+  tap start onCreate 100; tap and job in one command: run 100, postponed; job then tap: onCreate 400, run 100,
+  postponed; job cold start in the background: onCreate 400, run 230, posted; screen off after the power key: 230,
+  posted; lock screen shown with Migrely behind (swipe lock enabled for the probe, then disabled and the emulator
+  rebooted): 230, posted; split screen with Settings, Migrely visible: 100, postponed; shade over Migrely: 100,
+  postponed; on home: 100, postponed; HOME then the postponed run: 230, posted once. All as design D3 expects. Two
+  voided runs are kept in `probes.txt`: the lock probe with the lock screen disabled (no keyguard), and a tap race
+  with a stale keyguard showing; both were redone. Not checked: API 26, real phones, real Doze windows; the postponed
+  run was waited for in real time, the probes forced it. Device restored: auto time on, deviceidle unforced, battery
+  reset, lock screen disabled, font 1.0, rotation auto; emulator shut down.
+- [x] 2.10 Build for QA: the debug APK (for the r2 scripts) and the R8 release APK from this branch, plus 74095b8d's debug
   and R8 APKs as the negative control. Record the four SHAs and paths in the handoff.
+  Done, in `migrely-work/walks/r2/eng213/apk/` (R8 = `assembleRelease` without `keystore.properties`, debug-signed
+  like QA's earlier R8 builds, cert SHA-256 7eae4e48…): `debug-909561bd.apk` eb6971885e0fcb3c… (the walked APK; its
+  dex matches a rebuild of the commit except one Hilt debug-info parameter name), `r8-909561bd.apk` 933fb5ddba46ddcd…
+  (mapping beside it), `debug-74095b8d.apk` 1f5fb00d0797c27a…, `r8-74095b8d.apk` 5144c7297d7ee918… (built in a
+  detached worktree at 74095b8d, since removed). Full SHA-256 in the handoff.
 
 ## 3. Review (`code-reviewer`)
 
