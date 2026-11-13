@@ -91,6 +91,12 @@ data source in `app` (for example `AppOnScreenDataSource`) behind a domain repos
 `GetAppOnScreenRepository.appOnScreen()`). The engineer proves both claims on device (task 2.9); if either is false, stop and
 send it to the product-manager.
 
+Measured in 2.9 (emulator-5570, API 36, 909561bd, 3/3): in #213's path the tap at 8:01 PM starts the process, and
+WorkManager's in-process scheduler runs the kept, overdue work about 1 s later, while Migrely is opening (importance 100).
+D3 skips it, leaves the date unmarked and plans it at about 8:31 PM. After the person left (HOME), it posted once at
+8:31–8:36 PM and marked the date. So the person sees the reminder at the postponed run, about 30 minutes after the
+skipped run (at most about 30 minutes after leaving), never at the moment they leave. 74095b8d lost the run (0/3).
+
 ### D4. No new cut-off
 
 The question is about today and stays answerable until midnight; the existing rule (a run for a date that is not today
@@ -115,7 +121,7 @@ everyone and an update path to every Go/No-Go.
 
 | Case | 74095b8d | After |
 |---|---|---|
-| Doze-held run, app opened after the time (EC-REM-24) | today lost | kept; on screen: postponed 30 min; left the app: posts once |
+| Doze-held run, app opened after the time (EC-REM-24) | today lost | kept; runs about 1 s after the tap, on screen: postponed 30 min; left the app: posts once at the postponed run (about 8:31 PM) |
 | Doze-held run, another Migrely job or a reboot starts the process | today lost | kept; posts once when it runs, if still today |
 | Job cold-starts the process (R2) | posted 10/10, 1–7 ms margin | posts; no race (KEEP) |
 | Clock or zone change after the time, today not shown (EC-REM-25) | today lost | runs at once for today |

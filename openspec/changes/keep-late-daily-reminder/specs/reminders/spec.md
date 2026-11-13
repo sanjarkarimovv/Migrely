@@ -6,9 +6,11 @@ the time or turning the reminder on, a clock or time zone change, and a daily ru
 planned run. When the reminder is off, a start SHALL cancel any planned daily run (BRD D176, EC-REM-24, #213).
 
 #### Scenario: Opened after the time while the run is late
-- **WHEN** the daily reminder is on for 8:00 PM, nothing is logged today, the run is held by Doze, and the person opens
-  Migrely at 8:01 PM and leaves it before the run comes
-- **THEN** "How was today?" posts once when the run comes, today
+- **WHEN** the daily reminder is on for 8:00 PM, nothing is logged today, the run is held by Doze, the person opens
+  Migrely at 8:01 PM, and the run comes while Migrely is opening
+- **THEN** the run is kept, nothing posts while Migrely is on screen, and the date is not marked
+- **AND** if they leave without logging today, "How was today?" posts once at the postponed run, about 30 minutes after
+  the skipped run (about 8:31 PM), not at the moment they leave
 
 #### Scenario: Another start before a late run
 - **WHEN** the run for 8:00 PM is held by Doze and, before it comes, the process is started by another Migrely job or by a
@@ -86,7 +88,8 @@ D176, EC-REM-27).
 #### Scenario: On home at the time
 - **WHEN** the person is on Migrely's home at 8:00 PM and today is not answered
 - **THEN** no notification posts while they are on screen, and the date is not marked as handled
-- **AND** if they leave without answering, "How was today?" posts once about 30 minutes later that day
+- **AND** if they leave without answering, "How was today?" posts once about 30 minutes after that run, that day, not at
+  the moment they leave
 
 #### Scenario: Opened, browsed History, left without logging
 - **WHEN** a late run comes while the person browses History, and they leave Migrely without logging today
@@ -188,8 +191,8 @@ question SHALL stay on home's card when its notification is lost. No receiver an
 #### Scenario: Restored from a backup
 - **WHEN** Migrely is restored on a new phone with the daily reminder on, and first opened after the time
 - **THEN** a daily run is planned and nothing posts while the person is in the app
-- **AND** if they leave without answering, "How was today?" posts once about 30 minutes later that day, and the next day's
-  reminder posts at R
+- **AND** if they leave without answering, "How was today?" posts once about 30 minutes after the run that came while
+  they were in the app, not at the moment they leave, and the next day's reminder posts at R
 
 #### Scenario: The process dies while planning
 - **WHEN** the process is killed while the reminders are being planned

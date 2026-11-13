@@ -94,7 +94,12 @@ compile are fine), then passing. Record both runs in the handoff.
   manifest lists exactly the 6 permissions above, no INTERNET. `git diff --stat origin/develop --
   '**/AndroidManifest.xml' '*.toml' '*.kts'` prints nothing.
 - [x] 2.9 Device walk on emulator-5570 (API 36), debug build, with `migrely-work/walks/r2/bin/iter.sh`:
-  `late` mode 3 runs → posted=1 each (74095b8d gave 0/3); `kill` mode 3 runs → posted=1; `alive` 1 run → posted=1. Two new
+  `late` mode 3 runs. Expected (amended by product-manager 2026-11-13 after the finding below; the first text, "posted=1
+  each" by 20:07, was wrong, not the code): the 20:01 tap starts the process and the kept, overdue run comes about 1 s
+  later while Migrely is opening, so at the end of `iter.sh` (by 20:07) posted=0, `daily_last_shown_date` is not the run
+  date, and a "daily" job is planned about 30 minutes ahead; then, with Migrely off screen (HOME), posted=1 exactly once
+  by about 20:40, the date marked, the next run tomorrow. Negative control 74095b8d: posted=0 at 20:07 and still at 20:40
+  (run lost, 0/3). `kill` mode 3 runs → posted=1; `alive` 1 run → posted=1. Two new
   probes: (a) a `late` run from a copy of `iter.sh` without the second HOME key, so the app stays on screen when idle is
   unforced → posted=0, `daily_last_shown_date` is not that date (read with `adb shell run-as com.migrely.app`), and
   jobscheduler shows a daily job about 30 minutes ahead; then HOME → posted=1 once when that job runs; (b) R1: log
@@ -106,8 +111,8 @@ compile are fine), then passing. Record both runs in the handoff.
   Done (emulator-5570, API 36, debug 909561bd; scripts and runs in `migrely-work/walks/r2/eng213/`, copies of r2 with
   uid u0a336, plus `waitpost.sh`/`full.sh` and `probe.sh`). Finding, accepted by team-lead: in `late` mode the 20:01
   tap starts the process and WorkManager's GreedyScheduler runs the kept, overdue work about 1 s later, while Migrely
-  is opening, so D3 skips it and posts about 30 min later; the expected "posted=1" by 20:07 above is wrong
-  (product-manager amends). `late` 3/3 (L1214–L1216) posted=0 by 20:07, date not marked, daily job +29m59s; full
+  is opening, so D3 skips it and posts about 30 min later; the first expected "posted=1" by 20:07 was wrong
+  (amended above). `late` 3/3 (L1214–L1216) posted=0 by 20:07, date not marked, daily job +29m59s; full
   `late` runs that wait for the postponed run 3/3 posted=1 once (L1216 20:31:19, L1217 20:32:39, L1218 20:36:11), date
   marked, next run tomorrow (74095b8d: 0/3, `walks/r2/results.txt` L23, L1130, L1201). `kill` 3/3 posted=1
   (K1220–K1222, 20:00). `alive` 1/1 posted=1 (A1223). (a) `lateon` 1 run (O1219): posted=0 at 20:07 with the app on
@@ -142,14 +147,37 @@ compile are fine), then passing. Record both runs in the handoff.
 
 ## 4. Independent check on device (`qa-engineer`)
 
-Copy `migrely-work/walks/r2/bin/` to `migrely-work/qa-213/bin/` and change only the serial and the app uid in the job grep
-(read it with `adb shell dumpsys package com.migrely.app | grep userId`). On API 26 `pm revoke POST_NOTIFICATIONS` does not
-exist: clear notifications with `adb shell cmd notification` or a force stop before the run, and record the change.
-Builds from 2.10. Record every run in `migrely-work/qa-213/rows.jsonl`. Restore the clock (`auto_time 1`), battery,
-deviceidle, rotation, font and airplane mode after each session. Any failed run is reported with its log, never rerun away.
+What the engineer learned (2.9), which every row below relies on:
+- **The overdue run comes at the tap.** When a tap starts the process after the time, WorkManager runs the kept, overdue
+  daily work about 1 s later, while Migrely is opening. Design D3 postpones it 30 minutes. So a person who opens Migrely
+  at 20:01 and leaves at once gets "How was today?" at the postponed run, about 20:31 (20:31–20:36 seen), never at the
+  moment they leave. Any row that expects a post after an on-screen skip waits to about 20:40 of device time.
+- **Scripts.** Copy `migrely-work/walks/r2/eng213/bin/` (r2's `iter.sh` with the `lateon` mode, plus `waitpost.sh`,
+  `full.sh`, `shown.sh`) to `migrely-work/qa-213/bin/`. Change only the serial (`ANDROID_SERIAL`), the base paths
+  (`walks/r2/eng213` → `qa-213`) and the app uid in every job grep (`u0a336`). `iter.sh <mode> <day> <label>` ends at the
+  first WorkManager run or 20:07 and writes `RESULT`; `waitpost.sh <label> [home]` waits to 20:45 for a post and writes
+  `RESULT2` (with `home` it presses HOME first); `full.sh <mode> <first day> <count> <prefix>` runs both, one day per run.
+- **The uid is read, not typed.** After every install on each emulator: `adb shell dumpsys package com.migrely.app | grep
+  -m1 userId` gives `userId=10NNN`, which is `u0aNNN` in `dumpsys jobscheduler`. An uninstall or another emulator changes it.
+- **Forcing a job.** Where a row forces a run, take the id from `dumpsys jobscheduler` (`JOB
+  androidx.work.systemjobscheduler:u0aNNN/<id>`) and run `adb shell cmd jobscheduler run -f -n
+  androidx.work.systemjobscheduler com.migrely.app <id>`. Otherwise use real time and `deviceidle unforce`, as the scripts do.
+- **Builds (2.10), in `migrely-work/walks/r2/eng213/apk/`;** check sha256 against the engineer's packet before installing:
+  `debug-909561bd.apk` eb697188…, `r8-909561bd.apk` 933fb5dd…, `debug-74095b8d.apk` 1f5fb00d…, `r8-74095b8d.apk`
+  5144c729…. `shown.sh` reads `daily_last_shown_date` with `run-as`, which works only on a debug APK: rows that read the
+  date use the debug builds; 4.9 and 4.11 use R8. Never install `probe-909561bd.apk` (it carries the removed probe log).
 
-- [ ] 4.1 **The bug, fixed (API 36 and API 26).** `late` mode, app sent home before idle is unforced. New build: posted=1, 3
-  runs on each API. **Negative control:** 74095b8d, same script: posted=0, 1 run on each API.
+On API 26 `pm revoke POST_NOTIFICATIONS` does not exist: clear notifications with `adb shell cmd notification` or a force
+stop before the run, and record the change. Record every run in `migrely-work/qa-213/rows.jsonl`. Restore the clock
+(`auto_time 1`), battery, deviceidle, rotation, font and airplane mode after each session. Any failed run is reported with
+its log, never rerun away.
+
+- [ ] 4.1 **The bug, fixed (API 36 and API 26).** `full.sh late`: the 20:01 tap, then HOME before idle is unforced. New
+  build, expected: `RESULT` (by 20:07) posted=0, `daily_last_shown_date` is not the run date, and a "daily" job about 30
+  minutes ahead; then `RESULT2` posted=1 exactly once by about 20:40, `daily_last_shown_date` is the run date, and the next
+  job about 23.5 hours ahead. 3 runs on each API. A post before the postponed run (by 20:07) fails design D3; no post by
+  20:45 fails D176: both go to `product-manager` with the log. **Negative control:** 74095b8d debug, same script: posted=0
+  at 20:07 and still posted=0 at 20:40 (the run is lost, a job about 24 hours ahead), 1 run on each API.
 - [ ] 4.2 **On screen (API 36).** `late` mode without the second HOME key, so the app stays on home when idle is unforced:
   posted=0, `daily_last_shown_date` is not today, and a "daily" job about 30 minutes ahead. 2 runs. Extend the wait past
   the postponed time (or move the clock forward 31 minutes with `cmd alarm set-time` while the app stays on screen): still
