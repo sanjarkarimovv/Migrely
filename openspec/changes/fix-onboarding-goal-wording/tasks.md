@@ -50,14 +50,21 @@ Ownership:
 
 ## 4. Gate (`android-engineer`)
 
-- [ ] 4.1 `nice -n 19 ./gradlew --max-workers=2 assembleDebug test ktlintCheck detekt lint`. Verify: exit 0, with the task count
+- [x] 4.1 `nice -n 19 ./gradlew --max-workers=2 assembleDebug test ktlintCheck detekt lint`. Verify: exit 0, with the task count
   and the test count.
-- [ ] 4.2 Negative control: `git grep -n -i 'fewer painkillers' -- features app core designsystem` exits 1 here and prints 1 line
+  Record (eng-192, 2026-11-13, on 6c0f4548, load 1.9): `ANDROID_HOME=… nice -n 19 ./gradlew --max-workers=2 assembleDebug test
+  ktlintCheck detekt lint` exit 0, BUILD SUCCESSFUL in 5m 5s, 2058 actionable tasks, 2058 executed. Test results: 468 files,
+  3017 tests (debug and release variants together), 0 failures, 0 errors, 0 skipped. Then `:app:checkReleasePermissions
+  :app:checkReleaseDebugComponents` exit 0; the merged release manifest has no `android.permission.INTERNET` (count 0).
+- [x] 4.2 Negative control: `git grep -n -i 'fewer painkillers' -- features app core designsystem` exits 1 here and prints 1 line
   on `origin/develop` 5bbf8f94.
+  Record (eng-192, 2026-11-13): at the head, exit 1 and no output. `git grep -n -i 'fewer painkillers' 5bbf8f94 -- features
+  app core designsystem` exit 0, 1 line: `features/onboarding/ui/src/main/res/values/strings.xml:9`. The built APK's
+  `string/onboarding_goal_painkillers` reads "Keep track of my medication days" (`aapt2 dump resources`).
 
 ## 5. Walk (`emulator-5570`, `android-engineer`)
 
-- [ ] 5.1 Fresh install of the debug build, step 1 at 100% and 200% font, portrait and landscape:
+- [x] 5.1 Fresh install of the debug build, step 1 at 100% and 200% font, portrait and landscape:
   - the label wraps and is never clipped;
   - tapping it opens step 2;
   - "Skip" opens step 2.
@@ -65,6 +72,33 @@ Ownership:
   Then restart, Back on step 1 leaves the app, and onboarding shows again. Screenshots go in `migrely-work/walks/192/`.
   Restore the font scale and rotation. Verify: the screenshot paths, and the stored value read with
   `adb shell run-as com.migrely.app cat shared_prefs/migrely_preferences.xml | grep goal` showing `fewer_painkillers`.
+  Record (eng-192, 2026-11-13, emulator-5570, API 36, 1080 px at `wm density 480` = 360 dp, dark theme, uninstall then install
+  of the debug build from 6c0f4548). Screenshots in `migrely-work/walks/192/`:
+
+  | # | File | Font, orientation, scroll | Result |
+  |---|---|---|---|
+  | 1 | `01-100-portrait-top.png` | 100%, portrait, top | 1 line, inside the outline |
+  | 2 | `02-200-portrait-top.png` | 200%, portrait, top | 2 lines ("Keep track of my" / "medication days"), inside the outline, the same height as the other two choices |
+  | 3 | `03-200-portrait-bottom.png` | 200%, portrait, bottom | disclaimer and "Restore from a backup file" fully visible |
+  | 4 | `04-100-landscape-top.png` | 100%, landscape, top | 1 line; the third row continues below the fold |
+  | 5 | `05-200-landscape-top.png` | 200%, landscape, top | the third row starts at the fold; the scroll reaches it (6) |
+  | 6 | `06-200-landscape-bottom.png` | 200%, landscape, bottom | label on 1 line; disclaimer and Restore visible |
+
+  In all six: no "…", no word broken across lines, the outline encloses all the text, and the 2-line label (2, 3) keeps the
+  same gap to the disclaimer as the other rows keep to each other. A full-size crop of the third row at 200% portrait
+  (`crop-02-third.png`) shows the descender of "days" inside the outline.
+  Behaviour (portrait, 100%):
+  - Back on step 1 leaves the app (the launcher becomes the resumed activity); relaunch shows "Step 1 of 4";
+  - "Skip this step" opens "Step 2 of 4"; `migrely_preferences.xml` does not exist afterwards, so no goal is stored;
+  - Back to step 1, tap "Keep track of my medication days": "Step 2 of 4", and the prefs hold
+    `<string name="goal">fewer_painkillers</string>`;
+  - `run-as com.migrely.app kill -9 <pid>`, cold start: onboarding shows again at "Step 1 of 4".
+
+  Restored afterwards: `wm density reset` (420), font scale 1.0, `user_rotation` 0, `accelerometer_rotation` 1, night mode
+  no. The app data taken before the walk was put back and a fresh tar of it diffs empty against the backup; the installed
+  build stays this branch's debug build (1.2.1, vc 11).
+  Not checked: TalkBack wording and focus order (QA 7.2, as agreed); keyboard order; the label on a real phone; tapping the
+  label at 200% or in landscape (the tap target is the same row, checked at 100% portrait).
 
 ## 6. Review
 
