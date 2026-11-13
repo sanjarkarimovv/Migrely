@@ -102,9 +102,16 @@ Ownership:
 
 ## 6. Review
 
-- [ ] 6.1 `medical-reviewer` re-reviews the final diff: the string as shipped, and that no other text changed. Verify: a PASS
+- [x] 6.1 `medical-reviewer` re-reviews the final diff: the string as shipped, and that no other text changed. Verify: a PASS
   quoted into BRD D177 by `product-manager`.
-- [ ] 6.2 `code-reviewer` on the diff. Verify: a packet with findings or "none", and every finding closed.
+  Record (med-192b, 2026-11-13, diff 5bbf8f94..3fef0fdc): the string PASS; other health text PASS. One FIX: the NICE
+  description overstated what NICE says. Fixed word for word by `product-manager` in BRD D177 ("dorini toʻxtatishni shifokor
+  maslahat beradi va kuzatib boradi") and in the proposal's Why ("withdrawal is advised and followed up by a clinician"). No
+  method of withdrawal is named anywhere. med-192b: no further review needed. The PASS is quoted in D177.
+- [x] 6.2 `code-reviewer` on the diff. Verify: a packet with findings or "none", and every finding closed.
+  Record (cr-192, 2026-11-13, diff 5bbf8f94..3fef0fdc): no blocking finding; one Minor, closed (relayed by `team-lead` as
+  fixed). In the same commit `product-manager` corrected the proposal's QA line: the Maestro flow also checks the disclaimer and
+  taps Restore, and it does not assert the title only.
 
 ## 7. Acceptance (`qa-engineer`, scope: this diff only)
 

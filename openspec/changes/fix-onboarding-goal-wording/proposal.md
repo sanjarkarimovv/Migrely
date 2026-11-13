@@ -5,7 +5,7 @@
 #192 (S4, pre-existing, found in the T44 content review). Onboarding step 1, "What brings you to Migrely?", offers the goal
 "Take fewer painkillers" (`onboarding_goal_painkillers`). `medical-reviewer` (2026-11-13, med-192) gave it a FAIL. It reads as
 the app backing a cut in medicine without a doctor's plan, and as an outcome the app promises. Sources: Migraine Trust ("discuss a
-plan with your doctor before the withdrawal of painkillers") and NICE CG150 1.3.42–1.3.48 (a doctor decides how to withdraw).
+plan with your doctor before the withdrawal of painkillers") and NICE CG150 1.3.42–1.3.48 (withdrawal is advised and followed up by a clinician).
 
 The 2026-11-06 decision to keep the string (`archive/2026-11-06-fix-overuse-wording`) was a wording review, not a medical one.
 BRD D177 replaces it.
@@ -62,5 +62,6 @@ None.
 - `features/onboarding/ui/src/main/res/values/strings.xml`: one string.
 - No change to domain, presentation, data, database, preferences format, backup, manifest, permission or Gradle. Free and
   Premium alike. Works offline.
-- QA: `.maestro/onboarding/` asserts the title only. No flow or script names the old label (`git grep` on 5bbf8f94).
+- QA: `.maestro/onboarding/skip-restore-disclaimer.yaml` asserts step 1's title and disclaimer and taps "Restore from a backup
+  file". No flow or script names the old or the new goal label (`git grep` on 5bbf8f94).
 - BRD: ONB-F1, D77, D177, EC-ONB-01…06, §13 row 45.
