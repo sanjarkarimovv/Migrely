@@ -141,22 +141,59 @@ and the engineer cover: O1–O20 (order), F-a–F-h (focus), M1–M12 (motion an
 
 ## 6. UI (screens)
 
-- [ ] 6.1 All 13 screens use the order mechanism: Settings, Paywall, Doctor report, Your data, Reminders, History, My
+- [x] 6.1 All 13 screens use the order mechanism: Settings, Paywall, Doctor report, Your data, Reminders, History, My
   medications, Edit medication, Log medication, onboarding, Home, Attack details and Add past migraine. Verify: one Compose test
   per module for the Tab order passes in `./gradlew test`, and D165's Attack details tests stay green
   (`./gradlew :features:attack:ui:testDebugUnitTest`).
-- [ ] 6.2 Home, History and Reminders replace an error with `Saved` on the event and ignore it otherwise. Doctor report clears
+
+  Done. All 13 use `MessageLayout`: the nine bar screens and the paywall (its Close row is the top bar) through a
+  script that moved the first child of their column into `topBar`; onboarding and Home with no top bar; Attack details
+  and Add past migraine keep their top bar in their `*Contents` (a private `*TopBar`) and take a `messages` slot, so the
+  bar is still drawn by the same composable. Tests: one Tab-order test per module, 10 modules (settings, subscription,
+  report, backup, reminders, history, medication, onboarding, attack, home), each 1/1. Attack details: Back, Dismiss,
+  "Got it" (#185). D165's tests: `:features:attack:ui` 93/93.
+  - Negative control, local: `MessageLayout` placing the message after the content (52c12ce5's order): 9/9 module
+    order tests fail. Log `walks/msgs/6-negative-order-placement.log`. Restored.
+  - Not covered by a unit test: Edit medication, Log medication and Add past migraine (same module as one tested
+    screen, same layout). The walk covers Attack details, History and Home.
+- [x] 6.2 Home, History and Reminders replace an error with `Saved` on the event and ignore it otherwise. Doctor report clears
   an error on `Share`. Your data, My medications and Log medication show that their own message replaces the error, with no new
   code where none is needed. Verify: tests for every scenario of "An error on the other screens goes when a later save succeeds"
   pass in each module's `testDebugUnitTest`.
-- [ ] 6.3 `ScreenLeaveObserver` on the 9 screens clears an error, and only an error, on leave. Verify: tests for "belongs to the
+
+  Done. Home and History: "Saved." only in place of an error, in the message collector (`HomeMessagesTest` 5 cases,
+  `HistoryMessagesTest` 3 cases: after an error, with no error, while Undo shows, two quick saves, failed retry).
+  Reminders: the same rule in the screen's collector, its message now saveable and stamped
+  (`ShownRemindersMessageUiModel`). Doctor report clears an error on `Share`. Your data, My medications and Log
+  medication need no new code: a later message replaces the error (`MedicationMessagesTest` "Its own message after an
+  error replaces it"). Edit medication and Add past migraine close on success.
+  - Gap: Reminders' rule, Doctor report's `Share` clear and Your data are in their DI-bound screen functions and have no
+    Compose test here. A3, A4 and A5 (QA) and code review cover them; 3.1 covers the events.
+  - Found: the design's context said every screen keeps its message in `rememberSaveable`; Reminders, Doctor report and
+    Your data used `remember` (and Reminders had no posting identity). The spec requires rotation and process death to
+    keep the error, so they now use `rememberSaveable` with a stamped, parcelable shown model.
+- [x] 6.3 `ScreenLeaveObserver` on the 9 screens clears an error, and only an error, on leave. Verify: tests for "belongs to the
   visit" pass, and the leave test fails with a lifecycle `ON_STOP` clear in its place.
-- [ ] 6.4 Home gates `reviewPrompt()` on "no message shows" and on a `rememberSaveable` "error this visit" flag that the
+
+  Done on Home, History, the three medication screens (shared `MedicationMessages`), Reminders, Doctor report, Your
+  data and Add past migraine. Tests with a real `NavHost`: forward and back clears the error, the background
+  (`ON_STOP` and back) keeps it, Undo survives a trip (`HomeMessagesTest`, `HistoryMessagesTest`,
+  `MedicationMessagesTest`).
+  - Negative control N4, local: Home's leave clear swapped for `LifecycleEventEffect(ON_STOP)`: "An error stays when
+    the app goes to the background and comes back" fails (1/13). Log `walks/msgs/6.3-negative-N4.log`. Restored.
+- [x] 6.4 Home gates `reviewPrompt()` on "no message shows" and on a `rememberSaveable` "error this visit" flag that the
   `ScreenLeaveObserver` clears (design D5, F3, ux R1–R5). Verify: Home UI tests show the slot leaving with any message and
   returning when it goes; staying absent for the rest of the visit after an error, across rotation; and returning after a
   navigation away and back, and `./gradlew :features:home:ui:testDebugUnitTest :features:review:ui:testDebugUnitTest`
   passes.
-- [ ] 6.5 Home Today placement (design D6, F5, F6, ux rule 7, P1–P6). In a short window the message sits in the start column. In
+
+  Done. `ReviewGate` (`rememberReviewGate`): two `rememberSaveable` flags, "a message shows" from `HomeMessages`'
+  `onShownChanged` and "error this visit" from `onErrorPosted`, cleared by `ScreenLeaveObserver`. Home composes the
+  review slot only when both are open; the review module is unchanged. Tests: `HomeMessagesTest` 5 cases (no message:
+  there; error: gone; error dismissed: gone for the visit; next visit: back; Undo: gone, back after it leaves) and
+  `HomeReviewGateRestoreTest` 3 cases (error flag and message flag survive a restore). `:features:review:ui` unchanged
+  and green in the gate.
+- [x] 6.5 Home Today placement (design D6, F5, F6, ux rule 7, P1–P6). In a short window the message sits in the start column. In
   every window it sits at `max(MESSAGE_OFFSET_BELOW_TOP_BAR, settingsRowHeight + 2.dp)`, from the row's measured height, never its
   position. Verify: `HomeScreen` placement tests pass in `./gradlew :features:home:ui:testDebugUnitTest`, covering:
   - 411 and 274 dp at 100% and 200%, LTR and RTL;
@@ -164,17 +201,42 @@ and the engineer cover: O1–O20 (order), F-a–F-h (focus), M1–M12 (motion an
   - a scroll that does not move the message;
   - updated `messagesBesideControls` and `messageTopOffset` cases.
 
+  Done. `messageTopOffset(mode, settingsRowHeight)` = `max(56 dp, row + 2 dp)` on Today and while loading, 56 dp until
+  measured, 0 in attack mode; the row reports its height with `onSizeChanged`. `messagesBesideControls` is true for
+  Today and attack mode in a short window. The host's fit rule (5.5) keeps the 274 dp storage-full error whole.
+  `HomePlacementTest` (native graphics, so real text sizes) 10/10: 411 dp at 100% and 200%, 411 dp RTL, 274 dp at 100%
+  and 200%, 274 dp storage full at 200% LTR and RTL (whole on screen, Dismiss on screen, clear of "Migraine started"),
+  360 dp portrait at 200% with the date wrapped (the precondition checks the wrap), 360 dp at 200%, and a scroll that
+  does not move the message. `MessageTopOffsetTest` 6 and `MessagesBesideControlsTest` 6 updated.
+  - Negative control, local: 52c12ce5's rules (attack-only start column, fixed offset): 8/10 placement tests fail;
+    the scroll case passes both ways, as it should.
+  - `MessageCallSitesTest` (app, a text pin) now pins `messageTopOffset(uiState.mode, settingsRowHeight)`: the rule
+    changed with D178 (6).
+
 ## 7. Docs
 
-- [ ] 7.1 `docs/ARCHITECTURE.md`, in the messages part: one line for the order mechanism, one for replacement in place and the
+- [x] 7.1 `docs/ARCHITECTURE.md`, in the messages part: one line for the order mechanism, one for replacement in place and the
   never-transparent rule, and one for the "write saved" event on the other screens. Verify:
   `grep -n "write saved" docs/ARCHITECTURE.md` prints a line.
 
+  Done. Three lines in §10's messages part: the order mechanism, replacement in place and never transparent, and the
+  "write saved" event. `grep -n "write saved" docs/ARCHITECTURE.md` prints line 372.
+
 ## 8. Gate and walk (android-engineer)
 
-- [ ] 8.1 The gate. Verify: `set -o pipefail; nice -n 19 ./gradlew --max-workers=2 assembleDebug test ktlintCheck detekt lint`
+- [x] 8.1 The gate. Verify: `set -o pipefail; nice -n 19 ./gradlew --max-workers=2 assembleDebug test ktlintCheck detekt lint`
+
+  Done. `set -o pipefail; ANDROID_HOME=… nice -n 19 ./gradlew --max-workers=2 assembleDebug test ktlintCheck detekt lint`
+  -> exit 0, BUILD SUCCESSFUL in 3m 20s, 2142 tasks (676 executed). Result files: 3156 test cases (debug and release
+  unit tests together), 0 failures, 0 errors, 0 skipped. Load 7-8 at the start. The first run failed on one text pin,
+  `MessageCallSitesTest` (Home's offset call changed by D178 (6)); the pin was updated, not the code. Log
+  `walks/msgs/8.1-gate.log`.
   exits 0.
-- [ ] 8.2 No permission added. Verify: `./gradlew :app:checkReleasePermissions` exits 0.
+- [x] 8.2 No permission added. Verify: `./gradlew :app:checkReleasePermissions` exits 0.
+
+  Done. `:app:checkReleasePermissions` -> exit 0. Merged release manifest: POST_NOTIFICATIONS, ACCESS_NETWORK_STATE,
+  BILLING, WAKE_LOCK, RECEIVE_BOOT_COMPLETED and the dynamic-receiver permission; no INTERNET. No dependency was
+  added to main code (only test dependencies in four UI modules).
 - [ ] 8.3 A walk on `emulator-5570`, debug: design checks A1, A7, A8, A12 (Attack details, History, Home), A16 (one screen), A17
   (ux M3 and M4) and A18 (ux P1, P4 and P6) at 100% and 200%. Restore storage, font scale, animator scale, rotation and locale. Verify: the results and what the
   walk does not prove are in the packet.
