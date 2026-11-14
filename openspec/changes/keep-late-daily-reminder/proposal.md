@@ -50,7 +50,8 @@ notification that pops up while they are already in the app, perhaps logging an 
 
 ## Capabilities
 
-- Modified: `reminders` (ADDED requirements: three for #213, one reworded for #197).
+- Modified: `reminders` (ADDED requirements: four for #213, one for #197; MODIFIED "The daily reminder", which now names
+  the on-screen exception so the merged spec does not promise a post at 8:00 PM while Migrely is on screen).
 
 ## Impact
 

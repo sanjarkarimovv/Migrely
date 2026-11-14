@@ -1,3 +1,23 @@
+## MODIFIED Requirements
+
+### Requirement: The daily reminder
+When on, the daily reminder SHALL arrive at about its time each day, within about 15 minutes, as "How was today?" with
+the actions "Pain-free day" and "Log a migraine", unless Migrely is on screen then. It SHALL be skipped when today is
+already marked pain-free or has an attack. It SHALL be scheduled again after each run, after a reboot, and when the time
+zone or the clock changes, by the new local time (BRD REM-F1, EC-REM-03, EC-REM-04, EC-REM-05, D66, D176).
+
+#### Scenario: A calm day
+- **WHEN** the daily reminder is on for 8:00 PM, nothing is logged today, and Migrely is not on screen at 8:00 PM
+- **THEN** at about 8:00 PM "How was today?" arrives with "Pain-free day" and "Log a migraine"
+
+#### Scenario: Already answered
+- **WHEN** today is already marked pain-free, or an attack is logged today
+- **THEN** no daily reminder arrives today
+
+#### Scenario: Travel
+- **WHEN** the phone moves from Tashkent to Berlin
+- **THEN** the next reminder arrives at about 8:00 PM Berlin time
+
 ## ADDED Requirements
 
 ### Requirement: An app start keeps a planned daily reminder
