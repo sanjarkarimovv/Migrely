@@ -40,6 +40,8 @@ import com.migrely.app.designsystem.theme.MigrelyDarkRoom
 import com.migrely.app.home.presentation.model.HomeViewState
 import com.migrely.app.home.ui.di.HomeDependencies
 import com.migrely.app.home.ui.mapper.SkyAppearanceUiMapper
+import com.migrely.app.home.ui.notification.HomeMessagePresenter
+import com.migrely.app.home.ui.mapper.HomeMessageBehaviourUiMapper
 import com.migrely.app.home.ui.mapper.TimeUiFormatter
 import com.migrely.app.home.ui.model.HomeViewStateUiModel
 import com.migrely.app.home.ui.model.IntensityLevelUiModel
@@ -111,58 +113,111 @@ fun HomeDependencies.Home(
     )
     val reduceMotion = rememberReduceMotion()
 
+    val actions = HomeActions(
+        onStartAttack = homeViewModel::onStartAttackAction,
+        onIntensity = { level ->
+            homeViewModel.onIntensityAction(intensityLevelUiToPresentationMapper.toPresentation(level))
+        },
+        onMoveStartEarlier = homeViewModel::onMoveStartEarlierAction,
+        onEndAttack = homeViewModel::onEndAttackAction,
+        onStillGoing = homeViewModel::onStillGoingAction,
+        onDontAskAgain = homeViewModel::onDontAskAgainAction,
+        onEndedAt = { endEpochMillis ->
+            homeViewModel.onEndedAtAction(Instant.ofEpochMilli(endEpochMillis))
+        },
+        onAttackDetails = homeViewModel::onAttackDetailsAction,
+        onAddPastAttack = homeViewModel::onAddPastAttackAction,
+        onLogMedication = homeViewModel::onLogMedicationAction,
+        onPeriodToday = homeViewModel::onPeriodTodayAction,
+        onSettings = homeViewModel::onSettingsAction
+    )
+    HomeWithMessages(
+        navController = navController,
+        viewState = uiState,
+        nowMillis = nowMillis,
+        reduceMotion = reduceMotion,
+        skyAppearanceUiMapper = skyAppearanceUiMapper,
+        timeUiFormatter = timeUiFormatter,
+        actions = actions,
+        messageSetup = HomeMessageSetup(
+            presenter = homeMessagePresenter,
+            behaviourMapper = homeMessageBehaviourUiMapper,
+            onUndoStart = homeViewModel::onUndoStartAction,
+            onUndoEnd = homeViewModel::onUndoEndAction,
+            onUndoDelete = homeViewModel::onUndoDeleteAction
+        ),
+        slots = HomeSlots(
+            monthCalendar = { monthCalendar(homeLoads) },
+            medicationPrompt = { medicationPrompt(homeLoads) },
+            trialBanner = { trialBanner(homeLoads) },
+            visitCard = { visitCard(homeLoads) },
+            paywallTrigger = { paywallTrigger(homeLoads) },
+            reviewPrompt = { reviewPrompt(homeLoads) }
+        ),
+        modifier = modifier
+    )
+}
+
+/** What home's messages need besides the screen: where they come from, how they behave, and what Undo calls. */
+internal class HomeMessageSetup(
+    val presenter: HomeMessagePresenter,
+    val behaviourMapper: HomeMessageBehaviourUiMapper,
+    val onUndoStart: (attackId: String) -> Unit,
+    val onUndoEnd: (attackId: String) -> Unit,
+    val onUndoDelete: (attackId: String) -> Unit
+)
+
+/**
+ * [HomeContents] with its messages and the review gate wired together (BRD D178 (3), (6)): the review slot shows only
+ * while no message shows and no error showed this visit, and Today's message sits below the measured Settings row.
+ */
+@Suppress("LongParameterList")
+@Composable
+internal fun HomeWithMessages(
+    navController: NavController,
+    viewState: HomeViewStateUiModel,
+    nowMillis: Long,
+    reduceMotion: Boolean,
+    skyAppearanceUiMapper: SkyAppearanceUiMapper,
+    timeUiFormatter: TimeUiFormatter,
+    actions: HomeActions,
+    messageSetup: HomeMessageSetup,
+    slots: HomeSlots,
+    modifier: Modifier = Modifier
+) {
     // Where the message ends, so landscape attack mode keeps its guidance below it (BRD D52). It is read only in the
     // layout phase, so a moving message never recomposes the screen.
     val messageBottom = remember { mutableStateOf(0.dp) }
     var settingsRowHeight by remember { mutableStateOf(Dp.Unspecified) }
     val reviewGate = rememberReviewGate(navController)
     HomeContents(
-        viewState = uiState,
+        viewState = viewState,
         nowMillis = nowMillis,
         reduceMotion = reduceMotion,
         skyAppearanceUiMapper = skyAppearanceUiMapper,
         timeUiFormatter = timeUiFormatter,
-        actions = HomeActions(
-            onStartAttack = homeViewModel::onStartAttackAction,
-            onIntensity = { level ->
-                homeViewModel.onIntensityAction(
-                    intensityLevelUiToPresentationMapper.toPresentation(level)
-                )
-            },
-            onMoveStartEarlier = homeViewModel::onMoveStartEarlierAction,
-            onEndAttack = homeViewModel::onEndAttackAction,
-            onStillGoing = homeViewModel::onStillGoingAction,
-            onDontAskAgain = homeViewModel::onDontAskAgainAction,
-            onEndedAt = { endEpochMillis ->
-                homeViewModel.onEndedAtAction(Instant.ofEpochMilli(endEpochMillis))
-            },
-            onAttackDetails = homeViewModel::onAttackDetailsAction,
-            onAddPastAttack = homeViewModel::onAddPastAttackAction,
-            onLogMedication = homeViewModel::onLogMedicationAction,
-            onPeriodToday = homeViewModel::onPeriodTodayAction,
-            onSettings = homeViewModel::onSettingsAction
-        ),
-        monthCalendar = { monthCalendar(homeLoads) },
-        medicationPrompt = { medicationPrompt(homeLoads) },
-        trialBanner = { trialBanner(homeLoads) },
-        visitCard = { visitCard(homeLoads) },
-        paywallTrigger = { paywallTrigger(homeLoads) },
-        reviewPrompt = { if (reviewGate.open) reviewPrompt(homeLoads) },
+        actions = actions,
+        monthCalendar = slots.monthCalendar,
+        medicationPrompt = slots.medicationPrompt,
+        trialBanner = slots.trialBanner,
+        visitCard = slots.visitCard,
+        paywallTrigger = slots.paywallTrigger,
+        reviewPrompt = { if (reviewGate.open) slots.reviewPrompt() },
         onSettingsRowHeight = { settingsRowHeight = it },
         messages = {
             HomeMessages(
-                presenter = homeMessagePresenter,
+                presenter = messageSetup.presenter,
                 navController = navController,
-                behaviourMapper = homeMessageBehaviourUiMapper,
+                behaviourMapper = messageSetup.behaviourMapper,
                 timeUiFormatter = timeUiFormatter,
                 reduceMotion = reduceMotion,
-                onUndoStart = homeViewModel::onUndoStartAction,
-                onUndoEnd = homeViewModel::onUndoEndAction,
-                onUndoDelete = homeViewModel::onUndoDeleteAction,
+                onUndoStart = messageSetup.onUndoStart,
+                onUndoEnd = messageSetup.onUndoEnd,
+                onUndoDelete = messageSetup.onUndoDelete,
                 onMessageBottomChanged = { messageBottom.value = it },
                 onShownChanged = reviewGate::onShownChanged,
                 onErrorPosted = reviewGate::onErrorPosted,
-                topOffset = messageTopOffset(uiState.mode, settingsRowHeight)
+                topOffset = messageTopOffset(viewState.mode, settingsRowHeight)
             )
         },
         messageBottom = messageBottom::value,
@@ -299,7 +354,7 @@ fun HomeContents(
 }
 
 /** What `:app` draws into home's Today mode. */
-private class HomeSlots(
+internal class HomeSlots(
     val monthCalendar: @Composable () -> Unit,
     val medicationPrompt: @Composable () -> Unit,
     val trialBanner: @Composable () -> Unit,
