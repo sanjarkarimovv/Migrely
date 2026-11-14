@@ -23,6 +23,14 @@ class RemindersMessageBehaviourUiMapperTest {
     }
 
     @Test
+    fun `When mapping Saved then a confirmation for 8 s`() {
+        assertEquals(
+            RemindersMessageBehaviourUiModel(SnackbarTone.Confirmation, 8_000L),
+            classUnderTest.toUi(RemindersMessageUiModel.Saved)
+        )
+    }
+
+    @Test
     fun `When mapping Visit removed or Undone then information, for 5 s and 8 s`() {
         assertEquals(
             RemindersMessageBehaviourUiModel(SnackbarTone.Information, 5_000L),

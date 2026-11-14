@@ -31,6 +31,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -40,6 +42,7 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.migrely.app.designsystem.icon.MigrelyIcons
 import com.migrely.app.designsystem.sky.SkyAppearance
@@ -73,7 +76,11 @@ fun TodayContents(
     onPeriodToday: (marked: Boolean) -> Unit = {},
     onSettings: () -> Unit = {},
     trialBanner: @Composable () -> Unit = {},
-    visitCard: @Composable () -> Unit = {}
+    visitCard: @Composable () -> Unit = {},
+    onSettingsRowHeight: (Dp) -> Unit = {},
+    settingsModifier: Modifier = Modifier,
+    afterSettingsModifier: Modifier = Modifier,
+    lastModifier: Modifier = Modifier
 ) {
     val screenModifier = modifier
         .fillMaxSize()
@@ -88,14 +95,16 @@ fun TodayContents(
                     .weight(1f)
                     .verticalScroll(rememberScrollState())
             ) {
-                DayHeader(dayTitle, onSettings)
-                trialBanner()
-                TodaySkyCard(today = today, appearance = appearance)
-                if (today.periodOffered) PeriodToday(today.periodToday, onPeriodToday)
-                medicationPrompt()
-                visitCard()
-                TodayAttackList(today.attacks, nowMillis, timeUiFormatter, onAttackDetails)
-                monthCalendar()
+                DayHeader(dayTitle, onSettings, onSettingsRowHeight, settingsModifier)
+                Column(afterSettingsModifier.fillMaxWidth()) {
+                    trialBanner()
+                    TodaySkyCard(today = today, appearance = appearance)
+                    if (today.periodOffered) PeriodToday(today.periodToday, onPeriodToday)
+                    medicationPrompt()
+                    visitCard()
+                    TodayAttackList(today.attacks, nowMillis, timeUiFormatter, onAttackDetails)
+                    monthCalendar()
+                }
                 Spacer(Modifier.height(24.dp))
             }
             Column(
@@ -107,7 +116,7 @@ fun TodayContents(
             ) {
                 StartAttackButton(onStartAttack)
                 Spacer(Modifier.height(8.dp))
-                QuietLinks(onAddPastAttack, onLogMedication)
+                QuietLinks(onAddPastAttack, onLogMedication, lastModifier)
             }
         }
     } else {
@@ -117,20 +126,22 @@ fun TodayContents(
                     .weight(1f)
                     .verticalScroll(rememberScrollState())
             ) {
-                DayHeader(dayTitle, onSettings)
-                trialBanner()
-                TodaySkyCard(today = today, appearance = appearance)
-                if (today.periodOffered) PeriodToday(today.periodToday, onPeriodToday)
-                medicationPrompt()
-                visitCard()
-                TodayAttackList(today.attacks, nowMillis, timeUiFormatter, onAttackDetails)
-                monthCalendar()
+                DayHeader(dayTitle, onSettings, onSettingsRowHeight, settingsModifier)
+                Column(afterSettingsModifier.fillMaxWidth()) {
+                    trialBanner()
+                    TodaySkyCard(today = today, appearance = appearance)
+                    if (today.periodOffered) PeriodToday(today.periodToday, onPeriodToday)
+                    medicationPrompt()
+                    visitCard()
+                    TodayAttackList(today.attacks, nowMillis, timeUiFormatter, onAttackDetails)
+                    monthCalendar()
+                }
                 Spacer(Modifier.height(8.dp))
             }
             Spacer(Modifier.height(16.dp))
             StartAttackButton(onStartAttack)
             Spacer(Modifier.height(4.dp))
-            QuietLinks(onAddPastAttack, onLogMedication)
+            QuietLinks(onAddPastAttack, onLogMedication, lastModifier)
             Spacer(Modifier.height(12.dp))
         }
     }
@@ -222,8 +233,20 @@ private fun AttackSummaryRow(
 
 /** The date, with "Settings" at the end; attack mode has its own screen, so the button is normal mode only (D70). */
 @Composable
-private fun DayHeader(dayTitle: String, onSettings: () -> Unit) {
-    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+private fun DayHeader(
+    dayTitle: String,
+    onSettings: () -> Unit,
+    onHeight: (Dp) -> Unit,
+    settingsModifier: Modifier
+) {
+    val density = LocalDensity.current
+    // Its height, not its place, so a message placed from it does not follow scrolling (BRD D178 (6)).
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .onSizeChanged { onHeight(with(density) { it.height.toDp() }) }
+    ) {
         Text(
             text = dayTitle,
             style = MaterialTheme.typography.bodyMedium,
@@ -232,7 +255,7 @@ private fun DayHeader(dayTitle: String, onSettings: () -> Unit) {
                 .weight(1f)
                 .padding(start = 8.dp, top = 16.dp, bottom = 16.dp)
         )
-        IconButton(onClick = onSettings) {
+        IconButton(onClick = onSettings, modifier = settingsModifier) {
             Icon(
                 MigrelyIcons.Settings,
                 contentDescription = stringResource(R.string.home_settings),
@@ -267,15 +290,19 @@ private fun StartAttackButton(onStartAttack: () -> Unit) {
  * medication taken (D34). Side by side, each wraps its text at large font sizes instead of being cut.
  */
 @Composable
-private fun QuietLinks(onAddPastAttack: () -> Unit, onLogMedication: () -> Unit) {
+private fun QuietLinks(
+    onAddPastAttack: () -> Unit,
+    onLogMedication: () -> Unit,
+    lastModifier: Modifier
+) {
     Row(modifier = Modifier.fillMaxWidth()) {
         listOf(
-            R.string.home_add_past_attack to onAddPastAttack,
-            R.string.log_medication to onLogMedication
-        ).forEach { (label, onClick) ->
+            Triple(R.string.home_add_past_attack, onAddPastAttack, Modifier),
+            Triple(R.string.log_medication, onLogMedication, lastModifier)
+        ).forEach { (label, onClick, extra) ->
             TextButton(
                 onClick = onClick,
-                modifier = Modifier
+                modifier = extra
                     .weight(1f)
                     .heightIn(min = 48.dp)
             ) {

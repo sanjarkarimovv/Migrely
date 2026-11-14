@@ -42,6 +42,7 @@ import androidx.navigation.NavController
 import com.migrely.app.architecture.ui.view.ScreenEnterObserver
 import com.migrely.app.designsystem.input.TapGuard
 import com.migrely.app.designsystem.motion.rememberReduceMotion
+import com.migrely.app.designsystem.snackbar.MessageLayout
 import com.migrely.app.designsystem.snackbar.MigrelySnackbar
 import com.migrely.app.designsystem.snackbar.MigrelySnackbarHost
 import com.migrely.app.designsystem.snackbar.SnackbarTone
@@ -87,15 +88,16 @@ fun OnboardingDependencies.Onboarding(
     ScreenEnterObserver { onboardingViewModel.onEnter() }
     ViewModelObserver(navController)
     var step by rememberSaveable { mutableIntStateOf(GOAL) }
-    var notSaved by remember { mutableStateOf(false) }
+    // When the last failure was posted, so a second one is a new message and is spoken again (BRD D178 (5)).
+    var notSavedAt by remember { mutableStateOf<Long?>(null) }
     LaunchedEffect(onboardingEventPresenter) {
-        onboardingEventPresenter.notSaved.collect { notSaved = true }
+        onboardingEventPresenter.notSaved.collect { notSavedAt = System.currentTimeMillis() }
     }
     val notSavedTimeout = messageTimeoutMillis(READING_MILLIS)
-    LaunchedEffect(notSaved, notSavedTimeout) {
-        if (notSaved && notSavedTimeout != null) {
+    LaunchedEffect(notSavedAt, notSavedTimeout) {
+        if (notSavedAt != null && notSavedTimeout != null) {
             delay(notSavedTimeout)
-            notSaved = false
+            notSavedAt = null
         }
     }
     BackHandler(enabled = step > GOAL) { step-- }
@@ -123,7 +125,7 @@ fun OnboardingDependencies.Onboarding(
         reminderOffer = { reminderOffer(onboardingViewModel::onFinishAction) },
         messages = {
             MigrelySnackbarHost(
-                message = Unit.takeIf { notSaved },
+                message = notSavedAt,
                 reduceMotion = rememberReduceMotion()
             ) {
                 MigrelySnackbar(
@@ -132,7 +134,7 @@ fun OnboardingDependencies.Onboarding(
                     action = null,
                     baseDurationMillis = READING_MILLIS,
                     dismissLabel = stringResource(R.string.onboarding_message_dismiss),
-                    onDismiss = { notSaved = false }
+                    onDismiss = { notSavedAt = null }
                 )
             }
         },
@@ -149,11 +151,24 @@ fun OnboardingContents(
     messages: @Composable () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Box(
+    // No top bar: the message is the first stop (BRD D178 (4), ux Q2).
+    MessageLayout(
+        message = messages,
         modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
+        OnboardingSteps(step, actions, reminderOffer)
+    }
+}
+
+@Composable
+private fun OnboardingSteps(
+    step: Int,
+    actions: OnboardingActions,
+    reminderOffer: @Composable () -> Unit
+) {
+    Box(Modifier.fillMaxSize()) {
         Box(contentAlignment = Alignment.TopCenter, modifier = Modifier.fillMaxSize()) {
             Column(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -180,7 +195,6 @@ fun OnboardingContents(
             durationMillis = STEP_GUARD_MILLIS,
             modifier = Modifier.matchParentSize()
         )
-        messages()
     }
 }
 

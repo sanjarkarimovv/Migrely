@@ -16,10 +16,13 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalAccessibilityManager
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
+import androidx.navigation.NavController
+import com.migrely.app.architecture.ui.view.ScreenLeaveObserver
 import com.migrely.app.designsystem.snackbar.MESSAGE_OFFSET_BELOW_TOP_BAR
 import com.migrely.app.designsystem.snackbar.MigrelySnackbar
 import com.migrely.app.designsystem.snackbar.MigrelySnackbarHost
 import com.migrely.app.designsystem.snackbar.SnackbarAction
+import com.migrely.app.designsystem.snackbar.SnackbarTone
 import com.migrely.app.designsystem.snackbar.isFreshDeletion
 import com.migrely.app.history.ui.R
 import com.migrely.app.history.ui.mapper.HistoryMessageBehaviourUiMapper
@@ -36,10 +39,12 @@ private const val OFFERED_DELETIONS_KEPT = 10
  * appeared are saved, so after a rotation it stays only for the time it has left. Each base duration is stretched to
  * the user's accessibility timeout. A deletion made on the details screen opened from here is offered once
  * (BRD EC-HIS-04, D31); one made before History was opened, for example from home, belongs to home and is not offered.
+ * An error belongs to the visit: leaving History by Back or forward clears it (BRD D178 (2)).
  */
 @Composable
 internal fun HistoryMessages(
     presenter: HistoryMessagePresenter,
+    navController: NavController,
     behaviourMapper: HistoryMessageBehaviourUiMapper,
     reduceMotion: Boolean,
     onUndoDelete: (attackId: String) -> Unit,
@@ -65,8 +70,14 @@ internal fun HistoryMessages(
             ) ?: base
         }
 
+    fun errorShown(): Boolean =
+        shown?.let { behaviourMapper.toUi(it.message).tone == SnackbarTone.Error } == true
+
     LaunchedEffect(presenter) {
         presenter.messages.collect { message ->
+            // "Saved." only replaces an error that the write made untrue; any other message stays, and with none the
+            // write needs no word (BRD D178 (1)).
+            if (message == HistoryMessageUiModel.Saved && !errorShown()) return@collect
             if (message is HistoryMessageUiModel.AttackDeleted) {
                 // An older deletion, for example after the app was closed and opened again, is past its undo.
                 val fresh =
@@ -85,6 +96,8 @@ internal fun HistoryMessages(
             shown = ShownHistoryMessageUiModel(message, System.currentTimeMillis())
         }
     }
+
+    ScreenLeaveObserver(navController) { if (errorShown()) shown = null }
 
     val current = shown
     val currentTimeout = current?.let { timeoutMillis(behaviourMapper.toUi(it.message)) }
@@ -160,6 +173,7 @@ private fun messageText(message: HistoryMessageUiModel): String = when (message)
         R.string.history_message_undo_not_possible
     )
     HistoryMessageUiModel.AttackLoggedOnDay -> stringResource(R.string.message_attack_logged_on_day)
+    HistoryMessageUiModel.Saved -> stringResource(R.string.history_message_saved)
     HistoryMessageUiModel.StorageFull -> stringResource(R.string.history_message_storage_full)
     HistoryMessageUiModel.SomethingWentWrong -> stringResource(R.string.history_message_generic)
 }

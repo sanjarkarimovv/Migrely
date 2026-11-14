@@ -14,6 +14,8 @@
     <string name="reminders_picker_title">Reminder time</string>
     <string name="reminders_picker_ok">OK</string>
     <string name="reminders_picker_cancel">Cancel</string>
+    <!-- A write saved after an error showed; replaces it (BRD D178 (1)). -->
+    <string name="reminders_message_saved">Saved.</string>
     <string name="reminders_message_storage_full">Couldn\'t save. Your phone\'s storage is full.</string>
     <string name="reminders_message_something_went_wrong">Something went wrong. Try again.</string>
     <string name="reminders_message_dismiss">Dismiss</string>

@@ -30,6 +30,7 @@ import com.migrely.app.home.presentation.model.HomePresentationNotification.Atta
 import com.migrely.app.home.presentation.model.HomePresentationNotification.AttackEnded
 import com.migrely.app.home.presentation.model.HomePresentationNotification.AttackStarted
 import com.migrely.app.home.presentation.model.HomePresentationNotification.EndTimeOutOfRange
+import com.migrely.app.home.presentation.model.HomePresentationNotification.Saved
 import com.migrely.app.home.presentation.model.HomePresentationNotification.SomethingWentWrong
 import com.migrely.app.home.presentation.model.HomePresentationNotification.StartMoveRejected
 import com.migrely.app.home.presentation.model.HomePresentationNotification.StorageFull
@@ -43,7 +44,9 @@ import java.time.Instant
 
 /**
  * Stateless (skill rule 4): every successful action reloads today, and the UI passes back any id it needs, for example
- * to undo. Today is loaded on enter, on every resume and when the local date changes (design D11). The one thing kept
+ * to undo. A write with no message of its own sends [Saved] from its own result, before the reload, so it is told in the
+ * order the writes answered and never lands after a later write's error (BRD D178 (1), review 9.2 (a)); the screen
+ * decides what it means. A result that wrote nothing sends nothing. Today is loaded on enter, on every resume and when the local date changes (design D11). The one thing kept
  * is the number of the latest read of today, so an older read answering last is not shown (#116).
  */
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -80,7 +83,7 @@ class HomeViewModel(
             value = intensityLevelDomainMapper.toDomain(level),
             onResult = { result ->
                 when (result) {
-                    RecordIntensityResultDomainModel.Recorded,
+                    RecordIntensityResultDomainModel.Recorded -> saved()
                     RecordIntensityResultDomainModel.NotInProgress -> loadToday()
 
                     RecordIntensityResultDomainModel.StorageFull -> notify(StorageFull)
@@ -95,7 +98,7 @@ class HomeViewModel(
             value = Duration.ofMinutes(minutes.toLong()),
             onResult = { result ->
                 when (result) {
-                    is MoveStartResultDomainModel.Moved,
+                    is MoveStartResultDomainModel.Moved -> saved()
                     MoveStartResultDomainModel.NotInProgress -> loadToday()
 
                     is MoveStartResultDomainModel.OverlapsPrevious -> notify(
@@ -147,7 +150,7 @@ class HomeViewModel(
             value = marked,
             onResult = { result ->
                 when (result) {
-                    WriteResultDomainModel.Written -> loadToday(keepPeriodToggle = true)
+                    WriteResultDomainModel.Written -> saved(keepPeriodToggle = true)
                     WriteResultDomainModel.StorageFull -> notify(StorageFull)
                     WriteResultDomainModel.Failed -> notify(SomethingWentWrong)
                 }
@@ -198,7 +201,7 @@ class HomeViewModel(
             value = LongAttackAnswerRequestDomainModel(attackId, answer),
             onResult = { result ->
                 when (result) {
-                    AnswerLongAttackResultDomainModel.Saved,
+                    AnswerLongAttackResultDomainModel.Saved -> saved()
                     AnswerLongAttackResultDomainModel.NotInProgress -> loadToday()
 
                     AnswerLongAttackResultDomainModel.StorageFull -> notify(StorageFull)
@@ -206,6 +209,12 @@ class HomeViewModel(
                 }
             }
         )
+    }
+
+    /** A write with no message of its own saved (BRD D178 (1)). */
+    private fun saved(keepPeriodToggle: Boolean = false) {
+        notify(Saved)
+        loadToday(keepPeriodToggle = keepPeriodToggle)
     }
 
     private fun presentUndo(result: UndoResultDomainModel) {

@@ -28,6 +28,8 @@ class RemindersNotificationUiMapper(private val presenter: RemindersEventPresent
             )
             RemindersPresentationNotification.Undone ->
                 RemindersEventUiModel.Message(RemindersMessageUiModel.Undone)
+            RemindersPresentationNotification.Saved ->
+                RemindersEventUiModel.Message(RemindersMessageUiModel.Saved)
             RemindersPresentationNotification.StorageFull ->
                 RemindersEventUiModel.Message(RemindersMessageUiModel.StorageFull)
             RemindersPresentationNotification.SomethingWentWrong ->

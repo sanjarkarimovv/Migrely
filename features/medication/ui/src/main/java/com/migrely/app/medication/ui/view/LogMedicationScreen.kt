@@ -68,6 +68,7 @@ import com.migrely.app.designsystem.input.limitedEdit
 import com.migrely.app.designsystem.motion.rememberReduceMotion
 import com.migrely.app.designsystem.picker.DateTimePickerLabels
 import com.migrely.app.designsystem.picker.MigrelyDateTimePicker
+import com.migrely.app.designsystem.snackbar.MessageLayout
 import com.migrely.app.designsystem.theme.MigrelyColors
 import com.migrely.app.designsystem.theme.MigrelyDarkRoom
 import com.migrely.app.designsystem.theme.MigrelyTheme
@@ -188,6 +189,7 @@ fun LogMedicationDependencies.LogMedication(
         messages = {
             MedicationMessages(
                 presenter = medicationEventPresenter,
+                navController = navController,
                 behaviourMapper = medicationMessageBehaviourUiMapper,
                 reduceMotion = reduceMotion
             )
@@ -287,12 +289,12 @@ fun LogMedicationContents(
 ) = MigrelyDarkRoom(active = darkRoom) {
     // The dark room is dark in every theme, its pickers and messages included (BRD D94).
     val colors = palette(darkRoom)
-    Box(
+    MessageLayout(
+        message = messages,
         modifier = modifier
             .fillMaxSize()
-            .background(colors.background)
-    ) {
-        Column(Modifier.fillMaxSize()) {
+            .background(colors.background),
+        topBar = {
             TopAppBar(
                 title = {
                     Text(
@@ -315,6 +317,9 @@ fun LogMedicationContents(
                     WindowInsetsSides.Top + WindowInsetsSides.Horizontal
                 )
             )
+        }
+    ) {
+        Column(Modifier.fillMaxSize()) {
             Box(contentAlignment = Alignment.TopCenter, modifier = Modifier.fillMaxSize()) {
                 Column(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -359,7 +364,6 @@ fun LogMedicationContents(
                 }
             }
         }
-        messages()
     }
 }
 

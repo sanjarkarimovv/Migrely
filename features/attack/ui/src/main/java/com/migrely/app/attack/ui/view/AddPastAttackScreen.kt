@@ -48,6 +48,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.migrely.app.architecture.ui.view.ScreenLeaveObserver
 import com.migrely.app.attack.presentation.model.AddPastAttackViewState
 import com.migrely.app.attack.ui.R
 import com.migrely.app.attack.ui.di.AddPastAttackDependencies
@@ -63,6 +64,7 @@ import com.migrely.app.attack.ui.model.TimeFieldUiModel
 import com.migrely.app.designsystem.icon.MigrelyIcons
 import com.migrely.app.designsystem.motion.rememberReduceMotion
 import com.migrely.app.designsystem.picker.MigrelyDateTimePicker
+import com.migrely.app.designsystem.snackbar.MessageLayout
 import com.migrely.app.designsystem.theme.MigrelyTheme
 import java.time.Instant
 import java.time.LocalDate
@@ -119,6 +121,13 @@ fun AddPastAttackDependencies.AddPastAttack(
         }
     }
 
+    // An error belongs to the visit (BRD D178 (2)); a save that succeeds closes the screen.
+    ScreenLeaveObserver(navController) {
+        if (shownMessage?.let { attackMessageBehaviourUiMapper.toUi(it.message).isError } == true) {
+            shownMessage = null
+        }
+    }
+
     val viewModel = addPastAttackViewModel
     fun send(clearProblem: Boolean, action: (start: Instant, end: Instant) -> Unit) {
         val times = draft ?: return
@@ -146,24 +155,25 @@ fun AddPastAttackDependencies.AddPastAttack(
         onChangeTimes = { problem = null }
     )
 
-    Box(modifier = modifier.fillMaxSize()) {
-        AddPastAttackContents(
-            draft = draft,
-            problem = problem,
-            saving = saving,
-            timeUiFormatter = attackTimeUiFormatter,
-            actions = actions
-        )
-        AttackMessages(
-            shown = shownMessage,
-            behaviourMapper = attackMessageBehaviourUiMapper,
-            reduceMotion = rememberReduceMotion(),
-            isShown = { message -> shownMessage == message },
-            onClear = { message -> if (shownMessage == message) shownMessage = null },
-            onUndoTimes = {},
-            onUndoPoint = {}
-        )
-    }
+    AddPastAttackContents(
+        draft = draft,
+        problem = problem,
+        saving = saving,
+        timeUiFormatter = attackTimeUiFormatter,
+        actions = actions,
+        modifier = modifier,
+        messages = {
+            AttackMessages(
+                shown = shownMessage,
+                behaviourMapper = attackMessageBehaviourUiMapper,
+                reduceMotion = rememberReduceMotion(),
+                isShown = { message -> shownMessage == message },
+                onClear = { message -> if (shownMessage == message) shownMessage = null },
+                onUndoTimes = {},
+                onUndoPoint = {}
+            )
+        }
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -174,41 +184,50 @@ fun AddPastAttackContents(
     saving: Boolean,
     timeUiFormatter: AttackTimeUiFormatter,
     actions: AddPastAttackActions,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    messages: @Composable () -> Unit = {}
 ) {
-    Column(
+    // The bar, then the message, then the form, for keyboard and TalkBack (BRD D178 (4)).
+    MessageLayout(
+        message = messages,
         modifier = modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(MaterialTheme.colorScheme.background),
+        topBar = { AddPastAttackTopBar(actions.onBack) }
     ) {
-        TopAppBar(
-            title = {
-                Text(
-                    text = stringResource(R.string.past_title),
-                    style = MaterialTheme.typography.titleLarge
-                )
-            },
-            navigationIcon = {
-                IconButton(onClick = actions.onBack) {
-                    Icon(
-                        MigrelyIcons.Back,
-                        contentDescription = stringResource(R.string.attack_navigate_back)
-                    )
-                }
-            },
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = MaterialTheme.colorScheme.background
-            ),
-            windowInsets = WindowInsets.safeDrawing.only(
-                WindowInsetsSides.Top + WindowInsetsSides.Horizontal
-            )
-        )
         if (draft == null) {
             Box(Modifier.fillMaxSize())
         } else {
             DraftContents(draft, problem, saving, timeUiFormatter, actions)
         }
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AddPastAttackTopBar(onBack: () -> Unit) {
+    TopAppBar(
+        title = {
+            Text(
+                text = stringResource(R.string.past_title),
+                style = MaterialTheme.typography.titleLarge
+            )
+        },
+        navigationIcon = {
+            IconButton(onClick = onBack) {
+                Icon(
+                    MigrelyIcons.Back,
+                    contentDescription = stringResource(R.string.attack_navigate_back)
+                )
+            }
+        },
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = MaterialTheme.colorScheme.background
+        ),
+        windowInsets = WindowInsets.safeDrawing.only(
+            WindowInsetsSides.Top + WindowInsetsSides.Horizontal
+        )
+    )
 }
 
 @Composable

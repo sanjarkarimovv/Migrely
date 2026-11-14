@@ -66,14 +66,17 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavController
 import com.migrely.app.architecture.ui.view.ScreenEnterObserver
+import com.migrely.app.architecture.ui.view.ScreenLeaveObserver
 import com.migrely.app.designsystem.format.MigrelyDateFormat
 import com.migrely.app.designsystem.icon.MigrelyIcons
 import com.migrely.app.designsystem.motion.rememberReduceMotion
 import com.migrely.app.designsystem.picker.DateRangePickerLabels
 import com.migrely.app.designsystem.picker.MigrelyDateRangePicker
 import com.migrely.app.designsystem.snackbar.MESSAGE_OFFSET_BELOW_TOP_BAR
+import com.migrely.app.designsystem.snackbar.MessageLayout
 import com.migrely.app.designsystem.snackbar.MigrelySnackbar
 import com.migrely.app.designsystem.snackbar.MigrelySnackbarHost
+import com.migrely.app.designsystem.snackbar.SnackbarTone
 import com.migrely.app.designsystem.snackbar.messageTimeoutMillis
 import com.migrely.app.designsystem.theme.MigrelyTheme
 import com.migrely.app.report.presentation.model.ReportViewState
@@ -84,6 +87,7 @@ import com.migrely.app.report.ui.model.ReportMessageUiModel
 import com.migrely.app.report.ui.model.ReportOptionsUiModel
 import com.migrely.app.report.ui.model.ReportPeriodUiModel
 import com.migrely.app.report.ui.model.ReportViewStateUiModel
+import com.migrely.app.report.ui.model.ShownReportMessageUiModel
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -103,9 +107,6 @@ data class ReportActions(
     val onCreate: () -> Unit
 )
 
-/** A message as shown, with its place in the order shown, so the same one twice shows again. */
-private data class ShownMessage(val message: ReportMessageUiModel, val number: Int)
-
 /**
  * The doctor report (BRD REP-F1–F4, EC-REP-01–03, D81–D85). The chosen period and the notes switch are kept here, and
  * the finished PDF goes out through the system's share sheet with a one-off read grant, so no permission is needed.
@@ -120,12 +121,19 @@ fun ReportDependencies.Report(navController: NavController, modifier: Modifier =
     ViewModelObserver(navController)
     val viewState by reportViewModel.viewState.collectAsState(ReportViewState.Loading)
     val context = LocalContext.current
-    var message by remember { mutableStateOf<ShownMessage?>(null) }
-    var shownCount by remember { mutableIntStateOf(0) }
+    // Stamped, so the same message twice in a row shows and is announced again; saved, so an error survives a rotation.
+    var message by rememberSaveable { mutableStateOf<ShownReportMessageUiModel?>(null) }
     val show: (ReportMessageUiModel) -> Unit = {
-        shownCount++
-        message = ShownMessage(it, shownCount)
+        message = ShownReportMessageUiModel(it, System.currentTimeMillis())
     }
+
+    fun errorShown(): Boolean = message?.let {
+        reportMessageBehaviourUiMapper.toUi(it.message).tone == SnackbarTone.Error
+    } ==
+        true
+    // An error belongs to the visit: Back or forward clears it; the share sheet and Android Settings keep it
+    // (BRD D178 (2)).
+    ScreenLeaveObserver(navController) { if (errorShown()) message = null }
     val shareTitle = stringResource(R.string.report_share)
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     LaunchedEffect(reportEventPresenter, lifecycle) {
@@ -137,7 +145,10 @@ fun ReportDependencies.Report(navController: NavController, modifier: Modifier =
                 .collect { event ->
                     reportViewModel.onOutcomeShownAction()
                     when (event) {
-                        is ReportEventUiModel.Share ->
+                        // A report was made: an error it made untrue goes, with no "Saved.", because the share sheet
+                        // is the outcome and the app saved nothing (BRD D178 (1)).
+                        is ReportEventUiModel.Share -> {
+                            if (errorShown()) message = null
                             if (!share(
                                     context,
                                     event.uri,
@@ -146,6 +157,7 @@ fun ReportDependencies.Report(navController: NavController, modifier: Modifier =
                             ) {
                                 show(ReportMessageUiModel.NoAppToShare)
                             }
+                        }
                         is ReportEventUiModel.Message -> show(event.message)
                     }
                 }
@@ -156,8 +168,9 @@ fun ReportDependencies.Report(navController: NavController, modifier: Modifier =
         message?.let { reportMessageBehaviourUiMapper.toUi(it.message).baseDurationMillis }
     )
     LaunchedEffect(message, messageTimeout) {
-        if (message != null && messageTimeout != null) {
-            delay(messageTimeout)
+        val current = message
+        if (current != null && messageTimeout != null) {
+            delay(current.remainingMillis(System.currentTimeMillis(), messageTimeout))
             message = null
         }
     }
@@ -220,8 +233,10 @@ fun ReportContents(
     messages: @Composable () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Box(modifier = modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-        Column(Modifier.fillMaxSize()) {
+    MessageLayout(
+        message = messages,
+        modifier = modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
+        topBar = {
             TopAppBar(
                 title = {
                     Text(
@@ -246,6 +261,9 @@ fun ReportContents(
                     WindowInsetsSides.Top + WindowInsetsSides.Horizontal
                 )
             )
+        }
+    ) {
+        Column(Modifier.fillMaxSize()) {
             val working = viewState == ReportViewStateUiModel.Working
             if (working) {
                 val description = stringResource(R.string.report_working)
@@ -359,7 +377,6 @@ fun ReportContents(
                 }
             }
         }
-        messages()
     }
 }
 

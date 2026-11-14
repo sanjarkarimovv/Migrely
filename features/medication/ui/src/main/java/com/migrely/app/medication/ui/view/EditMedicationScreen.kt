@@ -49,6 +49,7 @@ import com.migrely.app.designsystem.icon.MigrelyIcons
 import com.migrely.app.designsystem.input.TapGuard
 import com.migrely.app.designsystem.input.rememberLimitedField
 import com.migrely.app.designsystem.motion.rememberReduceMotion
+import com.migrely.app.designsystem.snackbar.MessageLayout
 import com.migrely.app.designsystem.theme.MigrelyTheme
 import com.migrely.app.medication.ui.R
 import com.migrely.app.medication.ui.di.EditMedicationDependencies
@@ -147,6 +148,7 @@ private fun EditMedicationDependencies.MedicationEditor(
         messages = {
             MedicationMessages(
                 presenter = medicationEventPresenter,
+                navController = navController,
                 behaviourMapper = medicationMessageBehaviourUiMapper,
                 reduceMotion = reduceMotion
             )
@@ -170,12 +172,12 @@ fun EditMedicationContents(
     messages: @Composable () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Box(
+    MessageLayout(
+        message = messages,
         modifier = modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-    ) {
-        Column(Modifier.fillMaxSize()) {
+            .background(MaterialTheme.colorScheme.background),
+        topBar = {
             TopAppBar(
                 title = {
                     Text(
@@ -200,6 +202,9 @@ fun EditMedicationContents(
                     WindowInsetsSides.Top + WindowInsetsSides.Horizontal
                 )
             )
+        }
+    ) {
+        Column(Modifier.fillMaxSize()) {
             Box(contentAlignment = Alignment.TopCenter, modifier = Modifier.fillMaxSize()) {
                 Column(
                     verticalArrangement = Arrangement.spacedBy(FORM_SPACING),
@@ -224,7 +229,6 @@ fun EditMedicationContents(
                 }
             }
         }
-        messages()
     }
 }
 
