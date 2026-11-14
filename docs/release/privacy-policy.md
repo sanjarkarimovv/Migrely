@@ -3,7 +3,7 @@
 Effective date: 14 November 2026.
 
 Migrely is a headache diary for Android, published on Google Play by Sulton UzDev ("we"). This policy explains what
-happens to the information you enter in the app, and, near the end, what happens on the website. In short: **Migrely has no internet access, and we never receive your entries.**
+happens to the information you enter in the app, and, near the end, what happens on the website. In short: **Migrely has no internet permission, so the app cannot send your entries over the internet, and we never receive them.**
 
 ## What Migrely keeps, and where
 
@@ -19,7 +19,7 @@ Migrely keeps what you enter on your phone:
 - up to three automatic copies of your entries, made before an import replaces them.
 
 Migrely does not ask for your name, email, location, contacts, photos or any account. It has no internet permission,
-so it cannot send anything to us or to anyone else. It contains no analytics, advertising or tracking code of its own.
+so it cannot send anything to us or to anyone else over the internet. It contains no analytics, advertising or tracking code of its own.
 The Google Play billing library it uses for Premium includes Google's usage logging, which cannot send anything
 either without the internet permission. Google Play's rating library, which Migrely uses to ask for a rating, needs no
 permission at all.
