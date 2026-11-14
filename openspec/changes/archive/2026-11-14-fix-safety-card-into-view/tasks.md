@@ -13,4 +13,10 @@ Base: `hotfix/1.1.1`, alongside `fix-offline-play-sheet`. `Refs #171`.
   TalkBack: saved at 200% speaks the title and the sentence; failed at 100% speaks the sentence and not the title, as #166 expects. Negative control
   without P8: `nc3-no-p8-S4-*` (card above the view, title not spoken).
 - [x] 3.1 The gate, with the offline change (`fix-offline-play-sheet` 6.1). Verify: exit 0. Done: `gate.exit` 0 at a3f25cdb, `gate2.exit` 0 at 4233719a.
-- [ ] 3.2 `qa-engineer` runs S1 to S7, S4 on 1.1.0 or a local build without the change. Verify: they are in the 1.1.1 Go/No-Go.
+- [x] 3.2 `qa-engineer` runs S1 to S7, S4 on 1.1.0 or a local build without the change. Verify: they are in the 1.1.1 Go/No-Go. Done (record
+  2026-11-14, T63): `docs/qa/go-no-go-1.1.1.md`, "D167, the card", on eeb69f8a (product code equal to the GO SHA d7376af0). S1
+  debug 16/16 and R8 4/4, S2 4/4, S3 2/2, S4 on 1.1.0's code (c2761cba) fails as it should 3/3, S5, S6 at 100%, S7, R3 2/2, R4 12/12.
+  Not proved, accepted in that GO: S6 at 200% in landscape.
+- [x] 4.1 Sync the delta before archiving (T63, 2026-11-14). #166 is closed: messages no longer cover the card (in-app-messages,
+  D165). So the failed-save scenario and the TalkBack requirement no longer say the message lies over the title. Verify:
+  `openspec validate --specs --strict` exits 0 after the archive.
