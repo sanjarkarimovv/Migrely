@@ -399,10 +399,21 @@ and the engineer cover: O1–O20 (order), F-a–F-h (focus), M1–M12 (motion an
 
 ## 10. QA (qa-engineer, independent, this diff only)
 
-- [ ] 10.1 Run design checks A1–A20 and negative controls N1–N8 on the branch head SHA, debug and R8 release. Cover the ux spec's
+- [x] 10.1 Run design checks A1–A20 and negative controls N1–N8 on the branch head SHA, debug and R8 release. Cover the ux spec's
   §3 tables O1–O20, F-a–F-h, M1–M12, P1–P7, S1–S4 and R1–R5. Its font cells apply: 100% and 200% on API 34+, and 130% on API 26. Scope is what the diff
   reaches (owner rule 2026-11-09). The whole-app regression stays nightly on `develop`. Verify: the table is in `docs/qa/` with the
   SHA, the counts and what it does not prove. The retest results go on #181, #185, #183 and #88, and on #153 for its message part.
+
+  Done by qa-msgs at 1000c181 (control `develop` 52c12ce5), record `docs/qa/fix-messages-everywhere.md`: **GO for the merge into
+  `develop`**, no issue filed.
+  - Safety and data: "Saved." replaces the error and a newer failure stays (Home 5/5, +2 reduce motion, +1 R8; N1 control 2/2);
+    the 0.8 s guard after a shorter replacement 8/8 swallowed on debug and R8 (N8 mutant falls through 4/4, positive control at
+    2.5 s 3/3); failed retries spoken again with text and 0 empty live-region events in 66 (N6: `develop` History 3 empty in 6).
+  - Leave (A8, A9) 6/6 with N4 control 2/2; review R1–R5 on debug with N7 control 2/2; Tab order on 5 hosts and Home in both
+    modes, N2 control; Home placement at 411 and 274 dp at 100% and 200% (N3 control); API 26 O20 at 130%.
+  - Not run (risk carried, listed in the record): Paywall, Doctor report, Your data, My medications, Edit medication, Log
+    medication, Add past migraine and Onboarding on the device; S2, A13, A14, frame captures (M2, M4–M6, M8–M12), O15, O17, P6;
+    right to left (the app does not mirror).
 
 ## 11. Close (product-manager)
 
