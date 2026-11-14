@@ -194,6 +194,18 @@ class MessageOrderTest {
     }
 
     @Test
+    fun `The bar, the message and the content carry their traversal index in that order`() {
+        showScreen()
+
+        // Without an explicit index TalkBack orders by place on screen, and the content's top lies above the
+        // message's in many screens; so each part must carry its own index (review 9.2 (c)).
+        val indexes = listOf(hasText("Back"), hasContentDescription(DISMISS), hasText("First"))
+            .map { matcher -> slotIndex(matcher) }
+
+        assertEquals(listOf(0f, 1f, 2f), indexes)
+    }
+
+    @Test
     fun `A message that appears does not move focus`() {
         message = null
         showScreen()
@@ -266,6 +278,13 @@ class MessageOrderTest {
 
         assertEquals(FIRST, focused())
     }
+
+    /** The traversal index of the nearest traversal group around the node matching [matcher], or null with none. */
+    private fun slotIndex(matcher: SemanticsMatcher): Float? =
+        generateSequence(rule.onNode(matcher, useUnmergedTree = true).fetchSemanticsNode()) { it.parent }
+            .firstOrNull { SemanticsProperties.TraversalIndex in it.config }
+            ?.config
+            ?.get(SemanticsProperties.TraversalIndex)
 
     /**
      * Where the node matching [matcher] comes in TalkBack's order: the traversal indexes of its traversal groups, from
