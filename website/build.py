@@ -244,8 +244,10 @@ def play_link(page_campaign):
     return f'{PLAY}&referrer={quote(tags, safe="")}'
 
 
-def page(path, title, description, body, extra_head=''):
+def page(path, title, description, body, extra_head='', landing=False):
     canonical = f'{BASE}{path}'
+    if landing:
+        return landing_page(canonical, title, description, body)
     current = ' aria-current="page"'
     nav = ''.join(
         f'<a href="{href}"{current if href == path else ""}>{label}</a>'
@@ -301,6 +303,73 @@ def page(path, title, description, body, extra_head=''):
 </body>
 </html>
 '''
+
+
+# The paid-ad landing page (tracker T62, test ig-ads-test1). Meta does not let a Traffic ad link to Google Play, so the
+# ad opens /android/ and this page's two Play buttons carry the campaign tags, in plain utm_ parameters and in referrer.
+AD_TAGS = 'utm_source=instagram&utm_medium=paid_social&utm_campaign=ig-ads-test1'
+AD_PLAY = f'{PLAY}&{AD_TAGS}&referrer={quote(AD_TAGS, safe="")}'
+AD_PLAY_EXPECTED = ('https://play.google.com/store/apps/details?id=com.migrely.app&utm_source=instagram'
+                    '&utm_medium=paid_social&utm_campaign=ig-ads-test1&referrer=utm_source%3Dinstagram'
+                    '%26utm_medium%3Dpaid_social%26utm_campaign%3Dig-ads-test1')
+# The site-wide disclaimer minus "Talk to a doctor about your headaches", which would speak to a reader as someone
+# with headaches (Meta's personal-attributes policy).
+AD_DISCLAIMER = ('Migrely is a diary. It is not a medical device and does not diagnose, treat or prevent any '
+                 'condition.')
+
+
+def landing_page(canonical, title, description, body):
+    """A page for paid traffic: noindex, no site navigation, a short footer. Meta's crawler can still read it, because
+    robots.txt does not block it. It is not in the sitemap, and it links nowhere that sells or tracks."""
+    return f'''<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{esc(title)}</title>
+<meta name="description" content="{esc(description)}">
+<meta name="robots" content="noindex">
+<link rel="canonical" href="{canonical}">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#5B50D6">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Migrely">
+<meta property="og:title" content="{esc(title)}">
+<meta property="og:description" content="{esc(description)}">
+<meta property="og:url" content="{canonical}">
+<meta property="og:image" content="{BASE}/assets/img/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="preload" href="/assets/fonts/fraunces-600.woff" as="font" type="font/woff" crossorigin>
+<link rel="stylesheet" href="/assets/site.css?v={CSS_VERSION}">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="wrap bar">
+  <span class="brand"><img src="/favicon.svg" alt="" width="32" height="32"><span>Migrely</span></span>
+</div></header>
+<main id="main">
+{body}
+</main>
+<footer class="foot"><div class="wrap">
+  <p>{esc(AD_DISCLAIMER)}</p>
+  <p class="links"><a href="/privacy/">Privacy policy</a><a href="/privacy-check/">Check our privacy</a></p>
+  <p>© 2026 Migrely, published by Sulton UzDev · <a href="mailto:{SUPPORT}">{SUPPORT}</a></p>
+</div></footer>
+</body>
+</html>
+'''
+
+
+def ad_play_button(label='Get it on Google Play'):
+    return (f'<a class="play" href="{esc(AD_PLAY)}">'
+            '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">'
+            '<path fill="currentColor" d="M4 2.6v18.8c0 .5.5.8.9.6l16.3-9.4c.4-.2.4-.9 0-1.1L4.9 2.1c-.4-.2-.9.1-.9.5z"/>'
+            f'</svg><span>{label}</span></a>')
 
 
 def play_button(path, label='Get it on Google Play'):
@@ -632,6 +701,45 @@ def privacy_check():
     return page(path, 'Check Migrely\'s privacy yourself · Migrely',
                 'Migrely has no internet permission. Check it on your own phone in two minutes, and see what each of '
                 f'its {count} permissions is for.', body, ld)
+
+
+def android_landing():
+    """/android/: where the Instagram ad test ig-ads-test1 sends people (tracker T62). Every sentence comes from the
+    ad pack (headline, primary text, on-screen cards, alt text) or the site's own approved privacy lines."""
+    path = '/android/'
+    shots = ''.join(
+        f'<figure><img src="/assets/img/{name}.webp" alt="{esc(alt)}" width="360" height="640" loading="lazy"></figure>'
+        for name, alt in [('01-log', 'The Migrely app on a phone, with sample data: Rest now, we will keep time.'),
+                          ('02-sky-v2', 'Each month, drawn as a night sky. Each day shows what was logged.')])
+    body = f'''
+<section class="hero"><div class="wrap hero-text">
+  <h1>Private migraine diary for Android</h1>
+  <p class="lead">3 taps log an attack, even in a dark room. No account, no internet permission.</p>
+  <div class="cta">{ad_play_button()}</div>
+  <p class="meta">Free to log on Google Play</p>
+</div></section>
+
+<section class="shots" aria-label="Screens from Migrely"><div class="wrap strip">{shots}</div>
+  <p class="wrap meta">Sample data, not a real patient.</p></section>
+
+<section class="band"><div class="wrap block measure">
+  <h2>No internet permission</h2>
+  <p>Android lists every app's permissions. Internet is not on Migrely's list. No account, no ads.</p>
+  <p>Android's own backup may copy entries to a Google account, and exported files go wherever they are sent.</p>
+  <p>The permission list can be checked at <a href="/privacy-check/">migrely.health/privacy-check</a>. The
+    <a href="/privacy/">privacy policy</a> has the details.</p>
+</div></section>
+
+<section class="wrap block measure"><h2>Free, and Premium</h2>
+  <p>Logging, the full history, medications, reminders, backup and spreadsheet export are free. The doctor report and
+    Insights are Premium.</p>
+  <p>It's a diary: it doesn't diagnose or treat migraine.</p></section>
+
+<section class="wrap block final"><h2>Private migraine diary for Android</h2>{ad_play_button()}</section>
+'''
+    return page(path, 'Migrely: private migraine diary for Android',
+                '3 taps log an attack, even in a dark room. No account, no internet permission. Free to log on '
+                'Google Play.', body, landing=True)
 
 
 def privacy():
@@ -1461,6 +1569,29 @@ PAGES = [('/', 'index.html', home), ('/about/', 'about/index.html', about),
          ('/privacy/', 'privacy/index.html', privacy), ('/delete-data/', 'delete-data/index.html', delete_data)]
 
 
+# Pages built and checked like the others but kept out of the sitemap, llms.txt and the site's navigation: noindex and
+# reachable only from an ad. Their lastmod is tracked in lastmod.json all the same.
+AD_PAGES = [('/android/', 'android/index.html', android_landing)]
+
+
+def check_ad_pages(built):
+    """Stops the build when the ad landing page loses its Play link, noindex or canonical, or uses a script, a video
+    or wording the legal review forbids."""
+    if AD_PLAY != AD_PLAY_EXPECTED:
+        raise SystemExit(f'The ad Play link changed: {AD_PLAY}')
+    for path, (_, content) in built.items():
+        if content.count(f'href="{esc(AD_PLAY_EXPECTED)}"') != 2:
+            raise SystemExit(f'{path} must carry the exact campaign Play link on exactly two buttons.')
+        if '<meta name="robots" content="noindex">' not in content:
+            raise SystemExit(f'{path} must be noindex.')
+        if f'<link rel="canonical" href="{BASE}{path}">' not in content:
+            raise SystemExit(f'{path} needs a canonical to itself.')
+        if re.search(r'<script|<video|autoplay|iframe', content):
+            raise SystemExit(f'{path} must have no script, video or iframe.')
+        if re.search(r'never goes online|100% offline|nothing leaves your phone', content, re.I):
+            raise SystemExit(f'{path} uses wording the legal review forbids.')
+
+
 def check_orphans(built):
     """Stops the build when a sitemap page can't be reached by following links from the home page (BRD EC-WEB-19)."""
     links = {path: set(re.findall(r'<a\b[^>]*?\shref="(/[^"#?]*)"', re.sub(r'<!--.*?-->', '', content, flags=re.S)))
@@ -1580,16 +1711,18 @@ def main():
     check_faq_unique()
     check_min_sdk()
     built = {path: (rel, build()) for path, rel, build in PAGES}
+    ads = {path: (rel, build()) for path, rel, build in AD_PAGES}
+    check_ad_pages(ads)
     check_orphans(built)
     check_direct_answers(built)
     llms = llms_txt()
     check_llms(llms, built)
-    for rel, content in [*built.values(), ('404.html', not_found())]:
+    for rel, content in [*built.values(), *ads.values(), ('404.html', not_found())]:
         target = SITE / rel
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(content)
     images()
-    dates = lastmods({path: content for path, (_, content) in built.items()})
+    dates = lastmods({path: content for path, (_, content) in {**built, **ads}.items()})
     (SITE / 'sitemap.xml').write_text(
         '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
         + ''.join(f'  <url><loc>{BASE}{path}</loc><lastmod>{dates[path]}</lastmod></url>\n' for path in built)
