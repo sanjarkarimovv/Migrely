@@ -57,7 +57,8 @@ class AppOnScreenDataSourceImplTest {
 
     @Test
     fun `Given the system leaves the memory state unfilled then not on screen, so it posts`() {
-        // No entry for this process: Robolectric, like a system that answers nothing, fills in no importance.
+        // No entry for this process, so Robolectric fills in no importance. A device always fills it;
+        // this guards only the start value.
         shadowOf(
             RuntimeEnvironment.getApplication().getSystemService(ActivityManager::class.java)
         ).setProcesses(emptyList())

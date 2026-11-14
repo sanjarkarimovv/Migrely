@@ -11,8 +11,9 @@ import android.app.ActivityManager.RunningAppProcessInfo
  */
 class AppOnScreenDataSourceImpl : AppOnScreenDataSource {
     override fun isOnScreen(): Boolean {
-        // A new RunningAppProcessInfo says foreground; start from gone, so a state the system leaves unfilled lets the
-        // reminder post rather than postpone it until midnight (code review, cr-213).
+        // A new RunningAppProcessInfo says foreground; start from gone so an unfilled state posts the
+        // reminder (cr-213). Only Robolectric leaves it unfilled: on a device the system always fills
+        // importance, so this start value changes nothing there (cr-213b).
         val state = RunningAppProcessInfo().apply {
             importance = RunningAppProcessInfo.IMPORTANCE_GONE
         }
