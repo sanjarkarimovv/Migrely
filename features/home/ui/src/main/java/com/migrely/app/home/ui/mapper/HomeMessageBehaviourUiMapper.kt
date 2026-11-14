@@ -38,6 +38,9 @@ class HomeMessageBehaviourUiMapper {
         HomeMessageUiModel.EndTimeOutOfRange ->
             HomeMessageBehaviourUiModel(SnackbarTone.Information, undoTarget = null, READING_MILLIS)
 
+        HomeMessageUiModel.Saved ->
+            HomeMessageBehaviourUiModel(SnackbarTone.Confirmation, undoTarget = null, READING_MILLIS)
+
         HomeMessageUiModel.SomethingWentWrong ->
             HomeMessageBehaviourUiModel(SnackbarTone.Error, undoTarget = null, READING_MILLIS)
 

@@ -30,6 +30,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -427,4 +428,75 @@ class HistoryViewModelTest :
                     )
                 }
         }
+
+    // "Write saved" (BRD D178 (1), EC-UX-35): a day mark has no message of its own, so it says that it saved, and the
+    // screen replaces an error with "Saved.". A mark with its own message, or one that failed, says only that.
+
+    /** Every notification [action] sends. */
+    private fun TestScope.notificationsOf(action: () -> Unit): List<HistoryPresentationNotification> {
+        val heard = mutableListOf<HistoryPresentationNotification>()
+        val collecting = launch(start = UNDISPATCHED) {
+            classUnderTest.notification.collect { heard += it }
+        }
+        action()
+        runCurrent()
+        collecting.cancel()
+        return heard
+    }
+
+    private fun givenMark(kind: DayMarkKindDomainModel, result: SetDayMarkResultDomainModel) {
+        setDayMarkUseCase.givenSuccessfulExecution(
+            SetDayMarkRequestDomainModel(LocalDate.parse("2026-09-14"), kind, true),
+            result
+        )
+        givenMonth(HistoryMonthResultDomainModel.Loaded(month()))
+    }
+
+    @Test
+    fun `Given a period mark is written then write saved`() = runTest {
+        givenMark(DayMarkKindDomainModel.Period, SetDayMarkResultDomainModel.Done)
+
+        assertEquals(
+            listOf(HistoryPresentationNotification.Saved),
+            notificationsOf {
+                classUnderTest.onPeriodAction(SEPTEMBER, LocalDate.parse("2026-09-14"), true)
+            }
+        )
+    }
+
+    @Test
+    fun `Given a pain-free mark is written then write saved`() = runTest {
+        givenMark(DayMarkKindDomainModel.PainFree, SetDayMarkResultDomainModel.Done)
+
+        assertEquals(
+            listOf(HistoryPresentationNotification.Saved),
+            notificationsOf {
+                classUnderTest.onPainFreeAction(SEPTEMBER, LocalDate.parse("2026-09-14"), true)
+            }
+        )
+    }
+
+    @Test
+    fun `Given a mark with its own message then no write saved`() = runTest {
+        givenMark(DayMarkKindDomainModel.PainFree, SetDayMarkResultDomainModel.AttackLogged)
+
+        assertEquals(
+            listOf(HistoryPresentationNotification.AttackLoggedOnDay),
+            notificationsOf {
+                classUnderTest.onPainFreeAction(SEPTEMBER, LocalDate.parse("2026-09-14"), true)
+            }
+        )
+    }
+
+    @Test
+    fun `Given a mark that is not written then no write saved`() = runTest {
+        givenMark(DayMarkKindDomainModel.Period, SetDayMarkResultDomainModel.StorageFull)
+
+        assertEquals(
+            listOf(HistoryPresentationNotification.StorageFull),
+            notificationsOf {
+                classUnderTest.onPeriodAction(SEPTEMBER, LocalDate.parse("2026-09-14"), true)
+            }
+        )
+    }
 }

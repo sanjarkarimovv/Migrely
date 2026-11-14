@@ -71,6 +71,8 @@
     <string name="attack_details_description">Details of this migraine</string>
     <string name="home_message_undone">Undone.</string>
     <string name="home_message_undo_not_possible">This can no longer be undone.</string>
+    <!-- A write saved after an error showed; replaces it (BRD D178 (1)). -->
+    <string name="home_message_saved">Saved.</string>
     <string name="home_message_storage_full">Couldn\'t save. Your phone\'s storage is full.</string>
     <string name="message_move_rejected">Your previous migraine ended at %1$s.</string>
     <string name="message_end_out_of_range">Pick a time between the start and now.</string>

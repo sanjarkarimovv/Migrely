@@ -87,6 +87,7 @@ import com.migrely.app.designsystem.snackbar.MESSAGE_OFFSET_BELOW_TOP_BAR
 import com.migrely.app.designsystem.snackbar.MigrelySnackbar
 import com.migrely.app.designsystem.snackbar.MigrelySnackbarHost
 import com.migrely.app.designsystem.snackbar.SnackbarAction
+import com.migrely.app.designsystem.snackbar.SnackbarTone
 import com.migrely.app.designsystem.snackbar.messageTimeoutMillis
 import com.migrely.app.designsystem.theme.MigrelyTheme
 import com.migrely.app.reminders.presentation.model.RemindersViewState
@@ -189,7 +190,15 @@ fun RemindersDependencies.Reminders(navController: NavController, modifier: Modi
                         launcher.launch(Manifest.permission.POST_NOTIFICATIONS)
                     }
                 }
-                is RemindersEventUiModel.Message -> message = event.message
+                is RemindersEventUiModel.Message -> {
+                    // "Saved." only replaces an error that the write made untrue; any other message stays, and with
+                    // none the write needs no word (BRD D178 (1)).
+                    val saved = event.message == RemindersMessageUiModel.Saved
+                    val errorShown = message?.let {
+                        remindersMessageBehaviourUiMapper.toUi(it).tone == SnackbarTone.Error
+                    } == true
+                    if (!saved || errorShown) message = event.message
+                }
             }
         }
     }
@@ -588,6 +597,7 @@ private fun RemindersMessageUiModel.text() = when (this) {
     RemindersMessageUiModel.SomethingWentWrong -> R.string.reminders_message_something_went_wrong
     is RemindersMessageUiModel.VisitRemoved -> R.string.reminders_message_visit_removed
     RemindersMessageUiModel.Undone -> R.string.reminders_message_undone
+    RemindersMessageUiModel.Saved -> R.string.reminders_message_saved
 }
 
 /** Some builds lack a settings page; the app's own details page always exists. */

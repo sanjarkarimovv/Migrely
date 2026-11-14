@@ -37,19 +37,37 @@ and the engineer cover: O1–O20 (order), F-a–F-h (focus), M1–M12 (motion an
 
 ## 3. Presentation (android-engineer)
 
-- [ ] 3.1 `HomeViewModel`, `HistoryViewModel` and `RemindersViewModel` emit one "write saved" event on each success in the design's
+- [x] 3.1 `HomeViewModel`, `HistoryViewModel` and `RemindersViewModel` emit one "write saved" event on each success in the design's
   table (middle column), including Reminders' visit date `Saved` with `askForPermission = true` (F4), and none on a result that
   writes nothing. Write the tests first, one per write path, plus one for each
   non-write result (`NotInProgress`, `Unchanged`, `NothingToRemove`). Verify:
   `./gradlew :features:home:presentation:test :features:history:presentation:test :features:reminders:presentation:test`
   passes, and the new tests fail first on 52c12ce5.
 
+  Done. The event is a `Saved` notification in each module, as on Attack details (D165 (4)). Home sends it after the new
+  state (`loadToday(thenTell = Saved)`, D158 order); History and Reminders send it before the reload, as their own
+  messages do. 26 new tests: Home 10 (5 write paths, 5 non-write: `NotInProgress` x4, `AlreadyInProgress`), History 4
+  (2 write paths, own message, failure), Reminders 11 (5 reminder writes, failure, visit `Saved`, visit `Saved` with a
+  permission ask (order: `Saved`, then the ask), `Unchanged`, `NothingToRemove`, remove and undo keep their own message).
+  - Red, on 52c12ce5's view models with only the `Saved` objects added: 14 failed, all the write paths (Home 5/64, History
+    2/60, Reminders 7/37); the non-write tests passed, as they must. Log `migrely-work/walks/msgs/3.1-red.log`.
+  - Green: Home 64/64, History 60/60, Reminders 37/37, exit 0. One old test changed on purpose: "Given notifications off
+    when a visit is saved then permission is asked for it" read the first notification; the ask is now the last one, after
+    `Saved` (ux F4).
+
 ## 4. UI models, mappers and strings
 
-- [ ] 4.1 `Saved` in the home, history and reminders message models: confirmation, polite, `READING_MILLIS`, no action, no
+- [x] 4.1 `Saved` in the home, history and reminders message models: confirmation, polite, `READING_MILLIS`, no action, no
   haptic. The string is "Saved." in each module's `strings.xml`. Verify:
   `./gradlew :features:home:ui:testDebugUnitTest :features:history:ui:testDebugUnitTest :features:reminders:ui:testDebugUnitTest --tests '*MessageBehaviour*'`
   passes, with a case for `Saved` in each.
+
+  Done. `Saved` is confirmation, `READING_MILLIS`, no undo; the screen gives haptics only to errors and start/end, so none.
+  Strings `home_message_saved`, `history_message_saved`, `reminders_message_saved` = "Saved.". The screens show it only in
+  place of an error (6.2's rule, in the message collector of each). History had no `*MessageBehaviour*` test class, so
+  `HistoryMessageBehaviourUiMapperTest` is new. Verify run: home:ui 64/64, history:ui 42/42, reminders:ui 23/23, exit 0;
+  each module's `*MessageBehaviour*` result file has a `Saved` case. Not run red first: the task asks for coverage, not a
+  red test.
 
 ## 5. designsystem
 

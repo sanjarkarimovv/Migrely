@@ -15,6 +15,7 @@ import com.migrely.app.history.presentation.mapper.HistoryMonthPresentationMappe
 import com.migrely.app.history.presentation.model.HistoryPresentationNotification
 import com.migrely.app.history.presentation.model.HistoryPresentationNotification.AttackDeleted
 import com.migrely.app.history.presentation.model.HistoryPresentationNotification.AttackLoggedOnDay
+import com.migrely.app.history.presentation.model.HistoryPresentationNotification.Saved
 import com.migrely.app.history.presentation.model.HistoryPresentationNotification.SomethingWentWrong
 import com.migrely.app.history.presentation.model.HistoryPresentationNotification.StorageFull
 import com.migrely.app.history.presentation.model.HistoryPresentationNotification.UndoNotPossible
@@ -112,7 +113,11 @@ class HistoryViewModel(
             value = request,
             onResult = { result ->
                 when (result) {
-                    SetDayMarkResultDomainModel.Done -> loadMonth(month)
+                    // No message of its own: the screen decides what it means (BRD D178 (1)).
+                    SetDayMarkResultDomainModel.Done -> {
+                        notify(Saved)
+                        loadMonth(month)
+                    }
 
                     SetDayMarkResultDomainModel.AttackLogged -> {
                         notify(AttackLoggedOnDay)

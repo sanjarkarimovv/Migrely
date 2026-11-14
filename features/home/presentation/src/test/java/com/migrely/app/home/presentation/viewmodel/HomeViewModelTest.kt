@@ -696,4 +696,145 @@ class HomeViewModelTest :
 
         assertEquals(HomePresentationNavigationEvent.OnOpenSettings, event.await())
     }
+
+    // "Write saved" (BRD D178 (1), EC-UX-35): a write with no message of its own says so, after the new state, so the
+    // screen can replace an error that the write made untrue. A result that wrote nothing says nothing.
+
+    private val inProgress = TodayDomainModel.AttackInProgress(ATTACK, longAttackCheckDue = false)
+
+    @Test
+    fun `Given a pain level is recorded then write saved comes after attack mode`() = runTest {
+        recordIntensityUseCase.givenSuccessfulExecution(
+            IntensityLevelDomainModel.Moderate,
+            RecordIntensityResultDomainModel.Recorded
+        )
+        givenToday(inProgress)
+
+        assertEquals(
+            listOf(HomeViewState.AttackInProgress::class, HomePresentationNotification.Saved),
+            heard { classUnderTest.onIntensityAction(IntensityLevelPresentationModel.Moderate) }
+        )
+    }
+
+    @Test
+    fun `Given the start is moved earlier then write saved comes after attack mode`() = runTest {
+        moveAttackStartEarlierUseCase.givenSuccessfulExecution(
+            Duration.ofMinutes(60),
+            MoveStartResultDomainModel.Moved(START.minusSeconds(3_600))
+        )
+        givenToday(inProgress)
+
+        assertEquals(
+            listOf(HomeViewState.AttackInProgress::class, HomePresentationNotification.Saved),
+            heard { classUnderTest.onMoveStartEarlierAction(60) }
+        )
+    }
+
+    @Test
+    fun `Given today's period is written then write saved comes after Today`() = runTest {
+        setPeriodTodayUseCase.givenSuccessfulExecution(true, WriteResultDomainModel.Written)
+        givenToday(TodayDomainModel.Calm)
+
+        assertEquals(
+            listOf(HomeViewState.Today::class, HomePresentationNotification.Saved),
+            heard { classUnderTest.onPeriodTodayAction(marked = true) }
+        )
+    }
+
+    @Test
+    fun `Given still going is saved then write saved comes after attack mode`() = runTest {
+        answerLongAttackCheckUseCase.givenSuccessfulExecution(
+            LongAttackAnswerRequestDomainModel("a", LongAttackAnswerDomainModel.StillGoing),
+            AnswerLongAttackResultDomainModel.Saved
+        )
+        givenToday(inProgress)
+
+        assertEquals(
+            listOf(HomeViewState.AttackInProgress::class, HomePresentationNotification.Saved),
+            heard { classUnderTest.onStillGoingAction("a") }
+        )
+    }
+
+    @Test
+    fun `Given don't ask again is saved then write saved comes after attack mode`() = runTest {
+        answerLongAttackCheckUseCase.givenSuccessfulExecution(
+            LongAttackAnswerRequestDomainModel("a", LongAttackAnswerDomainModel.DontAskAgain),
+            AnswerLongAttackResultDomainModel.Saved
+        )
+        givenToday(inProgress)
+
+        assertEquals(
+            listOf(HomeViewState.AttackInProgress::class, HomePresentationNotification.Saved),
+            heard { classUnderTest.onDontAskAgainAction("a") }
+        )
+    }
+
+    @Test
+    fun `Given a pain level after the attack ended then nothing is said`() = runTest {
+        recordIntensityUseCase.givenSuccessfulExecution(
+            IntensityLevelDomainModel.Moderate,
+            RecordIntensityResultDomainModel.NotInProgress
+        )
+        givenToday(TodayDomainModel.Calm)
+
+        assertEquals(
+            listOf<Any>(HomeViewState.Today::class),
+            heard { classUnderTest.onIntensityAction(IntensityLevelPresentationModel.Moderate) }
+        )
+    }
+
+    @Test
+    fun `Given a start move after the attack ended then nothing is said`() = runTest {
+        moveAttackStartEarlierUseCase.givenSuccessfulExecution(
+            Duration.ofMinutes(60),
+            MoveStartResultDomainModel.NotInProgress
+        )
+        givenToday(TodayDomainModel.Calm)
+
+        assertEquals(
+            listOf<Any>(HomeViewState.Today::class),
+            heard { classUnderTest.onMoveStartEarlierAction(60) }
+        )
+    }
+
+    @Test
+    fun `Given a long-attack answer after the attack ended then nothing is said`() = runTest {
+        answerLongAttackCheckUseCase.givenSuccessfulExecution(
+            LongAttackAnswerRequestDomainModel("a", LongAttackAnswerDomainModel.StillGoing),
+            AnswerLongAttackResultDomainModel.NotInProgress
+        )
+        givenToday(TodayDomainModel.Calm)
+
+        assertEquals(
+            listOf<Any>(HomeViewState.Today::class),
+            heard { classUnderTest.onStillGoingAction("a") }
+        )
+    }
+
+    @Test
+    fun `Given an end after the attack already ended then nothing is said`() = runTest {
+        endAttackUseCase.givenSuccessfulExecution(
+            EndAttackRequestDomainModel(null),
+            EndAttackResultDomainModel.NotInProgress
+        )
+        givenToday(TodayDomainModel.Calm)
+
+        assertEquals(
+            listOf<Any>(HomeViewState.Today::class),
+            heard { classUnderTest.onEndAttackAction() }
+        )
+    }
+
+    @Test
+    fun `Given a start while one is in progress then nothing is said`() = runTest {
+        startAttackUseCase.givenSuccessfulExecution(
+            StartAttackResultDomainModel.AlreadyInProgress(ATTACK)
+        )
+        givenToday(inProgress)
+
+        assertEquals(
+            listOf<Any>(HomeViewState.AttackInProgress::class),
+            heard { classUnderTest.onStartAttackAction() }
+        )
+    }
 }

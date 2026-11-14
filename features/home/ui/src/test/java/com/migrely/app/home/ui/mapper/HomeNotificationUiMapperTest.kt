@@ -36,6 +36,7 @@ class HomeNotificationUiMapperTest(
                 HomePresentationNotification.UndoNotPossible,
                 HomeMessageUiModel.UndoNotPossible
             ),
+            arrayOf<Any>(HomePresentationNotification.Saved, HomeMessageUiModel.Saved),
             arrayOf<Any>(HomePresentationNotification.StorageFull, HomeMessageUiModel.StorageFull),
             arrayOf<Any>(
                 HomePresentationNotification.StartMoveRejected(Instant.ofEpochMilli(5_000L)),

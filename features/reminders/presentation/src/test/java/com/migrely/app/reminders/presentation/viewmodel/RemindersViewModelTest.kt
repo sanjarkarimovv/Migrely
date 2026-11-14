@@ -29,6 +29,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -210,15 +211,14 @@ class RemindersViewModelTest :
                 NOVEMBER_20,
                 SetDoctorVisitResultDomainModel.Saved(askForPermission = true)
             )
-            val notification = async(start = UNDISPATCHED) { classUnderTest.notification.first() }
-
-            classUnderTest.onVisitDateAction(NOVEMBER_20)
+            // After the write saved (ux F4), which has its own test below.
+            val heard = notificationsOf { classUnderTest.onVisitDateAction(NOVEMBER_20) }
 
             assertEquals(
                 RemindersPresentationNotification.AskForPermission(
                     ReminderKindPresentationModel.Visit
                 ),
-                notification.await()
+                heard.last()
             )
         }
 
@@ -386,4 +386,177 @@ class RemindersViewModelTest :
                 visitRemovable = nextVisit?.isAfter(today) == true
             )
         )
+
+    // "Write saved" (BRD D178 (1), EC-UX-35, ux F4): a reminder or visit write with no message of its own says that it
+    // saved, so the screen can replace an error with "Saved.". A result that wrote nothing says nothing.
+
+    /** Every notification [action] sends. */
+    private fun TestScope.notificationsOf(action: () -> Unit): List<RemindersPresentationNotification> {
+        val heard = mutableListOf<RemindersPresentationNotification>()
+        val collecting = launch(start = UNDISPATCHED) {
+            classUnderTest.notification.collect { heard += it }
+        }
+        action()
+        runCurrent()
+        collecting.cancel()
+        return heard
+    }
+
+    private val saved = listOf(RemindersPresentationNotification.Saved)
+
+    @Test
+    fun `Given notifications are allowed when the daily reminder is turned on then write saved`() =
+        runTest {
+            givenReminders(allowed = true)
+            setDailyReminderUseCase.givenSuccessfulExecution(
+                SetDailyReminderRequestDomainModel(true, EIGHT_PM),
+                ReminderWriteResultDomainModel.Done
+            )
+
+            assertEquals(
+                saved,
+                notificationsOf { classUnderTest.onDailyReminderAction(true, EIGHT_PM) }
+            )
+        }
+
+    @Test
+    fun `When the daily reminder is turned off then write saved`() = runTest {
+        givenReminders(allowed = true)
+        setDailyReminderUseCase.givenSuccessfulExecution(
+            SetDailyReminderRequestDomainModel(false, EIGHT_PM),
+            ReminderWriteResultDomainModel.Done
+        )
+
+        assertEquals(saved, notificationsOf { classUnderTest.onDailyReminderAction(false, EIGHT_PM) })
+    }
+
+    @Test
+    fun `When the daily time is saved then write saved`() = runTest {
+        givenReminders(allowed = true)
+        setDailyReminderUseCase.givenSuccessfulExecution(
+            SetDailyReminderRequestDomainModel(true, EIGHT_PM),
+            ReminderWriteResultDomainModel.Done
+        )
+
+        assertEquals(saved, notificationsOf { classUnderTest.onDailyTimeAction(true, EIGHT_PM) })
+    }
+
+    @Test
+    fun `Given notifications are allowed when the effect reminder is turned on then write saved`() =
+        runTest {
+            givenReminders(allowed = true)
+            setEffectReminderUseCase.givenSuccessfulExecution(
+                true,
+                ReminderWriteResultDomainModel.Done
+            )
+
+            assertEquals(saved, notificationsOf { classUnderTest.onEffectReminderAction(true) })
+        }
+
+    @Test
+    fun `When the effect reminder is turned off then write saved`() = runTest {
+        givenReminders(allowed = true)
+        setEffectReminderUseCase.givenSuccessfulExecution(false, ReminderWriteResultDomainModel.Done)
+
+        assertEquals(saved, notificationsOf { classUnderTest.onEffectReminderAction(false) })
+    }
+
+    @Test
+    fun `Given a reminder write fails then no write saved`() = runTest {
+        givenReminders(allowed = true)
+        setEffectReminderUseCase.givenSuccessfulExecution(
+            false,
+            ReminderWriteResultDomainModel.StorageFull
+        )
+
+        assertEquals(
+            listOf(RemindersPresentationNotification.StorageFull),
+            notificationsOf { classUnderTest.onEffectReminderAction(false) }
+        )
+    }
+
+    @Test
+    fun `When a visit date is saved then write saved`() = runTest {
+        givenReminders(allowed = true)
+        setDoctorVisitUseCase.givenSuccessfulExecution(
+            NOVEMBER_20,
+            SetDoctorVisitResultDomainModel.Saved(askForPermission = false)
+        )
+
+        assertEquals(saved, notificationsOf { classUnderTest.onVisitDateAction(NOVEMBER_20) })
+    }
+
+    @Test
+    fun `Given a visit date saved that asks for permission then write saved, then the request`() =
+        runTest {
+            givenReminders(allowed = false)
+            setDoctorVisitUseCase.givenSuccessfulExecution(
+                NOVEMBER_20,
+                SetDoctorVisitResultDomainModel.Saved(askForPermission = true)
+            )
+
+            assertEquals(
+                listOf(
+                    RemindersPresentationNotification.Saved,
+                    RemindersPresentationNotification.AskForPermission(
+                        ReminderKindPresentationModel.Visit
+                    )
+                ),
+                notificationsOf { classUnderTest.onVisitDateAction(NOVEMBER_20) }
+            )
+        }
+
+    @Test
+    fun `Given the same visit date then no write saved`() = runTest {
+        givenReminders(allowed = true)
+        setDoctorVisitUseCase.givenSuccessfulExecution(
+            NOVEMBER_20,
+            SetDoctorVisitResultDomainModel.Unchanged
+        )
+
+        assertEquals(
+            emptyList<RemindersPresentationNotification>(),
+            notificationsOf { classUnderTest.onVisitDateAction(NOVEMBER_20) }
+        )
+    }
+
+    @Test
+    fun `Given no visit to remove then no write saved`() = runTest {
+        givenReminders(allowed = true)
+        removeDoctorVisitUseCase.givenSuccessfulExecution(
+            RemoveDoctorVisitResultDomainModel.NothingToRemove
+        )
+
+        assertEquals(
+            emptyList<RemindersPresentationNotification>(),
+            notificationsOf { classUnderTest.onRemoveVisitAction() }
+        )
+    }
+
+    @Test
+    fun `Given a visit removed or put back then only its own message`() = runTest {
+        givenReminders(allowed = true)
+        removeDoctorVisitUseCase.givenSuccessfulExecution(
+            RemoveDoctorVisitResultDomainModel.Removed(DoctorVisitDomainModel("v", NOVEMBER_20))
+        )
+        restoreDoctorVisitUseCase.givenSuccessfulExecution(
+            DoctorVisitDomainModel("v", NOVEMBER_20),
+            ReminderWriteResultDomainModel.Done
+        )
+
+        assertEquals(
+            listOf(
+                RemindersPresentationNotification.VisitRemoved(
+                    DoctorVisitPresentationModel("v", NOVEMBER_20)
+                ),
+                RemindersPresentationNotification.Undone
+            ),
+            notificationsOf {
+                classUnderTest.onRemoveVisitAction()
+                classUnderTest.onUndoRemoveVisitAction(
+                    DoctorVisitPresentationModel("v", NOVEMBER_20)
+                )
+            }
+        )
+    }
 }

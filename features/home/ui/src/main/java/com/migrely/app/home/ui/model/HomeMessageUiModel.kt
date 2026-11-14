@@ -22,6 +22,10 @@ sealed interface HomeMessageUiModel : Parcelable {
     @Parcelize
     data object UndoNotPossible : HomeMessageUiModel
 
+    /** A write saved; shown only in place of an error, which it made untrue (BRD D178 (1)). */
+    @Parcelize
+    data object Saved : HomeMessageUiModel
+
     @Parcelize
     data object StorageFull : HomeMessageUiModel
 

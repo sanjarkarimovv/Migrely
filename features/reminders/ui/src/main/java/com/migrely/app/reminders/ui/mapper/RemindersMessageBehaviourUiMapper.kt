@@ -18,6 +18,9 @@ class RemindersMessageBehaviourUiMapper {
         is RemindersMessageUiModel.VisitRemoved ->
             RemindersMessageBehaviourUiModel(SnackbarTone.Information, UNDO_MILLIS)
 
+        RemindersMessageUiModel.Saved ->
+            RemindersMessageBehaviourUiModel(SnackbarTone.Confirmation, READING_MILLIS)
+
         RemindersMessageUiModel.Undone ->
             RemindersMessageBehaviourUiModel(SnackbarTone.Information, READING_MILLIS)
 

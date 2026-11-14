@@ -105,6 +105,8 @@
     <string name="mark_pain_free">Pain-free day</string>
     <string name="mark_pain_free_blocked">A migraine is logged on this day.</string>
     <string name="message_attack_logged_on_day">A migraine is logged on this day, so it can\'t be pain-free.</string>
+    <!-- A write saved after an error showed; replaces it (BRD D178 (1)). -->
+    <string name="history_message_saved">Saved.</string>
     <string name="history_message_storage_full">Couldn\'t save. Your phone\'s storage is full.</string>
     <string name="history_doctor_report">Doctor report</string>
     <string name="history_insights">Insights</string>

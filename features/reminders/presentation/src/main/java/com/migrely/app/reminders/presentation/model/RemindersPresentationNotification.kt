@@ -14,6 +14,12 @@ sealed interface RemindersPresentationNotification : PresentationNotification {
     /** Undo put the visit back. */
     data object Undone : RemindersPresentationNotification
 
+    /**
+     * A write saved and has no message of its own. Not a message: the screen uses it to replace an error that the
+     * write has made untrue (BRD D178 (1), EC-UX-35).
+     */
+    data object Saved : RemindersPresentationNotification
+
     data object StorageFull : RemindersPresentationNotification
 
     data object SomethingWentWrong : RemindersPresentationNotification

@@ -15,6 +15,12 @@ sealed interface HistoryPresentationNotification : PresentationNotification {
     /** Only a fallback: the screen never offers a pain-free mark on a day with an attack (BRD EC-DAY-01). */
     data object AttackLoggedOnDay : HistoryPresentationNotification
 
+    /**
+     * A write saved and has no message of its own. Not a message: the screen uses it to replace an error that the
+     * write has made untrue (BRD D178 (1), EC-UX-35).
+     */
+    data object Saved : HistoryPresentationNotification
+
     data object StorageFull : HistoryPresentationNotification
 
     data object SomethingWentWrong : HistoryPresentationNotification

@@ -20,6 +20,7 @@ import com.migrely.app.designsystem.snackbar.MESSAGE_OFFSET_BELOW_TOP_BAR
 import com.migrely.app.designsystem.snackbar.MigrelySnackbar
 import com.migrely.app.designsystem.snackbar.MigrelySnackbarHost
 import com.migrely.app.designsystem.snackbar.SnackbarAction
+import com.migrely.app.designsystem.snackbar.SnackbarTone
 import com.migrely.app.designsystem.snackbar.isFreshDeletion
 import com.migrely.app.history.ui.R
 import com.migrely.app.history.ui.mapper.HistoryMessageBehaviourUiMapper
@@ -65,8 +66,14 @@ internal fun HistoryMessages(
             ) ?: base
         }
 
+    fun errorShown(): Boolean =
+        shown?.let { behaviourMapper.toUi(it.message).tone == SnackbarTone.Error } == true
+
     LaunchedEffect(presenter) {
         presenter.messages.collect { message ->
+            // "Saved." only replaces an error that the write made untrue; any other message stays, and with none the
+            // write needs no word (BRD D178 (1)).
+            if (message == HistoryMessageUiModel.Saved && !errorShown()) return@collect
             if (message is HistoryMessageUiModel.AttackDeleted) {
                 // An older deletion, for example after the app was closed and opened again, is past its undo.
                 val fresh =
@@ -160,6 +167,7 @@ private fun messageText(message: HistoryMessageUiModel): String = when (message)
         R.string.history_message_undo_not_possible
     )
     HistoryMessageUiModel.AttackLoggedOnDay -> stringResource(R.string.message_attack_logged_on_day)
+    HistoryMessageUiModel.Saved -> stringResource(R.string.history_message_saved)
     HistoryMessageUiModel.StorageFull -> stringResource(R.string.history_message_storage_full)
     HistoryMessageUiModel.SomethingWentWrong -> stringResource(R.string.history_message_generic)
 }

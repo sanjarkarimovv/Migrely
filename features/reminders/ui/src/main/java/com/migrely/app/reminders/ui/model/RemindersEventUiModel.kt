@@ -16,6 +16,9 @@ sealed interface RemindersMessageUiModel {
     data class VisitRemoved(val visit: DoctorVisitUiModel) : RemindersMessageUiModel
 
     data object Undone : RemindersMessageUiModel
+
+    /** A write saved; shown only in place of an error, which it made untrue (BRD D178 (1)). */
+    data object Saved : RemindersMessageUiModel
 }
 
 /** A removed visit, held by its message for Undo. */

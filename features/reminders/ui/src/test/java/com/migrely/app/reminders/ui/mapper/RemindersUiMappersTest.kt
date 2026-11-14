@@ -111,6 +111,13 @@ class RemindersUiMappersTest {
                 RemindersEventUiModel.Message(RemindersMessageUiModel.StorageFull),
                 second.await()
             )
+
+            val third = async(start = UNDISPATCHED) { presenter.events.first() }
+            classUnderTest.toUi(RemindersPresentationNotification.Saved).present()
+            assertEquals(
+                RemindersEventUiModel.Message(RemindersMessageUiModel.Saved),
+                third.await()
+            )
         }
 
     @Test

@@ -29,7 +29,8 @@ import java.time.LocalTime
  * for if the 30-day rule allows it (EC-REM-01, EC-REM-02); otherwise the screen shows why it stays off. The UI passes
  * back the time shown and which switch asked, so the view model keeps no state. The doctor visit is saved at once, and
  * permission is asked for after it by the same rule; "Remove" offers Undo with the removed visit (BRD D168). Only the
- * latest read is shown, so a late first read never hides a newer save.
+ * latest read is shown, so a late first read never hides a newer save. A write with no message of its own sends
+ * [RemindersPresentationNotification.Saved], and the screen decides what it means (BRD D178 (1)).
  */
 class RemindersViewModel(
     private val getRemindersUseCase: GetRemindersUseCase,
@@ -83,12 +84,16 @@ class RemindersViewModel(
             value = date,
             onResult = { result ->
                 when (result) {
-                    is SetDoctorVisitResultDomainModel.Saved -> if (result.askForPermission) {
-                        notify(
-                            RemindersPresentationNotification.AskForPermission(
-                                ReminderKindPresentationModel.Visit
+                    // The date is written either way, so an error it made untrue goes (BRD D178 (1), ux F4).
+                    is SetDoctorVisitResultDomainModel.Saved -> {
+                        notify(RemindersPresentationNotification.Saved)
+                        if (result.askForPermission) {
+                            notify(
+                                RemindersPresentationNotification.AskForPermission(
+                                    ReminderKindPresentationModel.Visit
+                                )
                             )
-                        )
+                        }
                     }
                     SetDoctorVisitResultDomainModel.Unchanged -> Unit
                     SetDoctorVisitResultDomainModel.StorageFull ->
@@ -189,7 +194,7 @@ class RemindersViewModel(
 
     private fun reportWrite(result: ReminderWriteResultDomainModel) {
         when (result) {
-            ReminderWriteResultDomainModel.Done -> Unit
+            ReminderWriteResultDomainModel.Done -> notify(RemindersPresentationNotification.Saved)
             ReminderWriteResultDomainModel.StorageFull ->
                 notify(RemindersPresentationNotification.StorageFull)
             ReminderWriteResultDomainModel.Failed ->

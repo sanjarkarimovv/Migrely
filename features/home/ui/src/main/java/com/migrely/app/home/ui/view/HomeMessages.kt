@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import com.migrely.app.designsystem.snackbar.MigrelySnackbar
 import com.migrely.app.designsystem.snackbar.MigrelySnackbarHost
 import com.migrely.app.designsystem.snackbar.SnackbarAction
+import com.migrely.app.designsystem.snackbar.SnackbarTone
 import com.migrely.app.designsystem.snackbar.isFreshDeletion
 import com.migrely.app.home.ui.R
 import com.migrely.app.home.ui.mapper.HomeMessageBehaviourUiMapper
@@ -74,8 +75,15 @@ internal fun HomeMessages(
             ) ?: base
         }
 
+    fun errorShown(): Boolean =
+        shown?.let { behaviourMapper.toUi(it.message).tone == SnackbarTone.Error } == true
+
     LaunchedEffect(presenter) {
         presenter.messages.collect { message ->
+            // "Saved." only replaces an error that the write made untrue; any other message stays, and with none the
+            // write needs no word (BRD D178 (1)). Cleared on success, never on the attempt, so a failed retry shows no
+            // flash.
+            if (message == HomeMessageUiModel.Saved && !errorShown()) return@collect
             // A deletion arrives with every return to home while it is restorable; offer it once. Its window starts
             // when home shows it, so the trip back from the details screen does not shorten it.
             if (message is HomeMessageUiModel.AttackDeleted) {
@@ -211,6 +219,7 @@ private fun messageText(message: HomeMessageUiModel, timeUiFormatter: TimeUiForm
         HomeMessageUiModel.UndoNotPossible -> stringResource(
             R.string.home_message_undo_not_possible
         )
+        HomeMessageUiModel.Saved -> stringResource(R.string.home_message_saved)
         HomeMessageUiModel.StorageFull -> stringResource(R.string.home_message_storage_full)
         is HomeMessageUiModel.StartMoveRejected -> stringResource(
             R.string.message_move_rejected,
