@@ -25,10 +25,14 @@ Ownership:
 
 ## 1. Fit and accessibility (`ux-designer`, short check)
 
-- [ ] 1.1 Check "Keep track of my medication days" on step 1 at 100% and 200% font on a 360 dp screen, portrait and
+- [x] 1.1 Check "Keep track of my medication days" on step 1 at 100% and 200% font on a 360 dp screen, portrait and
   landscape. Checks: wrapping (no clip, no "…", no break inside a word), touch target ≥ 48 dp, the disclaimer and "Restore" still
   reachable, and the TalkBack and keyboard order unchanged (design D3, D4). No new words: the wording is medical and exact.
   Verify: a packet that says PASS, or a finding sent to `product-manager`.
+  Record (ticked by `product-manager`, 2026-11-14): `ux-designer` reported CONFIRM on 2026-11-13: the label wraps to 2 lines
+  with no clip and TalkBack reads it as "…, button". The box was not ticked at the time. QA 7.2 (qa-192, 2026-11-14) measured
+  the same independently at 100% and 200% font, 360 dp, portrait and landscape: 8 of 8 rows pass, buttons ≥ 48 dp, Restore
+  reachable, TalkBack and Tab order as on the base. Not covered by either: a real phone.
 
 ## 2. Domain, presentation and data (`android-engineer`)
 
@@ -154,6 +158,11 @@ Ownership:
 
 ## 8. Close (`product-manager`)
 
-- [ ] 8.1 Record the PASS from 6.1 in D177, sync the spec, and archive. Verify:
+- [x] 8.1 Record the PASS from 6.1 in D177, sync the spec, and archive. Verify:
   - `openspec validate --strict --all` exits 0;
   - `openspec/specs/onboarding/spec.md` holds "Keep track of my medication days".
+  Record (`product-manager`, 2026-11-14): the 6.1 PASS (med-192b) was already quoted in D177; D177 now also records
+  `ux-designer`'s CONFIRM, QA's GO at f7530040 per EC-ONB-01…06, and #217 (S4, pre-existing) as a follow-up out of scope.
+  Before the archive, `origin/develop` d8194c06 (PR #216) was merged into the branch: `docs/BRD.md` only conflicted, both sides
+  kept in numeric order (§13 rows 44, 45; D175, D176, D177). The change then validated and was archived; the commands and
+  counts are in the commit and the handoff packet.
