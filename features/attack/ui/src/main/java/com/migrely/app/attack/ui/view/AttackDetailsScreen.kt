@@ -71,6 +71,7 @@ import com.migrely.app.attack.ui.model.TagKindUiModel
 import com.migrely.app.attack.ui.model.TimeErrorUiModel
 import com.migrely.app.designsystem.icon.MigrelyIcons
 import com.migrely.app.designsystem.motion.rememberReduceMotion
+import com.migrely.app.designsystem.snackbar.MessageLayout
 import com.migrely.app.designsystem.snackbar.clearOfMessage
 import com.migrely.app.designsystem.theme.MigrelyTheme
 import java.time.Instant
@@ -310,52 +311,53 @@ fun AttackDetailsDependencies.AttackDetails(
         }
     )
 
-    Box(modifier = modifier.fillMaxSize()) {
-        AttackDetailsContents(
-            viewState = uiState,
-            timeUiFormatter = attackTimeUiFormatter,
-            labels = labels,
-            localState = AttackDetailsLocalState(
-                timeError = timeError,
-                safetyCardVisible = safetyCardVisible,
-                onDismissSafetyCard = { safetyCardVisible = false },
-                onTimeErrorShown = { timeError = null },
-                noteDraft = noteDraft,
-                onNoteDraft = { noteDraft = it },
-                safetyCardArrivals = safetyCardArrivals,
-                onSafetyCardAnnounced = { safetyCardAnnounced = it },
-                messageClearance = { if (cardMode) messageBottom.value else 0.dp }
-            ),
-            actions = actions
-        )
-        AttackMessages(
-            shown = if (messageHeld()) shownBeforeHold else shownMessage,
-            behaviourMapper = attackMessageBehaviourUiMapper,
-            reduceMotion = rememberReduceMotion(),
-            announcePolitely = cardMode,
-            onMessageBottomChanged = { messageBottom.value = it },
-            isShown = { message -> shownMessage == message },
-            onClear = { message -> if (shownMessage == message) shownMessage = null },
-            onUndoTimes = { undo ->
-                viewModel.onUndoTimesChangeAction(
-                    timesUndoUiToPresentationMapper
-                        .toPresentation(undo)
-                )
-            },
-            onUndoPoint = { message ->
-                viewModel.onUndoPointRemovalAction(
-                    message.attackId,
-                    intensityPointUiToPresentationMapper.toPresentation(message.point)
-                )
-            },
-            onUndoIntake = { message ->
-                viewModel.onUndoIntakeRemovalAction(
-                    message.attackId,
-                    attackIntakeUiToPresentationMapper.toPresentation(message.intake)
-                )
-            }
-        )
-    }
+    AttackDetailsContents(
+        viewState = uiState,
+        timeUiFormatter = attackTimeUiFormatter,
+        labels = labels,
+        localState = AttackDetailsLocalState(
+            timeError = timeError,
+            safetyCardVisible = safetyCardVisible,
+            onDismissSafetyCard = { safetyCardVisible = false },
+            onTimeErrorShown = { timeError = null },
+            noteDraft = noteDraft,
+            onNoteDraft = { noteDraft = it },
+            safetyCardArrivals = safetyCardArrivals,
+            onSafetyCardAnnounced = { safetyCardAnnounced = it },
+            messageClearance = { if (cardMode) messageBottom.value else 0.dp }
+        ),
+        actions = actions,
+        modifier = modifier,
+        messages = {
+            AttackMessages(
+                shown = if (messageHeld()) shownBeforeHold else shownMessage,
+                behaviourMapper = attackMessageBehaviourUiMapper,
+                reduceMotion = rememberReduceMotion(),
+                announcePolitely = cardMode,
+                onMessageBottomChanged = { messageBottom.value = it },
+                isShown = { message -> shownMessage == message },
+                onClear = { message -> if (shownMessage == message) shownMessage = null },
+                onUndoTimes = { undo ->
+                    viewModel.onUndoTimesChangeAction(
+                        timesUndoUiToPresentationMapper
+                            .toPresentation(undo)
+                    )
+                },
+                onUndoPoint = { message ->
+                    viewModel.onUndoPointRemovalAction(
+                        message.attackId,
+                        intensityPointUiToPresentationMapper.toPresentation(message.point)
+                    )
+                },
+                onUndoIntake = { message ->
+                    viewModel.onUndoIntakeRemovalAction(
+                        message.attackId,
+                        attackIntakeUiToPresentationMapper.toPresentation(message.intake)
+                    )
+                }
+            )
+        }
+    )
 }
 
 /**
@@ -379,48 +381,18 @@ fun AttackDetailsContents(
     labels: AttackLabels,
     localState: AttackDetailsLocalState,
     actions: AttackDetailsActions,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    messages: @Composable () -> Unit = {}
 ) {
-    Column(
+    val details = (viewState as? AttackDetailsViewStateUiModel.Ready)?.details
+    // The bar, then the message, then the content, for keyboard and TalkBack (BRD D178 (4)).
+    MessageLayout(
+        message = messages,
         modifier = modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(MaterialTheme.colorScheme.background),
+        topBar = { AttackDetailsTopBar(details, timeUiFormatter, actions.onBack) }
     ) {
-        val details = (viewState as? AttackDetailsViewStateUiModel.Ready)?.details
-        TopAppBar(
-            title = {
-                Column {
-                    Text(
-                        text = stringResource(R.string.attack_details_title),
-                        style = MaterialTheme.typography.titleLarge
-                    )
-                    if (details != null) {
-                        Text(
-                            text = timeUiFormatter.formatDay(
-                                details.startEpochMillis,
-                                details.startZoneId
-                            ),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-            },
-            navigationIcon = {
-                IconButton(onClick = actions.onBack) {
-                    Icon(
-                        MigrelyIcons.Back,
-                        contentDescription = stringResource(R.string.attack_navigate_back)
-                    )
-                }
-            },
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = MaterialTheme.colorScheme.background
-            ),
-            windowInsets = WindowInsets.safeDrawing.only(
-                WindowInsetsSides.Top + WindowInsetsSides.Horizontal
-            )
-        )
         when (viewState) {
             AttackDetailsViewStateUiModel.Loading -> Box(Modifier.fillMaxSize())
             AttackDetailsViewStateUiModel.NotFound -> NotFoundContents(actions.onBack)
@@ -428,6 +400,49 @@ fun AttackDetailsContents(
                 ReadyContents(viewState.details, timeUiFormatter, labels, localState, actions)
         }
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AttackDetailsTopBar(
+    details: AttackDetailsUiModel?,
+    timeUiFormatter: AttackTimeUiFormatter,
+    onBack: () -> Unit
+) {
+    TopAppBar(
+        title = {
+            Column {
+                Text(
+                    text = stringResource(R.string.attack_details_title),
+                    style = MaterialTheme.typography.titleLarge
+                )
+                if (details != null) {
+                    Text(
+                        text = timeUiFormatter.formatDay(
+                            details.startEpochMillis,
+                            details.startZoneId
+                        ),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        },
+        navigationIcon = {
+            IconButton(onClick = onBack) {
+                Icon(
+                    MigrelyIcons.Back,
+                    contentDescription = stringResource(R.string.attack_navigate_back)
+                )
+            }
+        },
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = MaterialTheme.colorScheme.background
+        ),
+        windowInsets = WindowInsets.safeDrawing.only(
+            WindowInsetsSides.Top + WindowInsetsSides.Horizontal
+        )
+    )
 }
 
 @Composable

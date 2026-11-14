@@ -47,6 +47,7 @@ import androidx.navigation.NavController
 import com.migrely.app.architecture.ui.view.ScreenEnterObserver
 import com.migrely.app.designsystem.icon.MigrelyIcons
 import com.migrely.app.designsystem.motion.rememberReduceMotion
+import com.migrely.app.designsystem.snackbar.MessageLayout
 import com.migrely.app.designsystem.theme.MigrelyTheme
 import com.migrely.app.medication.presentation.model.MedicationsViewState
 import com.migrely.app.medication.ui.R
@@ -86,6 +87,7 @@ fun MedicationsDependencies.Medications(
         messages = {
             MedicationMessages(
                 presenter = medicationEventPresenter,
+                navController = navController,
                 behaviourMapper = medicationMessageBehaviourUiMapper,
                 reduceMotion = reduceMotion,
                 onUndoArchive = medicationsViewModel::onUndoArchiveAction
@@ -110,12 +112,12 @@ fun MedicationsContents(
     messages: @Composable () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Box(
+    MessageLayout(
+        message = messages,
         modifier = modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-    ) {
-        Column(Modifier.fillMaxSize()) {
+            .background(MaterialTheme.colorScheme.background),
+        topBar = {
             TopAppBar(
                 title = {
                     Text(
@@ -138,6 +140,9 @@ fun MedicationsContents(
                     WindowInsetsSides.Top + WindowInsetsSides.Horizontal
                 )
             )
+        }
+    ) {
+        Column(Modifier.fillMaxSize()) {
             val medications = (viewState as? MedicationsViewStateUiModel.Ready)?.medications
             if (medications != null) {
                 Box(contentAlignment = Alignment.TopCenter, modifier = Modifier.fillMaxSize()) {
@@ -185,7 +190,6 @@ fun MedicationsContents(
                 }
             }
         }
-        messages()
     }
 }
 

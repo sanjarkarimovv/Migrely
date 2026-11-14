@@ -66,6 +66,7 @@ import androidx.navigation.NavController
 import com.migrely.app.architecture.ui.view.ScreenEnterObserver
 import com.migrely.app.designsystem.icon.MigrelyIcons
 import com.migrely.app.designsystem.motion.rememberReduceMotion
+import com.migrely.app.designsystem.snackbar.MessageLayout
 import com.migrely.app.designsystem.snackbar.MigrelySnackbar
 import com.migrely.app.designsystem.snackbar.MigrelySnackbarHost
 import com.migrely.app.designsystem.snackbar.messageTimeoutMillis
@@ -220,8 +221,10 @@ fun PaywallContents(
     messages: @Composable () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Box(modifier = modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-        Column(Modifier.fillMaxSize()) {
+    MessageLayout(
+        message = messages,
+        modifier = modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
+        topBar = {
             // The close button is there from the first frame, whatever is loading (BRD §7.3).
             Row(
                 horizontalArrangement = Arrangement.End,
@@ -241,6 +244,9 @@ fun PaywallContents(
                     )
                 }
             }
+        }
+    ) {
+        Column(Modifier.fillMaxSize()) {
             if (viewState == PaywallViewStateUiModel.Working && unlocked == null) {
                 val description = stringResource(R.string.subscription_working)
                 LinearProgressIndicator(
@@ -272,7 +278,6 @@ fun PaywallContents(
                 }
             }
         }
-        messages()
     }
 }
 

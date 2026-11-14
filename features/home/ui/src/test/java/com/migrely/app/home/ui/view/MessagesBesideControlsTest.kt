@@ -19,7 +19,8 @@ internal class MessagesBesideControlsTest(
             arrayOf(HomeMode.Attack, true, true),
             // Portrait attack mode keeps its controls in the lower half.
             arrayOf(HomeMode.Attack, false, false),
-            arrayOf(HomeMode.Today, true, false),
+            // Today in a short window: "Migraine started" fills the end column (BRD D178 (6), #88).
+            arrayOf(HomeMode.Today, true, true),
             arrayOf(HomeMode.Today, false, false),
             arrayOf(HomeMode.Loading, true, false),
             arrayOf(HomeMode.Loading, false, false)
@@ -27,7 +28,7 @@ internal class MessagesBesideControlsTest(
     }
 
     @Test
-    fun `When a message shows then it keeps beside the controls only in landscape attack mode`() {
+    fun `When a message shows then it keeps to the start column only in a short window`() {
         assertEquals(expected, messagesBesideControls(mode, compactHeight))
     }
 }

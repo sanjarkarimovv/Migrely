@@ -16,6 +16,8 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalAccessibilityManager
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
+import androidx.navigation.NavController
+import com.migrely.app.architecture.ui.view.ScreenLeaveObserver
 import com.migrely.app.designsystem.snackbar.MESSAGE_OFFSET_BELOW_TOP_BAR
 import com.migrely.app.designsystem.snackbar.MigrelySnackbar
 import com.migrely.app.designsystem.snackbar.MigrelySnackbarHost
@@ -33,11 +35,13 @@ import kotlinx.coroutines.delay
 /**
  * The snackbar of a medication screen (BRD EC-UX-16): the newest message replaces the one on screen, it is saved with
  * the time it appeared so rotation keeps only the time it has left, and its base duration follows the accessibility
- * timeout.
+ * timeout. An error belongs to the visit: leaving the screen by Back or forward clears it, while the background,
+ * Android Settings and a rotation keep it (BRD D178 (2)).
  */
 @Composable
 internal fun MedicationMessages(
     presenter: MedicationEventPresenter,
+    navController: NavController,
     behaviourMapper: MedicationMessageBehaviourUiMapper,
     reduceMotion: Boolean,
     onUndoArchive: (medicationId: String) -> Unit = {},
@@ -65,6 +69,12 @@ internal fun MedicationMessages(
                 haptics.performHapticFeedback(HapticFeedbackType.Reject)
             }
             shown = ShownMedicationMessageUiModel(event.message, System.currentTimeMillis())
+        }
+    }
+
+    ScreenLeaveObserver(navController) {
+        if (shown?.let { behaviourMapper.toUi(it.message).tone == SnackbarTone.Error } == true) {
+            shown = null
         }
     }
 

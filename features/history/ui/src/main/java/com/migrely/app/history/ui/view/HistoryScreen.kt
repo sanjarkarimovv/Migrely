@@ -61,6 +61,7 @@ import androidx.navigation.NavController
 import com.migrely.app.architecture.ui.view.ScreenEnterObserver
 import com.migrely.app.designsystem.icon.MigrelyIcons
 import com.migrely.app.designsystem.motion.rememberReduceMotion
+import com.migrely.app.designsystem.snackbar.MessageLayout
 import com.migrely.app.designsystem.theme.MigrelyTheme
 import com.migrely.app.history.presentation.model.HistoryViewState
 import com.migrely.app.history.ui.R
@@ -166,6 +167,7 @@ fun HistoryDependencies.History(
         messages = {
             HistoryMessages(
                 presenter = historyMessagePresenter,
+                navController = navController,
                 behaviourMapper = historyMessageBehaviourUiMapper,
                 reduceMotion = reduceMotion,
                 onUndoDelete = { attackId ->
@@ -220,12 +222,12 @@ fun HistoryContents(
     overuseIndicator: @Composable () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Box(
+    MessageLayout(
+        message = messages,
         modifier = modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-    ) {
-        Column(Modifier.fillMaxSize()) {
+            .background(MaterialTheme.colorScheme.background),
+        topBar = {
             TopAppBar(
                 title = {
                     Text(
@@ -262,6 +264,9 @@ fun HistoryContents(
                     WindowInsetsSides.Top + WindowInsetsSides.Horizontal
                 )
             )
+        }
+    ) {
+        Column(Modifier.fillMaxSize()) {
             val month = viewState.month
             if (month == null) {
                 Box(Modifier.fillMaxSize())
@@ -276,7 +281,6 @@ fun HistoryContents(
                 )
             }
         }
-        messages()
     }
 }
 

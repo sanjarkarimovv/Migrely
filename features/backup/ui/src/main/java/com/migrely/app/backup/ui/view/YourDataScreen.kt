@@ -58,6 +58,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavController
 import com.migrely.app.architecture.ui.view.ScreenEnterObserver
+import com.migrely.app.architecture.ui.view.ScreenLeaveObserver
 import com.migrely.app.backup.presentation.model.ImportModePresentationModel
 import com.migrely.app.backup.presentation.model.YourDataViewState
 import com.migrely.app.backup.ui.R
@@ -65,14 +66,17 @@ import com.migrely.app.backup.ui.di.YourDataDependencies
 import com.migrely.app.backup.ui.model.AutomaticCopyUiModel
 import com.migrely.app.backup.ui.model.BackupSummaryUiModel
 import com.migrely.app.backup.ui.model.PendingImportUiModel
+import com.migrely.app.backup.ui.model.ShownYourDataMessageUiModel
 import com.migrely.app.backup.ui.model.YourDataEventUiModel
 import com.migrely.app.backup.ui.model.YourDataMessageUiModel
 import com.migrely.app.designsystem.dialog.MigrelyAlertDialog
 import com.migrely.app.designsystem.icon.MigrelyIcons
 import com.migrely.app.designsystem.motion.rememberReduceMotion
 import com.migrely.app.designsystem.snackbar.MESSAGE_OFFSET_BELOW_TOP_BAR
+import com.migrely.app.designsystem.snackbar.MessageLayout
 import com.migrely.app.designsystem.snackbar.MigrelySnackbar
 import com.migrely.app.designsystem.snackbar.MigrelySnackbarHost
+import com.migrely.app.designsystem.snackbar.SnackbarTone
 import com.migrely.app.designsystem.snackbar.messageTimeoutMillis
 import com.migrely.app.designsystem.theme.MigrelyTheme
 import java.time.Instant
@@ -87,9 +91,6 @@ private val CONTENT_MAX_WIDTH = 600.dp
 
 /** Some file apps label a .json file as text or as plain bytes, so those are offered too; the file is checked anyway. */
 private val BACKUP_TYPES = arrayOf("application/json", "text/*", "application/octet-stream")
-
-/** A message as shown, with its place in the order shown. */
-private data class ShownMessage(val message: YourDataMessageUiModel, val number: Int)
 
 /** Callbacks from the Your data screen. [onRestoreCopy] asks to confirm first. */
 data class YourDataActions(
@@ -113,12 +114,22 @@ fun YourDataDependencies.YourData(navController: NavController, modifier: Modifi
     // Kept across a rotation, so the question is not lost while the user decides.
     var pending by rememberSaveable { mutableStateOf<PendingImportUiModel?>(null) }
     var confirmingRestore by rememberSaveable { mutableStateOf(false) }
-    // Numbered, so the same message twice in a row shows and is announced again.
-    var message by remember { mutableStateOf<ShownMessage?>(null) }
-    var shownCount by remember { mutableIntStateOf(0) }
+    // Stamped, so the same message twice in a row shows and is announced again; saved, so an error survives a rotation.
+    var message by rememberSaveable { mutableStateOf<ShownYourDataMessageUiModel?>(null) }
     val show: (YourDataMessageUiModel) -> Unit = {
-        shownCount++
-        message = ShownMessage(it, shownCount)
+        message = ShownYourDataMessageUiModel(it, System.currentTimeMillis())
+    }
+    // An error belongs to the visit: Back or forward clears it; the file picker and Android Settings keep it
+    // (BRD D178 (2)). A later message replaces it as before.
+    ScreenLeaveObserver(navController) {
+        if (message?.let {
+                yourDataMessageBehaviourUiMapper.toUi(it.message).tone ==
+                    SnackbarTone.Error
+            } ==
+            true
+        ) {
+            message = null
+        }
     }
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     LaunchedEffect(yourDataEventPresenter, lifecycle) {
@@ -141,8 +152,9 @@ fun YourDataDependencies.YourData(navController: NavController, modifier: Modifi
         message?.let { yourDataMessageBehaviourUiMapper.toUi(it.message).baseDurationMillis }
     )
     LaunchedEffect(message, messageTimeout) {
-        if (message != null && messageTimeout != null) {
-            delay(messageTimeout)
+        val current = message
+        if (current != null && messageTimeout != null) {
+            delay(current.remainingMillis(System.currentTimeMillis(), messageTimeout))
             message = null
         }
     }
@@ -236,12 +248,12 @@ fun YourDataContents(
     messages: @Composable () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Box(
+    MessageLayout(
+        message = messages,
         modifier = modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-    ) {
-        Column(Modifier.fillMaxSize()) {
+            .background(MaterialTheme.colorScheme.background),
+        topBar = {
             TopAppBar(
                 title = {
                     Text(
@@ -264,6 +276,9 @@ fun YourDataContents(
                     WindowInsetsSides.Top + WindowInsetsSides.Horizontal
                 )
             )
+        }
+    ) {
+        Column(Modifier.fillMaxSize()) {
             if (working) {
                 val description = stringResource(R.string.your_data_working)
                 LinearProgressIndicator(
@@ -328,7 +343,6 @@ fun YourDataContents(
                 }
             }
         }
-        messages()
     }
 }
 

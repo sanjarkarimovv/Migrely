@@ -391,7 +391,9 @@ class RemindersViewModelTest :
     // saved, so the screen can replace an error with "Saved.". A result that wrote nothing says nothing.
 
     /** Every notification [action] sends. */
-    private fun TestScope.notificationsOf(action: () -> Unit): List<RemindersPresentationNotification> {
+    private fun TestScope.notificationsOf(
+        action: () -> Unit
+    ): List<RemindersPresentationNotification> {
         val heard = mutableListOf<RemindersPresentationNotification>()
         val collecting = launch(start = UNDISPATCHED) {
             classUnderTest.notification.collect { heard += it }
@@ -427,7 +429,12 @@ class RemindersViewModelTest :
             ReminderWriteResultDomainModel.Done
         )
 
-        assertEquals(saved, notificationsOf { classUnderTest.onDailyReminderAction(false, EIGHT_PM) })
+        assertEquals(
+            saved,
+            notificationsOf {
+                classUnderTest.onDailyReminderAction(false, EIGHT_PM)
+            }
+        )
     }
 
     @Test
@@ -456,7 +463,10 @@ class RemindersViewModelTest :
     @Test
     fun `When the effect reminder is turned off then write saved`() = runTest {
         givenReminders(allowed = true)
-        setEffectReminderUseCase.givenSuccessfulExecution(false, ReminderWriteResultDomainModel.Done)
+        setEffectReminderUseCase.givenSuccessfulExecution(
+            false,
+            ReminderWriteResultDomainModel.Done
+        )
 
         assertEquals(saved, notificationsOf { classUnderTest.onEffectReminderAction(false) })
     }

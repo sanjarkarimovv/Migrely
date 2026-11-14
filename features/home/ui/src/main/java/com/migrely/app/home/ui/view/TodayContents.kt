@@ -31,6 +31,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -40,6 +42,7 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.migrely.app.designsystem.icon.MigrelyIcons
 import com.migrely.app.designsystem.sky.SkyAppearance
@@ -73,7 +76,8 @@ fun TodayContents(
     onPeriodToday: (marked: Boolean) -> Unit = {},
     onSettings: () -> Unit = {},
     trialBanner: @Composable () -> Unit = {},
-    visitCard: @Composable () -> Unit = {}
+    visitCard: @Composable () -> Unit = {},
+    onSettingsRowHeight: (Dp) -> Unit = {}
 ) {
     val screenModifier = modifier
         .fillMaxSize()
@@ -88,7 +92,7 @@ fun TodayContents(
                     .weight(1f)
                     .verticalScroll(rememberScrollState())
             ) {
-                DayHeader(dayTitle, onSettings)
+                DayHeader(dayTitle, onSettings, onSettingsRowHeight)
                 trialBanner()
                 TodaySkyCard(today = today, appearance = appearance)
                 if (today.periodOffered) PeriodToday(today.periodToday, onPeriodToday)
@@ -117,7 +121,7 @@ fun TodayContents(
                     .weight(1f)
                     .verticalScroll(rememberScrollState())
             ) {
-                DayHeader(dayTitle, onSettings)
+                DayHeader(dayTitle, onSettings, onSettingsRowHeight)
                 trialBanner()
                 TodaySkyCard(today = today, appearance = appearance)
                 if (today.periodOffered) PeriodToday(today.periodToday, onPeriodToday)
@@ -222,8 +226,15 @@ private fun AttackSummaryRow(
 
 /** The date, with "Settings" at the end; attack mode has its own screen, so the button is normal mode only (D70). */
 @Composable
-private fun DayHeader(dayTitle: String, onSettings: () -> Unit) {
-    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+private fun DayHeader(dayTitle: String, onSettings: () -> Unit, onHeight: (Dp) -> Unit) {
+    val density = LocalDensity.current
+    // Its height, not its place, so a message placed from it does not follow scrolling (BRD D178 (6)).
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .onSizeChanged { onHeight(with(density) { it.height.toDp() }) }
+    ) {
         Text(
             text = dayTitle,
             style = MaterialTheme.typography.bodyMedium,

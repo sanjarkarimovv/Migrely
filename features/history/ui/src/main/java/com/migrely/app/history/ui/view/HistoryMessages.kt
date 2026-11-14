@@ -16,6 +16,8 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalAccessibilityManager
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
+import androidx.navigation.NavController
+import com.migrely.app.architecture.ui.view.ScreenLeaveObserver
 import com.migrely.app.designsystem.snackbar.MESSAGE_OFFSET_BELOW_TOP_BAR
 import com.migrely.app.designsystem.snackbar.MigrelySnackbar
 import com.migrely.app.designsystem.snackbar.MigrelySnackbarHost
@@ -37,10 +39,12 @@ private const val OFFERED_DELETIONS_KEPT = 10
  * appeared are saved, so after a rotation it stays only for the time it has left. Each base duration is stretched to
  * the user's accessibility timeout. A deletion made on the details screen opened from here is offered once
  * (BRD EC-HIS-04, D31); one made before History was opened, for example from home, belongs to home and is not offered.
+ * An error belongs to the visit: leaving History by Back or forward clears it (BRD D178 (2)).
  */
 @Composable
 internal fun HistoryMessages(
     presenter: HistoryMessagePresenter,
+    navController: NavController,
     behaviourMapper: HistoryMessageBehaviourUiMapper,
     reduceMotion: Boolean,
     onUndoDelete: (attackId: String) -> Unit,
@@ -92,6 +96,8 @@ internal fun HistoryMessages(
             shown = ShownHistoryMessageUiModel(message, System.currentTimeMillis())
         }
     }
+
+    ScreenLeaveObserver(navController) { if (errorShown()) shown = null }
 
     val current = shown
     val currentTimeout = current?.let { timeoutMillis(behaviourMapper.toUi(it.message)) }

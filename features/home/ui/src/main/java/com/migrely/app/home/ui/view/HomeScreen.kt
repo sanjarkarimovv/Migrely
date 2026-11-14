@@ -27,12 +27,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.isUnspecified
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.navigation.NavController
 import com.migrely.app.architecture.ui.view.ScreenEnterObserver
+import com.migrely.app.architecture.ui.view.ScreenLeaveObserver
 import com.migrely.app.designsystem.input.TapGuard
 import com.migrely.app.designsystem.motion.rememberReduceMotion
 import com.migrely.app.designsystem.snackbar.MESSAGE_OFFSET_BELOW_TOP_BAR
+import com.migrely.app.designsystem.snackbar.MessageLayout
 import com.migrely.app.designsystem.theme.MigrelyColors
 import com.migrely.app.designsystem.theme.MigrelyDarkRoom
 import com.migrely.app.home.presentation.model.HomeViewState
@@ -51,6 +54,9 @@ private const val MODE_FADE_OUT_MILLIS = 600
 private const val COMPACT_HEIGHT_DP = 480
 private const val MODE_TAP_GUARD_MILLIS = 1_000L
 private const val GUIDANCE_COLUMN_WIDTH_FRACTION = 0.5f
+
+// With the host's own 8 dp, a message's top edge sits 10 dp below the Settings row (BRD D178 (6), ux Q6).
+private val SETTINGS_ROW_GAP = 2.dp
 
 /** Holds the mode shown last without being snapshot state, so reading it never recomposes. */
 private class ShownMode(var mode: HomeMode)
@@ -109,6 +115,12 @@ fun HomeDependencies.Home(
     // Where the message ends, so landscape attack mode keeps its guidance below it (BRD D52). It is read only in the
     // layout phase, so a moving message never recomposes the screen.
     val messageBottom = remember { mutableStateOf(0.dp) }
+    var settingsRowHeight by remember { mutableStateOf(Dp.Unspecified) }
+    // The review request waits while any message shows, and after an error it waits for the next visit (BRD D178 (3),
+    // ux F3). Saved, so a rotation or a restored process keeps both.
+    var messageShows by rememberSaveable { mutableStateOf(false) }
+    var errorThisVisit by rememberSaveable { mutableStateOf(false) }
+    ScreenLeaveObserver(navController) { errorThisVisit = false }
     HomeContents(
         viewState = uiState,
         nowMillis = nowMillis,
@@ -140,10 +152,12 @@ fun HomeDependencies.Home(
         trialBanner = { trialBanner(homeLoads) },
         visitCard = { visitCard(homeLoads) },
         paywallTrigger = { paywallTrigger(homeLoads) },
-        reviewPrompt = { reviewPrompt(homeLoads) },
+        reviewPrompt = { if (!messageShows && !errorThisVisit) reviewPrompt(homeLoads) },
+        onSettingsRowHeight = { settingsRowHeight = it },
         messages = {
             HomeMessages(
                 presenter = homeMessagePresenter,
+                navController = navController,
                 behaviourMapper = homeMessageBehaviourUiMapper,
                 timeUiFormatter = timeUiFormatter,
                 reduceMotion = reduceMotion,
@@ -151,7 +165,9 @@ fun HomeDependencies.Home(
                 onUndoEnd = homeViewModel::onUndoEndAction,
                 onUndoDelete = homeViewModel::onUndoDeleteAction,
                 onMessageBottomChanged = { messageBottom.value = it },
-                topOffset = messageTopOffset(uiState.mode, isCompactHeight())
+                onShownChanged = { messageShows = it },
+                onErrorPosted = { errorThisVisit = true },
+                topOffset = messageTopOffset(uiState.mode, settingsRowHeight)
             )
         },
         messageBottom = messageBottom::value,
@@ -186,18 +202,23 @@ internal fun guardsTaps(previous: HomeMode, next: HomeMode): Boolean =
     previous != HomeMode.Loading && previous != next
 
 /**
- * Whether messages keep to the guidance column (BRD EC-UX-20, D37): in a short window attack mode puts its controls in
- * the right half, starting at the top, where a centred message would cover them (QA #20).
+ * Whether messages keep to the start column (BRD EC-UX-20, D37, D178 (6)): in a short window attack mode puts its
+ * controls in the end half, starting at the top, and Today puts "Migraine started" there, where a centred message would
+ * cover them (QA #20, #88).
  */
 internal fun messagesBesideControls(mode: HomeMode, compactHeight: Boolean): Boolean =
-    mode == HomeMode.Attack && compactHeight
+    compactHeight && (mode == HomeMode.Attack || mode == HomeMode.Today)
 
 /**
- * How far a message moves down, to below the Settings row (BRD D158). Not in attack mode, which
- * keeps its own place (BRD D52), and not in a short window, where it would cover "Migraine started".
+ * How far a message moves down (BRD D158, D178 (6)): on Today, 10 dp below the date and Settings row, from the row's
+ * measured height, never its position, so the message does not follow scrolling; [MESSAGE_OFFSET_BELOW_TOP_BAR] until
+ * the row is measured and as the least. The host adds 8 dp of its own. Attack mode keeps its own place (BRD D52).
  */
-internal fun messageTopOffset(mode: HomeMode, compactHeight: Boolean): Dp =
-    if (mode == HomeMode.Attack || compactHeight) 0.dp else MESSAGE_OFFSET_BELOW_TOP_BAR
+internal fun messageTopOffset(mode: HomeMode, settingsRowHeight: Dp): Dp = when {
+    mode == HomeMode.Attack -> 0.dp
+    settingsRowHeight.isUnspecified -> MESSAGE_OFFSET_BELOW_TOP_BAR
+    else -> maxOf(MESSAGE_OFFSET_BELOW_TOP_BAR, settingsRowHeight + SETTINGS_ROW_GAP)
+}
 
 private val HomeViewStateUiModel.mode: HomeMode
     get() = when (this) {
@@ -226,7 +247,8 @@ fun HomeContents(
     trialBanner: @Composable () -> Unit = {},
     visitCard: @Composable () -> Unit = {},
     paywallTrigger: @Composable () -> Unit = {},
-    reviewPrompt: @Composable () -> Unit = {}
+    reviewPrompt: @Composable () -> Unit = {},
+    onSettingsRowHeight: (Dp) -> Unit = {}
 ) {
     // Decided from the target mode in the same pass as the switch, so a quick switch back (for example Undo) can never
     // leave a stale previous mode behind (BRD EC-UX-18, D32).
@@ -240,7 +262,75 @@ fun HomeContents(
     } else {
         maxOf(MODE_TAP_GUARD_MILLIS, MODE_FADE_IN_MILLIS.toLong())
     }
-    Box(modifier = modifier.fillMaxSize()) {
+    // Half the width at the start edge always ends before the end column of the short layouts, whatever the insets
+    // (design D4, BRD D178 (6)).
+    val messageArea = if (messagesBesideControls(mode, isCompactHeight())) {
+        Modifier.fillMaxWidth(GUIDANCE_COLUMN_WIDTH_FRACTION)
+    } else {
+        Modifier
+    }
+    // No top bar: the message is the first stop, before the content, in every mode (BRD D178 (4), ux Q2).
+    MessageLayout(
+        message = {
+            // Messages over attack mode are dark like it; the same call either way, so a message showing keeps its
+            // state.
+            MigrelyDarkRoom(active = mode == HomeMode.Attack) {
+                Box(messageArea) { messages() }
+            }
+        },
+        modifier = modifier.fillMaxSize()
+    ) {
+        HomeModes(
+            viewState = viewState,
+            nowMillis = nowMillis,
+            reduceMotion = reduceMotion,
+            skyAppearanceUiMapper = skyAppearanceUiMapper,
+            timeUiFormatter = timeUiFormatter,
+            actions = actions,
+            messageBottom = messageBottom,
+            slots = HomeSlots(
+                monthCalendar,
+                medicationPrompt,
+                trialBanner,
+                visitCard,
+                paywallTrigger,
+                reviewPrompt
+            ),
+            guardTaps = guardTaps,
+            guardMillis = guardMillis,
+            onSettingsRowHeight = onSettingsRowHeight
+        )
+    }
+}
+
+/** What `:app` draws into home's Today mode. */
+private class HomeSlots(
+    val monthCalendar: @Composable () -> Unit,
+    val medicationPrompt: @Composable () -> Unit,
+    val trialBanner: @Composable () -> Unit,
+    val visitCard: @Composable () -> Unit,
+    val paywallTrigger: @Composable () -> Unit,
+    val reviewPrompt: @Composable () -> Unit
+)
+
+/** Today or attack mode, with the guard against a double tap across a switch (BRD EC-UX-18, D32). */
+@Suppress("LongParameterList")
+@Composable
+private fun HomeModes(
+    viewState: HomeViewStateUiModel,
+    nowMillis: Long,
+    reduceMotion: Boolean,
+    skyAppearanceUiMapper: SkyAppearanceUiMapper,
+    timeUiFormatter: TimeUiFormatter,
+    actions: HomeActions,
+    messageBottom: () -> Dp,
+    slots: HomeSlots,
+    guardTaps: Boolean,
+    guardMillis: Long,
+    onSettingsRowHeight: (Dp) -> Unit
+) {
+    val mode = viewState.mode
+    Box(modifier = Modifier.fillMaxSize()) {
         AnimatedContent(
             targetState = viewState,
             contentKey = { it.mode },
@@ -278,10 +368,11 @@ fun HomeContents(
                     onLogMedication = { actions.onLogMedication(null) },
                     onPeriodToday = actions.onPeriodToday,
                     onSettings = actions.onSettings,
-                    monthCalendar = monthCalendar,
-                    medicationPrompt = medicationPrompt,
-                    trialBanner = trialBanner,
-                    visitCard = visitCard
+                    monthCalendar = slots.monthCalendar,
+                    medicationPrompt = slots.medicationPrompt,
+                    trialBanner = slots.trialBanner,
+                    visitCard = slots.visitCard,
+                    onSettingsRowHeight = onSettingsRowHeight
                 )
 
                 is HomeViewStateUiModel.AttackInProgress -> AttackModeContents(
@@ -298,8 +389,8 @@ fun HomeContents(
         // mode: a paywall the trigger asks for after that is dropped with it (BRD D110), and so is a
         // request for a rating still waiting for home to settle (BRD D130, EC-REV-07).
         if (mode == HomeMode.Today) {
-            paywallTrigger()
-            reviewPrompt()
+            slots.paywallTrigger()
+            slots.reviewPrompt()
         }
         // Above both modes and below the messages, so Undo always stays tappable.
         if (guardTaps) {
@@ -308,17 +399,6 @@ fun HomeContents(
                 durationMillis = guardMillis,
                 Modifier.matchParentSize()
             )
-        }
-        // Half the width at the start edge always ends before the controls column of SideBySideAttackLayout, whatever
-        // the insets (design D4).
-        val messageArea = if (messagesBesideControls(mode, isCompactHeight())) {
-            Modifier.fillMaxWidth(GUIDANCE_COLUMN_WIDTH_FRACTION)
-        } else {
-            Modifier
-        }
-        // Messages over attack mode are dark like it; the same call either way, so a message showing keeps its state.
-        MigrelyDarkRoom(active = mode == HomeMode.Attack) {
-            Box(messageArea) { messages() }
         }
     }
 }

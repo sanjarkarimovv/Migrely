@@ -433,7 +433,9 @@ class HistoryViewModelTest :
     // screen replaces an error with "Saved.". A mark with its own message, or one that failed, says only that.
 
     /** Every notification [action] sends. */
-    private fun TestScope.notificationsOf(action: () -> Unit): List<HistoryPresentationNotification> {
+    private fun TestScope.notificationsOf(
+        action: () -> Unit
+    ): List<HistoryPresentationNotification> {
         val heard = mutableListOf<HistoryPresentationNotification>()
         val collecting = launch(start = UNDISPATCHED) {
             classUnderTest.notification.collect { heard += it }

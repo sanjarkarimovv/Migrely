@@ -69,10 +69,10 @@ fun MessageLayout(
         )
         layout(width, height) {
             // Placed in reading order, so Tab follows it; the message is drawn above the content.
-            parked.place(0, 0)
-            topBar.place(0, 0)
-            message.place(0, 0, zIndex = 1f)
-            content.place(0, topBar.height)
+            parked.placeRelative(0, 0)
+            topBar.placeRelative(0, 0)
+            message.placeRelative(0, 0, zIndex = 1f)
+            content.placeRelative(0, topBar.height)
         }
     }
 }
