@@ -3,6 +3,10 @@
 The decisions are BRD D178. The code facts were read from `develop` 52c12ce5 and not run. The pattern comes from D165 and the
 archived change `2026-11-09-fix-save-message` (its design D4 and D5).
 
+**The UX source is `migrely-work/t63/ux-spec.md`** (ux-designer, 2026-11-14). Its §2 holds the engineer's rules and §3 the state
+tables O1–O20, F-a–F-h, M1–M12, P1–P7, S1–S4 and R1–R5. `team-lead` accepted findings F1–F8 as written. F9 is out of scope. Where
+this file and the ux spec differ, the ux spec's §2 and §3 win, and `product-manager` fixes this file.
+
 ## Context
 
 - **Hosts.** 13 screens show messages through `MigrelySnackbarHost`.
@@ -28,7 +32,7 @@ archived change `2026-11-09-fix-save-message` (its design D4 and D5).
   |---|---|---|
   | Home | `RecordIntensity.Recorded`, `MoveStart.Moved`, period today `Written`, `AnswerLongAttack.Saved` | start, end, undo start, end and delete |
   | History | `SetDayMark.Done` (period, pain-free) | `AttackLogged`, undo delete |
-  | Reminders | daily reminder and time, effect reminder (`ReminderWriteResult.Done -> Unit`), visit date `Saved` without a permission ask | visit removed (Undo), undo |
+  | Reminders | daily reminder and time, effect reminder (`ReminderWriteResult.Done -> Unit`), visit date `Saved`, with or without a permission ask (F4) | visit removed (Undo), undo |
   | Doctor report | `Share` (the share sheet opens) | `NothingLogged` (information) |
   | Your data | none | backup, CSV, replace, add, restore |
   | My medications | none | archive (Undo), undo |
@@ -58,7 +62,7 @@ D165 pattern per screen.
 
 | Part | Decision |
 |---|---|
-| Signal | Home, History and Reminders ViewModels emit one "write saved" event (not a message) on each success in the table's middle column. Nothing on a result that writes nothing |
+| Signal | Home, History and Reminders ViewModels emit one "write saved" event (not a message) on each success in the table's middle column. On Reminders this includes a visit date `Saved` with `askForPermission = true`, emitted alongside the permission request (F4). Nothing on a result that writes nothing |
 | Who decides | The screen. If an error shows (storage full or something went wrong), it replaces it with `Saved`. Otherwise it ignores the event. This mirrors `AttackDetailsScreen.kt:209` |
 | "Saved." | A new `Saved` in `HomeMessageUiModel`, `HistoryMessageUiModel` and the reminders message model. Confirmation tone, polite, `READING_MILLIS` stretched by the accessibility timeout, body tap closes it, no haptic. The string is "Saved." in each module, the same as `attack_message_saved` |
 | Doctor report | On `Share`, if an error shows, clear it with no message. The share sheet is the outcome, and the app saved nothing, so "Saved." would be false |
@@ -79,12 +83,13 @@ one of them fails with a lifecycle `ON_STOP` clear in its place (negative contro
 
 | Question | Decision |
 |---|---|
-| Order | The top bar's controls, then the message's text and its control, then the content. On Home and onboarding the message comes first, pending Q2 |
+| Order | The top bar's controls, then the message's text and its control, then the content. On Home (both modes, every orientation) and onboarding the message comes first (ux Q2). Text and control stay two nodes, never merged |
 | Where | One composable or modifier in `designsystem/snackbar`, used by all 13 screens. No per-screen focus requesters |
-| Recommended shape | A layout with three slots, `topBar`, `message` and `content`. It places them in that order, so Tab follows it. It draws `message` above `content` with `zIndex` and measures it over the whole screen as today. The layout is a traversal group and gives the slots `traversalIndex` in the same order for TalkBack. The engineer may choose another mechanism if tasks 5.2 and 5.3 pass |
-| Geometry | The message's bounds stay unchanged (±1 px at 100% and 200%), and so do `onMessageBottomChanged`, `topOffset`, the `TapGuard` and D165's card mode |
+| Recommended shape | A layout with three slots, `topBar`, `message` and `content`. It places them in that order, so Tab follows it. It draws `message` above `content` with `zIndex` and measures it over the whole screen as today. The layout is a traversal group and gives the slots `traversalIndex` in the same order for TalkBack. Home and onboarding leave `topBar` empty. Attack details lifts its top bar out of `AttackDetailsContents`, and the paywall's Close row goes into `topBar` (ux §2.1). The engineer may choose another mechanism if tasks 5.2 and 5.3 pass |
+| Geometry | The message's bounds stay unchanged (±1 px at 100% and 200%), and so do `onMessageBottomChanged`, `topOffset` and D165's card mode. Exceptions: Home Today's measured offset and the fit rule (D6, ux P3–P6) |
+| Guard after a replacement | The 0.8 s `TapGuard` covers the taller of the old and the new message, not only the new one. Today `guardHeight` follows the new message at once, so at 200% a shorter "Saved." would expose the strip where the error's Dismiss sat (F2) |
 | Focus on arrival | None. TalkBack hears the message through its live region, as today |
-| Focus on leave | When the focused message leaves, focus must not be lost into nothing. The next Tab reaches a control on screen (Q3) |
+| Focus on leave | Focus clears when the focused message leaves **and** when it is replaced; it is never carried to the new message's control and never moved into the content. The next Tab goes to the screen's first stop, Shift+Tab to the last. From the first frame of its exit fade a leaving message is neither a Tab stop nor in the semantics tree (Q3, F8) |
 
 **Rejected options:**
 - Per-screen `focusProperties` chains: 13 copies.
@@ -96,8 +101,9 @@ one of them fails with a lifecycle `ON_STOP` clear in its place (negative contro
 | Question | Decision |
 |---|---|
 | Replacement | In place on every host. The new message takes the old one's slot within one frame, with no cross-fade. This is D165's `replaceInPlace` path, so it becomes the only behaviour. The parameter can go once Attack details is green |
-| Arrival when none shows | It still slides in over 250 ms, but no frame holds a fully transparent node in the accessibility tree. The suggested way is a fade that starts above alpha 0, with the value from Q4. Deferring the live region until the node is visible is the fallback, used only if a test shows TalkBack still speaks |
-| Size | A replacement of a different height changes size at once. Whatever follows the message's bottom (D52 landscape attack mode, D165 card mode) moves at once too. With fewer moving parts this is calmer (Q5) |
+| Arrival when none shows | It still slides in over 250 ms, but no frame holds a fully transparent node in the accessibility tree: `fadeIn(initialAlpha = 0.02f)` (allowed 0.01–0.05, never 0), slide and easing unchanged (ux Q4). Setting the live region when the enter transition settles is the fallback, used only if A16 still hears an empty announcement |
+| Size | The message itself swaps in one frame. When the new message is **shorter**, the bottom the host reports eases up over 250 ms (the arrival tween), so content tied to it (D52 landscape attack mode, D165 card mode) moves up smoothly. When it is **taller**, the bottom moves at once, so the message never covers the safety card's title or the guidance for a frame. Only non-null to non-null changes ease. Reduce motion: at once (F1) |
+| Same-text retries | Every posted message has its own identity (a posting time, as `ShownAttackMessageUiModel` has), so a swap to an equal-looking message is a new node and is spoken again (ux §2.8) |
 | Proof without a field repro | The red test shows the transparent frame on `develop`. QA tries to reproduce #183 on one more screen as a control and records the result either way |
 
 `ReplaceInPlaceTest`'s case "By default the new message fades in over the old one" inverts, because the spec changes. That is
@@ -105,39 +111,47 @@ a deliberate change to the expected behaviour, not a test bent to pass. Record i
 
 ### D5. Review request (D178 (3))
 
-`HomeMessages` reports whether the shown message is an error or `Saved`, through a callback like `onMessageBottomChanged`. Home
-composes `reviewPrompt()` only when `mode == Today` and no such message shows. When the slot leaves the composition, the existing
-`ReviewPrompt` cancels its wait and calls `onLeave()`, so a flow being prepared is not launched and nothing counts. When the slot
-returns, the 2 s start again. The review module itself does not change.
+Ux F3, accepted by `team-lead`. Two gates on Home's review slot:
+
+1. **Any message.** `HomeMessages` reports whether any message shows (error, `Saved`, Undo or information), through a callback
+   like `onMessageBottomChanged`. While one shows, Home does not compose `reviewPrompt()`.
+2. **Error this visit.** Home keeps a `rememberSaveable` flag, set when an error is posted and cleared by the same
+   `ScreenLeaveObserver` that ends the visit (D2). While it is set, Home does not compose `reviewPrompt()`.
+
+Home composes the slot only when `mode == Today` and both gates are open. When the slot leaves the composition, the existing
+`ReviewPrompt` cancels its wait and calls `onLeave()`, so a flow being prepared is not launched and nothing counts. When it
+returns, the 2 s start again. The next visit or app start checks D130 as usual. The review module itself does not change.
 
 ### D6. Home Today in a short window (D178 (6))
 
 | Question | Decision |
 |---|---|
 | Width | The start column, through the rule landscape attack mode uses (`GUIDANCE_COLUMN_WIDTH_FRACTION`, `messagesBesideControls` true for Today in a short window) |
-| Top | At or below the Settings row's bottom, unscrolled, at 100%, 130% and 200% in windows 411 and 274 dp high. Use `MESSAGE_OFFSET_BELOW_TOP_BAR` if the measurement shows it is enough. If not, use the row's measured height, never its scrolling position, so the message never moves while the column scrolls (Q6) |
+| Top | `topOffset = max(MESSAGE_OFFSET_BELOW_TOP_BAR, settingsRowHeight + 2.dp)`: 10 dp below the row, because the host adds 8 dp. Measure the row's **height** (`onSizeChanged`), never its position, so the message never follows scrolling. Until the row is measured, use the fixed offset (ux Q6, F5) |
+| Portrait | The same measured offset in portrait Home Today. It changes nothing while the date fits on one line, and stops a wrapped 200% date on a 360 dp phone from being covered (F6) |
+| Fit rule | In the host, for every screen: the message is always whole inside the safe area. If its bottom would pass the bottom safe edge, it rises just enough, never above where it sits today (safe top + 8 dp). It does nothing where the message already fits. At 274 dp and 200% a no-duration error then may cover Settings, in that cell only, which is better than an unreachable Dismiss. "Migraine started" is never covered (F5) |
 | Covered | The first row under Settings, the trial banner or today's card, may lie under it (D158's first-row rule) |
-| Unchanged | Portrait Home Today, attack mode in either orientation, and every other screen |
+| Unchanged | Attack mode in either orientation, and every other screen's placement (the fit rule is a no-op there) |
 
 ### D7. Merge order
 
 The next change, `fix-keyboard-follows-cursor`, also edits `AttackDetailsScreen.kt`. This change merges first, and that one
 branches from the `develop` that contains it.
 
-## Questions for ux-designer, answered before code starts
+## Questions for ux-designer (answered 2026-11-14)
 
-The PM default applies unless ux decides otherwise in the ux spec.
+The ux answers are in bold. They are in `migrely-work/t63/ux-spec.md` §1, and `team-lead` accepted F1–F8.
 
 | # | Question | PM default |
 |---|---|---|
-| Q1 | Order on top-bar screens: are the bar's actions before the message (History: Back, Doctor report, Insights, message, content)? | Yes, the whole bar first |
-| Q2 | Home and onboarding have no top bar. Is the message the first stop even in portrait Home Today, where it sits below the Settings row? | Yes. Undo lasts 5 s, so reaching it fast matters more than matching the visual order. Settings comes right after the message |
-| Q3 | Where does focus go when the focused message leaves? | Compose's default (focus cleared). The next Tab starts from the first stop. No focus jump |
-| Q4 | Arrival fade: what start alpha keeps the look the same while never being 0? Or defer the live region instead? | The smallest alpha the test shows is non-transparent. The visible look stays unchanged |
-| Q5 | A replacement switches at once on every screen, with no cross-fade, and content tied to the message's bottom moves at once. Acceptable? | Yes. Less motion, already shipped on Attack details |
-| Q6 | Short-window Home Today: the start-column width, and is the fixed offset enough at 200% when the date wraps in half the width? | The start column. Offset or measured row height, whichever passes Q6's cells |
-| Q7 | "Saved." per screen: the same text, icon, tone, 8 s and no haptic as Attack details, on Home (both modes), History and Reminders. A silent clear on Doctor report? | Yes to all |
-| Q8 | Review: after an error or "Saved." leaves, start D130's 2 s again in the same visit, rather than waiting for the next visit? | Yes, per D178 (3) |
+| Q1 | Order on top-bar screens: are the bar's actions before the message (History: Back, Insights, Doctor report, message, content)? | Yes, the whole bar first. **Ux: yes** (F7 fixed the History example) |
+| Q2 | Home and onboarding have no top bar. Is the message the first stop even in portrait Home Today, where it sits below the Settings row? | Yes. **Ux: yes**, in every Home mode and orientation |
+| Q3 | Where does focus go when the focused message leaves? | Focus cleared. **Ux: yes**, plus F8: a replacement also clears focus, and a leaving message is not a stop |
+| Q4 | Arrival fade: what start alpha keeps the look the same while never being 0? Or defer the live region instead? | **Ux: 0.02** (range 0.01–0.05). Deferring the live region is the fallback only |
+| Q5 | A replacement switches at once on every screen, with no cross-fade, and content tied to the message's bottom moves at once. Acceptable? | **Ux: partly** (F1, F2). In place, yes; a shorter replacement eases the bottom over 250 ms, a taller one moves at once; the guard covers the taller message |
+| Q6 | Short-window Home Today: the start-column width, and is the fixed offset enough at 200% when the date wraps in half the width? | **Ux: not enough.** The start column, the measured row height with 56 dp as the floor, a fit rule, and the same offset in portrait (F5, F6) |
+| Q7 | "Saved." per screen: the same text, icon, tone, 8 s and no haptic as Attack details, on Home (both modes), History and Reminders. A silent clear on Doctor report? | **Ux: yes**, plus F4: Reminders' visit date with a permission request also says "Saved." |
+| Q8 | Review: after an error or "Saved." leaves, start D130's 2 s again in the same visit, rather than waiting for the next visit? | **Ux: no** (F3). Wait while any message shows; after an error, no request for the rest of the Home visit |
 
 ## Edge cases
 
@@ -153,7 +167,7 @@ The PM default applies unless ux decides otherwise in the ux spec.
 | 8 | Leaving by Back or forward | The error clears. Undo and information stay |
 | 9 | File picker, share sheet, Android Settings, Home, Recents, screen off | The error stays |
 | 10 | Rotation, process death | The error stays with no duration. Saved instance state brings it back |
-| 11 | Error on Home Today when the review is due | No request while it shows. 2 s after it leaves |
+| 11 | Error on Home Today when the review is due | No request for the rest of that Home visit. Any other message: no request while it shows, 2 s after it leaves |
 | 12 | Attack mode | "Saved." is dim (Dark room), and nothing new is bright. Attack-mode controls stay uncovered (D52) |
 | 13 | Free and Premium | Identical |
 | 14 | Offline | Nothing here uses the network |
@@ -163,11 +177,14 @@ The PM default applies unless ux decides otherwise in the ux spec.
 | 18 | Reduce motion | Arrival, replacement and leave happen at once |
 | 19 | TalkBack | The message is read after the bar, never empty, and does not take focus |
 | 20 | Hardware keyboard, Switch Access | The message's control is reachable forward and backward, with a separate highlight |
-| 21 | A message that leaves while focused | Focus is not lost into nothing, and there is no crash |
+| 21 | A message that leaves or is replaced while focused | Focus clears, never moves into the content, the next Tab goes to the first stop, no crash. A leaving message is never a stop |
 | 22 | Clock or zone change, DST, midnight | Not touched. `shownAt` uses the wall clock as today |
 | 23 | Upgrade from 1.2.x | No stored data. Saved instance state does not survive an update |
 | 24 | Double tap on a write | Each write is its own result: rule 6 |
-| 25 | Short window, 274 dp, 200% | The message covers part of the start column's content only, and neither Settings nor "Migraine started" |
+| 25 | Short window, 274 dp, 200% | An Undo covers part of the start column only. A no-duration error rises to stay whole and may cover Settings in that cell only. "Migraine started" is never covered |
+| 26 | A shorter replacement at 200% (error with Dismiss below → "Saved.") | A tap where the Dismiss was, within 0.8 s, reaches nothing |
+| 27 | Reminders visit date that asks for permission after an error | The error goes; "Saved." may sit behind the system dialog or time out there |
+| 28 | Portrait Home Today, 360 dp, 200%, a date that wraps | The message sits below the second date line, and Settings is fully uncovered |
 
 ## Acceptance (QA, this diff only)
 
@@ -188,14 +205,15 @@ afterwards.
 | A8 | Fail, go forward and back (Home to Settings, History to a migraine): no error. Fail, Home, Android Settings, return: the error stays. Your data file picker and Report share sheet: the error stays |
 | A9 | Fail, rotate. Fail, `am kill` in the background, reopen: the error stays |
 | A10 | A normal save with no error: no "Saved." |
-| A11 | Review: a debug setup where the request is due (D130 met). With an error on Home Today, no request in 10 s. Dismiss it, and the request flow starts after 2 s |
-| A12 | Tab order on Attack details (card and no card), History, Settings, Paywall, Your data, Reminders, Doctor report, the three medication screens, Add past migraine, Home and onboarding: bar, message, content. Shift+Tab reverses. 25 presses recorded per screen |
+| A11 | Review, ux R1–R5: a debug setup where the request is due (D130 met). With an error on Home Today, no request in 10 s; dismiss it and stay, no request for the rest of the visit; go to Settings and back, the request may run 2 s after Today shows. With "Migraine ended [Undo]", no request until it leaves, then after 2 s |
+| A12 | Tab order, ux O1–O20 and F-a–F-h: bar, message, content on every screen (History: Back, Insights, Doctor report, message control, month). Shift+Tab reverses. 25 presses recorded per screen. Focus clears on leave and on replacement, and Tab never lands on a leaving message |
 | A13 | TalkBack swipe order on the same screens: bar, message text, its control, content |
 | A14 | Switch Access on Attack details, History and Home: separate highlights in the same order, and selecting each works |
-| A15 | Message bounds on every screen at 100% and 200%: equal to `develop` 52c12ce5 within 1 px. The 0.8 s guard holds |
+| A15 | Message bounds on every screen at 100% and 200%: equal to `develop` 52c12ce5 within 1 px, except Home Today's measured offset and the fit rule (ux P7). The 0.8 s guard holds |
 | A16 | #183: on History, Reminders and Home, a message after more than 100 ms of quiet, and a same-text retry. No `ttsOutput={}` with a live region, 10 of 10 per screen |
-| A17 | A replacement: no frame shows two messages (60 fps capture), and no frame is visibly brighter than its neighbours |
-| A18 | Home Today short window, 411 and 274 dp, at 100%, 130% and 200%, LTR and `ar-XB`: Settings and "Migraine started" are uncovered, answer the first tap, and stay in the tree while Undo shows |
+| A17 | Replacements, ux M2–M9 and M12: no frame shows two messages (60 fps capture), no frame is visibly brighter than its neighbours; a shorter replacement eases the tied content over 250 ms, a taller one moves it at once; the guard covers the taller message |
+| A18 | Home Today placement, ux P1–P6: 411 and 274 dp, 100%, 130% and 200%, LTR and `ar-XB`; Settings and "Migraine started" uncovered, answer the first tap, stay in the tree while Undo shows; at 274 dp 200% a storage-full error is whole on screen with Dismiss reachable; portrait 360 dp 200% with a wrapped date |
+| A20 | "Saved." states, ux S1–S4, including the Reminders visit date with a permission request (F4) |
 | A19 | "Remove animations": everything happens at once |
 
 **Negative controls.** Each one shows that its check can fail.
@@ -209,6 +227,7 @@ afterwards.
 | N5 | This branch | A10 | No "Saved.", the control for D1 |
 | N6 | `develop` | A16 on one screen other than Attack details | Record the result whether or not an empty announcement appears. It is a control attempt, not a pass condition |
 | N7 | `develop` | A11 | The request starts while the error shows. This shows A11 can fail |
+| N8 | This branch with the guard following only the new message, local | Ux M3 | The tap at the old Dismiss spot reaches the row underneath, so A17's guard check can fail |
 
 ## What the checks will not prove
 
@@ -228,7 +247,9 @@ afterwards.
   A16 measures it.
 - **A leave clear that fires on Home or the file picker** would break #167's main path. N4 and A8 test both sides.
 - **"Saved." on Home in attack mode** is new text during an attack. It is dim, polite, gives no haptic and replaces an error the
-  person already saw. Q7 confirms it.
+  person already saw. Ux Q7 confirmed it.
+- **Ux heights are estimates** (row heights, the wrap, the 274 dp overflow). P1–P6 decide them on a device.
+- **The fit rule is new host behaviour on every screen.** It must be a no-op wherever the message already fits; A15 shows that.
 - **Scope L.** If it does not fit one reviewable PR, split it along D1+D2+D5 (#181) and D3+D4+D6 (#185, #183, #88). Keep D178 and
   renumber nothing.
 

@@ -22,7 +22,8 @@ and were not run here.
   TalkBack's tree. A tap no longer fires Undo, which D158 measured. #153 has the same cause: at 274 dp and 200% font the
   message covers the top of "Migraine started".
 
-The decision is BRD D178.
+The decision is BRD D178. The UX answers are in `migrely-work/t63/ux-spec.md` (ux-designer, 2026-11-14). `team-lead` accepted
+its findings F1–F8.
 
 ## What Changes
 
@@ -33,21 +34,28 @@ The decision is BRD D178.
   - On Doctor report, a created report clears the error with no message.
   - The rule is the same as D165 (4) on Attack details: it clears on success, never on the attempt. Undo and information messages
     stay. A retry that fails is announced again.
+  - On Reminders, a visit date that triggers a permission request also counts as a save (F4).
 - **An error belongs to the visit, on the same 9 screens (D178 (2)).** Back or going forward clears it. Dialogs, pickers, the
   system file picker, the share sheet, the background, Android Settings, rotation and process death keep it.
-- **No review request while an error, or the "Saved." that replaced it, shows on Home Today (D178 (3)).** Once the message
-  has gone, D130's 2-second wait starts again.
+- **Review request on Home Today (D178 (3), F3).** It waits while any message shows, and its 2 seconds start when the message
+  leaves. After an error, no request comes for the rest of that Home visit.
 - **Order of messages for keyboard, Switch Access and TalkBack, on all 13 screens (D178 (4)).** The order is the top bar first,
   then the message's text and its Dismiss or Undo, then the content. On a screen with no top bar the message comes first. One
-  shared mechanism in `designsystem` provides this. The message's place, size, drawing and tap guard do not change.
+  shared mechanism in `designsystem` provides this. Focus clears when the message leaves or is replaced, and a leaving message is
+  not a stop (F8). The message's place, size and drawing do not change. After a replacement, the tap guard covers the taller of
+  the two messages (F2).
 - **A message is never announced empty, on all 13 screens (D178 (5)).**
   - A replacement switches in place with no cross-fade on every screen. This is the path D165 already uses in card mode.
-  - A message that arrives when none is showing still slides in, but it is never fully transparent while in the accessibility
-    tree.
+  - When the new message is shorter, content tied to its bottom eases up over 250 ms. When it is taller, that content moves at
+    once (F1).
+  - A message that arrives when none is showing still slides in, starting at alpha 0.02, so it is never fully transparent while in
+    the accessibility tree.
   - No new flashing and no faster motion.
 - **Home Today in a short window (D178 (6)).** The message moves to the start column, as landscape attack mode already does,
-  and sits below the Settings row. It then covers neither Settings nor "Migraine started". This replaces D158's exception for
-  that window.
+  and sits 10 dp below the Settings row's measured height. It then covers neither Settings nor "Migraine started". This replaces
+  D158's exception for that window. The same measured offset applies in portrait Home Today (F6).
+- **A fit rule in the host (F5).** A message is always whole inside the safe area. It rises only as far as needed, and never
+  above where it sits today.
 - **New string:** "Saved." in the home, history and reminders UI modules, the same text as in the attack module.
 
 ## Out of scope
@@ -58,6 +66,10 @@ The decision is BRD D178.
 - **Timed errors:** Settings, onboarding and the paywall. Their errors leave after 8 s by themselves, so #181 does not apply.
 - The paywall trigger while an error shows on Home. D165 (8) named only the review request.
 - Closing a message with Esc, and any change to message text other than the new "Saved.".
+- **Ux F9, deferred to a later change** (`team-lead` adds a tracker row):
+  - pausing a message's countdown while it holds keyboard or TalkBack focus (WCAG 2.2.1);
+  - growing the message controls in attack mode from 48 dp to 64 dp, to match the dark-room bar.
+  No message size changes here.
 - D158's other accepted overlaps: Remove in row 1 of My medications, the History chevrons and the trial banner's close button.
 - The cramped short-window layout of #153 itself (the button's top under the status bar). Only the message part goes. #153
   stays open for QA to retest.

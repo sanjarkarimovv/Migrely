@@ -4,6 +4,11 @@ Base: `bugfix/181-messages-everywhere` from `origin/develop` 52c12ce5. Every com
 `Refs #183` and `Refs #88` (and `Refs #153` where the short-window work touches it). Never use a closing keyword, because QA filed
 these issues and retests them. No domain, data or permission change.
 
+**Work from the UX spec.** `migrely-work/t63/ux-spec.md` §2 is the engineer's rule list (rules 1–8). §3 holds the state tables QA
+and the engineer cover: O1–O20 (order), F-a–F-h (focus), M1–M12 (motion and announcements), P1–P7 (placement), S1–S4 and R1–R5
+("Saved." and the review). Each task below names the rules and rows it must satisfy. If a rule there and this file disagree, ask
+`product-manager` before you code.
+
 ## 1. Plan (product-manager)
 
 - [x] 1.1 BRD: D178, EC-UX-35…38, EC-REV-13, §13 row 46; EC-UX-16 and EC-UX-34 updated. Verify: `grep -c "^| D178 " docs/BRD.md`
@@ -13,7 +18,7 @@ these issues and retests them. No domain, data or permission change.
 
 ## 2. UX (ux-designer, before any code)
 
-- [ ] 2.1 Answer design Q1–Q8 in a ux spec. `team-lead` stores it in `migrely-work/t63/ux-spec.md`. Answer at least:
+- [x] 2.1 Answer design Q1–Q8 in a ux spec. `team-lead` stores it in `migrely-work/t63/ux-spec.md`. Answer at least:
   - the Tab and TalkBack order: Back and the bar's actions, then the message control, then the content; on Home and onboarding,
     the message first (Q1, Q2);
   - where focus goes when the focused message leaves (Q3);
@@ -23,14 +28,18 @@ these issues and retests them. No domain, data or permission change.
   - the short-window Home Today placement (Q6).
 
   Verify: the spec file exists and answers each Q by number. Any answer that departs from a PM default comes back to
-  `product-manager`, who updates D178 and the deltas before code starts.
-- [ ] 2.2 PM folds ux's answers into the design and deltas where they differ. Verify:
-  `openspec validate fix-messages-everywhere --strict` exits 0 after the update.
+  `product-manager`, who updates D178 and the deltas before code starts. Done: `migrely-work/t63/ux-spec.md` (276 lines), with
+  Q1–Q8 in §1 and findings F1–F9 in §6. Q5, Q6 and Q8 depart from the PM defaults.
+- [x] 2.2 PM folds ux's answers into the design and deltas where they differ. Verify:
+  `openspec validate fix-messages-everywhere --strict` exits 0 after the update. Done: `team-lead` accepted F1–F8, including F6
+  (the measured offset in portrait too). They are in D178 (1), (3)–(6), (10), EC-UX-16, 35–38, EC-REV-13, design D1, D3–D6, Q1–Q8,
+  A11, A12, A15, A17, A18, A20 and N8, and in both deltas. F9 is listed under out of scope in the proposal only.
 
 ## 3. Presentation (android-engineer)
 
 - [ ] 3.1 `HomeViewModel`, `HistoryViewModel` and `RemindersViewModel` emit one "write saved" event on each success in the design's
-  table (middle column), and none on a result that writes nothing. Write the tests first, one per write path, plus one for each
+  table (middle column), including Reminders' visit date `Saved` with `askForPermission = true` (F4), and none on a result that
+  writes nothing. Write the tests first, one per write path, plus one for each
   non-write result (`NotInProgress`, `Unchanged`, `NothingToRemove`). Verify:
   `./gradlew :features:home:presentation:test :features:history:presentation:test :features:reminders:presentation:test`
   passes, and the new tests fail first on 52c12ce5.
@@ -44,17 +53,27 @@ these issues and retests them. No domain, data or permission change.
 
 ## 5. designsystem
 
-- [ ] 5.1 Never transparent (design D4). First write a red test: in no frame of an arrival, and of a replacement, is the message's
-  node in the semantics tree while fully transparent. Then make in-place replacement the host's behaviour and start the arrival
-  fade above 0 (or use the fallback). Invert `ReplaceInPlaceTest`'s default-fade case and say so in the PR. Verify:
+- [ ] 5.1 Never transparent (design D4, ux rules 4 and 8). First write a red test: in no frame of an arrival, and of a replacement,
+  is the message's node in the semantics tree while fully transparent. Its negative control at `initialAlpha = 0f` fails. Then make
+  in-place replacement the host's behaviour, give every posted message its own identity, and start the arrival fade at
+  `ENTER_START_ALPHA = 0.02f` (or use the fallback). Invert `ReplaceInPlaceTest`'s default-fade case and say so in the PR. Verify:
   `./gradlew :designsystem:testDebugUnitTest` passes, and the new test fails on 52c12ce5's host.
-- [ ] 5.2 The order mechanism (design D3). First write red tests on a sample screen: Tab from the top goes bar, message control,
-  content; Shift+Tab reverses; the semantics traversal order matches; a message's appearance does not move focus. Verify:
+- [ ] 5.2 The order mechanism (design D3, ux rules 1–3). First write red tests on a sample screen: Tab from the top goes bar,
+  message control, content; Shift+Tab reverses; the semantics traversal order matches; a message's appearance does not move focus;
+  focus clears on leave and on replacement and never moves into the content; a leaving message is out of the focus and semantics
+  order from its first exit frame (F8). Verify:
   `./gradlew :designsystem:testDebugUnitTest` passes, and the tests fail with the message placed after the content, as on
   52c12ce5.
-- [ ] 5.3 Geometry is unchanged: the host's bounds, `onMessageBottomChanged` and the `TapGuard` match the old placement within 1 px
-  at 100% and 200%. Verify: `MessagePlaceAndTapTest`, `MessageClearanceLayoutTest` and a new bounds test pass in
+- [ ] 5.3 Geometry is unchanged: the host's bounds and `onMessageBottomChanged` match the old placement within 1 px at 100% and 200%
+  wherever the message fits. Verify: `MessagePlaceAndTapTest`, `MessageClearanceLayoutTest` and a new bounds test pass in
   `./gradlew :designsystem:testDebugUnitTest`.
+- [ ] 5.4 Replacement size and guard (F1, F2, ux rules 4 and 5). With motion on, a shorter replacement eases the reported bottom
+  over 250 ms (non-null to non-null only); a taller one moves it in the same frame; reduce motion is instant. The 0.8 s guard
+  covers the taller of the old and new message. Verify: tests for both directions and for a tap at the old Dismiss strip pass in
+  `./gradlew :designsystem:testDebugUnitTest`, and the guard test fails with the guard following only the new message (N8).
+- [ ] 5.5 Fit rule (F5, ux rule 6). The message is always whole inside the safe area. It rises only as far as needed, never above
+  safe top + 8 dp, and does nothing where it fits. Verify: a host test with an over-tall message in a short window, and a no-op
+  test at normal sizes, pass in `./gradlew :designsystem:testDebugUnitTest`.
 
 ## 6. UI (screens)
 
@@ -68,12 +87,18 @@ these issues and retests them. No domain, data or permission change.
   pass in each module's `testDebugUnitTest`.
 - [ ] 6.3 `ScreenLeaveObserver` on the 9 screens clears an error, and only an error, on leave. Verify: tests for "belongs to the
   visit" pass, and the leave test fails with a lifecycle `ON_STOP` clear in its place.
-- [ ] 6.4 Home gates `reviewPrompt()` on "no error and no `Saved` shown" (design D5). Verify: a Home UI test shows the slot
-  leaving and coming back with the message, and `./gradlew :features:home:ui:testDebugUnitTest :features:review:ui:testDebugUnitTest`
+- [ ] 6.4 Home gates `reviewPrompt()` on "no message shows" and on a `rememberSaveable` "error this visit" flag that the
+  `ScreenLeaveObserver` clears (design D5, F3, ux R1–R5). Verify: Home UI tests show the slot leaving with any message and
+  returning when it goes; staying absent for the rest of the visit after an error, across rotation; and returning after a
+  navigation away and back, and `./gradlew :features:home:ui:testDebugUnitTest :features:review:ui:testDebugUnitTest`
   passes.
-- [ ] 6.5 Home Today in a short window: the message sits in the start column, below the Settings row (design D6), and the offset
-  or measured row height follows ux Q6. Verify: `HomeScreen` placement tests pass for 411 and 274 dp at 100% and 200%, LTR and RTL,
-  with `messagesBesideControls` and `messageTopOffset` cases updated in `./gradlew :features:home:ui:testDebugUnitTest`.
+- [ ] 6.5 Home Today placement (design D6, F5, F6, ux rule 7, P1–P6). In a short window the message sits in the start column. In
+  every window it sits at `max(MESSAGE_OFFSET_BELOW_TOP_BAR, settingsRowHeight + 2.dp)`, from the row's measured height, never its
+  position. Verify: `HomeScreen` placement tests pass in `./gradlew :features:home:ui:testDebugUnitTest`, covering:
+  - 411 and 274 dp at 100% and 200%, LTR and RTL;
+  - portrait 360 dp at 200% with a wrapped date;
+  - a scroll that does not move the message;
+  - updated `messagesBesideControls` and `messageTopOffset` cases.
 
 ## 7. Docs
 
@@ -86,8 +111,8 @@ these issues and retests them. No domain, data or permission change.
 - [ ] 8.1 The gate. Verify: `set -o pipefail; nice -n 19 ./gradlew --max-workers=2 assembleDebug test ktlintCheck detekt lint`
   exits 0.
 - [ ] 8.2 No permission added. Verify: `./gradlew :app:checkReleasePermissions` exits 0.
-- [ ] 8.3 A walk on `emulator-5570`, debug: design checks A1, A7, A8, A12 (Attack details, History, Home), A16 (one screen) and
-  A18 (411 dp) at 100% and 200%. Restore storage, font scale, animator scale, rotation and locale. Verify: the results and what the
+- [ ] 8.3 A walk on `emulator-5570`, debug: design checks A1, A7, A8, A12 (Attack details, History, Home), A16 (one screen), A17
+  (ux M3 and M4) and A18 (ux P1, P4 and P6) at 100% and 200%. Restore storage, font scale, animator scale, rotation and locale. Verify: the results and what the
   walk does not prove are in the packet.
 
 ## 9. Review (code-reviewer)
@@ -96,20 +121,23 @@ these issues and retests them. No domain, data or permission change.
   - geometry of the 13 hosts;
   - D165's card mode and hold;
   - the leave clear (navigation, not lifecycle);
-  - the review slot's cancel path;
+  - the review slot's cancel path and its visit flag;
+  - the replacement easing, the taller-message guard and the fit rule;
+  - focus clearing on leave and on replacement;
   - the inverted `ReplaceInPlaceTest` case.
 
   Fixes go on the same branch. Verify: no open blocker in the review packet.
 
 ## 10. QA (qa-engineer, independent, this diff only)
 
-- [ ] 10.1 Run design checks A1–A19 and negative controls N1–N7 on the branch head SHA, debug and R8 release. Scope is what the diff
+- [ ] 10.1 Run design checks A1–A20 and negative controls N1–N8 on the branch head SHA, debug and R8 release. Cover the ux spec's
+  §3 tables O1–O20, F-a–F-h, M1–M12, P1–P7, S1–S4 and R1–R5. Its font cells apply: 100% and 200% on API 34+, and 130% on API 26. Scope is what the diff
   reaches (owner rule 2026-11-09). The whole-app regression stays nightly on `develop`. Verify: the table is in `docs/qa/` with the
   SHA, the counts and what it does not prove. The retest results go on #181, #185, #183 and #88, and on #153 for its message part.
 
 ## 11. Close (product-manager)
 
-- [ ] 11.1 Acceptance against D178: every EC-UX-35…38 and EC-REV-13 scenario is covered by a passing test or a QA row. Verify: the
+- [ ] 11.1 Acceptance against D178 and the ux spec's §3 rows: every EC-UX-35…38 and EC-REV-13 scenario is covered by a passing test or a QA row. Verify: the
   coverage list is in this file's verification record.
 - [ ] 11.2 Archive on the branch with `openspec archive fix-messages-everywhere --yes`, then validate. Verify:
   `openspec validate --specs --strict` exits 0.

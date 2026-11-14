@@ -1,10 +1,10 @@
 ## MODIFIED Requirements
 
 ### Requirement: Letting home settle
-The app SHALL ask only after home has shown today's mode for 2 seconds while the app is on screen and no error, nor the "Saved."
-that replaced one, shows; such a message SHALL drop a wait under way. It SHALL first have Google Play prepare the flow, and SHALL
-launch it only if home is still on screen, no attack is in progress and no paywall has shown itself. It SHALL launch the flow at
-most once per process, whatever the rotations or home loads (D130, D165, D178).
+The app SHALL ask only after home has shown today's mode for 2 seconds while on screen with no message showing; a message SHALL
+drop a wait under way. After an error during a visit to home, it SHALL NOT ask until the next visit. It SHALL have Google Play
+prepare the flow and launch it only if home is still on screen, no attack runs and no paywall showed; at most once per process
+(D130, D165, D178).
 
 #### Scenario: Leaving within 2 seconds
 - **WHEN** within 2 seconds of home showing today's mode the user starts an attack, opens another screen or sends the
@@ -24,17 +24,17 @@ most once per process, whatever the rotations or home loads (D130, D165, D178).
 #### Scenario: An error on Home Today
 - **WHEN** a request is due and "Couldn't save" or "Something went wrong" shows on Home Today, or appears during the 2-second
   wait or while Google Play prepares the flow
-- **THEN** nothing is asked and nothing counts while it shows (EC-REV-13)
+- **THEN** nothing is asked and nothing counts (EC-REV-13)
 
-#### Scenario: "Saved." after an error
-- **WHEN** "Saved." has replaced an error on Home Today
-- **THEN** nothing is asked while it shows (EC-REV-13)
+#### Scenario: The rest of the visit after an error
+- **WHEN** an error has shown on Home Today and has gone, by "Saved.", Dismiss or a swipe, and the user stays on home
+- **THEN** nothing is asked for the rest of that visit, including after rotation or a restored process (EC-REV-13)
 
-#### Scenario: The message goes
-- **WHEN** the error or "Saved." leaves by its time, Dismiss, a swipe, a newer message or leaving the screen, and home then shows
-  today's mode for 2 seconds with the other rules met
-- **THEN** the request may run, counted from when the message left (EC-REV-13)
+#### Scenario: The next visit
+- **WHEN** after such an error the user opens Settings and comes back, or starts the app again, and home then shows today's mode
+  for 2 seconds with no message and the other rules met
+- **THEN** the request may run (EC-REV-13)
 
 #### Scenario: Undo or information on Home Today
-- **WHEN** a message with "Undo" or an information message shows while a request is due
-- **THEN** the request behaves as before this change (EC-REV-13)
+- **WHEN** a request is due and "Migraine ended" with "Undo", or an information message, shows on Home Today
+- **THEN** nothing is asked while it shows, and the 2 seconds start when it leaves (EC-REV-13)

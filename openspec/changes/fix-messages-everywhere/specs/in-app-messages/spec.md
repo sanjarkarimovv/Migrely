@@ -25,6 +25,11 @@ never on the attempt (BRD EC-UX-35, D178).
 - **WHEN** an error shows on Reminders and the daily reminder, its time, the effect reminder or the visit date then saves
 - **THEN** "Saved." replaces the error
 
+#### Scenario: Reminders, a visit date that asks for permission
+- **WHEN** an error shows on Reminders and a visit date saves and the app then asks for the notification permission
+- **THEN** the error is gone, "Saved." replaces it even if it sits behind the system dialog or times out there, and the row shows
+  the date
+
 #### Scenario: Doctor report
 - **WHEN** creating a report failed because storage was full, and a later attempt creates it
 - **THEN** the error is gone, the share sheet opens, and no "Saved." shows, because the app saved nothing
@@ -116,8 +121,8 @@ share sheet, the background, Android Settings, a rotation and a restored process
 ### Requirement: Keyboard, Switch Access and TalkBack reach a message right after the top bar
 On every screen that shows messages, the keyboard focus order and TalkBack's order SHALL be: the top bar's controls, then the
 message's text and its Dismiss or Undo, then the content. On a screen with no top bar the message SHALL come first. A message
-SHALL NOT take focus when it appears. Its place, size, drawing over the content and tap guard SHALL NOT change (BRD EC-UX-36,
-D178).
+SHALL NOT take focus when it appears; focus SHALL clear when it leaves or is replaced, never moving into the content. A leaving
+message SHALL NOT be a stop. Its place, size and drawing SHALL NOT change (BRD EC-UX-36, D178).
 
 #### Scenario: Attack details with the safety card
 - **WHEN** "Couldn't save" shows above the safety card on Attack details and the user presses Tab from the top with a hardware
@@ -126,7 +131,7 @@ D178).
 
 #### Scenario: A screen with top bar actions
 - **WHEN** a message with "Undo" shows on History and the user presses Tab from the top
-- **THEN** the stops are Back, the bar's actions, "Undo", then the month and its days
+- **THEN** the stops are Back, Insights, Doctor report, "Undo", then the month and its days
 
 #### Scenario: Shift+Tab
 - **WHEN** focus is on the content's first control and the user presses Shift+Tab
@@ -149,8 +154,21 @@ D178).
 - **THEN** focus stays on that control, and TalkBack speaks the message through its live region
 
 #### Scenario: The focused message leaves
-- **WHEN** focus is on a message's control and the message times out, is undone or is replaced
-- **THEN** focus is not lost, the app does not crash, and the next Tab reaches a control on screen
+- **WHEN** focus is on a message's control and the message times out, is undone or is dismissed
+- **THEN** focus clears, the app does not crash, the next Tab goes to the screen's first stop and Shift+Tab to its last
+- **AND** focus never moves into the content by itself, so an Enter cannot start a migraine or record pain
+
+#### Scenario: A replacement clears focus
+- **WHEN** focus is on "Undo" and a new message replaces that message
+- **THEN** focus clears and is not carried to the new message's control, so a waiting Enter cannot act on the new message
+
+#### Scenario: A leaving message is not a stop
+- **WHEN** the user presses Tab, or swipes with TalkBack, during a message's 200 ms fade-out
+- **THEN** focus never lands on the leaving message, and touch on it behaves as before
+
+#### Scenario: Nothing focused
+- **WHEN** focus has cleared and the user presses Enter or Space
+- **THEN** nothing happens
 
 #### Scenario: Large font, landscape and right to left
 - **WHEN** the font is 200%, the phone is in landscape or the language is right to left, and a message shows with its action
@@ -159,8 +177,13 @@ D178).
 
 #### Scenario: The message does not move
 - **WHEN** a message shows on any of the 13 screens at 100% and 200% font
-- **THEN** its bounds match the build before this change within 1 pixel, and a tap where it was within 0.8 s still reaches nothing
-  under it
+- **THEN** its bounds match the build before this change within 1 pixel, except on Home Today where D178's measured offset and the
+  fit rule apply, and a tap where it was within 0.8 s still reaches nothing under it
+
+#### Scenario: A shorter replacement at 200%
+- **WHEN** at 200% font an error with its Dismiss below the text is replaced by "Saved.", and a tap lands where that Dismiss was
+  within 0.8 seconds
+- **THEN** the tap reaches nothing under it, because the guard covers the taller of the old and the new message
 
 ### Requirement: A message is never announced empty
 On every screen, a message that appears or replaces another SHALL never be fully transparent in any frame while it is in the
@@ -191,10 +214,10 @@ arrives when none shows SHALL still slide in, looking as before, with no new fla
 ## MODIFIED Requirements
 
 ### Requirement: Messages appear at the top and stay dim
-Short messages SHALL appear at the top of the screen, inside the system bars and display cutouts, and never cover the large
-controls. On a screen with a top bar the top edge SHALL sit below the bar; on the paywall, below the Close row; on Home Today,
-below the Settings row, and in a short window over the start column. A message SHALL never be the brightest element: text no
-brighter than `#C8CCD2`, on a dark surface with a thin outline (BRD EC-UX-01, EC-UX-16, EC-UX-20, EC-UX-38, D158, D178).
+Messages SHALL appear at the top, inside the system bars and cutouts, whole inside the safe area, never covering the large
+controls. With a top bar the top edge SHALL sit below it; on the paywall below Close; on Home Today below the measured Settings
+row, and in a short window over the start column. A message SHALL never be the brightest element: text no brighter than
+`#C8CCD2` on a dark outlined surface (BRD EC-UX-01, EC-UX-16, EC-UX-20, EC-UX-38, D158, D178).
 
 #### Scenario: Message during attack mode
 - **WHEN** an attack is started and the "Migraine started" message appears
@@ -227,11 +250,26 @@ brighter than `#C8CCD2`, on a dark surface with a thin outline (BRD EC-UX-01, EC
   line and the screen not scrolled
 - **THEN** its top edge is below the Settings row, and a tap on Settings opens Settings and does not undo
 
+#### Scenario: Home Today with a wrapped date
+- **WHEN** a message with "Undo" shows on Home Today in portrait on a 360 dp wide phone at 200% font, on a day whose date wraps to
+  two lines, with the screen not scrolled
+- **THEN** its top edge is 10 dp below the Settings row, so the second date line and Settings' whole target stay uncovered
+
 #### Scenario: Home Today in a short window
 - **WHEN** a message with "Undo" shows on Home Today in a window 411 or 274 dp high, short enough to pick the two-column layout,
   at 100%, 130% or 200% font, with the screen not scrolled
-- **THEN** it lies over the start column, below the Settings row, and ends before the column with "Migraine started"
+- **THEN** it lies over the start column, 10 dp below the Settings row, and ends before the column with "Migraine started"
 - **AND** a tap anywhere on "Migraine started", its top edge included, starts a migraine
+
+#### Scenario: A long error in the smallest short window
+- **WHEN** "Couldn't save. Your phone's storage is full." shows on Home Today in a window 274 dp high at 200% font
+- **THEN** the whole message and its Dismiss are on screen and reachable by touch, Tab and TalkBack, rising no higher than the
+  top of the safe area plus 8 dp
+- **AND** it may cover Settings in this case only, and "Migraine started" stays uncovered
+
+#### Scenario: Scrolling the start column
+- **WHEN** a message shows in a short window and the user scrolls the start column
+- **THEN** the message stays where it is
 
 #### Scenario: Settings under a message in a short window
 - **WHEN** a message with "Undo" shows on Home Today in a window 411 or 274 dp high, at 100%, 130% or 200% font, and the user
@@ -276,10 +314,10 @@ take it away (BRD EC-UX-16, EC-UX-34, EC-UX-35, EC-STO-01, D165, D178).
 - **THEN** it stays for 8 seconds, or longer if the accessibility timeout asks for it
 
 ### Requirement: Gentle motion and haptics for messages
-A message that arrives when none shows SHALL slide and fade in within 250 ms. A message that leaves SHALL fade out within 200 ms,
-and one that replaces another SHALL switch in place, with no flashing. With reduce motion on, a message SHALL appear and
-disappear without animation. Error messages SHALL give one short "reject" haptic. Start and end keep their confirm haptic (BRD
-EC-UX-07, EC-UX-08, EC-UX-37, D178).
+A message arriving when none shows SHALL slide and fade in within 250 ms and one leaving SHALL fade out within 200 ms. One
+replacing another SHALL switch in place; what follows its bottom SHALL ease up over 250 ms if it is shorter and move at once if
+taller. No flashing. Reduce motion SHALL make all of it instant. Errors SHALL give one short "reject" haptic; start and end keep
+their confirm haptic (BRD EC-UX-07, EC-UX-08, EC-UX-37, D178).
 
 #### Scenario: Reduce motion
 - **WHEN** reduce motion is on and a message appears
@@ -288,6 +326,16 @@ EC-UX-07, EC-UX-08, EC-UX-37, D178).
 #### Scenario: A replacement
 - **WHEN** "Migraine ended" replaces "Migraine started" with motion on
 - **THEN** the text and icon change in place, the surface stays where it is, and nothing cross-fades
+
+#### Scenario: A shorter replacement
+- **WHEN** "Saved." replaces a taller error in landscape attack mode or on Attack details while the safety card shows, with motion
+  on
+- **THEN** the guidance column or the content moves up over 250 ms instead of jumping
+
+#### Scenario: A taller replacement
+- **WHEN** a taller error replaces a message with "Undo" in the same places
+- **THEN** the content moves down in the same frame, and in no frame does the message cover the safety card's title or the
+  guidance
 
 #### Scenario: Error haptic
 - **WHEN** "something went wrong" is shown
