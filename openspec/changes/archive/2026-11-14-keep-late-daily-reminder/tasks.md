@@ -136,8 +136,10 @@ compile are fine), then passing. Record both runs in the handoff.
   (mapping beside it), `debug-74095b8d.apk` 1f5fb00d0797c27a…, `r8-74095b8d.apk` 5144c7297d7ee918… (built in a
   detached worktree at 74095b8d, since removed). Full SHA-256 in the handoff.
 - [x] 2.11 Review hardening (code-reviewer cr-213, optional): `AppOnScreenDataSourceImpl` starts from `IMPORTANCE_GONE`,
-  since a new `RunningAppProcessInfo` reports foreground; a memory state the system leaves unfilled now posts instead of
-  postponing until midnight. Commit 84d1f86f. New test in `AppOnScreenDataSourceImplTest` (no entry for this process, so
+  since a new `RunningAppProcessInfo` reports foreground. Corrected by product-manager 2026-11-14 after code-reviewer
+  cr-213b (3.1, confirmed): the start value guards the unfilled case in unit tests (Robolectric) only. On a device the
+  system fills its own new `RunningAppProcessInfo` (importance 100) when it has no process record, and the AIDL proxy
+  copies it into the caller's object, so device behaviour is the same as before 2.11. Commit 84d1f86f. New test in `AppOnScreenDataSourceImplTest` (no entry for this process, so
   nothing is filled): red on 909561bd, 1 of 3 failing; green 3/3. Gate exit 0, 2058 tasks, 3047 unit test results, 0
   failed; `:app:checkReleasePermissions :app:checkReleaseDebugComponents` exit 0, the same 6 permissions. APKs in
   `migrely-work/walks/r2/eng213/apk/`, the 909561bd ones kept: `debug-84d1f86f.apk` c74881584e60fa4b…, `r8-84d1f86f.apk`
@@ -145,12 +147,26 @@ compile are fine), then passing. Record both runs in the handoff.
 
 ## 3. Review (`code-reviewer`)
 
-- [ ] 3.1 Check: the only REPLACE callers of the daily plan are `SetDailyReminderUseCase`, the clock-change request and
+- [x] 3.1 Check: the only REPLACE callers of the daily plan are `SetDailyReminderUseCase`, the clock-change request and
   `RunDailyReminderUseCase` (its next run and its on-screen postpone) (`git grep -n 'scheduleDailyReminder\|scheduleDaily(' -- '*.kt'`); the start-up path reaches only
   KEEP; the on-screen check cannot block a post when the screen is off, and
   an on-screen skip never calls `setDailyShown`; visit, effect and import paths are unchanged
   (`git diff origin/develop -- features/reminders/domain/src/main/java/com/migrely/app/reminders/domain/usecase/VisitReminderPlan.kt`
   is empty); each **red** test really fails without its production change. Verify: verdict with file:line references.
+  Done (code-reviewer cr-213b on 84d1f86f against 74095b8d, relayed by team-lead 2026-11-14): "no blocking findings.
+  Merge." All six checks pass:
+  - REPLACE callers: only `SetDailyReminderUseCase.kt:35`, `RescheduleRemindersUseCase.kt:55` (ClockChange only),
+    `RunDailyReminderUseCase.kt:58` (next run) and `:83` (on-screen postpone);
+  - AppStart reaches only KEEP: `MigrelyApplication.kt:53` → `RescheduleRemindersUseCase.kt:53` →
+    `RemindersRepository.kt:103-104` → `ReminderScheduleDataSourceImpl.kt:31`;
+  - screen off cannot block a post: importance 100 only for states better than FOREGROUND_SERVICE; one process, no
+    `android:process`;
+  - the on-screen skip returns at `RunDailyReminderUseCase.kt:81-85`, before `setDailyShown`;
+  - visit, effect and import diffs are empty;
+  - red tests checked by mutation: M2–M8 all fail, and the 2.11 test is red without the change and green with it.
+  Minor, confirmed, not blocking: on a device the `IMPORTANCE_GONE` start value is always overwritten (2.11 corrected
+  above). `android-engineer` fixes the comments in `AppOnScreenDataSourceImpl.kt:14-15` and
+  `AppOnScreenDataSourceImplTest.kt:59` in a comment-only commit after the archive.
 
 ## 4. Independent check on device (`qa-engineer`)
 
@@ -245,7 +261,7 @@ its log, never rerun away.
   not reach `VisitReminderPlan` or `LogIntakeUseCase` (both unchanged; 3.1 checks the visit file's diff is empty).
   Accepted by product-manager 2026-11-14 (design R7). These two rows of the #197 requirement rest on D175's evidence, not
   on this change's device runs: code reading (D175 (2), (5); EC-REM-14, EC-REM-23), `RescheduleRemindersUseCaseTest` (the
-  visit is planned exactly as before for both requests, 2.2), and 4.9's proof that the stale job starts the process and
+  visit is planned exactly as before for both requests, 2.2: `RescheduleRemindersUseCaseTest.kt:228`), and 4.9's proof that the stale job starts the process and
   runs `onCreate`. The #197 closure cites D175 for them, and 4.9 and 4.11 only for the daily reminder. D175 reopens if a
   later report shows a visit reminder or the home card missing after the residual.
 - [x] 4.11 **Normal update (API 26 and API 36).** No clear, R about 15 minutes after the update, process dead at R: `workdb`
@@ -257,6 +273,10 @@ real phones, Play updates, vendor Doze).
 
 ## 5. Close (`product-manager`)
 
-- [ ] 5.1 After 3 and 4: archive. Verify: `openspec archive keep-late-daily-reminder` and `openspec validate --specs
+- [x] 5.1 After 3 and 4: archive. Verify: `openspec archive keep-late-daily-reminder` and `openspec validate --specs
   --strict` exit 0. Tell `team-lead`: #213 is retested by its reproducer (`android-engineer`) on the merged build, then closed;
   #197 closes as "not planned" for the receiver, citing D175, D176 and rows 4.9–4.11.
+  Done (product-manager 2026-11-14): 3.1 has no blocking finding; QA GO at 620a4f18 with R-1 decided (design R6) and 4.10
+  dropped (design R7), so #197's closure cites 4.9 and 4.11 for the daily reminder and D175 for the visit and "Did it
+  help?". `openspec validate keep-late-daily-reminder --strict`, `openspec archive keep-late-daily-reminder -y` and
+  `openspec validate --specs --strict` exit 0.

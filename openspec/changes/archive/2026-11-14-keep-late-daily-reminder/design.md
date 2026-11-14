@@ -174,5 +174,5 @@ everyone and an update path to every Go/No-Go.
   if the person opens Migrely first, that start plans the run at once (D2, D3). D175 (2) and EC-REM-22 carry the numbers.
 - **R7. Visit and "Did it help?" after the residual are not shown on a device.** QA dropped task 4.10: the diff does not
   reach `VisitReminderPlan` or `LogIntakeUseCase`. They rest on D175's evidence: code reading, the unit test that the
-  visit is planned as before for both requests (2.2), and 4.9's proof that the stale job starts the process and runs
+  visit is planned as before for both requests (2.2, `RescheduleRemindersUseCaseTest.kt:228`), and 4.9's proof that the stale job starts the process and runs
   `onCreate`. D175 reopens if a later report shows either missing after the residual.
