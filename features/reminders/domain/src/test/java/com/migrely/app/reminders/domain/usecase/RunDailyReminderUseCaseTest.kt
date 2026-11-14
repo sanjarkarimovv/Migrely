@@ -8,6 +8,7 @@ import com.migrely.app.reminders.domain.model.ReminderSettingsDomainModel
 import com.migrely.app.reminders.domain.model.ReminderSettingsResultDomainModel
 import com.migrely.app.reminders.domain.model.TodayEntriesResultDomainModel
 import com.migrely.app.reminders.domain.repository.CancelDailyReminderRepository
+import com.migrely.app.reminders.domain.repository.GetAppOnScreenRepository
 import com.migrely.app.reminders.domain.repository.GetCurrentTimeRepository
 import com.migrely.app.reminders.domain.repository.GetNotificationsAllowedRepository
 import com.migrely.app.reminders.domain.repository.GetReminderSettingsRepository
@@ -24,7 +25,9 @@ import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.given
+import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
@@ -41,6 +44,7 @@ class RunDailyReminderUseCaseTest {
     private val cancelDailyReminderRepository: CancelDailyReminderRepository = mock()
     private val showDailyReminderRepository: ShowDailyReminderRepository = mock()
     private val setDailyShownRepository: SetDailyShownRepository = mock()
+    private val getAppOnScreenRepository: GetAppOnScreenRepository = mock()
     private lateinit var classUnderTest: RunDailyReminderUseCase
 
     @Before
@@ -54,6 +58,7 @@ class RunDailyReminderUseCaseTest {
             cancelDailyReminderRepository,
             showDailyReminderRepository,
             setDailyShownRepository,
+            getAppOnScreenRepository,
             CoroutineContextProvider.Default
         )
         given(getCurrentTimeRepository.currentTime())
@@ -61,6 +66,11 @@ class RunDailyReminderUseCaseTest {
         given(getNotificationsAllowedRepository.notificationsAllowed()).willReturn(true)
         givenSettings()
         givenEntries()
+    }
+
+    private fun givenNow(local: String) {
+        given(getCurrentTimeRepository.currentTime())
+            .willReturn(CurrentTimeDomainModel(at(local), TASHKENT))
     }
 
     private fun at(local: String): Instant = LocalDateTime.parse(local).atZone(TASHKENT).toInstant()
@@ -177,5 +187,83 @@ class RunDailyReminderUseCaseTest {
             .willReturn(ReminderSettingsResultDomainModel.Failed)
 
         assertEquals(DailyReminderRunDomainModel.Failed, run())
+    }
+
+    @Test
+    fun `Given Migrely on screen when run then not shown, not marked, the date in 30 minutes`() {
+        given(getAppOnScreenRepository.appOnScreen()).willReturn(true)
+
+        assertEquals(DailyReminderRunDomainModel.Skipped, run())
+
+        verify(showDailyReminderRepository, never()).showDailyReminder(any())
+        verify(setDailyShownRepository, never()).setDailyShown(any())
+        inOrder(scheduleDailyReminderRepository) {
+            verify(scheduleDailyReminderRepository)
+                .scheduleDailyReminder(at("2026-10-25T20:00"), TODAY.plusDays(1))
+            verify(
+                scheduleDailyReminderRepository
+            ).scheduleDailyReminder(at("2026-10-24T20:35"), TODAY)
+        }
+    }
+
+    @Test
+    fun `Given a postponed run off screen, today not answered when run then shown and marked`() {
+        givenNow("2026-10-24T20:35")
+
+        assertEquals(DailyReminderRunDomainModel.Shown, run())
+
+        verify(showDailyReminderRepository).showDailyReminder(TODAY)
+        verify(setDailyShownRepository).setDailyShown(TODAY)
+        verify(scheduleDailyReminderRepository)
+            .scheduleDailyReminder(at("2026-10-25T20:00"), TODAY.plusDays(1))
+    }
+
+    @Test
+    fun `Given a postponed run and today answered when run then not shown`() {
+        givenNow("2026-10-24T20:35")
+        givenEntries(painFree = true)
+
+        assertEquals(DailyReminderRunDomainModel.Skipped, run())
+
+        verify(showDailyReminderRepository, never()).showDailyReminder(any())
+        verify(scheduleDailyReminderRepository, never()).scheduleDailyReminder(any(), eq(TODAY))
+    }
+
+    @Test
+    fun `Given a postponed run and Migrely still on screen when run then postponed again`() {
+        givenNow("2026-10-24T20:35")
+        given(getAppOnScreenRepository.appOnScreen()).willReturn(true)
+
+        assertEquals(DailyReminderRunDomainModel.Skipped, run())
+
+        verify(showDailyReminderRepository, never()).showDailyReminder(any())
+        verify(setDailyShownRepository, never()).setDailyShown(any())
+        verify(scheduleDailyReminderRepository).scheduleDailyReminder(at("2026-10-24T21:05"), TODAY)
+    }
+
+    @Test
+    fun `Given a postponed run after midnight when run then not shown, next day planned`() {
+        // Postponed at 23:50 on 23 October, it comes at 00:20 on 24 October.
+        givenNow("2026-10-24T00:20")
+        given(getAppOnScreenRepository.appOnScreen()).willReturn(true)
+
+        assertEquals(DailyReminderRunDomainModel.Skipped, run(TODAY.minusDays(1)))
+
+        verify(showDailyReminderRepository, never()).showDailyReminder(any())
+        verify(scheduleDailyReminderRepository).scheduleDailyReminder(at("2026-10-24T20:00"), TODAY)
+        verify(scheduleDailyReminderRepository, never())
+            .scheduleDailyReminder(any(), eq(TODAY.minusDays(1)))
+    }
+
+    @Test
+    fun `Given a postponed run after today showed when run then not shown, not postponed`() {
+        givenNow("2026-10-24T20:35")
+        givenSettings(lastShownOn = TODAY)
+        given(getAppOnScreenRepository.appOnScreen()).willReturn(true)
+
+        assertEquals(DailyReminderRunDomainModel.Skipped, run())
+
+        verify(showDailyReminderRepository, never()).showDailyReminder(any())
+        verify(scheduleDailyReminderRepository, never()).scheduleDailyReminder(any(), eq(TODAY))
     }
 }

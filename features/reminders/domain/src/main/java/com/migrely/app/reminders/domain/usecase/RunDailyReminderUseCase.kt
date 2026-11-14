@@ -7,6 +7,7 @@ import com.migrely.app.reminders.domain.model.DailyReminderRunDomainModel
 import com.migrely.app.reminders.domain.model.ReminderSettingsResultDomainModel
 import com.migrely.app.reminders.domain.model.TodayEntriesResultDomainModel
 import com.migrely.app.reminders.domain.repository.CancelDailyReminderRepository
+import com.migrely.app.reminders.domain.repository.GetAppOnScreenRepository
 import com.migrely.app.reminders.domain.repository.GetCurrentTimeRepository
 import com.migrely.app.reminders.domain.repository.GetNotificationsAllowedRepository
 import com.migrely.app.reminders.domain.repository.GetReminderSettingsRepository
@@ -14,13 +15,17 @@ import com.migrely.app.reminders.domain.repository.GetTodayEntriesRepository
 import com.migrely.app.reminders.domain.repository.ScheduleDailyReminderRepository
 import com.migrely.app.reminders.domain.repository.SetDailyShownRepository
 import com.migrely.app.reminders.domain.repository.ShowDailyReminderRepository
+import java.time.Duration
 import java.time.LocalDate
+
+private val ON_SCREEN_POSTPONE = Duration.ofMinutes(30)
 
 /**
  * One run of the daily reminder for the date it was planned for, or today (BRD D66). It first plans the next run, then
  * shows "How was today?" about that date unless the run slipped past its day, the reminder is off, notifications are
  * off, it already showed for that date, or the date is answered: marked pain-free, or touched by an attack by the
- * calendar's rule (D36).
+ * calendar's rule (D36). While Migrely is on screen it shows nothing and leaves the date unhandled: it plans that date's
+ * run again 30 minutes later, replacing the next run, and that run follows the same rules (D176, EC-REM-27).
  */
 @Suppress("LongParameterList")
 class RunDailyReminderUseCase(
@@ -32,6 +37,7 @@ class RunDailyReminderUseCase(
     private val cancelDailyReminderRepository: CancelDailyReminderRepository,
     private val showDailyReminderRepository: ShowDailyReminderRepository,
     private val setDailyShownRepository: SetDailyShownRepository,
+    private val getAppOnScreenRepository: GetAppOnScreenRepository,
     coroutineContextProvider: CoroutineContextProvider
 ) : BackgroundExecutingUseCase<LocalDate?, DailyReminderRunDomainModel>(coroutineContextProvider) {
     private val dailyReminderTime = DailyReminderTime()
@@ -72,6 +78,11 @@ class RunDailyReminderUseCase(
             TodayEntriesResultDomainModel.Failed -> return DailyReminderRunDomainModel.Failed
         }
         if (answered) return DailyReminderRunDomainModel.Skipped
+        if (getAppOnScreenRepository.appOnScreen()) {
+            val later = now.instant.plus(ON_SCREEN_POSTPONE)
+            scheduleDailyReminderRepository.scheduleDailyReminder(later, date)
+            return DailyReminderRunDomainModel.Skipped
+        }
         showDailyReminderRepository.showDailyReminder(date)
         setDailyShownRepository.setDailyShown(date)
         return DailyReminderRunDomainModel.Shown

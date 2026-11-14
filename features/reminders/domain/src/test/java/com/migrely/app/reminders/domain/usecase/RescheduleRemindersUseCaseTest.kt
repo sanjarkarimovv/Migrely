@@ -6,11 +6,15 @@ import com.migrely.app.reminders.domain.model.DoctorVisitDomainModel
 import com.migrely.app.reminders.domain.model.DoctorVisitsResultDomainModel
 import com.migrely.app.reminders.domain.model.ReminderSettingsDomainModel
 import com.migrely.app.reminders.domain.model.ReminderSettingsResultDomainModel
+import com.migrely.app.reminders.domain.model.RescheduleRemindersRequestDomainModel
+import com.migrely.app.reminders.domain.model.RescheduleRemindersRequestDomainModel.AppStart
+import com.migrely.app.reminders.domain.model.RescheduleRemindersRequestDomainModel.ClockChange
 import com.migrely.app.reminders.domain.repository.CancelDailyReminderRepository
 import com.migrely.app.reminders.domain.repository.CancelVisitReminderRepository
 import com.migrely.app.reminders.domain.repository.GetCurrentTimeRepository
 import com.migrely.app.reminders.domain.repository.GetDoctorVisitsRepository
 import com.migrely.app.reminders.domain.repository.GetReminderSettingsRepository
+import com.migrely.app.reminders.domain.repository.PlanDailyReminderIfNoneRepository
 import com.migrely.app.reminders.domain.repository.ScheduleDailyReminderRepository
 import com.migrely.app.reminders.domain.repository.ScheduleVisitReminderRepository
 import java.time.LocalDate
@@ -28,11 +32,13 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 
 private val BERLIN = ZoneId.of("Europe/Berlin")
+private val TODAY = LocalDate.of(2026, 10, 24)
 
 class RescheduleRemindersUseCaseTest {
     private val getReminderSettingsRepository: GetReminderSettingsRepository = mock()
     private val getCurrentTimeRepository: GetCurrentTimeRepository = mock()
     private val scheduleDailyReminderRepository: ScheduleDailyReminderRepository = mock()
+    private val planDailyReminderIfNoneRepository: PlanDailyReminderIfNoneRepository = mock()
     private val cancelDailyReminderRepository: CancelDailyReminderRepository = mock()
     private val getDoctorVisitsRepository: GetDoctorVisitsRepository = mock {
         on { doctorVisits(any()) } doReturn DoctorVisitsResultDomainModel.Loaded(null, null)
@@ -47,6 +53,7 @@ class RescheduleRemindersUseCaseTest {
             getReminderSettingsRepository,
             getCurrentTimeRepository,
             scheduleDailyReminderRepository,
+            planDailyReminderIfNoneRepository,
             cancelDailyReminderRepository,
             getDoctorVisitsRepository,
             scheduleVisitReminderRepository,
@@ -54,16 +61,19 @@ class RescheduleRemindersUseCaseTest {
             CoroutineContextProvider.Default
         )
         // The phone has just arrived in Berlin.
-        given(getCurrentTimeRepository.currentTime()).willReturn(
-            CurrentTimeDomainModel(
-                LocalDateTime.parse("2026-10-24T18:00").atZone(BERLIN).toInstant(),
-                BERLIN
-            )
-        )
+        givenNow("2026-10-24T18:00")
+    }
+
+    private fun at(local: String) = LocalDateTime.parse(local).atZone(BERLIN).toInstant()
+
+    private fun givenNow(local: String) {
+        given(getCurrentTimeRepository.currentTime())
+            .willReturn(CurrentTimeDomainModel(at(local), BERLIN))
     }
 
     private fun givenSettings(
         enabled: Boolean,
+        lastShownOn: LocalDate? = null,
         remindedFor: LocalDate? = null,
         postponedTo: LocalDate? = null
     ) {
@@ -74,7 +84,7 @@ class RescheduleRemindersUseCaseTest {
                     LocalTime.of(20, 0),
                     true,
                     null,
-                    null,
+                    lastShownOn,
                     visitRemindedFor = remindedFor,
                     visitPostponedTo = postponedTo
                 )
@@ -97,7 +107,7 @@ class RescheduleRemindersUseCaseTest {
     fun `Given the reminder is on when the zone changes then planned for 8 PM local time`() {
         givenSettings(enabled = true)
 
-        classUnderTest.executeInBackground(Unit)
+        classUnderTest.executeInBackground(ClockChange)
 
         verify(scheduleDailyReminderRepository).scheduleDailyReminder(
             LocalDateTime.parse("2026-10-24T20:00").atZone(BERLIN).toInstant(),
@@ -109,7 +119,7 @@ class RescheduleRemindersUseCaseTest {
     fun `Given the reminder is off when rescheduling then nothing stays planned`() {
         givenSettings(enabled = false)
 
-        classUnderTest.executeInBackground(Unit)
+        classUnderTest.executeInBackground(ClockChange)
 
         verify(cancelDailyReminderRepository).cancelDailyReminder()
     }
@@ -119,7 +129,7 @@ class RescheduleRemindersUseCaseTest {
         givenSettings(enabled = false)
         givenNextVisit(LocalDate.of(2026, 11, 20))
 
-        classUnderTest.executeInBackground(Unit)
+        classUnderTest.executeInBackground(ClockChange)
 
         verify(scheduleVisitReminderRepository).scheduleVisitReminder(
             LocalDateTime.parse("2026-11-18T10:00").atZone(BERLIN).toInstant(),
@@ -132,7 +142,7 @@ class RescheduleRemindersUseCaseTest {
         givenSettings(enabled = false, postponedTo = LocalDate.of(2026, 11, 19))
         givenNextVisit(LocalDate.of(2026, 11, 20))
 
-        classUnderTest.executeInBackground(Unit)
+        classUnderTest.executeInBackground(AppStart)
 
         verify(scheduleVisitReminderRepository).scheduleVisitReminder(
             LocalDateTime.parse("2026-11-19T10:00").atZone(BERLIN).toInstant(),
@@ -144,13 +154,86 @@ class RescheduleRemindersUseCaseTest {
     fun `Given no next visit or one reminded of when rescheduling then its run is cancelled`() {
         givenSettings(enabled = false)
         givenNextVisit(null)
-        classUnderTest.executeInBackground(Unit)
+        classUnderTest.executeInBackground(ClockChange)
 
         givenSettings(enabled = false, remindedFor = LocalDate.of(2026, 11, 20))
         givenNextVisit(LocalDate.of(2026, 11, 20))
-        classUnderTest.executeInBackground(Unit)
+        classUnderTest.executeInBackground(ClockChange)
 
         verify(cancelVisitReminderRepository, times(2)).cancelVisitReminder()
         verify(scheduleVisitReminderRepository, never()).scheduleVisitReminder(any(), any())
+    }
+
+    @Test
+    fun `Given the time passed, today not shown when the app starts then now, kept if planned`() {
+        givenSettings(enabled = true, lastShownOn = TODAY.minusDays(1))
+        givenNow("2026-10-24T20:01")
+
+        classUnderTest.executeInBackground(AppStart)
+
+        verify(planDailyReminderIfNoneRepository)
+            .planDailyReminderIfNone(at("2026-10-24T20:01"), TODAY)
+        verify(scheduleDailyReminderRepository, never()).scheduleDailyReminder(any(), any())
+    }
+
+    @Test
+    fun `Given the time is ahead when the app starts then today's time, kept if planned`() {
+        givenSettings(enabled = true)
+
+        classUnderTest.executeInBackground(AppStart)
+
+        verify(planDailyReminderIfNoneRepository)
+            .planDailyReminderIfNone(at("2026-10-24T20:00"), TODAY)
+        verify(scheduleDailyReminderRepository, never()).scheduleDailyReminder(any(), any())
+    }
+
+    @Test
+    fun `Given the time passed, today not shown when the clock changes then now, replacing`() {
+        givenSettings(enabled = true)
+        givenNow("2026-10-24T20:30")
+
+        classUnderTest.executeInBackground(ClockChange)
+
+        verify(scheduleDailyReminderRepository).scheduleDailyReminder(at("2026-10-24T20:30"), TODAY)
+        verify(planDailyReminderIfNoneRepository, never()).planDailyReminderIfNone(any(), any())
+    }
+
+    @Test
+    fun `Given the time passed and today shown when either plans then tomorrow`() {
+        givenSettings(enabled = true, lastShownOn = TODAY)
+        givenNow("2026-10-24T20:30")
+
+        classUnderTest.executeInBackground(AppStart)
+        classUnderTest.executeInBackground(ClockChange)
+
+        verify(planDailyReminderIfNoneRepository)
+            .planDailyReminderIfNone(at("2026-10-25T20:00"), TODAY.plusDays(1))
+        verify(scheduleDailyReminderRepository)
+            .scheduleDailyReminder(at("2026-10-25T20:00"), TODAY.plusDays(1))
+    }
+
+    @Test
+    fun `Given the reminder is off when either plans then cancelled, nothing planned`() {
+        givenSettings(enabled = false)
+
+        classUnderTest.executeInBackground(AppStart)
+        classUnderTest.executeInBackground(ClockChange)
+
+        verify(cancelDailyReminderRepository, times(2)).cancelDailyReminder()
+        verify(planDailyReminderIfNoneRepository, never()).planDailyReminderIfNone(any(), any())
+        verify(scheduleDailyReminderRepository, never()).scheduleDailyReminder(any(), any())
+    }
+
+    @Test
+    fun `Given a next visit when either plans then its reminder is planned the same way`() {
+        givenSettings(enabled = true)
+        givenNextVisit(LocalDate.of(2026, 11, 20))
+
+        RescheduleRemindersRequestDomainModel.entries.forEach(classUnderTest::executeInBackground)
+
+        verify(scheduleVisitReminderRepository, times(2)).scheduleVisitReminder(
+            LocalDateTime.parse("2026-11-18T10:00").atZone(BERLIN).toInstant(),
+            LocalDate.of(2026, 11, 20)
+        )
     }
 }
