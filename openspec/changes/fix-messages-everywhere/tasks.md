@@ -71,27 +71,73 @@ and the engineer cover: O1–O20 (order), F-a–F-h (focus), M1–M12 (motion an
 
 ## 5. designsystem
 
-- [ ] 5.1 Never transparent (design D4, ux rules 4 and 8). First write a red test: in no frame of an arrival, and of a replacement,
+- [x] 5.1 Never transparent (design D4, ux rules 4 and 8). First write a red test: in no frame of an arrival, and of a replacement,
   is the message's node in the semantics tree while fully transparent. Its negative control at `initialAlpha = 0f` fails. Then make
   in-place replacement the host's behaviour, give every posted message its own identity, and start the arrival fade at
   `ENTER_START_ALPHA = 0.02f` (or use the fallback). Invert `ReplaceInPlaceTest`'s default-fade case and say so in the PR. Verify:
   `./gradlew :designsystem:testDebugUnitTest` passes, and the new test fails on 52c12ce5's host.
-- [ ] 5.2 The order mechanism (design D3, ux rules 1–3). First write red tests on a sample screen: Tab from the top goes bar,
+
+  Done. `MessageNeverTransparentTest` (4 cases: arrival, same-text retry, other-text replacement, replacement during the
+  arrival) counts frames in which a node with the text is in the tree while `SemanticsNode.isTransparent` (Compose's
+  own test, read by reflection, so a Compose rename fails loudly). The host now swaps every replacement in place (one
+  content key) and fades in from `ENTER_START_ALPHA = 0.02f`. The `replaceInPlace` parameter is gone, and Attack details
+  lost its argument. Each screen's shown message carries a posting time (6.x), so a same-text retry is a new node.
+  - Red on 52c12ce5's host: 4/4 failed (2, 3, 2 and 1 transparent frames). Log `migrely-work/walks/msgs/5-red.log`.
+  - Negative control, local, `ENTER_START_ALPHA = 0f`: the arrival case fails again (the in-place cases do not fade, so
+    they stay green). Log `walks/msgs/5-negative-controls.log`. Restored to 0.02 before the green run.
+  - Green: `:designsystem:testDebugUnitTest` 185/185, exit 0.
+  - `ReplaceInPlaceTest` "By default the new message fades in over the old one" is inverted to "The new message takes the
+    old one's place at once, with no cross-fade": the spec changed (D178 (5)); the test was not bent. For the PR text.
+- [x] 5.2 The order mechanism (design D3, ux rules 1–3). First write red tests on a sample screen: Tab from the top goes bar,
   message control, content; Shift+Tab reverses; the semantics traversal order matches; a message's appearance does not move focus;
   focus clears on leave and on replacement and never moves into the content; a leaving message is out of the focus and semantics
   order from its first exit frame (F8). Verify:
   `./gradlew :designsystem:testDebugUnitTest` passes, and the tests fail with the message placed after the content, as on
   52c12ce5.
-- [ ] 5.3 Geometry is unchanged: the host's bounds and `onMessageBottomChanged` match the old placement within 1 px at 100% and 200%
+
+  Done. `MessageLayout(topBar, message, content)` in `designsystem/snackbar`: one `Layout` that places the slots in
+  reading order (Tab follows placement order), draws the message above the content with `zIndex`, and marks the slots
+  as traversal groups with `traversalIndex` 0, 1, 2 inside one traversal group. `MessageOrderTest` (11 cases): Tab from
+  the top, a hardware Tab key, Shift+Tab, no top bar, TalkBack's order (traversal index path), appearance keeps focus,
+  focus on leave, focus on replacement, Tab after a leave, and from the first exit frame no node in the merged tree and
+  no Tab stop.
+  - Red with a placeholder `MessageLayout` that kept 52c12ce5's `Box { Column { bar; content }; message }`: 9/11
+    failed. "A message that appears does not move focus" and "not a Tab stop during the exit" passed there too.
+  - Finding: on Android, clearing focus while a keyboard is in use gives it back to the first control at once (the
+    tests saw focus land on Back, both on 52c12ce5 and with `clearFocus`). So "focus clears" is built as a parking
+    target before the top bar: no semantics, no action, focusable only while it holds focus. Nothing looks focused,
+    Enter and Space do nothing, Tab goes to the first stop and Shift+Tab to the last (ux Q3). The host moves focus there
+    in the composition that drops or swaps the focused message, before the node goes.
+  - A leaving message gets `clearAndSetSemantics {}` and a focus group whose `onEnter` cancels, from its first exit
+    frame (F8). Touch is unchanged.
+  - Green: 11/11 in the 185/185 run.
+- [x] 5.3 Geometry is unchanged: the host's bounds and `onMessageBottomChanged` match the old placement within 1 px at 100% and 200%
   wherever the message fits. Verify: `MessagePlaceAndTapTest`, `MessageClearanceLayoutTest` and a new bounds test pass in
   `./gradlew :designsystem:testDebugUnitTest`.
-- [ ] 5.4 Replacement size and guard (F1, F2, ux rules 4 and 5). With motion on, a shorter replacement eases the reported bottom
+
+  Done. `MessageLayoutBoundsTest` composes 52c12ce5's structure and `MessageLayout` in one window and compares the bar,
+  the message, the content and the reported bottom within 0.5 dp (1 px at Robolectric's mdpi), at font scale 1 and 2:
+  2/2 pass. `MessagePlaceAndTapTest` 18/18 and `MessageClearanceLayoutTest` 3/3 pass unchanged.
+- [x] 5.4 Replacement size and guard (F1, F2, ux rules 4 and 5). With motion on, a shorter replacement eases the reported bottom
   over 250 ms (non-null to non-null only); a taller one moves it in the same frame; reduce motion is instant. The 0.8 s guard
   covers the taller of the old and new message. Verify: tests for both directions and for a tap at the old Dismiss strip pass in
   `./gradlew :designsystem:testDebugUnitTest`, and the guard test fails with the guard following only the new message (N8).
-- [ ] 5.5 Fit rule (F5, ux rule 6). The message is always whole inside the safe area. It rises only as far as needed, never above
+
+  Done. `MessageReplacementTest` (5 cases). The size animation of an in-place change is `tween(250)` when shorter and
+  `snap()` when taller. The container's size lags a frame, so during a replacement the host reports
+  `max(area, new message)` and a taller message pushes in the same frame. The guard covers the taller of the two.
+  - Red on 52c12ce5's host: 3/5 failed (taller in the same frame, reduce motion at once, the tap at the old strip).
+  - N8, local, guard following only the new message: "Soon after a shorter replacement, a tap where the taller one was
+    reaches nothing" fails. Log `walks/msgs/5-negative-controls.log`. Restored before the green run.
+  - Green: 5/5.
+- [x] 5.5 Fit rule (F5, ux rule 6). The message is always whole inside the safe area. It rises only as far as needed, never above
   safe top + 8 dp, and does nothing where it fits. Verify: a host test with an over-tall message in a short window, and a no-op
   test at normal sizes, pass in `./gradlew :designsystem:testDebugUnitTest`.
+
+  Done. `fitTopOffset` replaces `padding(top = topOffset)` in the host: it moves down by the offset, or only as far as
+  still ends inside the bottom safe edge, never above the safe top + 8 dp. `MessageFitTest` (3 cases, 600x300 dp
+  window): fits (no-op, top = 108 dp), too tall for its place (rises to end 8 dp above the bottom), taller than the
+  screen (top at 8 dp). Red on 52c12ce5: 2/3 failed (the no-op case passed, as it must). Green 3/3.
 
 ## 6. UI (screens)
 
