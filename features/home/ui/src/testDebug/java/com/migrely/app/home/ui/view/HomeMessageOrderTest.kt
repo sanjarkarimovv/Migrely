@@ -214,7 +214,7 @@ class HomeMessageOrderTest {
     }
 
     @Test
-    fun `With the real trial banner, Tab after the message reaches its close button, then Manage`() {
+    fun `With the real trial banner, Tab after the message reaches its close, then Manage`() {
         showHome(trialBanner = { CardShaped("banner") })
 
         assertTabFromMessageReachesCloseThenOpen("banner")
