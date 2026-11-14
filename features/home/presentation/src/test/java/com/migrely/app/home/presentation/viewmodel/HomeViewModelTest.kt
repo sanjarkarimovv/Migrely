@@ -697,13 +697,14 @@ class HomeViewModelTest :
         assertEquals(HomePresentationNavigationEvent.OnOpenSettings, event.await())
     }
 
-    // "Write saved" (BRD D178 (1), EC-UX-35): a write with no message of its own says so, after the new state, so the
-    // screen can replace an error that the write made untrue. A result that wrote nothing says nothing.
+    // "Write saved" (BRD D178 (1), EC-UX-35): a write with no message of its own says so from its own result, before
+    // the reload (review 9.2 (a)), so the screen can replace an error that the write made untrue. A result that wrote
+    // nothing says nothing.
 
     private val inProgress = TodayDomainModel.AttackInProgress(ATTACK, longAttackCheckDue = false)
 
     @Test
-    fun `Given a pain level is recorded then write saved comes after attack mode`() = runTest {
+    fun `Given a pain level is recorded then write saved is said, then attack mode`() = runTest {
         recordIntensityUseCase.givenSuccessfulExecution(
             IntensityLevelDomainModel.Moderate,
             RecordIntensityResultDomainModel.Recorded
@@ -711,13 +712,13 @@ class HomeViewModelTest :
         givenToday(inProgress)
 
         assertEquals(
-            listOf(HomeViewState.AttackInProgress::class, HomePresentationNotification.Saved),
+            listOf(HomePresentationNotification.Saved, HomeViewState.AttackInProgress::class),
             heard { classUnderTest.onIntensityAction(IntensityLevelPresentationModel.Moderate) }
         )
     }
 
     @Test
-    fun `Given the start is moved earlier then write saved comes after attack mode`() = runTest {
+    fun `Given the start is moved earlier then write saved is said, then attack mode`() = runTest {
         moveAttackStartEarlierUseCase.givenSuccessfulExecution(
             Duration.ofMinutes(60),
             MoveStartResultDomainModel.Moved(START.minusSeconds(3_600))
@@ -725,24 +726,24 @@ class HomeViewModelTest :
         givenToday(inProgress)
 
         assertEquals(
-            listOf(HomeViewState.AttackInProgress::class, HomePresentationNotification.Saved),
+            listOf(HomePresentationNotification.Saved, HomeViewState.AttackInProgress::class),
             heard { classUnderTest.onMoveStartEarlierAction(60) }
         )
     }
 
     @Test
-    fun `Given today's period is written then write saved comes after Today`() = runTest {
+    fun `Given today's period is written then write saved is said, then Today`() = runTest {
         setPeriodTodayUseCase.givenSuccessfulExecution(true, WriteResultDomainModel.Written)
         givenToday(TodayDomainModel.Calm)
 
         assertEquals(
-            listOf(HomeViewState.Today::class, HomePresentationNotification.Saved),
+            listOf(HomePresentationNotification.Saved, HomeViewState.Today::class),
             heard { classUnderTest.onPeriodTodayAction(marked = true) }
         )
     }
 
     @Test
-    fun `Given still going is saved then write saved comes after attack mode`() = runTest {
+    fun `Given still going is saved then write saved is said, then attack mode`() = runTest {
         answerLongAttackCheckUseCase.givenSuccessfulExecution(
             LongAttackAnswerRequestDomainModel("a", LongAttackAnswerDomainModel.StillGoing),
             AnswerLongAttackResultDomainModel.Saved
@@ -750,13 +751,13 @@ class HomeViewModelTest :
         givenToday(inProgress)
 
         assertEquals(
-            listOf(HomeViewState.AttackInProgress::class, HomePresentationNotification.Saved),
+            listOf(HomePresentationNotification.Saved, HomeViewState.AttackInProgress::class),
             heard { classUnderTest.onStillGoingAction("a") }
         )
     }
 
     @Test
-    fun `Given don't ask again is saved then write saved comes after attack mode`() = runTest {
+    fun `Given don't ask again is saved then write saved is said, then attack mode`() = runTest {
         answerLongAttackCheckUseCase.givenSuccessfulExecution(
             LongAttackAnswerRequestDomainModel("a", LongAttackAnswerDomainModel.DontAskAgain),
             AnswerLongAttackResultDomainModel.Saved
@@ -764,7 +765,7 @@ class HomeViewModelTest :
         givenToday(inProgress)
 
         assertEquals(
-            listOf(HomeViewState.AttackInProgress::class, HomePresentationNotification.Saved),
+            listOf(HomePresentationNotification.Saved, HomeViewState.AttackInProgress::class),
             heard { classUnderTest.onDontAskAgainAction("a") }
         )
     }
@@ -837,4 +838,30 @@ class HomeViewModelTest :
             heard { classUnderTest.onStartAttackAction() }
         )
     }
+
+    @Test
+    fun `Given a later write fails while the reload of a saved one is on its way then the error is said last`() =
+        runTest {
+            // Review 9.2 (a): "Saved." for the first write must never arrive after the second write's error.
+            val reads = answeredLater(getTodayUseCase)
+            recordIntensityUseCase.givenSuccessfulExecution(
+                IntensityLevelDomainModel.Moderate,
+                RecordIntensityResultDomainModel.Recorded
+            )
+            recordIntensityUseCase.givenSuccessfulExecution(
+                IntensityLevelDomainModel.Severe,
+                RecordIntensityResultDomainModel.StorageFull
+            )
+            val heard = mutableListOf<HomePresentationNotification>()
+            val collecting =
+                launch(start = UNDISPATCHED) { classUnderTest.notification.toList(heard) }
+
+            classUnderTest.onIntensityAction(IntensityLevelPresentationModel.Moderate)
+            classUnderTest.onIntensityAction(IntensityLevelPresentationModel.Severe)
+            reads[0](TodayResultDomainModel.Loaded(inProgress))
+            runCurrent()
+
+            assertEquals(HomePresentationNotification.StorageFull, heard.last())
+            collecting.cancel()
+        }
 }
