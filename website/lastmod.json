@@ -7,6 +7,10 @@
     "lastmod": "2026-11-13",
     "sha256": "625916b968dc668d39b24a2ea7bf019671a32a4217186c6ab249f746d0fa356e"
   },
+  "/android/": {
+    "lastmod": "2026-11-14",
+    "sha256": "eafcc4a9c219f0019b8a0a043398f4eb9cf7ba09a7b6a5d438a3ee465199c295"
+  },
   "/compare/": {
     "lastmod": "2026-11-13",
     "sha256": "bb58ed73c49dc4df54d589d12cd785250f1385f83b3b9a32ce10a16e0c47bb77"
@@ -32,8 +36,8 @@
     "sha256": "dc2d58454890781a65eecc4410b1dd8f03a7e60f057f89e87f8f212f870e10f0"
   },
   "/privacy/": {
-    "lastmod": "2026-11-13",
-    "sha256": "241395ef4c4ae324bcca4102b02ef38689551b4ee2530e94b431e128b8915ac1"
+    "lastmod": "2026-11-14",
+    "sha256": "bb4179eb0c7a4c9c4fe4e6d0535b39ef9ac6b6b10a96768029c9c1bd2bf77f89"
   },
   "/support/": {
     "lastmod": "2026-11-13",
