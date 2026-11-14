@@ -115,25 +115,42 @@ Ownership:
 
 ## 7. Acceptance (`qa-engineer`, scope: this diff only)
 
-- [ ] 7.1 Strings: `git grep -n -i 'fewer painkillers' -- features app core designsystem` exits 1 on the candidate. Negative
+- [x] 7.1 Strings: `git grep -n -i 'fewer painkillers' -- features app core designsystem` exits 1 on the candidate. Negative
   control: 1 line on 5bbf8f94. Also scan the APK resources for "Take fewer painkillers": 0 on the candidate, 1 on the base.
-- [ ] 7.2 Step 1 on the device at 100% and 200% font, 360 dp, portrait and landscape: the label is not clipped, the disclaimer and
+  Record (qa-192, 2026-11-14, f7530040): exit 1 and 0 lines; on 5bbf8f94 exit 0, 1 line. String pool `(?i)fewer\s+painkillers`:
+  candidate debug 0, R8 0, base 1; the new label 1, 1, 0. The two debug APKs differ only in `resources.arsc`.
+- [x] 7.2 Step 1 on the device at 100% and 200% font, 360 dp, portrait and landscape: the label is not clipped, the disclaimer and
   "Restore" are reachable, and TalkBack reads "Keep track of my medication days" as actionable, in the unchanged order. This
   covers "The label", "Large font, narrow screen, landscape" and "TalkBack and keyboard".
-- [ ] 7.3 Choosing it stores `fewer_painkillers`, "Skip" stores no goal, and Back on step 1 leaves the app. This covers
+  Record (qa-192, 2026-11-14, emulator-5580, API 36, 360 dp): 8 of 8 geometry rows pass (4 conditions, dark theme with
+  airplane mode on and off). The label is 2 lines at 200% portrait and 1 line otherwise, inside its button; buttons are
+  ≥ 144 px (48 dp); Restore is reached after 0 to 3 swipes. TalkBack: "Keep track of my medication days. Button", the same
+  stops as the base (100% and 200%); a double-tap opens step 2. Tab cycle as on the base. Pre-existing, filed as #217 (S4):
+  Skip reads "Skip this step. Skip. Button".
+- [x] 7.3 Choosing it stores `fewer_painkillers`, "Skip" stores no goal, and Back on step 1 leaves the app. This covers
   "Choosing it" and "Skip and Back on step 1".
-- [ ] 7.4 Upgrade: install 5bbf8f94, choose "Take fewer painkillers", finish onboarding, then update to the candidate without
+  Record (qa-192, 2026-11-14): choose → `fewer_painkillers` (control: doctor → `record_for_doctor`); Skip → no `goal` key,
+  also after all four steps; Back → the launcher resumes and the next start shows step 1. The base gives the same values.
+- [x] 7.4 Upgrade: install 5bbf8f94, choose "Take fewer painkillers", finish onboarding, then update to the candidate without
   clearing data. Check:
   - home opens and onboarding does not show;
   - the prefs still hold `fewer_painkillers`;
   - no crash in logcat.
 
   This covers "An upgrade with the old goal stored". Control: the same run on 5bbf8f94 over itself.
-- [ ] 7.5 Backup: export JSON on the candidate, with no `goal` key in the file, and import it with Add on 5bbf8f94. This covers
+  Record (qa-192, 2026-11-14): 2 of 2 pass (home, no onboarding, `fewer_painkillers` kept, 0 crash lines, a second cold
+  start also home); the control passes too. Negative controls: after `pm clear` the checks see onboarding and no goal;
+  `am crash` gives 1 FATAL line.
+- [x] 7.5 Backup: export JSON on the candidate, with no `goal` key in the file, and import it with Add on 5bbf8f94. This covers
   "Backup and restore". The Auto Backup restore is accepted by reading the code, because D78 is unchanged; say so in the
   record.
-- [ ] 7.6 Go/No-Go packet in `docs/qa/fix-onboarding-goal-wording.md`, saying what these checks do not prove. "Offline, Free or
+  Record (qa-192, 2026-11-14): the export (518 bytes, schemaVersion 7, 1 attack) has 0 goal, painkiller or "medication days"
+  keys or values; a planted `goal` gives 2 hits (exit 1). 5bbf8f94 with one past migraine: "It holds 1 migraine, 0
+  medications and 0 marked days.", Add → "Added 1 migraine."; a second import of the file fails that assertion. Auto
+  Backup: accepted by reading the code (D78 rules unchanged, the same stored key in both dex files).
+- [x] 7.6 Go/No-Go packet in `docs/qa/fix-onboarding-goal-wording.md`, saying what these checks do not prove. "Offline, Free or
   Premium, dark theme" is covered by 7.2 run in airplane mode with the dark theme.
+  Record (qa-192, 2026-11-14): `docs/qa/fix-onboarding-goal-wording.md`, GO at f7530040.
 
 ## 8. Close (`product-manager`)
 
