@@ -46,7 +46,31 @@ build, `qa-engineer` for H1 to H9, `team-lead` with the owner for H10.
 
 ## 7. QA and release
 
-- [ ] 7.1 `qa-engineer` runs H1 to H9 on the release candidate's exact SHA, H7 on a local negative-control build. Verify: a Go/No-Go in `docs/qa/`.
-- [ ] 7.2 `aso-seo-specialist` and `legal-finance-analyst` check the items in design "Data safety and public text" before Production. Verify: their packets.
-- [ ] 7.3 Owner's phone H10, then Git-flow release: PR into `main`, tag `v1.1.1`, merge into `develop`. Uploads only with the owner's permission. Verify:
-  the tag, and `git diff <built-sha> v1.1.1` is empty.
+- [x] 7.1 `qa-engineer` runs H1 to H9 on the release candidate's exact SHA, H7 on a local negative-control build. Verify: a Go/No-Go in `docs/qa/`. Done
+  (record 2026-11-14, T63): `docs/qa/go-no-go-1.1.1.md` (PR #184, develop cbd364c2), GO for `hotfix/1.1.1` d7376af0. The H rows ran
+  on a3f25cdb, whose product code equals d7376af0 (`git diff eeb69f8a d7376af0 -- ':!docs' ':!openspec'` empty, and a3f25cdb to
+  eeb69f8a touches only `SafetyCardReveal.kt`). H1 to H6 pass on debug, H7 opens the sheet offline 6/6, H8 is 1.1.0's 5 plus
+  `ACCESS_NETWORK_STATE` with the INTERNET control failing, API 26 6/6. Not proved, accepted in that GO: H9's forced datatransport
+  job, buy and Manage on R8 (no Play billing on the image), H5 on API 26.
+- [x] 7.2 `aso-seo-specialist` and `legal-finance-analyst` check the items in design "Data safety and public text" before Production. Verify: their packets. Done
+  (record 2026-11-14, T63): `legal-finance-analyst`'s draft `reports/hotfix-111-legal-permission-check.md` and `aso-hotfix`'s
+  `migrely-work/hotfix-111/aso-permission-claims.md`, both 2026-11-09, outside the repo. Data safety answer: no change. Their
+  fixes merged in PR #176 (develop 3170865b: the sixth permission on /privacy-check/, the policy paragraph "Checking whether you
+  are online", "no network access" changed to "no internet permission"), deployed to migrely.health 2026-11-11 (deployment
+  877da238). Not done: no one has read the live Console Data safety form since (legal item 5.3), and `docs/release/data-safety.md`
+  still has no 1.1.1 line (legal item 1.6). Both are sent to `legal-finance-analyst`; neither blocks this archive.
+- [x] 7.3 Owner's phone H10, then Git-flow release: PR into `main`, tag `v1.1.1`, merge into `develop`. Uploads only with the owner's permission. Verify:
+  the tag, and `git diff <built-sha> v1.1.1` is empty. Done (record 2026-11-14, T63): PR #173 merged into `main` as
+  64e08db8, annotated tag `v1.1.1` on it, merge-back PR #175 (develop 01205cc4, second parent d7376af0). The AAB
+  `Migrely-1.1.1-9.aab` (sha256 cc1c0088…) was built from d7376af0 (`migrely-work/release/111/aab/Migrely-1.1.1-9.commit.txt`), and
+  `git diff --quiet d7376af0 v1.1.1` exits 0. H10 on the owner's phone from Play internal testing, 2026-11-09 14:34–14:45, owner
+  present: H1 3/3, H3, H4, H5, Settings Restore, Close, offline cold start, 0 crash lines (`migrely-work/phone-111/EVIDENCE.md`);
+  not run there: Manage, the trial banner, a completed purchase. Live on Play since 2026-11-13: the store page returns 200 and
+  shows version 1.1.1 (checked again 2026-11-14).
+
+## 8. Archive
+
+- [x] 8.1 Sync the release-build delta before archiving (T63, 2026-11-14). `fix-release-debug-components` (archived 2026-11-11) already
+  rewrote "Release permissions" with D166 in it, so this delta now keeps that newer text and scenario and adds only "INTERNET comes
+  back". The 1.1.1-only scenario "One permission more than 1.1.0" is dropped: the 1.1.1 Go/No-Go (H8) holds its result. Verify:
+  `openspec validate --specs --strict` exits 0 after the archive.

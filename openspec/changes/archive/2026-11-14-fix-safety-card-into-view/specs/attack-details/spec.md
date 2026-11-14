@@ -13,9 +13,8 @@ process SHALL NOT scroll (BRD EC-ATK-23, D167, #174).
 
 #### Scenario: Scrolled down, a first 10 that fails to save
 - **WHEN** the same, and the save fails because storage is full
-- **THEN** within 1 second the content is back at its top, and the card's sentence and "Got it" show
-- **AND** the message covers no more of the card than in 1.1.0: the title at 100% (#166), and never the first line of the
-  sentence (#174)
+- **THEN** within 1 second the content is back at its top, and the card's title, sentence and "Got it" show
+- **AND** the message lies over no part of the card, because the content starts below it (D165, #166, #174)
 
 #### Scenario: Landscape and a card taller than the area
 - **WHEN** the phone is in landscape, at 100% or 200% font, and the card appears out of view, taller than the area or not
@@ -44,8 +43,8 @@ process SHALL NOT scroll (BRD EC-ATK-23, D167, #174).
 
 ### Requirement: TalkBack speaks the card once it is in view
 When the card scrolls into view, TalkBack SHALL speak its title and its sentence, each in full, once the card is in view,
-without moving accessibility focus. When a message lies over the title, as on a failed save at 100% font, the sentence SHALL
-still be spoken in full (BRD EC-ATK-23, D167, D163).
+without moving accessibility focus. When a message also shows, as on a failed save, the card's sentence SHALL still be spoken
+in full (BRD EC-ATK-23, D167, D163, D165).
 
 #### Scenario: A first 10 that saves, scrolled down
 - **WHEN** TalkBack is on, the user has scrolled down to Pain, and adds a first 10 that saves

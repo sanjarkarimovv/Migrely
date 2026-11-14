@@ -33,6 +33,10 @@ alarms and no foreground service. `ACCESS_NETWORK_STATE` is allowed, only to see
 - **WHEN** the release build is assembled
 - **THEN** its merged manifest's permission check passes, and its permission report lists `ACCESS_NETWORK_STATE` as the only network permission
 
+#### Scenario: INTERNET comes back
+- **WHEN** a library or a manifest line adds `android.permission.INTERNET`
+- **THEN** the permission check fails the build
+
 ### Requirement: The release build carries no debug-only components
 A release build SHALL declare no debug-only component in its merged manifest: `androidx.compose.ui.tooling.PreviewActivity`, the
 `androidx.activity.ComponentActivity` entry from ui-test-manifest, or the simulated billing receiver. The check SHALL read the merged manifest, not
