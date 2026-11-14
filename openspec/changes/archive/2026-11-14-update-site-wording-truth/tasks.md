@@ -13,13 +13,16 @@
 
 ## 3. Verify
 
-- [ ] 3.1 Phrase scan of the built site text (tags stripped) for "calm", "quiet", "while you rest", "internet access", "nothing leaves", "can leave your phone through", "for good", "migraines share", "spot trigger": the only hits are the promo transcript (v3.3) and "at a calm moment" on `/privacy/` (review prompt timing).
+- [x] 3.1 Phrase scan of the built site text (tags stripped) for "calm", "quiet", "while you rest", "internet access", "nothing leaves", "can leave your phone through", "for good", "migraines share", "spot trigger": the only hits are the promo transcript (v3.3) and "at a calm moment" on `/privacy/` (review prompt timing).
   - 2026-11-14 at fbc31bf7 + this commit: 5 hits; 3 in the promo transcript, 1 "at a calm moment", and 1 open: `/privacy-check/` "can leave your phone through Migrely" (task 2.1).
+  - 2026-11-14 at 39a81af3 (product-manager rerun, tags stripped, plus `alt` attributes): 8 hits, none open. 3 in the promo v3.3 transcript (EC-WEB-26), "at a calm moment" on `/privacy/`, the `/android/` screenshot alt quoting the app's "Calm so far today", and 3 × "the app itself sends nothing over the internet" on `/privacy-check/` and `/support/` (the approved form). "can leave your phone through": 0. `BANNED_AD` in `build.py` still lists the ad phrases (source, not output).
 - [x] 3.2 `openspec validate update-site-wording-truth --strict`.
-- [ ] 3.3 `medical-reviewer` re-reads the final diff.
+- [x] 3.3 `medical-reviewer` re-reads the final diff.
+  - 2026-11-14, med-t65b, word-for-word read at 39a81af3: PASS on all 16 items, nothing blocking; store PNGs, site images and `og-v2` checked. One finding for a later change (section 4).
 
 ## 4. Later, outside this change
 
 - Promo v3.4 and its transcript (content-creator).
 - The Play listing edit and store art upload after the 1.2.1 review result and the owner's go.
 - Settings privacy string, Maestro assertion, slide 06 re-capture (1.3.0, T63).
+- `/menstrual-migraine/` says entries "can leave it only in two ways" (backup and exported files), but direct transfer to a new phone is a third route. medical-reviewer's wording: "can leave it only through Android's own backup or transfer, if it is on (…), and in any file you export and share". A later change updates the page and this spec's "Period data stays private" scenario together (BRD D179).

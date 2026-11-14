@@ -17,7 +17,8 @@ Every page, `/llms.txt` and image alt text SHALL say what Migrely does, not how 
 - **WHEN** a page, its JSON-LD description or an alt text describes Migrely or the month sky
 - **THEN** it says "a private migraine diary" and "each month drawn as a night sky", with no "calm" or "quiet" and no
   "while you rest"
-- **AND** the only exception is the promo video's text alternative, which follows the video actually shown
+- **AND** the only exceptions are the promo video's text alternative, which follows the video actually shown, and an
+  alt text that quotes the app's own words on a screenshot, such as "Calm so far today"
 
 #### Scenario: Triggers keep their hedge
 
