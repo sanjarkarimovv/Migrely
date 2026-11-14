@@ -164,3 +164,15 @@ everyone and an update path to every Go/No-Go.
   job each, no post. Harmless.
 - **R3. A catch-up run at a clock change** posts at once on a day the reminder was turned on after its time. Rare, harmless.
 - **R4. Evidence is from emulators** with forced idle. Real Doze windows and vendor job batching are not covered.
+- **R6. When the stale job runs after #197's residual (QA R-1, decided 2026-11-14).** With WorkManager's database gone, the
+  only thing that starts the process without the person is the stale JobScheduler job, and the platform decides when it
+  runs. QA (API 26, task 4.9): the process started at R+0:00, R+0:00 and R+6:50, and the app posted within 0.1 s of each
+  start (3 of 3). In the R+6:50 run, at R+5, the job showed `TIMING_DELAY` unsatisfied with earliest −5m12s. A 4th run had
+  no start by R+5 and was not watched longer. The app cannot make the job run sooner without an exact alarm (EC-REM-03
+  rules that out). Decision: the acceptance is "posts once when the stale job starts the process, that day", not "within
+  5 minutes after R". If the job waits past midnight, the ended date is not asked about and the new date's R is planned;
+  if the person opens Migrely first, that start plans the run at once (D2, D3). D175 (2) and EC-REM-22 carry the numbers.
+- **R7. Visit and "Did it help?" after the residual are not shown on a device.** QA dropped task 4.10: the diff does not
+  reach `VisitReminderPlan` or `LogIntakeUseCase`. They rest on D175's evidence: code reading, the unit test that the
+  visit is planned as before for both requests (2.2), and 4.9's proof that the stale job starts the process and runs
+  `onCreate`. D175 reopens if a later report shows either missing after the residual.

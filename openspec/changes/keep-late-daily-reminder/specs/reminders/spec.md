@@ -160,7 +160,17 @@ question SHALL stay on home's card when its notification is lost. No receiver an
   updated to the build under test before R, and nobody opens it
 - **THEN** WorkManager's database is gone after the update, the stale job at R starts the process, and WorkManager logs
   "Didn't find WorkSpec"
-- **AND** "How was today?" posts once within a few minutes after R, while the app is still not opened
+- **AND** "How was today?" posts once as soon as the stale job has started the process, while the app is still not opened
+- **AND** when that job runs is the platform's choice: at R or later, never because of Migrely (BRD D175 (2), EC-REM-03)
+
+#### Scenario: The stale job runs after midnight
+- **WHEN** after the same kind of update JobScheduler holds the stale job past midnight, and nobody opens Migrely
+- **THEN** nothing posts about the date that ended, and the next run is at R on the new date
+
+#### Scenario: Opened before the stale job runs
+- **WHEN** after the same kind of update, R has passed, the stale job has not run, and the person opens Migrely
+- **THEN** nothing posts while Migrely is on screen, and if they leave without answering, "How was today?" posts once about
+  30 minutes after the run that came while they were in the app
 
 #### Scenario: The next day's reminder posts
 - **WHEN** the steps above have run and the next day's R comes, with the app still not opened
@@ -168,7 +178,8 @@ question SHALL stay on home's card when its notification is lost. No receiver an
 
 #### Scenario: A visit reminder lost the same way
 - **WHEN** after the same kind of update a next visit is set, its reminder has not been shown, and its reminder time comes
-- **THEN** the reminder posts once that day, within a few minutes, without the app being opened (BRD EC-REM-14)
+- **THEN** the reminder posts once when its stale job or any other start comes, if the visit day has not ended, without the
+  app being opened (BRD EC-REM-14)
 
 #### Scenario: "Did it help?" after the same update
 - **WHEN** an attack medication was logged less than 2 hours before the same kind of update

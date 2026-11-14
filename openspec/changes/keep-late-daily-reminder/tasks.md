@@ -227,16 +227,27 @@ its log, never rerun away.
   `26-plain-ctl-*` and `26-timed-ctl-1`: old build 1.1.1 R8 (or 1.2.0 R8 `r8-9d453bb5`), reminder R about 15 minutes ahead,
   clear storage, reopen, turn the reminder on again, update to the new R8 build before R, do not touch the device. Expect:
   `androidx.work.workdb` gone after the update (else the run is void, not a pass); at R "Didn't find WorkSpec" in the log;
-  "How was today?" posts once within 5 minutes after R. **Negative control:** the same with 74095b8d's R8 as "new": nothing
+  "How was today?" posts once when the stale job starts the process, with the app not opened (amended by product-manager
+  2026-11-14 after QA's R-1, design R6; the first text, "within 5 minutes after R", promised what JobScheduler decides,
+  not the app). **Negative control:** the same with 74095b8d's R8 as "new": nothing
   posts at R, and a job with about 24 h delay is planned. 2 + 1 runs.
   Done: workdb gone 4/4 valid; posted once at R+0:00, R+0:00, R+6:50 (when the stale job started the process; post
   within 0.1 s); 1 run no process start by R+5 (in the R+6:50 run JobScheduler showed `TIMING_DELAY`
   unsatisfied with earliest -5m12s at R+5), not watched longer. "Within 5 minutes" 2/4: residual risk R-1 for `product-manager`. Control 1/1 nothing,
   next +24h.
+  Accepted by product-manager 2026-11-14: the amended expectation holds in 3 of 3 runs where the stale job started the
+  process (post within 0.1 s of the start); the 4th run's outcome after R+5 is unknown, and the timing is JobScheduler's
+  (design R6, D175 (2), EC-REM-22).
 - [ ] 4.10 **#197 visit and "Did it help?" (API 26).** As the #197 plan's 4.3 and 4.4: the visit reminder posts once within a
   few minutes of its time with no app open; no "Did it help?" at 2 h, home's card asks within 24 h; control without clear
   posts at 2 h once. 1 + 1 + 1 runs.
-  Dropped by QA (time; not on the lead's must-have list; `VisitReminderPlan` and `LogIntakeUseCase` not in the diff).
+  **Dropped, not run** (left unticked on purpose). QA's reason: time, not on the lead's must-have list, and the diff does
+  not reach `VisitReminderPlan` or `LogIntakeUseCase` (both unchanged; 3.1 checks the visit file's diff is empty).
+  Accepted by product-manager 2026-11-14 (design R7). These two rows of the #197 requirement rest on D175's evidence, not
+  on this change's device runs: code reading (D175 (2), (5); EC-REM-14, EC-REM-23), `RescheduleRemindersUseCaseTest` (the
+  visit is planned exactly as before for both requests, 2.2), and 4.9's proof that the stale job starts the process and
+  runs `onCreate`. The #197 closure cites D175 for them, and 4.9 and 4.11 only for the daily reminder. D175 reopens if a
+  later report shows a visit reminder or the home card missing after the residual.
 - [x] 4.11 **Normal update (API 26 and API 36).** No clear, R about 15 minutes after the update, process dead at R: `workdb`
   kept, posted once. 2 runs on API 26, 1 on API 36.
   Done: 1.2.0 → R8, workdb kept, one post: API 36 1/1 (2 min after R), API 26 2/2 (12 s and 11 s after R).
