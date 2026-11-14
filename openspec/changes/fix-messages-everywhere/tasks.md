@@ -156,15 +156,16 @@ and the engineer cover: O1–O20 (order), F-a–F-h (focus), M1–M12 (motion an
     order tests fail. Log `walks/msgs/6-negative-order-placement.log`. Restored.
   - Not covered by a unit test: Edit medication, Log medication and Add past migraine (same module as one tested
     screen, same layout). The walk covers Attack details, History and Home.
-- [ ] 6.6 Home Today keyboard order (ux F10, revised Q2, rows O11–O13 in the ux spec's "Revision 2026-11-14" section). The order is
+- [x] 6.6 Home Today keyboard order (ux F10, revised Q2, rows O11–O13 in the ux spec's "Revision 2026-11-14" section). The order is
   Settings, then the message's control, then the content, in portrait and the short window. When the Settings row has scrolled
-  off, the message's control is first. TalkBack and Switch Access stay message-first on Home. Attack mode, onboarding and the 12
+  off, the message's control is within 2 key presses (reworded after O12, below). TalkBack and Switch Access stay message-first
+  on Home. Attack mode, onboarding and the 12
   other screens do not change. A single local focus link on Home is acceptable. Verify: Home tests pass in
   `./gradlew :features:home:ui:testDebugUnitTest`: from nothing focused, Tab, Tab reaches the message's control on Home Today;
   Shift+Tab from the first control after Settings goes to the message's control, then to Settings; the TalkBack traversal stays
   message first; attack mode stays message first. On `emulator-5570`, A12 Home Today shows Settings, then the message's control.
 
-  Done in code; left open for the O12 finding below. `TodayKeyboardOrder` (Home only) links Settings -> the message ->
+  Done. `TodayKeyboardOrder` (Home only) links Settings -> the message ->
   the first control after Settings and back; `MessageLayout(keyboardMessageLast = true)` on Home Today places the
   message last for Tab only, so a Tab past the end wraps to Settings; Settings' Shift+Tab wraps to Log medication.
   Every redirect checks `requestedFocusDirection` (Next or Previous only), as the reviewer asked. TalkBack's traversal
@@ -188,6 +189,11 @@ and the engineer cover: O1–O20 (order), F-a–F-h (focus), M1–M12 (motion an
     (here the Period chip) wins over the message's control on the right. So "once Settings has scrolled off, the message
     is first" does not hold in every scroll position. The message stays one Shift+Tab from the first control after
     Settings. Not changed: an entry redirect is what F10 chose to avoid.
+  - **Lead decision (2026-11-14): O12 accepted, with no entry redirect.** The scenario "Home Today scrolled", EC-UX-36, D178 (4),
+    design D3 and A12 now say: when Home Today is scrolled and the Settings row is off screen, the first Tab goes to the first
+    control Android finds from the top, which may be a content control, and the message's control is one Shift+Tab from it, so it
+    stays within 2 key presses. `team-lead` updates ux row O12 in `migrely-work`. The other 4 walked rows (O11 at 100% and 200%,
+    O13 at 411 dp at 100% and 200%) pass on the device.
   - Not walked: right to left, 274 dp, attack mode and onboarding on the device (Robolectric covers attack mode).
 - [x] 6.2 Home, History and Reminders replace an error with `Saved` on the event and ignore it otherwise. Doctor report clears
   an error on `Share`. Your data, My medications and Log medication show that their own message replaces the error, with no new

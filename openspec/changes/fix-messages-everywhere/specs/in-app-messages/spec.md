@@ -149,7 +149,10 @@ SHALL clear when it leaves or is replaced. A leaving message SHALL NOT be a stop
 
 #### Scenario: Home Today scrolled
 - **WHEN** the same message shows after the column has scrolled until the Settings row is off screen, and the user presses Tab
-- **THEN** the message's control is the first stop, and Shift+Tab from it goes to Settings, scrolled into view
+- **THEN** the first Tab goes to the first control Android finds from the top, which may be a content control such as the Period
+  chip lying partly under the message, and the message's control is one Shift+Tab from it
+- **AND** the message stays reachable within 2 key presses, and Shift+Tab from the message's control goes to Settings, scrolled
+  into view
 
 #### Scenario: Home Today with TalkBack or Switch Access
 - **WHEN** TalkBack or Switch Access moves through Home Today while a message shows
