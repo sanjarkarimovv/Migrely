@@ -20,7 +20,7 @@ and the engineer cover: O1–O20 (order), F-a–F-h (focus), M1–M12 (motion an
 
 - [x] 2.1 Answer design Q1–Q8 in a ux spec. `team-lead` stores it in `migrely-work/t63/ux-spec.md`. Answer at least:
   - the Tab and TalkBack order: Back and the bar's actions, then the message control, then the content; on Home and onboarding,
-    the message first (Q1, Q2);
+    the message first (Q1, Q2; Q2 revised by F10 after the device walk, see 6.6);
   - where focus goes when the focused message leaves (Q3);
   - "Saved." per screen: Home in both modes, History and Reminders, plus Doctor report's silent clear (Q7);
   - the Home review request while "Couldn't save" or "Saved." shows (Q8);
@@ -156,6 +156,13 @@ and the engineer cover: O1–O20 (order), F-a–F-h (focus), M1–M12 (motion an
     order tests fail. Log `walks/msgs/6-negative-order-placement.log`. Restored.
   - Not covered by a unit test: Edit medication, Log medication and Add past migraine (same module as one tested
     screen, same layout). The walk covers Attack details, History and Home.
+- [ ] 6.6 Home Today keyboard order (ux F10, revised Q2, rows O11–O13 in the ux spec's "Revision 2026-11-14" section). The order is
+  Settings, then the message's control, then the content, in portrait and the short window. When the Settings row has scrolled
+  off, the message's control is first. TalkBack and Switch Access stay message-first on Home. Attack mode, onboarding and the 12
+  other screens do not change. A single local focus link on Home is acceptable. Verify: Home tests pass in
+  `./gradlew :features:home:ui:testDebugUnitTest`: from nothing focused, Tab, Tab reaches the message's control on Home Today;
+  Shift+Tab from the first control after Settings goes to the message's control, then to Settings; the TalkBack traversal stays
+  message first; attack mode stays message first. On `emulator-5570`, A12 Home Today shows Settings, then the message's control.
 - [x] 6.2 Home, History and Reminders replace an error with `Saved` on the event and ignore it otherwise. Doctor report clears
   an error on `Share`. Your data, My medications and Log medication show that their own message replaces the error, with no new
   code where none is needed. Verify: tests for every scenario of "An error on the other screens goes when a later save succeeds"
@@ -292,6 +299,31 @@ and the engineer cover: O1–O20 (order), F-a–F-h (focus), M1–M12 (motion an
   - the inverted `ReplaceInPlaceTest` case.
 
   Fixes go on the same branch. Verify: no open blocker in the review packet.
+
+  Record (cr-msgs, reviewed at 90b5b96e): **no blocking findings.** Lead decisions, every item fixed on this branch by
+  `android-engineer` in 9.2:
+  - **(a) Minor.** Home's "Saved." can replace a newer error. Saved goes out after the Today reload, while StorageFull goes out
+    from the write result, so a later failed write can be overtaken. Fix: send Saved from the write result, as History and
+    Reminders do, or drop a Saved older than the shown error. Add a test.
+  - **(b) Minor.** No test reaches the real ReviewGate wiring in `HomeScreen.kt:150-164`. Add a test at the `HomeContents` level
+    with the gate.
+  - **(c) Minor.** `MessageOrderTest`'s TalkBack test passes without `traversalIndex`. Strengthen it so it fails when the index is
+    removed.
+  - **(d) Risk, fixed now.** The fit rule (`MessageFit.kt:20`, `MigrelySnackbar.kt:356`) uses `WindowInsets.safeDrawing`, which
+    includes the IME. Use system bars plus the display cutout instead, without the keyboard, so a future `adjustResize` cannot
+    raise a message over Back. Add a test.
+- [ ] 9.2 `android-engineer` fixes (a)–(d) on this branch.
+  - (a): a Home test where a write fails after a successful write whose Saved is still on its way. The error stays and the late
+    Saved is dropped.
+  - (b): a `HomeContents` test where the review slot leaves with a message and with the error-this-visit flag, and comes back
+    after a navigation away and back.
+  - (c): the TalkBack order test fails with `traversalIndex` removed locally. Restore it afterwards.
+  - (d): a fit-rule test where IME insets do not change the message's top, and system bars and the cutout still bound it.
+
+  Verify: each new test fails first, and then `set -o pipefail; nice -n 19 ./gradlew --max-workers=2 assembleDebug test
+  ktlintCheck detekt lint` exits 0.
+- [ ] 9.3 `code-reviewer` re-checks the delta from 90b5b96e to the fix head: 9.2 (a)–(d) and 6.6 (F10). Verify: no open blocker in
+  the re-check packet, and its SHA range is recorded here.
 
 ## 10. QA (qa-engineer, independent, this diff only)
 

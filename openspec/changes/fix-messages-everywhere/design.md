@@ -83,7 +83,7 @@ one of them fails with a lifecycle `ON_STOP` clear in its place (negative contro
 
 | Question | Decision |
 |---|---|
-| Order | The top bar's controls, then the message's text and its control, then the content. On Home (both modes, every orientation) and onboarding the message comes first (ux Q2). Text and control stay two nodes, never merged |
+| Order | The top bar's controls, then the message's text and its control, then the content. On Home Today the keyboard goes Settings, message, content in portrait and the short window (when the Settings row has scrolled off, the message is topmost and first); TalkBack and Switch Access stay message-first there. In attack mode and onboarding the message comes first for all three (ux F10, revised Q2). A single local focus link on Home (Settings → message → content) is acceptable; it is one screen, not 13 chains. Text and control stay two nodes, never merged |
 | Where | One composable or modifier in `designsystem/snackbar`, used by all 13 screens. No per-screen focus requesters |
 | Recommended shape | A layout with three slots, `topBar`, `message` and `content`. It places them in that order, so Tab follows it. It draws `message` above `content` with `zIndex` and measures it over the whole screen as today. The layout is a traversal group and gives the slots `traversalIndex` in the same order for TalkBack. Home and onboarding leave `topBar` empty. Attack details lifts its top bar out of `AttackDetailsContents`, and the paywall's Close row goes into `topBar` (ux §2.1). The engineer may choose another mechanism if tasks 5.2 and 5.3 pass |
 | Geometry | The message's bounds stay unchanged (±1 px at 100% and 200%), and so do `onMessageBottomChanged`, `topOffset` and D165's card mode. Exceptions: Home Today's measured offset and the fit rule (D6, ux P3–P6) |
@@ -145,7 +145,7 @@ The ux answers are in bold. They are in `migrely-work/t63/ux-spec.md` §1, and `
 | # | Question | PM default |
 |---|---|---|
 | Q1 | Order on top-bar screens: are the bar's actions before the message (History: Back, Insights, Doctor report, message, content)? | Yes, the whole bar first. **Ux: yes** (F7 fixed the History example) |
-| Q2 | Home and onboarding have no top bar. Is the message the first stop even in portrait Home Today, where it sits below the Settings row? | Yes. **Ux: yes**, in every Home mode and orientation |
+| Q2 | Home and onboarding have no top bar. Is the message the first stop even in portrait Home Today, where it sits below the Settings row? | Yes. **Ux, revised after the device walk (F10):** on Home Today the keyboard goes Settings, message, content; TalkBack and Switch Access stay message-first; attack mode and onboarding are message-first for all three. Android gives the first Tab from nothing focused to the topmost control, which is Settings |
 | Q3 | Where does focus go when the focused message leaves? | Focus cleared. **Ux: yes**, plus F8: a replacement also clears focus, and a leaving message is not a stop |
 | Q4 | Arrival fade: what start alpha keeps the look the same while never being 0? Or defer the live region instead? | **Ux: 0.02** (range 0.01–0.05). Deferring the live region is the fallback only |
 | Q5 | A replacement switches at once on every screen, with no cross-fade, and content tied to the message's bottom moves at once. Acceptable? | **Ux: partly** (F1, F2). In place, yes; a shorter replacement eases the bottom over 250 ms, a taller one moves at once; the guard covers the taller message |
@@ -206,8 +206,8 @@ afterwards.
 | A9 | Fail, rotate. Fail, `am kill` in the background, reopen: the error stays |
 | A10 | A normal save with no error: no "Saved." |
 | A11 | Review, ux R1–R5: a debug setup where the request is due (D130 met). With an error on Home Today, no request in 10 s; dismiss it and stay, no request for the rest of the visit; go to Settings and back, the request may run 2 s after Today shows. With "Migraine ended [Undo]", no request until it leaves, then after 2 s |
-| A12 | Tab order, ux O1–O20 and F-a–F-h: bar, message, content on every screen (History: Back, Insights, Doctor report, message control, month). Shift+Tab reverses. 25 presses recorded per screen. Focus clears on leave and on replacement, and Tab never lands on a leaving message |
-| A13 | TalkBack swipe order on the same screens: bar, message text, its control, content |
+| A12 | Tab order, ux O1–O20 (O11–O13 as revised in the ux spec's 2026-11-14 section) and F-a–F-h: bar, message, content on every screen (History: Back, Insights, Doctor report, message control, month). Home Today, from nothing focused: Tab, Tab reaches the message's control (Settings first), in portrait and the short window; scrolled, the message's control is first. Shift+Tab reverses. 25 presses recorded per screen. Focus clears on leave and on replacement, and Tab never lands on a leaving message |
+| A13 | TalkBack swipe order on the same screens: bar, message text, its control, content. On Home the message comes first |
 | A14 | Switch Access on Attack details, History and Home: separate highlights in the same order, and selecting each works |
 | A15 | Message bounds on every screen at 100% and 200%: equal to `develop` 52c12ce5 within 1 px, except Home Today's measured offset and the fit rule (ux P7). The 0.8 s guard holds |
 | A16 | #183: on History, Reminders and Home, a message after more than 100 ms of quiet, and a same-text retry. No `ttsOutput={}` with a live region, 10 of 10 per screen |

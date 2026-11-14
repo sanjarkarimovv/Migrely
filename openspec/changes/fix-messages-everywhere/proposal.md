@@ -40,7 +40,8 @@ its findings F1–F8.
 - **Review request on Home Today (D178 (3), F3).** It waits while any message shows, and its 2 seconds start when the message
   leaves. After an error, no request comes for the rest of that Home visit.
 - **Order of messages for keyboard, Switch Access and TalkBack, on all 13 screens (D178 (4)).** The order is the top bar first,
-  then the message's text and its Dismiss or Undo, then the content. On a screen with no top bar the message comes first. One
+  then the message's text and its Dismiss or Undo, then the content. On Home Today the keyboard goes Settings, message, content,
+  while TalkBack and Switch Access read the message first; in attack mode and onboarding it comes first for all three (F10). One
   shared mechanism in `designsystem` provides this. Focus clears when the message leaves or is replaced, and a leaving message is
   not a stop (F8). The message's place, size and drawing do not change. After a replacement, the tap guard covers the taller of
   the two messages (F2).

@@ -119,10 +119,10 @@ share sheet, the background, Android Settings, a rotation and a restored process
 - **THEN** it shows as usual
 
 ### Requirement: Keyboard, Switch Access and TalkBack reach a message right after the top bar
-On every screen that shows messages, the keyboard focus order and TalkBack's order SHALL be: the top bar's controls, then the
-message's text and its Dismiss or Undo, then the content. On a screen with no top bar the message SHALL come first. A message
-SHALL NOT take focus when it appears; focus SHALL clear when it leaves or is replaced, never moving into the content. A leaving
-message SHALL NOT be a stop. Its place, size and drawing SHALL NOT change (BRD EC-UX-36, D178).
+On every screen with messages, keyboard and TalkBack order SHALL be the top bar's controls, the message's text and its control,
+then the content. On Home Today the keyboard SHALL go Settings, message, content, while TalkBack and Switch Access read the message
+first; in attack mode and onboarding the message SHALL come first for all three. A message SHALL NOT take focus on arrival; focus
+SHALL clear when it leaves or is replaced. A leaving message SHALL NOT be a stop (BRD EC-UX-36, D178).
 
 #### Scenario: Attack details with the safety card
 - **WHEN** "Couldn't save" shows above the safety card on Attack details and the user presses Tab from the top with a hardware
@@ -141,9 +141,24 @@ message SHALL NOT be a stop. Its place, size and drawing SHALL NOT change (BRD E
 - **WHEN** TalkBack is on, a message shows, and the user swipes forward from the top bar's last control
 - **THEN** TalkBack reads the message's text, then its Dismiss or Undo, then the first content item
 
-#### Scenario: A screen with no top bar
-- **WHEN** a message with "Undo" shows on Home or on onboarding and the user presses Tab from the top
-- **THEN** the message's control is the first stop
+#### Scenario: Home Today with a keyboard
+- **WHEN** a message with "Undo" shows on Home Today, in portrait or a short window, with the column not scrolled and nothing
+  focused, and the user presses Tab twice
+- **THEN** the first Tab reaches Settings and the second the message's control, then the content follows
+- **AND** Shift+Tab from the first content control after Settings goes to the message's control, then to Settings
+
+#### Scenario: Home Today scrolled
+- **WHEN** the same message shows after the column has scrolled until the Settings row is off screen, and the user presses Tab
+- **THEN** the message's control is the first stop, and Shift+Tab from it goes to Settings, scrolled into view
+
+#### Scenario: Home Today with TalkBack or Switch Access
+- **WHEN** TalkBack or Switch Access moves through Home Today while a message shows
+- **THEN** the message's text and its control come first, then the date and Settings, then the rest of the content
+
+#### Scenario: Attack mode and onboarding
+- **WHEN** a message with "Undo" shows in attack mode, or a message shows on onboarding, and the user presses Tab from nothing
+  focused, swipes with TalkBack or scans with Switch Access
+- **THEN** the message's control is the first stop for all three
 
 #### Scenario: Switch Access
 - **WHEN** Switch Access scans a screen with a message
@@ -178,7 +193,7 @@ message SHALL NOT be a stop. Its place, size and drawing SHALL NOT change (BRD E
 #### Scenario: The message does not move
 - **WHEN** a message shows on any of the 13 screens at 100% and 200% font
 - **THEN** its bounds match the build before this change within 1 pixel, except on Home Today where D178's measured offset and the
-  fit rule apply, and a tap where it was within 0.8 s still reaches nothing under it
+  fit rule apply, its drawing over the content is unchanged, and a tap where it was within 0.8 s still reaches nothing under it
 
 #### Scenario: A shorter replacement at 200%
 - **WHEN** at 200% font an error with its Dismiss below the text is replaced by "Saved.", and a tap lands where that Dismiss was
