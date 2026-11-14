@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -25,6 +26,8 @@ import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -353,7 +356,8 @@ fun <T : Any> MigrelySnackbarHost(
             .windowInsetsPadding(
                 WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)
             )
-            .fitTopOffset(topOffset, WindowInsets.safeDrawing)
+            // The bars and the cutout bound it, not the keyboard: an open keyboard must not lift a message (review 9.2 (d)).
+            .fitTopOffset(topOffset, WindowInsets.systemBars.union(WindowInsets.displayCutout))
             .padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
         // Below the message, so the message itself stays tappable at once, but above what the screen draws under it:

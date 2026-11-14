@@ -281,7 +281,9 @@ class MessageOrderTest {
 
     /** The traversal index of the nearest traversal group around the node matching [matcher], or null with none. */
     private fun slotIndex(matcher: SemanticsMatcher): Float? =
-        generateSequence(rule.onNode(matcher, useUnmergedTree = true).fetchSemanticsNode()) { it.parent }
+        generateSequence(rule.onNode(matcher, useUnmergedTree = true).fetchSemanticsNode()) {
+            it.parent
+        }
             .firstOrNull { SemanticsProperties.TraversalIndex in it.config }
             ?.config
             ?.get(SemanticsProperties.TraversalIndex)

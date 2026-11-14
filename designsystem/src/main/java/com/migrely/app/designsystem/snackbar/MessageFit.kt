@@ -6,9 +6,10 @@ import androidx.compose.ui.layout.layout
 import androidx.compose.ui.unit.Dp
 
 /**
- * Moves what it modifies down by [topOffset], but never so far that it passes the bottom of the safe area ([insets]'s
- * bottom): then it moves down only as far as still fits, and not at all when even that does not fit (BRD D178 (6), ux
- * F5). Where it fits, it is exactly `padding(top = topOffset)`.
+ * Moves what it modifies down by [topOffset], but never so far that it passes the bottom of the safe area: [insets]'s
+ * bottom, meant to be the system bars and the display cutout, never the keyboard. Then it moves down only as far as
+ * still fits, and not at all when even that does not fit (BRD D178 (6), ux F5). Where it fits, it is exactly
+ * `padding(top = topOffset)`.
  */
 internal fun Modifier.fitTopOffset(topOffset: Dp, insets: WindowInsets): Modifier =
     layout { measurable, constraints ->
