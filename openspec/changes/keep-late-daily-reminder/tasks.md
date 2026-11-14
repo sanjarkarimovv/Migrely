@@ -179,46 +179,67 @@ stop before the run, and record the change. Record every run in `migrely-work/qa
 (`auto_time 1`), battery, deviceidle, rotation, font and airplane mode after each session. Any failed run is reported with
 its log, never rerun away.
 
-- [ ] 4.1 **The bug, fixed (API 36 and API 26).** `full.sh late`: the 20:01 tap, then HOME before idle is unforced. New
+- [x] 4.1 **The bug, fixed (API 36 and API 26).** `full.sh late`: the 20:01 tap, then HOME before idle is unforced. New
   build, expected: `RESULT` (by 20:07) posted=0, `daily_last_shown_date` is not the run date, and a "daily" job about 30
   minutes ahead; then `RESULT2` posted=1 exactly once by about 20:40, `daily_last_shown_date` is the run date, and the next
   job about 23.5 hours ahead. 3 runs on each API. A post before the postponed run (by 20:07) fails design D3; no post by
   20:45 fails D176: both go to `product-manager` with the log. **Negative control:** 74095b8d debug, same script: posted=0
   at 20:07 and still posted=0 at 20:40 (the run is lost, a job about 24 hours ahead), 1 run on each API.
-- [ ] 4.2 **On screen (API 36).** `late` mode without the second HOME key, so the app stays on home when idle is unforced:
+  Done (QA, 84d1f86f; record `docs/qa/keep-late-daily-reminder.md`, raw `migrely-work/qa-213/`): API 36 3/3 and API 26 3/3: posted=0 at 20:01, date not
+  marked, job +29m59s; posted once at 20:31–20:33, date marked, next ~+23h28m. Control 74095b8d 1/1 each API: posted=0 at
+  20:07 and 20:45, next +24h. API 26 needed `dumpsys deviceidle enable deep` (image ships with Doze off; 2 runs void).
+- [x] 4.2 **On screen (API 36).** `late` mode without the second HOME key, so the app stays on home when idle is unforced:
   posted=0, `daily_last_shown_date` is not today, and a "daily" job about 30 minutes ahead. 2 runs. Extend the wait past
   the postponed time (or move the clock forward 31 minutes with `cmd alarm set-time` while the app stays on screen): still
   posted=0 and a new job about 30 minutes ahead. **Controls:** `alive` mode with the app on home at 20:00: posted=0;
   `alive` with the app in the background: posted=1.
-- [ ] 4.3 **Left after the skip (API 36).** As 4.2, then press HOME (launcher) after the skip, force idle and unforce it
+  Done: 2/2 posted=0, job +30m; stayed on screen through the postponed run: still 0, postponed again. Controls: on home
+  posted=0 (36 and 26), background posted=1 (36 and 26).
+- [x] 4.3 **Left after the skip (API 36).** As 4.2, then press HOME (launcher) after the skip, force idle and unforce it
   when the postponed job is due: posted=1, exactly once for that date, and `daily_last_shown_date` is today. 2 runs.
-- [ ] 4.3a **Opening when the run comes (API 36).** `late` mode, then `am start` and `deviceidle unforce` in one shell
+  Done: 2/2 one post after HOME (21:01:31 after a double postpone; 20:33:04 with Doze held to 20:33), date marked.
+- [x] 4.3a **Opening when the run comes (API 36).** `late` mode, then `am start` and `deviceidle unforce` in one shell
   command, the app stays on screen: posted=0 and a job about 30 minutes ahead. 5 runs. A post in any run is a failure of
   design D3 (send to `product-manager`).
-- [ ] 4.3b **Screen-state probes (API 36), 1 run each, app on screen before 20:00:** lock screen right after the power key
+  Done: API 36 5/5 and API 26 2/2 posted=0, job +30m. No post: D3 holds.
+- [x] 4.3b **Screen-state probes (API 36), 1 run each, app on screen before 20:00:** lock screen right after the power key
   with Migrely behind it at 20:00 → posted=1; split screen with Migrely visible at 20:00 → posted=0, job about 30 minutes
   ahead; notification shade pulled over Migrely at 20:00 (hold it with `adb shell cmd statusbar expand-notifications`) →
   posted=0, job about 30 minutes ahead. Any other result goes to `product-manager`.
-- [ ] 4.4 **Cold start by the job, R2 (API 36 and API 26).** `kill` mode: posted=1. 5 runs on API 36, 3 on API 26.
-- [ ] 4.5 **Clock change after the time (API 36).** Plan 20:00, kill the process, force idle; at 20:01 set the clock forward
+  Done: lock screen awake posted=1 (36, 26), lock gone dark posted=1, screen off posted=1 (36, 26), split screen posted=0
+  +30m (36), shade posted=0 +30m (36 ×2, 26). All as design D3.
+- [x] 4.4 **Cold start by the job, R2 (API 36 and API 26).** `kill` mode: posted=1. 5 runs on API 36, 3 on API 26.
+  Done: API 36 5/5, API 26 3/3 posted=1, one enqueue each.
+- [x] 4.5 **Clock change after the time (API 36).** Plan 20:00, kill the process, force idle; at 20:01 set the clock forward
   by 2 minutes with `cmd alarm set-time`; unforce: posted=1. **Negative control:** 74095b8d: posted=0. 1 + 1 runs.
-- [ ] 4.6 **Reboot (API 36).** Plan 20:00, force idle, reboot the emulator at 20:01 (Doze ends with the boot): posted=1 once
+  Done: forward 1/1 posted=1 (TimeChangeReceiver start, run at once); zone Dhaka 1/1 posted=1; control 1/1 posted=0.
+- [x] 4.6 **Reboot (API 36).** Plan 20:00, force idle, reboot the emulator at 20:01 (Doze ends with the boot): posted=1 once
   after boot, before 20:15. **Negative control:** 74095b8d. 1 + 1 runs.
-- [ ] 4.7 **Already answered / off (API 36).** Mark today pain-free before 20:00, `late` mode: posted=0. Reminder off,
+  Done (real time): new 1/1 posted once 8 s after boot (RescheduleReceiver start); control 1/1 no post, next +24h.
+- [x] 4.7 **Already answered / off (API 36).** Mark today pain-free before 20:00, `late` mode: posted=0. Reminder off,
   `late` mode: posted=0 and no daily job. 1 run each.
-- [ ] 4.8 **No double post (API 36).** Let 20:00 post, then set the clock back to 19:58 and wait to 20:05: still one
+  Done: variant on the new path (skipped on screen, marked pain-free in History, postponed job forced) posted=0; off
+  posted=0 and no job.
+- [x] 4.8 **No double post (API 36).** Let 20:00 post, then set the clock back to 19:58 and wait to 20:05: still one
   notification for that date, posted count 1. 1 run.
-- [ ] 4.9 **#197 residual (API 26), from the #197 plan.** Use the plain-clear method of `migrely-work/qa-193` rows
+  Done: two runs, one notification, one enqueue.
+- [x] 4.9 **#197 residual (API 26), from the #197 plan.** Use the plain-clear method of `migrely-work/qa-193` rows
   `26-plain-ctl-*` and `26-timed-ctl-1`: old build 1.1.1 R8 (or 1.2.0 R8 `r8-9d453bb5`), reminder R about 15 minutes ahead,
   clear storage, reopen, turn the reminder on again, update to the new R8 build before R, do not touch the device. Expect:
   `androidx.work.workdb` gone after the update (else the run is void, not a pass); at R "Didn't find WorkSpec" in the log;
   "How was today?" posts once within 5 minutes after R. **Negative control:** the same with 74095b8d's R8 as "new": nothing
   posts at R, and a job with about 24 h delay is planned. 2 + 1 runs.
+  Done: workdb gone 4/4 valid; posted once at R+0:00, R+0:00, R+6:50 (when the stale job started the process; post
+  within 0.1 s); 1 run no process start by R+5 (in the R+6:50 run JobScheduler showed `TIMING_DELAY`
+  unsatisfied with earliest -5m12s at R+5), not watched longer. "Within 5 minutes" 2/4: residual risk R-1 for `product-manager`. Control 1/1 nothing,
+  next +24h.
 - [ ] 4.10 **#197 visit and "Did it help?" (API 26).** As the #197 plan's 4.3 and 4.4: the visit reminder posts once within a
   few minutes of its time with no app open; no "Did it help?" at 2 h, home's card asks within 24 h; control without clear
   posts at 2 h once. 1 + 1 + 1 runs.
-- [ ] 4.11 **Normal update (API 26 and API 36).** No clear, R about 15 minutes after the update, process dead at R: `workdb`
+  Dropped by QA (time; not on the lead's must-have list; `VisitReminderPlan` and `LogIntakeUseCase` not in the diff).
+- [x] 4.11 **Normal update (API 26 and API 36).** No clear, R about 15 minutes after the update, process dead at R: `workdb`
   kept, posted once. 2 runs on API 26, 1 on API 36.
+  Done: 1.2.0 → R8, workdb kept, one post: API 36 1/1 (2 min after R), API 26 2/2 (12 s and 11 s after R).
 
 Report in the handoff packet: counts per row, the RESULT lines, the probe outputs, and what was not checked (Android 8.1–15,
 real phones, Play updates, vendor Doze).
