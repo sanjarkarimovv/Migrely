@@ -114,7 +114,7 @@ class HomeMessageOrderTest {
     }
 
     @Test
-    fun `On Today, Shift+Tab from the first control after Settings goes to the message, then to Settings`() {
+    fun `On Today, Shift+Tab from the control after Settings goes to the message, then Settings`() {
         showHome()
         rule.onNodeWithContentDescription(PERIOD).requestFocus()
 

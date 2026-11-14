@@ -77,7 +77,8 @@ class MessageCallSitesTest {
     @Test
     fun `Home decides its message's place with its tested rule`() {
         assertTrue(
-            "topOffset = messageTopOffset(viewState.mode, settingsRowHeight)" in source("HomeScreen")
+            "topOffset = messageTopOffset(viewState.mode, settingsRowHeight)" in
+                source("HomeScreen")
         )
     }
 }

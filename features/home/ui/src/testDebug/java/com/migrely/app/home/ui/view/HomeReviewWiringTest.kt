@@ -96,7 +96,7 @@ class HomeReviewWiringTest {
     }
 
     @Test
-    fun `After an error is dismissed the review slot stays gone, and comes back on the next visit`() {
+    fun `After a dismissed error the review slot stays gone until the next visit`() {
         showHome()
         post(HomeMessageUiModel.StorageFull)
         rule.onNodeWithContentDescription("Dismiss").performClick()

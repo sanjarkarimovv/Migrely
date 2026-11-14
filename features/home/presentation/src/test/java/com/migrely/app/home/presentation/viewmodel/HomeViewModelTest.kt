@@ -840,28 +840,27 @@ class HomeViewModelTest :
     }
 
     @Test
-    fun `Given a later write fails while the reload of a saved one is on its way then the error is said last`() =
-        runTest {
-            // Review 9.2 (a): "Saved." for the first write must never arrive after the second write's error.
-            val reads = answeredLater(getTodayUseCase)
-            recordIntensityUseCase.givenSuccessfulExecution(
-                IntensityLevelDomainModel.Moderate,
-                RecordIntensityResultDomainModel.Recorded
-            )
-            recordIntensityUseCase.givenSuccessfulExecution(
-                IntensityLevelDomainModel.Severe,
-                RecordIntensityResultDomainModel.StorageFull
-            )
-            val heard = mutableListOf<HomePresentationNotification>()
-            val collecting =
-                launch(start = UNDISPATCHED) { classUnderTest.notification.toList(heard) }
+    fun `Given a write fails while a saved one reloads then the error is said last`() = runTest {
+        // Review 9.2 (a): "Saved." for the first write must never arrive after the second write's error.
+        val reads = answeredLater(getTodayUseCase)
+        recordIntensityUseCase.givenSuccessfulExecution(
+            IntensityLevelDomainModel.Moderate,
+            RecordIntensityResultDomainModel.Recorded
+        )
+        recordIntensityUseCase.givenSuccessfulExecution(
+            IntensityLevelDomainModel.Severe,
+            RecordIntensityResultDomainModel.StorageFull
+        )
+        val heard = mutableListOf<HomePresentationNotification>()
+        val collecting =
+            launch(start = UNDISPATCHED) { classUnderTest.notification.toList(heard) }
 
-            classUnderTest.onIntensityAction(IntensityLevelPresentationModel.Moderate)
-            classUnderTest.onIntensityAction(IntensityLevelPresentationModel.Severe)
-            reads[0](TodayResultDomainModel.Loaded(inProgress))
-            runCurrent()
+        classUnderTest.onIntensityAction(IntensityLevelPresentationModel.Moderate)
+        classUnderTest.onIntensityAction(IntensityLevelPresentationModel.Severe)
+        reads[0](TodayResultDomainModel.Loaded(inProgress))
+        runCurrent()
 
-            assertEquals(HomePresentationNotification.StorageFull, heard.last())
-            collecting.cancel()
-        }
+        assertEquals(HomePresentationNotification.StorageFull, heard.last())
+        collecting.cancel()
+    }
 }
