@@ -163,6 +163,32 @@ and the engineer cover: O1–O20 (order), F-a–F-h (focus), M1–M12 (motion an
   `./gradlew :features:home:ui:testDebugUnitTest`: from nothing focused, Tab, Tab reaches the message's control on Home Today;
   Shift+Tab from the first control after Settings goes to the message's control, then to Settings; the TalkBack traversal stays
   message first; attack mode stays message first. On `emulator-5570`, A12 Home Today shows Settings, then the message's control.
+
+  Done in code; left open for the O12 finding below. `TodayKeyboardOrder` (Home only) links Settings -> the message ->
+  the first control after Settings and back; `MessageLayout(keyboardMessageLast = true)` on Home Today places the
+  message last for Tab only, so a Tab past the end wraps to Settings; Settings' Shift+Tab wraps to Log medication.
+  Every redirect checks `requestedFocusDirection` (Next or Previous only), as the reviewer asked. TalkBack's traversal
+  indexes, attack mode, onboarding and the other 12 screens are unchanged.
+  - Red: `HomeMessageOrderTest` (rewritten for F10) 4/8 failed on the old order (from nothing: Tab, Tab; Shift+Tab
+    from Period; both trial-banner cases). Log `walks/msgs/6.6-red.log`. The device then showed Shift+Tab from Settings
+    looping back to the message; a new test for it failed (1/10, `6.6-wrap-red.log`) before the wrap link.
+  - Green: `HomeMessageOrderTest` 11/11 (portrait, short window, with and without the trial banner, no message, wrap,
+    attack mode message-first, TalkBack indexes message 1 < content 2); `:features:home:ui` 170/170.
+  - Walk, emulator-5570, debug build of this fix (evidence `walks/msgs/6.6-*.txt`):
+
+    | Row | Result |
+    |---|---|
+    | O11 portrait 100% | From nothing: Settings, Dismiss, Period. Shift+Tab: Dismiss, Settings, Log medication. Tab from Log medication: Settings, Dismiss |
+    | O11 portrait 200% | Same order |
+    | O13 landscape 411 dp, 100% and 200% | Settings, Dismiss, Period; Shift+Tab Dismiss, Settings, Log medication |
+    | O12 portrait 200%, scrolled | **Deviates.** The first Tab took Period, partly under the message, not the message. Shift+Tab from November: Period, Dismiss, Settings (scrolled into view) |
+
+  - **Finding for ux-designer and product-manager (O12):** the device's first focus is a downward search from the top-left,
+    not "the topmost control": with the column scrolled, a left-side content control lying partly under the message
+    (here the Period chip) wins over the message's control on the right. So "once Settings has scrolled off, the message
+    is first" does not hold in every scroll position. The message stays one Shift+Tab from the first control after
+    Settings. Not changed: an entry redirect is what F10 chose to avoid.
+  - Not walked: right to left, 274 dp, attack mode and onboarding on the device (Robolectric covers attack mode).
 - [x] 6.2 Home, History and Reminders replace an error with `Saved` on the event and ignore it otherwise. Doctor report clears
   an error on `Share`. Your data, My medications and Log medication show that their own message replaces the error, with no new
   code where none is needed. Verify: tests for every scenario of "An error on the other screens goes when a later save succeeds"
@@ -211,7 +237,7 @@ and the engineer cover: O1–O20 (order), F-a–F-h (focus), M1–M12 (motion an
   Done. `messageTopOffset(mode, settingsRowHeight)` = `max(56 dp, row + 2 dp)` on Today and while loading, 56 dp until
   measured, 0 in attack mode; the row reports its height with `onSizeChanged`. `messagesBesideControls` is true for
   Today and attack mode in a short window. The host's fit rule (5.5) keeps the 274 dp storage-full error whole.
-  `HomePlacementTest` (native graphics, so real text sizes) 10/10: 411 dp at 100% and 200%, 411 dp RTL, 274 dp at 100%
+  `HomePlacementTest` (native graphics, so real text sizes) 9/9 (corrected 2026-11-14; first recorded as 10/10): 411 dp at 100% and 200%, 411 dp RTL, 274 dp at 100%
   and 200%, 274 dp storage full at 200% LTR and RTL (whole on screen, Dismiss on screen, clear of "Migraine started"),
   360 dp portrait at 200% with the date wrapped (the precondition checks the wrap), 360 dp at 200%, and a scroll that
   does not move the message. `MessageTopOffsetTest` 6 and `MessagesBesideControlsTest` 6 updated.
@@ -312,7 +338,7 @@ and the engineer cover: O1–O20 (order), F-a–F-h (focus), M1–M12 (motion an
   - **(d) Risk, fixed now.** The fit rule (`MessageFit.kt:20`, `MigrelySnackbar.kt:356`) uses `WindowInsets.safeDrawing`, which
     includes the IME. Use system bars plus the display cutout instead, without the keyboard, so a future `adjustResize` cannot
     raise a message over Back. Add a test.
-- [ ] 9.2 `android-engineer` fixes (a)–(d) on this branch.
+- [x] 9.2 `android-engineer` fixes (a)–(d) on this branch.
   - (a): a Home test where a write fails after a successful write whose Saved is still on its way. The error stays and the late
     Saved is dropped.
   - (b): a `HomeContents` test where the review slot leaves with a message and with the error-this-visit flag, and comes back
@@ -322,6 +348,24 @@ and the engineer cover: O1–O20 (order), F-a–F-h (focus), M1–M12 (motion an
 
   Verify: each new test fails first, and then `set -o pipefail; nice -n 19 ./gradlew --max-workers=2 assembleDebug test
   ktlintCheck detekt lint` exits 0.
+
+  Done.
+  - (a) Home sends `Saved` from the write's own result, before the reload, as History and Reminders do. Red:
+    "Given a write fails while a saved one reloads then the error is said last" failed (65 tests, 1 failed,
+    `walks/msgs/9.2a-red.log`); green 65/65. Four older tests now expect `Saved` before the state (the order changed on
+    purpose).
+  - (b) `HomeWithMessages` now holds the wiring `Home` used inline (messages, review gate, Settings-row offset).
+    `HomeReviewWiringTest` (3 cases) draws it. Negative control: without `if (reviewGate.open)` 2/3 fail
+    (`9.2b-negative.log`). The test was written against the extracted code, so its red is that control, not a run on
+    the old file.
+  - (c) New test reads the traversal index around the bar, the message and the content (0, 1, 2). With
+    `traversalIndex` removed locally both TalkBack tests fail (`9.2c-negative.log`); restored, 12/12 pass.
+  - (d) The fit rule uses `systemBars.union(displayCutout)`, not `safeDrawing`. `MessageFitInsetsTest`: an IME inset of
+    250 dp left the message at 8 dp instead of 108 (red, `9.2d-red.log`); green 2/2, and a 250 dp navigation bar still
+    lifts it.
+  - Gate on the fix head: `set -o pipefail; … ./gradlew --max-workers=2 assembleDebug test ktlintCheck detekt lint`
+    exit 0; 3172 test cases in the result files, 0 failures, 0 errors. `:app:checkReleasePermissions` exit 0, no
+    INTERNET. Device restored (font 1.0, rotation 0 with auto-rotate, storage, app data md5 9d26b633…).
 - [ ] 9.3 `code-reviewer` re-checks the delta from 90b5b96e to the fix head: 9.2 (a)–(d) and 6.6 (F10). Verify: no open blocker in
   the re-check packet, and its SHA range is recorded here.
 

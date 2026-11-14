@@ -160,6 +160,16 @@ class HomeMessageOrderTest {
     }
 
     @Test
+    fun `On Today, Shift+Tab from Settings wraps to the last control, not back to the message`() {
+        showHome()
+        rule.onNodeWithContentDescription(SETTINGS).requestFocus()
+
+        move(FocusDirection.Previous)
+
+        rule.onNodeWithText("Log medication").assertIsFocused()
+    }
+
+    @Test
     fun `With no message, Tab goes from Settings to the first control after it`() {
         showHome(message = HomeMessageUiModel.Saved)
 

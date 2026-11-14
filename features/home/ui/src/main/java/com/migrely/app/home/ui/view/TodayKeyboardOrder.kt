@@ -26,6 +26,7 @@ internal class TodayKeyboardOrder {
     private val settingsRequester = FocusRequester()
     private val afterSettingsRequester = FocusRequester()
     private val messageRequester = FocusRequester()
+    private val lastRequester = FocusRequester()
     private var settingsFocused = false
 
     /** Whether a message shows; set by the screen. */
@@ -35,7 +36,16 @@ internal class TodayKeyboardOrder {
     val settings: Modifier = Modifier
         .focusRequester(settingsRequester)
         .onFocusChanged { settingsFocused = it.isFocused }
-        .focusProperties { if (messageShows) next = messageRequester }
+        .focusProperties {
+            if (messageShows) {
+                next = messageRequester
+                // Back past the start wraps to the end, as without a message; the message comes after Settings only.
+                previous = lastRequester
+            }
+        }
+
+    /** On the content's last control, where Shift+Tab from Settings wraps to. */
+    val last: Modifier = Modifier.focusRequester(lastRequester)
 
     /** Around everything in Settings' column that follows Settings. */
     val afterSettings: Modifier = Modifier

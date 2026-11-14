@@ -79,7 +79,8 @@ fun TodayContents(
     visitCard: @Composable () -> Unit = {},
     onSettingsRowHeight: (Dp) -> Unit = {},
     settingsModifier: Modifier = Modifier,
-    afterSettingsModifier: Modifier = Modifier
+    afterSettingsModifier: Modifier = Modifier,
+    lastModifier: Modifier = Modifier
 ) {
     val screenModifier = modifier
         .fillMaxSize()
@@ -115,7 +116,7 @@ fun TodayContents(
             ) {
                 StartAttackButton(onStartAttack)
                 Spacer(Modifier.height(8.dp))
-                QuietLinks(onAddPastAttack, onLogMedication)
+                QuietLinks(onAddPastAttack, onLogMedication, lastModifier)
             }
         }
     } else {
@@ -140,7 +141,7 @@ fun TodayContents(
             Spacer(Modifier.height(16.dp))
             StartAttackButton(onStartAttack)
             Spacer(Modifier.height(4.dp))
-            QuietLinks(onAddPastAttack, onLogMedication)
+            QuietLinks(onAddPastAttack, onLogMedication, lastModifier)
             Spacer(Modifier.height(12.dp))
         }
     }
@@ -289,15 +290,19 @@ private fun StartAttackButton(onStartAttack: () -> Unit) {
  * medication taken (D34). Side by side, each wraps its text at large font sizes instead of being cut.
  */
 @Composable
-private fun QuietLinks(onAddPastAttack: () -> Unit, onLogMedication: () -> Unit) {
+private fun QuietLinks(
+    onAddPastAttack: () -> Unit,
+    onLogMedication: () -> Unit,
+    lastModifier: Modifier
+) {
     Row(modifier = Modifier.fillMaxWidth()) {
         listOf(
-            R.string.home_add_past_attack to onAddPastAttack,
-            R.string.log_medication to onLogMedication
-        ).forEach { (label, onClick) ->
+            Triple(R.string.home_add_past_attack, onAddPastAttack, Modifier),
+            Triple(R.string.log_medication, onLogMedication, lastModifier)
+        ).forEach { (label, onClick, extra) ->
             TextButton(
                 onClick = onClick,
-                modifier = Modifier
+                modifier = extra
                     .weight(1f)
                     .heightIn(min = 48.dp)
             ) {

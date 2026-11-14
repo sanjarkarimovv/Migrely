@@ -443,7 +443,8 @@ private fun HomeModes(
                     visitCard = slots.visitCard,
                     onSettingsRowHeight = onSettingsRowHeight,
                     settingsModifier = keyboardOrder.settings,
-                    afterSettingsModifier = keyboardOrder.afterSettings
+                    afterSettingsModifier = keyboardOrder.afterSettings,
+                    lastModifier = keyboardOrder.last
                 )
 
                 is HomeViewStateUiModel.AttackInProgress -> AttackModeContents(
