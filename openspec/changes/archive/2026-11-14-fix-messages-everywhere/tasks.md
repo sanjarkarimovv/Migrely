@@ -276,11 +276,12 @@ and the engineer cover: O1–O20 (order), F-a–F-h (focus), M1–M12 (motion an
   Done. `:app:checkReleasePermissions` -> exit 0. Merged release manifest: POST_NOTIFICATIONS, ACCESS_NETWORK_STATE,
   BILLING, WAKE_LOCK, RECEIVE_BOOT_COMPLETED and the dynamic-receiver permission; no INTERNET. No dependency was
   added to main code (only test dependencies in four UI modules).
-- [ ] 8.3 A walk on `emulator-5570`, debug: design checks A1, A7, A8, A12 (Attack details, History, Home), A16 (one screen), A17
+- [x] 8.3 A walk on `emulator-5570`, debug: design checks A1, A7, A8, A12 (Attack details, History, Home), A16 (one screen), A17
   (ux M3 and M4) and A18 (ux P1, P4 and P6) at 100% and 200%. Restore storage, font scale, animator scale, rotation and locale. Verify: the results and what the
   walk does not prove are in the packet.
 
-  Partly done, on emulator-5570 (API 36, 1080x2400, 420 dpi), debug APK built by the 8.1 gate (HEAD 586b2b06's code;
+  Closed by product-manager at 11.1. The engineer's walk was partial. QA's 10.1 covers the rest, and what neither ran is
+  listed under "Not proven" in the verification record. Partly done, on emulator-5570 (API 36, 1080x2400, 420 dpi), debug APK built by the 8.1 gate (HEAD 586b2b06's code;
   later commits change tasks.md only), installed with `install -r` over 1.2.1 (vc 11). Storage full by `fallocate` of
   `/data` to the root reserve; keyboard input by `adb shell input keyevent KEYCODE_TAB` and `keycombination
   SHIFT_LEFT TAB`; focus read from uiautomator's `focused="true"`. Evidence `migrely-work/walks/msgs/` (`a1.txt`,
@@ -321,7 +322,7 @@ and the engineer cover: O1–O20 (order), F-a–F-h (focus), M1–M12 (motion an
 
 ## 9. Review (code-reviewer)
 
-- [ ] 9.1 Review `git diff origin/develop...bugfix/181-messages-everywhere` against D178 and the deltas. Areas at risk:
+- [x] 9.1 Review `git diff origin/develop...bugfix/181-messages-everywhere` against D178 and the deltas. Areas at risk:
   - geometry of the 13 hosts;
   - D165's card mode and hold;
   - the leave clear (navigation, not lifecycle);
@@ -372,8 +373,13 @@ and the engineer cover: O1–O20 (order), F-a–F-h (focus), M1–M12 (motion an
   - Gate on the fix head: `set -o pipefail; … ./gradlew --max-workers=2 assembleDebug test ktlintCheck detekt lint`
     exit 0; 3172 test cases in the result files, 0 failures, 0 errors. `:app:checkReleasePermissions` exit 0, no
     INTERNET. Device restored (font 1.0, rotation 0 with auto-rotate, storage, app data md5 9d26b633…).
-- [ ] 9.3 `code-reviewer` re-checks the delta from 90b5b96e to the fix head: 9.2 (a)–(d) and 6.6 (F10). Verify: no open blocker in
+- [x] 9.3 `code-reviewer` re-checks the delta from 90b5b96e to the fix head: 9.2 (a)–(d) and 6.6 (F10). Verify: no open blocker in
   the re-check packet, and its SHA range is recorded here.
+
+  Result: cr-msgs2 gave **9.3 PASS** on 25adeb38..1000c181. Nothing blocks. Two notes that do not block, carried as
+  follow-ups (verification record):
+  - the artificial Shift+Tab skip on Home when no control follows Settings;
+  - one inaccurate code comment in `TodayKeyboardOrder.kt` about the content's `onExit`.
 
   Re-check cr-msgs2 at 25adeb38: no blocker. android-engineer's fixes for its findings (not a tick of 9.3):
   - F1: Tab from the message requested focus on the "after Settings" group, and Compose enters a group by place, so with
@@ -417,13 +423,63 @@ and the engineer cover: O1–O20 (order), F-a–F-h (focus), M1–M12 (motion an
 
 ## 11. Close (product-manager)
 
-- [ ] 11.1 Acceptance against D178 and the ux spec's §3 rows: every EC-UX-35…38 and EC-REV-13 scenario is covered by a passing test or a QA row. Verify: the
+- [x] 11.1 Acceptance against D178 and the ux spec's §3 rows: every EC-UX-35…38 and EC-REV-13 scenario is covered by a passing test or a QA row. Verify: the
   coverage list is in this file's verification record.
-- [ ] 11.2 Archive on the branch with `openspec archive fix-messages-everywhere --yes`, then validate. Verify:
-  `openspec validate --specs --strict` exits 0.
-- [ ] 11.3 Hand to `team-lead`: PR into `develop`, tracker T63, and a note that `fix-keyboard-follows-cursor` branches after this
-  merge. Verify: the PR number is in the packet.
+- [x] 11.2 Archive on the branch with `openspec archive fix-messages-everywhere --yes`, then validate. Verify:
+  `openspec validate --specs --strict` exits 0. Done: both deltas were applied to `in-app-messages` and `in-app-review`; their
+  `## Purpose` stays as it was, and validation exits 0 (product-manager's packet).
+- [x] 11.3 Hand to `team-lead`: PR into `develop`, tracker T63, and a note that `fix-keyboard-follows-cursor` branches after this
+  merge. Verify: the PR number is in the packet. Done: handed off in product-manager's packet. `team-lead` runs the gate, opens
+  the PR and merges, so the PR number goes in the lead's packet.
 
 ## Verification record
 
-To be filled in by the engineer, the reviewer and QA.
+**Acceptance (product-manager, 11.1, 2026-11-14): ACCEPTED** for the merge into `develop` at the QA candidate 1000c181 (code
+3212406d). This record is committed later than that. The sources are engineer tasks 3–8, review 9.1–9.3 (cr-msgs at 90b5b96e and
+cr-msgs2 9.3 PASS on 25adeb38..1000c181) and QA 10.1 (`docs/qa/fix-messages-everywhere.md`: GO, no S1 or S2, no issue filed).
+
+### Coverage, by edge case and requirement
+
+| BRD | Requirement (delta) | Covered by a passing test | Covered on a device (QA row, control) |
+|---|---|---|---|
+| EC-UX-35 (D178 (1)) | An error on the other screens goes when a later save succeeds | 3.1 ViewModel write-saved tests (Home, History, Reminders, with the non-write results and the F4 visit date); 6.2 `HomeMessagesTest`, `HistoryMessagesTest` and the Reminders collector (after an error, no error, during Undo, two quick saves, failed retry); 9.2 (a) newer error not overtaken by a late Saved; Doctor report clear on `Share`; own-message screens | A1 Home 5/5 (+2 reduce motion, +1 R8), newer failure stays; A7 History and Reminders "Saved." spoken; A10/N5 no "Saved." without an error; N1 `develop` error stays 2/2 |
+| EC-UX-35 (D178 (2)) | An error on the other screens belongs to the visit | 6.3 leave tests on the 9 screens, failing with an `ON_STOP` clear | A8 History, Home and Android Settings stays 2/2, Insights and Back clears 2/2; A9 rotation 2/2; N4 mutant 2/2 |
+| EC-UX-36 (D178 (4), F8, F10, O12) | Keyboard, Switch Access and TalkBack reach a message right after the top bar | 5.2 `MessageOrderTest` (with 9.2 (c), which fails without `traversalIndex`); 6.1 order tests in 10 modules (9/9 fail on the old placement); 6.6 and 9.3 `HomeMessageOrderTest` 14/14 | A12 on Attack details, History, Settings, Reminders, Home Today (100% and 200%, R8) and Home attack mode; O19 no message equals `develop`; O20 on API 26 at 130%; N2 `develop` (Dismiss missing) |
+| EC-UX-37 (D178 (5), F1, F2) | A message is never announced empty; gentle motion | 5.1 never-transparent test (with its `0f` control); 5.4 replacement easing and guard (N8) | A7/A16/M1/M7: 0 empty live-region events in 66 on Home, History and Reminders; N6 `develop` 3 empty in 6 (#183 reproduced); M3 guard 8/8 debug and R8, N8 mutant 4/4 |
+| EC-UX-38, EC-UX-16 (D178 (6), F5, F6) | Messages appear at the top and stay dim (Home placement, fit rule) | 5.5 fit rule (with 9.2 (d), IME excluded); 6.5 `HomePlacementTest` (411 and 274 dp, 100% and 200%, LTR and RTL, 360 dp wrap, scroll) | A18 P1–P5 debug and R8, overlap 0 with Settings and "Migraine started" except the accepted P4 cell; N3 `develop` Settings hidden; P6 360 dp wrap walked by the engineer (8.3); A15 bounds equal to `develop` on 4 screens, Home 27 px lower (F6, accepted) |
+| EC-UX-34, EC-UX-16 | Message durations by kind | Behaviour mapper tests with `Saved` (4.1) | A1, A7 ("Saved." leaves; see follow-up 2 for the timeout used) |
+| EC-REV-13 (D178 (3), F3) | Letting home settle | 6.4 and 9.2 (b): review slot gating at the `HomeContents` level with the real gate | R1–R5 by `review_request_count`, 2/2 to 3/3 each; N7 `develop` fires with the error shown 2/2 |
+
+Issues retested by QA on 1000c181, against `develop` 52c12ce5: #181, #185, #183 and #88 pass. The message part of #153 passes.
+None of these is closed by this change; their reporters close them after the merge (`Refs`, not `Fixes`).
+
+### Not proven, accepted as residual risk (does not block)
+
+- **Device runs:** 8 of the 13 hosts were not run on a device: Paywall, Doctor report, Your data, My medications, Edit
+  medication, Log medication, Add past migraine and Onboarding. They use the same `MessageLayout`, and unit tests cover their
+  order, their Saved or own-message rule, and their leave rule. The 6.1 note says Edit medication, Log medication and Add past
+  migraine have no order test of their own.
+- **Accessibility paths:** A13 (TalkBack swipe order) and A14 / F-h (Switch Access). Unit tests cover the traversal index only.
+  TalkBack and Shift+Tab ran on API 36 only; API 26 had Tab only (O20).
+- **States:** S2 (Reminders visit date with a permission request) is covered by a unit test only. Also not run: O15 (landscape
+  attack mode), O17 (Attack details with the first-10 card, covered by a Robolectric test) and, by QA, P6 (the engineer walked it).
+- **Measurement limits:**
+  - the 60 fps frame captures (M2, M4–M6, M8–M12), so "alpha never 0" rests on speech, not on frames;
+  - "Saved." within 1 s, which a uiautomator read cannot measure;
+  - right to left, which the English-only app does not mirror;
+  - real phones, real touch and a 3-button navigation bar.
+
+### Follow-ups (not part of this change; `team-lead` adds tracker rows)
+
+1. **History keyboard (QA observation):** Shift+Tab from the Period switch in the chosen day's section lands on a stop with no
+   visible focus. The calendar is not in this diff.
+2. **Home "Saved." timeout (QA observation):** Home's "Saved." leaves after about 8 s because it follows the non-interactive
+   accessibility timeout. Decide whether it should follow the interactive one, as an Undo does, and check the other screens'
+   "Saved." the same way.
+3. **Review note (cr-msgs2):** the artificial Shift+Tab skip on Home when no control follows Settings.
+4. **Review note (cr-msgs2):** the inaccurate comment in `TodayKeyboardOrder.kt` about the content's `onExit`.
+5. **Ux F9:**
+   - pausing a message's countdown while it holds keyboard or TalkBack focus (WCAG 2.2.1);
+   - 48 dp message controls in attack mode, against the 64 dp dark-room bar.
+6. **Engineer walk 8.3:** "Log medication" breaks inside the word at 360 dp and 200% on Home Today. This predates the change.
+7. **Order tests:** Edit medication, Log medication and Add past migraine have no Tab-order test of their own.
