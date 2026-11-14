@@ -25,6 +25,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.isUnspecified
@@ -308,7 +309,8 @@ fun HomeContents(
     onSettingsRowHeight: (Dp) -> Unit = {},
     messageShows: Boolean = false
 ) {
-    val keyboardOrder = remember { TodayKeyboardOrder() }
+    val focusManager = LocalFocusManager.current
+    val keyboardOrder = remember(focusManager) { TodayKeyboardOrder(focusManager) }
     keyboardOrder.messageShows = messageShows
     // Decided from the target mode in the same pass as the switch, so a quick switch back (for example Undo) can never
     // leave a stale previous mode behind (BRD EC-UX-18, D32).

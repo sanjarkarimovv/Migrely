@@ -97,7 +97,8 @@ private fun Slot(id: String, order: Float, content: @Composable () -> Unit) {
 /**
  * Where focus waits when the focused message leaves or is replaced (ux Q3, F8): a target before the top bar with no
  * semantics and no action, focusable only while it holds focus. It looks like nothing is focused, Enter and Space do
- * nothing, Tab goes to the screen's first stop and Shift+Tab to its last.
+ * nothing, Tab goes to the screen's first stop and Shift+Tab to its last. With `keyboardMessageLast` the last stop is
+ * the message, so Shift+Tab from here goes to the message's control while one shows (Home Today, review 9.3 F3).
  */
 internal class MessageFocusPark {
     val requester = FocusRequester()

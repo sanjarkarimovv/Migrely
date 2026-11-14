@@ -173,7 +173,7 @@ and the engineer cover: O1–O20 (order), F-a–F-h (focus), M1–M12 (motion an
   - Red: `HomeMessageOrderTest` (rewritten for F10) 4/8 failed on the old order (from nothing: Tab, Tab; Shift+Tab
     from Period; both trial-banner cases). Log `walks/msgs/6.6-red.log`. The device then showed Shift+Tab from Settings
     looping back to the message; a new test for it failed (1/10, `6.6-wrap-red.log`) before the wrap link.
-  - Green: `HomeMessageOrderTest` 11/11 (portrait, short window, with and without the trial banner, no message, wrap,
+  - Green: `HomeMessageOrderTest` 10/10 at 25adeb38, recorded as 11/11 by mistake (corrected under 9.3 below; now 14/14) (portrait, short window, with and without the trial banner, no message, wrap,
     attack mode message-first, TalkBack indexes message 1 < content 2); `:features:home:ui` 170/170.
   - Walk, emulator-5570, debug build of this fix (evidence `walks/msgs/6.6-*.txt`):
 
@@ -374,6 +374,20 @@ and the engineer cover: O1–O20 (order), F-a–F-h (focus), M1–M12 (motion an
     INTERNET. Device restored (font 1.0, rotation 0 with auto-rotate, storage, app data md5 9d26b633…).
 - [ ] 9.3 `code-reviewer` re-checks the delta from 90b5b96e to the fix head: 9.2 (a)–(d) and 6.6 (F10). Verify: no open blocker in
   the re-check packet, and its SHA range is recorded here.
+
+  Re-check cr-msgs2 at 25adeb38: no blocker. android-engineer's fixes for its findings (not a tick of 9.3):
+  - F1: Tab from the message requested focus on the "after Settings" group, and Compose enters a group by place, so with
+    a card-shaped first slot (text, close button at its end, a button below) Tab landed on the lower button and never
+    reached the close button. Now the message's exit runs Tab order itself, with Settings briefly not a stop, so it
+    lands on the first control after Settings in Tab order. Red: 3 new tests failed (trial banner, medication prompt
+    first, visit card first; `walks/msgs/9.3-red.log`); asking the group with `requestFocus(Next)` still failed all 3;
+    green 3/3. The unused group requester is gone.
+  - F2: new test "Tab past Log medication wraps to Settings, then the message". Negative control: with the redirect body
+    removed it fails (1/14, `9.3-F2-negative.log`). Removing the `settingsFocused` guard instead failed nothing: Settings'
+    link to the message is a request and never reaches that exit, so the guard was dead code and is removed (the
+    Settings, then message test still passes).
+  - F3: `MessageFocusPark`'s KDoc now says that with `keyboardMessageLast` Shift+Tab from the park goes to the message.
+  - F4: 6.6's count corrected; `HomeMessageOrderTest` is now 14/14, `:features:home:ui` 174/174.
 
 ## 10. QA (qa-engineer, independent, this diff only)
 

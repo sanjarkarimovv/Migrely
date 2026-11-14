@@ -1,8 +1,16 @@
 package com.migrely.app.home.ui.view
 
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.platform.LocalFocusManager
@@ -14,7 +22,9 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.requestFocus
+import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.rememberNavController
+import com.migrely.app.designsystem.icon.MigrelyIcons
 import com.migrely.app.designsystem.theme.MigrelyTheme
 import com.migrely.app.home.ui.mapper.HomeMessageBehaviourUiMapper
 import com.migrely.app.home.ui.mapper.SkyAppearanceUiMapper
@@ -37,6 +47,8 @@ private const val SETTINGS = "Settings"
 private const val PERIOD = "Period today"
 private const val TRIAL = "trial banner"
 private val TODAY = HomeViewStateUiModel.Today(TodayUiModel(SkyUiModel.Calm, 0, null))
+private val NO_PERIOD =
+    HomeViewStateUiModel.Today(TodayUiModel(SkyUiModel.Calm, 0, null, periodOffered = false))
 private val ATTACK = HomeViewStateUiModel.AttackInProgress(
     AttackInProgressUiModel("a", 0L, "Asia/Tashkent", IntensityLevelUiModel.Moderate, false)
 )
@@ -56,16 +68,18 @@ class HomeMessageOrderTest {
     private lateinit var focusManager: FocusManager
 
     private fun showHome(
-        viewState: HomeViewStateUiModel = TODAY,
+        today: HomeViewStateUiModel = TODAY,
         message: HomeMessageUiModel = HomeMessageUiModel.AttackEnded("a"),
-        trialBanner: @Composable () -> Unit = {}
+        trialBanner: @Composable () -> Unit = {},
+        medicationPrompt: @Composable () -> Unit = {},
+        visitCard: @Composable () -> Unit = {}
     ) {
         rule.setContent {
             focusManager = LocalFocusManager.current
             MigrelyTheme {
                 HomeWithMessages(
                     navController = rememberNavController(),
-                    viewState = viewState,
+                    viewState = today,
                     nowMillis = 0L,
                     reduceMotion = true,
                     skyAppearanceUiMapper = SkyAppearanceUiMapper(),
@@ -78,7 +92,7 @@ class HomeMessageOrderTest {
                         onUndoEnd = {},
                         onUndoDelete = {}
                     ),
-                    slots = HomeSlots({}, {}, trialBanner, {}, {}, {})
+                    slots = HomeSlots({}, medicationPrompt, trialBanner, visitCard, {}, {})
                 )
             }
         }
@@ -169,6 +183,69 @@ class HomeMessageOrderTest {
         rule.onNodeWithText("Log medication").assertIsFocused()
     }
 
+    // Review 9.3 F1: the slots' real shape, a row with the text taking the room and a close button at its end, then a
+    // button below. Entering such a slot by its geometry lands on the lower button; Tab order lands on the close button.
+    @Composable
+    private fun CardShaped(name: String) {
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .padding(start = 16.dp, top = 8.dp, bottom = 4.dp)
+        ) {
+            Row {
+                Text("$name text", Modifier.weight(1f).padding(top = 8.dp))
+                IconButton(onClick = {}) {
+                    Icon(MigrelyIcons.Close, contentDescription = "Close $name")
+                }
+            }
+            TextButton(onClick = {
+            }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Open $name") }
+        }
+    }
+
+    private fun assertTabFromMessageReachesCloseThenOpen(name: String) {
+        move(FocusDirection.Next)
+        move(FocusDirection.Next)
+        rule.onNodeWithContentDescription(UNDO).assertIsFocused()
+        move(FocusDirection.Next)
+        rule.onNodeWithContentDescription("Close $name").assertIsFocused()
+        move(FocusDirection.Next)
+        rule.onNodeWithText("Open $name").assertIsFocused()
+    }
+
+    @Test
+    fun `With the real trial banner, Tab after the message reaches its close button, then Manage`() {
+        showHome(trialBanner = { CardShaped("banner") })
+
+        assertTabFromMessageReachesCloseThenOpen("banner")
+    }
+
+    @Test
+    fun `With the medication prompt first, Tab after the message reaches its close button`() {
+        showHome(today = NO_PERIOD, medicationPrompt = { CardShaped("prompt") })
+
+        assertTabFromMessageReachesCloseThenOpen("prompt")
+    }
+
+    @Test
+    fun `With the visit card first, Tab after the message reaches its close button`() {
+        showHome(today = NO_PERIOD, visitCard = { CardShaped("visit") })
+
+        assertTabFromMessageReachesCloseThenOpen("visit")
+    }
+
+    // Review 9.3 F2: a Tab past the last control goes back to Settings, not on to the message placed last for Tab.
+    @Test
+    fun `On Today, Tab past Log medication wraps to Settings, then the message`() {
+        showHome()
+        rule.onNodeWithText("Log medication").requestFocus()
+
+        move(FocusDirection.Next)
+        rule.onNodeWithContentDescription(SETTINGS).assertIsFocused()
+        move(FocusDirection.Next)
+        rule.onNodeWithContentDescription(UNDO).assertIsFocused()
+    }
+
     @Test
     fun `With no message, Tab goes from Settings to the first control after it`() {
         showHome(message = HomeMessageUiModel.Saved)
@@ -181,7 +258,7 @@ class HomeMessageOrderTest {
 
     @Test
     fun `In attack mode, from nothing focused, the message's control is the first stop`() {
-        showHome(viewState = ATTACK, message = HomeMessageUiModel.AttackStarted("a"))
+        showHome(today = ATTACK, message = HomeMessageUiModel.AttackStarted("a"))
 
         move(FocusDirection.Next)
 
