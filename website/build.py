@@ -177,7 +177,7 @@ PERMISSIONS = [
     ('“view network connections”', 'android.permission.ACCESS_NETWORK_STATE',
      'From version 1.1.1. When you tap to buy, restore or manage Premium, Migrely checks whether your phone is online, '
      'so it can tell you it is offline instead of opening a Google Play screen that cannot load. It reads this on '
-     'your phone and sends nothing. It does not let Migrely go on the internet: Migrely has no internet permission, in '
+     'your phone and does not send it anywhere. It does not let Migrely go on the internet: Migrely has no internet permission, in '
      'every version.'),
     ('An internal AndroidX permission', 'com.migrely.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION',
      'AndroidX, Google\'s standard library for Android apps, adds it so that on older Android versions only Migrely '
@@ -430,7 +430,7 @@ HOME_FAQ = [
 # link to read more.
 FAQ = [
     ('What can leave my phone?',
-     'Migrely itself sends nothing: it has no internet permission, so Android stops it from connecting. Three things '
+     'The app itself sends nothing over the internet: it has no internet permission, so Android stops it from connecting. Three things '
      'are up to Android, Google Play or you. Android\'s own backup may copy Migrely\'s entries to your Google account. '
      f'{BACKUP_RULE} Google Play handles buying Premium and ratings, under Google\'s privacy policy. And a backup, '
      'spreadsheet or PDF report goes wherever you choose to send it.',
@@ -672,8 +672,8 @@ def privacy_check():
     Android itself stops it from connecting to the internet. It takes about two minutes.</p>
   <h2>Does Migrely connect to the internet?</h2>
   <p>No. An Android app can reach the internet only if it asks for the internet permission, and Migrely does not ask
-    for it. Android then blocks every connection the app tries, so nothing you enter can leave your phone through
-    Migrely.</p>
+    for it. Android then blocks every connection the app tries, so the app itself cannot send what you enter over
+    the internet.</p>
   <h2>How can I check it on my phone?</h2>
   {steps_list(CHECK_STEPS)}
   <p>The names can differ a little between phone makers. The check for developers below is the same on every
@@ -690,7 +690,7 @@ def privacy_check():
     it cannot connect. “Have full network access” is the internet permission, and Migrely does not have it.</p>
   <div class="perms">{cards}</div>
   <h2>What can still leave my phone?</h2>
-  <p>Without the internet permission, Migrely itself sends nothing. Three things are up to Android, Google Play or
+  <p>Without the internet permission, the app itself sends nothing over the internet. Three things are up to Android, Google Play or
     you:</p>
   <ul><li><strong>Android's own backup.</strong> Android may back up Migrely's entries to your Google account, as it
       does for other apps. On Android 9 and later Migrely allows this only end-to-end encrypted, which needs a screen

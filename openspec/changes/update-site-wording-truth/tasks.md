@@ -9,7 +9,7 @@
 
 ## 2. Open before deploy
 
-- [ ] 2.1 `/privacy-check/` (`website/build.py` about line 675) still says "so nothing you enter can leave your phone through Migrely". Change it to "so the app itself cannot send what you enter over the internet" (aso-seo-specialist; scenario "The privacy claim"). Verify: the phrase scan in 3.1 finds no "can leave your phone through".
+- [x] 2.1 `/privacy-check/` (`website/build.py` about line 675) still says "so nothing you enter can leave your phone through Migrely". Change it to "so the app itself cannot send what you enter over the internet" (aso-seo-specialist; scenario "The privacy claim"). Verify: the phrase scan in 3.1 finds no "can leave your phone through".
 
 ## 3. Verify
 
