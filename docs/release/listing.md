@@ -8,7 +8,7 @@ The listing text for Google Play (BRD §14.2, D104, D121). The keyword plan and 
 | Field | Value |
 |---|---|
 | App name (≤ 30) | Migrely: Migraine Tracker |
-| Short description (≤ 80) | Private headache diary & migraine log. Spot triggers, watch painkiller days. |
+| Short description (≤ 80) | Private headache diary & migraine log. Track triggers and painkiller days. |
 | Category | Health & Fitness. Migrely is a diary, not a medical device (D104). |
 | Tags | Health & fitness, Medical |
 | Contact email | support@migrely.health |
@@ -21,12 +21,12 @@ The listing text for Google Play (BRD §14.2, D104, D121). The keyword plan and 
 ## Full description (≤ 4000)
 
 ```text
-Migrely is a calm, private migraine tracker and headache diary. Log an attack in three taps, even in a dark room, see your months as a quiet night sky, and take a clear report to your doctor.
+Migrely is a private migraine tracker and headache diary. Log an attack in three taps, even in a dark room, see each month drawn as a night sky, and take a clear report to your doctor.
 
 LOG A MIGRAINE IN SECONDS
 • "Migraine started" in one tap, in the app or by long-pressing its icon
 • Pain level, where it hurts, symptoms such as aura, nausea or sensitivity to light, possible triggers and notes, all optional
-• Attack mode stays dark and simple while you rest, and keeps the time for you
+• Attack mode stays dark and simple, and keeps the time until the end is logged
 • Add a past migraine, edit any entry, and undo a deletion
 
 SEE YOUR MONTHS
@@ -47,12 +47,12 @@ UNDERSTAND YOUR PATTERNS (PREMIUM)
 
 MIGRELY PREMIUM
 • Premium adds the doctor report and Insights: yearly, with a 7-day free trial for new subscribers, monthly, or a single lifetime payment, all through Google Play
-• Logging, history, medications, reminders, backups and exports, and every safety warning stay free for good
+• Logging, history, medications, reminders, backup and spreadsheet export, and every safety warning are free. Premium adds only the doctor report and Insights
 
 PRIVATE BY DESIGN
-• Migrely has no internet access. There is no account, no tracking and no ads
-• Your entries stay on your phone and in Android's own backup
-• Export a backup or a spreadsheet, or delete everything, whenever you like
+• Migrely has no internet permission, and you can check that in Android's settings. Premium is bought through Google Play, which goes online for the purchase. There is no account and no ads, and Migrely has no analytics or tracking code of its own
+• Your entries stay on your phone. If Android's own backup is on, it may also copy them to your Google account
+• Export a backup or a spreadsheet, or delete everything, whenever you like. A file you export goes where you send it
 
 GENTLE ON YOUR EYES
 • Dark by default, with a light theme, and always dark during a migraine
@@ -97,7 +97,7 @@ Ranked from Play's own search suggestions on 2026-10-26. Play publishes no searc
 
 Each phrase appears once or twice. Play treats repetition as keyword stuffing.
 
-Left out: "migraine relief" (Migrely promises no relief), "weather" and "barometric pressure" (Migrely has no internet),
+Left out: "migraine relief" (Migrely promises no relief), "weather" and "barometric pressure" (Migrely has no internet permission),
 and competitors' names (§11.8).
 
 ## Rules

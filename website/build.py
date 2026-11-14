@@ -29,6 +29,7 @@ PERMISSION_REPORT = ROOT / 'app' / 'build' / 'reports' / 'permissions' / 'releas
 VERSIONS = ROOT / 'gradle' / 'libs.versions.toml'
 # _headers caches /assets/ for a year, so the stylesheet's address changes whenever it does.
 CSS_VERSION = hashlib.sha256((ASSETS / 'site.css').read_bytes()).hexdigest()[:10]
+LANDING_CSS_VERSION = hashlib.sha256((ASSETS / 'landing.css').read_bytes()).hexdigest()[:10]
 BASE = 'https://migrely.health'
 PLAY = 'https://play.google.com/store/apps/details?id=com.migrely.app'
 SUPPORT = 'support@migrely.health'
@@ -46,10 +47,9 @@ BACKUP_RULE = ('On Android 9 and later Migrely allows this only end-to-end encry
 # Premium's US prices, on /compare/, /support/ and /llms.txt alike (BRD D147).
 PREMIUM_PRICES = '$29.99 a year with a 7-day free trial, $4.99 a month, or $59.99 once (US prices)'
 # What Migrely is, in 40 to 60 words: the home page's definition and /llms.txt's summary (BRD D147).
-WHAT_IS = ('Migrely is a migraine and headache diary for Android. Log an attack in a few taps, see each month as a '
-           'calm night sky, and get your medicine days counted. With no account and no internet permission, nothing '
-           'you enter can leave your phone through the app. Logging is free; Premium adds a doctor report and '
-           'Insights.')
+WHAT_IS = ('Migrely is a migraine and headache diary for Android. Log an attack in a few taps, see each month drawn '
+           'as a night sky, and get your medicine days counted. It has no account and no internet permission, so it '
+           'cannot send your entries over the internet. Logging is free; Premium adds a doctor report and Insights.')
 # /headache-diary/ (BRD D138): the date its facts were last checked against the sources, as ISO and as text.
 DIARY_REVIEWED = ('2026-11-04', '4 November 2026')
 # The printable template, made by website/make_diary_pdf.py (BRD D140).
@@ -59,6 +59,8 @@ DIARY_PDFS = {'a4': 'migrely-headache-diary-a4.pdf', 'letter': 'migrely-headache
 PROMO_VIDEO = ('migrely-promo-v3-3.mp4', 'migrely-promo-v3-3-poster.jpg')
 PROMO_UPLOADED = '2026-11-13T12:00:00+05:00'
 PROMO_SIZE = '2.0 MB'
+# T65: the transcript below still describes promo v3.3 (on-screen "calm sky", "while you rest"). Update it together
+# with the v3.4 render (content-creator), never before: it must match the video.
 # What each scene shows and says, for people who can't see the video, which has music and no speech (WCAG 1.2.1).
 PROMO_SCENES = [
     '"Log a migraine in 3 taps. Even in a dark room. We\'ll keep the time while you rest." The taps are "Migraine '
@@ -175,7 +177,7 @@ PERMISSIONS = [
     ('“view network connections”', 'android.permission.ACCESS_NETWORK_STATE',
      'From version 1.1.1. When you tap to buy, restore or manage Premium, Migrely checks whether your phone is online, '
      'so it can tell you it is offline instead of opening a Google Play screen that cannot load. It reads this on '
-     'your phone and sends nothing. It does not let Migrely go on the internet: Migrely has no internet permission, in '
+     'your phone and does not send it anywhere. It does not let Migrely go on the internet: Migrely has no internet permission, in '
      'every version.'),
     ('An internal AndroidX permission', 'com.migrely.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION',
      'AndroidX, Google\'s standard library for Android apps, adds it so that on older Android versions only Migrely '
@@ -244,8 +246,10 @@ def play_link(page_campaign):
     return f'{PLAY}&referrer={quote(tags, safe="")}'
 
 
-def page(path, title, description, body, extra_head=''):
+def page(path, title, description, body, extra_head='', landing=False):
     canonical = f'{BASE}{path}'
+    if landing:
+        return landing_page(canonical, title, description, body)
     current = ' aria-current="page"'
     nav = ''.join(
         f'<a href="{href}"{current if href == path else ""}>{label}</a>'
@@ -270,7 +274,7 @@ def page(path, title, description, body, extra_head=''):
 <meta property="og:title" content="{esc(title)}">
 <meta property="og:description" content="{esc(description)}">
 <meta property="og:url" content="{canonical}">
-<meta property="og:image" content="{BASE}/assets/img/og.png">
+<meta property="og:image" content="{BASE}/assets/img/og-v2.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
@@ -303,6 +307,82 @@ def page(path, title, description, body, extra_head=''):
 '''
 
 
+# The paid-ad landing page (tracker T62, test ig-ads-test1). Meta does not let a Traffic ad link to Google Play, so the
+# ad opens /android/ and this page's two Play buttons carry the campaign tags, in plain utm_ parameters and in referrer.
+AD_TAGS = 'utm_source=instagram&utm_medium=paid_social&utm_campaign=ig-ads-test1'
+AD_PLAY = f'{PLAY}&{AD_TAGS}&referrer={quote(AD_TAGS, safe="")}'
+AD_PLAY_EXPECTED = ('https://play.google.com/store/apps/details?id=com.migrely.app&utm_source=instagram'
+                    '&utm_medium=paid_social&utm_campaign=ig-ads-test1&referrer=utm_source%3Dinstagram'
+                    '%26utm_medium%3Dpaid_social%26utm_campaign%3Dig-ads-test1')
+# The site-wide disclaimer minus "Talk to a doctor about your headaches", which would speak to a reader as someone
+# with headaches (Meta's personal-attributes policy).
+AD_DISCLAIMER = ('Migrely is a diary. It is not a medical device and does not diagnose, treat or prevent any '
+                 'condition.')
+
+
+OG_ANDROID = 'og-android-v1.jpg'
+OG_ANDROID_ALT = ('Migraine diary for Android. 3 taps. Migraine logged. Even in a dark room. Migrely keeps the time '
+                  'until the end is logged. 1 Started, 2 How bad, 3 Ended.')
+
+
+def landing_page(canonical, title, description, body):
+    """A page for paid traffic: noindex, no site navigation, a short footer. Meta's crawler can still read it, because
+    robots.txt does not block it. It is not in the sitemap, and it links nowhere that sells or tracks."""
+    return f'''<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>{esc(title)}</title>
+<meta name="description" content="{esc(description)}">
+<meta name="robots" content="noindex">
+<link rel="canonical" href="{canonical}">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#0F1018" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#F7F6FC" media="(prefers-color-scheme: light)">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Migrely">
+<meta property="og:title" content="{esc(title)}">
+<meta property="og:description" content="{esc(description)}">
+<meta property="og:url" content="{canonical}">
+<meta property="og:image" content="{BASE}/assets/img/{OG_ANDROID}">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="{esc(OG_ANDROID_ALT)}">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="preload" href="/assets/fonts/fraunces-600.woff" as="font" type="font/woff" crossorigin>
+<link rel="stylesheet" href="/assets/site.css?v={CSS_VERSION}">
+<link rel="stylesheet" href="/assets/landing.css?v={LANDING_CSS_VERSION}">
+</head>
+<body class="ad">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="wrap bar">
+  <span class="brand"><img src="/favicon.svg" alt="" width="32" height="32"><span>Migrely</span></span>
+</div></header>
+<main id="main">
+{body}
+</main>
+<footer class="foot"><div class="wrap">
+  <p>{esc(AD_DISCLAIMER)}</p>
+  <p class="links"><a href="/privacy/">Privacy policy</a><a href="/privacy-check/">Check our privacy</a></p>
+  <p>© 2026 Migrely, published by Sulton UzDev · <a href="mailto:{SUPPORT}">{SUPPORT}</a></p>
+</div></footer>
+</body>
+</html>
+'''
+
+
+def ad_play_button(label='Get it on Google Play'):
+    return (f'<a class="play" href="{esc(AD_PLAY)}">'
+            '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">'
+            '<path fill="currentColor" d="M4 2.6v18.8c0 .5.5.8.9.6l16.3-9.4c.4-.2.4-.9 0-1.1L4.9 2.1c-.4-.2-.9.1-.9.5z"/>'
+            f'</svg><span>{label}</span></a>')
+
+
 def play_button(path, label='Get it on Google Play'):
     return (f'<a class="play" href="{esc(play_link(campaign(path)))}">'
             '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">'
@@ -311,15 +391,15 @@ def play_button(path, label='Get it on Google Play'):
 
 
 FEATURES = [
-    ('Log in seconds', 'One tap when a migraine starts, even in a dark room. Migrely keeps the time while you rest, '
-     'and you can add the details later.'),
-    ('Your month as a calm sky', 'Every day is drawn from what you logged: clear, hazy, cloudy or a storm. Patterns '
+    ('Log in seconds', 'One tap when a migraine starts, even in a dark room. Migrely keeps the time until the end is '
+     'logged, and you can add the details later.'),
+    ('Each month, drawn as a night sky', 'Every day is drawn from what you logged: clear, hazy, cloudy or a storm. Patterns '
      'show at a glance, with period and pain-free days marked.'),
     ('Watch your medication days', 'A gentle note when painkillers or triptans reach the days a month that can make '
      'headaches more frequent, so you can talk to your doctor in time.'),
     ('A report for your doctor', 'A clear PDF with a summary, a calendar and every migraine and medication, ready to '
      'share at your appointment.'),
-    ('See what your migraines share', 'Triggers often logged with your migraines, the days and hours they come, the '
+    ('See what is often logged together', 'Triggers often logged with your migraines, the days and hours they come, the '
      'days around your period and how you rated your medicines.'),
     ('Gentle on your eyes', 'Dark by default, light if you like, and always dark during a migraine. Large text, '
      'TalkBack and keyboards work throughout.'),
@@ -328,8 +408,8 @@ FEATURES = [
 # Questions asked before installing, answered on the home page (BRD D147). None may repeat one in FAQ (EC-WEB-21).
 HOME_FAQ = [
     ('Is Migrely free?',
-     'Yes. Logging, your whole history, medications, reminders, export and every safety warning are free, for good. '
-     'Premium is optional: it adds the doctor report and Insights, and its yearly plan starts with a 7-day free '
+     'Yes. Logging, your whole history, medications, reminders, backup and spreadsheet export, and every safety '
+     'warning are free. Premium is optional: it adds only the doctor report and Insights, and its yearly plan starts with a 7-day free '
      'trial.'),
     ('Does Migrely need the internet?',
      'No. Migrely has no internet permission, so Android stops it from connecting. Logging, your history, reminders '
@@ -350,7 +430,7 @@ HOME_FAQ = [
 # link to read more.
 FAQ = [
     ('What can leave my phone?',
-     'Migrely itself sends nothing: it has no internet permission, so Android stops it from connecting. Three things '
+     'The app itself sends nothing over the internet: it has no internet permission, so Android stops it from connecting. Three things '
      'are up to Android, Google Play or you. Android\'s own backup may copy Migrely\'s entries to your Google account. '
      f'{BACKUP_RULE} Google Play handles buying Premium and ratings, under Google\'s privacy policy. And a backup, '
      'spreadsheet or PDF report goes wherever you choose to send it.',
@@ -394,10 +474,10 @@ FAQ = [
 def home():
     shots = ''.join(
         f'<figure><img src="/assets/img/{name}.webp" alt="{esc(alt)}" width="360" height="640" loading="lazy"></figure>'
-        for name, alt in [('01-log', 'Attack mode: Rest now, we will keep time'),
-                          ('02-sky-v2', 'Your month as a calm night sky'),
+        for name, alt in [('01-log-v2', 'Attack mode: Migrely keeps the time until the end is logged'),
+                          ('02-sky-v3', 'Each month, drawn as a night sky'),
                           ('03-report-v2', 'A clear report for your doctor'),
-                          ('04-insights', 'Triggers and patterns in your migraines')])
+                          ('04-insights-v2', 'Insights: triggers often logged with migraines, and when they come')])
     features = ''.join(f'<article><h3>{esc(t)}</h3><p>{esc(d)}</p></article>' for t, d in FEATURES)
     scenes = ''.join(f'<li>{esc(scene)}</li>' for scene in PROMO_SCENES)
     guides = ''.join(f'<article><h3><a href="{esc(href)}">{esc(name)}</a></h3><p>{esc(summary)}</p></article>'
@@ -407,9 +487,9 @@ def home():
 <section class="hero"><div class="wrap hero-grid">
   <div class="hero-text">
     <p class="eyebrow">Migraine tracker for Android</p>
-    <h1>A calm, private migraine diary</h1>
-    <p class="lead">Log a migraine in seconds, see your months as a quiet night sky, and bring a clear report to your
-      doctor. No account, no internet, no ads.</p>
+    <h1>A private migraine diary</h1>
+    <p class="lead">Log a migraine in seconds, see each month drawn as a night sky, and bring a clear report to your
+      doctor. No account, no internet permission, no ads.</p>
     <div class="cta">{play_button('/')}<a class="quiet" href="/privacy/">How your data stays private</a></div>
   </div>
   <img class="hero-icon" src="/assets/img/icon-512.png" alt="The Migrely icon: a white calendar with a crescent moon on violet" width="256" height="256">
@@ -435,11 +515,12 @@ def home():
 <section class="band"><div class="wrap block">
   <h2>Private by design</h2>
   <ul class="ticks">
-    <li>Migrely has no internet access. Nothing you enter can leave your phone through the app.</li>
+    <li>Migrely has no internet permission, so the app itself cannot send what you enter over the internet.</li>
     <li>No account to make, no tracking, no ads.</li>
-    <li>Your entries stay on your phone, and in Android's own backup if it is on: on Android 9 and later only
-      end-to-end encrypted, which needs a screen lock.</li>
-    <li>Export a backup or a spreadsheet, or delete everything, whenever you like.</li>
+    <li>Your entries stay on your phone. If Android's own backup is on, it may also copy them to your Google account:
+      on Android 9 and later only end-to-end encrypted, which needs a screen lock.</li>
+    <li>Export a backup or a spreadsheet, or delete everything, whenever you like. A file you export goes where you
+      send it.</li>
   </ul>
   <p><a class="quiet" href="/privacy-check/">Check it yourself in two minutes</a></p>
 </div></section>
@@ -448,8 +529,8 @@ def home():
 
 <section class="wrap block two">
   <div><h2>Free, and Premium when you want more</h2>
-    <p>Logging, your whole history, medications, reminders, export and every safety warning are free, for good.
-      Premium adds the doctor report and Insights, with a 7-day free trial on the yearly plan.</p></div>
+    <p>Logging, your whole history, medications, reminders, backup and spreadsheet export, and every safety
+      warning are free. Premium adds only the doctor report and Insights, with a 7-day free trial on the yearly plan.</p></div>
   <div><h2>Safety first</h2>
     <p>The warning signs that need urgent care are always in Settings. Migrely is a diary, not a medical device: it
       helps you keep a record and talk to your doctor.</p></div>
@@ -463,7 +544,7 @@ def home():
     app = {'@type': 'MobileApplication', 'name': 'Migrely: Migraine Tracker',
           'operatingSystem': 'Android', 'applicationCategory': 'HealthApplication', 'url': f'{BASE}/',
           'downloadUrl': PLAY, 'image': f'{BASE}/assets/img/icon-512.png',
-          'description': 'A calm, private migraine diary: log in seconds, see your patterns, and share a report with '
+          'description': 'A private migraine diary: log in seconds, see your patterns, and share a report with '
                          'your doctor.',
           'offers': {'@type': 'Offer', 'price': '0', 'priceCurrency': 'USD'},
           'publisher': {'@type': 'Organization', 'name': 'Sulton UzDev'}}
@@ -480,7 +561,7 @@ def home():
     extra = json_ld({'@context': 'https://schema.org', '@graph': [ORGANIZATION, website, app, video, faq]})
     return page('/', 'Migrely: Migraine Tracker & Private Headache Diary',
                 'Log migraines in seconds, see your patterns and share a doctor-ready PDF. A private migraine diary '
-                'for Android: no account, no internet, no ads.', body, extra)
+                'for Android: no account, no internet permission, no ads.', body, extra)
 
 
 def support():
@@ -531,15 +612,15 @@ def delete_data():
 def about():
     path = '/about/'
     body = f'''<section class="wrap block narrow prose"><h1>About Migrely</h1>
-  <p class="lead">Migrely is a calm, private migraine diary for Android. Here is who makes it, how it is paid for, and
+  <p class="lead">Migrely is a private migraine diary for Android. Here is who makes it, how it is paid for, and
     what it will never do.</p>
   <h2>Who makes Migrely?</h2>
   <p>Migrely is published on Google Play by Sulton UzDev. Questions and ideas reach us at
     <a href="mailto:{SUPPORT}">{SUPPORT}</a>.</p>
   <h2>Why does Migrely keep everything on the phone?</h2>
   <p>A headache diary holds some of the most personal things a phone can know: when you were in pain, what you took
-    and your cycle. Migrely keeps all of it on your phone and has no internet access, so it cannot send it to us or
-    to anyone else. <a href="/privacy-check/">You can check that yourself</a>, and see what Android's own backup and
+    and your cycle. Migrely keeps all of it on your phone and has no internet permission, so the app itself cannot send it to us or
+    over the internet. <a href="/privacy-check/">You can check that yourself</a>, and see what Android's own backup and
     the files you choose to share do. <a href="/compare/">See how other migraine diaries compare</a>.</p>
   <p>It is built for the moment a migraine starts: one tap to log, a dark screen, and the details later.</p>
   <h2>How does Migrely make money?</h2>
@@ -549,9 +630,9 @@ def about():
   <p>There are no ads, and no data is sold or shared: your entries never reach us, so there is nothing to sell.</p>
   <h2>What stays free?</h2>
   <p>Logging, your whole history, medications, reminders, backup and spreadsheet export, and every safety warning
-    are free, for good.</p>
+    are free.</p>
   <h2>What will Migrely never do?</h2>
-  <ul><li>Ask for internet access.</li><li>Ask you to make an account.</li>
+  <ul><li>Ask for the internet permission.</li><li>Ask you to make an account.</li>
     <li>Show ads, or carry analytics or tracking code of its own.</li>
     <li>Put a safety warning behind Premium.</li></ul>
   <h2>Where do the medication day counts come from?</h2>
@@ -569,7 +650,7 @@ def about():
   <p>{play_button(path)}</p></section>'''
     return page(path, 'About Migrely: who makes it and how it is paid for',
                 'Migrely is a migraine diary paid for by Premium, not by your data: no ads, no account and no internet '
-                'access. Who makes it, and why.', body, page_ld(path, 'AboutPage', 'About Migrely', about=BY_MIGRELY))
+                'permission. Who makes it, and why.', body, page_ld(path, 'AboutPage', 'About Migrely', about=BY_MIGRELY))
 
 
 # The phone check on /privacy-check/, shown and as a HowTo (BRD D147).
@@ -591,8 +672,8 @@ def privacy_check():
     Android itself stops it from connecting to the internet. It takes about two minutes.</p>
   <h2>Does Migrely connect to the internet?</h2>
   <p>No. An Android app can reach the internet only if it asks for the internet permission, and Migrely does not ask
-    for it. Android then blocks every connection the app tries, so nothing you enter can leave your phone through
-    Migrely.</p>
+    for it. Android then blocks every connection the app tries, so the app itself cannot send what you enter over
+    the internet.</p>
   <h2>How can I check it on my phone?</h2>
   {steps_list(CHECK_STEPS)}
   <p>The names can differ a little between phone makers. The check for developers below is the same on every
@@ -609,7 +690,7 @@ def privacy_check():
     it cannot connect. “Have full network access” is the internet permission, and Migrely does not have it.</p>
   <div class="perms">{cards}</div>
   <h2>What can still leave my phone?</h2>
-  <p>Without the internet permission, Migrely itself sends nothing. Three things are up to Android, Google Play or
+  <p>Without the internet permission, the app itself sends nothing over the internet. Three things are up to Android, Google Play or
     you:</p>
   <ul><li><strong>Android's own backup.</strong> Android may back up Migrely's entries to your Google account, as it
       does for other apps. On Android 9 and later Migrely allows this only end-to-end encrypted, which needs a screen
@@ -632,6 +713,122 @@ def privacy_check():
     return page(path, 'Check Migrely\'s privacy yourself · Migrely',
                 'Migrely has no internet permission. Check it on your own phone in two minutes, and see what each of '
                 f'its {count} permissions is for.', body, ld)
+
+
+# Copy for /android/, kept in constants so a reviewer's wording change is one edit (T62, UX spec section 3).
+AD_SAMPLE = 'Sample data, not a real patient. Not a diagnosis.'
+AD_BACKUP = 'Android\'s own backup may copy entries to a Google account, and exported files go wherever they are sent.'
+AD_DIARY = 'It doesn\'t diagnose or treat migraine.'
+AD_PREMIUM_TERMS = ('Premium is a yearly subscription with a 7-day free trial for new subscribers, a monthly '
+                    'subscription, or a single payment. Subscriptions renew until cancelled in Google Play. Google Play '
+                    'shows the price in your local currency before you pay.')
+AD_PREMIUM_BUY = 'Premium is bought through Google Play, which goes online for the purchase. Migrely itself does not.'
+AD_PERMS_NOTE = 'Part of Android\'s permission screen for Migrely. The list continues below.'
+AD_QR_NOTE = 'Scan with an Android phone\'s camera to open Migrely on Google Play.'
+ALT_HOME = ('Migrely\'s Home screen with sample data: Monday, October 26. Calm so far today. No migraine logged. '
+            'Period. October.')
+ALT_SKY = ('Migrely\'s month view with sample data: 9:41 AM \u2013 1:20 PM, 6 out of 10, then October, days 1 to 24. '
+           'Each day\'s tile shows what was logged, as stars, a cloud, a storm or waves; days not logged are empty '
+           'outlines.')
+ALT_PERMS = ('Android\'s permission screen for Migrely: All permissions. Migrely. Notifications: show notifications. '
+             'Other app capabilities. Top of the list.')
+MIN_ANDROID_NUMBER = MIN_ANDROID.split()[1]
+AD_FAQ = [
+    ('Which phones does Migrely work on?',
+     f'Android phones with {MIN_ANDROID} or later and Google Play. There is no iPhone version.'),
+    ('Is there an account?', 'No. There is no account to make and nothing to sign in to.'),
+    ('Where are the entries kept?',
+     f'On the phone. Migrely has no internet permission, so Android stops it from connecting. Android\'s own backup '
+     f'may copy entries to a Google account. {BACKUP_RULE} Exported files go wherever they are sent.'),
+]
+AD_FAQ_PLAY = ('What if Google Play doesn\'t open?',
+               'The buttons open Migrely\'s listing on Google Play. If it doesn\'t load, Google Play may be blocked on '
+               'this network or device, or Migrely may not be offered in this country. Search for \u201cMigrely\u201d '
+               'in the Google Play app, or write to ')
+QR_FILE = 'qr-ig-ads-test1-v1.svg'
+
+
+def android_landing():
+    """/android/: where the Instagram ad test ig-ads-test1 sends people (tracker T62). Every sentence comes from the
+    ad pack (headline, primary text, on-screen cards, alt text) or the site's own approved privacy lines, or is listed
+    for review in migrely-work/landing/ux-spec.md."""
+    path = '/android/'
+    questions = ''.join(f'<h3>{esc(q)}</h3><p>{esc(a)}</p>' for q, a in AD_FAQ)
+    questions += (f'<h3>{esc(AD_FAQ_PLAY[0])}</h3><p>{esc(AD_FAQ_PLAY[1])}<a href="mailto:{SUPPORT}">{SUPPORT}</a>.</p>')
+    body = f'''
+<section class="ad-hero" id="hero" aria-labelledby="hero-h"><div class="wrap">
+  <div class="hero-copy">
+    <p class="eyebrow">Migraine diary for Android</p>
+    <h1 id="hero-h"><span class="h1-a">3 taps.</span> <span class="h1-b">Migraine logged.</span></h1>
+    <p class="lead">Even in a dark room. Migrely keeps the time until the end is logged.</p>
+    {ad_play_button()}
+    <p class="meta">Free to log on Google Play<br>For Android {MIN_ANDROID_NUMBER} and later. Not available for iPhone.</p>
+    <div class="qr"><img src="/assets/img/{QR_FILE}" alt="QR code for Migrely on Google Play" width="160" height="160" loading="lazy">
+      <p>{esc(AD_QR_NOTE)}</p></div>
+  </div>
+  <figure class="window">
+    <img src="/assets/img/ad1-home-v1.webp" width="880" height="619" alt="{esc(ALT_HOME)}">
+    <figcaption>{AD_SAMPLE}</figcaption>
+  </figure>
+</div></section>
+
+<div class="rest">
+<section class="ad-sec" id="steps" aria-labelledby="steps-h"><div class="wrap stack">
+  <h2 id="steps-h">3 taps log an attack, even in a dark room.</h2>
+  <ol class="steps" role="list">
+    <li><span class="num">1</span><h3>Started</h3><p>\u201cMigraine started\u201d, then \u201cRest now. We'll keep time.\u201d</p></li>
+    <li><span class="num">2</span><h3>How bad</h3><p>Mild, Moderate or Severe</p></li>
+    <li><span class="num">3</span><h3>Ended</h3><p>Later, when it's over: \u201cMigraine ended\u201d</p></li>
+  </ol>
+</div></section>
+
+<section class="ad-sec" id="sky" aria-labelledby="sky-h"><div class="wrap split">
+  <div class="stack"><p class="eyebrow">Every month</p>
+    <h2 id="sky-h">Each month, drawn as a <span class="accent">night sky.</span></h2>
+    <p class="lead">Each day shows what was logged.</p></div>
+  <figure class="window"><img src="/assets/img/ad1-sky-v1.webp" width="880" height="619" loading="lazy" alt="{esc(ALT_SKY)}">
+    <figcaption>{AD_SAMPLE}</figcaption></figure>
+</div></section>
+
+<section class="ad-sec band" id="privacy" aria-labelledby="privacy-h"><div class="wrap split">
+  <div class="stack"><p class="eyebrow">Private by design</p>
+    <h2 id="privacy-h">No internet permission.</h2>
+    <p>Android lists every app's permissions. The internet permission, shown as \u201chave full network access\u201d, is not on Migrely's list.</p>
+    <ul class="ticks" role="list"><li>No account</li><li>No ads</li></ul>
+    <p>{esc(AD_BACKUP)}</p>
+    <p>Check it yourself: <a href="/privacy-check/">migrely.health/privacy-check</a></p></div>
+  <figure class="window"><img src="/assets/img/ad1-perms-v1.webp" width="880" height="655" loading="lazy" alt="{esc(ALT_PERMS)}">
+    <figcaption>{esc(AD_PERMS_NOTE)}</figcaption></figure>
+</div></section>
+
+<section class="ad-sec" id="plans" aria-labelledby="plans-h"><div class="wrap stack">
+  <h2 id="plans-h">Free, and Premium</h2>
+  <div class="plans">
+    <article class="plan"><h3>Free</h3><ul class="ticks" role="list"><li>Logging</li><li>The full history</li><li>Medications</li><li>Reminders</li><li>Backup and spreadsheet export</li></ul>
+      <p class="meta">Safety warnings are never Premium.</p></article>
+    <article class="plan premium"><h3>Premium</h3><ul class="ticks" role="list"><li>The doctor report</li><li>Insights</li></ul>
+      <p>{esc(AD_PREMIUM_TERMS)}</p>
+      <p class="meta">{esc(AD_PREMIUM_BUY)}</p></article>
+  </div>
+</div></section>
+
+<section class="ad-sec" id="diary" aria-labelledby="diary-h"><div class="wrap stack">
+  <h2 id="diary-h">It's a diary.</h2><p class="lead">{esc(AD_DIARY)}</p>
+</div></section>
+
+<section class="ad-sec" id="faq" aria-labelledby="faq-h"><div class="wrap stack faq">
+  <h2 id="faq-h">Questions</h2>{questions}
+</div></section>
+
+<section class="final-cta" id="final" aria-labelledby="final-h"><div class="wrap stack">
+  <h2 id="final-h">Private migraine diary for Android</h2><p class="meta">Free to log on Google Play</p>
+</div></section>
+<div class="dock">{ad_play_button()}</div>
+</div>
+'''
+    return page(path, 'Migrely: private migraine diary for Android',
+                '3 taps log an attack, even in a dark room. No account, no internet permission. Free to log on '
+                'Google Play.', body, landing=True)
 
 
 def privacy():
@@ -679,7 +876,7 @@ def privacy():
     body = '<section class="wrap block narrow prose">' + '\n'.join(out) + '</section>'
     path = '/privacy/'
     return page(path, 'Migrely privacy policy: what it keeps and where',
-                'Migrely has no internet access and no account. What it keeps on your phone, Android\'s backup, and '
+                'Migrely has no internet permission and no account. What it keeps on your phone, Android\'s backup, and '
                 'how to delete everything.', body, page_ld(path, 'WebPage', 'Migrely privacy policy'))
 
 
@@ -831,7 +1028,7 @@ def headache_diary():
     doctor, with medicine days counted by kind.</p>
   <p>It prints well in black and white, on A4 or US Letter.</p>
   <h2>Would you rather use your phone?</h2>
-  <p>Migrely, our app, keeps the same diary on Android, with no account and no internet access. Logging, your whole
+  <p>Migrely, our app, keeps the same diary on Android, with no account and no internet permission. Logging, your whole
     history and spreadsheet export are free, and it counts medicine days for you. Its doctor PDF report is part of
     Premium.</p>
   <p>{play_button(path)}</p>
@@ -1129,13 +1326,13 @@ def menstrual_migraine():
     migraine worse, tell your doctor: the type or dose can be reviewed. Your doctor will go through the benefits and
     risks before prescribing.</p>
   <h2>Is my period data private in Migrely?</h2>
-  <p>Migrely has no internet access and no account, so it cannot send your period days or migraines anywhere. They are
+  <p>Migrely has no internet permission and no account, so the app itself cannot send your period days or migraines over the internet. They are
     kept on your phone, and can leave it only in two ways: in Android's own backup to your Google account, if backup
     is on (on Android 9 and later only end-to-end encrypted, which needs a screen lock), and in any file you export
     and share. Tracking periods is optional: turning it off hides the marks, and any you saved stay until you delete
     them. You can <a href="/privacy-check/">check the privacy yourself</a>.</p>
   <p>Marking period days on the calendar is free. Once the months you look at include at least 2 period starts and 5
-    migraines, Insights, part of Premium, counts how many of your migraines started in these five days and shows how
+    migraines, and your first migraine was at least 30 days ago, Insights, part of Premium, counts how many of your migraines started in these five days and shows how
     much of the time those days make up. It doesn't draw a conclusion: that is for you and your doctor.</p>
   <p>{play_button(path)}</p>
   {urgent_help()}
@@ -1399,9 +1596,10 @@ def images():
     img = ASSETS / 'img'
     img.mkdir(parents=True, exist_ok=True)
     # /assets/ is immutable for a year, so a changed picture gets a new name (EC-WEB-20): 02-sky-v2 and 03-report-v2 are the store
-    # screenshot 02-sky without the green "fewer migraine days" line (#209). Bump the suffix for the next change.
-    for name in ['01-log', '02-sky-v2', '03-report-v2', '04-insights']:
-        src = STORE_ART / 'screenshots' / f'{name.removesuffix("-v2")}.png'
+    # screenshot 02-sky without the green "fewer migraine days" line (#209). Bump the suffix for the next change (T65: 01-log-v2, 02-sky-v3, 04-insights-v2, og-v2).
+    for name in ['01-log-v2', '02-sky-v3', '03-report-v2', '04-insights-v2']:
+        source = re.sub(r'-v\d+$', '', name)  # the store screenshot keeps its Play name: 01-log-v2 comes from 01-log
+        src = STORE_ART / 'screenshots' / f'{source}.png'
         tmp = img / f'{name}.png'
         Image.open(src).convert('RGB').resize((720, 1280), Image.LANCZOS).save(tmp)
         subprocess.run(['cwebp', '-quiet', '-q', '80', str(tmp), '-o', str(img / f'{name}.webp')], check=True)
@@ -1416,7 +1614,7 @@ def images():
     feature = Image.open(STORE_ART / 'feature-graphic-1024x500.png').convert('RGB')
     og = Image.new('RGB', (1200, 630), (91, 80, 214))
     og.paste(feature, ((1200 - feature.width) // 2, (630 - feature.height) // 2))
-    og.save(img / 'og.png', optimize=True)
+    og.save(img / 'og-v2.png', optimize=True)
 
 
 def check_permissions():
@@ -1459,6 +1657,78 @@ PAGES = [('/', 'index.html', home), ('/about/', 'about/index.html', about),
          ('/compare/', 'compare/index.html', compare),
          ('/support/', 'support/index.html', support),
          ('/privacy/', 'privacy/index.html', privacy), ('/delete-data/', 'delete-data/index.html', delete_data)]
+
+
+# Pages built and checked like the others but kept out of the sitemap, llms.txt and the site's navigation: noindex and
+# reachable only from an ad. Their lastmod is tracked in lastmod.json all the same.
+AD_PAGES = [('/android/', 'android/index.html', android_landing)]
+
+
+BANNED_AD = re.compile(r'never goes online|100% offline|nothing leaves your phone|your migraine|your month|while you rest'
+                       r'|your (head|pain|attack|health|doctor|period)|calm sky|a calm migraine|\bbest\b|#1|\blimit\b'
+                       r'|02-sky-v2|01-log|US\$|\$[0-9]', re.I)
+AD_BUDGET = 160 * 1024
+
+
+def check_ad_pages(built):
+    """Stops the build when the ad landing page breaks a rule of T62's UX spec, section 9.1: the exact Play link on
+    exactly two buttons and no other Play link, noindex and canonical, no script, video, iframe, inline style or
+    redirect, one H1 and no skipped heading level, every image sized with alt (lazy below the hero), the sample-data
+    caption twice, the backup caveat and the diary line present, no banned wording or price, a viewport that allows
+    zoom, the 1200x630 link preview, and a page weight of at most 160 KB."""
+    if AD_PLAY != AD_PLAY_EXPECTED:
+        raise SystemExit(f'The ad Play link changed: {AD_PLAY}')
+    for path, (_, content) in built.items():
+        text = html.unescape(content)
+        fail = lambda why: SystemExit(f'{path}: {why}')
+        if content.count(f'href="{esc(AD_PLAY_EXPECTED)}"') != 2:
+            raise fail('must carry the exact campaign Play link on exactly two buttons.')
+        if content.count('play.google.com') != 2:
+            raise fail('play.google.com must appear exactly twice.')
+        if '<meta name="robots" content="noindex">' not in content:
+            raise fail('must be noindex.')
+        if f'<link rel="canonical" href="{BASE}{path}">' not in content:
+            raise fail('needs a canonical to itself.')
+        if re.search(r'<script|<video|autoplay|iframe', content):
+            raise fail('must have no script, video or iframe.')
+        for bad in ['market://', 'intent://', 'http-equiv="refresh"', 'target="_blank"', ' style="', '<style', 'onclick']:
+            if bad in content:
+                raise fail(f'must not contain {bad}.')
+        levels = [int(n) for n in re.findall(r'<h([1-6])\b', content)]
+        if levels.count(1) != 1 or any(b > a + 1 for a, b in zip(levels, levels[1:])) or levels[0] != 1:
+            raise fail(f'needs one h1 and no skipped heading level, got {levels}.')
+        first_figure = content.index('</figure>')
+        for tag in re.findall(r'<img\b[^>]*>', content):
+            if not all(attr in tag for attr in ('alt="', 'width="', 'height="')):
+                raise fail(f'image without alt, width or height: {tag[:80]}')
+            if content.index(tag) > first_figure and 'loading="lazy"' not in tag:
+                raise fail(f'image below the hero must be lazy: {tag[:80]}')
+        if text.count(AD_SAMPLE) != 2:
+            raise fail(f'"{AD_SAMPLE}" must appear exactly twice.')
+        for needed in (AD_BACKUP, AD_DIARY):
+            if needed not in text:
+                raise fail(f'missing: {needed}')
+        found = BANNED_AD.search(text)
+        if found:
+            raise fail(f'banned wording: {found.group(0)}')
+        viewport = re.search(r'<meta name="viewport" content="([^"]*)"', content).group(1)
+        if 'viewport-fit=cover' not in viewport or 'maximum-scale' in viewport or 'user-scalable' in viewport:
+            raise fail('viewport needs viewport-fit=cover and must allow zoom.')
+        if f'property="og:image" content="{BASE}/assets/img/{OG_ANDROID}"' not in content:
+            raise fail('og:image must be the Android preview.')
+        if Image.open(ASSETS / 'img' / OG_ANDROID).size != (1200, 630):
+            raise fail('the link preview must be 1200x630.')
+        weight = len(content.encode())
+        for src in sorted(set(re.findall(r'(?:src|href)="(/[^"?#]*\.(?:webp|svg|png|css|woff))', content))):
+            if not (SITE / src.lstrip('/')).exists():
+                raise fail(f'{src} does not exist.')
+            if not src.endswith('.png') and src not in ('/favicon-32.png',):
+                weight += (SITE / src.lstrip('/')).stat().st_size
+        for font in ('fraunces-600', 'figtree-400', 'figtree-600'):
+            weight += (ASSETS / 'fonts' / f'{font}.woff').stat().st_size
+        if weight > AD_BUDGET:
+            raise fail(f'weighs {weight} bytes, over the {AD_BUDGET} budget.')
+        print(f'{path}: page weight {weight} bytes including the HTML')
 
 
 def check_orphans(built):
@@ -1540,13 +1810,13 @@ def llms_txt():
     facts = [
         f'An Android app ({MIN_ANDROID} and later), in English, published by Sulton UzDev on Google Play: '
         f'{play_link("llms")}',
-        'No internet permission: Android stops it from connecting, so nothing entered can leave the phone through the '
-        f'app. Anyone can check this on their own phone: {BASE}/privacy-check/',
+        'No internet permission: Android stops it from connecting, so the app itself cannot send entries over the '
+        f'internet. Anyone can check this on their own phone: {BASE}/privacy-check/',
         'Android\'s own backup may copy the entries to the user\'s Google account. '
         + BACKUP_RULE.replace('Migrely allows this', 'the app allows this')
         + ' Files the user exports go wherever they send them.',
         'No account, no ads, and no analytics or tracking code of its own.',
-        'Free, for good: logging, the whole history, medications, reminders, backup and spreadsheet export, and every '
+        'Free: logging, the whole history, medications, reminders, backup and spreadsheet export, and every '
         'safety warning.',
         f'Premium adds the doctor PDF report and Insights: {PREMIUM_PRICES}.',
         'Not a medical device: it does not diagnose, treat or prevent any condition. Its medicine-day note uses the '
@@ -1580,16 +1850,18 @@ def main():
     check_faq_unique()
     check_min_sdk()
     built = {path: (rel, build()) for path, rel, build in PAGES}
+    ads = {path: (rel, build()) for path, rel, build in AD_PAGES}
+    check_ad_pages(ads)
     check_orphans(built)
     check_direct_answers(built)
     llms = llms_txt()
     check_llms(llms, built)
-    for rel, content in [*built.values(), ('404.html', not_found())]:
+    for rel, content in [*built.values(), *ads.values(), ('404.html', not_found())]:
         target = SITE / rel
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(content)
     images()
-    dates = lastmods({path: content for path, (_, content) in built.items()})
+    dates = lastmods({path: content for path, (_, content) in {**built, **ads}.items()})
     (SITE / 'sitemap.xml').write_text(
         '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
         + ''.join(f'  <url><loc>{BASE}{path}</loc><lastmod>{dates[path]}</lastmod></url>\n' for path in built)

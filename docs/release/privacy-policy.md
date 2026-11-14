@@ -1,9 +1,9 @@
 # Migrely privacy policy
 
-Effective date: 9 November 2026.
+Effective date: 14 November 2026.
 
 Migrely is a headache diary for Android, published on Google Play by Sulton UzDev ("we"). This policy explains what
-happens to the information you enter. In short: **Migrely has no internet access, and we never receive your entries.**
+happens to the information you enter in the app, and, near the end, what happens on the website. In short: **Migrely has no internet permission, so the app cannot send your entries over the internet, and we never receive them.**
 
 ## What Migrely keeps, and where
 
@@ -19,7 +19,7 @@ Migrely keeps what you enter on your phone:
 - up to three automatic copies of your entries, made before an import replaces them.
 
 Migrely does not ask for your name, email, location, contacts, photos or any account. It has no internet permission,
-so it cannot send anything to us or to anyone else. It contains no analytics, advertising or tracking code of its own.
+so it cannot send anything to us or to anyone else over the internet. It contains no analytics, advertising or tracking code of its own.
 The Google Play billing library it uses for Premium includes Google's usage logging, which cannot send anything
 either without the internet permission. Google Play's rating library, which Migrely uses to ask for a rating, needs no
 permission at all.
@@ -96,6 +96,21 @@ Nevada's SB 370 and Connecticut's health data rules. We do not collect, share or
 we have no way to receive it. Migrely uses no location data and no geofencing. Because we hold none of your health
 data, there is nothing for us to access, correct, delete or share on request; you control it all in the app, as
 described above. If you have a question about your rights, contact us at the address below.
+
+## This website
+
+This section is about the website migrely.health, not the app.
+
+The website sets no cookies and runs no scripts, analytics, advertising or tracking code of its own. Its host,
+Cloudflare, delivers each page and, like most web hosts, may keep standard technical records of requests, such as the
+IP address and the page asked for. We do not use them to identify you. Cloudflare also asks some browsers to send it a
+short report when a page fails to load; visits that load are not reported. Cloudflare handles this under its own
+privacy policy.
+
+If you arrive from an ad, the link may carry campaign tags, for example utm_source=instagram. Our pages do not use
+them. The "Get it on Google Play" button passes the same tags on to Google Play, which uses them in install reports for
+the app's publisher. The Instagram app, which may add tags of its own to the link, and its built-in browser are run by
+Meta under Meta's privacy policy, and we cannot see what they collect. The Migrely app does not read these tags.
 
 ## Changes to this policy
 
