@@ -12,9 +12,29 @@ section 9.
   a reason.
 - [ ] 1.2 `ux-designer` names the walk matrix (U9): each field, font, orientation and API that the engineer and QA must run.
   Verify: the matrix is in the ux packet.
-- [ ] 1.3 `qa-engineer` measures #145 on emulator-5582 (design D6): `WindowInsets.ime` bottom and `safeDrawing` bottom on Home
+- [x] 1.3 `qa-engineer` measures #145 on emulator-5582 (design D6): `WindowInsets.ime` bottom and `safeDrawing` bottom on Home
   before the note, with the keyboard open, after COPY and Back, and after a restart, on develop 046efe95. Verify: a log with the
   four values, and a verdict "stale ime" or "other cause".
+  - Record (2026-11-14, develop ea41869a, no `.kt` or manifest change since 046efe95; debug build plus a local log probe,
+    never committed). **Verdict: stale `ime`.** Compose bottoms in px (`ime` / `safeDrawing`), API 26, AOSP keyboard: Home
+    before 0 / 126; keyboard open 0 / 126 (the window pans, a fresh root read says 901); toolbar shown 901 / 901; after COPY
+    901 / 901; after Back with the keyboard closed **901 / 901** while the window manager and a fresh root read give 126 and
+    0; after a restart 0 / 126. Home's "Migraine started" moves from y 1982 to 1207, exactly the keyboard's 775 px; History
+    ends at y 1499.
+  - Cause: under the resolved `adjustPan`, `WindowInsetsCompat` on API < 30 takes `ime` from the root view's visible insets,
+    which it caches only when insets are dispatched. Showing or hiding the text toolbar dispatches; closing the keyboard
+    does not. COPY hides the toolbar while the keyboard is still up, so the last dispatch keeps the keyboard. What
+    dispatches on the toolbar was not traced.
+  - Runs: unmodified build 2/2, probe 2/2 at 100% and 1/1 at 130% (775 px again), from Edit medication 1/1 and Delete all
+    data 1/1 (Home stale), History entry 1/1. HOME and return does not clear it; a new activity does. Controls: the same
+    steps without the toolbar 6/6 clean (`ime` stays 0); the toolbar shown, then the keyboard closed, then Back closing the
+    toolbar clears it (0); API 36 (Gboard) 2/2 clean, `ime` 883 open and 0 after close.
+  - For D1 to D3 and K5: D3's bars inset avoids this value on API 26 (`navigationBars` there is capped at the root stable
+    bottom), but screens that keep `ime` (D2) also read it, so K5 must run the COPY steps on API 26 from the note, Edit
+    medication and Delete all data, with this build as the negative control. Side note: on API 26 with no toolbar,
+    Compose never sees the keyboard today, so Delete all data's fixed row stays under it (y 2159).
+  - Not proven: a real Android 8 phone, Gboard on API 26, API 27 to 29, CUT, PASTE and SELECT ALL (same toolbar, not run).
+    Evidence: `migrely-work/qa-145/` (`MEASUREMENTS.log`, `probe.diff`, per-step dumps and shots).
 - [ ] 1.4 `product-manager` folds 1.1 to 1.3 into the BRD (D180) and the specs: the margin of U1, the motion of U3, and, if 1.3
   says "other cause", drops the scenario "Android 8 after a copy" and leaves #145 open. Verify:
   `openspec validate fix-keyboard-follows-cursor --strict` exits 0.
