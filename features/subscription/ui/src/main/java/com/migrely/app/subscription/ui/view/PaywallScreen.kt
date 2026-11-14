@@ -690,7 +690,7 @@ private fun PaywallMessageUiModel.text() = when (this) {
     PaywallMessageUiModel.OfflineToManage -> R.string.subscription_offline_manage
 }
 
-private val PREVIEW_OFFERS = PaywallOffersUiModel(
+internal val PREVIEW_OFFERS = PaywallOffersUiModel(
     status = PremiumStatusUiModel.Free,
     products = listOf(
         PaywallProductUiModel(

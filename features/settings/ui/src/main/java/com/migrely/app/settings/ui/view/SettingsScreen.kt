@@ -392,7 +392,7 @@ private fun RowTexts(title: String, summary: String, titleColor: Color, modifier
 }
 
 private val PREVIEW_ACTIONS = SettingsActions({}, {}, {}, {}, {}, {}, {}, {}, {}, {})
-private val PREVIEW_SETTINGS = SettingsUiModel(
+internal val PREVIEW_SETTINGS = SettingsUiModel(
     periodTracking = true,
     theme = ThemeUiModel.Dark,
     version = "0.1.0"

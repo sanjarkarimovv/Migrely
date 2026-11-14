@@ -671,7 +671,7 @@ private fun AttackRow(
     }
 }
 
-private val previewActions = HistoryActions({}, {}, {}, {}, {}, {}, {})
+internal val previewActions = HistoryActions({}, {}, {}, {}, {}, {}, {})
 
 @Preview(name = "History: October")
 @Composable

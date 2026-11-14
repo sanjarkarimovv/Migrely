@@ -24,6 +24,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
 
 private const val TEXT = "Couldn't save. Your phone's storage is full."
 private val SCREEN = 800.dp
@@ -34,6 +35,7 @@ private const val ONE_PIXEL_DP = 0.5f
  * content lie where 52c12ce5's `Box { Column { topBar; content }; messages() }` put them, at 100% and 200%.
  */
 @RunWith(RobolectricTestRunner::class)
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(sdk = [35], qualifiers = "w400dp-h1600dp")
 class MessageLayoutBoundsTest {
     @get:Rule

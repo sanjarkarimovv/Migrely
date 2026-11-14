@@ -31,7 +31,6 @@ import androidx.compose.ui.unit.isUnspecified
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.navigation.NavController
 import com.migrely.app.architecture.ui.view.ScreenEnterObserver
-import com.migrely.app.architecture.ui.view.ScreenLeaveObserver
 import com.migrely.app.designsystem.input.TapGuard
 import com.migrely.app.designsystem.motion.rememberReduceMotion
 import com.migrely.app.designsystem.snackbar.MESSAGE_OFFSET_BELOW_TOP_BAR
@@ -116,11 +115,7 @@ fun HomeDependencies.Home(
     // layout phase, so a moving message never recomposes the screen.
     val messageBottom = remember { mutableStateOf(0.dp) }
     var settingsRowHeight by remember { mutableStateOf(Dp.Unspecified) }
-    // The review request waits while any message shows, and after an error it waits for the next visit (BRD D178 (3),
-    // ux F3). Saved, so a rotation or a restored process keeps both.
-    var messageShows by rememberSaveable { mutableStateOf(false) }
-    var errorThisVisit by rememberSaveable { mutableStateOf(false) }
-    ScreenLeaveObserver(navController) { errorThisVisit = false }
+    val reviewGate = rememberReviewGate(navController)
     HomeContents(
         viewState = uiState,
         nowMillis = nowMillis,
@@ -152,7 +147,7 @@ fun HomeDependencies.Home(
         trialBanner = { trialBanner(homeLoads) },
         visitCard = { visitCard(homeLoads) },
         paywallTrigger = { paywallTrigger(homeLoads) },
-        reviewPrompt = { if (!messageShows && !errorThisVisit) reviewPrompt(homeLoads) },
+        reviewPrompt = { if (reviewGate.open) reviewPrompt(homeLoads) },
         onSettingsRowHeight = { settingsRowHeight = it },
         messages = {
             HomeMessages(
@@ -165,8 +160,8 @@ fun HomeDependencies.Home(
                 onUndoEnd = homeViewModel::onUndoEndAction,
                 onUndoDelete = homeViewModel::onUndoDeleteAction,
                 onMessageBottomChanged = { messageBottom.value = it },
-                onShownChanged = { messageShows = it },
-                onErrorPosted = { errorThisVisit = true },
+                onShownChanged = reviewGate::onShownChanged,
+                onErrorPosted = reviewGate::onErrorPosted,
                 topOffset = messageTopOffset(uiState.mode, settingsRowHeight)
             )
         },
