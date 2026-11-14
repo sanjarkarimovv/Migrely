@@ -389,6 +389,14 @@ and the engineer cover: O1–O20 (order), F-a–F-h (focus), M1–M12 (motion an
   - F3: `MessageFocusPark`'s KDoc now says that with `keyboardMessageLast` Shift+Tab from the park goes to the message.
   - F4: 6.6's count corrected; `HomeMessageOrderTest` is now 14/14, `:features:home:ui` 174/174.
 
+  - Gate on 3212406d (committed first, SHA in the log's first line, `walks/msgs/9.3-gate.log`): exit 0, 3176 test cases
+    in the result files, 0 failures, 0 errors. `:app:checkReleasePermissions` exit 0, no INTERNET permission.
+  - Walk at 3212406d, emulator-5570, O11 portrait 100% with a storage-full error: Tab from nothing: Settings, Dismiss,
+    Period, November; Shift+Tab: Period, Dismiss, Settings, Log medication; Tab from Log medication: Settings, Dismiss.
+    Not walked: the trial banner. In debug it appears only near the end of a simulated trial, which needs a clock change.
+    The card-shaped slot tests stand for it. Device restored (font 1.0, rotation 0 with auto-rotate, storage, app
+    data md5 9d26b633…).
+
 ## 10. QA (qa-engineer, independent, this diff only)
 
 - [ ] 10.1 Run design checks A1–A20 and negative controls N1–N8 on the branch head SHA, debug and R8 release. Cover the ux spec's
