@@ -241,6 +241,45 @@ and the engineer cover: O1–O20 (order), F-a–F-h (focus), M1–M12 (motion an
   (ux M3 and M4) and A18 (ux P1, P4 and P6) at 100% and 200%. Restore storage, font scale, animator scale, rotation and locale. Verify: the results and what the
   walk does not prove are in the packet.
 
+  Partly done, on emulator-5570 (API 36, 1080x2400, 420 dpi), debug APK built by the 8.1 gate (HEAD 586b2b06's code;
+  later commits change tasks.md only), installed with `install -r` over 1.2.1 (vc 11). Storage full by `fallocate` of
+  `/data` to the root reserve; keyboard input by `adb shell input keyevent KEYCODE_TAB` and `keycombination
+  SHIFT_LEFT TAB`; focus read from uiautomator's `focused="true"`. Evidence `migrely-work/walks/msgs/` (`a1.txt`,
+  `a7-a8-home.txt`, `a8-history.txt`, `a12-*.txt`, `a18-*.txt`, screenshots).
+
+  | Check | Result |
+  |---|---|
+  | A1 Home Today period mark | 5/5: error shown (cycles 2 to 5; cycle 1's dump failed on the full disk), "Saved." within 0.6 s, error gone; `day_mark` 2026-11-14 `period = 1` after 5 saves |
+  | A1 Home attack mode | Pain level failed (error), next level saved: "Saved." dim, controls uncovered (screenshot) |
+  | A7 Home | Failed retry with the disk still full: the error stays, no "Saved." |
+  | A8 Home | Home key and back: error stays. Settings and back: error gone |
+  | A8 History | Home key, Android Settings, back: error stays. Back to Home, History again: error gone |
+  | A12 History | Tab: Back, Insights, Doctor report, Dismiss, the selected day, Period. Shift+Tab: day, Dismiss, Doctor report, Insights |
+  | A12 Attack details (no card) | Tab: Back, Dismiss, time, pain. Shift+Tab: time, Dismiss |
+  | A12 Home Today | Tab from nothing focused: Settings, Period, November, today, Migraine started. Shift+Tab from Settings: Dismiss, then wraps to Log medication. Focus on Dismiss + Enter: message gone, nothing focused, Enter again did nothing (mark unchanged), next Tab: Settings |
+  | A18 P1 411 dp landscape | 100% and 200%: start column, top below the Settings row, Settings and "Migraine started" uncovered; first tap on Settings opened Settings; the error survived the font-scale recreate |
+  | A18 P6 360 dp portrait 200% (`wm size 945x2100`) | Date on 2 lines; message below the second line; Settings uncovered |
+  | `:designsystem:connectedDebugAndroidTest` | 58/58 on emulator-5570, exit 0 |
+
+  - **Finding for product-manager and ux-designer (Home, "message first"):** on the device, the first Tab press while
+    nothing is focused is Android's default-focus entry, which takes the topmost control, not the first in reading
+    order. So on Home Today portrait the first Tab lands on Settings; the message's control comes right before Settings
+    (one Shift+Tab, or after a wrap). Bar screens are not affected: Back is the topmost control. The Robolectric tests
+    pass because they move focus from inside Compose. The scenario "A screen with no top bar ... the message's control
+    is the first stop" therefore fails on a device for Home Today portrait. Options: accept and reword (the message is
+    the stop before Settings), or redirect the default-focus entry into the reading order in `MessageLayout` (more code,
+    its own risk). Not changed here.
+  - Not walked, and why: A16 (TalkBack speech; needs TalkBack's verbose speech log, QA's setup), A17 M3 and M4 (a tap
+    inside 0.8 s at the old Dismiss strip and a 60 fps capture of the eased column; `MessageReplacementTest` covers
+    them on the JVM), A18 P4 (274 dp; `HomePlacementTest` covers it), A12 with the first-10 safety card (O17; the
+    Robolectric test covers Back, Dismiss, "Got it"), onboarding, Reminders, Doctor report and Your data on the device.
+  - Seen, out of scope: at 360 dp and 200%, "Log medication" on Home Today breaks inside the word ("medicatio / n").
+    Present before this change (Quiet links), for ux-designer.
+  - Restored: storage (fill files removed, `/data` 17% used), font scale 1.0, rotation 0 with auto-rotate on, `wm size`
+    reset, animator scales untouched (1), accessibility untouched, locale untouched, app data from
+    `/data/local/tmp/baseline-msgs` (taken before the walk; db dump md5 9d26b633… before and after). The app on the
+    device is now this branch's debug build.
+
 ## 9. Review (code-reviewer)
 
 - [ ] 9.1 Review `git diff origin/develop...bugfix/181-messages-everywhere` against D178 and the deltas. Areas at risk:
