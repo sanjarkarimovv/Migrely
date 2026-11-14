@@ -14,6 +14,8 @@ import com.migrely.app.datasource.notification.datasource.NotificationDataSource
 import com.migrely.app.datasource.reminder.datasource.ReminderSettingsDataSource
 import com.migrely.app.datasource.schedule.datasource.ReminderScheduleDataSource
 import com.migrely.app.datasource.schedule.datasource.ReminderScheduleDataSourceImpl
+import com.migrely.app.datasource.screen.datasource.AppOnScreenDataSource
+import com.migrely.app.datasource.screen.datasource.AppOnScreenDataSourceImpl
 import com.migrely.app.navigation.mapper.RemindersNavigationEventDestinationMapper
 import com.migrely.app.navigation.mapper.VisitCardNavigationEventDestinationMapper
 import com.migrely.app.reminders.data.mapper.DoctorVisitDomainMapper
@@ -78,6 +80,9 @@ internal object RemindersModule {
         @ApplicationContext context: Context
     ): NotificationDataSource = NotificationDataSourceImpl(context)
 
+    @Provides
+    fun providesAppOnScreenDataSource(): AppOnScreenDataSource = AppOnScreenDataSourceImpl()
+
     @Suppress("LongParameterList")
     @Provides
     fun providesRemindersRepository(
@@ -86,7 +91,8 @@ internal object RemindersModule {
         notificationDataSource: NotificationDataSource,
         attackDataSource: AttackDataSource,
         dayMarkDataSource: DayMarkDataSource,
-        clockDataSource: ClockDataSource
+        clockDataSource: ClockDataSource,
+        appOnScreenDataSource: AppOnScreenDataSource
     ) = RemindersRepository(
         reminderSettingsDataSource,
         reminderScheduleDataSource,
@@ -94,6 +100,7 @@ internal object RemindersModule {
         attackDataSource,
         dayMarkDataSource,
         clockDataSource,
+        appOnScreenDataSource,
         ReminderSettingsDomainMapper(),
         ReminderZoneDomainMapper()
     )
@@ -244,6 +251,7 @@ internal object RemindersModule {
         repository,
         repository,
         repository,
+        repository,
         visits,
         visits,
         visits,
@@ -255,6 +263,7 @@ internal object RemindersModule {
         repository: RemindersRepository,
         coroutines: CoroutineContextProvider
     ) = RunDailyReminderUseCase(
+        repository,
         repository,
         repository,
         repository,

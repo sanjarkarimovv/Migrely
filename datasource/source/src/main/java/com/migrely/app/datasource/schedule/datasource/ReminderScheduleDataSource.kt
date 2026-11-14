@@ -11,6 +11,12 @@ interface ReminderScheduleDataSource {
     /** Plans the daily reminder's run for [date] at about [at], replacing any run already planned. */
     fun scheduleDaily(at: Instant, date: LocalDate)
 
+    /**
+     * Plans the daily reminder's run for [date] at about [at] only when no daily run is waiting or running; one that is
+     * stays as it is, even a late one (BRD D176).
+     */
+    fun scheduleDailyIfNone(at: Instant, date: LocalDate)
+
     fun cancelDaily()
 
     /** Plans the "Did it help?" run for intake [intakeId] at about [at], replacing one already planned for it. */
