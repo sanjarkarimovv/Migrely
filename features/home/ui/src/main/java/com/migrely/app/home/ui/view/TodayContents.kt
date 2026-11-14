@@ -77,7 +77,9 @@ fun TodayContents(
     onSettings: () -> Unit = {},
     trialBanner: @Composable () -> Unit = {},
     visitCard: @Composable () -> Unit = {},
-    onSettingsRowHeight: (Dp) -> Unit = {}
+    onSettingsRowHeight: (Dp) -> Unit = {},
+    settingsModifier: Modifier = Modifier,
+    afterSettingsModifier: Modifier = Modifier
 ) {
     val screenModifier = modifier
         .fillMaxSize()
@@ -92,14 +94,16 @@ fun TodayContents(
                     .weight(1f)
                     .verticalScroll(rememberScrollState())
             ) {
-                DayHeader(dayTitle, onSettings, onSettingsRowHeight)
-                trialBanner()
-                TodaySkyCard(today = today, appearance = appearance)
-                if (today.periodOffered) PeriodToday(today.periodToday, onPeriodToday)
-                medicationPrompt()
-                visitCard()
-                TodayAttackList(today.attacks, nowMillis, timeUiFormatter, onAttackDetails)
-                monthCalendar()
+                DayHeader(dayTitle, onSettings, onSettingsRowHeight, settingsModifier)
+                Column(afterSettingsModifier.fillMaxWidth()) {
+                    trialBanner()
+                    TodaySkyCard(today = today, appearance = appearance)
+                    if (today.periodOffered) PeriodToday(today.periodToday, onPeriodToday)
+                    medicationPrompt()
+                    visitCard()
+                    TodayAttackList(today.attacks, nowMillis, timeUiFormatter, onAttackDetails)
+                    monthCalendar()
+                }
                 Spacer(Modifier.height(24.dp))
             }
             Column(
@@ -121,14 +125,16 @@ fun TodayContents(
                     .weight(1f)
                     .verticalScroll(rememberScrollState())
             ) {
-                DayHeader(dayTitle, onSettings, onSettingsRowHeight)
-                trialBanner()
-                TodaySkyCard(today = today, appearance = appearance)
-                if (today.periodOffered) PeriodToday(today.periodToday, onPeriodToday)
-                medicationPrompt()
-                visitCard()
-                TodayAttackList(today.attacks, nowMillis, timeUiFormatter, onAttackDetails)
-                monthCalendar()
+                DayHeader(dayTitle, onSettings, onSettingsRowHeight, settingsModifier)
+                Column(afterSettingsModifier.fillMaxWidth()) {
+                    trialBanner()
+                    TodaySkyCard(today = today, appearance = appearance)
+                    if (today.periodOffered) PeriodToday(today.periodToday, onPeriodToday)
+                    medicationPrompt()
+                    visitCard()
+                    TodayAttackList(today.attacks, nowMillis, timeUiFormatter, onAttackDetails)
+                    monthCalendar()
+                }
                 Spacer(Modifier.height(8.dp))
             }
             Spacer(Modifier.height(16.dp))
@@ -226,7 +232,12 @@ private fun AttackSummaryRow(
 
 /** The date, with "Settings" at the end; attack mode has its own screen, so the button is normal mode only (D70). */
 @Composable
-private fun DayHeader(dayTitle: String, onSettings: () -> Unit, onHeight: (Dp) -> Unit) {
+private fun DayHeader(
+    dayTitle: String,
+    onSettings: () -> Unit,
+    onHeight: (Dp) -> Unit,
+    settingsModifier: Modifier
+) {
     val density = LocalDensity.current
     // Its height, not its place, so a message placed from it does not follow scrolling (BRD D178 (6)).
     Row(
@@ -243,7 +254,7 @@ private fun DayHeader(dayTitle: String, onSettings: () -> Unit, onHeight: (Dp) -
                 .weight(1f)
                 .padding(start = 8.dp, top = 16.dp, bottom = 16.dp)
         )
-        IconButton(onClick = onSettings) {
+        IconButton(onClick = onSettings, modifier = settingsModifier) {
             Icon(
                 MigrelyIcons.Settings,
                 contentDescription = stringResource(R.string.home_settings),

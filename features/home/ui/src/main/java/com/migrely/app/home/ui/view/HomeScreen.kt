@@ -39,12 +39,12 @@ import com.migrely.app.designsystem.theme.MigrelyColors
 import com.migrely.app.designsystem.theme.MigrelyDarkRoom
 import com.migrely.app.home.presentation.model.HomeViewState
 import com.migrely.app.home.ui.di.HomeDependencies
-import com.migrely.app.home.ui.mapper.SkyAppearanceUiMapper
-import com.migrely.app.home.ui.notification.HomeMessagePresenter
 import com.migrely.app.home.ui.mapper.HomeMessageBehaviourUiMapper
+import com.migrely.app.home.ui.mapper.SkyAppearanceUiMapper
 import com.migrely.app.home.ui.mapper.TimeUiFormatter
 import com.migrely.app.home.ui.model.HomeViewStateUiModel
 import com.migrely.app.home.ui.model.IntensityLevelUiModel
+import com.migrely.app.home.ui.notification.HomeMessagePresenter
 import java.time.Instant
 import java.time.LocalDate
 import kotlinx.coroutines.delay
@@ -116,7 +116,9 @@ fun HomeDependencies.Home(
     val actions = HomeActions(
         onStartAttack = homeViewModel::onStartAttackAction,
         onIntensity = { level ->
-            homeViewModel.onIntensityAction(intensityLevelUiToPresentationMapper.toPresentation(level))
+            homeViewModel.onIntensityAction(
+                intensityLevelUiToPresentationMapper.toPresentation(level)
+            )
         },
         onMoveStartEarlier = homeViewModel::onMoveStartEarlierAction,
         onEndAttack = homeViewModel::onEndAttackAction,
@@ -189,9 +191,11 @@ internal fun HomeWithMessages(
     // layout phase, so a moving message never recomposes the screen.
     val messageBottom = remember { mutableStateOf(0.dp) }
     var settingsRowHeight by remember { mutableStateOf(Dp.Unspecified) }
+    var messageShows by remember { mutableStateOf(false) }
     val reviewGate = rememberReviewGate(navController)
     HomeContents(
         viewState = viewState,
+        messageShows = messageShows,
         nowMillis = nowMillis,
         reduceMotion = reduceMotion,
         skyAppearanceUiMapper = skyAppearanceUiMapper,
@@ -215,7 +219,10 @@ internal fun HomeWithMessages(
                 onUndoEnd = messageSetup.onUndoEnd,
                 onUndoDelete = messageSetup.onUndoDelete,
                 onMessageBottomChanged = { messageBottom.value = it },
-                onShownChanged = reviewGate::onShownChanged,
+                onShownChanged = { shows ->
+                    messageShows = shows
+                    reviewGate.onShownChanged(shows)
+                },
                 onErrorPosted = reviewGate::onErrorPosted,
                 topOffset = messageTopOffset(viewState.mode, settingsRowHeight)
             )
@@ -298,8 +305,11 @@ fun HomeContents(
     visitCard: @Composable () -> Unit = {},
     paywallTrigger: @Composable () -> Unit = {},
     reviewPrompt: @Composable () -> Unit = {},
-    onSettingsRowHeight: (Dp) -> Unit = {}
+    onSettingsRowHeight: (Dp) -> Unit = {},
+    messageShows: Boolean = false
 ) {
+    val keyboardOrder = remember { TodayKeyboardOrder() }
+    keyboardOrder.messageShows = messageShows
     // Decided from the target mode in the same pass as the switch, so a quick switch back (for example Undo) can never
     // leave a stale previous mode behind (BRD EC-UX-18, D32).
     val shownMode = remember { ShownMode(HomeMode.Loading) }
@@ -319,18 +329,25 @@ fun HomeContents(
     } else {
         Modifier
     }
-    // No top bar: the message is the first stop, before the content, in every mode (BRD D178 (4), ux Q2).
+    // No top bar. TalkBack reads the message first in every mode. For Tab, attack mode keeps it first, while Today goes
+    // Settings, message, content through its own link (BRD D178 (4), ux F10).
+    val todayOrder = mode == HomeMode.Today
     MessageLayout(
         message = {
             // Messages over attack mode are dark like it; the same call either way, so a message showing keeps its
             // state.
             MigrelyDarkRoom(active = mode == HomeMode.Attack) {
-                Box(messageArea) { messages() }
+                Box(messageArea.then(if (todayOrder) keyboardOrder.message else Modifier)) {
+                    messages()
+                }
             }
         },
+        keyboardMessageLast = todayOrder,
         modifier = modifier.fillMaxSize()
     ) {
         HomeModes(
+            modifier = if (todayOrder) keyboardOrder.content else Modifier,
+            keyboardOrder = keyboardOrder,
             viewState = viewState,
             nowMillis = nowMillis,
             reduceMotion = reduceMotion,
@@ -377,10 +394,12 @@ private fun HomeModes(
     slots: HomeSlots,
     guardTaps: Boolean,
     guardMillis: Long,
-    onSettingsRowHeight: (Dp) -> Unit
+    onSettingsRowHeight: (Dp) -> Unit,
+    keyboardOrder: TodayKeyboardOrder,
+    modifier: Modifier = Modifier
 ) {
     val mode = viewState.mode
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(modifier = modifier.fillMaxSize()) {
         AnimatedContent(
             targetState = viewState,
             contentKey = { it.mode },
@@ -422,7 +441,9 @@ private fun HomeModes(
                     medicationPrompt = slots.medicationPrompt,
                     trialBanner = slots.trialBanner,
                     visitCard = slots.visitCard,
-                    onSettingsRowHeight = onSettingsRowHeight
+                    onSettingsRowHeight = onSettingsRowHeight,
+                    settingsModifier = keyboardOrder.settings,
+                    afterSettingsModifier = keyboardOrder.afterSettings
                 )
 
                 is HomeViewStateUiModel.AttackInProgress -> AttackModeContents(

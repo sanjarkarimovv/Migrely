@@ -49,7 +49,9 @@ class HomeReviewWiringTest {
                     composable(HOME) {
                         HomeWithMessages(
                             navController = navController,
-                            viewState = HomeViewStateUiModel.Today(TodayUiModel(SkyUiModel.Calm, 0, null)),
+                            viewState = HomeViewStateUiModel.Today(
+                                TodayUiModel(SkyUiModel.Calm, 0, null)
+                            ),
                             nowMillis = 0L,
                             reduceMotion = true,
                             skyAppearanceUiMapper = SkyAppearanceUiMapper(),

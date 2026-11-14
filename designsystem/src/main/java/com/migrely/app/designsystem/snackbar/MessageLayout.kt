@@ -33,12 +33,16 @@ private const val PARK = "park"
  * Drawing stays as before: [topBar] at the top and [content] below it, as in a `Column`, and [message] measured over the
  * whole screen and drawn above both, as a later sibling in a `Box` was, so its place and size do not change. With no
  * top bar, as on Home and onboarding, the message is the first stop.
+ *
+ * [keyboardMessageLast] places the message after the content for Tab only, for a screen that links the message into
+ * its content itself (Home Today, BRD D178 (4), ux F10). TalkBack's order, the drawing and the place do not change.
  */
 @Composable
 fun MessageLayout(
     message: @Composable () -> Unit,
     modifier: Modifier = Modifier,
     topBar: @Composable () -> Unit = {},
+    keyboardMessageLast: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val park = remember { MessageFocusPark() }
@@ -71,8 +75,9 @@ fun MessageLayout(
             // Placed in reading order, so Tab follows it; the message is drawn above the content.
             parked.placeRelative(0, 0)
             topBar.placeRelative(0, 0)
-            message.placeRelative(0, 0, zIndex = 1f)
+            if (!keyboardMessageLast) message.placeRelative(0, 0, zIndex = 1f)
             content.placeRelative(0, topBar.height)
+            if (keyboardMessageLast) message.placeRelative(0, 0, zIndex = 1f)
         }
     }
 }
