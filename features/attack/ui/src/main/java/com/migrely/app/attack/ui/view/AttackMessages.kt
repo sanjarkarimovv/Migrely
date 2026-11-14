@@ -28,9 +28,9 @@ import kotlinx.coroutines.delay
 /**
  * The details screen's messages, following the home screen's pattern (profile section 10): the newest message replaces
  * the one on screen, it keeps its remaining time across rotation, and its duration stretches to the accessibility
- * timeout (BRD EC-UX-16). With [announcePolitely] an error waits for what TalkBack is saying, such as the safety card,
- * and a message that replaces another switches at once, so TalkBack reads it; [onMessageBottomChanged] tells where the
- * message ends (BRD D165 (1), (3)).
+ * timeout (BRD EC-UX-16). With [announcePolitely] an error waits for what TalkBack is saying, such as the safety card;
+ * a message that replaces another switches at once on every screen now (BRD D178 (5)). [onMessageBottomChanged] tells
+ * where the message ends (BRD D165 (1), (3)).
  */
 @Suppress("LongParameterList")
 @Composable
@@ -76,9 +76,7 @@ internal fun AttackMessages(
         reduceMotion = reduceMotion,
         modifier = modifier,
         topOffset = MESSAGE_OFFSET_BELOW_TOP_BAR,
-        onMessageBottomChanged = onMessageBottomChanged,
-        // A polite message that fades in is announced while transparent, so with no text (QA TB12).
-        replaceInPlace = announcePolitely
+        onMessageBottomChanged = onMessageBottomChanged
     ) { visible ->
         val behaviour = behaviourMapper.toUi(visible.message)
         val visibleTimeout = timeoutMillis(behaviour)

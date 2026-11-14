@@ -1,15 +1,18 @@
 package com.migrely.app.designsystem.snackbar
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.EnterExitState
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -45,6 +48,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.focus.FocusManager
+import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
@@ -53,7 +59,9 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
@@ -67,6 +75,12 @@ import com.migrely.app.designsystem.theme.MigrelyTheme
 import kotlin.math.roundToInt
 
 private const val ENTER_MILLIS = 250
+
+/**
+ * The alpha a message fades in from: below one visible step on its dim surface, and never 0, which Android's
+ * accessibility tree treats as invisible (BRD D178 (5), ux Q4).
+ */
+internal const val ENTER_START_ALPHA = 0.02f
 private const val EXIT_MILLIS = 200
 
 // How long a message's place keeps swallowing touches after it changes: past the slide in or fade out, plus the time a
@@ -290,24 +304,31 @@ private fun SnackbarLayout(
 }
 
 /**
- * Shows [message] at the top of the screen, inside the status bar and display cutout and at most 560 dp wide. A new
- * message replaces the old one. Messages slide and fade in over 250 ms and fade out over 200 ms, or switch at once with
- * [reduceMotion] (BRD EC-UX-07, EC-UX-08).
+ * Shows [message] at the top of the screen, inside the status bar and display cutout and at most 560 dp wide. A message
+ * that arrives when none shows slides and fades in over 250 ms, and one that leaves fades out over 200 ms; with
+ * [reduceMotion] both happen at once (BRD EC-UX-07, EC-UX-08).
+ *
+ * A message that replaces another one takes its place in the same frame, with no cross-fade (BRD D178 (5)). The arrival
+ * fade starts at [ENTER_START_ALPHA], never 0: Android's accessibility tree leaves out a fully transparent node, so a
+ * live region added in that frame was announced with no text (BRD D165 (3), QA TB12, #183). Each message must be its
+ * own value, for example with the time it was posted, so a retry with the same text is a new node and is spoken again.
  *
  * [onMessageBottomChanged] gets the bottom of the message in root coordinates (`positionInRoot`), or 0 dp while none
  * shows, as it moves; a screen measures its own content the same way to keep it clear of the message (BRD D52). The
  * area grows with the message's slide in and shrinks only once its fade out ends, so what follows it never slides under
- * a message still on screen.
+ * a message still on screen. After a replacement it moves down at once when the new message is taller, and eases up
+ * over 250 ms when it is shorter (ux F1).
  *
- * [topOffset] moves the message down, past a top bar for example, and [guardMillis] is how long its place keeps
- * swallowing touches after it changes (BRD D158).
+ * [topOffset] moves the message down, past a top bar for example, but never so far that the message leaves the safe
+ * area: one too tall for its place rises just enough, never above the safe top plus 8 dp (BRD D178 (6)). [guardMillis]
+ * is how long its place keeps swallowing touches after it changes, and after a replacement that place is the taller of
+ * the two messages (BRD D158, ux F2).
  *
- * With [replaceInPlace] a message that replaces another one switches at once instead of fading. A node that fades in
- * starts transparent, and Android's accessibility tree hides a transparent node, so a polite live region would be
- * announced with no text: a retry with the same text was not spoken (BRD D165 (3), QA TB12). A message that arrives
- * when none shows still slides in.
+ * A leaving message is out of the focus order and the semantics tree from its first exit frame, and focus on it clears
+ * when it leaves or is replaced, never moving on to another control (BRD D178 (4), ux F8). Put the host in the message
+ * slot of [MessageLayout] for the reading order.
  */
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "LongMethod")
 @Composable
 fun <T : Any> MigrelySnackbarHost(
     message: T?,
@@ -316,12 +337,15 @@ fun <T : Any> MigrelySnackbarHost(
     topOffset: Dp = 0.dp,
     guardMillis: Long = GUARD_MILLIS,
     onMessageBottomChanged: (Dp) -> Unit = {},
-    replaceInPlace: Boolean = false,
     content: @Composable (T) -> Unit
 ) {
     val density = LocalDensity.current
-    // The height of the last message shown, kept after it goes, so its place stays guarded while the fade ends.
-    var guardHeight by remember { mutableStateOf(0.dp) }
+    val guard = remember { ReplacementGuard() }
+    val bottom = remember { MessageBottom() }
+    guard.target(message)
+    bottom.target(message)
+    val focus = rememberMessageFocus(message)
+    val currentOnMessageBottomChanged by rememberUpdatedState(onMessageBottomChanged)
     Box(
         contentAlignment = Alignment.TopCenter,
         modifier = modifier
@@ -329,7 +353,7 @@ fun <T : Any> MigrelySnackbarHost(
             .windowInsetsPadding(
                 WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)
             )
-            .padding(top = topOffset)
+            .fitTopOffset(topOffset, WindowInsets.safeDrawing)
             .padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
         // Below the message, so the message itself stays tappable at once, but above what the screen draws under it:
@@ -341,18 +365,23 @@ fun <T : Any> MigrelySnackbarHost(
             modifier = Modifier
                 .widthIn(max = MAX_WIDTH)
                 .fillMaxWidth()
-                .height(guardHeight)
+                .height(guard.height)
         )
         AnimatedContent(
             targetState = message,
             transitionSpec = {
-                if (reduceMotion) {
+                when {
                     // No size animation either, so what follows the message's bottom moves at once too.
-                    EnterTransition.None togetherWith ExitTransition.None using null
-                } else {
-                    (
+                    reduceMotion -> EnterTransition.None togetherWith ExitTransition.None using null
+                    // In place: only the area changes, at once when it grows, gently when it shrinks (ux F1).
+                    initialState != null && targetState != null ->
+                        EnterTransition.None togetherWith ExitTransition.None using
+                            SizeTransform(clip = false) { initial, target ->
+                                if (target.height < initial.height) tween(ENTER_MILLIS) else snap()
+                            }
+                    else -> (
                         slideInVertically(tween(ENTER_MILLIS)) { -it / 2 } +
-                            fadeIn(tween(ENTER_MILLIS))
+                            fadeIn(tween(ENTER_MILLIS), initialAlpha = ENTER_START_ALPHA)
                         ) togetherWith
                         fadeOut(tween(EXIT_MILLIS)) using
                         SizeTransform(clip = false) { initial, target ->
@@ -364,25 +393,33 @@ fun <T : Any> MigrelySnackbarHost(
                         }
                 }
             },
-            // In place, every message shares one slot, so a replacement is no transition at all: key() below swaps
-            // the node within one frame, and the new one is never transparent.
-            contentKey = { shown -> if (replaceInPlace && shown != null) InPlace else shown },
+            // Every message shares one slot, so a replacement is no transition at all: key() below swaps the node
+            // within one frame, and the new one is never transparent.
+            contentKey = { shown -> if (shown != null) InPlace else null },
             contentAlignment = Alignment.TopCenter,
             label = "snackbar",
             modifier = Modifier.onGloballyPositioned { coordinates ->
-                val height = coordinates.size.height
-                val bottom = if (height == 0) 0f else coordinates.positionInRoot().y + height
-                onMessageBottomChanged(with(density) { bottom.toDp() })
+                bottom.area(coordinates.positionInRoot().y, coordinates.size.height)
+                currentOnMessageBottomChanged(with(density) { bottom.value.toDp() })
             }
         ) { shown ->
             if (shown != null) {
+                val leaving = transition.targetState == EnterExitState.PostExit
                 Box(
                     modifier = Modifier
                         .widthIn(max = MAX_WIDTH)
                         // Measured at full size from the first frame, while the slide only moves it.
                         .onSizeChanged { size ->
-                            if (size.height > 0) guardHeight = with(density) { size.height.toDp() }
+                            if (size.height >
+                                0
+                            ) {
+                                guard.measured(shown, with(density) { size.height.toDp() })
+                            }
+                            if (bottom.measured(shown, size.height)) {
+                                currentOnMessageBottomChanged(with(density) { bottom.value.toDp() })
+                            }
                         }
+                        .then(focus.modifier(leaving))
                 ) { key(shown) { content(shown) } }
             }
         }
