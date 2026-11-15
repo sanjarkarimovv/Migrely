@@ -14,8 +14,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
@@ -50,6 +50,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.migrely.app.designsystem.icon.MigrelyIcons
 import com.migrely.app.designsystem.input.TapGuard
+import com.migrely.app.designsystem.layout.MigrelyInsets
 import com.migrely.app.designsystem.picker.DateTimePickerLabels
 import com.migrely.app.designsystem.picker.MigrelyDateTimePicker
 import com.migrely.app.designsystem.sky.SkyAppearance
@@ -102,7 +103,7 @@ fun AttackModeContents(
     val screenModifier = modifier
         .fillMaxSize()
         .background(MigrelyColors.AttackModeBackground)
-        .safeDrawingPadding()
+        .windowInsetsPadding(MigrelyInsets.bars)
         .padding(horizontal = 16.dp)
     // In a short window (landscape) the controls alone fill the height and hide the guidance,
     // so the two sit side by side.
