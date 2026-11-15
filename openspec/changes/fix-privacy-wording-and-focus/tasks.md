@@ -151,6 +151,12 @@ under load. Never `--stop` the daemon.
   - Tab from the day returns to the control.
   - Verify: `./gradlew :features:history:ui:testDebugUnitTest --tests '*Keyboard*'` fails on the pre-fix base, in the way
     4.1 recorded.
+  - 2026-11-15, android-engineer: `HistoryKeyboardOrderTest` (4 cases: migraine row, Period, Pain-free with Period
+    hidden at 200%, Period at 100%; 360x640 dp) passes on the pre-fix code in Robolectric: Shift+Tab reaches the chosen
+    day, which was off-screen before (y -141 and -93 dp) and is fully in view after. It can fail: without the
+    calendar's `onEnter` all 4 land on today instead. So the JVM does not reproduce the stop; 4.1's device proof was
+    not run (emulator-5570 died on both boots, logs in `migrely-work/walks/t66/emu-boot*.log`). Not ticked: 4.1, 4.2's
+    red, 4.3. No History code changed. The test stays as a guard.
 - [ ] 4.3 Fix the cause 4.1 proved (design 3). No group, scroll container, legend or spacer may be a stop.
   - Verify: 4.2 passes. `./gradlew :features:history:ui:testDebugUnitTest :designsystem:testDebugUnitTest` exits 0.
   - Device: the ring is visible on the chosen day after Shift+Tab, at 100% and 200%, portrait and landscape (2 panes).
@@ -232,7 +238,7 @@ under load. Never `--stop` the daemon.
 - [ ] 7.1 `qa-engineer`: `.maestro/a11y-tour/settings-privacy.yaml:13` asserts the new first paragraph, `visible: "Migrely
   has no internet permission, so the app itself cannot send anything over the internet\\..*"`.
   - Verify: the flow passes on this branch's debug build, and fails on a 40536f49 build (negative control).
-- [ ] 7.2 KDoc: `TodayKeyboardOrder` and `QuietLinks` describe the new behaviour with BRD D181. The `StepHeader` and
+- [x] 7.2 KDoc: `TodayKeyboardOrder` and `QuietLinks` describe the new behaviour with BRD D181. The `StepHeader` and
   `SnackbarEndControl` comments say why the child text is cleared.
   - Verify: `git grep -n "D181" -- '*.kt' | wc -l` prints at least 3.
 - [ ] 7.3 `team-lead` adds tracker rows for:
