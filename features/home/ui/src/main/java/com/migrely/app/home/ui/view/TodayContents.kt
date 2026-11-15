@@ -327,12 +327,13 @@ private fun PeriodToday(marked: Boolean, onPeriodToday: (Boolean) -> Unit) {
     FilterChip(
         selected = marked,
         onClick = { onPeriodToday(!marked) },
-        // The label's description merges into the chip, so it is read once, with its checked state.
+        // One spoken name (BRD D181 (2)): the chip says "Period today" with its state; the word it
+        // shows is left out of its semantics, so TalkBack does not add "Period".
         label = {
             Text(
                 text = stringResource(R.string.period_today),
                 style = MaterialTheme.typography.labelLarge,
-                modifier = Modifier.semantics { contentDescription = description }
+                modifier = Modifier.clearAndSetSemantics { }
             )
         },
         leadingIcon = if (marked) {
@@ -343,6 +344,7 @@ private fun PeriodToday(marked: Boolean, onPeriodToday: (Boolean) -> Unit) {
         modifier = Modifier
             .padding(top = 12.dp)
             .heightIn(min = 48.dp)
+            .semantics { contentDescription = description }
     )
 }
 

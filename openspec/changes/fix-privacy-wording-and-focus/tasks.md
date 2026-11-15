@@ -71,7 +71,7 @@ under load. Never `--stop` the daemon.
 
 ## 3. UI: one spoken name per control (D181 (2), EC-ONB-07, EC-UX-45, #217)
 
-- [ ] 3.1 Sweep. List every clickable in `*/src/main/*.kt` that sets `contentDescription` through `semantics` while a
+- [x] 3.1 Sweep. List every clickable in `*/src/main/*.kt` that sets `contentDescription` through `semantics` while a
   child `Text` stays in its semantics.
   - Include ux's sites: `MigrelySnackbar.kt:225`, `AttackModeContents.kt:293` and `:340`, `DoctorVisitSection.kt:81`,
     `RemindersScreen.kt:551`.
@@ -81,22 +81,45 @@ under load. Never `--stop` the daemon.
   - Line numbers are from 40536f49; re-find them after 0.1.
   - Verify: the list is recorded here, one line per site, with its visible text and spoken label, and the grep command
     used.
-- [ ] 3.2 Red first: one Compose test per listed site, on the merged tree.
+  - Recorded 2026-11-15 on d12d1ef0 (android-engineer). Grep: `git grep -n -E 'semantics.*contentDescription|contentDescription
+    = (spoken|label|description|it\b)' -- '*/src/main/*.kt'`, then each hit read by hand. Format: site, visible text ->
+    spoken label, red result.
+    - `MigrelySnackbar.kt:221` `SnackbarEndControl`: "Undo" -> "Undo the start" (and every `*_undo_*_description`): read twice, fixed.
+    - `OnboardingScreen.kt:214` `StepHeader`: "Skip" -> "Skip this step": read twice, fixed (#217).
+    - `AttackModeContents.kt:294` Details: "Details" -> "Details of this migraine": read twice, fixed.
+    - `AttackModeContents.kt:341` chips: "15 min", "30 min", "1 h", "2 h" -> "Move the start … earlier": read twice, fixed.
+    - `DoctorVisitSection.kt:81` Remove: "Remove" -> "Remove the next visit": read twice, fixed.
+    - `RemindersScreen.kt:550` Open settings (channel notice): "Open settings" -> "Open notification settings": read
+      twice and label not in name; fixed, string per 3.5.
+    - `AttackPainSection.kt:202` pain dialog time: "At 14:30" -> "Change the time, now 14:30": read twice and label not
+      in name; fixed, string "At %1$s, change the time" by ux-designer (2026-11-15).
+    - `AttackTimeSection.kt:208` Started and Ended rows: "Started" + date -> "Change when it started, now …": read
+      twice, fixed (the in-progress Ended row has no description and no click: unchanged).
+    - `AttackChoiceSections.kt:242` "+ Your own": "+ Your own" -> "Add your own symptom" or "… trigger": read twice,
+      fixed.
+    - `TodayContents.kt:335` Period chip: "Period" -> "Period today" (description sat on the child Text): read twice,
+      fixed; description moved to the chip, selected state kept.
+    - `AttackMedicationsSection.kt:123` medication row, `DoctorVisitSection.kt:120` visit row, `RemindersScreen.kt:423`
+      time row: texts already cleared, no double reading, unchanged (tests pass before and after).
+    - `PaywallTrigger.kt:45`, `MedicationPromptCard.kt:196`, `MigrelyDatePicker.kt:176`, progress bars: not clickable,
+      out of scope. Surface rows (Today, History, Medications, Log medication), `MonthSkyCard`, `MonthSkyCalendar`
+      days: inner texts already cleared.
+- [x] 3.2 Red first: one Compose test per listed site, on the merged tree.
   - The control's node has `ContentDescription == [spoken label]` and no `SemanticsProperties.Text`.
   - The spoken label contains the visible label, case-insensitive and in order.
   - Verify: the module test runs fail on the pre-fix base for each site that reads twice. Record the count per module.
     A site whose test already passes is recorded as "no double reading" and is not changed.
-- [ ] 3.3 #217: in `StepHeader` (`OnboardingScreen.kt`), keep the description on the `TextButton` and add
+- [x] 3.3 #217: in `StepHeader` (`OnboardingScreen.kt`), keep the description on the `TextButton` and add
   `Modifier.clearAndSetSemantics {}` to the child `Text`.
   - Verify:
     - `./gradlew :features:onboarding:ui:testDebugUnitTest` passes, including the 3.2 test, which failed before;
     - `uiautomator dump` on step 1 shows the Skip node with content-desc "Skip this step" and no child text node.
-- [ ] 3.4 Apply the same fix at each site that 3.2 proved: `SnackbarEndControl`, attack mode "Details" and the "Started
+- [x] 3.4 Apply the same fix at each site that 3.2 proved: `SnackbarEndControl`, attack mode "Details" and the "Started
   earlier?" chips, the visit's "Remove", "Open settings", and any further site from 3.1.
   - Do not use `clearAndSetSemantics` on the clickable itself.
   - Verify: every 3.2 test passes. `./gradlew :designsystem:testDebugUnitTest :features:home:ui:testDebugUnitTest
     :features:reminders:ui:testDebugUnitTest :features:attack:ui:testDebugUnitTest` exits 0.
-- [ ] 3.5 `reminders_open_settings_description` becomes "Open settings for notifications". Update
+- [x] 3.5 `reminders_open_settings_description` becomes "Open settings for notifications". Update
   `DoctorVisitScreenTest.kt:217`.
   - Verify:
     - `git grep -n "Open notification settings" -- '*/src/*'` prints nothing;

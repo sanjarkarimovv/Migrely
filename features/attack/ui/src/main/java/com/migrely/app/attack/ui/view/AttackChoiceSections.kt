@@ -29,6 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.selected
@@ -246,7 +247,18 @@ private fun ChoiceChip(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
             ) {
-                Text(text = label, style = MaterialTheme.typography.bodyMedium, color = content)
+                // One spoken name (BRD D181 (2)): a chip with its own spoken label ("Add your own
+                // symptom") leaves the shown "+ Your own" out of its semantics.
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = content,
+                    modifier = if (spokenLabel == null) {
+                        Modifier
+                    } else {
+                        Modifier.clearAndSetSemantics { }
+                    }
+                )
             }
         }
         if (onArchive != null) {

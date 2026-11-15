@@ -22,6 +22,7 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
@@ -212,11 +213,16 @@ internal fun TimeRow(
                     .heightIn(min = 56.dp)
                     .padding(horizontal = 16.dp, vertical = 12.dp)
             ) {
+                // One spoken name (BRD D181 (2)): a row with a description says only that ("Change when
+                // it started, now …"); a row without one, the Ended row of an attack in progress, is
+                // read by its texts.
+                val shown = if (description == null) Modifier else Modifier.clearAndSetSemantics { }
                 // The label sits above the value, so a long date never squeezes the label at large font sizes.
                 Text(
                     text = label,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = shown
                 )
                 Text(
                     text = value,
@@ -226,7 +232,7 @@ internal fun TimeRow(
                     } else {
                         MaterialTheme.colorScheme.primary
                     },
-                    modifier = Modifier.padding(top = 2.dp)
+                    modifier = shown.padding(top = 2.dp)
                 )
             }
             if (error != null) {

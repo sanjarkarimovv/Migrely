@@ -80,7 +80,11 @@ internal fun DoctorVisitSection(
                     .heightIn(min = 48.dp)
                     .semantics { contentDescription = removeDescription }
             ) {
-                Text(stringResource(R.string.reminders_visit_remove))
+                // One spoken name (BRD D181 (2)): "Remove the next visit" only.
+                Text(
+                    text = stringResource(R.string.reminders_visit_remove),
+                    modifier = Modifier.clearAndSetSemantics { }
+                )
             }
         }
         if (nextVisit != null) {
