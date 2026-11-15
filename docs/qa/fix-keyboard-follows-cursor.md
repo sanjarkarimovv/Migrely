@@ -1,6 +1,29 @@
 # QA record: `fix-keyboard-follows-cursor` (T63, BRD D180), task 8.1
 
-## Decision
+## Decision (current): retest on c3e2368e
+
+**QA's verdict, 2026-11-15 14:52: GO with recorded deferred risks for the merge of `bugfix/141-keyboard-follows-cursor` at
+c3e2368e (code 2b24b915) into `develop`.** This is a change verdict, not a release verdict.
+
+- **Finding 1 is fixed on a device.** On API 26 with the note's last word still composing, closing the keyboard after
+  scrolling away now leaves the page where it was:
+  - head: 5 of 5 runs (100% portrait 4/4, one of them with "Remove animations"; 200% landscape 1/1);
+  - committed word: 3 of 3;
+  - control 76e5afcd in the same session: it still jumps, 2 of 2.
+- **The rows the fix can reach pass on API 26.** Each of these brings the line back above the keyboard after scrolling away:
+  typing again (2/2), a cursor move by arrow key (2/2) and a paste (2/2). Also passing:
+  - reopening by a tap (10/10);
+  - the D167 safety card after a first 10 (3/3);
+  - W-AUTOSAVE (2/2);
+  - Edit medication's name at 200% landscape (2/2).
+- **Deferred, the condition of this GO:** the API 36 rows of 8.1 did not run because the host had too little memory (swap
+  free 0.9 GB against the 2 GB bar). They are Gboard, TalkBack (K2, U8, the safety card's reading), the K4 message rows, the
+  360 dp window and 8.3. They become a **blocking line in the Go/No-Go of the first release that carries this change**.
+  `team-lead` records this deferral. If the deferral is not accepted, the verdict is NO-GO until those rows run on
+  emulator-5580.
+- No S1 or S2 was found, and no issue was filed. Details are under "Retest of finding 1 on c3e2368e".
+
+## Earlier decision: 8.1 on 76e5afcd (superseded)
 
 **QA's verdict, 2026-11-15: NO-GO for the merge of `bugfix/141-keyboard-follows-cursor` at 76e5afcd (code f05814f2) into
 `develop`.** This is a change verdict, not a release verdict.
@@ -23,7 +46,7 @@ Two reasons, either one is enough:
 What passed is below. No S1 or S2 was found. No issue was filed: finding 1 belongs to this change, and the two smaller
 observations are listed for the engineer.
 
-## Candidate, builds and device
+## 8.1 on 76e5afcd: candidate, builds and device
 
 | APK | Source | sha256 (first 16) | Use |
 |---|---|---|---|
@@ -54,7 +77,7 @@ observations are listed for the engineer.
   launches now use `am start -n`. Landscape swipes now run in Home's left pane. A refocus tap landed under the top bar where a
   field's unclipped bounds still reach; taps now start below it.
 
-## Rows
+## 8.1 rows (76e5afcd)
 
 C1 to C5 are the ux matrix checks (U9): C1 the cursor or input line at least 8 dp above the keyboard (judged on a crop of the
 strip above the keyboard), C2 Back's bounds as with no keyboard and a first tap leaves, C3 nothing under the status bar
@@ -126,7 +149,7 @@ Every COPY passed the guard (toolbar shown, gone after the tap, text unchanged).
 (`qa-195/apk/r8-v121-5a15b3f8.apk`): 8 lines, `diff` empty. `MainActivity` has `windowSoftInputMode=0x10` (adjustResize).
 `git diff v1.2.1 76e5afcd -- app/src/main/AndroidManifest.xml` adds only that attribute.
 
-## Finding 1 (NO-GO): closing the keyboard mid-word pulls the page back to the note
+## Finding 1 (NO-GO on 76e5afcd, fixed in 2b24b915): closing the keyboard mid-word pulls the page back to the note
 
 - **Steps (API 26, emulator-5582, head 76e5afcd debug, 100% portrait):** open a migraine's details from History, scroll to
   Notes, tap the note, type a word without a trailing space (`adb shell input text "aura%sonce"`; the keyboard keeps "once"
@@ -157,7 +180,7 @@ Every COPY passed the guard (toolbar shown, gone after the tap, text unchanged).
    It looks like Compose's own "keep the focused field in view when the viewport shrinks" for a field taller than the
    viewport. S4 at most.
 
-## What these rows do not prove
+## What the 8.1 rows do not prove
 
 - **Nothing on API 36:** no Gboard, no TalkBack (K2 "TalkBack reaches Back", U8, F5 order, the D167 card's reading), no K4
   message rows, no 360 dp window, no split screen or floating keyboard, no RTL (this app does not mirror), and the 10 U9 cells
@@ -169,7 +192,7 @@ Every COPY passed the guard (toolbar shown, gone after the tap, text unchanged).
 - **C1 margins** are read by eye from crops (cursor line to the keyboard's top), not measured from the cursor rectangle.
 - A real Android 8 phone, other keyboards, API 27 to 35, foldables and tablets.
 
-## Device state at the end
+## Device state at the end of 8.1
 
 emulator-5582: the `develop` ea41869a debug APK reinstalled (sha256 read back), app data restored from the backup (equal),
 font 1.0, rotation 0 with auto-rotate on, animator scale unset, transition and window 1.0, `show_ime_with_hard_keyboard` 1,
@@ -177,8 +200,128 @@ no accessibility service, theme preference as before (no `theme` key). Shut down
 emulator-5580: never finished booting, nothing was changed on it, off. QA's own idle Gradle and Kotlin daemons (started by
 this build at 12:17, 5 GB) were stopped by PID before the second 5580 boot; it did not help.
 
-## Next
+## Next (after the 8.1 run, done in the retest below)
 
 `android-engineer`: fix finding 1 (and decide on observation 2), with a red test that finishes a composing word on close.
 `qa-engineer`: rerun row F1 (composing and committed, head and control) and the API 36 rows of 8.1 once a QA emulator on API
 36 boots; then 8.2 (retest and close #141, #83, #145) and 8.3.
+
+## Retest of finding 1 on c3e2368e (2026-11-15, 14:12 to 14:52)
+
+### Candidate, builds and device
+
+| APK | Source | sha256 (first 16) | Use |
+|---|---|---|---|
+| `app-debug-c3e2368e` | head, built by QA in `migraine-app-qa-kbd8` checked out detached at c3e2368e (2b24b915 code + tasks.md) | 1c53f4c5ea6f42e3 | every head row. Read back from the device (`sha256sum` of `pm path`) after each install: equal 3/3 |
+| `app-release-c3e2368e` | head, `assembleRelease` (R8, debug key, no `keystore.properties` in a QA worktree) | 3275806c9f96f718 | K8 only (not installed) |
+| `app-debug-76e5afcd` | QA's 8.1 build of the previous head | 78cb48c0bfe3487c | negative control for F1 and for observation 2. Read back from the device: equal 2/2 |
+| `app-debug-ea41869a` | `develop`, QA's build from task 1.3 | aff4e8b8485fa39f | on the device before and after (read back: equal) |
+
+The engineer's APK `walks/kbd/app-debug-2b24b915.apk` (368bd378…) was not used.
+
+- **Build:** `perl -e 'alarm 1500; exec @ARGV' nice -n 19 ./gradlew --max-workers=2 :app:assembleDebug :app:assembleRelease
+  :app:checkReleasePermissions`. Result: BUILD SUCCESSFUL in 1m 4s, exit 0, `:designsystem:compileDebugKotlin` re-ran
+  (`migrely-work/qa-kbd9/build-c3e2368e.log`). QA did not rerun the gate. `android-engineer` ran it on 2b24b915: exit 0;
+  JVM 1348, debug 1156, release 702 tests.
+- **K8:** `aapt2 dump permissions` of the R8 APK, sorted, equals 76e5afcd's R8 APK (8 lines, no INTERNET). The task
+  `:app:checkReleasePermissions` was up to date: the manifest inputs did not change.
+- **Device:** the same as for 8.1. That is emulator-5582 (`Migrely_QA_API_26`, Android 8.0, AOSP LatinIME), cold boot with
+  `-no-snapshot -memory 2048`. Host load was 1.9 to 6.5, and swap 8.25 to 8.29 of 9.2 GB used.
+- **Data:** app data was saved with `run-as tar` before the run (`appdata26-before.tar`); `migrely.db` and the preferences
+  were byte-equal to the 8.1 backup. At the end the data was restored, and every file was byte-equal (`diff -r`).
+  - A read-only `sqlite3` row count after that comparison closed the database cleanly. That removed the 0-byte
+    `migrely.db-wal` and its `-shm` index.
+  - `migrely.db`, both preference files and the WorkManager database stayed byte-equal (final `diff -r`). The row counts
+    are equal.
+- **Driver:** `migrely-work/qa-kbd9/`. `chain9.sh` is resumable with 300 s per run and reuses `qa-kbd8`'s `away8.py`,
+  `f2row.py`, `autosave8.py` and `seednote.sh`. Two scripts are new:
+  - `again9.py`: type, arrow or paste after scrolling away;
+  - `u4.py`: the field's bounds before and after a tap on its first line.
+
+  Raw output is in `chain-head.out`; logs, dumps and crops are in `5582/`.
+- **Driver error found and fixed (no row counted from it):** the first seven `again9.py` runs were refused by the driver's own
+  guard, and nothing was sent. On API 26, `dumpsys input_method` reports `mCurFocusedWindow` as a BinderProxy, not a window
+  name. The guard now requires all three of these:
+  - `mInputShown=true`;
+  - the IME client's pid equal to `pidof com.migrely.app`;
+  - `mCurrentFocus` on `com.migrely.app/…MainActivity`.
+
+  It logged "-> True" on every counted run. Keys and text were sent only after a dump showed the note `focused="true"`
+  (before scrolling away), with no tap in between.
+
+### Rows
+
+| Row | Head (c3e2368e) | Control |
+|---|---|---|
+| **F1** note, composing last word (`aura%sonce`), 100% portrait | **PASS 4/4** (3 with animations, 1 with "Remove animations"). Top node `Started@352-399` before and after Back, the note not in view after closing (`awayCA1..3`, `awayCN`) | **76e5afcd: MOVED 2/2.** After Back the top is `+ Your own@385-432` and the note is in view at 2145-2274 (`awayCtlC1`, `C2`). The control fails as in 8.1, so the row can fail |
+| **F1** note, composing, 200% landscape | **PASS 1/1.** Top `1 · Less active@257-287` unchanged, nothing pulled back (`awayCL`) | 8.1: 76e5afcd FAIL 1/1 |
+| **F1** note, committed last word (`aura%sonce%s`) | **PASS 3/3:** 100% portrait 2/2 and 200% landscape 1/1 | |
+| **F1** Edit medication's name, composing, 200% landscape | **PASS 2/2.** Top `Preventive` unchanged, more nodes shown below (`medM1`, `M2`) | |
+| Reopen the keyboard by a tap in the field (the last step of every F1 run) | **PASS 10/10.** Each time the keyboard opens and the field has focus. The line above the keyboard was judged by eye on 2 crops: `awayCA1-head-reopen-crop.png` at 100% portrait, where the line and "26/1000" sit well above the keyboard, and `awayCL-head-reopen-crop.png` at 200% landscape, where the line sits about 100 px above the keyboard and below the title | |
+| Typing again after scrolling away (note, composing word, 100% portrait, then type "x") | **PASS 2/2.** The note is back at 1370 above the keyboard (1499), and "oncex" shows about 13 dp above the keyboard (`typeT1-head-after-crop.png`). Text 26 -> 27 | The page was away before the action in each run (the note not in the dump) |
+| A cursor move after scrolling away (DPAD_LEFT, no text change) | **PASS 2/2.** The note is back at 1370, text unchanged (`arrowR1-head-after-crop.png`) | as above |
+| Paste after scrolling away (long-press, COPY in the toolbar, end of line, scroll away, KEYCODE_PASTE) | **PASS 2/2.** Text 26 -> 47, the note at 1304, the pasted line above the keyboard (`pasteP1-head-after-crop.png`) | as above |
+| Paste into a full note (1000 of 1000), exploratory | Nothing pasted: the 1000-unit limit keeps the text unchanged, so nothing scrolls, and the page stays where the person left it. This is the existing length limit, which this diff does not touch. It is not a follow case and not counted | |
+| **F2** the safety card after a first 10, note focused with the keyboard up, 100% portrait | **PASS 3/3** (composing 2/2, committed 1/1). The D167 card ("Sudden, extremely bad pain?") and Got it at 534-597 stay inside the viewport at +2.0, 3.1, 4.5 and 6.2 s, and the note is not in view | Not rerun. In 8.1 the 51e22355 control did not fail on this device, so the row still rests on 7.2's mutation test |
+| **W-AUTOSAVE**, 200% portrait, 996-unit note: tap the middle, "zz", 1.2 s, "yy", 1.2 s | **PASS 2/2.** The page is unchanged across the three reads, and "zzyy" sits together at index 106 of 1000 | |
+| Tap the first line of a 996-unit note | **PASS 3/3** for the cursor: "zzyy" at index 4 (100%, 2/2) and 2 (200%). The page is unchanged while typing | |
+
+### Observation 2 (U4) reread: unchanged
+
+`u4.py` records the field before and after a tap on its first line (996-unit note, keyboard closed before the tap).
+
+- **100% portrait, head (2/2) and the 76e5afcd control (1/1) are identical.** The field's top goes from 465 to 231, so the
+  page moves up at least 234 px (89 dp), the same as in 8.1. The "Notes" header leaves the view.
+  - The screenshot (`u4V1-100P-head-after-small.png`) shows the tapped first line just under the top bar, with the cursor
+    in it and the keyboard below.
+  - The script's bottom-based figure (491 px) is not valid: the field's bottom is clipped in both reads.
+- **200% portrait, head:** the page does not move (field top 1117 before and after).
+- **Conclusion:** the fix did not change U4, and it did not make it worse. It stays an observation, S4 at most, and is not
+  filed.
+
+### What the retest does not prove
+
+- **No API 36:** the host's swap free was 0.93 to 0.97 GB at 14:11, 14:17 and 14:52, below the 2 GB bar, so emulator-5580
+  was not started. The rows not run are:
+  - Gboard (whose composing behaviour drove finding 1);
+  - TalkBack: K2 "TalkBack reaches Back", U8, the F5 order, and the D167 card's reading;
+  - the K4 message rows;
+  - the 360 dp window, split screen and the floating keyboard;
+  - the 10 U9 cells the engineer did not walk;
+  - 8.3.
+
+  The last QA-independent device evidence on API 36 is the engineer's 6.2 walk on 24109541. That was before f05814f2 and
+  2b24b915 changed the helper.
+- **Layout changes without an edit:** the effect no longer runs on a new layout alone. A field that changes width while
+  focused (a split-screen or fold resize, a font change) therefore does not bring its line back until the next edit, cursor
+  move or keyboard inset change (KeyboardFollow). It is not reachable on this API 26 image, where rotation drops the focus.
+  Low risk, S4 at most.
+- No R8 build on a device, no real Android 8 phone, no other keyboard than AOSP LatinIME, no API 27 to 35. C1 margins are
+  read by eye from crops.
+- F2's negative control cannot fail on this device (see 8.1).
+
+### Device state at the end
+
+emulator-5582 was left as follows:
+- the `develop` ea41869a debug APK reinstalled, with its sha256 aff4e8b8… read back;
+- app data restored as described under Data;
+- every recorded setting equal to its value before the run (`settings-before.txt` and `settings-end.txt`, `diff` empty):
+  - font 1.0;
+  - auto-rotate on, rotation 0;
+  - animator scale unset, transition and window scale 1.0;
+  - `show_ime_with_hard_keyboard` 1;
+  - no accessibility service;
+  - LatinIME as the keyboard;
+  - airplane mode off;
+- `/data/local/tmp/kbd9.tar` removed;
+- shut down with `sync` and `reboot -p`; the process is gone.
+
+emulator-5580 was not started. QA's own idle Gradle and Kotlin daemons from this build (PIDs 71773 and 71811) were stopped
+by PID after the build.
+
+### Next
+
+- `team-lead`: accept or refuse the deferral of the API 36 rows (the condition of this GO).
+- `android-engineer`: merge after `code-reviewer`'s verdict. Use `Refs #141 #83 #145`, not a closing keyword.
+- `qa-engineer`: run the API 36 rows of 8.1 and 8.3 on emulator-5580 when the host has room, at the latest in the release
+  Go/No-Go. Then 8.2: retest and close #141, #83 and #145 once the fix is in `develop`.
