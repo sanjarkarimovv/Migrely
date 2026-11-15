@@ -364,7 +364,14 @@ section 9.
     1 s), the page does not return to the note, the card's TalkBack reading is D167's. Negative control: the 51e22355 build
     (expected to pull the page from the card; if it does not reproduce on a device, record that, and the row then rests on
     the mutation test of 7.2).
-- [ ] 8.2 QA retests #141, #83 and #145, and closes those that pass. Verify: the issues' comments.
+- [x] 8.2 QA retests #141, #83 and #145, and closes those that pass. Verify: the issues' comments.
+  - Record (2026-11-15, QA, `develop` d3d98673, QA's debug build sha256 1af5b0cf…ff8067 read back from emulator-5582,
+    API 26, AOSP keyboard): all three pass and are closed with a comment each. #141 typing past the keyboard 5/5, the
+    composing last word 3/3 and the committed one 2/2 (control ea41869a 1/1 under the keyboard); #83 Back and title on
+    screen with the keyboard open and a first tap leaves 5/5 (control 1/1 `[0,0][0,0]`); #145 after COPY, Home and
+    History whole at 130% 2/2 and landscape 2/2 (control 2/2 stale). The API 36 rows stay deferred to the
+    release/1.3.0 Go/No-Go as a blocking line (`team-lead`, 2026-11-15); an issue is reopened if they fail there.
+    Details: `docs/qa/fix-keyboard-follows-cursor.md`, "Task 8.2".
 - [ ] 8.3 ux F5, separate from this change: on a device, Edit medication with the keyboard open and TalkBack on, Save with a name
   that gives an error; does the error line stay off screen and silent? Only if it reproduces, file an issue with severity and
   steps. Verify: a yes or no with evidence in the QA record, and the issue number if one was filed.
