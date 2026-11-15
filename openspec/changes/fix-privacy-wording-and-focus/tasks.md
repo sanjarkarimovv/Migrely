@@ -155,20 +155,20 @@ under load. Never `--stop` the daemon.
   - Verify: 4.2 passes. `./gradlew :features:history:ui:testDebugUnitTest :designsystem:testDebugUnitTest` exits 0.
   - Device: the ring is visible on the chosen day after Shift+Tab, at 100% and 200%, portrait and landscape (2 panes).
     Save screenshots.
-- [ ] 4.4 Red first: Home tests (next to `HomeMessageOrderTest.kt`).
+- [x] 4.4 Red first: Home tests (next to `HomeMessageOrderTest.kt`).
   - (a) All slots empty and a message shown: Tab ×3 goes Settings, message control, "Migraine started"; Shift+Tab ×2
     goes message control, Settings.
   - (b) The same in a short window, where the end column's first control comes first.
   - (c) Regression: one focusable slot after Settings, as today.
   - Verify: `./gradlew :features:home:ui:testDebugUnitTest --tests '*MessageOrder*'`. (a) and (b) fail on the pre-fix
     base. (c) passes before and after.
-- [ ] 4.5 Move the Shift+Tab redirect to the first control after Settings in Tab order (design 4). Rewrite the content
+- [x] 4.5 Move the Shift+Tab redirect to the first control after Settings in Tab order (design 4). Rewrite the content
   `onExit` comment in `TodayKeyboardOrder.kt` so it states what the code does (follow-up 4).
   - Verify:
     - 4.4 (a) to (c) pass, and every existing Home keyboard test passes;
     - negative control: removing the new `previous` link makes (a) fail;
     - code-reviewer confirms the comment in 8.4.
-- [ ] 4.6 Red first: a quiet-links test with the row at a fixed 360 dp.
+- [x] 4.6 Red first: a quiet-links test with the row at a fixed 360 dp.
   - At font scale 2.0 the two links share x, differ in y, each is at least 48 dp tall and has the full row width.
   - At 1.0 they share y.
   - The Tab order is "Add a past migraine", then "Log medication", in both layouts.
