@@ -24,8 +24,10 @@ product-manager accepts B1–B3 as written. Where this file and §B differ, §B 
     - `AttackMessages.kt:62` (`hasUndo`);
     - `MedicationMessages.kt:61` (`undoesArchive`).
   - So on those screens "Saved." and information messages follow the non-interactive timeout.
-  - In `MedicationMessages`, any Undo other than an archive (the logged intake's Undo on Log medication) follows it too.
-    The engineer confirms this in the red test of task 4.1.
+  - In `MedicationMessages` only `Archived` has Undo (`MedicationMessageBehaviourUiMapper.kt:16`). `Undone`,
+    `IntakeUndone`, `InFuture`, `LimitReached` and `SomethingWentWrong` have none and a reading time of 8 s; `StorageFull`
+    has none and no time. Log medication's own Undo button (`LogMedicationScreen.kt:505`) is a screen control, not a
+    message, and is out of scope.
 - **Countdown today.**
   - Each host keeps `Shown<X>MessageUiModel(message, shownAtEpochMillis)` in `rememberSaveable`. It runs
     `LaunchedEffect(current, timeout) { delay(current.remainingMillis(System.currentTimeMillis(), timeout)); shown = null }`.
@@ -91,25 +93,38 @@ product-manager accepts B1–B3 as written. Where this file and §B differ, §B 
     - `remainingMillis(now)`;
     - `paused`;
     - `expired(now)`;
-    - `timeLeftFraction(now)`.
+    - `timeLeftFraction(now)`: the share of time left to the real end, the earlier of the timeout and the ceiling.
+- **Time-left line.**
+  - It never grows. On resume it goes on from the fraction where it stopped and shrinks to 0 over the new time left, even
+    when the 3 s floor makes that time longer than the line's share suggests.
+  - With a ceiling it reaches 0 exactly at the ceiling.
+  - Under reduce motion it is not drawn, as today.
+  - Today each host restarts the line at `remaining / timeout` whenever its effect restarts (for example
+    `AttackMessages.kt:138` `rememberTimeLeft`, and Home's equivalent). The shared driver replaces those helpers.
 - **Clocks.** `MessageClock { wallMillis(); elapsedRealtimeMillis() }` comes through a `LocalMessageClock`. The default
   is `System.currentTimeMillis()` and `SystemClock.elapsedRealtime()`. Tests provide a fake.
   - The countdown runs on `elapsedRealtime`, which counts sleep and cannot be set by the user.
   - The ceiling's first bound uses the wall clock, the same clock `deletedAt`, the purge and `isFreshDeletion` use.
 - **What is saved.** The host's `rememberSaveable` state becomes:
   - the message;
-  - `runMillis`: running time already shown;
-  - `wasPaused`;
+  - `runMillis`: running time already shown, with the pause ended and the 3 s floor applied at the moment of saving;
+  - `savedElapsedMillis`: `elapsedRealtime` at the save;
   - `shownElapsedMillis` and `shownWallMillis`;
   - `actionWallMillis`.
-  - If, after a restore, `elapsedRealtime` reads below `shownElapsedMillis`, the phone rebooted. An Undo is then treated as
-    past its ceiling. Any other message keeps its `runMillis`.
+  - The pause ends at the save, because focus does not survive it. Time from `savedElapsedMillis` to the restore counts as
+    running time. So a rotation comes back with about the floor or more, and a restore after the time left at the save has
+    run out shows nothing, even if the message was paused.
+  - If, after a restore, `elapsedRealtime` reads below `savedElapsedMillis` or `shownElapsedMillis`, the phone rebooted.
+    The message is then dropped.
 - **Pause.**
   - `paused = (keyboardFocus || screenReaderFocus) && windowFocused`.
   - When focus is lost, a 300 ms grace starts. Focus that returns within it cancels the resume. The grace does not count
     as shown time.
-  - Window focus loss (`LocalWindowInfo.current.isWindowFocused == false`) ends a pause at once, with no grace.
+  - Window focus loss (`LocalWindowInfo.current.isWindowFocused == false`) ends a pause at once, with no 300 ms grace. The
+    3 s floor applies.
 - **Resume.** `remaining = max(remaining, 3_000)`, then capped by the ceiling.
+- **Timeout changed while shown.** A new "Time to take action" value applies against `runMillis`, the unpaused time already
+  shown, not against the moment the message appeared.
 - **Ceiling.**
   - `UNDO_CEILING_MILLIS = 115_000`, in `DeletionOffer.kt` next to `DELETION_OFFER_MAX_AGE_MILLIS`.
   - It ends at the earlier of `actionWallMillis + UNDO_CEILING_MILLIS` on the wall clock and
@@ -143,6 +158,10 @@ product-manager accepts B1–B3 as written. Where this file and §B differ, §B 
     `TYPE_VIEW_ACCESSIBILITY_FOCUSED` and `..._CLEARED` for the message's virtual node ids.
   - Another: a semantics-based probe.
   - "TalkBack off" comes from `AccessibilityManager` touch-exploration state.
+  - **The probe is invisible to users of assistive tech:** it adds no semantics node, label, action or change to the
+    reading order.
+  - The spike also opens TalkBack's own menu on a message and logs `isWindowFocused` and the focus events, to learn
+    whether that menu takes window focus and so resumes the countdown.
   - **Pass bar:** on API 26 and API 36, ten focus moves onto and off the text and the control each give the right state,
     10 of 10.
   - **On failure:** the pre-agreed fallback is keyboard only.
@@ -163,6 +182,8 @@ product-manager accepts B1–B3 as written. Where this file and §B differ, §B 
 - The label style does not change. The inline-or-below measurement in `MessageLayout` uses the measured control width, so
   the rule holds without new constants.
 - The tap guard already follows the measured height (D178 F2).
+- When the room switches under a message, the size changes in the same frame, with no size animation of its own and no
+  later jump. The control keeps its node, so keyboard or TalkBack focus on it stays, and so does the pause.
 - D52's landscape column already moves by `messageBottom`.
 - Delete all data's dark room gets the size too if a message ever shows there while deleting. That is consistent, not a
   goal.
@@ -186,7 +207,9 @@ product-manager accepts B1–B3 as written. Where this file and §B differ, §B 
 None block the plan. The §D items become device-walk checks (task 7):
 - the feel of the 3 s floor and the 300 ms grace;
 - whether 64 dp feels heavy over the rain card at 200%;
-- whether stock Android writes only the interactive timeout.
+- whether stock Android writes only the interactive timeout;
+- that a touch ending keyboard mode counts as focus leaving (spec "A touch ends keyboard mode");
+- the 48 to 64 dp change when "Migraine ended" replaces a message on Home, and the reverse after "Undo".
 
 If the walk says a number is wrong, ux-designer proposes a new one, and product-manager updates D182 and the delta.
 
@@ -195,11 +218,12 @@ If the walk says a number is wrong, ux-designer proposes a new one, and product-
 | Area | Case | Rule | Scenario |
 |---|---|---|---|
 | EC-UX-52 | "Saved." on Home with a 20 s interactive and an 8 s non-interactive timeout | 20 s | Message durations by kind: The same rule on every screen |
-| EC-UX-52 | Setting changed while shown | new value from the moment it appeared | The setting changes while a message shows |
+| EC-UX-52 | Setting changed while shown | new value against the unpaused time already shown | The setting changes while a message shows |
 | EC-UX-52 | Attack mode "Saved." | about 30 s, dim, one tap closes it | Saved on Home in attack mode |
 | EC-UX-53 | Keyboard on Undo | pause, then the time left | Keyboard holds Undo |
 | EC-UX-53 | 0.5 s left on leave | 3 s floor | Focus leaves with little time left |
 | EC-UX-53 | Reduce motion | no line, the pause still works | Undo window: Reduce motion; The line stops while paused |
+| EC-UX-53 | Line after a pause or at the ceiling | never grows, 0 at the real end | The line never grows; The line meets the ceiling |
 | EC-UX-53 | 200%, landscape, RTL | the same pause | Large font, landscape and right-to-left |
 | EC-UX-54 | TalkBack text, then control | no resume between them | From the text to the control |
 | EC-UX-54 | API 26 and 36 | both | Both Android versions |
@@ -209,8 +233,9 @@ If the walk says a number is wrong, ux-designer proposes a new one, and product-
 | EC-UX-56 | Replacement while paused | full, unpaused time | A new message replaces a paused one |
 | EC-UX-56 | Undo while paused | "Undone." full time | Undo pressed while paused |
 | EC-UX-56 | Storage full | unchanged | Storage full has nothing to pause |
-| EC-UX-57 | Rotation while paused | no focus, at least 3 s | Rotate while paused |
-| EC-UX-57 | Process death while paused | no focus, at least 3 s | Process death while paused |
+| EC-UX-57 | Rotation while paused | pause ends at the save, floor then, no focus | Rotate while paused |
+| EC-UX-57 | Process death while paused | time left at the save, less the time to restore | Process death while paused |
+| EC-UX-57 | Restore after the time ran out | nothing shown, even if paused | Restored after the time ran out |
 | EC-UX-57 | Restore past the ceiling | no Undo | Restored after the ceiling |
 | EC-UX-58 | Held Undo | 115 s after the action | A held deletion Undo; TalkBack holds an Undo; Other Undo messages |
 | EC-UX-58 | Clock back or forward | elapsed bound or early end | The clock is set back during a pause; The clock is set forward |
@@ -221,8 +246,8 @@ If the walk says a number is wrong, ux-designer proposes a new one, and product-
 | EC-UX-59 | Portrait and landscape attack mode, 100% and 200% | 64 dp | Portrait attack mode; Landscape attack mode; attack-mode: Undo the start in the dark |
 | EC-UX-59 | Log medication dark room | Dismiss 64 dp | Log medication in the dark room |
 | EC-UX-59 | Outside the dark room | 48 dp | Outside the dark room |
-| EC-UX-59 | Room changes under a message | the new room's size | The room changes under a message |
-| EC-UX-59 | TalkBack | nothing new spoken | Nothing new is spoken |
+| EC-UX-59 | Room changes under a message | the new room's size in the same frame, focus and pause kept | The room changes under a message |
+| EC-UX-59 | TalkBack, in or out of the dark room | nothing new spoken, no new node from the probe | Nothing new is spoken |
 
 **Checklist items with no change:**
 - *Data:* nothing stored changes, so there is no effect on backup, restore or upgrade from 1.0.x to 1.2.1.

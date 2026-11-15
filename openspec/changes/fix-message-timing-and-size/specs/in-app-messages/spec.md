@@ -49,8 +49,8 @@ EC-UX-55, EC-UX-56, D182).
 ### Requirement: The countdown pauses while the message holds TalkBack focus
 While TalkBack's focus is on a timed message's text or control, its countdown SHALL pause as for keyboard focus, with the
 same 300 ms grace, which covers TalkBack's move from the text to the control, and the same 3 second floor. Turning TalkBack
-off SHALL count as focus leaving. No message SHALL become indefinite under TalkBack: an Undo still leaves at its ceiling
-(BRD EC-UX-54, EC-UX-55, D182).
+off SHALL count as focus leaving. TalkBack being on SHALL NOT make a message indefinite; a message pauses only while focus
+holds it, and an Undo still leaves at its ceiling (BRD EC-UX-54, EC-UX-55, D182).
 
 #### Scenario: From the text to the control
 - **WHEN** TalkBack focuses a message's text and the user swipes to its control 2 seconds later
@@ -145,19 +145,23 @@ EC-UX-02, EC-UX-59, D182).
 
 #### Scenario: The room changes under a message
 - **WHEN** a message is on screen and Home enters or leaves attack mode
-- **THEN** its control takes the size of the room it is now in, and the tap guard follows the message's new height
+- **THEN** its control takes the size of the room it is now in, in the same frame as the room's switch, with no size
+  animation of its own and no later jump
+- **AND** the tap guard follows the message's new height
+- **AND** keyboard or TalkBack focus on the control stays, and so does the pause
 
 #### Scenario: Nothing new is spoken
-- **WHEN** TalkBack reads a message in the dark room
+- **WHEN** TalkBack reads a message, in or out of the dark room
 - **THEN** it reads the same text and labels as before
+- **AND** the pause's focus probe adds no semantics node, label, action or change to the reading order
 
 ## MODIFIED Requirements
 
 ### Requirement: Undo window follows the accessibility timeout
 A message with "Undo" SHALL stay for 5 seconds of unpaused time, or for Android's interactive accessibility timeout when
-that is longer, and never past its Undo ceiling. While it is shown, a thin line along its bottom edge SHALL shrink to show
-the time left and SHALL stop while the countdown is paused. With reduce motion on, the line SHALL be hidden (BRD ATK-F1,
-ATK-F2, EC-UX-08, EC-UX-16, D182).
+that is longer, and never past its Undo ceiling. A thin line along its bottom edge SHALL show the time left to the real
+end, the earlier of timeout and ceiling, SHALL stop while paused, SHALL never grow, and SHALL reach 0 at that end. With
+reduce motion on, it SHALL be hidden (BRD ATK-F1, ATK-F2, EC-UX-08, EC-UX-16, D182).
 
 #### Scenario: Default undo window
 - **WHEN** an attack is started and the accessibility timeout is not set
@@ -173,7 +177,16 @@ ATK-F2, EC-UX-08, EC-UX-16, D182).
 
 #### Scenario: The line stops while paused
 - **WHEN** keyboard focus rests on "Undo" with reduce motion off
-- **THEN** the time-left line stops where it was and shrinks again once focus has left
+- **THEN** the time-left line stops where it was
+- **AND** once focus has left it goes on from where it stopped and shrinks to 0 over the new time left
+
+#### Scenario: The line never grows
+- **WHEN** focus leaves a paused "Undo" with 0.5 seconds left, so the 3 second floor applies
+- **THEN** the line goes on from where it stopped, with no jump back, and shrinks to 0 over the 3 seconds
+
+#### Scenario: The line meets the ceiling
+- **WHEN** an Undo's ceiling comes before its timeout
+- **THEN** the line reaches 0 exactly at the ceiling, when the message leaves
 
 ### Requirement: Message durations by kind
 Information messages, "something went wrong" and "Saved." SHALL stay 8 seconds, extended by Android's interactive
@@ -210,13 +223,13 @@ the screen SHALL also take it away (BRD EC-UX-16, EC-UX-34, EC-UX-35, EC-UX-52, 
 
 #### Scenario: The setting changes while a message shows
 - **WHEN** the user changes "Time to take action" while a timed message is on screen
-- **THEN** the new value applies, counted from when the message appeared
+- **THEN** the new value applies, counted against the unpaused time already shown, not from when the message appeared
 
 ### Requirement: Messages survive rotation and short interruptions
-A message SHALL keep the time it has left when the screen rotates, the activity is recreated, the process is restored, or
-the app returns from the background in time. The host SHALL save the time already shown, not only when the message
-appeared. A restored message SHALL have no focus; one that was paused SHALL resume with at least 3 s left. None SHALL pass
-its Undo ceiling (BRD EC-UX-16, EC-UX-57, D182).
+A message SHALL keep its time left across rotation, recreation, process restore and a return from the background in
+time. The host SHALL save the running time shown and the save's elapsed stamp. A pause SHALL end at the save, with the 3 s
+floor applied then; time from save to restore SHALL count as running time. A restored message SHALL have no focus and never
+pass its Undo ceiling (BRD EC-UX-16, EC-UX-57, D182).
 
 #### Scenario: Rotate during the undo window
 - **WHEN** the user rotates the phone 2 seconds after starting an attack
@@ -227,12 +240,19 @@ its Undo ceiling (BRD EC-UX-16, EC-UX-57, D182).
 - **THEN** no message is shown
 
 #### Scenario: Rotate while paused
-- **WHEN** keyboard focus has held "Undo" for 20 seconds and the user rotates the phone
-- **THEN** the message is still shown with no focus, and it leaves after the time it had left, at least 3 seconds
+- **WHEN** keyboard focus has held "Undo" for 20 seconds with 2 seconds left and the user rotates the phone
+- **THEN** the pause ends at the save with at least 3 seconds left, and the message comes back with no focus and about 3
+  seconds left, less the time the rotation took
 
 #### Scenario: Process death while paused
-- **WHEN** the process dies while focus holds a message and Android restores the screen
-- **THEN** the message comes back with no focus and at least 3 seconds left
+- **WHEN** the process dies while focus holds a message, and Android restores the screen before the time left at the save
+  has run out
+- **THEN** the message comes back with no focus and the time left at the save, less the time until the restore
+
+#### Scenario: Restored after the time ran out
+- **WHEN** a screen is restored after the time left at the save has run out on the elapsed clock, even though the message
+  was paused when it was saved
+- **THEN** no message is shown
 
 #### Scenario: Restored after the ceiling
 - **WHEN** a screen with a deletion Undo is restored more than 115 seconds after `deletedAt`

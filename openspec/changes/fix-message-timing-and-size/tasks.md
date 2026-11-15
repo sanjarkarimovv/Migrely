@@ -50,6 +50,9 @@ ask `product-manager` before you code.
 - [ ] 3.1 TalkBack focus on a message's text and control, on API 36 (`emulator-5570`) and on API 26, on a device
   `team-lead` assigns (`emulator-5582` belongs to QA) (design D3).
   - **Pass:** 10 of 10 correct focus and clear events on each level, for the text and the control.
+  - Also open TalkBack's own menu on a message and log `isWindowFocused` and the focus events, so we know whether that
+    menu resumes the countdown.
+  - The probe adds no semantics node, label, action or change to the reading order.
   - Write the result in this file under 3.1: the method, the counts, and the logcat or test file.
   - **On failure:** send `product-manager` the result. product-manager drops "The countdown pauses while the message holds
     TalkBack focus" from the delta and adds the known limit to D182 and EC-UX-54 before task 4.4 starts.
@@ -70,13 +73,16 @@ ask `product-manager` before you code.
     - drives the lifecycle through pause and resume;
     - asserts that "Undo" is gone and "This can no longer be undone." never appears.
   - Add a 114 s positive control: Undo restores and "Undone." is shown.
-  - Add the same red test for the logged-intake Undo's timeout in `MedicationMessages` (design Context).
+  - Add one red test for the timeout split (D182 (1)): with an interactive timeout of 20 s and a non-interactive one of
+    8 s, the information message `IntakeUndone` on Log medication stays 20 s. On 40536f49 it leaves at 8 s. Log
+    medication's own Undo button is a screen control, not a message, and stays out of scope (design Context).
   - If the tests need the clock seam, land 4.2's seam alone first, with no behaviour change, and run the red tests on that
     commit.
 
   Verify:
   - `./gradlew :features:home:ui:testDebugUnitTest --tests '*HomeMessagesTest*' :features:history:ui:testDebugUnitTest --tests '*HistoryMessagesTest*'`
     fails on the two 122 s tests, and only those;
+  - `./gradlew :features:medication:ui:testDebugUnitTest --tests '*MedicationMessages*'` fails on the `IntakeUndone` test;
   - paste the failing test names and the SHA here.
 - [ ] 4.2 Add `MessageClock` and `LocalMessageClock`, and `UNDO_CEILING_MILLIS = 115_000` in `DeletionOffer.kt`. Move the
   retention value to a public `DELETED_ATTACK_RETENTION_MILLIS` in `datasource/source`, with `DELETED_RETENTION` derived
@@ -89,6 +95,10 @@ ask `product-manager` before you code.
   ceiling's two bounds, saved state and the reboot rule (design D2).
   - Unit tests cover P1–P7 from ux §B2, a clock set back an hour, a clock set forward, and an elapsed clock below the saved
     stamp.
+  - The saved state follows design D2: the pause ends and the 3 s floor applies at the save, and save-to-restore time
+    counts as running time on `elapsedRealtime`. Tests cover a rotation while paused (about 3 s back), a restore after the
+    time left at the save has run out (nothing, even if paused), and a timeout changed while shown (counted against the
+    unpaused time already shown).
   - Negative control: with the floor set to 0, P2 fails.
 
   Verify: `./gradlew :designsystem:testDebugUnitTest --tests '*MessageCountdown*'` passes, and the negative control run
@@ -97,19 +107,27 @@ ask `product-manager` before you code.
   - It sleeps until the next deadline.
   - It re-evaluates on `LifecycleResumeEffect` and when window focus returns.
   - It takes keyboard focus from `MessageFocus`, and TalkBack focus from the spike's method if 3.1 passed.
-  - It feeds `timeLeft` so the line stops while paused.
+  - It feeds `timeLeft` from `MessageCountdown.timeLeftFraction`. The line stops while paused, never grows, goes on from
+    where it stopped over the new time left, and reaches 0 at the earlier of timeout and ceiling. It replaces the
+    per-host helpers that restart the line at `remaining / timeout`: `AttackMessages.kt:138` `rememberTimeLeft` and Home's
+    equivalent.
+  - The TalkBack probe adds no semantics node, label, action or change to the reading order.
 
-  Verify: `./gradlew :designsystem:testDebugUnitTest` passes, including a Robolectric test where window focus loss resumes
-  at once.
+  Verify: `./gradlew :designsystem:testDebugUnitTest` passes, including Robolectric tests where window focus loss resumes
+  at once with no 300 ms grace, the line after a 0.5 s resume goes on from where it stopped (no jump), and the semantics
+  tree with and without the probe is identical.
 - [ ] 4.5 `messageTimeoutMillis` is the only timeout. Add a Konsist rule, next to `app/src/test/.../MessageCallSitesTest.kt`,
   that fails on `calculateRecommendedTimeoutMillis` outside `MessageTimeout.kt` (design D1).
   Verify: `./gradlew :app:testDebugUnitTest --tests '*MessageCallSites*'` fails on 40536f49's four hosts, which is the
   negative control, and passes after task 5.1.
 - [ ] 4.6 Add `LocalInDarkRoom` in `MigrelyDarkRoom`. In a dark room `MigrelySnackbar` uses a 64 dp minimum height, a
   64 x 64 dp minimum for Undo, and a 64 x 64 dp Dismiss with a 24 dp icon (design D4).
+  The size changes in the same frame as the room's switch, with no size animation of its own, and the control keeps its
+  node so focus and the pause stay.
   Verify:
   - `./gradlew :designsystem:testDebugUnitTest --tests '*Snackbar*'` passes, with bounds of at least 64 dp inside an active
-    room and 48 dp outside;
+    room and 48 dp outside, and a test that switches the room under a focused control and finds the new size in the next
+    frame with focus kept;
   - with the local forced false, the test fails.
 
 ## 5. Hosts (each `ui` module)
@@ -128,8 +146,9 @@ ask `product-manager` before you code.
   timeout is already interactive.
   Verify: `./gradlew :features:reminders:ui:testDebugUnitTest :features:report:ui:testDebugUnitTest :features:backup:ui:testDebugUnitTest :features:settings:ui:testDebugUnitTest :features:onboarding:ui:testDebugUnitTest :features:subscription:ui:testDebugUnitTest`
   passes.
-- [ ] 5.3 Saved state per host covers `runMillis`, `wasPaused` and the stamps. Rotation and process-death restore tests
-  cover the scenarios "Rotate while paused", "Process death while paused" and "Restored after the ceiling".
+- [ ] 5.3 Saved state per host covers `runMillis` (pause ended and floor applied at the save), `savedElapsedMillis` and the
+  stamps. Rotation and process-death restore tests cover the scenarios "Rotate while paused", "Process death while
+  paused", "Restored after the time ran out" and "Restored after the ceiling".
   Verify: `./gradlew :features:home:ui:testDebugUnitTest --tests '*Restore*' :features:history:ui:testDebugUnitTest --tests '*Restore*'`
   passes.
 
@@ -141,9 +160,13 @@ ask `product-manager` before you code.
 
 ## 7. Device walk (android-engineer, own emulator only)
 
-- [ ] 7.1 Walk ux §B2's device list and §B3's bounds on API 36 (`emulator-5570`) and API 26 (as `team-lead` assigns): keyboard and TalkBack, Home attack mode portrait
-  200%, History, Reminders, landscape attack mode, dark-room Log medication.
+- [ ] 7.1 Walk ux §B2's device list and §B3's bounds on API 36 (`emulator-5570`) and API 26 (as `team-lead` assigns):
+  keyboard and TalkBack, Home attack mode portrait 200%, History, Reminders, landscape attack mode, dark-room Log
+  medication.
   - Run the ceiling path of design A4 on the branch.
+  - Check that a touch ending keyboard mode counts as focus leaving (scenario "A touch ends keyboard mode").
+  - Check the 48 to 64 dp change when "Migraine ended" replaces a message on Home, and the reverse after "Undo": same frame,
+    no jump.
   - Restore font scale, rotation, the a11y timeout and the locale.
 
   Verify: one line per check in this file with the result, and `adb shell settings get secure accessibility_interactive_ui_timeout_ms`
