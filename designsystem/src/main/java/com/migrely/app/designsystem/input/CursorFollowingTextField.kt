@@ -20,6 +20,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.SolidColor
@@ -34,6 +35,7 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.flow.first
 
 /** The clearance between the cursor line and the scrolling area's edges, the keyboard's top included (ux U1). */
 private val CURSOR_MARGIN = 8.dp
@@ -42,6 +44,7 @@ private val CURSOR_MARGIN = 8.dp
  * An outlined text field, drawn as Material's, whose line with the cursor its scrolling parent keeps in view, [margin]
  * clear of the parent's visible edges, while it has focus (BRD D180 (2), EC-UX-39, #141): after typing, a tap, a paste,
  * a cursor move, and when the visible area shrinks as the keyboard opens while that line is in view (KeyboardFollow).
+ * The keyboard ending the word it composes changes neither text nor cursor, so it moves nothing.
  * The page scrolls only as far as needed, so a tap on a line already in view moves nothing, and "Remove animations"
  * makes each scroll a jump.
  *
@@ -69,9 +72,14 @@ fun CursorFollowingTextField(
     val keyboard = WindowInsets.ime
     val marginPx = with(density) { margin.toPx() }
     val cursor by rememberUpdatedState(value.selection.end)
-    LaunchedEffect(focused, value.selection, layout) {
+    // The text and the cursor, not the whole value: a keyboard ending the word it composes changes only the
+    // composition, so its new layout, as on closing, never brings the line back (review 7.1 F1, QA 8.1).
+    LaunchedEffect(focused, value.text, value.selection) {
         if (!focused) return@LaunchedEffect
-        val line = geometry.lineOf(layout, value.selection.end, marginPx) ?: return@LaunchedEffect
+        val text = value.text
+        // An edit's own layout comes a frame after it.
+        val laidOut = snapshotFlow { layout }.first { it?.layoutInput?.text?.text == text }
+        val line = geometry.lineOf(laidOut, value.selection.end, marginPx) ?: return@LaunchedEffect
         requester.bringIntoView(line)
         follow.onBroughtIntoView()
     }

@@ -1,5 +1,7 @@
 package com.migrely.app.attack.ui.view
 
+import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputConnection
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
@@ -24,12 +26,14 @@ import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.requestFocus
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.migrely.app.attack.ui.model.AttackDetailsViewStateUiModel
 import com.migrely.app.designsystem.theme.MigrelyTheme
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -303,5 +307,81 @@ class NoteKeyboardTest {
         setKeyboard(KEYBOARD_DP)
 
         assertEquals("the top left the view", 0f, scroll(), 0.5f)
+    }
+
+    /** The on-screen keyboard's own connection to the focused note, through which it types and composes. */
+    private fun keyboardConnection(): InputConnection {
+        var connection: InputConnection? = null
+        rule.runOnUiThread {
+            val view = rule.activity.window.decorView.findFocus()
+            connection = view.onCreateInputConnection(EditorInfo())
+        }
+        return checkNotNull(connection) { "the focused view gave the keyboard no connection" }
+    }
+
+    private fun InputConnection.send(edit: InputConnection.() -> Boolean) {
+        rule.runOnUiThread { assertTrue("the field refused the keyboard's edit", edit()) }
+        rule.waitForIdle()
+    }
+
+    // The keyboard underlines the word it is composing: the field draws that underline in its text layout.
+    private fun composing(): Boolean = layout().layoutInput.text.spanStyles.any { style ->
+        style.item.textDecoration == TextDecoration.Underline
+    }
+
+    private fun cursorLineInView(): Boolean {
+        val line = cursorLine()
+        val top = content.getUnclippedBoundsInRoot().top.value
+        return line.bottom > top && line.top < keyboardTop().value
+    }
+
+    /** The keyboard has typed [word] and still composes it, then the user scrolls the page to its top. */
+    private fun composeThenScrollAway(word: String): InputConnection {
+        show(LONG_NOTE.take(900))
+        note.requestFocus()
+        openKeyboard()
+        val keyboard = keyboardConnection()
+        keyboard.send { setComposingText(word, 1) }
+        assertTrue("the keyboard is not composing", composing())
+        scrollToTop()
+        assertFalse("the scroll did not take the cursor line away", cursorLineInView())
+        return keyboard
+    }
+
+    @Test
+    fun `Closing the keyboard mid-word after scrolling away leaves the page there`() {
+        val keyboard = composeThenScrollAway("once")
+        val typed = draft
+        val cursor = selection()
+        val scrolled = scroll()
+
+        // Back: the keyboard commits the word it was composing, then slides away.
+        keyboard.send { finishComposingText() }
+        assertFalse("the keyboard still composes", composing())
+        assertEquals(typed, draft)
+        assertEquals(cursor, selection())
+        assertEquals("the word's end scrolled the page back", scrolled, scroll(), 0.5f)
+        setKeyboard(0)
+
+        assertEquals("closing scrolled the page back", scrolled, scroll(), 0.5f)
+    }
+
+    @Test
+    fun `Typing again after scrolling away brings the cursor line back above the keyboard`() {
+        val keyboard = composeThenScrollAway("once")
+
+        keyboard.send { setComposingText("onset", 1) }
+
+        assertCursorLineShows("after the keyboard typed on")
+    }
+
+    @Test
+    fun `Moving the cursor after scrolling away brings its line back above the keyboard`() {
+        composeThenScrollAway("once")
+
+        note.performTextInputSelection(TextRange(selection().end - 40))
+        rule.waitForIdle()
+
+        assertCursorLineShows("after the cursor moved")
     }
 }
