@@ -273,6 +273,10 @@ under load. Never `--stop` the daemon.
     (focus null after the second press); green after: medication 88 of 88.
   - F6 (S4): a test that the in-progress Ended row keeps "Ended" and "In progress" and is not a control. Green on
     78eb13ed (a guard); a one-line mutation that always clears the row's texts fails it (1 of 5).
+  - F2 round 2 (cr-t66 on 24066a1e): keying on `pending` failed when the result came in the press's own frame
+    (InvalidName, InvalidDose). The screen now counts NotSaved results (`problemArrivals`) and the effect is keyed on
+    that count; the pending and touch-only guards stay. Red on 24066a1e: 2 of 15 (instant second Save, name and dose:
+    focus null); green after: medication 90 of 90.
   - F4 (backlog T68) and F5 (#224) are out of this change, by team-lead.
 - [ ] 8.5 `qa-engineer` gives Go/No-Go on the head SHA, limited to what the diff reaches, with negative controls on
   40536f49.

@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -71,6 +72,13 @@ class EditMedicationKeyboardOrderTest {
     /** What the next Save finds, as the ViewModel's NotSaved event would say. */
     private var problemOnSave: SaveProblemUiModel? = null
     private var savePends = false
+    private var problemArrivals by mutableIntStateOf(0)
+
+    /** As the screen's NotSaved collector: the problem, and one more result. */
+    private fun fail() {
+        problem = problemOnSave
+        problemArrivals++
+    }
 
     private var touchOnly = false
 
@@ -87,13 +95,14 @@ class EditMedicationKeyboardOrderTest {
                 notFound = notFound,
                 form = if (notFound) null else form,
                 problem = problem,
+                problemArrivals = problemArrivals,
                 pending = pending,
                 onFormChange = {
                     form = it
                     problem = null
                 },
                 onSave = {
-                    if (savePends) pending = true else problem = problemOnSave
+                    if (savePends) pending = true else fail()
                 },
                 onBack = {},
                 messages = {
@@ -237,7 +246,7 @@ class EditMedicationKeyboardOrderTest {
         rule.press(Key.Enter)
         rule.runOnIdle {
             pending = false
-            problem = problemOnSave
+            fail()
         }
         rule.waitForIdle()
     }
@@ -270,6 +279,41 @@ class EditMedicationKeyboardOrderTest {
         problemOnSave = SaveProblemUiModel.InvalidDose
 
         assertASecondSaveMovesFocusBackTo(DOSE, tabsToSave = 1)
+    }
+
+    /**
+     * The result inside the press's own frame (review F2, round 2): InvalidName and InvalidDose
+     * return before any database read, so no frame sees Save pending. Two Enters on Save in a
+     * row, with the same problem each time.
+     */
+    private fun assertASecondInstantSaveMovesFocusBackTo(field: String, tabsToSave: Int) {
+        savePends = false
+        focusOnBack()
+        rule.walk(ADD_ORDER.size)
+        rule.press(Key.Enter)
+        assertEquals(field, rule.focusedName())
+
+        rule.walk(tabsToSave)
+        assertEquals(SAVE, rule.focusedName())
+        rule.press(Key.Enter)
+
+        assertEquals(field, rule.focusedName())
+    }
+
+    @Test
+    fun `A second instant Save with the same invalid name moves focus to Name again`() {
+        show()
+        problemOnSave = SaveProblemUiModel.InvalidName
+
+        assertASecondInstantSaveMovesFocusBackTo(NAME, tabsToSave = ADD_ORDER.size - 1)
+    }
+
+    @Test
+    fun `A second instant Save with the same invalid dose moves focus to Usual dose again`() {
+        show()
+        problemOnSave = SaveProblemUiModel.InvalidDose
+
+        assertASecondInstantSaveMovesFocusBackTo(DOSE, tabsToSave = 1)
     }
 
     /** Robolectric's view never stays in touch mode, so the screen is given a touch-only manager. */
