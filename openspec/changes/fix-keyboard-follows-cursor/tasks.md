@@ -308,6 +308,36 @@ section 9.
       `[0,0][0,0]`, `walks/kbd/dev-typed.xml`), test 3.5, and the API 26 copy rows (head 9/9 clear, develop 3/3 stale,
       `qa-kbd-36/MEASUREMENTS.log`).
 
+- [x] 7.4 F1 composing word (QA 8.1 finding 1, NO-GO on 76e5afcd): `android-engineer` makes the keyboard ending the word it
+  composes leave the page where the person scrolled it. Verify: a red test on 76e5afcd that ends a composition with text and
+  cursor unchanged after a scroll away, green after; a mutation that turns it red again; the gate on the new SHA. The device
+  rerun of row F1 is QA's (8.1).
+  - Record (2026-11-15, android-engineer, code 2b24b915): cause confirmed. `CursorFollowingTextField` keyed its
+    bring-into-view effect on the text layout. The keyboard's composing underline is part of that layout, so ending the word
+    (on Back) gave a new layout with the same text and cursor, the effect ran again and brought the line back without asking
+    `KeyboardFollow`. The effect now runs on focus, a text change and a cursor move only, and waits for that edit's own layout
+    before it reads the line. `SingleLineFieldInView` runs on focus and a size change, which ending a word does not cause: no
+    change there. `KeyboardFollow`, D7 and the message host are untouched.
+  - Red on 76e5afcd, green on 2b24b915: `NoteKeyboardTest` "Closing the keyboard mid-word after scrolling away leaves the page
+    there", driven through the field's real `InputConnection` (`setComposingText("once")`, scroll to the top,
+    `finishComposingText()`, close). Red: pulled back 4035 px right at `finishComposingText()`, with the keyboard still open
+    (13 tests, 1 failed); green 13/13. Guards, green before and after: "Typing again after scrolling away" (the keyboard
+    composes on) and "Moving the cursor after scrolling away" bring the line back above the keyboard. Mutations: the layout
+    key back in the effect: red again, 4035 px; a focus-only trigger: 7 of 13 red (both guards among them); dropping the
+    wait for the edit's layout survives under Robolectric, where the effect starts after the frame's layout, so the wait
+    guards only the device ordering. Logs: `walks/kbd/7.4-red-76e5afcd.log`, `7.4-green.log`, `7.4-mutation-*.log`.
+  - Gate on 2b24b915: `BUILD SUCCESSFUL in 2m 27s`, exit 0; JVM 1348, debug 1156, release 702 tests, 0 failures, 0 skipped.
+    `:app:checkReleasePermissions` exit 0; no INTERNET in the merged release manifest. Logs: `gate-2b24b915.log`,
+    `perms-2b24b915.log`.
+  - Walk: **not run, blocked by the host.** emulator-5570 hung twice at boot (14:07 and 14:08, `-memory 2048 -no-snapshot`,
+    the second with `-cores 2`; qemu "detected a hanging thread" on every vCPU, crash reports
+    `qemu-system-aarch64-headless-2026-11-15-140828.ips` and `-140922.ips`), with swap at 8.3 of 9.2 GB. 5570 is off and
+    unchanged. `walks/kbd/away.sh` now takes the text to type (default `aura%sonce`, composing; `aura%sonce%s` committed) and
+    deletes stale dumps before each read.
+  - QA observation 2 (U4, page up 234 px at 100% as the keyboard opens): not settled. The fix removes one possible path (a
+    keyboard that sets a composing region around the tapped word after the tap), but the likelier cause, Compose's own
+    tracking of the focused field when the viewport shrinks, is untouched. QA's F1 rerun can read it at the same time.
+
 ## 8. QA
 
 - [ ] 8.1 `qa-engineer` runs K1 to K8 on the PR head, this diff only (owner rule 2026-11-09), with the negative controls named in
