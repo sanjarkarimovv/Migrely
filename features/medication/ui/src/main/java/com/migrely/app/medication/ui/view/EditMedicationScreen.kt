@@ -37,6 +37,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.input.InputMode
+import androidx.compose.ui.platform.LocalInputModeManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
@@ -50,6 +54,7 @@ import com.migrely.app.designsystem.input.rememberLimitedField
 import com.migrely.app.designsystem.layout.MigrelyInsets
 import com.migrely.app.designsystem.motion.rememberReduceMotion
 import com.migrely.app.designsystem.snackbar.MessageLayout
+import com.migrely.app.designsystem.snackbar.rememberParkWhenPressed
 import com.migrely.app.designsystem.theme.MigrelyTheme
 import com.migrely.app.medication.ui.R
 import com.migrely.app.medication.ui.di.EditMedicationDependencies
@@ -254,6 +259,9 @@ private fun MedicationForm(
     val doseField = rememberLimitedField(form.dose, MAXIMUM_DOSE_LENGTH) {
         onFormChange(form.copy(dose = it))
     }
+    val focus = rememberProblemFocus(nameProblem != null, problem == SaveProblemUiModel.InvalidDose)
+    // Save turns disabled while it waits (BRD D181 (6)).
+    val save = rememberParkWhenPressed()
     // Kept above the keyboard with its supporting line where that fits (BRD D180 (2), ux U1).
     SingleLineFieldInView(hasLabel = true) { inView, interactionSource ->
         OutlinedTextField(
@@ -273,7 +281,9 @@ private fun MedicationForm(
                 )
             },
             interactionSource = interactionSource,
-            modifier = inView.fillMaxWidth()
+            modifier = inView
+                .focusRequester(focus.name)
+                .fillMaxWidth()
         )
     }
     Text(stringResource(R.string.edit_kind), style = MaterialTheme.typography.labelLarge)
@@ -346,18 +356,47 @@ private fun MedicationForm(
                 )
             },
             interactionSource = interactionSource,
-            modifier = inView.fillMaxWidth()
+            modifier = inView
+                .focusRequester(focus.dose)
+                .fillMaxWidth()
         )
     }
     Button(
-        onClick = onSave,
+        onClick = {
+            save.pressed()
+            onSave()
+        },
         enabled = !pending,
-        modifier = Modifier
+        modifier = save.modifier
             .fillMaxWidth()
             .heightIn(min = 56.dp)
     ) {
         Text(stringResource(R.string.edit_save), style = MaterialTheme.typography.labelLarge)
     }
+}
+
+/**
+ * After a Save problem, keyboard focus goes to the field that has it, Name or Usual dose (BRD D181 (6), EC-UX-49), but
+ * only in keyboard mode: a text field takes focus in touch mode too, and would open the soft keyboard over a touch
+ * user's error.
+ */
+@Composable
+private fun rememberProblemFocus(nameProblem: Boolean, doseProblem: Boolean): ProblemFocus {
+    val inputModeManager = LocalInputModeManager.current
+    val focus = remember { ProblemFocus() }
+    LaunchedEffect(nameProblem, doseProblem) {
+        if (inputModeManager.inputMode != InputMode.Keyboard) return@LaunchedEffect
+        when {
+            nameProblem -> focus.name.requestFocus()
+            doseProblem -> focus.dose.requestFocus()
+        }
+    }
+    return focus
+}
+
+private class ProblemFocus {
+    val name = FocusRequester()
+    val dose = FocusRequester()
 }
 
 @Preview(name = "Edit medication")

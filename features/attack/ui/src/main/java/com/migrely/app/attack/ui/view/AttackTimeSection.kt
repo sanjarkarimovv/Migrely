@@ -183,7 +183,8 @@ internal fun TimeRow(
     zoneId: String,
     timeUiFormatter: AttackTimeUiFormatter,
     onClick: (() -> Unit)?,
-    onMerge: ((TimeErrorReasonUiModel.Overlaps) -> Unit)? = null
+    onMerge: ((TimeErrorReasonUiModel.Overlaps) -> Unit)? = null,
+    rowModifier: Modifier = Modifier
 ) {
     Surface(
         shape = RoundedCornerShape(16.dp),
@@ -194,7 +195,7 @@ internal fun TimeRow(
     ) {
         Column {
             Column(
-                modifier = Modifier
+                modifier = rowModifier
                     .then(
                         if (onClick == null) {
                             Modifier

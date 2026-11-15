@@ -183,7 +183,7 @@ under load. Never `--stop` the daemon.
 
 ## 5. UI: three screens (D181 (6), EC-UX-49, EC-UX-50, EC-UX-51)
 
-- [ ] 5.1 Red first: order tests for Edit medication (`features/medication/ui/src/testDebug`).
+- [x] 5.1 Red first: order tests for Edit medication (`features/medication/ui/src/testDebug`).
   - Add with "For an attack": the full order and its reverse.
   - "Preventive" chosen under focus.
   - The down arrow does not select.
@@ -196,20 +196,20 @@ under load. Never `--stop` the daemon.
   - Verify: `./gradlew :features:medication:ui:testDebugUnitTest --tests '*EditMedication*Order*'`. The focus-move tests
     fail on the pre-fix base; record which order tests already pass. Negative control: dropping one stop from an
     expected list fails that test.
-- [ ] 5.2 Red first: order tests for Log medication.
+- [x] 5.2 Red first: order tests for Log medication.
   - The list, first use, logged, and the dark room (64 dp) with the same order.
   - Logging by Enter leaves nothing focused, and the next Tab goes Back, Done, Undo.
   - Taken at's picker returns focus to Taken at.
   - Verify: `./gradlew :features:medication:ui:testDebugUnitTest --tests '*LogMedication*Order*'`. The logged-clears test
     fails on the pre-fix base if focus moves today; record the result either way. Negative control as in 5.1.
-- [ ] 5.3 Red first: order tests for Add past migraine (`features/attack/ui/src/testDebug`).
+- [x] 5.3 Red first: order tests for Add past migraine (`features/attack/ui/src/testDebug`).
   - The draft and the overlap.
   - "Change the times" puts focus on Started, with nothing saved or merged.
   - Ended's picker returns focus to Ended.
   - With a message.
   - Verify: `./gradlew :features:attack:ui:testDebugUnitTest --tests '*PastAttack*Order*'`. The "Change the times" test
     fails on the pre-fix base. Negative control as in 5.1.
-- [ ] 5.4 Implement what 5.1 to 5.3 proved missing (design 6):
+- [x] 5.4 Implement what 5.1 to 5.3 proved missing (design 6):
   - focus requesters on Name and Usual dose, used only in keyboard input mode;
   - clear focus when a focused Save turns disabled;
   - clear focus after a keyboard log;

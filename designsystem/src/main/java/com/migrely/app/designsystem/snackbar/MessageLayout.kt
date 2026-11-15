@@ -6,6 +6,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
@@ -13,6 +14,7 @@ import androidx.compose.ui.focus.focusTarget
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.layoutId
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.semantics.isTraversalGroup
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.traversalIndex
@@ -50,10 +52,11 @@ fun MessageLayout(
         content = {
             FocusPark(park)
             Slot(TOP_BAR, order = 0f, topBar)
+            // The content may park focus too ([rememberFocusParking], BRD D181 (6)).
             CompositionLocalProvider(LocalMessageFocusPark provides park) {
                 Slot(MESSAGE, order = 1f, message)
+                Slot(CONTENT, order = 2f, content)
             }
-            Slot(CONTENT, order = 2f, content)
         },
         modifier = modifier.semantics { isTraversalGroup = true }
     ) { measurables, constraints ->
@@ -113,6 +116,50 @@ internal class MessageFocusPark {
 }
 
 internal val LocalMessageFocusPark = staticCompositionLocalOf<MessageFocusPark?> { null }
+
+/**
+ * Takes keyboard focus off a control without handing it to another one: to the [MessageLayout]'s park, where it looks
+ * like nothing is focused and the next Tab goes to the screen's first stop. Android gives focus back to the first
+ * control as soon as it is cleared while a keyboard is in use, so a plain clear is only the fallback outside a
+ * [MessageLayout] (ux F8, BRD D181 (6)).
+ */
+class FocusParking internal constructor(
+    private val focusManager: FocusManager,
+    private val park: MessageFocusPark?
+) {
+    fun park() {
+        if (park == null || !park.park()) focusManager.clearFocus(force = true)
+    }
+}
+
+/** The [FocusParking] of the [MessageLayout] around the caller. */
+@Composable
+fun rememberFocusParking(): FocusParking {
+    val focusManager = LocalFocusManager.current
+    val park = LocalMessageFocusPark.current
+    return remember(focusManager, park) { FocusParking(focusManager, park) }
+}
+
+/**
+ * For a control whose press removes or disables it, such as a Save that waits or a button that logs and leaves: a
+ * press while it has keyboard focus parks focus ([FocusParking]), so Android does not hand focus to a control the
+ * user did not choose (BRD D181 (6)). Put [modifier] on the control and call [pressed] first in its click.
+ */
+class ParkWhenPressed internal constructor(private val parking: FocusParking) {
+    private var focused = false
+
+    val modifier: Modifier = Modifier.onFocusChanged { focused = it.isFocused }
+
+    fun pressed() {
+        if (focused) parking.park()
+    }
+}
+
+@Composable
+fun rememberParkWhenPressed(): ParkWhenPressed {
+    val parking = rememberFocusParking()
+    return remember(parking) { ParkWhenPressed(parking) }
+}
 
 @Composable
 private fun FocusPark(park: MessageFocusPark) {
