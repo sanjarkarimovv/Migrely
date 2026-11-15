@@ -79,6 +79,15 @@ fun SingleLineFieldInView(
     )
 }
 
+/**
+ * The height a focused single-line field needs to show its input line [margin] clear above and below, which is what
+ * [SingleLineFieldInView] asks for at least (ux U1, U7).
+ */
+@Composable
+fun inputLineRoom(margin: Dp = LINE_MARGIN): Dp =
+    with(LocalDensity.current) { LocalTextStyle.current.lineHeight.orBodyLine().toDp() } +
+        margin * 2
+
 private fun TextUnit.orBodyLine(): TextUnit = if (isSp) this else BODY_LINE
 
 /**

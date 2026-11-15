@@ -1,10 +1,14 @@
 package com.migrely.app.settings.ui.view
 
+import android.graphics.Insets
 import android.os.Build
 import android.os.Looper
 import android.view.View
+import android.view.WindowInsets
+import android.view.WindowInsetsAnimation
 import androidx.activity.ComponentActivity
-import androidx.core.graphics.Insets
+import androidx.annotation.RequiresApi
+import androidx.core.graphics.Insets as InsetsCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -31,7 +35,7 @@ internal fun ComponentActivity.setKeyboard(heightDp: Int) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
         val ime = WindowInsetsCompat.Type.ime()
         val insets = WindowInsetsCompat.Builder()
-            .setInsets(ime, Insets.of(0, 0, 0, bottom))
+            .setInsets(ime, InsetsCompat.of(0, 0, 0, bottom))
             .setVisible(ime, heightDp > 0)
             .build()
         ViewCompat.dispatchApplyWindowInsets(view, insets)
@@ -50,5 +54,46 @@ internal fun ComponentActivity.setKeyboard(heightDp: Int) {
         content.requestApplyInsets()
         // androidx animates the change itself from the next draw; Compose takes the new value when that ends.
         shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(1))
+    }
+}
+
+/**
+ * A keyboard moving from [fromDp] to [toDp] as Android 11 and later animate it: the final insets first, then the frames.
+ * Drive it from the main thread: [start], then [frame] for each fraction, then [end].
+ */
+@RequiresApi(Build.VERSION_CODES.R)
+internal class KeyboardAnimation(activity: ComponentActivity, fromDp: Int, toDp: Int) {
+    private val view = activity.window.decorView
+    private val density = view.resources.displayMetrics.density
+    private val from = (fromDp * density).roundToInt()
+    private val to = (toDp * density).roundToInt()
+    private val animation = WindowInsetsAnimation(WindowInsets.Type.ime(), null, DURATION_MILLIS)
+
+    fun start() {
+        view.dispatchWindowInsetsAnimationPrepare(animation)
+        view.dispatchApplyWindowInsets(keyboard(to))
+        view.dispatchWindowInsetsAnimationStart(
+            animation,
+            WindowInsetsAnimation.Bounds(Insets.NONE, Insets.of(0, 0, 0, maxOf(from, to)))
+        )
+    }
+
+    fun frame(fraction: Float) {
+        animation.fraction = fraction
+        view.dispatchWindowInsetsAnimationProgress(
+            keyboard((from + (to - from) * fraction).roundToInt()),
+            listOf(animation)
+        )
+    }
+
+    fun end() = view.dispatchWindowInsetsAnimationEnd(animation)
+
+    private fun keyboard(px: Int): WindowInsets = WindowInsets.Builder()
+        .setInsets(WindowInsets.Type.ime(), Insets.of(0, 0, 0, px))
+        .setVisible(WindowInsets.Type.ime(), px > 0)
+        .build()
+
+    private companion object {
+        const val DURATION_MILLIS = 300L
     }
 }
