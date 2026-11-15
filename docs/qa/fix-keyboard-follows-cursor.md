@@ -1,5 +1,45 @@
 # QA record: `fix-keyboard-follows-cursor` (T63, BRD D180), task 8.1
 
+## Task 8.2: retest of #141, #83 and #145 on `develop` d3d98673 (2026-11-15, 15:09 to 15:32)
+
+**Result: all three pass on API 26 and are closed** (comments on #141, #83 and #145). The API 36 rows stay deferred: they
+are a blocking line in the release/1.3.0 Go/No-Go (`team-lead`, 2026-11-15), and an issue is reopened if they fail there.
+
+- **Build:** `develop` d3d98673 (merge of PR #225) in the detached worktree `migraine-app-qa`,
+  `perl -e 'alarm 1500; …' nice -n 19 ./gradlew --max-workers=2 :app:assembleDebug` -> BUILD SUCCESSFUL, exit 0.
+  `app-debug-d3d98673` sha256 1af5b0cf…ff8067, read back from the device with `sha256sum` of `pm path`: equal.
+  `git diff c3e2368e d3d98673` touches no main source (docs, OpenSpec, website and one test); 8 dex entries still differ
+  from QA's c3e2368e debug APK (debug dexing, no SHA embedded), so the APK was not taken as identical.
+- **Control:** `develop` ea41869a debug (sha256 aff4e8b8…f18c150), on the device before and after.
+- **Device:** emulator-5582, Android 8.0, AOSP keyboard, cold boot `-no-snapshot -memory 2048`, clean state per run (the
+  note reset by SQL). Load 3.3 to 6.8, swap 0.98 GB free. emulator-5580 was not started (host memory).
+
+| Issue | Row | d3d98673 | Control ea41869a |
+|---|---|---|---|
+| #141 | Issue steps: tap the note, type past the keyboard's top, `ENDQA` last; 100% portrait (12 lines) | ✅ 2/2 `ENDQA` line above the keyboard (field to 1562, keyboard top 1499) | |
+| #141 | Same, 200% portrait (8 lines) | ✅ 2/2 | ❌ 1/1: qa3 to qa7 and `ENDQA` under the keyboard |
+| #141 | Same, 200% landscape | ✅ 1/1 (keyboard top 496) | |
+| #141 | F1, last word composing (`aura once`), scroll to Time and Pain, Back | ✅ 3/3 page stays (100% portrait 2, 200% landscape 1) | |
+| #141 | F1, last word committed (`aura once `) | ✅ 2/2 page stays | |
+| #141 | Reopen by a tap after the F1 runs | ✅ 5/5 line above the keyboard | |
+| #83 | Back's clickable node and the title with the keyboard open (the five #141 typing runs) | ✅ 5/5 equal to closed; a first tap on Back leaves 5/5 | ❌ 1/1 Back and title `[0,0][0,0]`; the tap stays |
+| #145 | Note COPY, Back to Home, then History; 130% portrait | ✅ 2/2 Home viewport 63-1814, "Migraine started" 1917, 7 day cells; History to 2274 | ❌ 1/1 Home 63-1039, "Migraine started" 1142; History ends 1499 |
+| #145 | Same, 100% landscape | ✅ 2/2 Home 63-1080, "Migraine started" 470; History to 1080 | ❌ 1/1 Home 63-496, "Migraine started" 178; History ends 496 |
+
+Every COPY passed the guard (toolbar shown, gone after the tap, keyboard still up). The second-run crops of the typing rows
+are pixel-identical to the first. Head 14 runs (5 typing, 5 F1, 4 COPY), control 3 runs. Evidence: `migrely-work/qa-kbd10/` (`chain10.sh`,
+`chain-head.out`, `chain-ctl.out`, `5582/`).
+
+**What 8.2 does not prove:** anything on API 36 (#141 and #83 were found there; QA's API 36 rows did not run, the
+engineer's 6.2 walk passed on 24109541, before the final helper changes), Gboard, TalkBack, the TAB and 996-unit variants of
+#141 and the Edit medication and Delete all data COPY of #145 (run in 8.1 on API 26, not rerun), a real phone, an R8 build
+on a device.
+
+**Device state at the end:** ea41869a reinstalled (sha256 read back), app data restored from `appdata26-before.tar` and
+byte-equal (`diff -r` of the extracted trees, row counts equal), the 11 settings equal to before (font 1.0, rotation 0 with
+auto-rotate on, animator unset, transition and window 1.0, `show_ime_with_hard_keyboard` 1, no accessibility service),
+`zen_mode` 3 as found. Shut down with `sync` and `reboot -p`; the emulator process exited.
+
 ## Decision (current): retest on c3e2368e
 
 **QA's verdict, 2026-11-15 14:52: GO with recorded deferred risks for the merge of `bugfix/141-keyboard-follows-cursor` at
