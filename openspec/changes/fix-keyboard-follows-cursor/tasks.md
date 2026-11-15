@@ -126,7 +126,7 @@ section 9.
   - Record (2026-11-15): `MainActivitySoftInputTest` (in `app/src/testDebug`, where Robolectric is): red without the
     attribute, "expected:<16> but was:<0>"; green with it. Evidence: `3.5-red-green.txt`.
 
-- [ ] 3.6 #145 on screens with a field (design D6): prove whether `adjustResize` alone clears the stale `ime` after a copy from
+- [x] 3.6 #145 on screens with a field (design D6): prove whether `adjustResize` alone clears the stale `ime` after a copy from
   the toolbar on API 26. First a Robolectric test at `sdk = [26]` if it can model the toolbar dispatch; if it cannot, say so
   and ask `qa-engineer` for a device check on emulator-5582 with the probe of task 1.3 (`migrely-work/qa-145/probe.diff`). If
   the value stays, add the smallest fix that clears it and report it to `product-manager` before section 4 ends. Verify: the
@@ -143,6 +143,14 @@ section 9.
     proven. No extra fix was added. Asked of `qa-engineer` (via `team-lead`): on emulator-5582 with the probe of 1.3,
     the COPY steps from the note, Edit medication and Delete all data on this branch's head; pass is `ime` 0 after the
     keyboard closes on each, with develop ea41869a as the negative control.
+  - Record (2026-11-15, qa-engineer qa-kbd36, relayed by `team-lead`): **proven on a device, no extra fix needed.**
+    emulator-5582 (API 26, AOSP LatinIME, 100% font), 51e22355 plus the probe of 1.3; APK sha256
+    aba291f0f91762a93fde0e4bf5e053dc3b8e7cd234d12a61bb7b283760008688, manifest `adjustResize`. Compose `ime` back to 0
+    after the keyboard closed in 9/9 runs on the head: note COPY 3/3, Edit medication COPY 2/2, Delete all data COPY
+    2/2, History -> details COPY -> History 2/2, the no-toolbar control 1/1. Home's "Migraine started" stayed at y 1982
+    (baseline) with 14 day cells; History ended at 2274. Control develop ea41869a with the probe, same boot: stale in
+    3/3 valid runs (`ime` 901, Home y 1207, 0 day cells). Evidence: `migrely-work/qa-kbd-36/MEASUREMENTS.log`. Not
+    checked: 130% font and landscape (QA 8.x), Gboard on API 26, other makers' Android 8 builds.
 
 ## 4. UI
 
@@ -247,6 +255,33 @@ section 9.
 
 - [ ] 7.1 `code-reviewer`, with the reviewer's own D178 (6) warning as a check item: no keyboard inset above the content column,
   and the fit rule reads the shared bars inset. Verify: no open blocker.
+- [ ] 7.2 `android-engineer` fixes the review's F1 (and with it F2) and takes F6. Verify: a red test per helper on 51e22355,
+  green after; the gate on the new SHA; a short walk on emulator-5570.
+  - Record (2026-11-15, android-engineer, f05814f2): both helpers asked for their line on every keyboard height change,
+    closing included. New `designsystem/input/KeyboardFollow.kt`: a layout in which the keyboard did not move records
+    whether the line is whole in view (clipped by the scroll), so a scroll away, by hand or by the D167 reveal, ends the
+    following; a layout in which the keyboard moved keeps the record from before, as Compose's resize tracking does,
+    without its clip gap (the line, not the whole field, is what must show). Only a growing keyboard asks, and only
+    while following. Focus, an edit and a field size change still ask as before (U1, D7 unchanged). F6: the keyboard
+    height is read in `snapshotFlow`, so its frames no longer recompose the note or the medication screens (Delete all
+    data still reads it in composition for D7's padding). The message host is untouched (D178 (6)).
+  - Red on 51e22355's helpers, green on f05814f2: `NoteKeyboardTest` "Closing the keyboard after scrolling away from the
+    note leaves the page there" (pulled back 3957 px); F2 model "A keyboard that closes and opens again keeps the top
+    of the page in view" (top left by 4207 px; it uses a programmatic scroll to the top in place of the real reveal);
+    `EditMedicationKeyboardTest` "Closing the keyboard after scrolling to Save does not scroll back to the name" (8 px
+    against the page's new end, 106 px: with Save at the page's end the larger area may settle it down, U6). Mutation
+    "ask on every growth": the F2 model fails again (4207 px). Evidence: `7.2-red-51e22355.txt`,
+    `7.2-mutation-grow-only.txt`.
+  - Gate on f05814f2: `BUILD SUCCESSFUL in 1m 48s`, exit 0; JVM 1348, debug 1153, release 702 tests, 0 failures, 0
+    skipped. `:app:checkReleasePermissions` exit 0. Logs: `gate-f05814f2.log`, `perms-f05814f2.log`.
+  - Walk: **not run, blocked by the host.** emulator-5570 did not boot in 6 starts between 11:52 and 12:05 (`-gpu
+    host` twice, `swiftshader_indirect`, cold boot without the snapshot, normal priority, and once more after
+    emulator-5582 went off): each time all four QEMU vCPU threads hung within 20 s at 0% CPU ("detected a hanging
+    thread"), then the process exited or stayed hung. emulator-5560 and another project's headless Pixel_6 (about 80 to
+    100% CPU, up 4 days) were running; host load 3.7 to 5.6. Logs: `emu5570.log`, `emu5570-2.log` to `emu5570-6.log`.
+    5570 is off, its settings untouched, no test data written. Still to walk on a device: F1 on the note and on Edit
+    medication at 100% portrait, and F2 (safety card after a first pain 10 with the note focused, also with Remove
+    animations); `away.sh` in the same folder is ready for F1, with the focus guard.
 
 ## 8. QA
 
