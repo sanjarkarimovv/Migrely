@@ -376,6 +376,17 @@ class NoteKeyboardTest {
     }
 
     @Test
+    fun `A word the keyboard rewrites in place after scrolling away brings the line back`() {
+        val keyboard = composeThenScrollAway("once")
+        val cursor = selection()
+
+        keyboard.send { setComposingText("ones", 1) }
+
+        assertEquals("the rewrite moved the cursor", cursor, selection())
+        assertCursorLineShows("after the keyboard rewrote the word")
+    }
+
+    @Test
     fun `Moving the cursor after scrolling away brings its line back above the keyboard`() {
         composeThenScrollAway("once")
 

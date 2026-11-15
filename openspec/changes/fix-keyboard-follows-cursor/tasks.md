@@ -338,6 +338,15 @@ section 9.
     keyboard that sets a composing region around the tapped word after the tap), but the likelier cause, Compose's own
     tracking of the focused field when the viewport shrinks, is untouched. QA's F1 rerun can read it at the same time.
 
+- [x] 7.5 Review finding 1 on c3e2368e (S4, test gap): no test failed with `value.text` dropped from the effect's keys, as
+  every edit in `NoteKeyboardTest` also moved the cursor. Verify: a test with a same-length rewrite, red under that
+  mutation, green on the code.
+  - Record (2026-11-15, android-engineer): `NoteKeyboardTest` "A word the keyboard rewrites in place after scrolling away
+    brings the line back": after `composeThenScrollAway("once")`, `setComposingText("ones")` keeps the cursor and must bring
+    the line above the keyboard. Mutation `LaunchedEffect(focused, value.selection)`: 14 tests, 1 failed, this one ("line
+    4434.0..4477.0, keyboard at 450.0"; `walks/kbd/7.5-mutation-text-key.log`). Code restored: 14/14, ktlint and detekt
+    of the module clean (`7.5-green.log`). No product code changed.
+
 ## 8. QA
 
 - [ ] 8.1 `qa-engineer` runs K1 to K8 on the PR head, this diff only (owner rule 2026-11-09), with the negative controls named in
