@@ -6,14 +6,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
@@ -64,7 +62,9 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.navigation.NavController
 import com.migrely.app.architecture.ui.view.ScreenEnterObserver
 import com.migrely.app.designsystem.icon.MigrelyIcons
+import com.migrely.app.designsystem.input.SingleLineFieldInView
 import com.migrely.app.designsystem.input.limitedEdit
+import com.migrely.app.designsystem.layout.MigrelyInsets
 import com.migrely.app.designsystem.motion.rememberReduceMotion
 import com.migrely.app.designsystem.picker.DateTimePickerLabels
 import com.migrely.app.designsystem.picker.MigrelyDateTimePicker
@@ -313,7 +313,7 @@ fun LogMedicationContents(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = colors.background),
-                windowInsets = WindowInsets.safeDrawing.only(
+                windowInsets = MigrelyInsets.bars.only(
                     WindowInsetsSides.Top + WindowInsetsSides.Horizontal
                 )
             )
@@ -326,11 +326,14 @@ fun LogMedicationContents(
                     modifier = Modifier
                         .widthIn(max = CONTENT_MAX_WIDTH)
                         .fillMaxWidth()
+                        // Before the scroll, so its visible part ends at the keyboard's top and a focused
+                        // field is kept above it (BRD D180 (2)).
+                        .windowInsetsPadding(
+                            MigrelyInsets.barsAndKeyboard.only(WindowInsetsSides.Bottom)
+                        )
                         .verticalScroll(rememberScrollState())
                         .windowInsetsPadding(
-                            WindowInsets.safeDrawing.only(
-                                WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
-                            )
+                            MigrelyInsets.barsAndKeyboard.only(WindowInsetsSides.Horizontal)
                         )
                         .padding(horizontal = 16.dp, vertical = 8.dp)
                 ) {
@@ -541,24 +544,28 @@ private fun FirstMedicationForm(
             it is SaveProblemUiModel.ArchivedName ||
             it == SaveProblemUiModel.InvalidName
     }
-    OutlinedTextField(
-        value = name,
-        onValueChange = { name = limitedEdit(name, it, MAXIMUM_NAME_LENGTH) },
-        label = { Text(stringResource(R.string.edit_name)) },
-        singleLine = true,
-        isError = nameProblem != null,
-        supportingText = {
-            Text(
-                nameProblem?.let { problemText(it) } ?: stringResource(
-                    R.string.edit_counter,
-                    name.text.length,
-                    MAXIMUM_NAME_LENGTH
+    // Kept above the keyboard with its supporting line where that fits (BRD D180 (2), ux U1).
+    SingleLineFieldInView(hasLabel = true) { inView, interactionSource ->
+        OutlinedTextField(
+            value = name,
+            onValueChange = { name = limitedEdit(name, it, MAXIMUM_NAME_LENGTH) },
+            label = { Text(stringResource(R.string.edit_name)) },
+            singleLine = true,
+            isError = nameProblem != null,
+            supportingText = {
+                Text(
+                    nameProblem?.let { problemText(it) } ?: stringResource(
+                        R.string.edit_counter,
+                        name.text.length,
+                        MAXIMUM_NAME_LENGTH
+                    )
                 )
-            )
-        },
-        colors = colors.textField,
-        modifier = Modifier.fillMaxWidth()
-    )
+            },
+            colors = colors.textField,
+            interactionSource = interactionSource,
+            modifier = inView.fillMaxWidth()
+        )
+    }
     CategoryChoices(category, colors.content, colors.selection, colors.buttonHeight) {
         category = it
     }

@@ -5,14 +5,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
@@ -46,8 +44,10 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.migrely.app.architecture.ui.view.ScreenEnterObserver
 import com.migrely.app.designsystem.icon.MigrelyIcons
+import com.migrely.app.designsystem.input.SingleLineFieldInView
 import com.migrely.app.designsystem.input.TapGuard
 import com.migrely.app.designsystem.input.rememberLimitedField
+import com.migrely.app.designsystem.layout.MigrelyInsets
 import com.migrely.app.designsystem.motion.rememberReduceMotion
 import com.migrely.app.designsystem.snackbar.MessageLayout
 import com.migrely.app.designsystem.theme.MigrelyTheme
@@ -198,7 +198,7 @@ fun EditMedicationContents(
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background
                 ),
-                windowInsets = WindowInsets.safeDrawing.only(
+                windowInsets = MigrelyInsets.bars.only(
                     WindowInsetsSides.Top + WindowInsetsSides.Horizontal
                 )
             )
@@ -211,11 +211,14 @@ fun EditMedicationContents(
                     modifier = Modifier
                         .widthIn(max = CONTENT_MAX_WIDTH)
                         .fillMaxWidth()
+                        // Before the scroll, so its visible part ends at the keyboard's top and a focused
+                        // field is kept above it (BRD D180 (2)).
+                        .windowInsetsPadding(
+                            MigrelyInsets.barsAndKeyboard.only(WindowInsetsSides.Bottom)
+                        )
                         .verticalScroll(rememberScrollState())
                         .windowInsetsPadding(
-                            WindowInsets.safeDrawing.only(
-                                WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
-                            )
+                            MigrelyInsets.barsAndKeyboard.only(WindowInsetsSides.Horizontal)
                         )
                         .padding(horizontal = 16.dp, vertical = 8.dp)
                 ) {
@@ -251,20 +254,28 @@ private fun MedicationForm(
     val doseField = rememberLimitedField(form.dose, MAXIMUM_DOSE_LENGTH) {
         onFormChange(form.copy(dose = it))
     }
-    OutlinedTextField(
-        value = nameField.value,
-        onValueChange = nameField.onValueChange,
-        label = { Text(stringResource(R.string.edit_name)) },
-        singleLine = true,
-        isError = nameProblem != null,
-        supportingText = {
-            Text(
-                nameProblem?.let { problemText(it) }
-                    ?: stringResource(R.string.edit_counter, form.name.length, MAXIMUM_NAME_LENGTH)
-            )
-        },
-        modifier = Modifier.fillMaxWidth()
-    )
+    // Kept above the keyboard with its supporting line where that fits (BRD D180 (2), ux U1).
+    SingleLineFieldInView(hasLabel = true) { inView, interactionSource ->
+        OutlinedTextField(
+            value = nameField.value,
+            onValueChange = nameField.onValueChange,
+            label = { Text(stringResource(R.string.edit_name)) },
+            singleLine = true,
+            isError = nameProblem != null,
+            supportingText = {
+                Text(
+                    nameProblem?.let { problemText(it) }
+                        ?: stringResource(
+                            R.string.edit_counter,
+                            form.name.length,
+                            MAXIMUM_NAME_LENGTH
+                        )
+                )
+            },
+            interactionSource = interactionSource,
+            modifier = inView.fillMaxWidth()
+        )
+    }
     Text(stringResource(R.string.edit_kind), style = MaterialTheme.typography.labelLarge)
     Box(Modifier.fillMaxWidth()) {
         Column(verticalArrangement = Arrangement.spacedBy(FORM_SPACING)) {
@@ -313,24 +324,31 @@ private fun MedicationForm(
             modifier = Modifier.matchParentSize()
         )
     }
-    OutlinedTextField(
-        value = doseField.value,
-        onValueChange = doseField.onValueChange,
-        label = { Text(stringResource(R.string.edit_dose)) },
-        placeholder = { Text(stringResource(R.string.edit_dose_hint)) },
-        singleLine = true,
-        isError = problem == SaveProblemUiModel.InvalidDose,
-        supportingText = {
-            Text(
-                if (problem == SaveProblemUiModel.InvalidDose) {
-                    problemText(problem)
-                } else {
-                    stringResource(R.string.edit_counter, form.dose.length, MAXIMUM_DOSE_LENGTH)
-                }
-            )
-        },
-        modifier = Modifier.fillMaxWidth()
-    )
+    SingleLineFieldInView(hasLabel = true) { inView, interactionSource ->
+        OutlinedTextField(
+            value = doseField.value,
+            onValueChange = doseField.onValueChange,
+            label = { Text(stringResource(R.string.edit_dose)) },
+            placeholder = { Text(stringResource(R.string.edit_dose_hint)) },
+            singleLine = true,
+            isError = problem == SaveProblemUiModel.InvalidDose,
+            supportingText = {
+                Text(
+                    if (problem == SaveProblemUiModel.InvalidDose) {
+                        problemText(problem)
+                    } else {
+                        stringResource(
+                            R.string.edit_counter,
+                            form.dose.length,
+                            MAXIMUM_DOSE_LENGTH
+                        )
+                    }
+                )
+            },
+            interactionSource = interactionSource,
+            modifier = inView.fillMaxWidth()
+        )
+    }
     Button(
         onClick = onSave,
         enabled = !pending,

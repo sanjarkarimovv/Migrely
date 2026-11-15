@@ -9,14 +9,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
@@ -71,6 +69,7 @@ import com.migrely.app.backup.ui.model.YourDataEventUiModel
 import com.migrely.app.backup.ui.model.YourDataMessageUiModel
 import com.migrely.app.designsystem.dialog.MigrelyAlertDialog
 import com.migrely.app.designsystem.icon.MigrelyIcons
+import com.migrely.app.designsystem.layout.MigrelyInsets
 import com.migrely.app.designsystem.motion.rememberReduceMotion
 import com.migrely.app.designsystem.snackbar.MESSAGE_OFFSET_BELOW_TOP_BAR
 import com.migrely.app.designsystem.snackbar.MessageLayout
@@ -272,7 +271,7 @@ fun YourDataContents(
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background
                 ),
-                windowInsets = WindowInsets.safeDrawing.only(
+                windowInsets = MigrelyInsets.bars.only(
                     WindowInsetsSides.Top + WindowInsetsSides.Horizontal
                 )
             )
@@ -297,7 +296,7 @@ fun YourDataContents(
                         .widthIn(max = CONTENT_MAX_WIDTH)
                         .fillMaxWidth()
                         .windowInsetsPadding(
-                            WindowInsets.safeDrawing.only(
+                            MigrelyInsets.bars.only(
                                 WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
                             )
                         )
