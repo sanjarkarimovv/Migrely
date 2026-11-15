@@ -7,6 +7,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasScrollAction
@@ -22,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import com.migrely.app.designsystem.theme.MigrelyTheme
 import com.migrely.app.medication.ui.model.MedicationFormUiModel
 import com.migrely.app.medication.ui.model.MedicationKindUiModel
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -163,4 +165,26 @@ class EditMedicationKeyboardTest {
         )
         assertSaveCanBeReached()
     }
+
+    @Test
+    @Config(sdk = [35], qualifiers = "w411dp-h891dp")
+    fun `Closing the keyboard after scrolling to Save does not scroll back to the name`() {
+        show(2f)
+        type(NAME)
+        rule.onNode(hasScrollAction()).performScrollToNode(hasText(SAVE))
+        rule.waitForIdle()
+        val scrolled = scroll()
+        assertTrue("Save was already in view", scrolled > 0f)
+
+        rule.runOnUiThread { rule.activity.setKeyboard(0) }
+        rule.waitForIdle()
+
+        // Save ends the page, so the larger area may only settle it down to the page's new end (ux U6).
+        assertEquals("the page scrolled back", minOf(scrolled, range().maxValue()), scroll(), 0.5f)
+    }
+
+    private fun range() = rule.onNode(hasScrollAction()).fetchSemanticsNode()
+        .config[SemanticsProperties.VerticalScrollAxisRange]
+
+    private fun scroll(): Float = range().value()
 }

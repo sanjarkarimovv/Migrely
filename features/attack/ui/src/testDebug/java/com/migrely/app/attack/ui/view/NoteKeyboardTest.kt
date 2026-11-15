@@ -17,6 +17,7 @@ import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextInputSelection
 import androidx.compose.ui.test.performTouchInput
@@ -265,5 +266,42 @@ class NoteKeyboardTest {
         assertEquals(TextRange(tapped + 6), selection())
         assertEquals(scrolled, scroll(), 0.5f)
         assertEquals("abcdef", draft!!.substring(tapped, tapped + 6))
+    }
+
+    private fun setKeyboard(heightDp: Int) {
+        rule.runOnUiThread { rule.activity.setKeyboard(heightDp) }
+        rule.waitForIdle()
+    }
+
+    /** Scrolls the content to its top, as the user does by hand or the safety card's reveal does (D167). */
+    private fun scrollToTop() {
+        content.performSemanticsAction(SemanticsActions.ScrollBy) { it(0f, -10_000f) }
+        rule.waitForIdle()
+    }
+
+    @Test
+    fun `Closing the keyboard after scrolling away from the note leaves the page there`() {
+        show(LONG_NOTE)
+        note.requestFocus()
+        openKeyboard()
+        scrollToTop()
+        val scrolled = scroll()
+
+        setKeyboard(0)
+
+        assertEquals("the page scrolled back", scrolled, scroll(), 0.5f)
+    }
+
+    @Test
+    fun `A keyboard that closes and opens again keeps the top of the page in view`() {
+        show(LONG_NOTE)
+        note.requestFocus()
+        openKeyboard()
+        scrollToTop()
+
+        setKeyboard(0)
+        setKeyboard(KEYBOARD_DP)
+
+        assertEquals("the top left the view", 0f, scroll(), 0.5f)
     }
 }

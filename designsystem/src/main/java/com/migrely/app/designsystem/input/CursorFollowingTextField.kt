@@ -18,6 +18,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
@@ -40,8 +41,9 @@ private val CURSOR_MARGIN = 8.dp
 /**
  * An outlined text field, drawn as Material's, whose line with the cursor its scrolling parent keeps in view, [margin]
  * clear of the parent's visible edges, while it has focus (BRD D180 (2), EC-UX-39, #141): after typing, a tap, a paste,
- * a cursor move, and when the visible area shrinks as the keyboard opens. The page scrolls only as far as needed, so a
- * tap on a line already in view moves nothing, and "Remove animations" makes each scroll a jump.
+ * a cursor move, and when the visible area shrinks as the keyboard opens while that line is in view (KeyboardFollow).
+ * The page scrolls only as far as needed, so a tap on a line already in view moves nothing, and "Remove animations"
+ * makes each scroll a jump.
  *
  * The field's own requests to be shown are dropped: Compose's text field asks for its cursor's place from before the
  * tap that focused it (b/216790855), which for a field opening at its end sent the page to that end (ux U4).
@@ -61,13 +63,23 @@ fun CursorFollowingTextField(
     val requester = remember { BringIntoViewRequester() }
     val geometry = remember { CursorGeometry() }
     var layout by remember { mutableStateOf<TextLayoutResult?>(null) }
+    val follow = remember { KeyboardFollow() }
     val density = LocalDensity.current
-    val keyboardBottom = WindowInsets.ime.getBottom(density)
+    // The insets object, not its value: the keyboard's frames do not recompose the screen.
+    val keyboard = WindowInsets.ime
     val marginPx = with(density) { margin.toPx() }
-    LaunchedEffect(focused, value.selection, layout, keyboardBottom) {
+    val cursor by rememberUpdatedState(value.selection.end)
+    LaunchedEffect(focused, value.selection, layout) {
         if (!focused) return@LaunchedEffect
         val line = geometry.lineOf(layout, value.selection.end, marginPx) ?: return@LaunchedEffect
         requester.bringIntoView(line)
+        follow.onBroughtIntoView()
+    }
+    LaunchedEffect(focused) {
+        if (!focused) return@LaunchedEffect
+        follow.followKeyboard({ keyboard.getBottom(density) }) {
+            geometry.lineOf(layout, cursor, marginPx)?.let { requester.bringIntoView(it) }
+        }
     }
     val colors = OutlinedTextFieldDefaults.colors()
     val textColor = if (focused) colors.focusedTextColor else colors.unfocusedTextColor
@@ -94,7 +106,14 @@ fun CursorFollowingTextField(
                     innerTextField = {
                         Box(
                             propagateMinConstraints = true,
-                            modifier = Modifier.onGloballyPositioned { geometry.text = it }
+                            modifier = Modifier.onGloballyPositioned {
+                                geometry.text = it
+                                follow.onPositioned(
+                                    keyboard.getBottom(density),
+                                    geometry.field,
+                                    geometry.lineOf(layout, cursor, 0f)
+                                )
+                            }
                         ) { innerTextField() }
                     },
                     enabled = true,
