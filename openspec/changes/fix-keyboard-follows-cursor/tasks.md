@@ -283,6 +283,31 @@ section 9.
     medication at 100% portrait, and F2 (safety card after a first pain 10 with the note focused, also with Remove
     animations); `away.sh` in the same folder is ready for F1, with the focus guard.
 
+- [x] 7.3 `product-manager` rules on the plan changes made during build and review, and makes plan and code agree (design D2,
+  D6, D7, K2, Risks; deltas `app-shell` and `attack-details`; proposal; BRD D180). Verify: `openspec validate
+  fix-keyboard-follows-cursor --strict` passes.
+  - Record (2026-11-15, product-manager pm-t66, on 60cb208f, code final at f05814f2):
+    - (a) `SingleLineFieldInView` with U1's priority, in place of "single-line fields keep Compose's own behaviour":
+      **accepted.** Evidence 3.3: without it 1/3 red (dose 3 dp clipped stayed under the keyboard); with it 3/3 green. It is
+      U1 as written. New `app-shell` scenario "A field 3 dp under the scroll's edge".
+    - (b) the note drops Compose's own bring-into-view requests (b/216790855, U4): **accepted.** Without it a tap in the first
+      lines sent the page to a long note's end (3.1). The reviewer confirmed TalkBack scrolls through `ScrollBy`, so it is
+      unaffected; QA's TalkBack row (K2 and the "TalkBack moves on from the note" scenario) still checks it on a device.
+    - (c) D7 needs the input line with 8 dp above and below: **accepted.** Stricter than "plus 8 dp", the same room the field
+      asks for, so the line never shows clipped; it can only move the row behind the keyboard in a few more windows, where
+      the type, Done, Delete flow already applies. Spec and BRD D180 (8) reworded.
+    - (d) follow the keyboard only while the line was in view; closing never scrolls; only a growing keyboard asks
+      (`KeyboardFollow.kt`, review 7.1 F1, F2): **accepted.** It makes U6 ("the page stays where it is") exact and removes
+      two regressions (3957 px pull-back on close, the safety card left on reopen). Requirement "A focused field stays above
+      the keyboard" and "Closing the keyboard and other keyboards" reworded; new scenarios "Closing after scrolling away",
+      "The keyboard grows after scrolling away", and in `attack-details` "The safety card with the keyboard open". The F2
+      test uses a programmatic scroll, so the real reveal is QA row 8.1 F2.
+    - F3 (review 7.1): the `app-shell` scenario "Without the change" and design K2 claimed that this commit without
+      `adjustResize` shows Back at `[0,0][0,0]`. False on API 36: Back stays at [43,181][106,241] (`walks/kbd/k2neg-typed.xml`),
+      because with D2 Android has nothing to pan to. Reworded as "The checks can fail": develop ea41869a on API 36 (Back
+      `[0,0][0,0]`, `walks/kbd/dev-typed.xml`), test 3.5, and the API 26 copy rows (head 9/9 clear, develop 3/3 stale,
+      `qa-kbd-36/MEASUREMENTS.log`).
+
 ## 8. QA
 
 - [ ] 8.1 `qa-engineer` runs K1 to K8 on the PR head, this diff only (owner rule 2026-11-09), with the negative controls named in
@@ -290,6 +315,16 @@ section 9.
   F5 at 200% landscape, K5's COPY steps from the note, Edit medication and Delete all data, with develop ea41869a as the
   negative control). A row that cannot be reached, such as the full-screen editor, is "not reachable", not a pass (ux F6). Verify: a record in
   `docs/qa/fix-keyboard-follows-cursor.md` with counts, SHAs and what the rows do not prove.
+  Rows added by 7.3 for the 7.2 change (API 36, emulator-5580; 7.2's own walk did not run):
+  - **F1:** the keyboard open on the note, then on Edit medication's name, at 100% portrait and 200% landscape; scroll the
+    page away from the field by hand, then close the keyboard (Back, hide key). Pass: the page stays where it was left (top
+    node's bounds equal before and after closing), no blank space. Then reopen the keyboard by a tap in the field: its line
+    shows 8 dp above the keyboard. Negative control: the 51e22355 build pulls the page back to the field on close.
+  - **F2:** the note focused with the keyboard up, scroll up to Pain, add a first 10, dismiss the dialog, with and without
+    "Remove animations". Pass: the D167 safety card comes into view and stays in view (its bounds inside the viewport after
+    1 s), the page does not return to the note, the card's TalkBack reading is D167's. Negative control: the 51e22355 build
+    (expected to pull the page from the card; if it does not reproduce on a device, record that, and the row then rests on
+    the mutation test of 7.2).
 - [ ] 8.2 QA retests #141, #83 and #145, and closes those that pass. Verify: the issues' comments.
 - [ ] 8.3 ux F5, separate from this change: on a device, Edit medication with the keyboard open and TalkBack on, Save with a name
   that gives an error; does the error line stay off screen and silent? Only if it reproduces, file an issue with severity and

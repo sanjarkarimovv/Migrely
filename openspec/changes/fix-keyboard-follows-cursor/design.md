@@ -56,10 +56,28 @@ API 26 to 29 the inset arrives in one step (U3). A tap on a visible line moves n
 navigation bar, not their sum. `union` gives that.
 
 Compose's legacy `OutlinedTextField` brings the field into view on focus. Whether it keeps the **cursor line** in view on every
-new line inside a multi-line field is to be proved by the red test (tasks 3.1). If it does not, a small helper in
-`designsystem` (`Modifier.keepCursorInView`) takes the cursor's rectangle from `onTextLayout`
-(`TextLayoutResult.getCursorRect(selection.end)`) and calls `BringIntoViewRequester.bringIntoView(rect)` when the selection or
-the layout changes while focused. Only the note needs it; single-line fields keep their own behaviour.
+new line inside a multi-line field was to be proved by the red test (task 3.1). It does not (5/8 red with the padding alone), so
+the note uses `designsystem/input/CursorFollowingTextField.kt`, drawn as Material's outlined field, which brings the cursor line
+±8 dp into view on focus, selection, layout and keyboard changes.
+
+*Changed during build, accepted by PM (task 7.3, plan change b):* the note's field **drops Compose's own bring-into-view
+requests**. Compose brings into view the cursor's place from before the tap that focused it (b/216790855); with `opensAtEnd`
+that sent the page to a long note's end and broke U4 (a tap's place wins). TalkBack is unaffected: code review 7.1 confirmed
+that its scrolling goes through `ScrollBy`, not through the field's requests.
+
+*Changed during build, accepted by PM (plan change a):* single-line fields **do not** keep Compose's own behaviour. A field 3 dp
+clipped by the scroll stayed under the keyboard, because Compose's resize tracking skips a field that was not whole in view (3.3:
+1/3 red). Edit medication's and Log medication's single-line fields are wrapped in `designsystem/input/SingleLineFieldInView.kt`,
+which asks for the whole field, the input line with its supporting line, and the input line ±8 dp at once, so the scroll shows
+the largest that fits: U1's priority (input line, then supporting line, then label).
+
+*Changed after review, accepted by PM (plan change d, review 7.1 F1 and F2, `designsystem/input/KeyboardFollow.kt`):* both
+helpers follow the keyboard **only while their line was whole in view before the keyboard moved**. A layout in which the
+keyboard did not move records whether the line is whole in view, clipped by the scroll; a scroll away, by hand or by D167's
+safety-card reveal, therefore ends the following. Only a **growing** keyboard asks; closing the keyboard never scrolls (U6).
+Focus, an edit, a cursor move and a field size change still ask as before. Without this, closing the keyboard pulled a page the
+user had scrolled away back to the field (3957 px on the note), and a reopened keyboard could pull the page away from the safety
+card. The keyboard height is read in `snapshotFlow`, so its animation frames do not recompose the screens (F6).
 
 Delete all data gets its own rule, D7.
 
@@ -104,9 +122,15 @@ close and so clear the value.** Task 3.6 proves it red to green, by a test if Ro
 on API 26 that QA runs for the engineer. If it does not clear, the engineer adds the smallest fix that does (for example a
 re-request of insets when the keyboard's visibility changes) and reports it before going on.
 
+*Result (task 3.6):* QA proved it on emulator-5582 (API 26): on 51e22355 Compose's `ime` returned to 0 after the keyboard
+closed in 9/9 COPY runs (note 3, Edit medication 2, Delete all data 2, History to details and back 2), and develop ea41869a
+stayed stale in 3/3. No extra fix was added.
+
 ### D7. Delete all data with the keyboard open (D180 (8), ux U7)
 
-The Delete row rides above the keyboard only while the input line plus 8 dp still shows above it. Otherwise it stays at the
+The Delete row rides above the keyboard only while the input line, with 8 dp above and 8 dp below it, still shows above the
+row. *Changed during build, accepted by PM (plan change c):* this is the same room the field asks for (`inputLineRoom`), slightly
+stricter than "plus 8 dp", so the line never shows clipped. Otherwise it stays at the
 window's bottom, behind the keyboard; Done or Back closes the keyboard and the field and "Delete everything" show together.
 The choice is made once per keyboard opening, from the keyboard's final height (`WindowInsets.imeAnimationTarget` on API 30 and
 later, the one-step inset on API 26 to 29), so the row never jumps midway. On API 26 the same rule now applies because the
@@ -137,10 +161,10 @@ text never counts as an outside change; a real outside change still puts the cur
 | A screen with a field that relied on the pan now hides a control | D2 covers all three; the walk and QA run each field at 200% in landscape |
 | Double bottom padding (keyboard + navigation bar) | `union`, not `add`; a test asserts the note's bottom at the keyboard's top |
 | On API 26 to 29, `systemBars` includes the keyboard by mistake, and the message or the bars inset moves | D4's `sdk = [26]` test; QA's API 26 rows |
-| Compose's text field moves focus or scroll on its own and fights the helper | the helper only acts while focused and only when the cursor rect is outside the viewport |
-| The safety card's reveal (D167) measures the viewport, which now shrinks with the keyboard | the card appears only after a pain dialog, with the keyboard closed; the D167 tests run unchanged |
+| Compose's text field moves focus or scroll on its own and fights the helper | the note's helper drops the field's own requests (b/216790855); both helpers act only while focused and follow the keyboard only while their line was in view (D2, `KeyboardFollow.kt`) |
+| The safety card's reveal (D167) measures the viewport, which now shrinks with the keyboard; the note can keep focus with the keyboard up while the user scrolls to Pain and adds a first 10 | the reveal scrolls the line out of view, which ends the following, and only a growing keyboard asks; the F2 model test (programmatic scroll) is green and the mutation "ask on every growth" fails it; the real reveal is QA row 8.1 F2, with and without "Remove animations"; the D167 tests run unchanged |
 | In a short landscape window the keyboard covers a message's lower part, its Dismiss or Undo included; a message over the content can cover the cursor line | accepted (ux U5, F1): the keyboard is a window above the app, a message never moves for it (D178 (6)); it stays dismissible by a sideways swipe, TalkBack's action or closing the keyboard, and the untimed storage-full error may cover the line |
-| `adjustResize` alone may not clear the stale `ime` on API 26 for screens with a field | task 3.6, D6 |
+| `adjustResize` alone may not clear the stale `ime` on API 26 for screens with a field | proven on a device: head 9/9 clear, develop 3/3 stale (task 3.6); 130% font, landscape, Gboard on API 26 and other makers stay open |
 
 ## UX answers (task 1.1, accepted by `team-lead`)
 
@@ -156,7 +180,7 @@ rotation, background and process death, W-AUTOSAVE, light theme, split screen, f
 | # | Build | Steps | Pass | Negative control |
 |---|---|---|---|---|
 | K1 | Debug and R8 | Note: type past the keyboard at 100% and 200%, portrait and landscape, 411 and 360 dp tall; tap the first lines of a 996-unit note; Tab into it; paste; W-AUTOSAVE (tap the middle, type, wait 1 s, type) | cursor line 8 dp above the keyboard after each step; W-AUTOSAVE: neither cursor nor page moves | same commit without D2 on details: line under the keyboard |
-| K2 | Debug | Note with the keyboard open: Back's bounds and a first tap; status bar clear; TalkBack reaches Back | bounds unchanged, leaves the screen | same commit without `adjustResize`: bounds `[0,0][0,0]` |
+| K2 | Debug | Note with the keyboard open: Back's bounds and a first tap; status bar clear; TalkBack reaches Back | bounds unchanged, leaves the screen | develop ea41869a on API 36: Back `[0,0][0,0]` with the keyboard open (`walks/kbd/dev-typed.xml`); the attribute itself by test 3.5 (red without it); on API 26 the K5 rows (head clears `ime` 9/9, develop stale 3/3, `qa-kbd-36/MEASUREMENTS.log`). Not a control: this commit without `adjustResize` on API 36 keeps Back at [43,181][106,241] (`k2neg-typed.xml`), because with D2 the cursor line is already in view and Android has nothing to pan to |
 | K3 | Debug | Edit medication name and dose, Log medication name, Delete all data, 200% landscape (411 and 360 dp), and on API 26 Log medication and Delete all data | input line above the keyboard, supporting line when it fits, Save reachable; Delete all data per D7: the row above the keyboard only with room, else behind it and shown after Done; on API 26 the row never left under the keyboard with the field hidden | without D2 on Edit medication; develop ea41869a on API 26 (row under the keyboard) |
 | K4 | Debug | A message on details, then the keyboard; the keyboard, then "storage full"; the keyboard closes under a message; at 200% landscape the keyboard covers the message's button, then a swipe and a TalkBack action dismiss it; a message over the cursor line | the message does not move or cover Back, and stays dismissible | host padded for `ime` (unit test mutation) |
 | K5 | Debug, API 26 | #145 COPY steps from the note, an Edit medication field and the Delete all data field, then Home and History; and back on a field screen with the keyboard closed | full content, no restart, no space kept for a closed keyboard | develop ea41869a: Home loses 775 px, History ends at y 1499 |

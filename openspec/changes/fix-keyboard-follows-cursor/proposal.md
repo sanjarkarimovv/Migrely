@@ -35,13 +35,15 @@ The decision is BRD D180. The UX answers are `migrely-work/t63/ux-keyboard.md` (
   place with the keyboard open, and nothing draws under the status bar (#83).
 - **The line being typed stays above the keyboard (D180 (2)).** Every screen with a text field shrinks its scrolling area's
   visible part to the keyboard's top, with the keyboard padding outside the scroll. The focused field and the cursor line stay
-  in view while typing. Compose brings the cursor into view itself where it can; where it does not, the cursor's rectangle is
-  brought into view. This covers Attack details' note (#141), Edit medication and Log medication. Delete all data already keeps
+  in view while typing. The note's field brings its cursor line into view itself and drops Compose's own requests
+  (b/216790855); single-line fields ask for the largest of field, input line with supporting line, and input line that fits
+  (U1). A field follows a growing keyboard only while its line was in view, and closing the keyboard never scrolls (review 7.1
+  F1, F2). This covers Attack details' note (#141), Edit medication and Log medication. Delete all data already keeps
   its Delete row above the keyboard on API 36, but in a short landscape window that row leaves no room for the input line, and
   on API 26 the row stays under the keyboard today. The line is 8 dp clear of the keyboard; a single-line field shows its
   supporting line when it fits.
 - **Delete all data decides once per keyboard opening (D180 (8)).** The Delete row rides above the keyboard only while the input
-  line plus 8 dp still shows; otherwise it stays behind the keyboard and the flow is type, Done, Delete.
+  line with 8 dp above and below it still shows; otherwise it stays behind the keyboard and the flow is type, Done, Delete.
 - **An autosave does not move the cursor or the page (D180 (9)).** `LimitedField.kt:32` puts the cursor at the end on any text
   change it did not make; once the page follows the cursor, a save must not count as such a change.
 - **A screen with no text field ignores the keyboard (D180 (3)).** Home, History, Insights, Settings and its pages, the

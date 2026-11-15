@@ -59,6 +59,11 @@ page SHALL scroll only as far as needed, and a tap's place SHALL win over openin
 - **WHEN** the keyboard is closed and a first 10 makes the safety card appear out of view
 - **THEN** the card comes into view exactly as D167 says, and the D167 tests still pass
 
+#### Scenario: The safety card with the keyboard open
+- **WHEN** the note has focus with the keyboard open, the user scrolls up to Pain and adds a first 10, and dismisses the dialog,
+  with or without "Remove animations"
+- **THEN** the safety card comes into view as D167 says and stays in view, and the page does not scroll back to the note
+
 #### Scenario: Without the change
 - **WHEN** the typing rows run on a build of the same commit without the keyboard padding on the details' scroll
 - **THEN** the cursor line ends under the keyboard as in #141, which shows the check can fail

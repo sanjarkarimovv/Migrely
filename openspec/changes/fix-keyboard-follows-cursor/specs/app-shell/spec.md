@@ -23,14 +23,17 @@ orientation. Nothing SHALL draw under the status bar (BRD EC-UX-40, D180).
 - **WHEN** the debug and the release build are assembled
 - **THEN** `MainActivity`'s merged manifest entry declares `adjustResize`, and the permission report equals 1.2.1's
 
-#### Scenario: Without the change
-- **WHEN** the same note row runs on a build of the same commit without `adjustResize`
-- **THEN** Back's bounds are empty or off screen as in #83, which shows the check can fail
+#### Scenario: The checks can fail
+- **WHEN** the note row runs on develop ea41869a on API 36, which has no `adjustResize` and pans
+- **THEN** Back's bounds are `[0,0][0,0]` with the keyboard open, as in #83, which shows the row can fail
+- **AND** a test of `MainActivity`'s window fails without `adjustResize`, and on Android 8 the copy rows that pass on this
+  change stay stale on develop ea41869a
 
 ### Requirement: A focused field stays above the keyboard
 On Attack details, Edit medication and Log medication the scroll's visible part SHALL end at the keyboard's top. A focused
 single-line field SHALL show its box and its supporting line when they fit; if not, its input line first, then the supporting
-line, then the label. Controls below SHALL be reachable by scrolling (BRD EC-UX-40, D180).
+line, then the label. A field SHALL follow a growing keyboard only while its line was in view before. Controls below SHALL be
+reachable by scrolling (BRD EC-UX-40, D180).
 
 #### Scenario: Edit medication at 200% in landscape
 - **WHEN** the user taps the name or the dose field on Edit medication, at 200% font in landscape
@@ -41,6 +44,11 @@ line, then the label. Controls below SHALL be reachable by scrolling (BRD EC-UX-
 - **WHEN** a name or dose error appears in the field's supporting line while the keyboard is open
 - **THEN** the input line keeps priority, the error line shows if it fits, and it shows again when the keyboard closes
 
+#### Scenario: A field 3 dp under the scroll's edge
+- **WHEN** the user taps the dose field on Edit medication while a few dp of it lie under the scroll's lower edge, at 100% font
+  in portrait
+- **THEN** the whole field with its supporting line shows above the keyboard
+
 #### Scenario: Log medication's name field
 - **WHEN** the user types a name on Log medication, at 100% or 200% font, in portrait or landscape, on API 36 or API 26
 - **THEN** the input line shows above the keyboard, and the buttons below it can be scrolled to
@@ -50,13 +58,14 @@ line, then the label. Controls below SHALL be reachable by scrolling (BRD EC-UX-
 - **THEN** the field or Save can end under the keyboard, which shows the check can fail
 
 ### Requirement: Delete all data with the keyboard open
-On Delete all data the Delete row SHALL ride above the keyboard only while the input line plus 8 dp still shows above it.
+On Delete all data the Delete row SHALL ride above the keyboard only while the input line, with 8 dp above and below it, still
+shows above the row.
 Otherwise the row SHALL stay at the window's bottom, behind the keyboard, and Done or Back shows the field and the row together.
 This SHALL be decided once per keyboard opening, from the keyboard's final height (BRD EC-UX-40, D180).
 
 #### Scenario: A window with room
 - **WHEN** the user types in the confirmation field at 100% or 200% font in portrait, or at 200% in landscape on a 411 dp tall
-  window where the input line plus 8 dp fits above the Delete row
+  window where the input line with 8 dp above and below it fits above the Delete row
 - **THEN** the input line and the Delete row both show above the keyboard
 
 #### Scenario: A short window
@@ -111,7 +120,7 @@ and the message's fit rule (BRD EC-UX-42, D180).
 - **THEN** Home keeps the same layout choice, because the choice reads the window's height and not the keyboard
 
 ### Requirement: Closing the keyboard and other keyboards
-When the keyboard closes, no blank space SHALL stay, the page SHALL stay where it is, and focus SHALL stay in the field. With a
+When the keyboard closes, no blank space SHALL stay, the page SHALL NOT scroll to the field, and focus SHALL stay in the field. With a
 hardware or floating keyboard, split screen or a full-screen editor, Migrely SHALL follow Android's inset and add nothing.
 "Remove animations" SHALL make every scroll a jump. Nothing SHALL be announced (BRD EC-UX-43, D180).
 
@@ -120,6 +129,16 @@ hardware or floating keyboard, split screen or a full-screen editor, Migrely SHA
 - **THEN** the page does not scroll back, it settles down by at most the keyboard's height if it was scrolled to its end, and
   no blank space is left above the navigation bar
 - **AND** the first Back closes only the keyboard, and the second leaves the screen
+
+#### Scenario: Closing after scrolling away
+- **WHEN** the keyboard is open on the note, or on Edit medication's name, and the user scrolls the page away from the field,
+  then closes the keyboard, with or without "Remove animations"
+- **THEN** the page stays where the user left it and does not scroll back to the field
+
+#### Scenario: The keyboard grows after scrolling away
+- **WHEN** the user has scrolled the field's line out of view and the keyboard then grows, as when it reopens or changes height
+- **THEN** the page does not scroll back to the field, and the next tap, edit or cursor move in the field brings its line into
+  view again
 
 #### Scenario: The strip the keyboard uncovers
 - **WHEN** the keyboard slides away in the dark theme, in the light theme, or during an attack, on API 36 or API 26
