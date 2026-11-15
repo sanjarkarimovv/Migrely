@@ -267,6 +267,13 @@ under load. Never `--stop` the daemon.
 - [ ] 8.4 `code-reviewer` reviews the diff from the merge base to the head. This includes the follow-up 4 comment, that
   no clickable lost its role or action, and that no test reads the string it checks.
   - Verify: a review packet with no open blocker and its SHA range recorded here.
+- [x] 8.4a Review fixes (`android-engineer`, cr-t66 on 78eb13ed).
+  - F2 (S3): Edit medication's focus after a Save problem is keyed on `pending` too, so a second Save with the same
+    problem brings focus back to Name or Usual dose. Red on 78eb13ed: 2 of 13 in `EditMedicationKeyboardOrderTest`
+    (focus null after the second press); green after: medication 88 of 88.
+  - F6 (S4): a test that the in-progress Ended row keeps "Ended" and "In progress" and is not a control. Green on
+    78eb13ed (a guard); a one-line mutation that always clears the row's texts fails it (1 of 5).
+  - F4 (backlog T68) and F5 (#224) are out of this change, by team-lead.
 - [ ] 8.5 `qa-engineer` gives Go/No-Go on the head SHA, limited to what the diff reaches, with negative controls on
   40536f49.
   - Scope: TalkBack logs for #217 and the sites from 3.2 on API 36 and 26, the Privacy page, keyboard walks on History,

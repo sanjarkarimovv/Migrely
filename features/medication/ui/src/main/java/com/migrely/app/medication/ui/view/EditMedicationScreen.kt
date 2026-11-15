@@ -259,7 +259,11 @@ private fun MedicationForm(
     val doseField = rememberLimitedField(form.dose, MAXIMUM_DOSE_LENGTH) {
         onFormChange(form.copy(dose = it))
     }
-    val focus = rememberProblemFocus(nameProblem != null, problem == SaveProblemUiModel.InvalidDose)
+    val focus = rememberProblemFocus(
+        pending = pending,
+        nameProblem = nameProblem != null,
+        doseProblem = problem == SaveProblemUiModel.InvalidDose
+    )
     // Save turns disabled while it waits (BRD D181 (6)).
     val save = rememberParkWhenPressed()
     // Kept above the keyboard with its supporting line where that fits (BRD D180 (2), ux U1).
@@ -378,14 +382,19 @@ private fun MedicationForm(
 /**
  * After a Save problem, keyboard focus goes to the field that has it, Name or Usual dose (BRD D181 (6), EC-UX-49), but
  * only in keyboard mode: a text field takes focus in touch mode too, and would open the soft keyboard over a touch
- * user's error.
+ * user's error. Keyed on [pending] too: each Save ends its wait, so a second Save that finds the same problem, which
+ * changes no value, still brings focus back from where the press parked it (review F2).
  */
 @Composable
-private fun rememberProblemFocus(nameProblem: Boolean, doseProblem: Boolean): ProblemFocus {
+private fun rememberProblemFocus(
+    pending: Boolean,
+    nameProblem: Boolean,
+    doseProblem: Boolean
+): ProblemFocus {
     val inputModeManager = LocalInputModeManager.current
     val focus = remember { ProblemFocus() }
-    LaunchedEffect(nameProblem, doseProblem) {
-        if (inputModeManager.inputMode != InputMode.Keyboard) return@LaunchedEffect
+    LaunchedEffect(pending, nameProblem, doseProblem) {
+        if (pending || inputModeManager.inputMode != InputMode.Keyboard) return@LaunchedEffect
         when {
             nameProblem -> focus.name.requestFocus()
             doseProblem -> focus.dose.requestFocus()

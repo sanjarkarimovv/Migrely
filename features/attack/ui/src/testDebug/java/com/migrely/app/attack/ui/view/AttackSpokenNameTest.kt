@@ -2,8 +2,11 @@ package com.migrely.app.attack.ui.view
 
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasNoClickAction
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -113,5 +116,20 @@ class AttackSpokenNameTest {
             hasContentDescription("Ibuprofen 400 mg, ", substring = true) and hasClickAction()
         )
         assertNull(row.fetchSemanticsNode().config.getOrNull(SemanticsProperties.Text))
+    }
+
+    /**
+     * Not a control (review F6): an attack in progress has an Ended row with no description and
+     * no click, so it is read by its own texts, "Ended" and "In progress".
+     */
+    @Test
+    fun `The Ended row of an attack in progress keeps its texts and is not a control`() {
+        show(details.copy(endEpochMillis = null))
+
+        listOf("Ended", "In progress").forEach { text ->
+            rule.onNodeWithText(text).assertExists().assert(hasNoClickAction())
+        }
+        rule.onAllNodes(hasContentDescription("Change when it ended", substring = true))
+            .assertCountEquals(0)
     }
 }

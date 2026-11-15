@@ -228,6 +228,50 @@ class EditMedicationKeyboardOrderTest {
         assertEquals(DOSE, rule.focusedName())
     }
 
+    /**
+     * As the screen runs it: Save turns pending, then the NotSaved result ends the wait with its
+     * problem, the same value again on a second press (review F2).
+     */
+    private fun saveByEnterAndFail() {
+        savePends = true
+        rule.press(Key.Enter)
+        rule.runOnIdle {
+            pending = false
+            problem = problemOnSave
+        }
+        rule.waitForIdle()
+    }
+
+    private fun assertASecondSaveMovesFocusBackTo(field: String, tabsToSave: Int) {
+        focusOnBack()
+        rule.walk(ADD_ORDER.size)
+        saveByEnterAndFail()
+        assertEquals(field, rule.focusedName())
+
+        // Back to Save with no edit, so the problem stays the same value, and Enter again.
+        rule.walk(tabsToSave)
+        assertEquals(SAVE, rule.focusedName())
+        saveByEnterAndFail()
+
+        assertEquals(field, rule.focusedName())
+    }
+
+    @Test
+    fun `A second Enter on Save with the same duplicate name moves focus to Name again`() {
+        show()
+        problemOnSave = SaveProblemUiModel.Duplicate("Ibuprofen")
+
+        assertASecondSaveMovesFocusBackTo(NAME, tabsToSave = ADD_ORDER.size - 1)
+    }
+
+    @Test
+    fun `A second Enter on Save with the same invalid dose moves focus to Usual dose again`() {
+        show()
+        problemOnSave = SaveProblemUiModel.InvalidDose
+
+        assertASecondSaveMovesFocusBackTo(DOSE, tabsToSave = 1)
+    }
+
     /** Robolectric's view never stays in touch mode, so the screen is given a touch-only manager. */
     @Test
     fun `A touch on Save with a duplicate name moves no focus`() {
