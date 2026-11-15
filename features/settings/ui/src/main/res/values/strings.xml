@@ -74,10 +74,11 @@
     <!-- Only the emergency part goes to the emergency number (BRD D171). -->
     <string name="settings_about_urgent">If a headache comes with any of the emergency signs on the Warning signs page, call your local emergency number.</string>
 
-    <!-- Privacy (BRD D97). -->
-    <string name="settings_privacy_offline">Migrely has no internet access, so it sends nothing anywhere. There\'s no account to make and nothing to sign in to.</string>
-    <string name="settings_privacy_phone">Your entries stay on this phone. On Android 9 and later, Android\'s own backup keeps a copy in your Google account only when it can encrypt it end to end, which needs a screen lock.</string>
-    <string name="settings_privacy_files">A file leaves the phone only when you export it yourself: a backup, a spreadsheet or a report for your doctor.</string>
+    <!-- Privacy (BRD D97, D181 (1): legal's final wording, verbatim). -->
+    <string name="settings_privacy_offline">Migrely has no internet permission, so the app itself cannot send anything over the internet. There\'s no account to make and nothing to sign in to.</string>
+    <string name="settings_privacy_purchase">Premium is bought through Google Play, which goes online for the purchase.</string>
+    <string name="settings_privacy_phone">Your entries stay on this phone. If Android\'s own backup is on, it may also copy them to your Google account. On Android 9 and later, it does that only when it can encrypt the copy end to end, which needs a screen lock. On Android 8, Migrely cannot require that, so the copy may not be end-to-end encrypted. Android can also move your entries to a new phone when you set it up.</string>
+    <string name="settings_privacy_files">Apart from Android\'s own backup and moving to a new phone, your entries leave the phone only in a file you export yourself: a backup, a spreadsheet or a report for your doctor. That file goes wherever you send it.</string>
     <string name="settings_privacy_delete">Delete all data, at the end of Settings, removes everything Migrely keeps on this phone.</string>
 
     <!-- Open-source licences: what the release app ships, from gradle/libs.versions.toml (BRD D97). -->

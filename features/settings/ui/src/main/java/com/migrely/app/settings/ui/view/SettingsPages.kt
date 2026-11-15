@@ -155,6 +155,7 @@ fun PrivacyContents(onBack: () -> Unit, modifier: Modifier = Modifier) = Setting
     modifier = modifier
 ) {
     Paragraph(stringResource(R.string.settings_privacy_offline))
+    Paragraph(stringResource(R.string.settings_privacy_purchase))
     Paragraph(stringResource(R.string.settings_privacy_phone))
     Paragraph(stringResource(R.string.settings_privacy_files))
     Paragraph(stringResource(R.string.settings_privacy_delete))

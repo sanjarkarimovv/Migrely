@@ -18,7 +18,7 @@ under load. Never `--stop` the daemon.
 
 ## 0. Before code
 
-- [ ] 0.1 Wait until `fix-keyboard-follows-cursor` (D180) is merged into `develop`. Then `git fetch origin && git merge
+- [x] 0.1 Wait until `fix-keyboard-follows-cursor` (D180) is merged into `develop`. Then `git fetch origin && git merge
   origin/develop` into this branch.
   - Resolve `docs/BRD.md` by keeping both sides in numeric order: D180 before D181, EC-UX-39…44 before EC-UX-45…51, §13
     row 48 before 49.
@@ -39,13 +39,13 @@ under load. Never `--stop` the daemon.
 
 ## 2. UI: privacy wording (D181 (1), EC-STO-11, EC-STO-12)
 
-- [ ] 2.1 Red first: add a Compose test in `features/settings/ui/src/testDebug`.
+- [x] 2.1 Red first: add a Compose test in `features/settings/ui/src/testDebug`.
   - It renders `PrivacyContents` and asserts 7 text nodes in order.
   - It compares the first four with legal's literal strings, written in the test, not read from `R.string`.
   - It asserts that the last node is the policy link with its address.
   - Verify: `./gradlew :features:settings:ui:testDebugUnitTest --tests '*Privacy*'` fails before 2.2 (old text, 6
     stops) and passes after 2.3.
-- [ ] 2.2 Strings in `features/settings/ui/src/main/res/values/strings.xml`:
+- [x] 2.2 Strings in `features/settings/ui/src/main/res/values/strings.xml`:
   - replace `settings_privacy_offline`, `settings_privacy_phone` and `settings_privacy_files` with D181 (1)'s text,
     verbatim, apostrophes escaped as `\'`;
   - add `settings_privacy_purchase`.
@@ -55,10 +55,10 @@ under load. Never `--stop` the daemon.
       '*/res/values*/*.xml' | wc -l` prints 0 (on 40536f49: 2);
     - `git grep -c -F "Premium is bought through Google Play, which goes online for the purchase." --
       features/settings/ui/src/main/res/values/strings.xml` prints 1.
-- [ ] 2.3 `PrivacyContents` (`SettingsPages.kt`): add `Paragraph(stringResource(R.string.settings_privacy_purchase))`
+- [x] 2.3 `PrivacyContents` (`SettingsPages.kt`): add `Paragraph(stringResource(R.string.settings_privacy_purchase))`
   right after `_offline`. No heading.
   - Verify: the 2.1 test passes.
-- [ ] 2.4 Red first: a test on Your data in `features/backup/ui/src/testDebug` asserts the note against legal's literal
+- [x] 2.4 Red first: a test on Your data in `features/backup/ui/src/testDebug` asserts the note against legal's literal
   text.
   - Verify: `./gradlew :features:backup:ui:testDebugUnitTest --tests '*YourData*'` fails before 2.2 and passes after.
 - [ ] 2.5 TalkBack and 200% check (device, emulator-5570, API 36).
