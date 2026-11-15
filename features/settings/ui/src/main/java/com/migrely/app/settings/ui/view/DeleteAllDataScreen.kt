@@ -7,14 +7,16 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.imeAnimationTarget
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
@@ -37,11 +39,15 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.heading
@@ -53,6 +59,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.migrely.app.designsystem.icon.MigrelyIcons
+import com.migrely.app.designsystem.input.SingleLineFieldInView
+import com.migrely.app.designsystem.input.inputLineRoom
+import com.migrely.app.designsystem.layout.MigrelyInsets
 import com.migrely.app.designsystem.theme.MigrelyDarkRoom
 import com.migrely.app.designsystem.theme.MigrelyTheme
 import com.migrely.app.settings.presentation.model.DeleteAllDataViewState
@@ -177,7 +186,7 @@ fun DeleteAllDataContents(
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background
                 ),
-                windowInsets = WindowInsets.safeDrawing.only(
+                windowInsets = MigrelyInsets.bars.only(
                     WindowInsetsSides.Top + WindowInsetsSides.Horizontal
                 )
             )
@@ -199,43 +208,78 @@ private fun ColumnScope.Confirmation(
     actions: DeleteAllDataActions
 ) {
     val scrollState = rememberScrollState()
-    Box(
-        contentAlignment = Alignment.TopCenter,
-        modifier = Modifier
+    var area by remember { mutableIntStateOf(0) }
+    var row by remember { mutableIntStateOf(0) }
+    val rides = rememberRowRidesAboveKeyboard(area, row)
+    val density = LocalDensity.current
+    val behindKeyboard = with(density) {
+        val keyboard = WindowInsets.ime.getBottom(density)
+        (keyboard - row - MigrelyInsets.bars.getBottom(density)).coerceAtLeast(0).toDp()
+    }
+    Column(
+        Modifier
             .weight(1f)
-            .fillMaxWidth()
+            .onSizeChanged { area = it.height }
     ) {
-        ConfirmationBody(typed, word, failed, actions.onTyped, scrollState)
-    }
-    // There is more to read above the button.
-    if (scrollState.canScrollForward) {
-        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-    }
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier = Modifier
-            .fillMaxWidth()
-            .windowInsetsPadding(
-                WindowInsets.safeDrawing.only(
-                    WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
-                )
-            )
-            .padding(horizontal = 16.dp, vertical = 8.dp)
-    ) {
-        Button(
-            onClick = actions.onDelete,
-            enabled = confirmed,
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.error,
-                contentColor = MaterialTheme.colorScheme.onError
-            ),
+        Box(
+            contentAlignment = Alignment.TopCenter,
             modifier = Modifier
-                .widthIn(max = CONTENT_MAX_WIDTH)
+                .weight(1f)
                 .fillMaxWidth()
-                .heightIn(min = 48.dp)
+                // With the row left behind the keyboard, the body still ends at the keyboard's top.
+                .padding(bottom = if (rides) 0.dp else behindKeyboard)
         ) {
-            Text(stringResource(R.string.settings_delete_confirm))
+            ConfirmationBody(typed, word, failed, actions.onTyped, scrollState)
         }
+        // There is more to read above the button.
+        if (scrollState.canScrollForward) {
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+        }
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .fillMaxWidth()
+                .windowInsetsPadding(
+                    (if (rides) MigrelyInsets.barsAndKeyboard else MigrelyInsets.bars)
+                        .only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom)
+                )
+                .onSizeChanged { row = it.height }
+                .padding(horizontal = 16.dp, vertical = 8.dp)
+        ) {
+            Button(
+                onClick = actions.onDelete,
+                enabled = confirmed,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.error,
+                    contentColor = MaterialTheme.colorScheme.onError
+                ),
+                modifier = Modifier
+                    .widthIn(max = CONTENT_MAX_WIDTH)
+                    .fillMaxWidth()
+                    .heightIn(min = 48.dp)
+            ) {
+                Text(stringResource(R.string.settings_delete_confirm))
+            }
+        }
+    }
+}
+
+/**
+ * Whether "Delete everything" rides above the keyboard (BRD D180 (8), EC-UX-40, ux U7): only while the space left
+ * above it, in the [area] below the top bar that also holds its [row], still shows the field's input line with its
+ * margins. Otherwise it stays at the bottom, behind the keyboard, and Done or Back shows it with the field. Decided
+ * once while a keyboard is up, from its final height, so the row never jumps as the keyboard opens or closes.
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun rememberRowRidesAboveKeyboard(area: Int, row: Int): Boolean {
+    val density = LocalDensity.current
+    val finalKeyboard = WindowInsets.imeAnimationTarget.getBottom(density)
+    val keyboardUp = finalKeyboard > 0 || WindowInsets.ime.getBottom(density) > 0
+    val bars = MigrelyInsets.bars.getBottom(density)
+    val lineRoom = with(density) { inputLineRoom().roundToPx() }
+    return remember(keyboardUp) {
+        !keyboardUp || area - row - maxOf(finalKeyboard, bars) >= lineRoom
     }
 }
 
@@ -253,7 +297,7 @@ private fun ConfirmationBody(
         modifier = Modifier
             .widthIn(max = CONTENT_MAX_WIDTH)
             .fillMaxWidth()
-            .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal))
+            .windowInsetsPadding(MigrelyInsets.bars.only(WindowInsetsSides.Horizontal))
             .verticalScroll(scrollState)
             .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 12.dp)
     ) {
@@ -262,18 +306,21 @@ private fun ConfirmationBody(
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurface
         )
-        OutlinedTextField(
-            value = typed,
-            onValueChange = onTyped,
-            singleLine = true,
-            label = { Text(stringResource(R.string.settings_delete_field, word)) },
-            keyboardOptions = KeyboardOptions(
-                capitalization = KeyboardCapitalization.Characters,
-                autoCorrectEnabled = false,
-                imeAction = ImeAction.Done
-            ),
-            modifier = Modifier.fillMaxWidth()
-        )
+        SingleLineFieldInView(hasLabel = true) { inView, interactionSource ->
+            OutlinedTextField(
+                value = typed,
+                onValueChange = onTyped,
+                singleLine = true,
+                label = { Text(stringResource(R.string.settings_delete_field, word)) },
+                keyboardOptions = KeyboardOptions(
+                    capitalization = KeyboardCapitalization.Characters,
+                    autoCorrectEnabled = false,
+                    imeAction = ImeAction.Done
+                ),
+                interactionSource = interactionSource,
+                modifier = inView.fillMaxWidth()
+            )
+        }
         if (failed) {
             Text(
                 text = stringResource(R.string.settings_not_deleted),
@@ -304,7 +351,7 @@ private fun ColumnScope.Deleting() {
             .weight(1f)
             .fillMaxWidth()
             .windowInsetsPadding(
-                WindowInsets.safeDrawing.only(
+                MigrelyInsets.bars.only(
                     WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
                 )
             )

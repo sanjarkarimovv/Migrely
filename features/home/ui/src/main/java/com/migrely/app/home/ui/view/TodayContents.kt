@@ -12,8 +12,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -45,6 +45,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.migrely.app.designsystem.icon.MigrelyIcons
+import com.migrely.app.designsystem.layout.MigrelyInsets
 import com.migrely.app.designsystem.sky.SkyAppearance
 import com.migrely.app.designsystem.sky.SkyCanvas
 import com.migrely.app.designsystem.theme.MigrelyTheme
@@ -85,7 +86,7 @@ fun TodayContents(
     val screenModifier = modifier
         .fillMaxSize()
         .background(MaterialTheme.colorScheme.background)
-        .safeDrawingPadding()
+        .windowInsetsPadding(MigrelyInsets.bars)
         .padding(horizontal = 16.dp)
     val appearance = skyAppearanceUiMapper.toAppearance(today.sky)
     if (isCompactHeight()) {

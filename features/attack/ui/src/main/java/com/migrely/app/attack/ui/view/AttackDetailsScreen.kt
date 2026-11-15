@@ -5,18 +5,14 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -70,6 +66,7 @@ import com.migrely.app.attack.ui.model.ShownAttackMessageUiModel
 import com.migrely.app.attack.ui.model.TagKindUiModel
 import com.migrely.app.attack.ui.model.TimeErrorUiModel
 import com.migrely.app.designsystem.icon.MigrelyIcons
+import com.migrely.app.designsystem.layout.MigrelyInsets
 import com.migrely.app.designsystem.motion.rememberReduceMotion
 import com.migrely.app.designsystem.snackbar.MessageLayout
 import com.migrely.app.designsystem.snackbar.clearOfMessage
@@ -439,9 +436,7 @@ private fun AttackDetailsTopBar(
         colors = TopAppBarDefaults.topAppBarColors(
             containerColor = MaterialTheme.colorScheme.background
         ),
-        windowInsets = WindowInsets.safeDrawing.only(
-            WindowInsetsSides.Top + WindowInsetsSides.Horizontal
-        )
+        windowInsets = MigrelyInsets.bars.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)
     )
 }
 
@@ -472,9 +467,14 @@ private fun ReadyContents(
                 .fillMaxWidth()
                 // Before the reveal's area, so in card mode "the top of the content" is below the message (D165 (2)).
                 .clearOfMessage(localState.messageClearance)
+                // Before the scroll, so its visible part ends at the keyboard's top, or the navigation bar's when that is
+                // higher, and the note's cursor line is kept in view against it (BRD D180 (2), #141).
+                .windowInsetsPadding(MigrelyInsets.barsAndKeyboard.only(WindowInsetsSides.Bottom))
                 .then(reveal.viewportModifier)
                 .verticalScroll(scrollState)
-                .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal))
+                .windowInsetsPadding(
+                    MigrelyInsets.barsAndKeyboard.only(WindowInsetsSides.Horizontal)
+                )
                 .padding(horizontal = 16.dp)
         ) {
             if (localState.safetyCardVisible) {
@@ -508,7 +508,6 @@ private fun ReadyContents(
                     color = MaterialTheme.colorScheme.error
                 )
             }
-            Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
         }
     }
 }
