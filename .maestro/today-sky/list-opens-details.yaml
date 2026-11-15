@@ -8,8 +8,10 @@ tags: [smoke, regression, today-sky, attack-details]
 - runFlow: ../subflows/start-attack.yaml
 - runFlow: ../subflows/end-attack.yaml
 - tapOn: "Migraine from .*Opens its details."
+# An ended migraine's Ended row is a control with one spoken name (D181 (2)); its shown "Ended" is not in the tree.
+# An in-progress migraine's row is not a control and has no such name, so this fails on the wrong state.
 - extendedWaitUntil:
-    visible: "Ended"
+    visible: "Change when it ended, now .*"
     timeout: 5000
 - assertVisible: "Duration .*"
 - assertNotVisible: "In progress"

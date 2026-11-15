@@ -10,5 +10,8 @@ appId: com.migrely.app
 - tapOn: "What Migrely keeps, and where"
 # The row's summary is not on the page itself; the page's first paragraph is.
 - extendedWaitUntil:
-    visible: "Migrely has no internet access, so it sends nothing anywhere\\..*"
+    visible: "Migrely has no internet permission, so the app itself cannot send anything over the internet\\..*"
     timeout: 5000
+# The purchase sentence comes right after it (D181 (1)).
+- assertVisible: "Premium is bought through Google Play, which goes online for the purchase\\."
+
