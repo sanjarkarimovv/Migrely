@@ -1,13 +1,13 @@
 ## ADDED Requirements
 
 ### Requirement: A message ignores the keyboard
-Opening or closing the keyboard SHALL NOT move a message, change how it fits (D178 (6)), or let it cover the top bar or Back. No
-keyboard padding SHALL apply to `MessageLayout`, the message host or their ancestors. A test SHALL prove it, and SHALL fail when
-the host is padded for the keyboard (BRD EC-UX-41, D180).
+Opening or closing the keyboard SHALL NOT move a message, change how it fits (D178 (6)), or let it cover the top bar or Back.
+The keyboard MAY cover a message's lower part; the message SHALL stay dismissible. No keyboard padding SHALL apply to
+`MessageLayout`, the message host or their ancestors, and a test SHALL fail when the host is padded (BRD EC-UX-41, D180).
 
 #### Scenario: A message, then the keyboard
 - **WHEN** a message shows on Attack details and the user taps the note, at 100% or 200% font, in portrait or landscape
-- **THEN** the message stays where it was, below the top bar, and a first tap on Back leaves the screen
+- **THEN** the message stays where it was, to the pixel, below the top bar, and a first tap on Back leaves the screen
 
 #### Scenario: The keyboard, then a message
 - **WHEN** the keyboard is open on a field and a message appears, such as "Couldn't save. Your phone's storage is full."
@@ -16,6 +16,11 @@ the host is padded for the keyboard (BRD EC-UX-41, D180).
 #### Scenario: The keyboard closes under a message
 - **WHEN** a message shows and the keyboard closes
 - **THEN** the message does not move
+
+#### Scenario: The keyboard covers the message's button
+- **WHEN** at 200% font in a short landscape window the keyboard covers a message's lower part, its Dismiss or Undo included
+- **THEN** the message never lies over the keyboard, and a sideways swipe on its visible part, TalkBack's Dismiss or Undo action,
+  or closing the keyboard each still clears or reaches it
 
 #### Scenario: A test with a keyboard inset
 - **WHEN** a test shows a message on Attack details and then gives the window a keyboard inset of 250 dp

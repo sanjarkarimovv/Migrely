@@ -12,10 +12,12 @@ They were confirmed by reading `develop` 046efe95, not by running it.
 - **#83 (S4).** With the keyboard open on the same screen, the whole window pans: Back's bounds are `[0,0][0,0]` and the trigger
   chips draw under the status bar's clock. The manifest has no `windowSoftInputMode`, and `MainActivity.kt:295` turns on
   edge-to-edge, so Android picks pan.
-- **#145 (S3, investigated here).** On Android 8, after a copy from a text field's toolbar, every screen keeps the keyboard's
+- **#145 (S3, confirmed on API 26).** On Android 8, after a copy from a text field's toolbar, every screen keeps the keyboard's
   space until a restart. Home and History pad their bottom with `safeDrawing`, which includes the keyboard
-  (`TodayContents.kt:88`, `AttackModeContents.kt:105`, `HistoryScreen.kt:298`). A keyboard inset left behind on Android 8
-  would explain it. That is a hypothesis until it is measured on API 26.
+  (`TodayContents.kt:88`, `AttackModeContents.kt:105`, `HistoryScreen.kt:298`). QA measured it (task 1.3): under the pan,
+  androidx caches `ime` only on an insets dispatch; the toolbar dispatches while the keyboard is open and closing the keyboard
+  does not, so `ime` stays at 901 px. Home loses 775 px and History ends at y 1499. It reproduced from the note, Edit
+  medication, Delete all data and History.
 
 Turning pan off is not a one-screen fix. Edit medication and Log medication pad for the keyboard inside their scroll
 (`EditMedicationScreen.kt:214-217`, `LogMedicationScreen.kt:329-332`), so today only the pan keeps their fields in sight.
@@ -24,7 +26,8 @@ The code reviewer of `fix-messages-everywhere` warned that the message's fit rul
 (`MigrelySnackbar.kt:360`, `MessageFit.kt`, D178 (6)). Whatever this change does to the window, a message must still never
 cover Back, and the fit rule must stay keyboard-independent.
 
-The decision is BRD D180.
+The decision is BRD D180. The UX answers are `migrely-work/t63/ux-keyboard.md` (ux-designer, 2026-11-14), accepted by
+`team-lead`.
 
 ## What Changes
 
@@ -34,15 +37,22 @@ The decision is BRD D180.
   visible part to the keyboard's top, with the keyboard padding outside the scroll. The focused field and the cursor line stay
   in view while typing. Compose brings the cursor into view itself where it can; where it does not, the cursor's rectangle is
   brought into view. This covers Attack details' note (#141), Edit medication and Log medication. Delete all data already keeps
-  its Delete row above the keyboard and only gets checked.
+  its Delete row above the keyboard on API 36, but in a short landscape window that row leaves no room for the input line, and
+  on API 26 the row stays under the keyboard today. The line is 8 dp clear of the keyboard; a single-line field shows its
+  supporting line when it fits.
+- **Delete all data decides once per keyboard opening (D180 (8)).** The Delete row rides above the keyboard only while the input
+  line plus 8 dp still shows; otherwise it stays behind the keyboard and the flow is type, Done, Delete.
+- **An autosave does not move the cursor or the page (D180 (9)).** `LimitedField.kt:32` puts the cursor at the end on any text
+  change it did not make; once the page follows the cursor, a save must not count as such a change.
 - **A screen with no text field ignores the keyboard (D180 (3)).** Home, History, Insights, Settings and its pages, the
-  paywall, Doctor report, My medications, Your data and Reminders pad only for the system bars and the cutout. One shared
+  paywall, Doctor report, My medications, Your data, Reminders and onboarding pad only for the system bars and the cutout. One shared
   inset in `designsystem` serves them and the message's fit rule.
 - **Messages stay keyboard-independent (D180 (4)).** No keyboard padding goes on `MessageLayout`, the message host or any
   of their ancestors. A test opens the keyboard on Attack details and proves that the message does not move and does not cover
-  Back. A mutation that pads the host for the keyboard makes that test fail.
-- **#145 is measured first (D180 (6)).** `qa-engineer` logs the keyboard inset on API 26 before and after the copy. If a stale
-  inset is the cause, D180 (3) fixes it and QA closes #145 after a retest. If not, #145 stays open.
+  Back. The keyboard, a window above the app, may cover a message's lower part, and a message over the content may cover the
+  cursor line; the message stays dismissible by a sideways swipe or TalkBack's action. A mutation that pads the host for the keyboard makes that test fail.
+- **#145 (D180 (6)).** D180 (3) removes the stale value from the screens without a field. Whether `adjustResize` alone clears it
+  for the screens with a field is not proven; the engineer proves it red to green (task 3.6) before the fix is called done.
 
 ## Out of scope
 
@@ -55,6 +65,8 @@ The decision is BRD D180.
   gives and adds nothing.
 - The tab order with a hardware keyboard, which D178 (4) set.
 - Any new string, permission, data, migration or Premium rule.
+- ux F5 (a medication error line that is not a live region): a possible separate issue; QA confirms it on a device first.
+- ux F7 (a light system keyboard over the dark attack screens): a later note.
 
 ## Capabilities
 
@@ -73,9 +85,9 @@ None.
 
 - **Code:** `app/src/main/AndroidManifest.xml` (one attribute), `designsystem` (a shared bars inset, maybe a cursor
   bring-into-view helper), `features/attack/ui` (`AttackDetailsScreen.kt`, maybe `AttackImpactNoteSections.kt`),
-  `features/medication/ui` (`EditMedicationScreen.kt`, `LogMedicationScreen.kt`), and the bottom insets of the 10 screens
-  without a field (11 files). `AttackDetailsScreen.kt` was also edited by `fix-messages-everywhere`, which is merged (D178), so there is no clash.
+  `features/medication/ui` (`EditMedicationScreen.kt`, `LogMedicationScreen.kt`), and the insets of the 11 screens
+  without a field (12 files). `AttackDetailsScreen.kt` was also edited by `fix-messages-everywhere`, which is merged (D178), so there is no clash.
 - **Tests:** Robolectric tests with a dispatched keyboard inset, the existing `MessageFitInsetsTest`, and the D167 card tests.
 - **Manifest and permissions:** no new permission. `:app:checkReleasePermissions` must still match 1.2.1's list.
 - **Data, backup, migration, Premium:** none.
-- **BRD:** D180, EC-UX-39 to EC-UX-43, §13 row 48.
+- **BRD:** D180, EC-UX-39 to EC-UX-44, §13 row 48.
