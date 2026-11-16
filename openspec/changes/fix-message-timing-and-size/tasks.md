@@ -509,9 +509,21 @@ ask `product-manager` before you code.
 
 ## 6. Negative control on the fix
 
-- [ ] 6.1 With the resume re-evaluation removed from `rememberMessageCountdown` as a temporary edit, 4.1's 122 s tests fail
+- [x] 6.1 With the resume re-evaluation removed from `rememberMessageCountdown` as a temporary edit, 4.1's 122 s tests fail
   again on Home and History. Restore the edit.
   Verify: paste the failing and then the passing test names, and confirm `git diff` is clean afterwards.
+
+  **Done 2026-11-17 (android-engineer).** The temporary edit removed `LifecycleResumeEffect(state) { state.wake() ... }`
+  from `rememberMessageCountdown`. The command was `:features:home:ui:testDebugUnitTest --tests '*HomeMessagesTest*'
+  :features:history:ui:testDebugUnitTest --tests '*HistoryMessagesTest*'`.
+  - **Without it, exit 1.** Exactly 1 of 16 tests fails on Home and 1 of 10 on History:
+    - `HomeMessagesTest > Lock and unlock at 122 seconds on Home leaves no Undo`;
+    - `HistoryMessagesTest > Lock and unlock at 122 seconds on History leaves no Undo`;
+    - both with `assertDoesNotExist ... found '1' node`: Undo was still on screen.
+    - The 114 s controls passed.
+  - **Edit restored:** `git diff` prints 0 lines.
+  - **Same command, exit 0:** 16 of 16 and 10 of 10 pass. Passing now: `Lock and unlock at 122 seconds on Home leaves no
+    Undo`, `... on History leaves no Undo`, and `Undo before the ceiling still restores on Home` and `... on History`.
 
 ## 7. Device walk (android-engineer, own emulator only)
 
