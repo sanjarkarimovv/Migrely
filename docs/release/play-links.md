@@ -12,7 +12,12 @@ confirmed that Console reads values inside `referrer=`, so every link carries bo
 `https://play.google.com/store/apps/details?id=com.migrely.app&utm_source=<s>&utm_medium=<m>&utm_campaign=<c>&referrer=utm_source%3D<s>%26utm_medium%3D<m>%26utm_campaign%3D<c>`
 
 Keep the campaign list short: Play folds small values into "Other", and with the install band we have now most will
-fold anyway. Detail (which story, which post, which directory) goes in our own log by date, not in the URL. The app and
+fold anyway. Detail (which story, which post) goes in our own log by date, not in the URL.
+
+**What Play Console reports (Play Console Help "View acquisition reports", retrieved 2026-11-16):** only `utm_source` and
+`utm_campaign` are dimensions, and the source only when the traffic filter is ads and referrals. `utm_medium`, `utm_term` and
+`utm_content` are not reported. So `utm_medium` is for our own hygiene only, and anything we want to tell apart in the
+Console must be in `utm_campaign`. Directories are the one place with a per-target value (`dir_<target>`, four values). The app and
 the site collect nothing: attribution is only what Play Console shows. Structured data `downloadUrl` stays bare (D137).
 
 ## Table
@@ -35,7 +40,10 @@ Each URL was built by script and checked: top-level tags equal the decoded `refe
 | Collab partner's story or bio | `instagram` | `social` | `collab` | planned | `https://play.google.com/store/apps/details?id=com.migrely.app&utm_source=instagram&utm_medium=social&utm_campaign=collab&referrer=utm_source%3Dinstagram%26utm_medium%3Dsocial%26utm_campaign%3Dcollab` |
 | In-app Settings, Share Migrely | `app` | `share` | `settings_share` | pm-loops, not built | `https://play.google.com/store/apps/details?id=com.migrely.app&utm_source=app&utm_medium=share&utm_campaign=settings_share&referrer=utm_source%3Dapp%26utm_medium%3Dshare%26utm_campaign%3Dsettings_share` |
 | Doctor PDF footer (clickable link only; the visible text is plain `migrely.health`) | `app` | `pdf` | `doctor_pdf` | pm-loops, optional | `https://play.google.com/store/apps/details?id=com.migrely.app&utm_source=app&utm_medium=pdf&utm_campaign=doctor_pdf&referrer=utm_source%3Dapp%26utm_medium%3Dpdf%26utm_campaign%3Ddoctor_pdf` |
-| Directory listings (AlternativeTo and similar; the directory's name goes in our log by date, not in the URL) | `directory` | `listing` | `directory` | planned, Part B | `https://play.google.com/store/apps/details?id=com.migrely.app&utm_source=directory&utm_medium=listing&utm_campaign=directory&referrer=utm_source%3Ddirectory%26utm_medium%3Dlisting%26utm_campaign%3Ddirectory` |
+| Outreach email to a directory or organisation, Healthline | `directory` | `email` | `dir_healthline` | planned, Part B | `https://play.google.com/store/apps/details?id=com.migrely.app&utm_source=directory&utm_medium=email&utm_campaign=dir_healthline&referrer=utm_source%3Ddirectory%26utm_medium%3Demail%26utm_campaign%3Ddir_healthline` |
+| Outreach email, Migraine & Headache Australia | `directory` | `email` | `dir_mha` | planned, Part B | `https://play.google.com/store/apps/details?id=com.migrely.app&utm_source=directory&utm_medium=email&utm_campaign=dir_mha&referrer=utm_source%3Ddirectory%26utm_medium%3Demail%26utm_campaign%3Ddir_mha` |
+| AlternativeTo page (link in the description or website field, if it accepts a Play link) | `directory` | `listing` | `dir_alternativeto` | planned, Part B | `https://play.google.com/store/apps/details?id=com.migrely.app&utm_source=directory&utm_medium=listing&utm_campaign=dir_alternativeto&referrer=utm_source%3Ddirectory%26utm_medium%3Dlisting%26utm_campaign%3Ddir_alternativeto` |
+| Healthify NZ screening form (the Play link we are asked for) | `directory` | `listing` | `dir_healthify` | planned, Part B | `https://play.google.com/store/apps/details?id=com.migrely.app&utm_source=directory&utm_medium=listing&utm_campaign=dir_healthify&referrer=utm_source%3Ddirectory%26utm_medium%3Dlisting%26utm_campaign%3Ddir_healthify` |
 
 ## What needs a site PR and an owner deploy
 
