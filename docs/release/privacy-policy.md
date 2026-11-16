@@ -1,6 +1,6 @@
 # Migrely privacy policy
 
-Effective date: 16 November 2026.
+Effective date: 14 November 2026.
 
 Migrely is a headache diary for Android, published on Google Play by Sulton UzDev ("we"). This policy explains what
 happens to the information you enter in the app, and, near the end, what happens on the website. In short: **Migrely has no internet permission, so the app cannot send your entries over the internet, and we never receive them.**
@@ -18,8 +18,8 @@ Migrely keeps what you enter on your phone:
 - how many times Google Play's rating window has run, and when it last did (see Rating Migrely below);
 - from version 1.4.0, whether your doctor report ends with a line saying it was made with Migrely (see Files you
   choose to share below);
-- from version 1.4.0, when Migrely last showed one of its safety cards (the first-10, "Still going?" and medication
-  overuse cards), so that it asks for no rating soon after one (see Rating Migrely below);
+- from version 1.4.0, when Migrely last showed one of its safety cards (the "Sudden, extremely bad pain?" and "Still
+  going?" cards, and the card about your medication days in the last 30 days), so that it asks for no rating soon after one (see Rating Migrely below);
 - up to three automatic copies of your entries, made before an import replaces them.
 
 Migrely does not ask for your name, email, location, contacts, photos or any account. It has no internet permission,
@@ -50,7 +50,7 @@ choose where it goes, for example by email or to a cloud drive. What happens to 
 choose.
 
 From version 1.4.0, the PDF report for your doctor ends with one small line of plain text saying it was made with
-Migrely, with our web address. It has no link, code or tracking, and it adds nothing you entered. You can turn it off
+Migrely, with our web address. It has no link or code of its own and no tracking, and it adds nothing you entered. You can turn it off
 with the switch on the report screen.
 
 ## Notifications

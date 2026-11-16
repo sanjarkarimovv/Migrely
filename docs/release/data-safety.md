@@ -19,7 +19,7 @@ whenever a permission, a library or the billing changes.
   talks to the Play Store app over IPC and declares no permission. A rating goes to Google Play, under its policy, and
   Play does not tell the app whether one was given. The app keeps only how many times it asked and when it last did
   (D131), in the settings, which are backed up with them. From 1.4.0 it also keeps when it last showed a safety card
-  (first-10, "Still going?", medication overuse), so it asks for no rating within 3 days after one (D185, D188), and
+  ("Sudden, extremely bad pain?", "Still going?", the card about medication days in the last 30 days), so it asks for no rating within 3 days after one (D185, D188), and
   whether the doctor report ends with the Migrely credit line (default on). Both sit in the same preferences, are
   backed up with them and removed by "Delete all data"; neither is sent anywhere.
 - **Share and Rate (1.4.0):** the app opens the system share sheet with a text-only Play link (UTM tags
