@@ -114,11 +114,20 @@ by hand during a suite.
   boundary" (T + 59 min alerts, T + 61 min quiet, each on its own date), "Clock moved back after a quiet post" (no second
   post). Negative control: develop e4b1fbcd on the same rows alerts at T + 2 h. Verify: a record in `docs/qa/` with counts
   per row and API.
+  4.1 API 26 qa-engineer 2026-11-16, ee9094e5 (also covers 2.8 a, b, c on API 26), `docs/qa/quiet-late-daily-reminder.md`:
+  T+2 h 3/3 quiet (no `notification_alert`, group "silent", shade entry with icon, text and both actions, date marked);
+  T+30 2/2, on time 2/2, T+59 2/2 and 59.75 min 1/1 alert; T+61 2/2 and 60.25 min 1/1 quiet; clock back after a quiet
+  post 1/1 one post; "Pain-free day" on a quiet post marks the date 1/1. Control develop 50c784e5: T+2 h 2/2 and T+61 1/1
+  alert. API 36 pending.
 - [ ] 4.2 Same devices: "Time zone change after the time" (quiet), "Do Not Disturb on" and "Migrely allowed through Do Not
   Disturb" (no sound), "Lock screen" (hide sensitive content: "Reminder" only), "Pain-free day on a quiet reminder" (no
   sound on the update), "Reboot after the time" (quiet, once), "The person's channel settings" with the "daily" channel set
   to silent (on-time and late both silent, no `notification_alert` sound; restore the channel after). Verify: the same
   record.
+  4.2 API 26 qa-engineer 2026-11-16, ee9094e5: zone change 2/2 quiet (control 1/1 alerts); DND "Alarms only" on time and
+  late 1/1 each, no sound; Priority only with Migrely allowed: on time 1/1 alerts, late 2/2 quiet (control 1/1 alerts);
+  lock screen 1/1 "Reminder" only; "Pain-free day" with an attack today 1/1, update without sound; "daily" set to Medium
+  "No sound": on time 2/2 and late 2/2 shown, no alert, restored; reboot after the time NOT RUN on a device (2 void attempts, see the record; unit coverage only). API 36 pending.
 - [ ] 4.3 TalkBack on API 36: the quiet reminder is reachable in the shade and reads title, text and both actions. Record,
   without pass or fail, whether TalkBack announced its arrival with the screen on and with it off. Verify: the record.
 - [ ] 4.3b Record only, not pass or fail, on API 36: with "wake screen for notifications" or always-on display on, does a
@@ -128,9 +137,12 @@ by hand during a suite.
   develop e4b1fbcd's. Verify: the record.
 - [ ] 4.5 Optional, if time allows: one real Doze-held run (`dumpsys deviceidle force-idle`) released more than 60 minutes
   late, posted quietly. Not required (design R5).
-- [ ] 4.6 Optional: raise the "daily" channel to "Pop on screen" in Android's settings (restore after). An on-time post
+- [x] 4.6 Optional: raise the "daily" channel to "Pop on screen" in Android's settings (restore after). An on-time post
   pops up; a late one (clock moved forward) does not. Only this row is evidence about pop-ups: on the default channel
   nothing pops up on develop either (design D1). Verify: the record.
+  4.6 API 26 qa-engineer 2026-11-16, ee9094e5: "daily" set to Urgent; on time 4/4 alert and pop up (heads-up seen in 3 of 3
+  runs with a working probe); late 3/3 no heads-up, no alert; control 50c784e5 late 1/1 pops up and alerts; restored to
+  High. API 36 not run (optional).
 
 ## 5. Fixes (`android-engineer`)
 
