@@ -33,6 +33,8 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
+import com.migrely.app.datasource.preferences.datasource.PreferencesDataSource
+import com.migrely.app.report.domain.usecase.SetReportCreditUseCase
 
 /** The doctor report (change add-doctor-report, BRD D81–D85). One repository serves every repository interface. */
 @Module
@@ -52,11 +54,13 @@ internal object ReportModule {
         formattingLocales: FormattingLocales,
         backupDataSource: BackupDataSource,
         reportDocumentDataSource: ReportDocumentDataSource,
-        clockDataSource: ClockDataSource
+        clockDataSource: ClockDataSource,
+        preferencesDataSource: PreferencesDataSource
     ) = ReportRepository(
         backupDataSource,
         reportDocumentDataSource,
         clockDataSource,
+        preferencesDataSource,
         ReportRecordsDomainMapper(),
         ReportDocumentMapper(
             ReportDateTimeFormatter(
@@ -83,8 +87,9 @@ internal object ReportModule {
         coroutines: CoroutineContextProvider,
         useCaseExecutor: UseCaseExecutor
     ) = ReportViewModel(
-        GetReportOptionsUseCase(repository, repository, coroutines),
+        GetReportOptionsUseCase(repository, repository, repository, coroutines),
         CreateReportUseCase(repository, repository, repository, repository, coroutines),
+        SetReportCreditUseCase(repository, coroutines),
         ReportPeriodDomainMapper(),
         ReportOptionsPresentationMapper(),
         useCaseExecutor

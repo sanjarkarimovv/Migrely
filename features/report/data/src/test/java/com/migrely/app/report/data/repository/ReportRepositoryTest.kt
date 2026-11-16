@@ -6,12 +6,14 @@ import com.migrely.app.datasource.clock.datasource.ClockDataSource
 import com.migrely.app.datasource.exception.DatabaseDataException
 import com.migrely.app.datasource.exception.FileDataException
 import com.migrely.app.datasource.exception.StorageFullDataException
+import com.migrely.app.datasource.preferences.datasource.PreferencesDataSource
 import com.migrely.app.datasource.report.datasource.ReportDocumentDataSource
 import com.migrely.app.datasource.report.model.ReportDocumentDataModel
 import com.migrely.app.datasource.report.model.ReportPaperDataModel
 import com.migrely.app.report.data.mapper.ReportDateTimeFormatter
 import com.migrely.app.report.data.mapper.ReportDocumentMapper
 import com.migrely.app.report.data.mapper.ReportRecordsDomainMapper
+import com.migrely.app.report.domain.model.ReportCreditWriteResultDomainModel
 import com.migrely.app.report.domain.model.ReportDatesDomainModel
 import com.migrely.app.report.domain.model.ReportDomainModel
 import com.migrely.app.report.domain.model.ReportRecordsDomainModel
@@ -42,7 +44,8 @@ private val REPORT = ReportDomainModel(
     emptyList(),
     emptyList(),
     emptyList(),
-    emptyList()
+    emptyList(),
+    includeCredit = true
 )
 
 class ReportRepositoryTest {
@@ -52,11 +55,13 @@ class ReportRepositoryTest {
         on { now() } doReturn NOW
         on { zone() } doReturn ZoneId.of("Asia/Tashkent")
     }
+    private val preferencesDataSource: PreferencesDataSource = mock()
     private var locale: Locale = Locale.UK
     private val classUnderTest = ReportRepository(
         backupDataSource,
         reportDocumentDataSource,
         clockDataSource,
+        preferencesDataSource,
         ReportRecordsDomainMapper(),
         ReportDocumentMapper(ReportDateTimeFormatter({ locale }, { true }) { _, _ -> "HH:mm" })
     ) { locale }
@@ -113,5 +118,28 @@ class ReportRepositoryTest {
         whenever(reportDocumentDataSource.cleanUp(NOW)).doThrow(FileDataException())
         classUnderTest.cleanUpReports()
         verify(reportDocumentDataSource).cleanUp(NOW)
+    }
+
+    @Test
+    fun `When reading the credit switch then the stored choice`() {
+        given(preferencesDataSource.reportCreditShown()).willReturn(false)
+
+        assertEquals(false, classUnderTest.reportCreditShown())
+    }
+
+    @Test
+    fun `When the credit switch changes then it is kept, and a write that fails comes back as a value`() {
+        assertEquals(
+            ReportCreditWriteResultDomainModel.Saved,
+            classUnderTest.setReportCreditShown(false)
+        )
+        verify(preferencesDataSource).setReportCreditShown(false)
+
+        given(preferencesDataSource.setReportCreditShown(true))
+            .willThrow(FileDataException("Preferences not saved"))
+        assertEquals(
+            ReportCreditWriteResultDomainModel.Failed,
+            classUnderTest.setReportCreditShown(true)
+        )
     }
 }

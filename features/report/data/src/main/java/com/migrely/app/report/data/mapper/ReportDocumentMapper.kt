@@ -28,6 +28,13 @@ import java.util.Locale
 /** At most this many pages; a longer attacks table keeps its latest rows, and the notes theirs (EC-REP-02, D84). */
 const val MAXIMUM_REPORT_PAGES = 50
 
+/**
+ * The credit line on the report's last page while the switch is on (BRD REP-F5, D186; medical-reviewer W4). The
+ * switch's summary quotes it word for word, and a test in `:app` keeps the two equal (W6).
+ */
+const val REPORT_CREDIT =
+    "Made with Migrely, a personal migraine diary app. Not a medical device. migrely.health"
+
 private const val SHORTENED_NOTE =
     "Showing the latest %1\$d of %2\$d migraines. The summary counts all of them."
 private const val NOTES_SHORTENED = "Notes from the latest %1\$d migraines."
@@ -62,6 +69,7 @@ class ReportDocumentMapper(private val reportDateTimeFormatter: ReportDateTimeFo
             footer = "Patient-entered data. Not a diagnosis.",
             pageLabel = "Page %1\$d of %2\$d",
             maxPages = MAXIMUM_REPORT_PAGES,
+            credit = if (report.includeCredit) REPORT_CREDIT else null,
             blocks =
             summary(report) + calendar(report) + attacks(attacksTable) + medications(report) +
                 notes(report, attacksTable)

@@ -17,13 +17,15 @@ sealed interface ReportPeriodPresentationModel {
 /**
  * [anythingLogged] is false when "Create report" must be off (BRD EC-REP-01). [period] is the one the dates are for,
  * never [ReportPeriodPresentationModel.Default], and [lastVisit] is set when "Since last visit" is offered (EC-REP-04).
+ * [creditShown] is the stored credit switch (REP-F5, D186).
  */
 data class ReportOptionsPresentationModel(
     val from: LocalDate,
     val to: LocalDate,
     val anythingLogged: Boolean,
     val period: ReportPeriodPresentationModel,
-    val lastVisit: LocalDate?
+    val lastVisit: LocalDate?,
+    val creditShown: Boolean
 )
 
 sealed interface ReportViewState {
@@ -46,4 +48,7 @@ sealed interface ReportPresentationNotification : PresentationNotification {
     data object StorageFull : ReportPresentationNotification
 
     data object SomethingWentWrong : ReportPresentationNotification
+
+    /** The credit switch could not be saved; it shows the stored choice again (BRD EC-REP-12). */
+    data object NotSaved : ReportPresentationNotification
 }

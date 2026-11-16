@@ -14,7 +14,8 @@ class ReportOptionsPresentationMapper {
                 options.dates.to,
                 options.anythingLogged,
                 toPresentation(options.period),
-                options.lastVisit
+                options.lastVisit,
+                options.creditShown
             )
         )
         ReportOptionsDomainModel.Failed -> ReportViewState.Unavailable

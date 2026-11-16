@@ -103,7 +103,9 @@ data class ReportActions(
     val onPeriod: (ReportPeriodUiModel) -> Unit,
     val onCustom: () -> Unit,
     val onNotes: (Boolean) -> Unit,
-    val onCreate: () -> Unit
+    val onCredit: (Boolean) -> Unit,
+    /** Takes the credit switch as shown at the tap, which the report uses (BRD EC-REP-13). */
+    val onCreate: (includeCredit: Boolean) -> Unit
 )
 
 /**
@@ -185,8 +187,13 @@ fun ReportDependencies.Report(navController: NavController, modifier: Modifier =
             },
             onCustom = { pickingRange = true },
             onNotes = { includeNotes = it },
-            onCreate = {
-                reportViewModel.onCreateAction(toPresentation.toPresentation(period), includeNotes)
+            onCredit = { reportViewModel.onCreditAction(it, toPresentation.toPresentation(period)) },
+            onCreate = { includeCredit ->
+                reportViewModel.onCreateAction(
+                    toPresentation.toPresentation(period),
+                    includeNotes,
+                    includeCredit
+                )
             }
         ),
         messages = {
@@ -352,9 +359,26 @@ fun ReportContents(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                    NotesRow(includeNotes, enabled = !working, onChange = actions.onNotes)
+                    SwitchRow(
+                        title = stringResource(R.string.report_notes),
+                        summary = stringResource(R.string.report_notes_summary),
+                        checked = includeNotes,
+                        enabled = !working,
+                        onChange = actions.onNotes
+                    )
+                    // Shown once its stored value is read, and kept while a report is made (BRD EC-REP-13).
+                    shownOptions?.let {
+                        SwitchRow(
+                            title = stringResource(R.string.report_credit_switch),
+                            summary = stringResource(R.string.report_credit_switch_summary),
+                            checked = it.creditShown,
+                            enabled = !working,
+                            onChange = actions.onCredit
+                        )
+                    }
                     Button(
-                        onClick = actions.onCreate,
+                        // Enabled only with options, so the switch's value is the one shown.
+                        onClick = { options?.let { actions.onCreate(it.creditShown) } },
                         enabled = !working && options?.anythingLogged == true,
                         modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)
                     ) {
@@ -434,9 +458,15 @@ private fun Covers(options: ReportOptionsUiModel) {
     )
 }
 
-/** One node with Role switch, like the app's other switches (EC-UX-04). */
+/** One node with Role switch, like the app's other switches (EC-UX-04): "Include notes" and the credit switch. */
 @Composable
-private fun NotesRow(checked: Boolean, enabled: Boolean, onChange: (Boolean) -> Unit) {
+private fun SwitchRow(
+    title: String,
+    summary: String,
+    checked: Boolean,
+    enabled: Boolean,
+    onChange: (Boolean) -> Unit
+) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
@@ -450,9 +480,9 @@ private fun NotesRow(checked: Boolean, enabled: Boolean, onChange: (Boolean) -> 
             )
     ) {
         Column(Modifier.weight(1f)) {
-            Text(stringResource(R.string.report_notes), style = MaterialTheme.typography.bodyLarge)
+            Text(title, style = MaterialTheme.typography.bodyLarge)
             Text(
-                stringResource(R.string.report_notes_summary),
+                summary,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -514,6 +544,7 @@ private fun ReportMessageUiModel.text() = when (this) {
     ReportMessageUiModel.StorageFull -> R.string.report_message_storage
     ReportMessageUiModel.SomethingWentWrong -> R.string.report_message_failed
     ReportMessageUiModel.NoAppToShare -> R.string.report_message_no_app
+    ReportMessageUiModel.NotSaved -> R.string.report_message_not_saved
 }
 
 @Preview(name = "Doctor report")
@@ -526,7 +557,7 @@ private fun ReportPreview() {
             ),
             period = DEFAULT_PERIOD,
             includeNotes = false,
-            actions = ReportActions({}, {}, {}, {}, {}),
+            actions = ReportActions({}, {}, {}, {}, {}, {}),
             messages = {}
         )
     }
@@ -542,7 +573,7 @@ private fun ReportEmptyPreview() {
             ),
             period = ReportPeriodUiModel.LastMonths(1),
             includeNotes = false,
-            actions = ReportActions({}, {}, {}, {}, {}),
+            actions = ReportActions({}, {}, {}, {}, {}, {}),
             messages = {}
         )
     }

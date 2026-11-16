@@ -3,11 +3,13 @@ package com.migrely.app.report.presentation.viewmodel
 import com.migrely.app.architecture.presentation.viewmodel.BaseViewModelTest
 import com.migrely.app.report.domain.model.CreateReportRequestDomainModel
 import com.migrely.app.report.domain.model.CreateReportResultDomainModel
+import com.migrely.app.report.domain.model.ReportCreditWriteResultDomainModel
 import com.migrely.app.report.domain.model.ReportDatesDomainModel
 import com.migrely.app.report.domain.model.ReportOptionsDomainModel
 import com.migrely.app.report.domain.model.ReportPeriodDomainModel
 import com.migrely.app.report.domain.usecase.CreateReportUseCase
 import com.migrely.app.report.domain.usecase.GetReportOptionsUseCase
+import com.migrely.app.report.domain.usecase.SetReportCreditUseCase
 import com.migrely.app.report.presentation.mapper.ReportOptionsPresentationMapper
 import com.migrely.app.report.presentation.mapper.ReportPeriodDomainMapper
 import com.migrely.app.report.presentation.model.ReportOptionsPresentationModel
@@ -43,7 +45,8 @@ private val READY = ReportViewState.Ready(
         LocalDate.of(2026, 10, 25),
         anythingLogged = true,
         period = THREE,
-        lastVisit = null
+        lastVisit = null,
+        creditShown = true
     )
 )
 
@@ -54,11 +57,14 @@ class ReportViewModelTest :
 
     @Mock private lateinit var createReportUseCase: CreateReportUseCase
 
+    @Mock private lateinit var setReportCreditUseCase: SetReportCreditUseCase
+
     @Before
     fun setUp() {
         classUnderTest = ReportViewModel(
             getReportOptionsUseCase,
             createReportUseCase,
+            setReportCreditUseCase,
             ReportPeriodDomainMapper(),
             ReportOptionsPresentationMapper(),
             useCaseExecutor
@@ -106,14 +112,14 @@ class ReportViewModelTest :
             ReportOptionsDomainModel.Ready(DATES, true, THREE_DOMAIN)
         )
         createReportUseCase.givenSuccessfulExecution(
-            CreateReportRequestDomainModel(THREE_DOMAIN, includeNotes = true),
+            CreateReportRequestDomainModel(THREE_DOMAIN, includeNotes = true, includeCredit = true),
             CreateReportResultDomainModel.Created("content://r")
         )
         val states = async(start = UNDISPATCHED) { classUnderTest.viewState.take(2).toList() }
 
         assertEquals(
             ReportPresentationNotification.Share("content://r"),
-            notificationOf { classUnderTest.onCreateAction(THREE, includeNotes = true) }
+            notificationOf { classUnderTest.onCreateAction(THREE, includeNotes = true, includeCredit = true) }
         )
         assertEquals(listOf(ReportViewState.Working, READY), states.await())
     }
@@ -132,13 +138,13 @@ class ReportViewModelTest :
                 ReportPresentationNotification.SomethingWentWrong
         ).forEach { (result, expected) ->
             createReportUseCase.givenSuccessfulExecution(
-                CreateReportRequestDomainModel(THREE_DOMAIN, false),
+                CreateReportRequestDomainModel(THREE_DOMAIN, false, true),
                 result
             )
             assertEquals(
                 expected,
                 notificationOf {
-                    classUnderTest.onCreateAction(THREE, includeNotes = false)
+                    classUnderTest.onCreateAction(THREE, includeNotes = false, includeCredit = true)
                 }
             )
         }
@@ -152,10 +158,10 @@ class ReportViewModelTest :
                 ReportOptionsDomainModel.Ready(DATES, true, THREE_DOMAIN)
             )
             createReportUseCase.givenSuccessfulExecution(
-                CreateReportRequestDomainModel(THREE_DOMAIN, false),
+                CreateReportRequestDomainModel(THREE_DOMAIN, false, true),
                 CreateReportResultDomainModel.Created("content://r")
             )
-            classUnderTest.onCreateAction(THREE, includeNotes = false)
+            classUnderTest.onCreateAction(THREE, includeNotes = false, includeCredit = true)
 
             assertEquals(
                 ReportPresentationNotification.Share("content://r"),
@@ -176,8 +182,8 @@ class ReportViewModelTest :
 
     @Test
     fun `Given a report is being made when Create is tapped again then no second report starts`() {
-        classUnderTest.onCreateAction(THREE, includeNotes = false)
-        classUnderTest.onCreateAction(THREE, includeNotes = false)
+        classUnderTest.onCreateAction(THREE, includeNotes = false, includeCredit = true)
+        classUnderTest.onCreateAction(THREE, includeNotes = false, includeCredit = true)
 
         verify(useCaseExecutor, times(1)).execute(
             useCase = eq(createReportUseCase),
@@ -195,10 +201,10 @@ class ReportViewModelTest :
                 ReportOptionsDomainModel.Ready(DATES, true, THREE_DOMAIN)
             )
             createReportUseCase.givenSuccessfulExecution(
-                CreateReportRequestDomainModel(THREE_DOMAIN, false),
+                CreateReportRequestDomainModel(THREE_DOMAIN, false, true),
                 CreateReportResultDomainModel.Created("content://r")
             )
-            classUnderTest.onCreateAction(THREE, includeNotes = false)
+            classUnderTest.onCreateAction(THREE, includeNotes = false, includeCredit = true)
 
             classUnderTest.onEnter(THREE)
             val state = async(start = UNDISPATCHED) { classUnderTest.viewState.first() }
@@ -231,10 +237,67 @@ class ReportViewModelTest :
                         LocalDate.of(2026, 10, 25),
                         anythingLogged = true,
                         period = ReportPeriodPresentationModel.SinceLastVisit(august20),
-                        lastVisit = august20
+                        lastVisit = august20,
+                        creditShown = true
                     )
                 ),
                 state.await()
             )
         }
+
+    @Test
+    fun `When the credit switch is turned off then it is saved and the options show it off`() = runTest {
+        setReportCreditUseCase.givenSuccessfulExecution(false, ReportCreditWriteResultDomainModel.Saved)
+        getReportOptionsUseCase.givenSuccessfulExecution(
+            THREE_DOMAIN,
+            ReportOptionsDomainModel.Ready(DATES, true, THREE_DOMAIN, creditShown = false)
+        )
+        val state = async(start = UNDISPATCHED) { classUnderTest.viewState.first() }
+
+        classUnderTest.onCreditAction(false, THREE)
+
+        assertEquals(
+            ReportViewState.Ready(READY.options.copy(creditShown = false)),
+            state.await()
+        )
+    }
+
+    @Test
+    fun `Given the credit switch cannot be saved then the stored choice shows again, with the message`() =
+        runTest {
+            setReportCreditUseCase.givenSuccessfulExecution(
+                false,
+                ReportCreditWriteResultDomainModel.Failed
+            )
+            getReportOptionsUseCase.givenSuccessfulExecution(
+                THREE_DOMAIN,
+                ReportOptionsDomainModel.Ready(DATES, true, THREE_DOMAIN, creditShown = true)
+            )
+            val state = async(start = UNDISPATCHED) { classUnderTest.viewState.first() }
+
+            assertEquals(
+                ReportPresentationNotification.NotSaved,
+                notificationOf { classUnderTest.onCreditAction(false, THREE) }
+            )
+            assertEquals(READY, state.await())
+        }
+
+    @Test
+    fun `When creating with the credit switch off then the report is asked for without it`() = runTest {
+        createReportUseCase.givenSuccessfulExecution(
+            CreateReportRequestDomainModel(THREE_DOMAIN, includeNotes = false, includeCredit = false),
+            CreateReportResultDomainModel.Created("content://r")
+        )
+        getReportOptionsUseCase.givenSuccessfulExecution(
+            THREE_DOMAIN,
+            ReportOptionsDomainModel.Ready(DATES, true, THREE_DOMAIN)
+        )
+
+        assertEquals(
+            ReportPresentationNotification.Share("content://r"),
+            notificationOf {
+                classUnderTest.onCreateAction(THREE, includeNotes = false, includeCredit = false)
+            }
+        )
+    }
 }
