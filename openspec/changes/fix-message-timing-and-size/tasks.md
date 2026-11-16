@@ -557,6 +557,25 @@ ask `product-manager` before you code.
   here; negative control: with `ScreenReaderFocus` not fed to the countdown as a temporary edit, the test fails; then it
   passes after the revert.
 
+  **Test written 2026-11-17 (android-engineer); not run yet, it waits for `emulator-5570`.** The test is
+  `designsystem/src/androidTest/.../snackbar/MessageTalkBackPauseTest.kt`.
+  - It uses the real `MigrelySnackbarHost`, with `ScreenReaderFocusEffect` feeding `rememberMessageCountdown` (no fake
+    clock).
+  - 10 rounds, each with a fresh 4 s Undo message:
+    - wait until 1.5 s are left;
+    - TalkBack focus on the text, which must be paused;
+    - then on "Undo the start", which must stay paused at every 10 ms poll for 600 ms;
+    - then on the content, which must be paused right after, then resumed, with at least 3 s left (less 400 ms of
+      slack for the poll and the frame).
+  - Each round logs under the tag `T64Pause`, including how long after leaving the "still paused" check ran.
+  - It skips itself with a message when TalkBack is off.
+  - The node finder is shared with the spike in `AccessibilityTree.kt`.
+  - `:designsystem:compileDebugAndroidTestKotlin :designsystem:ktlintCheck :designsystem:detekt` exits 0.
+  - Command for the device run:
+    `ANDROID_SERIAL=emulator-5570 ./gradlew :designsystem:connectedDebugAndroidTest
+    -Pandroid.testInstrumentationRunnerArguments.class=com.migrely.app.designsystem.snackbar.MessageTalkBackPauseTest`.
+  - Negative control for the device run: drop the `ScreenReaderFocusEffect(...)` call in `MigrelySnackbarHost`.
+
 ## 8. Gate, review, docs
 
 - [ ] 8.1 Gate. Verify: `./gradlew assembleDebug test ktlintCheck detekt lint` exits 0.

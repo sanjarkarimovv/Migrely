@@ -263,26 +263,17 @@ class TalkBackFocusSpikeTest {
      * record in [systemFocusOn].
      */
     private fun moveFocus(label: String): Boolean {
-        val node = find(automation.rootInActiveWindow, label)
+        val node = automation.rootInActiveWindow.findByLabel(label)
         val result = node?.performAction(AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS)
         Log.i(TAG, "move to '$label': found=${node != null} result=$result")
         return node != null
     }
 
     private fun systemFocusOn(label: String): Boolean = await {
-        find(automation.rootInActiveWindow, label)?.also { it.refresh() }?.isAccessibilityFocused ==
+        automation.rootInActiveWindow.findByLabel(label)?.also {
+            it.refresh()
+        }?.isAccessibilityFocused ==
             true
-    }
-
-    /** Compose does not search its nodes by text, so this walks the window's tree. */
-    private fun find(node: AccessibilityNodeInfo?, label: String): AccessibilityNodeInfo? {
-        if (node == null) return null
-        val matches = node.text?.toString() == label || node.contentDescription?.toString() == label
-        return if (matches) {
-            node
-        } else {
-            (0 until node.childCount).firstNotNullOfOrNull { find(node.getChild(it), label) }
-        }
     }
 
     private fun awaitInMessage(expected: Boolean): Boolean = await {
