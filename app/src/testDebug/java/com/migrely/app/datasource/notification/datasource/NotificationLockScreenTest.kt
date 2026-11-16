@@ -47,7 +47,7 @@ class NotificationLockScreenTest {
 
     @Test
     fun `When the daily reminder is posted then it is private with the shared public version`() {
-        classUnderTest.showDailyReminder(LocalDate.parse("2026-11-18"))
+        classUnderTest.showDailyReminder(LocalDate.parse("2026-11-18"), quiet = false)
 
         assertPrivate(posted().single())
     }

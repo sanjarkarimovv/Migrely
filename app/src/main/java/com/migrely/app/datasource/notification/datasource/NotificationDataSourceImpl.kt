@@ -26,9 +26,11 @@ class NotificationDataSourceImpl(private val context: Context) : NotificationDat
 
     override fun areEnabled(): Boolean = manager.areNotificationsEnabled()
 
-    override fun showDailyReminder(date: LocalDate) = notify(
+    // A late one is silent (BRD D183); androidx does it by a group of its own, so it still shows as before.
+    override fun showDailyReminder(date: LocalDate, quiet: Boolean) = notify(
         DAILY_ID,
         builder(CHANNEL_DAILY, R.string.notification_channel_daily)
+            .setSilent(quiet)
             .setContentTitle(context.getString(R.string.notification_daily_title))
             .setContentText(context.getString(R.string.notification_daily_text))
             .addAction(

@@ -1,6 +1,7 @@
 package com.migrely.app.reminders.domain.usecase
 
 import com.migrely.app.reminders.domain.model.CurrentTimeDomainModel
+import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
@@ -39,6 +40,13 @@ internal class DailyReminderTime {
         val nextDay = at(date.plusDays(1), time, now.zone)
         return if (nextDay.isAfter(now.instant)) nextDay else next(now, time)
     }
+
+    /**
+     * How late a run at now is for [date]'s [time], read in the device's zone at the moment, from the same instant the
+     * plan uses; negative when now is before it. More than 60 minutes makes the reminder quiet (BRD D183).
+     */
+    fun lateBy(date: LocalDate, now: CurrentTimeDomainModel, time: LocalTime): Duration =
+        Duration.between(at(date, time, now.zone), now.instant)
 
     /** The date a run at [at] asks about, in the device's zone. */
     fun dateOf(at: Instant, zone: ZoneId): LocalDate = at.atZone(zone).toLocalDate()
