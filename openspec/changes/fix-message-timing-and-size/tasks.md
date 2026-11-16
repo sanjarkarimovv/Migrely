@@ -17,7 +17,7 @@ ask `product-manager` before you code.
 
 ## 0. Order
 
-- [ ] 0.1 Merge `origin/develop` after D180 (`bugfix/141-keyboard-follows-cursor`) and D181
+- [x] 0.1 Merge `origin/develop` after D180 (`bugfix/141-keyboard-follows-cursor`) and D181
   (`bugfix/217-privacy-wording-and-focus`) land, and resolve the spec overlap.
   - Keep every BRD row in numeric order: EC-UX-39…51 before 52…59, and §13 rows 48 and 49 before 50.
   - If either branch took D182, EC-UX-52…59, EC-ATK-24 or row 50, this change renumbers, because it merges second.
@@ -28,6 +28,21 @@ ask `product-manager` before you code.
     exits 0;
   - `grep -c "^| D182 " docs/BRD.md` prints 1;
   - `openspec validate fix-message-timing-and-size --strict` exits 0.
+
+  **Done 2026-11-16 (android-engineer), merge commit 3cd3144f** of `origin/develop` 03a8900e (develop had moved past
+  50c784e5 to #232, D184, listing). Only `docs/BRD.md` conflicted; no code conflict, since this branch had no code.
+  - Branch scan (`git branch -r`, every branch's BRD): D182, EC-UX-52…59, EC-ATK-24 and §13 row 50 exist only here.
+    Others: D183 and row 51 on `feature/quiet-late-daily-reminder`, D184 on develop, D185–D188 and row 52 on
+    `feature/add-word-of-mouth-loops`. No renumbering.
+  - Order kept: EC-UX-39…51 then 52…59; §13 rows 48, 49, 50; §17 D180, D181, D182, D184.
+  - The two bugfix branches are deleted on origin, so the ancestor check used their PR merge commits:
+    `git merge-base --is-ancestor d3d98673 HEAD && git merge-base --is-ancestor 50c784e5 HEAD` → exit 0
+    (d3d98673 = PR #225, 50c784e5 = PR #231).
+  - `grep -c "^| D182 " docs/BRD.md` → 1.
+  - `openspec validate fix-message-timing-and-size --strict` → exit 0; `openspec validate --all --strict` → 33 passed,
+    0 failed.
+  - Spec overlap: D180 and D181 each only ADD one requirement to `in-app-messages`; none of this change's three MODIFIED
+    requirements is touched by them.
 
 ## 1. Plan (product-manager)
 
@@ -42,8 +57,9 @@ ask `product-manager` before you code.
 
 ## 2. UX (ux-designer)
 
-- [ ] 2.1 Confirm that the deltas match §B. Nothing new is asked, and no copy changes.
+- [x] 2.1 Confirm that the deltas match §B. Nothing new is asked, and no copy changes.
   Verify: a reply to `product-manager` saying "matches" or listing differences by scenario name.
+  **Done:** ux-t64 reviewed bc0f5896 on 2026-11-15 (1 error + 7 differences, folded in by PM cc2bab9c).
 
 ## 3. Spike (android-engineer, before the pause code)
 
