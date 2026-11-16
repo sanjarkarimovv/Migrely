@@ -478,11 +478,34 @@ ask `product-manager` before you code.
   | Settings | 31 | 0 |
   | Onboarding | 5 | 0 |
   | Subscription | 42 | 0 |
-- [ ] 5.3 Saved state per host covers `runMillis` (pause ended and floor applied at the save), `savedElapsedMillis` and the
+- [x] 5.3 Saved state per host covers `runMillis` (pause ended and floor applied at the save), `savedElapsedMillis` and the
   stamps. Rotation and process-death restore tests cover the scenarios "Rotate while paused", "Process death while
   paused", "Restored after the time ran out" and "Restored after the ceiling".
   Verify: `./gradlew :features:home:ui:testDebugUnitTest --tests '*Restore*' :features:history:ui:testDebugUnitTest --tests '*Restore*'`
   passes.
+
+  **Done 2026-11-17 (android-engineer).**
+  - The saved state lives in `rememberMessageCountdown`'s own `rememberSaveable`, keyed by the message the host already
+    saves, so every host saves it the same way: `runMillis` (pause ended and floor applied at the save),
+    `savedElapsedMillis`, `shownElapsedMillis`, `actionWallMillis` and the line's fraction.
+  - The tests are `HomeMessagesRestoreTest` and `HistoryMessagesRestoreTest`, each with four, using
+    `StateRestorationTester` and a fake clock:
+    - rotate while paused: about 3 s back, Undo not focused, gone at 3 s;
+    - process death while paused, restored 2 s later: 2 s left;
+    - restored after the time ran out: nothing, even though it was paused;
+    - restored past the ceiling: no Undo.
+  - The tester saves and restores at once, so the time a restore takes is added inside the restored composition, before
+    the message is restored. Its dispose and re-emit need frames, so the Compose clock runs for that step alone; the
+    fake message clock times the countdown.
+
+  Results:
+  - The verify command exits 0: Home `*Restore*` 7 tests, History `*Restore*` 5 tests, 0 failures (the 8 above, plus
+    restore tests that already existed).
+  - ktlint and detekt on both modules exit 0.
+  - Negative control, with the countdown's `Saver` saving nothing: 3 of 4 fail on each screen (the paused rotation,
+    process death and "ran out"). They pass again after the revert.
+    - "Restored after the ceiling" still passes under that mutation, as it should: a fresh countdown still counts its
+      wall bound from `deletedAt`, so the Undo stays gone.
 
 ## 6. Negative control on the fix
 
