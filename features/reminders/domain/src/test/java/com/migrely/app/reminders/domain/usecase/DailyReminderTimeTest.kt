@@ -1,6 +1,7 @@
 package com.migrely.app.reminders.domain.usecase
 
 import com.migrely.app.reminders.domain.model.CurrentTimeDomainModel
+import java.time.Duration
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
@@ -10,6 +11,7 @@ import org.junit.Test
 
 private val TASHKENT = ZoneId.of("Asia/Tashkent")
 private val BERLIN = ZoneId.of("Europe/Berlin")
+private val NEW_YORK = ZoneId.of("America/New_York")
 private val EIGHT_PM = LocalTime.of(20, 0)
 private val TODAY = LocalDate.of(2026, 10, 24)
 
@@ -133,5 +135,63 @@ class DailyReminderTimeTest {
         )
         val now = now("2026-10-24T21:00")
         assertEquals(now.instant, classUnderTest.due(now, EIGHT_PM, handledOn))
+    }
+
+    @Test
+    fun `Given a run after the time when asked how late then the minutes since that date's time`() {
+        fun lateAt(local: String) = classUnderTest.lateBy(TODAY, now(local), EIGHT_PM)
+
+        assertEquals(Duration.ofMinutes(59), lateAt("2026-10-24T20:59"))
+        assertEquals(Duration.ofMinutes(60), lateAt("2026-10-24T21:00"))
+        assertEquals(Duration.ofMinutes(61), lateAt("2026-10-24T21:01"))
+        assertEquals(Duration.ofMinutes(190), lateAt("2026-10-24T23:10"))
+    }
+
+    @Test
+    fun `Given the clock is before the time when asked how late then negative`() {
+        assertEquals(
+            Duration.ofMinutes(-60),
+            classUnderTest.lateBy(TODAY, now("2026-10-24T19:00"), EIGHT_PM)
+        )
+    }
+
+    @Test
+    fun `Given a time skipped by DST when asked how late then read from where the plan put it`() {
+        // Berlin skips 02:00–03:00 on 29 March 2026, so 02:30 that day is 03:30.
+        assertEquals(
+            Duration.ofMinutes(5),
+            classUnderTest.lateBy(
+                LocalDate.of(2026, 3, 29),
+                now("2026-03-29T03:35", BERLIN),
+                LocalTime.of(2, 30)
+            )
+        )
+    }
+
+    @Test
+    fun `Given a repeated hour by DST when asked how late at the second time then 60 minutes`() {
+        // New York repeats 01:00–02:00 on 1 November 2026; the plan takes the first 01:30.
+        val secondHalfPastOne = LocalDateTime.parse("2026-11-01T01:30")
+            .atZone(NEW_YORK)
+            .withLaterOffsetAtOverlap()
+            .toInstant()
+
+        assertEquals(
+            Duration.ofMinutes(60),
+            classUnderTest.lateBy(
+                LocalDate.of(2026, 11, 1),
+                CurrentTimeDomainModel(secondHalfPastOne, NEW_YORK),
+                LocalTime.of(1, 30)
+            )
+        )
+    }
+
+    @Test
+    fun `Given the phone moved to another zone when asked how late then read in the new zone`() {
+        // 23:00 in Berlin is 02:00 on 25 October in Tashkent; Berlin's 8 PM was 3 hours ago.
+        assertEquals(
+            Duration.ofHours(3),
+            classUnderTest.lateBy(TODAY, now("2026-10-24T23:00", BERLIN), EIGHT_PM)
+        )
     }
 }
