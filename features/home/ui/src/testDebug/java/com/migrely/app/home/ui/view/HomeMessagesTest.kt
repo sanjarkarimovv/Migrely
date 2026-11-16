@@ -3,6 +3,9 @@ package com.migrely.app.home.ui.view
 import androidx.activity.ComponentActivity
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.ProvidedValue
+import androidx.compose.ui.platform.LocalAccessibilityManager
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -12,6 +15,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.migrely.app.designsystem.snackbar.LocalMessageClock
 import com.migrely.app.designsystem.theme.MigrelyTheme
 import com.migrely.app.home.ui.mapper.HomeMessageBehaviourUiMapper
 import com.migrely.app.home.ui.model.HomeMessageUiModel
@@ -28,6 +32,18 @@ private const val ENDED = "Migraine ended"
 private const val REVIEW = "review"
 private const val HOME = "home"
 private const val SETTINGS = "settings"
+private const val UNDO_DELETE = "Undo the deletion"
+private const val UNDONE = "Undone."
+private const val UNDO_NOT_POSSIBLE = "This can no longer be undone."
+
+// EC-ATK-24: "Time to take action" at 2 minutes, a deletion Home offers 20 s after it was made, and D23's 2 minutes
+// in which it can be restored.
+private const val TIME_TO_TAKE_ACTION_MILLIS = 120_000L
+private const val OFFERED_AFTER_MILLIS = 20_000L
+private const val RESTORABLE_MILLIS = 120_000L
+
+// A few frames on the held Compose clock, far shorter than any time a message has left.
+private const val FRAMES_MILLIS = 100L
 
 /**
  * Home's messages after D178: "Saved." replaces an error and nothing else (EC-UX-35), an error belongs to the visit
@@ -42,14 +58,16 @@ class HomeMessagesTest {
 
     private val presenter = HomeMessagePresenter()
     private lateinit var navController: NavHostController
+    private val clock = FakeMessageClock(wall = System.currentTimeMillis())
+    private var deletedAt = 0L
 
     /** Home with its messages and its review slot, inside a NavHost with one other screen. */
-    private fun showHome() {
+    private fun showHome(vararg locals: ProvidedValue<*>) {
         rule.setContent {
             navController = rememberNavController()
             MigrelyTheme {
                 NavHost(navController, startDestination = HOME) {
-                    composable(HOME) { HomeWithReview() }
+                    composable(HOME) { CompositionLocalProvider(*locals) { HomeWithReview() } }
                     composable(SETTINGS) { Text(SETTINGS) }
                 }
             }
@@ -69,7 +87,7 @@ class HomeMessagesTest {
             reduceMotion = true,
             onUndoStart = {},
             onUndoEnd = {},
-            onUndoDelete = {},
+            onUndoDelete = { restoreDeletion() },
             onMessageBottomChanged = {},
             onShownChanged = gate::onShownChanged,
             onErrorPosted = gate::onErrorPosted
@@ -79,6 +97,48 @@ class HomeMessagesTest {
     private fun post(message: HomeMessageUiModel) {
         rule.runOnIdle { presenter.show(message) }
         rule.waitForIdle()
+    }
+
+    /** D23's restore as Home's view model reports it: back within its 2 minutes, purged after them. */
+    private fun restoreDeletion() {
+        presenter.show(
+            if (clock.wall - deletedAt <= RESTORABLE_MILLIS) {
+                HomeMessageUiModel.Undone
+            } else {
+                HomeMessageUiModel.UndoNotPossible
+            }
+        )
+    }
+
+    private fun showHomeWithLongTimeToTakeAction() = showHome(
+        LocalAccessibilityManager provides FakeAccessibilityManager(TIME_TO_TAKE_ACTION_MILLIS),
+        LocalMessageClock provides clock
+    )
+
+    /**
+     * A migraine deleted on Details, which Home offers 20 s later. Once it shows, the Compose clock is held, so only
+     * the phone's clocks move, as while the screen is locked. The deletion is stamped on the phone's wall clock, which
+     * Home reads when a deletion arrives.
+     */
+    private fun offerDeletionLate() {
+        deletedAt = System.currentTimeMillis().also { clock.wall = it }
+        clock.advanceBy(OFFERED_AFTER_MILLIS)
+        post(HomeMessageUiModel.AttackDeleted("a", deletedAt))
+        rule.onNodeWithContentDescription(UNDO_DELETE).assertExists()
+        rule.mainClock.autoAdvance = false
+    }
+
+    private fun nextFrames() {
+        rule.mainClock.advanceTimeBy(FRAMES_MILLIS)
+        rule.waitForIdle()
+    }
+
+    /** Locks the screen and unlocks it [millisAfterDeletion] after the deletion. */
+    private fun lockAndUnlockAt(millisAfterDeletion: Long) {
+        rule.activityRule.scenario.moveToState(Lifecycle.State.CREATED)
+        clock.advanceBy(deletedAt + millisAfterDeletion - clock.wall)
+        rule.activityRule.scenario.moveToState(Lifecycle.State.RESUMED)
+        nextFrames()
     }
 
     private fun goToSettingsAndBack() {
@@ -228,5 +288,31 @@ class HomeMessagesTest {
 
         rule.onNodeWithText(ENDED).assertDoesNotExist()
         rule.onNodeWithText(REVIEW).assertExists()
+    }
+
+    // The Undo ceiling (EC-ATK-24, BRD D182 (3))
+
+    @Test
+    fun `Lock and unlock at 122 seconds on Home leaves no Undo`() {
+        showHomeWithLongTimeToTakeAction()
+        offerDeletionLate()
+
+        lockAndUnlockAt(122_000)
+
+        rule.onNodeWithContentDescription(UNDO_DELETE).assertDoesNotExist()
+        rule.onNodeWithText(UNDO_NOT_POSSIBLE).assertDoesNotExist()
+    }
+
+    @Test
+    fun `Undo before the ceiling still restores on Home`() {
+        showHomeWithLongTimeToTakeAction()
+        offerDeletionLate()
+        lockAndUnlockAt(114_000)
+
+        rule.onNodeWithContentDescription(UNDO_DELETE).performClick()
+        nextFrames()
+
+        rule.onNodeWithText(UNDONE).assertExists()
+        rule.onNodeWithText(UNDO_NOT_POSSIBLE).assertDoesNotExist()
     }
 }
