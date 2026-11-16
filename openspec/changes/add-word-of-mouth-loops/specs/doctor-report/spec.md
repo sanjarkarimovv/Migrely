@@ -1,10 +1,10 @@
 ## ADDED Requirements
 
 ### Requirement: The Migrely credit line
-While the credit switch is on, the last page SHALL carry one line under "Patient-entered data. Not a diagnosis.": the
-approved credit text, which says Migrely is a personal diary app, not a medical device, and names `migrely.health`. It
-SHALL use the footer's small grey type across the content width, have no logo, colour, QR or link, never be cut or
-overlap the page number, and not change the page count (BRD REP-F5, D186).
+While the credit switch is on, the last page SHALL carry "Made with Migrely, a personal migraine diary app. Not a medical
+device. migrely.health" as a second footer line under "Patient-entered data. Not a diagnosis.", placed by line 1's
+measured height, in the footer's small grey type across the content width. It SHALL have no logo, colour, QR or link,
+never be cut or overlap the page number, and not change the page count (BRD REP-F5, D186).
 
 #### Scenario: A three-month report
 - **WHEN** a Premium user with the switch on, as by default, makes a report of several pages
@@ -17,8 +17,9 @@ overlap the page number, and not change the page count (BRD REP-F5, D186).
 
 #### Scenario: A4 and Letter
 - **WHEN** the report is made on A4 (595 × 842) or on Letter (612 × 792)
-- **THEN** the credit line is one line, not ellipsized, inside the bottom margin, clear of "Page N of M", and the page
-  count equals that of the same report with the switch off (EC-REP-06)
+- **THEN** the credit line lays out as one line with no ellipsis (`lineCount == 1`, `getEllipsisCount(0) == 0`), inside
+  the bottom margin, clear of "Page N of M", and the page count equals that of the same report with the switch off
+  (EC-REP-06)
 
 #### Scenario: The 50-page cap
 - **WHEN** a report is cut at the page limit (EC-REP-02)
@@ -26,7 +27,8 @@ overlap the page number, and not change the page count (BRD REP-F5, D186).
 
 #### Scenario: Turned off
 - **WHEN** the switch is off and a report is made
-- **THEN** the PDF has no credit line, and its pages are laid out as before this change (EC-REP-07)
+- **THEN** the PDF has no credit line, its pages are laid out as before this change, and "Patient-entered data. Not a
+  diagnosis." is still on every page (EC-REP-07; QA negative control, medical-reviewer condition)
 
 #### Scenario: Changed after sharing
 - **WHEN** a report was shared and the switch is changed afterwards
@@ -37,13 +39,30 @@ overlap the page number, and not change the page count (BRD REP-F5, D186).
 - **THEN** the PDF and the credit line stay English and left to right, as the report is today (EC-REP-10)
 
 ### Requirement: The credit switch
-The Doctor report screen SHALL offer one switch for the credit line, on by default. The choice SHALL survive restarts and
-process death, move with Android's backup, return to on after "Delete all data", and stay out of the JSON and CSV
-exports, whose content and `schemaVersion` SHALL not change (BRD REP-F5, D71, D186).
+The Doctor report SHALL offer "Mention Migrely in the report", after "Include notes", on by default; its summary SHALL
+quote the credit line exactly. The choice SHALL survive restarts and process death, move with Android's backup, return to
+on after "Delete all data", and stay out of JSON and CSV exports, whose content and `schemaVersion` SHALL not change
+(BRD REP-F5, D71, D186).
+
+#### Scenario: The summary quotes the line
+- **WHEN** the switch's summary is shown
+- **THEN** it reads 'One small line on the last page: "Made with Migrely, a personal migraine diary app. Not a medical
+  device. migrely.health"', and a test asserts it contains the mapper's credit constant exactly (medical-reviewer
+  condition W6)
 
 #### Scenario: Kept
 - **WHEN** the user turns the switch off, then the app restarts or its process is killed and restored
 - **THEN** the switch is still off
+
+#### Scenario: Not saved
+- **WHEN** the choice cannot be saved, as with storage full or a write error
+- **THEN** the switch returns to the stored value and the report shows "Couldn't save that. Try again." as an error
+  message, so a switch never looks changed when it is not (EC-REP-12)
+
+#### Scenario: Loading and making a report
+- **WHEN** the screen is loading, or a report is being made
+- **THEN** the switch is hidden until its value is read, and is shown but disabled while the report is made, which uses
+  the value at the tap on "Create report" (EC-REP-13)
 
 #### Scenario: Delete all data
 - **WHEN** the user deletes all data
@@ -59,5 +78,5 @@ exports, whose content and `schemaVersion` SHALL not change (BRD REP-F5, D71, D1
 
 #### Scenario: TalkBack, 200% font, landscape and keyboard
 - **WHEN** the switch is reached with TalkBack, at 200% font, in landscape or with a keyboard
-- **THEN** it is one node with its label, its on or off state and the switch role, the label wraps without "…", and Tab
-  reaches it in visual order (EC-REP-11)
+- **THEN** it is one node with its title, its summary, its on or off state and the switch role, the text wraps without
+  "…", and Tab reaches it between "Include notes" and "Create report"; Space toggles it (EC-REP-11)

@@ -1,18 +1,22 @@
 # Tasks
 
-Base: `feature/add-word-of-mouth-loops` from `origin/develop` 50c784e5. Release: 1.4.0, the minor after 1.3.0 (team-lead).
-It must not hold 1.3.0's Go/No-Go. BRD D185–D188.
+Base: `feature/add-word-of-mouth-loops` from `origin/develop` 50c784e5; `origin/develop` 03a8900e (D184 listing, the Play
+link table `docs/release/play-links.md`) merged in at bb243a75. Release: 1.4.0, the minor after 1.3.0 (team-lead). It must
+not hold 1.3.0's Go/No-Go. BRD D185–D188.
 
 Ownership:
 - `product-manager`: 0, 1.3 and 9;
 - `ux-designer`: 1.1;
 - `medical-reviewer` and `legal-finance-analyst`: 1.2;
-- `android-engineer`: 2–6 and 7 (7 with the owner, main session);
-- `code-reviewer`: 8;
-- `qa-engineer`: 8 (emulator-5580 API 36, emulator-5582 API 26, one at a time).
+- `android-engineer`: 2–6 and 7 (7.3 with the owner, main session);
+- `code-reviewer`: 8.1; `qa-engineer`: 8.2 (emulator-5580 API 36, emulator-5582 API 26, one at a time);
+- `content-creator`: 10.1 (the owner sends); `aso-seo-specialist`, `legal-finance-analyst` and the owner: 10.2.
 
 Gate for every code task: `nice -n 19 ./gradlew --max-workers=2 assembleDebug test ktlintCheck detekt lint` exits 0 (run
 with `set -o pipefail`; never `testDebugUnitTest` alone).
+
+Strings: use design.md "Final copy" word for word. The medical verdicts lapse if `strings.xml`, the mapper constant or the
+switch summary drift from it.
 
 ## 0. Plan (`product-manager`)
 
@@ -21,13 +25,18 @@ with `set -o pipefail`; never `testDebugUnitTest` alone).
 
 ## 1. Copy and flow (before code)
 
-- [ ] 1.1 `ux-designer`: section name and position, row titles and summaries, the two failure messages, the report
-  switch label, summary and position, focus when rows vanish at an attack start (design D5), TalkBack labels and action
-  names, 200% font and landscape layouts, the credit line placement on the PDF (design D2). Output: a spec file in
-  `migrely-work/` and the final strings. Verify: every row of design.md's copy table has a final value.
-- [ ] 1.2 `medical-reviewer` (and `legal-finance-analyst` for the privacy claim): the share sentence, the share subject and
-  the PDF credit line. Verify: written approval of the exact strings, quoted in this file.
-- [ ] 1.3 `product-manager`: put the final strings and any renamed section into the spec deltas. Verify:
+- [x] 1.1 `ux-designer`: done 2026-11-16, `migrely-work/word-of-mouth/ux-spec.md` (section name "Share and rate" and
+  position confirmed, rows without chevron, TalkBack action names, the two failure messages, the report switch "Mention
+  Migrely in the report" after "Include notes", focus rule, the shared tap guard, PDF placement by measured line height,
+  final strings in §7). Code read, not run.
+- [x] 1.2 `medical-reviewer`: `migrely-work/word-of-mouth/medical-verdict-strings-2026-11-16.md`, "All 9 strings PASS. No
+  CHANGE, no FAIL.", with three conditions: W3 text-only share intent asserted, W6 switch summary equals the credit
+  constant asserted, and a switch-off negative control that the disclaimer stays on every page (tasks 5.1, 5.2, 8.2).
+  `legal-finance-analyst`: `reports/2026-11-16-legal-loops-strings.md` (DRAFT), strings acceptable; gift-message elements
+  (10.1) and policy additions P1–P3 (10.2). team-lead decisions: share option A verbatim, credit on by default, "Not a
+  medical device" kept (D104), section name stays "Share and rate", shares never rewarded, unlocked or counted.
+- [x] 1.3 `product-manager`: final strings and rules in the BRD (D185 (8)–(9), D186 (5), D187 (5), EC-SHR-05 reworded,
+  EC-SHR-12, EC-SHR-13, EC-REP-12, EC-REP-13), the spec deltas, design and these tasks. Verify:
   `openspec validate add-word-of-mouth-loops --strict` exits 0.
 
 ## 2. Domain
@@ -38,16 +47,17 @@ with `set -o pipefail`; never `testDebugUnitTest` alone).
 - [ ] 2.2 attack, home, medication: `MarkSafetyCardShownRepository` (one function each) and the call where the card
   becomes visible (presentation decides, domain marks). Tests per feature. Verify:
   `./gradlew :features:attack:domain:test :features:home:domain:test :features:medication:domain:test`.
-- [ ] 2.3 report: `GetReportCreditRepository`, `SetReportCreditRepository`, use cases; `CreateReportUseCase` passes the
-  choice. Tests. Verify: `./gradlew :features:report:domain:test`.
+- [ ] 2.3 report: `GetReportCreditRepository`, `SetReportCreditRepository` (with a failure result), use cases;
+  `CreateReportUseCase` passes the choice. Tests. Verify: `./gradlew :features:report:domain:test`.
 
 ## 3. Presentation
 
-- [ ] 3.1 settings: `showShareAndRate` from the attack flow; actions `onShareAction`, `onRateAction` emitting navigation
-  events; the failure notification. Tests, including "attack starts while open". Verify:
+- [ ] 3.1 settings: `showShareAndRate` from the attack flow, false while unknown; actions `onShareAction`, `onRateAction`
+  emitting navigation events; the two failure notifications with a stamp (design D1 "Messages"). Tests, including
+  "loading", "attack starts while open" and "attack ends while open". Verify:
   `./gradlew :features:settings:presentation:test`.
-- [ ] 3.2 report: credit switch in the view state and its action. Tests. Verify:
-  `./gradlew :features:report:presentation:test`.
+- [ ] 3.2 report: credit switch in the view state (hidden while loading, disabled while working) and its action; a failed
+  save reverts the value and emits the "not saved" message. Tests. Verify: `./gradlew :features:report:presentation:test`.
 - [ ] 3.3 attack, home, medication presentation: call the mark when the card's state first becomes visible, once per
   appearance (rotation does not mark again). Tests. Verify: `./gradlew :features:attack:presentation:test
   :features:home:presentation:test :features:medication:presentation:test`.
@@ -56,22 +66,37 @@ with `set -o pipefail`; never `testDebugUnitTest` alone).
 
 - [ ] 4.1 preferences: `report_credit_shown` (absent = true) and `safety_card_last_shown`; "Delete all data" removes
   both (check design D3). Tests in the datasource module. Verify: `./gradlew :datasource:implementation:test`.
-- [ ] 4.2 `ReportDocumentDataModel.credit: String?`; `ReportDocumentMapper` fills the approved text when on;
-  `ReportPageLayout` draws it on the last page only (design D2). Tests: mapper on and off; instrumented layout test on A4
-  and Letter: one line, no ellipsis, same page count on and off, absent on pages before the last. Verify:
-  `./gradlew :features:report:data:test` and `ANDROID_SERIAL=emulator-5570 ./gradlew
-  :datasource:implementation:connectedDebugAndroidTest`.
-- [ ] 4.3 JSON and CSV unchanged: the existing backup round-trip and CSV tests pass unmodified. Verify:
+- [ ] 4.2 `ReportDocumentDataModel.credit: String?`; `ReportDocumentMapper` fills the credit constant when on;
+  `ReportPageLayout` draws it on the last page only, at line 1's top plus line 1's measured height (design D2). Tests:
+  mapper on and off; instrumented layout test on A4 and Letter: `lineCount == 1`, `getEllipsisCount(0) == 0`, same page
+  count on and off, absent on pages before the last. Verify: `./gradlew :features:report:data:test` and
+  `ANDROID_SERIAL=emulator-5570 ./gradlew :datasource:implementation:connectedDebugAndroidTest`.
+- [ ] 4.3 Disclaimer with the switch off (medical-reviewer condition, unit level): the rendered text of every page of a
+  multi-page report with `credit = null` contains "Patient-entered data. Not a diagnosis." and no "Made with Migrely".
+  Verify: the same connected test run as 4.2, test name in the record.
+- [ ] 4.4 JSON and CSV unchanged: the existing backup round-trip and CSV tests pass unmodified. Verify:
   `git diff origin/develop -- '**/backup/**/test/**'` is empty and `./gradlew :features:backup:data:test` passes.
 
 ## 5. UI
 
-- [ ] 5.1 settings ui: the section and two rows (`LinkRow` style), the intent helper with its result (design D1), the
-  share-link constant and its test against the table (design D6), the two messages. Compose tests: rows absent during an
-  attack, present otherwise, one node each with role and action label, Warning signs still first in Help. Verify:
-  `./gradlew :features:settings:ui:testDebugUnitTest` (plus the full gate).
-- [ ] 5.2 report ui: the switch row (approved label), one node with state and role, wraps at 200%. Compose test. Verify:
-  `./gradlew :features:report:ui:testDebugUnitTest`.
+- [ ] 5.1 settings ui: the section and two rows (`LinkRow`, `opensScreen = false`, new optional `onClickLabel`), the
+  intent helper with its result (design D1, `ActivityNotFoundException` and `SecurityException`), the shared tap guard
+  (design D1, EC-SHR-05), the share-link constant and its test against the table (design D6), the two messages, the focus
+  rule (design D5). Tests:
+  - **W3 (medical-reviewer condition):** the built share intent has action `ACTION_SEND`, type `text/plain`, no
+    `EXTRA_STREAM`, no `ClipData` with a URI, no `FLAG_GRANT_READ_URI_PERMISSION`, and `EXTRA_TEXT` equals
+    `settings_share_text` formatted with the fixed link;
+  - the link equals the table's "In-app Settings, Share Migrely" URL and its decoded `referrer` equals the top-level tags;
+  - the guard: a second activation within the timeout, Share then Rate, and key repeat start nothing more;
+  - Compose: rows absent during an attack and while loading, present otherwise; one node each, name starting with the
+    title, role Button and the action label; no chevron; "Warning signs" still first in Help.
+  Verify: `./gradlew :features:settings:ui:testDebugUnitTest` (plus the full gate).
+- [ ] 5.2 report ui: the switch row (`NotesRow` made to take title and summary), one node with state and role, wraps at
+  200%; the new `report_message_not_saved`. Tests:
+  - **W6 (medical-reviewer condition):** the switch summary contains the mapper's credit constant exactly (shared
+    constant or written-out text with an equality test);
+  - Compose: hidden while loading, disabled while working, reverted with the message on a failed save.
+  Verify: `./gradlew :features:report:ui:testDebugUnitTest`.
 
 ## 6. Wiring and manifest
 
@@ -82,23 +107,29 @@ with `set -o pipefail`; never `testDebugUnitTest` alone).
 
 ## 7. Device walk and promo verification (`android-engineer`)
 
-- [ ] 7.1 emulator-5570: walk every scenario of the four spec deltas, including TalkBack (`uiautomator dump` labels),
-  200% font, landscape, keyboard, rotation and process death on Settings and Doctor report; Play app disabled
-  (`pm disable-user com.android.vending`, restore after) and no browser; offline; Free, Premium subscription and lifetime
-  (simulated store); a PDF on A4 (locale en-GB) and Letter (en-US), opened and checked page by page. Restore every device
-  setting. Verify: a verification record below with counts and what was not checked.
+- [ ] 7.1 emulator-5570: walk every scenario of the four spec deltas, including TalkBack (`uiautomator dump` labels, the
+  focus move of EC-SHR-13 with TalkBack on, and report what Compose does if it cannot move there), 200% font, landscape,
+  keyboard, rotation and process death on Settings and Doctor report; Play app disabled (`pm disable-user
+  com.android.vending`, restore after) and no browser; offline; Free, Premium subscription and lifetime (simulated store);
+  a PDF on A4 (locale en-GB) and Letter (en-US), opened and checked page by page; the share preview in at least one
+  messenger. Judge the 200 ms fade next to the dark theme flip (design D5). Restore every device setting. Verify: a
+  verification record below with counts and what was not checked.
 - [ ] 7.2 Review gap: first-10 card, "Still going?" and overuse card each followed by a home load with D130 met; then
   the mark moved back 3 days via preferences in a debug build. Verify: no review flow in the first three, one in the last
   (debug `FakeReviewManager`, observed through the review marks).
-- [ ] 7.3 Promo codes on the owner's phone, with the owner, design D7 cases 1 and 2 (3 optional). Verify: result per case
-  recorded below; a failure is filed as an issue with `Refs` in this file.
+- [ ] 7.3 Promo codes on the owner's phone, with the owner, design D7 cases 1 and 2 (3 optional); check the exact Play
+  "Redeem code" menu path for 10.1. Verify: result per case recorded below; a failure is filed as an issue with `Refs`
+  in this file.
 
 ## 8. Review and QA
 
 - [ ] 8.1 `code-reviewer` on `git diff origin/develop...feature/add-word-of-mouth-loops`, briefed with the specs and the
-  risks (three safety hosts, PDF geometry, no manifest change). Verify: findings answered in this file.
+  risks (three safety hosts, PDF geometry, the tap guard, no manifest change, the W3 and W6 tests). Verify: findings
+  answered in this file.
 - [ ] 8.2 `qa-engineer`: independent check of the diff's reach with negative controls (owner rule 2026-11-09), API 36 and
-  26. Verify: QA verdict recorded with its SHA.
+  26. Must include: (a) **switch off: "Patient-entered data. Not a diagnosis." on every page of a multi-page PDF**
+  (medical-reviewer condition); (b) the share intent text-only on a device (no attachment reaches the target); (c) a
+  double tap on Share with and without the guard (ux §8.6). Verify: QA verdict recorded with its SHA.
 
 ## 9. Docs and archive (`product-manager`)
 
@@ -106,6 +137,24 @@ with `set -o pipefail`; never `testDebugUnitTest` alone).
   --yes` on the feature branch. Verify: `openspec validate --specs --strict` exits 0.
 - [ ] 9.2 Tell `aso-seo-specialist` the share link is live in 1.4.0 so the table's state column changes. Verify: message
   sent with the release tag.
+
+## 10. Outside the app code, before gifts and before 1.4.0 reaches users
+
+- [ ] 10.1 `content-creator`: the gift message from legal's DRAFT §4 (D187 (5)), with all four elements: (a) a gift,
+  nothing expected, no rating or review asked anywhere, a rating earns nothing; (b) disclose the gift clearly, at the
+  start, naming the giver (for example "Ad: I was given Migrely Premium free by its developer."); (c) any honest view,
+  and never describe Migrely as treating, preventing or reducing migraines; (d) how to redeem (code, the Play path from
+  7.3, the promotion end date), open Migrely once within 3 days, "Restore purchases" if Premium does not show. Then
+  `medical-reviewer` and `legal-finance-analyst` read it. **The owner sends it; no agent sends.** Recipient list only in
+  `marketing/`. No gift before 7.3 passes. Verify: a draft in `marketing/` with the four elements ticked by legal.
+- [ ] 10.2 Privacy policy and Data safety (D185 (9)): `aso-seo-specialist` drafts legal's P1–P3 (the PDF line and its
+  switch; the two new stored marks; a "Sharing and rating Migrely" section), a new effective date, the regenerated
+  `privacy-policy.html` (`make_policy_html.py`) and the `docs/release/data-safety.md` "Ratings" bullet, and checks site
+  pages that list stored data (`/privacy-check/`, the medical-device FAQ), in a reviewed site PR. `legal-finance-analyst`
+  re-reads it. **The owner approves the policy text before merge**, and the owner's deploy makes it live before 1.4.0
+  reaches users. The Data safety form answer stays "No data collected / shared". Verify: the PR link, legal's re-read, the
+  owner's approval in the tracker, and the live `https://migrely.health/privacy/` showing P1–P3 before the 1.4.0
+  production rollout (a 1.4.0 Go/No-Go row).
 
 ## Verification record
 
