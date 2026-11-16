@@ -66,7 +66,13 @@ date shown. At 60 minutes late or less, or early, it SHALL alert as the channel 
 
 #### Scenario: A late reminder time
 - **WHEN** the reminder is on for 11:15 PM and Doze holds the run past midnight
-- **THEN** nothing posts about the date that ended, as before, so a reminder at 11:00 PM or later never posts quietly
+- **THEN** nothing posts about the date that ended, as before, so a reminder at 11:00 PM or later never posts quietly,
+  except on a night when the clocks fall back at midnight
+
+#### Scenario: Clocks fall back at midnight
+- **WHEN** the phone is in a zone whose clocks fall back from midnight to 11:00 PM (America/Santiago, Asia/Beirut,
+  Africa/Cairo), the reminder is on for 11:00 PM, and the run is held until the second 11:10 PM of the same date
+- **THEN** it is 70 minutes late and posts quietly, once
 
 #### Scenario: Daylight saving, a skipped time
 - **WHEN** the reminder is on for 2:30 AM on the night the clocks jump from 2:00 AM to 3:00 AM, and the run comes at 3:35 AM
@@ -76,10 +82,12 @@ date shown. At 60 minutes late or less, or early, it SHALL alert as the channel 
 - **WHEN** the reminder is on for 1:30 AM on the night the clocks fall back from 2:00 AM to 1:00 AM, and the run comes at
   the second 1:30 AM
 - **THEN** it is exactly 60 minutes late and posts with the channel's sound
+- **AND** a run at the second 1:31 AM or later is more than 60 minutes late and posts quietly
 
 #### Scenario: Free and Premium
 - **WHEN** the same late run comes for a free user and a Premium user
 - **THEN** both get the same quiet reminder
+- **AND** the proof is the code, not a device row: `RunDailyReminderUseCase` takes no entitlement input
 
 #### Scenario: The check can fail
 - **WHEN** the clock-forward row runs on develop e4b1fbcd
@@ -102,6 +110,8 @@ added (BRD D183, EC-REM-30).
 #### Scenario: The person's channel settings
 - **WHEN** the person set the "daily" channel to silent, or turned it off
 - **THEN** an on-time reminder follows that setting as before, and a late one is never louder
+- **AND** QA checks the silent channel (task 4.2); a channel turned off is Android's own behaviour (nothing shows), not
+  tested here
 
 #### Scenario: Notifications off
 - **WHEN** notifications are off for Migrely and the run comes late
