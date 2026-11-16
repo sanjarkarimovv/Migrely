@@ -23,7 +23,7 @@ import com.migrely.app.designsystem.snackbar.SnackbarTone
 import com.migrely.app.designsystem.snackbar.isFreshDeletion
 import com.migrely.app.designsystem.snackbar.messageTimeoutMillis
 import com.migrely.app.designsystem.snackbar.rememberMessageCountdown
-import com.migrely.app.designsystem.snackbar.rememberTimeLeft
+import com.migrely.app.designsystem.snackbar.rememberMessageTimeLeft
 import com.migrely.app.home.ui.R
 import com.migrely.app.home.ui.mapper.HomeMessageBehaviourUiMapper
 import com.migrely.app.home.ui.mapper.TimeUiFormatter
@@ -139,7 +139,7 @@ internal fun HomeMessages(
             shown = visible,
             behaviour = behaviour,
             timeLeft = if (!reduceMotion && behaviour.undoTarget != null) {
-                countdown.rememberTimeLeft()
+                rememberMessageTimeLeft()
             } else {
                 null
             },

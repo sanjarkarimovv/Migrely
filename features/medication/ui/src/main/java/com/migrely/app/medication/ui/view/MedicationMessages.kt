@@ -21,7 +21,7 @@ import com.migrely.app.designsystem.snackbar.SnackbarAction
 import com.migrely.app.designsystem.snackbar.SnackbarTone
 import com.migrely.app.designsystem.snackbar.messageTimeoutMillis
 import com.migrely.app.designsystem.snackbar.rememberMessageCountdown
-import com.migrely.app.designsystem.snackbar.rememberTimeLeft
+import com.migrely.app.designsystem.snackbar.rememberMessageTimeLeft
 import com.migrely.app.medication.ui.R
 import com.migrely.app.medication.ui.mapper.MedicationMessageBehaviourUiMapper
 import com.migrely.app.medication.ui.model.MedicationEventUiModel
@@ -105,7 +105,7 @@ internal fun MedicationMessages(
             baseDurationMillis = behaviour.baseDurationMillis,
             dismissLabel = stringResource(R.string.medication_snackbar_dismiss),
             onDismiss = { if (shown == visible) shown = null },
-            timeLeft = if (!reduceMotion && archived != null) countdown.rememberTimeLeft() else null
+            timeLeft = if (!reduceMotion && archived != null) rememberMessageTimeLeft() else null
         )
     }
 }

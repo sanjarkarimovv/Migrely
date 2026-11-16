@@ -6,6 +6,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -21,7 +22,7 @@ import kotlinx.coroutines.delay
 
 /**
  * The countdown of the message a host shows, from [rememberMessageCountdown]. Give it to [MigrelySnackbarHost], which
- * tells it where keyboard and TalkBack focus are, and draw its line with [rememberTimeLeft].
+ * tells it where keyboard and TalkBack focus are, and draw its line with [rememberMessageTimeLeft].
  */
 @Stable
 class MessageCountdownState internal constructor(
@@ -115,11 +116,20 @@ private fun HoldEffect(state: MessageCountdownState) {
 }
 
 /**
- * The time-left line for [MigrelySnackbar]'s `timeLeft`: it stops while paused, never grows, and runs to 0 at the real
- * end, the earlier of the timeout and the ceiling (BRD EC-UX-53). Ask for it only when the line is drawn.
+ * The time-left line of the message being drawn, for [MigrelySnackbar]'s `timeLeft`, from the countdown
+ * [MigrelySnackbarHost] gave it: it stops while paused, never grows, and runs to 0 at the real end, the earlier of the
+ * timeout and the ceiling (BRD EC-UX-53). A leaving message keeps its own line through its fade, so it never jumps to 0.
+ * Ask for it only when the line is drawn, inside the host's content.
  */
 @Composable
-fun MessageCountdownState.rememberTimeLeft(): () -> Float {
+fun rememberMessageTimeLeft(): () -> Float =
+    LocalShownCountdown.current?.rememberTimeLeft() ?: { 0f }
+
+/** The countdown of the message [MigrelySnackbarHost] is drawing, kept per message, so one leaving keeps its own. */
+internal val LocalShownCountdown = compositionLocalOf<MessageCountdownState?> { null }
+
+@Composable
+internal fun MessageCountdownState.rememberTimeLeft(): () -> Float {
     val line = remember(this) { Animatable(countdown?.timeLeftFraction() ?: 0f) }
     LaunchedEffect(this, version) {
         val countdown = countdown ?: return@LaunchedEffect

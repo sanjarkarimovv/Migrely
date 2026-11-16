@@ -562,6 +562,23 @@ ask `product-manager` before you code.
 - [ ] 8.1 Gate. Verify: `./gradlew assembleDebug test ktlintCheck detekt lint` exits 0.
 - [ ] 8.2 `code-reviewer`, then fixes.
   Verify: no open blocker in the review notes.
+
+  **cr-t64 on bc8d0d9b: approved with findings, no S1 or S2.** product-manager folded the spec findings into 24a29a0d.
+  android-engineer, 2026-11-17:
+  - **S4 #3, fixed in c6a3de7a.** `MessageTimeout.kt`'s KDoc no longer says "without Undo". Comment paragraphs this
+    branch wrote past 120 characters are rewrapped (comments only).
+  - **S4 #5, fixed red to green.** During the exit fade, the leaving message's line jumped to 0: its content read the
+    new, empty countdown, and `rememberTimeLeft` started a fresh `Animatable` at 0.
+    - Red, before the fix: `MessageCountdownHostTest > A leaving message keeps its own line through the fade`, with
+      `expected:<0.6> but was:<0.0>` one frame into the fade.
+    - Fix: `MigrelySnackbarHost` keeps, per message drawn (`remember(shown)`), the countdown that message entered with,
+      and provides it through `LocalShownCountdown`. Hosts ask for the line with `rememberMessageTimeLeft()`, and
+      `MessageCountdownState.rememberTimeLeft` is now internal, so a host cannot read another message's line.
+    - Green: `:designsystem:testDebugUnitTest` exits 0 with 228 tests, ktlint and detekt clean.
+  - **Line-length check of every module the branch touched:** ktlint and detekt on `:designsystem`, `:app`,
+    `:datasource:source`, `:datasource:implementation` and the ten feature `ui` modules all exit 0, as do the tests of
+    the five hosts whose line call changed: Home 122, History 61, Attack 119, Medication 91, Reminders 27, all with 0
+    failures.
 - [ ] 8.3 QA independent check, design "Acceptance" A1–A6 on the branch SHA, with `develop` 40536f49 as the negative
   control for A1 and A4.
   - A3 runs on API 36 with TalkBack on, through the real host (7.2's test rerun by QA). API 26 TalkBack is a known limit,

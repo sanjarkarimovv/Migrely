@@ -22,7 +22,7 @@ import com.migrely.app.designsystem.snackbar.SnackbarTone
 import com.migrely.app.designsystem.snackbar.isFreshDeletion
 import com.migrely.app.designsystem.snackbar.messageTimeoutMillis
 import com.migrely.app.designsystem.snackbar.rememberMessageCountdown
-import com.migrely.app.designsystem.snackbar.rememberTimeLeft
+import com.migrely.app.designsystem.snackbar.rememberMessageTimeLeft
 import com.migrely.app.history.ui.R
 import com.migrely.app.history.ui.mapper.HistoryMessageBehaviourUiMapper
 import com.migrely.app.history.ui.model.HistoryMessageUiModel
@@ -130,7 +130,7 @@ internal fun HistoryMessages(
             dismissLabel = stringResource(R.string.history_snackbar_dismiss),
             onDismiss = { if (shown == visible) shown = null },
             timeLeft = if (!reduceMotion && behaviour.undoesDeletion) {
-                countdown.rememberTimeLeft()
+                rememberMessageTimeLeft()
             } else {
                 null
             }

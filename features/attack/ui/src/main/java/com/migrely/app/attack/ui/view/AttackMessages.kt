@@ -18,14 +18,14 @@ import com.migrely.app.designsystem.snackbar.MigrelySnackbarHost
 import com.migrely.app.designsystem.snackbar.SnackbarAction
 import com.migrely.app.designsystem.snackbar.messageTimeoutMillis
 import com.migrely.app.designsystem.snackbar.rememberMessageCountdown
-import com.migrely.app.designsystem.snackbar.rememberTimeLeft
+import com.migrely.app.designsystem.snackbar.rememberMessageTimeLeft
 
 /**
  * The details screen's messages, following the home screen's pattern (profile section 10): the newest message replaces
  * the one on screen, its duration stretches to the user's "Time to take action", and its countdown pauses while focus
- * holds it and survives a rotation (BRD EC-UX-16, D182). With [announcePolitely] an error waits for what TalkBack is saying, such as the safety card;
- * a message that replaces another switches at once on every screen now (BRD D178 (5)). [onMessageBottomChanged] tells
- * where the message ends (BRD D165 (1), (3)).
+ * holds it and survives a rotation (BRD EC-UX-16, D182). With [announcePolitely] an error waits for what TalkBack is
+ * saying, such as the safety card; a message that replaces another switches at once on every screen now (BRD D178 (5)).
+ * [onMessageBottomChanged] tells where the message ends (BRD D165 (1), (3)).
  */
 @Suppress("LongParameterList")
 @Composable
@@ -114,7 +114,7 @@ internal fun AttackMessages(
             timeLeft = if (!reduceMotion &&
                 behaviour.hasUndo
             ) {
-                countdown.rememberTimeLeft()
+                rememberMessageTimeLeft()
             } else {
                 null
             },

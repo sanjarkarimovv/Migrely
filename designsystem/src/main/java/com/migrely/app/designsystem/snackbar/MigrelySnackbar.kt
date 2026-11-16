@@ -37,6 +37,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -459,7 +460,13 @@ fun <T : Any> MigrelySnackbarHost(
                             }
                         }
                         .then(focus.modifier(leaving))
-                ) { key(shown) { content(shown) } }
+                ) {
+                    // The countdown this message entered with, kept while it leaves (cr-t64 S4 #5).
+                    val ownCountdown = remember(shown) { countdown }
+                    CompositionLocalProvider(LocalShownCountdown provides ownCountdown) {
+                        key(shown) { content(shown) }
+                    }
+                }
             }
         }
     }

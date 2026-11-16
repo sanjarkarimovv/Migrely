@@ -63,6 +63,7 @@ class MessageCountdownHostTest {
     private var timeLeft: () -> Float = { -1f }
     private var withCountdown by mutableStateOf(true)
     private var composedWithCountdown = false
+    private var reduceMotion = true
 
     private fun show(line: Boolean = false) {
         rule.mainClock.autoAdvance = false
@@ -92,7 +93,7 @@ class MessageCountdownHostTest {
             Button(onClick = {}) { Text(CONTENT) }
             MigrelySnackbarHost(
                 message = shown?.takeUnless { countdown.isOver },
-                reduceMotion = true,
+                reduceMotion = reduceMotion,
                 countdown = countdown.takeIf { withCountdown }
             ) { text ->
                 MigrelySnackbar(
@@ -102,7 +103,7 @@ class MessageCountdownHostTest {
                     baseDurationMillis = UNDO_MILLIS,
                     dismissLabel = "Dismiss",
                     onDismiss = {},
-                    timeLeft = if (line) countdown.rememberTimeLeft().also(::keepLine) else null
+                    timeLeft = if (line) rememberMessageTimeLeft().also(::keepLine) else null
                 )
             }
         }
@@ -200,5 +201,21 @@ class MessageCountdownHostTest {
 
         assertTrue("the countdown was never given to the host", composedWithCountdown)
         assertEquals(without, rule.onRoot(useUnmergedTree = true).printToString())
+    }
+
+    @Test
+    fun `A leaving message keeps its own line through the fade`() {
+        reduceMotion = false
+        show(line = true)
+        passTime(2_000)
+        assertEquals(0.6f, timeLeft(), LINE_DELTA)
+
+        rule.runOnUiThread { shown = null }
+        rule.waitForIdle()
+        rule.mainClock.advanceTimeByFrame()
+        rule.waitForIdle()
+
+        // One frame into the 200 ms fade, the leaving message still draws about the line it had, not 0 (cr-t64 S4 #5).
+        assertEquals(0.6f, timeLeft(), LINE_DELTA)
     }
 }

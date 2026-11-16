@@ -89,7 +89,7 @@ import com.migrely.app.designsystem.snackbar.SnackbarAction
 import com.migrely.app.designsystem.snackbar.SnackbarTone
 import com.migrely.app.designsystem.snackbar.messageTimeoutMillis
 import com.migrely.app.designsystem.snackbar.rememberMessageCountdown
-import com.migrely.app.designsystem.snackbar.rememberTimeLeft
+import com.migrely.app.designsystem.snackbar.rememberMessageTimeLeft
 import com.migrely.app.designsystem.theme.MigrelyTheme
 import com.migrely.app.reminders.presentation.model.RemindersViewState
 import com.migrely.app.reminders.ui.R
@@ -292,7 +292,7 @@ fun RemindersDependencies.Reminders(navController: NavController, modifier: Modi
                     dismissLabel = stringResource(R.string.reminders_message_dismiss),
                     onDismiss = { if (message == shown) message = null },
                     timeLeft = if (removed != null && !rememberReduceMotion()) {
-                        countdown.rememberTimeLeft()
+                        rememberMessageTimeLeft()
                     } else {
                         null
                     }
