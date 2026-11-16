@@ -76,6 +76,53 @@ ask `product-manager` before you code.
   Verify: the counts are written here. On failure, `openspec validate fix-message-timing-and-size --strict` exits 0 after
   the PM edit.
 
+  **Status 2026-11-16 (android-engineer): open. Nothing has run on a device yet: no pass, no failure.**
+  - **API 26 half: not runnable on our API 26 image.**
+    - The image has no TalkBack (team-lead's information). I could not confirm it with `pm list packages`: the guard
+      allows android-engineer only `emulator-5570`, and 5572 was assigned by mistake.
+    - No TalkBack APK may be downloaded or sideloaded without the owner.
+    - A run without TalkBack proves nothing, for a reason in Compose UI 1.9.3
+      (`AndroidComposeViewAccessibilityDelegateCompat`):
+      - focus and clear events go out only when `isEnabled`, that is `accessibilityManager.isEnabled &&
+        enabledServices.isNotEmpty()`. UiAutomation is never in that list; Compose's own comment says this filters it
+        out;
+      - `requestAccessibilityFocus` returns false unless touch exploration is on.
+    - So UiAutomation alone gets no focus and no events. The internal `accessibilityForceEnabledForTesting` would only
+      test a forced path. team-lead ruled out both as evidence.
+  - **API 36 half (real TalkBack)** waits for `emulator-5570`, once the other project's `emulator-5560` is closed.
+  - **Prepared for that run** (androidTest only, no production code):
+    - `designsystem/src/androidTest/.../snackbar/AccessibilityFocusProbe.kt`, the probe, using public APIs only:
+      - a `View.AccessibilityDelegate` set on the ComposeView, the parent of the AndroidComposeView;
+      - `onRequestSendAccessibilityEvent` catches `TYPE_VIEW_ACCESSIBILITY_FOCUSED` and `_CLEARED`;
+      - on each one it asks the AndroidComposeView's node provider for `findFocus(FOCUS_ACCESSIBILITY)`, which Compose
+        implements, and checks whether that node's screen bounds lie inside the message;
+      - every other delegate method keeps its default, so it adds no semantics node, label or action and does not
+        change the reading order;
+      - open for 4.4: a delegate already on that ComposeView would need chaining, and `getAccessibilityDelegate` is
+        API 29+.
+    - `designsystem/src/androidTest/.../snackbar/TalkBackFocusSpikeTest.kt`, which skips itself unless TalkBack is on
+      (`isEnabled && isTouchExplorationEnabled`), so normal instrumented runs are unaffected:
+      - UiAutomation, with `FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES` so that TalkBack stays on, moves accessibility
+        focus the way a TalkBack swipe does;
+      - text: 10 rounds of focus on "Migraine deleted", seen inside, then onto "Content", seen outside;
+      - control: the same on "Undo the deletion";
+      - move: 10 rounds from text to control, where every event between them must read inside, including Compose's
+        clear of the text;
+      - what TalkBack reads (each node's class, text, description, actions and bounds from UiAutomation) is the same
+        with and without the probe;
+      - every event is logged under the tag `T64Probe` with `windowFocused`.
+    - Checked without a device: `:designsystem:compileDebugAndroidTestKotlin :designsystem:ktlintCheck
+      :designsystem:detekt` exit 0, and `:designsystem:ktlintAndroidTestSourceSetCheck --rerun` exits 0.
+  - **Still to do on 5570:**
+    - turn TalkBack on and record the original `enabled_accessibility_services` and `accessibility_enabled`;
+    - `ANDROID_SERIAL=emulator-5570 ./gradlew :designsystem:connectedDebugAndroidTest
+      -Pandroid.testInstrumentationRunnerArguments.class=com.migrely.app.designsystem.snackbar.TalkBackFocusSpikeTest`;
+    - `adb logcat -s T64Probe`;
+    - by hand: open TalkBack's menu on the message and log `windowFocused` and the events;
+    - real swipes for a sample of the moves, since UiAutomation's focus action is not a TalkBack gesture;
+    - a negative control on the "reads the same" check: a probe that sets a description on its host must fail it;
+    - restore the settings.
+
 ## 4. Shared mechanism (`:designsystem`)
 
 - [x] 4.1 **Red first, Home and History, before any production change** (EC-ATK-24).
