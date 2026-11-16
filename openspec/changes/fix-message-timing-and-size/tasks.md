@@ -160,7 +160,7 @@ ask `product-manager` before you code.
   - After the revert: exit 0.
   - In the same run as the pass, `:datasource:implementation:testDebugUnitTest` passes all 229 tests.
   - ktlint and detekt pass on `:datasource:source`, `:datasource:implementation`, `:designsystem` and `:app`.
-- [ ] 4.3 Add `MessageCountdown`, the plain state machine: pause, the 300 ms grace, window focus, the 3 s floor, the
+- [x] 4.3 Add `MessageCountdown`, the plain state machine: pause, the 300 ms grace, window focus, the 3 s floor, the
   ceiling's two bounds, saved state and the reboot rule (design D2).
   - Unit tests cover P1–P7 from ux §B2, a clock set back an hour, a clock set forward, and an elapsed clock below the saved
     stamp.
@@ -172,6 +172,41 @@ ask `product-manager` before you code.
 
   Verify: `./gradlew :designsystem:testDebugUnitTest --tests '*MessageCountdown*'` passes, and the negative control run
   fails.
+
+  **Done 2026-11-16 (android-engineer).** `designsystem/.../snackbar/MessageCountdown.kt` holds `MessageCountdown`,
+  `CountdownHold`, `UndoCeiling`, `SavedMessageCountdown` and a private `TimeLeftLine`. They are plain Kotlin, with no
+  Compose types.
+  - The class reads `MessageClock` on each call and first settles a grace that has run out.
+  - The grace, 300 ms, does not count as shown time.
+  - Window focus loss resumes at once.
+  - The 3 s floor applies whenever a pause or a grace ends, and at a save while paused. It never passes the ceiling.
+  - `save()` leaves the live countdown unchanged, because Compose saves on every move to the background too.
+  - `restore()` returns null when the time or the ceiling has passed, or when the elapsed clock reads below the saved
+    stamps (a restart).
+
+  Where the API differs from design D2's wording, with the same rules:
+  - The focus inputs come in as one `update(CountdownHold(keyboardFocus, screenReaderFocus, screenReaderOn,
+    windowFocused))`, not as separate calls. 4.4 can feed it straight from Compose state.
+  - The saved model has no `shownWallMillis`. The countdown never reads it, and for an Undo that is not a deletion it
+    is the `actionWallMillis` that is saved.
+  - The saved model adds `lineFraction`, so the line cannot grow after a restore.
+  - The line runs on `elapsedRealtime` from the fraction where it stopped. A wall clock set forward can end an Undo
+    before its line reaches 0. The message still leaves on time.
+
+  Results:
+  - `:designsystem:testDebugUnitTest --tests '*MessageCountdown*'`: 27 tests, 0 failures. They cover P1–P7, the grace,
+    TalkBack (moving from text to control, moving on, turned off, and off with focus), the window lost and back, the
+    ceiling (held deletion, late offer, the floor capped by the ceiling), the clock set back an hour and set forward, a
+    timeout changed while shown, the saved state (rotation paused and running, process death, a restore after the time
+    ran out, a restore after the ceiling, an elapsed clock below the stamp, save leaving the live state alone) and the
+    line (stops, never grows, meets the ceiling).
+  - Negative control, with `RESUME_FLOOR_MILLIS = 0L`: exit 1, 4 of 27 tests fail:
+    - `P2 focus leaving with 0_5 s left gives 3 s`: `expected:<3000> but was:<500>`;
+    - P5: `expected:<3000> but was:<1000>`;
+    - the paused rotation: `expected:<2800> but was:<1800>`;
+    - the line under the floor: `expected:<0.05> but was:<0.0>`.
+  - After the revert: `:designsystem:testDebugUnitTest :designsystem:ktlintCheck :designsystem:detekt` exits 0, with
+    216 tests and 0 failures.
 - [ ] 4.4 Add `rememberMessageCountdown(...)`.
   - It sleeps until the next deadline.
   - It re-evaluates on `LifecycleResumeEffect` and when window focus returns.
