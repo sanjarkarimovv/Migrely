@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -26,6 +25,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import com.migrely.app.attack.ui.R
 import com.migrely.app.attack.ui.model.FunctionalImpactUiModel
+import com.migrely.app.designsystem.input.CursorFollowingTextField
 import com.migrely.app.designsystem.input.rememberLimitedField
 import kotlinx.coroutines.delay
 
@@ -109,7 +109,8 @@ internal fun NoteSection(
     )
     Column {
         SectionTitle(stringResource(R.string.section_note))
-        OutlinedTextField(
+        // Its cursor line stays above the keyboard while typing (BRD D180 (2), #141).
+        CursorFollowingTextField(
             value = field.value,
             onValueChange = field.onValueChange,
             placeholder = { Text(stringResource(R.string.note_hint)) },

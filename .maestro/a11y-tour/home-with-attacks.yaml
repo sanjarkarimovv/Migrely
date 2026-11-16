@@ -11,6 +11,7 @@ appId: com.migrely.app
 - swipe:
     from: "Migraine ended"
     direction: RIGHT
+# The end message's Undo has the spoken name "Undo the end" and no "Undo" node (D181 (2)).
 - extendedWaitUntil:
-    notVisible: "Undo"
+    notVisible: "Undo the end"
     timeout: 5000

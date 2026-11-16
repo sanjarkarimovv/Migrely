@@ -16,8 +16,9 @@ import androidx.compose.ui.focus.focusRequester
  * of the content. The device usually starts the first Tab at Settings while the column is not scrolled (lead decision
  * on O12 for the scrolled case). One local link on this one screen: [settings] goes on to the message; Tab from the
  * message runs Tab order itself with Settings briefly not a stop, so it lands on the first control after Settings in
- * Tab order, never one chosen by place (review 9.3 F1); Shift+Tab from [afterSettings]'s first control goes back to
- * the message, and from the message to Settings. The message is placed last for Tab ([MessageLayout]'s
+ * Tab order, never one chosen by place (review 9.3 F1); Shift+Tab from the first control after Settings in Tab order
+ * goes back to the message, whichever control that is (BRD D181 (4): [settings] turns a Previous search that reaches
+ * it), and from the message to Settings. The message is placed last for Tab ([MessageLayout]'s
  * `keyboardMessageLast`), so a Tab past the end wraps to [content]'s start, Settings, not to the message. TalkBack and
  * Switch Access keep reading the message first.
  *
@@ -36,8 +37,21 @@ internal class TodayKeyboardOrder(private val focusManager: FocusManager) {
     /** Whether a message shows; set by the screen. */
     var messageShows by mutableStateOf(false)
 
-    /** On the Settings button. */
+    /**
+     * On the Settings button. Its own group turns a Shift+Tab that would land on Settings to the message instead
+     * (BRD D181 (4)): only the first control after Settings in Tab order searches back into Settings, whichever control
+     * that is (a slot, Period, or "Migraine started" when nothing else follows Settings). The message's own way back
+     * to Settings is a request, not a Previous search, so it is not turned.
+     */
     val settings: Modifier = Modifier
+        .focusProperties {
+            onEnter = {
+                if (requestedFocusDirection == FocusDirection.Previous && messageShows) {
+                    messageRequester.requestFocus()
+                }
+            }
+        }
+        .focusGroup()
         .focusRequester(settingsRequester)
         .focusProperties {
             canFocus = !passingSettings
@@ -50,17 +64,6 @@ internal class TodayKeyboardOrder(private val focusManager: FocusManager) {
 
     /** On the content's last control, where Shift+Tab from Settings wraps to. */
     val last: Modifier = Modifier.focusRequester(lastRequester)
-
-    /** Around everything in Settings' column that follows Settings. */
-    val afterSettings: Modifier = Modifier
-        .focusProperties {
-            onExit = {
-                if (requestedFocusDirection == FocusDirection.Previous && messageShows) {
-                    messageRequester.requestFocus()
-                }
-            }
-        }
-        .focusGroup()
 
     /** Around the message. */
     val message: Modifier = Modifier
@@ -84,8 +87,11 @@ internal class TodayKeyboardOrder(private val focusManager: FocusManager) {
     val content: Modifier = Modifier
         .focusProperties {
             onExit = {
-                // Settings' own link to the message is a request, not a search, and does not pass here (a test without
-                // a guard for it stays green, review 9.3 F2).
+                // Runs for every Next that leaves the content while a message shows: a Tab past the last control,
+                // which this turns back to Settings (review 9.3 F2), and also Settings' own `next` link to the
+                // message. For the link, the request asks for Settings, which already has focus, so it changes nothing
+                // and focus goes on to the message (D181 (4), checked with a probe on 2026-11-15; the order tests
+                // fail if it ever does change something).
                 if (requestedFocusDirection == FocusDirection.Next && messageShows) {
                     settingsRequester.requestFocus()
                 }

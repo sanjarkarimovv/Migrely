@@ -12,8 +12,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -31,6 +31,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.pluralStringResource
@@ -45,6 +46,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.migrely.app.designsystem.icon.MigrelyIcons
+import com.migrely.app.designsystem.layout.MigrelyInsets
 import com.migrely.app.designsystem.sky.SkyAppearance
 import com.migrely.app.designsystem.sky.SkyCanvas
 import com.migrely.app.designsystem.theme.MigrelyTheme
@@ -79,13 +81,12 @@ fun TodayContents(
     visitCard: @Composable () -> Unit = {},
     onSettingsRowHeight: (Dp) -> Unit = {},
     settingsModifier: Modifier = Modifier,
-    afterSettingsModifier: Modifier = Modifier,
     lastModifier: Modifier = Modifier
 ) {
     val screenModifier = modifier
         .fillMaxSize()
         .background(MaterialTheme.colorScheme.background)
-        .safeDrawingPadding()
+        .windowInsetsPadding(MigrelyInsets.bars)
         .padding(horizontal = 16.dp)
     val appearance = skyAppearanceUiMapper.toAppearance(today.sky)
     if (isCompactHeight()) {
@@ -96,7 +97,7 @@ fun TodayContents(
                     .verticalScroll(rememberScrollState())
             ) {
                 DayHeader(dayTitle, onSettings, onSettingsRowHeight, settingsModifier)
-                Column(afterSettingsModifier.fillMaxWidth()) {
+                Column(Modifier.fillMaxWidth()) {
                     trialBanner()
                     TodaySkyCard(today = today, appearance = appearance)
                     if (today.periodOffered) PeriodToday(today.periodToday, onPeriodToday)
@@ -127,7 +128,7 @@ fun TodayContents(
                     .verticalScroll(rememberScrollState())
             ) {
                 DayHeader(dayTitle, onSettings, onSettingsRowHeight, settingsModifier)
-                Column(afterSettingsModifier.fillMaxWidth()) {
+                Column(Modifier.fillMaxWidth()) {
                     trialBanner()
                     TodaySkyCard(today = today, appearance = appearance)
                     if (today.periodOffered) PeriodToday(today.periodToday, onPeriodToday)
@@ -287,7 +288,10 @@ private fun StartAttackButton(onStartAttack: () -> Unit) {
 
 /**
  * The quiet ways to log what has already happened, under the big button: a past attack (BRD 18.3 A, D26) and a
- * medication taken (D34). Side by side, each wraps its text at large font sizes instead of being cut.
+ * medication taken (D34). Side by side while each label's longest word, with its button's padding, fits half the row;
+ * otherwise stacked, each a full-width row, so no word breaks and the type keeps its size (D181 (5), EC-UX-48). A
+ * label may still wrap at a space. "Add a past migraine" comes first in both, so the Tab order and [lastModifier]'s
+ * place do not change.
  */
 @Composable
 private fun QuietLinks(
@@ -295,24 +299,41 @@ private fun QuietLinks(
     onLogMedication: () -> Unit,
     lastModifier: Modifier
 ) {
-    Row(modifier = Modifier.fillMaxWidth()) {
-        listOf(
-            Triple(R.string.home_add_past_attack, onAddPastAttack, Modifier),
-            Triple(R.string.log_medication, onLogMedication, lastModifier)
-        ).forEach { (label, onClick, extra) ->
-            TextButton(
-                onClick = onClick,
-                modifier = extra
-                    .weight(1f)
-                    .heightIn(min = 48.dp)
-            ) {
-                Text(
-                    text = stringResource(label),
-                    style = MaterialTheme.typography.labelLarge,
-                    textAlign = TextAlign.Center
-                )
+    Layout(
+        content = {
+            QuietLink(R.string.home_add_past_attack, onAddPastAttack, Modifier)
+            QuietLink(R.string.log_medication, onLogMedication, lastModifier)
+        },
+        modifier = Modifier.fillMaxWidth()
+    ) { links, constraints ->
+        val rowWidth = constraints.maxWidth
+        val half = rowWidth / 2
+        // A button's min intrinsic width is its longest word plus its padding.
+        val stacked = links.any { it.minIntrinsicWidth(constraints.maxHeight) > half }
+        val linkWidth = if (stacked) rowWidth else half
+        val placeables = links.map {
+            it.measure(constraints.copy(minWidth = linkWidth, maxWidth = linkWidth, minHeight = 0))
+        }
+        val height = if (stacked) placeables.sumOf { it.height } else placeables.maxOf { it.height }
+        layout(rowWidth, height) {
+            var x = 0
+            var y = 0
+            placeables.forEach { link ->
+                link.placeRelative(x, y)
+                if (stacked) y += link.height else x += link.width
             }
         }
+    }
+}
+
+@Composable
+private fun QuietLink(label: Int, onClick: () -> Unit, modifier: Modifier) {
+    TextButton(onClick = onClick, modifier = modifier.heightIn(min = 48.dp)) {
+        Text(
+            text = stringResource(label),
+            style = MaterialTheme.typography.labelLarge,
+            textAlign = TextAlign.Center
+        )
     }
 }
 
@@ -326,12 +347,13 @@ private fun PeriodToday(marked: Boolean, onPeriodToday: (Boolean) -> Unit) {
     FilterChip(
         selected = marked,
         onClick = { onPeriodToday(!marked) },
-        // The label's description merges into the chip, so it is read once, with its checked state.
+        // One spoken name (BRD D181 (2)): the chip says "Period today" with its state; the word it
+        // shows is left out of its semantics, so TalkBack does not add "Period".
         label = {
             Text(
                 text = stringResource(R.string.period_today),
                 style = MaterialTheme.typography.labelLarge,
-                modifier = Modifier.semantics { contentDescription = description }
+                modifier = Modifier.clearAndSetSemantics { }
             )
         },
         leadingIcon = if (marked) {
@@ -342,6 +364,7 @@ private fun PeriodToday(marked: Boolean, onPeriodToday: (Boolean) -> Unit) {
         modifier = Modifier
             .padding(top = 12.dp)
             .heightIn(min = 48.dp)
+            .semantics { contentDescription = description }
     )
 }
 

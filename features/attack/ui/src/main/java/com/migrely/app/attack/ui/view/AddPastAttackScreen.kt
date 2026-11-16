@@ -41,6 +41,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
@@ -242,6 +244,16 @@ private fun DraftContents(
     // Read when a picker opens, so a screen left open for a while still allows the current time.
     val now = remember(picking) { System.currentTimeMillis() }
     val timeError = (problem as? PastAttackProblemUiModel.Time)?.error
+    // "Change the times" leaves with its card: keyboard focus goes to Started, the first time to change, once the card
+    // has gone (BRD D181 (6), EC-UX-51). A clickable takes no focus in touch mode, so a touch user's screen stays.
+    val startedFocus = remember { FocusRequester() }
+    var focusStarted by remember { mutableStateOf(false) }
+    LaunchedEffect(focusStarted) {
+        if (focusStarted) {
+            startedFocus.requestFocus()
+            focusStarted = false
+        }
+    }
     Box(contentAlignment = Alignment.TopCenter, modifier = Modifier.fillMaxSize()) {
         Column(
             verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -259,7 +271,9 @@ private fun DraftContents(
                 modifier = Modifier.padding(horizontal = 4.dp)
             )
             Column {
-                DraftTimeRows(draft, timeError, timeUiFormatter) { field -> picking = field }
+                DraftTimeRows(draft, timeError, timeUiFormatter, startedFocus) { field ->
+                    picking = field
+                }
                 Text(
                     text = stringResource(
                         R.string.time_duration,
@@ -272,7 +286,18 @@ private fun DraftContents(
             }
             if (problem is PastAttackProblemUiModel.Overlaps) {
                 // The card's two choices replace "Add migraine", which would only show the card again.
-                OverlapCard(problem.attacks, draft.zoneId, timeUiFormatter, saving, actions)
+                OverlapCard(
+                    problem.attacks,
+                    draft.zoneId,
+                    timeUiFormatter,
+                    saving,
+                    actions.copy(
+                        onChangeTimes = {
+                            focusStarted = true
+                            actions.onChangeTimes()
+                        }
+                    )
+                )
             } else {
                 Button(
                     onClick = actions.onAdd,
@@ -298,6 +323,7 @@ private fun DraftTimeRows(
     draft: PastAttackDraftUiModel,
     timeError: TimeErrorUiModel?,
     timeUiFormatter: AttackTimeUiFormatter,
+    startedFocus: FocusRequester,
     onPick: (TimeFieldUiModel) -> Unit
 ) {
     val startText = timeUiFormatter.formatDateTime(draft.startEpochMillis, draft.zoneId)
@@ -308,7 +334,8 @@ private fun DraftTimeRows(
         error = timeError?.takeIf { it.field == TimeFieldUiModel.Start },
         zoneId = draft.zoneId,
         timeUiFormatter = timeUiFormatter,
-        onClick = { onPick(TimeFieldUiModel.Start) }
+        onClick = { onPick(TimeFieldUiModel.Start) },
+        rowModifier = Modifier.focusRequester(startedFocus)
     )
     val endText = timeUiFormatter.formatDateTime(draft.endEpochMillis, draft.zoneId)
     TimeRow(
