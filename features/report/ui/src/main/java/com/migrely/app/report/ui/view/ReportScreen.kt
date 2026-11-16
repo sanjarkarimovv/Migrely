@@ -307,6 +307,14 @@ fun ReportContents(
                     }
                     val options = (viewState as? ReportViewStateUiModel.Ready)?.options
                     if (options != null) shownOptions = options
+                    // The stored credit switch, from the options or, when they cannot be read, on its own, so it
+                    // follows a save in either state; kept while a report is made (BRD EC-REP-12, EC-REP-13).
+                    var shownCredit by rememberSaveable { mutableStateOf<Boolean?>(null) }
+                    when (viewState) {
+                        is ReportViewStateUiModel.Ready -> shownCredit = viewState.options.creditShown
+                        is ReportViewStateUiModel.Unavailable -> shownCredit = viewState.creditShown
+                        ReportViewStateUiModel.Loading, ReportViewStateUiModel.Working -> Unit
+                    }
                     // Until a period is chosen, the one the options made of the default is shown chosen (EC-REP-04).
                     val chosen = if (period ==
                         ReportPeriodUiModel.Default
@@ -354,7 +362,7 @@ fun ReportContents(
                         )
                     }
                     shownOptions?.let { Covers(it) }
-                    if (viewState == ReportViewStateUiModel.Unavailable) {
+                    if (viewState is ReportViewStateUiModel.Unavailable) {
                         Text(
                             stringResource(R.string.report_unavailable),
                             style = MaterialTheme.typography.bodyLarge,
@@ -369,11 +377,11 @@ fun ReportContents(
                         onChange = actions.onNotes
                     )
                     // Shown once its stored value is read, and kept while a report is made (BRD EC-REP-13).
-                    shownOptions?.let {
+                    shownCredit?.let {
                         SwitchRow(
                             title = stringResource(R.string.report_credit_switch),
                             summary = stringResource(R.string.report_credit_switch_summary),
-                            checked = it.creditShown,
+                            checked = it,
                             enabled = !working,
                             onChange = actions.onCredit
                         )

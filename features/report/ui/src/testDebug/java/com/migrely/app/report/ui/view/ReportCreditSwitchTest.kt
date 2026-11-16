@@ -128,4 +128,24 @@ class ReportCreditSwitchTest {
 
         assertEquals(listOf(false), created)
     }
+
+    @Test
+    fun `Given the options cannot be read when the switch is saved off then it shows off`() {
+        viewState = ready(creditShown = true)
+        show()
+        rule.waitForIdle()
+
+        // Saved, then the options were read again and failed: the switch follows the stored value (review S4).
+        viewState = ReportViewStateUiModel.Unavailable(creditShown = false)
+
+        switch().performScrollTo().assertIsEnabled().assertIsOff()
+    }
+
+    @Test
+    fun `Given the options cannot be read from the start then the switch shows the stored value`() {
+        viewState = ReportViewStateUiModel.Unavailable(creditShown = false)
+        show()
+
+        switch().performScrollTo().assertIsOff()
+    }
 }

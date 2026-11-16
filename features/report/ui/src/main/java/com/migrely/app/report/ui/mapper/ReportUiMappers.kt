@@ -29,7 +29,7 @@ class ReportViewStateUiMapper {
             )
         )
         ReportViewState.Working -> ReportViewStateUiModel.Working
-        ReportViewState.Unavailable -> ReportViewStateUiModel.Unavailable
+        is ReportViewState.Unavailable -> ReportViewStateUiModel.Unavailable(viewState.creditShown)
     }
 
     private fun toUi(period: ReportPeriodPresentationModel): ReportPeriodUiModel = when (period) {

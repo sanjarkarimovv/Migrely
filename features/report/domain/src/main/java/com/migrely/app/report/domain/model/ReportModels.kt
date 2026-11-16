@@ -172,7 +172,8 @@ sealed interface ReportOptionsDomainModel {
         val creditShown: Boolean = true
     ) : ReportOptionsDomainModel
 
-    data object Failed : ReportOptionsDomainModel
+    /** The records cannot be read; the credit switch, a preference, still can (BRD EC-REP-12). */
+    data class Failed(val creditShown: Boolean) : ReportOptionsDomainModel
 }
 
 sealed interface ReportWriteResultDomainModel {

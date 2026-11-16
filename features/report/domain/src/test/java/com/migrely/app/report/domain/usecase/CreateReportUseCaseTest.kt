@@ -216,7 +216,7 @@ class CreateReportUseCaseTest {
             getReportRecordsRepository.reportRecords()
         ).willReturn(ReportRecordsResultDomainModel.Failed)
         assertEquals(
-            ReportOptionsDomainModel.Failed,
+            ReportOptionsDomainModel.Failed(creditShown = false),
             options.executeInBackground(ReportPeriodDomainModel.LastMonths(1))
         )
     }

@@ -18,7 +18,7 @@ class ReportOptionsPresentationMapper {
                 options.creditShown
             )
         )
-        ReportOptionsDomainModel.Failed -> ReportViewState.Unavailable
+        is ReportOptionsDomainModel.Failed -> ReportViewState.Unavailable(options.creditShown)
     }
 
     private fun toPresentation(period: ReportPeriodDomainModel): ReportPeriodPresentationModel =

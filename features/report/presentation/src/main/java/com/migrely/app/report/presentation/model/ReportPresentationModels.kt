@@ -36,7 +36,8 @@ sealed interface ReportViewState {
     /** The report is being made (BRD EC-REP-02). */
     data object Working : ReportViewState
 
-    data object Unavailable : ReportViewState
+    /** The options cannot be read; [creditShown] is the stored credit switch, which still shows (EC-REP-12). */
+    data class Unavailable(val creditShown: Boolean) : ReportViewState
 }
 
 sealed interface ReportPresentationNotification : PresentationNotification {

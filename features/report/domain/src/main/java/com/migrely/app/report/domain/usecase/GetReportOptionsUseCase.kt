@@ -38,7 +38,8 @@ class GetReportOptionsUseCase(
                     getReportCreditRepository.reportCreditShown()
                 )
             }
-            ReportRecordsResultDomainModel.Failed -> ReportOptionsDomainModel.Failed
+            ReportRecordsResultDomainModel.Failed ->
+                ReportOptionsDomainModel.Failed(getReportCreditRepository.reportCreditShown())
         }
     }
 }

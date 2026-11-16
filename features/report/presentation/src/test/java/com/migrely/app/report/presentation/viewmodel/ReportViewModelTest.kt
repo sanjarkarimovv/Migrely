@@ -96,13 +96,13 @@ class ReportViewModelTest :
     fun `Given the options cannot be read then unavailable`() = runTest {
         getReportOptionsUseCase.givenSuccessfulExecution(
             THREE_DOMAIN,
-            ReportOptionsDomainModel.Failed
+            ReportOptionsDomainModel.Failed(creditShown = false)
         )
         val state = async(start = UNDISPATCHED) { classUnderTest.viewState.first() }
 
         classUnderTest.onPeriodAction(THREE)
 
-        assertEquals(ReportViewState.Unavailable, state.await())
+        assertEquals(ReportViewState.Unavailable(creditShown = false), state.await())
     }
 
     @Test

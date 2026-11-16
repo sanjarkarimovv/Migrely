@@ -41,7 +41,8 @@ sealed interface ReportViewStateUiModel {
 
     data object Working : ReportViewStateUiModel
 
-    data object Unavailable : ReportViewStateUiModel
+    /** [creditShown] is the stored credit switch, which still shows (BRD EC-REP-12). */
+    data class Unavailable(val creditShown: Boolean) : ReportViewStateUiModel
 }
 
 sealed interface ReportEventUiModel {
