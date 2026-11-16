@@ -21,7 +21,7 @@ The listing text for Google Play (BRD §14.2, D104, D121). The keyword plan and 
 ## Full description (≤ 4000)
 
 ```text
-Migrely is a private migraine diary and headache tracker. Log an attack in three taps, even in a dark room, see each month drawn as a night sky, and take a clear report to your doctor.
+Migrely is a private migraine tracker and headache diary. Log an attack in three taps, even in a dark room, see each month drawn as a night sky, and take a clear report to your doctor.
 
 Log a Migraine in Seconds
 • "Migraine started" in one tap, in the app or by long-pressing its icon
@@ -88,18 +88,18 @@ Ranked from Play's own search suggestions on 2026-10-26. Play publishes no searc
 
 | Rank | Phrase | Where it is |
 |---|---|---|
-| 1 | migraine tracker | name (the first sentence of the description no longer carries the exact phrase, D184) |
-| 2 | headache tracker | description first sentence, "tracker" in the name |
+| 1 | migraine tracker | name, first sentence of the description |
+| 2 | headache tracker | "headache" in the short description, "tracker" in the name |
 | 3 | migraine app | name and description words |
-| 4 | migraine diary | short description, first sentence, "PDF migraine diary report" (D184) |
-| 5 | headache diary | words in the short description ("headache log") and the description; the exact phrase left the text in D184 |
+| 4 | migraine diary | short description (D184), "PDF migraine diary report" |
+| 5 | headache diary | first sentence of the description |
 | 6 | migraine log, headache log | short description ("headache log"), "your headache log" bullet |
 | 7 | aura, triggers, menstrual migraine, medication-overuse headache | description only (no suggestions, so low volume) |
 
 Position check (logged-out web search, 2026-11-16, `migrely-work/aso/positions.py`, one snapshot, 30 results): "migraine
 tracker" #14, "migraine app" #14, "migraine diary" #26, "migraine diary app" not in top 30, "headache diary" #15,
 "headache tracker" #19. The D184 text is not live: it is the baseline before it. Repeat the check 1 and 2 weeks after
-the owner publishes, and watch "headache diary" (it lost its exact phrase).
+the owner publishes, and watch "migraine diary", the one phrase D184 adds (to the short description).
 
 Each phrase appears once or twice. Play treats repetition as keyword stuffing.
 
