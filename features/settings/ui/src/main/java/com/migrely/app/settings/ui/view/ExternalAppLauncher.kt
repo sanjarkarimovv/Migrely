@@ -17,7 +17,8 @@ internal const val SHARE_LINK =
 
 /** Migrely's page in the Google Play app, then in a browser (BRD SET-F2, EC-SHR-01). */
 internal const val STORE_PAGE_IN_PLAY = "market://details?id=com.migrely.app"
-internal const val STORE_PAGE_ON_WEB = "https://play.google.com/store/apps/details?id=com.migrely.app"
+internal const val STORE_PAGE_ON_WEB =
+    "https://play.google.com/store/apps/details?id=com.migrely.app"
 internal const val PLAY_STORE_PACKAGE = "com.android.vending"
 
 /**

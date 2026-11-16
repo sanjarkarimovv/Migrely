@@ -11,6 +11,7 @@ import com.migrely.app.attack.domain.repository.GetActiveCustomTagsRepository
 import com.migrely.app.attack.domain.repository.GetAttackDetailsRepository
 import com.migrely.app.attack.domain.repository.GetCurrentTimeRepository
 import com.migrely.app.attack.domain.repository.GetMaximumRecordedRepository
+import com.migrely.app.attack.domain.repository.MarkSafetyCardShownRepository
 import com.migrely.app.attack.domain.repository.MergeAttacksRepository
 import com.migrely.app.attack.domain.repository.PurgeExpiredDeletionsRepository
 import com.migrely.app.attack.domain.repository.RemoveIntakeRepository
@@ -31,6 +32,7 @@ import com.migrely.app.attack.domain.usecase.CreatePastAttackUseCase
 import com.migrely.app.attack.domain.usecase.DeleteAttackUseCase
 import com.migrely.app.attack.domain.usecase.GetAttackDetailsUseCase
 import com.migrely.app.attack.domain.usecase.GetPastAttackDraftUseCase
+import com.migrely.app.attack.domain.usecase.MarkSafetyCardShownUseCase
 import com.migrely.app.attack.domain.usecase.MergeAttacksUseCase
 import com.migrely.app.attack.domain.usecase.PurgeExpiredDeletionsUseCase
 import com.migrely.app.attack.domain.usecase.RemoveIntakeUseCase
@@ -70,8 +72,6 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
-import com.migrely.app.attack.domain.repository.MarkSafetyCardShownRepository
-import com.migrely.app.attack.domain.usecase.MarkSafetyCardShownUseCase
 
 @Module
 @InstallIn(SingletonComponent::class)

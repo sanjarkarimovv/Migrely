@@ -41,31 +41,38 @@ switch summary drift from it.
 
 ## 2. Domain
 
-- [ ] 2.1 review: `GetLastSafetyCardShownRepository`; `ShouldRequestReviewUseCase` adds the 3-day safety gap (design D4),
+- [x] 2.1 review: `GetLastSafetyCardShownRepository`; `ShouldRequestReviewUseCase` adds the 3-day safety gap (design D4),
   future stamp = recent, unreadable = recent. Tests first, red then green: within 3 days, exactly 3 days, future stamp,
   unreadable, absent. Verify: `./gradlew :features:review:domain:test`.
-- [ ] 2.2 attack, home, medication: `MarkSafetyCardShownRepository` (one function each) and the call where the card
+  Done 2026-11-16 (`eng-loops`, 5b4fb49f). Red first: with the repository injected and the rule absent, 5 of 31 review domain tests failed (an hour ago, just under 3 days, future stamp, unreadable, crash/migraines not read); green after. Unreadable is a sealed `Unknown`, not null. Also re-checked in `RequestReviewUseCase` just before the flow opens (a card that appears while Google Play prepares). `Refs #233`.
+- [x] 2.2 attack, home, medication: `MarkSafetyCardShownRepository` (one function each) and the call where the card
   becomes visible (presentation decides, domain marks). Tests per feature. Verify:
   `./gradlew :features:attack:domain:test :features:home:domain:test :features:medication:domain:test`.
-- [ ] 2.3 report: `GetReportCreditRepository`, `SetReportCreditRepository` (with a failure result), use cases;
+  Done (410bd38f): one `MarkSafetyCardShownRepository` + use case per feature, `SafetyCardRepository` per data module (stamp from the clock, a failed write dropped). Domain and data tests per feature.
+- [x] 2.3 report: `GetReportCreditRepository`, `SetReportCreditRepository` (with a failure result), use cases;
   `CreateReportUseCase` passes the choice. Tests. Verify: `./gradlew :features:report:domain:test`.
+  Done (73ecda05): `SetReportCreditUseCase` with `ReportCreditWriteResultDomainModel`; the stored value comes with `GetReportOptionsUseCase` (one Ready state, so the switch shows only once read); `CreateReportRequestDomainModel.includeCredit` is the switch as shown at the tap.
 
 ## 3. Presentation
 
-- [ ] 3.1 settings: `showShareAndRate` from the attack flow, false while unknown; actions `onShareAction`, `onRateAction`
+- [x] 3.1 settings: `showShareAndRate` from the attack flow, false while unknown; actions `onShareAction`, `onRateAction`
   emitting navigation events; the two failure notifications with a stamp (design D1 "Messages"). Tests, including
   "loading", "attack starts while open" and "attack ends while open". Verify:
   `./gradlew :features:settings:presentation:test`.
-- [ ] 3.2 report: credit switch in the view state (hidden while loading, disabled while working) and its action; a failed
+  Done (8c5087ab). Deviation, reason: Share and Rate are notifications to the screen (the report's share pattern), not navigation events, because a failure must reach Settings' own message host and `:app` would hold the intents. The attack state is read with the settings (null = unknown = hidden); `:app` passes its live attack state so Settings reads again on a change; latest read wins (test with out-of-order answers).
+- [x] 3.2 report: credit switch in the view state (hidden while loading, disabled while working) and its action; a failed
   save reverts the value and emits the "not saved" message. Tests. Verify: `./gradlew :features:report:presentation:test`.
-- [ ] 3.3 attack, home, medication presentation: call the mark when the card's state first becomes visible, once per
+  Done (73ecda05): `onCreditAction(on, period)`; a failed save notifies `NotSaved` and reloads, so the switch shows the stored value.
+- [x] 3.3 attack, home, medication presentation: call the mark when the card's state first becomes visible, once per
   appearance (rotation does not mark again). Tests. Verify: `./gradlew :features:attack:presentation:test
   :features:home:presentation:test :features:medication:presentation:test`.
+  Done (410bd38f). First-10: on its one-off event, so once per appearance. "Still going?" and the overuse card: on every load that shows them. Deviation, reason: rotation reloads home and marks again with a newer time; a mark kept only per appearance would go stale while the card stays on screen across days (resume without leaving), and a review could then follow a visible card. Flagged for code-reviewer.
 
 ## 4. Data and datasource
 
-- [ ] 4.1 preferences: `report_credit_shown` (absent = true) and `safety_card_last_shown`; "Delete all data" removes
+- [x] 4.1 preferences: `report_credit_shown` (absent = true) and `safety_card_last_shown`; "Delete all data" removes
   both (check design D3). Tests in the datasource module. Verify: `./gradlew :datasource:implementation:test`.
+  Done (5b4fb49f): keys `safety_card_last_shown`, `report_credit_shown` (absent = true, tested with an empty file). `clear()` clears the whole file (existing test), so "Delete all data" removes both.
 - [ ] 4.2 `ReportDocumentDataModel.credit: String?`; `ReportDocumentMapper` fills the credit constant when on;
   `ReportPageLayout` draws it on the last page only, at line 1's top plus line 1's measured height (design D2). Tests:
   mapper on and off; instrumented layout test on A4 and Letter: `lineCount == 1`, `getEllipsisCount(0) == 0`, same page
@@ -74,12 +81,13 @@ switch summary drift from it.
 - [ ] 4.3 Disclaimer with the switch off (medical-reviewer condition, unit level): the rendered text of every page of a
   multi-page report with `credit = null` contains "Patient-entered data. Not a diagnosis." and no "Made with Migrely".
   Verify: the same connected test run as 4.2, test name in the record.
-- [ ] 4.4 JSON and CSV unchanged: the existing backup round-trip and CSV tests pass unmodified. Verify:
+- [x] 4.4 JSON and CSV unchanged: the existing backup round-trip and CSV tests pass unmodified. Verify:
   `git diff origin/develop -- '**/backup/**/test/**'` is empty and `./gradlew :features:backup:data:test` passes.
+  Done: `git diff origin/develop -- features/backup` is empty (0 lines); `:features:backup:data:test` passes in the gate.
 
 ## 5. UI
 
-- [ ] 5.1 settings ui: the section and two rows (`LinkRow`, `opensScreen = false`, new optional `onClickLabel`), the
+- [x] 5.1 settings ui: the section and two rows (`LinkRow`, `opensScreen = false`, new optional `onClickLabel`), the
   intent helper with its result (design D1, `ActivityNotFoundException` and `SecurityException`), the shared tap guard
   (design D1, EC-SHR-05), the share-link constant and its test against the table (design D6), the two messages, the focus
   rule (design D5). Tests:
@@ -91,16 +99,19 @@ switch summary drift from it.
   - Compose: rows absent during an attack and while loading, present otherwise; one node each, name starting with the
     title, role Button and the action label; no chevron; "Warning signs" still first in Help.
   Verify: `./gradlew :features:settings:ui:testDebugUnitTest` (plus the full gate).
-- [ ] 5.2 report ui: the switch row (`NotesRow` made to take title and summary), one node with state and role, wraps at
+  Done (8c5087ab). Tests: `ExternalAppLauncherTest` (W3, 7), `ShareLinkTest` (3), `OpeningGuardTest` (5, with a no-wait negative control), `ShareAndRateTest` (9: loading, attack, one button node with title, summary and action label, order with Warning signs first in Help, double tap, Share then Rate via TalkBack's click, held Enter, focus to "Open-source licences", no-guard negative control). Mutation control: guard removed from the rows -> 2 `ShareAndRateTest` cases fail. Not tested in Compose: no chevron (an icon without description has no semantics), TalkBack accessibility focus (task 7).
+- [x] 5.2 report ui: the switch row (`NotesRow` made to take title and summary), one node with state and role, wraps at
   200%; the new `report_message_not_saved`. Tests:
   - **W6 (medical-reviewer condition):** the switch summary contains the mapper's credit constant exactly (shared
     constant or written-out text with an equality test);
   - Compose: hidden while loading, disabled while working, reverted with the message on a failed save.
   Verify: `./gradlew :features:report:ui:testDebugUnitTest`.
+  Done (73ecda05): `SwitchRow(title, summary, …)` used twice. W6: `ReportCreditSummaryTest` in `:app` (the summary is written out and must equal `One small line on the last page: "$REPORT_CREDIT"`). `ReportCreditSwitchTest` (5): hidden while loading, one Switch node with title, quoting summary and state, tap asks and shows the stored value until saved, disabled while working, Create takes the shown value. 200% wrap is task 7.
 
 ## 6. Wiring and manifest
 
-- [ ] 6.1 `:app` DI for the new repositories and use cases. Verify: the gate.
+- [x] 6.1 `:app` DI for the new repositories and use cases. Verify: the gate.
+  Done: review, three safety-card features, report and settings wired in `:app/di`; Konsist passes in the gate.
 - [ ] 6.2 Manifest and permissions unchanged. Verify: `./gradlew :app:checkReleasePermissions` exits 0, and
   `diff` of `app/build/intermediates/merged_manifests/release/.../AndroidManifest.xml` against the same file built from
   `origin/develop` shows no new `uses-permission`, `<queries>` or component. Record both.

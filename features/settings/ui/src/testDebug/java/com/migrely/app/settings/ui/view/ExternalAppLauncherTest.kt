@@ -31,7 +31,7 @@ class ExternalAppLauncherTest {
     private fun Intent.sent(): Intent = getParcelableExtra(Intent.EXTRA_INTENT)!!
 
     @Test
-    fun `W3 - the share is text only, the final sentence then the fixed link, with no file, stream or grant`() {
+    fun `W3 - text only, the final sentence and the fixed link, no file or grant`() {
         assertEquals(ExternalAppResultUiModel.Opened, share())
 
         val chooser = started.single()
@@ -40,8 +40,8 @@ class ExternalAppLauncherTest {
         assertEquals(Intent.ACTION_SEND, sent.action)
         assertEquals("text/plain", sent.type)
         assertEquals(
-            "Migrely is a private migraine diary for Android. No internet permission, no account, no ads.\n" +
-                SHARE_LINK,
+            "Migrely is a private migraine diary for Android. " +
+                "No internet permission, no account, no ads.\n" + SHARE_LINK,
             sent.getStringExtra(Intent.EXTRA_TEXT)
         )
         assertFalse(sent.hasExtra(Intent.EXTRA_STREAM))
@@ -116,7 +116,8 @@ class ExternalAppLauncherTest {
     fun `The share text says nothing but the approved sentence before the link`() {
         // No outcome promise and nothing on what stays on or leaves the phone beyond "No internet permission".
         assertEquals(
-            "Migrely is a private migraine diary for Android. No internet permission, no account, no ads.",
+            "Migrely is a private migraine diary for Android. " +
+                "No internet permission, no account, no ads.",
             shareText.substringBefore("\n")
         )
     }

@@ -1,9 +1,9 @@
 package com.migrely.app.attack.data.repository
 
+import com.migrely.app.attack.domain.repository.MarkSafetyCardShownRepository
 import com.migrely.app.datasource.clock.datasource.ClockDataSource
 import com.migrely.app.datasource.exception.DataException
 import com.migrely.app.datasource.preferences.datasource.PreferencesDataSource
-import com.migrely.app.attack.domain.repository.MarkSafetyCardShownRepository
 
 /** The safety-card mark, kept with the review marks (BRD D188). */
 class SafetyCardRepository(

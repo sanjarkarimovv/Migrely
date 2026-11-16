@@ -197,7 +197,7 @@ class ShouldRequestReviewUseCaseTest {
     }
 
     @Test
-    fun `Given a safety card appeared an hour ago, as the first 10 before the attack ended, then no`() {
+    fun `Given a safety card appeared an hour ago then the app does not ask`() {
         safetyCardShown(NOW.minus(Duration.ofHours(1)))
 
         assertFalse(asks())
@@ -218,7 +218,7 @@ class ShouldRequestReviewUseCaseTest {
     }
 
     @Test
-    fun `Given the safety card mark cannot be read then it counts as recent and the app does not ask`() {
+    fun `Given the safety card mark cannot be read then it counts as recent`() {
         given(getLastSafetyCardShownRepository.lastSafetyCardShown())
             .willReturn(LastSafetyCardDomainModel.Unknown)
 

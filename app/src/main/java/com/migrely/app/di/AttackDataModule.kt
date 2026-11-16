@@ -15,6 +15,7 @@ import com.migrely.app.attack.data.mapper.HeadLocationDomainMapper
 import com.migrely.app.attack.data.mapper.TagKindDataMapper
 import com.migrely.app.attack.data.repository.AttackDetailsRepository
 import com.migrely.app.attack.data.repository.CustomTagRepository
+import com.migrely.app.attack.data.repository.SafetyCardRepository
 import com.migrely.app.attack.domain.repository.AddIntensityPointRepository
 import com.migrely.app.attack.domain.repository.CountActiveCustomTagsRepository
 import com.migrely.app.attack.domain.repository.CreateCustomTagRepository
@@ -25,6 +26,7 @@ import com.migrely.app.attack.domain.repository.GetActiveCustomTagsRepository
 import com.migrely.app.attack.domain.repository.GetAttackDetailsRepository
 import com.migrely.app.attack.domain.repository.GetCurrentTimeRepository
 import com.migrely.app.attack.domain.repository.GetMaximumRecordedRepository
+import com.migrely.app.attack.domain.repository.MarkSafetyCardShownRepository
 import com.migrely.app.attack.domain.repository.MergeAttacksRepository
 import com.migrely.app.attack.domain.repository.PurgeExpiredDeletionsRepository
 import com.migrely.app.attack.domain.repository.RemoveIntakeRepository
@@ -41,14 +43,12 @@ import com.migrely.app.attack.domain.repository.UpdateAttackTimesRepository
 import com.migrely.app.datasource.attack.datasource.AttackDataSource
 import com.migrely.app.datasource.clock.datasource.ClockDataSource
 import com.migrely.app.datasource.medication.datasource.MedicationDataSource
+import com.migrely.app.datasource.preferences.datasource.PreferencesDataSource
 import com.migrely.app.datasource.tag.datasource.TagDataSource
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
-import com.migrely.app.datasource.preferences.datasource.PreferencesDataSource
-import com.migrely.app.attack.data.repository.SafetyCardRepository
-import com.migrely.app.attack.domain.repository.MarkSafetyCardShownRepository
 
 @Module
 @InstallIn(SingletonComponent::class)

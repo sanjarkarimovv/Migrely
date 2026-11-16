@@ -9,7 +9,9 @@ import com.migrely.app.report.domain.repository.SetReportCreditRepository
 class SetReportCreditUseCase(
     private val setReportCreditRepository: SetReportCreditRepository,
     coroutineContextProvider: CoroutineContextProvider
-) : BackgroundExecutingUseCase<Boolean, ReportCreditWriteResultDomainModel>(coroutineContextProvider) {
+) : BackgroundExecutingUseCase<Boolean, ReportCreditWriteResultDomainModel>(
+    coroutineContextProvider
+) {
     override fun executeInBackground(request: Boolean): ReportCreditWriteResultDomainModel =
         setReportCreditRepository.setReportCreditShown(request)
 }

@@ -16,6 +16,7 @@ import com.migrely.app.settings.presentation.model.SettingsViewState
 import com.migrely.app.settings.presentation.model.ThemePresentationModel
 import com.migrely.app.settings.presentation.navigation.SettingsPresentationNavigationEvent
 import kotlinx.coroutines.CoroutineStart.UNDISPATCHED
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.take
@@ -27,8 +28,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.mockito.Mock
 import org.mockito.BDDMockito.willAnswer
+import org.mockito.Mock
 import org.mockito.junit.MockitoJUnitRunner
 import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
@@ -150,12 +151,13 @@ class SettingsViewModelTest :
     }
 
     @Test
-    fun `When Share or Rate is chosen then the screen is told to open it, and nothing is written`() = runTest {
+    fun `When Share or Rate is chosen then the screen opens it, nothing written`() = runTest {
         mapOf(
             classUnderTest::onShareAction to SettingsPresentationNotification.OpenShareSheet,
             classUnderTest::onRateAction to SettingsPresentationNotification.OpenStorePage
         ).forEach { (action, expected) ->
-            val notification = async(start = UNDISPATCHED) { classUnderTest.notification.first() }
+            val notification =
+                async(start = UNDISPATCHED) { classUnderTest.notification.first() }
             action()
             assertEquals(expected, notification.await())
         }
@@ -163,32 +165,39 @@ class SettingsViewModelTest :
     }
 
     @Test
-    fun `Given an attack in progress, or one that cannot be told, then share and rate are hidden`() = runTest {
+    fun `Given an attack in progress or unknown then share and rate are hidden`() = runTest {
         listOf(true, null).forEach { attack ->
-            getSettingsUseCase.givenSuccessfulExecution(SETTINGS.copy(attackInProgress = attack))
+            getSettingsUseCase.givenSuccessfulExecution(
+                SETTINGS.copy(attackInProgress = attack)
+            )
             val state = async(start = UNDISPATCHED) { classUnderTest.viewState.first() }
 
             classUnderTest.onEnter()
 
-            assertEquals(SettingsViewState.Ready(SHOWN.copy(showShareAndRate = false)), state.await())
+            assertEquals(
+                SettingsViewState.Ready(SHOWN.copy(showShareAndRate = false)),
+                state.await()
+            )
         }
     }
 
     @Test
-    fun `When an attack starts, then ends, while Settings shows then the section follows`() = runTest {
-        val states = async(start = UNDISPATCHED) { classUnderTest.viewState.take(2).toList() }
+    fun `When an attack starts, then ends, while Settings shows then the section follows`() =
+        runTest {
+            val states = async(start = UNDISPATCHED) { classUnderTest.viewState.take(2).toList() }
 
-        getSettingsUseCase.givenSuccessfulExecution(SETTINGS.copy(attackInProgress = true))
-        classUnderTest.onAttackChanged()
-        getSettingsUseCase.givenSuccessfulExecution(SETTINGS)
-        classUnderTest.onAttackChanged()
+            getSettingsUseCase.givenSuccessfulExecution(SETTINGS.copy(attackInProgress = true))
+            classUnderTest.onAttackChanged()
+            getSettingsUseCase.givenSuccessfulExecution(SETTINGS)
+            classUnderTest.onAttackChanged()
 
-        assertEquals(
-            listOf(false, true),
-            states.await().map { (it as SettingsViewState.Ready).settings.showShareAndRate }
-        )
-    }
+            assertEquals(
+                listOf(false, true),
+                states.await().map { (it as SettingsViewState.Ready).settings.showShareAndRate }
+            )
+        }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun `Given an older read answers after a newer one then only the newer one shows`() = runTest {
         // A read made before the attack started must not bring the section back (#116, trap "latest read wins").

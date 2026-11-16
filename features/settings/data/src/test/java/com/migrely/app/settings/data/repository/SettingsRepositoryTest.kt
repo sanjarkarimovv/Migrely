@@ -53,7 +53,7 @@ class SettingsRepositoryTest {
     }
 
     @Test
-    fun `When reading during an attack then it is in progress, and unknown when the diary cannot be read`() {
+    fun `When reading during an attack then in progress, or unknown when unreadable`() {
         given(preferencesDataSource.theme()).willReturn(ThemeDataModel.Dark)
         given(appInfoDataSource.versionName()).willReturn("1.4.0")
         given(attackDataSource.inProgress()).willReturn(mock())

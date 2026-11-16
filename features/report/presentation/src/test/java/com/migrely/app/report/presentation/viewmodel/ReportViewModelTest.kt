@@ -119,7 +119,9 @@ class ReportViewModelTest :
 
         assertEquals(
             ReportPresentationNotification.Share("content://r"),
-            notificationOf { classUnderTest.onCreateAction(THREE, includeNotes = true, includeCredit = true) }
+            notificationOf {
+                classUnderTest.onCreateAction(THREE, includeNotes = true, includeCredit = true)
+            }
         )
         assertEquals(listOf(ReportViewState.Working, READY), states.await())
     }
@@ -246,8 +248,11 @@ class ReportViewModelTest :
         }
 
     @Test
-    fun `When the credit switch is turned off then it is saved and the options show it off`() = runTest {
-        setReportCreditUseCase.givenSuccessfulExecution(false, ReportCreditWriteResultDomainModel.Saved)
+    fun `When the credit switch is turned off then saved and shown off`() = runTest {
+        setReportCreditUseCase.givenSuccessfulExecution(
+            false,
+            ReportCreditWriteResultDomainModel.Saved
+        )
         getReportOptionsUseCase.givenSuccessfulExecution(
             THREE_DOMAIN,
             ReportOptionsDomainModel.Ready(DATES, true, THREE_DOMAIN, creditShown = false)
@@ -263,29 +268,32 @@ class ReportViewModelTest :
     }
 
     @Test
-    fun `Given the credit switch cannot be saved then the stored choice shows again, with the message`() =
-        runTest {
-            setReportCreditUseCase.givenSuccessfulExecution(
-                false,
-                ReportCreditWriteResultDomainModel.Failed
-            )
-            getReportOptionsUseCase.givenSuccessfulExecution(
-                THREE_DOMAIN,
-                ReportOptionsDomainModel.Ready(DATES, true, THREE_DOMAIN, creditShown = true)
-            )
-            val state = async(start = UNDISPATCHED) { classUnderTest.viewState.first() }
+    fun `Given the credit switch is not saved then stored choice and message`() = runTest {
+        setReportCreditUseCase.givenSuccessfulExecution(
+            false,
+            ReportCreditWriteResultDomainModel.Failed
+        )
+        getReportOptionsUseCase.givenSuccessfulExecution(
+            THREE_DOMAIN,
+            ReportOptionsDomainModel.Ready(DATES, true, THREE_DOMAIN, creditShown = true)
+        )
+        val state = async(start = UNDISPATCHED) { classUnderTest.viewState.first() }
 
-            assertEquals(
-                ReportPresentationNotification.NotSaved,
-                notificationOf { classUnderTest.onCreditAction(false, THREE) }
-            )
-            assertEquals(READY, state.await())
-        }
+        assertEquals(
+            ReportPresentationNotification.NotSaved,
+            notificationOf { classUnderTest.onCreditAction(false, THREE) }
+        )
+        assertEquals(READY, state.await())
+    }
 
     @Test
-    fun `When creating with the credit switch off then the report is asked for without it`() = runTest {
+    fun `When creating with the credit switch off then no credit is asked for`() = runTest {
         createReportUseCase.givenSuccessfulExecution(
-            CreateReportRequestDomainModel(THREE_DOMAIN, includeNotes = false, includeCredit = false),
+            CreateReportRequestDomainModel(
+                THREE_DOMAIN,
+                includeNotes = false,
+                includeCredit = false
+            ),
             CreateReportResultDomainModel.Created("content://r")
         )
         getReportOptionsUseCase.givenSuccessfulExecution(
@@ -296,7 +304,11 @@ class ReportViewModelTest :
         assertEquals(
             ReportPresentationNotification.Share("content://r"),
             notificationOf {
-                classUnderTest.onCreateAction(THREE, includeNotes = false, includeCredit = false)
+                classUnderTest.onCreateAction(
+                    THREE,
+                    includeNotes = false,
+                    includeCredit = false
+                )
             }
         )
     }

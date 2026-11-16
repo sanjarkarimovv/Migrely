@@ -39,11 +39,12 @@ internal fun longSinceLastPaywall(lastShown: Instant?, now: Instant): Boolean =
  * Whether no safety card appeared in the last [SAFETY_CARD_GAP] before [now] (BRD D188, EC-REV-14). One dated after
  * [now] counts as recent until the clock passes it, and so does a mark that cannot be read.
  */
-internal fun longSinceSafetyCard(last: LastSafetyCardDomainModel, now: Instant): Boolean = when (last) {
-    LastSafetyCardDomainModel.Never -> true
-    is LastSafetyCardDomainModel.ShownAt -> Duration.between(last.at, now) >= SAFETY_CARD_GAP
-    LastSafetyCardDomainModel.Unknown -> false
-}
+internal fun longSinceSafetyCard(last: LastSafetyCardDomainModel, now: Instant): Boolean =
+    when (last) {
+        LastSafetyCardDomainModel.Never -> true
+        is LastSafetyCardDomainModel.ShownAt -> Duration.between(last.at, now) >= SAFETY_CARD_GAP
+        LastSafetyCardDomainModel.Unknown -> false
+    }
 
 /**
  * Whether the app asks for a rating now (BRD §14.4, D130, design D3). Only when all hold, read in

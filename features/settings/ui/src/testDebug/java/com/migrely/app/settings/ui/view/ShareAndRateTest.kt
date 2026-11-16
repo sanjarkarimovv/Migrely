@@ -82,7 +82,7 @@ class ShareAndRateTest {
     }
 
     @Test
-    fun `With no attack each row is one button node named by its title, with its summary and action`() {
+    fun `With no attack each row is one button node with title, summary and action`() {
         settings = PREVIEW_SETTINGS
         show()
 
@@ -106,7 +106,7 @@ class ShareAndRateTest {
     }
 
     @Test
-    fun `The section comes after Version and before Delete all data, and Warning signs stays first in Help`() {
+    fun `Section after Version, before Delete all data, Warning signs first in Help`() {
         settings = PREVIEW_SETTINGS
         show()
 
@@ -132,7 +132,7 @@ class ShareAndRateTest {
     }
 
     @Test
-    fun `Share then Rate in a burst opens only the share sheet, and TalkBack's double tap counts too`() {
+    fun `Share then Rate in a burst opens only the share sheet, TalkBack too`() {
         settings = PREVIEW_SETTINGS
         show()
 
@@ -170,7 +170,7 @@ class ShareAndRateTest {
     }
 
     @Test
-    fun `When the section leaves with keyboard focus on a row then focus goes to Open-source licences`() {
+    fun `When the section leaves with focus on a row then licences get focus`() {
         settings = PREVIEW_SETTINGS
         show()
         row(SHARE).performScrollTo().requestFocus()

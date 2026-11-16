@@ -10,7 +10,7 @@ private const val CREDIT =
 /** Which footer lines each page draws (BRD REP-F5, D186, EC-REP-05–07). */
 class ReportFooterLinesTest {
     @Test
-    fun `Given the switch off then every page of a multi-page report has the disclaimer and no credit`() {
+    fun `Given the switch off then every page has the disclaimer and none the credit`() {
         // medical-reviewer's condition: the disclaimer never depends on the credit switch.
         val pages = 7
 

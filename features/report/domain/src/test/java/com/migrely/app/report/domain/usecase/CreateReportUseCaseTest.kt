@@ -75,7 +75,11 @@ class CreateReportUseCaseTest {
         assertEquals(
             CreateReportResultDomainModel.Created("content://r"),
             classUnderTest.executeInBackground(
-                CreateReportRequestDomainModel(THREE_MONTHS, includeNotes = true, includeCredit = true)
+                CreateReportRequestDomainModel(
+                    THREE_MONTHS,
+                    includeNotes = true,
+                    includeCredit = true
+                )
             )
         )
 
@@ -130,14 +134,18 @@ class CreateReportUseCaseTest {
     }
 
     @Test
-    fun `Given the credit switch at the tap then the report carries that choice, on or off`() {
+    fun `Given the credit switch at the tap then the report carries it`() {
         givenRecords(ATTACK)
         given(
             writeReportRepository.writeReport(any())
         ).willReturn(ReportWriteResultDomainModel.Written("content://r"))
 
         classUnderTest.executeInBackground(
-            CreateReportRequestDomainModel(THREE_MONTHS, includeNotes = false, includeCredit = false)
+            CreateReportRequestDomainModel(
+                THREE_MONTHS,
+                includeNotes = false,
+                includeCredit = false
+            )
         )
         classUnderTest.executeInBackground(
             CreateReportRequestDomainModel(THREE_MONTHS, includeNotes = false, includeCredit = true)
@@ -153,7 +161,9 @@ class CreateReportUseCaseTest {
         givenRecords()
         assertEquals(
             CreateReportResultDomainModel.NothingLogged,
-            classUnderTest.executeInBackground(CreateReportRequestDomainModel(THREE_MONTHS, true, true))
+            classUnderTest.executeInBackground(
+                CreateReportRequestDomainModel(THREE_MONTHS, true, true)
+            )
         )
         verify(writeReportRepository, never()).writeReport(any())
 
@@ -163,7 +173,9 @@ class CreateReportUseCaseTest {
         ).willReturn(ReportWriteResultDomainModel.StorageFull)
         assertEquals(
             CreateReportResultDomainModel.StorageFull,
-            classUnderTest.executeInBackground(CreateReportRequestDomainModel(THREE_MONTHS, true, true))
+            classUnderTest.executeInBackground(
+                CreateReportRequestDomainModel(THREE_MONTHS, true, true)
+            )
         )
 
         given(
@@ -171,7 +183,9 @@ class CreateReportUseCaseTest {
         ).willReturn(ReportRecordsResultDomainModel.Failed)
         assertEquals(
             CreateReportResultDomainModel.Failed,
-            classUnderTest.executeInBackground(CreateReportRequestDomainModel(THREE_MONTHS, true, true))
+            classUnderTest.executeInBackground(
+                CreateReportRequestDomainModel(THREE_MONTHS, true, true)
+            )
         )
     }
 

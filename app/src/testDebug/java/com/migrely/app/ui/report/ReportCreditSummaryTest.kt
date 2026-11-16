@@ -25,7 +25,10 @@ class ReportCreditSummaryTest {
 
     @Test
     fun `The switch's summary contains the PDF's credit line exactly`() {
-        assertTrue("\"$summary\" should quote \"$REPORT_CREDIT\"", summary.contains("\"$REPORT_CREDIT\""))
+        assertTrue(
+            "\"$summary\" should quote \"$REPORT_CREDIT\"",
+            summary.contains("\"$REPORT_CREDIT\"")
+        )
     }
 
     @Test

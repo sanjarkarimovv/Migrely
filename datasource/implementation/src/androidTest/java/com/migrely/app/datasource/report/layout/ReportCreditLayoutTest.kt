@@ -108,7 +108,10 @@ class ReportCreditLayoutTest {
             assertFalse("$paper: the last page shows no credit", changed.isEmpty())
             // Line 1 starts 54 pt above the edge; the credit is below it and inside the 40 pt margin's band.
             val heightPt = paper.height
-            assertTrue("$paper: credit drawn above line 1", changed.min() >= (heightPt - 50) * SCALE)
+            assertTrue(
+                "$paper: credit drawn above line 1",
+                changed.min() >= (heightPt - 50) * SCALE
+            )
             assertTrue("$paper: credit drawn too low", changed.max() <= (heightPt - 30) * SCALE)
         }
     }
@@ -125,7 +128,8 @@ class ReportCreditLayoutTest {
                 assertFalse("$paper page ${index + 1} has no disclaimer", rows.isEmpty())
                 assertTrue(
                     "$paper page ${index + 1}: disclaimer out of place",
-                    rows.min() >= (paper.height - 56) * SCALE && rows.max() <= (paper.height - 40) * SCALE
+                    rows.min() >= (paper.height - 56) * SCALE &&
+                        rows.max() <= (paper.height - 40) * SCALE
                 )
             }
         }
@@ -135,10 +139,16 @@ class ReportCreditLayoutTest {
         written.clear()
         dataSource.write(document)
         val file = written.single()
-        return PdfRenderer(ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)).use { pdf ->
+        return PdfRenderer(
+            ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
+        ).use { pdf ->
             List(pdf.pageCount) { index ->
                 pdf.openPage(index).use { page ->
-                    Bitmap.createBitmap(page.width * SCALE, page.height * SCALE, Bitmap.Config.ARGB_8888)
+                    Bitmap.createBitmap(
+                        page.width * SCALE,
+                        page.height * SCALE,
+                        Bitmap.Config.ARGB_8888
+                    )
                         .apply {
                             eraseColor(Color.WHITE)
                             page.render(this, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)

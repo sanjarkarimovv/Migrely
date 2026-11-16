@@ -18,7 +18,13 @@ class SetReportCreditUseCaseTest {
 
     @Test
     fun `When the switch changes then the choice is kept, and a failure comes back as a value`() {
-        assertEquals(ReportCreditWriteResultDomainModel.Saved, classUnderTest.executeInBackground(false))
-        assertEquals(ReportCreditWriteResultDomainModel.Failed, classUnderTest.executeInBackground(true))
+        assertEquals(
+            ReportCreditWriteResultDomainModel.Saved,
+            classUnderTest.executeInBackground(false)
+        )
+        assertEquals(
+            ReportCreditWriteResultDomainModel.Failed,
+            classUnderTest.executeInBackground(true)
+        )
     }
 }

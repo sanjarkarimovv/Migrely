@@ -22,6 +22,7 @@ import com.migrely.app.medication.domain.repository.GetMedicationRepository
 import com.migrely.app.medication.domain.repository.GetOveruseNoticesRepository
 import com.migrely.app.medication.domain.repository.GetPendingEffectQuestionOfRepository
 import com.migrely.app.medication.domain.repository.GetPendingEffectQuestionRepository
+import com.migrely.app.medication.domain.repository.MarkSafetyCardShownRepository
 import com.migrely.app.medication.domain.repository.SetIntakeEffectRepository
 import com.migrely.app.medication.domain.repository.SetMedicationArchivedRepository
 import com.migrely.app.medication.domain.repository.UpdateMedicationRepository
@@ -34,6 +35,7 @@ import com.migrely.app.medication.domain.usecase.GetMedicationUseCase
 import com.migrely.app.medication.domain.usecase.GetMedicationsUseCase
 import com.migrely.app.medication.domain.usecase.GetOveruseStatusUseCase
 import com.migrely.app.medication.domain.usecase.LogIntakeUseCase
+import com.migrely.app.medication.domain.usecase.MarkSafetyCardShownUseCase
 import com.migrely.app.medication.domain.usecase.RestoreMedicationUseCase
 import com.migrely.app.medication.domain.usecase.RunEffectQuestionUseCase
 import com.migrely.app.medication.domain.usecase.SaveMedicationUseCase
@@ -57,8 +59,6 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
-import com.migrely.app.medication.domain.repository.MarkSafetyCardShownRepository
-import com.migrely.app.medication.domain.usecase.MarkSafetyCardShownUseCase
 
 @Module
 @InstallIn(SingletonComponent::class)

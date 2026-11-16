@@ -187,7 +187,9 @@ fun ReportDependencies.Report(navController: NavController, modifier: Modifier =
             },
             onCustom = { pickingRange = true },
             onNotes = { includeNotes = it },
-            onCredit = { reportViewModel.onCreditAction(it, toPresentation.toPresentation(period)) },
+            onCredit = {
+                reportViewModel.onCreditAction(it, toPresentation.toPresentation(period))
+            },
             onCreate = { includeCredit ->
                 reportViewModel.onCreateAction(
                     toPresentation.toPresentation(period),

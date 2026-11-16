@@ -30,8 +30,9 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 private const val TITLE = "Mention Migrely in the report"
-private const val SUMMARY = "One small line on the last page: \"Made with Migrely, a personal migraine diary app. " +
-    "Not a medical device. migrely.health\""
+private const val SUMMARY =
+    "One small line on the last page: \"Made with Migrely, a personal migraine diary app. " +
+        "Not a medical device. migrely.health\""
 
 /** The credit switch on the Doctor report (BRD REP-F5, D186, EC-REP-11–13). */
 @RunWith(RobolectricTestRunner::class)
@@ -77,7 +78,7 @@ class ReportCreditSwitchTest {
     }
 
     @Test
-    fun `When ready then one switch node, with its title, the summary quoting the line, and its state`() {
+    fun `When ready then one switch node with title, quoting summary and state`() {
         viewState = ready(creditShown = true)
         show()
 
@@ -86,14 +87,17 @@ class ReportCreditSwitchTest {
             .assert(hasText(SUMMARY, substring = true))
             .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Switch))
             .assert(
-                SemanticsMatcher.expectValue(SemanticsProperties.ToggleableState, ToggleableState.On)
+                SemanticsMatcher.expectValue(
+                    SemanticsProperties.ToggleableState,
+                    ToggleableState.On
+                )
             )
             .assertIsEnabled()
             .assertIsOn()
     }
 
     @Test
-    fun `When the switch is tapped then the change is asked for, and it shows the stored value until it is saved`() {
+    fun `When tapped then the change is asked for, stored value shown until saved`() {
         viewState = ready(creditShown = true)
         show()
 

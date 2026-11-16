@@ -7,6 +7,7 @@ import com.migrely.app.datasource.preferences.datasource.PreferencesDataSource
 import com.migrely.app.home.data.mapper.AttackDomainMapper
 import com.migrely.app.home.data.mapper.IntensityPointDomainMapper
 import com.migrely.app.home.data.repository.HomeRepository
+import com.migrely.app.home.data.repository.SafetyCardRepository
 import com.migrely.app.home.domain.repository.AddIntensityPointRepository
 import com.migrely.app.home.domain.repository.DeleteAttackRepository
 import com.migrely.app.home.domain.repository.EndAttackRepository
@@ -16,6 +17,7 @@ import com.migrely.app.home.domain.repository.GetDayMarksRepository
 import com.migrely.app.home.domain.repository.GetPeriodTrackingRepository
 import com.migrely.app.home.domain.repository.GetPreviousAttackEndRepository
 import com.migrely.app.home.domain.repository.GetTodayRepository
+import com.migrely.app.home.domain.repository.MarkSafetyCardShownRepository
 import com.migrely.app.home.domain.repository.ReopenAttackRepository
 import com.migrely.app.home.domain.repository.ReplaceLatestIntensityPointRepository
 import com.migrely.app.home.domain.repository.RestoreDeletedAttackRepository
@@ -27,8 +29,6 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
-import com.migrely.app.home.data.repository.SafetyCardRepository
-import com.migrely.app.home.domain.repository.MarkSafetyCardShownRepository
 
 @Module
 @InstallIn(SingletonComponent::class)

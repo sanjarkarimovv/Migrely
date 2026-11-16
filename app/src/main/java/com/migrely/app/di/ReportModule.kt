@@ -7,6 +7,7 @@ import com.migrely.app.architecture.domain.UseCaseExecutor
 import com.migrely.app.coroutine.CoroutineContextProvider
 import com.migrely.app.datasource.backup.datasource.BackupDataSource
 import com.migrely.app.datasource.clock.datasource.ClockDataSource
+import com.migrely.app.datasource.preferences.datasource.PreferencesDataSource
 import com.migrely.app.datasource.report.datasource.ReportDocumentDataSource
 import com.migrely.app.datasource.report.datasource.ReportDocumentDataSourceImpl
 import com.migrely.app.locale.FormattingLocales
@@ -18,6 +19,7 @@ import com.migrely.app.report.data.repository.ReportRepository
 import com.migrely.app.report.domain.usecase.CleanUpReportsUseCase
 import com.migrely.app.report.domain.usecase.CreateReportUseCase
 import com.migrely.app.report.domain.usecase.GetReportOptionsUseCase
+import com.migrely.app.report.domain.usecase.SetReportCreditUseCase
 import com.migrely.app.report.presentation.mapper.ReportOptionsPresentationMapper
 import com.migrely.app.report.presentation.mapper.ReportPeriodDomainMapper
 import com.migrely.app.report.presentation.viewmodel.ReportViewModel
@@ -33,8 +35,6 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
-import com.migrely.app.datasource.preferences.datasource.PreferencesDataSource
-import com.migrely.app.report.domain.usecase.SetReportCreditUseCase
 
 /** The doctor report (change add-doctor-report, BRD D81–D85). One repository serves every repository interface. */
 @Module

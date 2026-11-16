@@ -29,9 +29,10 @@ class RequestReviewUseCase(
 ) : BackgroundExecutingUseCase<Unit, Boolean>(coroutineContextProvider) {
     override fun executeInBackground(request: Unit): Boolean {
         val now = getCurrentTimeRepository.now()
-        val stillCalm = longSinceLastPaywall(getLastPaywallShownRepository.lastPaywallShown(), now) &&
-            longSinceSafetyCard(getLastSafetyCardShownRepository.lastSafetyCardShown(), now) &&
-            getAttackInProgressRepository.attackInProgress() == false
+        val stillCalm =
+            longSinceLastPaywall(getLastPaywallShownRepository.lastPaywallShown(), now) &&
+                longSinceSafetyCard(getLastSafetyCardShownRepository.lastSafetyCardShown(), now) &&
+                getAttackInProgressRepository.attackInProgress() == false
         if (!stillCalm) return false
         val completed = launchReviewFlowRepository.launchReviewFlow() ==
             ReviewFlowResultDomainModel.Completed

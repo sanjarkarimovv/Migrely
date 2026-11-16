@@ -22,7 +22,7 @@ class OpeningGuardTest {
     }
 
     @Test
-    fun `Given Settings never left, as when nothing could open, then a tap after the timeout opens again`() {
+    fun `Given Settings never left then a tap after the timeout opens again`() {
         // So a deliberate second tap shows and speaks the failure again (D178).
         assertEquals(2, opened(1_000L, 1_300L))
     }

@@ -1,7 +1,7 @@
 package com.migrely.app.attack.domain.usecase
 
-import com.migrely.app.coroutine.CoroutineContextProvider
 import com.migrely.app.attack.domain.repository.MarkSafetyCardShownRepository
+import com.migrely.app.coroutine.CoroutineContextProvider
 import org.junit.Test
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify

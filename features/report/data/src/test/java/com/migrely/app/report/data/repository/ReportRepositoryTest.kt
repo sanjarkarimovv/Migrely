@@ -128,7 +128,7 @@ class ReportRepositoryTest {
     }
 
     @Test
-    fun `When the credit switch changes then it is kept, and a write that fails comes back as a value`() {
+    fun `When the credit switch changes then it is kept, or failed as a value`() {
         assertEquals(
             ReportCreditWriteResultDomainModel.Saved,
             classUnderTest.setReportCreditShown(false)

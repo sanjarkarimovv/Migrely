@@ -7,7 +7,8 @@ import kotlinx.coroutines.flow.asSharedFlow
 
 /** Tells the screen a setting was not saved, or that Share or Rate was chosen. */
 class SettingsEventPresenter {
-    private val _events = MutableSharedFlow<SettingsEventUiModel>(extraBufferCapacity = EVENT_BUFFER)
+    private val _events =
+        MutableSharedFlow<SettingsEventUiModel>(extraBufferCapacity = EVENT_BUFFER)
     val events: SharedFlow<SettingsEventUiModel> = _events.asSharedFlow()
 
     fun show(event: SettingsEventUiModel) {

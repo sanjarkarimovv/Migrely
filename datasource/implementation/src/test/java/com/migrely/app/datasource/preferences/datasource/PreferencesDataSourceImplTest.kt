@@ -166,13 +166,16 @@ class PreferencesDataSourceImplTest {
     }
 
     @Test
-    fun `Given an empty file, as on a new install, an upgrade or after deleting all data, then the credit is on`() {
+    fun `Given an empty file, as after an install or deleting all data, then credit is on`() {
         // A file with nothing in it answers every read with its default.
         val empty: SharedPreferences = mock {
             on { getBoolean(any(), any()) } doAnswer { it.getArgument(1) }
         }
 
-        assertEquals(true, PreferencesDataSourceImpl(empty, entitlementPreferences).reportCreditShown())
+        assertEquals(
+            true,
+            PreferencesDataSourceImpl(empty, entitlementPreferences).reportCreditShown()
+        )
     }
 
     @Test

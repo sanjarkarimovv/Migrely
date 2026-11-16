@@ -1,5 +1,14 @@
 package com.migrely.app.settings.ui.view
 
+import android.os.SystemClock
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -31,20 +40,34 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.navigation.NavController
 import com.migrely.app.architecture.ui.view.ScreenEnterObserver
+import com.migrely.app.architecture.ui.view.ScreenLeaveObserver
 import com.migrely.app.designsystem.icon.MigrelyIcons
 import com.migrely.app.designsystem.layout.MigrelyInsets
 import com.migrely.app.designsystem.motion.rememberReduceMotion
@@ -58,36 +81,13 @@ import com.migrely.app.designsystem.theme.MigrelyTheme
 import com.migrely.app.settings.presentation.model.SettingsViewState
 import com.migrely.app.settings.ui.R
 import com.migrely.app.settings.ui.di.SettingsDependencies
-import com.migrely.app.settings.ui.model.SettingsUiModel
-import com.migrely.app.settings.ui.model.ThemeUiModel
-import kotlinx.coroutines.delay
-import android.os.SystemClock
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.EnterTransition
-import androidx.compose.animation.ExitTransition
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
-import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.input.key.Key
-import androidx.compose.ui.input.key.KeyEventType
-import androidx.compose.ui.input.key.key
-import androidx.compose.ui.input.key.onPreviewKeyEvent
-import androidx.compose.ui.input.key.type
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalViewConfiguration
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.compose.LifecycleEventEffect
-import com.migrely.app.architecture.ui.view.ScreenLeaveObserver
 import com.migrely.app.settings.ui.model.ExternalAppResultUiModel
 import com.migrely.app.settings.ui.model.SettingsEventUiModel
 import com.migrely.app.settings.ui.model.SettingsMessageUiModel
+import com.migrely.app.settings.ui.model.SettingsUiModel
 import com.migrely.app.settings.ui.model.ShownSettingsMessageUiModel
+import com.migrely.app.settings.ui.model.ThemeUiModel
+import kotlinx.coroutines.delay
 
 internal val CONTENT_MAX_WIDTH = 600.dp
 private val ROW_MIN_HEIGHT = 56.dp
@@ -401,7 +401,11 @@ private fun ShareAndRateSection(
     var focusInSection by remember { mutableStateOf(false) }
     val followFocus = Modifier.onFocusChanged { state ->
         // A row that leaves while focused reports the loss too; that one must not reset the mark.
-        if (state.hasFocus) focusInSection = true else if (currentlyShown) focusInSection = false
+        if (state.hasFocus) {
+            focusInSection = true
+        } else if (currentlyShown) {
+            focusInSection = false
+        }
     }
     LaunchedEffect(shown) {
         if (!shown && focusInSection) {
@@ -577,7 +581,8 @@ private fun RowTexts(title: String, summary: String, titleColor: Color, modifier
     }
 }
 
-internal val PREVIEW_SETTINGS_ACTIONS = SettingsActions({}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {})
+internal val PREVIEW_SETTINGS_ACTIONS =
+    SettingsActions({}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {})
 internal val PREVIEW_SETTINGS = SettingsUiModel(
     periodTracking = true,
     theme = ThemeUiModel.Dark,
@@ -589,7 +594,11 @@ internal val PREVIEW_SETTINGS = SettingsUiModel(
 @Composable
 private fun SettingsPreview() {
     MigrelyTheme {
-        SettingsContents(settings = PREVIEW_SETTINGS, actions = PREVIEW_SETTINGS_ACTIONS, messages = {})
+        SettingsContents(
+            settings = PREVIEW_SETTINGS,
+            actions = PREVIEW_SETTINGS_ACTIONS,
+            messages = {}
+        )
     }
 }
 
