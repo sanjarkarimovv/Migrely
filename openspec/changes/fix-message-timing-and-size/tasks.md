@@ -78,7 +78,7 @@ ask `product-manager` before you code.
 
 ## 4. Shared mechanism (`:designsystem`)
 
-- [ ] 4.1 **Red first, Home and History, before any production change** (EC-ATK-24).
+- [x] 4.1 **Red first, Home and History, before any production change** (EC-ATK-24).
   - Add the ceiling tests to `features/home/ui/src/testDebug/.../HomeMessagesTest.kt` and
     `features/history/ui/src/testDebug/.../HistoryMessagesTest.kt`.
   - Each test:
@@ -100,6 +100,43 @@ ask `product-manager` before you code.
     fails on the two 122 s tests, and only those;
   - `./gradlew :features:medication:ui:testDebugUnitTest --tests '*MedicationMessages*'` fails on the `IntakeUndone` test;
   - paste the failing test names and the SHA here.
+
+  **Done 2026-11-16 (android-engineer).** The tests needed the clock seam, so it landed alone first:
+  - **740626db**: `MessageClock`, `SystemMessageClock` and `LocalMessageClock` in `designsystem/snackbar/MessageClock.kt`.
+    Nothing reads them yet, so behaviour can't change. On that commit `:designsystem:testDebugUnitTest` (189 tests),
+    `HomeMessagesTest` (13), `HistoryMessagesTest` (7) and `MedicationMessagesTest` (4) all pass, with 0 failures,
+    along with `:designsystem:ktlintCheck :designsystem:detekt`.
+  - **bdc89f0d**: the red tests, with no production change. Each UI module's tests get `MessageFakes.kt`, holding
+    `FakeAccessibilityManager` (interactive and reading timeouts apart) and `FakeMessageClock` (wall and elapsed
+    clocks moving together). As with `SpokenName.kt`, the copies stay per module because the modules share no test
+    module.
+  - How the tests work:
+    - The Home and History tests stamp the deletion on the phone's wall clock (the hosts still read
+      `System.currentTimeMillis()` when a deletion arrives, and History offers only deletions made after it opened).
+    - They offer it 20 s later, with Undo shown, then hold the Compose clock.
+    - They move the fake clocks to 122 s or 114 s after the deletion between `CREATED` and `RESUMED`, then let 100 ms
+      of frames run.
+    - The Undo callback fakes D23: "Undone." within 120 s, otherwise "This can no longer be undone.".
+
+  Command, from `bdc89f0d`, with load under 7:
+  `nice -n 19 ./gradlew --max-workers=2 --continue :designsystem:ktlintCheck :designsystem:detekt
+  :features:{home,history,medication}:ui:ktlintCheck :features:{home,history,medication}:ui:detekt
+  :features:home:ui:testDebugUnitTest :features:history:ui:testDebugUnitTest :features:medication:ui:testDebugUnitTest`.
+  It exits 1 because of the three red tests and nothing else:
+  - every ktlint and detekt task passes;
+  - Home: 120 tests, 1 failed. `HomeMessagesTest > Lock and unlock at 122 seconds on Home leaves no Undo`
+    (`HomeMessagesTest.kt:302`): `Failed: assertDoesNotExist. Reason: Did not expect any node but found '1' node that
+    satisfies: (ContentDescription = 'Undo the deletion' (ignoreCase: false))`.
+  - History: 58 tests, 1 failed. `HistoryMessagesTest > Lock and unlock at 122 seconds on History leaves no Undo`
+    (`HistoryMessagesTest.kt:216`): the same assertion message.
+  - Medication: 91 tests, 1 failed. `MedicationMessagesTest > A removed intake on Log medication stays for the time to
+    take action` (`MedicationMessagesTest.kt:145`, the 19 s check): `Failed: assertExists. Reason: Expected exactly
+    '1' node but could not find any node that satisfies: (Text + InputText + EditableText contains 'Removed. Nothing
+    was logged.' (ignoreCase: false))`. It left at 8 s.
+  - The positive controls pass: `Undo before the ceiling still restores on Home` and `... on History`.
+  - What these runs do not prove:
+    - That the 122 s tests turn green for the right reason. Task 6.1's negative control covers that.
+    - Robolectric's lifecycle is not a real lock. Task 7.1 and QA's A4 cover the device.
 - [ ] 4.2 Add `MessageClock` and `LocalMessageClock`, and `UNDO_CEILING_MILLIS = 115_000` in `DeletionOffer.kt`. Move the
   retention value to a public `DELETED_ATTACK_RETENTION_MILLIS` in `datasource/source`, with `DELETED_RETENTION` derived
   from it. Add the `:app` JVM test that ties them (design D2).
@@ -107,6 +144,9 @@ ask `product-manager` before you code.
   - `./gradlew :app:testDebugUnitTest --tests '*UndoCeiling*'` passes;
   - the same run with the retention changed to 3 minutes as a mutation fails;
   - revert the mutation and record both results here.
+
+  Partly landed: the clock seam alone is in 740626db (see 4.1). Still to do: `UNDO_CEILING_MILLIS`, the public
+  retention value and the `:app` test.
 - [ ] 4.3 Add `MessageCountdown`, the plain state machine: pause, the 300 ms grace, window focus, the 3 s floor, the
   ceiling's two bounds, saved state and the reboot rule (design D2).
   - Unit tests cover P1–P7 from ux §B2, a clock set back an hour, a clock set forward, and an elapsed clock below the saved
