@@ -76,7 +76,9 @@ ask `product-manager` before you code.
   Verify: the counts are written here. On failure, `openspec validate fix-message-timing-and-size --strict` exits 0 after
   the PM edit.
 
-  **Status 2026-11-16 (android-engineer): open. Nothing has run on a device yet: no pass, no failure.**
+  **Status 2026-11-16, 23:44 (android-engineer):** the API 36 automated rows pass. The API 26 half could not be run.
+  Real TalkBack gestures and TalkBack's menu are not checked. Result and method are below the preparation notes.
+  - First record, 2026-11-16 22:20: nothing had run on a device yet.
   - **API 26 half: not runnable on our API 26 image.**
     - The image has no TalkBack (team-lead's information). I could not confirm it with `pm list packages`: the guard
       allows android-engineer only `emulator-5570`, and 5572 was assigned by mistake.
@@ -122,6 +124,62 @@ ask `product-manager` before you code.
     - real swipes for a sample of the moves, since UiAutomation's focus action is not a TalkBack gesture;
     - a negative control on the "reads the same" check: a probe that sets a description on its host must fail it;
     - restore the settings.
+
+  **API 36 result, 2026-11-16, `emulator-5570`, `Migrely_API_36`, TalkBack 16.0.0.738667889:**
+  - **Method.**
+    - TalkBack was turned on through `enabled_accessibility_services`. TalkBack bound, and touch exploration was on.
+    - Command: `ANDROID_SERIAL=emulator-5570 nice -n 19 ./gradlew --max-workers=2 :designsystem:connectedDebugAndroidTest
+      -Pandroid.testInstrumentationRunnerArguments.class=com.migrely.app.designsystem.snackbar.TalkBackFocusSpikeTest`.
+    - The probe log comes from `adb logcat -d 'T64Probe:I' '*:S'`.
+    - Logs are kept in `migrely-work/t64/`: `spike-runN.log` and `spike-runN-probe.log`, for N = 1 to 9.
+  - **Final harness, runs 7, 8 and 9 in a row. Each run exits 0 and passes all 5 automated tests.**
+    - Text: 10 of 10.
+    - Control: 10 of 10.
+    - Text to control: 10 of 10, each checked against Android's own `isAccessibilityFocused`.
+    - What TalkBack reads is the same with and without the probe.
+    - The negative control passes: a delegate that adds a description makes the reading differ, so the check can fail.
+    - `holdForChecksByHand` is skipped, as intended.
+  - **Pass bar of 10 of 10 per row: met on all three runs.**
+  - **What a move looks like.**
+    - Each move sends two `FOCUS_CLEARED` events, then `FOCUSED`. The first clear still reads the old node; the second
+      reads no focus.
+    - So from text to control the probe reads "outside" for a moment. Longest gap per round:
+      - run 7: 7, 3, 5, 2, 4, 1, 2, 3, 1, 1 ms;
+      - run 8: 1, 1, 11, 1, 2, 2, 1, 2, 1, 1 ms;
+      - run 9: 1, 3, 2, 1, 5, 4, 8, 3, 1, 1 ms.
+    - The largest gap of any round, in runs 4 to 9, was 21 ms, against the 300 ms grace.
+    - Every focus event had `windowFocused=true`. The only `windowFocused=false` events are the clears at test
+      teardown.
+  - **Earlier runs, kept as results.**
+    - Run 1: two failures, both from the harness.
+      - The move test required every event to read "inside", which is stricter than the design's grace.
+      - The reading dump included where TalkBack's focus sat (actions 64 and 128), and TalkBack moved that focus
+        between the two dumps.
+    - Run 2: 1 of 10 on the move test. Run 3: 0 of 10 on the move test alone. Neither logged the action's result.
+    - Run 5: the text test failed at 1 of 10.
+      - The probe saw the focus at 23:36:43.191.
+      - The `performAction` that caused it returned `false` 2 s later.
+      - The text was then already focused, so seven more calls came back false at once.
+      - The rounds failed through the driver's result. The probe's readings were right.
+    - Since then the harness:
+      - only logs the action's result;
+      - judges each round by the probe, checked against `isAccessibilityFocused`;
+      - leaves out the focus-only actions 64 and 128 from the reading dump.
+    - Run 9 shows one late `false` result, which this harness rightly ignores.
+  - **Not checked: real TalkBack gestures and TalkBack's menu.**
+    - Three different ways of making a gesture from adb failed:
+      - `input swipe` and `input touchscreen swipe` (TalkBack's touch explorer saw nothing);
+      - TalkBack's keyboard keys through `input keycombination` (Alt + arrows; nothing);
+      - raw `sendevent` on `/dev/input/event1` (denied by SELinux; I did not root the image).
+    - So the menu question is open: does TalkBack's menu take window focus, and so resume the countdown?
+    - What the run does show:
+      - with TalkBack on, TalkBack focused the message's text by itself, and the probe saw it
+        (`spike-manual.log`);
+      - every focus move in runs 4 to 9 went through Compose's real path with TalkBack bound.
+    - Gestures and the menu need a person at the emulator window or on a phone.
+  - **Restored.** Every setting matches the values recorded before the run (`diff` of
+    `migrely-work/t64/spike-original-settings.txt` against `spike-final-settings.txt` is empty), and no service is
+    bound. The emulator was shut down with `emu kill`, and `adb devices` is empty.
 
 ## 4. Shared mechanism (`:designsystem`)
 
