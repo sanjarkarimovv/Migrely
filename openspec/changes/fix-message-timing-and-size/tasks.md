@@ -63,7 +63,7 @@ ask `product-manager` before you code.
 
 ## 3. Spike (android-engineer, before the pause code)
 
-- [ ] 3.1 TalkBack focus on a message's text and control, on API 36 (`emulator-5570`) and on API 26, on a device
+- [x] 3.1 TalkBack focus on a message's text and control, on API 36 (`emulator-5570`) and on API 26, on a device
   `team-lead` assigns (`emulator-5582` belongs to QA) (design D3).
   - **Pass:** 10 of 10 correct focus and clear events on each level, for the text and the control.
   - Also open TalkBack's own menu on a message and log `isWindowFocused` and the focus events, so we know whether that
@@ -79,6 +79,13 @@ ask `product-manager` before you code.
   **Status 2026-11-16, 23:44 (android-engineer):** the API 36 automated rows pass. The API 26 half could not be run.
   Real TalkBack gestures and TalkBack's menu are not checked. Result and method are below the preparation notes.
   - First record, 2026-11-16 22:20: nothing had run on a device yet.
+  - **Accepted by team-lead, 2026-11-16 (relayed by main):** the spike passes for Compose's focus path on API 36, with
+    3 runs, each 10 of 10 on all three rows, and the longest moment "outside" 21 ms against the 300 ms grace. 4.4
+    starts with the TalkBack pause.
+  - The TalkBack menu question stays open. It becomes a row in QA's 8.3: a person on a real phone, with TalkBack
+    gestures.
+  - If the menu resumes the countdown, product-manager adds a known-limit line to D182 and EC-UX-54 then. No PM edit
+    now.
   - **API 26 half: not runnable on our API 26 image.**
     - The image has no TalkBack (team-lead's information). I could not confirm it with `pm list packages`: the guard
       allows android-engineer only `emulator-5570`, and 5572 was assigned by mistake.
