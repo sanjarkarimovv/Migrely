@@ -18,6 +18,10 @@ SHALL be left alone (BRD EC-UX-45, D181).
 - **WHEN** TalkBack focuses the visit's "Remove" or the notice's "Open settings" on Reminders
 - **THEN** it says "Remove the next visit, Button" or "Open settings for notifications, Button", once each
 
+#### Scenario: The pain dialog's time
+- **WHEN** TalkBack focuses the time button "At 14:30" in the pain dialog
+- **THEN** it says "At 14:30, change the time, Button", once, and the button still opens the time picker
+
 #### Scenario: Label in name
 - **WHEN** any control's spoken label differs from its visible text
 - **THEN** the spoken label contains the visible words in the same order, so a voice command naming the visible text can

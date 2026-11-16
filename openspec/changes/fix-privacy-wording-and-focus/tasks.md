@@ -27,9 +27,11 @@ under load. Never `--stop` the daemon.
     - `git log origin/develop --oneline | grep -c "keyboard-follows-cursor"` is at least 1;
     - `grep -c -E '^\| D18[01] ' docs/BRD.md` prints 2;
     - `openspec validate fix-privacy-wording-and-focus --strict` passes.
-- [ ] 0.2 `team-lead` records the owner's approval of the 5 privacy strings, as legal-t66 asked ("Decision needed from
+- [x] 0.2 `team-lead` records the owner's approval of the 5 privacy strings, as legal-t66 asked ("Decision needed from
   the owner"), including whether the phone-transfer additions stay. This gates the merge (8.6), not the coding.
   - Verify: a dated approval line here. Without one, 8.6 does not run.
+  - Owner approved in chat 2026-11-16 (team-lead). The approved strings are the 5 as built, phone-transfer additions
+    included (recorded by product-manager, 7.4).
 
 ## 1. Domain, presentation and data
 
@@ -161,6 +163,12 @@ under load. Never `--stop` the daemon.
   - Verify: 4.2 passes. `./gradlew :features:history:ui:testDebugUnitTest :designsystem:testDebugUnitTest` exits 0.
   - Device: the ring is visible on the chosen day after Shift+Tab, at 100% and 200%, portrait and landscape (2 panes).
     Save screenshots.
+  - 2026-11-16, product-manager (7.4, review F3, team-lead ruling): no History code changed and none is claimed. 4.1 ran
+    on API 26 by QA (qa-t66): 0 stops in 22 cells, 11 on head f846c899 and 11 on `develop` (migraine row, Period,
+    Pain-free with Period hidden; 100% and 200%; portrait and landscape; tap and arrows+Enter). `HistoryKeyboardOrderTest`
+    stays as a guard, green before and after, so 4.2 has no red. API 36 has not run: it is a blocking line in the
+    release/1.3.0 Go/No-Go. If the stop reproduces there, a follow-up change does 4.1 to 4.3 for the node it finds.
+    4.1 to 4.3 stay unticked; BRD D181 (3), EC-UX-46, §13 row 49 and the `attack-history` delta now say this.
 - [x] 4.4 Red first: Home tests (next to `HomeMessageOrderTest.kt`).
   - (a) All slots empty and a message shown: Tab ×3 goes Settings, message control, "Migraine started"; Shift+Tab ×2
     goes message control, Settings.
@@ -252,6 +260,16 @@ under load. Never `--stop` the daemon.
 - [ ] 7.4 `product-manager`: after the code, re-read the BRD and the deltas against what was built. Fix any drift
   before the archive.
   - Verify: `openspec validate fix-privacy-wording-and-focus --strict` passes on the final head.
+  - 2026-11-16, product-manager on f846c899: re-read against the code. Changed: History (D181 (3), EC-UX-46, row 49,
+    `attack-history`, proposal, design 3) no longer claims a fix; the pain dialog's "At %1$s, change the time" is in
+    D181 (2), EC-UX-45 and an `app-shell` scenario; design 4 to 6 describe what was built (Settings' `onEnter`, the
+    measured `Layout`, focus parking, the NotSaved count, pickers needing no code); proposal's QA task number is 7.1;
+    owner approval recorded (0.2). QA's 8.5 on f846c899 (`qa/217-acceptance` 34190925): GO for API 26, API 36
+    pending, #229 S4 and #230 S3 pre-existing. Team-lead decision: the API 36 rows (2.5, 3.6, 8.3, History and Home
+    with Gboard, the 5.5 TalkBack pass on the Name error, History on API 36) are a blocking line in the release/1.3.0
+    Go/No-Go; design "What these checks do not prove" lists them. 8.5's own note is QA's, on its branch. Strings checked against the deltas:
+    `reminders_open_settings_description` "Open settings for notifications", `pain_dialog_change_time` "At %1$s,
+    change the time", and the 5 privacy strings verbatim. Validate passed on this commit; rerun on the final head.
 
 ## 8. Verify
 

@@ -53,12 +53,18 @@ product-manager checked each claim against the code at 40536f49 before planning 
   - When a control's spoken label differs from its visible text, the visible text leaves the semantics.
   - The spoken label contains the visible words in order (label in name).
   - Onboarding's Skip is read "Skip this step, Button".
-  - `reminders_open_settings_description` becomes "Open settings for notifications".
-  - The engineer sweeps every site of the shape and proves each double reading with a red test before fixing it.
+  - `reminders_open_settings_description` becomes "Open settings for notifications", and `pain_dialog_change_time`
+    becomes "At %1$s, change the time" (ux-designer, 2026-11-15): neither old label contained the visible words in
+    order.
+  - The engineer sweeps every site of the shape and proves each double reading with a red test before fixing it. As
+    built, 10 sites were fixed (tasks 3.1); sites whose texts were already cleared are unchanged.
 - **Every keyboard stop is visible and in view (D181 (3), ux A3).**
-  - On History, Shift+Tab from the first control of the chosen day's section lands on the chosen day, with its ring
-    visible and the cell on screen.
-  - The engineer first proves which node is the invisible stop. ux's two causes are guesses.
+  - The rule: on History, Shift+Tab from the first control of the chosen day's section lands on the chosen day, with
+    its ring visible and the cell on screen.
+  - As built, no History code changed and this change claims no History fix. `HistoryKeyboardOrderTest` guards the
+    order; it passes on `develop` and on the head. The reported stop did not reproduce on API 26 (QA, 22 cells, 0
+    stops on head and on `develop`). The API 36 check is a blocking line in the release/1.3.0 Go/No-Go; if the stop
+    reproduces there, a follow-up change fixes it.
 - **Home Today's order is symmetric (D181 (4), ux A4).**
   - With nothing focusable after Settings: Settings, message, "Migraine started", and the exact reverse.
   - The comment from follow-up 4 is corrected.
@@ -119,18 +125,20 @@ None.
   - semantics at the swept sites (`OnboardingScreen.kt`, `MigrelySnackbar.kt`, `AttackModeContents.kt`,
     `DoctorVisitSection.kt`, `RemindersScreen.kt`, and any site the sweep confirms);
   - `TodayKeyboardOrder.kt`, `TodayContents.kt` (`QuietLinks`);
-  - History's calendar or day section, depending on what the proof shows;
+  - no History code: a guard test only (D181 (3));
   - `EditMedicationScreen.kt`, `LogMedicationScreen.kt`, `AddPastAttackScreen.kt`.
   - No domain, presentation, data, DI or navigation change.
 - **Order:** code starts after `fix-keyboard-follows-cursor` (D180) merges into `develop`, because it edits Edit
   medication, Log medication, Home Today and Settings insets. Task 0.1 merges `develop` in first.
-- **Tests:** new Compose tests per item, each red on 40536f49. `DoctorVisitScreenTest.kt:217` changes with the string.
-- **QA-owned:** `.maestro/a11y-tour/settings-privacy.yaml:13` asserts the old first paragraph. Task 6.1 is for
+- **Tests:** new Compose tests per item, red on the pre-fix base where the item changes code. The History order test
+  and the in-progress Ended row test (review F6) are guards, green before and after, each with a mutation as its
+  negative control. `DoctorVisitScreenTest.kt:217` changes with the string.
+- **QA-owned:** `.maestro/a11y-tour/settings-privacy.yaml:13` asserts the old first paragraph. Task 7.1 is for
   `qa-engineer`, not the engineer.
 - **Other owners:**
   - slide 06 re-capture, data-safety and content-rating wording (`aso-seo-specialist`);
   - tracker rows (`team-lead`);
-  - owner approval of the 5 strings, which legal asked for (`team-lead`, task 0.2).
+  - owner approval of the 5 strings, which legal asked for (`team-lead`, task 0.2): approved in chat on 2026-11-16.
 - **Not affected:** permissions (`:app:checkReleasePermissions` stays the same), Free and Premium, the dark room's
   colours, the policy.
 - **No health sentence changes**, so no `medical-reviewer` read is needed.

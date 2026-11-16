@@ -3,8 +3,8 @@
 ### Requirement: Shift+Tab from the day returns to the chosen day
 On History, Shift+Tab from the first control of the chosen day's section SHALL land on the chosen day in the month, with
 its two-tone ring visible and the whole cell on screen. That control is the first migraine row, else Period, else
-Pain-free. Tab from the day SHALL return to it. The same order SHALL hold in landscape's two panes (BRD EC-UX-46,
-D181).
+Pain-free. Tab from the day SHALL return to it, also in landscape's two panes. The existing History code meets this
+and a test guards it; this change makes no History fix (BRD EC-UX-46, D181 (3)).
 
 #### Scenario: A day with migraines
 - **WHEN** a day with migraines is chosen, focus is on its first migraine row, and the user presses Shift+Tab
