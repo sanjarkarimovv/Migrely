@@ -78,9 +78,11 @@ switch summary drift from it.
   mapper on and off; instrumented layout test on A4 and Letter: `lineCount == 1`, `getEllipsisCount(0) == 0`, same page
   count on and off, absent on pages before the last. Verify: `./gradlew :features:report:data:test` and
   `ANDROID_SERIAL=emulator-5570 ./gradlew :datasource:implementation:connectedDebugAndroidTest`.
+  Code and JVM tests done (73ecda05): mapper on and off (final text word for word), `footerLines()` per page. `ReportCreditLayoutTest` (androidTest, 4 tests: one line and no ellipsis on A4 and Letter, same page count, pixel diff only on the last page and only in the band below the disclaimer) is written but NOT RUN: emulator-5570 was not booted (host swap above 6 GB). Tick after the connected run.
 - [ ] 4.3 Disclaimer with the switch off (medical-reviewer condition, unit level): the rendered text of every page of a
   multi-page report with `credit = null` contains "Patient-entered data. Not a diagnosis." and no "Made with Migrely".
   Verify: the same connected test run as 4.2, test name in the record.
+  Unit level done: `ReportFooterLinesTest` "Given the switch off then every page has the disclaimer and none the credit" (7-page report). Rendered check written, NOT RUN: `ReportCreditLayoutTest.givenTheSwitchOff_thenEveryPageStillHasTheDisclaimer` (disclaimer band differs from a blank footer on every page, A4 and Letter). Tick after the connected run.
 - [x] 4.4 JSON and CSV unchanged: the existing backup round-trip and CSV tests pass unmodified. Verify:
   `git diff origin/develop -- '**/backup/**/test/**'` is empty and `./gradlew :features:backup:data:test` passes.
   Done: `git diff origin/develop -- features/backup` is empty (0 lines); `:features:backup:data:test` passes in the gate.
@@ -112,9 +114,10 @@ switch summary drift from it.
 
 - [x] 6.1 `:app` DI for the new repositories and use cases. Verify: the gate.
   Done: review, three safety-card features, report and settings wired in `:app/di`; Konsist passes in the gate.
-- [ ] 6.2 Manifest and permissions unchanged. Verify: `./gradlew :app:checkReleasePermissions` exits 0, and
+- [x] 6.2 Manifest and permissions unchanged. Verify: `./gradlew :app:checkReleasePermissions` exits 0, and
   `diff` of `app/build/intermediates/merged_manifests/release/.../AndroidManifest.xml` against the same file built from
   `origin/develop` shows no new `uses-permission`, `<queries>` or component. Record both.
+  Done 2026-11-16: `:app:checkReleasePermissions` exit 0 on 8528d1c7; `build/reports/permissions/release.txt` identical to `origin/develop` 03a8900e (ACCESS_NETWORK_STATE, POST_NOTIFICATIONS, RECEIVE_BOOT_COMPLETED, WAKE_LOCK, BILLING, DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION; no INTERNET). Merged release manifest (`merged_manifest/release/processReleaseMainManifest`) byte-identical to develop's (sha256 1e776dba…33f4 both; develop built in a temporary detached worktree, removed). The one `<queries>` is Play Billing's, already on develop.
 
 ## 7. Device walk and promo verification (`android-engineer`)
 
@@ -169,4 +172,13 @@ switch summary drift from it.
 
 ## Verification record
 
-(empty until 7 runs)
+2026-11-16, `eng-loops`, tasks 2–6 on `feature/add-word-of-mouth-loops` (code 8528d1c7):
+- Gate `nice -n 19 ./gradlew --max-workers=2 assembleDebug test ktlintCheck detekt lint --continue`: exit 0 (second
+  run; the first failed only on a test name with ";", fixed). Unit test XML under all `build/test-results`: 3364 tests,
+  0 failures, 0 errors, 0 skipped (debug and release variants).
+- Not run (device, task 7): `ANDROID_SERIAL=emulator-5570 ./gradlew :datasource:implementation:connectedDebugAndroidTest`
+  (`ReportCreditLayoutTest`, 4 new tests); every device scenario of 7.1 and 7.2; 7.3 with the owner.
+- Task 7 needs: swap low enough to boot emulator-5570; the connected run above; then the 7.1 walk with particular
+  attention to (a) TalkBack accessibility focus when the section leaves (keyboard focus is tested, TalkBack is not),
+  (b) the 200 ms fold next to the dark theme flip, (c) the share preview and that Android's own text-only `ClipData`
+  carries no attachment, (d) PDF line on A4 and Letter with the device font; 7.2 via the debug review fake.
