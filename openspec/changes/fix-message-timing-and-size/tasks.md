@@ -369,6 +369,15 @@ ask `product-manager` before you code.
   that fails on `calculateRecommendedTimeoutMillis` outside `MessageTimeout.kt` (design D1).
   Verify: `./gradlew :app:testDebugUnitTest --tests '*MessageCallSites*'` fails on 40536f49's four hosts, which is the
   negative control, and passes after task 5.1.
+
+  **Rule added 2026-11-17 (android-engineer).** It is `MessageCallSitesTest > Only messageTimeoutMillis asks Android for
+  the accessibility timeout`: every production file whose text has `calculateRecommendedTimeoutMillis` must be
+  `MessageTimeout` alone.
+  - Negative control, on the hosts as they are before 5.1 (unchanged since 40536f49): the rule fails with
+    `expected:<[MessageTimeout]> but was:<[MessageTimeout, AttackMessages, HistoryMessages, HomeMessages,
+    MedicationMessages]>`. Those are exactly the four hosts of design D1.
+  - The other 4 tests of `MessageCallSitesTest` pass.
+  - The task is ticked after 5.1 turns the rule green.
 - [ ] 4.6 Add `LocalInDarkRoom` in `MigrelyDarkRoom`. In a dark room `MigrelySnackbar` uses a 64 dp minimum height, a
   64 x 64 dp minimum for Undo, and a 64 x 64 dp Dismiss with a 24 dp icon (design D4).
   The size changes in the same frame as the room's switch, with no size animation of its own, and the control keeps its
