@@ -59,7 +59,8 @@ class OpeningGuardLifecycleTest {
         rule.waitForIdle()
     }
 
-    private fun tapShare() = rule.onNodeWithText(SHARE, substring = true).performScrollTo().performClick()
+    private fun tapShare() =
+        rule.onNodeWithText(SHARE, substring = true).performScrollTo().performClick()
 
     @Test
     fun `Given Settings came back from the share sheet then Share opens again at once`() {

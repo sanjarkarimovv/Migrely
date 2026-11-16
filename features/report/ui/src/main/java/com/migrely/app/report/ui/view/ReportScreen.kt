@@ -311,7 +311,9 @@ fun ReportContents(
                     // follows a save in either state; kept while a report is made (BRD EC-REP-12, EC-REP-13).
                     var shownCredit by rememberSaveable { mutableStateOf<Boolean?>(null) }
                     when (viewState) {
-                        is ReportViewStateUiModel.Ready -> shownCredit = viewState.options.creditShown
+                        is ReportViewStateUiModel.Ready ->
+                            shownCredit =
+                                viewState.options.creditShown
                         is ReportViewStateUiModel.Unavailable -> shownCredit = viewState.creditShown
                         ReportViewStateUiModel.Loading, ReportViewStateUiModel.Working -> Unit
                     }

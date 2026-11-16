@@ -78,7 +78,7 @@ switch summary drift from it.
   mapper on and off; instrumented layout test on A4 and Letter: `lineCount == 1`, `getEllipsisCount(0) == 0`, same page
   count on and off, absent on pages before the last. Verify: `./gradlew :features:report:data:test` and
   `ANDROID_SERIAL=emulator-5570 ./gradlew :datasource:implementation:connectedDebugAndroidTest`.
-  Code and JVM tests done (73ecda05): mapper on and off (final text word for word), `footerLines()` per page. `ReportCreditLayoutTest` (androidTest, 4 tests: one line and no ellipsis on A4 and Letter, same page count, pixel diff only on the last page and only in the band below the disclaimer) is written but NOT RUN: emulator-5570 was not booted (host swap above 6 GB). Tick after the connected run.
+  Code and JVM tests done (73ecda05): mapper on and off (final text word for word), `footerLines()` per page. `ReportCreditLayoutTest` (androidTest, 3 tests: one line and no ellipsis on A4 and Letter; rendered page counts equal and a pixel diff only on the last page, only in the band below the disclaimer; the disclaimer band on every page with the switch off) is written but NOT RUN: emulator-5570 was not booted (host swap above 6 GB). Tick after the connected run.
 - [ ] 4.3 Disclaimer with the switch off (medical-reviewer condition, unit level): the rendered text of every page of a
   multi-page report with `credit = null` contains "Patient-entered data. Not a diagnosis." and no "Made with Migrely".
   Verify: the same connected test run as 4.2, test name in the record.
@@ -101,7 +101,7 @@ switch summary drift from it.
   - Compose: rows absent during an attack and while loading, present otherwise; one node each, name starting with the
     title, role Button and the action label; no chevron; "Warning signs" still first in Help.
   Verify: `./gradlew :features:settings:ui:testDebugUnitTest` (plus the full gate).
-  Done (8c5087ab). Tests: `ExternalAppLauncherTest` (W3, 7), `ShareLinkTest` (3), `OpeningGuardTest` (5, with a no-wait negative control), `ShareAndRateTest` (9: loading, attack, one button node with title, summary and action label, order with Warning signs first in Help, double tap, Share then Rate via TalkBack's click, held Enter, focus to "Open-source licences", no-guard negative control). Mutation control: guard removed from the rows -> 2 `ShareAndRateTest` cases fail. Not tested in Compose: no chevron (an icon without description has no semantics), TalkBack accessibility focus (task 7).
+  Done (8c5087ab). Tests: `ExternalAppLauncherTest` (W3, 7), `ShareLinkTest` (3), `OpeningGuardTest` (5, with a no-wait negative control), `ShareAndRateTest` (9: loading, attack, one button node with title, summary and action label, order with Warning signs first in Help, double tap, Share then Rate via TalkBack's click, held Enter (with a no-wait guard, so only `clickable`'s release-only key handling keeps it to one), focus to "Open-source licences", no-guard negative control). `OpeningGuardLifecycleTest` (2) drives Settings' pause and resume through `rememberOpeningGuard`. Mutation controls: guard removed from the rows -> 2 `ShareAndRateTest` cases fail; ON_RESUME or ON_PAUSE removed -> `OpeningGuardLifecycleTest` fails; Rate firing on repeated key presses -> the held-Enter test fails. No key-repeat filter: Compose foundation 1.9.3's `clickable` already acts once, on release (code review S4-1). Not tested in Compose: no chevron (an icon without description has no semantics), TalkBack accessibility focus (task 7).
 - [x] 5.2 report ui: the switch row (`NotesRow` made to take title and summary), one node with state and role, wraps at
   200%; the new `report_message_not_saved`. Tests:
   - **W6 (medical-reviewer condition):** the switch summary contains the mapper's credit constant exactly (shared
@@ -177,8 +177,12 @@ switch summary drift from it.
   run; the first failed only on a test name with ";", fixed). Unit test XML under all `build/test-results`: 3364 tests,
   0 failures, 0 errors, 0 skipped (debug and release variants).
 - Not run (device, task 7): `ANDROID_SERIAL=emulator-5570 ./gradlew :datasource:implementation:connectedDebugAndroidTest`
-  (`ReportCreditLayoutTest`, 4 new tests); every device scenario of 7.1 and 7.2; 7.3 with the owner.
+  (`ReportCreditLayoutTest`, 3 new tests); every device scenario of 7.1 and 7.2; 7.3 with the owner.
 - Task 7 needs: swap low enough to boot emulator-5570; the connected run above; then the 7.1 walk with particular
   attention to (a) TalkBack accessibility focus when the section leaves (keyboard focus is tested, TalkBack is not),
   (b) the 200 ms fold next to the dark theme flip, (c) the share preview and that Android's own text-only `ClipData`
   carries no attachment, (d) PDF line on A4 and Letter with the device font; 7.2 via the debug review fake.
+- Code review (`cr-loops`, a28083d0): no defect above S4. S4 fixes on this branch: (1) key-repeat filter removed, held-Enter
+  test made able to fail (mutation C); (2) `OpeningGuardLifecycleTest` (mutations A, B); (3) page-count test that never
+  read the credit dropped, the pixel test compares rendered page counts; (4) the credit switch follows a save while the
+  options are unavailable (red: 2 `ReportCreditSwitchTest` cases, then green; 0b826f63).
