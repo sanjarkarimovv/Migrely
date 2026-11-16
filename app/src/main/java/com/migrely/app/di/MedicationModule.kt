@@ -57,6 +57,8 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import com.migrely.app.medication.domain.repository.MarkSafetyCardShownRepository
+import com.migrely.app.medication.domain.usecase.MarkSafetyCardShownUseCase
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -236,12 +238,14 @@ internal object MedicationModule {
         answerEffectUseCase: AnswerEffectUseCase,
         skipEffectQuestionUseCase: SkipEffectQuestionUseCase,
         acknowledgeOveruseUseCase: AcknowledgeOveruseUseCase,
+        markSafetyCardShownUseCase: MarkSafetyCardShownUseCase,
         useCaseExecutor: UseCaseExecutor
     ) = MedicationPromptViewModel(
         getMedicationPromptUseCase,
         answerEffectUseCase,
         skipEffectQuestionUseCase,
         acknowledgeOveruseUseCase,
+        markSafetyCardShownUseCase,
         MedicationPromptPresentationMapper(OveruseCategoryPresentationMapper()),
         MedicationPromptDomainMapper(),
         useCaseExecutor
@@ -293,4 +297,10 @@ internal object MedicationModule {
         SaveProblemPresentationMapper(),
         useCaseExecutor
     )
+
+    @Provides
+    fun providesMedicationMarkSafetyCardShownUseCase(
+        markSafetyCardShownRepository: MarkSafetyCardShownRepository,
+        coroutineContextProvider: CoroutineContextProvider
+    ) = MarkSafetyCardShownUseCase(markSafetyCardShownRepository, coroutineContextProvider)
 }

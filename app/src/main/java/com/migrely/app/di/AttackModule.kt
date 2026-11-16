@@ -70,6 +70,8 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import com.migrely.app.attack.domain.repository.MarkSafetyCardShownRepository
+import com.migrely.app.attack.domain.usecase.MarkSafetyCardShownUseCase
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -283,6 +285,7 @@ internal object AttackModule {
         removeIntakeUseCase: RemoveIntakeUseCase,
         restoreIntakeUseCase: RestoreIntakeUseCase,
         setIntakeEffectUseCase: SetIntakeEffectUseCase,
+        markSafetyCardShownUseCase: MarkSafetyCardShownUseCase,
         useCaseExecutor: UseCaseExecutor
     ): AttackDetailsViewModel {
         val tagKindDomainMapper = TagKindDomainMapper()
@@ -324,7 +327,14 @@ internal object AttackModule {
             restoreIntakeUseCase = restoreIntakeUseCase,
             attackIntakeDomainMapper = AttackIntakeDomainMapper(),
             setIntakeEffectUseCase = setIntakeEffectUseCase,
+            markSafetyCardShownUseCase = markSafetyCardShownUseCase,
             useCaseExecutor = useCaseExecutor
         )
     }
+
+    @Provides
+    fun providesAttackMarkSafetyCardShownUseCase(
+        markSafetyCardShownRepository: MarkSafetyCardShownRepository,
+        coroutineContextProvider: CoroutineContextProvider
+    ) = MarkSafetyCardShownUseCase(markSafetyCardShownRepository, coroutineContextProvider)
 }

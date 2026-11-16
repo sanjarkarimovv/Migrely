@@ -38,6 +38,9 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import com.migrely.app.datasource.preferences.datasource.PreferencesDataSource
+import com.migrely.app.medication.data.repository.SafetyCardRepository
+import com.migrely.app.medication.domain.repository.MarkSafetyCardShownRepository
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -162,4 +165,11 @@ internal object MedicationDataModule {
     @Provides
     fun providesDeleteIntakeRepository(repository: MedicationRepository): DeleteIntakeRepository =
         repository
+
+    /** The moment the overuse card appeared (BRD D188). */
+    @Provides
+    fun providesMedicationMarkSafetyCardShownRepository(
+        preferencesDataSource: PreferencesDataSource,
+        clockDataSource: ClockDataSource
+    ): MarkSafetyCardShownRepository = SafetyCardRepository(preferencesDataSource, clockDataSource)
 }

@@ -46,6 +46,9 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import com.migrely.app.datasource.preferences.datasource.PreferencesDataSource
+import com.migrely.app.attack.data.repository.SafetyCardRepository
+import com.migrely.app.attack.domain.repository.MarkSafetyCardShownRepository
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -195,4 +198,11 @@ internal object AttackDataModule {
     fun providesSetCustomTagArchivedRepository(
         repository: CustomTagRepository
     ): SetCustomTagArchivedRepository = repository
+
+    /** The moment the first-10 card appeared (BRD D188). */
+    @Provides
+    fun providesAttackMarkSafetyCardShownRepository(
+        preferencesDataSource: PreferencesDataSource,
+        clockDataSource: ClockDataSource
+    ): MarkSafetyCardShownRepository = SafetyCardRepository(preferencesDataSource, clockDataSource)
 }

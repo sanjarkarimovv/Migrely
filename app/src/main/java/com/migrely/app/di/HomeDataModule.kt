@@ -27,6 +27,8 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import com.migrely.app.home.data.repository.SafetyCardRepository
+import com.migrely.app.home.domain.repository.MarkSafetyCardShownRepository
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -114,4 +116,11 @@ internal object HomeDataModule {
     fun providesRestoreDeletedAttackRepository(
         repository: HomeRepository
     ): RestoreDeletedAttackRepository = repository
+
+    /** The moment "Still going?" appeared (BRD D188). */
+    @Provides
+    fun providesHomeMarkSafetyCardShownRepository(
+        preferencesDataSource: PreferencesDataSource,
+        clockDataSource: ClockDataSource
+    ): MarkSafetyCardShownRepository = SafetyCardRepository(preferencesDataSource, clockDataSource)
 }

@@ -36,6 +36,8 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import com.migrely.app.home.domain.repository.MarkSafetyCardShownRepository
+import com.migrely.app.home.domain.usecase.MarkSafetyCardShownUseCase
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -174,6 +176,7 @@ internal object HomeModule {
         answerLongAttackCheckUseCase: AnswerLongAttackCheckUseCase,
         restoreDeletedAttackUseCase: RestoreDeletedAttackUseCase,
         setPeriodTodayUseCase: SetPeriodTodayUseCase,
+        markSafetyCardShownUseCase: MarkSafetyCardShownUseCase,
         todayPresentationMapper: TodayPresentationMapper,
         intensityLevelDomainMapper: IntensityLevelDomainMapper,
         useCaseExecutor: UseCaseExecutor
@@ -188,8 +191,15 @@ internal object HomeModule {
         answerLongAttackCheckUseCase = answerLongAttackCheckUseCase,
         restoreDeletedAttackUseCase = restoreDeletedAttackUseCase,
         setPeriodTodayUseCase = setPeriodTodayUseCase,
+        markSafetyCardShownUseCase = markSafetyCardShownUseCase,
         todayPresentationMapper = todayPresentationMapper,
         intensityLevelDomainMapper = intensityLevelDomainMapper,
         useCaseExecutor = useCaseExecutor
     )
+
+    @Provides
+    fun providesHomeMarkSafetyCardShownUseCase(
+        markSafetyCardShownRepository: MarkSafetyCardShownRepository,
+        coroutineContextProvider: CoroutineContextProvider
+    ) = MarkSafetyCardShownUseCase(markSafetyCardShownRepository, coroutineContextProvider)
 }

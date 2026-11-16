@@ -36,6 +36,7 @@ import com.migrely.app.attack.domain.usecase.AddIntensityPointUseCase
 import com.migrely.app.attack.domain.usecase.ArchiveCustomTagUseCase
 import com.migrely.app.attack.domain.usecase.DeleteAttackUseCase
 import com.migrely.app.attack.domain.usecase.GetAttackDetailsUseCase
+import com.migrely.app.attack.domain.usecase.MarkSafetyCardShownUseCase
 import com.migrely.app.attack.domain.usecase.MergeAttacksUseCase
 import com.migrely.app.attack.domain.usecase.RemoveIntakeUseCase
 import com.migrely.app.attack.domain.usecase.RemoveIntensityPointUseCase
@@ -98,6 +99,10 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.mockito.Mock
 import org.mockito.junit.MockitoJUnitRunner
+import org.mockito.kotlin.any
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.never
+import org.mockito.kotlin.verify
 
 private val START: Instant = Instant.parse("2026-10-23T09:00:00Z")
 private val END: Instant = START.plusSeconds(7_200)
@@ -152,6 +157,8 @@ class AttackDetailsViewModelTest :
 
     @Mock private lateinit var setIntakeEffectUseCase: SetIntakeEffectUseCase
 
+    @Mock private lateinit var markSafetyCardShownUseCase: MarkSafetyCardShownUseCase
+
     private val presentationMapper = AttackDetailsPresentationMapper(
         HeadLocationPresentationMapper(),
         BuiltInSymptomPresentationMapper(),
@@ -195,6 +202,7 @@ class AttackDetailsViewModelTest :
             restoreIntakeUseCase,
             AttackIntakeDomainMapper(),
             setIntakeEffectUseCase,
+            markSafetyCardShownUseCase,
             useCaseExecutor
         )
     }
@@ -387,6 +395,30 @@ class AttackDetailsViewModelTest :
         assertEquals(
             AttackDetailsPresentationNotification.FirstMaximumRecorded,
             notification.await()
+        )
+        // Its moment is kept, so no rating is asked for in the next 3 days (BRD D188).
+        verify(useCaseExecutor).execute(
+            useCase = eq(markSafetyCardShownUseCase),
+            onResult = any(),
+            onException = any()
+        )
+    }
+
+    @Test
+    fun `Given a 10 that is not the first when adding a point then no safety card is marked`() {
+        val at = START.plusSeconds(60)
+        addIntensityPointUseCase.givenSuccessfulExecution(
+            AddIntensityPointRequestDomainModel("a", IntensityPointDomainModel(at, 10)),
+            AddIntensityPointResultDomainModel.Added(firstMaximum = false)
+        )
+        givenDetails()
+
+        classUnderTest.onAddPointAction("a", IntensityPointPresentationModel(at, 10))
+
+        verify(useCaseExecutor, never()).execute(
+            useCase = eq(markSafetyCardShownUseCase),
+            onResult = any(),
+            onException = any()
         )
     }
 
