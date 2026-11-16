@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -69,6 +70,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.migrely.app.designsystem.input.TapGuard
 import com.migrely.app.designsystem.layout.MigrelyInsets
+import com.migrely.app.designsystem.theme.LocalInDarkRoom
 import com.migrely.app.designsystem.theme.MigrelyColors
 import com.migrely.app.designsystem.theme.MigrelyTheme
 import kotlin.math.roundToInt
@@ -95,6 +97,10 @@ private val END_PADDING = 4.dp
 private val ICON_GAP = 12.dp
 private val TEXT_VERTICAL_PADDING = 12.dp
 private val MIN_HEIGHT = 52.dp
+
+// In an active dark room every target is 64 dp, a message and its control too (BRD D182 (4), ux B3); elsewhere 48 dp.
+private val DARK_ROOM_TARGET = 64.dp
+private val CONTROL_MIN = 48.dp
 private val TIME_LEFT_STROKE = 2.dp
 
 /**
@@ -159,6 +165,9 @@ private fun SnackbarSurface(
     announcePolitely: Boolean
 ) {
     val lineColor = MaterialTheme.colorScheme.primary.copy(alpha = TIME_LEFT_ALPHA)
+    // Read where it is drawn, so a room that switches under the message resizes it in the same frame, with no
+    // animation of its own, and the control keeps its node and its focus.
+    val inDarkRoom = LocalInDarkRoom.current
     val liveRegionMode = if (tone == SnackbarTone.Error && !announcePolitely) {
         LiveRegionMode.Assertive
     } else {
@@ -173,6 +182,7 @@ private fun SnackbarSurface(
             .semantics { liveRegion = liveRegionMode }
     ) {
         SnackbarLayout(
+            minHeight = if (inDarkRoom) DARK_ROOM_TARGET else MIN_HEIGHT,
             // Inside the surface, so the rounded shape clips the line at the corners.
             modifier = Modifier.drawWithContent {
                 drawContent()
@@ -202,7 +212,7 @@ private fun SnackbarSurface(
                     modifier = Modifier.padding(vertical = TEXT_VERTICAL_PADDING)
                 )
             },
-            action = { SnackbarEndControl(action, dismissLabel, onDismiss) }
+            action = { SnackbarEndControl(action, dismissLabel, onDismiss, inDarkRoom) }
         )
     }
 }
@@ -211,13 +221,20 @@ private fun SnackbarSurface(
 private fun SnackbarEndControl(
     action: SnackbarAction?,
     dismissLabel: String,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    inDarkRoom: Boolean
 ) {
     if (action != null) {
         TextButton(
             onClick = action.onClick,
             modifier = Modifier
-                .heightIn(min = 48.dp)
+                .then(
+                    if (inDarkRoom) {
+                        Modifier.sizeIn(minWidth = DARK_ROOM_TARGET, minHeight = DARK_ROOM_TARGET)
+                    } else {
+                        Modifier.heightIn(min = CONTROL_MIN)
+                    }
+                )
                 .semantics { contentDescription = action.spokenLabel }
         ) {
             // One spoken name (BRD D181 (2)): the button says its spoken label ("Undo the start"),
@@ -231,7 +248,10 @@ private fun SnackbarEndControl(
             )
         }
     } else {
-        IconButton(onClick = onDismiss) {
+        IconButton(
+            onClick = onDismiss,
+            modifier = if (inDarkRoom) Modifier.size(DARK_ROOM_TARGET) else Modifier
+        ) {
             Icon(
                 imageVector = SnackbarIcons.Close,
                 contentDescription = dismissLabel,
@@ -255,6 +275,7 @@ private fun SnackbarTone.color(): Color = when (this) {
  */
 @Composable
 private fun SnackbarLayout(
+    minHeight: Dp,
     modifier: Modifier,
     icon: @Composable () -> Unit,
     text: @Composable () -> Unit,
@@ -288,7 +309,7 @@ private fun SnackbarLayout(
             Constraints(maxWidth = (if (inline) inlineTextWidth else besideIcon).coerceAtLeast(0))
         )
         val inlineActionHeight = if (inline) actionPlaceable.height else 0
-        val firstRowHeight = maxOf(textPlaceable.height, inlineActionHeight, MIN_HEIGHT.roundToPx())
+        val firstRowHeight = maxOf(textPlaceable.height, inlineActionHeight, minHeight.roundToPx())
         val height = if (inline) firstRowHeight else firstRowHeight + actionPlaceable.height
         val actionX = width - endPadding - actionPlaceable.width
         layout(width, height) {

@@ -378,7 +378,7 @@ ask `product-manager` before you code.
     MedicationMessages]>`. Those are exactly the four hosts of design D1.
   - The other 4 tests of `MessageCallSitesTest` pass.
   - The task is ticked after 5.1 turns the rule green.
-- [ ] 4.6 Add `LocalInDarkRoom` in `MigrelyDarkRoom`. In a dark room `MigrelySnackbar` uses a 64 dp minimum height, a
+- [x] 4.6 Add `LocalInDarkRoom` in `MigrelyDarkRoom`. In a dark room `MigrelySnackbar` uses a 64 dp minimum height, a
   64 x 64 dp minimum for Undo, and a 64 x 64 dp Dismiss with a 24 dp icon (design D4).
   The size changes in the same frame as the room's switch, with no size animation of its own, and the control keeps its
   node so focus and the pause stay.
@@ -387,6 +387,26 @@ ask `product-manager` before you code.
     room and 48 dp outside, and a test that switches the room under a focused control and finds the new size in the next
     frame with focus kept;
   - with the local forced false, the test fails.
+
+  **Done 2026-11-17 (android-engineer).**
+  - `LocalInDarkRoom` lives in `theme/DarkRoom.kt` and equals `active || LocalInDarkRoom.current`.
+  - In a dark room `MigrelySnackbar` uses a 64 dp minimum height, `sizeIn(64, 64)` for Undo, and `size(64.dp)` for
+    Dismiss.
+  - The local is read where the message is drawn, with no size animation, so the control keeps its node and its focus.
+  - **Difference from design D4, for the review:** Dismiss's icon is 20 dp (`ICON_SIZE`), not 24 dp. UX B3 says "the
+    same icon", so it stays at 20 dp.
+
+  Results:
+  - `:designsystem:testDebugUnitTest :designsystem:ktlintCheck :designsystem:detekt` exits 0, with 227 tests and 0
+    failures.
+  - `SnackbarDarkRoomSizeTest`, 5 of 5:
+    - in an active room, Undo is at least 64 x 64 dp and Dismiss is 64 x 64 dp;
+    - outside the room, Undo keeps its 48 dp minimum height (measured 51 dp) and does not grow;
+    - outside the room, Dismiss keeps its 48 dp touch target and does not grow. Its layout bounds are Material's
+      40 dp button, and the 48 dp target lies outside them, so this reads the touch bounds;
+    - switching the room under a focused Undo gives 64 dp in the next frame, with focus kept.
+  - Negative control, with `MigrelyDarkRoom` providing `LocalInDarkRoom provides false`: 3 of 5 fail (the two in-room
+    sizes and the switch), and pass again after the revert.
 
 ## 5. Hosts (each `ui` module)
 
