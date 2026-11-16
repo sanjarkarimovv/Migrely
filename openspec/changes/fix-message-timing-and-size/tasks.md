@@ -137,7 +137,7 @@ ask `product-manager` before you code.
   - What these runs do not prove:
     - That the 122 s tests turn green for the right reason. Task 6.1's negative control covers that.
     - Robolectric's lifecycle is not a real lock. Task 7.1 and QA's A4 cover the device.
-- [ ] 4.2 Add `MessageClock` and `LocalMessageClock`, and `UNDO_CEILING_MILLIS = 115_000` in `DeletionOffer.kt`. Move the
+- [x] 4.2 Add `MessageClock` and `LocalMessageClock`, and `UNDO_CEILING_MILLIS = 115_000` in `DeletionOffer.kt`. Move the
   retention value to a public `DELETED_ATTACK_RETENTION_MILLIS` in `datasource/source`, with `DELETED_RETENTION` derived
   from it. Add the `:app` JVM test that ties them (design D2).
   Verify:
@@ -145,8 +145,21 @@ ask `product-manager` before you code.
   - the same run with the retention changed to 3 minutes as a mutation fails;
   - revert the mutation and record both results here.
 
-  Partly landed: the clock seam alone is in 740626db (see 4.1). Still to do: `UNDO_CEILING_MILLIS`, the public
-  retention value and the `:app` test.
+  **Done 2026-11-16 (android-engineer).** The clock seam landed first, in 740626db (see 4.1).
+  - `DELETED_ATTACK_RETENTION_MILLIS = 120_000L` is in
+    `datasource/source/.../attack/datasource/DeletedAttackRetention.kt`.
+  - `AttackDataSourceImpl`'s `DELETED_RETENTION` is now `Duration.ofMillis(DELETED_ATTACK_RETENTION_MILLIS)`, so its
+    value is unchanged.
+  - `UNDO_CEILING_MILLIS = 115_000L` is in `DeletionOffer.kt`.
+  - The tie test is `app/src/test/java/com/migrely/app/message/UndoCeilingTest.kt`.
+
+  Results:
+  - `:app:testDebugUnitTest --tests '*UndoCeiling*'`: 1 test, it passes.
+  - Mutation, with the retention at `180_000L`: exit 1, `UndoCeilingTest > The Undo ceiling is the deleted attack's
+    retention less 5 seconds FAILED`, `expected:<175000> but was:<115000>`.
+  - After the revert: exit 0.
+  - In the same run as the pass, `:datasource:implementation:testDebugUnitTest` passes all 229 tests.
+  - ktlint and detekt pass on `:datasource:source`, `:datasource:implementation`, `:designsystem` and `:app`.
 - [ ] 4.3 Add `MessageCountdown`, the plain state machine: pause, the 300 ms grace, window focus, the 3 s floor, the
   ceiling's two bounds, saved state and the reboot rule (design D2).
   - Unit tests cover P1–P7 from ux §B2, a clock set back an hour, a clock set forward, and an elapsed clock below the saved
