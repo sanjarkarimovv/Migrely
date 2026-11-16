@@ -243,9 +243,12 @@ under load. Never `--stop` the daemon.
 
 ## 7. Docs and other owners
 
-- [ ] 7.1 `qa-engineer`: `.maestro/a11y-tour/settings-privacy.yaml:13` asserts the new first paragraph, `visible: "Migrely
+- [x] 7.1 `qa-engineer`: `.maestro/a11y-tour/settings-privacy.yaml:13` asserts the new first paragraph, `visible: "Migrely
   has no internet permission, so the app itself cannot send anything over the internet\\..*"`.
   - Verify: the flow passes on this branch's debug build, and fails on a 40536f49 build (negative control).
+  - 2026-11-16, qa-engineer (`qa/217-acceptance`): the flow also asserts the purchase sentence. It passes on f846c899
+    (12:26:57, API 26) and fails at the first paragraph on the develop build d3d98673 (21:16:14). That build has the same
+    old text as 40536f49. Record: `docs/qa/fix-privacy-wording-and-focus.md`.
 - [x] 7.2 KDoc: `TodayKeyboardOrder` and `QuietLinks` describe the new behaviour with BRD D181. The `StepHeader` and
   `SnackbarEndControl` comments say why the child text is cleared.
   - Verify: `git grep -n "D181" -- '*.kt' | wc -l` prints at least 3.
@@ -301,6 +304,9 @@ under load. Never `--stop` the daemon.
   - Scope: TalkBack logs for #217 and the sites from 3.2 on API 36 and 26, the Privacy page, keyboard walks on History,
     Home and the three screens, and the 7.1 Maestro flow.
   - Verify: a QA report in `docs/qa/fix-privacy-wording-and-focus.md` with a GO and no open S1 or S2.
+  - 2026-11-16 12:45, qa-engineer: **GO for API 26, API 36 pending** on f846c899 (`docs/qa/fix-privacy-wording-and-focus.md`).
+    No open S1 or S2. History's invisible stop does not reproduce on API 26 (head or develop). Filed #229 (S4) and #230
+    (S3); both predate T66. Not ticked: the API 36 and TalkBack rows have not run (emulator-5560 up, swap below 2 GB).
 - [ ] 8.6 Archive and merge after 0.2 and 8.5. Run `openspec archive fix-privacy-wording-and-focus`, then open a PR into
   `develop` (`Refs #217`) and self-merge with a merge commit.
   - Verify: `openspec list` no longer shows the change, `openspec validate --specs --strict` passes, and the PR is
