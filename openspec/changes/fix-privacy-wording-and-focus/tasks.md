@@ -260,7 +260,7 @@ under load. Never `--stop` the daemon.
   - backlog: the disabled Pain-free switch is not a keyboard stop (ux A3);
   - `qa-engineer`: Android 8 backup behaviour with `bmgr` on API 26 (legal-t66, not blocking).
   - Verify: the four rows exist in `tracker/tasks.js` (grep their ids).
-- [ ] 7.4 `product-manager`: after the code, re-read the BRD and the deltas against what was built. Fix any drift
+- [x] 7.4 `product-manager`: after the code, re-read the BRD and the deltas against what was built. Fix any drift
   before the archive.
   - Verify: `openspec validate fix-privacy-wording-and-focus --strict` passes on the final head.
   - 2026-11-16, product-manager on f846c899: re-read against the code. Changed: History (D181 (3), EC-UX-46, row 49,
@@ -273,6 +273,7 @@ under load. Never `--stop` the daemon.
     Go/No-Go; design "What these checks do not prove" lists them. 8.5's own note is QA's, on its branch. Strings checked against the deltas:
     `reminders_open_settings_description` "Open settings for notifications", `pain_dialog_change_time` "At %1$s,
     change the time", and the 5 privacy strings verbatim. Validate passed on this commit; rerun on the final head.
+  - team-lead accepted 2026-11-16.
 
 ## 8. Verify
 
