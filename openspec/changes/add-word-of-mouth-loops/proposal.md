@@ -3,8 +3,7 @@
 ## Why
 
 The owner asked on 2026-11-16 for the three most useful free-growth steps. This change is step 2: word of mouth from inside
-an app that has no internet permission, no analytics and no account. The research report (`reports/Migrely bepul auditoriya
-kanallari.md`, "Ilova ichidagi uchta halqa…") found three honest loops: a share link that Play Console counts by UTM, a
+an app that has no internet permission, no analytics and no account. Internal research (2026-11-16) found three honest loops: a share link that Play Console counts by UTM, a
 permanent "rate" link, and a small credit line on the doctor PDF. Play promo codes are a fourth, manual lever.
 
 The person: someone whose migraine diary already helped them at a doctor visit, who wants to tell a friend in the same
@@ -41,7 +40,7 @@ matches Google's current rules (no pre-question, no button, no change to the car
   overuse card appeared.
 - **Promo codes**: a verification on the phone, with the owner, that a lifetime code redeemed in Play Store (outside the
   app) turns Premium on and is acknowledged. Gifts use lifetime codes only, with a gift message that has legal's four
-  elements (`content-creator` drafts, the owner sends).
+  elements; the owner sends it.
 - **Before 1.4.0 reaches users** (not app code, tracked here): privacy policy additions P1–P3 and the `data-safety.md`
   "Ratings" bullet, through a reviewed site PR that the owner approves.
 - **BRD**: D185–D188, SET-F2, REP-F5, SUB-F3, EC-SHR-01…13 (new §9.16), EC-REP-05…13, EC-BIL-21…25, EC-REV-14, §13 row
@@ -59,8 +58,10 @@ matches Google's current rules (no pre-question, no button, no change to the car
 - New review moments (after an export, after a PDF). D130's moments stay; only the safety-card condition is added.
 - Changing the existing footer text, the PDF content, JSON or CSV exports, `schemaVersion`, Room schema, permissions or
   dependencies.
-- Creating promo codes, choosing recipients, writing gift messages (owner, `team-lead`, `content-creator`).
-- Release 1.3.0. This ships in the next minor, 1.4.0 (team-lead). It must not hold 1.3.0's Go/No-Go.
+- Creating promo codes, choosing recipients and sending gift messages: done outside the repo, the owner sends.
+- Release 1.3.0. This ships in the next minor, 1.4.0 (team-lead). It must not hold 1.3.0's Go/No-Go. **Merge gate:** the
+  branch does not merge into `develop` until `release/1.3.0` has been cut from `develop`; merged earlier, it would ship in
+  1.3.0 ahead of the privacy policy additions, the promo-code phone check and QA.
 
 ## Capabilities
 
@@ -80,7 +81,7 @@ matches Google's current rules (no pre-question, no button, no change to the car
   release merged-manifest diff against `develop`.
 - Copy: final English strings from `ux-designer` (`migrely-work/word-of-mouth/ux-spec.md` §7); all 9 health or privacy
   strings PASS `medical-reviewer` (`medical-verdict-strings-2026-11-16.md`), and `legal-finance-analyst`'s DRAFT
-  (`reports/2026-11-16-legal-loops-strings.md`) finds them acceptable. Lead decisions: share sentence option A verbatim,
+  opinion (2026-11-16, kept outside the repo) finds them acceptable. Lead decisions: share sentence option A verbatim,
   credit on by default, "Not a medical device" kept (D104).
 - Site and store documents: `website/` privacy policy and `docs/release/data-safety.md`, owned by `aso-seo-specialist`,
   in their own reviewed PR.

@@ -1,5 +1,9 @@
 # Tasks
 
+**Merge gate (team-lead, S2):** this branch does NOT merge into `develop` until `release/1.3.0` has been cut from
+`develop`. Reason: merged earlier, it would ship in 1.3.0 ahead of the privacy policy additions (10.2), the promo-code
+phone check (7.3) and QA (8.2). It ships in 1.4.0.
+
 Base: `feature/add-word-of-mouth-loops` from `origin/develop` 50c784e5; `origin/develop` 03a8900e (D184 listing, the Play
 link table `docs/release/play-links.md`) merged in at bb243a75. Release: 1.4.0, the minor after 1.3.0 (team-lead). It must
 not hold 1.3.0's Go/No-Go. BRD D185–D188.
@@ -10,7 +14,7 @@ Ownership:
 - `medical-reviewer` and `legal-finance-analyst`: 1.2;
 - `android-engineer`: 2–6 and 7 (7.3 with the owner, main session);
 - `code-reviewer`: 8.1; `qa-engineer`: 8.2 (emulator-5580 API 36, emulator-5582 API 26, one at a time);
-- `content-creator`: 10.1 (the owner sends); `aso-seo-specialist`, `legal-finance-analyst` and the owner: 10.2.
+- 10.1 outside the repo, the owner sends; `aso-seo-specialist`, `legal-finance-analyst` and the owner: 10.2.
 
 Gate for every code task: `nice -n 19 ./gradlew --max-workers=2 assembleDebug test ktlintCheck detekt lint` exits 0 (run
 with `set -o pipefail`; never `testDebugUnitTest` alone).
@@ -32,7 +36,7 @@ switch summary drift from it.
 - [x] 1.2 `medical-reviewer`: `migrely-work/word-of-mouth/medical-verdict-strings-2026-11-16.md`, "All 9 strings PASS. No
   CHANGE, no FAIL.", with three conditions: W3 text-only share intent asserted, W6 switch summary equals the credit
   constant asserted, and a switch-off negative control that the disclaimer stays on every page (tasks 5.1, 5.2, 8.2).
-  `legal-finance-analyst`: `reports/2026-11-16-legal-loops-strings.md` (DRAFT), strings acceptable; gift-message elements
+  `legal-finance-analyst`: DRAFT opinion 2026-11-16 (kept outside the repo), strings acceptable; gift-message elements
   (10.1) and policy additions P1–P3 (10.2). team-lead decisions: share option A verbatim, credit on by default, "Not a
   medical device" kept (D104), section name stays "Share and rate", shares never rewarded, unlocked or counted.
 - [x] 1.3 `product-manager`: final strings and rules in the BRD (D185 (8)–(9), D186 (5), D187 (5), EC-SHR-05 reworded,
@@ -154,13 +158,11 @@ switch summary drift from it.
 
 ## 10. Outside the app code, before gifts and before 1.4.0 reaches users
 
-- [ ] 10.1 `content-creator`: the gift message from legal's DRAFT §4 (D187 (5)), with all four elements: (a) a gift,
-  nothing expected, no rating or review asked anywhere, a rating earns nothing; (b) disclose the gift clearly, at the
-  start, naming the giver (for example "Ad: I was given Migrely Premium free by its developer."); (c) any honest view,
-  and never describe Migrely as treating, preventing or reducing migraines; (d) how to redeem (code, the Play path from
-  7.3, the promotion end date), open Migrely once within 3 days, "Restore purchases" if Premium does not show. Then
-  `medical-reviewer` and `legal-finance-analyst` read it. **The owner sends it; no agent sends.** Recipient list only in
-  `marketing/`. No gift before 7.3 passes. Verify: a draft in `marketing/` with the four elements ticked by legal.
+- [ ] 10.1 Gift message (D187 (5)), kept outside the repo: lifetime codes only, never for or after a rating or review,
+  and legal's four elements present ((a) a gift, nothing expected, no rating or review asked, a rating earns nothing;
+  (b) clear disclosure at the start, naming the giver; (c) no treating, preventing or reducing claims; (d) how to
+  redeem, open Migrely within 3 days, "Restore purchases"). **The owner sends it; no agent sends.** No gift before 7.3
+  passes. Verify: team-lead confirms the four elements were checked by legal (no message text in this repo).
 - [ ] 10.2 Privacy policy and Data safety (D185 (9)): `aso-seo-specialist` drafts legal's P1–P3 (the PDF line and its
   switch; the two new stored marks; a "Sharing and rating Migrely" section), a new effective date, the regenerated
   `privacy-policy.html` (`make_policy_html.py`) and the `docs/release/data-safety.md` "Ratings" bullet, and checks site

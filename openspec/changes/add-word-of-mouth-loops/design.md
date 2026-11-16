@@ -123,7 +123,7 @@ change of its own.
 
 ### D7. Promo-code verification protocol (phone only)
 
-Who: `android-engineer` in the main session with the owner present (handbook §6, phone `14634fa97d7c`). Build: the live
+Who: `android-engineer` with the owner present, on the owner's phone. Build: the live
 Play build installed from Play (no upload, owner order of 2026-11-06). Account: a Google account on the phone that owns no
 Migrely purchase. The owner creates one promotion with lifetime codes in Play Console (owner step). Cases:
 
@@ -163,11 +163,11 @@ table word for word; the medical verdicts lapse if they drift.
 
 ### D8. Work outside the app code, tracked in this change
 
-- **Gift message (D187 (5)).** `content-creator` adapts legal's DRAFT §4 with all four elements: (a) a gift, nothing
-  expected, no rating or review asked, a rating earns nothing; (b) disclose the gift clearly, at the start, naming the
-  giver; (c) any honest view, and never describe Migrely as treating, preventing or reducing migraines (a diary, not a
-  medical device); (d) how to redeem, the promotion end date, open Migrely within 3 days, "Restore purchases". The owner
-  sends it; no agent sends. Recipient lists stay in `marketing/`.
+- **Gift message (D187 (5)).** Lifetime codes only, never for or after a rating or review. The message carries legal's
+  four elements: (a) a gift, nothing expected, no rating or review asked, a rating earns nothing; (b) disclose the gift
+  clearly, at the start, naming the giver; (c) never describe Migrely as treating, preventing or reducing migraines;
+  (d) how to redeem, open Migrely within 3 days, "Restore purchases". The message, recipients and sending are kept
+  outside the repo; the owner sends.
 - **Privacy policy and Data safety (D185 (9)).** `aso-seo-specialist` drafts legal's P1–P3 (the PDF line and its switch,
   the two new stored marks, a "Sharing and rating Migrely" section), a new effective date, the regenerated HTML and the
   `data-safety.md` "Ratings" bullet, in a reviewed site PR. `legal-finance-analyst` re-reads, the **owner approves the
