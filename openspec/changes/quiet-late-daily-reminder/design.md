@@ -25,7 +25,10 @@ phone is exactly what Doze waits for.
 ### D1. Quiet, not missing
 
 A late daily reminder still posts, still shows in the shade with the status bar icon, the same text, both actions and the
-lock screen's "Reminder" version, and still marks the date shown (`setDailyShown`). Only sound, vibration and heads-up go.
+lock screen's "Reminder" version, and still marks the date shown (`setDailyShown`). Only sound and vibration go. Every
+Migrely channel is `IMPORTANCE_DEFAULT` (`NotificationDataSourceImpl.kt:107`), which never pops up on screen, so "no pop-up"
+is not evidence on the default channel and QA does not count it. Only if the person raised "daily" to "Pop on screen" does
+the group trick (D4) also stop a late one popping up: an optional QA row (4.6).
 The notification stays until the person dismisses or answers it, as today (`setAutoCancel`). So nothing the person can
 answer is lost, and D176's work to bring a held day back is kept.
 
@@ -72,15 +75,18 @@ Why per-post silence and not a second channel:
   screen: closer to missing;
 - the person's own choices on the "daily" channel (sound, vibration, off) would not carry over.
 
-The engineer records how androidx 1.17.0 implements `setSilent` on API 26–30 and 31+ (a group-alert trick or the
-platform flag), and proves both on device (task 2.8) because the shade, icon and actions must stay.
+How androidx core 1.17.0 implements it (ux-designer read `NotificationCompatBuilder.java:278-297`, 2026-11-16): on every
+API from 26 up it is the group trick, not a platform flag. If no group is set it sets the group key "silent" and
+`GROUP_ALERT_SUMMARY`, and clears sound and vibration. The daily post sets no group today, so it lands in group "silent"
+with no summary. The engineer confirms this in the Robolectric test (task 2.5) and proves on device (task 2.8) that the
+shade entry, icon and actions stay, on API 26 and API 36 alike.
 
 ### D5. Only the daily reminder
 
 Migrely has no medication-taking reminder (REM-F1 to REM-F4). "Did it help?" (D67) asks about a dose already taken; its
 dark-room risk exists on time too, and D69 already stops it during an attack, so a lateness rule would not answer it. The
 visit reminder (D168) is a daytime, once-per-visit nudge where being noticed matters more. Both keep their sound. The
-"Did it help?" sound question goes to ux-designer as a separate item (handoff).
+"Did it help?" always quiet (ux-designer, task 1.2) is a follow-up backlog row opened by team-lead, not this change.
 
 ### D6. Do Not Disturb, channels, TalkBack
 
@@ -132,12 +138,14 @@ QA records what it does, and it is not a pass or fail condition.
 
 ## Risks
 
-- **R1. `setSilent` on API 26–30.** androidx may implement it with a group and `GROUP_ALERT_SUMMARY`. If on any API the
+- **R1. `setSilent`'s group trick, API 26 and API 36 alike.** androidx implements it with group "silent" and
+  `GROUP_ALERT_SUMMARY` on every API from 26 (D4). If on any API the
   notification loses its shade entry, its icon or its actions, stop and send it back to the product-manager: missing is
   worse than loud.
 - **R2. A person who relies on vibration** (hard of hearing) gets no buzz for a late reminder. It still shows. Accepted:
   the same reasoning applies to everyone, and the reminder is not a safety path.
-- **R3. Android 14 flash notifications and watches** may or may not flash or buzz for a silent post. Android's, not ours.
+- **R3. Android 14 flash notifications, watches and screen wake** ("wake screen for notifications", always-on display) may
+  or may not react to a silent post. Android's, not ours; QA records screen wake (4.3b).
 - **R4. Emulator evidence only.** Real Doze windows and vendor behaviour are not covered, as for D176.
 - **R5. Clock-forward test path.** QA's deterministic late post uses a clock change (D176's catch-up). The Doze-held path
   uses the same code after the run starts; one Doze row is optional and its cost is time, not risk.

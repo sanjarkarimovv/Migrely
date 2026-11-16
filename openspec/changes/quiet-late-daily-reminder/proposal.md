@@ -20,13 +20,14 @@ Code read on `develop` e4b1fbcd, not run:
   channel's sound and vibration play.
 
 A quiet late reminder is not a missed one. It still posts, still shows in the shade with its icon, text and actions, and
-still marks the date shown. Only the sound, vibration and the pop-up over the screen go.
+still marks the date shown. Only the sound and vibration go. (Every Migrely channel is `IMPORTANCE_DEFAULT`, which never
+pops up on screen, unless the person raised the channel to "Pop on screen"; then a late one does not pop up either.)
 
 ## What Changes
 
 - **A late daily reminder posts quietly.** When a daily reminder posts more than 60 minutes after that date's set time,
   measured in the phone's zone at that moment against the current setting, it posts with `setSilent(true)`: no sound, no
-  vibration, no heads-up. Text, actions, lock-screen version, status bar icon and the "shown" mark do not change.
+  vibration (and no pop-up if the person raised the channel to "Pop on screen"). Text, actions, lock-screen version, status bar icon and the "shown" mark do not change.
 - **60 minutes or less alerts as before.** Normal WorkManager slack (about 15 minutes, EC-REM-03), JobScheduler batching
   (7 minutes seen in #213) and the first on-screen postpone (about 30 minutes, D176) keep their sound.
 - **Domain decides, the data source obeys.** `RunDailyReminderUseCase` works out lateness with the same `DailyReminderTime`
@@ -38,7 +39,8 @@ still marks the date shown. Only the sound, vibration and the pop-up over the sc
 - **"Did it help?" and the visit reminder.** Migrely has no medication-taking reminder (REM-F1 to F4). "Did it help?" asks
   about a dose already taken, and its dark-room problem is the same on time, not a lateness problem; D69 already holds it
   during an attack. The visit reminder is a daytime 10:00 nudge two days ahead, once per visit, where being noticed matters
-  more. Both keep their sound. Whether "Did it help?" should ever sound is a separate question for ux-designer.
+  more. Both keep their sound. ux-designer's follow-up, "Did it help?" always quiet, is a separate backlog row opened by
+  team-lead, not part of this change.
 - A quiet-hours setting, a bedtime, or any new setting, toggle or text.
 - A cut-off that stops late reminders posting (D176 (4) stands: the day stays answerable until midnight).
 - A new or changed notification channel, channel importance, or channel name.

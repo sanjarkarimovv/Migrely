@@ -19,12 +19,15 @@ No medical-reviewer: no user-facing string and no health sentence changes. No ne
 
 ## 1. Behaviour check (`ux-designer`)
 
-- [ ] 1.1 Confirm the rule as planned: more than 60 minutes after that date's set time, current setting, current zone
-  (design D2, D3); quiet = no sound, vibration or heads-up, everything else unchanged (D1); only the daily reminder (D5);
+- [x] 1.1 Confirm the rule as planned: more than 60 minutes after that date's set time, current setting, current zone
+  (design D2, D3); quiet = no sound or vibration, everything else unchanged (D1); only the daily reminder (D5);
   no copy, screen, setting or channel changes. Any change to the rule goes back to the product-manager before code.
   Verify: a line in this task naming the decision, and `git diff origin/develop -- '*.xml' '*strings*'` empty.
-- [ ] 1.2 Separate item, not this change: should "Did it help?" ever sound, given the person may be lying down after a dose
-  (design D5)? Answer to team-lead as a new tracker item or "no change".
+  1.1 ux-designer 2026-11-16: confirmed, the rule matches the #213 (c) intent: more than 60 min after that date's set time,
+  current setting and zone; setSilent only; no copy, screen, setting or channel change. `git diff origin/develop -- '*.xml'
+  '*strings*'` is empty.
+- [x] 1.2 Separate item, not this change: should "Did it help?" ever sound (design D5)? ux-designer proposed it always
+  quiet; team-lead opens a backlog row. Nothing of it is in this change.
 
 ## 2. Code (`android-engineer`)
 
@@ -50,8 +53,8 @@ compile are fine), then passing. Record both runs in the handoff.
   '*RemindersRepositoryTest'`.
 - [ ] 2.5 Data source, `NotificationDataSource.showDailyReminder(date, quiet)` KDoc and `NotificationDataSourceImpl`:
   `.setSilent(quiet)` on the existing builder, nothing else. **Red** Robolectric test beside `NotificationLockScreenTest`:
-  the posted daily notification with `quiet = true` is silent by androidx's own marker (record which field: group-alert
-  behaviour, sound/vibration, or the platform flag, per API level Robolectric runs), and with `quiet = false` it is not;
+  the posted daily notification with `quiet = true` carries androidx's group trick (group "silent", `GROUP_ALERT_SUMMARY`,
+  no sound or vibration; design D4), and with `quiet = false` it has no group and none of that;
   both keep `VISIBILITY_PRIVATE`, the "Reminder" public version, the title, the text and both actions. Red with `setSilent`
   removed. `NotificationLockScreenTest` stays green. Update the call in `NotificationDataSourceImplTest` (androidTest).
   Verify: `./gradlew :app:testDebugUnitTest --tests '*Notification*'` and `./gradlew :app:compileDebugAndroidTestKotlin`.
@@ -65,7 +68,7 @@ compile are fine), then passing. Record both runs in the handoff.
   shade with the icon, text and both actions; `adb logcat -b events -d -s notification_alert` has no line for it; tapping
   "Pain-free day" marks today. (b) Next date, set the clock to T + 30 min: posts with a `notification_alert` line (sound).
   (c) Negative control: (a) on a develop e4b1fbcd build shows a `notification_alert` line. Record androidx's mechanism (R1).
-  If the shade entry, icon or actions are missing in (a), stop and send it to the product-manager.
+  If the shade entry, icon or actions are missing in (a), stop and send it to the product-manager. API 26 is QA's (4.1).
 
 ## 3. Review (`code-reviewer`)
 
@@ -88,11 +91,16 @@ by hand during a suite.
   sound on the update), "Reboot after the time" (quiet, once). Verify: the same record.
 - [ ] 4.3 TalkBack on API 36: the quiet reminder is reachable in the shade and reads title, text and both actions. Record,
   without pass or fail, whether TalkBack announced its arrival with the screen on and with it off. Verify: the record.
+- [ ] 4.3b Record only, not pass or fail, on API 36: with "wake screen for notifications" or always-on display on, does a
+  quiet late post light the screen? Compare with an on-time post. Verify: the record.
 - [ ] 4.4 Untouched paths, one row each on API 36: "Did it help?" late and the visit reminder late still log a
   `notification_alert`; Android's notification settings list the same three channels; the permission report equals
   develop e4b1fbcd's. Verify: the record.
 - [ ] 4.5 Optional, if time allows: one real Doze-held run (`dumpsys deviceidle force-idle`) released more than 60 minutes
   late, posted quietly. Not required (design R5).
+- [ ] 4.6 Optional: raise the "daily" channel to "Pop on screen" in Android's settings (restore after). An on-time post
+  pops up; a late one (clock moved forward) does not. Only this row is evidence about pop-ups: on the default channel
+  nothing pops up on develop either (design D1). Verify: the record.
 
 ## 5. Fixes (`android-engineer`)
 

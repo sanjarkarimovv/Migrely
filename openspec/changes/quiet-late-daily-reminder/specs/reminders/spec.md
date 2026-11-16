@@ -2,16 +2,20 @@
 
 ### Requirement: A late daily reminder posts quietly
 A daily reminder that posts more than 60 minutes after its date's set time, taken from the current setting in the phone's
-zone at that moment, SHALL post without sound, vibration or heads-up. It SHALL still post, with the same text, actions,
-status bar icon and lock screen version, and SHALL mark the date shown. At 60 minutes late or less, or early, it SHALL
-alert as the channel says (BRD D183, EC-REM-29).
+zone at that moment, SHALL post without sound or vibration, and without a pop-up even if the person let the channel pop
+on screen. It SHALL still post, with the same text, actions, status bar icon and lock screen version, and SHALL mark the
+date shown. At 60 minutes late or less, or early, it SHALL alert as the channel says (BRD D183, EC-REM-29).
 
 #### Scenario: Held by Doze for hours
 - **WHEN** the daily reminder is on for 8:00 PM, today is not answered, the phone sits untouched in Doze, and the run comes
   at 11:10 PM with Migrely not on screen
-- **THEN** "How was today?" posts once at 11:10 PM with "Pain-free day" and "Log a migraine", with no sound, no vibration
-  and no pop-up over the screen
+- **THEN** "How was today?" posts once at 11:10 PM with "Pain-free day" and "Log a migraine", with no sound and no
+  vibration
 - **AND** it shows in the notification shade with Migrely's status bar icon, and today is marked shown
+
+#### Scenario: The person let the channel pop on screen
+- **WHEN** the person raised the "daily" channel to "Pop on screen" in Android's settings and a late reminder posts
+- **THEN** it does not pop up over the screen, and an on-time one pops up as the person chose
 
 #### Scenario: About on time
 - **WHEN** the run for 8:00 PM comes at 8:07 PM
