@@ -60,8 +60,11 @@ Strictly greater than 60 minutes is quiet; 60:00 and below alert.
   a second on-screen postpone.
 - Rejected 30 min: the first postpone would go quiet. Rejected 2 h: a first Doze window would still ring.
 - Consequence: a set time of 11:00 PM or later is never quiet, because a run for a date that has ended does not post (D176
-  (4)). Accepted: the person chose a late time and lateness under an hour still alerts.
-- DST repeated hour: the second 1:30 AM is exactly 60 minutes, so it alerts. Rare, accepted.
+  (4)), except on a night when the clocks fall back at midnight (America/Santiago, Asia/Beirut, Africa/Cairo): 11:00 PM to
+  11:59 PM happens twice, so a run held to the second 11:10 PM is 70 minutes late and quiet, which is D2's rule working.
+  Accepted: the person chose a late time and lateness under an hour still alerts.
+- DST repeated hour: only a run at exactly the second 1:30 AM is 60 minutes late and alerts; a run at the second 1:31 AM or
+  later is quiet. Rare, accepted.
 
 ### D4. Mechanism: `NotificationCompat.Builder.setSilent(true)` on this one post
 
@@ -113,16 +116,18 @@ QA records what it does, and it is not a pass or fail condition.
 | Zone change west, now before the time | sound at local 8 PM | sound at local 8 PM |
 | Time changed to later while a run was held | sound at the new time | sound at the new time |
 | Time changed to earlier after it passed | today lost, EC-REM-28 | unchanged |
-| Set time 11:00 PM or later, held past midnight | nothing posts | nothing posts |
+| Set time 11:00 PM or later, held past midnight (no fall-back at midnight) | nothing posts | nothing posts |
 | DST gap, set 2:30 AM, run 3:35 AM | sound | sound (read from 3:30) |
 | DST overlap, second 1:30 AM | sound | sound (exactly 60 min) |
+| DST overlap, second 1:31 AM or later | sound | quiet |
+| Clocks fall back at midnight, 11 PM set time, run at the second 11:10 PM | sound | quiet (70 min) |
 | Midnight between plan and run | nothing posts | nothing posts |
 | Run date not today | nothing posts | nothing posts |
 | Today answered, notifications off, reminder off | nothing posts | nothing posts |
 | Migrely on screen | postponed 30 min | postponed 30 min (D176) |
 | DND on | Android's rules | Android's rules, never louder |
 | Migrely allowed through DND | sound | late: quiet |
-| "daily" channel silent or off by the person | follows it | follows it, never louder |
+| "daily" channel silent or off by the person | follows it | follows it, never louder (silent: QA 4.2; off: Android's, not tested) |
 | Lock screen hides content | "Reminder" | "Reminder" |
 | TalkBack | reads in the shade | reads in the shade; arrival recorded by QA |
 | "Pain-free day" with an attack today | update, `setOnlyAlertOnce` | unchanged |
@@ -132,7 +137,7 @@ QA records what it does, and it is not a pass or fail condition.
 | Upgrade with a run planned by any shipped version, with or without a date | sound | rule applies; no migration |
 | Backup and restore | nothing stored | nothing stored |
 | Process death, rotation, double tap | not reachable (worker) | not reachable |
-| Free and Premium | same | same |
+| Free and Premium | same | same (proof: `RunDailyReminderUseCase` takes no entitlement input) |
 | Offline | no network used | no network used |
 | API 26 and API 36 | same code | `setSilent` checked on both |
 

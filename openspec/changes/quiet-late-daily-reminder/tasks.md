@@ -116,7 +116,9 @@ by hand during a suite.
   per row and API.
 - [ ] 4.2 Same devices: "Time zone change after the time" (quiet), "Do Not Disturb on" and "Migrely allowed through Do Not
   Disturb" (no sound), "Lock screen" (hide sensitive content: "Reminder" only), "Pain-free day on a quiet reminder" (no
-  sound on the update), "Reboot after the time" (quiet, once). Verify: the same record.
+  sound on the update), "Reboot after the time" (quiet, once), "The person's channel settings" with the "daily" channel set
+  to silent (on-time and late both silent, no `notification_alert` sound; restore the channel after). Verify: the same
+  record.
 - [ ] 4.3 TalkBack on API 36: the quiet reminder is reachable in the shade and reads title, text and both actions. Record,
   without pass or fail, whether TalkBack announced its arrival with the screen on and with it off. Verify: the record.
 - [ ] 4.3b Record only, not pass or fail, on API 36: with "wake screen for notifications" or always-on display on, does a
