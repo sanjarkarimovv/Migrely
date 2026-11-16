@@ -76,6 +76,19 @@ interface PreferencesDataSource {
     fun markReviewRequested(atMillis: Long)
 
     /**
+     * When a safety card (the first-10 card, "Still going?" or the medication overuse card) last appeared, in epoch
+     * milliseconds, or null. Kept with the review marks (BRD D188).
+     */
+    fun safetyCardLastShownMillis(): Long?
+
+    fun markSafetyCardShown(atMillis: Long)
+
+    /** Whether the doctor report names Migrely on its last page; on until the user turns it off (BRD D186). */
+    fun reportCreditShown(): Boolean
+
+    fun setReportCreditShown(on: Boolean)
+
+    /**
      * Forgets every setting, so the app starts as on a new phone (BRD D96). The entitlement goes
      * too and is read from Google Play again at the next check (D112).
      */

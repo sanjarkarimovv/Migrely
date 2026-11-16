@@ -39,6 +39,8 @@ private const val PAYWALL_LAST_SHOWN = "paywall_last_shown"
 private const val REVIEW_REQUEST_COUNT = "review_request_count"
 private const val REVIEW_LAST_REQUESTED = "review_last_requested"
 private const val TRIAL_BANNER_DISMISSED = "trial_banner_dismissed"
+private const val SAFETY_CARD_LAST_SHOWN = "safety_card_last_shown"
+private const val REPORT_CREDIT_SHOWN = "report_credit_shown"
 
 /**
  * Over the app's `migrely_preferences` file ([FILE]). Writes use `commit()`, which is safe here
@@ -178,6 +180,15 @@ class PreferencesDataSourceImpl(
         putLong(REVIEW_LAST_REQUESTED, atMillis)
     }
 
+    override fun safetyCardLastShownMillis(): Long? = preferences.longOrNull(SAFETY_CARD_LAST_SHOWN)
+
+    override fun markSafetyCardShown(atMillis: Long) =
+        write { putLong(SAFETY_CARD_LAST_SHOWN, atMillis) }
+
+    override fun reportCreditShown(): Boolean = preferences.getBoolean(REPORT_CREDIT_SHOWN, true)
+
+    override fun setReportCreditShown(on: Boolean) = write { putBoolean(REPORT_CREDIT_SHOWN, on) }
+
     /** The entitlement first, so whatever stops this leaves no Premium behind (BRD D112). */
     override fun clear() {
         entitlementPreferences.write { clear() }
@@ -199,7 +210,10 @@ class PreferencesDataSourceImpl(
     }
 
     companion object {
-        /** The settings, paywall and review marks and trial banner: backed up with the diary (BRD D74, D131). */
+        /**
+         * The settings, paywall, review and safety-card marks, the report credit switch and the trial banner: backed up
+         * with the diary (BRD D74, D131, D186, D188).
+         */
         const val FILE = "migrely_preferences"
 
         /** The premium entitlement, never backed up (BRD D115; res/xml/backup_rules.xml). */

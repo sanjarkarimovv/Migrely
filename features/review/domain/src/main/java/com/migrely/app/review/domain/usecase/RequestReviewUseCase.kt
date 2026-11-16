@@ -6,29 +6,32 @@ import com.migrely.app.review.domain.model.ReviewFlowResultDomainModel
 import com.migrely.app.review.domain.repository.GetAttackInProgressRepository
 import com.migrely.app.review.domain.repository.GetCurrentTimeRepository
 import com.migrely.app.review.domain.repository.GetLastPaywallShownRepository
+import com.migrely.app.review.domain.repository.GetLastSafetyCardShownRepository
 import com.migrely.app.review.domain.repository.LaunchReviewFlowRepository
 import com.migrely.app.review.domain.repository.MarkReviewRequestedRepository
 
 /**
  * Opens the flow Google Play prepared and, when it completes, counts the request with the time it
- * ended (BRD D131). Just before opening, it checks again that no attack has started and no paywall
- * has shown itself while Google Play prepared (BRD D130, design D3); then nothing opens or counts.
+ * ended (BRD D131). Just before opening, it checks again that no attack has started, no paywall
+ * has shown itself and no safety card has appeared while Google Play prepared (BRD D130, D188, design
+ * D3); then nothing opens or counts.
  * A flow Google Play cannot run counts as nothing. Answers whether it completed.
  */
 @Suppress("LongParameterList")
 class RequestReviewUseCase(
     private val getAttackInProgressRepository: GetAttackInProgressRepository,
     private val getLastPaywallShownRepository: GetLastPaywallShownRepository,
+    private val getLastSafetyCardShownRepository: GetLastSafetyCardShownRepository,
     private val launchReviewFlowRepository: LaunchReviewFlowRepository,
     private val markReviewRequestedRepository: MarkReviewRequestedRepository,
     private val getCurrentTimeRepository: GetCurrentTimeRepository,
     coroutineContextProvider: CoroutineContextProvider
 ) : BackgroundExecutingUseCase<Unit, Boolean>(coroutineContextProvider) {
     override fun executeInBackground(request: Unit): Boolean {
-        val stillCalm = longSinceLastPaywall(
-            getLastPaywallShownRepository.lastPaywallShown(),
-            getCurrentTimeRepository.now()
-        ) && getAttackInProgressRepository.attackInProgress() == false
+        val now = getCurrentTimeRepository.now()
+        val stillCalm = longSinceLastPaywall(getLastPaywallShownRepository.lastPaywallShown(), now) &&
+            longSinceSafetyCard(getLastSafetyCardShownRepository.lastSafetyCardShown(), now) &&
+            getAttackInProgressRepository.attackInProgress() == false
         if (!stillCalm) return false
         val completed = launchReviewFlowRepository.launchReviewFlow() ==
             ReviewFlowResultDomainModel.Completed
