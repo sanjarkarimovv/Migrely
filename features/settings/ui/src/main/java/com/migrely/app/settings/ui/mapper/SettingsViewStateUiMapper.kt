@@ -10,7 +10,8 @@ class SettingsViewStateUiMapper(private val themeUiMapper: ThemeUiMapper) {
         is SettingsViewState.Ready -> SettingsUiModel(
             periodTracking = viewState.settings.periodTracking,
             theme = themeUiMapper.toUi(viewState.settings.theme),
-            version = viewState.settings.version
+            version = viewState.settings.version,
+            showShareAndRate = viewState.settings.showShareAndRate
         )
     }
 }

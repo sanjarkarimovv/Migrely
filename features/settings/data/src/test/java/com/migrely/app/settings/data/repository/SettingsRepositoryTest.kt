@@ -45,10 +45,22 @@ class SettingsRepositoryTest {
             SettingsDomainModel(
                 periodTracking = false,
                 theme = ThemeDomainModel.System,
-                version = "1.2.0"
+                version = "1.2.0",
+                attackInProgress = false
             ),
             classUnderTest.settings()
         )
+    }
+
+    @Test
+    fun `When reading during an attack then it is in progress, and unknown when the diary cannot be read`() {
+        given(preferencesDataSource.theme()).willReturn(ThemeDataModel.Dark)
+        given(appInfoDataSource.versionName()).willReturn("1.4.0")
+        given(attackDataSource.inProgress()).willReturn(mock())
+        assertEquals(true, classUnderTest.settings().attackInProgress)
+
+        given(attackDataSource.inProgress()).willThrow(DatabaseDataException())
+        assertEquals(null, classUnderTest.settings().attackInProgress)
     }
 
     @Test

@@ -61,12 +61,42 @@ import com.migrely.app.settings.ui.di.SettingsDependencies
 import com.migrely.app.settings.ui.model.SettingsUiModel
 import com.migrely.app.settings.ui.model.ThemeUiModel
 import kotlinx.coroutines.delay
+import android.os.SystemClock
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalViewConfiguration
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
+import com.migrely.app.architecture.ui.view.ScreenLeaveObserver
+import com.migrely.app.settings.ui.model.ExternalAppResultUiModel
+import com.migrely.app.settings.ui.model.SettingsEventUiModel
+import com.migrely.app.settings.ui.model.SettingsMessageUiModel
+import com.migrely.app.settings.ui.model.ShownSettingsMessageUiModel
 
 internal val CONTENT_MAX_WIDTH = 600.dp
 private val ROW_MIN_HEIGHT = 56.dp
 
-/** "Couldn't save that" is an error: 8 s, stretched to the accessibility timeout (BRD EC-UX-16; QA #56). */
+/** Settings' messages are errors: 8 s, stretched to the accessibility timeout (BRD EC-UX-16; QA #56). */
 private const val READING_MILLIS = 8_000L
+
+/** "Share and rate" fades and folds in this time (ux section 1, design D5). */
+private const val SECTION_MOTION_MILLIS = 200
 
 /** Callbacks from the Settings screen. [onTheme] opens its dialog. */
 data class SettingsActions(
@@ -79,17 +109,22 @@ data class SettingsActions(
     val onAboutMigrely: () -> Unit,
     val onPrivacy: () -> Unit,
     val onLicences: () -> Unit,
-    val onDeleteAllData: () -> Unit
+    val onDeleteAllData: () -> Unit,
+    val onShare: () -> Unit,
+    val onRate: () -> Unit
 )
 
 /**
- * Settings (BRD SET-F1, D93), opened from home's header. [premiumSection] is drawn at the top;
- * `:app` fills it with the subscription feature's Premium section (change add-subscription, D112).
+ * Settings (BRD SET-F1, SET-F2, D93, D185), opened from home's header. [premiumSection] is drawn at the top; `:app`
+ * fills it with the subscription feature's Premium section (change add-subscription, D112). [attackInProgress] is the
+ * app's live attack state: when it changes while Settings shows, Settings reads again, so "Share and rate" follows
+ * (EC-SHR-13).
  */
 @Composable
 fun SettingsDependencies.Settings(
     navController: NavController,
     modifier: Modifier = Modifier,
+    attackInProgress: Boolean = false,
     premiumSection: @Composable () -> Unit = {}
 ) {
     ScreenEnterObserver { settingsViewModel.onEnter() }
@@ -98,23 +133,57 @@ fun SettingsDependencies.Settings(
         settingsViewModel.onResume()
         onPauseOrDispose { }
     }
+    var attackSeen by remember { mutableStateOf(attackInProgress) }
+    LaunchedEffect(attackInProgress) {
+        if (attackInProgress != attackSeen) {
+            attackSeen = attackInProgress
+            settingsViewModel.onAttackChanged()
+        }
+    }
     ViewModelObserver(navController)
     val viewState by settingsViewModel.viewState.collectAsState(SettingsViewState.Loading)
     val settings = settingsViewStateUiMapper.toUi(viewState)
-    // When the last failure was posted, so a second one is a new message and is spoken again (BRD D178 (5)).
-    var notSavedAt by remember { mutableStateOf<Long?>(null) }
+    // Stamped, so a second failure is a new message and is spoken again; saved, so it survives a rotation (D178).
+    var message by rememberSaveable { mutableStateOf<ShownSettingsMessageUiModel?>(null) }
+    val show: (SettingsMessageUiModel) -> Unit = {
+        message = ShownSettingsMessageUiModel(it, System.currentTimeMillis())
+    }
     // Kept across a rotation.
     var choosingTheme by rememberSaveable { mutableStateOf(false) }
-    LaunchedEffect(settingsEventPresenter) {
-        settingsEventPresenter.notSaved.collect { notSavedAt = System.currentTimeMillis() }
-    }
-    val notSavedTimeout = messageTimeoutMillis(READING_MILLIS)
-    LaunchedEffect(notSavedAt, notSavedTimeout) {
-        if (notSavedAt != null && notSavedTimeout != null) {
-            delay(notSavedTimeout)
-            notSavedAt = null
+    val context = LocalContext.current
+    val launcher = remember(context) { ExternalAppLauncher(context::startActivity) }
+    val shareText = stringResource(R.string.settings_share_text, SHARE_LINK)
+    val shareSubject = stringResource(R.string.settings_share_subject)
+    val shareChooser = stringResource(R.string.settings_share_chooser)
+    LaunchedEffect(settingsEventPresenter, launcher) {
+        settingsEventPresenter.events.collect { event ->
+            when (event) {
+                SettingsEventUiModel.NotSaved -> show(SettingsMessageUiModel.NotSaved)
+                SettingsEventUiModel.OpenShareSheet -> if (
+                    launcher.share(shareText, shareSubject, shareChooser) ==
+                    ExternalAppResultUiModel.NothingCouldOpen
+                ) {
+                    show(SettingsMessageUiModel.ShareUnavailable)
+                }
+                SettingsEventUiModel.OpenStorePage -> if (
+                    launcher.openStorePage() == ExternalAppResultUiModel.NothingCouldOpen
+                ) {
+                    show(SettingsMessageUiModel.PlayUnavailable)
+                }
+            }
         }
     }
+    // Every Settings message is an error: 8 s, stretched to the accessibility timeout (BRD EC-UX-16; QA #56).
+    val messageTimeout = messageTimeoutMillis(READING_MILLIS)
+    LaunchedEffect(message, messageTimeout) {
+        val current = message
+        if (current != null && messageTimeout != null) {
+            delay(current.remainingMillis(System.currentTimeMillis(), messageTimeout))
+            message = null
+        }
+    }
+    // An error belongs to the visit: Back or forward clears it; the share sheet and Google Play keep it (D178 (2)).
+    ScreenLeaveObserver(navController) { message = null }
     SettingsContents(
         settings = settings,
         actions = SettingsActions(
@@ -127,21 +196,23 @@ fun SettingsDependencies.Settings(
             onAboutMigrely = settingsViewModel::onAboutMigrelyAction,
             onPrivacy = settingsViewModel::onPrivacyAction,
             onLicences = settingsViewModel::onLicencesAction,
-            onDeleteAllData = settingsViewModel::onDeleteAllDataAction
+            onDeleteAllData = settingsViewModel::onDeleteAllDataAction,
+            onShare = settingsViewModel::onShareAction,
+            onRate = settingsViewModel::onRateAction
         ),
         messages = {
             MigrelySnackbarHost(
-                message = notSavedAt,
+                message = message,
                 reduceMotion = rememberReduceMotion(),
                 topOffset = MESSAGE_OFFSET_BELOW_TOP_BAR
-            ) {
+            ) { shown ->
                 MigrelySnackbar(
-                    text = stringResource(R.string.settings_not_saved),
+                    text = stringResource(shown.message.text()),
                     tone = SnackbarTone.Error,
                     action = null,
                     baseDurationMillis = READING_MILLIS,
                     dismissLabel = stringResource(R.string.settings_message_dismiss),
-                    onDismiss = { notSavedAt = null }
+                    onDismiss = { if (message == shown) message = null }
                 )
             }
         },
@@ -160,6 +231,12 @@ fun SettingsDependencies.Settings(
     }
 }
 
+private fun SettingsMessageUiModel.text() = when (this) {
+    SettingsMessageUiModel.NotSaved -> R.string.settings_not_saved
+    SettingsMessageUiModel.PlayUnavailable -> R.string.settings_play_unavailable
+    SettingsMessageUiModel.ShareUnavailable -> R.string.settings_share_unavailable
+}
+
 /** The screen itself, without its view model. Each item is one labelled node (BRD D93, EC-UX-04). */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -168,7 +245,8 @@ fun SettingsContents(
     actions: SettingsActions,
     messages: @Composable () -> Unit,
     modifier: Modifier = Modifier,
-    premiumSection: @Composable () -> Unit = {}
+    premiumSection: @Composable () -> Unit = {},
+    openingGuard: OpeningGuard = rememberOpeningGuard()
 ) {
     MessageLayout(
         message = messages,
@@ -215,7 +293,7 @@ fun SettingsContents(
                         .padding(bottom = 16.dp)
                 ) {
                     premiumSection()
-                    SettingsItems(settings, actions)
+                    SettingsItems(settings, actions, openingGuard)
                 }
             }
         }
@@ -223,7 +301,12 @@ fun SettingsContents(
 }
 
 @Composable
-private fun SettingsItems(settings: SettingsUiModel?, actions: SettingsActions) {
+private fun SettingsItems(
+    settings: SettingsUiModel?,
+    actions: SettingsActions,
+    openingGuard: OpeningGuard
+) {
+    val licencesFocus = remember { FocusRequester() }
     SectionHeader(stringResource(R.string.settings_section_diary))
     LinkRow(
         title = stringResource(R.string.settings_reminders),
@@ -272,10 +355,20 @@ private fun SettingsItems(settings: SettingsUiModel?, actions: SettingsActions) 
     LinkRow(
         title = stringResource(R.string.settings_licences),
         summary = stringResource(R.string.settings_licences_summary),
-        onClick = actions.onLicences
+        onClick = actions.onLicences,
+        modifier = Modifier.focusRequester(licencesFocus)
     )
     if (settings != null && settings.version.isNotEmpty()) {
         ValueRow(title = stringResource(R.string.settings_version), value = settings.version)
+    }
+    // Composed with the content, so it never animates in when Settings opens (ux section 1).
+    if (settings != null) {
+        ShareAndRateSection(
+            shown = settings.showShareAndRate,
+            actions = actions,
+            openingGuard = openingGuard,
+            focusOnLeaving = licencesFocus
+        )
     }
     HorizontalDivider(
         color = MaterialTheme.colorScheme.outlineVariant,
@@ -288,6 +381,89 @@ private fun SettingsItems(settings: SettingsUiModel?, actions: SettingsActions) 
         onClick = actions.onDeleteAllData,
         titleColor = MaterialTheme.colorScheme.error
     )
+}
+
+/**
+ * "Share and rate" (BRD SET-F2, D185): absent during an attack and while that is unknown; it fades and folds away, or
+ * at once with "Remove animations" (ux section 1, design D5). When it goes while keyboard focus is on one of its rows,
+ * focus moves to [focusOnLeaving], never to "Delete all data", which slides into its place (EC-SHR-13). Both rows go
+ * through [openingGuard], so one tap opens one thing (EC-SHR-05).
+ */
+@Composable
+private fun ShareAndRateSection(
+    shown: Boolean,
+    actions: SettingsActions,
+    openingGuard: OpeningGuard,
+    focusOnLeaving: FocusRequester
+) {
+    val reduceMotion = rememberReduceMotion()
+    val currentlyShown by rememberUpdatedState(shown)
+    var focusInSection by remember { mutableStateOf(false) }
+    val followFocus = Modifier.onFocusChanged { state ->
+        // A row that leaves while focused reports the loss too; that one must not reset the mark.
+        if (state.hasFocus) focusInSection = true else if (currentlyShown) focusInSection = false
+    }
+    LaunchedEffect(shown) {
+        if (!shown && focusInSection) {
+            focusInSection = false
+            focusOnLeaving.requestFocus()
+        }
+    }
+    AnimatedVisibility(
+        visible = shown,
+        enter = if (reduceMotion) {
+            EnterTransition.None
+        } else {
+            fadeIn(tween(SECTION_MOTION_MILLIS)) + expandVertically(tween(SECTION_MOTION_MILLIS))
+        },
+        exit = if (reduceMotion) {
+            ExitTransition.None
+        } else {
+            fadeOut(tween(SECTION_MOTION_MILLIS)) + shrinkVertically(tween(SECTION_MOTION_MILLIS))
+        }
+    ) {
+        Column {
+            SectionHeader(stringResource(R.string.settings_section_share))
+            LinkRow(
+                title = stringResource(R.string.settings_share),
+                summary = stringResource(R.string.settings_share_summary),
+                onClick = { if (openingGuard.tryOpen()) actions.onShare() },
+                modifier = followFocus.then(IgnoreHeldActivationKeys),
+                opensScreen = false,
+                onClickLabel = stringResource(R.string.settings_share_action),
+                // Not while it leaves: a tap on a fading row must not open anything during an attack.
+                enabled = shown
+            )
+            LinkRow(
+                title = stringResource(R.string.settings_rate),
+                summary = stringResource(R.string.settings_rate_summary),
+                onClick = { if (openingGuard.tryOpen()) actions.onRate() },
+                modifier = followFocus.then(IgnoreHeldActivationKeys),
+                opensScreen = false,
+                onClickLabel = stringResource(R.string.settings_rate_action),
+                enabled = shown
+            )
+        }
+    }
+}
+
+/** A held Enter or Space repeats; only its first press counts (EC-SHR-05). */
+private val IgnoreHeldActivationKeys = Modifier.onPreviewKeyEvent { event ->
+    event.type == KeyEventType.KeyDown &&
+        event.nativeKeyEvent.repeatCount > 0 &&
+        event.key in ACTIVATION_KEYS
+}
+
+private val ACTIVATION_KEYS = setOf(Key.Enter, Key.NumPadEnter, Key.Spacebar, Key.DirectionCenter)
+
+/** The guard for Share and Rate, which Settings' pause and resume release (design D1). */
+@Composable
+internal fun rememberOpeningGuard(): OpeningGuard {
+    val timeout = LocalViewConfiguration.current.doubleTapTimeoutMillis
+    val guard = remember(timeout) { OpeningGuard(timeout) { SystemClock.uptimeMillis() } }
+    LifecycleEventEffect(Lifecycle.Event.ON_PAUSE) { guard.onPause() }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { guard.onResume() }
+    return guard
 }
 
 /** The label of a theme choice, as the row and the dialog show it. */
@@ -335,21 +511,32 @@ private fun SwitchRow(
     }
 }
 
-/** A row that opens a screen, with a chevron, or a dialog, without one. */
+/**
+ * A row that opens a screen, with a chevron, or a dialog or another app, without one. [onClickLabel] names the action
+ * for TalkBack ("Double-tap to …"); null keeps the system's words.
+ */
 @Composable
 private fun LinkRow(
     title: String,
     summary: String,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
     opensScreen: Boolean = true,
-    titleColor: Color = MaterialTheme.colorScheme.onSurface
+    titleColor: Color = MaterialTheme.colorScheme.onSurface,
+    onClickLabel: String? = null,
+    enabled: Boolean = true
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .heightIn(min = ROW_MIN_HEIGHT)
-            .clickable(role = Role.Button, onClick = onClick)
+            .clickable(
+                enabled = enabled,
+                onClickLabel = onClickLabel,
+                role = Role.Button,
+                onClick = onClick
+            )
             .padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
         RowTexts(title, summary, titleColor, Modifier.weight(1f))
@@ -390,18 +577,19 @@ private fun RowTexts(title: String, summary: String, titleColor: Color, modifier
     }
 }
 
-private val PREVIEW_ACTIONS = SettingsActions({}, {}, {}, {}, {}, {}, {}, {}, {}, {})
+internal val PREVIEW_SETTINGS_ACTIONS = SettingsActions({}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {})
 internal val PREVIEW_SETTINGS = SettingsUiModel(
     periodTracking = true,
     theme = ThemeUiModel.Dark,
-    version = "0.1.0"
+    version = "0.1.0",
+    showShareAndRate = true
 )
 
 @Preview(name = "Settings")
 @Composable
 private fun SettingsPreview() {
     MigrelyTheme {
-        SettingsContents(settings = PREVIEW_SETTINGS, actions = PREVIEW_ACTIONS, messages = {})
+        SettingsContents(settings = PREVIEW_SETTINGS, actions = PREVIEW_SETTINGS_ACTIONS, messages = {})
     }
 }
 
@@ -411,7 +599,7 @@ private fun SettingsLightPreview() {
     MigrelyTheme(dark = false) {
         SettingsContents(
             settings = PREVIEW_SETTINGS.copy(theme = ThemeUiModel.Light),
-            actions = PREVIEW_ACTIONS,
+            actions = PREVIEW_SETTINGS_ACTIONS,
             messages = {}
         )
     }
@@ -421,6 +609,6 @@ private fun SettingsLightPreview() {
 @Composable
 private fun SettingsLoadingPreview() {
     MigrelyTheme {
-        SettingsContents(settings = null, actions = PREVIEW_ACTIONS, messages = {})
+        SettingsContents(settings = null, actions = PREVIEW_SETTINGS_ACTIONS, messages = {})
     }
 }
