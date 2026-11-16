@@ -6,6 +6,7 @@ which 13b `publish-to-play` fills in.
 | File | For |
 |---|---|
 | `listing.md` | the store listing: name, descriptions, category, contact |
+| `play-links.md` | every Play link used outside the listing, with its UTM tags; custom store listings for later |
 | `play-products.md` | Monetize with Play → Products: Migrely Premium's subscription, base plans, trial offer and lifetime |
 | `privacy-policy.md` | the privacy policy; `make_policy_html.py` turns it into `privacy-policy.html` for hosting |
 | `data-safety.md` | App content → Data safety |

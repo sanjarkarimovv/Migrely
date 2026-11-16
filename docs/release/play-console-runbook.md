@@ -114,7 +114,7 @@ shu commit'ni tag bilan solishtiradi (D125).
 ## 5. Store listing (Grow users → Store presence → Main store listing)
 
 1. **App name:** `Migrely: Migraine Tracker`.
-2. **Short description:** `Private headache diary & migraine log. Spot triggers, watch painkiller days.`
+2. **Short description:** `Private migraine diary & headache log. Track triggers and painkiller days.`
 3. **Full description:** `listing.md` dagi matn, oʻzgartirmasdan (har paragraf bitta qator).
 4. **Graphics:** ikonka, feature graphic, 8 ta telefon skrinshoti (01 dan 08 gacha, fayl nomi tartibida:
    birinchi uchtasi qidiruvda koʻrinadi).

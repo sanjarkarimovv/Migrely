@@ -8,7 +8,7 @@ The listing text for Google Play (BRD §14.2, D104, D121). The keyword plan and 
 | Field | Value |
 |---|---|
 | App name (≤ 30) | Migrely: Migraine Tracker |
-| Short description (≤ 80) | Private headache diary & migraine log. Track triggers and painkiller days. |
+| Short description (≤ 80) | Private migraine diary & headache log. Track triggers and painkiller days. |
 | Category | Health & Fitness. Migrely is a diary, not a medical device (D104). |
 | Tags | Health & fitness, Medical |
 | Contact email | support@migrely.health |
@@ -23,48 +23,48 @@ The listing text for Google Play (BRD §14.2, D104, D121). The keyword plan and 
 ```text
 Migrely is a private migraine tracker and headache diary. Log an attack in three taps, even in a dark room, see each month drawn as a night sky, and take a clear report to your doctor.
 
-LOG A MIGRAINE IN SECONDS
+Log a Migraine in Seconds
 • "Migraine started" in one tap, in the app or by long-pressing its icon
 • Pain level, where it hurts, symptoms such as aura, nausea or sensitivity to light, possible triggers and notes, all optional
 • Attack mode stays dark and simple, and keeps the time until the end is logged
 • Add a past migraine, edit any entry, and undo a deletion
 
-SEE YOUR MONTHS
+See Your Months
 • A calendar where each day is a small sky, drawn only from what you logged
 • Migraine days, attacks, medication days and pain-free days for every month
 • Mark period days and pain-free days, so your headache log shows the whole picture
 
-KEEP AN EYE ON MEDICATION
+Keep an Eye on Medication
 • Log what you took, and later say whether it helped
 • A gentle note when painkillers or triptans reach the number of days a month linked to medication-overuse headache, so you can talk to your doctor about it
 • Optional reminders: one to log your day, and one to say whether a medication helped
 
-FOR YOUR DOCTOR (PREMIUM)
+For Your Doctor (Premium)
 • A PDF migraine diary report: a summary, a calendar and every migraine and medication, ready to share with your doctor or neurologist
 
-UNDERSTAND YOUR PATTERNS (PREMIUM)
+Understand Your Patterns (Premium)
 • Triggers often logged with your migraines, the days and hours they come, the days around your period for menstrual migraine, how you rated your medications, and the last 12 months
 
-MIGRELY PREMIUM
+Migrely Premium
 • Premium adds the doctor report and Insights: yearly, with a 7-day free trial for new subscribers, monthly, or a single lifetime payment, all through Google Play
 • Logging, history, medications, reminders, backup and spreadsheet export, and every safety warning are free. Premium adds only the doctor report and Insights
 
-PRIVATE BY DESIGN
+Private by Design
 • Migrely has no internet permission, and you can check that in Android's settings. Premium is bought through Google Play, which goes online for the purchase. There is no account and no ads, and Migrely has no analytics or tracking code of its own
 • Your entries stay on your phone. If Android's own backup is on, it may also copy them to your Google account
 • Export a backup or a spreadsheet, or delete everything, whenever you like. A file you export goes where you send it
 
-GENTLE ON YOUR EYES
+Gentle on Your Eyes
 • Dark by default, with a light theme, and always dark during a migraine
 • Large text, TalkBack and keyboards work throughout
 
-SAFETY FIRST
+Safety First
 • The warning signs that need urgent care are always at hand in Settings
 
 Migrely is a diary. It is not a medical device and does not diagnose, treat, cure or prevent any medical condition. Talk to a doctor or other healthcare professional about your headaches, and before you start, stop or change a medication. If a headache comes with any of the warning signs, call your local emergency number.
 ```
 
-The text is 2,596 characters. Paste it as it is: each paragraph is one line, because Play keeps line breaks.
+The text is 2,901 characters (counted 2026-11-16; the old figure was stale). Paste it as it is: each paragraph is one line, because Play keeps line breaks.
 
 ## Graphics
 
@@ -88,17 +88,27 @@ Ranked from Play's own search suggestions on 2026-10-26. Play publishes no searc
 
 | Rank | Phrase | Where it is |
 |---|---|---|
-| 1 | migraine tracker | name, description |
+| 1 | migraine tracker | name, first sentence of the description |
 | 2 | headache tracker | "headache" in the short description, "tracker" in the name |
 | 3 | migraine app | name and description words |
-| 4 | headache diary, migraine diary | short description, description |
-| 5 | migraine log, headache log | short description, description |
-| 6 | aura, triggers, menstrual migraine, medication-overuse headache | description only (no suggestions, so low volume) |
+| 4 | migraine diary | short description (D184), "PDF migraine diary report" |
+| 5 | headache diary | first sentence of the description |
+| 6 | migraine log, headache log | short description ("headache log"), "your headache log" bullet |
+| 7 | aura, triggers, menstrual migraine, medication-overuse headache | description only (no suggestions, so low volume) |
+
+Position check (logged-out web search, 2026-11-16, `migrely-work/aso/positions.py`, one snapshot, 30 results): "migraine
+tracker" #14, "migraine app" #14, "migraine diary" #26, "migraine diary app" not in top 30, "headache diary" #15,
+"headache tracker" #19. The D184 text is not live: it is the baseline before it. Repeat the check 1 and 2 weeks after
+the owner publishes, and watch "migraine diary", the one phrase D184 adds (to the short description).
 
 Each phrase appears once or twice. Play treats repetition as keyword stuffing.
 
 Left out: "migraine relief" (Migrely promises no relief), "weather" and "barometric pressure" (Migrely has no internet permission),
 and competitors' names (§11.8).
+
+## Outside links
+
+Every Play link we use outside the listing, with its UTM tags: [`play-links.md`](play-links.md).
 
 ## Rules
 
