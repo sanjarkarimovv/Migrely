@@ -19,6 +19,7 @@ import java.time.Duration
 import java.time.LocalDate
 
 private val ON_SCREEN_POSTPONE = Duration.ofMinutes(30)
+private val QUIET_WHEN_LATER_THAN = Duration.ofMinutes(60)
 
 /**
  * One run of the daily reminder for the date it was planned for, or today (BRD D66). It first plans the next run, then
@@ -26,6 +27,7 @@ private val ON_SCREEN_POSTPONE = Duration.ofMinutes(30)
  * off, it already showed for that date, or the date is answered: marked pain-free, or touched by an attack by the
  * calendar's rule (D36). While Migrely is on screen it shows nothing and leaves the date unhandled: it plans that date's
  * run again 30 minutes later, replacing the next run, and that run follows the same rules (D176, EC-REM-27).
+ * More than 60 minutes after that date's time, read from the current setting and zone, it shows quietly (D183).
  */
 @Suppress("LongParameterList")
 class RunDailyReminderUseCase(
@@ -83,7 +85,8 @@ class RunDailyReminderUseCase(
             scheduleDailyReminderRepository.scheduleDailyReminder(later, date)
             return DailyReminderRunDomainModel.Skipped
         }
-        showDailyReminderRepository.showDailyReminder(date)
+        val quiet = dailyReminderTime.lateBy(date, now, settings.dailyTime) > QUIET_WHEN_LATER_THAN
+        showDailyReminderRepository.showDailyReminder(date, quiet)
         setDailyShownRepository.setDailyShown(date)
         return DailyReminderRunDomainModel.Shown
     }
