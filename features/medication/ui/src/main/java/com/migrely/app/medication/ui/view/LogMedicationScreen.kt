@@ -69,6 +69,7 @@ import com.migrely.app.designsystem.motion.rememberReduceMotion
 import com.migrely.app.designsystem.picker.DateTimePickerLabels
 import com.migrely.app.designsystem.picker.MigrelyDateTimePicker
 import com.migrely.app.designsystem.snackbar.MessageLayout
+import com.migrely.app.designsystem.snackbar.rememberParkWhenPressed
 import com.migrely.app.designsystem.theme.MigrelyColors
 import com.migrely.app.designsystem.theme.MigrelyDarkRoom
 import com.migrely.app.designsystem.theme.MigrelyTheme
@@ -436,12 +437,18 @@ private fun MedicationButton(
     val title = medication.spokenTitle()
     val what = if (preventive) "$title, ${medication.typeLabel()}" else title
     val description = stringResource(R.string.log_medication_description, what)
+    // A log replaces the list, this button with it: focus clears and moves nowhere, so TalkBack reads the logged
+    // sentence whole (BRD D181 (6), EC-UX-50).
+    val logs = rememberParkWhenPressed()
     Surface(
-        onClick = onClick,
+        onClick = {
+            logs.pressed()
+            onClick()
+        },
         enabled = !pending,
         shape = RoundedCornerShape(20.dp),
         color = colors.surface,
-        modifier = Modifier
+        modifier = logs.modifier
             .fillMaxWidth()
             .heightIn(min = colors.buttonHeight)
             // Merged into the clickable (EC-UX-19); the texts inside are cleared so it is read once.
@@ -569,11 +576,16 @@ private fun FirstMedicationForm(
     CategoryChoices(category, colors.content, colors.selection, colors.buttonHeight) {
         category = it
     }
+    // As a medication button: the form leaves once it logs (BRD D181 (6)).
+    val logs = rememberParkWhenPressed()
     Button(
-        onClick = { actions.onAddAndLog(name.text, category) },
+        onClick = {
+            logs.pressed()
+            actions.onAddAndLog(name.text, category)
+        },
         enabled = !pending,
         colors = colors.actionColors(),
-        modifier = Modifier
+        modifier = logs.modifier
             .fillMaxWidth()
             .heightIn(min = colors.buttonHeight)
     ) {

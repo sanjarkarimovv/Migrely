@@ -42,6 +42,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
@@ -293,10 +294,12 @@ private fun AttackGuidance(startedAt: String, textAlign: TextAlign, onDetails: (
             .heightIn(min = 48.dp)
             .semantics { contentDescription = detailsDescription }
     ) {
+        // One spoken name (BRD D181 (2)): "Details of this migraine", not also "Details".
         Text(
             text = stringResource(R.string.attack_details),
             style = MaterialTheme.typography.labelMedium,
-            color = MigrelyColors.AttackModeText
+            color = MigrelyColors.AttackModeText,
+            modifier = Modifier.clearAndSetSemantics { }
         )
     }
 }
@@ -340,10 +343,12 @@ private fun MoveStartOptions(onMoveStartEarlier: (Int) -> Unit) {
                         .heightIn(min = 48.dp)
                         .semantics { contentDescription = description }
                 ) {
+                    // One spoken name (BRD D181 (2)): "Move the start 15 min earlier" only.
                     Text(
                         text = text,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MigrelyColors.AttackModeText
+                        color = MigrelyColors.AttackModeText,
+                        modifier = Modifier.clearAndSetSemantics { }
                     )
                 }
             }

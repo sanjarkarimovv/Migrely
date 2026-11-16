@@ -30,6 +30,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
@@ -213,7 +214,12 @@ private fun StepHeader(step: Int, onSkip: () -> Unit) {
                 .heightIn(min = 48.dp)
                 .semantics { contentDescription = skip }
         ) {
-            Text(stringResource(R.string.onboarding_skip))
+            // One spoken name (BRD D181 (2), #217): the button says "Skip this step", so the word
+            // it shows is left out of its semantics; otherwise TalkBack adds "Skip" after it.
+            Text(
+                text = stringResource(R.string.onboarding_skip),
+                modifier = Modifier.clearAndSetSemantics { }
+            )
         }
     }
 }

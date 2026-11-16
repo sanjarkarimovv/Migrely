@@ -551,7 +551,16 @@ internal fun NotificationsOffNotice(
                         }
                     )
             ) {
-                Text(stringResource(R.string.reminders_open_settings))
+                // One spoken name (BRD D181 (2)): with a description, the shown words are left out
+                // of the button's semantics; without one, they are its name.
+                Text(
+                    text = stringResource(R.string.reminders_open_settings),
+                    modifier = if (openSettingsDescription == null) {
+                        Modifier
+                    } else {
+                        Modifier.clearAndSetSemantics { }
+                    }
+                )
             }
         }
     }

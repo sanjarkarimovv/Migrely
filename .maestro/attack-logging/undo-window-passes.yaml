@@ -9,7 +9,9 @@ tags: [regression, attack-logging, in-app-messages, a11y-timeout]
 - runFlow: ../subflows/launch-clean.yaml
 - runFlow: ../subflows/start-attack.yaml
 - assertVisible: "Undo the start"
+# The message's Undo is heard and matched by its spoken name only (D181 (2)); a bare "Undo" matches no node and would
+# pass at once.
 - extendedWaitUntil:
-    notVisible: "Undo"
+    notVisible: "Undo the start"
     timeout: 30000
 - assertVisible: "Rest now. We'll keep time."

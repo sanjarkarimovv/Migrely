@@ -220,10 +220,14 @@ private fun SnackbarEndControl(
                 .heightIn(min = 48.dp)
                 .semantics { contentDescription = action.spokenLabel }
         ) {
+            // One spoken name (BRD D181 (2)): the button says its spoken label ("Undo the start"),
+            // which contains the shown word, so the word is left out of its semantics; otherwise
+            // TalkBack reads both. Role, click and size stay on the button.
             Text(
                 text = action.label,
                 style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.primary
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.clearAndSetSemantics { }
             )
         }
     } else {

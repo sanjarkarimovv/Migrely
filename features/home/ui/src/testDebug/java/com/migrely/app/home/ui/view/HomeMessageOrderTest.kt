@@ -46,6 +46,7 @@ private const val UNDO = "Undo the end"
 private const val SETTINGS = "Settings"
 private const val PERIOD = "Period today"
 private const val TRIAL = "trial banner"
+private const val START = "Migraine started"
 private val TODAY = HomeViewStateUiModel.Today(TodayUiModel(SkyUiModel.Calm, 0, null))
 private val NO_PERIOD =
     HomeViewStateUiModel.Today(TodayUiModel(SkyUiModel.Calm, 0, null, periodOffered = false))
@@ -232,6 +233,40 @@ class HomeMessageOrderTest {
         showHome(today = NO_PERIOD, visitCard = { CardShaped("visit") })
 
         assertTabFromMessageReachesCloseThenOpen("visit")
+    }
+
+    /**
+     * D181 (4), EC-UX-47: nothing to press follows Settings in its column (no Period, no card, no
+     * slot), so the first control after Settings in Tab order is "Migraine started". The order still
+     * runs Settings, the message, "Migraine started", and reverses exactly.
+     */
+    private fun assertOrderWithNothingAfterSettings() {
+        move(FocusDirection.Next)
+        rule.onNodeWithContentDescription(SETTINGS).assertIsFocused()
+        move(FocusDirection.Next)
+        rule.onNodeWithContentDescription(UNDO).assertIsFocused()
+        move(FocusDirection.Next)
+        rule.onNodeWithText(START).assertIsFocused()
+
+        move(FocusDirection.Previous)
+        rule.onNodeWithContentDescription(UNDO).assertIsFocused()
+        move(FocusDirection.Previous)
+        rule.onNodeWithContentDescription(SETTINGS).assertIsFocused()
+    }
+
+    @Test
+    fun `With nothing after Settings, Tab and Shift+Tab run Settings, message, Migraine started`() {
+        showHome(today = NO_PERIOD)
+
+        assertOrderWithNothingAfterSettings()
+    }
+
+    @Test
+    @Config(sdk = [35], qualifiers = "w891dp-h411dp")
+    fun `In a short window with nothing after Settings, the end column's first control follows`() {
+        showHome(today = NO_PERIOD)
+
+        assertOrderWithNothingAfterSettings()
     }
 
     // Review 9.3 F2: a Tab past the last control goes back to Settings, not on to the message placed last for Tab.
