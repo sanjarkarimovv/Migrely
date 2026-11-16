@@ -54,13 +54,13 @@ import com.migrely.app.designsystem.snackbar.MigrelySnackbar
 import com.migrely.app.designsystem.snackbar.MigrelySnackbarHost
 import com.migrely.app.designsystem.snackbar.SnackbarTone
 import com.migrely.app.designsystem.snackbar.messageTimeoutMillis
+import com.migrely.app.designsystem.snackbar.rememberMessageCountdown
 import com.migrely.app.designsystem.theme.MigrelyTheme
 import com.migrely.app.settings.presentation.model.SettingsViewState
 import com.migrely.app.settings.ui.R
 import com.migrely.app.settings.ui.di.SettingsDependencies
 import com.migrely.app.settings.ui.model.SettingsUiModel
 import com.migrely.app.settings.ui.model.ThemeUiModel
-import kotlinx.coroutines.delay
 
 internal val CONTENT_MAX_WIDTH = 600.dp
 private val ROW_MIN_HEIGHT = 56.dp
@@ -108,13 +108,13 @@ fun SettingsDependencies.Settings(
     LaunchedEffect(settingsEventPresenter) {
         settingsEventPresenter.notSaved.collect { notSavedAt = System.currentTimeMillis() }
     }
-    val notSavedTimeout = messageTimeoutMillis(READING_MILLIS)
-    LaunchedEffect(notSavedAt, notSavedTimeout) {
-        if (notSavedAt != null && notSavedTimeout != null) {
-            delay(notSavedTimeout)
-            notSavedAt = null
-        }
-    }
+    // Stretched to "Time to take action", paused while focus holds it (BRD EC-UX-16, D182).
+    val countdown = rememberMessageCountdown(
+        message = notSavedAt,
+        timeoutMillis = messageTimeoutMillis(READING_MILLIS),
+        undoActionWallMillis = null,
+        onExpired = { notSavedAt = null }
+    )
     SettingsContents(
         settings = settings,
         actions = SettingsActions(
@@ -131,9 +131,10 @@ fun SettingsDependencies.Settings(
         ),
         messages = {
             MigrelySnackbarHost(
-                message = notSavedAt,
+                message = notSavedAt?.takeUnless { countdown.isOver },
                 reduceMotion = rememberReduceMotion(),
-                topOffset = MESSAGE_OFFSET_BELOW_TOP_BAR
+                topOffset = MESSAGE_OFFSET_BELOW_TOP_BAR,
+                countdown = countdown
             ) {
                 MigrelySnackbar(
                     text = stringResource(R.string.settings_not_saved),

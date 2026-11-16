@@ -455,10 +455,29 @@ ask `product-manager` before you code.
     Robolectric's own clocks stand still: `SaveMessageTest`, and `HomeMessagesTest`'s default.
     - The clock must live as long as the test. One created in composition came back after navigation reading below the
       saved stamp, and the countdown dropped the message as after a restart. That is the reboot rule doing its job.
-- [ ] 5.2 Reminders, Doctor report, Your data, Settings, Onboarding and Paywall use `rememberMessageCountdown`. Their
+- [x] 5.2 Reminders, Doctor report, Your data, Settings, Onboarding and Paywall use `rememberMessageCountdown`. Their
   timeout is already interactive.
   Verify: `./gradlew :features:reminders:ui:testDebugUnitTest :features:report:ui:testDebugUnitTest :features:backup:ui:testDebugUnitTest :features:settings:ui:testDebugUnitTest :features:onboarding:ui:testDebugUnitTest :features:subscription:ui:testDebugUnitTest`
   passes.
+
+  **Done 2026-11-17 (android-engineer).** Six screens now use `rememberMessageCountdown` and give the countdown to
+  `MigrelySnackbarHost`, with `isOver` hiding a message restored past its time: Reminders, Doctor report, Your data,
+  Settings, Onboarding and Paywall.
+  - Reminders' "Visit removed" Undo counts its ceiling from when it showed. The other five screens have no Undo.
+  - Their `LaunchedEffect(delay)` and Reminders' `rememberTimeLeft` are deleted, and so is `remainingMillis` in the
+    Shown models of Reminders, Doctor report and Your data. No test used it.
+  - Reminders, Doctor report and Your data stamp `shownAtEpochMillis` from `LocalMessageClock`.
+
+  Result: the verify command, with ktlint and detekt on the same six modules, exits 0.
+
+  | Module | Tests | Failures |
+  |---|---|---|
+  | Reminders | 27 | 0 |
+  | Doctor report | 8 | 0 |
+  | Your data | 16 | 0 |
+  | Settings | 31 | 0 |
+  | Onboarding | 5 | 0 |
+  | Subscription | 42 | 0 |
 - [ ] 5.3 Saved state per host covers `runMillis` (pause ended and floor applied at the save), `savedElapsedMillis` and the
   stamps. Rotation and process-death restore tests cover the scenarios "Rotate while paused", "Process death while
   paused", "Restored after the time ran out" and "Restored after the ceiling".

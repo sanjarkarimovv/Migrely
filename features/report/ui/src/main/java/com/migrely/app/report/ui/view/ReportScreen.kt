@@ -71,12 +71,14 @@ import com.migrely.app.designsystem.layout.MigrelyInsets
 import com.migrely.app.designsystem.motion.rememberReduceMotion
 import com.migrely.app.designsystem.picker.DateRangePickerLabels
 import com.migrely.app.designsystem.picker.MigrelyDateRangePicker
+import com.migrely.app.designsystem.snackbar.LocalMessageClock
 import com.migrely.app.designsystem.snackbar.MESSAGE_OFFSET_BELOW_TOP_BAR
 import com.migrely.app.designsystem.snackbar.MessageLayout
 import com.migrely.app.designsystem.snackbar.MigrelySnackbar
 import com.migrely.app.designsystem.snackbar.MigrelySnackbarHost
 import com.migrely.app.designsystem.snackbar.SnackbarTone
 import com.migrely.app.designsystem.snackbar.messageTimeoutMillis
+import com.migrely.app.designsystem.snackbar.rememberMessageCountdown
 import com.migrely.app.designsystem.theme.MigrelyTheme
 import com.migrely.app.report.presentation.model.ReportViewState
 import com.migrely.app.report.ui.R
@@ -90,7 +92,6 @@ import com.migrely.app.report.ui.model.ShownReportMessageUiModel
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.onSubscription
 
 private val CONTENT_MAX_WIDTH = 600.dp
@@ -122,8 +123,9 @@ fun ReportDependencies.Report(navController: NavController, modifier: Modifier =
     val context = LocalContext.current
     // Stamped, so the same message twice in a row shows and is announced again; saved, so an error survives a rotation.
     var message by rememberSaveable { mutableStateOf<ShownReportMessageUiModel?>(null) }
+    val messageClock = LocalMessageClock.current
     val show: (ReportMessageUiModel) -> Unit = {
-        message = ShownReportMessageUiModel(it, System.currentTimeMillis())
+        message = ShownReportMessageUiModel(it, messageClock.wallMillis())
     }
 
     fun errorShown(): Boolean = message?.let {
@@ -162,17 +164,15 @@ fun ReportDependencies.Report(navController: NavController, modifier: Modifier =
                 }
         }
     }
-    // Stretched to the accessibility timeout (BRD EC-UX-16; QA #56).
-    val messageTimeout = messageTimeoutMillis(
-        message?.let { reportMessageBehaviourUiMapper.toUi(it.message).baseDurationMillis }
+    // Stretched to "Time to take action", paused while focus holds it (BRD EC-UX-16, D182; QA #56).
+    val countdown = rememberMessageCountdown(
+        message = message,
+        timeoutMillis = messageTimeoutMillis(
+            message?.let { reportMessageBehaviourUiMapper.toUi(it.message).baseDurationMillis }
+        ),
+        undoActionWallMillis = null,
+        onExpired = { message = null }
     )
-    LaunchedEffect(message, messageTimeout) {
-        val current = message
-        if (current != null && messageTimeout != null) {
-            delay(current.remainingMillis(System.currentTimeMillis(), messageTimeout))
-            message = null
-        }
-    }
     ReportContents(
         viewState = reportViewStateUiMapper.toUi(viewState),
         period = period,
@@ -191,9 +191,10 @@ fun ReportDependencies.Report(navController: NavController, modifier: Modifier =
         ),
         messages = {
             MigrelySnackbarHost(
-                message = message,
+                message = message?.takeUnless { countdown.isOver },
                 reduceMotion = rememberReduceMotion(),
-                topOffset = MESSAGE_OFFSET_BELOW_TOP_BAR
+                topOffset = MESSAGE_OFFSET_BELOW_TOP_BAR,
+                countdown = countdown
             ) { shown ->
                 val behaviour = reportMessageBehaviourUiMapper.toUi(shown.message)
                 MigrelySnackbar(
