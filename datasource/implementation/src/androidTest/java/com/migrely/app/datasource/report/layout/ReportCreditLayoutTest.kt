@@ -80,24 +80,11 @@ class ReportCreditLayoutTest {
     }
 
     @Test
-    fun givenA4AndLetter_thenThePageCountIsTheSameWithTheCreditOnOrOff() {
-        ReportPaperDataModel.entries.forEach { paper ->
-            val on = document(paper, CREDIT)
-            val off = document(paper, null)
-
-            assertEquals(
-                "$paper",
-                ReportPageLayout(off).pageCount(off.blocks),
-                ReportPageLayout(on).pageCount(on.blocks)
-            )
-        }
-    }
-
-    @Test
     fun givenAMultiPageReport_thenOnlyTheLastPageDiffers_andOnlyBelowTheDisclaimer() {
         ReportPaperDataModel.entries.forEach { paper ->
             val on = pages(document(paper, CREDIT))
             val off = pages(document(paper, null))
+            // The rendered page counts: the credit sits in the bottom margin and never adds a page (EC-REP-06).
             assertEquals("$paper pages", off.size, on.size)
             assertTrue("$paper must be several pages", on.size > 1)
 

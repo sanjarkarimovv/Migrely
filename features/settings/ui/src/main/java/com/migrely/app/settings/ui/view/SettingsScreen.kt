@@ -49,11 +49,6 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.key.Key
-import androidx.compose.ui.input.key.KeyEventType
-import androidx.compose.ui.input.key.key
-import androidx.compose.ui.input.key.onPreviewKeyEvent
-import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.res.stringResource
@@ -387,7 +382,9 @@ private fun SettingsItems(
  * "Share and rate" (BRD SET-F2, D185): absent during an attack and while that is unknown; it fades and folds away, or
  * at once with "Remove animations" (ux section 1, design D5). When it goes while keyboard focus is on one of its rows,
  * focus moves to [focusOnLeaving], never to "Delete all data", which slides into its place (EC-SHR-13). Both rows go
- * through [openingGuard], so one tap opens one thing (EC-SHR-05).
+ * through [openingGuard], so one tap opens one thing (EC-SHR-05). A held Enter or Space needs no filter: `clickable`
+ * acts on the key's release and skips repeated presses (Compose foundation 1.9.3); `ShareAndRateTest` holds Enter to
+ * catch an upgrade that changes it.
  */
 @Composable
 private fun ShareAndRateSection(
@@ -432,7 +429,7 @@ private fun ShareAndRateSection(
                 title = stringResource(R.string.settings_share),
                 summary = stringResource(R.string.settings_share_summary),
                 onClick = { if (openingGuard.tryOpen()) actions.onShare() },
-                modifier = followFocus.then(IgnoreHeldActivationKeys),
+                modifier = followFocus,
                 opensScreen = false,
                 onClickLabel = stringResource(R.string.settings_share_action),
                 // Not while it leaves: a tap on a fading row must not open anything during an attack.
@@ -442,7 +439,7 @@ private fun ShareAndRateSection(
                 title = stringResource(R.string.settings_rate),
                 summary = stringResource(R.string.settings_rate_summary),
                 onClick = { if (openingGuard.tryOpen()) actions.onRate() },
-                modifier = followFocus.then(IgnoreHeldActivationKeys),
+                modifier = followFocus,
                 opensScreen = false,
                 onClickLabel = stringResource(R.string.settings_rate_action),
                 enabled = shown
@@ -450,15 +447,6 @@ private fun ShareAndRateSection(
         }
     }
 }
-
-/** A held Enter or Space repeats; only its first press counts (EC-SHR-05). */
-private val IgnoreHeldActivationKeys = Modifier.onPreviewKeyEvent { event ->
-    event.type == KeyEventType.KeyDown &&
-        event.nativeKeyEvent.repeatCount > 0 &&
-        event.key in ACTIVATION_KEYS
-}
-
-private val ACTIVATION_KEYS = setOf(Key.Enter, Key.NumPadEnter, Key.Spacebar, Key.DirectionCenter)
 
 /** The guard for Share and Rate, which Settings' pause and resume release (design D1). */
 @Composable

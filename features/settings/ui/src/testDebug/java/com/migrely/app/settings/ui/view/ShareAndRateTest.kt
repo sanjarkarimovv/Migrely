@@ -159,7 +159,9 @@ class ShareAndRateTest {
     @Test
     fun `A held Enter on Rate opens one Google Play page`() {
         settings = PREVIEW_SETTINGS
-        show()
+        // No wait in the guard, so only the row's own key handling can keep it to one: a held key repeats its press,
+        // and clickable acts once, on the release (review S4-1).
+        show(guard = OpeningGuard(timeoutMillis = 0L) { now })
 
         row(RATE).performScrollTo().requestFocus()
         row(RATE).performKeyInput {

@@ -4,7 +4,8 @@ package com.migrely.app.settings.ui.view
  * One opening per tap for "Share Migrely" and "Rate Migrely on Google Play" together (BRD EC-SHR-05, design D1). After
  * an accepted activation, both rows ignore activation until Settings is resumed after leaving or, if it never leaves
  * (split screen, nothing could open), until [timeoutMillis], Android's double-tap timeout, has passed. It sees every
- * activation the rows get: touch, TalkBack, Switch Access and the keyboard. [now] is a monotonic clock in
+ * activation the rows get: touch, TalkBack, Switch Access and the keyboard (a held key activates once, on release,
+ * through `clickable` itself). [now] is a monotonic clock in
  * milliseconds.
  */
 class OpeningGuard(private val timeoutMillis: Long, private val now: () -> Long) {
