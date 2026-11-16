@@ -375,8 +375,15 @@ def landing_page(canonical, title, description, body):
 '''
 
 
-def ad_play_button(label='Get it on Google Play'):
-    return (f'<a class="play" href="{esc(AD_PLAY)}">'
+BIO_TAGS = 'utm_source=instagram&utm_medium=social&utm_campaign=bio'
+BIO_PLAY = f'{PLAY}&{BIO_TAGS}&referrer={quote(BIO_TAGS, safe="")}'
+BIO_PLAY_EXPECTED = ('https://play.google.com/store/apps/details?id=com.migrely.app&utm_source=instagram'
+                     '&utm_medium=social&utm_campaign=bio&referrer=utm_source%3Dinstagram%26utm_medium%3Dsocial'
+                     '%26utm_campaign%3Dbio')
+
+
+def ad_play_button(label='Get it on Google Play', link=None):
+    return (f'<a class="play" href="{esc(link or AD_PLAY)}">'
             '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">'
             '<path fill="currentColor" d="M4 2.6v18.8c0 .5.5.8.9.6l16.3-9.4c.4-.2.4-.9 0-1.1L4.9 2.1c-.4-.2-.9.1-.9.5z"/>'
             f'</svg><span>{label}</span></a>')
@@ -824,6 +831,36 @@ def android_landing():
 </div></section>
 <div class="dock">{ad_play_button()}</div>
 </div>
+'''
+    return page(path, 'Migrely: private migraine diary for Android',
+                '3 taps log an attack, even in a dark room. No account, no internet permission. Free to log on '
+                'Google Play.', body, landing=True)
+
+
+def instagram_bio():
+    """/instagram/: where the @migrely.health bio link points (tracker T69). Instagram on Android often fails to open a
+    Google Play link placed directly in a bio, so the bio opens this page and its one button opens Play. The campaign
+    is `bio`, apart from /android/ (the paid test ig-ads-test1). Every sentence is copied from /android/ word for word."""
+    path = '/instagram/'
+    body = f'''
+<section class="ad-hero" id="hero" aria-labelledby="hero-h"><div class="wrap">
+  <div class="hero-copy">
+    <p class="eyebrow">Migraine diary for Android</p>
+    <h1 id="hero-h"><span class="h1-a">3 taps.</span> <span class="h1-b">Migraine logged.</span></h1>
+    <p class="lead">Even in a dark room. Migrely keeps the time until the end is logged.</p>
+    {ad_play_button(link=BIO_PLAY)}
+    <p class="meta">Free to log on Google Play<br>For Android {MIN_ANDROID_NUMBER} and later. Not available for iPhone.</p>
+  </div>
+</div></section>
+
+<section class="ad-sec band" id="privacy" aria-labelledby="privacy-h"><div class="wrap stack">
+  <p class="eyebrow">Private by design</p>
+  <h2 id="privacy-h">No internet permission.</h2>
+  <p>Android lists every app's permissions. The internet permission, shown as \u201chave full network access\u201d, is not on Migrely's list.</p>
+  <ul class="ticks" role="list"><li>No account</li><li>No ads</li></ul>
+  <p>{esc(AD_BACKUP)}</p>
+  <p>Check it yourself: <a href="/privacy-check/">migrely.health/privacy-check</a></p>
+</div></section>
 '''
     return page(path, 'Migrely: private migraine diary for Android',
                 '3 taps log an attack, even in a dark room. No account, no internet permission. Free to log on '
@@ -1661,6 +1698,8 @@ PAGES = [('/', 'index.html', home), ('/about/', 'about/index.html', about),
 # Pages built and checked like the others but kept out of the sitemap, llms.txt and the site's navigation: noindex and
 # reachable only from an ad. Their lastmod is tracked in lastmod.json all the same.
 AD_PAGES = [('/android/', 'android/index.html', android_landing)]
+# The Instagram bio page: same rules (noindex, off the sitemap, linked from nowhere), its own Play link and its own check.
+BIO_PAGES = [('/instagram/', 'instagram/index.html', instagram_bio)]
 
 
 BANNED_AD = re.compile(r'never goes online|100% offline|nothing leaves your phone|your migraine|your month|while you rest'
@@ -1728,6 +1767,43 @@ def check_ad_pages(built):
         if weight > AD_BUDGET:
             raise fail(f'weighs {weight} bytes, over the {AD_BUDGET} budget.')
         print(f'{path}: page weight {weight} bytes including the HTML')
+
+
+def check_bio_pages(built):
+    """Stops the build when /instagram/ drifts: the exact bio campaign Play link on its one button and nowhere else,
+    noindex and canonical, no script, video, iframe, style, redirect or new-tab link, one h1, no image, a zoomable
+    viewport, no banned wording, and no page links to it (it is reached only from the Instagram bio)."""
+    if BIO_PLAY != BIO_PLAY_EXPECTED:
+        raise SystemExit(f'The bio Play link changed: {BIO_PLAY}')
+    for path, (_, content) in built.items():
+        fail = lambda why: SystemExit(f'{path}: {why}')
+        if content.count(f'href="{esc(BIO_PLAY_EXPECTED)}"') != 1 or content.count('play.google.com') != 1:
+            raise fail('must carry the exact bio Play link on exactly one button and no other Play link.')
+        if '<meta name="robots" content="noindex">' not in content:
+            raise fail('must be noindex.')
+        if f'<link rel="canonical" href="{BASE}{path}">' not in content:
+            raise fail('needs a canonical to itself.')
+        if re.search(r'<script|<video|autoplay|iframe|<img\b(?![^>]*favicon)', content.replace('<img src="/favicon.svg"', '')):
+            raise fail('must have no script, video, iframe or image.')
+        for bad in ['market://', 'intent://', 'http-equiv="refresh"', 'target="_blank"', ' style="', '<style', 'onclick']:
+            if bad in content:
+                raise fail(f'must not contain {bad}.')
+        if len(re.findall(r'<h1\b', content)) != 1:
+            raise fail('needs exactly one h1.')
+        found = BANNED_AD.search(html.unescape(content))
+        if found:
+            raise fail(f'banned wording: {found.group(0)}')
+        viewport = re.search(r'<meta name="viewport" content="([^"]*)"', content).group(1)
+        if 'viewport-fit=cover' not in viewport or 'maximum-scale' in viewport or 'user-scalable' in viewport:
+            raise fail('viewport needs viewport-fit=cover and must allow zoom.')
+
+
+def check_no_links_to(pages, targets):
+    """Stops the build when a page links to a page that only the bio or an ad may reach."""
+    for path, (_, content) in pages.items():
+        for target in targets:
+            if target != path and re.search(rf'<a\b[^>]*\shref="(?:{re.escape(BASE)})?{re.escape(target)}"', content):
+                raise SystemExit(f'{path} links to {target}, which must stay unlinked.')
 
 
 def check_orphans(built):
@@ -1851,16 +1927,19 @@ def main():
     built = {path: (rel, build()) for path, rel, build in PAGES}
     ads = {path: (rel, build()) for path, rel, build in AD_PAGES}
     check_ad_pages(ads)
+    bio = {path: (rel, build()) for path, rel, build in BIO_PAGES}
+    check_bio_pages(bio)
+    check_no_links_to({**built, **ads, **bio}, [*ads, *bio])
     check_orphans(built)
     check_direct_answers(built)
     llms = llms_txt()
     check_llms(llms, built)
-    for rel, content in [*built.values(), *ads.values(), ('404.html', not_found())]:
+    for rel, content in [*built.values(), *ads.values(), *bio.values(), ('404.html', not_found())]:
         target = SITE / rel
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(content)
     images()
-    dates = lastmods({path: content for path, (_, content) in {**built, **ads}.items()})
+    dates = lastmods({path: content for path, (_, content) in {**built, **ads, **bio}.items()})
     (SITE / 'sitemap.xml').write_text(
         '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
         + ''.join(f'  <url><loc>{BASE}{path}</loc><lastmod>{dates[path]}</lastmod></url>\n' for path in built)
