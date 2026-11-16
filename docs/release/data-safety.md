@@ -18,7 +18,14 @@ whenever a permission, a library or the billing changes.
 - **Ratings:** the app may ask Google Play to show its in-app rating window (BRD D129). Google Play's review library
   talks to the Play Store app over IPC and declares no permission. A rating goes to Google Play, under its policy, and
   Play does not tell the app whether one was given. The app keeps only how many times it asked and when it last did
-  (D131), in the settings, which are backed up with them.
+  (D131), in the settings, which are backed up with them. From 1.4.0 it also keeps when it last showed a safety card
+  (first-10, "Still going?", medication overuse), so it asks for no rating within 3 days after one (D185, D188), and
+  whether the doctor report ends with the Migrely credit line (default on). Both sit in the same preferences, are
+  backed up with them and removed by "Delete all data"; neither is sent anywhere.
+- **Share and Rate (1.4.0):** the app opens the system share sheet with a text-only Play link (UTM tags
+  `utm_source=app`, `utm_medium=share`, `utm_campaign=settings_share`) or opens its Play page. Both are ACTION_SEND or
+  ACTION_VIEW hand-offs to other apps: no permission, no SDK, no network call by the app, no user data in the text.
+  The form answer stays "No data collected, no data shared".
 - **Android's own backup** is an operating-system service that the user controls, not the app. From Android 9 the app
   allows only end-to-end encrypted cloud backup, which Play's guidance exempts from "collection" when no one but the
   user can read it. On Android 8 the system, not the app, sends the backup.

@@ -1,6 +1,6 @@
 # Migrely privacy policy
 
-Effective date: 14 November 2026.
+Effective date: 16 November 2026.
 
 Migrely is a headache diary for Android, published on Google Play by Sulton UzDev ("we"). This policy explains what
 happens to the information you enter in the app, and, near the end, what happens on the website. In short: **Migrely has no internet permission, so the app cannot send your entries over the internet, and we never receive them.**
@@ -16,6 +16,10 @@ Migrely keeps what you enter on your phone:
 - your settings, such as reminders, the theme and whether you track periods;
 - whether Migrely Premium is on (see Purchases below);
 - how many times Google Play's rating window has run, and when it last did (see Rating Migrely below);
+- from version 1.4.0, whether your doctor report ends with a line saying it was made with Migrely (see Files you
+  choose to share below);
+- from version 1.4.0, when Migrely last showed one of its safety cards (the first-10, "Still going?" and medication
+  overuse cards), so that it asks for no rating soon after one (see Rating Migrely below);
 - up to three automatic copies of your entries, made before an import replaces them.
 
 Migrely does not ask for your name, email, location, contacts, photos or any account. It has no internet permission,
@@ -44,6 +48,10 @@ Google's privacy policy, and we cannot see it. You can turn it off in your phone
 You can export a backup file, a spreadsheet file or a PDF report for your doctor. Migrely creates the file, and you
 choose where it goes, for example by email or to a cloud drive. What happens to it then depends on the service you
 choose.
+
+From version 1.4.0, the PDF report for your doctor ends with one small line of plain text saying it was made with
+Migrely, with our web address. It has no link, code or tracking, and it adds nothing you entered. You can turn it off
+with the switch on the report screen.
 
 ## Notifications
 
@@ -75,6 +83,19 @@ Migrely whether you rated it or what you wrote, and we never receive it from the
 Google Play's window has run and when it last did, so that it asks no more than once in 120 days and three times in
 all. This is kept
 with your settings: it is part of Android's backup, and Settings → Delete all data removes it.
+
+From version 1.4.0, Migrely also waits three days after one of its safety cards before it asks Google Play to show
+the rating window. For that it keeps when it last showed a safety card. This is kept with your settings in the same
+way: it is part of Android's backup, and Settings → Delete all data removes it.
+
+## Sharing and rating Migrely
+
+From version 1.4.0, Settings has a "Share and rate" section. Share Migrely opens Android's share sheet with a short
+text and a link to Migrely on Google Play. Your entries are not included. The link carries campaign tags (for example
+utm_source=app), the same for everyone, which Google Play uses in install reports for the app's publisher. The Migrely
+app does not read them. Rate Migrely on Google Play opens Migrely's page in the Google Play app or a browser. What the
+app you choose does with the text is up to that app. Neither row shows while an attack is in progress, and Migrely
+keeps nothing about them.
 
 ## Deleting your information
 
