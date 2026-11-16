@@ -38,6 +38,10 @@ private const val TIME_TO_TAKE_ACTION_MILLIS = 120_000L
 private const val OFFERED_AFTER_MILLIS = 20_000L
 private const val RESTORABLE_MILLIS = 120_000L
 
+// D182 (1): "Time to take action" and the reading timeout set apart.
+private const val SPLIT_INTERACTIVE_MILLIS = 20_000L
+private const val SPLIT_READING_MILLIS = 8_000L
+
 // A few frames on the held Compose clock, far shorter than any time a message has left.
 private const val FRAMES_MILLIS = 100L
 
@@ -99,11 +103,10 @@ class HistoryMessagesTest {
 
     /**
      * A migraine deleted on Details opened from History, which History offers 20 s later. Once it shows, the Compose
-     * clock is held, so only the phone's clocks move, as while the screen is locked. The deletion is stamped on the
-     * phone's wall clock, which History reads when a deletion arrives.
+     * clock is held, so only the phone's clocks move, as while the screen is locked.
      */
     private fun offerDeletionLate() {
-        deletedAt = System.currentTimeMillis().also { clock.wall = it }
+        deletedAt = clock.wall
         clock.advanceBy(OFFERED_AFTER_MILLIS)
         post(HistoryMessageUiModel.AttackDeleted("a", deletedAt))
         rule.onNodeWithContentDescription(UNDO_DELETE).assertExists()
@@ -228,5 +231,26 @@ class HistoryMessagesTest {
 
         rule.onNodeWithText(UNDONE).assertExists()
         rule.onNodeWithText(UNDO_NOT_POSSIBLE).assertDoesNotExist()
+    }
+
+    // One timeout for every message (EC-UX-52, BRD D182 (1))
+
+    @Test
+    fun `Saved stays for the time to take action, not the reading timeout`() {
+        showScreen(
+            LocalAccessibilityManager provides FakeAccessibilityManager(
+                interactiveMillis = SPLIT_INTERACTIVE_MILLIS,
+                nonInteractiveMillis = SPLIT_READING_MILLIS
+            ),
+            LocalMessageClock provides ComposeMessageClock(rule.mainClock)
+        )
+        post(HistoryMessageUiModel.StorageFull)
+        post(HistoryMessageUiModel.Saved)
+
+        rule.mainClock.advanceTimeBy(19_000)
+        rule.onNodeWithText("Saved.").assertExists()
+        // Past the 20 s, with room for the exit.
+        rule.mainClock.advanceTimeBy(3_000)
+        rule.onNodeWithText("Saved.").assertDoesNotExist()
     }
 }

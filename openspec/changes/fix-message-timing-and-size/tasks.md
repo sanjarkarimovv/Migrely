@@ -365,7 +365,7 @@ ask `product-manager` before you code.
     - That test first passed even with the mutation, because the switch to the countdown never reached composition.
       It now asserts that the host really recomposed with the countdown.
   - Open for the device walk (7.1), which no JVM test proves: whether a touch ends keyboard mode (and so focus).
-- [ ] 4.5 `messageTimeoutMillis` is the only timeout. Add a Konsist rule, next to `app/src/test/.../MessageCallSitesTest.kt`,
+- [x] 4.5 `messageTimeoutMillis` is the only timeout. Add a Konsist rule, next to `app/src/test/.../MessageCallSitesTest.kt`,
   that fails on `calculateRecommendedTimeoutMillis` outside `MessageTimeout.kt` (design D1).
   Verify: `./gradlew :app:testDebugUnitTest --tests '*MessageCallSites*'` fails on 40536f49's four hosts, which is the
   negative control, and passes after task 5.1.
@@ -378,6 +378,7 @@ ask `product-manager` before you code.
     MedicationMessages]>`. Those are exactly the four hosts of design D1.
   - The other 4 tests of `MessageCallSitesTest` pass.
   - The task is ticked after 5.1 turns the rule green.
+  - **Green after 5.1:** `:app:testDebugUnitTest --tests '*MessageCallSites*'` gives 5 tests, 0 failures.
 - [x] 4.6 Add `LocalInDarkRoom` in `MigrelyDarkRoom`. In a dark room `MigrelySnackbar` uses a 64 dp minimum height, a
   64 x 64 dp minimum for Undo, and a 64 x 64 dp Dismiss with a 24 dp icon (design D4).
   The size changes in the same frame as the room's switch, with no size animation of its own, and the control keeps its
@@ -410,7 +411,7 @@ ask `product-manager` before you code.
 
 ## 5. Hosts (each `ui` module)
 
-- [ ] 5.1 Home, History, Attack details and Add past migraine, and the medication screens:
+- [x] 5.1 Home, History, Attack details and Add past migraine, and the medication screens:
   - drop the local `timeoutMillis`;
   - use `messageTimeoutMillis` and `rememberMessageCountdown`;
   - deletion messages pass `deletedAtEpochMillis` as the action time.
@@ -420,6 +421,40 @@ ask `product-manager` before you code.
     passes, including 4.1's tests, now green;
   - a per-host test shows "Saved." or an information message leaving at 20 s with an interactive 20 s and a
     non-interactive 8 s timeout.
+
+  **Done 2026-11-17 (android-engineer).** The four hosts now use `messageTimeoutMillis` and `rememberMessageCountdown`:
+  `HomeMessages`, `HistoryMessages`, `AttackMessages` (Attack details, Add past migraine) and `MedicationMessages`
+  (My medications, Edit medication, Log medication).
+  - Their own `timeoutMillis`, the `LaunchedEffect(delay)` and the `rememberTimeLeft` helpers are deleted. So are the
+    Shown models' `remainingMillis` and the three unit-test files that covered only it.
+  - Time comes from `LocalMessageClock`: `isFreshDeletion`, History's `enteredAt`, and every `shownAtEpochMillis`
+    (Attack details and Add past migraine too).
+  - Ceiling start for each Undo:
+    - deletion messages pass `deletedAtEpochMillis`;
+    - every other Undo passes the moment it showed. For Attack details that is the moment it could be seen, after the
+      safety card.
+  - Each host passes `isOver` to hide a restored message whose time has passed, and gives the countdown to
+    `MigrelySnackbarHost`.
+
+  Results:
+  - Command: `:features:{home,history,attack,medication}:ui:testDebugUnitTest`, with ktlint and detekt on the same
+    modules and `:app:testDebugUnitTest --tests '*MessageCallSites*'`. Exit 0:
+
+    | Module | Tests | Failures |
+    |---|---|---|
+    | Home | 118 | 0 |
+    | History | 57 | 0 |
+    | Attack | 119 | 0 |
+    | Medication | 91 | 0 |
+    | `MessageCallSites` | 5 | 0 |
+
+  - The 4.1 tests now pass: both 122 s tests, both 114 s controls, and IntakeUndone.
+  - New split tests, each passing: "Saved." stays for the time to take action (20 s) and not the reading timeout (8 s)
+    on Home, History and Attack details. IntakeUndone on Log medication is from 4.1.
+  - Tests that time a message by the Compose clock now give the host a `ComposeMessageClock` that follows it, because
+    Robolectric's own clocks stand still: `SaveMessageTest`, and `HomeMessagesTest`'s default.
+    - The clock must live as long as the test. One created in composition came back after navigation reading below the
+      saved stamp, and the countdown dropped the message as after a restart. That is the reboot rule doing its job.
 - [ ] 5.2 Reminders, Doctor report, Your data, Settings, Onboarding and Paywall use `rememberMessageCountdown`. Their
   timeout is already interactive.
   Verify: `./gradlew :features:reminders:ui:testDebugUnitTest :features:report:ui:testDebugUnitTest :features:backup:ui:testDebugUnitTest :features:settings:ui:testDebugUnitTest :features:onboarding:ui:testDebugUnitTest :features:subscription:ui:testDebugUnitTest`

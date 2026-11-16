@@ -66,6 +66,7 @@ import com.migrely.app.attack.ui.model.TimeFieldUiModel
 import com.migrely.app.designsystem.icon.MigrelyIcons
 import com.migrely.app.designsystem.motion.rememberReduceMotion
 import com.migrely.app.designsystem.picker.MigrelyDateTimePicker
+import com.migrely.app.designsystem.snackbar.LocalMessageClock
 import com.migrely.app.designsystem.snackbar.MessageLayout
 import com.migrely.app.designsystem.theme.MigrelyTheme
 import java.time.Instant
@@ -107,6 +108,7 @@ fun AddPastAttackDependencies.AddPastAttack(
     }
     var problem by rememberSaveable { mutableStateOf<PastAttackProblemUiModel?>(null) }
     var shownMessage by rememberSaveable { mutableStateOf<ShownAttackMessageUiModel?>(null) }
+    val messageClock = LocalMessageClock.current
     var saving by remember { mutableStateOf(false) }
 
     LaunchedEffect(addPastAttackEventPresenter) {
@@ -115,10 +117,8 @@ fun AddPastAttackDependencies.AddPastAttack(
             when (event) {
                 is AddPastAttackEventUiModel.Problem -> problem = event.problem
                 is AddPastAttackEventUiModel.Message ->
-                    shownMessage = ShownAttackMessageUiModel(
-                        event.message,
-                        System.currentTimeMillis()
-                    )
+                    shownMessage =
+                        ShownAttackMessageUiModel(event.message, messageClock.wallMillis())
             }
         }
     }

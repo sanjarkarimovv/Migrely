@@ -42,6 +42,10 @@ private const val TIME_TO_TAKE_ACTION_MILLIS = 120_000L
 private const val OFFERED_AFTER_MILLIS = 20_000L
 private const val RESTORABLE_MILLIS = 120_000L
 
+// D182 (1): "Time to take action" and the reading timeout set apart.
+private const val SPLIT_INTERACTIVE_MILLIS = 20_000L
+private const val SPLIT_READING_MILLIS = 8_000L
+
 // A few frames on the held Compose clock, far shorter than any time a message has left.
 private const val FRAMES_MILLIS = 100L
 
@@ -59,6 +63,9 @@ class HomeMessagesTest {
     private val presenter = HomeMessagePresenter()
     private lateinit var navController: NavHostController
     private val clock = FakeMessageClock(wall = System.currentTimeMillis())
+
+    // One for the whole test, as the phone has one: a new one would read as a restart.
+    private val composeClock by lazy { ComposeMessageClock(rule.mainClock) }
     private var deletedAt = 0L
 
     /** Home with its messages and its review slot, inside a NavHost with one other screen. */
@@ -67,7 +74,13 @@ class HomeMessagesTest {
             navController = rememberNavController()
             MigrelyTheme {
                 NavHost(navController, startDestination = HOME) {
-                    composable(HOME) { CompositionLocalProvider(*locals) { HomeWithReview() } }
+                    composable(HOME) {
+                        CompositionLocalProvider(
+                            LocalMessageClock provides composeClock
+                        ) {
+                            CompositionLocalProvider(*locals) { HomeWithReview() }
+                        }
+                    }
                     composable(SETTINGS) { Text(SETTINGS) }
                 }
             }
@@ -117,11 +130,10 @@ class HomeMessagesTest {
 
     /**
      * A migraine deleted on Details, which Home offers 20 s later. Once it shows, the Compose clock is held, so only
-     * the phone's clocks move, as while the screen is locked. The deletion is stamped on the phone's wall clock, which
-     * Home reads when a deletion arrives.
+     * the phone's clocks move, as while the screen is locked.
      */
     private fun offerDeletionLate() {
-        deletedAt = System.currentTimeMillis().also { clock.wall = it }
+        deletedAt = clock.wall
         clock.advanceBy(OFFERED_AFTER_MILLIS)
         post(HomeMessageUiModel.AttackDeleted("a", deletedAt))
         rule.onNodeWithContentDescription(UNDO_DELETE).assertExists()
@@ -314,5 +326,25 @@ class HomeMessagesTest {
 
         rule.onNodeWithText(UNDONE).assertExists()
         rule.onNodeWithText(UNDO_NOT_POSSIBLE).assertDoesNotExist()
+    }
+
+    // One timeout for every message (EC-UX-52, BRD D182 (1))
+
+    @Test
+    fun `Saved stays for the time to take action, not the reading timeout`() {
+        showHome(
+            LocalAccessibilityManager provides FakeAccessibilityManager(
+                interactiveMillis = SPLIT_INTERACTIVE_MILLIS,
+                nonInteractiveMillis = SPLIT_READING_MILLIS
+            )
+        )
+        post(HomeMessageUiModel.StorageFull)
+        post(HomeMessageUiModel.Saved)
+
+        rule.mainClock.advanceTimeBy(19_000)
+        rule.onNodeWithText(SAVED).assertExists()
+        // Past the 20 s, with room for the exit.
+        rule.mainClock.advanceTimeBy(3_000)
+        rule.onNodeWithText(SAVED).assertDoesNotExist()
     }
 }

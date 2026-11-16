@@ -10,6 +10,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.Snapshot
+import androidx.compose.ui.platform.AccessibilityManager
+import androidx.compose.ui.platform.LocalAccessibilityManager
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.SemanticsProperties
@@ -42,6 +44,7 @@ import com.migrely.app.attack.ui.model.AttackDetailsEventUiModel
 import com.migrely.app.attack.ui.model.AttackMessageUiModel
 import com.migrely.app.attack.ui.model.IntensityPointUiModel
 import com.migrely.app.attack.ui.notification.AttackDetailsEventPresenter
+import com.migrely.app.designsystem.snackbar.LocalMessageClock
 import com.migrely.app.designsystem.theme.MigrelyTheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -83,18 +86,22 @@ class SaveMessageTest {
     private val events = AttackDetailsEventPresenter()
     private val dependencies = attackDetailsTestDependencies(events)
     private lateinit var navController: NavHostController
+    private val messageClock by lazy { ComposeMessageClock(rule.mainClock) }
 
     @Before
     fun holdTheClock() {
         rule.mainClock.autoAdvance = false
     }
 
-    private fun show(fontScale: Float = 1f) {
+    private fun show(fontScale: Float = 1f, timeouts: AccessibilityManager? = null) {
         rule.setContent {
             MigrelyTheme {
                 val density = LocalDensity.current
+                val accessibilityManager = LocalAccessibilityManager.current
                 CompositionLocalProvider(
-                    LocalDensity provides Density(density.density, fontScale)
+                    LocalDensity provides Density(density.density, fontScale),
+                    LocalMessageClock provides messageClock,
+                    LocalAccessibilityManager provides (timeouts ?: accessibilityManager)
                 ) {
                     navController = rememberNavController()
                     NavHost(navController, startDestination = DETAILS_ROUTE) {
@@ -522,6 +529,20 @@ class SaveMessageTest {
         saved()
 
         settle(9_000)
+
+        rule.onNodeWithText(SAVED).assertDoesNotExist()
+    }
+
+    @Test
+    fun `Given Saved then it stays for the time to take action, not the reading timeout`() {
+        show(timeouts = SplitTimeouts)
+        storageFull()
+        saved()
+
+        settle(19_000)
+        rule.onNodeWithText(SAVED).assertExists()
+        // Past the 20 s, with room for the exit.
+        settle(3_000)
 
         rule.onNodeWithText(SAVED).assertDoesNotExist()
     }
