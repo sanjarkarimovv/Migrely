@@ -34,9 +34,9 @@ private const val OFFERED_DELETIONS_KEPT = 10
 /**
  * History's messages (BRD EC-UX-16), as on home: the newest replaces the one on screen, each base duration is stretched
  * to the user's "Time to take action", and the countdown pauses while focus holds the message and survives a rotation;
- * an Undo never outlives what it restores (BRD D182). A deletion made on the details screen opened from here is offered once
- * (BRD EC-HIS-04, D31); one made before History was opened, for example from home, belongs to home and is not offered.
- * An error belongs to the visit: leaving History by Back or forward clears it (BRD D178 (2)).
+ * an Undo never outlives what it restores (BRD D182). A deletion made on the details screen opened from here is offered
+ * once (BRD EC-HIS-04, D31); one made before History was opened, for example from home, belongs to home and is not
+ * offered. An error belongs to the visit: leaving History by Back or forward clears it (BRD D178 (2)).
  */
 @Composable
 internal fun HistoryMessages(

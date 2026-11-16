@@ -37,12 +37,12 @@ import java.time.ZoneId
 private const val OFFERED_DELETIONS_KEPT = 10
 
 /**
- * The home screen's messages (BRD EC-UX-16). The newest message replaces the one on screen. Each message's base duration
- * is stretched to the user's "Time to take action", and its countdown pauses while focus holds it and survives a
- * rotation; an Undo never outlives what it restores (BRD D182).
+ * The home screen's messages (BRD EC-UX-16). The newest message replaces the one on screen. Each message's base
+ * duration is stretched to the user's "Time to take action", and its countdown pauses while focus holds it and survives
+ * a rotation; an Undo never outlives what it restores (BRD D182).
  *
- * An error belongs to the visit: leaving Home by Back or forward clears it, while the background, Android Settings and a
- * rotation keep it (BRD D178 (2)). [onShownChanged] tells whether any message shows and [onErrorPosted] that an error
+ * An error belongs to the visit: leaving Home by Back or forward clears it, while the background, Android Settings and
+ * a rotation keep it (BRD D178 (2)). [onShownChanged] tells whether any message shows and [onErrorPosted] that an error
  * came, so Home can hold its review request (BRD D178 (3)).
  */
 @Suppress("LongParameterList")

@@ -74,8 +74,8 @@ private data class ProbeEvent(
  * It runs only with TalkBack on and skips itself otherwise. Compose sends accessibility-focus events only when an
  * enabled accessibility service is listed, and UiAutomation is never listed, so without TalkBack there is nothing to
  * see. UiAutomation moves the focus, as a TalkBack swipe does, without suppressing TalkBack, so Compose takes its real
- * path. Every event is logged under the tag "T64Probe" with `isWindowFocused`. TalkBack's own menu is checked by hand on
- * the device, from the same log.
+ * path. Every event is logged under the tag "T64Probe" with `isWindowFocused`. TalkBack's own menu is checked by hand
+ * on the device, from the same log.
  */
 @RunWith(AndroidJUnit4::class)
 class TalkBackFocusSpikeTest {
@@ -134,8 +134,8 @@ class TalkBackFocusSpikeTest {
     }
 
     /**
-     * For checks by hand: holds the screen for [MANUAL_HOLD_MILLIS] while real TalkBack gestures and TalkBack's menu are
-     * used from outside, and the probe logs. Runs only with the instrumentation argument `t64Manual=true`.
+     * For checks by hand: holds the screen for [MANUAL_HOLD_MILLIS] while real TalkBack gestures and TalkBack's menu
+     * are used from outside, and the probe logs. Runs only with the instrumentation argument `t64Manual=true`.
      */
     @Test
     fun holdForChecksByHand() {

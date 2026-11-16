@@ -148,7 +148,7 @@ fun YourDataDependencies.YourData(navController: NavController, modifier: Modifi
             }
         }
     }
-    // Each kind stays its own time, stretched to "Time to take action" and paused while focus holds it (BRD EC-UX-16, D182).
+    // Each kind stays its own time, stretched to "Time to take action", paused while focus holds it (BRD D182).
     val countdown = rememberMessageCountdown(
         message = message,
         timeoutMillis = messageTimeoutMillis(

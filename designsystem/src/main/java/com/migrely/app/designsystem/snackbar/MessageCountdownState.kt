@@ -47,9 +47,9 @@ class MessageCountdownState internal constructor(
  * passes [UNDO_CEILING_MILLIS] after that action. At the end it calls [onExpired], where the host drops the message,
  * as on a timeout.
  *
- * It pauses while keyboard or TalkBack focus holds the message, goes on after the grace or at once when the window loses
- * focus, and looks again on every resume, so a lock and unlock never shows an Undo past its ceiling (EC-ATK-24). Its
- * state survives rotation and process death keyed by [message]; a restored message whose time has run out shows
+ * It pauses while keyboard or TalkBack focus holds the message, goes on after the grace or at once when the window
+ * loses focus, and looks again on every resume, so a lock and unlock never shows an Undo past its ceiling (EC-ATK-24).
+ * Its state survives rotation and process death keyed by [message]; a restored message whose time has run out shows
  * nothing ([MessageCountdownState.isOver]).
  */
 @Composable
