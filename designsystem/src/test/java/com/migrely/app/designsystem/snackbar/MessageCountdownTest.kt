@@ -422,4 +422,29 @@ class MessageCountdownTest {
         assertEquals(0f, countdown.timeLeftFraction(), LINE_DELTA)
         assertTrue(countdown.isExpired())
     }
+
+    // When to look again (the driver of rememberMessageCountdown)
+
+    @Test
+    fun `The next check is the real end, the grace's end, or the ceiling while held`() {
+        val countdown = undo(TIME_TO_TAKE_ACTION_MILLIS)
+        assertEquals(UNDO_CEILING_MILLIS, countdown.nextCheckInMillis())
+
+        countdown.update(KEYBOARD)
+        clock.pass(5_000)
+        assertEquals(110_000L, countdown.nextCheckInMillis())
+
+        countdown.update(NOTHING)
+        clock.pass(100)
+        assertEquals(200L, countdown.nextCheckInMillis())
+    }
+
+    @Test
+    fun `A held message with no Undo has no next check until its hold changes`() {
+        val countdown = message(READING_MILLIS)
+
+        countdown.update(KEYBOARD)
+
+        assertNull(countdown.nextCheckInMillis())
+    }
 }

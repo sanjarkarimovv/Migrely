@@ -330,6 +330,9 @@ private fun SnackbarLayout(
  * A leaving message is out of the focus order and the semantics tree from its first exit frame, and focus on it clears
  * when it leaves or is replaced, never moving on to another control (BRD D178 (4), ux F8). Put the host in the message
  * slot of [MessageLayout] for the reading order.
+ *
+ * [countdown], from [rememberMessageCountdown] for the same [message], hears keyboard and TalkBack focus on the message
+ * shown, which pause it (BRD D182 (2)).
  */
 @Suppress("LongParameterList", "LongMethod")
 @Composable
@@ -340,14 +343,23 @@ fun <T : Any> MigrelySnackbarHost(
     topOffset: Dp = 0.dp,
     guardMillis: Long = GUARD_MILLIS,
     onMessageBottomChanged: (Dp) -> Unit = {},
+    countdown: MessageCountdownState? = null,
     content: @Composable (T) -> Unit
 ) {
     val density = LocalDensity.current
     val guard = remember { ReplacementGuard() }
     val bottom = remember { MessageBottom() }
+    val inScreen = remember { MessageInScreen() }
     guard.target(message)
     bottom.target(message)
-    val focus = rememberMessageFocus(message)
+    val currentCountdown by rememberUpdatedState(countdown)
+    val focus = rememberMessageFocus(message) { currentCountdown?.keyboardFocus = it }
+    if (countdown != null) {
+        ScreenReaderFocusEffect(
+            messageInScreen = { inScreen.bounds },
+            onChanged = { currentCountdown?.screenReaderFocus = it }
+        )
+    }
     val currentOnMessageBottomChanged by rememberUpdatedState(onMessageBottomChanged)
     Box(
         contentAlignment = Alignment.TopCenter,
@@ -413,6 +425,7 @@ fun <T : Any> MigrelySnackbarHost(
                 Box(
                     modifier = Modifier
                         .widthIn(max = MAX_WIDTH)
+                        .onGloballyPositioned { inScreen.place(it) }
                         // Measured at full size from the first frame, while the slide only moves it.
                         .onSizeChanged { size ->
                             if (size.height >

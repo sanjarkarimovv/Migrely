@@ -119,6 +119,24 @@ class MessageCountdown private constructor(
 
     fun isExpired(): Boolean = remainingMillis()?.let { it <= 0 } == true
 
+    /**
+     * How long until the countdown may change on its own: its end while running, the end of a grace, or the ceiling
+     * while paused; null when nothing will change until the hold or the timeout does.
+     */
+    fun nextCheckInMillis(): Long? {
+        settle()
+        val now = clock.elapsedRealtimeMillis()
+        val next = if (runningSince != null) {
+            remainingAt(now)
+        } else {
+            listOfNotNull(
+                graceEnd?.let { it - now },
+                ceiling?.leftMillis(clock.wallMillis(), now)
+            ).minOrNull()
+        }
+        return next?.coerceAtLeast(0L)
+    }
+
     fun timeLeftFraction(): Float {
         settle()
         return line.fractionAt(clock.elapsedRealtimeMillis())

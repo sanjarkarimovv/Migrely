@@ -319,7 +319,7 @@ ask `product-manager` before you code.
     - the line under the floor: `expected:<0.05> but was:<0.0>`.
   - After the revert: `:designsystem:testDebugUnitTest :designsystem:ktlintCheck :designsystem:detekt` exits 0, with
     216 tests and 0 failures.
-- [ ] 4.4 Add `rememberMessageCountdown(...)`.
+- [x] 4.4 Add `rememberMessageCountdown(...)`.
   - It sleeps until the next deadline.
   - It re-evaluates on `LifecycleResumeEffect` and when window focus returns.
   - It takes keyboard focus from `MessageFocus`, and TalkBack focus from the spike's method if 3.1 passed.
@@ -332,6 +332,39 @@ ask `product-manager` before you code.
   Verify: `./gradlew :designsystem:testDebugUnitTest` passes, including Robolectric tests where window focus loss resumes
   at once with no 300 ms grace, the line after a 0.5 s resume goes on from where it stopped (no jump), and the semantics
   tree with and without the probe is identical.
+
+  **Done 2026-11-17 (android-engineer).** Three new files in `designsystem/.../snackbar/`:
+  - `MessageCountdownState.kt`, holding `rememberMessageCountdown(message, timeoutMillis, undoActionWallMillis,
+    onExpired)` and `MessageCountdownState.rememberTimeLeft()`:
+    - the countdown saves itself with `rememberSaveable` keyed by the message, so a host keeps only its message;
+    - `isOver` is true when a restored message's time or ceiling has passed, so a host shows nothing, not even one
+      frame;
+    - the driver sleeps until `MessageCountdown.nextCheckInMillis()` (new, with 2 tests) and looks again on every
+      `LifecycleResumeEffect`, on any change to the hold, and on a timeout change;
+    - the hold is read from keyboard focus, TalkBack focus, `isTouchExplorationEnabled` and
+      `LocalWindowInfo.isWindowFocused`;
+    - the line is an `Animatable` restarted from the countdown's fraction at each change, so it is finite and needs no
+      per-frame tick.
+  - `ScreenReaderFocus.kt`, the spike's probe made production:
+    - one `View.AccessibilityDelegate` per ComposeView, shared by every message host on it;
+    - it is never installed over a delegate already there (readable from API 29);
+    - TalkBack's focused node counts as the message's when its screen bounds lie inside the message.
+  - `MigrelySnackbarHost(countdown = ...)` feeds the countdown with keyboard focus (from `MessageFocus`) and TalkBack
+    focus (the probe, matched against the message's `positionOnScreen` bounds).
+
+  Results:
+  - `:designsystem:testDebugUnitTest :designsystem:ktlintCheck :designsystem:detekt` exits 0, with 222 tests and 0
+    failures (the 4.6 files set aside for this slice).
+  - The 4 tests of `MessageCountdownHostTest`:
+    - keyboard focus holds the message, which then leaves with its time left;
+    - the window losing focus resumes at once, with the floor and no grace;
+    - after a 0.5 s resume the line goes on from 0.1, with no jump;
+    - the countdown adds nothing to the semantics tree.
+  - Negative control on the semantics test: with the host adding `contentDescription = "probe"` while it has a
+    countdown, the test fails (the tree differs); after the revert, 4 of 4 pass.
+    - That test first passed even with the mutation, because the switch to the countdown never reached composition.
+      It now asserts that the host really recomposed with the countdown.
+  - Open for the device walk (7.1), which no JVM test proves: whether a touch ends keyboard mode (and so focus).
 - [ ] 4.5 `messageTimeoutMillis` is the only timeout. Add a Konsist rule, next to `app/src/test/.../MessageCallSitesTest.kt`,
   that fails on `calculateRecommendedTimeoutMillis` outside `MessageTimeout.kt` (design D1).
   Verify: `./gradlew :app:testDebugUnitTest --tests '*MessageCallSites*'` fails on 40536f49's four hosts, which is the
