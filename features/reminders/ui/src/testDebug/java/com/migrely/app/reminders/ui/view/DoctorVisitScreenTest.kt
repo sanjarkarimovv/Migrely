@@ -9,6 +9,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
@@ -16,6 +17,7 @@ import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -44,6 +46,9 @@ private val VISIT: LocalDate = LocalDate.of(2027, 11, 20)
 private val SPOKEN = "${VISIT.dayOfWeek.name.lowercase().replaceFirstChar(
     Char::titlecase
 )}, November 20, ${VISIT.year}"
+
+/** The visit's Remove, by its one spoken name (BRD D181 (2)): its visible word is not in its semantics. */
+private const val REMOVE = "Remove the next visit"
 
 /**
  * The Reminders screen's "Doctor visit" section (BRD D168, design D9) and home's card (D8), as TalkBack and the eye see
@@ -120,7 +125,7 @@ class DoctorVisitScreenTest {
             hasContentDescription("Next visit, not set. Set a date.") and isButton()
         )
             .assertIsDisplayed()
-        composeTestRule.onAllNodesWithText("Remove").assertCountEquals(0)
+        composeTestRule.onAllNodesWithContentDescription(REMOVE).assertCountEquals(0)
         val section = composeTestRule.onNodeWithText(
             "Doctor visit"
         ).fetchSemanticsNode().boundsInRoot
@@ -149,7 +154,7 @@ class DoctorVisitScreenTest {
     fun givenTheVisitIsToday_thenNoRemove_sinceTodaysVisitStaysAsTheLastOne() {
         show(nextVisit = TODAY)
 
-        composeTestRule.onAllNodesWithText("Remove").assertCountEquals(0)
+        composeTestRule.onAllNodesWithContentDescription(REMOVE).assertCountEquals(0)
     }
 
     /** Issue #187: the state's day decides, not the device's clock, which here is a year before the visit. */
@@ -160,7 +165,7 @@ class DoctorVisitScreenTest {
         composeTestRule.onNode(
             hasContentDescription("Next visit, $SPOKEN. Change it.") and isButton()
         ).assertIsDisplayed()
-        composeTestRule.onAllNodesWithText("Remove").assertCountEquals(0)
+        composeTestRule.onAllNodesWithContentDescription(REMOVE).assertCountEquals(0)
     }
 
     /** Issue #187: the screen stays open past midnight; the new read takes Remove away, and the row stays. */
@@ -168,11 +173,11 @@ class DoctorVisitScreenTest {
     fun givenTheScreenStaysOpen_whenTheVisitDayStarts_thenRemoveGoes() {
         val shown = mutableStateOf(reminders(nextVisit = VISIT, today = VISIT.minusDays(1)))
         show(shown)
-        composeTestRule.onAllNodesWithText("Remove").assertCountEquals(1)
+        composeTestRule.onAllNodesWithContentDescription(REMOVE).assertCountEquals(1)
 
         shown.value = reminders(nextVisit = VISIT, today = VISIT)
 
-        composeTestRule.onAllNodesWithText("Remove").assertCountEquals(0)
+        composeTestRule.onAllNodesWithContentDescription(REMOVE).assertCountEquals(0)
         composeTestRule.onNode(
             hasContentDescription("Next visit, $SPOKEN. Change it.") and isButton()
         ).assertIsDisplayed()
@@ -214,11 +219,44 @@ class DoctorVisitScreenTest {
             "Doctor visit notifications are off, so this reminder can show only on Home."
         ).assertIsDisplayed()
         composeTestRule.onNodeWithContentDescription(
-            "Open notification settings"
+            "Open settings for notifications"
         ).assertIsDisplayed()
         composeTestRule.onAllNodesWithText(
             "This reminder can show only on Home."
         ).assertCountEquals(0)
+    }
+
+    @Test
+    fun givenAVisit_thenRemoveHasOneSpokenName() {
+        show(nextVisit = VISIT)
+
+        composeTestRule.assertOneSpokenName(spoken = REMOVE, visible = "Remove")
+    }
+
+    @Test
+    fun givenOnlyTheChannelOff_thenItsOpenSettingsHasOneSpokenName() {
+        show(nextVisit = VISIT, channelOff = true)
+
+        composeTestRule.assertOneSpokenName(
+            spoken = "Open settings for notifications",
+            visible = "Open settings"
+        )
+    }
+
+    /** Already read once (D181 (2), ux check list): the rows clear their texts, and stay as they are. */
+    @Test
+    fun givenAVisit_thenTheVisitRowAndTheTimeRowReadOnlyTheirDescriptions() {
+        show(nextVisit = VISIT)
+
+        listOf(
+            hasContentDescription("Next visit, $SPOKEN. Change it."),
+            hasContentDescription("Reminder time, ", substring = true)
+        ).forEach { row ->
+            val config = composeTestRule.onNode(row and hasClickAction())
+                .fetchSemanticsNode()
+                .config
+            assertEquals(null, config.getOrNull(SemanticsProperties.Text))
+        }
     }
 
     @Test

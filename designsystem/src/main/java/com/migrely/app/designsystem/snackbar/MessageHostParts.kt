@@ -7,10 +7,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -81,10 +79,7 @@ internal class MessageBottom {
  * Keeps keyboard and switch focus off a message that is leaving, and moves focus off the focused message when it
  * leaves or is replaced, to where nothing acts on Enter (ux F8).
  */
-internal class MessageFocus(
-    private val focusManager: FocusManager,
-    private val park: MessageFocusPark?
-) {
+internal class MessageFocus(private val parking: FocusParking) {
     private var inside = false
 
     fun modifier(leaving: Boolean): Modifier = if (leaving) {
@@ -99,9 +94,7 @@ internal class MessageFocus(
     fun changed() {
         if (!inside) return
         inside = false
-        // Android gives focus back to the first control as soon as it is cleared while a keyboard is in use, so with a
-        // MessageLayout focus goes to its parking place before the screen's first stop instead.
-        if (park == null || !park.park()) focusManager.clearFocus(force = true)
+        parking.park()
     }
 }
 
@@ -111,9 +104,8 @@ internal class MessageFocus(
  */
 @Composable
 internal fun rememberMessageFocus(message: Any?): MessageFocus {
-    val focusManager = LocalFocusManager.current
-    val park = LocalMessageFocusPark.current
-    val focus = remember(focusManager, park) { MessageFocus(focusManager, park) }
+    val parking = rememberFocusParking()
+    val focus = remember(parking) { MessageFocus(parking) }
     val last = remember { arrayOf(message) }
     if (last[0] != message) {
         last[0] = message

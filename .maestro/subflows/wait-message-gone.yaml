@@ -1,6 +1,9 @@
 # Wait until the snackbar with "Undo" has timed out (5 s undo window, 8 s for information messages).
+# A message's Undo is matched by its spoken name, "Undo the start", "Undo the deletion" and so on (D181 (2)): the
+# shown word is not in the tree, so a bare "Undo" would pass at once. "Undo" alone still matches Log medication's own
+# Undo button, as before. "Undone." does not match.
 appId: com.migrely.app
 ---
 - extendedWaitUntil:
-    notVisible: "Undo"
+    notVisible: "Undo( .+)?"
     timeout: 12000

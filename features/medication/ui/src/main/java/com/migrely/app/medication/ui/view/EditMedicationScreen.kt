@@ -31,12 +31,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.input.InputMode
+import androidx.compose.ui.platform.LocalInputModeManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
@@ -50,6 +55,7 @@ import com.migrely.app.designsystem.input.rememberLimitedField
 import com.migrely.app.designsystem.layout.MigrelyInsets
 import com.migrely.app.designsystem.motion.rememberReduceMotion
 import com.migrely.app.designsystem.snackbar.MessageLayout
+import com.migrely.app.designsystem.snackbar.rememberParkWhenPressed
 import com.migrely.app.designsystem.theme.MigrelyTheme
 import com.migrely.app.medication.ui.R
 import com.migrely.app.medication.ui.di.EditMedicationDependencies
@@ -85,6 +91,8 @@ private fun EditMedicationDependencies.MedicationEditor(
 ) {
     var form by rememberSaveable { mutableStateOf<MedicationFormUiModel?>(null) }
     var notFound by rememberSaveable { mutableStateOf(false) }
+    // Counts NotSaved results, so the same problem twice in a row is still a new result (review F2).
+    var problemArrivals by remember { mutableIntStateOf(0) }
     var problem by rememberSaveable { mutableStateOf<SaveProblemUiModel?>(null) }
     // Not saved: a write still running when the screen is recreated must not leave Save disabled.
     var pending by remember { mutableStateOf(false) }
@@ -116,7 +124,10 @@ private fun EditMedicationDependencies.MedicationEditor(
     LaunchedEffect(medicationEventPresenter) {
         medicationEventPresenter.events.collect { event ->
             pending = false
-            if (event is MedicationEventUiModel.NotSaved) problem = event.problem
+            if (event is MedicationEventUiModel.NotSaved) {
+                problem = event.problem
+                problemArrivals++
+            }
         }
     }
     val reduceMotion = rememberReduceMotion()
@@ -126,6 +137,7 @@ private fun EditMedicationDependencies.MedicationEditor(
         notFound = notFound && form == null,
         form = form,
         problem = problem,
+        problemArrivals = problemArrivals,
         pending = pending,
         onFormChange = {
             form = it
@@ -170,6 +182,7 @@ fun EditMedicationContents(
     onSave: () -> Unit,
     onBack: () -> Unit,
     messages: @Composable () -> Unit,
+    problemArrivals: Int = 0,
     modifier: Modifier = Modifier
 ) {
     MessageLayout(
@@ -227,7 +240,14 @@ fun EditMedicationContents(
                             stringResource(R.string.edit_not_found),
                             style = MaterialTheme.typography.bodyLarge
                         )
-                        form != null -> MedicationForm(form, problem, pending, onFormChange, onSave)
+                        form != null -> MedicationForm(
+                            form,
+                            problem,
+                            problemArrivals,
+                            pending,
+                            onFormChange,
+                            onSave
+                        )
                     }
                 }
             }
@@ -239,6 +259,7 @@ fun EditMedicationContents(
 private fun MedicationForm(
     form: MedicationFormUiModel,
     problem: SaveProblemUiModel?,
+    problemArrivals: Int,
     pending: Boolean,
     onFormChange: (MedicationFormUiModel) -> Unit,
     onSave: () -> Unit
@@ -254,6 +275,14 @@ private fun MedicationForm(
     val doseField = rememberLimitedField(form.dose, MAXIMUM_DOSE_LENGTH) {
         onFormChange(form.copy(dose = it))
     }
+    val focus = rememberProblemFocus(
+        arrivals = problemArrivals,
+        pending = pending,
+        nameProblem = nameProblem != null,
+        doseProblem = problem == SaveProblemUiModel.InvalidDose
+    )
+    // Save turns disabled while it waits (BRD D181 (6)).
+    val save = rememberParkWhenPressed()
     // Kept above the keyboard with its supporting line where that fits (BRD D180 (2), ux U1).
     SingleLineFieldInView(hasLabel = true) { inView, interactionSource ->
         OutlinedTextField(
@@ -273,7 +302,9 @@ private fun MedicationForm(
                 )
             },
             interactionSource = interactionSource,
-            modifier = inView.fillMaxWidth()
+            modifier = inView
+                .focusRequester(focus.name)
+                .fillMaxWidth()
         )
     }
     Text(stringResource(R.string.edit_kind), style = MaterialTheme.typography.labelLarge)
@@ -346,18 +377,54 @@ private fun MedicationForm(
                 )
             },
             interactionSource = interactionSource,
-            modifier = inView.fillMaxWidth()
+            modifier = inView
+                .focusRequester(focus.dose)
+                .fillMaxWidth()
         )
     }
     Button(
-        onClick = onSave,
+        onClick = {
+            save.pressed()
+            onSave()
+        },
         enabled = !pending,
-        modifier = Modifier
+        modifier = save.modifier
             .fillMaxWidth()
             .heightIn(min = 56.dp)
     ) {
         Text(stringResource(R.string.edit_save), style = MaterialTheme.typography.labelLarge)
     }
+}
+
+/**
+ * After a Save problem, keyboard focus goes to the field that has it, Name or Usual dose (BRD D181 (6), EC-UX-49), but
+ * only in keyboard mode: a text field takes focus in touch mode too, and would open the soft keyboard over a touch
+ * user's error. Keyed on [arrivals], the count of NotSaved results: a second Save that finds the same problem changes
+ * no value, and its result can come in the press's own frame (InvalidName and InvalidDose read no database), so only a
+ * count shows it is new and brings focus back from where the press parked it (review F2).
+ */
+@Composable
+private fun rememberProblemFocus(
+    arrivals: Int,
+    pending: Boolean,
+    nameProblem: Boolean,
+    doseProblem: Boolean
+): ProblemFocus {
+    val inputModeManager = LocalInputModeManager.current
+    val focus = remember { ProblemFocus() }
+    LaunchedEffect(arrivals) {
+        if (pending || inputModeManager.inputMode != InputMode.Keyboard) return@LaunchedEffect
+        when {
+            nameProblem -> focus.name.requestFocus()
+            doseProblem -> focus.dose.requestFocus()
+        }
+    }
+    return focus
+}
+
+private class ProblemFocus {
+    val name = FocusRequester()
+    val dose = FocusRequester()
 }
 
 @Preview(name = "Edit medication")

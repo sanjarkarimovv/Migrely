@@ -18,7 +18,7 @@
         <item quantity="one">Copy restored: %d migraine.</item>
         <item quantity="other">Copy restored: %d migraines.</item>
     </plurals>
-    <string name="your_data_note">Migrely has no internet access. Your entries stay on this phone, in Android\'s own backup, and in the files you save.</string>
+    <string name="your_data_note">Migrely has no internet permission. Your entries stay on this phone, in Android\'s own backup if it\'s on, in a transfer to a new phone, and in any file you export.</string>
     <string name="your_data_working">Working on your file</string>
     <string name="your_data_confirm_title">Import this backup?</string>
     <string name="your_data_confirm_holds">It holds %1$s, %2$s and %3$s.</string>

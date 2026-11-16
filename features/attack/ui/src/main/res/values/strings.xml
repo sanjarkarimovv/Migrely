@@ -40,7 +40,7 @@
     <string name="pain_dialog_title">How strong was it?</string>
     <string name="pain_dialog_value">%1$d/10</string>
     <string name="pain_dialog_time">At %1$s</string>
-    <string name="pain_dialog_change_time">Change the time, now %1$s</string>
+    <string name="pain_dialog_change_time">At %1$s, change the time</string>
     <string name="pain_dialog_add">Add</string>
     <string name="pain_level_mild">Mild</string>
     <string name="pain_level_moderate">Moderate</string>
