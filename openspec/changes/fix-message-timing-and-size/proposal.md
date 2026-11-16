@@ -55,8 +55,9 @@ product-manager re-read every claim in the code at 40536f49 before planning from
   - The time-left line stops while paused. Nothing is spoken and no label appears.
   - The host saves the time already shown, so rotation and process death keep it.
   - One mechanism in `designsystem/snackbar` serves every host.
-  - TalkBack focus needs a spike on API 26 and 36 first. If it fails, the pre-agreed fallback is keyboard only and a known
-    limit in the BRD. product-manager then edits the spec before any code.
+  - TalkBack focus needed a spike first. It passed on API 36 (3 runs, 10 of 10). Our API 26 image has no TalkBack, so
+    there the TalkBack pause is built but not verified: a known limit in the BRD. The keyboard pause is verified on both.
+  - Settings, Onboarding and Paywall keep their message only in memory, so rotation drops it there, as today (#236).
 - **An Undo never outlives what it restores (D182 (3), ux B2 ceiling, QA qa-undo).**
   - An Undo leaves no later than 115 s after the action it undoes, paused or not. That is D23 minus 5 s.
   - For a deletion the action time is `deletedAt`. For every other Undo it is the moment the message appeared.
@@ -70,7 +71,7 @@ product-manager re-read every claim in the code at 40536f49 before planning from
 - **64 dp message controls in the dark room (D182 (4), ux B3).**
   - Inside an active `MigrelyDarkRoom`:
     - Undo is at least 64 x 64 dp;
-    - Dismiss is 64 x 64 dp, with the same 24 dp icon;
+    - Dismiss is 64 x 64 dp, with the same 20 dp icon;
     - the message is at least 64 dp tall.
   - Outside the dark room, nothing changes.
   - The host supplies the size, so screens need no code of their own.
@@ -90,6 +91,8 @@ product-manager re-read every claim in the code at 40536f49 before planning from
 - The keyboard work of D180 (`fix-keyboard-follows-cursor`) and the T66 items of D181 (`fix-privacy-wording-and-focus`),
   including the Undo's spoken name. Both merge first.
 - Any domain, data, permission, manifest, Room schema or backup change.
+- Saving the message across rotation on Settings, Onboarding and Paywall (#236, pre-existing).
+- Verifying the TalkBack pause on API 26: our image has no TalkBack and we do not sideload it.
 
 ## Capabilities
 
@@ -103,7 +106,7 @@ None.
   - durations follow the interactive timeout;
   - the countdown pauses on keyboard and TalkBack focus;
   - the Undo ceiling;
-  - the saved time survives rotation and process death;
+  - the saved time survives rotation and process death, except on Settings, Onboarding and Paywall (#236);
   - 64 dp controls in the dark room.
 - `attack-mode`: the message's controls meet attack mode's 64 dp bar.
 

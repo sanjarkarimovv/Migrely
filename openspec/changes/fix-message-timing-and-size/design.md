@@ -40,7 +40,7 @@ product-manager accepts B1–B3 as written. Where this file and §B differ, §B 
   focus when the focused message leaves or is replaced (D178, T63 F8).
 - **Sizes.**
   - `MigrelySnackbar.kt:101` sets `MIN_HEIGHT = 52.dp`.
-  - `SnackbarEndControl` gives Undo `heightIn(min = 48.dp)` and Dismiss a default `IconButton` (48 dp) with a 24 dp icon.
+  - `SnackbarEndControl` gives Undo `heightIn(min = 48.dp)` and Dismiss a default `IconButton` (48 dp) with a 20 dp icon (`ICON_SIZE`).
 - **Dark room.**
   - `MigrelyDarkRoom(active)` (`designsystem/theme/DarkRoom.kt`) provides the dark theme and counts `LocalDarkScreens`.
     There is no local that says "inside an active dark room".
@@ -69,7 +69,8 @@ product-manager accepts B1–B3 as written. Where this file and §B differ, §B 
 - data rules (D23, D31);
 - base durations;
 - text, placement and Tab order;
-- the keyboard (D180) and T66 (D181) work.
+- the keyboard (D180) and T66 (D181) work;
+- saving the message on Settings, Onboarding and Paywall across rotation (#236, pre-existing).
 
 ## Decisions
 
@@ -162,8 +163,13 @@ product-manager accepts B1–B3 as written. Where this file and §B differ, §B 
     reading order.
   - The spike also opens TalkBack's own menu on a message and logs `isWindowFocused` and the focus events, to learn
     whether that menu takes window focus and so resumes the countdown.
-  - **Pass bar:** on API 26 and API 36, ten focus moves onto and off the text and the control each give the right state,
-    10 of 10.
+  - **Pass bar (revised after cr-t64 S3 #2):** on API 36, ten focus moves onto and off the text and the control each give
+    the right state, 10 of 10. Spike 3.1 passed it: 3 runs, 10 of 10 each.
+  - **Known limit, API 26:** our API 26 emulator image has no TalkBack, and we do not sideload APKs. So the TalkBack pause
+    is built for every level but verified on API 36 only. The keyboard pause is required and verified on API 26 and API 36.
+  - **Production path:** the spike used a bare Box. Task 7.2 runs the real `MigrelySnackbarHost` with `ScreenReaderFocus`
+    on API 36 with TalkBack on, as an instrumented test. Whether TalkBack's own menu takes window focus stays a manual
+    row in 8.3, on a real phone.
   - **On failure:** the pre-agreed fallback is keyboard only.
     - The engineer reports the result to product-manager.
     - product-manager removes the TalkBack requirement from the delta and adds the known limit to D182 and EC-UX-54, before
@@ -178,7 +184,8 @@ product-manager accepts B1–B3 as written. Where this file and §B differ, §B 
 - `MigrelySnackbar` reads it:
   - `MIN_HEIGHT` becomes 64 dp in a dark room;
   - Undo gets `sizeIn(minWidth = 64.dp, minHeight = 64.dp)`;
-  - Dismiss gets `Modifier.size(64.dp)` with the icon at 24 dp.
+  - Dismiss gets `Modifier.size(64.dp)` with the same 20 dp icon (`ICON_SIZE`), as ux B3's "the same icon" means
+    (cr-t64 S3 #1).
 - The label style does not change. The inline-or-below measurement in `MessageLayout` uses the measured control width, so
   the rule holds without new constants.
 - The tap guard already follows the measured height (D178 F2).
@@ -226,10 +233,10 @@ If the walk says a number is wrong, ux-designer proposes a new one, and product-
 | EC-UX-53 | Line after a pause or at the ceiling | never grows, 0 at the real end | The line never grows; The line meets the ceiling |
 | EC-UX-53 | 200%, landscape, RTL | the same pause | Large font, landscape and right-to-left |
 | EC-UX-54 | TalkBack text, then control | no resume between them | From the text to the control |
-| EC-UX-54 | API 26 and 36 | both | Both Android versions |
+| EC-UX-54 | API 26 and 36 | keyboard on both; TalkBack on API 36, a known limit on API 26 | Which Android versions are checked |
 | EC-UX-55 | Shade, other app, dialog, screen off | runs at once | The window loses focus |
 | EC-UX-55 | Touch, Back | focus left | A touch ends keyboard mode |
-| EC-UX-55 | TalkBack turned off | runs | TalkBack is turned off |
+| EC-UX-55 | TalkBack turned off | runs after the 300 ms grace | TalkBack is turned off |
 | EC-UX-56 | Replacement while paused | full, unpaused time | A new message replaces a paused one |
 | EC-UX-56 | Undo while paused | "Undone." full time | Undo pressed while paused |
 | EC-UX-56 | Storage full | unchanged | Storage full has nothing to pause |
@@ -237,6 +244,7 @@ If the walk says a number is wrong, ux-designer proposes a new one, and product-
 | EC-UX-57 | Process death while paused | time left at the save, less the time to restore | Process death while paused |
 | EC-UX-57 | Restore after the time ran out | nothing shown, even if paused | Restored after the time ran out |
 | EC-UX-57 | Restore past the ceiling | no Undo | Restored after the ceiling |
+| EC-UX-57 | Rotation on Settings, Onboarding, Paywall | message dropped, as on `develop`; known limit #236, not in this change | none: scoped out of "Messages survive rotation" |
 | EC-UX-58 | Held Undo | 115 s after the action | A held deletion Undo; TalkBack holds an Undo; Other Undo messages |
 | EC-UX-58 | Clock back or forward | elapsed bound or early end | The clock is set back during a pause; The clock is set forward |
 | EC-UX-58 | D23 changes | test fails | The ceiling follows D23 |
@@ -268,8 +276,9 @@ If the walk says a number is wrong, ux-designer proposes a new one, and product-
   - negative control: Home's leaves at about 8 s on `develop` 40536f49.
 - **A2 (B2, keyboard):** P1, P2, P5 and P6 from ux §B2, on API 26 and API 36, on Home attack mode portrait 200% (Undo the
   start), History (Undo the deletion) and Reminders ("Saved.").
-- **A3 (B2, TalkBack):** P4 on API 26 and 36, if the spike passed. Otherwise QA confirms there is no pause under TalkBack
-  and that the timeout and the ceiling still end the message.
+- **A3 (B2, TalkBack):** P4 on API 36 with TalkBack on, through the real `MigrelySnackbarHost` (task 7.2's test, rerun
+  by QA, plus a few real swipes). On API 26, TalkBack is not checked: a known limit (D182, EC-UX-54), not a failure.
+  TalkBack's own menu on a message is a manual row on a real phone: does it take window focus and resume the countdown?
 - **A4 (ceiling, device):**
   - Set `adb shell settings put secure accessibility_interactive_ui_timeout_ms 120000`.
   - Delete a migraine on Details, wait about 20 s, go Back to Home, lock, unlock when about 122 s have passed since the
@@ -289,13 +298,15 @@ If the walk says a number is wrong, ux-designer proposes a new one, and product-
 
 - Unit and Robolectric tests use fake clocks and a fake `AccessibilityManager`. They do not prove what stock Android
   writes to the two timeout settings, or how `delay` behaves in deep sleep.
-- The TalkBack spike shows observability on two API levels on emulators, not on every OEM build.
+- The TalkBack checks show observability on API 36 on one emulator, not on API 26 and not on every OEM build.
+- Settings, Onboarding and Paywall still drop their message on rotation (#236). No check here covers them.
 - The bounds checks prove size, not comfort. Whether 64 dp feels heavy over the rain card, and whether 3 s and 300 ms feel
   right, needs a person (ux §D).
 
 ## Risks
 
-- **TalkBack focus is not observable reliably.** The fallback is pre-agreed, and the spec changes before code.
+- **TalkBack focus on API 26 is unverified.** The spike passed on API 36 only. If it fails on Android 8, the message
+  still ends at its timeout and its ceiling, so nothing is held forever.
 - **A longer "Saved." keeps Home's review request waiting longer.** Accepted in ux B1: it is harmless.
 - **Code conflict with D180 and D181 in `MigrelySnackbar.kt`.** Task 0.1 handles it. The review checks all three rules
   after the merge.

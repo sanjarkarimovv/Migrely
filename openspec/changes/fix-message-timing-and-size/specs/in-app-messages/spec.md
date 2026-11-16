@@ -62,15 +62,18 @@ holds it, and an Undo still leaves at its ceiling (BRD EC-UX-54, EC-UX-55, D182)
 
 #### Scenario: TalkBack is turned off
 - **WHEN** TalkBack focus is on a paused message and TalkBack is turned off
-- **THEN** the countdown goes on, with at least 3 seconds left
+- **THEN** focus counts as left after the same 300 ms grace, and the countdown goes on with at least 3 seconds left
 
 #### Scenario: TalkBack holds an Undo
 - **WHEN** TalkBack focus stays on "Undo the deletion" for 3 minutes
 - **THEN** the message leaves at its Undo ceiling, focus is cleared, and the app does not crash
 
-#### Scenario: Both Android versions
-- **WHEN** the pause is checked with TalkBack on API 26 and on API 36
-- **THEN** both pause and resume as above
+#### Scenario: Which Android versions are checked
+- **WHEN** the pause is checked on API 26 and on API 36
+- **THEN** the keyboard pause is required and checked on both, and the TalkBack pause, built for every level, is checked
+  on API 36 through the real message host with TalkBack on
+- **AND** the TalkBack pause on API 26 is a known limit: our API 26 image has no TalkBack and we do not sideload it (BRD
+  EC-UX-54, D182)
 
 ### Requirement: An Undo never outlives what it restores
 An Undo SHALL leave no later than 115 s, D23's restorable window minus 5 s, after the action it undoes, paused or not. Two
@@ -120,7 +123,7 @@ and leave as on timeout (BRD EC-UX-58, EC-ATK-24, D23, D182).
 - **THEN** it fails, which shows the ceiling cannot drift from D23; the mutation is reverted
 
 ### Requirement: Message controls are 64 dp in the dark room
-Inside an active dark room, a message's Undo SHALL be at least 64 by 64 dp, its Dismiss 64 by 64 dp with the same 24 dp
+Inside an active dark room, a message's Undo SHALL be at least 64 by 64 dp, its Dismiss 64 by 64 dp with the same 20 dp
 icon, and the message at least 64 dp tall. The visible target SHALL grow, not only its touch area. Label size and colour,
 placement, the 8 dp gap, dim colours and the tap guard SHALL stay. Outside a dark room controls SHALL stay 48 dp (BRD
 EC-UX-02, EC-UX-59, D182).
@@ -137,7 +140,7 @@ EC-UX-02, EC-UX-59, D182).
 
 #### Scenario: Log medication in the dark room
 - **WHEN** "Couldn't save. Your phone's storage is full." shows on Log medication opened from attack mode
-- **THEN** its Dismiss is at least 64 by 64 dp with a 24 dp icon
+- **THEN** its Dismiss is at least 64 by 64 dp with the same 20 dp icon
 
 #### Scenario: Outside the dark room
 - **WHEN** a message shows on Home Today in the light theme, or on History
@@ -226,10 +229,11 @@ the screen SHALL also take it away (BRD EC-UX-16, EC-UX-34, EC-UX-35, EC-UX-52, 
 - **THEN** the new value applies, counted against the unpaused time already shown, not from when the message appeared
 
 ### Requirement: Messages survive rotation and short interruptions
-A message SHALL keep its time left across rotation, recreation, process restore and a return from the background in
-time. The host SHALL save the running time shown and the save's elapsed stamp. A pause SHALL end at the save, with the 3 s
-floor applied then; time from save to restore SHALL count as running time. A restored message SHALL have no focus and never
-pass its Undo ceiling (BRD EC-UX-16, EC-UX-57, D182).
+Except on Settings, Onboarding and Paywall (known limit, #236), a message SHALL keep its time left across rotation,
+recreation, process restore and a return from the background in time. The host SHALL save the running time shown and the
+save's elapsed stamp. A pause SHALL end at the save, with the 3 s floor applied then; time from save to restore SHALL
+count as running time. A restored message SHALL have no focus and never pass its Undo ceiling (BRD EC-UX-16, EC-UX-57,
+D182).
 
 #### Scenario: Rotate during the undo window
 - **WHEN** the user rotates the phone 2 seconds after starting an attack

@@ -13,4 +13,4 @@ EC-UX-59, section 18.3 B, D182).
 
 #### Scenario: Dismiss in the dark
 - **WHEN** an information message with Dismiss shows in attack mode
-- **THEN** Dismiss is at least 64 by 64 dp and its icon stays 24 dp
+- **THEN** Dismiss is at least 64 by 64 dp and its icon stays the same 20 dp

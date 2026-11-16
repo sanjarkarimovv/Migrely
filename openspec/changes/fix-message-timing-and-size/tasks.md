@@ -76,6 +76,10 @@ ask `product-manager` before you code.
   Verify: the counts are written here. On failure, `openspec validate fix-message-timing-and-size --strict` exits 0 after
   the PM edit.
 
+  **Decided 2026-11-17 (team-lead, after cr-t64 S3 #2):** the API 26 half stays unrun. The TalkBack pause is built for
+  every level and verified on API 36 only; this is a known limit in D182 and EC-UX-54. The keyboard pause is verified on
+  both levels (7.1). The production path is task 7.2.
+
   **Status 2026-11-16, 23:44 (android-engineer):** the API 36 automated rows pass. The API 26 half could not be run.
   Real TalkBack gestures and TalkBack's menu are not checked. Result and method are below the preparation notes.
   - First record, 2026-11-16 22:20: nothing had run on a device yet.
@@ -380,7 +384,7 @@ ask `product-manager` before you code.
   - The task is ticked after 5.1 turns the rule green.
   - **Green after 5.1:** `:app:testDebugUnitTest --tests '*MessageCallSites*'` gives 5 tests, 0 failures.
 - [x] 4.6 Add `LocalInDarkRoom` in `MigrelyDarkRoom`. In a dark room `MigrelySnackbar` uses a 64 dp minimum height, a
-  64 x 64 dp minimum for Undo, and a 64 x 64 dp Dismiss with a 24 dp icon (design D4).
+  64 x 64 dp minimum for Undo, and a 64 x 64 dp Dismiss with the same 20 dp icon (design D4).
   The size changes in the same frame as the room's switch, with no size animation of its own, and the control keeps its
   node so focus and the pause stay.
   Verify:
@@ -396,6 +400,8 @@ ask `product-manager` before you code.
   - The local is read where the message is drawn, with no size animation, so the control keeps its node and its focus.
   - **Difference from design D4, for the review:** Dismiss's icon is 20 dp (`ICON_SIZE`), not 24 dp. UX B3 says "the
     same icon", so it stays at 20 dp.
+    - **Resolved 2026-11-17 (PM, cr-t64 S3 #1):** the plan was wrong. The spec, design D4 and D182 (4) now say the same
+      20 dp icon.
 
   Results:
   - `:designsystem:testDebugUnitTest :designsystem:ktlintCheck :designsystem:detekt` exits 0, with 227 tests and 0
@@ -528,8 +534,8 @@ ask `product-manager` before you code.
 ## 7. Device walk (android-engineer, own emulator only)
 
 - [ ] 7.1 Walk ux §B2's device list and §B3's bounds on API 36 (`emulator-5570`) and API 26 (as `team-lead` assigns):
-  keyboard and TalkBack, Home attack mode portrait 200%, History, Reminders, landscape attack mode, dark-room Log
-  medication.
+  keyboard on both levels and TalkBack on API 36 only (API 26 is a known limit, D182), Home attack mode portrait 200%,
+  History, Reminders, landscape attack mode, dark-room Log medication.
   - Run the ceiling path of design A4 on the branch.
   - Check that a touch ending keyboard mode counts as focus leaving (scenario "A touch ends keyboard mode").
   - Check the 48 to 64 dp change when "Migraine ended" replaces a message on Home, and the reverse after "Undo": same frame,
@@ -539,6 +545,18 @@ ask `product-manager` before you code.
   Verify: one line per check in this file with the result, and `adb shell settings get secure accessibility_interactive_ui_timeout_ms`
   printing the original value at the end.
 
+- [ ] 7.2 The production TalkBack path on API 36 (`emulator-5570`) with TalkBack on: an instrumented test on the real
+  `MigrelySnackbarHost` with `ScreenReaderFocus`, not the spike's bare Box (design D3, cr-t64 S3 #2).
+  - It moves TalkBack focus onto a message's text, then to its control within 300 ms, then off to the content.
+  - It checks: paused on the text, no resume during the move, resumed 300 ms after leaving with at least 3 s left.
+  - It skips itself, with a message, when TalkBack is off, so a run without TalkBack proves nothing and says so.
+  - Restore `enabled_accessibility_services` and `accessibility_enabled` afterwards.
+
+  Verify: `ANDROID_SERIAL=emulator-5570 ./gradlew :designsystem:connectedDebugAndroidTest
+  -Pandroid.testInstrumentationRunnerArguments.class=<the new test>` passes with TalkBack on, with the run count written
+  here; negative control: with `ScreenReaderFocus` not fed to the countdown as a temporary edit, the test fails; then it
+  passes after the revert.
+
 ## 8. Gate, review, docs
 
 - [ ] 8.1 Gate. Verify: `./gradlew assembleDebug test ktlintCheck detekt lint` exits 0.
@@ -546,6 +564,10 @@ ask `product-manager` before you code.
   Verify: no open blocker in the review notes.
 - [ ] 8.3 QA independent check, design "Acceptance" A1–A6 on the branch SHA, with `develop` 40536f49 as the negative
   control for A1 and A4.
+  - A3 runs on API 36 with TalkBack on, through the real host (7.2's test rerun by QA). API 26 TalkBack is a known limit,
+    not a failure.
+  - The TalkBack menu question stays a manual row: a person on a real phone with TalkBack opens its menu on a message
+    and notes whether the countdown resumes.
   Verify: the QA report lists A1–A6 with counts.
 - [ ] 8.4 Archive the change, update the BRD §13 row status, PR into `develop`, self-merge with a merge commit.
   Verify: `openspec list` no longer shows `fix-message-timing-and-size`, and `openspec validate --all --strict` exits 0.
