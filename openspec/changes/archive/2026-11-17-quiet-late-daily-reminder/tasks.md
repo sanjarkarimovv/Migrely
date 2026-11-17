@@ -88,7 +88,7 @@ compile are fine), then passing. Record both runs in the handoff.
   `:app:checkReleasePermissions` exit 0; merged release manifest uses-permission: ACCESS_NETWORK_STATE,
   POST_NOTIFICATIONS, RECEIVE_BOOT_COMPLETED, WAKE_LOCK, BILLING, DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION; no INTERNET;
   no manifest, Gradle or catalog file changed. Logs `migrely-work/walks/t61/gate.log`, `perms.log`.
-- [ ] 2.8 Device walk on emulator-5570 (API 36), auto time off, DND off, ringer normal; restore all after. Daily reminder on
+- [x] 2.8 Device walk on emulator-5570 (API 36), auto time off, DND off, ringer normal; restore all after. Daily reminder on
   for a time T, today not answered, Migrely in the background. (a) Set the clock to T + 2 h: the catch-up posts once, in the
   shade with the icon, text and both actions; `adb logcat -b events -d -s notification_alert` has no line for it; tapping
   "Pain-free day" marks today. (b) Next date, set the clock to T + 30 min: posts with a `notification_alert` line (sound).
@@ -97,19 +97,27 @@ compile are fine), then passing. Record both runs in the handoff.
   2.8 android-engineer 2026-11-16: not run, no boot tried. Preconditions failed at 16:24 and 16:34: emulator-5560 (another
   project) running and swap free 1.69 GB, then 1.44 GB (need more than 2 GB). Left to QA 4.1 and 4.2, which cover (a),
   (b) and (c) on API 36 and API 26. R1 is so far proven only in Robolectric (SDK 26 and 35), not on a device.
+  - Not run by the engineer. Covered on API 36 by QA in the release 1.3.0 Go/No-Go (`docs/qa/go-no-go-1.3.0.md`, "T61
+    quiet late daily reminder on API 36"): (a) T+2 h 3/3 posted once, full with icon, text and both actions,
+    `flags=AUTO_CANCEL|SILENT`, beep 0 buzz 0, date marked, and "Pain-free day" on a quiet post 1/1 marks the date; (b)
+    on time 2/2 and T+59 2/2 beep 1 (T+30 ran on API 26); (c) control develop 50c784e5 (just before T61) beep 1 at T+2 h
+    2/2. R1's androidx mechanism (group "silent", no summary) is recorded on API 26
+    (`docs/qa/quiet-late-daily-reminder.md`).
 
 ## 3. Review (`code-reviewer`)
 
-- [ ] 3.1 Review the diff against design D1–D6: lateness from the set time not the planned instant, strictly more than
+- [x] 3.1 Review the diff against design D1–D6: lateness from the set time not the planned instant, strictly more than
   60 minutes, the same `at()` as the plan, `setSilent` only on the daily post, no new string, channel, permission or stored
   value, red runs recorded. Verify: review notes with no blocking finding, or fixes and a re-review.
+  - code-reviewer approved ee9094e5 with no S1 to S3 finding; F1 (S4, a DST wording claim in the plan) fixed by
+    product-manager in a574598d (PR #235, "Evidence").
 
 ## 4. Independent check (`qa-engineer`)
 
 Go/No-Go covers only what this diff reaches (owner rule 2026-11-09). Restore every device setting you change. Never run adb
 by hand during a suite.
 
-- [ ] 4.1 API 36 (emulator-5580) and API 26 (emulator-5582), one at a time, the build under test: the spec's "Clock moved
+- [x] 4.1 API 36 (emulator-5580) and API 26 (emulator-5582), one at a time, the build under test: the spec's "Clock moved
   forward" (quiet, no `notification_alert`, shade entry with icon and both actions, date marked), "About on time" and "The
   boundary" (T + 59 min alerts, T + 61 min quiet, each on its own date), "Clock moved back after a quiet post" (no second
   post). Negative control: develop e4b1fbcd on the same rows alerts at T + 2 h. Verify: a record in `docs/qa/` with counts
@@ -119,6 +127,9 @@ by hand during a suite.
   T+30 2/2, on time 2/2, T+59 2/2 and 59.75 min 1/1 alert; T+61 2/2 and 60.25 min 1/1 quiet; clock back after a quiet
   post 1/1 one post; "Pain-free day" on a quiet post marks the date 1/1. Control develop 50c784e5: T+2 h 2/2 and T+61 1/1
   alert. API 36 pending.
+  - API 36, release 1.3.0 R8 candidate (`docs/qa/go-no-go-1.3.0.md`, "T61 quiet late daily reminder on API 36"): T+2 h
+    3/3 quiet and full; on time 2/2 and T+59 2/2 sound; T+61 2/2 quiet; clock back after a quiet post 1/1, one post;
+    control develop 50c784e5: T+2 h 2/2 and T+61 1/1 sound. Pass on both levels.
 - [ ] 4.2 Same devices: "Time zone change after the time" (quiet), "Do Not Disturb on" and "Migrely allowed through Do Not
   Disturb" (no sound), "Lock screen" (hide sensitive content: "Reminder" only), "Pain-free day on a quiet reminder" (no
   sound on the update), "Reboot after the time" (quiet, once), "The person's channel settings" with the "daily" channel set
@@ -128,15 +139,30 @@ by hand during a suite.
   late 1/1 each, no sound; Priority only with Migrely allowed: on time 1/1 alerts, late 2/2 quiet (control 1/1 alerts);
   lock screen 1/1 "Reminder" only; "Pain-free day" with an attack today 1/1, update without sound; "daily" set to Medium
   "No sound": on time 2/2 and late 2/2 shown, no alert, restored; reboot after the time NOT RUN on a device (2 void attempts, see the record; unit coverage only). API 36 pending.
-- [ ] 4.3 TalkBack on API 36: the quiet reminder is reachable in the shade and reads title, text and both actions. Record,
+  - API 36 (`docs/qa/go-no-go-1.3.0.md`, "T61 quiet late daily reminder on API 36"): zone change 2/2 quiet (control 1/1
+    sound); lock screen "Reminder · now" only 1/1; "Pain-free day" on a quiet post 1/1, no sound; DND priority, late 1/1
+    beep 0. **Reboot after the time VOID** on API 36 and not run on API 26: unit tests only
+    (`RunDailyReminderUseCaseTest`); team-lead allowed recording it VOID (same record, "Voids"). "Migrely allowed
+    through DND" and the "daily" channel set to silent ran on API 26 only. Unticked for the reboot row.
+- [x] 4.3 TalkBack on API 36: the quiet reminder is reachable in the shade and reads title, text and both actions. Record,
   without pass or fail, whether TalkBack announced its arrival with the screen on and with it off. Verify: the record.
+  - API 36 (`docs/qa/go-no-go-1.3.0.md`, "T61 quiet late daily reminder on API 36"): **pass** in the shade (app, title,
+    text, then "Collapse", "Pain-free day", "Log a migraine", each a Button). Record only: arrival spoken with the
+    screen on, nothing with it off.
 - [ ] 4.3b Record only, not pass or fail, on API 36: with "wake screen for notifications" or always-on display on, does a
   quiet late post light the screen? Compare with an on-time post. Verify: the record.
+  - Not possible on the emulator image: no always-on display, and "wake screen for notifications" was not set; the
+    screen stayed off for both a late and an on-time post (same record, row 4.3b).
 - [ ] 4.4 Untouched paths, one row each on API 36: "Did it help?" late and the visit reminder late still log a
   `notification_alert`; Android's notification settings list the same three channels; the permission report equals
   develop e4b1fbcd's. Verify: the record.
+  - API 36 (`docs/qa/go-no-go-1.3.0.md`, "T61 quiet late daily reminder on API 36"): visit reminder 90 min late beep 1
+    (pass); permission report equal to 1.2.1 (pass); channels `effect` and `visit` on that install, `daily` created by
+    Android at the first daily post as in 1.2.1. "Did it help?" 90 min late posted without SILENT, but its
+    `notification_alert` line was not captured, so its sound is inferred from the flags. Unticked for that row.
 - [ ] 4.5 Optional, if time allows: one real Doze-held run (`dumpsys deviceidle force-idle`) released more than 60 minutes
   late, posted quietly. Not required (design R5).
+  - Optional, not run (design R5).
 - [x] 4.6 Optional: raise the "daily" channel to "Pop on screen" in Android's settings (restore after). An on-time post
   pops up; a late one (clock moved forward) does not. Only this row is evidence about pop-ups: on the default channel
   nothing pops up on develop either (design D1). Verify: the record.
@@ -146,9 +172,15 @@ by hand during a suite.
 
 ## 5. Fixes (`android-engineer`)
 
-- [ ] 5.1 Fix review and QA findings on this branch; re-run the gate. Verify: the gate command in 2.7 exits 0.
+- [x] 5.1 Fix review and QA findings on this branch; re-run the gate. Verify: the gate command in 2.7 exits 0.
+  - No code fix needed: the review's only finding (F1, S4) was plan wording, fixed in a574598d; QA filed no defect on
+    API 26 or API 36. Lead gate on the merge result: exit 0, 3287 tests, 0 failures; `:app:checkReleasePermissions
+    :app:checkReleaseDebugComponents` exit 0 (PR #235, comment).
 
 ## 6. Close (`product-manager`)
 
 - [ ] 6.1 Acceptance against this spec, archive the change, sync `openspec/specs/reminders/spec.md`, mark §13 row 51 done.
   Verify: `openspec validate --all --strict` exits 0 and `openspec list` no longer shows the change.
+  - Archived 2026-11-17 on `chore/archive-1.3.0-changes` (PR "Archive the OpenSpec changes shipped in 1.3.0"), synced
+    into `openspec/specs/reminders/spec.md` (+2 requirements); `openspec validate --all --strict`: 30 passed, 0 failed,
+    exit 0. Acceptance against the spec and §13 row 51 are product-manager's, not done here.

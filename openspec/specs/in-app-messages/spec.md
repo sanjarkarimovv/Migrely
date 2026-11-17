@@ -714,3 +714,64 @@ arrives when none shows SHALL still slide in, looking as before, with no new fla
 #### Scenario: Reduce motion
 - **WHEN** "Remove animations" is on and a message appears or replaces another
 - **THEN** it shows in its final place at once
+
+### Requirement: A message ignores the keyboard
+Opening or closing the keyboard SHALL NOT move a message, change how it fits (D178 (6)), or let it cover the top bar or Back.
+The keyboard MAY cover a message's lower part; the message SHALL stay dismissible. No keyboard padding SHALL apply to
+`MessageLayout`, the message host or their ancestors, and a test SHALL fail when the host is padded (BRD EC-UX-41, D180).
+
+#### Scenario: A message, then the keyboard
+- **WHEN** a message shows on Attack details and the user taps the note, at 100% or 200% font, in portrait or landscape
+- **THEN** the message stays where it was, to the pixel, below the top bar, and a first tap on Back leaves the screen
+
+#### Scenario: The keyboard, then a message
+- **WHEN** the keyboard is open on a field and a message appears, such as "Couldn't save. Your phone's storage is full."
+- **THEN** it appears at the same place as with the keyboard closed, below the top bar, and does not cover Back
+
+#### Scenario: The keyboard closes under a message
+- **WHEN** a message shows and the keyboard closes
+- **THEN** the message does not move
+
+#### Scenario: The keyboard covers the message's button
+- **WHEN** at 200% font in a short landscape window the keyboard covers a message's lower part, its Dismiss or Undo included
+- **THEN** the message never lies over the keyboard, and a sideways swipe on its visible part, TalkBack's Dismiss or Undo action,
+  or closing the keyboard each still clears or reaches it
+
+#### Scenario: A test with a keyboard inset
+- **WHEN** a test shows a message on Attack details and then gives the window a keyboard inset of 250 dp
+- **THEN** the message's top and Back's bounds are the same as before the inset, and `MessageFitInsetsTest` still passes
+
+#### Scenario: The host padded for the keyboard
+- **WHEN** the same test runs with keyboard padding put on the message host as a mutation
+- **THEN** the test fails, which shows it can fail; the mutation is reverted
+
+#### Scenario: The safety card
+- **WHEN** the safety card shows with a message and the keyboard closed
+- **THEN** D165 holds as before: the content starts below the message, and the message covers no part of the card
+
+### Requirement: Home Today's message order holds with nothing after Settings
+On Home Today with a message, Shift+Tab from the first control after Settings in Tab order SHALL go to the message's
+control, then Settings, whichever column that control is in. With nothing focusable after Settings in its column, Tab
+SHALL go Settings, message, "Migraine started", and Shift+Tab the exact reverse, with no stop added or skipped (BRD
+EC-UX-47, EC-UX-36, D178 (4), D181).
+
+#### Scenario: Nothing after Settings
+- **WHEN** a message with "Undo" shows on Home Today, nothing focusable follows Settings in its column, and the user
+  presses Tab three times from nothing focused
+- **THEN** focus goes Settings, the message's "Undo", "Migraine started"
+- **AND** Shift+Tab twice goes back to "Undo", then Settings
+
+#### Scenario: The month card is not ready yet
+- **WHEN** a message shows right after a fresh start, before the month card has loaded, and the user presses Shift+Tab
+  from "Migraine started"
+- **THEN** focus goes to the message's control, not past it to Settings
+
+#### Scenario: A short window
+- **WHEN** the phone is in a short landscape window at 200% font, the start column holds only the date and Settings,
+  and the user presses Shift+Tab from the first control of the end column
+- **THEN** focus goes to the message's control, then to Settings
+
+#### Scenario: A control after Settings
+- **WHEN** a focusable control, such as the trial banner, follows Settings in its column and the user presses Shift+Tab
+  from it
+- **THEN** focus goes to the message's control, then Settings, as before
