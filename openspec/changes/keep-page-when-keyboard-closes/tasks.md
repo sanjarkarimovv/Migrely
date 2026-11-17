@@ -130,7 +130,7 @@ navigation task).
     very end (200% portrait 3, landscape 2): the field is out of view there, TalkBack starts on Back; the page is
     still all the same (last text's top unchanged, 0 scroll events). Rows `migrely-work/238/walk/rows.jsonl`, raw
     TalkBack logs `walk/raw/<row>.log`, drivers `bin/w.py`, `bin/batch36.py`.
-- [ ] 5.2 Field bounds before and after the close on the four screens (KR4), and the room at 200% landscape 360 dp (KR11).
+- [x] 5.2 Field bounds before and after the close on the four screens (KR4), and the room at 200% landscape 360 dp (KR11).
   Verify: dump coordinates in the packet.
   - Record (2026-11-17): KR4, field and page-end bounds (px) before Back and after, candidate | v1.3.0. API 36: details
     note top 962 | moved 820/856; Log medication Name 372 and "Add and log" 1394 | moved 373; Edit medication dose 1081
@@ -144,7 +144,16 @@ navigation task).
     the keyboard up there (2 rows per build and one debug run: the keyboard never showed, then a tap on Home's migraine
     row opened Log medication); left to QA 7.1. Divider (cr-238 finding 1): short of the end a 1 dp line at y 1325–1327
     above the row with the keyboard up; after the close, end in view, no line (`shots/delete-short-*.png`).
-- [ ] 5.3 Band screenshots with the page end and the band in view, for `ux-designer`'s review (ux §11.1): Attack details dark,
+  - QA (2026-11-18, qa-238, candidate 47f93991, `docs/qa/keep-page-when-keyboard-closes.md` KR4, KR11, commit 5f873c7c):
+    KR4 equals the engineer's numbers on API 36 and API 26 (candidate 0 px in every cell; M0, where run, moves as v1.3.0). KR11 at
+    411 dp: 0 px in every KR4 cell; at 200% landscape the visible part above the keyboard is 137 px and the field's top
+    holds still. **360 dp** (`wm size 945x2100`, reached by QA): details 200% portrait 0 px (2 runs), Log 200% landscape 0,
+    Edit 200% landscape 0, Edit and Log 200% portrait 0 for the end node (field out of view at the end with the keyboard
+    up), Delete 200% short of the end 0. Details 200% landscape at 360 dp: 0 px on the candidate and on v1.3.0 (visible
+    part 61 px, plenty of page below, no room needed): that cell cannot fail. The typed line is hidden there with the
+    keyboard up on both builds: #245, pre-existing. API 26 details 200% landscape 0 px (v1.3.0 and M0 156). Room never
+    taller than the keyboard (KR7 max 820 px against a keyboard top at 1517 of 2337).
+- [x] 5.3 Band screenshots with the page end and the band in view, for `ux-designer`'s review (ux §11.1): Attack details dark,
   Attack details light, Log medication from attack mode (dark room). Verify: three screenshots in `migrely-work/238/shots/`,
   and a one-line ux verdict per shot in this task.
   - Shots (2026-11-17, candidate 5d2ee9bd…, API 36, 100% portrait), each a keyboard-open and a closed pair in
@@ -152,8 +161,29 @@ navigation task).
     attack card, first use), plus `delete-short-*` for the divider. KR5, every 4th pixel of the band (y 1510–2300)
     against the page background at (1060, 1100): dark 0 of 213,300 differ (15,17,21), light 0 differ (245,243,238),
     dark room 0 differ (8,9,12, the attack-mode background); the same check on each keyboard-open shot's keyboard area
-    fails on every pixel. The end and the field keep their bounds across the close in all three. Waiting for
-    `ux-designer`'s one-line verdict per shot, so not ticked.
+    fails on every pixel. The end and the field keep their bounds across the close in all three.
+  - ux-designer verdicts (2026-11-18, relayed by team-lead), engineer's shots (API 36, 100% portrait):
+    - `details-dark`: OK. The page does not move; the band is plain page background, no line, edge or tint.
+    - `details-light`: OK. The band is the warm light page background.
+    - `logattack-darkroom`: OK, milder than the accepted cost: only the Name label and the rows above it leave view; the
+      input, its counter and "Add and log" stay put.
+    - `delete-short`: OK. The field stays; the Delete row returns to the bottom; the divider shows with the keyboard up and
+      is gone with the end in view.
+  - ux-designer add-on on QA's shots (`migrely-work/qa-238/shots/`):
+    - `ux-kr11-api36-details-200-landscape-411dp`: OK. Android's text toolbar from the harness tap shows on v1.3.0 too.
+    - `ux-kr11-api36-edit-200-landscape-360dp`: OK. No band, as R1 says.
+    - `ux-kr11-api26-details-200-landscape`: **NOT OK.** The room works as specified (field 194–275 px and "Delete
+      migraine" 375–470 px identical before and after Back, row a26c-detailsL-0), but with the keyboard up the note was
+      already hidden under the top bar (visible part from 257 px). After the close the person sees only "Delete migraine"
+      above a band of about 60% of the window. v1.3.0 (a26v) and M0 (a26m) pulled the note back to 350–859 px on close.
+    - `ux-kr12-api26-details-anim0`: OK.
+  - team-lead decision on the NOT OK cell (2026-11-18): **not a blocker for 1.3.1**, recorded in D189 as a known limit.
+    Risk order puts data integrity and accessibility before UX: #238 stops TalkBack's focus jump, which on v1.3.0 wrote a
+    trigger chip or the impact radio into the record in 6 of 6 control rows. The cell is narrow (API 26, 200%, landscape,
+    details); the bad position starts before the close (the note was already hidden while typing, pre-existing); one
+    upward scroll brings the note back and removes the room; nothing is lost. Fix in 1.3.2 with #245: ux-designer designs
+    it (in a window shorter than the cursor line plus its margins D180's rules conflict); qa-engineer is classifying
+    whether the API 26 cell has #245's cause or a separate one.
 
 ## 6. Review (`code-reviewer`)
 
@@ -181,18 +211,37 @@ navigation task).
 
 ## 7. Acceptance (`qa-engineer`, this diff only)
 
-- [ ] 7.1 KR1 to KR16 from design "Acceptance" on the PR head, with the controls: v1.3.0, and the mutation build with the room
+- [x] 7.1 KR1 to KR16 from design "Acceptance" on the PR head, with the controls: v1.3.0, and the mutation build with the room
   removed from the screen under test. TalkBack rows headless first, windowed recorded separately; a screen where v1.3.0 shows
   no jump says "no jump observed", not a fix proof. Verify: a QA record with each KR row, build SHA, result and control result.
-- [ ] 7.2 Restore every device setting (font scale, rotation, animator scales, TalkBack, keyboard). Verify: the settings
+  - Record: `docs/qa/keep-page-when-keyboard-closes.md` (commit 5f873c7c), qa-238, 2026-11-18: **GO with recorded risks**
+    on 47f93991 (6825e1ff merged with `develop` bedd73b4, T64). Controls v1.3.0, M0 (room removed) and M1 (room never
+    shrinks), APK hashes read back on device. Details: v1.3.0 and M0 wrote a trigger or the impact into the record in 6 of 6
+    rows; candidate 3/3 clean plus 2 hide-key rows. New: v1.3.0 also jumps on Edit medication (dose to Name). Not reachable:
+    KR13. Not run: KR8's TalkBack navigation order, KR9 on Delete all data, KR15 at 360 dp, KR16 with TalkBack, windowed
+    TalkBack. One pre-existing defect filed: #245.
+- [x] 7.2 Restore every device setting (font scale, rotation, animator scales, TalkBack, keyboard). Verify: the settings
   read back in the QA record.
+  - Record: same file, section "7.2 Device settings, read back" (5f873c7c): emulator-5580 and emulator-5582 end equals
+    boot on every key except uptime; 5582's baseline font scale 2.0 restored to 2.0; both emulators off.
 
 ## 8. Close (`product-manager`, then `android-engineer`)
 
-- [ ] 8.1 Before archive: `fix-keyboard-follows-cursor` is archived first (its tasks 9.1 to 9.3). Then diff this change's
+- [x] 8.1 Before archive: ~~`fix-keyboard-follows-cursor` is archived first (its tasks 9.1 to 9.3).~~ Met: archived as
+  `openspec/changes/archive/2026-11-17-fix-keyboard-follows-cursor` (d4a5c539). Then diff this change's
   MODIFIED "Closing the keyboard and other keyboards" against the live `openspec/specs/app-shell/spec.md`; sync it if that
   requirement changed since 2026-11-17. Verify: the diff shows only this change's four rewritten scenarios and the body.
-- [ ] 8.2 BRD D189 updated with QA's results (what was proved, what stays open), then archive. Verify:
+  - Record (2026-11-18, product-manager, on 585b75da): the requirement extracted from the live spec and from this delta,
+    `diff`: only the body and four scenarios differ ("The keyboard closes", "The strip the keyboard uncovers", "Background
+    and process death", "A floating keyboard or split screen"); the other eight match line for line. The live spec's last
+    change is d4a5c539 (2026-11-17, the 1.3.0 archive that synced `fix-keyboard-follows-cursor`); `git diff 8675d05d
+    bedd73b4 -- openspec/specs/app-shell/spec.md` is empty (T64 did not touch it), and `openspec/specs/` equals
+    `origin/develop`. No sync needed.
+- [x] 8.2 BRD D189 updated with QA's results (what was proved, what stays open), then archive. Verify:
   `openspec archive keep-page-when-keyboard-closes --yes` and `openspec validate --all --strict` exit 0.
+  - Record (2026-11-18, product-manager): D189 gets "QA natijasi" (what was proved, what stays open) and known limit (e),
+    the API 26 200% landscape cell with team-lead's reason; D182's release corrected to 1.3.1. D180 (5) and EC-UX-43
+    already point to D189 since 0.1 (no rewrite). Design D5 and K6 stay in the archived change. Archive results are in
+    the commit that moves this file.
 - [ ] 8.3 PR into `develop` with `Refs #238`, merge commit, worktree removed after merge, tracker T74 updated by `team-lead`.
   Verify: `gh pr view <n> --json state,mergeCommit` shows MERGED.
