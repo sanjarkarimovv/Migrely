@@ -1,0 +1,91 @@
+# Tasks
+
+Base: `bugfix/238-talkback-focus-on-keyboard-close` (worktree `migraine-app-238`), started at 294c10c6 (1.3.0's head) with
+a1efa2bc, then merged with `origin/develop` c49b9e09 and `origin/ux/238-keyboard-room` b6131408. Release: 1.3.1, tracker T74.
+Write `Refs #238` in every commit and in the PR into `develop`, never a closing keyword: QA filed #238 and closes it after the
+retest. BRD D189, D180 (5), EC-UX-43, EC-UX-61 to EC-UX-65. Design: `docs/ux/238-keyboard-room.md` (R1 to R14, KR1 to KR16).
+
+Ownership:
+- `product-manager`: 0 (done) and 8;
+- `ux-designer`: 1 (done) and the band review in 5.3;
+- `android-engineer`: 2 to 5;
+- `code-reviewer`: 6;
+- `qa-engineer`: 7 (emulator-5580 API 36, then emulator-5582 API 26, one at a time).
+
+No `medical-reviewer`: no string and no health sentence changes. Layers: UI only (no domain, presentation, data, DI or
+navigation task).
+
+## 0. Plan (`product-manager`)
+
+- [x] 0.1 BRD D189, D180 (5), EC-UX-43 rewritten, EC-UX-61 to EC-UX-65, §13 row 53; proposal, design, `app-shell` delta, tasks.
+  Verify: `openspec validate keep-page-when-keyboard-closes --strict` and `openspec validate --all --strict` exit 0.
+
+## 1. Design (`ux-designer`)
+
+- [x] 1.1 Rules R1 to R14, per-screen notes, acceptance KR1 to KR16: `docs/ux/238-keyboard-room.md` (b6131408), accepted by
+  `team-lead`. Verify: the file is on this branch (`git log --oneline -1 -- docs/ux/238-keyboard-room.md`).
+
+## 2. Helper (`android-engineer`, `designsystem`)
+
+- [x] 2.1 Existing part: a1efa2bc adds `designsystem/.../input/KeyboardRoom.kt` and `KeyboardRoomTest` (Robolectric) and wires
+  Attack details. Not yet reviewed (section 6). Verify: `git show --stat a1efa2bc`.
+- [ ] 2.2 Let the helper take the visible part's bottom padding from a layout, not only from a `WindowInsets`, so Delete all
+  data's row (`rides` or `behindKeyboard`) can feed it (design D6). One helper for four screens; no second copy. Verify:
+  `./gradlew :designsystem:testDebugUnitTest --tests '*KeyboardRoomTest*'` green, plus a new case for a non-inset source that is
+  red when the source is ignored.
+
+## 3. Screens (`android-engineer`, `ui` modules)
+
+- [ ] 3.1 Edit medication: hoist the inline `rememberScrollState()`, put the room's modifier right after `verticalScroll`
+  (never a child: `spacedBy` would add a gap). R1 to R14. Verify: a test in `EditMedicationKeyboardTest` that closes a 250 dp
+  keyboard inset near the end and asserts the Usual dose field's bounds are unchanged; red with the modifier removed.
+- [ ] 3.2 Log medication (first-use Name, also from attack mode): same as 3.1; the room is `AttackModeBackground` in the dark
+  room. Verify: a test in the medication `ui` tests with the same assertion; red with the modifier removed.
+- [ ] 3.3 Delete all data: the room over the body above the Delete row, in both `rides` and behind-keyboard cases; the row
+  moves as D180 (8) says; the divider stays hidden with the end in view. Verify: a test in `DeleteKeyboardTest` for both
+  cases asserting the field's bounds; red with the room removed.
+- [ ] 3.4 Recheck Attack details (a1efa2bc) against R2 (room under the existing bottom padding, background only), R8 (not
+  saved: `remember`, no band after rotation, recreate or re-entry) and R11 (no semantics node, not focusable, no click). Fix
+  what fails. Verify: a test that the semantics tree has no node in the room's bounds, and a recreate test with no room after;
+  each red against a deliberately broken version.
+
+## 4. Gate (`android-engineer`)
+
+- [ ] 4.1 Full gate. Verify: `set -o pipefail; nice -n 19 ./gradlew --max-workers=2 assembleDebug test ktlintCheck detekt lint`
+  exit 0, with the counts of tests run (never `testDebugUnitTest` alone).
+- [ ] 4.2 No permission, string or manifest change. Verify: `./gradlew :app:checkReleasePermissions` exit 0 and
+  `git diff origin/develop -- '*.xml' '*strings*' '*AndroidManifest*'` empty except tests.
+
+## 5. Device walk (`android-engineer`, emulator-5570, headless first)
+
+- [ ] 5.1 Each of the four screens, API 36, 100% portrait, near the end, TalkBack on, Back once: focus stays on the field
+  (KR1 on the candidate only; QA owns the controls). Verify: the TalkBack log lines per screen in the packet.
+- [ ] 5.2 Field bounds before and after the close on the four screens (KR4), and the room at 200% landscape 360 dp (KR11).
+  Verify: dump coordinates in the packet.
+- [ ] 5.3 Band screenshots with the page end and the band in view, for `ux-designer`'s review (ux §11.1): Attack details dark,
+  Attack details light, Log medication from attack mode (dark room). Verify: three screenshots in `migrely-work/238/shots/`,
+  and a one-line ux verdict per shot in this task.
+
+## 6. Review (`code-reviewer`)
+
+- [ ] 6.1 Review a1efa2bc and sections 2 to 3 against design D1 to D7: one helper, modifier after `verticalScroll`, no
+  semantics, `remember` only, stale reads, no change to opening or message fit (D180 (2), (4)). Verify: a review packet with
+  findings, each fixed or answered by the engineer before QA.
+
+## 7. Acceptance (`qa-engineer`, this diff only)
+
+- [ ] 7.1 KR1 to KR16 from design "Acceptance" on the PR head, with the controls: v1.3.0, and the mutation build with the room
+  removed from the screen under test. TalkBack rows headless first, windowed recorded separately; a screen where v1.3.0 shows
+  no jump says "no jump observed", not a fix proof. Verify: a QA record with each KR row, build SHA, result and control result.
+- [ ] 7.2 Restore every device setting (font scale, rotation, animator scales, TalkBack, keyboard). Verify: the settings
+  read back in the QA record.
+
+## 8. Close (`product-manager`, then `android-engineer`)
+
+- [ ] 8.1 Before archive: `fix-keyboard-follows-cursor` is archived first (its tasks 9.1 to 9.3). Then diff this change's
+  MODIFIED "Closing the keyboard and other keyboards" against the live `openspec/specs/app-shell/spec.md`; sync it if that
+  requirement changed since 2026-11-17. Verify: the diff shows only this change's four rewritten scenarios and the body.
+- [ ] 8.2 BRD D189 updated with QA's results (what was proved, what stays open), then archive. Verify:
+  `openspec archive keep-page-when-keyboard-closes --yes` and `openspec validate --all --strict` exit 0.
+- [ ] 8.3 PR into `develop` with `Refs #238`, merge commit, worktree removed after merge, tracker T74 updated by `team-lead`.
+  Verify: `gh pr view <n> --json state,mergeCommit` shows MERGED.
