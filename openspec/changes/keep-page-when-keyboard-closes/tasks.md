@@ -75,10 +75,22 @@ navigation task).
     (inset dispatch recomposes before layout here), so the layout-time padding follows the helper's contract and no test
     forces it. The divider follows `canScrollForward`, false with the end in view; checked on a device in 5.2, not
     here. Logs `migrely-work/238/eng/3.3-*.log`.
-- [ ] 3.4 Recheck Attack details (a1efa2bc) against R2 (room under the existing bottom padding, background only), R8 (not
+- [x] 3.4 Recheck Attack details (a1efa2bc) against R2 (room under the existing bottom padding, background only), R8 (not
   saved: `remember`, no band after rotation, recreate or re-entry) and R11 (no semantics node, not focusable, no click). Fix
   what fails. Verify: a test that the semantics tree has no node in the room's bounds, and a recreate test with no room after;
   each red against a deliberately broken version.
+  - Record (2026-11-17, android-engineer): R2 holds by construction. The room is a layout modifier after
+    `verticalScroll`, so it sits below the last item ("Delete migraine"; the column has no bottom padding) and draws
+    nothing: the screen's `background(colorScheme.background)` shows, the dark room's in attack mode. R8: a1efa2bc kept
+    the room in `remember(viewportInsets)`, so an unequal insets object on recomposition would have reset it; since
+    2.2 it is `remember {}` with the source in `rememberUpdatedState`, and never `rememberSaveable`. R11: no child, no
+    semantics, no focus, no click. New `AttackDetailsKeyboardRoomTest` (200%, 400x700 dp, note focused, 250 dp
+    keyboard closed at the page's end), green 3/3: (a) the note keeps its top; (b) no node of the page (unmerged tree)
+    overlaps the room, with a check that the page's nodes have bounds; (c) after `emulateSavedInstanceStateRestore`
+    the page ends with no room. Broken versions: the room removed, 3 of 3 red (the note pulled 171 -> 421 dp); a
+    described 200 dp child in the room, (b) and (c) red; the room's peak kept outside the composition, (c) red (250 dp
+    after the restore). A clickable `Spacer` as the child made no semantics node under Robolectric, so that version
+    could not fail (b); not used as the control. Logs `migrely-work/238/eng/3.4-*.log`.
 
 ## 4. Gate (`android-engineer`)
 
