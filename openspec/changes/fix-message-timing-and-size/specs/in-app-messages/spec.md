@@ -47,14 +47,21 @@ EC-UX-55, EC-UX-56, D182).
 - **THEN** keyboard focus on "Undo" pauses the countdown in the same way
 
 ### Requirement: The countdown pauses while the message holds TalkBack focus
-While TalkBack's focus is on a timed message's text or control, its countdown SHALL pause as for keyboard focus, with the
-same 300 ms grace, which covers TalkBack's move from the text to the control, and the same 3 second floor. Turning TalkBack
-off SHALL count as focus leaving. TalkBack being on SHALL NOT make a message indefinite; a message pauses only while focus
-holds it, and an Undo still leaves at its ceiling (BRD EC-UX-54, EC-UX-55, D182).
+While TalkBack's focus is on a timed message's text or control, put there by the person or by TalkBack itself, its
+countdown SHALL pause as for keyboard focus, with the same 300 ms grace for the move from text to control and the same 3
+second floor. Turning TalkBack off SHALL count as focus leaving. TalkBack being on SHALL NOT make a message indefinite: it
+pauses only while focus holds it, and an Undo still leaves at its ceiling (BRD EC-UX-54, EC-UX-55, EC-UX-60, D182).
 
 #### Scenario: From the text to the control
 - **WHEN** TalkBack focuses a message's text and the user swipes to its control 2 seconds later
 - **THEN** the countdown stays paused through the move and does not resume between them
+
+#### Scenario: TalkBack focuses a new message by itself
+- **WHEN** a new "Saved." or "Migraine started" with "Undo" appears and TalkBack moves its own focus onto it before the
+  person moves anything
+- **THEN** the countdown pauses from that moment, the same as focus the person moved there
+- **AND** when focus moves on, it goes on 300 ms later with at least 3 seconds left, and the "Undo" still leaves at its
+  ceiling
 
 #### Scenario: TalkBack moves on
 - **WHEN** TalkBack focus moves from a paused message to the content

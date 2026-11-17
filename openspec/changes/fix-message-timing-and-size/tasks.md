@@ -682,6 +682,9 @@ ask `product-manager` before you code.
       but nobody chose to hold it.
     - This harness puts the message below a button. Whether the real screens do the same is checked in 7.1's TalkBack
       rows.
+    - **Decided 2026-11-17, 09:55 (team-lead): accepted as intended.** TalkBack's own focus counts as focus. Recorded by
+      product-manager in D182 (2), EC-UX-60, the spec scenario "TalkBack focuses a new message by itself", design D3,
+      and the 8.3 row below.
 
 ## 8. Gate, review, docs
 
@@ -711,6 +714,9 @@ ask `product-manager` before you code.
     not a failure.
   - The TalkBack menu question stays a manual row: a person on a real phone with TalkBack opens its menu on a message
     and notes whether the countdown resumes.
+  - Manual row, EC-UX-60: a person on a real phone with TalkBack, on Home, History and dark-room Log medication, notes
+    whether a new message takes TalkBack focus by itself, and whether it leaves 3 s or more after focus moves on (an
+    Undo at the latest 115 s after its action).
   Verify: the QA report lists A1–A6 with counts.
 - [ ] 8.4 Archive the change, update the BRD §13 row status, PR into `develop`, self-merge with a merge commit.
   Verify: `openspec list` no longer shows `fix-message-timing-and-size`, and `openspec validate --all --strict` exits 0.

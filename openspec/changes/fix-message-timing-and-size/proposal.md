@@ -49,7 +49,8 @@ product-manager re-read every claim in the code at 40536f49 before planning from
   - Home, History, Attack details and the medication screens drop their own calculation.
   - Base durations stay: Undo 5 s, the rest 8 s, "storage full" with no duration.
 - **The countdown pauses while the message holds focus (D182 (2), ux B2).**
-  - It pauses while keyboard focus is on the message's control, or TalkBack focus is on its text or control.
+  - It pauses while keyboard focus is on the message's control, or TalkBack focus is on its text or control, whether
+    the person or TalkBack itself put it there (EC-UX-60).
   - Focus has left after 300 ms with neither, or at once when the window loses focus.
   - On resume, at least 3 s are left.
   - The time-left line stops while paused. Nothing is spoken and no label appears.
@@ -125,8 +126,8 @@ None.
   - red-first ceiling tests on Home and History;
   - an `:app` JVM test that ties the ceiling to `DELETED_RETENTION`;
   - uiautomator bounds checks for 64 dp.
-- **Docs:** BRD D182, EC-UX-02, EC-UX-16, EC-UX-52…59, EC-ATK-24, D23, §13 row 50, §18.3 B.
-- **BRD ids:** D182, D23, D31, D52, D178, EC-UX-02, EC-UX-08, EC-UX-16, EC-UX-52…59, EC-ATK-14, EC-ATK-24, EC-HIS-04.
+- **Docs:** BRD D182, EC-UX-02, EC-UX-16, EC-UX-52…60, EC-ATK-24, D23, §13 row 50, §18.3 B.
+- **BRD ids:** D182, D23, D31, D52, D178, EC-UX-02, EC-UX-08, EC-UX-16, EC-UX-52…60, EC-ATK-14, EC-ATK-24, EC-HIS-04.
 - **Overlap:**
   - `bugfix/141-keyboard-follows-cursor` (D180) and `bugfix/217-privacy-wording-and-focus` (D181) both edit
     `MigrelySnackbar.kt` and add `in-app-messages` requirements. Neither delta conflicts with this one: they add a keyboard

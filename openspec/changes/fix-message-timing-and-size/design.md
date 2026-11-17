@@ -159,6 +159,10 @@ product-manager accepts B1–B3 as written. Where this file and §B differ, §B 
     `TYPE_VIEW_ACCESSIBILITY_FOCUSED` and `..._CLEARED` for the message's virtual node ids.
   - Another: a semantics-based probe.
   - "TalkBack off" comes from `AccessibilityManager` touch-exploration state.
+  - **Who put the focus there does not matter (team-lead, 2026-11-17, EC-UX-60).** Task 7.2 found that TalkBack puts its
+    own focus on a new message in 5 of 10 rounds. That focus holds the message too: a screen reader user must be able to
+    hear it in full and act. The 115 s ceiling still ends an Undo; any other message leaves 3 s or more after focus moves
+    on (WCAG 2.2.1). Accessibility comes before UX in the risk order.
   - **The probe is invisible to users of assistive tech:** it adds no semantics node, label, action or change to the
     reading order.
   - The spike also opens TalkBack's own menu on a message and logs `isWindowFocused` and the focus events, to learn
@@ -256,6 +260,7 @@ If the walk says a number is wrong, ux-designer proposes a new one, and product-
 | EC-UX-59 | Outside the dark room | 48 dp | Outside the dark room |
 | EC-UX-59 | Room changes under a message | the new room's size in the same frame, focus and pause kept | The room changes under a message |
 | EC-UX-59 | TalkBack, in or out of the dark room | nothing new spoken, no new node from the probe | Nothing new is spoken |
+| EC-UX-60 | TalkBack focuses a new message by itself | paused from then; floor after focus leaves; Undo ceiling | TalkBack focuses a new message by itself |
 
 **Checklist items with no change:**
 - *Data:* nothing stored changes, so there is no effect on backup, restore or upgrade from 1.0.x to 1.2.1.
@@ -279,6 +284,8 @@ If the walk says a number is wrong, ux-designer proposes a new one, and product-
 - **A3 (B2, TalkBack):** P4 on API 36 with TalkBack on, through the real `MigrelySnackbarHost` (task 7.2's test, rerun
   by QA, plus a few real swipes). On API 26, TalkBack is not checked: a known limit (D182, EC-UX-54), not a failure.
   TalkBack's own menu on a message is a manual row on a real phone: does it take window focus and resume the countdown?
+  A second manual row (EC-UX-60): on Home, History and dark-room Log medication, does a new message take TalkBack focus by
+  itself, and does it leave 3 s or more after focus moves on?
 - **A4 (ceiling, device):**
   - Set `adb shell settings put secure accessibility_interactive_ui_timeout_ms 120000`.
   - Delete a migraine on Details, wait about 20 s, go Back to Home, lock, unlock when about 122 s have passed since the
@@ -300,6 +307,8 @@ If the walk says a number is wrong, ux-designer proposes a new one, and product-
   writes to the two timeout settings, or how `delay` behaves in deep sleep.
 - The TalkBack checks show observability on API 36 on one emulator, not on API 26 and not on every OEM build.
 - Settings, Onboarding and Paywall still drop their message on rotation (#236). No check here covers them.
+- TalkBack taking focus by itself was seen on 7.2's test screen, where the message sits below a button. Whether real
+  screens do the same needs a person with TalkBack (8.3).
 - The bounds checks prove size, not comfort. Whether 64 dp feels heavy over the rain card, and whether 3 s and 300 ms feel
   right, needs a person (ux §D).
 
