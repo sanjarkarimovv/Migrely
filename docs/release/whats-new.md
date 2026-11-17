@@ -3,6 +3,23 @@
 Each release's text for Play Console › Create new release › Release notes. Play allows at most 500 characters per
 language. en-US is the default, and other languages fall back to it.
 
+## 1.3.1 (versionCode 13)
+
+The text covers `develop` 9075aff8 since `v1.3.0`: D182 (T64) and D189 (#238, T74). `medical-reviewer` (med-131)
+checked the text on 2026-11-18 against 9075aff8 and narrowed it to what the code does: the keyboard bullet names the
+four screens, the message bullet does not claim every message, and the larger buttons are only on Home during a
+migraine and on "Medication taken" opened from it. The Undo limit (D182 (3)) is not announced. It does not say
+"medically reviewed" or "approved" (the clinician sign-off, T31, is open). The text is 494 of 500 characters.
+
+```
+<en-US>
+Easier with TalkBack and "Time to take action":
+• Closing the keyboard in a migraine's details, when logging or editing a medication, or in Delete all data no longer moves the page or pulls TalkBack off the field you were typing in.
+• Messages such as "Saved." now follow Android's "Time to take action" setting and pause while TalkBack or keyboard focus is on them.
+• Between "Migraine started" and "Migraine ended", message buttons on Home and on "Medication taken" opened from it are larger.
+</en-US>
+```
+
 ## 1.3.0 (versionCode 12)
 
 The text covers `develop` e46f2b22 since `v1.2.1`: D177, D178, D180, D181 and D183. T64 (D182) is not in 1.3.0.
