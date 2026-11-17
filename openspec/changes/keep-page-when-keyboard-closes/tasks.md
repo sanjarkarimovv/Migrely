@@ -60,9 +60,21 @@ navigation task).
     `LogMedicationKeyboardTest`, first use, Name focused at 200%, scrolled to "Add and log", keyboard closed: red without
     the room, Name pulled 242 dp in both the light page and the dark room (2 of 2 failed); green with it. Medication `ui`
     debug unit tests after: 93, 0 failed.
-- [ ] 3.3 Delete all data: the room over the body above the Delete row, in both `rides` and behind-keyboard cases; the row
+- [x] 3.3 Delete all data: the room over the body above the Delete row, in both `rides` and behind-keyboard cases; the row
   moves as D180 (8) says; the divider stays hidden with the end in view. Verify: a test in `DeleteKeyboardTest` for both
   cases asserting the field's bounds; red with the room removed.
+  - Record (2026-11-17, android-engineer): the room's source is the visible part's bottom padding, `row +
+    rowInsets.getBottom + bodyInsets.getBottom`, read in layout. The row and the body pad with those same objects
+    (`rowInsets`, and `bodyInsets` = `ime.exclude(bars).exclude(row)` while the row stays behind, replacing the
+    composition-time `behindKeyboard` Dp by `padding(bodyInsets.asPaddingValues())`, which reads in layout and consumes
+    nothing). The room goes after `verticalScroll` in `ConfirmationBody`. `DeleteKeyboardTest`, 4 new cases at 200%
+    (riding row 411x891 dp with a 250 dp keyboard, row behind 800x360 dp with 200 dp; each closed at once and in 4
+    animation steps, the body scrolled to its end): red with the room removed, the field pulled 188 dp riding and 128 dp
+    behind (4 of 10 failed); green 10/10, the six D180 (8) row tests unchanged. Mutation without the body term: the two
+    behind cases red (the inset alone is not the source). Mutation with the old composition-time body padding: survives
+    (inset dispatch recomposes before layout here), so the layout-time padding follows the helper's contract and no test
+    forces it. The divider follows `canScrollForward`, false with the end in view; checked on a device in 5.2, not
+    here. Logs `migrely-work/238/eng/3.3-*.log`.
 - [ ] 3.4 Recheck Attack details (a1efa2bc) against R2 (room under the existing bottom padding, background only), R8 (not
   saved: `remember`, no band after rotation, recreate or re-entry) and R11 (no semantics node, not focusable, no click). Fix
   what fails. Verify: a test that the semantics tree has no node in the room's bounds, and a recreate test with no room after;

@@ -4,11 +4,14 @@ import androidx.activity.ComponentActivity
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
+import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.DpRect
@@ -97,6 +100,41 @@ class DeleteKeyboardTest {
         val line = inputLineBottom()
         assertTrue("input line ends at $line, $what at $edge", line + MARGIN.value <= edge + 0.5f)
     }
+
+    private val body get() = rule.onNode(hasScrollAction())
+
+    private fun scroll(): Float =
+        body.fetchSemanticsNode().config[SemanticsProperties.VerticalScrollAxisRange].value()
+
+    /**
+     * With the field focused and a [keyboardDp] keyboard open, scrolls the body to its end, closes the keyboard (in
+     * steps if [animated]) and returns the field's top before and at every step after (BRD D189, ux 5.4).
+     */
+    private fun fieldTopsAcrossAClose(keyboardDp: Int, animated: Boolean): List<Float> {
+        show()
+        setKeyboard(keyboardDp)
+        body.performSemanticsAction(SemanticsActions.ScrollBy) { it(0f, END) }
+        rule.waitForIdle()
+        assertTrue("the body fits above the keyboard", scroll() > 0f)
+        val before = field.getUnclippedBoundsInRoot().top.value
+        if (!animated) {
+            setKeyboard(0)
+            return listOf(before, field.getUnclippedBoundsInRoot().top.value)
+        }
+        val keyboard = KeyboardAnimation(rule.activity, keyboardDp, 0)
+        rule.runOnUiThread { keyboard.start() }
+        val tops = FRACTIONS.map { fraction ->
+            rule.runOnUiThread { keyboard.frame(fraction) }
+            rule.waitForIdle()
+            field.getUnclippedBoundsInRoot().top.value
+        }
+        rule.runOnUiThread { keyboard.end() }
+        rule.waitForIdle()
+        return listOf(before) + tops + field.getUnclippedBoundsInRoot().top.value
+    }
+
+    private fun assertStill(tops: List<Float>) =
+        tops.forEach { assertEquals("the field moved: $tops", tops.first(), it, 0.5f) }
 
     @Test
     @Config(sdk = [35], qualifiers = "w411dp-h891dp")
@@ -206,7 +244,30 @@ class DeleteKeyboardTest {
         assertEquals(rowBottoms.map { it.first }.sortedDescending(), rowBottoms.map { it.first })
     }
 
+    @Test
+    @Config(sdk = [35], qualifiers = "w411dp-h891dp")
+    fun `With the row riding, closing the keyboard near the end leaves the field where it is`() =
+        assertStill(fieldTopsAcrossAClose(KEYBOARD_DP, animated = false))
+
+    @Test
+    @Config(sdk = [35], qualifiers = "w800dp-h360dp")
+    fun `With the row behind the keyboard, closing it near the end leaves the field where it is`() =
+        assertStill(fieldTopsAcrossAClose(SHORT_KEYBOARD_DP, animated = false))
+
+    @Test
+    @Config(sdk = [35], qualifiers = "w800dp-h360dp")
+    fun `With the row behind the keyboard, a closing keyboard never moves the field near the end`() =
+        assertStill(fieldTopsAcrossAClose(SHORT_KEYBOARD_DP, animated = true))
+
+    @Test
+    @Config(sdk = [35], qualifiers = "w411dp-h891dp")
+    fun `With the row riding, a closing keyboard never moves the field near the end`() =
+        assertStill(fieldTopsAcrossAClose(KEYBOARD_DP, animated = true))
+
     private companion object {
         val FRACTIONS = listOf(0.25f, 0.5f, 0.75f, 1f)
+
+        // Past any body's end: the scroll stops there.
+        const val END = 10_000f
     }
 }
