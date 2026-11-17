@@ -688,7 +688,18 @@ ask `product-manager` before you code.
 
 ## 8. Gate, review, docs
 
-- [ ] 8.1 Gate. Verify: `./gradlew assembleDebug test ktlintCheck detekt lint` exits 0.
+- [x] 8.1 Gate. Verify: `./gradlew assembleDebug test ktlintCheck detekt lint` exits 0.
+
+  **Done 2026-11-17 (android-engineer)** on 0be03fda: branch 2df55c93 merged with `origin/develop` c49b9e09, no
+  conflicts.
+  - Command: `set -o pipefail; nice -n 19 ./gradlew --max-workers=2 --continue assembleDebug test ktlintCheck detekt lint
+    :app:checkReleasePermissions :app:checkReleaseDebugComponents`, started at load 1.19.
+  - Result: exit 0, `BUILD SUCCESSFUL in 3m 14s`, 2144 tasks (1398 executed).
+  - JUnit reports: 1370 JVM-module tests, 1265 debug unit tests and 726 release unit tests, all with 0 failures and 0
+    skipped.
+  - `:app:checkReleasePermissions` and `:app:checkReleaseDebugComponents` pass. The merged release manifest holds 6
+    `uses-permission` and no INTERNET: the word appears only in two comments.
+  - `openspec validate --all --strict`: 34 passed, 0 failed, exit 0.
 - [ ] 8.2 `code-reviewer`, then fixes.
   Verify: no open blocker in the review notes.
 
