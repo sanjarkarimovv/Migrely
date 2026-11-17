@@ -533,7 +533,7 @@ ask `product-manager` before you code.
 
 ## 7. Device walk (android-engineer, own emulator only)
 
-- [ ] 7.1 Walk ux §B2's device list and §B3's bounds on API 36 (`emulator-5570`) and API 26 (as `team-lead` assigns):
+- [x] 7.1 Walk ux §B2's device list and §B3's bounds on API 36 (`emulator-5570`) and API 26 (as `team-lead` assigns):
   keyboard on both levels and TalkBack on API 36 only (API 26 is a known limit, D182), Home attack mode portrait 200%,
   History, Reminders, landscape attack mode, dark-room Log medication.
   - Run the ceiling path of design A4 on the branch.
@@ -625,6 +625,10 @@ ask `product-manager` before you code.
     effective scale.
   - Both emulators are off. `adb devices` shows only the owner's phone, which was not touched.
 
+  **Result, 2026-11-17 (android-engineer):** done. QA ran in 8.3 the rows this walk did not run: A1 and A2 cover
+  Reminders "Saved." (API 36 and 26) and "Visit removed" (API 26), and P6 (2 rows on API 36, 1 on API 26); A3 drives
+  TalkBack in the real app through console gestures. Record: `docs/qa/fix-message-timing-and-size.md`.
+
 - [x] 7.2 The production TalkBack path on API 36 (`emulator-5570`) with TalkBack on: an instrumented test on the real
   `MigrelySnackbarHost` with `ScreenReaderFocus`, not the spike's bare Box (design D3, cr-t64 S3 #2).
   - It moves TalkBack focus onto a message's text, then to its control within 300 ms, then off to the content.
@@ -700,7 +704,7 @@ ask `product-manager` before you code.
   - `:app:checkReleasePermissions` and `:app:checkReleaseDebugComponents` pass. The merged release manifest holds 6
     `uses-permission` and no INTERNET: the word appears only in two comments.
   - `openspec validate --all --strict`: 34 passed, 0 failed, exit 0.
-- [ ] 8.2 `code-reviewer`, then fixes.
+- [x] 8.2 `code-reviewer`, then fixes.
   Verify: no open blocker in the review notes.
 
   **cr-t64 on bc8d0d9b: approved with findings, no S1 or S2.** product-manager folded the spec findings into 24a29a0d.
@@ -719,7 +723,12 @@ ask `product-manager` before you code.
     `:datasource:source`, `:datasource:implementation` and the ten feature `ui` modules all exit 0, as do the tests of
     the five hosts whose line call changed: Home 122, History 61, Attack 119, Medication 91, Reminders 27, all with 0
     failures.
-- [ ] 8.3 QA independent check, design "Acceptance" A1–A6 on the branch SHA, with `develop` 40536f49 as the negative
+
+  **Result, 2026-11-17 (android-engineer):** done, no open blocker. cr-t64 approved bc8d0d9b with findings, no S1 or S2.
+  The S3 and S4 findings are fixed in 24a29a0d, c6a3de7a, ac573e81 and 507f0918. The delta review of 507f0918 raised
+  S4 #1, fixed by product-manager in 8d1a0894. The only later code change is the instrumented test 7c85a7d0 (node-cache
+  clearing), which QA reran in 8.3: 10/10, negative control 0/10.
+- [x] 8.3 QA independent check, design "Acceptance" A1–A6 on the branch SHA, with `develop` 40536f49 as the negative
   control for A1 and A4.
   - A3 runs on API 36 with TalkBack on, through the real host (7.2's test rerun by QA). API 26 TalkBack is a known limit,
     not a failure.
@@ -729,5 +738,19 @@ ask `product-manager` before you code.
     whether a new message takes TalkBack focus by itself, and whether it leaves 3 s or more after focus moves on (an
     Undo at the latest 115 s after its action).
   Verify: the QA report lists A1–A6 with counts.
-- [ ] 8.4 Archive the change, update the BRD §13 row status, PR into `develop`, self-merge with a merge commit.
+
+  **Result, 2026-11-17 (qa-t64, recorded by android-engineer):** **GO with risks** on 58e62072, record
+  `docs/qa/fix-message-timing-and-size.md`. A1–A6 pass with counts, and each new check fails or differs on the control
+  `v1.3.0`. No defect filed.
+  - Two rows stay **PENDING-PERSON**: the TalkBack menu and EC-UX-60, each on a real phone. team-lead decided they move
+    to the Go/No-Go of the release that ships T64 (1.3.1). They do not block the merge into `develop`.
+  - The emulator already answered both. The menu takes window focus and the countdown runs (3/3, by design D3).
+    TalkBack focused a new Undo on Home by itself, and the Undo left at the 115 s ceiling.
+- [x] 8.4 Archive the change, update the BRD §13 row status, PR into `develop`, self-merge with a merge commit.
   Verify: `openspec list` no longer shows `fix-message-timing-and-size`, and `openspec validate --all --strict` exits 0.
+
+  **Result, 2026-11-17 (android-engineer):** the branch merged QA's record (`origin/qa/t64-message-timing` 1161a609) and
+  `origin/develop` d82cdf05, with no conflicts and only `openspec/` and `docs/` files from either.
+  - BRD §13 row 50 now holds its status and the QA record, and its release is 1.3.1. D182's text is unchanged.
+  - The change is archived. The PR into `develop` is open; team-lead gates and merges it, so the self-merge step is the
+    lead's.
