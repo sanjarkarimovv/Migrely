@@ -3,6 +3,23 @@
 Each release's text for Play Console › Create new release › Release notes. Play allows at most 500 characters per
 language. en-US is the default, and other languages fall back to it.
 
+## 1.3.1 (versionCode 13)
+
+The text covers `develop` 9075aff8 since `v1.3.0`: D182 (T64) and D189 (#238, T74). Both decisions add no new UI
+text and make no medical claim, and the bullets describe only how the page and messages behave. No reviewer
+has read this text yet. The text is 403 of 500 characters.
+
+```
+<en-US>
+Fixes:
+• Closing the keyboard no longer moves the page, so TalkBack stays on the field you were typing in.
+• Every message now follows your Android "Time to take action" setting.
+• A message now waits while TalkBack or keyboard focus is on it.
+• Undo no longer stays on screen after a deleted migraine can no longer be restored.
+• During a migraine, the Undo and Dismiss buttons on a message are larger.
+</en-US>
+```
+
 ## 1.3.0 (versionCode 12)
 
 The text covers `develop` e46f2b22 since `v1.2.1`: D177, D178, D180, D181 and D183. T64 (D182) is not in 1.3.0.
