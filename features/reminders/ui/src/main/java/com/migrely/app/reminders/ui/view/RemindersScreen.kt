@@ -11,9 +11,6 @@ import android.provider.Settings
 import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -83,6 +80,7 @@ import com.migrely.app.designsystem.layout.MigrelyInsets
 import com.migrely.app.designsystem.motion.rememberReduceMotion
 import com.migrely.app.designsystem.picker.DatePickerLabels
 import com.migrely.app.designsystem.picker.MigrelyDatePicker
+import com.migrely.app.designsystem.snackbar.LocalMessageClock
 import com.migrely.app.designsystem.snackbar.MESSAGE_OFFSET_BELOW_TOP_BAR
 import com.migrely.app.designsystem.snackbar.MessageLayout
 import com.migrely.app.designsystem.snackbar.MigrelySnackbar
@@ -90,6 +88,8 @@ import com.migrely.app.designsystem.snackbar.MigrelySnackbarHost
 import com.migrely.app.designsystem.snackbar.SnackbarAction
 import com.migrely.app.designsystem.snackbar.SnackbarTone
 import com.migrely.app.designsystem.snackbar.messageTimeoutMillis
+import com.migrely.app.designsystem.snackbar.rememberMessageCountdown
+import com.migrely.app.designsystem.snackbar.rememberMessageTimeLeft
 import com.migrely.app.designsystem.theme.MigrelyTheme
 import com.migrely.app.reminders.presentation.model.RemindersViewState
 import com.migrely.app.reminders.ui.R
@@ -178,6 +178,7 @@ fun RemindersDependencies.Reminders(navController: NavController, modifier: Modi
         }
     }
     var message by rememberSaveable { mutableStateOf<ShownRemindersMessageUiModel?>(null) }
+    val messageClock = LocalMessageClock.current
 
     fun errorShown(): Boolean = message?.let {
         remindersMessageBehaviourUiMapper.toUi(it.message).tone == SnackbarTone.Error
@@ -202,7 +203,7 @@ fun RemindersDependencies.Reminders(navController: NavController, modifier: Modi
                 is RemindersEventUiModel.Message ->
                     if (event.message != RemindersMessageUiModel.Saved || errorShown()) {
                         message =
-                            ShownRemindersMessageUiModel(event.message, System.currentTimeMillis())
+                            ShownRemindersMessageUiModel(event.message, messageClock.wallMillis())
                     }
             }
         }
@@ -210,17 +211,18 @@ fun RemindersDependencies.Reminders(navController: NavController, modifier: Modi
     // An error belongs to the visit: Back or forward clears it; the system dialog and Android Settings keep it
     // (BRD D178 (2)).
     ScreenLeaveObserver(navController) { if (errorShown()) message = null }
-    // Stretched to the accessibility timeout (BRD EC-UX-16; QA #56).
-    val messageTimeout = messageTimeoutMillis(
-        message?.let { remindersMessageBehaviourUiMapper.toUi(it.message).baseDurationMillis }
+    // Stretched to "Time to take action", paused while focus holds it (BRD EC-UX-16, D182; QA #56). "Visit removed"
+    // counts its Undo ceiling from when it showed.
+    val countdown = rememberMessageCountdown(
+        message = message,
+        timeoutMillis = messageTimeoutMillis(
+            message?.let { remindersMessageBehaviourUiMapper.toUi(it.message).baseDurationMillis }
+        ),
+        undoActionWallMillis = message
+            ?.takeIf { it.message is RemindersMessageUiModel.VisitRemoved }
+            ?.shownAtEpochMillis,
+        onExpired = { message = null }
     )
-    LaunchedEffect(message, messageTimeout) {
-        val current = message
-        if (current != null && messageTimeout != null) {
-            delay(current.remainingMillis(System.currentTimeMillis(), messageTimeout))
-            message = null
-        }
-    }
     val context = LocalContext.current
     RemindersContents(
         viewState = uiState,
@@ -259,9 +261,10 @@ fun RemindersDependencies.Reminders(navController: NavController, modifier: Modi
         ),
         messages = {
             MigrelySnackbarHost(
-                message = message,
+                message = message?.takeUnless { countdown.isOver },
                 reduceMotion = rememberReduceMotion(),
-                topOffset = MESSAGE_OFFSET_BELOW_TOP_BAR
+                topOffset = MESSAGE_OFFSET_BELOW_TOP_BAR,
+                countdown = countdown
             ) { shown ->
                 val behaviour = remindersMessageBehaviourUiMapper.toUi(shown.message)
                 val removed = shown.message as? RemindersMessageUiModel.VisitRemoved
@@ -288,10 +291,8 @@ fun RemindersDependencies.Reminders(navController: NavController, modifier: Modi
                     baseDurationMillis = behaviour.baseDurationMillis,
                     dismissLabel = stringResource(R.string.reminders_message_dismiss),
                     onDismiss = { if (message == shown) message = null },
-                    timeLeft = if (removed != null && messageTimeout != null &&
-                        !rememberReduceMotion()
-                    ) {
-                        rememberTimeLeft(shown, messageTimeout)
+                    timeLeft = if (removed != null && !rememberReduceMotion()) {
+                        rememberMessageTimeLeft()
                     } else {
                         null
                     }
@@ -652,23 +653,6 @@ private fun DropVisitRequestOnLeaving(drop: () -> Unit) {
         owner.lifecycle.addObserver(observer)
         onDispose { owner.lifecycle.removeObserver(observer) }
     }
-}
-
-// The line under "Visit removed" runs down with its time (BRD EC-UX-16).
-@Composable
-private fun rememberTimeLeft(
-    shown: ShownRemindersMessageUiModel,
-    timeoutMillis: Long
-): () -> Float {
-    val remaining = remember(shown, timeoutMillis) {
-        shown.remainingMillis(System.currentTimeMillis(), timeoutMillis)
-    }
-    val fraction =
-        remember(shown, timeoutMillis) { Animatable(remaining.toFloat() / timeoutMillis) }
-    LaunchedEffect(fraction) {
-        fraction.animateTo(0f, tween(remaining.toInt(), easing = LinearEasing))
-    }
-    return { fraction.value }
 }
 
 private val previewActions = RemindersActions({}, {}, {}, {}, {})

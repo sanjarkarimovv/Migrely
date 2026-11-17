@@ -69,6 +69,7 @@ import com.migrely.app.designsystem.icon.MigrelyIcons
 import com.migrely.app.designsystem.input.rememberKeyboardRoom
 import com.migrely.app.designsystem.layout.MigrelyInsets
 import com.migrely.app.designsystem.motion.rememberReduceMotion
+import com.migrely.app.designsystem.snackbar.LocalMessageClock
 import com.migrely.app.designsystem.snackbar.MessageLayout
 import com.migrely.app.designsystem.snackbar.clearOfMessage
 import com.migrely.app.designsystem.theme.MigrelyTheme
@@ -157,6 +158,7 @@ fun AttackDetailsDependencies.AttackDetails(
         mutableStateOf<ShownAttackMessageUiModel?>(null)
     }
     val messageBottom = remember { mutableStateOf(0.dp) }
+    val messageClock = LocalMessageClock.current
     // Read by the event collector, which outlives each state.
     val ready by rememberUpdatedState(uiState is AttackDetailsViewStateUiModel.Ready)
 
@@ -177,7 +179,7 @@ fun AttackDetailsDependencies.AttackDetails(
     // of the latest event has been announced, plus CARD_FIRST_MILLIS, it is not shown: TalkBack speaks the card first.
     fun post(message: AttackMessageUiModel) {
         if (!messageHeld()) shownBeforeHold = shownMessage
-        shownMessage = ShownAttackMessageUiModel(message, System.currentTimeMillis())
+        shownMessage = ShownAttackMessageUiModel(message, messageClock.wallMillis())
         if (messageReleasedFor < safetyCardArrivals) messageHeldFor = safetyCardArrivals
     }
 
@@ -189,7 +191,7 @@ fun AttackDetailsDependencies.AttackDetails(
             delay(CARD_FIRST_MILLIS)
             // Its time starts when it can be seen.
             if (messageHeld() && messageHeldFor <= announced) {
-                shownMessage = shownMessage?.copy(shownAtEpochMillis = System.currentTimeMillis())
+                shownMessage = shownMessage?.copy(shownAtEpochMillis = messageClock.wallMillis())
             }
             messageReleasedFor = announced
         }

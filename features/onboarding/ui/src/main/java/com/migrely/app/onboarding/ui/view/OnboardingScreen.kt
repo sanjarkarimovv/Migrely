@@ -47,12 +47,12 @@ import com.migrely.app.designsystem.snackbar.MigrelySnackbar
 import com.migrely.app.designsystem.snackbar.MigrelySnackbarHost
 import com.migrely.app.designsystem.snackbar.SnackbarTone
 import com.migrely.app.designsystem.snackbar.messageTimeoutMillis
+import com.migrely.app.designsystem.snackbar.rememberMessageCountdown
 import com.migrely.app.designsystem.theme.MigrelyTheme
 import com.migrely.app.onboarding.presentation.model.AttackFrequencyPresentationModel
 import com.migrely.app.onboarding.presentation.model.OnboardingGoalPresentationModel
 import com.migrely.app.onboarding.ui.R
 import com.migrely.app.onboarding.ui.di.OnboardingDependencies
-import kotlinx.coroutines.delay
 
 private const val STEPS = 4
 private const val GOAL = 0
@@ -93,13 +93,13 @@ fun OnboardingDependencies.Onboarding(
     LaunchedEffect(onboardingEventPresenter) {
         onboardingEventPresenter.notSaved.collect { notSavedAt = System.currentTimeMillis() }
     }
-    val notSavedTimeout = messageTimeoutMillis(READING_MILLIS)
-    LaunchedEffect(notSavedAt, notSavedTimeout) {
-        if (notSavedAt != null && notSavedTimeout != null) {
-            delay(notSavedTimeout)
-            notSavedAt = null
-        }
-    }
+    // Stretched to "Time to take action", paused while focus holds it (BRD EC-UX-16, D182).
+    val countdown = rememberMessageCountdown(
+        message = notSavedAt,
+        timeoutMillis = messageTimeoutMillis(READING_MILLIS),
+        undoActionWallMillis = null,
+        onExpired = { notSavedAt = null }
+    )
     BackHandler(enabled = step > GOAL) { step-- }
     val next: () -> Unit = {
         if (step < REMINDER) step++ else onboardingViewModel.onFinishAction()
@@ -125,8 +125,9 @@ fun OnboardingDependencies.Onboarding(
         reminderOffer = { reminderOffer(onboardingViewModel::onFinishAction) },
         messages = {
             MigrelySnackbarHost(
-                message = notSavedAt,
-                reduceMotion = rememberReduceMotion()
+                message = notSavedAt?.takeUnless { countdown.isOver },
+                reduceMotion = rememberReduceMotion(),
+                countdown = countdown
             ) {
                 MigrelySnackbar(
                     text = stringResource(R.string.onboarding_not_saved),
