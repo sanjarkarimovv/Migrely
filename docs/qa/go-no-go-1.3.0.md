@@ -315,3 +315,32 @@ clean). A QA follow-up fixes `qa/monkey.sh`.
   baseline that earlier sessions left (font 2.0, DND "Alarms only" zen 3); clock skew under 1 s. Migrely is not installed at
   the end (the instrumented run uninstalls it); at the start 1.2.1 was installed. Powered off with `emu kill`.
 - **Host:** QA worktree `migraine-app-qa-rel130` clean at 2f7745c3 (the temporary monkey copy removed); no QA lock left.
+
+## Addendum, 2026-11-17 12:20: T66 4.1/4.3 History on API 36 (evidence found after the record)
+
+The scope above lists "T66 4.1/4.3 History" for API 36, but the record had no History row. The rows ran during the
+check (chain `s9`, 02:35 to 02:42) and were left out of the write-up. QA (qa-t64) read the evidence back:
+`migrely-work/qa-rel130/logs/s9.progress`, `hist36/hist-head/kb66.log`, one dump per key and one screenshot per cell.
+
+- **Build on the device:** APK sha256 prefix `782cf3d3e80efc1a` before and after the step (`s9.progress`), the
+  candidate's debug build from 2f7745c3 (`apk/SHA256SUMS`). Not the R8 build.
+- **Device:** emulator-5580, API 36, portrait. Driver `bin/hist36.sh` (qa-t66 `hist.sh`): Maestro setup per cell, tap
+  the day, then Tab from no focus, Shift+Tab, Tab, Shift+Tab, a `uiautomator` dump after every key.
+
+| Cell | Day chosen | Tab ×5 from no focus | Shift+Tab from the day section's first control | Result |
+|---|---|---|---|---|
+| migraine row, 100% | today, 1 migraine | Back, Insights, Doctor report, the day, the migraine row | the chosen day, inside the window; Tab, Shift+Tab repeat it | **pass** |
+| Period shown, 100% | Nov 2, nothing logged | … the day, "Period" | the chosen day, inside | **pass** |
+| Period hidden, 100% | Nov 2 | … the day, "Pain-free day" | the chosen day, inside | **pass** |
+| migraine row, 200% | today | … the day, the migraine row | the chosen day, inside (the page scrolled so the day sits at y 296–424, under the top bar's 276) | **pass** |
+| Period shown, 200% | Nov 2 | … the day, "Period" | the chosen day, inside | **pass** |
+
+- **5 of 5 cells: no stop.** Shift+Tab never landed on a group, a scroll container, the legend or a spacer, which is the
+  stop T66 4.1 looked for. The focus ring is visible on the chosen day in the end screenshot of the cells checked
+  (`head-per-2.0-P-end.png`).
+- **Not run on API 36:** Period hidden at 200%, landscape (two panes) at 100% and 200%, and a day chosen by the
+  keyboard (arrows and Enter). These cells exist only on API 26 (0 stops in 22 cells, head and develop,
+  `fix-privacy-wording-and-focus.md`).
+- **No control on API 36.** 1.3.0 changed no History code (T66 4.3 note), so there is no "fixed" claim to prove
+  against an older build; the row shows only that the stop does not reproduce on API 36 in these 5 cells.
+- **Effect on the verdict:** none. The rows pass, and the 1.3.0 GO stands as recorded.
