@@ -109,7 +109,11 @@ After generating a feature:
 2. Rename the generated `<Feature>Screen()` and `<Feature>ScreenContent()` composables to `<Screen>()` and
    `<Screen>Contents()` (sample naming).
 3. Register the feature in `:app`: DI modules, navigation mapper, route and nav host entry (section 5).
-4. Add the tests that skill rule 12 requires before the change is considered done.
+4. Declare `libs.compose.ui.tooling` and `libs.compose.ui.test.manifest` with `debugImplementation` only; `@Preview`
+   needs just `libs.compose.ui.tooling.preview`. `:app:checkReleaseDebugComponents` fails the release build when the
+   release merged manifest declares a listed debug-only component, such as ui-tooling's exported `PreviewActivity`
+   (issue #195, BRD D172).
+5. Add the tests that skill rule 12 requires before the change is considered done.
 
 ## 5. Navigation binding: Navigation Compose 2, type-safe
 
@@ -359,6 +363,15 @@ data must never be passed to any SDK.
     when a write saves with no message of its own; the screen alone decides to replace an error with "Saved.". The
     screen clears an error with `ScreenLeaveObserver`, which reads the back stack, not the lifecycle, so Home and
     Android Settings keep it. Attack details is the pattern for the other screens.
+  - Order (D178 (4)): every screen with messages lays itself out with `MessageLayout(topBar, message, content)`, so
+    Tab, Switch Access and TalkBack reach the bar, then the message, then the content; with no top bar (Home,
+    onboarding) the message comes first. A screen never orders focus itself.
+  - Replacement (D178 (5)): the host swaps a new message in place and fades an arrival in from 0.02, never 0, so no
+    message is ever in the accessibility tree while fully transparent. Each posted message is its own value (a posting
+    time), so a same-text retry is a new node and is spoken again.
+  - The "write saved" event on the other screens (D178 (1)): Home, History and Reminders get the same `Saved`
+    notification as Attack details and show "Saved." only in place of an error; Doctor report clears an error on
+    `Share`; every screen with an error clears it on leave.
 
 ## 11. Testing
 

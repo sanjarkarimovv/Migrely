@@ -16,7 +16,7 @@ import org.robolectric.annotation.Config
 private const val TITLE = "Warning signs"
 private const val BULLET_GLYPH = "•"
 
-/** The emergency part (BRD SAF-F1, D171), word for word from `specs/app-settings/spec.md`. */
+/** The emergency part (BRD SAF-F1, D171, D173), word for word from `specs/app-settings/spec.md`. */
 private const val CALL_HEADING =
     "Call your local emergency number if a headache comes with any of these:"
 private val EMERGENCY_SIGNS = listOf(
@@ -27,7 +27,8 @@ private val EMERGENCY_SIGNS = listOf(
     "Feeling drowsy or confused",
     "A seizure or fit",
     "A very high temperature and signs of meningitis, such as a stiff neck",
-    "A rash that doesn't fade when you press a glass against it",
+    "A rash that doesn't fade when you press a glass against it " +
+        "(this may be harder to see on brown or black skin)",
     "A head injury in the last 3 months"
 )
 private const val NO_DRIVE =
@@ -43,12 +44,15 @@ private val URGENT_SIGNS = listOf(
 private const val OTHER =
     "If you have any other symptoms you're worried about, get urgent medical advice."
 
+/** "numb" or "numbness" as a word, so "number" does not match. */
+private val NUMBNESS = Regex("""\bnumb(ness)?\b""", RegexOption.IGNORE_CASE)
+
 private const val ABOUT_URGENT = "If a headache comes with any of the emergency signs on the " +
     "Warning signs page, call your local emergency number."
 
 /**
  * The Warning signs page reads the spec's text in the spec's order, with the two part headings as
- * accessibility headings and no bullet glyph exposed (BRD SAF-F1, D171; design D5).
+ * accessibility headings, no bullet glyph exposed and no numbness sign (BRD SAF-F1, D171, D173).
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w320dp-h640dp")
@@ -87,6 +91,17 @@ class WarningSignsContentsTest {
         val glyphs = texts(SemanticsMatcher.keyIsDefined(SemanticsProperties.Text))
             .filter { it.contains(BULLET_GLYPH) }
         assertEquals(emptyList<String>(), glyphs)
+    }
+
+    @Test
+    fun `When shown then no text names numbness`() {
+        // When
+        composeTestRule.setContent { MigrelyTheme { WarningSignsContents(onBack = {}) } }
+
+        // Then: numbness alone waits for the clinician (BRD D173 (3), EC-SAF-14).
+        val numbness = texts(SemanticsMatcher.keyIsDefined(SemanticsProperties.Text))
+            .filter { NUMBNESS.containsMatchIn(it) }
+        assertEquals(emptyList<String>(), numbness)
     }
 
     @Test

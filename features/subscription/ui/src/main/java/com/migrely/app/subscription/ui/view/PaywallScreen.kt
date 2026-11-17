@@ -7,14 +7,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -65,7 +63,9 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavController
 import com.migrely.app.architecture.ui.view.ScreenEnterObserver
 import com.migrely.app.designsystem.icon.MigrelyIcons
+import com.migrely.app.designsystem.layout.MigrelyInsets
 import com.migrely.app.designsystem.motion.rememberReduceMotion
+import com.migrely.app.designsystem.snackbar.MessageLayout
 import com.migrely.app.designsystem.snackbar.MigrelySnackbar
 import com.migrely.app.designsystem.snackbar.MigrelySnackbarHost
 import com.migrely.app.designsystem.snackbar.messageTimeoutMillis
@@ -220,15 +220,17 @@ fun PaywallContents(
     messages: @Composable () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Box(modifier = modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-        Column(Modifier.fillMaxSize()) {
+    MessageLayout(
+        message = messages,
+        modifier = modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
+        topBar = {
             // The close button is there from the first frame, whatever is loading (BRD §7.3).
             Row(
                 horizontalArrangement = Arrangement.End,
                 modifier = Modifier
                     .fillMaxWidth()
                     .windowInsetsPadding(
-                        WindowInsets.safeDrawing.only(
+                        MigrelyInsets.bars.only(
                             WindowInsetsSides.Top + WindowInsetsSides.Horizontal
                         )
                     )
@@ -241,6 +243,9 @@ fun PaywallContents(
                     )
                 }
             }
+        }
+    ) {
+        Column(Modifier.fillMaxSize()) {
             if (viewState == PaywallViewStateUiModel.Working && unlocked == null) {
                 val description = stringResource(R.string.subscription_working)
                 LinearProgressIndicator(
@@ -257,7 +262,7 @@ fun PaywallContents(
                         .widthIn(max = CONTENT_MAX_WIDTH)
                         .fillMaxWidth()
                         .windowInsetsPadding(
-                            WindowInsets.safeDrawing.only(
+                            MigrelyInsets.bars.only(
                                 WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
                             )
                         )
@@ -272,7 +277,6 @@ fun PaywallContents(
                 }
             }
         }
-        messages()
     }
 }
 
@@ -685,7 +689,7 @@ private fun PaywallMessageUiModel.text() = when (this) {
     PaywallMessageUiModel.OfflineToManage -> R.string.subscription_offline_manage
 }
 
-private val PREVIEW_OFFERS = PaywallOffersUiModel(
+internal val PREVIEW_OFFERS = PaywallOffersUiModel(
     status = PremiumStatusUiModel.Free,
     products = listOf(
         PaywallProductUiModel(

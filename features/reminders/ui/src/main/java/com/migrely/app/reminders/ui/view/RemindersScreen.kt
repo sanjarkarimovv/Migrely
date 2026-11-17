@@ -21,7 +21,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -29,7 +28,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
@@ -78,15 +76,19 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavController
 import com.migrely.app.architecture.ui.view.ScreenEnterObserver
+import com.migrely.app.architecture.ui.view.ScreenLeaveObserver
 import com.migrely.app.designsystem.dialog.MigrelyDialog
 import com.migrely.app.designsystem.icon.MigrelyIcons
+import com.migrely.app.designsystem.layout.MigrelyInsets
 import com.migrely.app.designsystem.motion.rememberReduceMotion
 import com.migrely.app.designsystem.picker.DatePickerLabels
 import com.migrely.app.designsystem.picker.MigrelyDatePicker
 import com.migrely.app.designsystem.snackbar.MESSAGE_OFFSET_BELOW_TOP_BAR
+import com.migrely.app.designsystem.snackbar.MessageLayout
 import com.migrely.app.designsystem.snackbar.MigrelySnackbar
 import com.migrely.app.designsystem.snackbar.MigrelySnackbarHost
 import com.migrely.app.designsystem.snackbar.SnackbarAction
+import com.migrely.app.designsystem.snackbar.SnackbarTone
 import com.migrely.app.designsystem.snackbar.messageTimeoutMillis
 import com.migrely.app.designsystem.theme.MigrelyTheme
 import com.migrely.app.reminders.presentation.model.RemindersViewState
@@ -97,6 +99,7 @@ import com.migrely.app.reminders.ui.model.RemindersEventUiModel
 import com.migrely.app.reminders.ui.model.RemindersMessageUiModel
 import com.migrely.app.reminders.ui.model.RemindersUiModel
 import com.migrely.app.reminders.ui.model.RemindersViewStateUiModel
+import com.migrely.app.reminders.ui.model.ShownRemindersMessageUiModel
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
@@ -174,7 +177,12 @@ fun RemindersDependencies.Reminders(navController: NavController, modifier: Modi
             launcher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
     }
-    var message by remember { mutableStateOf<RemindersMessageUiModel?>(null) }
+    var message by rememberSaveable { mutableStateOf<ShownRemindersMessageUiModel?>(null) }
+
+    fun errorShown(): Boolean = message?.let {
+        remindersMessageBehaviourUiMapper.toUi(it.message).tone == SnackbarTone.Error
+    } ==
+        true
     LaunchedEffect(remindersEventPresenter) {
         remindersEventPresenter.events.collect { event ->
             when (event) {
@@ -189,17 +197,27 @@ fun RemindersDependencies.Reminders(navController: NavController, modifier: Modi
                         launcher.launch(Manifest.permission.POST_NOTIFICATIONS)
                     }
                 }
-                is RemindersEventUiModel.Message -> message = event.message
+                // "Saved." only replaces an error that the write made untrue; any other message stays, and with none
+                // the write needs no word (BRD D178 (1)).
+                is RemindersEventUiModel.Message ->
+                    if (event.message != RemindersMessageUiModel.Saved || errorShown()) {
+                        message =
+                            ShownRemindersMessageUiModel(event.message, System.currentTimeMillis())
+                    }
             }
         }
     }
+    // An error belongs to the visit: Back or forward clears it; the system dialog and Android Settings keep it
+    // (BRD D178 (2)).
+    ScreenLeaveObserver(navController) { if (errorShown()) message = null }
     // Stretched to the accessibility timeout (BRD EC-UX-16; QA #56).
     val messageTimeout = messageTimeoutMillis(
-        message?.let { remindersMessageBehaviourUiMapper.toUi(it).baseDurationMillis }
+        message?.let { remindersMessageBehaviourUiMapper.toUi(it.message).baseDurationMillis }
     )
     LaunchedEffect(message, messageTimeout) {
-        if (message != null && messageTimeout != null) {
-            delay(messageTimeout)
+        val current = message
+        if (current != null && messageTimeout != null) {
+            delay(current.remainingMillis(System.currentTimeMillis(), messageTimeout))
             message = null
         }
     }
@@ -245,10 +263,10 @@ fun RemindersDependencies.Reminders(navController: NavController, modifier: Modi
                 reduceMotion = rememberReduceMotion(),
                 topOffset = MESSAGE_OFFSET_BELOW_TOP_BAR
             ) { shown ->
-                val behaviour = remindersMessageBehaviourUiMapper.toUi(shown)
-                val removed = shown as? RemindersMessageUiModel.VisitRemoved
+                val behaviour = remindersMessageBehaviourUiMapper.toUi(shown.message)
+                val removed = shown.message as? RemindersMessageUiModel.VisitRemoved
                 MigrelySnackbar(
-                    text = stringResource(shown.text()),
+                    text = stringResource(shown.message.text()),
                     tone = behaviour.tone,
                     action = removed?.let {
                         SnackbarAction(
@@ -293,12 +311,12 @@ fun RemindersContents(
     messages: @Composable () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Box(
+    MessageLayout(
+        message = messages,
         modifier = modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-    ) {
-        Column(Modifier.fillMaxSize()) {
+            .background(MaterialTheme.colorScheme.background),
+        topBar = {
             TopAppBar(
                 title = {
                     Text(
@@ -317,10 +335,13 @@ fun RemindersContents(
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background
                 ),
-                windowInsets = WindowInsets.safeDrawing.only(
+                windowInsets = MigrelyInsets.bars.only(
                     WindowInsetsSides.Top + WindowInsetsSides.Horizontal
                 )
             )
+        }
+    ) {
+        Column(Modifier.fillMaxSize()) {
             Box(contentAlignment = Alignment.TopCenter, modifier = Modifier.fillMaxSize()) {
                 Column(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -328,7 +349,7 @@ fun RemindersContents(
                         .widthIn(max = CONTENT_MAX_WIDTH)
                         .fillMaxWidth()
                         .windowInsetsPadding(
-                            WindowInsets.safeDrawing.only(
+                            MigrelyInsets.bars.only(
                                 WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
                             )
                         )
@@ -350,7 +371,6 @@ fun RemindersContents(
                 }
             }
         }
-        messages()
     }
 }
 
@@ -531,7 +551,16 @@ internal fun NotificationsOffNotice(
                         }
                     )
             ) {
-                Text(stringResource(R.string.reminders_open_settings))
+                // One spoken name (BRD D181 (2)): with a description, the shown words are left out
+                // of the button's semantics; without one, they are its name.
+                Text(
+                    text = stringResource(R.string.reminders_open_settings),
+                    modifier = if (openSettingsDescription == null) {
+                        Modifier
+                    } else {
+                        Modifier.clearAndSetSemantics { }
+                    }
+                )
             }
         }
     }
@@ -588,6 +617,7 @@ private fun RemindersMessageUiModel.text() = when (this) {
     RemindersMessageUiModel.SomethingWentWrong -> R.string.reminders_message_something_went_wrong
     is RemindersMessageUiModel.VisitRemoved -> R.string.reminders_message_visit_removed
     RemindersMessageUiModel.Undone -> R.string.reminders_message_undone
+    RemindersMessageUiModel.Saved -> R.string.reminders_message_saved
 }
 
 /** Some builds lack a settings page; the app's own details page always exists. */
@@ -626,10 +656,17 @@ private fun DropVisitRequestOnLeaving(drop: () -> Unit) {
 
 // The line under "Visit removed" runs down with its time (BRD EC-UX-16).
 @Composable
-private fun rememberTimeLeft(shown: RemindersMessageUiModel, timeoutMillis: Long): () -> Float {
-    val fraction = remember(shown, timeoutMillis) { Animatable(1f) }
+private fun rememberTimeLeft(
+    shown: ShownRemindersMessageUiModel,
+    timeoutMillis: Long
+): () -> Float {
+    val remaining = remember(shown, timeoutMillis) {
+        shown.remainingMillis(System.currentTimeMillis(), timeoutMillis)
+    }
+    val fraction =
+        remember(shown, timeoutMillis) { Animatable(remaining.toFloat() / timeoutMillis) }
     LaunchedEffect(fraction) {
-        fraction.animateTo(0f, tween(timeoutMillis.toInt(), easing = LinearEasing))
+        fraction.animateTo(0f, tween(remaining.toInt(), easing = LinearEasing))
     }
     return { fraction.value }
 }

@@ -2,7 +2,7 @@
 
 ## Purpose
 Defines how the app asks whether a medication helped, inside the app, and where the answer can be given or changed
-later, so the doctor report and insights can tell which medications work (BRD MED-F4, ATK-F2, D39).
+later, so the doctor report and insights can show how the person rated each medication (BRD MED-F4, ATK-F2, D39, D174).
 
 ## Requirements
 

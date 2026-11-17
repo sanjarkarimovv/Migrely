@@ -24,6 +24,7 @@ class HistoryMessageUiMappersTest {
                 HistoryMessageUiModel.UndoNotPossible,
             HistoryPresentationNotification.AttackLoggedOnDay to
                 HistoryMessageUiModel.AttackLoggedOnDay,
+            HistoryPresentationNotification.Saved to HistoryMessageUiModel.Saved,
             HistoryPresentationNotification.StorageFull to HistoryMessageUiModel.StorageFull,
             HistoryPresentationNotification.SomethingWentWrong to
                 HistoryMessageUiModel.SomethingWentWrong

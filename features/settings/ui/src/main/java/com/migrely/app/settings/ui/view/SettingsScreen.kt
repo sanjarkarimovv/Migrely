@@ -5,14 +5,12 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
@@ -48,8 +46,10 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.navigation.NavController
 import com.migrely.app.architecture.ui.view.ScreenEnterObserver
 import com.migrely.app.designsystem.icon.MigrelyIcons
+import com.migrely.app.designsystem.layout.MigrelyInsets
 import com.migrely.app.designsystem.motion.rememberReduceMotion
 import com.migrely.app.designsystem.snackbar.MESSAGE_OFFSET_BELOW_TOP_BAR
+import com.migrely.app.designsystem.snackbar.MessageLayout
 import com.migrely.app.designsystem.snackbar.MigrelySnackbar
 import com.migrely.app.designsystem.snackbar.MigrelySnackbarHost
 import com.migrely.app.designsystem.snackbar.SnackbarTone
@@ -101,17 +101,18 @@ fun SettingsDependencies.Settings(
     ViewModelObserver(navController)
     val viewState by settingsViewModel.viewState.collectAsState(SettingsViewState.Loading)
     val settings = settingsViewStateUiMapper.toUi(viewState)
-    var notSaved by remember { mutableStateOf(false) }
+    // When the last failure was posted, so a second one is a new message and is spoken again (BRD D178 (5)).
+    var notSavedAt by remember { mutableStateOf<Long?>(null) }
     // Kept across a rotation.
     var choosingTheme by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(settingsEventPresenter) {
-        settingsEventPresenter.notSaved.collect { notSaved = true }
+        settingsEventPresenter.notSaved.collect { notSavedAt = System.currentTimeMillis() }
     }
     val notSavedTimeout = messageTimeoutMillis(READING_MILLIS)
-    LaunchedEffect(notSaved, notSavedTimeout) {
-        if (notSaved && notSavedTimeout != null) {
+    LaunchedEffect(notSavedAt, notSavedTimeout) {
+        if (notSavedAt != null && notSavedTimeout != null) {
             delay(notSavedTimeout)
-            notSaved = false
+            notSavedAt = null
         }
     }
     SettingsContents(
@@ -130,7 +131,7 @@ fun SettingsDependencies.Settings(
         ),
         messages = {
             MigrelySnackbarHost(
-                message = Unit.takeIf { notSaved },
+                message = notSavedAt,
                 reduceMotion = rememberReduceMotion(),
                 topOffset = MESSAGE_OFFSET_BELOW_TOP_BAR
             ) {
@@ -140,7 +141,7 @@ fun SettingsDependencies.Settings(
                     action = null,
                     baseDurationMillis = READING_MILLIS,
                     dismissLabel = stringResource(R.string.settings_message_dismiss),
-                    onDismiss = { notSaved = false }
+                    onDismiss = { notSavedAt = null }
                 )
             }
         },
@@ -169,12 +170,12 @@ fun SettingsContents(
     modifier: Modifier = Modifier,
     premiumSection: @Composable () -> Unit = {}
 ) {
-    Box(
+    MessageLayout(
+        message = messages,
         modifier = modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-    ) {
-        Column(Modifier.fillMaxSize()) {
+            .background(MaterialTheme.colorScheme.background),
+        topBar = {
             TopAppBar(
                 title = {
                     Text(
@@ -193,17 +194,20 @@ fun SettingsContents(
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background
                 ),
-                windowInsets = WindowInsets.safeDrawing.only(
+                windowInsets = MigrelyInsets.bars.only(
                     WindowInsetsSides.Top + WindowInsetsSides.Horizontal
                 )
             )
+        }
+    ) {
+        Column(Modifier.fillMaxSize()) {
             Box(contentAlignment = Alignment.TopCenter, modifier = Modifier.fillMaxSize()) {
                 Column(
                     modifier = Modifier
                         .widthIn(max = CONTENT_MAX_WIDTH)
                         .fillMaxWidth()
                         .windowInsetsPadding(
-                            WindowInsets.safeDrawing.only(
+                            MigrelyInsets.bars.only(
                                 WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
                             )
                         )
@@ -215,7 +219,6 @@ fun SettingsContents(
                 }
             }
         }
-        messages()
     }
 }
 
@@ -388,7 +391,7 @@ private fun RowTexts(title: String, summary: String, titleColor: Color, modifier
 }
 
 private val PREVIEW_ACTIONS = SettingsActions({}, {}, {}, {}, {}, {}, {}, {}, {}, {})
-private val PREVIEW_SETTINGS = SettingsUiModel(
+internal val PREVIEW_SETTINGS = SettingsUiModel(
     periodTracking = true,
     theme = ThemeUiModel.Dark,
     version = "0.1.0"

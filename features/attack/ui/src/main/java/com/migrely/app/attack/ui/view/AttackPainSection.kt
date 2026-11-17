@@ -28,6 +28,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
@@ -201,7 +202,11 @@ private fun AddPainDialog(
                         .heightIn(min = 48.dp)
                         .semantics { contentDescription = changeTime }
                 ) {
-                    Text(stringResource(R.string.pain_dialog_time, timeText))
+                    // One spoken name (BRD D181 (2)): "At 14:30, change the time" only.
+                    Text(
+                        text = stringResource(R.string.pain_dialog_time, timeText),
+                        modifier = Modifier.clearAndSetSemantics { }
+                    )
                 }
             }
         },
@@ -258,7 +263,7 @@ internal fun SafetyCard(
                     tint = MaterialTheme.colorScheme.tertiary,
                     modifier = Modifier.size(20.dp)
                 )
-                // A heading, so heading navigation lands on it; the text is unchanged (BRD D165 (3)).
+                // A heading, so heading navigation lands on it; worded as Warning signs (BRD D173).
                 Text(
                     text = stringResource(R.string.safety_title),
                     style = MaterialTheme.typography.titleMedium,

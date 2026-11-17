@@ -53,7 +53,11 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
-private const val TITLE = "Sudden, worst-ever pain?"
+private const val TITLE = "Sudden, extremely bad pain?"
+
+/** The card's sentence, word for word from the spec's "Card text" scenario (BRD SAF-F2, D173). */
+private const val SENTENCE =
+    "Call your local emergency number now if this is extremely bad pain that came on suddenly."
 private const val GOT_IT = "Got it"
 private const val STORAGE_FULL = "Couldn't save. Your phone's storage is full."
 private const val SAVED = "Saved."
@@ -476,6 +480,17 @@ class SaveMessageTest {
         storageFull()
 
         assertEquals(LiveRegionMode.Assertive, liveRegionOf(message(STORAGE_FULL)))
+    }
+
+    @Test
+    fun `The card reads the spec's title, sentence and button word for word`() {
+        show()
+
+        send(AttackDetailsEventUiModel.FirstMaximumRecorded)
+
+        rule.onNodeWithText(TITLE).assertExists()
+        rule.onNodeWithText(SENTENCE).assertExists()
+        rule.onNodeWithText(GOT_IT).assertExists()
     }
 
     @Test

@@ -49,6 +49,11 @@ class HomeMessageBehaviourUiMapperTest(
             arrayOf<Any>(HomeMessageUiModel.UndoNotPossible, information),
             arrayOf<Any>(HomeMessageUiModel.StartMoveRejected(1_000L), information),
             arrayOf<Any>(HomeMessageUiModel.EndTimeOutOfRange, information),
+            // A confirmation read for 8 s, with no undo (BRD D178 (1)).
+            arrayOf<Any>(
+                HomeMessageUiModel.Saved,
+                HomeMessageBehaviourUiModel(SnackbarTone.Confirmation, null, 8_000L)
+            ),
             arrayOf<Any>(
                 HomeMessageUiModel.SomethingWentWrong,
                 HomeMessageBehaviourUiModel(SnackbarTone.Error, null, 8_000L)

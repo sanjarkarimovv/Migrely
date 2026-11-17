@@ -218,7 +218,10 @@ internal fun CycleSection(cycle: InsightsCycleUiModel, migraines: Int, months: I
     }
 }
 
-/** Each attack medication and how often it helped, once it has 3 answers (BRD INS-F4, D92). */
+/**
+ * Each attack medication and how the person rated it: how many of its effect answers were "A lot"
+ * or "Completely", once it has 3 answers (BRD INS-F4, D92, D174).
+ */
 @Composable
 internal fun MedicationsSection(medications: List<InsightsMedicationUiModel>) {
     Section(stringResource(R.string.insights_medications_title)) {

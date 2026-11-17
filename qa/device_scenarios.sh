@@ -13,11 +13,11 @@
 # reminder_permission, reminder_effect, reminder_replan (restarts the emulator), visit_reminder, med_only_history,
 # message_tap_guard (#52), two_touch (#138, #139), theme_check, onboarding_states, delete_all_data, privacy_link, backup_export, backup_import,
 # message_duration (#56), premium_store_states, premium_no_products, premium_pending, premium_plans, premium_entitlement, premium_offline,
-# trial_banner, paywall_self_show, report_three_months, report_counting, report_heavy, insights, upgrade, release_apk.
+# trial_banner, paywall_self_show, report_three_months, report_counting, report_heavy, insights, upgrade, insights_upgrade, release_apk.
 # On demand only: backup_android (bmgr).
 # QA_APK=<apk> names the build under test (default: this worktree's debug APK), for example a release branch's.
 # release_apk needs QA_RELEASE_APK=<release APK>; without it, it is reported as not run.
-# upgrade needs QA_OLD_APK=<older debug APK of com.migrely.app>; without it, it is reported as not run.
+# upgrade and insights_upgrade need QA_OLD_APK=<older debug APK of com.migrely.app>; without it, they are reported as not run.
 set -euo pipefail
 
 QA_SERIAL="emulator-5580"
@@ -2010,13 +2010,15 @@ print(f'old notes: the latest {n} of 900 migraines, \"Notes from the latest {n} 
 
 # Covers: trigger-insights › Triggers, never causes › Stress
 # Covers: trigger-insights › When migraines come › Mondays
-# Covers: trigger-insights › What helped › Ibuprofen
+# Covers: trigger-insights › How you rated your medications › Ibuprofen
+# Covers: trigger-insights › How you rated your medications › The heading
+# Covers: trigger-insights › How you rated your medications › Fewer than three answers
 # Covers: trigger-insights › Around the period › Tracking off
 # Covers: trigger-insights › Twelve months › A screen reader
 # Covers: trigger-insights › Enough to go on › Three migraines so far
 # Covers: trigger-insights › The period › Opening Insights
 scenario_insights() {
-  echo "Scenario insights: triggers, days and times, what helped, the period, the 12 months for TalkBack, the N-more card (D87-D92)"
+  echo "Scenario insights: triggers, days and times, how you rated your medications, the period, the 12 months for TalkBack, the N-more card (D87-D92)"
   local seed
   for seed in insights-patterns insights-three; do
     run_flow clean || return 1
@@ -2038,6 +2040,9 @@ scenario_insights() {
     expect_seen "$out/insights-$seed.want" "$out/insights-$seed.seen" || return 1
     if grep -q "Around your period" "$out/insights-$seed.seen"; then echo "  FAILED: a period section with Track periods off"; return 1; fi
     if grep -qiE "caus|leads? to" "$out/insights-$seed.seen"; then echo "  FAILED: a text says a trigger causes migraines"; return 1; fi
+    # The medication section names the person's ratings, not a relief claim (D174), in any letter case. The pattern is
+    # written with [[:space:]]+ so that grepping qa/ for the old heading finds only stale expectations, not this guard.
+    if grep -qiE "what[[:space:]]+helped" "$out/insights-$seed.seen"; then echo "  FAILED: a text names the old heading (D174)"; return 1; fi
     echo "    $seed, Track periods off: $(wc -l <"$out/insights-$seed.want" | tr -d ' ') texts seen; no period section; nothing says \"cause\""
   done
 }
@@ -2323,6 +2328,49 @@ scenario_upgrade() {
   run_flow upgrade-kept || return 1
 }
 
+# Covers: trigger-insights › How you rated your medications › Upgrade or restore
+# The older build gets the insights-patterns seed and Premium; Insights' texts are read; the newer build is installed over
+# it without clearing data, and Insights must show the same trigger, day, time, medication and month texts, with the
+# heading "How you rated your medications" and no old heading in any letter case (D174, EC-INS-06). The older build's
+# heading is printed, not judged. The first launch is by the launcher, not Maestro's clearState: on Android 8.0 that order
+# made the next install -r empty the database (a test artefact, see the QA notes), which would hide a real loss. After
+# that launch, the clean flow skips onboarding as in the insights scenario.
+scenario_insights_upgrade() {
+  echo "Scenario insights_upgrade: Insights' counts survive an update; only the medication heading's words change (D174)"
+  if [[ -z "${QA_OLD_APK:-}" || ! -f "${QA_OLD_APK:-}" ]]; then
+    echo "  NOT RUN: set QA_OLD_APK to the older APK (for a release: the APK of the previous release)"
+    return 1
+  fi
+  local heading="How you rated your medications" old_heading
+  adbq uninstall "$APP" >/dev/null 2>&1 || true
+  adbq install "$QA_OLD_APK" >/dev/null || { echo "  FAILED: could not install $QA_OLD_APK"; return 1; }
+  echo "    installed the older build $(adbq shell dumpsys package "$APP" | grep -m1 versionCode | tr -s ' ')"
+  adbq shell monkey -p "$APP" -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1
+  sleep 5
+  adbq shell am force-stop "$APP"
+  run_flow clean || return 1
+  seed_import insights-patterns Import || return 1
+  run_flow_env premium-buy PLAN=Monthly BUTTON=Subscribe "SHEET=Complete the purchase" "RESULT=You have Premium" || return 1
+  run_flow_env insights-open TRACKING=off || return 1
+  screen_labels_scrolled 14 >"$out/insights-upgrade-before.seen"
+  python3 -I "$ROOT/qa/seed_expect.py" insights "$out/seed-insights-patterns.expected" >"$out/insights-upgrade.want" ||
+    { echo "  FAILED: no Insights texts for insights-patterns"; return 1; }
+  grep -vxF "$heading" "$out/insights-upgrade.want" >"$out/insights-upgrade-counts.want"
+  expect_seen "$out/insights-upgrade-counts.want" "$out/insights-upgrade-before.seen" || return 1
+  old_heading="$(grep -ixE "what[[:space:]]+helped|$heading" "$out/insights-upgrade-before.seen" | head -1)"
+  echo "    older build: $(wc -l <"$out/insights-upgrade-counts.want" | tr -d ' ') texts seen, medication heading \"${old_heading:-none seen}\""
+  adbq install -r "$APK" >/dev/null || { echo "  FAILED: could not install the newer build over it"; return 1; }
+  echo "    installed the newer build over it $(adbq shell dumpsys package "$APP" | grep -m1 versionCode | tr -s ' '), data kept"
+  run_flow_env insights-open TRACKING=off || return 1
+  screen_labels_scrolled 14 >"$out/insights-upgrade-after.seen"
+  expect_seen "$out/insights-upgrade.want" "$out/insights-upgrade-after.seen" || return 1
+  if grep -qiE "what[[:space:]]+helped" "$out/insights-upgrade-after.seen"; then
+    echo "  FAILED: after the update a text still names the old heading"
+    return 1
+  fi
+  echo "    newer build: the same $(wc -l <"$out/insights-upgrade-counts.want" | tr -d ' ') texts, under \"$heading\""
+}
+
 out="$ROOT/build/qa/device/$(date +%Y%m%d-%H%M%S)"
 mkdir -p "$out"
 if [[ $# -eq 0 ]]; then
@@ -2335,7 +2383,7 @@ if [[ $# -eq 0 ]]; then
     premium_store_states premium_no_products premium_pending premium_plans premium_entitlement premium_offline trial_banner paywall_self_show \
     report_three_months report_counting report_heavy insights
   if [[ -n "${QA_OLD_APK:-}" ]]; then
-    set -- "$@" upgrade
+    set -- "$@" upgrade insights_upgrade
   else
     echo "Note: upgrade is not in this run; set QA_OLD_APK to the older APK to include it."
   fi

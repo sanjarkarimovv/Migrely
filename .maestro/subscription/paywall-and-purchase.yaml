@@ -9,6 +9,8 @@
 # Covers: quality-gates › Premium is checked through the simulated store › A purchase from the paywall
 # Covers: subscription › The paywall › Restore comes before what Premium adds
 # Covers: subscription › What a purchase depends on › Every plan
+# Covers: subscription › The paywall names Insights without a claim › The Insights lead
+# Covers: subscription › The paywall names Insights without a claim › The benefit row
 # A free user's taps on Doctor report and Insights open the paywall with their own headlines; closing it returns to
 # History. Monthly is bought through the simulated store and the report screen opens; then Change plan moves to yearly
 # (D120), and Settings reads "Premium · yearly".
@@ -59,7 +61,16 @@ tags: [regression, subscription, simulated-store]
 - extendedWaitUntil:
     visible: "See what your migraines have in common"
     timeout: 10000
-- assertVisible: "Premium shows your triggers, when migraines come, and what helped\\."
+# The Insights lead and the benefit row name what the person logged, never a cause or a relief claim (D174). The
+# negative checks ignore letter case and are written with \\s+, so grepping .maestro for the old copy finds only stale
+# expectations, not these guards.
+- assertVisible: "Premium shows triggers often logged with your migraines, when they come, and how you rated your medications\\."
+- assertNotVisible: "(?i).*(what\\s+helped|shows\\s+your\\s+triggers).*"
+- scrollUntilVisible:
+    element: "When migraines come, and how you rated your medications"
+    direction: DOWN
+- assertVisible: "When migraines come, and how you rated your medications"
+- assertNotVisible: "(?i).*(what\\s+helped|shows\\s+your\\s+triggers).*"
 - tapOn: "Close"
 - extendedWaitUntil:
     visible: "History"

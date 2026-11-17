@@ -18,6 +18,9 @@ class HistoryMessageBehaviourUiMapper {
         HistoryMessageUiModel.AttackLoggedOnDay ->
             HistoryMessageBehaviourUiModel(SnackbarTone.Information, false, READING_MILLIS)
 
+        HistoryMessageUiModel.Saved ->
+            HistoryMessageBehaviourUiModel(SnackbarTone.Confirmation, false, READING_MILLIS)
+
         // Stays until the user closes it (BRD EC-UX-16).
         HistoryMessageUiModel.StorageFull ->
             HistoryMessageBehaviourUiModel(SnackbarTone.Error, false, null)

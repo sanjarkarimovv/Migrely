@@ -14,8 +14,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
@@ -42,6 +42,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
@@ -50,6 +51,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.migrely.app.designsystem.icon.MigrelyIcons
 import com.migrely.app.designsystem.input.TapGuard
+import com.migrely.app.designsystem.layout.MigrelyInsets
 import com.migrely.app.designsystem.picker.DateTimePickerLabels
 import com.migrely.app.designsystem.picker.MigrelyDateTimePicker
 import com.migrely.app.designsystem.sky.SkyAppearance
@@ -102,7 +104,7 @@ fun AttackModeContents(
     val screenModifier = modifier
         .fillMaxSize()
         .background(MigrelyColors.AttackModeBackground)
-        .safeDrawingPadding()
+        .windowInsetsPadding(MigrelyInsets.bars)
         .padding(horizontal = 16.dp)
     // In a short window (landscape) the controls alone fill the height and hide the guidance,
     // so the two sit side by side.
@@ -292,10 +294,12 @@ private fun AttackGuidance(startedAt: String, textAlign: TextAlign, onDetails: (
             .heightIn(min = 48.dp)
             .semantics { contentDescription = detailsDescription }
     ) {
+        // One spoken name (BRD D181 (2)): "Details of this migraine", not also "Details".
         Text(
             text = stringResource(R.string.attack_details),
             style = MaterialTheme.typography.labelMedium,
-            color = MigrelyColors.AttackModeText
+            color = MigrelyColors.AttackModeText,
+            modifier = Modifier.clearAndSetSemantics { }
         )
     }
 }
@@ -339,10 +343,12 @@ private fun MoveStartOptions(onMoveStartEarlier: (Int) -> Unit) {
                         .heightIn(min = 48.dp)
                         .semantics { contentDescription = description }
                 ) {
+                    // One spoken name (BRD D181 (2)): "Move the start 15 min earlier" only.
                     Text(
                         text = text,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MigrelyColors.AttackModeText
+                        color = MigrelyColors.AttackModeText,
+                        modifier = Modifier.clearAndSetSemantics { }
                     )
                 }
             }

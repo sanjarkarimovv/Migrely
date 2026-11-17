@@ -8,8 +8,9 @@ pdf: the period line of page 1 ("27 Jul 2026 to 26 Oct 2026 (92 days)"), each su
 medications row with its cells joined by spaces, and the start of each migraines row. Lines marked "re:" are Python
 regexes: a summary or medications row must not run on into more digits ("bed rest 4" is not "bed rest 40"), and a
 migraines row's start cell wraps in the PDF and its time is written as an en-US phone writes it (12-hour).
-insights: the "N more migraines" card, each trigger share, the busiest day and time of day, each medication's "What
-helped" line, and the 12 months as TalkBack reads them; none of them depends on Track periods.
+insights: the "N more migraines" card, each trigger share, the busiest day and time of day, the medication section's
+heading "How you rated your medications" (D174) with each medication's answers line, and the 12 months as TalkBack reads
+them; none of them depends on Track periods.
 period: the lines under "Around your period (Track periods on):", the section's title and texts.
 """
 import re
@@ -107,6 +108,8 @@ def insights_texts(lines):
             out.append(stripped)
         elif re.match(r"^(Most often .+: \d+ of \d+|No single (day|time of day) stands out)$", stripped):
             out.append(stripped)
+        elif stripped == "How you rated your medications:":
+            out.append(stripped[:-1])
         elif re.match(r"^[A-Z][^:]*: (Helped a lot or completely: .+|Needs \d+ answers? \(has \d+\))$", stripped):
             name, text = stripped.split(": ", 1)
             out.extend([name, text])

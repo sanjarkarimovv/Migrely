@@ -13,7 +13,7 @@ track, which 13b `publish-to-play` does first.
 |---|---|
 | Product ID | `migrely_premium` |
 | Name | Migrely Premium |
-| Benefits (up to 4, shown by Play) | A PDF report for your doctor · Triggers and patterns in your migraines · What helped, and when migraines come · The last 12 months at a glance |
+| Benefits (up to 4, shown by Play) | A PDF report for your doctor · Triggers and patterns in your migraines · Your medication ratings, migraine timing · The last 12 months at a glance |
 | Icon | The 512 × 512 Play icon, also on `migrely_lifetime` |
 
 ### Base plans

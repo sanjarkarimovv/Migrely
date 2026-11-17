@@ -8,7 +8,6 @@ import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import com.migrely.app.designsystem.theme.MigrelyTheme
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -17,7 +16,11 @@ import org.robolectric.annotation.Config
 
 private const val TEXT = "Couldn't save. Your phone's storage is full."
 
-/** A message that replaces another one: a fade by default, at once with replaceInPlace (BRD D165 (3), QA TB12). */
+/**
+ * A message that replaces another one takes its place at once, on every host (BRD D178 (5), D165 (3), QA TB12). Until
+ * D178 this was the replaceInPlace option and the default cross-faded; the default case below was inverted on purpose,
+ * because the spec changed, not to make a test pass.
+ */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
 class ReplaceInPlaceTest {
@@ -29,14 +32,10 @@ class ReplaceInPlaceTest {
 
     private var message by mutableStateOf<Posted?>(Posted(TEXT, 1))
 
-    private fun show(replaceInPlace: Boolean) {
+    private fun show() {
         rule.setContent {
             MigrelyTheme {
-                MigrelySnackbarHost(
-                    message,
-                    reduceMotion = false,
-                    replaceInPlace = replaceInPlace
-                ) {
+                MigrelySnackbarHost(message, reduceMotion = false) {
                     MigrelySnackbar(it.text, SnackbarTone.Error, null, null, "Dismiss", {})
                 }
             }
@@ -55,24 +54,18 @@ class ReplaceInPlaceTest {
         }
     }
 
+    // Inverted by D178: until then the default cross-faded, so two nodes showed for 200 ms.
     @Test
-    fun `By default the new message fades in over the old one`() {
-        show(replaceInPlace = false)
-
-        assertTrue(mostNodesWhileReplacing() > 1)
-    }
-
-    @Test
-    fun `In place, the new message takes the old one's place at once`() {
-        show(replaceInPlace = true)
+    fun `The new message takes the old one's place at once, with no cross-fade`() {
+        show()
 
         assertEquals(1, mostNodesWhileReplacing())
     }
 
     @Test
-    fun `In place, a message that arrives when none shows still comes in as usual`() {
+    fun `A message that arrives when none shows still comes in as usual`() {
         message = null
-        show(replaceInPlace = true)
+        show()
 
         message = Posted(TEXT, 2)
         Snapshot.sendApplyNotifications()

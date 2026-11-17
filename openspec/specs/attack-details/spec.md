@@ -119,9 +119,20 @@ and entries (BRD EC-ATK-09).
 
 ### Requirement: First maximum pain safety card
 When the user enters a pain level of 10 and no saved attack has a 10, the details screen SHALL show a card that does not block the
-screen: "If this pain came on suddenly and is the worst of your life, call emergency services now." It SHALL show whether the entry is
-saved or not, and when the saved 10s cannot be read. The card SHALL be dismissible and SHALL NOT appear once a 10 is saved
-(BRD SAF-F2, EC-ATK-22, D163, D165).
+screen. Its sentence SHALL lead with the call to action and name the sign in the Warning signs page's own words. It SHALL show
+whether the entry is saved or not, and when the saved 10s cannot be read. The card SHALL be dismissible and SHALL NOT appear once a
+10 is saved (BRD SAF-F2, EC-ATK-22, D163, D165, D173, EC-SAF-11, EC-SAF-12).
+
+#### Scenario: Card text
+- **WHEN** the card shows
+- **THEN** its title reads "Sudden, extremely bad pain?"
+- **AND** its sentence reads "Call your local emergency number now if this is extremely bad pain that came on suddenly."
+- **AND** its button reads "Got it"
+
+#### Scenario: The card and the page name the sign the same way
+- **WHEN** the card's sentence is compared with the first emergency sign on the Warning signs page
+- **THEN** the sentence contains that sign's words, "extremely bad pain that came on suddenly"
+- **AND** neither the title nor the sentence contains "worst" or "emergency services"
 
 #### Scenario: First 10
 - **WHEN** no attack has ever had a pain entry of 10 and the user adds one
@@ -134,7 +145,8 @@ saved or not, and when the saved 10s cannot be read. The card SHALL be dismissib
 #### Scenario: A first 10 that fails to save
 - **WHEN** no saved attack has a 10, the user adds a 10, and the phone's storage is full
 - **THEN** the safety card appears, and "Couldn't save. Your phone's storage is full." shows under the top bar
-- **AND** the card's title, warning sentence and "Got it" are all visible below the message, at any font and orientation
+- **AND** at any font and orientation, no part of the card is under the message and no line is clipped; when the card is taller
+  than the area below the message, the rest is reached by scrolling (D167 (1))
 
 #### Scenario: A first 10 that fails for another reason
 - **WHEN** no saved attack has a 10, the user adds a 10, and the save fails for another reason or the entry is refused for its time
@@ -163,9 +175,31 @@ saved or not, and when the saved 10s cannot be read. The card SHALL be dismissib
 - **AND** the card stays until "Got it", and the message stays until it is closed, a later save succeeds, or the user leaves the
   screen
 
+#### Scenario: TalkBack reads the new words
+- **WHEN** TalkBack is on, the user has scrolled down to Pain, and adds a first 10 that saves
+- **THEN** once the card is in view, TalkBack speaks "Sudden, extremely bad pain?" as a heading and then "Call your local emergency
+  number now if this is extremely bad pain that came on suddenly." in full
+- **AND** accessibility focus stays where it was
+
+#### Scenario: The card stays whole at 200% font
+- **WHEN** the font is 200%, the screen is 320 dp wide or in landscape, the user has scrolled down to Pain, and a first 10 fails to
+  save
+- **THEN** the card scrolls into view as before: its top, with the title, is at the top of the content area, just below the
+  message, and no part of the card is under the message
+- **AND** the title, the whole sentence and "Got it" are all shown with no line clipped or shortened; when the card is taller
+  than the area, the rest is reached by scrolling, as D167 (1) allows
+
 #### Scenario: Rotation
 - **WHEN** the phone rotates with the card and the message showing
 - **THEN** both are still there, and the message does not cover the card
+
+#### Scenario: During an attack, offline, on Free
+- **WHEN** a first 10 is added during an attack in the dark room, with no network, by a Free user
+- **THEN** the card shows the same title and sentence on the dark theme, with nothing locked behind Premium
+
+#### Scenario: Upgraded with a 10 already saved
+- **WHEN** the app is updated from an earlier version and a saved attack already has a 10
+- **THEN** no card appears when the user adds another 10, and the Warning signs page names the same sign in the same words
 
 ### Requirement: Where it hurts, symptoms and triggers
 The user SHALL be able to select any number of locations, symptoms and triggers for an attack. The built-in choices
@@ -304,3 +338,65 @@ screen for this attack (BRD ATK-F5, MED-F3, EC-MED-01, D34).
 #### Scenario: Add from details
 - **WHEN** the attack ended and the user taps "Add medication"
 - **THEN** the "Medication taken" screen opens with the time set to the attack's start
+
+### Requirement: The safety card comes into view when it appears
+When the first-10 safety card appears and is not fully inside the visible content area, the content SHALL scroll back to
+its top, where the card is the first item, so the card sits at its unscrolled place. The scroll SHALL ease over 300 ms, or jump
+with "Remove animations", and a touch SHALL NOT stop it. Accessibility focus SHALL NOT move. A card restored by a rotation or a
+process SHALL NOT scroll (BRD EC-ATK-23, D167, #174).
+
+#### Scenario: Scrolled down to Pain, a first 10 that saves
+- **WHEN** the user has scrolled until Pain's Add is on screen and the card's place is above the view, at 100% or 200% font,
+  and adds a first 10 that saves
+- **THEN** within 1 second the content is back at its top, and the card's title, sentence and "Got it" show
+
+#### Scenario: Scrolled down, a first 10 that fails to save
+- **WHEN** the same, and the save fails because storage is full
+- **THEN** within 1 second the content is back at its top, and the card's title, sentence and "Got it" show
+- **AND** the message lies over no part of the card, because the content starts below it (D165, #166, #174)
+
+#### Scenario: Landscape and a card taller than the area
+- **WHEN** the phone is in landscape, at 100% or 200% font, and the card appears out of view, taller than the area or not
+- **THEN** the content is back at its top, the card's top shows, and the rest can be scrolled
+
+#### Scenario: The card is already in view
+- **WHEN** the card appears fully inside the visible content area
+- **THEN** nothing scrolls
+
+#### Scenario: Remove animations
+- **WHEN** "Remove animations" is on and the card appears out of view
+- **THEN** the content jumps to it, with no frames in between
+
+#### Scenario: A touch during the scroll
+- **WHEN** the user touches or drags the content during the 300 ms scroll
+- **THEN** the scroll still ends with the card in view, and the next drag scrolls as usual
+
+#### Scenario: A restored card
+- **WHEN** the phone rotates or the process is restored while the card shows
+- **THEN** the content keeps the place the user scrolled to
+
+#### Scenario: Card text
+- **WHEN** the card shows
+- **THEN** this change leaves its title, sentence and "Got it" as they are (their words are set by "First maximum pain safety
+  card", BRD D173)
+
+### Requirement: TalkBack speaks the card once it is in view
+When the card scrolls into view, TalkBack SHALL speak its title and its sentence, each in full, once the card is in view,
+without moving accessibility focus. When a message also shows, as on a failed save, the card's sentence SHALL still be spoken
+in full (BRD EC-ATK-23, D167, D163, D165).
+
+#### Scenario: A first 10 that saves, scrolled down
+- **WHEN** TalkBack is on, the user has scrolled down to Pain, and adds a first 10 that saves
+- **THEN** TalkBack speaks the card's title and sentence in full
+
+#### Scenario: A first 10 that fails, scrolled down, at 200%
+- **WHEN** TalkBack is on at 200% font, scrolled down, and a first 10 fails to save
+- **THEN** TalkBack speaks the card's title and sentence in full, and the message
+
+#### Scenario: Focus
+- **WHEN** TalkBack's focus is on Pain's Add and the card scrolls into view
+- **THEN** focus stays where it was
+
+#### Scenario: Without this change
+- **WHEN** the same rows run on a build without the scroll, as 1.1.0
+- **THEN** the card stays out of view and TalkBack does not speak its title, which shows the check can fail

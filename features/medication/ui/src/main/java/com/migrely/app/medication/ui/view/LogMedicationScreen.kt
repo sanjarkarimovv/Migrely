@@ -6,14 +6,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
@@ -64,10 +62,14 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.navigation.NavController
 import com.migrely.app.architecture.ui.view.ScreenEnterObserver
 import com.migrely.app.designsystem.icon.MigrelyIcons
+import com.migrely.app.designsystem.input.SingleLineFieldInView
 import com.migrely.app.designsystem.input.limitedEdit
+import com.migrely.app.designsystem.layout.MigrelyInsets
 import com.migrely.app.designsystem.motion.rememberReduceMotion
 import com.migrely.app.designsystem.picker.DateTimePickerLabels
 import com.migrely.app.designsystem.picker.MigrelyDateTimePicker
+import com.migrely.app.designsystem.snackbar.MessageLayout
+import com.migrely.app.designsystem.snackbar.rememberParkWhenPressed
 import com.migrely.app.designsystem.theme.MigrelyColors
 import com.migrely.app.designsystem.theme.MigrelyDarkRoom
 import com.migrely.app.designsystem.theme.MigrelyTheme
@@ -188,6 +190,7 @@ fun LogMedicationDependencies.LogMedication(
         messages = {
             MedicationMessages(
                 presenter = medicationEventPresenter,
+                navController = navController,
                 behaviourMapper = medicationMessageBehaviourUiMapper,
                 reduceMotion = reduceMotion
             )
@@ -287,12 +290,12 @@ fun LogMedicationContents(
 ) = MigrelyDarkRoom(active = darkRoom) {
     // The dark room is dark in every theme, its pickers and messages included (BRD D94).
     val colors = palette(darkRoom)
-    Box(
+    MessageLayout(
+        message = messages,
         modifier = modifier
             .fillMaxSize()
-            .background(colors.background)
-    ) {
-        Column(Modifier.fillMaxSize()) {
+            .background(colors.background),
+        topBar = {
             TopAppBar(
                 title = {
                     Text(
@@ -311,21 +314,27 @@ fun LogMedicationContents(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = colors.background),
-                windowInsets = WindowInsets.safeDrawing.only(
+                windowInsets = MigrelyInsets.bars.only(
                     WindowInsetsSides.Top + WindowInsetsSides.Horizontal
                 )
             )
+        }
+    ) {
+        Column(Modifier.fillMaxSize()) {
             Box(contentAlignment = Alignment.TopCenter, modifier = Modifier.fillMaxSize()) {
                 Column(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     modifier = Modifier
                         .widthIn(max = CONTENT_MAX_WIDTH)
                         .fillMaxWidth()
+                        // Before the scroll, so its visible part ends at the keyboard's top and a focused
+                        // field is kept above it (BRD D180 (2)).
+                        .windowInsetsPadding(
+                            MigrelyInsets.barsAndKeyboard.only(WindowInsetsSides.Bottom)
+                        )
                         .verticalScroll(rememberScrollState())
                         .windowInsetsPadding(
-                            WindowInsets.safeDrawing.only(
-                                WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
-                            )
+                            MigrelyInsets.barsAndKeyboard.only(WindowInsetsSides.Horizontal)
                         )
                         .padding(horizontal = 16.dp, vertical = 8.dp)
                 ) {
@@ -359,7 +368,6 @@ fun LogMedicationContents(
                 }
             }
         }
-        messages()
     }
 }
 
@@ -429,12 +437,18 @@ private fun MedicationButton(
     val title = medication.spokenTitle()
     val what = if (preventive) "$title, ${medication.typeLabel()}" else title
     val description = stringResource(R.string.log_medication_description, what)
+    // A log replaces the list, this button with it: focus clears and moves nowhere, so TalkBack reads the logged
+    // sentence whole (BRD D181 (6), EC-UX-50).
+    val logs = rememberParkWhenPressed()
     Surface(
-        onClick = onClick,
+        onClick = {
+            logs.pressed()
+            onClick()
+        },
         enabled = !pending,
         shape = RoundedCornerShape(20.dp),
         color = colors.surface,
-        modifier = Modifier
+        modifier = logs.modifier
             .fillMaxWidth()
             .heightIn(min = colors.buttonHeight)
             // Merged into the clickable (EC-UX-19); the texts inside are cleared so it is read once.
@@ -537,32 +551,41 @@ private fun FirstMedicationForm(
             it is SaveProblemUiModel.ArchivedName ||
             it == SaveProblemUiModel.InvalidName
     }
-    OutlinedTextField(
-        value = name,
-        onValueChange = { name = limitedEdit(name, it, MAXIMUM_NAME_LENGTH) },
-        label = { Text(stringResource(R.string.edit_name)) },
-        singleLine = true,
-        isError = nameProblem != null,
-        supportingText = {
-            Text(
-                nameProblem?.let { problemText(it) } ?: stringResource(
-                    R.string.edit_counter,
-                    name.text.length,
-                    MAXIMUM_NAME_LENGTH
+    // Kept above the keyboard with its supporting line where that fits (BRD D180 (2), ux U1).
+    SingleLineFieldInView(hasLabel = true) { inView, interactionSource ->
+        OutlinedTextField(
+            value = name,
+            onValueChange = { name = limitedEdit(name, it, MAXIMUM_NAME_LENGTH) },
+            label = { Text(stringResource(R.string.edit_name)) },
+            singleLine = true,
+            isError = nameProblem != null,
+            supportingText = {
+                Text(
+                    nameProblem?.let { problemText(it) } ?: stringResource(
+                        R.string.edit_counter,
+                        name.text.length,
+                        MAXIMUM_NAME_LENGTH
+                    )
                 )
-            )
-        },
-        colors = colors.textField,
-        modifier = Modifier.fillMaxWidth()
-    )
+            },
+            colors = colors.textField,
+            interactionSource = interactionSource,
+            modifier = inView.fillMaxWidth()
+        )
+    }
     CategoryChoices(category, colors.content, colors.selection, colors.buttonHeight) {
         category = it
     }
+    // As a medication button: the form leaves once it logs (BRD D181 (6)).
+    val logs = rememberParkWhenPressed()
     Button(
-        onClick = { actions.onAddAndLog(name.text, category) },
+        onClick = {
+            logs.pressed()
+            actions.onAddAndLog(name.text, category)
+        },
         enabled = !pending,
         colors = colors.actionColors(),
-        modifier = Modifier
+        modifier = logs.modifier
             .fillMaxWidth()
             .heightIn(min = colors.buttonHeight)
     ) {

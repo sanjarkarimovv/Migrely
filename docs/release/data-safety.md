@@ -6,7 +6,7 @@ whenever a permission, a library or the billing changes.
 ## Why the answers are "none"
 
 - **No transmission:** the app has no INTERNET permission, and the permission check fails the build, the bundle too, if
-  one appears (D44). Nothing the user enters can leave the phone through the app, and nothing reaches the developer.
+  one appears (D44). Nothing the user enters can leave the phone through the app over the internet, and nothing reaches the developer.
 - **No SDKs that collect:** no analytics, advertising or crash reporting.
 - **Purchases (Migrely Premium):** the Play Billing Library talks only to the Google Play app on the phone, and Google
   Play processes every purchase under its own policy, so purchase data is Google's, not the app's (D105). The app keeps

@@ -13,13 +13,13 @@
     <string name="subscription_headline_report">A report for your doctor</string>
     <string name="subscription_lead_report">Premium makes a clear PDF of your migraines and medications to take to your appointment.</string>
     <string name="subscription_headline_insights">See what your migraines have in common</string>
-    <string name="subscription_lead_insights">Premium shows your triggers, when migraines come, and what helped.</string>
+    <string name="subscription_lead_insights">Premium shows triggers often logged with your migraines, when they come, and how you rated your medications.</string>
     <string name="subscription_headline_settings">Migrely Premium</string>
     <string name="subscription_lead_settings">Premium adds the doctor report and Insights.</string>
     <string name="subscription_benefits_title">What Premium adds</string>
     <string name="subscription_benefit_report">A PDF report for your doctor</string>
     <string name="subscription_benefit_triggers">Triggers often logged with your migraines</string>
-    <string name="subscription_benefit_timing">When migraines come, and what helped</string>
+    <string name="subscription_benefit_timing">When migraines come, and how you rated your medications</string>
     <string name="subscription_benefit_trends">The last 12 months at a glance</string>
     <string name="subscription_free_stays">Logging, history, reminders, export and every safety warning stay free.</string>
     <string name="subscription_plans_title">Choose a plan</string>

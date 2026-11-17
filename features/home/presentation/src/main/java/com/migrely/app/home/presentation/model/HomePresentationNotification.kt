@@ -22,5 +22,11 @@ sealed interface HomePresentationNotification : PresentationNotification {
     data class AttackDeleted(val attackId: String, val deletedAt: Instant) :
         HomePresentationNotification
 
+    /**
+     * A write saved and has no message of its own. Not a message: the screen uses it to replace an error that the
+     * write has made untrue (BRD D178 (1), EC-UX-35).
+     */
+    data object Saved : HomePresentationNotification
+
     data object SomethingWentWrong : HomePresentationNotification
 }

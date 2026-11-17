@@ -6,12 +6,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
@@ -32,6 +30,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
@@ -41,7 +40,9 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.migrely.app.architecture.ui.view.ScreenEnterObserver
 import com.migrely.app.designsystem.input.TapGuard
+import com.migrely.app.designsystem.layout.MigrelyInsets
 import com.migrely.app.designsystem.motion.rememberReduceMotion
+import com.migrely.app.designsystem.snackbar.MessageLayout
 import com.migrely.app.designsystem.snackbar.MigrelySnackbar
 import com.migrely.app.designsystem.snackbar.MigrelySnackbarHost
 import com.migrely.app.designsystem.snackbar.SnackbarTone
@@ -87,15 +88,16 @@ fun OnboardingDependencies.Onboarding(
     ScreenEnterObserver { onboardingViewModel.onEnter() }
     ViewModelObserver(navController)
     var step by rememberSaveable { mutableIntStateOf(GOAL) }
-    var notSaved by remember { mutableStateOf(false) }
+    // When the last failure was posted, so a second one is a new message and is spoken again (BRD D178 (5)).
+    var notSavedAt by remember { mutableStateOf<Long?>(null) }
     LaunchedEffect(onboardingEventPresenter) {
-        onboardingEventPresenter.notSaved.collect { notSaved = true }
+        onboardingEventPresenter.notSaved.collect { notSavedAt = System.currentTimeMillis() }
     }
     val notSavedTimeout = messageTimeoutMillis(READING_MILLIS)
-    LaunchedEffect(notSaved, notSavedTimeout) {
-        if (notSaved && notSavedTimeout != null) {
+    LaunchedEffect(notSavedAt, notSavedTimeout) {
+        if (notSavedAt != null && notSavedTimeout != null) {
             delay(notSavedTimeout)
-            notSaved = false
+            notSavedAt = null
         }
     }
     BackHandler(enabled = step > GOAL) { step-- }
@@ -123,7 +125,7 @@ fun OnboardingDependencies.Onboarding(
         reminderOffer = { reminderOffer(onboardingViewModel::onFinishAction) },
         messages = {
             MigrelySnackbarHost(
-                message = Unit.takeIf { notSaved },
+                message = notSavedAt,
                 reduceMotion = rememberReduceMotion()
             ) {
                 MigrelySnackbar(
@@ -132,7 +134,7 @@ fun OnboardingDependencies.Onboarding(
                     action = null,
                     baseDurationMillis = READING_MILLIS,
                     dismissLabel = stringResource(R.string.onboarding_message_dismiss),
-                    onDismiss = { notSaved = false }
+                    onDismiss = { notSavedAt = null }
                 )
             }
         },
@@ -149,18 +151,31 @@ fun OnboardingContents(
     messages: @Composable () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Box(
+    // No top bar: the message is the first stop (BRD D178 (4), ux Q2).
+    MessageLayout(
+        message = messages,
         modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
+        OnboardingSteps(step, actions, reminderOffer)
+    }
+}
+
+@Composable
+private fun OnboardingSteps(
+    step: Int,
+    actions: OnboardingActions,
+    reminderOffer: @Composable () -> Unit
+) {
+    Box(Modifier.fillMaxSize()) {
         Box(contentAlignment = Alignment.TopCenter, modifier = Modifier.fillMaxSize()) {
             Column(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier
                     .widthIn(max = CONTENT_MAX_WIDTH)
                     .fillMaxWidth()
-                    .windowInsetsPadding(WindowInsets.safeDrawing)
+                    .windowInsetsPadding(MigrelyInsets.bars)
                     .verticalScroll(rememberScrollState())
                     .padding(16.dp)
             ) {
@@ -180,7 +195,6 @@ fun OnboardingContents(
             durationMillis = STEP_GUARD_MILLIS,
             modifier = Modifier.matchParentSize()
         )
-        messages()
     }
 }
 
@@ -200,7 +214,12 @@ private fun StepHeader(step: Int, onSkip: () -> Unit) {
                 .heightIn(min = 48.dp)
                 .semantics { contentDescription = skip }
         ) {
-            Text(stringResource(R.string.onboarding_skip))
+            // One spoken name (BRD D181 (2), #217): the button says "Skip this step", so the word
+            // it shows is left out of its semantics; otherwise TalkBack adds "Skip" after it.
+            Text(
+                text = stringResource(R.string.onboarding_skip),
+                modifier = Modifier.clearAndSetSemantics { }
+            )
         }
     }
 }

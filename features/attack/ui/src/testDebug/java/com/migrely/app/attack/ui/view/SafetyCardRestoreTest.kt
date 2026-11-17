@@ -22,7 +22,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
-private const val TITLE = "Sudden, worst-ever pain?"
+private const val TITLE = "Sudden, extremely bad pain?"
 private const val DELETE = "Delete migraine"
 
 /**

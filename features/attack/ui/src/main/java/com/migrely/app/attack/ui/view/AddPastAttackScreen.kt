@@ -41,6 +41,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
@@ -48,6 +50,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.migrely.app.architecture.ui.view.ScreenLeaveObserver
 import com.migrely.app.attack.presentation.model.AddPastAttackViewState
 import com.migrely.app.attack.ui.R
 import com.migrely.app.attack.ui.di.AddPastAttackDependencies
@@ -63,6 +66,7 @@ import com.migrely.app.attack.ui.model.TimeFieldUiModel
 import com.migrely.app.designsystem.icon.MigrelyIcons
 import com.migrely.app.designsystem.motion.rememberReduceMotion
 import com.migrely.app.designsystem.picker.MigrelyDateTimePicker
+import com.migrely.app.designsystem.snackbar.MessageLayout
 import com.migrely.app.designsystem.theme.MigrelyTheme
 import java.time.Instant
 import java.time.LocalDate
@@ -119,6 +123,13 @@ fun AddPastAttackDependencies.AddPastAttack(
         }
     }
 
+    // An error belongs to the visit (BRD D178 (2)); a save that succeeds closes the screen.
+    ScreenLeaveObserver(navController) {
+        if (shownMessage?.let { attackMessageBehaviourUiMapper.toUi(it.message).isError } == true) {
+            shownMessage = null
+        }
+    }
+
     val viewModel = addPastAttackViewModel
     fun send(clearProblem: Boolean, action: (start: Instant, end: Instant) -> Unit) {
         val times = draft ?: return
@@ -146,24 +157,25 @@ fun AddPastAttackDependencies.AddPastAttack(
         onChangeTimes = { problem = null }
     )
 
-    Box(modifier = modifier.fillMaxSize()) {
-        AddPastAttackContents(
-            draft = draft,
-            problem = problem,
-            saving = saving,
-            timeUiFormatter = attackTimeUiFormatter,
-            actions = actions
-        )
-        AttackMessages(
-            shown = shownMessage,
-            behaviourMapper = attackMessageBehaviourUiMapper,
-            reduceMotion = rememberReduceMotion(),
-            isShown = { message -> shownMessage == message },
-            onClear = { message -> if (shownMessage == message) shownMessage = null },
-            onUndoTimes = {},
-            onUndoPoint = {}
-        )
-    }
+    AddPastAttackContents(
+        draft = draft,
+        problem = problem,
+        saving = saving,
+        timeUiFormatter = attackTimeUiFormatter,
+        actions = actions,
+        modifier = modifier,
+        messages = {
+            AttackMessages(
+                shown = shownMessage,
+                behaviourMapper = attackMessageBehaviourUiMapper,
+                reduceMotion = rememberReduceMotion(),
+                isShown = { message -> shownMessage == message },
+                onClear = { message -> if (shownMessage == message) shownMessage = null },
+                onUndoTimes = {},
+                onUndoPoint = {}
+            )
+        }
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -174,41 +186,50 @@ fun AddPastAttackContents(
     saving: Boolean,
     timeUiFormatter: AttackTimeUiFormatter,
     actions: AddPastAttackActions,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    messages: @Composable () -> Unit = {}
 ) {
-    Column(
+    // The bar, then the message, then the form, for keyboard and TalkBack (BRD D178 (4)).
+    MessageLayout(
+        message = messages,
         modifier = modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(MaterialTheme.colorScheme.background),
+        topBar = { AddPastAttackTopBar(actions.onBack) }
     ) {
-        TopAppBar(
-            title = {
-                Text(
-                    text = stringResource(R.string.past_title),
-                    style = MaterialTheme.typography.titleLarge
-                )
-            },
-            navigationIcon = {
-                IconButton(onClick = actions.onBack) {
-                    Icon(
-                        MigrelyIcons.Back,
-                        contentDescription = stringResource(R.string.attack_navigate_back)
-                    )
-                }
-            },
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = MaterialTheme.colorScheme.background
-            ),
-            windowInsets = WindowInsets.safeDrawing.only(
-                WindowInsetsSides.Top + WindowInsetsSides.Horizontal
-            )
-        )
         if (draft == null) {
             Box(Modifier.fillMaxSize())
         } else {
             DraftContents(draft, problem, saving, timeUiFormatter, actions)
         }
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AddPastAttackTopBar(onBack: () -> Unit) {
+    TopAppBar(
+        title = {
+            Text(
+                text = stringResource(R.string.past_title),
+                style = MaterialTheme.typography.titleLarge
+            )
+        },
+        navigationIcon = {
+            IconButton(onClick = onBack) {
+                Icon(
+                    MigrelyIcons.Back,
+                    contentDescription = stringResource(R.string.attack_navigate_back)
+                )
+            }
+        },
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = MaterialTheme.colorScheme.background
+        ),
+        windowInsets = WindowInsets.safeDrawing.only(
+            WindowInsetsSides.Top + WindowInsetsSides.Horizontal
+        )
+    )
 }
 
 @Composable
@@ -223,6 +244,16 @@ private fun DraftContents(
     // Read when a picker opens, so a screen left open for a while still allows the current time.
     val now = remember(picking) { System.currentTimeMillis() }
     val timeError = (problem as? PastAttackProblemUiModel.Time)?.error
+    // "Change the times" leaves with its card: keyboard focus goes to Started, the first time to change, once the card
+    // has gone (BRD D181 (6), EC-UX-51). A clickable takes no focus in touch mode, so a touch user's screen stays.
+    val startedFocus = remember { FocusRequester() }
+    var focusStarted by remember { mutableStateOf(false) }
+    LaunchedEffect(focusStarted) {
+        if (focusStarted) {
+            startedFocus.requestFocus()
+            focusStarted = false
+        }
+    }
     Box(contentAlignment = Alignment.TopCenter, modifier = Modifier.fillMaxSize()) {
         Column(
             verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -240,7 +271,9 @@ private fun DraftContents(
                 modifier = Modifier.padding(horizontal = 4.dp)
             )
             Column {
-                DraftTimeRows(draft, timeError, timeUiFormatter) { field -> picking = field }
+                DraftTimeRows(draft, timeError, timeUiFormatter, startedFocus) { field ->
+                    picking = field
+                }
                 Text(
                     text = stringResource(
                         R.string.time_duration,
@@ -253,7 +286,18 @@ private fun DraftContents(
             }
             if (problem is PastAttackProblemUiModel.Overlaps) {
                 // The card's two choices replace "Add migraine", which would only show the card again.
-                OverlapCard(problem.attacks, draft.zoneId, timeUiFormatter, saving, actions)
+                OverlapCard(
+                    problem.attacks,
+                    draft.zoneId,
+                    timeUiFormatter,
+                    saving,
+                    actions.copy(
+                        onChangeTimes = {
+                            focusStarted = true
+                            actions.onChangeTimes()
+                        }
+                    )
+                )
             } else {
                 Button(
                     onClick = actions.onAdd,
@@ -279,6 +323,7 @@ private fun DraftTimeRows(
     draft: PastAttackDraftUiModel,
     timeError: TimeErrorUiModel?,
     timeUiFormatter: AttackTimeUiFormatter,
+    startedFocus: FocusRequester,
     onPick: (TimeFieldUiModel) -> Unit
 ) {
     val startText = timeUiFormatter.formatDateTime(draft.startEpochMillis, draft.zoneId)
@@ -289,7 +334,8 @@ private fun DraftTimeRows(
         error = timeError?.takeIf { it.field == TimeFieldUiModel.Start },
         zoneId = draft.zoneId,
         timeUiFormatter = timeUiFormatter,
-        onClick = { onPick(TimeFieldUiModel.Start) }
+        onClick = { onPick(TimeFieldUiModel.Start) },
+        rowModifier = Modifier.focusRequester(startedFocus)
     )
     val endText = timeUiFormatter.formatDateTime(draft.endEpochMillis, draft.zoneId)
     TimeRow(

@@ -22,6 +22,7 @@ class HomeNotificationUiMapper(private val homeMessagePresenter: HomeMessagePres
                 notification.deletedAt.toEpochMilli()
             )
             HomePresentationNotification.UndoNotPossible -> HomeMessageUiModel.UndoNotPossible
+            HomePresentationNotification.Saved -> HomeMessageUiModel.Saved
             HomePresentationNotification.StorageFull -> HomeMessageUiModel.StorageFull
             is HomePresentationNotification.StartMoveRejected ->
                 HomeMessageUiModel.StartMoveRejected(notification.previousEnd.toEpochMilli())

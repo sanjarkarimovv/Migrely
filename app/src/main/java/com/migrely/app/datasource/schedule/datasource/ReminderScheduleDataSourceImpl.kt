@@ -15,20 +15,20 @@ import java.util.concurrent.ExecutionException
 
 /**
  * Reminders as WorkManager one-time work (BRD EC-REM-03): inexact by design, so no exact-alarm permission is needed,
- * and kept across reboots (EC-REM-04). Each kind is unique work, so planning again replaces the earlier run.
+ * and kept across reboots (EC-REM-04). Each kind is unique work, so planning again replaces the earlier run, except an
+ * app start's daily plan, which keeps it (D176).
  */
 class ReminderScheduleDataSourceImpl(
     private val workManager: WorkManager,
     private val clockDataSource: ClockDataSource
 ) : ReminderScheduleDataSource {
-    override fun scheduleDaily(at: Instant, date: LocalDate) = enqueue(
-        DAILY_WORK,
-        at,
-        workDataOf(
-            ReminderWorker.KEY_KIND to ReminderWorker.KIND_DAILY,
-            ReminderWorker.KEY_DATE to date.toString()
-        )
-    )
+    override fun scheduleDaily(at: Instant, date: LocalDate) =
+        enqueue(DAILY_WORK, at, dailyInput(date))
+
+    // KEEP leaves a waiting or running daily run alone, inside WorkManager, and enqueues only when there is none or it
+    // has finished (BRD D176).
+    override fun scheduleDailyIfNone(at: Instant, date: LocalDate) =
+        enqueue(DAILY_WORK, at, dailyInput(date), policy = ExistingWorkPolicy.KEEP)
 
     override fun cancelDaily() {
         workManager.cancelUniqueWork(DAILY_WORK)
@@ -94,15 +94,26 @@ class ReminderScheduleDataSourceImpl(
 
     // REPLACE also covers the daily run planning its own next run: WorkManager marks the running work cancelled but
     // never interrupts a Worker's doWork, which finishes normally (androidx.work.Worker).
-    private fun enqueue(name: String, at: Instant, input: Data, tag: String? = null) {
+    private fun enqueue(
+        name: String,
+        at: Instant,
+        input: Data,
+        tag: String? = null,
+        policy: ExistingWorkPolicy = ExistingWorkPolicy.REPLACE
+    ) {
         val delay = Duration.between(clockDataSource.now(), at).coerceAtLeast(Duration.ZERO)
         val request = OneTimeWorkRequestBuilder<ReminderWorker>()
             .setInitialDelay(delay)
             .setInputData(input)
             .apply { tag?.let(::addTag) }
             .build()
-        workManager.enqueueUniqueWork(name, ExistingWorkPolicy.REPLACE, request)
+        workManager.enqueueUniqueWork(name, policy, request)
     }
+
+    private fun dailyInput(date: LocalDate) = workDataOf(
+        ReminderWorker.KEY_KIND to ReminderWorker.KIND_DAILY,
+        ReminderWorker.KEY_DATE to date.toString()
+    )
 
     private fun effectWork(intakeId: String) = "$EFFECT_WORK_PREFIX$intakeId"
 

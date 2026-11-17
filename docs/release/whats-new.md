@@ -3,21 +3,46 @@
 Each release's text for Play Console › Create new release › Release notes. Play allows at most 500 characters per
 language. en-US is the default, and other languages fall back to it.
 
-## 1.2.1 (versionCode 11)
+## 1.3.0 (versionCode 12)
 
-Replaces 1.2.0, which was tagged but never uploaded (D170). Users never saw 1.2.0, so these notes are its notes,
-unchanged and already checked by `medical-reviewer`. 1.2.1 also keeps the diary and reminders across an update after
-"Clear storage" on Android 8.0 (#193, #189). That fix is not announced: the 1.2.0 text is 495 of 500 characters, and it
-needs no action from users.
+The text covers `develop` e46f2b22 since `v1.2.1`: D177, D178, D180, D181 and D183. T64 (D182) is not in 1.3.0.
+`medical-reviewer` checked the text on 2026-11-16, word for word against e46f2b22; bullets 1 and 4 changed on its
+verdict. `legal-finance-analyst` passed the privacy bullet. It does not say "medically reviewed" or "approved" (the
+clinician sign-off, T31, is open). Fixes that need no action from users (D172 to D176) are not announced. The text is
+494 of 500 characters.
 
 ```
 <en-US>
 New:
-• Doctor visit: set your next visit's date in Reminders. Two days before, Migrely reminds you to make a report for your doctor. The Doctor report can cover the time since your last visit.
-• Lock screen reminders no longer name a medication or say that you logged a migraine.
+• The daily reminder, if held up more than an hour past its time, now arrives quietly.
+• While you type a note or a medication name, the line you are typing stays above the keyboard and the top bar with Back stays in place.
+• Clearer privacy wording: no internet permission, how Premium is bought, what Android's own backup may copy.
 Fixes:
-• A quick second tap on Remove in a custom tag's menu no longer selects what was under it.
-• On the Migraine screen, a message no longer covers the safety card, and "Couldn't save" clears once a save works.
+• A goal on the first setup screen now reads "Keep track of my medication days".
+• After a failed save, the next save that works replaces the error.
+</en-US>
+```
+
+## 1.2.1 (versionCode 11)
+
+Replaces 1.2.0, which was tagged but never uploaded (D170). Users never saw 1.2.0. 1.2.1 also rewrote the in-app
+Warning signs page to follow the NHS emergency and urgent lists (D171, #194), so the notes now say so. They were
+written for 1.2.0 and changed after the `v1.2.1` tag: the copy of this file in the tag is the 1.2.0 text, and the owner
+pastes the notes from `develop` at upload. `medical-reviewer` checked the text on 2026-11-11, word for word against the v1.2.1
+code and BRD D168, D169 and D171. It does not say "medically reviewed" or "approved" (the clinician sign-off, T31, is
+open). 1.2.1 also keeps the diary and reminders
+across an update after "Clear storage" on Android 8.0 (#193, #189). That fix is not announced: it needs no action from
+users. The text is 496 of 500 characters.
+
+```
+<en-US>
+New:
+• Doctor visit: set your next visit's date in Reminders. Two days before, Migrely reminds you to make a report for your doctor (Premium).
+• Lock screen reminders no longer name a medication or say that you logged a migraine.
+• Settings, Warning signs, now follows NHS lists: when to call your local emergency number and when to get urgent medical advice.
+Fixes:
+• A quick second tap on Remove in a tag's menu no longer selects what was under it.
+• A message no longer covers the safety card.
 </en-US>
 ```
 

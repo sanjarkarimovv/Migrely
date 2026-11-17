@@ -6,7 +6,7 @@
     <string name="onboarding_goal_title">What brings you to Migrely?</string>
     <string name="onboarding_goal_doctor">Keep a record for my doctor</string>
     <string name="onboarding_goal_triggers">Find what triggers my migraines</string>
-    <string name="onboarding_goal_painkillers">Take fewer painkillers</string>
+    <string name="onboarding_goal_painkillers">Keep track of my medication days</string>
     <string name="onboarding_disclaimer">Migrely is a headache diary. It doesn\'t diagnose or treat.</string>
     <string name="onboarding_restore">Restore from a backup file</string>
     <string name="onboarding_frequency_title">How often do you get migraines?</string>

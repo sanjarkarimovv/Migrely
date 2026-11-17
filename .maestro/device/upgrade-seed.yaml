@@ -2,7 +2,14 @@
 # and an attack today with Severe and Nausea. upgrade-kept.yaml checks them after the newer build is installed over it.
 appId: com.migrely.app
 ---
-- runFlow: ../subflows/launch-clean.yaml
+# No clearState: scenario_upgrade installs the old build fresh just before. A clear (pm clear) and a relaunch on
+# Android 8.0 leave installd's code_cache mark stale, so the next install -r can empty databases/ or no_backup/
+# (#193, BRD EC-STO-10): the upgrade would then measure that, not the new build.
+- launchApp
+- runFlow: ../subflows/skip-onboarding.yaml
+- extendedWaitUntil:
+    visible: "Today: calm. Calm so far today. No migraine logged."
+    timeout: 15000
 - runFlow: ../subflows/add-past-attack-last-month.yaml
 - runFlow: ../subflows/start-attack.yaml
 - tapOn: "Severe"

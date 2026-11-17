@@ -18,9 +18,12 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
+import com.migrely.app.architecture.ui.view.ScreenLeaveObserver
 import com.migrely.app.designsystem.snackbar.MigrelySnackbar
 import com.migrely.app.designsystem.snackbar.MigrelySnackbarHost
 import com.migrely.app.designsystem.snackbar.SnackbarAction
+import com.migrely.app.designsystem.snackbar.SnackbarTone
 import com.migrely.app.designsystem.snackbar.isFreshDeletion
 import com.migrely.app.home.ui.R
 import com.migrely.app.home.ui.mapper.HomeMessageBehaviourUiMapper
@@ -39,10 +42,16 @@ private const val OFFERED_DELETIONS_KEPT = 10
  * The home screen's messages (BRD EC-UX-16). The newest message replaces the one on screen. The message and the time
  * it appeared are saved, so after a rotation it stays only for the time it has left. Each message's base duration is
  * stretched to the user's accessibility timeout ("Time to take action").
+ *
+ * An error belongs to the visit: leaving Home by Back or forward clears it, while the background, Android Settings and a
+ * rotation keep it (BRD D178 (2)). [onShownChanged] tells whether any message shows and [onErrorPosted] that an error
+ * came, so Home can hold its review request (BRD D178 (3)).
  */
+@Suppress("LongParameterList")
 @Composable
 internal fun HomeMessages(
     presenter: HomeMessagePresenter,
+    navController: NavController,
     behaviourMapper: HomeMessageBehaviourUiMapper,
     timeUiFormatter: TimeUiFormatter,
     reduceMotion: Boolean,
@@ -51,7 +60,9 @@ internal fun HomeMessages(
     onUndoDelete: (attackId: String) -> Unit,
     onMessageBottomChanged: (Dp) -> Unit,
     modifier: Modifier = Modifier,
-    topOffset: Dp = 0.dp
+    topOffset: Dp = 0.dp,
+    onShownChanged: (Boolean) -> Unit = {},
+    onErrorPosted: () -> Unit = {}
 ) {
     var shown by rememberSaveable { mutableStateOf<ShownHomeMessageUiModel?>(null) }
     // Deletions already offered, so a return to home or a rotation does not offer one again after a dismissal.
@@ -63,6 +74,7 @@ internal fun HomeMessages(
     val currentOnUndoStart by rememberUpdatedState(onUndoStart)
     val currentOnUndoEnd by rememberUpdatedState(onUndoEnd)
     val currentOnUndoDelete by rememberUpdatedState(onUndoDelete)
+    val currentOnErrorPosted by rememberUpdatedState(onErrorPosted)
 
     fun timeoutMillis(behaviour: HomeMessageBehaviourUiModel): Long? =
         behaviour.baseDurationMillis?.let { base ->
@@ -74,8 +86,15 @@ internal fun HomeMessages(
             ) ?: base
         }
 
+    fun errorShown(): Boolean =
+        shown?.let { behaviourMapper.toUi(it.message).tone == SnackbarTone.Error } == true
+
     LaunchedEffect(presenter) {
         presenter.messages.collect { message ->
+            // "Saved." only replaces an error that the write made untrue; any other message stays, and with none the
+            // write needs no word (BRD D178 (1)). Cleared on success, never on the attempt, so a failed retry shows no
+            // flash.
+            if (message == HomeMessageUiModel.Saved && !errorShown()) return@collect
             // A deletion arrives with every return to home while it is restorable; offer it once. Its window starts
             // when home shows it, so the trip back from the details screen does not shorten it.
             if (message is HomeMessageUiModel.AttackDeleted) {
@@ -101,9 +120,14 @@ internal fun HomeMessages(
 
                 else -> Unit
             }
+            if (behaviourMapper.toUi(message).tone == SnackbarTone.Error) currentOnErrorPosted()
             shown = ShownHomeMessageUiModel(message, System.currentTimeMillis())
         }
     }
+    ScreenLeaveObserver(navController) { if (errorShown()) shown = null }
+    val showing = shown != null
+    val currentOnShownChanged by rememberUpdatedState(onShownChanged)
+    LaunchedEffect(showing) { currentOnShownChanged(showing) }
 
     val current = shown
     val currentTimeout = current?.let { timeoutMillis(behaviourMapper.toUi(it.message)) }
@@ -211,6 +235,7 @@ private fun messageText(message: HomeMessageUiModel, timeUiFormatter: TimeUiForm
         HomeMessageUiModel.UndoNotPossible -> stringResource(
             R.string.home_message_undo_not_possible
         )
+        HomeMessageUiModel.Saved -> stringResource(R.string.home_message_saved)
         HomeMessageUiModel.StorageFull -> stringResource(R.string.home_message_storage_full)
         is HomeMessageUiModel.StartMoveRejected -> stringResource(
             R.string.message_move_rejected,

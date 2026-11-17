@@ -2,6 +2,16 @@
 
 ## Decision
 
+> **Amended 2026-11-10: 1.2.0 is NO-GO for upload and is superseded by 1.2.1.** After this GO, QA found **#193 (S1,
+> pre-existing)**. On Android 8.0, the first app update after "Clear storage" and a reopen can delete the diary database:
+> installd clears a folder by a stale `code_cache` inode. The same cause empties WorkManager's database, which is #189.
+> The lead decided not to upload 1.2.0 (BRD D170) and to ship the fix as 1.2.1; see `go-no-go-1.2.1.md`. The tag v1.2.0
+> stays as it is (a tag never moves); versionCode 10 is never uploaded.
+> This record's API 26 "after an update" rows need a correction. R2-26, T4-26 and T5-26, including the 1.1.1 → 1.1.1
+> controls, were seeded through `launch-clean.yaml`, whose `clearState` is a `pm clear` and a relaunch: exactly #193's path.
+> So their reminder misses do not show a reminder fault without a clear. 1.2.1's record re-runs the upgrade with a seed that
+> never clears.
+
 **QA's verdict, 2026-11-10: GO for `release/1.2.0` @ 826887f22f60d6290e2e51fb533be4854400fa8a** (rows ran on
 9d453bb5f1c63a2c127f9c54b6ab585522d010a1; 826887f2 changes one line of `docs/release/whats-new.md`, and its R8 APK has
 the same 768 entries byte for byte, see "Candidate").
