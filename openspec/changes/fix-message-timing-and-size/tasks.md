@@ -545,7 +545,7 @@ ask `product-manager` before you code.
   Verify: one line per check in this file with the result, and `adb shell settings get secure accessibility_interactive_ui_timeout_ms`
   printing the original value at the end.
 
-- [ ] 7.2 The production TalkBack path on API 36 (`emulator-5570`) with TalkBack on: an instrumented test on the real
+- [x] 7.2 The production TalkBack path on API 36 (`emulator-5570`) with TalkBack on: an instrumented test on the real
   `MigrelySnackbarHost` with `ScreenReaderFocus`, not the spike's bare Box (design D3, cr-t64 S3 #2).
   - It moves TalkBack focus onto a message's text, then to its control within 300 ms, then off to the content.
   - It checks: paused on the text, no resume during the move, resumed 300 ms after leaving with at least 3 s left.
@@ -575,6 +575,33 @@ ask `product-manager` before you code.
     `ANDROID_SERIAL=emulator-5570 ./gradlew :designsystem:connectedDebugAndroidTest
     -Pandroid.testInstrumentationRunnerArguments.class=com.migrely.app.designsystem.snackbar.MessageTalkBackPauseTest`.
   - Negative control for the device run: drop the `ScreenReaderFocusEffect(...)` call in `MigrelySnackbarHost`.
+
+  **Run 2026-11-17 on `emulator-5570` (`Migrely_API_36`, TalkBack 16 bound, touch exploration on). Pass.**
+  - Command: `ANDROID_SERIAL=emulator-5570 nice -n 19 ./gradlew --max-workers=2 :designsystem:connectedDebugAndroidTest
+    -Pandroid.testInstrumentationRunnerArguments.class=com.migrely.app.designsystem.snackbar.MessageTalkBackPauseTest`.
+  - Logs are in `migrely-work/t64/pause-*.log`.
+  - **Run A: exit 0, 10 of 10 rounds. Run B, after the negative control's revert: exit 0, 10 of 10.**
+    - Every round: paused on the text, paused at every poll through the move to "Undo the start", still paused when
+      checked 22–33 ms after leaving, then resumed.
+    - Time left after the resume, run B: 2990–3684 ms. The 2.99 s rounds are the floor; on the others see the finding
+      below.
+  - **Negative control:** `ScreenReaderFocusEffect(...)` removed from `MigrelySnackbarHost`. Exit 1, 0 of 10: no round
+    paused on the text, and each message ran out. After the revert `git diff` was empty.
+  - **First run: 5 of 10, from the harness.**
+    - UiAutomation's node cache went stale between rounds and did not see the new message's text in 5 rounds.
+    - A debug run showed `findByLabel` returning nothing in exactly those rounds.
+    - Now the cache is cleared (`clearCache()`, API 34 and up) and the node refreshed before each move. With that, 10
+      of 10 in the debug run and in runs A and B.
+  - **Finding for product-manager and ux-designer: TalkBack moves its own focus onto a new message.**
+    - In 5 of 10 rounds of each run, a fresh node shows TalkBack's focus already on the new message's text before the
+      test moves it.
+    - The countdown then pauses from about the moment the message appears; those rounds end with 3.6–3.7 s left, not
+      the 3 s floor.
+    - For an Undo the ceiling still ends it. A "Saved." or information message that TalkBack focuses on its own stays
+      until the person moves on or closes it. That fits the delta's letter ("pauses while TalkBack focus holds it"),
+      but nobody chose to hold it.
+    - This harness puts the message below a button. Whether the real screens do the same is checked in 7.1's TalkBack
+      rows.
 
 ## 8. Gate, review, docs
 

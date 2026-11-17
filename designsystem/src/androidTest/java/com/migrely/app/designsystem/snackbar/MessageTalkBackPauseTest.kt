@@ -1,6 +1,7 @@
 package com.migrely.app.designsystem.snackbar
 
 import android.app.UiAutomation
+import android.os.Build
 import android.os.SystemClock
 import android.util.Log
 import android.view.accessibility.AccessibilityManager
@@ -138,10 +139,30 @@ class MessageTalkBackPauseTest {
         countdown?.countdown?.isPaused()
     }
 
+    /**
+     * Moves TalkBack's focus to [label]. UiAutomation's node cache went stale between rounds and missed the new message
+     * in 5 of 10 rounds, so the cache is cleared and the node refreshed first. Whether TalkBack had already put its
+     * focus there by itself is logged: it did on its own in about half the rounds (task 7.2 result).
+     */
     private fun moveFocus(label: String): Boolean {
-        val node = automation.rootInActiveWindow.findByLabel(label) ?: return false
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) automation.clearCache()
+        val node = automation.rootInActiveWindow.findByLabel(label)
+        if (node == null) {
+            val labels = labels(automation.rootInActiveWindow)
+            Log.i(TAG, "move to '$label': not found; labels=$labels")
+            return false
+        }
+        node.refresh()
+        val alreadyFocused = node.isAccessibilityFocused
         node.performAction(AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS)
+        Log.i(TAG, "move to '$label': TalkBack focus already there=$alreadyFocused")
         return true
+    }
+
+    private fun labels(node: AccessibilityNodeInfo?): List<String> {
+        if (node == null) return emptyList()
+        val own = listOfNotNull(node.text?.toString(), node.contentDescription?.toString())
+        return own + (0 until node.childCount).flatMap { labels(node.getChild(it)) }
     }
 
     private fun await(condition: () -> Boolean): Boolean {
