@@ -250,12 +250,20 @@ section 9.
     accessibility service, the walk's medication and intake removed (0 medications, 0 intakes, 0 migraines, as before).
     Evidence: `migrely-work/walks/kbd/` (`f1-*` to `f5-*`, `k1-*`, `dev-*`, `k2neg-*`: `.png` and `.xml`; APKs of
     24109541, develop ea41869a and the K2 negative).
+  - Release 1.3.0 (2026-11-17, from QA's record): **not passed as a whole.** QA ran the rest of the API 36 matrix on
+    emulator-5580 (`docs/qa/go-no-go-1.3.0.md`, "T63 keyboard follows the cursor on API 36"): U9 portrait cells pass C1
+    to C5 (11 of 11 measured C2), landscape cells 5 of 5, K2 TalkBack reaches Back 1/1, K4 a to e pass. Not run there:
+    the 360 dp F1 200% cell, F4 100% landscape, rotation with the keyboard open, process death, RTL, light theme, split
+    screen. U8 (TalkBack on, Back from the note with the keyboard up) **failed** 3 of 3 → #238, being fixed by the
+    change `keep-page-when-keyboard-closes` (D189) on `bugfix/238-talkback-focus-on-keyboard-close`.
 
 ## 7. Review
 
-- [ ] 7.1 `code-reviewer`, with the reviewer's own D178 (6) warning as a check item: no keyboard inset above the content column,
+- [x] 7.1 `code-reviewer`, with the reviewer's own D178 (6) warning as a check item: no keyboard inset above the content column,
   and the fit rule reads the shared bars inset. Verify: no open blocker.
-- [ ] 7.2 `android-engineer` fixes the review's F1 (and with it F2) and takes F6. Verify: a red test per helper on 51e22355,
+  - Done (2026-11-15): code-reviewer reviewed the change (findings F1 to F3, fixed in 7.2 and 7.3) and the final delta
+    (approved; its S4 test gap closed in 7.5). Record: PR #225, "Review".
+- [x] 7.2 `android-engineer` fixes the review's F1 (and with it F2) and takes F6. Verify: a red test per helper on 51e22355,
   green after; the gate on the new SHA; a short walk on emulator-5570.
   - Record (2026-11-15, android-engineer, f05814f2): both helpers asked for their line on every keyboard height change,
     closing included. New `designsystem/input/KeyboardFollow.kt`: a layout in which the keyboard did not move records
@@ -282,6 +290,11 @@ section 9.
     5570 is off, its settings untouched, no test data written. Still to walk on a device: F1 on the note and on Edit
     medication at 100% portrait, and F2 (safety card after a first pain 10 with the note focused, also with Remove
     animations); `away.sh` in the same folder is ready for F1, with the focus guard.
+  - Walk, release 1.3.0 (2026-11-17): the rows this walk was to cover ran on API 36 in QA's record
+    (`docs/qa/go-no-go-1.3.0.md`, "T63 keyboard follows the cursor on API 36"): F1 on the note PASS 3/3 with the word
+    composing on Gboard's keys and 4/4 injected, the line above the keyboard on reopen; F2 safety card PASS 1/1. What it
+    does not show: the 51e22355 control was not run on API 36, the F1 row cannot fail on Gboard (the 76e5afcd control
+    stayed too), and F1 on Edit medication's name is not decisive (the page is only ~60 px taller than the viewport).
 
 - [x] 7.3 `product-manager` rules on the plan changes made during build and review, and makes plan and code agree (design D2,
   D6, D7, K2, Risks; deltas `app-shell` and `attack-details`; proposal; BRD D180). Verify: `openspec validate
@@ -364,6 +377,12 @@ section 9.
     1 s), the page does not return to the note, the card's TalkBack reading is D167's. Negative control: the 51e22355 build
     (expected to pull the page from the card; if it does not reproduce on a device, record that, and the row then rests on
     the mutation test of 7.2).
+  - Release 1.3.0 (QA, 2026-11-17): the API 36 rows ran on emulator-5580 (`docs/qa/go-no-go-1.3.0.md`, "T63 keyboard
+    follows the cursor on API 36"); the API 26 rows are in `docs/qa/fix-keyboard-follows-cursor.md`. **U8 FAILED:** with
+    TalkBack on and the keyboard up on the note, Back closes the keyboard but moves TalkBack's focus to the "Stress"
+    chip, 3 of 3 (1.2.1 stays on the note, 2 of 2) → #238 (S3), being fixed by `keep-page-when-keyboard-closes` (D189).
+    Also open: F1 on Gboard cannot fail (control stayed), F2 on Edit medication not decisive, the F2 card's 51e22355
+    control and the 360 dp F1 200% cell not run.
 - [x] 8.2 QA retests #141, #83 and #145, and closes those that pass. Verify: the issues' comments.
   - Record (2026-11-15, QA, `develop` d3d98673, QA's debug build sha256 1af5b0cf…ff8067 read back from emulator-5582,
     API 26, AOSP keyboard): all three pass and are closed with a comment each. #141 typing past the keyboard 5/5, the
@@ -372,15 +391,25 @@ section 9.
     History whole at 130% 2/2 and landscape 2/2 (control 2/2 stale). The API 36 rows stay deferred to the
     release/1.3.0 Go/No-Go as a blocking line (`team-lead`, 2026-11-15); an issue is reopened if they fail there.
     Details: `docs/qa/fix-keyboard-follows-cursor.md`, "Task 8.2".
-- [ ] 8.3 ux F5, separate from this change: on a device, Edit medication with the keyboard open and TalkBack on, Save with a name
+- [x] 8.3 ux F5, separate from this change: on a device, Edit medication with the keyboard open and TalkBack on, Save with a name
   that gives an error; does the error line stay off screen and silent? Only if it reproduces, file an issue with severity and
   steps. Verify: a yes or no with evidence in the QA record, and the issue number if one was filed.
+  - Answered **yes** (QA, release 1.3.0, `docs/qa/go-no-go-1.3.0.md`, "T63 keyboard follows the cursor on API 36", row
+    "8.3 (ux F5) and T66 5.5"): nothing about the error is spoken in 8 s and "Enter a name." stays under Name, off
+    screen → filed #239 (S3, open).
 
 ## 9. Close
 
 - [ ] 9.1 BRD D180 updated with the results (what was proved, what stays open), `docs/QA.md` or the release notes untouched
   unless `team-lead` asks. Verify: `grep -c "^| D180 " docs/BRD.md` prints 1.
-- [ ] 9.2 Archive and validate. Verify: `openspec archive fix-keyboard-follows-cursor --yes` and
+  - Not done (2026-11-17): D180 does not yet carry the 1.3.0 Go/No-Go results (#238, #239, what API 36 proved and did
+    not). The BRD is product-manager's.
+- [x] 9.2 Archive and validate. Verify: `openspec archive fix-keyboard-follows-cursor --yes` and
   `openspec validate --specs --strict` exits 0.
+  - Done 2026-11-17 on `chore/archive-1.3.0-changes` (PR "Archive the OpenSpec changes shipped in 1.3.0"): `openspec
+    archive fix-keyboard-follows-cursor --yes` (+9 requirements into `app-shell`, `attack-details`, `in-app-messages`),
+    then `openspec validate --all --strict`: 30 passed, 0 failed, exit 0.
 - [ ] 9.3 PR into `develop` with `Refs #141`, `Refs #83`, `Refs #145`, merge commit, the worktree removed, tracker T63 updated by
   `team-lead`. Verify: `git log --oneline -1 origin/develop` shows the merge.
+  - PR #225 merged into `develop` with a merge commit (d3d98673, 2026-11-15); the change's worktree is gone. Tracker T63
+    is still "doing" (team-lead's).
