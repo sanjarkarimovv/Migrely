@@ -1,17 +1,22 @@
 package com.migrely.app.designsystem.snackbar
 
+import android.graphics.Rect
 import androidx.compose.foundation.focusGroup
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.positionOnScreen
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import kotlin.math.roundToInt
 
 /**
  * The height [MigrelySnackbarHost]'s tap guard covers: the message shown, and for a replacement the taller of it and the
@@ -75,11 +80,28 @@ internal class MessageBottom {
     }
 }
 
+/** Where the message shown is on the screen, to match TalkBack's focused node against (BRD D182 (2)). */
+internal class MessageInScreen {
+    var bounds: Rect? = null
+        private set
+
+    fun place(coordinates: LayoutCoordinates) {
+        val origin = coordinates.positionOnScreen()
+        val left = origin.x.roundToInt()
+        val top = origin.y.roundToInt()
+        bounds = Rect(left, top, left + coordinates.size.width, top + coordinates.size.height)
+    }
+}
+
 /**
  * Keeps keyboard and switch focus off a message that is leaving, and moves focus off the focused message when it
- * leaves or is replaced, to where nothing acts on Enter (ux F8).
+ * leaves or is replaced, to where nothing acts on Enter (ux F8). [onInsideChanged] hears keyboard focus enter and leave
+ * the message shown, which holds its countdown (BRD D182 (2)).
  */
-internal class MessageFocus(private val parking: FocusParking) {
+internal class MessageFocus(
+    private val parking: FocusParking,
+    private val onInsideChanged: (Boolean) -> Unit
+) {
     private var inside = false
 
     fun modifier(leaving: Boolean): Modifier = if (leaving) {
@@ -88,7 +110,10 @@ internal class MessageFocus(private val parking: FocusParking) {
             .focusProperties { onEnter = { cancelFocusChange() } }
             .focusGroup()
     } else {
-        Modifier.onFocusChanged { inside = it.hasFocus }
+        Modifier.onFocusChanged {
+            inside = it.hasFocus
+            onInsideChanged(it.hasFocus)
+        }
     }
 
     fun changed() {
@@ -103,9 +128,13 @@ internal class MessageFocus(private val parking: FocusParking) {
  * focus off it before its node goes, so focus is never passed on to another control by the system.
  */
 @Composable
-internal fun rememberMessageFocus(message: Any?): MessageFocus {
+internal fun rememberMessageFocus(
+    message: Any?,
+    onInsideChanged: (Boolean) -> Unit = {}
+): MessageFocus {
     val parking = rememberFocusParking()
-    val focus = remember(parking) { MessageFocus(parking) }
+    val currentOnInsideChanged by rememberUpdatedState(onInsideChanged)
+    val focus = remember(parking) { MessageFocus(parking) { currentOnInsideChanged(it) } }
     val last = remember { arrayOf(message) }
     if (last[0] != message) {
         last[0] = message

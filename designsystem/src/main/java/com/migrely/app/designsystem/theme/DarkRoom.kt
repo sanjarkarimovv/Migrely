@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.setValue
@@ -33,6 +34,12 @@ class DarkScreens {
 val LocalDarkScreens = staticCompositionLocalOf { DarkScreens() }
 
 /**
+ * Whether the content is inside an active [MigrelyDarkRoom], where every target is 64 dp, a message's control too
+ * (BRD D182 (4)). An inactive room inside an active one keeps it true.
+ */
+val LocalInDarkRoom = compositionLocalOf { false }
+
+/**
  * Keeps [content] dark in every theme while [active]: attack mode and the dark room, because light hurts during an
  * attack (BRD D94, 18.3 B). Dialogs, pickers and messages inside take the dark scheme too. While not [active],
  * [content] has the app's theme, so a part of the screen can change rooms without losing its state.
@@ -55,6 +62,7 @@ fun MigrelyDarkRoom(active: Boolean = true, content: @Composable () -> Unit) {
             } else {
                 contentColor
             },
+            LocalInDarkRoom provides (active || LocalInDarkRoom.current),
             content = content
         )
     }

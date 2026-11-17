@@ -2,6 +2,9 @@ package com.migrely.app.medication.ui.view
 
 import androidx.activity.ComponentActivity
 import androidx.compose.material3.Text
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.ProvidedValue
+import androidx.compose.ui.platform.LocalAccessibilityManager
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.lifecycle.Lifecycle
@@ -9,6 +12,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.migrely.app.designsystem.snackbar.LocalMessageClock
 import com.migrely.app.designsystem.theme.MigrelyTheme
 import com.migrely.app.medication.ui.mapper.MedicationMessageBehaviourUiMapper
 import com.migrely.app.medication.ui.model.MedicationEventUiModel
@@ -23,6 +27,11 @@ import org.robolectric.annotation.Config
 private const val STORAGE_FULL = "Couldn't save. Your phone's storage is full."
 private const val SCREEN = "screen"
 private const val OTHER = "other"
+private const val INTAKE_UNDONE = "Removed. Nothing was logged."
+
+// D182 (1): "Time to take action" and the reading timeout set apart.
+private const val TIME_TO_TAKE_ACTION_MILLIS = 20_000L
+private const val READING_TIMEOUT_MILLIS = 8_000L
 
 /** The medication screens after D178: an error belongs to the visit, and their own message replaces it (BRD EC-UX-35). */
 @RunWith(RobolectricTestRunner::class)
@@ -33,19 +42,22 @@ class MedicationMessagesTest {
 
     private val presenter = MedicationEventPresenter()
     private lateinit var navController: NavHostController
+    private val clock = FakeMessageClock(wall = System.currentTimeMillis())
 
-    private fun showScreen() {
+    private fun showScreen(vararg locals: ProvidedValue<*>) {
         rule.setContent {
             navController = rememberNavController()
             MigrelyTheme {
                 NavHost(navController, startDestination = SCREEN) {
                     composable(SCREEN) {
-                        MedicationMessages(
-                            presenter = presenter,
-                            navController = navController,
-                            behaviourMapper = MedicationMessageBehaviourUiMapper(),
-                            reduceMotion = true
-                        )
+                        CompositionLocalProvider(*locals) {
+                            MedicationMessages(
+                                presenter = presenter,
+                                navController = navController,
+                                behaviourMapper = MedicationMessageBehaviourUiMapper(),
+                                reduceMotion = true
+                            )
+                        }
                     }
                     composable(OTHER) { Text(OTHER) }
                 }
@@ -56,6 +68,13 @@ class MedicationMessagesTest {
 
     private fun post(message: MedicationMessageUiModel) {
         rule.runOnIdle { presenter.show(MedicationEventUiModel.Message(message)) }
+        rule.waitForIdle()
+    }
+
+    /** Time passes on the screen: the Compose clock and the phone's clocks together. */
+    private fun passTime(millis: Long) {
+        clock.advanceBy(millis)
+        rule.mainClock.advanceTimeBy(millis)
         rule.waitForIdle()
     }
 
@@ -107,5 +126,26 @@ class MedicationMessagesTest {
         goForwardAndBack()
 
         rule.onNodeWithText("Medication removed").assertExists()
+    }
+
+    // One timeout for every message (EC-UX-52, BRD D182 (1))
+
+    @Test
+    fun `A removed intake on Log medication stays for the time to take action`() {
+        showScreen(
+            LocalAccessibilityManager provides FakeAccessibilityManager(
+                interactiveMillis = TIME_TO_TAKE_ACTION_MILLIS,
+                nonInteractiveMillis = READING_TIMEOUT_MILLIS
+            ),
+            LocalMessageClock provides clock
+        )
+        post(MedicationMessageUiModel.IntakeUndone)
+
+        passTime(19_000)
+        rule.onNodeWithText(INTAKE_UNDONE).assertExists()
+
+        // Past the 20 s, with room for the exit.
+        passTime(3_000)
+        rule.onNodeWithText(INTAKE_UNDONE).assertDoesNotExist()
     }
 }

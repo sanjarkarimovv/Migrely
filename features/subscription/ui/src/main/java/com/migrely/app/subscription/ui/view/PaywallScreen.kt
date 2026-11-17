@@ -69,6 +69,7 @@ import com.migrely.app.designsystem.snackbar.MessageLayout
 import com.migrely.app.designsystem.snackbar.MigrelySnackbar
 import com.migrely.app.designsystem.snackbar.MigrelySnackbarHost
 import com.migrely.app.designsystem.snackbar.messageTimeoutMillis
+import com.migrely.app.designsystem.snackbar.rememberMessageCountdown
 import com.migrely.app.designsystem.theme.MigrelyTheme
 import com.migrely.app.subscription.presentation.model.PaywallViewState
 import com.migrely.app.subscription.ui.R
@@ -82,7 +83,6 @@ import com.migrely.app.subscription.ui.model.PaywallViewStateUiModel
 import com.migrely.app.subscription.ui.model.PremiumPlanUiModel
 import com.migrely.app.subscription.ui.model.PremiumStatusUiModel
 import com.migrely.app.subscription.ui.model.TrialLengthUiModel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.onSubscription
 
 /** Only for a trial Google Play gives in months and days at once, which it does not today. */
@@ -153,16 +153,15 @@ fun PaywallDependencies.Paywall(
     LaunchedEffect(purchaseUpdates) {
         purchaseUpdates.collect { paywallViewModel.onPurchaseUpdatedAction(presentationContext) }
     }
-    // Stretched to the accessibility timeout (BRD EC-UX-16; QA #56).
-    val messageTimeout = messageTimeoutMillis(
-        message?.let { paywallMessageBehaviourUiMapper.toUi(it.message).baseDurationMillis }
+    // Stretched to "Time to take action", paused while focus holds it (BRD EC-UX-16, D182; QA #56).
+    val countdown = rememberMessageCountdown(
+        message = message,
+        timeoutMillis = messageTimeoutMillis(
+            message?.let { paywallMessageBehaviourUiMapper.toUi(it.message).baseDurationMillis }
+        ),
+        undoActionWallMillis = null,
+        onExpired = { message = null }
     )
-    LaunchedEffect(message, messageTimeout) {
-        if (message != null && messageTimeout != null) {
-            delay(messageTimeout)
-            message = null
-        }
-    }
     val onClose = { paywallViewModel.onCloseAction(presentationContext) }
     BackHandler(onBack = onClose)
     PaywallContents(
@@ -188,10 +187,11 @@ fun PaywallDependencies.Paywall(
         ),
         messages = {
             MigrelySnackbarHost(
-                message = message,
+                message = message?.takeUnless { countdown.isOver },
                 reduceMotion = rememberReduceMotion(),
                 topOffset = MESSAGE_BELOW_CLOSE_ROW,
-                guardMillis = MESSAGE_GUARD_MILLIS
+                guardMillis = MESSAGE_GUARD_MILLIS,
+                countdown = countdown
             ) { shown ->
                 val behaviour = paywallMessageBehaviourUiMapper.toUi(shown.message)
                 MigrelySnackbar(

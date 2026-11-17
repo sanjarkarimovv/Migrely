@@ -29,8 +29,8 @@ private val VALID_IMPACT = 0..3
 private const val MAXIMUM_INTENSITY = 10
 private const val MAXIMUM_NOTE_LENGTH = 1_000
 
-/** How long a deleted attack stays restorable: the longest Android accessibility timeout (BRD D23). */
-internal val DELETED_RETENTION: Duration = Duration.ofMinutes(2)
+/** How long a deleted attack stays restorable (BRD D23); the value lives in [DELETED_ATTACK_RETENTION_MILLIS]. */
+internal val DELETED_RETENTION: Duration = Duration.ofMillis(DELETED_ATTACK_RETENTION_MILLIS)
 
 /**
  * How far ahead of the clock a deletion may read, as after a small step back, and still count as the recent one; one
