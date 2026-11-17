@@ -51,6 +51,7 @@ import com.migrely.app.architecture.ui.view.ScreenEnterObserver
 import com.migrely.app.designsystem.icon.MigrelyIcons
 import com.migrely.app.designsystem.input.SingleLineFieldInView
 import com.migrely.app.designsystem.input.TapGuard
+import com.migrely.app.designsystem.input.rememberKeyboardRoom
 import com.migrely.app.designsystem.input.rememberLimitedField
 import com.migrely.app.designsystem.layout.MigrelyInsets
 import com.migrely.app.designsystem.motion.rememberReduceMotion
@@ -218,6 +219,10 @@ fun EditMedicationContents(
         }
     ) {
         Column(Modifier.fillMaxSize()) {
+            val scrollState = rememberScrollState()
+            val viewportInsets = MigrelyInsets.barsAndKeyboard.only(WindowInsetsSides.Bottom)
+            // Closing the keyboard leaves the page where it is, so TalkBack stays on the field (BRD D189, #238).
+            val keyboardRoom = rememberKeyboardRoom(scrollState, viewportInsets)
             Box(contentAlignment = Alignment.TopCenter, modifier = Modifier.fillMaxSize()) {
                 Column(
                     verticalArrangement = Arrangement.spacedBy(FORM_SPACING),
@@ -226,10 +231,10 @@ fun EditMedicationContents(
                         .fillMaxWidth()
                         // Before the scroll, so its visible part ends at the keyboard's top and a focused
                         // field is kept above it (BRD D180 (2)).
-                        .windowInsetsPadding(
-                            MigrelyInsets.barsAndKeyboard.only(WindowInsetsSides.Bottom)
-                        )
-                        .verticalScroll(rememberScrollState())
+                        .windowInsetsPadding(viewportInsets)
+                        .verticalScroll(scrollState)
+                        // After the scroll, never a child: the column's spacing would add a gap.
+                        .then(keyboardRoom.modifier)
                         .windowInsetsPadding(
                             MigrelyInsets.barsAndKeyboard.only(WindowInsetsSides.Horizontal)
                         )

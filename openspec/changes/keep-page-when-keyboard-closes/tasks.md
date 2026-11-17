@@ -45,11 +45,21 @@ navigation task).
 
 ## 3. Screens (`android-engineer`, `ui` modules)
 
-- [ ] 3.1 Edit medication: hoist the inline `rememberScrollState()`, put the room's modifier right after `verticalScroll`
+- [x] 3.1 Edit medication: hoist the inline `rememberScrollState()`, put the room's modifier right after `verticalScroll`
   (never a child: `spacedBy` would add a gap). R1 to R14. Verify: a test in `EditMedicationKeyboardTest` that closes a 250 dp
   keyboard inset near the end and asserts the Usual dose field's bounds are unchanged; red with the modifier removed.
-- [ ] 3.2 Log medication (first-use Name, also from attack mode): same as 3.1; the room is `AttackModeBackground` in the dark
+  - Record (2026-11-17, android-engineer): `EditMedicationContents` hoists its `ScrollState`, pads with the same
+    `viewportInsets` it gives the room, and puts `keyboardRoom.modifier` right after `verticalScroll`.
+    `EditMedicationKeyboardTest` "Closing the keyboard near the page's end leaves the dose where it is" (100% portrait,
+    411x891 dp, dose focused, scrolled to Save, 250 dp keyboard closed): red without the room, the dose pulled from 483
+    to 554 dp (5 tests, 1 failed); green with it. Logs `migrely-work/238/eng/3.1-3.2-red.log`, `3.1-3.2-green.log`.
+- [x] 3.2 Log medication (first-use Name, also from attack mode): same as 3.1; the room is `AttackModeBackground` in the dark
   room. Verify: a test in the medication `ui` tests with the same assertion; red with the modifier removed.
+  - Record (2026-11-17, android-engineer): same wiring in `LogMedicationContents`; the room draws nothing, so it shows
+    `palette(darkRoom).background` (`AttackModeBackground` in the dark room) set on the screen. New
+    `LogMedicationKeyboardTest`, first use, Name focused at 200%, scrolled to "Add and log", keyboard closed: red without
+    the room, Name pulled 242 dp in both the light page and the dark room (2 of 2 failed); green with it. Medication `ui`
+    debug unit tests after: 93, 0 failed.
 - [ ] 3.3 Delete all data: the room over the body above the Delete row, in both `rides` and behind-keyboard cases; the row
   moves as D180 (8) says; the divider stays hidden with the end in view. Verify: a test in `DeleteKeyboardTest` for both
   cases asserting the field's bounds; red with the room removed.
