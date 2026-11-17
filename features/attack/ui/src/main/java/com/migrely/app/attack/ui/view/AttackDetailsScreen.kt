@@ -66,6 +66,7 @@ import com.migrely.app.attack.ui.model.ShownAttackMessageUiModel
 import com.migrely.app.attack.ui.model.TagKindUiModel
 import com.migrely.app.attack.ui.model.TimeErrorUiModel
 import com.migrely.app.designsystem.icon.MigrelyIcons
+import com.migrely.app.designsystem.input.rememberKeyboardRoom
 import com.migrely.app.designsystem.layout.MigrelyInsets
 import com.migrely.app.designsystem.motion.rememberReduceMotion
 import com.migrely.app.designsystem.snackbar.MessageLayout
@@ -452,6 +453,9 @@ private fun ReadyContents(
     val arrivals = localState.safetyCardArrivals
     val reveal = rememberSafetyCardReveal(scrollState, arrivals)
     val reduceMotion = rememberReduceMotion()
+    val viewportInsets = MigrelyInsets.barsAndKeyboard.only(WindowInsetsSides.Bottom)
+    // Closing the keyboard leaves the page where it is, so TalkBack stays on the note (#238).
+    val keyboardRoom = rememberKeyboardRoom(scrollState, viewportInsets)
     // Keyed on the card's event, not on its restored visibility (BRD D167).
     LaunchedEffect(arrivals) {
         if (arrivals > 0) {
@@ -469,9 +473,10 @@ private fun ReadyContents(
                 .clearOfMessage(localState.messageClearance)
                 // Before the scroll, so its visible part ends at the keyboard's top, or the navigation bar's when that is
                 // higher, and the note's cursor line is kept in view against it (BRD D180 (2), #141).
-                .windowInsetsPadding(MigrelyInsets.barsAndKeyboard.only(WindowInsetsSides.Bottom))
+                .windowInsetsPadding(viewportInsets)
                 .then(reveal.viewportModifier)
                 .verticalScroll(scrollState)
+                .then(keyboardRoom.modifier)
                 .windowInsetsPadding(
                     MigrelyInsets.barsAndKeyboard.only(WindowInsetsSides.Horizontal)
                 )
