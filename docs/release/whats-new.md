@@ -3,6 +3,26 @@
 Each release's text for Play Console › Create new release › Release notes. Play allows at most 500 characters per
 language. en-US is the default, and other languages fall back to it.
 
+## 1.3.0 (versionCode 12)
+
+The text covers `develop` e46f2b22 since `v1.2.1`: D177, D178, D180, D181 and D183. T64 (D182) is not in 1.3.0.
+`medical-reviewer` checked the text on 2026-11-16, word for word against e46f2b22; bullets 1 and 4 changed on its
+verdict. `legal-finance-analyst` passed the privacy bullet. It does not say "medically reviewed" or "approved" (the
+clinician sign-off, T31, is open). Fixes that need no action from users (D172 to D176) are not announced. The text is
+494 of 500 characters.
+
+```
+<en-US>
+New:
+• The daily reminder, if held up more than an hour past its time, now arrives quietly.
+• While you type a note or a medication name, the line you are typing stays above the keyboard and the top bar with Back stays in place.
+• Clearer privacy wording: no internet permission, how Premium is bought, what Android's own backup may copy.
+Fixes:
+• A goal on the first setup screen now reads "Keep track of my medication days".
+• After a failed save, the next save that works replaces the error.
+</en-US>
+```
+
 ## 1.2.1 (versionCode 11)
 
 Replaces 1.2.0, which was tagged but never uploaded (D170). Users never saw 1.2.0. 1.2.1 also rewrote the in-app
