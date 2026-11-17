@@ -545,6 +545,86 @@ ask `product-manager` before you code.
   Verify: one line per check in this file with the result, and `adb shell settings get secure accessibility_interactive_ui_timeout_ms`
   printing the original value at the end.
 
+  **Walk 2026-11-17 (android-engineer), on `emulator-5570` only, one emulator at a time.**
+  - Build: the T64 debug APK from 7c85a7d0, sha256 `fca7f23d…dd15f257`, identical on the device and locally.
+    - API 36 had 1.3.0 (versionCode 12), so it was installed with `adb install -r -d`.
+    - API 26 was a fresh install, through onboarding.
+  - Evidence is in `migrely-work/t64/`: `walk-*.png`, `walk-switch*.mp4`, `frames-switch/`, and `walk{36,26}-*-settings.txt`.
+  - API 36 is `Migrely_API_36`, density 2.625. API 26 is `Migrely_API_26` on `-port 5570`, after API 36 was off.
+  - API 26 has no "Time to take action" setting (it came with API 29), so an Undo lasts its base 5 s there.
+  - Rows run across a network drop at 06:3x were voided and rerun; only the reruns count.
+
+  Sizes (ux §B3; 168 px = 64 dp, 126 px = 48 dp):
+  - API 36, Home attack mode, portrait 100%: Undo 168x168 px; Dismiss ("Undone.") 168x168 px; message 168 px tall.
+    **Pass.**
+  - API 36, Home attack mode, portrait 200%: Undo 230x168 px. **Pass.** Screenshot `walk-03-attack-200.png`: the message
+    is whole, the rain card's text and Details are uncovered, and "Migraine ended" is untouched.
+  - API 36, Home attack mode, landscape 200%: Undo 230x168 px. **Pass.**
+  - API 36, Home attack mode, landscape 100%: Undo 168x168 px; the guidance column sits below the message. **Pass.**
+  - API 36, dark-room Log medication (from attack mode), "Removed. Nothing was logged.": Dismiss 168x168 px; message 168 px
+    tall. **Pass.** Storage full could not be caused; this message has the same Dismiss.
+  - API 36, outside the room, "Migraine ended" on Home Today and "Migraine deleted" on History: Undo 152x126 px (48 dp
+    tall). **Pass.**
+  - API 26, Home attack mode at 200%, portrait and landscape: Undo 230x168 px. **Pass.**
+  - API 26, outside the room at 200%, Home Today and History: Undo 230x126 px. **Pass.**
+
+  Room switching under a message (API 36, recorded):
+  - **48 to 64 dp and back: no size animation and no later jump within the recording's frame spacing.**
+    - "Migraine ended" (48 dp) replacing "Migraine started" (64 dp): the first frame with the new message already has the
+      light-room size, while the room still cross-fades.
+    - After Undo: the old message fades out, then "Undone." arrives at 64 dp. That clear-then-arrive order is D178's.
+    - The recording is 5–25 fps (30–300 ms between frames), so "the same frame" is not proven.
+    - The message also moves down to Today's place; that is Home's existing offset per mode, not part of this change.
+
+  Keyboard rows, ux §B2:
+  - API 36, P1, Home attack mode at 200%, "Time to take action" 20 s: Undo focused about 1 s in, held to 36 s and still
+    shown; it left 19–21 s after focus left, its 19 s left. **Pass.**
+  - API 36, P3, History, 120 s setting: deletion Undo focused at 16 s and held. It was there at 112 s and gone by 116 s
+    after the deletion. Then nothing had focus, the app was still running, and the crash log was empty. **Pass.**
+  - API 36, "A touch ends keyboard mode", Home Today, 20 s setting: Undo focused, then a touch on the date text. Focus
+    cleared at once, and the message left 16–19 s later with the time it had left. Had focus stayed, it would have held
+    to its ceiling. **Pass.**
+  - API 36, P5, Home attack mode, 20 s setting: Undo focused and held to 28 s. The shade was opened for 28 s and the
+    message ran out under it. **Pass.**
+  - API 26, P1, Home attack mode at 200%: Undo focused at once, held to 16 s against its 5 s, gone about 4 s after focus
+    left. **Pass.**
+  - API 26, P2, the floor, Home Today at 200%: Undo focused with about 1.4 s left. After focus left it was still shown
+    at +2.3 s and gone by +3.5 s, which is the 3 s floor plus the grace, not 1.4 s. **Pass.**
+  - API 26, History at 200%: deletion Undo focused after the top bar (4 Tabs), held to 14.9 s against its 5 s, gone
+    3.2–4.9 s after focus left. **Pass.**
+  - API 26, P5, Home Today: Undo focused, held to 10.4 s, then the shade for 13 s (`dumpsys window`: the StatusBar takes
+    focus, and Migrely gets it back when the shade closes). The message was gone. **Pass.**
+  - Tab order, both levels: the message's control comes right after the top bar (History: Back, Insights, Doctor
+    report, Undo), and first in attack mode. **Pass.**
+
+  Ceiling, design A4 (API 36, 120 s setting): delete on Details, Undo offered at about 2 s, lock at 20–23 s, unlock at
+  125 s.
+  - Home: no Undo, no "This can no longer be undone.", and a tap where Undo was did nothing. **Pass.**
+  - History: the same. **Pass.**
+  - Deleting on Details closes it at once, so the offer came at about 2 s, not about 20 s; the ceiling counts from the
+    deletion either way.
+  - The negative control on `develop` 40536f49 is QA's (8.3 A4).
+
+  Not checked, and why:
+  - **TalkBack rows in the real app (API 36):** adb cannot drive TalkBack. Injected touches and keys never reach it, and
+    raw `sendevent` is denied, as in 3.1. The production TalkBack path passed in 7.2.
+    - The open questions go to QA 8.3 with a person: TalkBack's menu, and whether TalkBack focuses a new message on its
+      own in the real screens (7.2's finding).
+  - **Reminders:**
+    - "Saved." there comes only after an error, which cannot be caused on purpose.
+    - "Visit removed" needs a visit date first, which raises Android's notification-permission dialog and would change
+      a device permission.
+    - Its host tests pass (27 of 27), and QA's A2 lists it.
+  - **P6** (a new message replacing a held one) was not walked; the unit tests cover it.
+  - **Feel** (how 3 s and 300 ms feel, whether 64 dp is heavy) needs ux-designer on a device (ux §D).
+
+  Settings, restored and compared with the values recorded before the walk:
+  - API 36: identical, including `accessibility_interactive_ui_timeout_ms` = null at the end, TalkBack off, font scale
+    1.0, auto-rotate on.
+  - API 26: identical except `font_scale`. It was unset before and reads 1.0 after `settings delete`, which is the same
+    effective scale.
+  - Both emulators are off. `adb devices` shows only the owner's phone, which was not touched.
+
 - [x] 7.2 The production TalkBack path on API 36 (`emulator-5570`) with TalkBack on: an instrumented test on the real
   `MigrelySnackbarHost` with `ScreenReaderFocus`, not the spike's bare Box (design D3, cr-t64 S3 #2).
   - It moves TalkBack focus onto a message's text, then to its control within 300 ms, then off to the content.
