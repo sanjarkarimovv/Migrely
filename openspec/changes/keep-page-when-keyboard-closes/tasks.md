@@ -110,17 +110,54 @@ navigation task).
 
 ## 5. Device walk (`android-engineer`, emulator-5570, headless first)
 
-- [ ] 5.1 Each of the four screens, API 36, 100% portrait, near the end, TalkBack on, Back once: focus stays on the field
+- [x] 5.1 Each of the four screens, API 36, 100% portrait, near the end, TalkBack on, Back once: focus stays on the field
   (KR1 on the candidate only; QA owns the controls). Verify: the TalkBack log lines per screen in the packet.
+  - Record (2026-11-17, android-engineer, emulator-5570 headless `-gpu swiftshader_indirect -no-snapshot -no-window
+    -memory 2048`, API 36, Gboard, TalkBack 16 at VERBOSE; candidate = debug of 34036ae1, sha256 5d2ee9bd…, read back from
+    the device before each row; control = v1.3.0 code, QA's debug-2f7745c3 782cf3d3…; `v1.3.0` and 294c10c6 have equal
+    trees). Each row: field focused, keyboard up, page at its end (or short of it), TalkBack on, the speech before Back
+    must include "Editing." (else invalid), Back once, then 3 s of TalkBack's log and one TalkBack double tap.
+    Candidate, valid rows: Attack details 3/3, Log medication first use 3/3, Edit medication (dose) 3/3, Delete all
+    data at 200% (at 100% its body fits above the keyboard, no scroll container: nothing can move) short of the end
+    3/3 and with the field in view 2/2 (row riding), landscape with the field in view 2/2 (row behind), details at
+    200% landscape 2/2. In every one: speech after Back only "keyboard hidden" (plus the window title "Migrely" and
+    the field itself in some), 0 `TYPE_VIEW_SCROLLED` from the app, and the double tap reopens the keyboard in the same
+    field with no chip, radio or kind changed. Control on the same set-ups: details pulled 820 and 856 px, 1 and 4
+    scroll events, "Not selected. Stress" spoken in 1 of 2 (the #238 jump); Log medication 373 px, Edit medication 502
+    px, Delete short of the end 421 px and field in view 262–264 px, details landscape 51 px, each with TalkBack's focus
+    kept: "no jump observed" there (Log and Edit sent no scroll event at all, so TalkBack had nothing to follow). Delete
+    landscape, field in view: no move on v1.3.0 either, so that row cannot fail. Invalid, not counted: Delete at the
+    very end (200% portrait 3, landscape 2): the field is out of view there, TalkBack starts on Back; the page is
+    still all the same (last text's top unchanged, 0 scroll events). Rows `migrely-work/238/walk/rows.jsonl`, raw
+    TalkBack logs `walk/raw/<row>.log`, drivers `bin/w.py`, `bin/batch36.py`.
 - [ ] 5.2 Field bounds before and after the close on the four screens (KR4), and the room at 200% landscape 360 dp (KR11).
   Verify: dump coordinates in the packet.
+  - Record (2026-11-17): KR4, field and page-end bounds (px) before Back and after, candidate | v1.3.0. API 36: details
+    note top 962 | moved 820/856; Log medication Name 372 and "Add and log" 1394 | moved 373; Edit medication dose 1081
+    and Save 1394 | moved 502; Delete 200% short of the end field 233, last text top 1028 | moved 421; Delete 200%
+    field in view 386–388 | moved 262–264. API 26 (AOSP keyboard, no TalkBack on that image, KR4 only, 2 rows each):
+    details note 944 | 775; Log Name 354 | 268; Edit dose 1063 | 455; Delete short of the end 168 | 421; Delete field
+    in view 268–270 | 318–319; details 200% landscape 194 | 156; Delete landscape row behind 267–272 | 0 (no move on
+    1.3.0 either). Candidate: 0 px in every row. KR11 at 200% landscape in the device's 411 dp window: details 2/2 and
+    Delete (row behind) 2/2 still, the room filling the keyboard's place ("Delete migraine" came into view below the
+    unmoved note). **Not run: the 360 dp window** (`wm size 945x2100`): the driver did not reach a focused field with
+    the keyboard up there (2 rows per build and one debug run: the keyboard never showed, then a tap on Home's migraine
+    row opened Log medication); left to QA 7.1. Divider (cr-238 finding 1): short of the end a 1 dp line at y 1325–1327
+    above the row with the keyboard up; after the close, end in view, no line (`shots/delete-short-*.png`).
 - [ ] 5.3 Band screenshots with the page end and the band in view, for `ux-designer`'s review (ux §11.1): Attack details dark,
   Attack details light, Log medication from attack mode (dark room). Verify: three screenshots in `migrely-work/238/shots/`,
   and a one-line ux verdict per shot in this task.
+  - Shots (2026-11-17, candidate 5d2ee9bd…, API 36, 100% portrait), each a keyboard-open and a closed pair in
+    `migrely-work/238/shots/`: `details-dark-*`, `details-light-*`, `logattack-darkroom-*` (Log medication from the
+    attack card, first use), plus `delete-short-*` for the divider. KR5, every 4th pixel of the band (y 1510–2300)
+    against the page background at (1060, 1100): dark 0 of 213,300 differ (15,17,21), light 0 differ (245,243,238),
+    dark room 0 differ (8,9,12, the attack-mode background); the same check on each keyboard-open shot's keyboard area
+    fails on every pixel. The end and the field keep their bounds across the close in all three. Waiting for
+    `ux-designer`'s one-line verdict per shot, so not ticked.
 
 ## 6. Review (`code-reviewer`)
 
-- [ ] 6.1 Review a1efa2bc and sections 2 to 3 against design D1 to D7: one helper, modifier after `verticalScroll`, no
+- [x] 6.1 Review a1efa2bc and sections 2 to 3 against design D1 to D7: one helper, modifier after `verticalScroll`, no
   semantics, `remember` only, stale reads, no change to opening or message fit (D180 (2), (4)). Verify: a review packet with
   findings, each fixed or answered by the engineer before QA.
   - Fixes (2026-11-17, android-engineer, on cr-238's review of f5f8524f; 6.1 stays the reviewer's to close):
@@ -140,6 +177,7 @@ navigation task).
       layout and says why `row` and `rides`, set in composition, are safe. The helper's KDoc now asks only values that
       move with the keyboard to be read in layout.
     - Logs `migrely-work/238/eng/r1-red-f5f8524f.log`, `r-green.log`, `r2-green.log`, `r2-mutation-below-ignored.log`.
+  - cr-238 approved 34036ae1 with no new findings (2026-11-17, relayed by team-lead).
 
 ## 7. Acceptance (`qa-engineer`, this diff only)
 
