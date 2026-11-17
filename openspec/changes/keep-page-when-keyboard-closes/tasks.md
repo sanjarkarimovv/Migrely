@@ -29,10 +29,19 @@ navigation task).
 
 - [x] 2.1 Existing part: a1efa2bc adds `designsystem/.../input/KeyboardRoom.kt` and `KeyboardRoomTest` (Robolectric) and wires
   Attack details. Not yet reviewed (section 6). Verify: `git show --stat a1efa2bc`.
-- [ ] 2.2 Let the helper take the visible part's bottom padding from a layout, not only from a `WindowInsets`, so Delete all
+- [x] 2.2 Let the helper take the visible part's bottom padding from a layout, not only from a `WindowInsets`, so Delete all
   data's row (`rides` or `behindKeyboard`) can feed it (design D6). One helper for four screens; no second copy. Verify:
   `./gradlew :designsystem:testDebugUnitTest --tests '*KeyboardRoomTest*'` green, plus a new case for a non-inset source that is
   red when the source is ignored.
+  - Record (2026-11-17, android-engineer): `rememberKeyboardRoom(scrollState, viewportBottom: Density.() -> Int)`, read
+    in layout; the `WindowInsets` overload delegates to it, so one helper. The source is held by `rememberUpdatedState`,
+    so a recomposition never makes a new room (a1efa2bc keyed it on the insets object). New cases in `KeyboardRoomTest`
+    with a page ended by a layout-time row padding: offset kept on close, room gone after scrolling back. Red with the
+    source ignored (`height(0)`, flow reads 0): 6 tests, 2 failed, the new close case among them; green 6/6
+    (`migrely-work/238/eng/2.2-red-source-ignored.log`, `2.2-green.log`). Found on the way: a row padding set in
+    composition while the room reads the source in layout fails (1200 -> 948 px under Robolectric): the room grows a
+    pass before the visible part, the flow counts it as page below and cuts it. The KDoc now requires layout-time
+    values, and Delete all data (3.3) reads only insets and sizes.
 
 ## 3. Screens (`android-engineer`, `ui` modules)
 

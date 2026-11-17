@@ -12,11 +12,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.offset
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -61,6 +63,34 @@ class KeyboardRoomTest {
                 Modifier
                     .height(PAGE)
                     .windowInsetsPadding(insets)
+                    .verticalScroll(scroll)
+                    .then(room.modifier)
+            ) {
+                Box(Modifier.height(CONTENT))
+            }
+        }
+        rule.waitForIdle()
+    }
+
+    // Pads the bottom by what [bottom] reads when laid out, as a row below the page does.
+    private fun Modifier.padBottom(bottom: Density.() -> Int) = layout { measurable, constraints ->
+        val padding = bottom()
+        val placeable = measurable.measure(constraints.offset(vertical = -padding))
+        layout(placeable.width, placeable.height + padding) { placeable.place(0, 0) }
+    }
+
+    /**
+     * A page whose visible part a layout ends, as Delete all data's row does (BRD D180 (8)): padded by a value, not an
+     * inset, and the room told that value.
+     */
+    private fun showPageEndedByARow() {
+        val rowBottom: Density.() -> Int = { bottom.roundToPx() }
+        rule.setContent {
+            val room = rememberKeyboardRoom(scroll, rowBottom)
+            Column(
+                Modifier
+                    .height(PAGE)
+                    .padBottom(rowBottom)
                     .verticalScroll(scroll)
                     .then(room.modifier)
             ) {
@@ -120,6 +150,31 @@ class KeyboardRoomTest {
     fun aPageWithoutAKeyboardHasNoRoom() {
         bottom = NAVIGATION_BAR
         showPage()
+
+        assertEquals(px(CONTENT) - (px(PAGE) - px(NAVIGATION_BAR)), scroll.maxValue)
+    }
+
+    @Test
+    fun closingTheKeyboardOnAPageEndedByARowKeepsTheOffset() {
+        showPageEndedByARow()
+        scrollToEnd()
+        val before = scroll.value
+
+        bottom = NAVIGATION_BAR
+        rule.waitForIdle()
+
+        assertEquals(before, scroll.value)
+    }
+
+    @Test
+    fun theRoomOfAPageEndedByARowGoesAsThePageIsScrolledBack() {
+        showPageEndedByARow()
+        scrollToEnd()
+        bottom = NAVIGATION_BAR
+        rule.waitForIdle()
+
+        runBlocking { scroll.scrollTo(0) }
+        rule.waitForIdle()
 
         assertEquals(px(CONTENT) - (px(PAGE) - px(NAVIGATION_BAR)), scroll.maxValue)
     }

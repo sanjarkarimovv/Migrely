@@ -4,30 +4,35 @@ import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.constrainHeight
 
 /**
- * Room below the content of a scrolling page whose visible part ends at the keyboard, the page padding that part by
- * [viewportInsets] (BRD D180 (2)). As the keyboard closes the room grows by what the visible part gains, so the page
- * keeps its scroll offset (#238): a page pulled down instead is reported as a scroll, and TalkBack then moves its focus
- * off the field to the first item it sees. The room shrinks to what is in view as the page is scrolled back and as the
- * keyboard opens again, so it never moves the page itself. Put [modifier] right after the page's `verticalScroll`.
+ * Room below the content of a scrolling page whose visible part ends at the keyboard, the page padding that part's
+ * bottom by [viewportBottom] px (BRD D180 (2)). As the keyboard closes the room grows by what the visible part gains,
+ * so the page keeps its scroll offset (BRD D189, #238): a page pulled down instead is reported as a scroll, and
+ * TalkBack then moves its focus off the field to the first item it sees. The room shrinks to what is in view as the
+ * page is scrolled back and as the keyboard opens again, so it never moves the page itself. It draws nothing, so the
+ * page's own background shows, and it adds no semantics node. It is not saved: a recreated screen has none.
+ * Put [modifier] right after the page's `verticalScroll`, never as a child, which a `spacedBy` column would space.
  */
-class KeyboardRoom internal constructor(private val viewportInsets: WindowInsets) {
+class KeyboardRoom internal constructor(private val viewportBottom: State<Density.() -> Int>) {
     // The largest padding of the visible part the room still makes up for, in px.
     private var peak by mutableIntStateOf(0)
 
     val modifier: Modifier = Modifier.layout { measurable, constraints ->
         val placeable = measurable.measure(constraints)
-        val room = height(viewportInsets.getBottom(this))
+        val room = height(viewportBottom.value(this))
         layout(placeable.width, constraints.constrainHeight(placeable.height + room)) {
             placeable.place(0, 0)
         }
@@ -45,16 +50,28 @@ class KeyboardRoom internal constructor(private val viewportInsets: WindowInsets
     }
 }
 
-/** The [KeyboardRoom] of the page scrolled by [scrollState]. */
+/** The [KeyboardRoom] of the page scrolled by [scrollState], whose visible part is padded by [viewportInsets]. */
 @Composable
-fun rememberKeyboardRoom(scrollState: ScrollState, viewportInsets: WindowInsets): KeyboardRoom {
+fun rememberKeyboardRoom(scrollState: ScrollState, viewportInsets: WindowInsets): KeyboardRoom =
+    rememberKeyboardRoom(scrollState) { viewportInsets.getBottom(this) }
+
+/**
+ * The [KeyboardRoom] of the page scrolled by [scrollState], whose visible part ends [viewportBottom] px above the
+ * bottom of the area it is laid out in, for a page whose visible part a layout sets rather than an inset (Delete all
+ * data's row, BRD D180 (8)). [viewportBottom] is read while the page is laid out, so it must read the values that
+ * layout reads there (insets, sizes), never a value set in composition: a room that grows a pass before the visible
+ * part does is counted as page below the view and taken away, and the page is pulled after all.
+ */
+@Composable
+fun rememberKeyboardRoom(scrollState: ScrollState, viewportBottom: Density.() -> Int): KeyboardRoom {
     val density = LocalDensity.current
-    val room = remember(viewportInsets) { KeyboardRoom(viewportInsets) }
+    val bottom = rememberUpdatedState(viewportBottom)
+    val room = remember { KeyboardRoom(bottom) }
     LaunchedEffect(room, scrollState, density) {
         // Read again when collected: a layout between the two would make the values stale.
-        val bottom = { viewportInsets.getBottom(density) }
+        val bottomPx = { bottom.value(density) }
         val below = { scrollState.maxValue - scrollState.value }
-        snapshotFlow { bottom() to below() }.collect { room.onChange(bottom(), below()) }
+        snapshotFlow { bottomPx() to below() }.collect { room.onChange(bottomPx(), below()) }
     }
     return room
 }
