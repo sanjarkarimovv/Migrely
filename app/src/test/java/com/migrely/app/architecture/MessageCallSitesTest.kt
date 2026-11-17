@@ -81,4 +81,14 @@ class MessageCallSitesTest {
                 source("HomeScreen")
         )
     }
+
+    @Test
+    fun `Only messageTimeoutMillis asks Android for the accessibility timeout`() {
+        // One timeout rule on every screen (BRD D182 (1)): a screen of its own could again split "Saved." from Undo.
+        val askers = Konsist.scopeFromProduction().files
+            .filter { "calculateRecommendedTimeoutMillis" in it.text }
+            .map { it.name }
+
+        assertEquals(listOf("MessageTimeout"), askers)
+    }
 }

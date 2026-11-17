@@ -66,8 +66,10 @@ import com.migrely.app.attack.ui.model.ShownAttackMessageUiModel
 import com.migrely.app.attack.ui.model.TagKindUiModel
 import com.migrely.app.attack.ui.model.TimeErrorUiModel
 import com.migrely.app.designsystem.icon.MigrelyIcons
+import com.migrely.app.designsystem.input.rememberKeyboardRoom
 import com.migrely.app.designsystem.layout.MigrelyInsets
 import com.migrely.app.designsystem.motion.rememberReduceMotion
+import com.migrely.app.designsystem.snackbar.LocalMessageClock
 import com.migrely.app.designsystem.snackbar.MessageLayout
 import com.migrely.app.designsystem.snackbar.clearOfMessage
 import com.migrely.app.designsystem.theme.MigrelyTheme
@@ -156,6 +158,7 @@ fun AttackDetailsDependencies.AttackDetails(
         mutableStateOf<ShownAttackMessageUiModel?>(null)
     }
     val messageBottom = remember { mutableStateOf(0.dp) }
+    val messageClock = LocalMessageClock.current
     // Read by the event collector, which outlives each state.
     val ready by rememberUpdatedState(uiState is AttackDetailsViewStateUiModel.Ready)
 
@@ -176,7 +179,7 @@ fun AttackDetailsDependencies.AttackDetails(
     // of the latest event has been announced, plus CARD_FIRST_MILLIS, it is not shown: TalkBack speaks the card first.
     fun post(message: AttackMessageUiModel) {
         if (!messageHeld()) shownBeforeHold = shownMessage
-        shownMessage = ShownAttackMessageUiModel(message, System.currentTimeMillis())
+        shownMessage = ShownAttackMessageUiModel(message, messageClock.wallMillis())
         if (messageReleasedFor < safetyCardArrivals) messageHeldFor = safetyCardArrivals
     }
 
@@ -188,7 +191,7 @@ fun AttackDetailsDependencies.AttackDetails(
             delay(CARD_FIRST_MILLIS)
             // Its time starts when it can be seen.
             if (messageHeld() && messageHeldFor <= announced) {
-                shownMessage = shownMessage?.copy(shownAtEpochMillis = System.currentTimeMillis())
+                shownMessage = shownMessage?.copy(shownAtEpochMillis = messageClock.wallMillis())
             }
             messageReleasedFor = announced
         }
@@ -452,6 +455,9 @@ private fun ReadyContents(
     val arrivals = localState.safetyCardArrivals
     val reveal = rememberSafetyCardReveal(scrollState, arrivals)
     val reduceMotion = rememberReduceMotion()
+    val viewportInsets = MigrelyInsets.barsAndKeyboard.only(WindowInsetsSides.Bottom)
+    // Closing the keyboard leaves the page where it is, so TalkBack stays on the note (#238).
+    val keyboardRoom = rememberKeyboardRoom(scrollState, viewportInsets)
     // Keyed on the card's event, not on its restored visibility (BRD D167).
     LaunchedEffect(arrivals) {
         if (arrivals > 0) {
@@ -469,9 +475,10 @@ private fun ReadyContents(
                 .clearOfMessage(localState.messageClearance)
                 // Before the scroll, so its visible part ends at the keyboard's top, or the navigation bar's when that is
                 // higher, and the note's cursor line is kept in view against it (BRD D180 (2), #141).
-                .windowInsetsPadding(MigrelyInsets.barsAndKeyboard.only(WindowInsetsSides.Bottom))
+                .windowInsetsPadding(viewportInsets)
                 .then(reveal.viewportModifier)
                 .verticalScroll(scrollState)
+                .then(keyboardRoom.modifier)
                 .windowInsetsPadding(
                     MigrelyInsets.barsAndKeyboard.only(WindowInsetsSides.Horizontal)
                 )

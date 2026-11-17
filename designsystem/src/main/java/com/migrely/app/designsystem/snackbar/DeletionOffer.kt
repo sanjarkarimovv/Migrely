@@ -3,6 +3,12 @@ package com.migrely.app.designsystem.snackbar
 /** How long after a deletion the screen it returns to may still offer to undo it (BRD D23). */
 const val DELETION_OFFER_MAX_AGE_MILLIS = 30_000L
 
+/**
+ * The latest an Undo may stay after the action it undoes, paused or not: the deleted attack's restorable window
+ * (BRD D23) less 5 s, so an Undo never outlives what it restores (BRD D182 (3), EC-ATK-24).
+ */
+const val UNDO_CEILING_MILLIS = 115_000L
+
 /** How far ahead of the clock a deletion may read, as after an automatic correction, and still be offered. */
 const val DELETION_OFFER_CLOCK_TOLERANCE_MILLIS = 2_000L
 

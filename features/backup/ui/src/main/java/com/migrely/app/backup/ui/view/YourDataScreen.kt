@@ -71,19 +71,20 @@ import com.migrely.app.designsystem.dialog.MigrelyAlertDialog
 import com.migrely.app.designsystem.icon.MigrelyIcons
 import com.migrely.app.designsystem.layout.MigrelyInsets
 import com.migrely.app.designsystem.motion.rememberReduceMotion
+import com.migrely.app.designsystem.snackbar.LocalMessageClock
 import com.migrely.app.designsystem.snackbar.MESSAGE_OFFSET_BELOW_TOP_BAR
 import com.migrely.app.designsystem.snackbar.MessageLayout
 import com.migrely.app.designsystem.snackbar.MigrelySnackbar
 import com.migrely.app.designsystem.snackbar.MigrelySnackbarHost
 import com.migrely.app.designsystem.snackbar.SnackbarTone
 import com.migrely.app.designsystem.snackbar.messageTimeoutMillis
+import com.migrely.app.designsystem.snackbar.rememberMessageCountdown
 import com.migrely.app.designsystem.theme.MigrelyTheme
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.onSubscription
 
 private val CONTENT_MAX_WIDTH = 600.dp
@@ -115,8 +116,9 @@ fun YourDataDependencies.YourData(navController: NavController, modifier: Modifi
     var confirmingRestore by rememberSaveable { mutableStateOf(false) }
     // Stamped, so the same message twice in a row shows and is announced again; saved, so an error survives a rotation.
     var message by rememberSaveable { mutableStateOf<ShownYourDataMessageUiModel?>(null) }
+    val messageClock = LocalMessageClock.current
     val show: (YourDataMessageUiModel) -> Unit = {
-        message = ShownYourDataMessageUiModel(it, System.currentTimeMillis())
+        message = ShownYourDataMessageUiModel(it, messageClock.wallMillis())
     }
     // An error belongs to the visit: Back or forward clears it; the file picker and Android Settings keep it
     // (BRD D178 (2)). A later message replaces it as before.
@@ -146,17 +148,15 @@ fun YourDataDependencies.YourData(navController: NavController, modifier: Modifi
             }
         }
     }
-    // Each kind stays its own time, stretched to the accessibility timeout (BRD EC-UX-16; QA #56).
-    val messageTimeout = messageTimeoutMillis(
-        message?.let { yourDataMessageBehaviourUiMapper.toUi(it.message).baseDurationMillis }
+    // Each kind stays its own time, stretched to "Time to take action", paused while focus holds it (BRD D182).
+    val countdown = rememberMessageCountdown(
+        message = message,
+        timeoutMillis = messageTimeoutMillis(
+            message?.let { yourDataMessageBehaviourUiMapper.toUi(it.message).baseDurationMillis }
+        ),
+        undoActionWallMillis = null,
+        onExpired = { message = null }
     )
-    LaunchedEffect(message, messageTimeout) {
-        val current = message
-        if (current != null && messageTimeout != null) {
-            delay(current.remainingMillis(System.currentTimeMillis(), messageTimeout))
-            message = null
-        }
-    }
     val exportBackup =
         rememberLauncherForActivityResult(
             ActivityResultContracts.CreateDocument("application/json")
@@ -196,9 +196,10 @@ fun YourDataDependencies.YourData(navController: NavController, modifier: Modifi
         ),
         messages = {
             MigrelySnackbarHost(
-                message = message,
+                message = message?.takeUnless { countdown.isOver },
                 reduceMotion = rememberReduceMotion(),
-                topOffset = MESSAGE_OFFSET_BELOW_TOP_BAR
+                topOffset = MESSAGE_OFFSET_BELOW_TOP_BAR,
+                countdown = countdown
             ) { shown ->
                 val behaviour = yourDataMessageBehaviourUiMapper.toUi(shown.message)
                 MigrelySnackbar(
