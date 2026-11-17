@@ -48,6 +48,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
@@ -225,8 +226,10 @@ private fun ColumnScope.Confirmation(
         WindowInsets.ime.exclude(MigrelyInsets.bars).exclude(WindowInsets(bottom = row))
             .only(WindowInsetsSides.Bottom)
     }
-    // Closing the keyboard leaves the body where it is (BRD D189, #238). Every value here is read in layout, as the
-    // row's and the body's paddings read them.
+    // Closing the keyboard leaves the body where it is (BRD D189, #238). The insets are read in layout, as the row's
+    // and the body's paddings read them. `row` comes from an earlier pass and holds still while the keyboard moves
+    // (the row's size excludes its insets). `rides` is chosen in composition, only as a keyboard starts to open,
+    // where the room can only shrink, or is gone, where both of its cases give the same bottom.
     val keyboardRoom = rememberKeyboardRoom(scrollState) {
         row + rowInsets.getBottom(this) + bodyInsets.getBottom(this)
     }
@@ -245,10 +248,15 @@ private fun ColumnScope.Confirmation(
         ) {
             ConfirmationBody(typed, word, failed, actions.onTyped, scrollState, keyboardRoom)
         }
-        // There is more to read above the button.
-        if (scrollState.canScrollForward) {
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-        }
+        // There is more to read above the button. Always laid out, only its colour changes: a divider that comes
+        // and goes would resize the body's visible part and scroll it by its 1 dp at the end (BRD D189, #238).
+        HorizontalDivider(
+            color = if (scrollState.canScrollForward) {
+                MaterialTheme.colorScheme.outlineVariant
+            } else {
+                Color.Transparent
+            }
+        )
         Box(
             contentAlignment = Alignment.Center,
             modifier = Modifier

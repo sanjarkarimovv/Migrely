@@ -106,15 +106,25 @@ class DeleteKeyboardTest {
     private fun scroll(): Float =
         body.fetchSemanticsNode().config[SemanticsProperties.VerticalScrollAxisRange].value()
 
+    private fun scrollBodyBy(px: Float) {
+        body.performSemanticsAction(SemanticsActions.ScrollBy) { it(0f, px) }
+        rule.waitForIdle()
+    }
+
     /**
-     * With the field focused and a [keyboardDp] keyboard open, scrolls the body to its end, closes the keyboard (in
-     * steps if [animated]) and returns the field's top before and at every step after (BRD D189, ux 5.4).
+     * With the field focused and a [keyboardDp] keyboard open, scrolls the body to its end and back by [backDp], so
+     * that less than a keyboard of it lies below, closes the keyboard (in steps if [animated]) and returns the
+     * field's top before and at every step after (BRD D189, ux 5.4).
      */
-    private fun fieldTopsAcrossAClose(keyboardDp: Int, animated: Boolean): List<Float> {
+    private fun fieldTopsAcrossAClose(
+        keyboardDp: Int,
+        animated: Boolean,
+        backDp: Float = 0f
+    ): List<Float> {
         show()
         setKeyboard(keyboardDp)
-        body.performSemanticsAction(SemanticsActions.ScrollBy) { it(0f, END) }
-        rule.waitForIdle()
+        scrollBodyBy(END)
+        scrollBodyBy(-backDp * rule.density.density)
         assertTrue("the body fits above the keyboard", scroll() > 0f)
         val before = field.getUnclippedBoundsInRoot().top.value
         if (!animated) {
@@ -264,10 +274,39 @@ class DeleteKeyboardTest {
     fun `With the row riding, a closing keyboard never moves the field near the end`() =
         assertStill(fieldTopsAcrossAClose(KEYBOARD_DP, animated = true))
 
+    @Test
+    @Config(sdk = [35], qualifiers = "w411dp-h891dp")
+    fun `With the row riding, closing it a little before the end leaves the field where it is`() =
+        assertStill(fieldTopsAcrossAClose(KEYBOARD_DP, animated = false, backDp = NEAR_THE_END_DP))
+
+    @Test
+    @Config(sdk = [35], qualifiers = "w800dp-h360dp")
+    fun `With the row behind, closing it a little before the end leaves the field where it is`() =
+        assertStill(
+            fieldTopsAcrossAClose(SHORT_KEYBOARD_DP, animated = false, backDp = NEAR_THE_END_DP)
+        )
+
+    @Test
+    @Config(sdk = [35], qualifiers = "w411dp-h891dp")
+    fun `Scrolling back through the room moves the body by the scroll alone`() {
+        assertStill(fieldTopsAcrossAClose(KEYBOARD_DP, animated = false))
+        val before = scroll()
+
+        scrollBodyBy(-SCROLL_BACK_PX)
+
+        // In step with the person's scroll, and nothing more (BRD D189 (3), ux R4).
+        assertEquals("the body's scroll", before - SCROLL_BACK_PX, scroll(), 0.5f)
+    }
+
     private companion object {
         val FRACTIONS = listOf(0.25f, 0.5f, 0.75f, 1f)
 
         // Past any body's end: the scroll stops there.
         const val END = 10_000f
+
+        // Less than a keyboard of the body left below the view: the room fills only part of the keyboard's place.
+        const val NEAR_THE_END_DP = 30f
+
+        const val SCROLL_BACK_PX = 30f
     }
 }

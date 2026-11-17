@@ -73,8 +73,8 @@ navigation task).
     behind (4 of 10 failed); green 10/10, the six D180 (8) row tests unchanged. Mutation without the body term: the two
     behind cases red (the inset alone is not the source). Mutation with the old composition-time body padding: survives
     (inset dispatch recomposes before layout here), so the layout-time padding follows the helper's contract and no test
-    forces it. The divider follows `canScrollForward`, false with the end in view; checked on a device in 5.2, not
-    here. Logs `migrely-work/238/eng/3.3-*.log`.
+    forces it. Correction (6.1, cr-238): the divider was not checked, on a device or here, and these cases all start
+    exactly at the end (b = 0), which hid review finding 1. Logs `migrely-work/238/eng/3.3-*.log`.
 - [x] 3.4 Recheck Attack details (a1efa2bc) against R2 (room under the existing bottom padding, background only), R8 (not
   saved: `remember`, no band after rotation, recreate or re-entry) and R11 (no semantics node, not focusable, no click). Fix
   what fails. Verify: a test that the semantics tree has no node in the room's bounds, and a recreate test with no room after;
@@ -123,6 +123,23 @@ navigation task).
 - [ ] 6.1 Review a1efa2bc and sections 2 to 3 against design D1 to D7: one helper, modifier after `verticalScroll`, no
   semantics, `remember` only, stale reads, no change to opening or message fit (D180 (2), (4)). Verify: a review packet with
   findings, each fixed or answered by the engineer before QA.
+  - Fixes (2026-11-17, android-engineer, on cr-238's review of f5f8524f; 6.1 stays the reviewer's to close):
+    - Finding 1 (S3): Delete all data's "more to read" divider came and went with `canScrollForward`, so its 1 dp
+      resized the body's visible part outside the room's source. Closing short of the end (0 < b < K) brought the
+      body to its end, the divider left and the scroll clamped by 1 dp, a real scroll event; each scroll back through
+      the room ended with an extra 1 dp. Now the divider is always laid out and only its colour changes (transparent
+      with the end in view). `DeleteKeyboardTest`, 3 new cases at 200% (the riding row and the row behind, each
+      closed 30 dp short of the end; a 30 px scroll back through the room): red on f5f8524f, 3 of 13 (field 43 -> 44
+      and -246 -> -245 dp, scroll 158 -> 157 px against 158); green 13/13 after.
+    - Finding 2 (S4): `KeyboardRoomTest` closed only at the end. New cases: 70 px short of the end in one step and
+      in 50 dp steps (offset kept, and the room ends exactly at the page's end), and a keyboard's place plus a bar
+      short (no room). Mutation cutting the whole room once anything lies below: 2 of 9 red (both short cases;
+      the old six pass under it, as the reviewer found); green 9/9. With 100 px short, the stepped case did not
+      fail under the mutation (every step's growth fitted what lay below), hence 70.
+    - Finding 3 (S4): the Delete comment said every value is read in layout; it now names the insets as read in
+      layout and says why `row` and `rides`, set in composition, are safe. The helper's KDoc now asks only values that
+      move with the keyboard to be read in layout.
+    - Logs `migrely-work/238/eng/r1-red-f5f8524f.log`, `r-green.log`, `r2-green.log`, `r2-mutation-below-ignored.log`.
 
 ## 7. Acceptance (`qa-engineer`, this diff only)
 

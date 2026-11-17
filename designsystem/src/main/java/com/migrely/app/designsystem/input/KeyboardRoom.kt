@@ -58,9 +58,11 @@ fun rememberKeyboardRoom(scrollState: ScrollState, viewportInsets: WindowInsets)
 /**
  * The [KeyboardRoom] of the page scrolled by [scrollState], whose visible part ends [viewportBottom] px above the
  * bottom of the area it is laid out in, for a page whose visible part a layout sets rather than an inset (Delete all
- * data's row, BRD D180 (8)). [viewportBottom] is read while the page is laid out, so it must read the values that
- * layout reads there (insets, sizes), never a value set in composition: a room that grows a pass before the visible
- * part does is counted as page below the view and taken away, and the page is pulled after all.
+ * data's row, BRD D180 (8)). [viewportBottom] is read while the page is laid out: whatever moves with the keyboard
+ * must be read there too (insets), as the page's own padding reads it. A value that moves with the keyboard but is
+ * set in composition can lag the layout by a pass, and a room that grows before the visible part does is counted as
+ * page below the view and taken away, so the page is pulled after all. Values that hold still while the keyboard
+ * moves (a row's own size, a choice made once per keyboard) may come from composition.
  */
 @Composable
 fun rememberKeyboardRoom(

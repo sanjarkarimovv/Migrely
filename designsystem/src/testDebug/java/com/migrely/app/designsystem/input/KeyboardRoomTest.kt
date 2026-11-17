@@ -178,4 +178,50 @@ class KeyboardRoomTest {
 
         assertEquals(px(CONTENT) - (px(PAGE) - px(NAVIGATION_BAR)), scroll.maxValue)
     }
+
+    /**
+     * From [below] px short of the page's end, closes the keyboard through [steps] (the visible part's padding at each
+     * frame): the offset holds at every step. Returns the scroll after.
+     */
+    private fun closeWithBelow(below: Int, steps: List<Dp>): Int {
+        showPage()
+        runBlocking { scroll.scrollTo(scroll.maxValue - below) }
+        rule.waitForIdle()
+        val before = scroll.value
+        steps.forEach { step ->
+            bottom = step
+            rule.waitForIdle()
+            assertEquals("offset with the visible part padded by $step", before, scroll.value)
+        }
+        return before
+    }
+
+    @Test
+    fun closingShortOfTheEndAddsOnlyWhatTheEndNeeds() {
+        // Less than a keyboard below: the room is the keyboard's place less what lay below (ux R1).
+        val before = closeWithBelow(BELOW_SHORT, listOf(NAVIGATION_BAR))
+
+        assertEquals("the room went past the page's end", before, scroll.maxValue)
+    }
+
+    @Test
+    fun closingShortOfTheEndInStepsKeepsTheOffset() {
+        val steps = listOf(250.dp, 200.dp, 150.dp, 100.dp, NAVIGATION_BAR)
+        val before = closeWithBelow(BELOW_SHORT, steps)
+
+        assertEquals("the room went past the page's end", before, scroll.maxValue)
+    }
+
+    @Test
+    fun closingFarFromTheEndAddsNoRoom() {
+        closeWithBelow(px(KEYBOARD) + px(NAVIGATION_BAR), listOf(NAVIGATION_BAR))
+
+        assertEquals(px(CONTENT) - (px(PAGE) - px(NAVIGATION_BAR)), scroll.maxValue)
+    }
+
+    private companion object {
+        // Short of the page's end by less than the keyboard's place, and by no whole number of the 50 dp steps, so a
+        // step outgrows what lies below and only the room keeps the offset.
+        const val BELOW_SHORT = 70
+    }
 }
