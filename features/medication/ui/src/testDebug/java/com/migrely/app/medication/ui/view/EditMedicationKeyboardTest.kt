@@ -197,7 +197,8 @@ class EditMedicationKeyboardTest {
         rule.waitForIdle()
 
         // The page keeps its scroll position (BRD D189, #238): a pulled page is a scroll TalkBack follows.
-        assertEquals("the dose moved", before.value, dose.getUnclippedBoundsInRoot().top.value, 0.5f)
+        val after = dose.getUnclippedBoundsInRoot().top
+        assertEquals("the dose moved", before.value, after.value, 0.5f)
     }
 
     private fun range() = rule.onNode(hasScrollAction()).fetchSemanticsNode()

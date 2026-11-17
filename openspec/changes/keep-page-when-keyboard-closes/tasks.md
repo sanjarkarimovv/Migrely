@@ -94,10 +94,19 @@ navigation task).
 
 ## 4. Gate (`android-engineer`)
 
-- [ ] 4.1 Full gate. Verify: `set -o pipefail; nice -n 19 ./gradlew --max-workers=2 assembleDebug test ktlintCheck detekt lint`
+- [x] 4.1 Full gate. Verify: `set -o pipefail; nice -n 19 ./gradlew --max-workers=2 assembleDebug test ktlintCheck detekt lint`
   exit 0, with the counts of tests run (never `testDebugUnitTest` alone).
-- [ ] 4.2 No permission, string or manifest change. Verify: `./gradlew :app:checkReleasePermissions` exit 0 and
+  - Record (2026-11-17 10:41, android-engineer, load 5.4): `set -o pipefail; nice -n 19 ./gradlew --max-workers=2
+    assembleDebug test ktlintCheck detekt lint` -> **BUILD SUCCESSFUL in 50s, exit 0** on the tree committed with
+    this line. Unit tests (result files of every module): JVM `test` 1370, `testDebugUnitTest` 1231,
+    `testReleaseUnitTest` 702; 0 failures, 0 errors, 0 skipped. Two earlier runs failed in ktlint only (a signature and
+    four test lines over 100 columns, one body expression), fixed in this commit. Log `migrely-work/238/eng/gate.log`.
+- [x] 4.2 No permission, string or manifest change. Verify: `./gradlew :app:checkReleasePermissions` exit 0 and
   `git diff origin/develop -- '*.xml' '*strings*' '*AndroidManifest*'` empty except tests.
+  - Record (2026-11-17): `:app:checkReleasePermissions :app:checkReleaseDebugComponents` exit 0. Merged release
+    manifest uses-permission: ACCESS_NETWORK_STATE, POST_NOTIFICATIONS, RECEIVE_BOOT_COMPLETED, WAKE_LOCK, BILLING,
+    DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION; INTERNET appears only in two comments. `git diff --stat origin/develop --
+    '*.xml' '*strings*' '*AndroidManifest*'` prints nothing. `openspec validate --all --strict`: 31 passed, 0 failed.
 
 ## 5. Device walk (`android-engineer`, emulator-5570, headless first)
 

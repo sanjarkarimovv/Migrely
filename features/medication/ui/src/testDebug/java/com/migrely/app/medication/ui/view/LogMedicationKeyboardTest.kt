@@ -108,7 +108,8 @@ class LogMedicationKeyboardTest {
         rule.runOnUiThread { rule.activity.setKeyboard(0) }
         rule.waitForIdle()
 
-        assertEquals("the name moved", before.value, name.getUnclippedBoundsInRoot().top.value, 0.5f)
+        val after = name.getUnclippedBoundsInRoot().top
+        assertEquals("the name moved", before.value, after.value, 0.5f)
     }
 
     @Test

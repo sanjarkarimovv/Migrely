@@ -63,7 +63,10 @@ fun rememberKeyboardRoom(scrollState: ScrollState, viewportInsets: WindowInsets)
  * part does is counted as page below the view and taken away, and the page is pulled after all.
  */
 @Composable
-fun rememberKeyboardRoom(scrollState: ScrollState, viewportBottom: Density.() -> Int): KeyboardRoom {
+fun rememberKeyboardRoom(
+    scrollState: ScrollState,
+    viewportBottom: Density.() -> Int
+): KeyboardRoom {
     val density = LocalDensity.current
     val bottom = rememberUpdatedState(viewportBottom)
     val room = remember { KeyboardRoom(bottom) }

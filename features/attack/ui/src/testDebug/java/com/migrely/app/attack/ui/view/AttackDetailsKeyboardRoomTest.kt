@@ -102,9 +102,10 @@ class AttackDetailsKeyboardRoomTest {
     }
 
     /** The empty page below "Delete migraine", down to the visible part's end, in dp. */
-    private fun roomBelowTheEnd(): Float =
-        content.getUnclippedBoundsInRoot().bottom.value -
-            rule.onNodeWithText(DELETE).getUnclippedBoundsInRoot().bottom.value
+    private fun roomBelowTheEnd(): Float {
+        val end = rule.onNodeWithText(DELETE).getUnclippedBoundsInRoot().bottom
+        return content.getUnclippedBoundsInRoot().bottom.value - end.value
+    }
 
     private fun SemanticsNode.descendants(): List<SemanticsNode> =
         children.flatMap { listOf(it) + it.descendants() }
@@ -137,7 +138,11 @@ class AttackDetailsKeyboardRoomTest {
         // The page's own nodes: none of them may lie in the room (R11). Its container and the screen hold it.
         val inRoom = page.filter { it.boundsInRoot.overlaps(roomRect) }
 
-        assertEquals("nodes in the room $roomRect: ${inRoom.map { it.config }}", emptyList<SemanticsNode>(), inRoom)
+        assertEquals(
+            "nodes in the room $roomRect: ${inRoom.map { it.config }}",
+            emptyList<SemanticsNode>(),
+            inRoom
+        )
     }
 
     @Test

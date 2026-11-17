@@ -256,7 +256,7 @@ class DeleteKeyboardTest {
 
     @Test
     @Config(sdk = [35], qualifiers = "w800dp-h360dp")
-    fun `With the row behind the keyboard, a closing keyboard never moves the field near the end`() =
+    fun `With the row behind, a closing keyboard never moves the field near the end`() =
         assertStill(fieldTopsAcrossAClose(SHORT_KEYBOARD_DP, animated = true))
 
     @Test
