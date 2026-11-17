@@ -35,9 +35,11 @@ under load. Never `--stop` the daemon.
 
 ## 1. Domain, presentation and data
 
-- [ ] 1.1 None. No use case, view model, repository, data source, DI or navigation change.
+- [x] 1.1 None. No use case, view model, repository, data source, DI or navigation change.
   - Verify: at the end, `git diff origin/develop --stat -- '*/domain/*' '*/presentation/*' '*/data/*' '*/datasource/*'
     '*/di/*'` prints nothing.
+  - Verified 2026-11-17 on PR #231's merge: `git diff --stat 50c784e5^1 50c784e5 -- '*/domain/*' '*/presentation/*'
+    '*/data/*' '*/datasource/*' '*/di/*'` prints nothing.
 
 ## 2. UI: privacy wording (D181 (1), EC-STO-11, EC-STO-12)
 
@@ -70,6 +72,11 @@ under load. Never `--stop` the daemon.
   - Restore font scale and rotation afterwards.
   - Verify: a filtered TalkBack `action=SPEAK` log with 7 lines in order, and 2 screenshots in
     `migrely-work/walks/t66/`.
+  - Release 1.3.0 (QA on emulator-5580, `docs/qa/go-no-go-1.3.0.md`, "T66 privacy wording and focus on API 36"):
+    TalkBack reads the title and the 7 stops in order, each once, at 100% and at 200% in a 360 dp portrait window, every
+    stop scrolled into view. **200% landscape not run on API 36** (the driver did not find the Privacy row, twice); on
+    API 26 QA reached every text at 200% landscape by scrolling (`docs/qa/fix-privacy-wording-and-focus.md`, "2.x
+    Privacy page on screen"). Unticked for that cell.
 
 ## 3. UI: one spoken name per control (D181 (2), EC-ONB-07, EC-UX-45, #217)
 
@@ -133,6 +140,11 @@ under load. Never `--stop` the daemon.
   - Reminders: "Remove the next visit, Button", "Open settings for notifications, Button".
   - Verify: filtered `action=SPEAK` lines per control, saved in `migrely-work/walks/t66/`. The negative control is the
     same log on a 40536f49 build, which shows "Skip this step. Skip. Button".
+  - Release 1.3.0 (`docs/qa/go-no-go-1.3.0.md`, "T66 privacy wording and focus on API 36"): **pass** on onboarding steps
+    1 to 4 ("Skip this step. Button"; control 1.2.1 "Skip this step. Skip. Button"; #217 closed), Home attack mode (all
+    three controls), "Remove the next visit. Button" and the Reminders notice's "Open settings. Button". Not read on a
+    device: the visit section's "Open settings for notifications" (shown when only the visit channel is off); its
+    Compose test covers the name. Unticked for that one control.
 
 ## 4. UI: keyboard order on Home and History (D181 (3)–(5), EC-UX-46, EC-UX-47, EC-UX-48)
 
@@ -146,6 +158,9 @@ under load. Never `--stop` the daemon.
     committed.
   - Verify: the evidence file `migrely-work/walks/t66/history-stop.txt` names the node. This task records which of
     design 3's causes (a), (b) or another it is. The fix in 4.3 targets that node.
+  - Release 1.3.0: History on API 36 is in the Go/No-Go's scope (`docs/qa/go-no-go-1.3.0.md`, "Candidate, scope and
+    builds", item 1) but the record has no History row, so it has not run on API 36. API 26: 0 stops in 22 cells, head
+    and develop (`docs/qa/fix-privacy-wording-and-focus.md`, "4.1 History proof").
 - [ ] 4.2 Red first: a History keyboard test in `features/history/ui/src/testDebug`.
   - For each first-control variant (migraine row, Period, Pain-free with Period hidden), Shift+Tab lands on the chosen
     day.
@@ -159,6 +174,8 @@ under load. Never `--stop` the daemon.
     calendar's `onEnter` all 4 land on today instead. So the JVM does not reproduce the stop; 4.1's device proof was
     not run (emulator-5570 died on both boots, logs in `migrely-work/walks/t66/emu-boot*.log`). Not ticked: 4.1, 4.2's
     red, 4.3. No History code changed. The test stays as a guard.
+  - No red: `HistoryKeyboardOrderTest` passes on the pre-fix code (above) and stays a guard; the device proof it should
+    follow is open (4.1).
 - [ ] 4.3 Fix the cause 4.1 proved (design 3). No group, scroll container, legend or spacer may be a stop.
   - Verify: 4.2 passes. `./gradlew :features:history:ui:testDebugUnitTest :designsystem:testDebugUnitTest` exits 0.
   - Device: the ring is visible on the chosen day after Shift+Tab, at 100% and 200%, portrait and landscape (2 panes).
@@ -169,6 +186,7 @@ under load. Never `--stop` the daemon.
     stays as a guard, green before and after, so 4.2 has no red. API 36 has not run: it is a blocking line in the
     release/1.3.0 Go/No-Go. If the stop reproduces there, a follow-up change does 4.1 to 4.3 for the node it finds.
     4.1 to 4.3 stay unticked; BRD D181 (3), EC-UX-46, §13 row 49 and the `attack-history` delta now say this.
+  - No History code changed, none needed on API 26; API 36 not run (4.1).
 - [x] 4.4 Red first: Home tests (next to `HomeMessageOrderTest.kt`).
   - (a) All slots empty and a message shown: Tab ×3 goes Settings, message control, "Migraine started"; Shift+Tab ×2
     goes message control, Settings.
@@ -188,12 +206,15 @@ under load. Never `--stop` the daemon.
   - The Tab order is "Add a past migraine", then "Log medication", in both layouts.
   - Verify: `./gradlew :features:home:ui:testDebugUnitTest --tests '*QuietLinks*'`. The 2.0 case fails on the pre-fix
     base.
-- [ ] 4.7 `QuietLinks` measures each label's min intrinsic width and stacks when either value plus 24 dp exceeds half
+- [x] 4.7 `QuietLinks` measures each label's min intrinsic width and stacks when either value plus 24 dp exceeds half
   the row (design 5). `lastModifier` stays on "Log medication".
   - Verify:
     - 4.6 passes;
     - screenshots at 360 dp 200% in portrait and in a short landscape window show whole words;
     - at 100% the bounds are within 1 px of the pre-fix base (uiautomator).
+  - Built in PR #231 (`TodayContents.kt`: `QuietLinks` reads `minIntrinsicWidth`). QA on API 26
+    (`docs/qa/fix-privacy-wording-and-focus.md`, "4.7 Quiet links"): stacked, whole words, at 360 dp 200% portrait and
+    in the short landscape window, where develop breaks "medicatio / n"; at 100% within 1 px of develop.
 
 ## 5. UI: three screens (D181 (6), EC-UX-49, EC-UX-50, EC-UX-51)
 
@@ -234,12 +255,19 @@ under load. Never `--stop` the daemon.
 - [ ] 5.5 Device walk at 200% portrait with a hardware keyboard on each of the three screens. Include a touch Save with a
   duplicate name (no soft keyboard opens) and a TalkBack pass on the Name error.
   - Verify: the walk notes in `migrely-work/walks/t66/three-screens.md` list each stop seen, and they match the tests.
+  - QA ran the hardware-keyboard walk at 200% portrait on API 26: every order, focus move and the touch Save with a
+    duplicate name match the tests (`docs/qa/fix-privacy-wording-and-focus.md`, "5.5 Three screens"). **The TalkBack
+    pass on the Name error failed** on API 36 (`docs/qa/go-no-go-1.3.0.md`, "T63 keyboard follows the cursor on API 36",
+    row "8.3 (ux F5) and T66 5.5"): nothing spoken, the error off screen → #239 (S3, open).
 
 ## 6. Wiring
 
-- [ ] 6.1 None. No DI, navigation or manifest change.
+- [x] 6.1 None. No DI, navigation or manifest change.
   - Verify: `git diff origin/develop --stat -- '*/AndroidManifest.xml' '*/navigation/*'` prints nothing, and
     `./gradlew :app:checkReleasePermissions` passes with the same list as `develop`.
+  - Verified 2026-11-17: `git diff --stat 50c784e5^1 50c784e5 -- '*/AndroidManifest.xml' '*/navigation/*'` prints
+    nothing; the lead gate on the merge result ran `:app:checkReleasePermissions` exit 0 with 1.2.x's list (PR #231,
+    "Evidence").
 
 ## 7. Docs and other owners
 
@@ -252,7 +280,7 @@ under load. Never `--stop` the daemon.
 - [x] 7.2 KDoc: `TodayKeyboardOrder` and `QuietLinks` describe the new behaviour with BRD D181. The `StepHeader` and
   `SnackbarEndControl` comments say why the child text is cleared.
   - Verify: `git grep -n "D181" -- '*.kt' | wc -l` prints at least 3.
-- [ ] 7.3 `team-lead` adds tracker rows for:
+- [x] 7.3 `team-lead` adds tracker rows for:
   - `aso-seo-specialist`: re-capture slide 06 as `06-private-v2` from the 1.3.0 build, shown on Play only after 1.3.0
     is live;
   - `aso-seo-specialist`: the `ACCESS_NETWORK_STATE` line in `docs/release/data-safety.md`, and the wording "the app
@@ -260,6 +288,8 @@ under load. Never `--stop` the daemon.
   - backlog: the disabled Pain-free switch is not a keyboard stop (ux A3);
   - `qa-engineer`: Android 8 backup behaviour with `bmgr` on API 26 (legal-t66, not blocking).
   - Verify: the four rows exist in `tracker/tasks.js` (grep their ids).
+  - Rows exist in `tracker/tasks.js`: T67 (slide 06 v2, data safety `ACCESS_NETWORK_STATE`, the content rating wording)
+    and T68 (the Pain-free switch keyboard stop, API 26 `bmgr` backup).
 - [x] 7.4 `product-manager`: after the code, re-read the BRD and the deltas against what was built. Fix any drift
   before the archive.
   - Verify: `openspec validate fix-privacy-wording-and-focus --strict` passes on the final head.
@@ -277,18 +307,29 @@ under load. Never `--stop` the daemon.
 
 ## 8. Verify
 
-- [ ] 8.1 Gate: `./gradlew assembleDebug test ktlintCheck detekt lint`.
+- [x] 8.1 Gate: `./gradlew assembleDebug test ktlintCheck detekt lint`.
   - Verify: exit 0, with the log's last lines recorded. Use `set -o pipefail` with any pipe.
-- [ ] 8.2 Instrumented tests in the touched modules that have `androidTest` (`designsystem`, `features:attack:ui`,
+  - Lead gate on the merge result (c2756049 + develop e4b1fbcd, PR #231, "Evidence"): `assembleDebug test ktlintCheck
+    detekt lint` exit 0, 3261 tests, 0 failures; `openspec validate --all --strict` 32/32.
+- [x] 8.2 Instrumented tests in the touched modules that have `androidTest` (`designsystem`, `features:attack:ui`,
   `features:medication:ui`) on emulator-5570.
   - Verify: `ANDROID_SERIAL=emulator-5570 ./gradlew :designsystem:connectedDebugAndroidTest
     :features:attack:ui:connectedDebugAndroidTest :features:medication:ui:connectedDebugAndroidTest` exits 0.
+  - Not on emulator-5570 (it did not boot on the host). QA ran the three modules on API 36 in the release Go/No-Go:
+    designsystem 58, attack/ui 5, medication/ui 14, all pass (`docs/qa/go-no-go-1.3.0.md`, "R8 smoke, monkey,
+    instrumented tests"); on API 26 every class the diff reaches passes and the two failing classes fail the same on
+    develop, #229 and #144 (`docs/qa/fix-privacy-wording-and-focus.md`, "8.2 Instrumented tests on API 26").
 - [ ] 8.3 Device walk (engineer): 2.5, 3.6, 4.3, 4.7 and 5.5 are done, in dark and light themes. All device settings are
   restored: font scale, rotation, TalkBack, animator scale.
   - Verify: the walk index in `migrely-work/walks/t66/` and `adb shell settings get system font_scale` printing 1.0.
-- [ ] 8.4 `code-reviewer` reviews the diff from the merge base to the head. This includes the follow-up 4 comment, that
+  - Not done by the engineer (emulator-5570 did not boot). QA's records cover 3.6 and 2.5 portrait on API 36, and 4.7
+    and 5.5 on API 26; still open: History on API 36 (4.1), 2.5 at 200% landscape on API 36, the visit section's name
+    (3.6) and the 5.5 TalkBack row (#239).
+- [x] 8.4 `code-reviewer` reviews the diff from the merge base to the head. This includes the follow-up 4 comment, that
   no clickable lost its role or action, and that no test reads the string it checks.
   - Verify: a review packet with no open blocker and its SHA range recorded here.
+  - Done: code-reviewer cr-t66 reviewed 78eb13ed and, in round 2, 24066a1e: approve with findings; F2 and F6 closed
+    (8.4a), F4 to the backlog (T68), F5 to #224 (PR #231, "Evidence").
 - [x] 8.4a Review fixes (`android-engineer`, cr-t66 on 78eb13ed).
   - F2 (S3): Edit medication's focus after a Save problem is keyed on `pending` too, so a second Save with the same
     problem brings focus back to Name or Usual dose. Red on 78eb13ed: 2 of 13 in `EditMedicationKeyboardOrderTest`
@@ -300,7 +341,7 @@ under load. Never `--stop` the daemon.
     that count; the pending and touch-only guards stay. Red on 24066a1e: 2 of 15 (instant second Save, name and dose:
     focus null); green after: medication 90 of 90.
   - F4 (backlog T68) and F5 (#224) are out of this change, by team-lead.
-- [ ] 8.5 `qa-engineer` gives Go/No-Go on the head SHA, limited to what the diff reaches, with negative controls on
+- [x] 8.5 `qa-engineer` gives Go/No-Go on the head SHA, limited to what the diff reaches, with negative controls on
   40536f49.
   - Scope: TalkBack logs for #217 and the sites from 3.2 on API 36 and 26, the Privacy page, keyboard walks on History,
     Home and the three screens, and the 7.1 Maestro flow.
@@ -308,7 +349,13 @@ under load. Never `--stop` the daemon.
   - 2026-11-16 12:45, qa-engineer: **GO for API 26, API 36 pending** on f846c899 (`docs/qa/fix-privacy-wording-and-focus.md`).
     No open S1 or S2. History's invisible stop does not reproduce on API 26 (head or develop). Filed #229 (S4) and #230
     (S3); both predate T66. Not ticked: the API 36 and TalkBack rows have not run (emulator-5560 up, swap below 2 GB).
-- [ ] 8.6 Archive and merge after 0.2 and 8.5. Run `openspec archive fix-privacy-wording-and-focus`, then open a PR into
+  - API 26: GO on f846c899 (`docs/qa/fix-privacy-wording-and-focus.md`, "Decision"). API 36: ran in the release 1.3.0
+    Go/No-Go, GO on 294c10c6 with no open S1 or S2 (`docs/qa/go-no-go-1.3.0.md`, "Decision" and "T66 privacy wording and
+    focus on API 36"). Left open by it: #239 (S3), History on API 36 and Privacy at 200% landscape not run.
+- [x] 8.6 Archive and merge after 0.2 and 8.5. Run `openspec archive fix-privacy-wording-and-focus`, then open a PR into
   `develop` (`Refs #217`) and self-merge with a merge commit.
   - Verify: `openspec list` no longer shows the change, `openspec validate --specs --strict` passes, and the PR is
     merged with a merge commit.
+  - PR #231 merged into `develop` with a merge commit (50c784e5, 2026-11-16, after 0.2). Archived 2026-11-17 on
+    `chore/archive-1.3.0-changes` (PR "Archive the OpenSpec changes shipped in 1.3.0"); `openspec validate --all
+    --strict`: 30 passed, 0 failed, exit 0; `openspec list` no longer shows the change.
