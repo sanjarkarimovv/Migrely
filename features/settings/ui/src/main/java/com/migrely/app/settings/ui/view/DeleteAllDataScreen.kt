@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.exclude
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -46,6 +48,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
@@ -59,8 +62,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.migrely.app.designsystem.icon.MigrelyIcons
+import com.migrely.app.designsystem.input.KeyboardRoom
 import com.migrely.app.designsystem.input.SingleLineFieldInView
 import com.migrely.app.designsystem.input.inputLineRoom
+import com.migrely.app.designsystem.input.rememberKeyboardRoom
 import com.migrely.app.designsystem.layout.MigrelyInsets
 import com.migrely.app.designsystem.theme.MigrelyDarkRoom
 import com.migrely.app.designsystem.theme.MigrelyTheme
@@ -211,10 +216,22 @@ private fun ColumnScope.Confirmation(
     var area by remember { mutableIntStateOf(0) }
     var row by remember { mutableIntStateOf(0) }
     val rides = rememberRowRidesAboveKeyboard(area, row)
-    val density = LocalDensity.current
-    val behindKeyboard = with(density) {
-        val keyboard = WindowInsets.ime.getBottom(density)
-        (keyboard - row - MigrelyInsets.bars.getBottom(density)).coerceAtLeast(0).toDp()
+    // The row's bottom: above the keyboard while it rides, else above the bars.
+    val rowInsets = (if (rides) MigrelyInsets.barsAndKeyboard else MigrelyInsets.bars)
+        .only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom)
+    // With the row left behind the keyboard, the body still ends at the keyboard's top.
+    val bodyInsets = if (rides) {
+        WindowInsets(0)
+    } else {
+        WindowInsets.ime.exclude(MigrelyInsets.bars).exclude(WindowInsets(bottom = row))
+            .only(WindowInsetsSides.Bottom)
+    }
+    // Closing the keyboard leaves the body where it is (BRD D189, #238). The insets are read in layout, as the row's
+    // and the body's paddings read them. `row` comes from an earlier pass and holds still while the keyboard moves
+    // (the row's size excludes its insets). `rides` is chosen in composition, only as a keyboard starts to open,
+    // where the room can only shrink, or is gone, where both of its cases give the same bottom.
+    val keyboardRoom = rememberKeyboardRoom(scrollState) {
+        row + rowInsets.getBottom(this) + bodyInsets.getBottom(this)
     }
     Column(
         Modifier
@@ -226,23 +243,25 @@ private fun ColumnScope.Confirmation(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
-                // With the row left behind the keyboard, the body still ends at the keyboard's top.
-                .padding(bottom = if (rides) 0.dp else behindKeyboard)
+                // Read in layout, and consumes no inset.
+                .padding(bodyInsets.asPaddingValues())
         ) {
-            ConfirmationBody(typed, word, failed, actions.onTyped, scrollState)
+            ConfirmationBody(typed, word, failed, actions.onTyped, scrollState, keyboardRoom)
         }
-        // There is more to read above the button.
-        if (scrollState.canScrollForward) {
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-        }
+        // There is more to read above the button. Always laid out, only its colour changes: a divider that comes
+        // and goes would resize the body's visible part and scroll it by its 1 dp at the end (BRD D189, #238).
+        HorizontalDivider(
+            color = if (scrollState.canScrollForward) {
+                MaterialTheme.colorScheme.outlineVariant
+            } else {
+                Color.Transparent
+            }
+        )
         Box(
             contentAlignment = Alignment.Center,
             modifier = Modifier
                 .fillMaxWidth()
-                .windowInsetsPadding(
-                    (if (rides) MigrelyInsets.barsAndKeyboard else MigrelyInsets.bars)
-                        .only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom)
-                )
+                .windowInsetsPadding(rowInsets)
                 .onSizeChanged { row = it.height }
                 .padding(horizontal = 16.dp, vertical = 8.dp)
         ) {
@@ -289,7 +308,8 @@ private fun ConfirmationBody(
     word: String,
     failed: Boolean,
     onTyped: (String) -> Unit,
-    scrollState: ScrollState
+    scrollState: ScrollState,
+    keyboardRoom: KeyboardRoom
 ) {
     // Kept tight, so the warning and the field fit above the button in landscape at twice the font size.
     Column(
@@ -299,6 +319,8 @@ private fun ConfirmationBody(
             .fillMaxWidth()
             .windowInsetsPadding(MigrelyInsets.bars.only(WindowInsetsSides.Horizontal))
             .verticalScroll(scrollState)
+            // After the scroll, never a child: the column's spacing would add a gap.
+            .then(keyboardRoom.modifier)
             .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 12.dp)
     ) {
         Text(

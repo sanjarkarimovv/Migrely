@@ -183,6 +183,24 @@ class EditMedicationKeyboardTest {
         assertEquals("the page scrolled back", minOf(scrolled, range().maxValue()), scroll(), 0.5f)
     }
 
+    @Test
+    @Config(sdk = [35], qualifiers = "w411dp-h891dp")
+    fun `Closing the keyboard near the page's end leaves the dose where it is`() {
+        show(1f)
+        type(DOSE)
+        rule.onNode(hasScrollAction()).performScrollToNode(hasText(SAVE))
+        rule.waitForIdle()
+        assertTrue("the page fits above the keyboard", scroll() > 0f)
+        val before = dose.getUnclippedBoundsInRoot().top
+
+        rule.runOnUiThread { rule.activity.setKeyboard(0) }
+        rule.waitForIdle()
+
+        // The page keeps its scroll position (BRD D189, #238): a pulled page is a scroll TalkBack follows.
+        val after = dose.getUnclippedBoundsInRoot().top
+        assertEquals("the dose moved", before.value, after.value, 0.5f)
+    }
+
     private fun range() = rule.onNode(hasScrollAction()).fetchSemanticsNode()
         .config[SemanticsProperties.VerticalScrollAxisRange]
 
