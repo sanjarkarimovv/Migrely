@@ -32,7 +32,7 @@ Measured by QA (`migrely-work/qa-238/walk/rows.jsonl` and the #245 comment of 20
 | 360 dp | Edit medication, Log medication (one-line bar) | 87 px = 33 dp (y 231 to 318) | the input line of a 200% field; the field box is 81 dp |
 | 411 dp | Attack details | 137 px = 52 dp | 64 dp with margins, 48 dp without |
 | API 26, about 411 dp | Attack details | 239 px = 91 dp (y 257 to 496) | fits: the caret line shows at y 278 to 389, 107 px clear of the keyboard (case b, not a defect) |
-| API 26, 360 dp | Attack details | 156 px | the caret line shows (y 320 to 412) but only 1 px above the keyboard: R2 applies |
+| API 26, 360 dp | Attack details | 156 px | the caret line (92 to 111 px) shows at y 320 to 412 but only 1 px above the keyboard. A line plus two 8 dp margins is 134 to 153 px, so it is R1 or at worst R2: the margins must be equal and as large as fit, never 1 px below with room left above |
 
 Where the space goes in the 360 dp window: status bar 24 dp, top bar 74 dp (details) or 64 dp (one-line bar), keyboard
 239 dp. My T63 estimate (80 to 110 dp left) was wrong. The keyboard is two thirds of the window. The keyboard, the status bar
@@ -94,6 +94,7 @@ What this means for the design:
 - While typing: R1 holds there today. Nothing to change.
 - After a drag by the person: the page stays where the person put it, also while typing stops, and also on close (#238
   R3 and R4). Their own scroll is respected; the next typed character brings the line back (D180 (2)).
+- API 26 at 360 dp (156 px) is window capacity, the same cause as #245: SW4 covers it under R1 or R2.
 - On close: the line, or whatever the person scrolled to, stays where it was. Nothing scrolls.
 - My #238 5.3 verdict "NOT OK" for `ux-kr11-api26-details-200-landscape` is withdrawn: the position came from the drag,
   and the room kept the person's own scroll as #238 R4 intends. The verdict for that shot is OK.
@@ -133,8 +134,8 @@ Mutations as named. Each row restores font scale, rotation, `wm size` and densit
 
 | ID | Where | Steps | Expected on candidate | Negative control |
 |---|---|---|---|---|
-| SW1 | Details, 360 dp, 200%, landscape, API 36 | Scroll to Notes, tap, type `qa`, then Enter and another line | The cursor line is whole in the visible part with ≥ 8 dp below it; Back and the title are absent from the layout dump; the status bar is unchanged | 1.3.1: visible part 61 px, line not visible (#245 shots) |
-| SW2 | Edit medication name and dose, Log medication name, Delete all data word, each at 360 dp, 200%, landscape | Focus the field, type | The input line is whole; supporting line when it fits (U1 order); the bar is aside only if the input line did not fit with it; Delete row per D7 | 1.3.1: visible part 87 px (Edit, Log), input line not whole |
+| SW1 | Details, 360 dp, 200%, landscape, API 36 | Scroll to Notes without dragging to the end, tap, type `qa`, then Enter and another line | The cursor line is whole in the visible part with ≥ 8 dp below it; Back and the title are absent from the layout dump; the status bar is unchanged | 1.3.1, re-taken without the drag: visible part 61 px, line not visible. The #245 shots were taken after a drag; the control holds by capacity (61 px is less than one 92 to 111 px line), but the re-take is the evidence |
+| SW2 | Edit medication name and dose, Log medication name, Delete all data word, each at 360 dp, 200%, landscape | Focus the field, type | The input line is whole; supporting line when it fits (U1 order); the bar is aside only if the input line did not fit with it; Delete row per D7 | 1.3.1, re-taken without a drag: visible part 87 px (Edit, Log), input line not whole |
 | SW3 | Details, 411 dp, 200%, landscape, API 36 | As SW1 | The bar stays (Back in the dump at its usual bounds); the line is whole; the margins may be under 8 dp (R2) | Mutation "bar always aside when the keyboard is up": the bar is missing here, so red |
 | SW4 | Details at 200% landscape: API 26 at about 411 dp, and API 26 at 360 dp | Scroll to Notes without dragging to the end, tap, type | 411 dp: the line is whole with 8 dp below it and the bar stays (R1). 360 dp: the line is whole and the margins shrink equally (R2), so it is no longer 1 px from the keyboard; the bar stays unless the line does not fit | 1.3.1 at 360 dp: the caret line is 1 px from the keyboard (QA, #245 comment) |
 | SW5 | SW1 and SW4 set-ups, and once after a drag to the page end while typing | Close by Back, then by the hide key | The bar is back at the same bounds as before typing; the line is still on screen; TalkBack (on, VERBOSE) says nothing but the field or "keyboard hidden" and stays on the field; zero TYPE_VIEW_SCROLLED from the page within 3 s | Mutation that keeps the line's screen position on close by scrolling: a scroll event, so red |
