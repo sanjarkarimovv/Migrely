@@ -192,24 +192,42 @@ mutation is a deliberately broken build that must turn the test red again. Logs 
 
 ## 6. Review (`code-reviewer`)
 
-- [ ] 6.1 Review sections 2 to 3 against design D1 to D4: clears only on `Logged`, both collectors, no ViewModel state, Undo
-  keeps the result until success, no double Undo, only the two ux 4.4 strings, no fade on the clear, D178 (2) and D182 untouched. Verify: a review packet with
-  findings, each fixed or answered by the engineer before QA.
+- [x] 6.1 Review sections 2 to 3 against design D1 to D4: clears only on `Logged`, both collectors, no ViewModel state, Undo
+  keeps the result until success, no double Undo, only the two ux 4.4 strings, no fade on the clear, D178 (2) and D182
+  untouched. Verify: a review packet with findings, each fixed or answered by the engineer before QA.
+  - Record (2026-11-18, product-manager, relayed by `team-lead`): cr-237 approved; its four S4 findings are fixed or
+    answered in the records of 3.1 (S4-2), 3.4 (S4-4), 3.5 (S4-1) and 3.6 (S4-3), commit d2fa83b4.
 
 ## 7. Acceptance (`qa-engineer`, this diff only)
 
-- [ ] 7.1 Rows A1 to A9 of design "Acceptance" on the PR head (A6 and A7 only if rule 2 ships), with v1.3.1 as the negative
+- [x] 7.1 Rows A1 to A9 of design "Acceptance" on the PR head (A6 and A7 only if rule 2 ships), with v1.3.1 as the negative
   control (A1, A2, A3, A4, A5, A6 and A9 must show the defect on v1.3.1, or that row proves nothing and says so). APK hashes read back on the device. Verify: a QA
   record `docs/qa/clear-message-when-intake-logged.md` with each row, build SHA, result and control result.
-- [ ] 7.2 Restore every device setting and free the filled storage. Verify: the settings and `df /data` read back in the QA
+  - Record: `docs/qa/clear-message-when-intake-logged.md` (qa-237, `qa/237-acceptance` 6705ae3d, merged here as 71be556a):
+    **GO with recorded observations**, tested at 8b96026b, carried over by diff to d2fa83b4 (only `src/testDebug/` files
+    and this file changed). A1 to A9 pass; every row with a control (A1 to A6, A9) shows the defect on v1.3.1's code.
+    Added rows: E17 (Done before the outcome), E17f (failure after a long lock), G200/G200L (the 800 ms guard at 200%).
+    Three observations, not filed: the landscape guard over Done's top 21 px, TalkBack's focus going to Back after a log
+    (pre-existing), the A6 message over the logged line (D158). See D190 "Natija".
+- [x] 7.2 Restore every device setting and free the filled storage. Verify: the settings and `df /data` read back in the QA
   record.
+  - Record: same file, "Restore (task 7.2)": settings read back, no filler files left, 4283580 KB free, emulator off.
 
 ## 8. Close (`product-manager`, then `android-engineer`)
 
-- [ ] 8.1 Before archive: diff this change's MODIFIED "An error on the other screens goes when a later save succeeds" against
+- [x] 8.1 Before archive: diff this change's MODIFIED "An error on the other screens goes when a later save succeeds" against
   the live `openspec/specs/in-app-messages/spec.md`; sync it if another change (for example #239's) rewrote that requirement
   since 2026-11-18. Verify: the diff shows only this change's body edit, two rewritten scenarios and one new scenario.
-- [ ] 8.2 BRD D190 updated with QA's results (what was proved, what stays open), then archive. Verify:
+  - Record (2026-11-18, product-manager, on 71be556a, which contains `origin/develop` 9a48dbcf): the requirement from the
+    live `openspec/specs/in-app-messages/spec.md` and from this delta, `diff`: the body (Log medication added, D190), "A
+    write with its own message" and "Undo or information on screen" rewritten, "Log medication, a dose logged after freeing
+    space" added; the other 13 scenarios match line for line (live 16, delta 17). `git diff --stat 76c38c38 HEAD --
+    openspec/specs` is empty, so nothing synced since the plan; #239 adds a separate ADDED requirement and does not touch
+    this one. No sync needed. The two ADDED `medication-intakes` requirements do not exist in the live spec.
+- [x] 8.2 BRD D190 updated with QA's results (what was proved, what stays open), then archive. Verify:
   `openspec archive clear-message-when-intake-logged --yes` and `openspec validate --all --strict` exit 0.
+  - Record (2026-11-18, product-manager): D190 gets "Natija": the 2.0 red result, cr-237's approval, QA's GO, what was
+    proved, the three observations and what stays open; EC-MED-17 no longer says "not reproduced". Archive results are in
+    the commit that moves this file.
 - [ ] 8.3 PR into `develop` with `Refs #237`, merge commit, worktree removed after merge, tracker T75 updated by `team-lead`.
   Verify: `gh pr view <n> --json state,mergeCommit` shows MERGED.
