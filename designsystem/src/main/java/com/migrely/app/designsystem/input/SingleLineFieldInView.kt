@@ -15,6 +15,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -44,6 +45,10 @@ private val BODY_LINE = 24.sp
  * Pass the given modifier first in the field's chain and the given interaction source to it. [hasLabel] says where the
  * input line sits: below half a floating label's line, as Material places it, and its content padding.
  *
+ * Each new value of [inViewRequests] above 0 brings the field into view the same way without focus, once the frame
+ * after the request is laid out, so a supporting line that has just appeared is included (BRD D191, ux F2). Inside a
+ * [TypingSpace] it keeps the same reduced margins as a focused field (BRD D192).
+ *
  * The input line's height is the field's line as laid out in [LocalTextStyle], the style the field uses (BRD D192): not
  * that style's line height in sp, which nonlinear font scaling converts to less (95 against 112 px at 200%). The same
  * height gives [inputLineRoom]. A field that passes its own `textStyle` must provide it as [LocalTextStyle] around this.
@@ -52,6 +57,7 @@ private val BODY_LINE = 24.sp
 fun SingleLineFieldInView(
     hasLabel: Boolean,
     margin: Dp = LINE_MARGIN,
+    inViewRequests: Int = 0,
     field: @Composable (modifier: Modifier, interactionSource: MutableInteractionSource) -> Unit
 ) {
     val interactionSource = remember { MutableInteractionSource() }
@@ -83,6 +89,11 @@ fun SingleLineFieldInView(
         if (!focused || size == IntSize.Zero) return@LaunchedEffect
         bringFieldIntoView(size.width.toFloat(), size.height.toFloat())
         follow.onBroughtIntoView()
+    }
+    LaunchedEffect(inViewRequests) {
+        if (inViewRequests == 0) return@LaunchedEffect
+        withFrameNanos { }
+        if (size != IntSize.Zero) bringFieldIntoView(size.width.toFloat(), size.height.toFloat())
     }
     // The line being typed is the input line, laid out in the field's text style (BRD D192, ux R5).
     LaunchedEffect(focused, space, lineHeight) {

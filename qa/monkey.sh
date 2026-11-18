@@ -68,7 +68,7 @@ adbq shell pm clear "$APP" >/dev/null
 adbq logcat -c || true
 adbq logcat -c -b crash || true
 adbq logcat -c -b events || true
-adbq shell monkey -p "$APP" -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1
+qa_launch_app || exit 1 # qa/lib.sh: as the launcher icon does; fails if the app did not start
 sleep 3
 # --ignore-crashes/--ignore-timeouts keep monkey going when ANOTHER app fails: the AOSP keyboard of the API 26 image
 # crashes under random input ("Empty keySpec"). The verdict below reads only this app's crashes and ANRs.

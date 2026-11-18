@@ -538,8 +538,8 @@ the screen turning off, Android Settings, a rotation and a restored process SHAL
 ### Requirement: An error on the other screens goes when a later save succeeds
 On Home, History, My medications, Edit medication, Log medication, Reminders, Doctor report, Your data and Add past migraine,
 while an error shows, the next write there that succeeds SHALL replace it with that write's own message, or else with "Saved."
-on Home, History and Reminders. On Doctor report a created report SHALL clear it with no message. It SHALL clear on success,
-never on the attempt (BRD EC-UX-35, D178).
+on Home, History and Reminders. A created report on Doctor report and a logged intake on Log medication SHALL clear it with no
+message. It SHALL clear on success, never on the attempt (BRD EC-UX-35, D178, D190).
 
 #### Scenario: Home Today, a day mark after freeing space
 - **WHEN** marking today's period failed because storage was full, the user frees space without closing the message, and marks
@@ -571,8 +571,15 @@ never on the attempt (BRD EC-UX-35, D178).
 
 #### Scenario: A write with its own message
 - **WHEN** an error shows and the next successful write brings its own message, such as "Backup saved" on Your data, the archive
-  message with "Undo" on My medications, the logged message with "Undo" on Log medication, "Migraine started" or "Undone."
+  message with "Undo" on My medications, "Removed. Nothing was logged." after an Undo on Log medication, "Migraine started" or
+  "Undone."
 - **THEN** that message replaces the error, and no "Saved." shows
+
+#### Scenario: Log medication, a dose logged after freeing space
+- **WHEN** logging Ibuprofen failed with "Couldn't save. Your phone's storage is full.", the user frees space without closing
+  the message, and taps Ibuprofen again
+- **THEN** within 1 second the error is gone with no "Saved." and no haptic, "Ibuprofen 400 mg logged at 14:20" shows with
+  "Done" and "Undo" and nothing over it, and TalkBack speaks the logged line
 
 #### Scenario: A write that closes the screen
 - **WHEN** an error shows on Edit medication or Add past migraine and a later save succeeds
@@ -588,8 +595,11 @@ never on the attempt (BRD EC-UX-35, D178).
 - **THEN** no "Saved." shows
 
 #### Scenario: Undo or information on screen
-- **WHEN** a message with "Undo" or an information message shows and a later write saves
+- **WHEN** a message with "Undo" or an information message shows on any of these screens but Log medication, and a later write
+  saves
 - **THEN** that message stays with the time it has left
+- **AND** on Log medication a logged intake clears it, because the logged result replaces the whole page (medication-intakes
+  "A logged intake clears the message on Log medication")
 
 #### Scenario: It fails again
 - **WHEN** an error shows, storage is still full, and the user tries again
@@ -989,3 +999,31 @@ EC-UX-02, EC-UX-59, D182).
 - **WHEN** TalkBack reads a message, in or out of the dark room
 - **THEN** it reads the same text and labels as before
 - **AND** the pause's focus probe adds no semantics node, label, action or change to the reading order
+
+### Requirement: A field problem replaces the message on the medication forms
+On Edit medication and on Log medication's first-medication form, when Save or "Add and log" finds a field problem, any
+message on the screen SHALL go in the same frame, silently, so the field error is the only error and no message covers
+Name. A later attempt that fails for another reason SHALL show its message again (BRD EC-UX-70, D191).
+
+#### Scenario: Storage message, then an empty name
+- **WHEN** "Couldn't save. Your phone's storage is full." shows on Edit medication, the user frees space, clears Name and
+  saves
+- **THEN** the storage message is gone in the same frame that "Enter a name." appears, Name and its error are in view and
+  not covered, and only "Enter a name." is announced
+
+#### Scenario: Storage still full after the fix
+- **WHEN** the storage message went with a name problem, storage is still full, and the user fixes the name and saves
+- **THEN** "Couldn't save. Your phone's storage is full." shows again and is announced
+
+#### Scenario: Any other message
+- **WHEN** "Something went wrong. Please try again.", "You can keep up to 50 medications. Remove one you no longer take." or
+  "Pick a time up to now." shows and Save or "Add and log" then finds a field problem
+- **THEN** the message goes silently in the same frame and the field problem follows the field rules
+
+#### Scenario: The first-medication form
+- **WHEN** a message shows on Log medication's first-medication form and "Add and log" finds the name empty
+- **THEN** the message goes in the same frame and nothing covers "Taken at" or Name
+
+#### Scenario: Rotation after the clear
+- **WHEN** the message went with a field problem and the phone rotates or the process is restored
+- **THEN** the field error shows and the message does not come back
