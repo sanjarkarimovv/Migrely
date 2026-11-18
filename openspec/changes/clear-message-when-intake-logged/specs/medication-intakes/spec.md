@@ -1,9 +1,9 @@
 ## ADDED Requirements
 
 ### Requirement: A logged intake clears the message on Log medication
-When an intake is stored on Log medication, by a tap on a medication or by "Add and log", every message on that screen SHALL
-go at once, with no new message and no haptic, and the logged line SHALL be announced with nothing over it. Only a stored
-intake SHALL clear it: a time in the future, full storage, another failure or a refused medication SHALL keep the list and
+When an intake is stored on Log medication, by a tap on a medication or by "Add and log", every message there SHALL go in
+the frame the logged result appears, with no fade, no new message and no haptic; only the logged line SHALL be heard. Only a
+stored intake SHALL clear it: a future time, full storage, another failure or a refused medication SHALL keep the list and
 show their message as before (BRD EC-MED-16, D190).
 
 #### Scenario: Storage full, then logged after freeing space
@@ -13,8 +13,8 @@ show their message as before (BRD EC-MED-16, D190).
   and "Undo", no "Saved." shows, there is no haptic, and TalkBack speaks the logged line
 
 #### Scenario: Another error, then logged
-- **WHEN** "Something went wrong. Please try again." or "Pick a time up to now." shows and the next tap on a medication stores
-  an intake
+- **WHEN** "Something went wrong. Please try again.", "Pick a time up to now." or "You can keep up to 50 medications…" shows
+  and the next tap on a medication or "Add and log" stores an intake
 - **THEN** the message is gone and the logged result shows as above
 
 #### Scenario: First medication added and logged
@@ -40,8 +40,8 @@ show their message as before (BRD EC-MED-16, D190).
 
 #### Scenario: One outcome for the page and the message
 - **WHEN** the logged outcome reaches the screen
-- **THEN** the logged result and the cleared message show together, in either order of handling, and no frame after that
-  shows the logged result under the old message
+- **THEN** the logged result and the cleared message show in the same frame, in either order of handling, with no fade-out
+  frames, and no frame shows the logged result together with the old message
 
 #### Scenario: Rotation and a restored process after the log
 - **WHEN** the logged result shows after an error and the phone rotates, or the process is killed in the background and
@@ -54,7 +54,8 @@ show their message as before (BRD EC-MED-16, D190).
 
 #### Scenario: Keyboard and TalkBack
 - **WHEN** the user logs by pressing Enter on a medication, or by a TalkBack double tap, while an error shows
-- **THEN** the error goes, focus does not land on where it was, and TalkBack reads the logged line once
+- **THEN** the error goes, focus is cleared and moves nowhere, TalkBack reads only the logged line, once, and the next Tab
+  goes to Back, then Done
 
 #### Scenario: Largest font size and landscape
 - **WHEN** the same steps run at 200% font, in portrait and in landscape
@@ -66,8 +67,8 @@ show their message as before (BRD EC-MED-16, D190).
 
 ### Requirement: Undo on Log medication keeps the logged result until the intake is removed
 After "Undo" on the logged result, the result with "Done" and "Undo" SHALL stay until the removal is stored; then the list
-SHALL show with "Removed. Nothing was logged.". If the removal fails, the result SHALL stay with the error over it and "Undo"
-SHALL work again. A second "Undo" before the outcome SHALL do nothing (BRD EC-MED-17, D190).
+SHALL show with "Removed. Nothing was logged.". If the removal fails, the result SHALL stay, a message starting "Still logged."
+SHALL say so, and "Undo" SHALL work again. A second "Undo" before the outcome SHALL do nothing (BRD EC-MED-17, D190).
 
 #### Scenario: Undo succeeds
 - **WHEN** the user taps "Undo" on "Ibuprofen 400 mg logged at 14:20" and the removal is stored
@@ -75,8 +76,8 @@ SHALL work again. A second "Undo" before the outcome SHALL do nothing (BRD EC-ME
 
 #### Scenario: Undo with full storage
 - **WHEN** the user taps "Undo" and the removal fails because storage is full
-- **THEN** the intake is still stored, the logged result with "Done" and "Undo" stays, "Couldn't save. Your phone's storage
-  is full." shows over it, and TalkBack speaks it
+- **THEN** the intake is still stored, the logged result with "Done" and "Undo" stays, "Still logged. Your phone's storage
+  is full." shows as an error with no time limit, "Done" is not covered, and TalkBack speaks it
 
 #### Scenario: Undo again after freeing space
 - **WHEN** the removal failed, the user frees space and taps "Undo" again
@@ -84,7 +85,8 @@ SHALL work again. A second "Undo" before the outcome SHALL do nothing (BRD EC-ME
 
 #### Scenario: Undo fails for another reason
 - **WHEN** the removal fails with any other error
-- **THEN** the logged result stays and "Something went wrong. Please try again." shows over it
+- **THEN** the logged result stays and "Still logged. Something went wrong. Please try again." shows as an error for 8
+  seconds or the accessibility timeout
 
 #### Scenario: Two quick taps on Undo
 - **WHEN** the user taps "Undo" twice before the outcome

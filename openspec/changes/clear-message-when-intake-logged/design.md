@@ -53,7 +53,9 @@ The clear happens on the `Logged` outcome only. `InFuture`, `StorageFull`, `Fail
 ### D2. One outcome, both collectors (D190 (3))
 
 `MedicationMessages` reacts to `MedicationEventUiModel.Logged` by clearing what it shows, in the same pass that the screen's
-collector sets `logged`. Both are collectors of one `SharedFlow` emission, so their order does not matter: after the outcome is
+collector sets `logged`. The exit has no 200 ms fade-out (ux L3): a fading message still covers the logged line, and a line
+that enters the accessibility tree after its text changed may never fire its live region. The host's tap protection for a
+leaving message stays as it is. Both are collectors of one `SharedFlow` emission, so their order does not matter: after the outcome is
 handled, the logged result never shows with the old message. Alternative accepted if simpler: hoist the clear into the screen
 (one collector) and pass it down. Not accepted: a ViewModel flag, a delay, or clearing on the tap.
 
@@ -65,8 +67,15 @@ Focus: as D178 (4), a message that goes clears its focus and moves it nowhere; t
 | Undo outcome | Page | Message |
 |---|---|---|
 | removal stored | list (as today) | "Removed. Nothing was logged." (as today) |
-| storage full | logged result stays, "Undo" enabled again | "Couldn't save. Your phone's storage is full." |
-| other failure | logged result stays | "Something went wrong. Please try again." |
+| storage full | logged result stays, "Undo" enabled again | "Still logged. Your phone's storage is full." (error, no time limit) |
+| other failure | logged result stays | "Still logged. Something went wrong. Please try again." (error, 8 s, D182 timing) |
+
+New string keys suggested by ux 4.4: `message_intake_kept_storage_full`, `message_intake_kept_generic`. Their message models
+are new `MedicationMessageUiModel` values with error tone; the behaviour mapper gives them the durations above.
+
+**Condition (team-lead, 2026-11-18).** Task 2.0 comes before anything else: a red test on v1.3.1's code showing that a failed
+removal brings the list back while the intake is still stored. If it cannot be made red, rule 2, this table's failure rows
+and the two strings leave 1.3.2; the engineer stops, and `product-manager` trims the BRD and the deltas.
 | second tap before the outcome | nothing | nothing |
 
 The screen keeps `logged` until a success outcome for that Undo arrives. A second tap is blocked the same way the log is
@@ -81,8 +90,9 @@ list and "Removed. Nothing was logged." show: true. No other intake can be remov
 
 ### D4. What does not change
 
-Strings, haptics on errors (still `Reject` for a new error), the message host and its timing (D182), "An error belongs to the
-visit" (D178 (2)), the logged line's text and its live region, the list after a successful Undo.
+Strings other than the two "Still logged." ones, haptics on errors (still `Reject` for a new error), the message host and its
+timing (D182), "An error belongs to the visit" (D178 (2)), the logged line's text and its live region, the list after a
+successful Undo.
 
 ## Risks
 
@@ -95,7 +105,8 @@ visit" (D178 (2)), the logged line's text and its live region, the list after a 
 
 ## Acceptance (for `qa-engineer`, this diff only)
 
-Build: the PR head. Negative control: v1.3.1 (`v1.3.1` tag), which must show the defect, or the row proves nothing.
+Build: the PR head. Negative control: v1.3.1 (`v1.3.1` tag), which must show the defect, or the row proves nothing. These rows
+match ux L1 to L9 (`docs/ux/239-237-validation-and-save-feedback.md` section 5); A6 and A7 run only if rule 2 ships.
 
 | Row | Steps | Candidate | v1.3.1 control |
 |---|---|---|---|
@@ -104,6 +115,7 @@ Build: the PR head. Negative control: v1.3.1 (`v1.3.1` tag), which must show the
 | A3 | Undo, then log another medication within 5 s | "Removed…" gone at once | "Removed…" stays over the result |
 | A4 | A1 opened from attack mode (dark room) | as A1, dark colours | error stays |
 | A5 | A1 with TalkBack | TalkBack speaks the logged line; no "Saved." | logged line not spoken |
-| A6 | Log, fill storage, Undo | logged result stays with the error; intake count unchanged | list shows with the error; intake still stored |
+| A6 | Log, fill storage, Undo | logged result stays with "Still logged. Your phone's storage is full."; Done not covered; intake count unchanged | list shows with "Couldn't save…"; intake still stored |
+| A9 | A1 recorded with `screenrecord` across the second tap | no frame with the message and the logged result together; no fade frames | message persists |
 | A7 | A6, free space, Undo | list and "Removed…"; intake gone | n/a |
 | A8 | A1 at 200% font, portrait and landscape | logged line, Done, Undo fully visible | n/a |

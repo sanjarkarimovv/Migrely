@@ -28,12 +28,16 @@ so it is fixed here.
 ## What Changes
 
 - **A stored intake clears the message (D190 (1)).** On Log medication, an intake stored by a tap or by "Add and log" removes
-  whatever message shows (error, "Removed. Nothing was logged.", "Pick a time up to now."), silently: no "Saved.", no haptic,
-  no new string. The logged line, already a polite live region, is the outcome, as the share sheet is on Doctor report. Only a
-  stored intake clears; every failure keeps today's behaviour.
-- **Undo waits for its outcome (D190 (2)).** The logged result stays until the removal is stored, then the list shows with
-  "Removed. Nothing was logged." as today. A failed removal keeps the logged result with the error over it, and "Undo" works
-  again. A second "Undo" before the outcome does nothing.
+  whatever message shows (error, "Removed. Nothing was logged.", "Pick a time up to now.", "You can keep up to 50
+  medications…"), silently and in the frame the logged result appears, with no fade (ux L3): no "Saved.", no haptic. Only the
+  logged line, already a polite live region, is heard (ux L4); it is the outcome, as the share sheet is on Doctor report. Only
+  a stored intake clears; every failure keeps today's behaviour.
+- **Undo waits for its outcome (D190 (2), conditional).** The logged result stays until the removal is stored, then the list
+  shows with "Removed. Nothing was logged." as today. A failed removal keeps the logged result and says "Still logged. Your
+  phone's storage is full." or "Still logged. Something went wrong. Please try again." (ux 4.4: "Couldn't save" on a page
+  titled "Medication taken" would read as "the dose was not logged"), and "Undo" works again. A second "Undo" before the
+  outcome does nothing. **Condition (team-lead, 2026-11-18):** the engineer's first task is a red test that shows the failed
+  Undo on v1.3.1's code. If it cannot be shown red, rule 2 and its two strings leave 1.3.2 and become a backlog note.
 - **Records.** BRD D190 (new), EC-MED-16 and EC-MED-17 (new), EC-UX-35 (Log medication pointer), §13 row 54.
   `in-app-messages` "An error on the other screens goes when a later save succeeds" is corrected for Log medication.
 
@@ -41,7 +45,8 @@ so it is fixed here.
 
 - The message's place and the first-row rule (D158): a message may still lie over the first row of any page; this change only
   makes sure none is left over the logged result.
-- Any new or changed string, and the other 8 screens of D178 (their behaviour stays as D178 says).
+- Any string other than the two "Still logged." messages, and the other 8 screens of D178 (their behaviour stays as D178
+  says).
 - Attack details' own intake rows and their Undo (its own message path, D165), Home's "+ Medication taken" card.
 - #239 (Edit medication's Save feedback) and #245 (short-window cursor): separate changes.
 - Domain, data, DI, navigation, permission, Room schema, backup format, migration. No health sentence changes, so no
@@ -63,12 +68,16 @@ None.
 
 ## Impact
 
+- **Shared file with #239:** `MedicationMessages` also changes in `fix-save-problem-feedback` (clear on `NotSaved`). Merge this
+  change first; #239 merges `develop` before its review.
 - **Code:** `features/medication/ui` (`LogMedicationScreen`, `MedicationMessages`, the event model and its mapper) and,
   for Undo's outcome, `features/medication/presentation` (`LogMedicationViewModel`, `LogMedicationPresentationNotification`).
   The ViewModel stays stateless. No domain, data, datasource, DI or navigation change expected.
 - **Tests:** presentation unit tests for Undo's outcomes; Robolectric screen tests on `LogMedicationScreen` with the message
   host, each red on `develop` first.
-- **No change to:** manifest, permissions, strings, Room schema, backup, Free or Premium.
+- **Strings:** two new ones in `features/medication/ui` (ux 4.4), only with rule 2. No health claim, so no `medical-reviewer`.
+- **No change to:** manifest, permissions, Room schema, backup, Free or Premium.
+- **Design source:** `docs/ux/239-237-validation-and-save-feedback.md` section 4 (ux-239, 4001103f), merged into this branch.
 - **BRD:** D190, EC-MED-16, EC-MED-17, EC-UX-35, §13 row 54.
 - **Issue:** `Refs #237` in every commit and the PR, never a closing keyword: QA filed #237 and closes it after the retest.
 - **Release:** 1.3.2 (tracker T75), with #239 and #245.
