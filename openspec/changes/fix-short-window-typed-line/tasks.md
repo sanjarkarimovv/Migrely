@@ -102,8 +102,12 @@ by hand in Robolectric, as `KeyboardRoomTest` does.
   case is reachable on 76c38c38 and was red there: row behind, visible part 231..315 (84 px), 36 of 112 px of the line.
   Green after: row behind, 112 of 112 px with >= 8 dp, Back gone. 411 dp: row behind, bar stays at 231 px, line whole
   (green on both). Settings ui 40 tests green, `DeleteKeyboardTest` 13/13 unchanged. Logs `3.3-*.log`.
-- [ ] 3.4 Messages (D6, R10). Verify: with a message shown, its bounds are identical with the bar present and aside. Mutation:
+- [x] 3.4 Messages (D6, R10). Verify: with a message shown, its bounds are identical with the bar present and aside. Mutation:
   offset the message by the bar's height → red.
+  Done: `MessageBarAsideTest` (Attack details with the real storage-full message, QA's 360 dp geometry, system 200%): the
+  message's bounds are equal before the keyboard, with the bar aside (Back gone) and after the close (Back back). Green;
+  the message is laid out over the whole screen, so the bar never moves it. Mutation: message placed at the bar's height
+  -> red (top 198 -> 124 dp). Logs `3.4-*.log`.
 
 ## 4. #238 guards, merge and gate (`android-engineer`)
 
