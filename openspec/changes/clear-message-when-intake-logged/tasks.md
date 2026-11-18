@@ -66,8 +66,16 @@ mutation is a deliberately broken build that must turn the test red again. Logs 
     has the logged line with the old text, and no node the settled screen lacks takes room in a frame with the result;
     no "Saved." node. All 5 red on 5388f77e (red-3x/). Code: `MedicationMessages` clears on `Logged` with no fade
     (`reduceMotion || leavesAtOnce`) and draws nothing for the leaving message, while the host's tap guard keeps its
-    place (it has no semantics). Mutations (mutations.txt): host fade -> the 5 frame cases red; only the size snap, the
-    leaving message still drawn -> the same 5 red; clear only error tone -> "Removed…" and "Pick a time…" red.
+    place (it has no semantics). Mutations (mutations.txt): host fade, both parts removed -> the 5 frame cases red; the
+    leaving message drawn again (early return removed) -> the same 5 red; clear only error tone -> "Removed…" and "Pick
+    a time…" red.
+  - Correction after review (cr-237 S4-2, 2026-11-18): the first mutation removed both parts, so it credited
+    `|| leavesAtOnce` with nothing of its own. Removing only `|| leavesAtOnce` leaves every test green (s4/mutations.txt),
+    and so does a new guard "A message posted right after a log never brings the cleared one back" (also green under
+    the "fade" and "draw-leaving" mutations, s4/mutations-2.txt): the host reuses its one in-place slot for the next
+    message, so the cleared text cannot come back. What `|| leavesAtOnce` changes is only the 450 ms size animation of an
+    empty area with no semantics and no drawing. It is kept as reviewed; removing it is a KISS option for
+    `team-lead`/`code-reviewer`.
 - [x] 3.2 Only a stored intake clears (EC-MED-16 "It fails again", "Not on the tap"). Verify: in the same test class, an error
   followed by another `StorageFull`, `Failed`, `InFuture` or `NotSaved` keeps a message and the list; a tap with the write
   pending keeps the error; a `Logged` followed by an error shows the error. Mutation: clear on the tap (in `onMedication`) →
@@ -88,8 +96,13 @@ mutation is a deliberately broken build that must turn the test red again. Logs 
     two quick taps -> one `deleteIntake`; the result stays while the removal runs). 5 red on 5388f77e (the two-taps case
     red because the second "Undo" no longer existed). Screen: `onUndo` sets `pending` and keeps `logged`; only the new
     `MedicationEventUiModel.IntakeUndone` drops it. Mutations: early `logged = null` -> 6 red incl. storage full; no
-    `pending` guard on Undo -> two-taps red. "Done before the outcome" is not covered here (navigation is a no-op in
-    the test); left to the device walk.
+    `pending` guard on Undo -> two-taps red.
+  - Added after review (cr-237 S4-4): "Done before the outcome closes the screen, and nothing shows on return" (a
+    `NavHost` with Done popping to a home destination; the removal released after leaving; on return no "Removed…" and
+    no logged line). Mutation: the presenter replays its last event to a new screen -> that case red. EC-MED-16 "Two
+    quick taps": two taps on Ibuprofen while the stored write is held -> one intake, one logged line; mutation without
+    the `pending` guard and with the button left enabled -> red (with only the lambda guard removed it stays green: the
+    disabled button is the first guard).
 - [x] 3.5 Rotation and process death (EC-MED-16, EC-MED-17). Verify: `StateRestorationTester` cases: after a log that cleared
   an error, the restored screen shows the logged result and no message; during a pending Undo, the restored screen shows the
   logged result with "Undo" enabled. Mutation: keep the shown message in plain `remember` while it should be cleared → no
@@ -97,14 +110,20 @@ mutation is a deliberately broken build that must turn the test red again. Logs 
   - Record: `StateRestorationTester` cases, both red on 5388f77e (error restored; list restored during Undo). Mutation
     `logged` in plain `remember` -> both red. Mutation shown message in plain `remember` -> no change (exit 0): the clear
     already set it to null, so saving it adds nothing for this rule; it stays saveable for D182/rotation of errors.
+  - Correction after review (cr-237 S4-1): "Undo" is never disabled, so the first version's `isEnabled()` check could
+    not fail (a saveable `pending` left all tests green). The case now taps Undo after the restore and expects a second
+    removal of the same intake; mutation `pending` in `rememberSaveable` -> that case red (s4/mutations.txt).
 - [x] 3.6 Dark room and accessibility (EC-MED-16 "The dark room", "Keyboard and TalkBack", "Largest font size and
   landscape"). Verify: the 3.1 case with `darkRoom = true`; a keyboard case (Enter on a focused medication) asserting no node
   is focused at the message's old place and the logged line is the only live region; a 200% font case in a 411x891 dp and a
   891x411 dp window asserting the logged line, "Done" and "Undo" are fully inside the window and not under any message node.
   - Record: dark-room frame case (red on 5388f77e); keyboard case: Tab to "Log Ibuprofen, 400 mg", Enter, then the error
     is gone, nothing is focused, the only live region is the logged line, next Tabs Back, Done (red on 5388f77e: the
-    error stayed); 200% font in 411x891 and 891x411 dp: logged line, Done and Undo inside the window and no message
-    (both red on 5388f77e). Robolectric does not model TalkBack's speech; that is rows A5 on a device.
+    error stayed); 200% font in 411x891 and 891x411 dp: no message left and the three parts inside the window (both
+    red on 5388f77e). Robolectric does not model TalkBack's speech; that is rows A5 on a device.
+  - Correction after review (cr-237 S4-3): Robolectric fakes text metrics, so the bounds are the same at 100% and 200%;
+    the two cases prove only "no message left", and are renamed so. The 200% claim (whole logged line, Done and Undo in
+    portrait and landscape) rests on walk row A8 (5.2).
 
 - [x] 3.7 Two strings for a failed Undo (only if 2.0 was red): "Still logged. Your phone's storage is full." (error, no time
   limit) and "Still logged. Something went wrong. Please try again." (error, 8 s with D182 timing), exactly as ux 4.4. Verify:

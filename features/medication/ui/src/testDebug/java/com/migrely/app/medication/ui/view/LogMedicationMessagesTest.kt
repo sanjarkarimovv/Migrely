@@ -274,7 +274,7 @@ class LogMedicationMessagesTest {
     }
 
     @Test
-    fun `A restored screen during a running Undo shows the result with Undo enabled`() {
+    fun `A restored screen during a running Undo shows the result, and Undo works again`() {
         val restoration = StateRestorationTester(rule)
         screen.show(restoration = restoration)
         screen.logIbuprofen()
@@ -285,10 +285,66 @@ class LogMedicationMessagesTest {
 
         restoration.emulateSavedInstanceStateRestore()
         rule.waitForIdle()
-
         rule.onNode(screen.loggedLine).assertExists()
-        rule.onNode(hasText("Undo") and isEnabled()).assertExists()
+        // The removal may still run, or be lost with the process: a new Undo asks again, for the same intake only
+        // (design D3). "Undo" always looks enabled, so only a second removal shows that it acts.
+        rule.onNodeWithText("Undo").performClick()
+        screen.waitFor { diary.deleteCalls.size == 2 }
         release.countDown()
+
+        assertEquals(listOf(diary.deleteCalls[0]), diary.deleteCalls.distinct())
+    }
+
+    // The no-fade exit, then a new message at once (design D2): the cleared message never draws again.
+
+    @Test
+    fun `A message posted right after a log never brings the cleared one back`() {
+        screen.show()
+        screen.post(MedicationEventUiModel.Message(MedicationMessageUiModel.StorageFull))
+        screen.awaitText(STORAGE_FULL_TEXT)
+        rule.waitForIdle()
+        rule.mainClock.autoAdvance = false
+
+        screen.post(MedicationEventUiModel.Logged(INTAKE))
+        repeat(2) { rule.mainClock.advanceTimeByFrame() }
+        screen.post(MedicationEventUiModel.Message(MedicationMessageUiModel.SomethingWentWrong))
+        val frames = (1..FRAMES).map {
+            rule.mainClock.advanceTimeByFrame()
+            screen.nodesWithRoom()
+        }
+        rule.mainClock.advanceTimeBy(SETTLE_MILLIS)
+        val settled = screen.nodesWithRoom()
+        rule.mainClock.autoAdvance = true
+
+        screen.awaitText(GENERIC_TEXT)
+        frames.forEachIndexed { frame, nodes ->
+            assertEquals(
+                "frame ${frame + 1}: a leaving node takes room",
+                emptySet<Int>(),
+                nodes - settled
+            )
+        }
+    }
+
+    // EC-MED-16 "Two quick taps"
+
+    @Test
+    fun `Two quick taps after freeing space store one intake`() {
+        screen.show()
+        screen.failOnFullStorage()
+        val release = CountDownLatch(1)
+        diary.holdAdd = release
+
+        screen.tapIbuprofen()
+        screen.waitFor { diary.addCalls.size == 2 }
+        screen.tapIbuprofen()
+        release.countDown()
+        screen.awaitNode(screen.loggedLine)
+        rule.waitForIdle()
+
+        assertEquals(2, diary.addCalls.size)
+        assertEquals(1, diary.intakes.size)
+        assertEquals(1, rule.onAllNodes(screen.loggedLine).fetchSemanticsNodes().size)
     }
 
     // 3.6 Dark room, keyboard, largest font and landscape
@@ -328,14 +384,18 @@ class LogMedicationMessagesTest {
 
     @Test
     @Config(sdk = [35], qualifiers = "w411dp-h891dp")
-    fun `At the largest font in portrait the logged result is whole and uncovered`() =
+    fun `At 200% font in portrait no message is left over the logged result`() =
         assertWholeAtLargestFont()
 
     @Test
     @Config(sdk = [35], qualifiers = "w891dp-h411dp")
-    fun `At the largest font in landscape the logged result is whole and uncovered`() =
+    fun `At 200% font in landscape no message is left over the logged result`() =
         assertWholeAtLargestFont()
 
+    /**
+     * Robolectric fakes text metrics, so the bounds below are the same at 100% and 200%: this proves only that no
+     * message is left and the three parts lie in the window. Whole text at 200% rests on the device walk (row A8).
+     */
     private fun assertWholeAtLargestFont() {
         screen.show(fontScale = LARGEST_FONT)
         screen.failOnFullStorage()

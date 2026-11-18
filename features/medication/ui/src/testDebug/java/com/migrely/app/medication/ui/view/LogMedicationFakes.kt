@@ -195,8 +195,14 @@ internal val LOG_FORMATTER = MedicationTimeUiFormatter(
     bestDateTimePattern = { _, skeleton -> if (skeleton == "EEEdMMM") "EEE d MMM" else "HH:mm" }
 )
 
-/** Log medication as the app builds it, over [diary]: the real use cases, ViewModel and mappers. */
-internal fun logMedicationDependencies(diary: FakeDiary): LogMedicationDependencies {
+/**
+ * Log medication as the app builds it, over [diary]: the real use cases, ViewModel and mappers. [onDone] is where
+ * "Done" and Back go; by default they stay.
+ */
+internal fun logMedicationDependencies(
+    diary: FakeDiary,
+    onDone: UiDestination = UiDestination { }
+): LogMedicationDependencies {
     val presenter = MedicationEventPresenter()
     return LogMedicationDependencies(
         logMedicationViewModel = LogMedicationViewModel(
@@ -219,7 +225,7 @@ internal fun logMedicationDependencies(diary: FakeDiary): LogMedicationDependenc
         medicationTimeUiFormatter = LOG_FORMATTER,
         medicationEventPresenter = presenter,
         medicationMessageBehaviourUiMapper = MedicationMessageBehaviourUiMapper(),
-        navigationMapper = NoLogDestination,
+        navigationMapper = LogDestinations(onDone),
         notificationMapper = LogMedicationNotificationUiMapper(
             presenter,
             SaveProblemUiMapper(),
@@ -228,10 +234,13 @@ internal fun logMedicationDependencies(diary: FakeDiary): LogMedicationDependenc
     )
 }
 
-private object NoLogDestination :
+private class LogDestinations(private val onDone: UiDestination) :
     NavigationEventDestinationMapper<LogMedicationPresentationNavigationEvent>(
         LogMedicationPresentationNavigationEvent::class
     ) {
     override fun mapTypedEvent(navigationEvent: LogMedicationPresentationNavigationEvent) =
-        UiDestination { }
+        when (navigationEvent) {
+            LogMedicationPresentationNavigationEvent.OnDone -> onDone
+            LogMedicationPresentationNavigationEvent.OnManageMedications -> UiDestination { }
+        }
 }
