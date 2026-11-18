@@ -130,9 +130,9 @@ the order (BRD EC-UX-50, D181).
 
 ### Requirement: A logged intake clears the message on Log medication
 When an intake is stored on Log medication, by a tap on a medication or by "Add and log", every message there SHALL go in
-the frame the logged result appears, with no fade, no new message and no haptic; only the logged line SHALL be heard. Only a
-stored intake SHALL clear it: a future time, full storage, another failure or a refused medication SHALL keep the list and
-show their message as before (BRD EC-MED-16, D190).
+the frame the logged result appears, with no fade, no new message and no haptic; only the logged line SHALL be heard. A
+future time, full storage or another failure SHALL keep the list and their message as before; a name problem on the
+first-medication form SHALL clear it as a field problem (BRD EC-MED-16, EC-UX-70, D190, D191).
 
 #### Scenario: Storage full, then logged after freeing space
 - **WHEN** "Couldn't save. Your phone's storage is full." shows after a tap on Ibuprofen failed, the user frees space and taps
@@ -157,6 +157,12 @@ show their message as before (BRD EC-MED-16, D190).
 #### Scenario: It fails again
 - **WHEN** an error shows, storage is still full, and the user taps Ibuprofen again
 - **THEN** no intake is stored, the list stays, and the error shows in the same place and TalkBack speaks it again
+
+#### Scenario: A name problem on the first-medication form
+- **WHEN** no medication exists, "Couldn't save. Your phone's storage is full." shows, and "Add and log" then finds the name
+  empty
+- **THEN** no medication and no intake are stored, the message goes in the same frame and Name shows its error
+  (in-app-messages "A field problem replaces the message on the medication forms")
 
 #### Scenario: Not on the tap
 - **WHEN** an error shows and the user taps Ibuprofen while the write is still running
@@ -228,3 +234,42 @@ SHALL say so, and "Undo" SHALL work again. A second "Undo" before the outcome SH
 - **WHEN** the phone rotates, or the process is restored, while a removal runs
 - **THEN** the screen shows the logged result if the intake may still be stored, a later "Undo" removes it or confirms it is
   gone with "Removed. Nothing was logged.", and no second intake is ever removed
+
+### Requirement: First-use name problems are heard and seen
+On Log medication's first-medication form, normal and in the dark room, "Add and log" with a name problem SHALL follow the
+rules of Save on Edit medication: Name scrolls fully into view, the app announces the problem once and every press makes it
+heard, the soft keyboard stays as it was, focus moves to Name only with a hardware keyboard, and Name reads its real error,
+never "Invalid input", with no extra stop after 1 s (BRD EC-UX-66 to EC-UX-71, D191).
+
+#### Scenario: Empty name with TalkBack
+- **WHEN** no medication exists, Name is empty with the keyboard up, TalkBack is on "Add and log", and the user double taps
+- **THEN** nothing is saved, TalkBack says "Enter a name." once within 3 seconds, Name and the error come fully into view
+  above the keyboard, and the keyboard stays open
+
+#### Scenario: Hardware keyboard
+- **WHEN** the user presses Enter on "Add and log" with a hardware keyboard and the name is empty
+- **THEN** the press parks focus as today and, in the same result frame, focus moves to Name with its focus indicator, so the
+  next Tab does not start from the top, and no soft keyboard opens
+
+#### Scenario: Keyboard closed
+- **WHEN** the name is empty, the keyboard is closed, and the user taps "Add and log"
+- **THEN** no field takes focus, the keyboard stays closed, Name and its error scroll into view, and the error is announced
+  once
+
+#### Scenario: The dark room
+- **WHEN** the form was opened from attack mode and "Add and log" finds the name empty
+- **THEN** the same happens on the dark room background, with the dark theme's error colour, 64 dp controls and no light
+  frame at any point
+
+#### Scenario: Again, and typing
+- **WHEN** the user taps "Add and log" again without editing, and then types a name
+- **THEN** the error is announced again once, and typing is quiet apart from TalkBack's own key echo
+
+#### Scenario: Swiping to Name
+- **WHEN** after the problem the user swipes to Name with TalkBack
+- **THEN** Name says its label, its value and "Enter a name." once, never "Invalid input", and from 1 second after the
+  press no separate stop repeats the error; within that second a swipe may land on the announcement (accepted residual)
+
+#### Scenario: Largest font size and landscape
+- **WHEN** the same steps run at 200% font in portrait and in landscape, in windows 411 and 360 dp tall
+- **THEN** the input line, then the error line, then the label come into view, and nothing is cut off

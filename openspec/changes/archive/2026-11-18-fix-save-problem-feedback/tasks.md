@@ -233,8 +233,12 @@ the test red again. Logs go to `migrely-work/239/eng/`. Robolectric tests live i
     in-app-messages "An error on the other screens goes when a later save succeeds" ("clear on success, never on the
     attempt") does not conflict: "attempt" is the tap before the outcome (its scenario "Not on the tap"), and the
     field-problem clear acts on the `NotSaved` outcome; no ADDED name here exists in the live specs.
-- [ ] 8.2 BRD D191 updated with QA's results (what was proved, what stays open, including the speech counts), then archive.
+- [x] 8.2 BRD D191 updated with QA's results (what was proved, what stays open, including the speech counts), then archive.
   Verify: `openspec archive fix-save-problem-feedback --yes` and `openspec validate --all --strict` exit 0.
+  - Record (2026-11-18, product-manager): D191 (9) QA results (V1 1 utterance at 0.64 s vs 0; V3T 5/5 vs 0/5; the five
+    limits and the (8) residual; V12 landscape tied to #245, D192) and (10) the 8.1 spec sync; EC-MED-16 points to
+    EC-UX-70 (efc3ea8a). Archived with `--yes` into `openspec/changes/archive/2026-11-18-fix-save-problem-feedback/`;
+    the exit codes are in the archive commit's message.
 - [ ] 8.3 PR into `develop` with `Refs #239`, merge commit, worktree removed after merge, tracker T75 updated by `team-lead`.
   Verify: `gh pr view <n> --json state,mergeCommit` shows MERGED.
 
