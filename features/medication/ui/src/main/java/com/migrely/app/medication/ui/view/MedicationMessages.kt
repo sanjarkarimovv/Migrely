@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -45,17 +46,33 @@ internal fun MedicationMessages(
     modifier: Modifier = Modifier
 ) {
     var shown by rememberSaveable { mutableStateOf<ShownMedicationMessageUiModel?>(null) }
+    // True from a logged intake's clear until the next message: that exit has no fade (BRD D190 (1), ux L3).
+    var leavesAtOnce by remember { mutableStateOf(false) }
     val haptics = LocalHapticFeedback.current
     val clock = LocalMessageClock.current
     val currentOnUndoArchive by rememberUpdatedState(onUndoArchive)
 
     LaunchedEffect(presenter) {
-        presenter.events.collect { event ->
-            if (event !is MedicationEventUiModel.Message) return@collect
-            if (behaviourMapper.toUi(event.message).tone == SnackbarTone.Error) {
+        fun show(message: MedicationMessageUiModel) {
+            if (behaviourMapper.toUi(message).tone == SnackbarTone.Error) {
                 haptics.performHapticFeedback(HapticFeedbackType.Reject)
             }
-            shown = ShownMedicationMessageUiModel(event.message, clock.wallMillis())
+            leavesAtOnce = false
+            shown = ShownMedicationMessageUiModel(message, clock.wallMillis())
+        }
+        presenter.events.collect { event ->
+            when (event) {
+                is MedicationEventUiModel.Message -> show(event.message)
+                MedicationEventUiModel.IntakeUndone -> show(MedicationMessageUiModel.IntakeUndone)
+                // The logged result replaces the whole page, so a message about the page before goes with it, in
+                // the same frame and silently: the logged line is the confirmation (BRD D190 (1)).
+                is MedicationEventUiModel.Logged -> {
+                    leavesAtOnce = true
+                    shown = null
+                }
+
+                is MedicationEventUiModel.NotSaved -> Unit
+            }
         }
     }
 
@@ -79,11 +96,14 @@ internal fun MedicationMessages(
 
     MigrelySnackbarHost(
         message = current?.takeUnless { countdown.isOver },
-        reduceMotion = reduceMotion,
+        reduceMotion = reduceMotion || leavesAtOnce,
         modifier = modifier,
         topOffset = MESSAGE_OFFSET_BELOW_TOP_BAR,
         countdown = countdown
     ) { visible ->
+        // Cleared by a logged intake: it draws nothing while it leaves, so no frame shows it over the logged line.
+        // The host keeps guarding its place against a late tap (BRD D190 (1), ux L3).
+        if (leavesAtOnce) return@MigrelySnackbarHost
         val behaviour = behaviourMapper.toUi(visible.message)
         val archived = visible.message as? MedicationMessageUiModel.Archived
         MigrelySnackbar(
@@ -115,6 +135,12 @@ private fun messageText(message: MedicationMessageUiModel): String = when (messa
     is MedicationMessageUiModel.Archived -> stringResource(R.string.message_archived)
     MedicationMessageUiModel.Undone -> stringResource(R.string.medication_message_undone)
     MedicationMessageUiModel.IntakeUndone -> stringResource(R.string.message_intake_undone)
+    MedicationMessageUiModel.IntakeKeptStorageFull -> stringResource(
+        R.string.medication_message_intake_kept_storage_full
+    )
+    MedicationMessageUiModel.IntakeKeptFailed -> stringResource(
+        R.string.medication_message_intake_kept_generic
+    )
     MedicationMessageUiModel.InFuture -> stringResource(R.string.message_in_future)
     MedicationMessageUiModel.LimitReached -> stringResource(R.string.message_limit_reached)
     MedicationMessageUiModel.StorageFull -> stringResource(R.string.medication_message_storage_full)

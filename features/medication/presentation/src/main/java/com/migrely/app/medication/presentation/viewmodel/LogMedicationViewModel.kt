@@ -105,10 +105,12 @@ class LogMedicationViewModel(
                         onEnter(attackId)
                     }
 
+                    // The intake is still stored, so the screen keeps its result (BRD D190 (2)).
                     WriteResultDomainModel.StorageFull ->
-                        notify(LogMedicationPresentationNotification.StorageFull)
+                        notify(LogMedicationPresentationNotification.IntakeKeptStorageFull)
 
-                    WriteResultDomainModel.Failed -> notify(SomethingWentWrong)
+                    WriteResultDomainModel.Failed ->
+                        notify(LogMedicationPresentationNotification.IntakeKeptFailed)
                 }
             }
         )
