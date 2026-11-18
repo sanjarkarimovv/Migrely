@@ -131,11 +131,22 @@ by hand in Robolectric, as `KeyboardRoomTest` does.
   down by exactly the bar's height. Mutation: `scrollBy` the bar's height on close (in the room's collector) -> red short of
   the end (offset 1833 -> 1847 at 25%); at the page's end such a scroll has nowhere to go, so those two cases cannot catch
   it. Logs `4.1-*.log`.
-- [ ] 4.2 If #239 has merged into `develop` by now, merge `origin/develop` and resolve `EditMedicationScreen` and
+- [x] 4.2 If #239 has merged into `develop` by now, merge `origin/develop` and resolve `EditMedicationScreen` and
   `LogMedicationScreen`. Verify: both changes' test classes green on the merged tree; record `git log --oneline -1
   origin/develop`.
-  Open (2026-11-18 13:05): #239 is not in `develop` yet (`origin/develop` ae3593c6 has #237). Waiting for `team-lead`;
-  after the merge: rerun #239's four into-view tests and the `MessageLayout` top-bar paths on the merged tree.
+  Done 2026-11-18: `origin/develop` 05b37589 (#239, PR #253) merged with `--no-ff` as 5250de37. Conflicts, both sides kept:
+  `SingleLineFieldInView.kt` (#239's unfocused `inViewRequests` into-view request and #245's laid-out L, its report to
+  the `TypingSpace` and `inputLineRoom()`; the request uses the same `bringFieldIntoView`, so it keeps the reduced
+  margins) and `docs/BRD.md` (EC-UX-66 to 71, rows 54 and 55, D190 and D191 from develop before EC-UX-72 to 77, row 56
+  and D192; D191 (9)(c)'s "#245 (D192, change 56)" matches). The medication screens merged on their own. On the merge:
+  designsystem 266, attack ui 127, medication ui 154, settings ui 42 tests, 0 failed; #239's
+  `EditMedicationProblemFeedbackTest` 12, `FirstMedicationProblemFeedbackTest` 8, `MedicationFormMessagesTest` 3,
+  `MedicationMessagesTest` 7, `LogMedicationMessagesTest` 20; every short-window class and KeyboardRoom guard green. Full
+  gate exit 0 (3485 test results, 53 modules); `:app:checkReleasePermissions` exit 0, six permissions, no INTERNET. A
+  combined unit case (refused Save with the bar aside) was not kept: with no edit after #239's focus move the caret's
+  blink phase is unknown in Robolectric, the error line has no text node of its own and shares the caret's colour, and an
+  edit to restart the blink adds the field's own caret request; it showed focus on Name and the bar staying aside, but
+  not the line's place. QA covers it on the device. Logs `4.2-*.log`.
 - [x] 4.3 Full gate. Verify: `set -o pipefail; nice -n 19 ./gradlew --max-workers=2 assembleDebug test ktlintCheck detekt lint`
   exit 0, with the counts of tests run (never `testDebugUnitTest` alone).
   Done at 6b45197a: `set -o pipefail; nice -n 19 ./gradlew --max-workers=2 assembleDebug test ktlintCheck detekt lint`
