@@ -21,11 +21,13 @@ class MedicationMessageBehaviourUiMapper {
             MedicationMessageUiModel.LimitReached ->
                 MedicationMessageBehaviourUiModel(SnackbarTone.Information, false, READING_MILLIS)
 
-            MedicationMessageUiModel.SomethingWentWrong ->
+            MedicationMessageUiModel.SomethingWentWrong,
+            MedicationMessageUiModel.IntakeKeptFailed ->
                 MedicationMessageBehaviourUiModel(SnackbarTone.Error, false, READING_MILLIS)
 
             // Nothing was saved, so the message stays until the user has seen it (EC-STO-01).
-            MedicationMessageUiModel.StorageFull ->
+            MedicationMessageUiModel.StorageFull,
+            MedicationMessageUiModel.IntakeKeptStorageFull ->
                 MedicationMessageBehaviourUiModel(SnackbarTone.Error, false, null)
         }
 }

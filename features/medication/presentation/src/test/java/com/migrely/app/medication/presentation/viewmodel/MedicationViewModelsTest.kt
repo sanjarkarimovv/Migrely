@@ -53,6 +53,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.mockito.Mock
 import org.mockito.junit.MockitoJUnitRunner
+import org.mockito.kotlin.verifyNoInteractions
 
 @RunWith(MockitoJUnitRunner::class)
 class MedicationsViewModelTest :
@@ -485,6 +486,33 @@ class LogMedicationViewModelTest :
 
         assertEquals(LogMedicationPresentationNotification.IntakeUndone, notification.await())
     }
+
+    @Test
+    fun `Given the disk is full when undoing then the intake is kept and the list is not reloaded`() =
+        runTest {
+            undoIntakeUseCase.givenSuccessfulExecution("i", WriteResultDomainModel.StorageFull)
+            val notification = async(start = UNDISPATCHED) { classUnderTest.notification.first() }
+
+            classUnderTest.onUndoAction("i", "a")
+
+            assertEquals(
+                LogMedicationPresentationNotification.IntakeKeptStorageFull,
+                notification.await()
+            )
+            verifyNoInteractions(getMedicationLogUseCase)
+        }
+
+    @Test
+    fun `Given the removal fails when undoing then the intake is kept and the list is not reloaded`() =
+        runTest {
+            undoIntakeUseCase.givenSuccessfulExecution("i", WriteResultDomainModel.Failed)
+            val notification = async(start = UNDISPATCHED) { classUnderTest.notification.first() }
+
+            classUnderTest.onUndoAction("i", "a")
+
+            assertEquals(LogMedicationPresentationNotification.IntakeKeptFailed, notification.await())
+            verifyNoInteractions(getMedicationLogUseCase)
+        }
 
     @Test
     fun `When managing or done then the matching navigation`() = runTest {
