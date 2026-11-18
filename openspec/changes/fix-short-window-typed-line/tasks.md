@@ -140,6 +140,7 @@ by hand in Robolectric, as `KeyboardRoomTest` does.
   exit 0, with the counts of tests run (never `testDebugUnitTest` alone).
   Done at 6b45197a: `set -o pipefail; nice -n 19 ./gradlew --max-workers=2 assembleDebug test ktlintCheck detekt lint`
   exit 0 (4 m 15 s); 3422 test results in 53 modules, 0 failed. Log `4.3-gate.log`.
+  Again after the clip fix, at cc6af472: exit 0, 3423 test results in 53 modules, 0 failed. Log `4.3-gate-2.log`.
 - [x] 4.4 No permission, string or manifest change. Verify: `./gradlew :app:checkReleasePermissions` exit 0 and
   `git diff origin/develop -- '*.xml' '*strings*' '*AndroidManifest*'` empty except tests.
   Done: `:app:checkReleasePermissions` exit 0; the merged release manifest's six permissions, no INTERNET;
@@ -147,13 +148,48 @@ by hand in Robolectric, as `KeyboardRoomTest` does.
 
 ## 5. Device walk (`android-engineer`, emulator-5570, headless first)
 
-- [ ] 5.1 SW1 and SW2 (Edit name, Log name) at `wm size 945x2100`, API 36 Gboard, 200% landscape, QA's method (no drag after
+- [x] 5.1 SW1 and SW2 (Edit name, Log name) at `wm size 945x2100`, API 36 Gboard, 200% landscape, QA's method (no drag after
   the keyboard opens; cursor at end, start, middle). Verify: per cell the visible part, the caret top and bottom and the bar's
   absence from a `uiautomator dump`, on the candidate (hash read back) and v1.3.1.
-- [ ] 5.2 SW5 / K2 with TalkBack VERBOSE: close by Back and by the hide key. Verify: the TalkBack lines and 0 TYPE_VIEW_SCROLLED
+  Done on emulator-5570 (API 36, Gboard, headless, cold-booted after #239's console touches), QA's method ported to
+  `migrely-work/245/eng/walk/sw.py`: drags only before the tap, then typing and DPAD keys; caret by blink difference; IME
+  top read in every row (318 at 360 dp, 394 at 411 dp: a real inset, not Gboard's pill). Candidate a1499634 (cc6af472, hash
+  read back), control v1.3.1 = QA's develop 76c38c38 debug fde165db. Font 200%, landscape, `wm size 945x2100`. Rows
+  `walk/rows.jsonl` (w1 to w4), shots `walk/shots/`.
+
+  | Cell (360 dp) | v1.3.1 | Candidate |
+  |---|---|---|
+  | SW1 Details end / start / middle | visible 61 px, 40 of 112 px each, Back present | visible 255 px, 112 of 112 px; clear 122/21, 21/122, 122/21 px; Back absent |
+  | SW2 Log name | visible 87 px, 68 of 112 px, Back present | 255 px, 112 of 112 px, clear 19/124 px, Back absent |
+  | SW2 Edit name | 87 px, 68 of 112 px | 255 px, 112 of 112 px, clear 19/124 px, Back absent |
+  | SW2 Edit dose (field text "400" checked) | 87 px, 68 of 112 px: a fix cell, not a guard | 255 px, 112 of 112 px, clear 19/124 px, Back absent |
+
+  Found and fixed on the way: the first candidate (85ecfe15) drew the aside bar's title, date and Back over the page (shots
+  `c3-details-360-end.png`, `c6-edit-360-edit-name.png`) while every number passed; see 2.3 and cc6af472. All rows above
+  are on the fixed build, and its shots show no bar content over the page. Finding for QA and ux: on the one-line fields
+  the clearance above the input line is 19 px, 2 px under 8 dp, on both builds (QA's 411 dp cell on v1.3.1 shows the same
+  19 px). It comes from `SingleLineFieldInView`'s line position, not from this change. Not walked here: Delete all
+  data's word, the dark room, symbols/emoji, the RTL, rotation-with-keyboard and hardware-keyboard rows (QA's SW7, SW9 to
+  SW13).
+- [x] 5.2 SW5 / K2 with TalkBack VERBOSE: close by Back and by the hide key. Verify: the TalkBack lines and 0 TYPE_VIEW_SCROLLED
   in 3 s; field bounds before and after (lower by the bar's height).
-- [ ] 5.3 SW3 at 411 dp and SW6 in portrait: the bar stays. Verify: Back's bounds in the dump.
-- [ ] 5.4 Restore font scale, rotation, `wm size`, density, animator scales, TalkBack and keyboard. Verify: settings read back.
+  Done (Details at 360 dp, TalkBack on, log VERBOSE; no console touch): close by Back and by Gboard's hide key (chevron
+  at 275, 882; the keyboard closed). Candidate both ways: the bar back at its pre-typing bounds [155,129][218,192], the page
+  top 63 -> 257, the field 143 -> 337 (exactly the bar's 194 px), 0 TYPE_VIEW_SCROLLED from the app in 3 s, no focus
+  move with `sourceAction=MANUAL_SCROLL`. Speech was only the field (a queued reading from TalkBack's start, event time
+  6 s before the press) and "keyboard hidden". v1.3.1 by Back: the field keeps its place, 0 TYPE_VIEW_SCROLLED, the same
+  speech. Both builds log TalkBack "Manual scrolling" interpretations of the app's content changes (3 on v1.3.1, 4 on the
+  candidate) with no focus action following. The scroll-on-close mutation was not built for the device; its control is
+  the Robolectric one in 4.1. Raw logs `walk/raw/w1-k2-*.log`, `w2-k2-back.log`.
+- [x] 5.3 SW3 at 411 dp and SW6 in portrait: the bar stays. Verify: Back's bounds in the dump.
+  Done: SW3 at 411 dp, both builds identical: Back stays at [171,129][234,192], visible 137 px, 112 of 112 px, clear
+  21/4 (end, middle) and 4/21 (start), not evened. SW6 in portrait at 200% (display 1080x2400 read back): Details and
+  Edit (name, dose) keep Back; the line is whole.
+- [x] 5.4 Restore font scale, rotation, `wm size`, density, animator scales, TalkBack and keyboard. Verify: settings read back.
+  Done: font 1.0, rotation 0 with auto-rotate on (`wm user-rotation free`), `wm size` physical, density 420, TalkBack off
+  and its log level back to ERROR, developer settings unset again, Gboard, animator scales 1. `settings_snapshot` equals
+  the baseline taken at handover (`walk/settings-baseline.json` vs `settings-after.json`: no difference). App data cleared,
+  as eng-239 left it; the candidate debug stays installed. Emulator-5570 turned off.
 
 ## 6. Review (`code-reviewer`)
 
