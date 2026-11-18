@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.TextUnit
@@ -42,6 +43,10 @@ private val BODY_LINE = 24.sp
  *
  * Pass the given modifier first in the field's chain and the given interaction source to it. [hasLabel] says where the
  * input line sits: below half a floating label's line, as Material places it, and its content padding.
+ *
+ * The input line's height is the field's line as laid out in [LocalTextStyle], the style the field uses (BRD D192): not
+ * that style's line height in sp, which nonlinear font scaling converts to less (95 against 112 px at 200%). A field that
+ * passes its own `textStyle` must provide it as [LocalTextStyle] around this instead.
  */
 @Composable
 fun SingleLineFieldInView(
@@ -62,7 +67,12 @@ fun SingleLineFieldInView(
     val lineTop = with(density) {
         labelHalf.toPx() + OutlinedTextFieldDefaults.contentPadding().calculateTopPadding().toPx()
     }
-    val lineHeight = with(density) { LocalTextStyle.current.lineHeight.orBodyLine().toPx() }
+    // Laid out, not converted from sp: see the KDoc.
+    val textStyle = LocalTextStyle.current
+    val measurer = rememberTextMeasurer()
+    val lineHeight = remember(textStyle, density, measurer) {
+        measurer.measure(text = "A", style = textStyle, density = density).size.height.toFloat()
+    }
     val marginPx = with(density) { margin.toPx() }
     val space = LocalTypingSpace.current
     suspend fun bringFieldIntoView(width: Float, height: Float) {

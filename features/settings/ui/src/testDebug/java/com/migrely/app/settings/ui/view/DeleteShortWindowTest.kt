@@ -162,6 +162,18 @@ class DeleteShortWindowTest {
     }
 
     @Test
+    @Config(qualifiers = WINDOW_360)
+    fun `A word line a little shorter than its laid-out line steps the bar aside`() {
+        // H = 334 - 231 - the divider's 3 px = 100 px: under the laid-out line (112 px), over a 24 sp line height
+        // converted at 200% (95 px).
+        typeWithKeyboardAt(KEYBOARD_TOP_360_PX + BETWEEN_PX)
+
+        assertRowBehindTheKeyboard(KEYBOARD_TOP_360_PX + BETWEEN_PX)
+        assertInputLineShows(MARGIN_PX)
+        assertFalse("Back is in the tree with the bar aside", backInTree())
+    }
+
+    @Test
     @Config(qualifiers = WINDOW_411)
     fun `In the 411 dp window the row stays behind and the bar stays`() {
         typeWithKeyboardAt(KEYBOARD_TOP_411_PX)
@@ -181,5 +193,8 @@ class DeleteShortWindowTest {
     private companion object {
         // The 64 dp bar at density 2.625.
         const val BAR_PX = 168f
+
+        // A keyboard 16 px shorter than Gboard's at 360 dp.
+        const val BETWEEN_PX = 16
     }
 }

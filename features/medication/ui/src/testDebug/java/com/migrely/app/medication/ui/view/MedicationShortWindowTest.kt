@@ -277,6 +277,19 @@ class MedicationShortWindowTest {
     }
 
     @Test
+    @Config(qualifiers = WINDOW_360)
+    fun `Edit medication's name a little shorter than its laid-out line steps the bar aside`() {
+        showEdit()
+
+        // H = 103 px under the bar: under the line Android lays out (112 px) but over a 24 sp line height converted
+        // at 200% (95 px), so a trigger that reads the sp value keeps the bar and cuts the line.
+        typeIn(NAME, KEYBOARD_TOP_BETWEEN_PX)
+
+        assertInputLineShowsWithMargins(NAME)
+        assertFalse("Back is in the tree with the bar aside", backInTree())
+    }
+
+    @Test
     @Config(qualifiers = WINDOW_411)
     fun `Edit medication's name in the 411 dp window keeps the bar`() {
         showEdit()
@@ -297,6 +310,9 @@ class MedicationShortWindowTest {
     }
 
     private companion object {
+        // A keyboard 16 px shorter than Gboard's at 360 dp: H = 334 - 231 = 103 px.
+        const val KEYBOARD_TOP_BETWEEN_PX = KEYBOARD_TOP_360_PX + 16
+
         // The 64 dp bar at density 2.625.
         const val BAR_ROWS = 168
     }

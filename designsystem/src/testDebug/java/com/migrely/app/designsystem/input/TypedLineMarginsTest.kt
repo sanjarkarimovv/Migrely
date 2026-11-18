@@ -1,5 +1,7 @@
 package com.migrely.app.designsystem.input
 
+import android.graphics.Bitmap
+import android.graphics.Canvas
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,11 +17,15 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Text
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
@@ -29,6 +35,7 @@ import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextInputSelection
 import androidx.compose.ui.test.requestFocus
@@ -66,12 +73,17 @@ private const val LINES = 9
 private const val TOP_BAR = "topBar"
 private const val TOLERANCE = 0.5f
 
+// Inside the single-line field's outline, which is drawn in the cursor's colour while focused.
+private val FIELD_INSIDE = 20.dp
+
 /**
  * The line being typed is never cut while only its margins are short (BRD D192, EC-UX-73, ux R2 reduced, task 2.0): in a
  * visible part H with L <= H < L + 2M the note's cursor line shows whole; where H >= L + M the margins stay as the follow
  * gives them today (4 and 21 px at H 137 on API 36), never evened out. Density 2.625 and the system's nonlinear 200% font,
  * as on QA's API 36 emulator, so L is the line Android lays out (112 px), not a constant. The visible part is set by the
- * keyboard, computed from the measured line and the page's measured top.
+ * keyboard, computed from the measured line and the page's measured top. The same band holds for a single-line field
+ * ([SingleLineFieldInView], as on Edit and Log medication and Delete all data), reached from below, with L its laid-out
+ * line (BRD D192: from layout, never an sp constant).
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -81,14 +93,18 @@ class TypedLineMarginsTest {
     val rule = createAndroidComposeRule<ComponentActivity>()
 
     private var value by mutableStateOf(TextFieldValue(""))
+    private var name by mutableStateOf("")
+    private var cursorColor = 0
 
     private val note get() = rule.onNode(hasSetTextAction())
     private val page get() = rule.onNode(hasScrollAction())
 
-    private fun show() {
+    /** The page with the note, or with [singleLine], a labelled single-line field as on Edit medication. */
+    private fun show(singleLine: Boolean = false) {
         rule.runOnUiThread { rule.activity.drawEdgeToEdge() }
         rule.setContent {
             MigrelyTheme {
+                cursorColor = OutlinedTextFieldDefaults.colors().cursorColor.toArgb()
                 val space = rememberTypingSpace()
                 Column(Modifier.fillMaxSize()) {
                     // Stands for the top bar: the page's visible part starts under it, as on the four screens.
@@ -115,12 +131,28 @@ class TypedLineMarginsTest {
                     ) {
                         Spacer(Modifier.height(ABOVE))
                         ProvideTypingSpace(space) {
-                            CursorFollowingTextField(
-                                value = value,
-                                onValueChange = { value = it },
-                                minLines = 3,
-                                modifier = Modifier.fillMaxWidth()
-                            )
+                            if (singleLine) {
+                                SingleLineFieldInView(hasLabel = true) {
+                                        inView,
+                                        interactionSource
+                                    ->
+                                    OutlinedTextField(
+                                        value = name,
+                                        onValueChange = { name = it },
+                                        singleLine = true,
+                                        label = { Text("Name") },
+                                        interactionSource = interactionSource,
+                                        modifier = inView.fillMaxWidth()
+                                    )
+                                }
+                            } else {
+                                CursorFollowingTextField(
+                                    value = value,
+                                    onValueChange = { value = it },
+                                    minLines = 3,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
                         }
                         Spacer(Modifier.height(BELOW))
                     }
@@ -267,7 +299,95 @@ class TypedLineMarginsTest {
         assertMargins("cursor at the start", above = QA_411_EXTRA - MARGIN_PX, below = MARGIN_PX)
     }
 
+    // ---- The single-line field (SingleLineFieldInView, as on Edit and Log medication and Delete all data) ----
+
+    /**
+     * Opens a keyboard that leaves a visible part of the input line's height L plus [extraPx], then focuses the field from
+     * below the visible part, or from above it with [fieldAbove]. L is the field's laid-out line.
+     */
+    private fun focusSingleLineLeaving(extraPx: Int, fieldAbove: Boolean): Int {
+        show(singleLine = true)
+        val results = mutableListOf<TextLayoutResult>()
+        note.fetchSemanticsNode().config[SemanticsActions.GetTextLayoutResult].action!!(results)
+        val line = (results.first().getLineBottom(0) - results.first().getLineTop(0)).roundToInt()
+        val root = rule.onRoot().fetchSemanticsNode().size.height
+        setInsets(keyboardPx = root - (visiblePart().top + line + extraPx).roundToInt())
+        assertEquals(
+            "the visible part",
+            (line + extraPx).toFloat(),
+            visiblePart().height,
+            TOLERANCE
+        )
+        if (fieldAbove) {
+            page.performSemanticsAction(SemanticsActions.ScrollBy) { it(0f, PAST_THE_END) }
+            rule.waitForIdle()
+        }
+        note.requestFocus()
+        rule.waitForIdle()
+        // An edit restarts the caret's blink, so it is drawn.
+        note.performTextInput("x")
+        rule.waitForIdle()
+        return line
+    }
+
+    // `captureToImage` never returns under Robolectric here; the window draws itself the same way.
+    private fun drawWindow(): Bitmap {
+        val decor = rule.activity.window.decorView
+        val bitmap = Bitmap.createBitmap(decor.width, decor.height, Bitmap.Config.ARGB_8888)
+        rule.runOnUiThread { decor.draw(Canvas(bitmap)) }
+        return bitmap
+    }
+
+    /**
+     * The caret's rows on screen, in px: Compose draws it over the whole line box, so the longest vertical run of the
+     * cursor's colour inside the field (its outline, the same colour, left out) is the part of the line that shows. The
+     * single-line field gives no caret geometry of its own.
+     */
+    private fun caretRows(): IntRange? {
+        val bounds = note.getUnclippedBoundsInRoot()
+        val inside = (FIELD_INSIDE.value * density()).toInt()
+        val window = drawWindow()
+        val left = (bounds.left.value * density()).toInt() + inside
+        val right = (bounds.right.value * density()).toInt() - inside
+        var best: IntRange? = null
+        (left until right).forEach { x ->
+            var start = -1
+            (0..window.height).forEach { y ->
+                val caret = y < window.height && window.getPixel(x, y) == cursorColor
+                if (caret && start < 0) start = y
+                if (!caret && start >= 0) {
+                    if (best == null || y - start > best!!.count()) best = start until y
+                    start = -1
+                }
+            }
+        }
+        return best
+    }
+
+    private fun assertInputLineWhole(step: String, line: Int) {
+        assertBarStays(step)
+        val caret = checkNotNull(caretRows()) { "$step: no caret drawn" }
+        val visible = visiblePart()
+        assertTrue(
+            "$step: ${caret.count()} of the line's $line px show, " +
+                "at ${caret.first}..${caret.last + 1}, in the visible part ${visible.top}..${visible.bottom} (${visible.height} px)",
+            caret.count() >= line - 1 &&
+                caret.first >= visible.top - TOLERANCE &&
+                caret.last + 1 <= visible.bottom + TOLERANCE
+        )
+    }
+
+    @Test
+    fun `In the band a single-line field reached from below shows its input line whole`() {
+        val line = focusSingleLineLeaving(extraPx = BAND_EXTRA, fieldAbove = false)
+
+        assertInputLineWhole("field below the visible part", line)
+    }
+
     private companion object {
+        // Past any page's end: the scroll stops there.
+        const val PAST_THE_END = 10_000f
+
         // H = 137 px, L = 112 px: QA's API 36 Attack details cell at 411 dp, where the line is whole today.
         const val QA_411_EXTRA = 25
 
