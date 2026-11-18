@@ -109,7 +109,7 @@ the test red again. Logs go to `migrely-work/239/eng/`. Robolectric tests live i
 
 ## 4. Merge and gate (`android-engineer`)
 
-- [ ] 4.0 After #237 (`clear-message-when-intake-logged`) is merged into `develop`, merge `origin/develop` into this branch
+- [x] 4.0 After #237 (`clear-message-when-intake-logged`) is merged into `develop`, merge `origin/develop` into this branch
   and resolve `MedicationMessages` so both clears (`Logged`, `NotSaved`) exist; rerun 3.2 and #237's 3.1. Verify: both test
   classes green on the merged tree; `git log --oneline -1 origin/develop` recorded here. If #237 is not merged yet when
   review starts, record that and do this before QA.
@@ -118,6 +118,10 @@ the test red again. Logs go to `migrely-work/239/eng/`. Robolectric tests live i
     conflict resolved by keeping both builders). Both clears exist (`Logged`, `NotSaved` share `leavesAtOnce`); #237's
     3.1 and this 3.2 are green on the merged tree (gate-3.log). Still open: #237 is not in `develop` yet
     (`origin/develop` 9a48dbcf); merge `origin/develop` after it lands, before QA.
+  - Done (2026-11-18): #237 merged as PR #251, `origin/develop` ae3593c6, merged here as 56e36528. One BRD conflict:
+    develop's archived D190 text taken, D191 kept after it. The merge brought only docs, openspec and `qa/` files, no
+    product file. Gate on 56e36528 exit 0, every task up to date from gate-4 (same inputs), 3438 tests, 0 failures
+    (`gate-5.log`).
 - [x] 4.1 Full gate. Verify: `set -o pipefail; nice -n 19 ./gradlew --max-workers=2 assembleDebug test ktlintCheck detekt lint`
   exit 0, with the counts of tests run (never `testDebugUnitTest` alone).
   - Record: exit 0, BUILD SUCCESSFUL on 95041d45 (`gate-3.log`) and again on df7bbca4 after the F6 fix (`gate-4.log`,
