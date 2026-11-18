@@ -55,7 +55,11 @@ class LogMedicationNotificationUiMapper(
             is LogMedicationPresentationNotification.Logged ->
                 MedicationEventUiModel.Logged(intakeUiMapper.toUi(notification.intake))
             LogMedicationPresentationNotification.IntakeUndone ->
-                Message(MedicationMessageUiModel.IntakeUndone)
+                MedicationEventUiModel.IntakeUndone
+            LogMedicationPresentationNotification.IntakeKeptStorageFull ->
+                Message(MedicationMessageUiModel.IntakeKeptStorageFull)
+            LogMedicationPresentationNotification.IntakeKeptFailed ->
+                Message(MedicationMessageUiModel.IntakeKeptFailed)
             is LogMedicationPresentationNotification.NotSaved ->
                 saveProblemUiMapper.toUi(notification.problem).toEvent()
             LogMedicationPresentationNotification.InFuture -> Message(

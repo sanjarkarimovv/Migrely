@@ -137,6 +137,8 @@ fun LogMedicationDependencies.LogMedication(
                     problem = null
                 }
 
+                // Only a stored removal drops the result; a failed one keeps it with its message (BRD D190 (2)).
+                MedicationEventUiModel.IntakeUndone -> logged = null
                 is MedicationEventUiModel.NotSaved -> problem = event.problem
                 is MedicationEventUiModel.Message -> Unit
             }
@@ -179,8 +181,10 @@ fun LogMedicationDependencies.LogMedication(
                 }
             },
             onUndo = {
-                logged?.let { intake ->
-                    logged = null
+                val intake = logged
+                // The result stays until the removal's outcome; a second tap meanwhile does nothing (BRD D190 (2)).
+                if (!pending && intake != null) {
+                    pending = true
                     // The screen's own attack, not the one the intake joined, so a later time links afresh.
                     logMedicationViewModel.onUndoAction(intake.id, attackId)
                 }
