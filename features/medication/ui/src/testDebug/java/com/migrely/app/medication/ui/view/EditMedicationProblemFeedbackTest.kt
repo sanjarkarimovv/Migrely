@@ -71,7 +71,7 @@ class EditMedicationProblemFeedbackTest {
     // 2.2 The field reads its real error, as one stop (F6)
 
     @Test
-    fun `Name carries the real error, and only the field and the announcement say it`() {
+    fun `Name says its real error once, and only the announcement says it besides`() {
         screen.showEdit()
 
         save()
@@ -79,8 +79,9 @@ class EditMedicationProblemFeedbackTest {
 
         val field = name.fetchSemanticsNode()
         assertEquals(ENTER_A_NAME, field.config.getOrNull(SemanticsProperties.Error))
+        // Read as "Name, edit box, error: Enter a name.": the visible line is not read a second time (ux F6).
         val saying = rule.onAllNodes(hasText(ENTER_A_NAME, substring = true)).fetchSemanticsNodes()
-        assertEquals(listOf(field.id), saying.map { it.id })
+        assertEquals(emptyList<Int>(), saying.map { it.id })
         screen.awaitNode(announcement(ENTER_A_NAME))
         val spoken = rule.onNode(announcement(ENTER_A_NAME)).fetchSemanticsNode()
         assertFalse(spoken.config.contains(SemanticsActions.RequestFocus))

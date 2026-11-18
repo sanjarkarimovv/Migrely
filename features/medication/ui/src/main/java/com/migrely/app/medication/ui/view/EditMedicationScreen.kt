@@ -313,13 +313,9 @@ private fun MedicationForm(
             singleLine = true,
             isError = nameProblem != null,
             supportingText = {
-                Text(
-                    nameText
-                        ?: stringResource(
-                            R.string.edit_counter,
-                            form.name.length,
-                            MAXIMUM_NAME_LENGTH
-                        )
+                FieldSupportingLine(
+                    nameText,
+                    stringResource(R.string.edit_counter, form.name.length, MAXIMUM_NAME_LENGTH)
                 )
             },
             interactionSource = interactionSource,
@@ -389,12 +385,9 @@ private fun MedicationForm(
             singleLine = true,
             isError = doseProblem != null,
             supportingText = {
-                Text(
-                    doseText ?: stringResource(
-                        R.string.edit_counter,
-                        form.dose.length,
-                        MAXIMUM_DOSE_LENGTH
-                    )
+                FieldSupportingLine(
+                    doseText,
+                    stringResource(R.string.edit_counter, form.dose.length, MAXIMUM_DOSE_LENGTH)
                 )
             },
             interactionSource = interactionSource,

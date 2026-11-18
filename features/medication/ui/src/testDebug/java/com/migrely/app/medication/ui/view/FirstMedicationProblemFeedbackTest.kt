@@ -79,7 +79,7 @@ class FirstMedicationProblemFeedbackTest {
         announcesOnceAndAgain(darkRoom = true)
 
     @Test
-    fun `Name carries the real error`() {
+    fun `Name says its real error once`() {
         screen.showFirstUse()
 
         addAndLog()
@@ -89,6 +89,7 @@ class FirstMedicationProblemFeedbackTest {
             ENTER_A_NAME,
             name.fetchSemanticsNode().config.getOrNull(SemanticsProperties.Error)
         )
+        assertFalse(screen.exists(hasText(ENTER_A_NAME, substring = true)))
     }
 
     // A shorter window than the class's, so that Add and log in view leaves Name out of it above the keyboard.

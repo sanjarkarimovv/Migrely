@@ -133,8 +133,9 @@ internal class ProblemFeedbackHarness(private val rule: ActivityComposeRule, val
 
     fun awaitNode(matcher: SemanticsMatcher) = waitFor { exists(matcher) }
 
-    /** Waits for the field problem [text] to show under its field. */
-    fun awaitProblem(text: String) = awaitNode(hasText(text))
+    /** Waits for a field to carry the problem [text] as its error. */
+    fun awaitProblem(text: String) =
+        awaitNode(SemanticsMatcher.expectValue(SemanticsProperties.Error, text))
 
     fun focusedNodes(): List<SemanticsNode> = rule.onAllNodes(isFocused()).fetchSemanticsNodes()
 

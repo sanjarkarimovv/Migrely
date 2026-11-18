@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
@@ -64,6 +65,19 @@ internal class ProblemField {
 /** The field's error, read with it as one stop, instead of Material's default "Invalid input" (ux F6). */
 internal fun Modifier.problemSemantics(problem: String?): Modifier =
     if (problem == null) this else semantics { error(problem) }
+
+/**
+ * A field's supporting line: its [problem], or else its [counter]. The problem is read once, as the field's error
+ * ("Name, edit box, error: Enter a name."), so its visible line is not read a second time (ux F6).
+ */
+@Composable
+internal fun FieldSupportingLine(problem: String?, counter: String) {
+    if (problem != null) {
+        Text(problem, Modifier.clearAndSetSemantics { })
+    } else {
+        Text(counter)
+    }
+}
 
 /**
  * Says a field problem once, politely (ux F5): from its own node, so the field never becomes a live region and typing

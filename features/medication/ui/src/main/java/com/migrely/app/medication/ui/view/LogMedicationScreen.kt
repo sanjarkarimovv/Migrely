@@ -604,12 +604,9 @@ private fun FirstMedicationForm(
             singleLine = true,
             isError = nameProblem != null,
             supportingText = {
-                Text(
-                    nameText ?: stringResource(
-                        R.string.edit_counter,
-                        name.text.length,
-                        MAXIMUM_NAME_LENGTH
-                    )
+                FieldSupportingLine(
+                    nameText,
+                    stringResource(R.string.edit_counter, name.text.length, MAXIMUM_NAME_LENGTH)
                 )
             },
             colors = colors.textField,
