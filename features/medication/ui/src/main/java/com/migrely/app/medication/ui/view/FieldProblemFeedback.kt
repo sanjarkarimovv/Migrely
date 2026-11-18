@@ -33,10 +33,11 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 
 /**
- * How long an announcement stays in the accessibility tree: long enough for TalkBack to read it after a busy frame,
- * short enough that it is not left as a second stop that repeats the field's own error (BRD D191, ux F5, F6).
+ * How long an announcement stays in the accessibility tree. While there it is a TalkBack stop that repeats the field's
+ * error (ux F6), so as short as TalkBack allows: TalkBack takes the text when the node appears, and on emulator-5570
+ * 500, 1000 and 3000 ms were all spoken alike; 1000 ms keeps a margin for a busy phone (BRD D191, cr-239 F2).
  */
-private const val ANNOUNCEMENT_MILLIS = 3_000L
+private const val ANNOUNCEMENT_MILLIS = 1_000L
 
 /**
  * A text field that a Save problem can point at (BRD D191, ux F2, F3): put [modifier] on the field and pass
