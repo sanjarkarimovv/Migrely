@@ -70,6 +70,14 @@ by hand in Robolectric, as `KeyboardRoomTest` does.
   only "same pixels, no move". The code has no alpha; QA's SW8 60 fps recording is the check. The tree check uses
   the merged tree, the one accessibility services get: Compose's test unmerged tree still lists what `clearAndSetSemantics`
   removed. Logs `2.3-*.log`.
+  **Defect found on the device walk (5.1, 2026-11-18) and fixed:** the clip sat inside the bar's layout modifier, so it cut
+  the bar to its full height, not the height it reported: with the bar aside, the title, date and Back were still drawn
+  over the page (text over text on Details and Edit medication at 360 dp; shots `walk/shots/c3-details-360-end.png`,
+  `c6-edit-360-edit-name.png`). The pixel check above missed it (it read only the rows the bar kept), and 3.2's dark-room
+  check read only the left 8 dp. New case "Nothing of an aside bar is drawn over the page" (a bar painted red, a page with
+  no background of its own, as on the screens): red on that code (338218 bar pixels under the status bar), green with the
+  clip outside the layout. A first version with an opaque page stayed green on the faulty code and was discarded.
+  Logs `5-clip-*.log`.
 
 ## 3. Screens (`android-engineer`, `ui` modules)
 

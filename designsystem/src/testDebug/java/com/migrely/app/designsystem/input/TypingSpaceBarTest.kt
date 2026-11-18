@@ -3,6 +3,8 @@ package com.migrely.app.designsystem.input
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import androidx.activity.ComponentActivity
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsetsSides
@@ -24,6 +26,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasSetTextAction
@@ -72,23 +76,39 @@ class TypingSpaceBarTest {
 
     private var value by mutableStateOf(TextFieldValue(""))
 
-    private fun show() {
+    /**
+     * With [paintedBar], the bar is a box painted [BAR_PAINT] all over, so any of it left on screen is seen: the page
+     * draws no background of its own, as on the screens, so it cannot hide what the bar draws.
+     */
+    private fun show(paintedBar: Boolean = false) {
         rule.runOnUiThread { rule.activity.drawEdgeToEdge() }
         rule.setContent {
             MigrelyTheme {
                 val space = rememberTypingSpace()
                 Column(Modifier.fillMaxSize()) {
-                    TopAppBar(
-                        title = { Text(TITLE) },
-                        navigationIcon = {
-                            IconButton(onClick = {
-                            }) { Icon(MigrelyIcons.Back, contentDescription = BACK) }
-                        },
-                        windowInsets = MigrelyInsets.bars.only(
-                            WindowInsetsSides.Top + WindowInsetsSides.Horizontal
-                        ),
-                        modifier = Modifier.testTag(TOP_BAR).then(space.barModifier)
-                    )
+                    if (paintedBar) {
+                        Box(
+                            Modifier
+                                .testTag(TOP_BAR)
+                                .then(space.barModifier)
+                                .fillMaxWidth()
+                                .background(BAR_PAINT)
+                                .windowInsetsPadding(MigrelyInsets.bars.only(WindowInsetsSides.Top))
+                                .height(64.dp)
+                        )
+                    } else {
+                        TopAppBar(
+                            title = { Text(TITLE) },
+                            navigationIcon = {
+                                IconButton(onClick = {
+                                }) { Icon(MigrelyIcons.Back, contentDescription = BACK) }
+                            },
+                            windowInsets = MigrelyInsets.bars.only(
+                                WindowInsetsSides.Top + WindowInsetsSides.Horizontal
+                            ),
+                            modifier = Modifier.testTag(TOP_BAR).then(space.barModifier)
+                        )
+                    }
                     Column(
                         Modifier
                             .weight(1f)
@@ -253,6 +273,42 @@ class TypingSpaceBarTest {
         return bitmap
     }
 
+    @Test
+    fun `Nothing of an aside bar is drawn over the page`() {
+        show(paintedBar = true)
+        assertTrue(
+            "no bar to begin with",
+            drawWindow().rows(STATUS_PX until STATUS_PX + 10).any {
+                it ==
+                    BAR_ARGB
+            }
+        )
+
+        rule.runOnUiThread {
+            rule.activity.setInsets(keyboardPx = KEYBOARD_PX, statusPx = STATUS_PX)
+        }
+        rule.waitForIdle()
+        assertEquals(
+            "the bar did not step aside",
+            STATUS_PX.toFloat(),
+            barHeightPx(),
+            HEIGHT_TOLERANCE
+        )
+
+        val below = drawWindow().rows(STATUS_PX until KEYBOARD_TOP_PX)
+        assertEquals(
+            "pixels of the bar drawn under the status bar",
+            0,
+            below.count {
+                it == BAR_ARGB
+            }
+        )
+    }
+
+    private fun Bitmap.rows(rows: IntRange): List<Int> = rows.flatMap { row ->
+        IntArray(width).also { getPixels(it, 0, width, 0, row, width, 1) }.toList()
+    }
+
     private fun Bitmap.sameRow(other: Bitmap, row: Int): Boolean {
         val mine = IntArray(width).also { getPixels(it, 0, width, 0, row, width, 1) }
         val theirs = IntArray(other.width).also {
@@ -278,6 +334,10 @@ class TypingSpaceBarTest {
     }
 
     private companion object {
+        val BAR_PAINT = Color(0xFFFF0000)
+        val BAR_ARGB = BAR_PAINT.toArgb()
+        const val KEYBOARD_TOP_PX = 945 - KEYBOARD_PX
+
         // Gboard's symbols and emoji pages are taller than its letters.
         const val SYMBOLS_EXTRA_PX = 80
     }

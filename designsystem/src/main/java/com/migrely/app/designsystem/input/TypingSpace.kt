@@ -60,7 +60,9 @@ class TypingSpace internal constructor(
     private var page by mutableStateOf<Page?>(null)
     private var typed by mutableStateOf<TypedLine?>(null)
 
+    // The clip first: it cuts the bar to the height the layout below reports, not to the bar's full height.
     private val barLayout: Modifier = Modifier
+        .clipToBounds()
         .layout { measurable, constraints ->
             val placeable = measurable.measure(constraints)
             val kept = statusBar.getTop(this).coerceAtMost(placeable.height)
@@ -69,7 +71,6 @@ class TypingSpace internal constructor(
                 placeable.place(0, 0)
             }
         }
-        .clipToBounds()
 
     /** Put on the screen's top bar. Read in composition: the bar's accessibility follows the decision. */
     val barModifier: Modifier
