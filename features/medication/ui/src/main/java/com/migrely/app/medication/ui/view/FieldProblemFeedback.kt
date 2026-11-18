@@ -1,11 +1,13 @@
 package com.migrely.app.medication.ui.view
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.imeAnimationTarget
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
@@ -146,6 +148,7 @@ internal fun ProblemAnnouncement(announcer: ProblemAnnouncer, modifier: Modifier
  *
  * [onFocusMoving] puts the field's cursor at the end before it takes focus (F3).
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun FieldProblemFeedback(
     arrivals: Int,
@@ -156,9 +159,10 @@ internal fun FieldProblemFeedback(
     onFocusMoving: () -> Unit
 ) {
     val inputModeManager = LocalInputModeManager.current
-    // The insets object, read at the result: the keyboard's frames do not recompose the form. Its height, not its
-    // visibility, which reads "visible" before a window has had any insets.
-    val keyboard = WindowInsets.ime
+    // The insets object, read at the result: the keyboard's frames do not recompose the form. Where the keyboard is
+    // going, not where it is: a Save tapped while it closes must not move focus and open it again (ux F4). Its height,
+    // not its visibility, which reads "visible" before a window has had any insets.
+    val keyboard = WindowInsets.imeAnimationTarget
     val density = LocalDensity.current
     LaunchedEffect(arrivals) {
         if (arrivals == 0 || pending || field == null || problem == null) return@LaunchedEffect
@@ -175,5 +179,9 @@ internal fun FieldProblemFeedback(
     // Typing clears the problem; an announcement not yet gone goes with it (F8).
     LaunchedEffect(problem == null) {
         if (problem == null) announcer.clear()
+    }
+    // The form can leave while its announcement runs, as when a dose is then logged: the announcement goes with it.
+    DisposableEffect(announcer) {
+        onDispose { announcer.clear() }
     }
 }

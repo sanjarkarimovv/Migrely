@@ -4,6 +4,7 @@ import androidx.activity.ComponentActivity
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -11,6 +12,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.requestFocus
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -68,6 +70,8 @@ class FirstMedicationProblemFeedbackTest {
         rule.waitForIdle()
 
         assertTrue("the name is not in view", screen.isInView(name))
+        screen.awaitNode(announcement(ENTER_A_NAME))
+        assertEquals(1, rule.onAllNodes(announcement(ENTER_A_NAME)).fetchSemanticsNodes().size)
     }
 
     @Test
@@ -101,6 +105,37 @@ class FirstMedicationProblemFeedbackTest {
     @Test
     @Config(sdk = [35], qualifiers = "w411dp-h700dp")
     fun `In the dark room the name comes into view`() = comesIntoView(darkRoom = true)
+
+    @Test
+    fun `With no keyboard, no field takes focus`() {
+        screen.showFirstUse()
+
+        addAndLog()
+        screen.awaitProblem(ENTER_A_NAME)
+        rule.waitForIdle()
+
+        assertEquals(emptyList<String>(), screen.focusedLabels())
+    }
+
+    // F3 of cr-239: the form leaves with its announcement still running; nothing of it may stay on the logged page.
+    @Test
+    fun `A dose logged right after a name problem leaves only the logged line live`() {
+        screen.showFirstUse()
+        addAndLog()
+        screen.awaitNode(announcement(ENTER_A_NAME))
+        name.performTextInput(IBUPROFEN_NAME)
+
+        addAndLog()
+        screen.awaitNode(hasText("$IBUPROFEN_NAME logged at", substring = true))
+        rule.waitForIdle()
+
+        val live = rule.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsProperties.LiveRegion))
+            .fetchSemanticsNodes()
+        assertTrue(
+            live.single().config[SemanticsProperties.Text].first().text
+                .startsWith("$IBUPROFEN_NAME logged at")
+        )
+    }
 
     @Test
     fun `With a hardware keyboard, Enter on Add and log moves focus to the name`() {

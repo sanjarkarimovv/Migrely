@@ -68,6 +68,21 @@ class EditMedicationProblemFeedbackTest {
         screen.awaitNode(announcement(ENTER_A_NAME))
     }
 
+    @Test
+    fun `A second Save before the announcement is gone announces again`() {
+        screen.showEdit()
+        save()
+        screen.awaitNode(announcement(ENTER_A_NAME))
+        val first = rule.onNode(announcement(ENTER_A_NAME)).fetchSemanticsNode().id
+
+        rule.onNodeWithText(SAVE).performClick()
+
+        // A new node: the old one went for a frame, so the same text is a new announcement (F7).
+        screen.waitFor {
+            rule.onAllNodes(announcement(ENTER_A_NAME)).fetchSemanticsNodes().any { it.id != first }
+        }
+    }
+
     // 2.2 The field reads its real error, as one stop (F6)
 
     @Test
@@ -119,6 +134,9 @@ class EditMedicationProblemFeedbackTest {
         rule.waitForIdle()
 
         assertTrue("the name is not in view", screen.isInView(name))
+        // The #239 case: the cursor stays in Name, so the announcement is what is heard (ux F5).
+        screen.awaitNode(announcement(ENTER_A_NAME))
+        assertEquals(1, rule.onAllNodes(announcement(ENTER_A_NAME)).fetchSemanticsNodes().size)
     }
 
     @Test
