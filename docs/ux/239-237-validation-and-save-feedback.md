@@ -37,8 +37,9 @@ is broken" and gives up on logging.
 
 **#237.** Someone logs a dose during an attack. The first tap fails because storage is full. They free space and tap
 again. The intake is stored, but the old "Couldn't save." stays on top and covers "Ibuprofen 400 mg logged at 14:20".
-Someone who is foggy believes the latest message and logs again. The diary then holds a duplicate dose, and that dose
-counts toward the day count linked to medication-overuse headache. This is a data-integrity problem, not a cosmetic one.
+Someone who is foggy believes the latest message and logs again. The diary then holds a duplicate dose. It raises the intake count in the doctor report
+and on the attack, and if the second log lands on another day it adds a day to the day count linked to
+medication-overuse headache. This is a data-integrity problem, not a cosmetic one.
 
 ## 3. #239: field problems after a submit
 
