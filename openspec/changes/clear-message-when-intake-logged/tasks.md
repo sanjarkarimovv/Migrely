@@ -132,13 +132,44 @@ mutation is a deliberately broken build that must turn the test red again. Logs 
 
 ## 5. Device walk (`android-engineer`, emulator-5570, headless first)
 
-- [ ] 5.1 Rows A1, A3, A5, A9 and (if rule 2 ships) A6 of design "Acceptance" on the candidate (debug build of the
+- [x] 5.1 Rows A1, A3, A5, A9 and (if rule 2 ships) A6 of design "Acceptance" on the candidate (debug build of the
   branch head, hash read back from the device), API 36, 100% portrait; storage filled as QA did for #237 (`fallocate` as shell, then as the app) and freed after
   each row. Verify: per row the intake count before and after (`sqlite3` on a copy of the database, or the app's own list),
   a `uiautomator dump` 2 s after the tap showing no message node and the logged line present, and TalkBack's log for A5.
-- [ ] 5.2 A8 (200% font, portrait and landscape). Verify: one screenshot per orientation in `migrely-work/237/shots/` and the
+  - Record (2026-11-18, android-engineer, emulator-5570 `Migrely_API_36`, headless swiftshader, API 36, 1080x2400 @420,
+    100% portrait unless said). Candidate = debug APK of 3ab5d6ec's tree (sha256 c6b26b55…, read back from the device);
+    control = QA's debug APK of `develop` 76c38c38 = v1.3.1's product tree (fde165db…, read back). Disk filled with
+    `fallocate` (shell, then the app's cache). From A8 landscape on, three full-disk taps in a row were stored, because
+    the write-ahead log kept room from earlier writes; from then on the WAL was checkpointed (TRUNCATE, content
+    unchanged) on a stopped app before each fill, and every full-disk tap failed as it should. Intake counts from a copy of the database; dumps by `uiautomator dump /dev/tty`. Log:
+    `migrely-work/237/eng/walk/walk.log`, shots and videos in `migrely-work/237/shots/`.
+
+    | Row | Candidate | v1.3.1 control |
+    |---|---|---|
+    | A1 | error on the full-disk tap; after freeing, at 2 s and 8 s no message, logged line in the tree, intakes 0 -> 1 | error still on screen at 2 s and 8 s, logged line not in the tree, intakes 1 -> 2 |
+    | A2 (extra) | first use, Add and log: error, then logged, no message at 2 s and 8 s, intakes 0 -> 1 | not run |
+    | A3 | log tapped 4 s after "Removed…" showed: message gone at the first dump, logged line present; intakes 1 -> 1 | "Removed…" over the result at 6 s and 8 s, logged line not in the tree; gone at 10 s (its own 8 s) |
+    | A5 | TalkBack VERBOSE: after the tap only "Ibuprofen logged at 10:54 AM" is spoken (plus TalkBack's own "Double-tap to activate" hint before it); no "Saved.", nothing about storage | the logged line is never spoken |
+    | A6 | "Still logged. Your phone's storage is full.", Done and Undo shown, intakes 1 -> 1; the message lies over the logged line (first-row rule D158, out of scope) and Done is below it | list back with "Couldn't save…", intakes 2 -> 2 (still stored) |
+    | A7 | after freeing, Undo: list and "Removed. Nothing was logged.", intakes 1 -> 0 | n/a |
+    | A9 | `screenrecord` across the tap: 6 frames, 0 with the logged page and anything in the message's place, no in-between (fade) values | 3 frames, 2 with the logged page and the message |
+    | Process death | after A1, Home, `run-as kill -9`, relaunch: logged result, no message | not run |
+
+    A first A3 run (both builds) tapped about 8 s after the message showed, so it expired by itself and the row proved
+    nothing; it was rerun with an early tap (`a3fast`), above. The frame check of A9 first compared with the last frame,
+    which could not fail on the control; it now compares with an empty-background patch (candidate 0, control 2).
+- [x] 5.2 A8 (200% font, portrait and landscape). Verify: one screenshot per orientation in `migrely-work/237/shots/` and the
   logged line's bounds from a dump.
-- [ ] 5.3 Restore storage, font scale, rotation and TalkBack. Verify: `df /data` free space and the settings read back.
+  - Record: 200% font. Portrait: A1 at 200%, logged line [42,359][1038,564], Done text [447,664][633,759], Undo text
+    [445,843][635,938] in a 1080x2400 screen, no message (`shots/A8-cand-2s`… and `walk.log`). Landscape: the error was
+    set up in portrait, the phone turned (error kept, D178), space freed, logged: logged line [583,294][1617,389], Done
+    [1172,489][1358,584], Undo [1170,668][1360,763] in 2400x1080, no message, intakes 0 -> 1
+    (`shots/A8-cand-landscape.png`). Bounds are of the texts; the buttons are whole on the shot.
+- [x] 5.3 Restore storage, font scale, rotation and TalkBack. Verify: `df /data` free space and the settings read back.
+  - Record: storage freed (`df /data`: 8288132 K free), TalkBack off (`enabled_accessibility_services` null,
+    `accessibility_enabled` 0) and its log level back to ERROR, font 1.0, `user_rotation` 0, `accelerometer_rotation` 1,
+    animator 1, `wm size` 1080x2400 and density 420 unchanged. The app is now the candidate build with its data cleared
+    (baseline was a 1.1.1 debug build with no database). Emulator turned off (`adb emu kill`).
 
 ## 6. Review (`code-reviewer`)
 
