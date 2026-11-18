@@ -194,16 +194,17 @@ class LogMedicationMessagesTest {
     }
 
     @Test
-    fun `A refused medication after an error keeps the error and logs nothing`() {
+    fun `A refused medication after an error clears the error and logs nothing`() {
         screen.show()
         screen.failOnFullStorage()
 
-        // A refused first medication keeps today's behaviour here (D190); #239 (F9) owns its own clear.
+        // A field problem is the newest result, so the older message goes (D191, ux F9).
         screen.post(MedicationEventUiModel.NotSaved(SaveProblemUiModel.InvalidName))
         rule.waitForIdle()
 
-        rule.onNodeWithText(STORAGE_FULL_TEXT).assertExists()
+        rule.onNodeWithText(STORAGE_FULL_TEXT).assertDoesNotExist()
         rule.onNode(screen.loggedLine).assertDoesNotExist()
+        assertTrue(diary.intakes.isEmpty())
     }
 
     @Test

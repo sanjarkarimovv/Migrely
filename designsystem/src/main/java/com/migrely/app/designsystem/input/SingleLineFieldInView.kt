@@ -15,6 +15,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -42,11 +43,15 @@ private val BODY_LINE = 24.sp
  *
  * Pass the given modifier first in the field's chain and the given interaction source to it. [hasLabel] says where the
  * input line sits: below half a floating label's line, as Material places it, and its content padding.
+ *
+ * Each new value of [inViewRequests] above 0 brings the field into view the same way without focus, once the frame
+ * after the request is laid out, so a supporting line that has just appeared is included (BRD D191, ux F2).
  */
 @Composable
 fun SingleLineFieldInView(
     hasLabel: Boolean,
     margin: Dp = LINE_MARGIN,
+    inViewRequests: Int = 0,
     field: @Composable (modifier: Modifier, interactionSource: MutableInteractionSource) -> Unit
 ) {
     val interactionSource = remember { MutableInteractionSource() }
@@ -73,6 +78,11 @@ fun SingleLineFieldInView(
         if (!focused || size == IntSize.Zero) return@LaunchedEffect
         bringFieldIntoView(size.width.toFloat(), size.height.toFloat())
         follow.onBroughtIntoView()
+    }
+    LaunchedEffect(inViewRequests) {
+        if (inViewRequests == 0) return@LaunchedEffect
+        withFrameNanos { }
+        if (size != IntSize.Zero) bringFieldIntoView(size.width.toFloat(), size.height.toFloat())
     }
     LaunchedEffect(focused) {
         if (!focused) return@LaunchedEffect
