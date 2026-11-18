@@ -72,6 +72,14 @@ fun CursorFollowingTextField(
     val keyboard = WindowInsets.ime
     val marginPx = with(density) { margin.toPx() }
     val cursor by rememberUpdatedState(value.selection.end)
+    val space = LocalTypingSpace.current
+
+    // The line holding [offset] with the margins the visible part leaves it (ux R2), in the field's coordinates.
+    fun lineInView(layout: TextLayoutResult?, offset: Int): Rect? =
+        geometry.lineOf(layout, offset)?.let { line ->
+            val clearance = space?.marginAround(line.height, marginPx) ?: marginPx
+            Rect(line.left, line.top - clearance, line.right, line.bottom + clearance)
+        }
     // The text and the cursor, not the whole value: a keyboard ending the word it composes changes only the
     // composition, so its new layout, as on closing, never brings the line back (review 7.1 F1, QA 8.1).
     LaunchedEffect(focused, value.text, value.selection) {
@@ -79,14 +87,21 @@ fun CursorFollowingTextField(
         val text = value.text
         // An edit's own layout comes a frame after it.
         val laidOut = snapshotFlow { layout }.first { it?.layoutInput?.text?.text == text }
-        val line = geometry.lineOf(laidOut, value.selection.end, marginPx) ?: return@LaunchedEffect
+        val line = lineInView(laidOut, value.selection.end) ?: return@LaunchedEffect
         requester.bringIntoView(line)
         follow.onBroughtIntoView()
     }
     LaunchedEffect(focused) {
         if (!focused) return@LaunchedEffect
         follow.followKeyboard({ keyboard.getBottom(density) }) {
-            geometry.lineOf(layout, cursor, marginPx)?.let { requester.bringIntoView(it) }
+            lineInView(layout, cursor)?.let { requester.bringIntoView(it) }
+        }
+    }
+    // The line being typed is the caret's line box, as laid out (BRD D192, ux R5).
+    LaunchedEffect(focused, space) {
+        if (!focused || space == null) return@LaunchedEffect
+        space.reportLine {
+            layout?.takeIf { cursor <= it.layoutInput.text.length }?.getCursorRect(cursor)?.height
         }
     }
     val colors = OutlinedTextFieldDefaults.colors()
@@ -119,7 +134,7 @@ fun CursorFollowingTextField(
                                 follow.onPositioned(
                                     keyboard.getBottom(density),
                                     geometry.field,
-                                    geometry.lineOf(layout, cursor, 0f)
+                                    geometry.lineOf(layout, cursor)
                                 )
                             }
                         ) { innerTextField() }
@@ -150,19 +165,14 @@ private class CursorGeometry {
     var field: LayoutCoordinates? = null
     var text: LayoutCoordinates? = null
 
-    /** The line holding [offset], grown by [margin] above and below, in the field's coordinates. */
-    fun lineOf(layout: TextLayoutResult?, offset: Int, margin: Float): Rect? {
+    /** The line holding [offset], in the field's coordinates. */
+    fun lineOf(layout: TextLayoutResult?, offset: Int): Rect? {
         val field = field?.takeIf { it.isAttached } ?: return null
         val text = text?.takeIf { it.isAttached } ?: return null
         if (layout == null || offset > layout.layoutInput.text.length) return null
         val cursor = layout.getCursorRect(offset)
         val origin = field.localPositionOf(text, cursor.topLeft)
-        return Rect(
-            origin.x,
-            origin.y - margin,
-            origin.x + cursor.width,
-            origin.y + cursor.height + margin
-        )
+        return Rect(origin.x, origin.y, origin.x + cursor.width, origin.y + cursor.height)
     }
 }
 

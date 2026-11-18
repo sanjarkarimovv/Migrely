@@ -64,15 +64,25 @@ fun SingleLineFieldInView(
     }
     val lineHeight = with(density) { LocalTextStyle.current.lineHeight.orBodyLine().toPx() }
     val marginPx = with(density) { margin.toPx() }
-    suspend fun bringFieldIntoView(width: Float, height: Float) = requester.bringNestedIntoView(
-        Rect(0f, 0f, width, height),
-        Rect(0f, lineTop - marginPx, width, height),
-        Rect(0f, lineTop - marginPx, width, lineTop + lineHeight + marginPx)
-    )
+    val space = LocalTypingSpace.current
+    suspend fun bringFieldIntoView(width: Float, height: Float) {
+        // The input line keeps what margin the visible part leaves it (ux R2).
+        val clearance = space?.marginAround(lineHeight, marginPx) ?: marginPx
+        requester.bringNestedIntoView(
+            Rect(0f, 0f, width, height),
+            Rect(0f, lineTop - marginPx, width, height),
+            Rect(0f, lineTop - clearance, width, lineTop + lineHeight + clearance)
+        )
+    }
     LaunchedEffect(focused, size) {
         if (!focused || size == IntSize.Zero) return@LaunchedEffect
         bringFieldIntoView(size.width.toFloat(), size.height.toFloat())
         follow.onBroughtIntoView()
+    }
+    // The line being typed is the input line, laid out in the field's text style (BRD D192, ux R5).
+    LaunchedEffect(focused, space, lineHeight) {
+        if (!focused || space == null) return@LaunchedEffect
+        space.reportLine { lineHeight }
     }
     LaunchedEffect(focused) {
         if (!focused) return@LaunchedEffect

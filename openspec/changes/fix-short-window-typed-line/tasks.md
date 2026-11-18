@@ -31,25 +31,45 @@ by hand in Robolectric, as `KeyboardRoomTest` does.
 
 ## 2. The line and the trigger (`android-engineer`, `designsystem`)
 
-- [ ] 2.0 **First, before any fix (team-lead condition):** a red test on the code as on v1.3.1 (`develop` 76c38c38) that shows
+- [x] 2.0 **First, before any fix (team-lead condition):** a red test on the code as on v1.3.1 (`develop` 76c38c38) that shows
   the line being typed cut in the R2 band: a note field at 200% in a scroll whose visible part H is between L and L + M (for
   example H = L + 10 px), keyboard inset applied, cursor at the end and then at the start; assert the cursor line's bounds lie
   fully inside the visible part. It must fail on 76c38c38 because the follow aligns the line-plus-margins rect with the edge.
   Verify: `migrely-work/245/eng/2.0-red.log` with the failing assertion and the measured overlap in px. **If it cannot be made
   red honestly (no tuned numbers, no fake layout), stop:** report to `product-manager`, who removes the requirement "Margins
   give way before the line is cut", EC-UX-73 and SW13; skip 2.2.
-- [ ] 2.1 The decision (D1, R5, R9). A shared state in `designsystem` that, at the keyboard's final height, decides
+  Result (2026-11-18): **red**, so reduced R2 stays (confirmed by `product-manager`). `TypedLineMarginsTest` on 8ed06eeb
+  (`designsystem` = v1.3.1), density 2.625, system nonlinear 200%: L from layout 112 px, keyboard set so H = 122 px (asserted).
+  End: line 278..390 in 257..379, cut 11 px at the keyboard; start: 246..358, cut 11 px under the bar (11 = M - 10). The same
+  harness at H 137 px is green on that code with 21/4 and 4/21 px (QA's 411 dp cell), so it can pass. Log
+  `migrely-work/245/eng/2.0-red.log`.
+- [x] 2.1 The decision (D1, R5, R9). A shared state in `designsystem` that, at the keyboard's final height, decides
   `barAside = H < L` with H measured under the bar and L from the focused field's layout, holds it until the keyboard closes,
   and decides again on a new opening, rotation or font change. Verify: `./gradlew :designsystem:testDebugUnitTest --tests
   '*TopBarAside*'` (or the chosen name) with cases: H 61 and 87 px with L 112 → aside; H 137 → stays; H 156 → stays; cursor
   moves, keyboard height change and a message while aside → no change; no IME inset → never. Red where new. Mutation:
   constant 64 dp trigger → the 156 px case red; re-deciding on every layout → the height-change case red.
-- [ ] 2.2 Reduced R2 (D4), only if 2.0 was red. Verify: the 2.0 test green; a case at H = 137 px asserting margins stay 4 and 21
+  Done: `TopBarAside` (decision) and `TypingSpace` (screen holder, `designsystem/input`). `TopBarAsideTest` 13/13 green
+  (61, 87 -> aside; 137, 156, H = L -> stays; cursor, height change, message, closing, new opening, no inset). Mutations:
+  trigger 168 px (64 dp) -> 5 red incl. "API 26 at 360 dp"; re-decide on every update -> 4 red incl. both height-change
+  cases. Logs `2.1-*.log`.
+- [x] 2.2 Reduced R2 (D4), only if 2.0 was red. Verify: the 2.0 test green; a case at H = 137 px asserting margins stay 4 and 21
   px by cursor direction (not evened). Mutation: even out the margins → red; restore today's rect → 2.0 red again.
-- [ ] 2.3 The bar's height follows the inset fraction (D2, R6) and its semantics leave while aside (D3, R11). Verify: a test
+  Done: the fields keep `min(M, H - L)` above and below (`TypingSpace.marginAround`). `TypedLineMarginsTest` 4/4 green
+  (band end and start whole; H 137: 21/4 and 4/21 px). Mutations: evened margins -> both 137 cases red (13/12 px); today's
+  rect -> both band cases red again (cut 11 px). Logs `2.2-*.log`.
+- [x] 2.3 The bar's height follows the inset fraction (D2, R6) and its semantics leave while aside (D3, R11). Verify: a test
   that steps the IME inset through 0, 25, 50, 100% and asserts the bar's height goes full → 0 in proportion, no alpha below 1
   on its content, and with the bar aside no semantics node of Back, the title or an action exists (unmerged tree). One step
   when the inset jumps (API 26–29 path) and with animations off. Mutation: hide with alpha only → the semantics case red.
+  Done: `TypingSpaceBarTest` 5/5 (opening and closing at 0/25/50/100% of the platform IME animation, one step on a jump,
+  no return on a keyboard height change, clipped in place, gone from the merged tree while aside) and `TypingSpaceFocusTest`
+  2/2 (legacy graphics: Shift+Tab stops `Above, Name, Above, Name` while aside, Back after close). Mutations: alpha-only hide
+  -> 6 red; no semantics clear -> red; no focus block -> red; no fraction -> red. **Not proven here:** "no alpha below 1".
+  Robolectric draws in software and ignores a layer's alpha (an alpha 0 mutation stayed green), so the pixel check proves
+  only "same pixels, no move". The code has no alpha; QA's SW8 60 fps recording is the check. The tree check uses
+  the merged tree, the one accessibility services get: Compose's test unmerged tree still lists what `clearAndSetSemantics`
+  removed. Logs `2.3-*.log`.
 
 ## 3. Screens (`android-engineer`, `ui` modules)
 
