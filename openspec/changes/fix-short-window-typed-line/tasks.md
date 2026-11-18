@@ -126,10 +126,16 @@ by hand in Robolectric, as `KeyboardRoomTest` does.
 - [ ] 4.2 If #239 has merged into `develop` by now, merge `origin/develop` and resolve `EditMedicationScreen` and
   `LogMedicationScreen`. Verify: both changes' test classes green on the merged tree; record `git log --oneline -1
   origin/develop`.
-- [ ] 4.3 Full gate. Verify: `set -o pipefail; nice -n 19 ./gradlew --max-workers=2 assembleDebug test ktlintCheck detekt lint`
+  Open (2026-11-18 13:05): #239 is not in `develop` yet (`origin/develop` ae3593c6 has #237). Waiting for `team-lead`;
+  after the merge: rerun #239's four into-view tests and the `MessageLayout` top-bar paths on the merged tree.
+- [x] 4.3 Full gate. Verify: `set -o pipefail; nice -n 19 ./gradlew --max-workers=2 assembleDebug test ktlintCheck detekt lint`
   exit 0, with the counts of tests run (never `testDebugUnitTest` alone).
-- [ ] 4.4 No permission, string or manifest change. Verify: `./gradlew :app:checkReleasePermissions` exit 0 and
+  Done at 6b45197a: `set -o pipefail; nice -n 19 ./gradlew --max-workers=2 assembleDebug test ktlintCheck detekt lint`
+  exit 0 (4 m 15 s); 3422 test results in 53 modules, 0 failed. Log `4.3-gate.log`.
+- [x] 4.4 No permission, string or manifest change. Verify: `./gradlew :app:checkReleasePermissions` exit 0 and
   `git diff origin/develop -- '*.xml' '*strings*' '*AndroidManifest*'` empty except tests.
+  Done: `:app:checkReleasePermissions` exit 0; the merged release manifest's six permissions, no INTERNET;
+  `git diff origin/develop...HEAD -- '*.xml' '*strings*' '*AndroidManifest*'` empty. Log `4.4-perms.log`.
 
 ## 5. Device walk (`android-engineer`, emulator-5570, headless first)
 
