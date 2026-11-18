@@ -1,10 +1,10 @@
 ## ADDED Requirements
 
 ### Requirement: Save problems on Edit medication are heard and seen
-When Save on Edit medication (Add or Edit) finds a problem, the field with it SHALL scroll fully into view, the problem
-SHALL be announced exactly once by the app, and the soft keyboard SHALL stay open or closed as it was. Input focus SHALL
-move to that field only with a hardware keyboard, or when the soft keyboard is open on another field. The field SHALL read
-its real error, never "Invalid input", with no extra stop (BRD EC-UX-66 to EC-UX-71, D191).
+When Save on Edit medication (Add or Edit) finds a problem, the field with it SHALL scroll fully into view, the app SHALL
+announce it once, and every press SHALL make it heard, from the app or the field's own reading. The soft keyboard SHALL stay
+as it was; focus SHALL move to the field only with a hardware keyboard or the soft keyboard open on another field. The field
+SHALL read its real error, never "Invalid input", with no extra stop after 1 s (BRD EC-UX-66 to EC-UX-71, D191).
 
 #### Scenario: Empty name with TalkBack (the issue)
 - **WHEN** Name is cleared with the keyboard up, TalkBack is on Save, and the user double taps
@@ -50,8 +50,18 @@ its real error, never "Invalid input", with no extra stop (BRD EC-UX-66 to EC-UX
 
 #### Scenario: Swiping through the form
 - **WHEN** after a name problem the user swipes from Back to Save and back with TalkBack
-- **THEN** Name is one stop that says its label, its value and the error once, no separate stop repeats the error, and
-  "Invalid input" is never spoken
+- **THEN** Name is one stop that says its label, its value and the error once, "Invalid input" is never spoken, and from 1
+  second after the press no separate stop repeats the error
+
+#### Scenario: A swipe within 1 second (accepted residual)
+- **WHEN** TalkBack is on Name, the user presses Save with an empty name, and swipes left within 1 second
+- **THEN** TalkBack may land on the announcement and say "Enter a name." a second time; a swipe 1.5 seconds after the press
+  goes past it to the content above, and v1.3.1 has no such node
+
+#### Scenario: Every press is heard
+- **WHEN** the keyboard is closed, TalkBack is on, and the user presses Save with an empty name several times
+- **THEN** on every press "Enter a name." is heard, from the app's announcement or from TalkBack's reading of Name; TalkBack
+  may also say "Migrely"; a press with no error heard at all is a fail
 
 #### Scenario: Switch Access and Voice Access
 - **WHEN** a name problem shows and the user reaches Name with Switch Access, or says "Tap Name" with Voice Access

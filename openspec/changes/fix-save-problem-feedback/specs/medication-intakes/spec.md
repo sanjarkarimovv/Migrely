@@ -2,9 +2,9 @@
 
 ### Requirement: First-use name problems are heard and seen
 On Log medication's first-medication form, normal and in the dark room, "Add and log" with a name problem SHALL follow the
-rules of Save on Edit medication: Name scrolls fully into view, the problem is announced once by the app, the soft keyboard
-stays as it was, focus moves to Name only with a hardware keyboard, and Name reads its real error, never "Invalid input"
-(BRD EC-UX-66 to EC-UX-71, D191).
+rules of Save on Edit medication: Name scrolls fully into view, the app announces the problem once and every press makes it
+heard, the soft keyboard stays as it was, focus moves to Name only with a hardware keyboard, and Name reads its real error,
+never "Invalid input", with no extra stop after 1 s (BRD EC-UX-66 to EC-UX-71, D191).
 
 #### Scenario: Empty name with TalkBack
 - **WHEN** no medication exists, Name is empty with the keyboard up, TalkBack is on "Add and log", and the user double taps
@@ -32,8 +32,8 @@ stays as it was, focus moves to Name only with a hardware keyboard, and Name rea
 
 #### Scenario: Swiping to Name
 - **WHEN** after the problem the user swipes to Name with TalkBack
-- **THEN** Name says its label, its value and "Enter a name." once, with no separate stop for the error and never "Invalid
-  input"
+- **THEN** Name says its label, its value and "Enter a name." once, never "Invalid input", and from 1 second after the
+  press no separate stop repeats the error; within that second a swipe may land on the announcement (accepted residual)
 
 #### Scenario: Largest font size and landscape
 - **WHEN** the same steps run at 200% font in portrait and in landscape, in windows 411 and 360 dp tall

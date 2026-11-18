@@ -195,7 +195,7 @@ the test red again. Logs go to `migrely-work/239/eng/`. Robolectric tests live i
 
 ## 7. Acceptance (`qa-engineer`, this diff only)
 
-- [ ] 7.1 V1 to V16 (ux section 5) on the PR head with v1.3.1 as the negative control (V1, V2, V3, V4, V9, V10 and V11 must
+- [ ] 7.1 V1 to V16 (ux section 5), plus V17 and V3T (design "Acceptance", the D191 (8) residual; a press with no error heard is a fail) on the PR head with v1.3.1 as the negative control (V1, V2, V3, V4, V9, V10 and V11 must
   show the defect on v1.3.1, or that row proves nothing and says so); V7 with its mutation build; V15 as a guard. APK hashes
   read back on the device. Verify: a QA record `docs/qa/fix-save-problem-feedback.md` with each row, build SHA, result,
   control result and the app-caused and TalkBack-caused utterance counts.

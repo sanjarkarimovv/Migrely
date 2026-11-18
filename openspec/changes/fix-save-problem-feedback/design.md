@@ -54,6 +54,15 @@ mutation). The announcement needs its own mechanism that fires once per arrival 
 invisible polite live-region node whose text is set on arrival and cleared after, or a stamped text so a repeat arrival
 re-announces). It must not be a swipe stop (F6). Android's deprecated announce call is not used (ux 3.5 E).
 
+**Residual (cr-239 F2, team-lead decision 2026-11-18, D191 (8)).** No node without text is both announced and skipped by
+TalkBack. A pane title was not a stop, but it made TalkBack say "Migrely" and re-read Name on every press, so it was
+rejected. The live-region node stays and lives 1 s (0918f73f; 500, 1000 and 3000 ms were spoken alike). Within that second
+a swipe from Name lands on it and "Enter a name." is heard twice (3 of 3 on emulator-5570); at 1.5 s the swipe goes past
+(3 of 3). With the keyboard closed and TalkBack on, TalkBack also says "Migrely", and its own re-reading of Name can flush
+the app's announcement (1 of 2 runs), so the error is heard from the field instead. The bar is: the error is heard on every
+press, from the app or the field's own reading; a press with no error heard is a fail. Evidence: tasks.md "Review cr-239",
+`migrely-work/239/eng/walk/walk.log`.
+
 ### D3. The field's semantics carry the real error (F6)
 
 The field's error semantics are set to the problem text, replacing Material's default "Invalid input"; the error stays one
@@ -90,3 +99,10 @@ head. Negative control: v1.3.1 (`v1.3.1` tag); V1, V2, V3, V4, V9, V10 and V11 m
 nothing and says so. V7 needs its mutation build (a live region on the whole field) to fail. V15 is a guard: Add past
 migraine's announcement must be the same on both builds; a row out of view at 200% landscape is evidence for the backlog
 item, not a 1.3.2 fail. API 36 for all rows, API 26 for V1 and V2.
+
+Two rows for the D2 residual (team-lead 2026-11-18):
+
+| Row | Steps | Candidate | Control |
+|---|---|---|---|
+| V17 Swipe within 1 s | Edit medication, Name empty, TalkBack focus on Name, press Save while TalkBack's focus stays on Name (eng-239's method, `walk.log` F2-window), then swipe left within 1 s; repeat with the swipe at 1.5 s | Within 1 s: TalkBack may land on "Enter a name." and say it a second time (the accepted residual, record the count). At 1.5 s: the swipe goes past it. Never "Invalid input" | v1.3.1: no announcement node; the swipe goes to the content above |
+| V3T Every press heard | V3 (keyboard closed) with TalkBack on, 5 presses of Save | On every press "Enter a name." is heard at least once; count the presses where it came only from TalkBack's re-reading of Name and the presses where TalkBack also said "Migrely". **A press with no error heard is a fail** | v1.3.1: no press is heard (as V1) |
