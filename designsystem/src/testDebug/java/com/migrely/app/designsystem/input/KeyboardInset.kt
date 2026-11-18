@@ -1,8 +1,11 @@
 package com.migrely.app.designsystem.input
 
+import android.graphics.Insets as PlatformInsets
 import android.os.Build
 import android.os.Looper
 import android.view.View
+import android.view.WindowInsets
+import android.view.WindowInsetsAnimation
 import androidx.activity.ComponentActivity
 import androidx.core.graphics.Insets
 import androidx.core.view.ViewCompat
@@ -47,5 +50,60 @@ internal fun ComponentActivity.setInsets(keyboardPx: Int, statusPx: Int = 0) {
         content.requestApplyInsets()
         // androidx animates the change itself from the next draw; Compose takes the new value when that ends.
         shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(1))
+    }
+}
+
+/**
+ * The keyboard's own animation from [from] to [to] px, as Android runs it from API 30: the end state is reported first,
+ * which androidx keeps as the target, then each frame's inset. [idle] waits for the screen after each step.
+ */
+internal class KeyboardAnimation(
+    private val activity: ComponentActivity,
+    private val statusPx: Int,
+    private val from: Int,
+    private val to: Int,
+    private val idle: () -> Unit
+) {
+    private val decor get() = activity.window.decorView
+    private val animation = WindowInsetsAnimation(WindowInsets.Type.ime(), null, ANIMATION_MILLIS)
+
+    private fun insets(keyboard: Int): WindowInsets = WindowInsets.Builder()
+        .setInsets(WindowInsets.Type.statusBars(), PlatformInsets.of(0, statusPx, 0, 0))
+        .setVisible(WindowInsets.Type.statusBars(), true)
+        .setInsets(WindowInsets.Type.ime(), PlatformInsets.of(0, 0, 0, keyboard))
+        .setVisible(WindowInsets.Type.ime(), keyboard > 0)
+        .build()
+
+    fun start() {
+        activity.runOnUiThread {
+            decor.dispatchWindowInsetsAnimationPrepare(animation)
+            decor.dispatchApplyWindowInsets(insets(to))
+            decor.dispatchWindowInsetsAnimationStart(
+                animation,
+                WindowInsetsAnimation.Bounds(
+                    PlatformInsets.NONE,
+                    PlatformInsets.of(0, 0, 0, maxOf(from, to))
+                )
+            )
+        }
+        idle()
+    }
+
+    fun progress(fraction: Float) {
+        activity.runOnUiThread {
+            animation.fraction = fraction
+            val keyboard = from + ((to - from) * fraction).toInt()
+            decor.dispatchWindowInsetsAnimationProgress(insets(keyboard), listOf(animation))
+        }
+        idle()
+    }
+
+    fun end() {
+        activity.runOnUiThread { decor.dispatchWindowInsetsAnimationEnd(animation) }
+        idle()
+    }
+
+    private companion object {
+        const val ANIMATION_MILLIS = 250L
     }
 }

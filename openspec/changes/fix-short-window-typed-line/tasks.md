@@ -111,11 +111,18 @@ by hand in Robolectric, as `KeyboardRoomTest` does.
 
 ## 4. #238 guards, merge and gate (`android-engineer`)
 
-- [ ] 4.1 Keyboard-room guards (D5, team-lead condition). Verify: `KeyboardRoomTest`, `AttackDetailsKeyboardRoomTest`,
+- [x] 4.1 Keyboard-room guards (D5, team-lead condition). Verify: `KeyboardRoomTest`, `AttackDetailsKeyboardRoomTest`,
   `EditMedicationKeyboardTest`, `LogMedicationKeyboardTest` and `DeleteKeyboardTest` all green with no assertion changed. New
   cases with the bar aside: on close the scroll value is unchanged, the field is lower by exactly the bar's height, and no
   scroll happens (scroll state's value and `isScrollInProgress` checked). Mutation: keep the field's screen position on close
   by `scrollBy(barHeight)` → red.
+  Done: `KeyboardRoom.kt`, `KeyboardRoomTest` and the four screens' keyboard tests have no diff since 76c38c38 (0 lines)
+  and pass (counts in 4.3). New `TypingSpaceCloseTest` (MessageLayout with the space, the room after the scroll, QA's 360
+  dp geometry, the platform IME animation): with the bar aside, at the page's end, short of it by 170 px, and on a jump
+  shut, the offset holds and `isScrollInProgress` is false at 25/50/75/100% of the close, and the page and the field move
+  down by exactly the bar's height. Mutation: `scrollBy` the bar's height on close (in the room's collector) -> red short of
+  the end (offset 1833 -> 1847 at 25%); at the page's end such a scroll has nowhere to go, so those two cases cannot catch
+  it. Logs `4.1-*.log`.
 - [ ] 4.2 If #239 has merged into `develop` by now, merge `origin/develop` and resolve `EditMedicationScreen` and
   `LogMedicationScreen`. Verify: both changes' test classes green on the merged tree; record `git log --oneline -1
   origin/develop`.

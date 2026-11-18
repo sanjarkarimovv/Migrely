@@ -2,9 +2,6 @@ package com.migrely.app.designsystem.input
 
 import android.graphics.Bitmap
 import android.graphics.Canvas
-import android.graphics.Insets
-import android.view.WindowInsets
-import android.view.WindowInsetsAnimation
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -124,46 +121,8 @@ class TypingSpaceBarTest {
         rule.waitForIdle()
     }
 
-    private fun insets(keyboard: Int): WindowInsets = WindowInsets.Builder()
-        .setInsets(WindowInsets.Type.statusBars(), Insets.of(0, STATUS_PX, 0, 0))
-        .setVisible(WindowInsets.Type.statusBars(), true)
-        .setInsets(WindowInsets.Type.ime(), Insets.of(0, 0, 0, keyboard))
-        .setVisible(WindowInsets.Type.ime(), keyboard > 0)
-        .build()
-
-    /** The keyboard's own animation from [from] to [to] px, as Android runs it from API 30. */
-    private inner class KeyboardAnimation(private val from: Int, private val to: Int) {
-        private val decor get() = rule.activity.window.decorView
-        private val animation =
-            WindowInsetsAnimation(WindowInsets.Type.ime(), null, ANIMATION_MILLIS)
-
-        fun start() {
-            rule.runOnUiThread {
-                decor.dispatchWindowInsetsAnimationPrepare(animation)
-                // Android reports the end state first; androidx keeps it as the target.
-                decor.dispatchApplyWindowInsets(insets(to))
-                decor.dispatchWindowInsetsAnimationStart(
-                    animation,
-                    WindowInsetsAnimation.Bounds(Insets.NONE, Insets.of(0, 0, 0, maxOf(from, to)))
-                )
-            }
-            rule.waitForIdle()
-        }
-
-        fun progress(fraction: Float) {
-            rule.runOnUiThread {
-                animation.fraction = fraction
-                val keyboard = from + ((to - from) * fraction).toInt()
-                decor.dispatchWindowInsetsAnimationProgress(insets(keyboard), listOf(animation))
-            }
-            rule.waitForIdle()
-        }
-
-        fun end() {
-            rule.runOnUiThread { decor.dispatchWindowInsetsAnimationEnd(animation) }
-            rule.waitForIdle()
-        }
-    }
+    private fun keyboardAnimation(from: Int, to: Int) =
+        KeyboardAnimation(rule.activity, STATUS_PX, from, to) { rule.waitForIdle() }
 
     private fun density() = rule.activity.resources.displayMetrics.density
 
@@ -187,7 +146,7 @@ class TypingSpaceBarTest {
     fun `The bar's height follows the keyboard's animation down to the status bar and back`() {
         show()
         val full = barHeightPx()
-        val opening = KeyboardAnimation(from = 0, to = KEYBOARD_PX)
+        val opening = keyboardAnimation(from = 0, to = KEYBOARD_PX)
 
         opening.start()
         listOf(0f, 0.25f, 0.5f, 1f).forEach { fraction ->
@@ -198,7 +157,7 @@ class TypingSpaceBarTest {
         opening.end()
         assertEquals("open", STATUS_PX.toFloat(), barHeightPx(), HEIGHT_TOLERANCE)
 
-        val closing = KeyboardAnimation(from = KEYBOARD_PX, to = 0)
+        val closing = keyboardAnimation(from = KEYBOARD_PX, to = 0)
         closing.start()
         listOf(0f, 0.25f, 0.5f, 1f).forEach { fraction ->
             closing.progress(fraction)
@@ -233,7 +192,7 @@ class TypingSpaceBarTest {
         }
         rule.waitForIdle()
 
-        val symbols = KeyboardAnimation(from = KEYBOARD_PX, to = KEYBOARD_PX + SYMBOLS_EXTRA_PX)
+        val symbols = keyboardAnimation(from = KEYBOARD_PX, to = KEYBOARD_PX + SYMBOLS_EXTRA_PX)
         symbols.start()
         listOf(0f, 0.5f, 1f).forEach { fraction ->
             symbols.progress(fraction)
@@ -245,7 +204,7 @@ class TypingSpaceBarTest {
             )
         }
         symbols.end()
-        val letters = KeyboardAnimation(from = KEYBOARD_PX + SYMBOLS_EXTRA_PX, to = KEYBOARD_PX)
+        val letters = keyboardAnimation(from = KEYBOARD_PX + SYMBOLS_EXTRA_PX, to = KEYBOARD_PX)
         letters.start()
         listOf(0f, 0.5f, 1f).forEach { fraction ->
             letters.progress(fraction)
@@ -264,7 +223,7 @@ class TypingSpaceBarTest {
         show()
         val full = barHeightPx().toInt()
         val before = drawWindow()
-        val opening = KeyboardAnimation(from = 0, to = KEYBOARD_PX)
+        val opening = keyboardAnimation(from = 0, to = KEYBOARD_PX)
         opening.start()
 
         opening.progress(0.5f)
@@ -319,8 +278,6 @@ class TypingSpaceBarTest {
     }
 
     private companion object {
-        const val ANIMATION_MILLIS = 250L
-
         // Gboard's symbols and emoji pages are taller than its letters.
         const val SYMBOLS_EXTRA_PX = 80
     }
