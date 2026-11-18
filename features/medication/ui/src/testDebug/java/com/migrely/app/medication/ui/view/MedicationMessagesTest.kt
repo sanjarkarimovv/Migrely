@@ -157,7 +157,7 @@ class MedicationMessagesTest {
     }
 
     @Test
-    fun `A field problem clears the storage error at once, with no haptic, and a new error shows again`() {
+    fun `A field problem clears the storage error at once, without haptic, then one shows`() {
         clearsOnAFieldProblem(MedicationMessageUiModel.StorageFull, STORAGE_FULL)
 
         post(MedicationMessageUiModel.StorageFull)

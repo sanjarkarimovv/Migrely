@@ -51,14 +51,14 @@ internal fun announcement(text: String): SemanticsMatcher =
 internal val nameField: SemanticsMatcher = hasSetTextAction() and hasText(NAME_LABEL)
 internal val doseField: SemanticsMatcher = hasSetTextAction() and hasText(DOSE_LABEL)
 
+private typealias ActivityComposeRule =
+    AndroidComposeTestRule<ActivityScenarioRule<ComponentActivity>, ComponentActivity>
+
 /**
  * The medication forms as the app shows them, edge to edge so the keyboard's inset reaches them, over the real
  * ViewModels and use cases (BRD D191).
  */
-internal class ProblemFeedbackHarness(
-    private val rule: AndroidComposeTestRule<ActivityScenarioRule<ComponentActivity>, ComponentActivity>,
-    val diary: FakeDiary
-) {
+internal class ProblemFeedbackHarness(private val rule: ActivityComposeRule, val diary: FakeDiary) {
     val edit = editMedicationDependencies(diary)
     val log = logMedicationDependencies(diary)
 
@@ -108,7 +108,9 @@ internal class ProblemFeedbackHarness(
         restoration: StateRestorationTester? = null
     ) {
         content(fontScale, restoration) {
-            with(log) { LogMedication(rememberNavController(), attackId = null, darkRoom = darkRoom) }
+            with(log) {
+                LogMedication(rememberNavController(), attackId = null, darkRoom = darkRoom)
+            }
         }
         awaitNode(hasText("Add and log"))
     }

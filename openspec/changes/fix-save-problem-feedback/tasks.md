@@ -31,39 +31,76 @@ the test red again. Logs go to `migrely-work/239/eng/`. Robolectric tests live i
 
 ## 2. Edit medication (`android-engineer`, `features/medication/ui`)
 
-- [ ] 2.1 Announce once per arrival (D1, D2; F5, F7). Verify: a test (for example `EditMedicationProblemFeedbackTest`) that
+- [x] 2.1 Announce once per arrival (D1, D2; F5, F7). Verify: a test (for example `EditMedicationProblemFeedbackTest`) that
   clears Name, presses Save, and asserts one polite live-region node carrying "Enter a name." appears once per `NotSaved`
   arrival; a second Save with no edit announces again (the node's content changes or is re-stamped). Red on 76c38c38 (no
   such node). Mutation: key the effect on the problem value instead of the arrival count → the second-Save case red.
-- [ ] 2.2 Real error in the field's semantics, one stop (D3; F6). Verify: the merged node for Name has error "Enter a name."
+  - Record (2026-11-18, android-engineer, 8509c53c; logs `migrely-work/239/eng/`): `EditMedicationProblemFeedbackTest`, full screen over the real ViewModel. One shared mechanism,
+    `FieldProblemFeedback.kt`: per `NotSaved` arrival, touch and focus not moved -> the field comes into view and a
+    `ProblemAnnouncer` speaks the text from its own 1 dp polite live-region node at the page's top (not focusable, no
+    actions), gone after 3 s or when the problem clears; the same text again re-announces (gone for a frame first).
+    Red on de414287 (no node). Mutation `LaunchedEffect(problem)` -> the 3 "again" cases red (mutations.txt).
+- [x] 2.2 Real error in the field's semantics, one stop (D3; F6). Verify: the merged node for Name has error "Enter a name."
   (not "Invalid input"); no other focusable node carries the error text; the announcement node is not focusable or
   traversable. Red on 76c38c38 ("Invalid input"). Mutation: drop the override → red.
-- [ ] 2.3 Typing is quiet (F8). Verify: after the error, typing "Ib" produces no live-region change and no node in the field
+  - Record: Name's merged node has `Error` "Enter a name."; only the field carries the text as text; the announcement
+    node has no RequestFocus, OnClick or Focused. `Modifier.problemSemantics` comes before Material's default in the
+    same node, and the first peer wins. Red on de414287 ("Invalid input"). Mutation: no override -> 2 cases red.
+- [x] 2.3 Typing is quiet (F8). Verify: after the error, typing "Ib" produces no live-region change and no node in the field
   with `liveRegion`. Mutation: put `liveRegion = Polite` on the supporting text → red.
-- [ ] 2.4 Scroll into view (D5; F2). Verify: in a 411x891 dp window with a 250 dp IME inset, Name focused, page scrolled to
+  - Record: after the error, typing "Ib" leaves no node with `LiveRegion` anywhere (green on de414287, a guard).
+    Mutation: Polite live region on Name's supporting text -> red (and 4 other cases).
+- [x] 2.4 Scroll into view (D5; F2). Verify: in a 411x891 dp window with a 250 dp IME inset, Name focused, page scrolled to
   Save: after Save, the field region's bounds are fully inside the visible part (below the top bar, above the IME inset). Same
   with no IME inset and Name unfocused. Already in view → scroll value unchanged. Red on 76c38c38 (Name off screen).
   Mutation: remove the bring-into-view request → red.
-- [ ] 2.5 Focus and keyboard (D1; F3, F4). Verify: (a) keyboard mode → Name focused (existing, keep green); (b) touch, IME
+  - Record: 411x891 with a 250 dp IME inset, Name focused, page at Save -> Name's whole region inside the visible
+    scroll area; 411x480 without IME, nothing focused -> the same, and no focus; already in view -> scroll value
+    unchanged. Uses a new `inViewRequests` on `SingleLineFieldInView` (designsystem), U1's nested areas, one frame after
+    the result so the error line counts. Red on de414287 (not in view). Mutation: no request -> 4 cases red (2 Edit, 2
+    first use).
+- [x] 2.5 Focus and keyboard (D1; F3, F4). Verify: (a) keyboard mode → Name focused (existing, keep green); (b) touch, IME
   inset present, Usual dose focused → Name focused, cursor at end, selection collapsed, no IME hide call; (c) touch, no IME
   inset → no field focused; (d) touch, IME inset, Name focused → focus unchanged. (b) red on 76c38c38. Mutation: request
   focus in every mode → (c) red.
-- [ ] 2.6 Pending and one field (F1, F12). Verify: two quick presses → one `onSaveAction`, one announcement; empty name and
+  - Record: (a) keyboard mode stays covered by `EditMedicationKeyboardOrderTest` (green); (b) touch, IME up, cursor in
+    Usual dose -> Name focused, selection `TextRange(9)` after the name "Ibuprofen" whose cursor was put at 0 (red on
+    de414287: focus stayed in the dose); (c) touch, no IME -> nothing focused; (d) touch, IME up, Name focused ->
+    unchanged. No keyboard show or hide call exists in the code. "Keyboard up" is read from the IME inset's height at
+    the result (a window with no insets reads `isImeVisible` as true, which moved focus in an existing test). Touch is
+    given by a fake `InputModeManager` (Robolectric never stays in touch mode). Mutation: focus in every mode -> (c)
+    red, 10 red in all.
+- [x] 2.6 Pending and one field (F1, F12). Verify: two quick presses → one `onSaveAction`, one announcement; empty name and
   invalid dose → only Name has an error. Mutation: allow the press while pending → red.
+  - Record: two presses while the duplicate lookup is held -> one lookup, one announcement; empty name with a dose ->
+    only Name has `Error`. Mutation: press allowed while pending (guard and enabled) -> the two-presses case red.
 
 ## 3. Log medication first use and messages (`android-engineer`, `features/medication/ui`)
 
-- [ ] 3.1 Apply 2.1 to 2.5 to `FirstMedicationForm` through the same mechanism (no second copy), in the normal page and the
+- [x] 3.1 Apply 2.1 to 2.5 to `FirstMedicationForm` through the same mechanism (no second copy), in the normal page and the
   dark room. Hardware keyboard: the park then the move to Name in the same result frame. Verify: a test class for the
   first-use form with the announcement, field semantics, scroll and keyboard-mode focus cases, each red on 76c38c38; the
   dark-room variant of the announcement and scroll cases.
-- [ ] 3.2 A field problem clears an older message (D4; F9). Verify: in `MedicationMessages` tests and one screen test per
+  - Record: `FirstMedicationProblemFeedbackTest` (normal and dark room): announcement once and again, real error,
+    into view with the IME (411x700), hardware keyboard Tab to Add and log + Enter -> Name focused after the park. All
+    7 red on de414287. Same `FieldProblemFeedback`, no copy; the screen counts its own `NotSaved` arrivals. Typing in
+    the first-use form does not clear its problem (unchanged), so only 2.1, 2.2, 2.4 and the keyboard case apply.
+- [x] 3.2 A field problem clears an older message (D4; F9). Verify: in `MedicationMessages` tests and one screen test per
   form: "Couldn't save. Your phone's storage is full." shows, then `NotSaved(InvalidName)` → the message node is gone after
   one frame, no haptic call, the field error shows; then `Message(StorageFull)` → shown again. Red on 76c38c38. Mutation:
   clear only error-tone messages → the "You can keep up to 50 medications…" case red.
-- [ ] 3.3 Rotation and process death (EC-UX-70 "Rotation after the clear"). Verify: `StateRestorationTester` after a clear
+  - Record: `MedicationMessages` clears on `NotSaved` exactly as on `Logged` (#237's `leavesAtOnce`: no fade, draws
+    nothing while leaving, no haptic). Host tests: storage full then `NotSaved` -> gone within two frames, no haptic
+    call, then a new storage full shows; the 50-medications message the same. Screen tests: Edit and first use, a
+    full-disk refusal then an empty name -> no message, field error. #237's guard "A refused medication after an error
+    …" inverted to "clears the error and logs nothing". All red on de414287. Mutation: clear only error tone -> the
+    50-medications case red.
+- [x] 3.3 Rotation and process death (EC-UX-70 "Rotation after the clear"). Verify: `StateRestorationTester` after a clear
   by `NotSaved`: the field error shows, no message, and no new announcement on restore. Mutation: re-announce on restore →
   red.
+  - Record: `StateRestorationTester` on Edit after the clear (past the announcement): field error shown, no message,
+    no announcement node. Red on de414287 (message restored). Mutation: `problemArrivals` in `rememberSaveable` ->
+    red.
 
 ## 4. Merge and gate (`android-engineer`)
 
@@ -71,10 +108,20 @@ the test red again. Logs go to `migrely-work/239/eng/`. Robolectric tests live i
   and resolve `MedicationMessages` so both clears (`Logged`, `NotSaved`) exist; rerun 3.2 and #237's 3.1. Verify: both test
   classes green on the merged tree; `git log --oneline -1 origin/develop` recorded here. If #237 is not merged yet when
   review starts, record that and do this before QA.
-- [ ] 4.1 Full gate. Verify: `set -o pipefail; nice -n 19 ./gradlew --max-workers=2 assembleDebug test ktlintCheck detekt lint`
+  - Record (2026-11-18, android-engineer): by `team-lead`'s decision #237 was merged first, before #239's code:
+    8b96026b (de414287, BRD rows 54/55 and D190/D191 kept in order) and its review fixes d2fa83b4 (6e96b31b, a test-fake
+    conflict resolved by keeping both builders). Both clears exist (`Logged`, `NotSaved` share `leavesAtOnce`); #237's
+    3.1 and this 3.2 are green on the merged tree (gate-3.log). Still open: #237 is not in `develop` yet
+    (`origin/develop` 9a48dbcf); merge `origin/develop` after it lands, before QA.
+- [x] 4.1 Full gate. Verify: `set -o pipefail; nice -n 19 ./gradlew --max-workers=2 assembleDebug test ktlintCheck detekt lint`
   exit 0, with the counts of tests run (never `testDebugUnitTest` alone).
-- [ ] 4.2 No permission, string or manifest change. Verify: `./gradlew :app:checkReleasePermissions` exit 0 and
+  - Record: exit 0, BUILD SUCCESSFUL (`migrely-work/239/eng/gate-3.log`). Result XMLs: 3438 tests, 0 failures;
+    `:features:medication:ui` 145 (debug) + 23 (release), `:designsystem` 237. Two earlier runs failed on test code only
+    (a `;` in a test name, a ktlint class signature), fixed before gate-3.
+- [x] 4.2 No permission, string or manifest change. Verify: `./gradlew :app:checkReleasePermissions` exit 0 and
   `git diff origin/develop -- '*.xml' '*strings*' '*AndroidManifest*'` empty except tests.
+  - Record: `:app:checkReleasePermissions` exit 0. `git diff origin/develop -- '*.xml' '*AndroidManifest*'`: only #237's
+    two strings (merged in); #239 adds no string, manifest or Gradle change.
 
 ## 5. Device walk (`android-engineer`, emulator-5570, headless first)
 

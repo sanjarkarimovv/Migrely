@@ -72,7 +72,7 @@ class MedicationFormMessagesTest {
     }
 
     @Test
-    fun `A restored screen after the clear shows the field error, no message and no new announcement`() {
+    fun `After the clear a restored screen shows the field error, no message, no announcement`() {
         val restoration = StateRestorationTester(rule)
         screen.showEdit(restoration = restoration)
         storageErrorThenEmptyName("Save")
