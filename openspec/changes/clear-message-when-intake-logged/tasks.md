@@ -117,11 +117,18 @@ mutation is a deliberately broken build that must turn the test red again. Logs 
 
 ## 4. Gate (`android-engineer`)
 
-- [ ] 4.1 Full gate. Verify: `set -o pipefail; nice -n 19 ./gradlew --max-workers=2 assembleDebug test ktlintCheck detekt lint`
+- [x] 4.1 Full gate. Verify: `set -o pipefail; nice -n 19 ./gradlew --max-workers=2 assembleDebug test ktlintCheck detekt lint`
   exit 0, with the counts of tests run (never `testDebugUnitTest` alone).
-- [ ] 4.2 No permission or manifest change; strings only the two of 3.7. Verify: `./gradlew :app:checkReleasePermissions`
+  - Record (3ab5d6ec's tree): exit 0, BUILD SUCCESSFUL (`migrely-work/237/eng/gate-2.log`). Result XMLs after the gate:
+    3413 test cases, 0 failures, 0 errors, 0 skipped; `:features:medication:ui` 120 (debug) + 23 (release),
+    `:features:medication:presentation` 41. The first gate run (gate-1.log) failed on ktlint line length; fixed in
+    3ab5d6ec.
+- [x] 4.2 No permission or manifest change; strings only the two of 3.7. Verify: `./gradlew :app:checkReleasePermissions`
   exit 0 and `git diff origin/develop -- '*.xml' '*strings*' '*AndroidManifest*'` shows only the two new strings (or nothing
   if rule 2 dropped).
+  - Record: `:app:checkReleasePermissions` exit 0 (perms.log). `git diff origin/develop -- '*.xml' '*AndroidManifest*'`:
+    only `features/medication/ui/src/main/res/values/strings.xml`, +3 lines (the two strings and their comment). No
+    Gradle, manifest or dependency change.
 
 ## 5. Device walk (`android-engineer`, emulator-5570, headless first)
 
