@@ -45,8 +45,8 @@ private val BODY_LINE = 24.sp
  * input line sits: below half a floating label's line, as Material places it, and its content padding.
  *
  * The input line's height is the field's line as laid out in [LocalTextStyle], the style the field uses (BRD D192): not
- * that style's line height in sp, which nonlinear font scaling converts to less (95 against 112 px at 200%). A field that
- * passes its own `textStyle` must provide it as [LocalTextStyle] around this instead.
+ * that style's line height in sp, which nonlinear font scaling converts to less (95 against 112 px at 200%). The same
+ * height gives [inputLineRoom]. A field that passes its own `textStyle` must provide it as [LocalTextStyle] around this.
  */
 @Composable
 fun SingleLineFieldInView(
@@ -67,12 +67,7 @@ fun SingleLineFieldInView(
     val lineTop = with(density) {
         labelHalf.toPx() + OutlinedTextFieldDefaults.contentPadding().calculateTopPadding().toPx()
     }
-    // Laid out, not converted from sp: see the KDoc.
-    val textStyle = LocalTextStyle.current
-    val measurer = rememberTextMeasurer()
-    val lineHeight = remember(textStyle, density, measurer) {
-        measurer.measure(text = "A", style = textStyle, density = density).size.height.toFloat()
-    }
+    val lineHeight = inputLineHeight()
     val marginPx = with(density) { margin.toPx() }
     val space = LocalTypingSpace.current
     suspend fun bringFieldIntoView(width: Float, height: Float) {
@@ -114,12 +109,25 @@ fun SingleLineFieldInView(
 
 /**
  * The height a focused single-line field needs to show its input line [margin] clear above and below, which is what
- * [SingleLineFieldInView] asks for at least (ux U1, U7).
+ * [SingleLineFieldInView] asks for at least (ux U1, U7), with the line as laid out ([inputLineHeight]).
  */
 @Composable
 fun inputLineRoom(margin: Dp = LINE_MARGIN): Dp =
-    with(LocalDensity.current) { LocalTextStyle.current.lineHeight.orBodyLine().toDp() } +
-        margin * 2
+    with(LocalDensity.current) { inputLineHeight().toDp() } + margin * 2
+
+/**
+ * The input line's height in px: one line laid out in [LocalTextStyle], the style the field uses, at the screen's density,
+ * not that style's line height in sp, which nonlinear font scaling converts to less (BRD D192; 95 against 112 px at 200%).
+ */
+@Composable
+private fun inputLineHeight(): Float {
+    val textStyle = LocalTextStyle.current
+    val density = LocalDensity.current
+    val measurer = rememberTextMeasurer()
+    return remember(textStyle, density, measurer) {
+        measurer.measure(text = "A", style = textStyle, density = density).size.height.toFloat()
+    }
+}
 
 private fun TextUnit.orBodyLine(): TextUnit = if (isSp) this else BODY_LINE
 

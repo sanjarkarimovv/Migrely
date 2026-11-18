@@ -58,7 +58,10 @@ class DeleteShortWindowTest {
     private val field get() = rule.onNode(hasSetTextAction())
 
     /** As QA's harness: a tap on the field, the keyboard, then typing; no drag after it opens. */
-    private fun typeWithKeyboardAt(keyboardTop: Int) {
+    private fun typeWithKeyboardAt(keyboardTop: Int) = typeWithKeyboardAt { keyboardTop }
+
+    /** [keyboardTop] is read once the field is focused, before the keyboard opens. */
+    private fun typeWithKeyboardAt(keyboardTop: () -> Int) {
         rule.runOnUiThread { rule.activity.drawEdgeToEdge() }
         rule.setContent {
             MigrelyTheme {
@@ -77,7 +80,7 @@ class DeleteShortWindowTest {
         setKeyboard(null)
         field.performClick()
         rule.waitForIdle()
-        setKeyboard(keyboardTop)
+        setKeyboard(keyboardTop())
         field.performTextInput("DEL")
         rule.waitForIdle()
     }
@@ -174,6 +177,27 @@ class DeleteShortWindowTest {
     }
 
     @Test
+    @Config(qualifiers = WINDOW_360)
+    fun `The row stays behind when the word's laid-out line and its margins do not fit above it`() {
+        var keyboardTop = 0
+        typeWithKeyboardAt {
+            // Above the row, the room the decision weighs: between L + 2M as laid out (154 px) and as an sp line
+            // height converted at 200% gives it (137 px).
+            val density = rule.activity.resources.displayMetrics.density
+            val areaTop = rule.onNode(
+                hasScrollAction()
+            ).fetchSemanticsNode().boundsInRoot.top.toInt()
+            val button = rule.onNodeWithText(DELETE).getUnclippedBoundsInRoot()
+            val row = ((button.bottom - button.top).value * density).toInt() + 2 * ROW_PADDING_PX
+            keyboardTop = areaTop + row + ROOM_ABOVE_ROW_PX
+            keyboardTop
+        }
+
+        assertRowBehindTheKeyboard(keyboardTop)
+        assertInputLineShows(MARGIN_PX)
+    }
+
+    @Test
     @Config(qualifiers = WINDOW_411)
     fun `In the 411 dp window the row stays behind and the bar stays`() {
         typeWithKeyboardAt(KEYBOARD_TOP_411_PX)
@@ -196,5 +220,11 @@ class DeleteShortWindowTest {
 
         // A keyboard 16 px shorter than Gboard's at 360 dp.
         const val BETWEEN_PX = 16
+
+        // The row's 8 dp padding above and below its button, at density 2.625.
+        const val ROW_PADDING_PX = 21
+
+        // 137 <= room < 154: inside the band where the two line heights disagree.
+        const val ROOM_ABOVE_ROW_PX = 145
     }
 }
