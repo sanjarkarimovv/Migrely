@@ -73,9 +73,14 @@ by hand in Robolectric, as `KeyboardRoomTest` does.
 
 ## 3. Screens (`android-engineer`, `ui` modules)
 
-- [ ] 3.1 Attack details (note) through `MessageLayout`'s top bar slot. Verify: a screen test at 200%, 891x360 dp-equivalent
+- [x] 3.1 Attack details (note) through `MessageLayout`'s top bar slot. Verify: a screen test at 200%, 891x360 dp-equivalent
   window with Gboard's measured inset (H 61 px under a 194 px bar at density 2.625): after typing, the cursor line's bounds are
   whole with ≥ 8 dp on both sides and no Back node; red on 76c38c38 (40 of 112 px). Same at the 411 dp window: Back present.
+  Done: `AttackDetailsShortWindowTest` (QA's API 36 geometry: status 63 px, keyboard top 318 px; system nonlinear 200%).
+  Red on the unwired screen, as on the device: visible part 257..318 = 61 px; end 278..390 and start 185..297, 40 of 112 px
+  each. Green after wiring: the line whole with >= 8 dp both sides at the end, start and middle, Back gone from the tree; at
+  411 dp (keyboard top 394) Back stays and the bar does not move. Attack ui 126 tests green, `AttackDetailsKeyboardRoomTest`
+  and `NoteKeyboardTest` unchanged. Logs `3.1-*.log`.
 - [ ] 3.2 Edit medication (name, dose) and Log medication (name, normal and dark room). Verify: the same assertions with a
   168 px bar and H 87 px; red on 76c38c38; dark-room case asserts the area the bar left is `AttackModeBackground`.
 - [ ] 3.3 Delete all data: the row decision first (D180 (8)), then the bar. Verify: a test in `DeleteKeyboardTest` where the

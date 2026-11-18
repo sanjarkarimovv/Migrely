@@ -66,7 +66,10 @@ import com.migrely.app.attack.ui.model.ShownAttackMessageUiModel
 import com.migrely.app.attack.ui.model.TagKindUiModel
 import com.migrely.app.attack.ui.model.TimeErrorUiModel
 import com.migrely.app.designsystem.icon.MigrelyIcons
+import com.migrely.app.designsystem.input.ProvideTypingSpace
+import com.migrely.app.designsystem.input.TypingSpace
 import com.migrely.app.designsystem.input.rememberKeyboardRoom
+import com.migrely.app.designsystem.input.rememberTypingSpace
 import com.migrely.app.designsystem.layout.MigrelyInsets
 import com.migrely.app.designsystem.motion.rememberReduceMotion
 import com.migrely.app.designsystem.snackbar.LocalMessageClock
@@ -385,19 +388,32 @@ fun AttackDetailsContents(
     messages: @Composable () -> Unit = {}
 ) {
     val details = (viewState as? AttackDetailsViewStateUiModel.Ready)?.details
+    // The note's line being typed always shows: the bar steps aside where it cannot (BRD D192, #245).
+    val typingSpace = rememberTypingSpace()
     // The bar, then the message, then the content, for keyboard and TalkBack (BRD D178 (4)).
     MessageLayout(
         message = messages,
         modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background),
-        topBar = { AttackDetailsTopBar(details, timeUiFormatter, actions.onBack) }
+        topBar = {
+            AttackDetailsTopBar(details, timeUiFormatter, actions.onBack, typingSpace.barModifier)
+        }
     ) {
         when (viewState) {
             AttackDetailsViewStateUiModel.Loading -> Box(Modifier.fillMaxSize())
             AttackDetailsViewStateUiModel.NotFound -> NotFoundContents(actions.onBack)
             is AttackDetailsViewStateUiModel.Ready ->
-                ReadyContents(viewState.details, timeUiFormatter, labels, localState, actions)
+                ProvideTypingSpace(typingSpace) {
+                    ReadyContents(
+                        viewState.details,
+                        timeUiFormatter,
+                        labels,
+                        localState,
+                        actions,
+                        typingSpace
+                    )
+                }
         }
     }
 }
@@ -407,9 +423,11 @@ fun AttackDetailsContents(
 private fun AttackDetailsTopBar(
     details: AttackDetailsUiModel?,
     timeUiFormatter: AttackTimeUiFormatter,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    modifier: Modifier
 ) {
     TopAppBar(
+        modifier = modifier,
         title = {
             Column {
                 Text(
@@ -449,7 +467,8 @@ private fun ReadyContents(
     timeUiFormatter: AttackTimeUiFormatter,
     labels: AttackLabels,
     localState: AttackDetailsLocalState,
-    actions: AttackDetailsActions
+    actions: AttackDetailsActions,
+    typingSpace: TypingSpace
 ) {
     val scrollState = rememberScrollState()
     val arrivals = localState.safetyCardArrivals
@@ -477,6 +496,7 @@ private fun ReadyContents(
                 // higher, and the note's cursor line is kept in view against it (BRD D180 (2), #141).
                 .windowInsetsPadding(viewportInsets)
                 .then(reveal.viewportModifier)
+                .then(typingSpace.pageModifier)
                 .verticalScroll(scrollState)
                 .then(keyboardRoom.modifier)
                 .windowInsetsPadding(
