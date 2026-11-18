@@ -37,14 +37,17 @@ the test red again. Logs go to `migrely-work/239/eng/`. Robolectric tests live i
   such node). Mutation: key the effect on the problem value instead of the arrival count → the second-Save case red.
   - Record (2026-11-18, android-engineer, 8509c53c; logs `migrely-work/239/eng/`): `EditMedicationProblemFeedbackTest`, full screen over the real ViewModel. One shared mechanism,
     `FieldProblemFeedback.kt`: per `NotSaved` arrival, touch and focus not moved -> the field comes into view and a
-    `ProblemAnnouncer` speaks the text from its own 1 dp polite live-region node at the page's top (not focusable, no
-    actions), gone after 3 s or when the problem clears; the same text again re-announces (gone for a frame first).
+    `ProblemAnnouncer` speaks the text from its own 1 dp polite live-region node at the page's top (no actions), gone
+    after 1 s (3 s before cr-239 F2), when the problem clears, or when the form leaves; the same text again re-announces
+    (gone for a frame first).
     Red on de414287 (no node). Mutation `LaunchedEffect(problem)` -> the 3 "again" cases red (mutations.txt).
 - [x] 2.2 Real error in the field's semantics, one stop (D3; F6). Verify: the merged node for Name has error "Enter a name."
   (not "Invalid input"); no other focusable node carries the error text; the announcement node is not focusable or
   traversable. Red on 76c38c38 ("Invalid input"). Mutation: drop the override → red.
   - Record: Name's merged node has `Error` "Enter a name."; only the field carries the text as text; the announcement
-    node has no RequestFocus, OnClick or Focused. `Modifier.problemSemantics` comes before Material's default in the
+    node has no RequestFocus, OnClick or Focused. Correction (cr-239 F2): that does not make it "not traversable".
+    TalkBack can land on a node that has text, and on 5570 a swipe walk from Name reached it. See the F2 record under
+    5.1: it now lives 1 s, and a swipe within that second is a D191 residual. `Modifier.problemSemantics` comes before Material's default in the
     same node, and the first peer wins. Red on de414287 ("Invalid input"). Mutation: no override -> 2 cases red.
   - Added after the device walk (df7bbca4): the visible error line is hidden from semantics (`FieldSupportingLine`,
     shared by both forms), because TalkBack read it inside the field next to the error ("Name. Enter a name.. Error:
@@ -88,7 +91,7 @@ the test red again. Logs go to `migrely-work/239/eng/`. Robolectric tests live i
   dark-room variant of the announcement and scroll cases.
   - Record: `FirstMedicationProblemFeedbackTest` (normal and dark room): announcement once and again, real error,
     into view with the IME (411x700), hardware keyboard Tab to Add and log + Enter -> Name focused after the park. All
-    7 red on de414287. Same `FieldProblemFeedback`, no copy; the screen counts its own `NotSaved` arrivals. Typing in
+    6 red on de414287 (the record said 7; there were 6 tests). Same `FieldProblemFeedback`, no copy; the screen counts its own `NotSaved` arrivals. Typing in
     the first-use form does not clear its problem (unchanged), so only 2.1, 2.2, 2.4 and the keyboard case apply.
 - [x] 3.2 A field problem clears an older message (D4; F9). Verify: in `MedicationMessages` tests and one screen test per
   form: "Couldn't save. Your phone's storage is full." shows, then `NotSaved(InvalidName)` → the message node is gone after
@@ -208,3 +211,33 @@ the test red again. Logs go to `migrely-work/239/eng/`. Robolectric tests live i
   Verify: `openspec archive fix-save-problem-feedback --yes` and `openspec validate --all --strict` exit 0.
 - [ ] 8.3 PR into `develop` with `Refs #239`, merge commit, worktree removed after merge, tracker T75 updated by `team-lead`.
   Verify: `gh pr view <n> --json state,mergeCommit` shows MERGED.
+
+## Review cr-239 (2026-11-18, android-engineer; logs `migrely-work/239/eng/cr/`)
+
+- F1 (no test for the announcement in #239's own keyboard-up case): Edit and first-use keyboard-up tests now await
+  and count exactly one announcement. Mutation `announce only when the IME height is 0` -> 3 red (Edit, first use,
+  dark room). e940e3f5.
+- F3 (stale live region on the logged page): `FieldProblemFeedback` clears its announcer on dispose. Test "A dose
+  logged right after a name problem leaves only the logged line live" (`live.single()`), red on a85623a8; mutation
+  `onDispose { }` -> red. e940e3f5. Not walked: with a 1 s lifetime a device dump (about 1.5 s) cannot tell the two
+  builds apart.
+- F4 (a second Save inside the lifetime): test with no clock advance asserts a new announcement node id. Mutation
+  "no frame between hide and show" -> red (`no-frame`); the wider mutation also removing `shown = null` -> 3 red.
+- Smaller: first use "With no keyboard, no field takes focus" (guard; focus-always mutation -> red). Record 3.1 count
+  corrected.
+- Keyboard closing (cr's trace): focus moves now read `WindowInsets.imeAnimationTarget`, where the keyboard is going,
+  so a Save tapped while it closes does not move focus and reopen it. Robolectric applies insets without the
+  animation, so no unit test can show the race; on 5570 V4 (keyboard up) still moves focus to Name (0918f73f).
+- F2 (the announcement node is a swipe stop): proved on 5570 with TalkBack (console swipes; `input swipe` is not a
+  TalkBack gesture). Probe with a 60 s lifetime: a swipe walk from Name reached "Enter a name." (1 of 13 stops). A
+  pane title instead of a live region was not a stop but made TalkBack say "Migrely" and re-read Name on every press:
+  rejected. No option without text both speaks and skips, so the node stays and lives 1 s (0918f73f): 500, 1000 and
+  3000 ms were spoken alike on the first press. Residual for D191 (sent to `product-manager`): a swipe from Name
+  within that second lands on it (3/3); 1.5 s after the press it goes to the title (3/3). Also seen with the keyboard
+  closed and TalkBack on: each press makes TalkBack say "Migrely", and in 1 of 2 runs the second press's announcement
+  was flushed by TalkBack's own re-reading of Name (the error is still heard, from TalkBack), the same at 3000 ms.
+- Re-walk on 0918f73f (5570 rebooted clean; sha256 6d7bea21…): V2 Edit (Name into view, keyboard up), V4 (focus to
+  Name, "a" in Name), V1 and V6 (1 utterance "Enter a name." each). A first re-walk was void: console touches had put
+  Gboard into its compact pill with no IME inset.
+- Gate on 0918f73f: `set -o pipefail; nice -n 19 ./gradlew --max-workers=2 assembleDebug test ktlintCheck detekt lint`
+  exit 0, BUILD SUCCESSFUL; result XMLs 3441 tests, 0 failures, `:features:medication:ui` debug 148 (`gate-6.log`).
