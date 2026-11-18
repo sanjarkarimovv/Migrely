@@ -35,7 +35,6 @@ import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onRoot
-import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextInputSelection
 import androidx.compose.ui.test.requestFocus
@@ -303,9 +302,9 @@ class TypedLineMarginsTest {
 
     /**
      * Opens a keyboard that leaves a visible part of the input line's height L plus [extraPx], then focuses the field from
-     * below the visible part, or from above it with [fieldAbove]. L is the field's laid-out line.
+     * below the visible part. L is the field's laid-out line.
      */
-    private fun focusSingleLineLeaving(extraPx: Int, fieldAbove: Boolean): Int {
+    private fun focusSingleLineLeaving(extraPx: Int): Int {
         show(singleLine = true)
         val results = mutableListOf<TextLayoutResult>()
         note.fetchSemanticsNode().config[SemanticsActions.GetTextLayoutResult].action!!(results)
@@ -318,10 +317,6 @@ class TypedLineMarginsTest {
             visiblePart().height,
             TOLERANCE
         )
-        if (fieldAbove) {
-            page.performSemanticsAction(SemanticsActions.ScrollBy) { it(0f, PAST_THE_END) }
-            rule.waitForIdle()
-        }
         note.requestFocus()
         rule.waitForIdle()
         // An edit restarts the caret's blink, so it is drawn.
@@ -379,15 +374,12 @@ class TypedLineMarginsTest {
 
     @Test
     fun `In the band a single-line field reached from below shows its input line whole`() {
-        val line = focusSingleLineLeaving(extraPx = BAND_EXTRA, fieldAbove = false)
+        val line = focusSingleLineLeaving(extraPx = BAND_EXTRA)
 
         assertInputLineWhole("field below the visible part", line)
     }
 
     private companion object {
-        // Past any page's end: the scroll stops there.
-        const val PAST_THE_END = 10_000f
-
         // H = 137 px, L = 112 px: QA's API 36 Attack details cell at 411 dp, where the line is whole today.
         const val QA_411_EXTRA = 25
 

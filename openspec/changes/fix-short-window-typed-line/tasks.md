@@ -196,6 +196,26 @@ by hand in Robolectric, as `KeyboardRoomTest` does.
 - [ ] 6.1 Review sections 2 to 4 against design D1 to D6: one shared mechanism, decision once per opening from measured H and L,
   no dp constant, height follows the inset, semantics removed while aside, no scroll on close, KeyboardRoom untouched in
   behaviour, messages unmoved, no string. Verify: a review packet with findings, each fixed or answered before QA.
+  Delta after cr-245's first review (engineer's record, 2026-11-18; cr-245 approved 0890e090):
+  - **F3, raised to S3, fixed.** Single-line fields took L from their style's line height in sp: 95 px at Android's
+    nonlinear 200%, against 112 px laid out. So the bar stepped aside only below 95 px, the reduced margins never applied,
+    and Delete all data's row decision used 137 px for L + 2M instead of 154. Fixed in cb4bedbd (follow and trigger) and
+    0890e090 (`inputLineRoom()`): one source, a line laid out in `LocalTextStyle` by a `TextMeasurer`. Four tests red on
+    c8d848db or cb4bedbd, green after: the single-line band case in `TypedLineMarginsTest` (103 of 112 px), Edit name at
+    H 103 px (bar kept, 55 of 112 px), Delete all data's word at H 100 px (bar kept, 52 of 112 px)
+    (`7.1-L-red.log` / `7.1-L-green.log`), and Delete all data's row with 145 px of room (rode at 397 against a keyboard
+    at 565) (`8-room-red.log` / `8-room-green.log`).
+  - **Behaviour change from 1.3.1:** at 200%, Delete all data's row now stays behind the keyboard when 137 to 153 px of
+    room are left above it, as D180 (8) and EC-UX-40 say (the line and its margins must fit for the row to ride).
+  - **#252 (S3), out of scope:** a one-step keyboard (API 26 to 29, Remove animations) opening on an already focused
+    single-line field in the band 112 <= H < 133 px cuts the line to 23 of 112 px; Compose's focused-child tracking
+    overrides the follow, which is built against the old visible part. Pre-existing (the v1.3.1 code path does the same).
+  - **F1, not proven:** the reduced margin of `SingleLineFieldInView`'s third rect has no effect in Robolectric. The field's
+    own caret request decides when the keyboard is up first (offsets 1132 against 1130), and Compose's focus tracking
+    decides on a one-step keyboard (`7.2-probe-*.log`). cr-245 re-ran the F1 mutation on 0890e090: 35 tests stayed green.
+    QA's SW13 on a device decides, with the F1 mutation build as its negative control; if SW13 cannot make it red either,
+    the clearance is removed or recorded as inert in D192 (product-manager at close-out).
+  - The single-line band case lost its unused from-above parameter (it never failed in any state).
 
 ## 7. Acceptance (`qa-engineer`, this diff only)
 
