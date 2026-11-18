@@ -68,8 +68,15 @@ adbq shell pm clear "$APP" >/dev/null
 adbq logcat -c || true
 adbq logcat -c -b crash || true
 adbq logcat -c -b events || true
-adbq shell monkey -p "$APP" -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1
+# Open the app as its launcher icon does. Not `monkey -p … 1`: on the API 36 image that one-event monkey exits 251
+# ("SYS_KEYS has no physical keys") and set -e ends the run before any event. Not `am start -W`: it can hang on API 26.
+# am start can exit 0 without starting anything, so the app's process is checked instead.
+adbq shell am start -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -n "$APP/.MainActivity" >/dev/null
 sleep 3
+if [[ -z "$(adbq shell pidof "$APP" | tr -d '\r')" ]]; then
+  echo "The app did not start on $QA_SERIAL." >&2
+  exit 1
+fi
 # --ignore-crashes/--ignore-timeouts keep monkey going when ANOTHER app fails: the AOSP keyboard of the API 26 image
 # crashes under random input ("Empty keySpec"). The verdict below reads only this app's crashes and ANRs.
 adbq shell monkey -p "$APP" -s "$SEED" --throttle 50 --pct-syskeys 0 --ignore-crashes --ignore-timeouts -v "$EVENTS" \
