@@ -46,6 +46,11 @@ the test red again. Logs go to `migrely-work/239/eng/`. Robolectric tests live i
   - Record: Name's merged node has `Error` "Enter a name."; only the field carries the text as text; the announcement
     node has no RequestFocus, OnClick or Focused. `Modifier.problemSemantics` comes before Material's default in the
     same node, and the first peer wins. Red on de414287 ("Invalid input"). Mutation: no override -> 2 cases red.
+  - Added after the device walk (df7bbca4): the visible error line is hidden from semantics (`FieldSupportingLine`,
+    shared by both forms), because TalkBack read it inside the field next to the error ("Name. Enter a name.. Error:
+    Enter a name."). The tests now wait for the field's `Error` and assert no node carries the text as text; red on
+    8509c53c (2 cases), mutation "read-twice" -> the same 2 red, "live-line" (counter as live region) -> the typing
+    case red (mutations-f6.txt).
 - [x] 2.3 Typing is quiet (F8). Verify: after the error, typing "Ib" produces no live-region change and no node in the field
   with `liveRegion`. Mutation: put `liveRegion = Polite` on the supporting text → red.
   - Record: after the error, typing "Ib" leaves no node with `LiveRegion` anywhere (green on de414287, a guard).
@@ -115,7 +120,8 @@ the test red again. Logs go to `migrely-work/239/eng/`. Robolectric tests live i
     (`origin/develop` 9a48dbcf); merge `origin/develop` after it lands, before QA.
 - [x] 4.1 Full gate. Verify: `set -o pipefail; nice -n 19 ./gradlew --max-workers=2 assembleDebug test ktlintCheck detekt lint`
   exit 0, with the counts of tests run (never `testDebugUnitTest` alone).
-  - Record: exit 0, BUILD SUCCESSFUL (`migrely-work/239/eng/gate-3.log`). Result XMLs: 3438 tests, 0 failures;
+  - Record: exit 0, BUILD SUCCESSFUL on 95041d45 (`gate-3.log`) and again on df7bbca4 after the F6 fix (`gate-4.log`,
+    1m 20s, BUILD SUCCESSFUL). Result XMLs: 3438 tests, 0 failures;
     `:features:medication:ui` 145 (debug) + 23 (release), `:designsystem` 237. Two earlier runs failed on test code only
     (a `;` in a test name, a ktlint class signature), fixed before gate-3.
 - [x] 4.2 No permission, string or manifest change. Verify: `./gradlew :app:checkReleasePermissions` exit 0 and
@@ -125,13 +131,53 @@ the test red again. Logs go to `migrely-work/239/eng/`. Robolectric tests live i
 
 ## 5. Device walk (`android-engineer`, emulator-5570, headless first)
 
-- [ ] 5.1 V1, V2, V4, V5 and V6 on the candidate (debug build of the branch head, hash read back from the device), API 36,
+- [x] 5.1 V1, V2, V4, V5 and V6 on the candidate (debug build of the branch head, hash read back from the device), API 36,
   TalkBack 16 at VERBOSE, Gboard, 100% portrait. Verify: per row the TalkBack utterances in the 5 s after the tap that contain
   the error text, split into app-caused and TalkBack-caused (ux section 5), and a `uiautomator dump` with Name's bounds and
   the IME's top.
-- [ ] 5.2 V11 (dark room, first use) and V12 at 200% portrait and landscape. Verify: dumps with the field region's bounds and
+  - Record (2026-11-18, android-engineer, emulator-5570 `Migrely_API_36`, headless swiftshader, API 36, Gboard,
+    1080x2400 @420, 100% portrait). Candidate: debug APK of df7bbca4 (sha256 f4c8b929…, read back on the device);
+    control: v1.3.1's product tree, QA's debug APK of 76c38c38 (fde165db…, read back). TalkBack at VERBOSE; each press
+    waits until TalkBack has been silent for 3 s, then counts the fragments in the next 5 s. Log
+    `migrely-work/239/eng/walk/walk.log`, shots `migrely-work/239/shots/`.
+
+    | Row | Candidate | v1.3.1 control |
+    |---|---|---|
+    | V1 Edit, Name cleared, keyboard up, TalkBack press on Save | 1 utterance "Enter a name." (app-caused); Name scrolled to [42,296]-[1038,532], below the top bar (296) and above the keyboard (1517); input focus and keyboard kept | 0 utterances; Name stays off screen |
+    | V6 second press, no edit | 1 utterance "Enter a name." again | 0 utterances |
+    | V2 Edit, no TalkBack, 1 s after Save | Name region in view as V1, focused, keyboard up | Name off screen (only the dose field in view) |
+    | V2 first use | Name already in view at 100% (the page fits above the keyboard); stays focused, keyboard up, announcement node present | not run |
+    | V4 cursor in Usual dose, Save, type "a" | focus moved to Name, keyboard stayed (1517), Name reads "a", dose empty; with TalkBack: 1 utterance, the field's reading "Editing. Edit box. Name. Error: Enter a name." | focus stays in the dose and "a" goes into the dose |
+    | V5 first use, Tab to Add and log, Enter | focus to Name; with TalkBack 1 utterance "Edit box. Name. Error: Enter a name." (after the F6 fix) | not run |
+    | V5 Edit, Tab to Save, Enter | focus to Name; with TalkBack only "Showing English (US) (QWERTY)" in 3 of 3 runs | the same: focus to Name (D181 (6)) and only the keyboard announcement |
+
+    Found and fixed during the walk (df7bbca4): the first candidate (95041d45) read the focused Name as "Editing. Edit
+    box. Name. Enter a name.. Error: Enter a name." (the visible line merged in next to the error). The error line is now
+    hidden from semantics, so the field reads its error once; tests tightened and mutation-checked (read-twice -> 2
+    red; live-line -> 1 red).
+
+    Not conclusive here: V5 on Edit with TalkBack. The emulator has no hardware keyboard configured, so moving focus
+    by `input keyevent` shows Gboard, and TalkBack speaks only its "Showing English…" on both builds. On a real hardware
+    keyboard the soft keyboard stays hidden; QA's V5 on a device with a keyboard decides it. The field's reading of its
+    error is shown in V4 (touch) and V5 first use.
+- [x] 5.2 V11 (dark room, first use) and V12 at 200% portrait and landscape. Verify: dumps with the field region's bounds and
   one screenshot per cell in `migrely-work/239/shots/`.
-- [ ] 5.3 Restore font scale, rotation, animator scales, TalkBack, keyboard and locale. Verify: the settings read back.
+  - Record: V11 (attack mode, Medication taken, first use, keyboard up, TalkBack press on Add and log): 1 utterance
+    "Enter a name."; Name moved from under the top bar (top 267) to [42,296]-[1038,532]; dark room colours on the shot
+    (`V11-cand-after.png`). A first V11 run lost the announcement because TalkBack had been switched on 1 s before the
+    press and was still reading its start-up focus; rerun after TalkBack fell silent. Error colour not measured (F11,
+    unchanged code).
+    V12 at 200% (`V12-*.png`): portrait, Edit and first use: Name off screen before, [42,296]-[1038,647] after, keyboard
+    up (1517), focused, announced. Landscape, keyboard closed: Name region [583,231]-[1946,582] (Edit) and
+    [583,231]-[1946,576] (first use) inside the visible part [231,1080], keyboard stayed closed. Landscape, keyboard
+    up (Tab, Enter): the visible part is only [231,394]; the field [168,457] cannot fit, and its input line is kept in
+    view while the error line is under the keyboard, as U1 orders. Only the 411 dp landscape height was walked; 360 dp
+    was not.
+- [x] 5.3 Restore font scale, rotation, animator scales, TalkBack, keyboard and locale. Verify: the settings read back.
+  - Record: TalkBack off (`enabled_accessibility_services` null, `accessibility_enabled` 0) and its log level back to
+    ERROR, font 1.0, `user_rotation` 0, `accelerometer_rotation` 1, animator 1 (never changed), Gboard still the input
+    method, locale not changed, `wm size` 1080x2400 and density 420, no filler files (no storage was filled). The app is
+    the candidate with its data cleared. Emulator turned off (`adb emu kill`).
 
 ## 6. Review (`code-reviewer`)
 
