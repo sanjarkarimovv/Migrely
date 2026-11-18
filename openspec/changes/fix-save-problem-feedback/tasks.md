@@ -188,25 +188,51 @@ the test red again. Logs go to `migrely-work/239/eng/`. Robolectric tests live i
 
 ## 6. Review (`code-reviewer`)
 
-- [ ] 6.1 Review sections 2 to 4 against design D1 to D5: one mechanism for both forms, effect keyed on arrivals, no live
+- [x] 6.1 Review sections 2 to 4 against design D1 to D5: one mechanism for both forms, effect keyed on arrivals, no live
   region on the field, no "Invalid input", focus rules by mode and IME, no keyboard show or hide call, clear on `NotSaved`
   without fade or haptic, merge with #237 correct, no string change. Verify: a review packet with findings, each fixed or
   answered by the engineer before QA.
+  - Record (2026-11-18, relayed by `team-lead`): `code-reviewer` cr-239 **APPROVED 1ce3eab9** on re-review. F1, F3 and F4
+    fixed with mutations (section "Review cr-239" below); F2 is the accepted residual in BRD D191 (8): for 1 s a swipe can
+    land on the 1 dp announcement node.
 
 ## 7. Acceptance (`qa-engineer`, this diff only)
 
-- [ ] 7.1 V1 to V16 (ux section 5), plus V17 and V3T (design "Acceptance", the D191 (8) residual; a press with no error heard is a fail) on the PR head with v1.3.1 as the negative control (V1, V2, V3, V4, V9, V10 and V11 must
+- [x] 7.1 V1 to V16 (ux section 5), plus V17 and V3T (design "Acceptance", the D191 (8) residual; a press with no error heard is a fail) on the PR head with v1.3.1 as the negative control (V1, V2, V3, V4, V9, V10 and V11 must
   show the defect on v1.3.1, or that row proves nothing and says so); V7 with its mutation build; V15 as a guard. APK hashes
   read back on the device. Verify: a QA record `docs/qa/fix-save-problem-feedback.md` with each row, build SHA, result,
   control result and the app-caused and TalkBack-caused utterance counts.
-- [ ] 7.2 Restore every device setting. Verify: the settings read back in the QA record.
+  - Record: `docs/qa/fix-save-problem-feedback.md` (qa-239, branch `qa/239-acceptance` 9bffad27, merged here with a merge
+    commit), verdict line: "**QA (qa-239), 2026-11-18: GO with recorded limits** for merging
+    `bugfix/239-save-error-feedback` @ 1ce3eab9…". Proved: V1 one "Enter a name." at 0.64 s (v1.3.1: 0 in 5 s); V3T 5 of
+    5 presses heard (v1.3.1: 0 of 5); V4 "a" lands in Name (v1.3.1: in Usual dose); V2, V3x, V9, V10, V11, V12 portrait,
+    V13, V14 pass; V7 passes and its mutant M-V7b fails; V8 never "Invalid input"; V17 the D191 (8) residual 3 of 3;
+    keyboard-closing race 8 of 8; "Migrely" 0 of 5 on both builds; API 26 V2 and V3x pass. Limits (none S1 or S2): V5
+    Edit with TalkBack not proven (Gboard's "Showing English…" cuts the reading on both builds); V6-timed heard twice in
+    3 of 4 runs, once in 1; V12 landscape 200% with the keyboard up shows only the input line (#245, D192); V16 RTL not
+    reachable; V15 not run. Carried into D191 (9) by task 8.2.
+- [x] 7.2 Restore every device setting. Verify: the settings read back in the QA record.
+  - Record: QA record section "Restore (task 7.2)": emulator-5580 snapshot `changed: {}` against the start, emulator-5582
+    read back, both emulators off.
 
 ## 8. Close (`product-manager`, then `android-engineer`)
 
-- [ ] 8.1 Before archive: diff the MODIFIED "Edit medication with a keyboard" against the live
+- [x] 8.1 Before archive: diff the MODIFIED "Edit medication with a keyboard" against the live
   `openspec/specs/medication-list/spec.md`, and check that `in-app-messages` and `medication-intakes` gained nothing from #237
   that conflicts with the ADDED requirements here. Verify: the diff shows only the body's BRD ids and the two rewritten
   scenarios.
+  - Record (2026-11-18, product-manager, branch at the QA merge 63c707e5, `openspec/specs` equal to `origin/develop`
+    ae3593c6): per-requirement diff of "Edit medication with a keyboard", live vs delta: 3 hunks, the body's "D181" ->
+    "D181, D191" and the scenarios "Save with a name problem" and "Save problem by touch"; the other ten scenarios equal.
+    #237 (archived 2026-11-18) left one conflict: medication-intakes "A logged intake clears the message on Log
+    medication" said "Only a stored intake SHALL clear it: … a refused medication SHALL keep the list and show their
+    message as before", while the code (`LogMedicationMessagesTest` "A refused medication after an error clears the error
+    and logs nothing") and in-app-messages "A field problem replaces the message on the medication forms" clear it on a
+    name problem. Synced: a MODIFIED delta for that requirement (body sentence and BRD ids; scenario "A name problem on
+    the first-medication form" added; the thirteen live scenarios unchanged), and the EC-MED-16 row points to EC-UX-70.
+    in-app-messages "An error on the other screens goes when a later save succeeds" ("clear on success, never on the
+    attempt") does not conflict: "attempt" is the tap before the outcome (its scenario "Not on the tap"), and the
+    field-problem clear acts on the `NotSaved` outcome; no ADDED name here exists in the live specs.
 - [ ] 8.2 BRD D191 updated with QA's results (what was proved, what stays open, including the speech counts), then archive.
   Verify: `openspec archive fix-save-problem-feedback --yes` and `openspec validate --all --strict` exit 0.
 - [ ] 8.3 PR into `develop` with `Refs #239`, merge commit, worktree removed after merge, tracker T75 updated by `team-lead`.

@@ -54,7 +54,9 @@ None.
 
 - `medication-list`: ADDED "Save problems on Edit medication are heard and seen"; MODIFIED "Edit medication with a keyboard"
   (body's BRD ids; scenarios "Save with a name problem" and "Save problem by touch" rewritten; the other ten unchanged).
-- `medication-intakes`: ADDED "First-use name problems are heard and seen".
+- `medication-intakes`: ADDED "First-use name problems are heard and seen"; MODIFIED "A logged intake clears the message on
+  Log medication" (from #237, archived 2026-11-18: its "a refused medication SHALL keep … their message" now yields to the
+  field-problem clear here; one scenario added, the other thirteen unchanged; synced in task 8.1).
 - `in-app-messages`: ADDED "A field problem replaces the message on the medication forms".
 
 ## Impact
