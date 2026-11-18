@@ -25,10 +25,12 @@ import com.migrely.app.medication.domain.repository.FindMedicationByNameReposito
 import com.migrely.app.medication.domain.repository.GetActiveMedicationsRepository
 import com.migrely.app.medication.domain.repository.GetAttackRepository
 import com.migrely.app.medication.domain.repository.GetCurrentTimeRepository
+import com.migrely.app.medication.domain.repository.GetMedicationRepository
 import com.migrely.app.medication.domain.repository.ScheduleEffectQuestionRepository
 import com.migrely.app.medication.domain.repository.SetMedicationArchivedRepository
 import com.migrely.app.medication.domain.repository.UpdateMedicationRepository
 import com.migrely.app.medication.domain.usecase.GetMedicationLogUseCase
+import com.migrely.app.medication.domain.usecase.GetMedicationUseCase
 import com.migrely.app.medication.domain.usecase.LogIntakeUseCase
 import com.migrely.app.medication.domain.usecase.SaveMedicationUseCase
 import com.migrely.app.medication.domain.usecase.UndoIntakeUseCase
@@ -37,9 +39,14 @@ import com.migrely.app.medication.presentation.mapper.MedicationDomainMapper
 import com.migrely.app.medication.presentation.mapper.MedicationLogPresentationMapper
 import com.migrely.app.medication.presentation.mapper.MedicationPresentationMapper
 import com.migrely.app.medication.presentation.mapper.SaveProblemPresentationMapper
+import com.migrely.app.medication.presentation.navigation.EditMedicationPresentationNavigationEvent
 import com.migrely.app.medication.presentation.navigation.LogMedicationPresentationNavigationEvent
+import com.migrely.app.medication.presentation.viewmodel.EditMedicationViewModel
 import com.migrely.app.medication.presentation.viewmodel.LogMedicationViewModel
+import com.migrely.app.medication.ui.di.EditMedicationDependencies
 import com.migrely.app.medication.ui.di.LogMedicationDependencies
+import com.migrely.app.medication.ui.mapper.EditMedicationNotificationUiMapper
+import com.migrely.app.medication.ui.mapper.EditMedicationViewStateUiMapper
 import com.migrely.app.medication.ui.mapper.IntakeUiMapper
 import com.migrely.app.medication.ui.mapper.LogMedicationNotificationUiMapper
 import com.migrely.app.medication.ui.mapper.LogMedicationViewStateUiMapper
@@ -93,6 +100,7 @@ internal class FakeDiary(vararg medications: MedicationDomainModel) :
     ScheduleEffectQuestionRepository,
     CancelEffectQuestionRepository,
     FindMedicationByNameRepository,
+    GetMedicationRepository,
     CountActiveMedicationsRepository,
     CreateMedicationRepository,
     UpdateMedicationRepository,
@@ -100,6 +108,7 @@ internal class FakeDiary(vararg medications: MedicationDomainModel) :
     val medications = CopyOnWriteArrayList(medications.toList())
     val intakes = CopyOnWriteArrayList<String>()
     val addCalls = CopyOnWriteArrayList<String>()
+    val lookups = CopyOnWriteArrayList<String>()
     val deleteCalls = CopyOnWriteArrayList<String>()
 
     @Volatile var addFailure: AddIntakeResultDomainModel? = null
@@ -111,6 +120,8 @@ internal class FakeDiary(vararg medications: MedicationDomainModel) :
     @Volatile var holdAdd: CountDownLatch? = null
 
     @Volatile var holdDelete: CountDownLatch? = null
+
+    @Volatile var holdLookup: CountDownLatch? = null
 
     private var nextIntake = 0
 
@@ -149,8 +160,16 @@ internal class FakeDiary(vararg medications: MedicationDomainModel) :
 
     override fun cancelEffectQuestion(intakeId: String) = Unit
 
-    override fun medicationByNameKey(nameKey: String) =
-        medications.firstOrNull { it.name.lowercase() == nameKey }
+    override fun medicationByNameKey(nameKey: String): MedicationLookupResultDomainModel {
+        lookups += nameKey
+        holdLookup?.await(HOLD_MILLIS, TimeUnit.MILLISECONDS)
+        return medications.firstOrNull { it.name.lowercase() == nameKey }
+            ?.let(MedicationLookupResultDomainModel::Found)
+            ?: MedicationLookupResultDomainModel.NotFound
+    }
+
+    override fun medication(medicationId: String) =
+        medications.firstOrNull { it.id == medicationId }
             ?.let(MedicationLookupResultDomainModel::Found)
             ?: MedicationLookupResultDomainModel.NotFound
 
@@ -232,6 +251,36 @@ internal fun logMedicationDependencies(
             IntakeUiMapper()
         )
     )
+}
+
+/** Edit medication as the app builds it, over [diary]: the real use cases, ViewModel and mappers. */
+internal fun editMedicationDependencies(diary: FakeDiary): EditMedicationDependencies {
+    val presenter = MedicationEventPresenter()
+    return EditMedicationDependencies(
+        editMedicationViewModel = EditMedicationViewModel(
+            GetMedicationUseCase(diary, LogTestContexts),
+            SaveMedicationUseCase(diary, diary, diary, diary, diary, LogTestContexts),
+            MedicationPresentationMapper(),
+            MedicationDomainMapper(),
+            SaveProblemPresentationMapper(),
+            UseCaseExecutor()
+        ),
+        editMedicationViewStateUiMapper = EditMedicationViewStateUiMapper(MedicationUiMapper()),
+        medicationKindUiToPresentationMapper = MedicationKindUiToPresentationMapper(),
+        medicationCategoryUiToPresentationMapper = MedicationCategoryUiToPresentationMapper(),
+        medicationEventPresenter = presenter,
+        medicationMessageBehaviourUiMapper = MedicationMessageBehaviourUiMapper(),
+        navigationMapper = NoEditDestination,
+        notificationMapper = EditMedicationNotificationUiMapper(presenter, SaveProblemUiMapper())
+    )
+}
+
+private object NoEditDestination :
+    NavigationEventDestinationMapper<EditMedicationPresentationNavigationEvent>(
+        EditMedicationPresentationNavigationEvent::class
+    ) {
+    override fun mapTypedEvent(navigationEvent: EditMedicationPresentationNavigationEvent) =
+        UiDestination { }
 }
 
 private class LogDestinations(private val onDone: UiDestination) :

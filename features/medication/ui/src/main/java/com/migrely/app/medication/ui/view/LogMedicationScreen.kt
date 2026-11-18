@@ -41,6 +41,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -54,6 +55,7 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
@@ -126,6 +128,8 @@ fun LogMedicationDependencies.LogMedication(
     // Not saved: a write still running when the screen is recreated must not leave every button disabled.
     var pending by remember { mutableStateOf(false) }
     var problem by rememberSaveable { mutableStateOf<SaveProblemUiModel?>(null) }
+    // Counts refused first medications, so the same problem twice is still a new result (BRD D191, ux F7).
+    var problemArrivals by remember { mutableIntStateOf(0) }
     val log = (uiState as? LogMedicationViewStateUiModel.Ready)?.log
     val shownTime = pickedTime ?: log?.defaultTimeEpochMillis
     LaunchedEffect(medicationEventPresenter) {
@@ -139,7 +143,10 @@ fun LogMedicationDependencies.LogMedication(
 
                 // Only a stored removal drops the result; a failed one keeps it with its message (BRD D190 (2)).
                 MedicationEventUiModel.IntakeUndone -> logged = null
-                is MedicationEventUiModel.NotSaved -> problem = event.problem
+                is MedicationEventUiModel.NotSaved -> {
+                    problem = event.problem
+                    problemArrivals++
+                }
                 is MedicationEventUiModel.Message -> Unit
             }
         }
@@ -151,6 +158,7 @@ fun LogMedicationDependencies.LogMedication(
         shownTime = shownTime,
         logged = logged,
         problem = problem,
+        problemArrivals = problemArrivals,
         pending = pending,
         darkRoom = darkRoom,
         timeUiFormatter = medicationTimeUiFormatter,
@@ -291,7 +299,8 @@ fun LogMedicationContents(
     timeUiFormatter: MedicationTimeUiFormatter,
     actions: LogMedicationActions,
     messages: @Composable () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    problemArrivals: Int = 0
 ) = MigrelyDarkRoom(active = darkRoom) {
     // The dark room is dark in every theme, its pickers and messages included (BRD D94).
     val colors = palette(darkRoom)
@@ -330,6 +339,7 @@ fun LogMedicationContents(
             val viewportInsets = MigrelyInsets.barsAndKeyboard.only(WindowInsetsSides.Bottom)
             // Closing the keyboard leaves the page where it is, so TalkBack stays on the field (BRD D189, #238).
             val keyboardRoom = rememberKeyboardRoom(scrollState, viewportInsets)
+            val announcer = rememberProblemAnnouncer()
             Box(contentAlignment = Alignment.TopCenter, modifier = Modifier.fillMaxSize()) {
                 Column(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -353,7 +363,14 @@ fun LogMedicationContents(
                         else -> {
                             TimeRow(shownTime, log.zoneId, colors, timeUiFormatter, actions)
                             if (log.medications.isEmpty()) {
-                                FirstMedicationForm(problem, pending, colors, actions)
+                                FirstMedicationForm(
+                                    problem,
+                                    problemArrivals,
+                                    pending,
+                                    announcer,
+                                    colors,
+                                    actions
+                                )
                             } else {
                                 log.medications.forEach { medication ->
                                     MedicationButton(medication, pending, colors) {
@@ -375,6 +392,7 @@ fun LogMedicationContents(
                         }
                     }
                 }
+                ProblemAnnouncement(announcer, Modifier.align(Alignment.TopStart))
             }
         }
     }
@@ -534,9 +552,12 @@ private fun LoggedContents(
 
 /** No medication yet: add one with its type and log it at once (BRD EC-MED-08). */
 @Composable
+@Suppress("LongParameterList")
 private fun FirstMedicationForm(
     problem: SaveProblemUiModel?,
+    problemArrivals: Int,
     pending: Boolean,
+    announcer: ProblemAnnouncer,
     colors: LogPalette,
     actions: LogMedicationActions
 ) {
@@ -560,8 +581,22 @@ private fun FirstMedicationForm(
             it is SaveProblemUiModel.ArchivedName ||
             it == SaveProblemUiModel.InvalidName
     }
+    val nameText = nameProblem?.let { problemText(it) }
+    val nameField = remember { ProblemField() }
+    // The same reaction as Edit medication's; Add and log parks focus on press first (BRD D191, D181 (6)).
+    FieldProblemFeedback(
+        arrivals = problemArrivals,
+        pending = pending,
+        field = nameField.takeIf { nameText != null },
+        problem = nameText,
+        announcer = announcer,
+        onFocusMoving = { name = name.copy(selection = TextRange(name.text.length)) }
+    )
     // Kept above the keyboard with its supporting line where that fits (BRD D180 (2), ux U1).
-    SingleLineFieldInView(hasLabel = true) { inView, interactionSource ->
+    SingleLineFieldInView(
+        hasLabel = true,
+        inViewRequests = nameField.inViewRequests
+    ) { inView, interactionSource ->
         OutlinedTextField(
             value = name,
             onValueChange = { name = limitedEdit(name, it, MAXIMUM_NAME_LENGTH) },
@@ -570,7 +605,7 @@ private fun FirstMedicationForm(
             isError = nameProblem != null,
             supportingText = {
                 Text(
-                    nameProblem?.let { problemText(it) } ?: stringResource(
+                    nameText ?: stringResource(
                         R.string.edit_counter,
                         name.text.length,
                         MAXIMUM_NAME_LENGTH
@@ -579,7 +614,10 @@ private fun FirstMedicationForm(
             },
             colors = colors.textField,
             interactionSource = interactionSource,
-            modifier = inView.fillMaxWidth()
+            modifier = inView
+                .then(nameField.modifier)
+                .problemSemantics(nameText)
+                .fillMaxWidth()
         )
     }
     CategoryChoices(category, colors.content, colors.selection, colors.buttonHeight) {

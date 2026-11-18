@@ -46,7 +46,7 @@ internal fun MedicationMessages(
     modifier: Modifier = Modifier
 ) {
     var shown by rememberSaveable { mutableStateOf<ShownMedicationMessageUiModel?>(null) }
-    // True from a logged intake's clear until the next message: that exit has no fade (BRD D190 (1), ux L3).
+    // True from a clear by a log or a field problem until the next message: no fade (BRD D190 (1), D191, ux L3).
     var leavesAtOnce by remember { mutableStateOf(false) }
     val haptics = LocalHapticFeedback.current
     val clock = LocalMessageClock.current
@@ -65,13 +65,14 @@ internal fun MedicationMessages(
                 is MedicationEventUiModel.Message -> show(event.message)
                 MedicationEventUiModel.IntakeUndone -> show(MedicationMessageUiModel.IntakeUndone)
                 // The logged result replaces the whole page, so a message about the page before goes with it, in
-                // the same frame and silently: the logged line is the confirmation (BRD D190 (1)).
-                is MedicationEventUiModel.Logged -> {
+                // the same frame and silently: the logged line is the confirmation (BRD D190 (1)). A field problem
+                // is the newest result and its field lies under the message's place, so an older message goes the
+                // same way (BRD D191, ux F9).
+                is MedicationEventUiModel.Logged,
+                is MedicationEventUiModel.NotSaved -> {
                     leavesAtOnce = true
                     shown = null
                 }
-
-                is MedicationEventUiModel.NotSaved -> Unit
             }
         }
     }
@@ -101,7 +102,7 @@ internal fun MedicationMessages(
         topOffset = MESSAGE_OFFSET_BELOW_TOP_BAR,
         countdown = countdown
     ) { visible ->
-        // Cleared by a logged intake: it draws nothing while it leaves, so no frame shows it over the logged line.
+        // Cleared by a log or a field problem: it draws nothing while it leaves, so no frame shows it over the page.
         // The host keeps guarding its place against a late tap (BRD D190 (1), ux L3).
         if (leavesAtOnce) return@MigrelySnackbarHost
         val behaviour = behaviourMapper.toUi(visible.message)

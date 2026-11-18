@@ -9,7 +9,10 @@ import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 
 /** What a limited text field shows, and what to do with an edit of it. */
-class LimitedField(val value: TextFieldValue, val onValueChange: (TextFieldValue) -> Unit)
+class LimitedField(val value: TextFieldValue, val onValueChange: (TextFieldValue) -> Unit) {
+    /** Puts the cursor after the text, selecting nothing and changing no text. */
+    fun cursorToEnd() = onValueChange(atTheEnd(value.text))
+}
 
 /**
  * A text field holding at most [maxLength] units of a [text] stored by the caller. What is shown is what is stored: the
