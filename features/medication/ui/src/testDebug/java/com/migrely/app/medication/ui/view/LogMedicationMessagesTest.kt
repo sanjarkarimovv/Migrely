@@ -96,7 +96,11 @@ class LogMedicationMessagesTest {
         screen.post(MedicationEventUiModel.Logged(INTAKE))
         val frames = (1..FRAMES).map {
             rule.mainClock.advanceTimeByFrame()
-            Frame(screen.exists(screen.loggedLine), screen.exists(hasText(text)), screen.nodesWithRoom())
+            Frame(
+                logged = screen.exists(screen.loggedLine),
+                message = screen.exists(hasText(text)),
+                nodesWithRoom = screen.nodesWithRoom()
+            )
         }
         rule.mainClock.advanceTimeBy(SETTLE_MILLIS)
         val settled = screen.nodesWithRoom()
@@ -298,7 +302,7 @@ class LogMedicationMessagesTest {
         )
 
     @Test
-    fun `A log by Enter clears the error, leaves nothing focused, and only the logged line is live`() {
+    fun `A log by Enter clears the error, focuses nothing, and only the logged line is live`() {
         screen.show()
         screen.failOnFullStorage()
         rule.onNodeWithContentDescription("Back").requestFocus()
@@ -341,11 +345,14 @@ class LogMedicationMessagesTest {
 
         rule.onNodeWithText(STORAGE_FULL_TEXT).assertDoesNotExist()
         val window = rule.onRoot().getUnclippedBoundsInRoot()
-        listOf(rule.onNode(screen.loggedLine), rule.onNodeWithText("Done"), rule.onNodeWithText("Undo"))
-            .forEach { node ->
-                val bounds = node.getUnclippedBoundsInRoot()
-                assertTrue("$bounds is not inside $window", window.contains(bounds))
-            }
+        listOf(
+            rule.onNode(screen.loggedLine),
+            rule.onNodeWithText("Done"),
+            rule.onNodeWithText("Undo")
+        ).forEach { node ->
+            val bounds = node.getUnclippedBoundsInRoot()
+            assertTrue("$bounds is not inside $window", window.contains(bounds))
+        }
     }
 
     private companion object {

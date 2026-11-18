@@ -488,29 +488,31 @@ class LogMedicationViewModelTest :
     }
 
     @Test
-    fun `Given the disk is full when undoing then the intake is kept and the list is not reloaded`() =
-        runTest {
-            undoIntakeUseCase.givenSuccessfulExecution("i", WriteResultDomainModel.StorageFull)
-            val notification = async(start = UNDISPATCHED) { classUnderTest.notification.first() }
+    fun `Given the disk is full when undoing then the intake is kept and not reloaded`() = runTest {
+        undoIntakeUseCase.givenSuccessfulExecution("i", WriteResultDomainModel.StorageFull)
+        val notification = async(start = UNDISPATCHED) { classUnderTest.notification.first() }
 
-            classUnderTest.onUndoAction("i", "a")
+        classUnderTest.onUndoAction("i", "a")
 
-            assertEquals(
-                LogMedicationPresentationNotification.IntakeKeptStorageFull,
-                notification.await()
-            )
-            verifyNoInteractions(getMedicationLogUseCase)
-        }
+        assertEquals(
+            LogMedicationPresentationNotification.IntakeKeptStorageFull,
+            notification.await()
+        )
+        verifyNoInteractions(getMedicationLogUseCase)
+    }
 
     @Test
-    fun `Given the removal fails when undoing then the intake is kept and the list is not reloaded`() =
+    fun `Given the removal fails when undoing then the intake is kept and not reloaded`() =
         runTest {
             undoIntakeUseCase.givenSuccessfulExecution("i", WriteResultDomainModel.Failed)
             val notification = async(start = UNDISPATCHED) { classUnderTest.notification.first() }
 
             classUnderTest.onUndoAction("i", "a")
 
-            assertEquals(LogMedicationPresentationNotification.IntakeKeptFailed, notification.await())
+            assertEquals(
+                LogMedicationPresentationNotification.IntakeKeptFailed,
+                notification.await()
+            )
             verifyNoInteractions(getMedicationLogUseCase)
         }
 

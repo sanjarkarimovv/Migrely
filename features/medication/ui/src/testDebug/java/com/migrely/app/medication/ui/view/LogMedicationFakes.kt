@@ -164,7 +164,8 @@ internal class FakeDiary(vararg medications: MedicationDomainModel) :
         defaultDose: String?
     ): MedicationWriteResultDomainModel {
         createFailure?.let { return it }
-        val created = MedicationDomainModel("med-$nameKey", name, kind, category, defaultDose, false)
+        val created =
+            MedicationDomainModel("med-$nameKey", name, kind, category, defaultDose, false)
         medications += created
         return MedicationWriteResultDomainModel.Done(created)
     }

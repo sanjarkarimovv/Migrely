@@ -54,7 +54,8 @@ class LogMedicationNotificationUiMapper(
         val event = when (notification) {
             is LogMedicationPresentationNotification.Logged ->
                 MedicationEventUiModel.Logged(intakeUiMapper.toUi(notification.intake))
-            LogMedicationPresentationNotification.IntakeUndone -> MedicationEventUiModel.IntakeUndone
+            LogMedicationPresentationNotification.IntakeUndone ->
+                MedicationEventUiModel.IntakeUndone
             LogMedicationPresentationNotification.IntakeKeptStorageFull ->
                 Message(MedicationMessageUiModel.IntakeKeptStorageFull)
             LogMedicationPresentationNotification.IntakeKeptFailed ->
