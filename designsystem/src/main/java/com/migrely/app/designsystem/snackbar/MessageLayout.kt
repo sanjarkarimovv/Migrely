@@ -21,6 +21,8 @@ import androidx.compose.ui.semantics.traversalIndex
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.constrainHeight
 import androidx.compose.ui.unit.constrainWidth
+import com.migrely.app.designsystem.input.ProvideTypingSpace
+import com.migrely.app.designsystem.input.TypingSpace
 
 private const val TOP_BAR = "topBar"
 private const val MESSAGE = "message"
@@ -38,6 +40,9 @@ private const val PARK = "park"
  *
  * [keyboardMessageLast] places the message after the content for Tab only, for a screen that links the message into
  * its content itself (Home Today, BRD D178 (4), ux F10). TalkBack's order, the drawing and the place do not change.
+ *
+ * [typingSpace], for a screen with a text field, lets [topBar] step aside while the line being typed cannot fit under it
+ * and gives [content]'s fields the space (BRD D192). The message keeps its place: it is measured over the whole screen.
  */
 @Composable
 fun MessageLayout(
@@ -45,17 +50,20 @@ fun MessageLayout(
     modifier: Modifier = Modifier,
     topBar: @Composable () -> Unit = {},
     keyboardMessageLast: Boolean = false,
+    typingSpace: TypingSpace? = null,
     content: @Composable () -> Unit
 ) {
     val park = remember { MessageFocusPark() }
     Layout(
         content = {
             FocusPark(park)
-            Slot(TOP_BAR, order = 0f, topBar)
+            Slot(TOP_BAR, order = 0f, typingSpace?.barModifier ?: Modifier, topBar)
             // The content may park focus too ([rememberFocusParking], BRD D181 (6)).
             CompositionLocalProvider(LocalMessageFocusPark provides park) {
-                Slot(MESSAGE, order = 1f, message)
-                Slot(CONTENT, order = 2f, content)
+                Slot(MESSAGE, order = 1f, content = message)
+                Slot(CONTENT, order = 2f) {
+                    if (typingSpace == null) content() else ProvideTypingSpace(typingSpace, content)
+                }
             }
         },
         modifier = modifier.semantics { isTraversalGroup = true }
@@ -86,7 +94,12 @@ fun MessageLayout(
 }
 
 @Composable
-private fun Slot(id: String, order: Float, content: @Composable () -> Unit) {
+private fun Slot(
+    id: String,
+    order: Float,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit
+) {
     Box(
         modifier = Modifier
             .layoutId(id)
@@ -94,6 +107,7 @@ private fun Slot(id: String, order: Float, content: @Composable () -> Unit) {
                 isTraversalGroup = true
                 traversalIndex = order
             }
+            .then(modifier)
     ) { content() }
 }
 

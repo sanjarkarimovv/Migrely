@@ -81,8 +81,17 @@ by hand in Robolectric, as `KeyboardRoomTest` does.
   each. Green after wiring: the line whole with >= 8 dp both sides at the end, start and middle, Back gone from the tree; at
   411 dp (keyboard top 394) Back stays and the bar does not move. Attack ui 126 tests green, `AttackDetailsKeyboardRoomTest`
   and `NoteKeyboardTest` unchanged. Logs `3.1-*.log`.
-- [ ] 3.2 Edit medication (name, dose) and Log medication (name, normal and dark room). Verify: the same assertions with a
+- [x] 3.2 Edit medication (name, dose) and Log medication (name, normal and dark room). Verify: the same assertions with a
   168 px bar and H 87 px; red on 76c38c38; dark-room case asserts the area the bar left is `AttackModeBackground`.
+  Done: one shape for three screens, `MessageLayout(typingSpace = ...)` (bar slot and the fields' space) plus the page
+  modifier before the scroll; Attack details moved to it too. `MedicationShortWindowTest` measures the caret's drawn rows,
+  as QA does (Compose draws it over the line box). Red on the unwired screens 4/5: Edit name, Edit dose, Log name, Log name
+  dark room each 39 of 112 px in 231..318 (87 px, as QA's H); green after: 112 of 112 px with >= 8 dp both sides, Back gone,
+  in the dark room the status bar and the area the bar left are `AttackModeBackground` at the left edge. 411 dp: bar
+  stays, line whole (a guard, green on both). Robolectric lays these fields' line out 29 px lower than API 36 does (279
+  against 250), so the 360 dp red shows 39 px where the device showed 68, and the 411 dp margins are not compared. The
+  dark-room pixel check sees colours, not fades (software drawing). Medication ui 99 tests green, its keyboard tests
+  unchanged. Logs `3.2-*.log`.
 - [ ] 3.3 Delete all data: the row decision first (D180 (8)), then the bar. Verify: a test in `DeleteKeyboardTest` where the
   row stays behind and the input line still does not fit → bar aside, line whole; where the line fits with the row behind →
   bar stays. Red where the first case is reachable on 76c38c38; if not reachable, say so in the record.

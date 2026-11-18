@@ -66,7 +66,6 @@ import com.migrely.app.attack.ui.model.ShownAttackMessageUiModel
 import com.migrely.app.attack.ui.model.TagKindUiModel
 import com.migrely.app.attack.ui.model.TimeErrorUiModel
 import com.migrely.app.designsystem.icon.MigrelyIcons
-import com.migrely.app.designsystem.input.ProvideTypingSpace
 import com.migrely.app.designsystem.input.TypingSpace
 import com.migrely.app.designsystem.input.rememberKeyboardRoom
 import com.migrely.app.designsystem.input.rememberTypingSpace
@@ -396,24 +395,21 @@ fun AttackDetailsContents(
         modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background),
-        topBar = {
-            AttackDetailsTopBar(details, timeUiFormatter, actions.onBack, typingSpace.barModifier)
-        }
+        topBar = { AttackDetailsTopBar(details, timeUiFormatter, actions.onBack) },
+        typingSpace = typingSpace
     ) {
         when (viewState) {
             AttackDetailsViewStateUiModel.Loading -> Box(Modifier.fillMaxSize())
             AttackDetailsViewStateUiModel.NotFound -> NotFoundContents(actions.onBack)
             is AttackDetailsViewStateUiModel.Ready ->
-                ProvideTypingSpace(typingSpace) {
-                    ReadyContents(
-                        viewState.details,
-                        timeUiFormatter,
-                        labels,
-                        localState,
-                        actions,
-                        typingSpace
-                    )
-                }
+                ReadyContents(
+                    viewState.details,
+                    timeUiFormatter,
+                    labels,
+                    localState,
+                    actions,
+                    typingSpace
+                )
         }
     }
 }
@@ -423,11 +419,9 @@ fun AttackDetailsContents(
 private fun AttackDetailsTopBar(
     details: AttackDetailsUiModel?,
     timeUiFormatter: AttackTimeUiFormatter,
-    onBack: () -> Unit,
-    modifier: Modifier
+    onBack: () -> Unit
 ) {
     TopAppBar(
-        modifier = modifier,
         title = {
             Column {
                 Text(
