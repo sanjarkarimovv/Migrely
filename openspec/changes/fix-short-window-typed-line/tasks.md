@@ -92,9 +92,16 @@ by hand in Robolectric, as `KeyboardRoomTest` does.
   against 250), so the 360 dp red shows 39 px where the device showed 68, and the 411 dp margins are not compared. The
   dark-room pixel check sees colours, not fades (software drawing). Medication ui 99 tests green, its keyboard tests
   unchanged. Logs `3.2-*.log`.
-- [ ] 3.3 Delete all data: the row decision first (D180 (8)), then the bar. Verify: a test in `DeleteKeyboardTest` where the
+- [x] 3.3 Delete all data: the row decision first (D180 (8)), then the bar. Verify: a test in `DeleteKeyboardTest` where the
   row stays behind and the input line still does not fit → bar aside, line whole; where the line fits with the row behind →
   bar stays. Red where the first case is reachable on 76c38c38; if not reachable, say so in the record.
+  Done: Delete all data's bar gets the bar modifier; its visible part ends a divider (1 dp) above the keyboard while the
+  row stays behind, given as `rememberTypingSpace(aboveKeyboard = DividerDefaults.Thickness)`. A row that rides always
+  leaves room for the line with margins (D7), so the bar never leaves then: the row is decided first. A sibling class,
+  `DeleteShortWindowTest` (QA's geometry; caret rows), not `DeleteKeyboardTest`, whose linear 2x font it keeps. The first
+  case is reachable on 76c38c38 and was red there: row behind, visible part 231..315 (84 px), 36 of 112 px of the line.
+  Green after: row behind, 112 of 112 px with >= 8 dp, Back gone. 411 dp: row behind, bar stays at 231 px, line whole
+  (green on both). Settings ui 40 tests green, `DeleteKeyboardTest` 13/13 unchanged. Logs `3.3-*.log`.
 - [ ] 3.4 Messages (D6, R10). Verify: with a message shown, its bounds are identical with the bar present and aside. Mutation:
   offset the message by the bar's height → red.
 
