@@ -204,9 +204,10 @@ by hand in Robolectric, as `KeyboardRoomTest` does.
 
 ## 6. Review (`code-reviewer`)
 
-- [ ] 6.1 Review sections 2 to 4 against design D1 to D6: one shared mechanism, decision once per opening from measured H and L,
+- [x] 6.1 Review sections 2 to 4 against design D1 to D6: one shared mechanism, decision once per opening from measured H and L,
   no dp constant, height follows the inset, semantics removed while aside, no scroll on close, KeyboardRoom untouched in
   behaviour, messages unmoved, no string. Verify: a review packet with findings, each fixed or answered before QA.
+  Done: cr-245: REQUEST CHANGES c8d848db (F1–F3), APPROVE 0890e090 and merge head 01e301fc; after 01e301fc docs/openspec only.
   Delta after cr-245's first review (engineer's record, 2026-11-18; cr-245 approved 0890e090):
   - **F3, raised to S3, fixed.** Single-line fields took L from their style's line height in sp: 95 px at Android's
     nonlinear 200%, against 112 px laid out. So the bar stepped aside only below 95 px, the reduced margins never applied,
