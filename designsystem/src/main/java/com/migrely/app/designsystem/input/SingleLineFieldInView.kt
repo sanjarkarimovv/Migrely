@@ -18,6 +18,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.rememberTextMeasurer
@@ -64,6 +65,8 @@ fun SingleLineFieldInView(
     val focused by interactionSource.collectIsFocusedAsState()
     val requester = remember { BringIntoViewRequester() }
     var size by remember { mutableStateOf(IntSize.Zero) }
+    val placed = remember { Placed() }
+    val inStep = remember { InStepScroll() }
     val follow = remember { KeyboardFollow() }
     val density = LocalDensity.current
     // The insets object, not its value: the keyboard's frames do not recompose the screen.
@@ -76,15 +79,19 @@ fun SingleLineFieldInView(
     val lineHeight = inputLineHeight()
     val marginPx = with(density) { margin.toPx() }
     val space = LocalTypingSpace.current
-    suspend fun bringFieldIntoView(width: Float, height: Float) {
-        // The input line keeps what margin the visible part leaves it (ux R2).
+
+    // ux U1's areas, the largest first: the whole field, then from the input line down, then the input line, which
+    // keeps what margin the visible part leaves it (ux R2).
+    fun fieldAreas(width: Float, height: Float): Array<Rect> {
         val clearance = space?.marginAround(lineHeight, marginPx) ?: marginPx
-        requester.bringNestedIntoView(
+        return arrayOf(
             Rect(0f, 0f, width, height),
             Rect(0f, lineTop - marginPx, width, height),
             Rect(0f, lineTop - clearance, width, lineTop + lineHeight + clearance)
         )
     }
+    suspend fun bringFieldIntoView(width: Float, height: Float) =
+        requester.bringNestedIntoView(*fieldAreas(width, height))
     LaunchedEffect(focused, size) {
         if (!focused || size == IntSize.Zero) return@LaunchedEffect
         bringFieldIntoView(size.width.toFloat(), size.height.toFloat())
@@ -103,14 +110,20 @@ fun SingleLineFieldInView(
     LaunchedEffect(focused) {
         if (!focused) return@LaunchedEffect
         follow.followKeyboard({ keyboard.getBottom(density) }) {
-            bringFieldIntoView(size.width.toFloat(), size.height.toFloat())
+            // In a typing space, in step with the keyboard (#259); elsewhere, brought into view as before.
+            val (width, height) = size.width.toFloat() to size.height.toFloat()
+            if (!inStep.show(space, placed.coordinates, *fieldAreas(width, height))) {
+                bringFieldIntoView(width, height)
+            }
         }
     }
     field(
         Modifier
+            .then(inStep.modifier)
             .bringIntoViewRequester(requester)
             .onGloballyPositioned {
                 size = it.size
+                placed.coordinates = it
                 val line = Rect(0f, lineTop, it.size.width.toFloat(), lineTop + lineHeight)
                 follow.onPositioned(keyboard.getBottom(density), it, line)
             },
@@ -138,6 +151,11 @@ private fun inputLineHeight(): Float {
     return remember(textStyle, density, measurer) {
         measurer.measure(text = "A", style = textStyle, density = density).size.height.toFloat()
     }
+}
+
+/** Where the field was last placed, for the keyboard's follow: not state, so placing it never recomposes. */
+private class Placed {
+    var coordinates: LayoutCoordinates? = null
 }
 
 private fun TextUnit.orBodyLine(): TextUnit = if (isSp) this else BODY_LINE

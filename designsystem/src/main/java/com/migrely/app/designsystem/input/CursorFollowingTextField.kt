@@ -44,6 +44,8 @@ private val CURSOR_MARGIN = 8.dp
  * An outlined text field, drawn as Material's, whose line with the cursor its scrolling parent keeps in view, [margin]
  * clear of the parent's visible edges, while it has focus (BRD D180 (2), EC-UX-39, #141): after typing, a tap, a paste,
  * a cursor move, and when the visible area shrinks as the keyboard opens while that line is in view (KeyboardFollow).
+ * Inside a [TypingSpace] the keyboard's growth moves the page in the same turn as the keyboard (BRD D194,
+ * [InStepScroll]); elsewhere the line is brought into view, animated, as for an edit.
  * The keyboard ending the word it composes changes neither text nor cursor, so it moves nothing.
  * The page scrolls only as far as needed, so a tap on a line already in view moves nothing, and "Remove animations"
  * makes each scroll a jump.
@@ -64,6 +66,7 @@ fun CursorFollowingTextField(
     val interactionSource = remember { MutableInteractionSource() }
     val focused by interactionSource.collectIsFocusedAsState()
     val requester = remember { BringIntoViewRequester() }
+    val inStep = remember { InStepScroll() }
     val geometry = remember { CursorGeometry() }
     var layout by remember { mutableStateOf<TextLayoutResult?>(null) }
     val follow = remember { KeyboardFollow() }
@@ -94,7 +97,9 @@ fun CursorFollowingTextField(
     LaunchedEffect(focused) {
         if (!focused) return@LaunchedEffect
         follow.followKeyboard({ keyboard.getBottom(density) }) {
-            lineInView(layout, cursor)?.let { requester.bringIntoView(it) }
+            val line = lineInView(layout, cursor) ?: return@followKeyboard
+            // In a typing space, in step with the keyboard (#259); elsewhere, the animated bring as before.
+            if (!inStep.show(space, geometry.field, line)) requester.bringIntoView(line)
         }
     }
     // The line being typed is the caret's line box, as laid out (BRD D192, ux R5).
@@ -111,6 +116,7 @@ fun CursorFollowingTextField(
             value = value,
             onValueChange = onValueChange,
             modifier = modifier
+                .then(inStep.modifier)
                 .bringIntoViewRequester(requester)
                 .onGloballyPositioned { geometry.field = it }
                 .then(OwnRequestsDropped)
