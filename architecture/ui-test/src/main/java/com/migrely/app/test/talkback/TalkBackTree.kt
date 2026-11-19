@@ -105,9 +105,16 @@ class TalkBackTree(private val activity: ComponentActivity) {
         val fake = node(node.id + CONTENT_DESCRIPTION_FAKE_NODE)?.takeIf {
             it.isVisibleToUser
         }?.contentDescription
-        return listOfNotNull(fake, info.contentDescription, info.text).map {
-            it.toString()
-        }.filter { it.isNotBlank() }
+        val description = (fake ?: info.contentDescription)?.toString()?.takeIf { it.isNotBlank() }
+        val text = info.text?.toString()?.takeIf { it.isNotBlank() }
+        // TalkBack says a node's description in place of its text, except on an edit box, where it says both.
+        return if (description != null &&
+            !node.isEditable()
+        ) {
+            listOf(description)
+        } else {
+            listOfNotNull(description, text)
+        }
     }
 
     private fun SemanticsNode.isEditable() = config.contains(SemanticsProperties.EditableText)

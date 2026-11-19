@@ -457,7 +457,8 @@ fun <T : Any> MigrelySnackbarHost(
                         .widthIn(max = MAX_WIDTH)
                         .onGloballyPositioned {
                             inScreen.place(it)
-                            cover?.bounds = it.boundsInRoot()
+                            // A leaving message is laid out again as it fades: it no longer covers the page.
+                            if (!leaving) cover?.bounds = it.boundsInRoot()
                         }
                         // Measured at full size from the first frame, while the slide only moves it.
                         .onSizeChanged { size ->
@@ -472,6 +473,10 @@ fun <T : Any> MigrelySnackbarHost(
                         }
                         .then(focus.modifier(leaving))
                 ) {
+                    DisposableEffect(cover, leaving) {
+                        if (leaving) cover?.bounds = null
+                        onDispose { cover?.bounds = null }
+                    }
                     // The countdown this message entered with, kept while it leaves (cr-t64 S4 #5).
                     val ownCountdown = remember(shown) { countdown }
                     CompositionLocalProvider(LocalShownCountdown provides ownCountdown) {

@@ -80,7 +80,7 @@ fun <A : ComponentActivity> AndroidComposeTestRule<*, A>.talkBackWalk(
         dumpPixels("$name $size")
         val walk = Walk(this)
         val areas = walk.scrollAreas()
-        val problems = walk.saidTwice() + if (areas.isEmpty()) {
+        val problems = walk.saidTwice() + walk.unspokenWordsOnScreen() + if (areas.isEmpty()) {
             walk.wrongSteps()
         } else {
             areas.flatMap { area ->
@@ -224,12 +224,27 @@ private class Walk<A : ComponentActivity>(private val rule: AndroidComposeTestRu
      * The words shown on a stop wholly in view that TalkBack does not say (BRD EC-UX-80): each Text inside the stop,
      * hidden from accessibility or not, must be in what it says, so words moved onto the stop's own node arrive whole.
      */
-    private fun unspokenWords(area: SemanticsMatcher): List<String> {
+    private fun unspokenWords(area: SemanticsMatcher): List<String> =
+        unspokenWordsOf(stops(area).filter { it.wholeIn(area) })
+
+    /** [unspokenWords] for every stop on the screen shown whole, so a page that does not scroll is checked too. */
+    fun unspokenWordsOnScreen(): List<String> = unspokenWordsOf(
+        rule.mergedNodes().values.filter {
+            it.mergedWords() != null &&
+                isShownWhole(it)
+        }
+    )
+
+    private fun isShownWhole(stop: SemanticsNode): Boolean = onUi {
+        val bounds = android.graphics.Rect()
+        tree.node(stop.id)?.getBoundsInScreen(bounds)
+        bounds.height() >= stop.size.height && bounds.width() >= stop.size.width
+    }
+
+    private fun unspokenWordsOf(candidates: List<SemanticsNode>): List<String> {
         val unmerged = rule.unmergedNodes()
         // A stop covered by a message (or anything drawn above it) is out of the tree: no stop, nothing to say.
-        return stops(area).filter {
-            it.wholeIn(area) && onUi { tree.node(it.id) != null }
-        }.flatMap { stop ->
+        return candidates.filter { onUi { tree.node(it.id) != null } }.flatMap { stop ->
             val node = unmerged[stop.id] ?: return@flatMap emptyList()
             val said = onUi { tree.spokenName(node) }
             shownTexts(node).filter { !isSaidIn(it, said) }

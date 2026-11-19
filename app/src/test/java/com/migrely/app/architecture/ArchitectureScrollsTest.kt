@@ -17,10 +17,13 @@ private const val REMINDERS =
  * fix and have none today.
  */
 private val RAW_SCROLL = Regex(
-    """\b(verticalScroll|horizontalScroll)\(|\.scrollable\(|\b(LazyColumn|LazyRow|LazyVerticalGrid)\s*[({]"""
+    """\b(verticalScroll|horizontalScroll)\(|\.scrollable\(|""" +
+        """\b(LazyColumn|LazyRow|LazyVerticalGrid|LazyVerticalStaggeredGrid|LazyHorizontalGrid|""" +
+        """LazyHorizontalStaggeredGrid|HorizontalPager|VerticalPager)\s*[({]"""
 )
 
-private const val STEP_ONLY = "PageScroll(exactBounds = false)"
+/** `PageScroll(exactBounds = false)`, however it is spaced, named or not. */
+private val STEP_ONLY = Regex("""\bPageScroll\(\s*(exactBounds\s*=\s*)?false\s*\)""")
 
 /**
  * Where only the half step applies (design D5 T2, T3; BRD D193): Material's date and time pickers, whose controls under
@@ -62,7 +65,7 @@ class ArchitectureScrollsTest {
     @Test
     fun `only the pickers and the time dialog leave exact bounds out`() {
         val stepOnly = files
-            .map { it.projectPath to Regex(Regex.escape(STEP_ONLY)).findAll(it.text).count() }
+            .map { it.projectPath to STEP_ONLY.findAll(it.text).count() }
             .filter { (_, count) -> count > 0 }
             .toMap()
 

@@ -278,6 +278,18 @@ does; each such stop passes the D181 one-name check (heard once, visible words i
   - Open for product (not a regression; develop does the same): a message over the top of a page covers the items
     under it, so they are out of TalkBack's tree until the message goes; at the page's top, swiping back ends at the
     first uncovered item. The walk logs it as "COVERED at the top" instead of failing.
+  Engineer's fixes for cr-255's round 2 on d42efba7 (logs `migrely-work/255b/r2-*`), each red first:
+  - N1: a leaving message no longer writes its bounds and the shown message clears them when it goes.
+    `PageScrollTest` "Once the message has gone…": red before (403 px for 433), green after.
+  - N2: the visible-words check also runs once per screen on every stop shown whole, so pages that do not scroll are
+    checked. M1 (counter hidden from accessibility): red in portrait too (Edit medication "9/60", "0/20"). A Text
+    whose semantics are cleared leaves the tree, so no semantics check can see it (`clearAndSetSemantics` M1 stays
+    green): that limit is for the device walks.
+  - N3: the step-only pin takes any spacing and a positional `false`; the scroll pattern adds the staggered and
+    horizontal grids and both pagers. Scratch file with `PageScroll( false )` and `HorizontalPager(` as constants: both
+    tests red at the file, green once removed.
+  - Fixture rule: a non-editable node's description replaces its text, as TalkBack reads it. No node on the walked
+    pages turned red with it.
 
 ## 8. Acceptance (`qa-engineer`)
 

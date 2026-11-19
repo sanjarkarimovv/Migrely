@@ -18,6 +18,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.platform.ViewConfiguration
@@ -58,6 +61,9 @@ private const val NAVIGATION_BAR_DP = 24
 private const val LEAD_DP = 2000
 private const val ITEM_DP = 40
 private const val ITEM = "item"
+
+// Well past a message's exit, so nothing of it is left.
+private const val MESSAGE_GONE_MILLIS = 5_000L
 
 // Within Compose's widening of a clipped child's touch bounds: half of a 48 dp target.
 private val HIDDEN_DISTANCES_DP = listOf(1, 12, 23)
@@ -316,6 +322,24 @@ class PageScrollTest {
         assertTrue("the message lies over the page's top", message!!.bottom > 0f)
         val shows = scrollState.viewportSize - message.bottom.toInt()
         assertWithinOnePx(shows / 2, accessibilityScrollForward())
+    }
+
+    @Test
+    fun `Once the message has gone the step counts the whole page again`() {
+        var message by mutableStateOf<String?>("Couldn't save.")
+        show {
+            MessageLayout(
+                message = {
+                    MigrelySnackbarHost(message = message, reduceMotion = true) {
+                        MigrelySnackbar(it, SnackbarTone.Error, null, null, "Dismiss", {})
+                    }
+                }
+            ) { PaddedPage() }
+        }
+        rule.runOnIdle { message = null }
+        rule.mainClock.advanceTimeBy(MESSAGE_GONE_MILLIS)
+        rule.waitForIdle()
+        assertWithinOnePx(scrollState.viewportSize / 2, accessibilityScrollForward())
     }
 }
 
