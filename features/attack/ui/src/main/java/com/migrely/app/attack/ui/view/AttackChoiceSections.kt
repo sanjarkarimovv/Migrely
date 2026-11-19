@@ -240,24 +240,21 @@ private fun ChoiceChip(
                             CustomAccessibilityAction(removeLabel) { onArchive().let { true } }
                         )
                     }
-                    if (spokenLabel != null) contentDescription = spokenLabel
+                    // On the chip's own node, so a chip cut by the page's edge still says it (#255, BRD D193).
+                    contentDescription = spokenLabel ?: label
                 }
         ) {
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
             ) {
-                // One spoken name (BRD D181 (2)): a chip with its own spoken label ("Add your own
-                // symptom") leaves the shown "+ Your own" out of its semantics.
+                // One spoken name (BRD D181 (2)): the chip says it, so the shown text, or "+ Your own" for
+                // "Add your own symptom", is left out of the semantics.
                 Text(
                     text = label,
                     style = MaterialTheme.typography.bodyMedium,
                     color = content,
-                    modifier = if (spokenLabel == null) {
-                        Modifier
-                    } else {
-                        Modifier.clearAndSetSemantics { }
-                    }
+                    modifier = Modifier.clearAndSetSemantics { }
                 )
             }
         }

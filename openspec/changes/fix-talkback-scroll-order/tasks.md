@@ -87,10 +87,23 @@ D3 to D5.
   scratch `ScratchRawScroll.kt` in home ui → 30, naming `ScratchRawScroll.kt:8`, its comment line 7 not counted; file
   removed → 29. It stays red, committed on purpose, until 4.7 turns it green.
 
-- [ ] 2.5 Cut sweep in the shared fixture (design D7): for each stop, scroll so 1 px to 12 dp of it shows at the top edge,
+- [x] 2.5 Cut sweep in the shared fixture (design D7): for each stop, scroll so 1 px to 12 dp of it shows at the top edge,
   then at the bottom edge, and read its name with the 2.2 read; report each stop whose name is empty or partial. Verify: on
   Attack details under D2 alone (no option 3) the sweep is red for symptom chips (negative control, log `2.5-red.log`);
   with option 3 on `ChoiceChip` it is green for chips.
+  Result: `cutSweep(page, of)` in `:architecture:ui-test` (`CutSweep.kt`): cuts of 1 px, 4, 8 and 12 dp at each edge,
+  compared with the stop's name when whole; a stop is any merged node with words, a click or merged children, and
+  one that says nothing even when whole is reported too. `AttackDetailsCutSweepTest` (portrait 100%, D2 given to the
+  whole screen by the test, as prototype 2): before option 3, 190 findings, every symptom, trigger and location chip
+  says '' when cut (`2.5-red-summary.txt`); with option 3 on `ChoiceChip` (`contentDescription = spokenLabel ?:
+  label`, inner `Text` cleared) the chip sweep is green (1 test, 0 failed). Mutations, each red: description back to
+  spokenLabel only → chips say nothing even when whole; the original code → 152 findings in 29 chips. A first run of
+  that mutation passed because the sweep skipped stops with no words; the sweep was fixed to count them. D181 checks
+  (`AttackSpokenNameTest`, the "Your own" chips) green; attack ui 136 tests, 7 failed = the 7 known red of 2.0/2.1.
+  **Input to 4.1 (D4.3, data-driven):** with chips fixed, 10 more stops on Attack details lose their name when cut
+  (38 findings): "Remove pain level 6 at 14:15" and "… 9 at 15:05" (icon buttons), "Add pain level", "Add medication",
+  the four impact choices ("0 · No impact" … "3 · Bed rest", radio rows), the note field (says its text without
+  "49/1000") and "Delete migraine" (`2.5-option3-summary.txt`). Expect the same for Material buttons on other pages.
 
 ## 3. Touch-target audit (`android-engineer`, before D2 lands on each page)
 
