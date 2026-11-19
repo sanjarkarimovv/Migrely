@@ -188,10 +188,25 @@ class MedicationUiMappersTest {
         mapper.toUi(LogMedicationPresentationNotification.InFuture).present()
 
         verify(presenter).show(MedicationEventUiModel.Logged(INTAKE_UI))
-        verify(
-            presenter
-        ).show(MedicationEventUiModel.Message(MedicationMessageUiModel.IntakeUndone))
+        verify(presenter).show(MedicationEventUiModel.IntakeUndone)
         verify(presenter).show(MedicationEventUiModel.Message(MedicationMessageUiModel.InFuture))
+    }
+
+    @Test
+    fun `When undo fails then the intake is kept, with its own message`() {
+        val presenter: MedicationEventPresenter = mock()
+        val mapper =
+            LogMedicationNotificationUiMapper(presenter, SaveProblemUiMapper(), IntakeUiMapper())
+
+        mapper.toUi(LogMedicationPresentationNotification.IntakeKeptStorageFull).present()
+        mapper.toUi(LogMedicationPresentationNotification.IntakeKeptFailed).present()
+
+        verify(presenter).show(
+            MedicationEventUiModel.Message(MedicationMessageUiModel.IntakeKeptStorageFull)
+        )
+        verify(presenter).show(
+            MedicationEventUiModel.Message(MedicationMessageUiModel.IntakeKeptFailed)
+        )
     }
 
     @Test
@@ -209,6 +224,20 @@ class MedicationUiMappersTest {
         assertEquals(
             MedicationMessageBehaviourUiModel(SnackbarTone.Error, false, null),
             mapper.toUi(MedicationMessageUiModel.StorageFull)
+        )
+    }
+
+    @Test
+    fun `When undo kept the intake then an error, timeless for full storage and 8 s otherwise`() {
+        val mapper = MedicationMessageBehaviourUiMapper()
+
+        assertEquals(
+            MedicationMessageBehaviourUiModel(SnackbarTone.Error, false, null),
+            mapper.toUi(MedicationMessageUiModel.IntakeKeptStorageFull)
+        )
+        assertEquals(
+            MedicationMessageBehaviourUiModel(SnackbarTone.Error, false, 8_000L),
+            mapper.toUi(MedicationMessageUiModel.IntakeKeptFailed)
         )
     }
 

@@ -4,7 +4,10 @@ import androidx.activity.ComponentActivity
 import androidx.compose.material3.Text
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ProvidedValue
+import androidx.compose.ui.hapticfeedback.HapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalAccessibilityManager
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.lifecycle.Lifecycle
@@ -17,7 +20,9 @@ import com.migrely.app.designsystem.theme.MigrelyTheme
 import com.migrely.app.medication.ui.mapper.MedicationMessageBehaviourUiMapper
 import com.migrely.app.medication.ui.model.MedicationEventUiModel
 import com.migrely.app.medication.ui.model.MedicationMessageUiModel
+import com.migrely.app.medication.ui.model.SaveProblemUiModel
 import com.migrely.app.medication.ui.notification.MedicationEventPresenter
+import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -28,6 +33,8 @@ private const val STORAGE_FULL = "Couldn't save. Your phone's storage is full."
 private const val SCREEN = "screen"
 private const val OTHER = "other"
 private const val INTAKE_UNDONE = "Removed. Nothing was logged."
+private const val LIMIT_REACHED =
+    "You can keep up to 50 medications. Remove one you no longer take."
 
 // D182 (1): "Time to take action" and the reading timeout set apart.
 private const val TIME_TO_TAKE_ACTION_MILLIS = 20_000L
@@ -128,6 +135,40 @@ class MedicationMessagesTest {
         rule.onNodeWithText("Medication removed").assertExists()
     }
 
+    // A field problem clears an older message, silently and at once (BRD D191, ux F9)
+
+    private fun clearsOnAFieldProblem(message: MedicationMessageUiModel, text: String) {
+        val haptics = RecordingHaptics()
+        showScreen(LocalHapticFeedback provides haptics)
+        post(message)
+        rule.onNodeWithText(text).assertExists()
+        val buzzes = haptics.count
+        rule.mainClock.autoAdvance = false
+
+        rule.runOnIdle {
+            presenter.show(MedicationEventUiModel.NotSaved(SaveProblemUiModel.InvalidName))
+        }
+        rule.mainClock.advanceTimeByFrame()
+        rule.mainClock.advanceTimeByFrame()
+
+        rule.onNodeWithText(text).assertDoesNotExist()
+        assertEquals("a haptic for the field problem", buzzes, haptics.count)
+        rule.mainClock.autoAdvance = true
+    }
+
+    @Test
+    fun `A field problem clears the storage error at once, without haptic, then one shows`() {
+        clearsOnAFieldProblem(MedicationMessageUiModel.StorageFull, STORAGE_FULL)
+
+        post(MedicationMessageUiModel.StorageFull)
+
+        rule.onNodeWithText(STORAGE_FULL).assertExists()
+    }
+
+    @Test
+    fun `A field problem clears the 50 medications message`() =
+        clearsOnAFieldProblem(MedicationMessageUiModel.LimitReached, LIMIT_REACHED)
+
     // One timeout for every message (EC-UX-52, BRD D182 (1))
 
     @Test
@@ -147,5 +188,15 @@ class MedicationMessagesTest {
         // Past the 20 s, with room for the exit.
         passTime(3_000)
         rule.onNodeWithText(INTAKE_UNDONE).assertDoesNotExist()
+    }
+}
+
+/** Counts the haptics a screen asks for. */
+private class RecordingHaptics : HapticFeedback {
+    var count = 0
+        private set
+
+    override fun performHapticFeedback(hapticFeedbackType: HapticFeedbackType) {
+        count++
     }
 }

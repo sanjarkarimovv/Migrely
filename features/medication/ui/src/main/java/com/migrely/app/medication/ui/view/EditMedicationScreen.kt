@@ -38,10 +38,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.input.InputMode
-import androidx.compose.ui.platform.LocalInputModeManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
@@ -53,6 +49,7 @@ import com.migrely.app.designsystem.input.SingleLineFieldInView
 import com.migrely.app.designsystem.input.TapGuard
 import com.migrely.app.designsystem.input.rememberKeyboardRoom
 import com.migrely.app.designsystem.input.rememberLimitedField
+import com.migrely.app.designsystem.input.rememberTypingSpace
 import com.migrely.app.designsystem.layout.MigrelyInsets
 import com.migrely.app.designsystem.motion.rememberReduceMotion
 import com.migrely.app.designsystem.snackbar.MessageLayout
@@ -186,6 +183,8 @@ fun EditMedicationContents(
     problemArrivals: Int = 0,
     modifier: Modifier = Modifier
 ) {
+    // The line being typed always shows: the bar steps aside where it cannot (BRD D192, #245).
+    val typingSpace = rememberTypingSpace()
     MessageLayout(
         message = messages,
         modifier = modifier
@@ -216,13 +215,15 @@ fun EditMedicationContents(
                     WindowInsetsSides.Top + WindowInsetsSides.Horizontal
                 )
             )
-        }
+        },
+        typingSpace = typingSpace
     ) {
         Column(Modifier.fillMaxSize()) {
             val scrollState = rememberScrollState()
             val viewportInsets = MigrelyInsets.barsAndKeyboard.only(WindowInsetsSides.Bottom)
             // Closing the keyboard leaves the page where it is, so TalkBack stays on the field (BRD D189, #238).
             val keyboardRoom = rememberKeyboardRoom(scrollState, viewportInsets)
+            val announcer = rememberProblemAnnouncer()
             Box(contentAlignment = Alignment.TopCenter, modifier = Modifier.fillMaxSize()) {
                 Column(
                     verticalArrangement = Arrangement.spacedBy(FORM_SPACING),
@@ -232,6 +233,7 @@ fun EditMedicationContents(
                         // Before the scroll, so its visible part ends at the keyboard's top and a focused
                         // field is kept above it (BRD D180 (2)).
                         .windowInsetsPadding(viewportInsets)
+                        .then(typingSpace.pageModifier)
                         .verticalScroll(scrollState)
                         // After the scroll, never a child: the column's spacing would add a gap.
                         .then(keyboardRoom.modifier)
@@ -250,11 +252,13 @@ fun EditMedicationContents(
                             problem,
                             problemArrivals,
                             pending,
+                            announcer,
                             onFormChange,
                             onSave
                         )
                     }
                 }
+                ProblemAnnouncement(announcer, Modifier.align(Alignment.TopStart))
             }
         }
     }
@@ -266,6 +270,7 @@ private fun MedicationForm(
     problem: SaveProblemUiModel?,
     problemArrivals: Int,
     pending: Boolean,
+    announcer: ProblemAnnouncer,
     onFormChange: (MedicationFormUiModel) -> Unit,
     onSave: () -> Unit
 ) {
@@ -280,16 +285,32 @@ private fun MedicationForm(
     val doseField = rememberLimitedField(form.dose, MAXIMUM_DOSE_LENGTH) {
         onFormChange(form.copy(dose = it))
     }
-    val focus = rememberProblemFocus(
+    val doseProblem = problem.takeIf { it == SaveProblemUiModel.InvalidDose }
+    val nameText = nameProblem?.let { problemText(it) }
+    val doseText = doseProblem?.let { problemText(it) }
+    val name = remember { ProblemField() }
+    val dose = remember { ProblemField() }
+    // One result, one field: Name before Usual dose (ux F1).
+    val (problemField, problemFieldValue) = when {
+        nameProblem != null -> name to nameField
+        doseProblem != null -> dose to doseField
+        else -> null to null
+    }
+    FieldProblemFeedback(
         arrivals = problemArrivals,
         pending = pending,
-        nameProblem = nameProblem != null,
-        doseProblem = problem == SaveProblemUiModel.InvalidDose
+        field = problemField,
+        problem = nameText ?: doseText,
+        announcer = announcer,
+        onFocusMoving = { problemFieldValue?.cursorToEnd() }
     )
     // Save turns disabled while it waits (BRD D181 (6)).
     val save = rememberParkWhenPressed()
     // Kept above the keyboard with its supporting line where that fits (BRD D180 (2), ux U1).
-    SingleLineFieldInView(hasLabel = true) { inView, interactionSource ->
+    SingleLineFieldInView(
+        hasLabel = true,
+        inViewRequests = name.inViewRequests
+    ) { inView, interactionSource ->
         OutlinedTextField(
             value = nameField.value,
             onValueChange = nameField.onValueChange,
@@ -297,18 +318,15 @@ private fun MedicationForm(
             singleLine = true,
             isError = nameProblem != null,
             supportingText = {
-                Text(
-                    nameProblem?.let { problemText(it) }
-                        ?: stringResource(
-                            R.string.edit_counter,
-                            form.name.length,
-                            MAXIMUM_NAME_LENGTH
-                        )
+                FieldSupportingLine(
+                    nameText,
+                    stringResource(R.string.edit_counter, form.name.length, MAXIMUM_NAME_LENGTH)
                 )
             },
             interactionSource = interactionSource,
             modifier = inView
-                .focusRequester(focus.name)
+                .then(name.modifier)
+                .problemSemantics(nameText)
                 .fillMaxWidth()
         )
     }
@@ -360,30 +378,27 @@ private fun MedicationForm(
             modifier = Modifier.matchParentSize()
         )
     }
-    SingleLineFieldInView(hasLabel = true) { inView, interactionSource ->
+    SingleLineFieldInView(
+        hasLabel = true,
+        inViewRequests = dose.inViewRequests
+    ) { inView, interactionSource ->
         OutlinedTextField(
             value = doseField.value,
             onValueChange = doseField.onValueChange,
             label = { Text(stringResource(R.string.edit_dose)) },
             placeholder = { Text(stringResource(R.string.edit_dose_hint)) },
             singleLine = true,
-            isError = problem == SaveProblemUiModel.InvalidDose,
+            isError = doseProblem != null,
             supportingText = {
-                Text(
-                    if (problem == SaveProblemUiModel.InvalidDose) {
-                        problemText(problem)
-                    } else {
-                        stringResource(
-                            R.string.edit_counter,
-                            form.dose.length,
-                            MAXIMUM_DOSE_LENGTH
-                        )
-                    }
+                FieldSupportingLine(
+                    doseText,
+                    stringResource(R.string.edit_counter, form.dose.length, MAXIMUM_DOSE_LENGTH)
                 )
             },
             interactionSource = interactionSource,
             modifier = inView
-                .focusRequester(focus.dose)
+                .then(dose.modifier)
+                .problemSemantics(doseText)
                 .fillMaxWidth()
         )
     }
@@ -399,37 +414,6 @@ private fun MedicationForm(
     ) {
         Text(stringResource(R.string.edit_save), style = MaterialTheme.typography.labelLarge)
     }
-}
-
-/**
- * After a Save problem, keyboard focus goes to the field that has it, Name or Usual dose (BRD D181 (6), EC-UX-49), but
- * only in keyboard mode: a text field takes focus in touch mode too, and would open the soft keyboard over a touch
- * user's error. Keyed on [arrivals], the count of NotSaved results: a second Save that finds the same problem changes
- * no value, and its result can come in the press's own frame (InvalidName and InvalidDose read no database), so only a
- * count shows it is new and brings focus back from where the press parked it (review F2).
- */
-@Composable
-private fun rememberProblemFocus(
-    arrivals: Int,
-    pending: Boolean,
-    nameProblem: Boolean,
-    doseProblem: Boolean
-): ProblemFocus {
-    val inputModeManager = LocalInputModeManager.current
-    val focus = remember { ProblemFocus() }
-    LaunchedEffect(arrivals) {
-        if (pending || inputModeManager.inputMode != InputMode.Keyboard) return@LaunchedEffect
-        when {
-            nameProblem -> focus.name.requestFocus()
-            doseProblem -> focus.dose.requestFocus()
-        }
-    }
-    return focus
-}
-
-private class ProblemFocus {
-    val name = FocusRequester()
-    val dose = FocusRequester()
 }
 
 @Preview(name = "Edit medication")
