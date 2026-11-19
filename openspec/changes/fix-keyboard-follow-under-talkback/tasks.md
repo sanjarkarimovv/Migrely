@@ -103,21 +103,54 @@ window size afterwards. One JSON row per run in `migrely-work/259/rows.jsonl`.
 
 - [ ] 5.1 T1, T4: TalkBack double tap on the note at 360 dp (6 runs) and 411 dp (2 runs): focus still on the note after 3 s
   (TalkBack VERBOSE log), line 112/112. Verify: rows with `focus_kept` true in every run.
+  NOT MET (candidate 9eb83586 debug, sha256 50d8e381…; 5570, 2026-11-20). 360 dp: 17 TalkBack openings of the note,
+  focus kept in 14; in 3 (`m1c2-`, `m3b-`, `w7-tb2-det-360`, two with the recorder running, one without) TalkBack moved
+  it to the "Notes" heading (`sourceAction=MANUAL_SCROLL`, `currentNode=null`: a `TYPE_VIEW_SCROLLED` reached it while the
+  note was still out of the tree after the keyboard's first frame). No control took focus, nothing was written (17 of 17),
+  the line ended in view. 411 dp: 2 of 2 kept, 112/112. Develop control: jumps to an impact radio in every 360 dp row
+  (`d1`, `d4`, `m1d`, `m1d2`, `d3-tbclose`). Back to design: the in-step move still runs a turn after the frame that hid
+  the note.
 - [ ] 5.2 T2: a migraine with impact 2 recorded, and one with none; TalkBack opens the note, one more double tap. Verify: a
   database read before and after (`adb shell run-as … sqlite3` or the debug export) unchanged in every run.
+  Partly. Candidate, impact 2 recorded, TalkBack opens the note, one more double tap: attack row identical before and
+  after (`w7-tb2i-det-360` n0: impact 2, updated-at 1795130902048, both). Two more preset rows (`w5`) unchanged, pre-state
+  not captured. Develop control: `d4` row 2 cleared a recorded 2 (2 → empty). Develop with the preset (`d5`) did not jump:
+  the preset leaves the note in a position the first keyboard frame does not hide, so that control cannot fail.
 - [ ] 5.3 T3: Log medication (usual and dark room), Edit medication (name, dose), Delete all data, TalkBack double tap, at
   360 and 411 dp, 2 runs each: focus kept, no intake, medication or deletion written. Verify: rows per screen.
+  Partly. TalkBack double tap, candidate: Log medication 360 ×2, 411 ×2; Delete all data 360 ×3, 411 ×2; Edit
+  medication name 360 ×2, 411 ×1, dose 360 ×2, 411 ×1: focus kept and nothing written in all 15. Log medication in the dark
+  room was run TalkBack off only (`m4`). Develop (earlier, `d2`, `d3`): no jump on these screens either (latent).
 - [ ] 5.4 T5: TalkBack off, 360 dp, bar aside: line 112/112 on the four screens. Verify: layout dump bounds.
+  Partly. TalkBack off, Gboard's full keyboard, bar aside, 112/112: note (`m1c-off-det-360`), Log medication name
+  (`w2-off-log-360`), Edit medication name (`w6-off-edit-360`), Log medication in the dark room (`m4`). Delete all data not
+  obtained: 5570's Gboard mostly showed its compact physical-keyboard bar with TalkBack off (and `dumpsys` reported a
+  keyboard frame while none was drawn); only rows where the bar measurably stepped aside are counted.
 - [ ] 5.5 T6 (#238): close by Back, hide key, Done; TalkBack on and off: 0 `TYPE_VIEW_SCROLLED` from the page, scroll
   position 0 px (bar height where aside), focus on the field. Verify: rows and TalkBack log lines.
-- [ ] 5.6 T7: Remove animations with TalkBack on, 360 dp: focus kept, one-step move. Verify: rows.
+  Partly. TalkBack on, Back (`w1-tbclose-det-360`): 0 `TYPE_VIEW_SCROLLED`, no focus move, "keyboard hidden". TalkBack
+  off, Back: 0 px on the candidate only with the compact bar (bar not aside); with the full keyboard and the bar aside, 0 px
+  on prototype 2 (`p4-close-det-360`). Hide key and Done with the full keyboard: not obtained (compact bar).
+- [x] 5.6 T7: Remove animations with TalkBack on, 360 dp: focus kept, one-step move. Verify: rows.
+  Done. Remove animations (all three scales 0, restored), TalkBack, 360 dp: 2 of 2 focus kept, 112/112, nothing
+  written (`w3`).
 - [ ] 5.7 M1: 60 fps `screenrecord` of the note's keyboard opening at 360 dp, TalkBack off and on, candidate and develop:
   frames at keyboard start, middle, last and +500 ms with the cursor line's top y and the keyboard's top y. Pass C1 and C2 on
   every frame, last equals +500 ms. Negative control: develop's frame +500 ms differs from its last frame. Verify: a frame
   table in `migrely-work/259/eng/m1.md`.
+  Partly (`migrely-work/259/eng/m1.md`). 5570's compositor produced 2 to 3 frames per opening (about 5 fps), so a
+  60 fps per-frame C1 check is not possible here. Candidate, TalkBack off: field under the keyboard for one captured frame
+  (the keyboard jumped 422 px in one frame), in place the next; no C1 or C2 break where seen. Develop with TalkBack: the
+  field stays under the keyboard after it settles. Develop's TalkBack-off spring (C3 control) not recorded (compact bar);
+  shown at unit level (408 px after the keyboard settled).
 - [ ] 5.8 M2 to M4: final frames against develop at 411 and 360 dp (within 1 px; SW13 band if reached); the note at the page
   end and Delete all data in the dark theme, no stretch or glow; Log medication from attack mode, no lighter frame. Verify:
   shots in `migrely-work/259/shots/` and a short table.
+  Partly. M2: 411 dp final caret 278..390 on candidate and develop (0 px); 360 dp candidate 185..297, as QA's develop row
+  x1-base on 5580. M3 (TalkBack, recorded): the note at the page's end and Delete all data, dark: no stretch or glow in the
+  frames (`shots/m3/sheet.png`, `shots/m3c/sheet.png`); at the page's end the note was wholly in view before the keyboard,
+  and the page's own animation moved it 71 px after the keyboard settled (the 3.3 limit, as on develop). M4: the band's
+  colour is the dark room's (4, 6, 9) in all 61 frames, no lighter frame.
 
 ## 6. Review (`code-reviewer`)
 
