@@ -255,6 +255,29 @@ does; each such stop passes the D181 one-name check (heard once, visible words i
 - [ ] 7.1 Independent review of the diff against this spec and design: one entry point, delegate correctness, no drawn
   change, touch-target audit complete, guards untouched, tests red first with mutations. Verify: review verdict with
   findings fixed or answered, recorded here.
+  Engineer's fixes for cr-255's round 1 on f8d958da (eng-255b; logs `migrely-work/255b/r1-*`), each red first:
+  - Root cause: the fixture now reads what Android exposes (`AccessibilityNodeInfo`: the description Compose hands
+    over, first entry only and on a fake child for a merging node; text; state, not for an edit box; visibility), and
+    the walk checks that every word shown on a stop in view is said. On the old code it was red: 9-10 Settings rows,
+    category examples, Your data and Reminders rows (`r1-walk-red.txt`); M1 (counter hidden) red, "not said: '9/60'".
+  - F1: only a control's name goes on its own node (`ownWords(name)`, one string); summaries, values, disabled reasons,
+    examples and the policy address stay spoken children. F2/F7: counters are spoken children again (also heard on
+    the device, 6.1: "…remembering. 0/1000"); `FieldProblemFeedback.kt` is develop's text again.
+  - F3: `ArchitectureScrollsTest` also pins `PageScroll(exactBounds = false)` to the 3 picker sites and the time
+    dialog; M2 (date picker set to true) red. F8: it also rejects `horizontalScroll(`, `.scrollable(`, `LazyColumn`,
+    `LazyRow`, `LazyVerticalGrid` with `(` or `{`; a scratch `LazyColumn { }` red at its line, green once removed (a
+    first scratch with no parentheses passed and showed the gap).
+  - F4: `AttackDetailsExactBoundsScopeTest` on the real page with its message below the top bar: Back and Dismiss
+    expose 48×48 dp; M3 (exact bounds reaching the top bar) red, Back 40×40.
+  - F5: `MessageLayout` gives its message and content a `MessageCover`; `MigrelySnackbarHost` fills in the shown
+    message's bounds; `PageScroll` leaves that part out of V. `PageScrollTest` case with a message: cover ignored →
+    red (433 px for 403). Attack details with a message showing joined the walk and audit screens.
+  - F6: calendar pixels asserted against PNG goldens rendered from develop's calendar code (test resources, 24-31 KB);
+    no outset → red (18,719-35,450 pixels differ). `talkBackWalk`'s pixel dump is a manual tool, off unless
+    `MIGRELY_SCREEN_PIXELS` is set, never asserted.
+  - Open for product (not a regression; develop does the same): a message over the top of a page covers the items
+    under it, so they are out of TalkBack's tree until the message goes; at the page's top, swiping back ends at the
+    first uncovered item. The walk logs it as "COVERED at the top" instead of failing.
 
 ## 8. Acceptance (`qa-engineer`)
 

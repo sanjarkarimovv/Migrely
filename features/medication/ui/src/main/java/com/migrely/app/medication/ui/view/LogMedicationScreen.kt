@@ -674,7 +674,7 @@ internal fun CategoryChoices(
                         role = Role.RadioButton,
                         onClick = { onSelect(choice) }
                     )
-                    .ownWords(categoryLabel(choice), categoryExamples(choice))
+                    .ownWords(categoryLabel(choice))
             ) {
                 RadioButton(
                     selected = choice == selected,
@@ -695,8 +695,7 @@ internal fun CategoryChoices(
                         Text(
                             text = it,
                             style = MaterialTheme.typography.bodySmall,
-                            color = content,
-                            modifier = Modifier.wordsShownOnly()
+                            color = content
                         )
                     }
                 }

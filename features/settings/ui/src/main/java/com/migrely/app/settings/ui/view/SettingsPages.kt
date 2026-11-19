@@ -182,7 +182,7 @@ private fun PolicyLink() {
             .clickable(role = Role.Button, onClickLabel = label) {
                 uriHandler.openInBrowserIfAny(PRIVACY_POLICY_URL)
             }
-            .ownWords(label, PRIVACY_POLICY_ADDRESS)
+            .ownWords(label)
             .padding(vertical = 8.dp)
     ) {
         Text(
@@ -194,8 +194,7 @@ private fun PolicyLink() {
         Text(
             text = PRIVACY_POLICY_ADDRESS,
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.wordsShownOnly()
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }

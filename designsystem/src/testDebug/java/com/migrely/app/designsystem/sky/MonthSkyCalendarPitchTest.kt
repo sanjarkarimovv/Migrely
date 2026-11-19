@@ -1,6 +1,7 @@
 package com.migrely.app.designsystem.sky
 
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.Column
@@ -23,8 +24,6 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import com.migrely.app.designsystem.layout.PageScroll
 import com.migrely.app.designsystem.theme.MigrelyTheme
-import java.io.File
-import java.nio.ByteBuffer
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -122,41 +121,48 @@ class MonthSkyCalendarPitchTest {
         assertEquals(listOf(1, 2, 1, 1 + WEEK), clicked)
     }
 
-    /** The window's pixels, for the before-and-after comparison (`migrely-work/255b/3.2-*`). */
-    private fun dump(name: String) {
+    /**
+     * The window's pixels against [golden], rendered from the calendar as it was before its days took their pitch
+     * (develop's code, 0fd87fc0's parent) and kept as a test resource: nothing drawn may move. Returns how many differ.
+     */
+    private fun differingFromGolden(golden: String): Int {
         val decor = rule.activity.window.decorView
-        val bitmap = Bitmap.createBitmap(decor.width, decor.height, Bitmap.Config.ARGB_8888)
-        rule.runOnUiThread { decor.draw(Canvas(bitmap)) }
-        val pixels = ByteBuffer.allocate(bitmap.byteCount)
-        bitmap.copyPixelsToBuffer(pixels)
-        File("build/calendar-pixels").apply {
-            mkdirs()
-        }.resolve("$name.raw").writeBytes(pixels.array())
+        val window = Bitmap.createBitmap(decor.width, decor.height, Bitmap.Config.ARGB_8888)
+        rule.runOnUiThread { decor.draw(Canvas(window)) }
+        val expected = javaClass.getResourceAsStream("/calendar/$golden.png").use {
+            BitmapFactory.decodeStream(it)
+        }
+        assertEquals("size", expected.width to expected.height, window.width to window.height)
+        val now = IntArray(window.width * window.height)
+        val before = IntArray(now.size)
+        window.getPixels(now, 0, window.width, 0, 0, window.width, window.height)
+        expected.getPixels(before, 0, window.width, 0, 0, window.width, window.height)
+        return now.indices.count { now[it] != before[it] }
     }
 
-    private fun showAndDump(name: String, fontScale: Float) {
+    private fun showAndCompare(golden: String, fontScale: Float) {
         show(fontScale)
         // The keyboard's focus ring, two-tone, on day 3.
         rule.onNodeWithContentDescription(
             "Day 3"
         ).performSemanticsAction(SemanticsActions.RequestFocus)
         rule.waitForIdle()
-        dump(name)
+        assertEquals("pixels that differ from $golden", 0, differingFromGolden(golden))
     }
 
     @Test
     @Config(sdk = [35], qualifiers = "w360dp-h800dp")
-    fun `Pixels at 360 dp, 100 percent`() = showAndDump("360-100", 1f)
+    fun `Pixels at 360 dp, 100 percent`() = showAndCompare("360-100", 1f)
 
     @Test
     @Config(sdk = [35], qualifiers = "w360dp-h800dp")
-    fun `Pixels at 360 dp, 200 percent`() = showAndDump("360-200", 2f)
+    fun `Pixels at 360 dp, 200 percent`() = showAndCompare("360-200", 2f)
 
     @Test
     @Config(sdk = [35], qualifiers = "w411dp-h891dp")
-    fun `Pixels at 411 dp, 100 percent`() = showAndDump("411-100", 1f)
+    fun `Pixels at 411 dp, 100 percent`() = showAndCompare("411-100", 1f)
 
     @Test
     @Config(sdk = [35], qualifiers = "w411dp-h891dp")
-    fun `Pixels at 411 dp, 200 percent`() = showAndDump("411-200", 2f)
+    fun `Pixels at 411 dp, 200 percent`() = showAndCompare("411-200", 2f)
 }

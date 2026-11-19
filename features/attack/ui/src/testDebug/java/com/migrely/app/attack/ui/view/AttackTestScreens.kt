@@ -5,6 +5,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import com.migrely.app.attack.ui.model.AttackDetailsViewStateUiModel
 import com.migrely.app.attack.ui.model.PastAttackDraftUiModel
+import com.migrely.app.designsystem.snackbar.MESSAGE_OFFSET_BELOW_TOP_BAR
+import com.migrely.app.designsystem.snackbar.MigrelySnackbar
+import com.migrely.app.designsystem.snackbar.MigrelySnackbarHost
+import com.migrely.app.designsystem.snackbar.SnackbarTone
 import com.migrely.app.designsystem.theme.MigrelyTheme
 import com.migrely.app.test.talkback.auditTouchTargets
 import org.junit.Assert.assertEquals
@@ -32,6 +36,32 @@ internal val attackScreens: Map<String, @Composable () -> Unit> = mapOf(
                     onTimeErrorShown = {}
                 ),
                 actions = previewActions
+            )
+        }
+    },
+    // A message over the page, where the screen shows its own: TalkBack's step leaves out what it covers (EC-UX-79).
+    "Attack details, a message showing" to @Composable {
+        MigrelyTheme {
+            AttackDetailsContents(
+                viewState = AttackDetailsViewStateUiModel.Ready(previewDetails()),
+                timeUiFormatter = previewTimeFormatter,
+                labels = AttackLabels.Default,
+                localState = AttackDetailsLocalState(
+                    timeError = null,
+                    safetyCardVisible = false,
+                    onDismissSafetyCard = {},
+                    onTimeErrorShown = {}
+                ),
+                actions = previewActions,
+                messages = {
+                    MigrelySnackbarHost(
+                        message = "Couldn't save.",
+                        reduceMotion = true,
+                        topOffset = MESSAGE_OFFSET_BELOW_TOP_BAR
+                    ) {
+                        MigrelySnackbar(it, SnackbarTone.Error, null, null, "Dismiss", {})
+                    }
+                }
             )
         }
     },

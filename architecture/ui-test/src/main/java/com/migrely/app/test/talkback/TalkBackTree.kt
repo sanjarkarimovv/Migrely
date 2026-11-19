@@ -18,6 +18,9 @@ import androidx.core.view.accessibility.AccessibilityNodeProviderCompat
 import kotlin.math.roundToInt
 import org.robolectric.Shadows.shadowOf
 
+/** Where Compose puts a merging node's content description: a fake child with this offset on its id. */
+private const val CONTENT_DESCRIPTION_FAKE_NODE = 2_000_000_000
+
 /** The extra Compose fills, for tests, with the node TalkBack goes to after this one (traversalBefore). */
 private const val TRAVERSAL_BEFORE =
     "android.view.accessibility.extra.EXTRA_DATA_TEST_TRAVERSALBEFORE_VAL"
@@ -77,25 +80,37 @@ class TalkBackTree(private val activity: ComponentActivity) {
     }
 
     /**
-     * The words TalkBack says for [node], read from the unmerged tree as TalkBack builds them: the node's own
-     * description and text, then the words of each child that is in the tree now and is not a stop of its own. A
-     * child cut off by the visible edge is out of the tree, and one hidden from accessibility is not visible to the
-     * user, so their words are missing here, as they are in TalkBack (#255, design D7). Pass a node fetched with `useUnmergedTree = true`.
+     * The words TalkBack says for [node], read from what Android exposes, as TalkBack builds them (#255, design D7):
+     * the node's content description (Compose gives only its first entry, on a fake first child when the node merges
+     * children), text and state description (not for an edit box: Compose drops it there), then the words of each
+     * child that is visible to the user and not a stop of its own. A child cut off by the visible edge is out of the
+     * tree and one hidden from accessibility is not visible to the user, so their words are missing, as in TalkBack.
+     * Pass a node fetched with `useUnmergedTree = true`.
      */
     fun spokenName(node: SemanticsNode): String = spokenParts(node).joinToString(" ")
 
-    /** [spokenName] in the parts TalkBack joins: own description, own text, then each child's words. */
+    /** [spokenName] in the parts TalkBack joins: [ownWords], the state, then each child's words. */
     fun spokenParts(node: SemanticsNode): List<String> {
-        val description = node.config.getOrNull(
-            SemanticsProperties.ContentDescription
-        )?.joinToString(" ")
-        val own = node.config.getOrNull(SemanticsProperties.Text)?.joinToString(" ")
-            ?: node.config.getOrNull(SemanticsProperties.EditableText)?.text
+        val info = node(node.id) ?: return emptyList()
+        val state = info.stateDescription?.toString()?.takeUnless { node.isEditable() }
         val children = node.children
             .filter { child -> !child.isOwnStop() && node(child.id)?.isVisibleToUser == true }
             .map(::spokenName)
-        return (listOfNotNull(description, own) + children).filter { it.isNotBlank() }
+        return (ownWords(node) + listOfNotNull(state) + children).filter { it.isNotBlank() }
     }
+
+    /** The words Android exposes on [node] itself: its content description, as Compose hands it over, and its text. */
+    fun ownWords(node: SemanticsNode): List<String> {
+        val info = node(node.id) ?: return emptyList()
+        val fake = node(node.id + CONTENT_DESCRIPTION_FAKE_NODE)?.takeIf {
+            it.isVisibleToUser
+        }?.contentDescription
+        return listOfNotNull(fake, info.contentDescription, info.text).map {
+            it.toString()
+        }.filter { it.isNotBlank() }
+    }
+
+    private fun SemanticsNode.isEditable() = config.contains(SemanticsProperties.EditableText)
 
     private fun SemanticsNode.isOwnStop() = config.isMergingSemanticsOfDescendants
 

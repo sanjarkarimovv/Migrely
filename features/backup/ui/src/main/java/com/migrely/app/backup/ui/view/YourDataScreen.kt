@@ -358,7 +358,7 @@ private fun ActionRow(title: String, summary: String, enabled: Boolean, onClick:
             .fillMaxWidth()
             .heightIn(min = 56.dp)
             .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
-            .ownWords(title, summary)
+            .ownWords(title)
             .padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
         Column(Modifier.weight(1f)) {
@@ -375,8 +375,7 @@ private fun ActionRow(title: String, summary: String, enabled: Boolean, onClick:
             Text(
                 text = summary,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.wordsShownOnly()
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }

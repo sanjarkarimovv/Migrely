@@ -30,6 +30,12 @@ import androidx.compose.ui.unit.dp
 import androidx.core.view.accessibility.AccessibilityNodeInfoCompat
 import com.migrely.app.designsystem.dialog.MigrelyAlertDialog
 import com.migrely.app.designsystem.input.drawEdgeToEdge
+import com.migrely.app.designsystem.snackbar.LocalMessageCover
+import com.migrely.app.designsystem.snackbar.MessageCover
+import com.migrely.app.designsystem.snackbar.MessageLayout
+import com.migrely.app.designsystem.snackbar.MigrelySnackbar
+import com.migrely.app.designsystem.snackbar.MigrelySnackbarHost
+import com.migrely.app.designsystem.snackbar.SnackbarTone
 import com.migrely.app.test.talkback.TalkBackTree
 import com.migrely.app.test.talkback.setNavigationBar
 import com.migrely.app.test.talkback.turnOnTalkBack
@@ -288,6 +294,28 @@ class PageScrollTest {
         }
         assertEquals(DpSize(48.dp, 48.dp), inside!!.minimumTouchTargetSize)
         assertWithinOnePx(scrollState.viewportSize / 2, accessibilityScrollForward())
+    }
+
+    @Test
+    fun `One accessibility scroll leaves out a message shown over the page`() {
+        var cover: MessageCover? = null
+        show {
+            MessageLayout(
+                message = {
+                    MigrelySnackbarHost(message = "Couldn't save.", reduceMotion = true) {
+                        MigrelySnackbar(it, SnackbarTone.Error, null, null, "Dismiss", {})
+                    }
+                }
+            ) {
+                cover = LocalMessageCover.current
+                PaddedPage()
+            }
+        }
+        val message = cover?.bounds
+        assertNotNull("the host says where its message is", message)
+        assertTrue("the message lies over the page's top", message!!.bottom > 0f)
+        val shows = scrollState.viewportSize - message.bottom.toInt()
+        assertWithinOnePx(shows / 2, accessibilityScrollForward())
     }
 }
 

@@ -532,7 +532,7 @@ private fun MarkSwitch(
                 role = Role.Switch,
                 onValueChange = onChange
             )
-            .ownWords(label, disabledReason)
+            .ownWords(label)
             .padding(horizontal = 8.dp, vertical = 4.dp)
     ) {
         Column(Modifier.weight(1f)) {
@@ -549,7 +549,6 @@ private fun MarkSwitch(
             if (disabledReason != null) {
                 Text(
                     text = disabledReason,
-                    modifier = Modifier.wordsShownOnly(),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

@@ -38,6 +38,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -55,6 +56,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.positionInRoot
@@ -383,6 +385,12 @@ fun <T : Any> MigrelySnackbarHost(
         )
     }
     val currentOnMessageBottomChanged by rememberUpdatedState(onMessageBottomChanged)
+    // Where the message covers the page beneath, for TalkBack's scroll step there (#255).
+    val cover = LocalMessageCover.current
+    DisposableEffect(cover, message == null) {
+        if (message == null) cover?.bounds = null
+        onDispose { cover?.bounds = null }
+    }
     Box(
         contentAlignment = Alignment.TopCenter,
         modifier = modifier
@@ -447,7 +455,10 @@ fun <T : Any> MigrelySnackbarHost(
                 Box(
                     modifier = Modifier
                         .widthIn(max = MAX_WIDTH)
-                        .onGloballyPositioned { inScreen.place(it) }
+                        .onGloballyPositioned {
+                            inScreen.place(it)
+                            cover?.bounds = it.boundsInRoot()
+                        }
                         // Measured at full size from the first frame, while the slide only moves it.
                         .onSizeChanged { size ->
                             if (size.height >

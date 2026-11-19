@@ -37,6 +37,9 @@ private const val NAVIGATION_BAR_DP = 24
 
 private const val PERCENT = 100
 
+// Letters and digits only, so punctuation and spacing do not count.
+private val WORD = Regex("""[\p{L}\p{N}]+""")
+
 // More steps than any page needs between two items: a check that cannot loop for ever.
 private const val MAX_STEPS_PER_SWIPE = 20
 
@@ -47,9 +50,10 @@ private const val MAX_STEPS_PER_SWIPE = 20
  * - swiping back from the end and on from the top: each step keeps the item TalkBack was on in view, or, where the
  *   gap to the next item is half the visible part or more, at least reaches that next item;
  * - the cut sweep ([cutSweep]): a stop cut by an edge says what it says whole;
- * - no stop says its words twice, as its own description and again as its Text (BRD D181 (2)).
- * Returns each problem as "screen: …"; empty when TalkBack walks every screen. Writes each screen's window pixels at
- * the top of its page to `build/screen-pixels/<screen> <width>dp <font>%.raw`, for the before-and-after comparison.
+ * - no stop says its words twice, as its own description and again as its Text (BRD D181 (2));
+ * - every word shown on a stop in view is said (EC-UX-80), as Android exposes it to TalkBack.
+ * Returns each problem as "screen: …"; empty when TalkBack walks every screen. [dumpPixels] can write each screen's
+ * window pixels for a comparison by hand.
  * TalkBack is turned on here, so call it before anything is composed.
  */
 fun <A : ComponentActivity> AndroidComposeTestRule<*, A>.talkBackWalk(
@@ -89,13 +93,18 @@ fun <A : ComponentActivity> AndroidComposeTestRule<*, A>.talkBackWalk(
     }
 }
 
+/**
+ * A manual tool, out of the gate: with `MIGRELY_SCREEN_PIXELS` set to a folder, writes the window's pixels there for a
+ * before-and-after comparison by hand (#255 used it to show 54 of 54 screens unchanged). Nothing is asserted.
+ */
 private fun <A : ComponentActivity> AndroidComposeTestRule<*, A>.dumpPixels(name: String) {
+    val folder = System.getenv("MIGRELY_SCREEN_PIXELS") ?: return
     val decor = activity.window.decorView
     val bitmap = Bitmap.createBitmap(decor.width, decor.height, Bitmap.Config.ARGB_8888)
     runOnUiThread { decor.draw(Canvas(bitmap)) }
     val pixels = ByteBuffer.allocate(bitmap.byteCount)
     bitmap.copyPixelsToBuffer(pixels)
-    File("build/screen-pixels").apply { mkdirs() }.resolve("$name.raw").writeBytes(pixels.array())
+    File(folder).apply { mkdirs() }.resolve("$name.raw").writeBytes(pixels.array())
 }
 
 private class Walk<A : ComponentActivity>(private val rule: AndroidComposeTestRule<*, A>) {
@@ -205,10 +214,43 @@ private class Walk<A : ComponentActivity>(private val rule: AndroidComposeTestRu
                 found +=
                     "order at ${before.toInt()} px: $it"
             }
+            unspokenWords(area).forEach { if (it !in found) found += it }
             scrollBy(area, ORDER_STEP_PX)
             if (position(area) == before) return found
         }
     }
+
+    /**
+     * The words shown on a stop wholly in view that TalkBack does not say (BRD EC-UX-80): each Text inside the stop,
+     * hidden from accessibility or not, must be in what it says, so words moved onto the stop's own node arrive whole.
+     */
+    private fun unspokenWords(area: SemanticsMatcher): List<String> {
+        val unmerged = rule.unmergedNodes()
+        // A stop covered by a message (or anything drawn above it) is out of the tree: no stop, nothing to say.
+        return stops(area).filter {
+            it.wholeIn(area) && onUi { tree.node(it.id) != null }
+        }.flatMap { stop ->
+            val node = unmerged[stop.id] ?: return@flatMap emptyList()
+            val said = onUi { tree.spokenName(node) }
+            shownTexts(node).filter { !isSaidIn(it, said) }
+                .map { "not said: '$it' on ${stop.mergedWords()} (says '$said')" }
+        }
+    }
+
+    /** Each word of [shown] is in [said], so a spoken form may spell it out ("6/10" as "peak 6 of 10", BRD D181). */
+    private fun isSaidIn(shown: String, said: String): Boolean {
+        val spoken = said.lowercase()
+        return WORD.findAll(shown.lowercase()).all { it.value in spoken }
+    }
+
+    private fun shownTexts(node: SemanticsNode): List<String> = listOfNotNull(
+        node.config.getOrNull(SemanticsProperties.Text)?.joinToString(" ")?.takeIf {
+            it.isNotBlank()
+        }
+    ) +
+        node.children.filter {
+            !it.config.isMergingSemanticsOfDescendants
+        }.flatMap(::shownTexts)
 
     /** The area's items TalkBack stops on, from the top down. */
     private fun stops(area: SemanticsMatcher): List<SemanticsNode> {
@@ -217,6 +259,19 @@ private class Walk<A : ComponentActivity>(private val rule: AndroidComposeTestRu
             .filter { node -> node.mergedWords() != null }
             .filter { node -> generateSequence(node.parent) { it.parent }.any { it.id == areaId } }
             .sortedWith(compareBy({ it.positionInRoot.y }, { it.positionInRoot.x }))
+    }
+
+    private fun atItsEnd(area: SemanticsMatcher, backward: Boolean): Boolean {
+        val range = rule.onNode(
+            area
+        ).fetchSemanticsNode().config[SemanticsProperties.VerticalScrollAxisRange]
+        return if (backward) range.value() <= 0f else range.value() >= range.maxValue()
+    }
+
+    /** [stop] lies in the visible part but is out of the tree: something drawn above it, a message, covers it. */
+    private fun coveredAtTheEnd(stop: SemanticsNode): Boolean {
+        val now = rule.mergedNodes()[stop.id] ?: return false
+        return onUi { tree.node(stop.id) == null } && now.boundsInRoot.height > 0f
     }
 
     private fun visiblePart(area: SemanticsMatcher) =
@@ -282,6 +337,14 @@ private class Walk<A : ComponentActivity>(private val rule: AndroidComposeTestRu
                     steps++
                 }
                 if (!onScreen(target.id)) {
+                    if (atItsEnd(area, backward) && coveredAtTheEnd(target)) {
+                        // Under a message at the page's very end: out of the tree until the message goes, on develop
+                        // too. The walk ends at the last item TalkBack can reach (reported, not a failure).
+                        println(
+                            "COVERED at the ${if (backward) "top" else "end"}: ${target.mergedWords()}"
+                        )
+                        return lost.map { "swiping ${if (backward) "back" else "on"}: $it" }
+                    }
                     lost += "${target.mergedWords()} not on screen after $steps steps"
                     break
                 }

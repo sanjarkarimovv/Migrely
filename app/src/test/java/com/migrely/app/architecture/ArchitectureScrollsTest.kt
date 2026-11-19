@@ -8,20 +8,46 @@ import org.junit.Test
 private const val ENTRY_POINT_PATH =
     "/designsystem/src/main/java/com/migrely/app/designsystem/layout/PageScroll.kt"
 
-private val RAW_SCROLL = Regex("""\bverticalScroll\(""")
+private const val PICKER_DIR = "/designsystem/src/main/java/com/migrely/app/designsystem/picker/"
+private const val REMINDERS =
+    "/features/reminders/ui/src/main/java/com/migrely/app/reminders/ui/view/RemindersScreen.kt"
+
+/**
+ * A scroll that does not go through the entry point: Compose's own scrolls, and lazy lists, which would need the same
+ * fix and have none today.
+ */
+private val RAW_SCROLL = Regex(
+    """\b(verticalScroll|horizontalScroll)\(|\.scrollable\(|\b(LazyColumn|LazyRow|LazyVerticalGrid)\s*[({]"""
+)
+
+private const val STEP_ONLY = "PageScroll(exactBounds = false)"
+
+/**
+ * Where only the half step applies (design D5 T2, T3; BRD D193): Material's date and time pickers, whose controls under
+ * 48 dp need Compose's widening, and Reminders' time dialog, which shows the same time picker.
+ */
+private val STEP_ONLY_SITES = mapOf(
+    "${PICKER_DIR}MigrelyDatePicker.kt" to 1,
+    "${PICKER_DIR}MigrelyDateTimePicker.kt" to 2,
+    REMINDERS to 1
+)
 
 private val COMMENT = Regex("""^\s*(//|/\*|\*)""")
 
+private fun String.isRawScroll() =
+    !COMMENT.containsMatchIn(this) && RAW_SCROLL.containsMatchIn(this)
+
 /**
- * A page that calls Compose's `verticalScroll` itself would keep TalkBack's loop and skip (issue #255, BRD D193):
- * every vertical scroll goes through `PageScroll`'s `pageScroll`, which brings exact bounds and the half step.
- * Only the entry point's file names the raw call. Failures name each file and line.
+ * A page that scrolls by Compose's own means would keep TalkBack's loop and skip (issue #255, BRD D193): every scroll
+ * goes through `PageScroll`'s `pageScroll`, which brings exact bounds and the half step. Only the entry point's file
+ * names a raw scroll. Failures name each file and line.
  */
 class ArchitectureScrollsTest {
+    private val files = Konsist.scopeFromProduction().files
+
     @Test
-    fun `only the entry point calls verticalScroll`() {
-        val raw = Konsist.scopeFromProduction()
-            .files
+    fun `only the entry point scrolls by Compose's own means`() {
+        val raw = files
             .filter { it.projectPath != ENTRY_POINT_PATH }
             .flatMap { file ->
                 file.text.lines().withIndex()
@@ -30,9 +56,16 @@ class ArchitectureScrollsTest {
             }
             .sorted()
 
-        assertEquals("raw verticalScroll calls: ${raw.size}", emptyList<String>(), raw)
+        assertEquals("raw scrolls: ${raw.size}", emptyList<String>(), raw)
+    }
+
+    @Test
+    fun `only the pickers and the time dialog leave exact bounds out`() {
+        val stepOnly = files
+            .map { it.projectPath to Regex(Regex.escape(STEP_ONLY)).findAll(it.text).count() }
+            .filter { (_, count) -> count > 0 }
+            .toMap()
+
+        assertEquals(STEP_ONLY_SITES, stepOnly)
     }
 }
-
-private fun String.isRawScroll() =
-    !COMMENT.containsMatchIn(this) && RAW_SCROLL.containsMatchIn(this)

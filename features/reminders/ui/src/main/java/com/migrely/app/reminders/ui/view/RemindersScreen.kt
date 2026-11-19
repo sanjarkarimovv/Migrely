@@ -496,7 +496,7 @@ private fun SwitchRow(
             .fillMaxWidth()
             .heightIn(min = 56.dp)
             .toggleable(value = checked, role = Role.Switch, onValueChange = onCheckedChange)
-            .ownWords(title, summary)
+            .ownWords(title)
             .padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
         Column(modifier = Modifier.weight(1f)) {
@@ -509,8 +509,7 @@ private fun SwitchRow(
             Text(
                 summary,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.wordsShownOnly()
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
         Switch(

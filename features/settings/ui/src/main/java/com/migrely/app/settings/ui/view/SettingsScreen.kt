@@ -329,7 +329,7 @@ private fun SwitchRow(
             .fillMaxWidth()
             .heightIn(min = ROW_MIN_HEIGHT)
             .toggleable(value = checked, role = Role.Switch, onValueChange = onCheckedChange)
-            .ownWords(title, summary)
+            .ownWords(title)
             .padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
         RowTexts(title, summary, MaterialTheme.colorScheme.onSurface, Modifier.weight(1f))
@@ -356,7 +356,7 @@ private fun LinkRow(
             .fillMaxWidth()
             .heightIn(min = ROW_MIN_HEIGHT)
             .clickable(role = Role.Button, onClick = onClick)
-            .ownWords(title, summary)
+            .ownWords(title)
             .padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
         RowTexts(title, summary, titleColor, Modifier.weight(1f))
@@ -379,7 +379,7 @@ private fun ValueRow(title: String, value: String) {
             .fillMaxWidth()
             .heightIn(min = ROW_MIN_HEIGHT)
             .semantics(mergeDescendants = true) { }
-            .ownWords(title, value)
+            .ownWords(title)
             .padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
         RowTexts(title, value, MaterialTheme.colorScheme.onSurface, Modifier.weight(1f))
@@ -399,8 +399,7 @@ private fun RowTexts(title: String, summary: String, titleColor: Color, modifier
         Text(
             text = summary,
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.wordsShownOnly()
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }

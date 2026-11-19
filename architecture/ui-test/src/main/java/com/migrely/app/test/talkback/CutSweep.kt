@@ -91,17 +91,17 @@ private class Sweep<A : ComponentActivity>(
                 .filter { (_, target) -> target in 0..max }
                 .mapNotNull { (edge, target) ->
                     scrollTo(target)
-                    spokenName(stop.id)?.takeIf { it != whole }
+                    spokenName(stop.id)?.takeIf { whole !in it }
                         ?.let { said -> "${stop.words}: $cut px at the $edge edge says '$said'" }
                 }
         }
     }
 
     /**
-     * The stop's name as TalkBack builds it, or null when it is not in the tree. A text field's name is its own: its
-     * label (on its node) and its text. Its supporting line under it (a counter) is only extra, so it may go with the part
-     * an edge cuts off, as anything out of view does; TalkBack does not speak a field's state description, so the line
-     * stays a child (#255, device walk 6.1).
+     * The stop's name, or null when it is not in the tree: the words Android exposes on the stop itself (its content
+     * description and text), or, for a stop with none of its own, all TalkBack says for it. Its other lines (a row's
+     * summary, a field's counter) may go with the part an edge cuts off, as anything out of view does; the walk's
+     * visible-words check makes sure they are said while in view.
      */
     private fun spokenName(id: Int): String? {
         val node = rule.unmergedNodes()[id] ?: return null
@@ -109,17 +109,8 @@ private class Sweep<A : ComponentActivity>(
         rule.runOnUiThread {
             val tree = TalkBackTree(rule.activity)
             if (tree.node(id) != null) {
-                val parts = tree.spokenParts(node)
-                name = if (node.config.contains(SemanticsProperties.EditableText)) {
-                    listOfNotNull(
-                        node.config.getOrNull(
-                            SemanticsProperties.ContentDescription
-                        )?.joinToString(" "),
-                        node.config[SemanticsProperties.EditableText].text
-                    ).filter { it.isNotBlank() }.joinToString(" ")
-                } else {
-                    parts.joinToString(" ")
-                }
+                val own = tree.ownWords(node)
+                name = (own.ifEmpty { tree.spokenParts(node) }).joinToString(" ")
             }
         }
         return name

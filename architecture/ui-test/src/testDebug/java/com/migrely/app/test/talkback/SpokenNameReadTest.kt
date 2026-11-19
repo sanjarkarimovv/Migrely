@@ -35,7 +35,7 @@ private const val CHIP = "chip"
 /**
  * Why the name TalkBack says is read from the unmerged tree (#255, design D7): a chip cut by the visible edge, with
  * exact bounds, keeps its own node in the tree, but its text child lies outside the visible part and leaves it.
- * TalkBack then says only the chip's state. The merged read still finds the text and can never fail this way.
+ * TalkBack then says only the chip's state, as Android exposes it. The merged read still finds the text and can never fail this way.
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -87,16 +87,16 @@ class SpokenNameReadTest {
     }
 
     @Test
-    fun `A whole chip says its words`() {
+    fun `A whole chip says its state and its words`() {
         showChipScrolledBy(150)
-        assertEquals("Nausea", spokenName())
+        assertEquals("Not selected Nausea", spokenName())
     }
 
     @Test
-    fun `A chip cut below its text says no words, while the merged read still finds them`() {
+    fun `A chip cut below its text says only its state, the merged read its words`() {
         // The chip's top 6 dp show at the bottom edge; its text starts 8 dp below that edge.
         showChipScrolledBy(106)
-        assertEquals("", spokenName())
+        assertEquals("Not selected", spokenName())
         assertEquals("Nausea", rule.onNodeWithTag(CHIP).fetchSemanticsNode().mergedWords())
     }
 }
