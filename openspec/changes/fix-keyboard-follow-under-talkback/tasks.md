@@ -32,37 +32,69 @@ green; each mutation must turn its test red again. Logs go to `migrely-work/259/
 
 ## 2. The follow survives Compose's layout (`designsystem`)
 
-- [ ] 2.1 `KeyboardFollow`: keep `keyboardFollowed`, set by the collector; `onPositioned` records only when the height equals
+- [x] 2.1 `KeyboardFollow`: keep `keyboardFollowed`, set by the collector; `onPositioned` records only when the height equals
   both the last layout's and the followed one (design D1). KDoc names #259. Verify: the 1.1 tests, 4 of 4 green; the
   never-drop mutant still fails the scroll-away control (log in `migrely-work/259/eng/2.1-mutant.log`).
+  Done 89548bb3. `KeyboardFollowTest` 4 of 4 green (2 red on 2bf5857c); the never-drop mutant fails only the scroll-away
+  control, "expected:<1> but was:<2>" (`eng/2.1-mutant.log`).
 
 ## 3. The line moves in step with the keyboard (`designsystem`)
 
-- [ ] 3.1 `TypingSpace.scrollToShow(coordinates, area)` (design D2): unit tests first, red without it, for a line that shows
+- [x] 3.1 `TypingSpace.scrollToShow(coordinates, area)` (design D2): unit tests first, red without it, for a line that shows
   (0), below the visible part, above it, taller than it (its top first), an unknown page (null) and detached coordinates
   (null). Verify: `./gradlew :designsystem:testDebugUnitTest --tests '*TypingSpace*'` green, and red with the function
   returning 0.
-- [ ] 3.2 `CursorFollowingTextField`: inside a typing space, on keyboard growth while following, hand `scrollToShow` of the
+  Done 232a615c. `TypingSpaceScrollToShowTest` 6 of 6 green; returning 0 fails 5 of 6 (the inside cell is 0 by definition)
+  (`eng/3.1-mutant.log`).
+- [x] 3.2 `CursorFollowingTextField`: inside a typing space, on keyboard growth while following, hand `scrollToShow` of the
   caret's line box to the page in the same turn (design D3); outside a typing space keep `bringIntoView`. Robolectric test:
   a note in a `verticalScroll` inside a `TypingSpace`, IME insets driven by hand in steps (as `KeyboardRoomTest` does), with
   an accessibility-like extra layout before the collector; after each step the line is inside the visible part. Red on
   develop. Verify: `./gradlew :designsystem:testDebugUnitTest` green; the test red with the old bring restored.
-- [ ] 3.3 `SingleLineFieldInView`: the same, with the input line plus `marginAround` (D192 R2), and its placed coordinates
+  Done d8524f24 (`InStepScroll`, `TypingSpace.visibleHeight`) and 44f9c6b7. `KeyboardFollowFramesTest` runs each step as on
+  5570: the frame's layout, a second layout at the same height, then the follow, with effects on a `StandardTestDispatcher`
+  and no clock between (Robolectric's default runs the collector inside the inset dispatch, before any layout). 11 green; on
+  develop 4d141abe 5 fail, with the old animated bring 5 fail (`eng/3.2-red-*.log`). `show` reports false where the page
+  takes less than the distance (a scrollable takes no raw scroll while another scroll of it runs): the old bring then.
+- [x] 3.3 `SingleLineFieldInView`: the same, with the input line plus `marginAround` (D192 R2), and its placed coordinates
   kept outside state so placing does not recompose. Same Robolectric shape. Verify: as 3.2.
-- [ ] 3.4 Motion at the unit level (C1 to C3): with insets stepped 0, 30, 70, 100% and the bar stepping aside in the second
+  Done 44f9c6b7, with ux U1's three areas (the largest that fits) rather than the input line alone, so the rest position is
+  develop's (C4). Limit: a field wholly in view before a shrink is Compose's own focused child; the page animates it back
+  itself and takes no raw scroll meanwhile, so the follow falls back to the old bring. A single-line field is wholly in view
+  after its focus bring, so in practice it moves in step only while cut (cell "cut at the bottom ... first frame", red with
+  develop's field, `eng/3.3-red-oldbring.log`) and otherwise as on develop (cell "wholly in view ... brought back by the page
+  itself"). The note at 360 dp never fits whole and stays in step. For code-reviewer (design D3).
+- [x] 3.4 Motion at the unit level (C1 to C3): with insets stepped 0, 30, 70, 100% and the bar stepping aside in the second
   step, the page's scroll delta per step is never above the keyboard's delta plus 1 px, never negative, and zero after the
   last step; a skipped step never produces a leap above the summed keyboard delta. Verify: the frame test green; a mutant
   that computes the distance from positions taken before the bar shrank fails C2 (log `migrely-work/259/eng/3.4-mutant.log`).
-- [ ] 3.5 Fallback and guards: a following field with no typing space is brought into view as on develop; an ancestor that
+  Done (frame test). Steps 0, 30, 70, 100%: scroll per step within the keyboard's step + 1 px and never negative; where it
+  scrolls, the line's bottom plus its margin sits at the part's bottom; nothing moves 1 s after the last step (old bring: the
+  spring moves 408 px after); one 100% step stays within 628 px. The bar shrinks with the keyboard in every step (its own
+  rule, R6), not in one. Mutant with page positions from the previous step fails C2, "expected:<507.0> but was:<429.0>"
+  (`eng/3.4-mutant.log`).
+- [x] 3.5 Fallback and guards: a following field with no typing space is brought into view as on develop; an ancestor that
   consumes post-scroll (not the page) does not take the distance or the test shows what it takes; a drag inside the field
   scrolls the page as on develop. Verify: tests green; the fallback test red when the null branch scrolls.
-- [ ] 3.6 Guards unchanged: `KeyboardRoomTest`, the screens' keyboard-room tests, D192's bar and margin tests (including
+  Done. Outside a typing space: no move in the keyboard's turn, then develop's bring (red on develop, which drops the
+  follow; red when the fallback does nothing, `eng/3.5-mutant-fallback.log`). An ancestor between the note and the page sees
+  the distance and leaves it to the page. A drag that starts on the note scrolls the page: green, but a mutant that makes
+  the field's connection swallow drags cannot reach it (the page's own scrollable handles that drag, so the field's
+  connection is not in its chain); recorded as a guard, not a killed mutant. Per screen (9eb83586): `PageScrollParent`
+  checks no other scroll or nested-scroll node lies between each field and its page on Attack details, Log and Edit
+  medication, Delete all data (4 tests); a nested scroll added inside Attack details' page fails it
+  (`eng/3.5-screens-mutant.log`).
+- [x] 3.6 Guards unchanged: `KeyboardRoomTest`, the screens' keyboard-room tests, D192's bar and margin tests (including
   `TypedLineMarginsTest`) pass without edits. Verify: `git diff 4d141abe -- '*Test.kt'` shows only added tests.
+  Done. `git diff 4d141abe --numstat -- '*Test.kt'`: 6 new files, 0 lines removed; no existing test edited.
 
 ## 4. Gate (`android-engineer`)
 
-- [ ] 4.1 Full gate. Verify: `set -o pipefail; nice -n 19 ./gradlew --max-workers=2 assembleDebug test ktlintCheck detekt
+- [x] 4.1 Full gate. Verify: `set -o pipefail; nice -n 19 ./gradlew --max-workers=2 assembleDebug test ktlintCheck detekt
   lint 2>&1 | tee migrely-work/259/eng/gate.log` exits 0; `:app:checkReleasePermissions` unchanged from 1.3.1.
+  Done at 9eb83586: `assembleDebug test ktlintCheck detekt lint` exit 0 (BUILD SUCCESSFUL, 2142 tasks), 3510 tests in 53
+  modules, 0 failed (`eng/gate.log`); `:app:checkReleasePermissions` exit 0; merged release manifest: ACCESS_NETWORK_STATE,
+  POST_NOTIFICATIONS, RECEIVE_BOOT_COMPLETED, WAKE_LOCK, BILLING, the dynamic receiver permission; no INTERNET.
 
 ## 5. Device walk on emulator-5570 (`android-engineer`)
 
