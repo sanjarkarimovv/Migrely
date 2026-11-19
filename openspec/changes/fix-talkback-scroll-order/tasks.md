@@ -79,9 +79,13 @@ D3 to D5.
   (`viewportSize / 2`) → 1 failed (moved 445 for 433); non-delegating configuration → 1 failed (c); D2 around the
   whole sample screen → 1 failed (d). `:designsystem:testDebugUnitTest` 273 tests, 0 failed (KeyboardRoomTest 9,
   TopBarAsideTest 13, TypedLineMarginsTest 5 unchanged). Logs `2.3-*.log`, `mut-2.3-*.txt`.
-- [ ] 2.4 Source check (D1): fails on `verticalScroll(` in `src/main` outside `designsystem`'s entry point, naming file and
+- [x] 2.4 Source check (D1): fails on `verticalScroll(` in `src/main` outside `designsystem`'s entry point, naming file and
   line. Verify: red now with 29 sites listed (design D8); green at the end of 4; negative control: a scratch raw call turns it
   red again. Log `2.4-*.log`.
+  Result: `app/src/test/.../architecture/ArchitectureScrollsTest` (Konsist, beside `ArchitectureDialogsTest`): red now,
+  "raw verticalScroll calls: 29", the 29 sites of D8 by file and line (`2.4-red-summary.txt`). Negative control: a
+  scratch `ScratchRawScroll.kt` in home ui → 30, naming `ScratchRawScroll.kt:8`, its comment line 7 not counted; file
+  removed → 29. It stays red, committed on purpose, until 4.7 turns it green.
 
 - [ ] 2.5 Cut sweep in the shared fixture (design D7): for each stop, scroll so 1 px to 12 dp of it shows at the top edge,
   then at the bottom edge, and read its name with the 2.2 read; report each stop whose name is empty or partial. Verify: on
