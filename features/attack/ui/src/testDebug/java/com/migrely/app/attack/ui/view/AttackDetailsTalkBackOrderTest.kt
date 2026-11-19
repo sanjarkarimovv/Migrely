@@ -13,6 +13,11 @@ import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.unit.Density
 import com.migrely.app.attack.ui.model.AttackDetailsViewStateUiModel
 import com.migrely.app.designsystem.theme.MigrelyTheme
+import com.migrely.app.test.talkback.TalkBackTree
+import com.migrely.app.test.talkback.mergedNodes
+import com.migrely.app.test.talkback.mergedWords
+import com.migrely.app.test.talkback.setNavigationBar
+import com.migrely.app.test.talkback.turnOnTalkBack
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -98,11 +103,11 @@ class AttackDetailsTalkBackOrderTest {
         rule.runOnUiThread {
             stops =
                 TalkBackTree(rule.activity).order(reading.keys).filter { id ->
-                    nodes[id]?.talkBackName() !=
+                    nodes[id]?.mergedWords() !=
                         null
                 }
         }
-        fun name(id: Int) = nodes.getValue(id).talkBackName()
+        fun name(id: Int) = nodes.getValue(id).mergedWords()
         val upward = stops.zipWithNext()
             .filter { (from, to) -> reading.getValue(to) < reading.getValue(from) }
             .map { (from, to) -> "${name(from)} -> ${name(to)}" }

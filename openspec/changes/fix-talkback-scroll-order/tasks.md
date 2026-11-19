@@ -49,12 +49,18 @@ D3 to D5.
   window (as `walk-b1`). Verify: red on this branch before the fix, log `2.1-red.log`.
   Result: `Portrait at 100 percent, navigation bar, no keyboard, the order runs down the page` (24 dp bar) red, 4 order
   tests completed, 3 failed; wrong steps such as "Add your own symptom -> Pain" (`2.1-red-summary.txt`).
-- [ ] 2.2 Shared test fixture: move `TalkBackTree` (order from the traversal data, scroll by the accessibility action, "only N
+- [x] 2.2 Shared test fixture: move `TalkBackTree` (order from the traversal data, scroll by the accessibility action, "only N
   items" guard) where every `ui` module's tests can use it, no copies. Replace the merged-semantics `talkBackName()`
   (`TalkBackTree.kt:76`) with an unmerged read as TalkBack builds the name (own text or description, then visible
   non-focusable children), so a cut name can fail. Verify: the 2.0 and 2.1 tests still red for the same reason after the
   move; a fixture test where a chip's text child is clipped out returns an empty name with the new read and the full name
   with the old one (shows why the old read could not fail).
+  Result: new test-support module `:architecture:ui-test` (package `com.migrely.app.test.talkback`, like
+  `:architecture:presentation-test`), used through `testDebugImplementation`; attack's copy deleted. `TalkBackTree.spokenName`
+  is the unmerged read; the merged read is kept only to find stops and label failures, renamed `mergedWords()` so it is
+  not mistaken for a name check. `setNavigationBar` moved there too. `SpokenNameReadTest`: 2 tests, 0 failures (whole chip
+  "Nausea"; chip cut 8 dp above its text: new read "", merged "Nausea"). Attack TalkBack tests: 8 completed, 7 failed with
+  the same named steps as 2.0 and 2.1 (`2.2-summary.txt`).
 - [ ] 2.3 The entry point (D1) with exact bounds (D2, scroll content only, D4a) and the step floor(V/2) px (D3).
   `ViewConfiguration` delegate: only `minimumTouchTargetSize` changes. Verify: a `designsystem` test that (a) a node 1 to 24
   dp below the visible edge with a bottom inset is absent from the tree, (b) one accessibility scroll moves floor(V/2) px

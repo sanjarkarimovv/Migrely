@@ -52,17 +52,3 @@ internal fun ComponentActivity.setKeyboard(heightDp: Int) {
         shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(1))
     }
 }
-
-/**
- * Gives the window a bottom navigation bar inset of [heightDp] and no keyboard, as an edge-to-edge window gets on a
- * phone with gesture navigation (#255): the page's visible part then ends above the window's bottom. Call it on the
- * main thread.
- */
-internal fun ComponentActivity.setNavigationBar(heightDp: Int) {
-    val view = window.decorView
-    val bottom = (heightDp * view.resources.displayMetrics.density).roundToInt()
-    val insets = WindowInsetsCompat.Builder()
-        .setInsets(WindowInsetsCompat.Type.navigationBars(), Insets.of(0, 0, 0, bottom))
-        .build()
-    ViewCompat.dispatchApplyWindowInsets(view, insets)
-}

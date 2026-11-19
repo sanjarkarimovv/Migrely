@@ -13,6 +13,10 @@ import androidx.core.view.accessibility.AccessibilityNodeInfoCompat
 import androidx.core.view.accessibility.AccessibilityNodeInfoCompat.AccessibilityActionCompat
 import com.migrely.app.attack.ui.model.AttackDetailsViewStateUiModel
 import com.migrely.app.designsystem.theme.MigrelyTheme
+import com.migrely.app.test.talkback.TalkBackTree
+import com.migrely.app.test.talkback.mergedNodes
+import com.migrely.app.test.talkback.mergedWords
+import com.migrely.app.test.talkback.turnOnTalkBack
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -68,7 +72,7 @@ class AttackDetailsTalkBackScrollTest {
     private fun stops(): List<SemanticsNode> {
         val pageId = page.fetchSemanticsNode().id
         return rule.mergedNodes().values
-            .filter { node -> node.talkBackName() != null }
+            .filter { node -> node.mergedWords() != null }
             .filter { node -> generateSequence(node.parent) { it.parent }.any { it.id == pageId } }
             .sortedWith(compareBy({ it.positionInRoot.y }, { it.positionInRoot.x }))
     }
@@ -115,9 +119,9 @@ class AttackDetailsTalkBackScrollTest {
             val target = stops.getOrNull(index + direction) ?: break
             if (!onScreen(target)) {
                 perform(page.fetchSemanticsNode().id, step)
-                if (!onScreen(pivot)) lost += "${pivot.talkBackName()} left the screen"
+                if (!onScreen(pivot)) lost += "${pivot.mergedWords()} left the screen"
                 if (!onScreen(target)) {
-                    lost += "${target.talkBackName()} not on screen after the step"
+                    lost += "${target.mergedWords()} not on screen after the step"
                     break
                 }
             }
@@ -127,7 +131,7 @@ class AttackDetailsTalkBackScrollTest {
             index += direction
         }
         val end = if (backward) 0 else stops.lastIndex
-        if (index != end) lost += "stopped at ${stops[index].talkBackName()}"
+        if (index != end) lost += "stopped at ${stops[index].mergedWords()}"
         return lost
     }
 
