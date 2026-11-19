@@ -1,5 +1,6 @@
 package com.migrely.app.designsystem.button
 
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.indication
@@ -9,7 +10,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LocalContentColor
-import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import com.migrely.app.designsystem.layout.InsetInteractionSource
 import com.migrely.app.designsystem.layout.ownWords
 import com.migrely.app.designsystem.layout.wordsShownOnly
+import kotlin.math.roundToInt
 
 // Material's minimum interactive size and its standard icon button's drawn circle.
 private val TouchSize = 48.dp
@@ -46,7 +47,10 @@ fun MigrelyIconButton(
 ) {
     val colors = IconButtonDefaults.iconButtonColors()
     val interactions = remember { MutableInteractionSource() }
-    val inset = with(LocalDensity.current) { ((TouchSize - CircleSize) / 2).toPx() }
+    // Where Alignment.Center places the circle, to the pixel: half the space left, rounded as it rounds.
+    val inset = with(LocalDensity.current) {
+        ((TouchSize.roundToPx() - CircleSize.roundToPx()) / 2f).roundToInt().toFloat()
+    }
     val circleInteractions = remember(interactions, inset) {
         InsetInteractionSource(interactions, Offset(inset, inset))
     }
@@ -72,7 +76,8 @@ fun MigrelyIconButton(
                     color = if (enabled) colors.containerColor else colors.disabledContainerColor,
                     shape = CircleShape
                 )
-                .indication(circleInteractions, ripple())
+                // The theme's ripple, as Material's icon button draws.
+                .indication(circleInteractions, LocalIndication.current)
         ) {
             val contentColor = if (enabled) colors.contentColor else colors.disabledContentColor
             CompositionLocalProvider(LocalContentColor provides contentColor) {
