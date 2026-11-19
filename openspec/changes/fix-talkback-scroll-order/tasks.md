@@ -119,6 +119,16 @@ D3 to D5.
   touchable only through `ViewConfiguration.minimumTouchTargetSize`, which D2 sets to 0. Design D2's note ("Material
   controls keep their 48 dp layout size") holds for layout, not for touch. Not a T1 to T4 case; the same pattern
   (Material icon buttons, checkboxes, switches) appears in 21 `src/main` files, not yet measured.
+  **Lead decision 2026-11-19, option 1:** inside D2 every clickable, toggleable or selectable node is itself at least
+  48×48 dp (its own size, never `ViewConfiguration` widening); nothing drawn changes. Icon buttons:
+  `designsystem/button/MigrelyIconButton` (48 dp clickable node; Material's 40 dp circle, container, icon and ripple
+  drawn inside it, presses moved by the 4 dp inset so the ripple starts under the finger). `MigrelyIconButtonTest`:
+  red on a stub that is Material's `IconButton` (tap 2 dp outside the 40 dp circle, inside 48 dp, inside a page: no
+  click), green after; the control test shows Material's button misses that tap inside a page. At rest and disabled:
+  0 pixels differ from Material's (mutation, icon moved: 198 pixels differ, red). Named limits: the circle's size does
+  not show at rest (transparent container), and Robolectric draws no platform ripple (Material's own pressed button
+  equals its resting one), so the pressed comparison is the instrumented `MigrelyIconButtonPressedTest` (compiles; to
+  run on emulator-5570 in the device round). TalkBack's focus outline follows the node: 48 dp square, was 40 dp.
 - [ ] 3.2 T1 History calendar days (`MonthSkyCalendar.kt:320-345`) at 360 dp wide, 200% font: if a cell is under 48 dp, a
   touch area covering the whole cell pitch, drawn cell, clip and focus ring unchanged. Verify: a test that a tap in the 6 dp
   gap opens the nearer day under D2 (red with D2 and no pitch area), and the History screenshot identical.
