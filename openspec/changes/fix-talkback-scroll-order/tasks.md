@@ -111,6 +111,14 @@ D3 to D5.
   360 and 411 dp wide and at 100% and 200% font, against its bar (48 dp; 64 dp for attack mode's intensity choices,
   "Migraine ended", a message's Undo and Dismiss). Verify: a table in `migrely-work/255/eng/touch-targets.md` (site,
   controls, smallest size) and the test names; summary line here.
+  **Stopped (eng-255b, 2026-11-19), decision needed:** fixture `touchTargets(page)` in `:architecture:ui-test` measures
+  the node that takes each click inside the page, with no widening. `AttackTouchTargetAuditTest` (Attack details, 360
+  and 411 dp, 100% and 200%): 43 controls in the page, 41 at 48 dp or more; the two "Remove pain level" Material3
+  `IconButton`s are **40×40 dp** at all four sizes (`3.1-attack-summary.txt`). Material's
+  `minimumInteractiveComponentSize` keeps a 48 dp layout, but the click lands on the 40 dp node and the 4 dp ring is
+  touchable only through `ViewConfiguration.minimumTouchTargetSize`, which D2 sets to 0. Design D2's note ("Material
+  controls keep their 48 dp layout size") holds for layout, not for touch. Not a T1 to T4 case; the same pattern
+  (Material icon buttons, checkboxes, switches) appears in 21 `src/main` files, not yet measured.
 - [ ] 3.2 T1 History calendar days (`MonthSkyCalendar.kt:320-345`) at 360 dp wide, 200% font: if a cell is under 48 dp, a
   touch area covering the whole cell pitch, drawn cell, clip and focus ring unchanged. Verify: a test that a tap in the 6 dp
   gap opens the nearer day under D2 (red with D2 and no pitch area), and the History screenshot identical.
