@@ -38,6 +38,8 @@ import com.migrely.app.attack.ui.model.AttackIntakeUiModel
 import com.migrely.app.designsystem.button.MigrelyIconButton
 import com.migrely.app.designsystem.dialog.MigrelyAlertDialog
 import com.migrely.app.designsystem.icon.MigrelyIcons
+import com.migrely.app.designsystem.layout.ownWords
+import com.migrely.app.designsystem.layout.wordsShownOnly
 
 /**
  * The medications taken during the attack, oldest first. Each row shows how much it helped and opens that choice
@@ -79,11 +81,14 @@ internal fun MedicationsSection(
             modifier = Modifier
                 .padding(top = 8.dp)
                 .heightIn(min = 48.dp)
+                .ownWords(stringResource(R.string.medication_add))
         ) {
             Icon(MigrelyIcons.Add, contentDescription = null, modifier = Modifier.size(18.dp))
             Text(
                 text = stringResource(R.string.medication_add),
-                modifier = Modifier.padding(start = 8.dp)
+                modifier = Modifier
+                    .padding(start = 8.dp)
+                    .wordsShownOnly()
             )
         }
     }
@@ -139,10 +144,13 @@ private fun IntakeRow(
                 )
             }
         }
-        MigrelyIconButton(onClick = onRemove) {
+        MigrelyIconButton(
+            contentDescription = stringResource(R.string.medication_remove, what),
+            onClick = onRemove
+        ) {
             Icon(
                 MigrelyIcons.Close,
-                contentDescription = stringResource(R.string.medication_remove, what)
+                contentDescription = null
             )
         }
     }

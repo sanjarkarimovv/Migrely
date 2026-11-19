@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.toggleable
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -47,6 +46,9 @@ import androidx.navigation.NavController
 import com.migrely.app.architecture.ui.view.ScreenEnterObserver
 import com.migrely.app.designsystem.icon.MigrelyIcons
 import com.migrely.app.designsystem.layout.MigrelyInsets
+import com.migrely.app.designsystem.layout.PageScroll
+import com.migrely.app.designsystem.layout.ownWords
+import com.migrely.app.designsystem.layout.wordsShownOnly
 import com.migrely.app.designsystem.motion.rememberReduceMotion
 import com.migrely.app.designsystem.snackbar.MESSAGE_OFFSET_BELOW_TOP_BAR
 import com.migrely.app.designsystem.snackbar.MessageLayout
@@ -203,20 +205,22 @@ fun SettingsContents(
     ) {
         Column(Modifier.fillMaxSize()) {
             Box(contentAlignment = Alignment.TopCenter, modifier = Modifier.fillMaxSize()) {
-                Column(
-                    modifier = Modifier
-                        .widthIn(max = CONTENT_MAX_WIDTH)
-                        .fillMaxWidth()
-                        .windowInsetsPadding(
-                            MigrelyInsets.bars.only(
-                                WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
+                PageScroll {
+                    Column(
+                        modifier = Modifier
+                            .widthIn(max = CONTENT_MAX_WIDTH)
+                            .fillMaxWidth()
+                            .windowInsetsPadding(
+                                MigrelyInsets.bars.only(
+                                    WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
+                                )
                             )
-                        )
-                        .verticalScroll(rememberScrollState())
-                        .padding(bottom = 16.dp)
-                ) {
-                    premiumSection()
-                    SettingsItems(settings, actions)
+                            .pageScroll(rememberScrollState())
+                            .padding(bottom = 16.dp)
+                    ) {
+                        premiumSection()
+                        SettingsItems(settings, actions)
+                    }
                 }
             }
         }
@@ -325,6 +329,7 @@ private fun SwitchRow(
             .fillMaxWidth()
             .heightIn(min = ROW_MIN_HEIGHT)
             .toggleable(value = checked, role = Role.Switch, onValueChange = onCheckedChange)
+            .ownWords(title, summary)
             .padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
         RowTexts(title, summary, MaterialTheme.colorScheme.onSurface, Modifier.weight(1f))
@@ -351,6 +356,7 @@ private fun LinkRow(
             .fillMaxWidth()
             .heightIn(min = ROW_MIN_HEIGHT)
             .clickable(role = Role.Button, onClick = onClick)
+            .ownWords(title, summary)
             .padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
         RowTexts(title, summary, titleColor, Modifier.weight(1f))
@@ -373,6 +379,7 @@ private fun ValueRow(title: String, value: String) {
             .fillMaxWidth()
             .heightIn(min = ROW_MIN_HEIGHT)
             .semantics(mergeDescendants = true) { }
+            .ownWords(title, value)
             .padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
         RowTexts(title, value, MaterialTheme.colorScheme.onSurface, Modifier.weight(1f))
@@ -382,11 +389,18 @@ private fun ValueRow(title: String, value: String) {
 @Composable
 private fun RowTexts(title: String, summary: String, titleColor: Color, modifier: Modifier) {
     Column(modifier) {
-        Text(text = title, style = MaterialTheme.typography.bodyLarge, color = titleColor)
+        // The row says both from its own node (#255).
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodyLarge,
+            color = titleColor,
+            modifier = Modifier.wordsShownOnly()
+        )
         Text(
             text = summary,
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.wordsShownOnly()
         )
     }
 }

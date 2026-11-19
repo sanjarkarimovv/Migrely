@@ -23,7 +23,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DividerDefaults
@@ -71,6 +70,9 @@ import com.migrely.app.designsystem.input.inputLineRoom
 import com.migrely.app.designsystem.input.rememberKeyboardRoom
 import com.migrely.app.designsystem.input.rememberTypingSpace
 import com.migrely.app.designsystem.layout.MigrelyInsets
+import com.migrely.app.designsystem.layout.PageScroll
+import com.migrely.app.designsystem.layout.ownWords
+import com.migrely.app.designsystem.layout.wordsShownOnly
 import com.migrely.app.designsystem.theme.MigrelyDarkRoom
 import com.migrely.app.designsystem.theme.MigrelyTheme
 import com.migrely.app.settings.presentation.model.DeleteAllDataViewState
@@ -332,56 +334,65 @@ private fun ConfirmationBody(
     pageModifier: Modifier
 ) {
     // Kept tight, so the warning and the field fit above the button in landscape at twice the font size.
-    Column(
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-        modifier = Modifier
-            .widthIn(max = CONTENT_MAX_WIDTH)
-            .fillMaxWidth()
-            .windowInsetsPadding(MigrelyInsets.bars.only(WindowInsetsSides.Horizontal))
-            .then(pageModifier)
-            .verticalScroll(scrollState)
-            // After the scroll, never a child: the column's spacing would add a gap.
-            .then(keyboardRoom.modifier)
-            .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 12.dp)
-    ) {
-        Text(
-            text = stringResource(R.string.settings_delete_warning),
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurface
-        )
-        SingleLineFieldInView(hasLabel = true) { inView, interactionSource ->
-            OutlinedTextField(
-                value = typed,
-                onValueChange = onTyped,
-                singleLine = true,
-                label = { Text(stringResource(R.string.settings_delete_field, word)) },
-                keyboardOptions = KeyboardOptions(
-                    capitalization = KeyboardCapitalization.Characters,
-                    autoCorrectEnabled = false,
-                    imeAction = ImeAction.Done
-                ),
-                interactionSource = interactionSource,
-                modifier = inView.fillMaxWidth()
-            )
-        }
-        if (failed) {
+    PageScroll {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier
+                .widthIn(max = CONTENT_MAX_WIDTH)
+                .fillMaxWidth()
+                .windowInsetsPadding(MigrelyInsets.bars.only(WindowInsetsSides.Horizontal))
+                .then(pageModifier)
+                .pageScroll(scrollState)
+                // After the scroll, never a child: the column's spacing would add a gap.
+                .then(keyboardRoom.modifier)
+                .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 12.dp)
+        ) {
             Text(
-                text = stringResource(R.string.settings_not_deleted),
+                text = stringResource(R.string.settings_delete_warning),
                 style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            SingleLineFieldInView(hasLabel = true) { inView, interactionSource ->
+                OutlinedTextField(
+                    value = typed,
+                    onValueChange = onTyped,
+                    singleLine = true,
+                    label = {
+                        Text(
+                            stringResource(R.string.settings_delete_field, word),
+                            Modifier.wordsShownOnly()
+                        )
+                    },
+                    keyboardOptions = KeyboardOptions(
+                        capitalization = KeyboardCapitalization.Characters,
+                        autoCorrectEnabled = false,
+                        imeAction = ImeAction.Done
+                    ),
+                    interactionSource = interactionSource,
+                    modifier = inView
+                        .fillMaxWidth()
+                        .ownWords(stringResource(R.string.settings_delete_field, word))
+                )
+            }
+            if (failed) {
+                Text(
+                    text = stringResource(R.string.settings_not_deleted),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
+                )
+            }
+            Text(
+                text = stringResource(R.string.settings_delete_what),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = stringResource(R.string.settings_android_backup),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-        Text(
-            text = stringResource(R.string.settings_delete_what),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Text(
-            text = stringResource(R.string.settings_android_backup),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
     }
 }
 

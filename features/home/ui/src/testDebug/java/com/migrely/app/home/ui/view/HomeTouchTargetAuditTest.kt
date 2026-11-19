@@ -36,42 +36,7 @@ class HomeTouchTargetAuditTest {
     // Attack mode's dark-room controls (attack-mode spec): the intensity choices and "Migraine ended".
     private val largeControls = setOf("Mild", "Moderate", "Severe", "Migraine ended")
 
-    private val screens: Map<String, @Composable () -> Unit> = mapOf(
-        "Today" to {
-            MigrelyTheme {
-                TodayContents(
-                    today = TodayUiModel(SkyUiModel.Calm, 0, null),
-                    dayTitle = "Today",
-                    nowMillis = 0L,
-                    skyAppearanceUiMapper = SkyAppearanceUiMapper(),
-                    timeUiFormatter = previewFormatter,
-                    onStartAttack = {},
-                    onAttackDetails = {},
-                    onAddPastAttack = {}
-                )
-            }
-        },
-        "Attack mode" to {
-            MigrelyTheme {
-                AttackModeContents(
-                    attack = AttackInProgressUiModel(
-                        "a",
-                        0L,
-                        "Asia/Tashkent",
-                        IntensityLevelUiModel.Moderate,
-                        false
-                    ),
-                    nowMillis = 0L,
-                    reduceMotion = true,
-                    messageBottom = { 0.dp },
-                    timeUiFormatter = previewFormatter,
-                    actions = previewActions
-                )
-            }
-        }
-    )
-
-    private fun underBar(fontScale: Float) = rule.auditTouchTargets(fontScale, screens) {
+    private fun underBar(fontScale: Float) = rule.auditTouchTargets(fontScale, homeScreens) {
         if (it.words in largeControls) LARGE_BAR_DP else TOUCH_BAR_DP
     }
 

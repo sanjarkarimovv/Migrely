@@ -26,23 +26,7 @@ class ReportTouchTargetAuditTest {
     @get:Rule
     val rule = createAndroidComposeRule<ComponentActivity>()
 
-    private val screens: Map<String, @Composable () -> Unit> = mapOf(
-        "Report" to {
-            MigrelyTheme {
-                ReportContents(
-                    viewState = ReportViewStateUiModel.Ready(
-                        ReportOptionsUiModel(20_660, 20_751, anythingLogged = true)
-                    ),
-                    period = ReportPeriodUiModel.Default,
-                    includeNotes = false,
-                    actions = ReportActions({}, {}, {}, {}, {}),
-                    messages = {}
-                )
-            }
-        }
-    )
-
-    private fun underBar(fontScale: Float) = rule.auditTouchTargets(fontScale, screens)
+    private fun underBar(fontScale: Float) = rule.auditTouchTargets(fontScale, reportScreens)
 
     @Test
     @Config(sdk = [35], qualifiers = "w360dp-h800dp")

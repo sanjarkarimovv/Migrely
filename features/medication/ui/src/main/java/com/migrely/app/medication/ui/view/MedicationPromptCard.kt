@@ -197,12 +197,13 @@ private fun EffectQuestion(
                 )
             }
             MigrelyIconButton(
+                contentDescription = stringResource(R.string.prompt_effect_skip),
                 onClick = { actions.onSkip(question.intakeId) },
                 modifier = Modifier.semantics { traversalIndex = 1f }
             ) {
                 Icon(
                     MigrelyIcons.Close,
-                    contentDescription = stringResource(R.string.prompt_effect_skip)
+                    contentDescription = null
                 )
             }
         }

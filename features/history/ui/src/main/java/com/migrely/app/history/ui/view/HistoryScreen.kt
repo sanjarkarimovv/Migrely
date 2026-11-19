@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -60,6 +59,9 @@ import com.migrely.app.architecture.ui.view.ScreenEnterObserver
 import com.migrely.app.designsystem.button.MigrelyIconButton
 import com.migrely.app.designsystem.icon.MigrelyIcons
 import com.migrely.app.designsystem.layout.MigrelyInsets
+import com.migrely.app.designsystem.layout.PageScroll
+import com.migrely.app.designsystem.layout.ownWords
+import com.migrely.app.designsystem.layout.wordsShownOnly
 import com.migrely.app.designsystem.motion.rememberReduceMotion
 import com.migrely.app.designsystem.snackbar.MessageLayout
 import com.migrely.app.designsystem.theme.MigrelyTheme
@@ -322,35 +324,41 @@ private fun MonthContents(
     // A phone in landscape puts the calendar and the list side by side (BRD EC-UX-03).
     if (LocalConfiguration.current.screenHeightDp < COMPACT_HEIGHT_DP) {
         Row(horizontalArrangement = Arrangement.spacedBy(24.dp), modifier = contentModifier) {
-            Column(
-                Modifier
-                    .weight(1f)
-                    .verticalScroll(rememberScrollState())
-            ) {
-                calendar()
-                Spacer(Modifier.height(16.dp))
+            PageScroll {
+                Column(
+                    Modifier
+                        .weight(1f)
+                        .pageScroll(rememberScrollState())
+                ) {
+                    calendar()
+                    Spacer(Modifier.height(16.dp))
+                }
             }
-            Column(
-                Modifier
-                    .weight(1f)
-                    .verticalScroll(rememberScrollState())
-            ) {
-                list()
-                Spacer(Modifier.height(16.dp))
+            PageScroll {
+                Column(
+                    Modifier
+                        .weight(1f)
+                        .pageScroll(rememberScrollState())
+                ) {
+                    list()
+                    Spacer(Modifier.height(16.dp))
+                }
             }
         }
     } else {
         Box(contentAlignment = Alignment.TopCenter, modifier = Modifier.fillMaxSize()) {
-            Column(
-                modifier = contentModifier
-                    .widthIn(max = CONTENT_MAX_WIDTH)
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState())
-            ) {
-                calendar()
-                Spacer(Modifier.height(24.dp))
-                list()
-                Spacer(Modifier.height(24.dp))
+            PageScroll {
+                Column(
+                    modifier = contentModifier
+                        .widthIn(max = CONTENT_MAX_WIDTH)
+                        .fillMaxWidth()
+                        .pageScroll(rememberScrollState())
+                ) {
+                    calendar()
+                    Spacer(Modifier.height(24.dp))
+                    list()
+                    Spacer(Modifier.height(24.dp))
+                }
             }
         }
     }
@@ -368,10 +376,14 @@ private fun MonthHeader(
             .fillMaxWidth()
             .padding(bottom = 8.dp)
     ) {
-        MigrelyIconButton(onClick = actions.onPreviousMonth, enabled = month.hasPreviousMonth) {
+        MigrelyIconButton(
+            contentDescription = stringResource(R.string.previous_month),
+            onClick = actions.onPreviousMonth,
+            enabled = month.hasPreviousMonth
+        ) {
             Icon(
                 MigrelyIcons.ChevronStart,
-                contentDescription = stringResource(R.string.previous_month)
+                contentDescription = null
             )
         }
         Text(
@@ -383,8 +395,12 @@ private fun MonthHeader(
                 .weight(1f)
                 .semantics { heading() }
         )
-        MigrelyIconButton(onClick = actions.onNextMonth, enabled = month.hasNextMonth) {
-            Icon(MigrelyIcons.ChevronEnd, contentDescription = stringResource(R.string.next_month))
+        MigrelyIconButton(
+            contentDescription = stringResource(R.string.next_month),
+            onClick = actions.onNextMonth,
+            enabled = month.hasNextMonth
+        ) {
+            Icon(MigrelyIcons.ChevronEnd, contentDescription = null)
         }
     }
 }
@@ -470,10 +486,12 @@ private fun DaySection(
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = 48.dp)
+            .ownWords(stringResource(R.string.history_add_past_attack))
     ) {
         Text(
             stringResource(R.string.history_add_past_attack),
-            style = MaterialTheme.typography.labelLarge
+            style = MaterialTheme.typography.labelLarge,
+            modifier = Modifier.wordsShownOnly()
         )
     }
     TextButton(
@@ -481,10 +499,12 @@ private fun DaySection(
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = 48.dp)
+            .ownWords(stringResource(R.string.show_all_month, monthName))
     ) {
         Text(
             stringResource(R.string.show_all_month, monthName),
-            style = MaterialTheme.typography.labelLarge
+            style = MaterialTheme.typography.labelLarge,
+            modifier = Modifier.wordsShownOnly()
         )
     }
 }
@@ -512,11 +532,13 @@ private fun MarkSwitch(
                 role = Role.Switch,
                 onValueChange = onChange
             )
+            .ownWords(label, disabledReason)
             .padding(horizontal = 8.dp, vertical = 4.dp)
     ) {
         Column(Modifier.weight(1f)) {
             Text(
                 text = label,
+                modifier = Modifier.wordsShownOnly(),
                 style = MaterialTheme.typography.bodyLarge,
                 color = if (enabled) {
                     MaterialTheme.colorScheme.onSurface
@@ -527,6 +549,7 @@ private fun MarkSwitch(
             if (disabledReason != null) {
                 Text(
                     text = disabledReason,
+                    modifier = Modifier.wordsShownOnly(),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

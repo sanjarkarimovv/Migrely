@@ -20,6 +20,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
@@ -27,6 +29,8 @@ import com.migrely.app.attack.ui.R
 import com.migrely.app.attack.ui.model.FunctionalImpactUiModel
 import com.migrely.app.designsystem.input.CursorFollowingTextField
 import com.migrely.app.designsystem.input.rememberLimitedField
+import com.migrely.app.designsystem.layout.ownWords
+import com.migrely.app.designsystem.layout.wordsShownOnly
 import kotlinx.coroutines.delay
 
 private const val MAXIMUM_NOTE_LENGTH = 1_000
@@ -43,6 +47,12 @@ internal fun ImpactSection(
         SectionTitle(stringResource(R.string.section_impact))
         FunctionalImpactUiModel.entries.forEachIndexed { level, option ->
             val chosen = option == impact
+            val words =
+                stringResource(
+                    R.string.impact_level,
+                    level,
+                    stringResource(labels.impact.toUi(option))
+                )
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
@@ -53,17 +63,16 @@ internal fun ImpactSection(
                         role = Role.RadioButton,
                         onClick = { onImpact(if (chosen) null else option) }
                     )
+                    .ownWords(words)
             ) {
                 RadioButton(selected = chosen, onClick = null)
                 Text(
-                    text = stringResource(
-                        R.string.impact_level,
-                        level,
-                        stringResource(labels.impact.toUi(option))
-                    ),
+                    text = words,
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(start = 12.dp)
+                    modifier = Modifier
+                        .padding(start = 12.dp)
+                        .wordsShownOnly()
                 )
             }
         }
@@ -107,6 +116,8 @@ internal fun NoteSection(
         opensAtEnd = true,
         onTextChange = onDraftChange
     )
+    // The counter is said from the field's own node, so an edge that cuts it off the field still leaves it (#255).
+    val counter = stringResource(R.string.note_counter, text.length)
     Column {
         SectionTitle(stringResource(R.string.section_note))
         // Its cursor line stays above the keyboard while typing (BRD D180 (2), #141).
@@ -116,12 +127,15 @@ internal fun NoteSection(
             placeholder = { Text(stringResource(R.string.note_hint)) },
             supportingText = {
                 Text(
-                    text = stringResource(R.string.note_counter, text.length),
-                    style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum")
+                    text = counter,
+                    style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
+                    modifier = Modifier.wordsShownOnly()
                 )
             },
             minLines = 3,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .semantics { stateDescription = counter }
         )
     }
 }

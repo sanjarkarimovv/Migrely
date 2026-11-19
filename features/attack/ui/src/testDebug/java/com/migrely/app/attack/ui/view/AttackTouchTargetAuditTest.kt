@@ -15,8 +15,6 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
-private const val NOW = 1_792_829_200_000L
-
 /**
  * Touch-target audit of the attack pages before exact bounds land on them (#255, design D5; lead decision 2026-11-19,
  * option 1): every control inside a page is 48 dp or more of its own.
@@ -27,38 +25,7 @@ class AttackTouchTargetAuditTest {
     @get:Rule
     val rule = createAndroidComposeRule<ComponentActivity>()
 
-    private val screens = mapOf(
-        "Attack details" to @Composable {
-            MigrelyTheme {
-                AttackDetailsContents(
-                    viewState = AttackDetailsViewStateUiModel.Ready(previewDetails()),
-                    timeUiFormatter = previewTimeFormatter,
-                    labels = AttackLabels.Default,
-                    localState = AttackDetailsLocalState(
-                        timeError = null,
-                        safetyCardVisible = true,
-                        onDismissSafetyCard = {},
-                        onTimeErrorShown = {}
-                    ),
-                    actions = previewActions
-                )
-            }
-        },
-        "Add past attack" to @Composable {
-            MigrelyTheme {
-                AddPastAttackContents(
-                    draft = PastAttackDraftUiModel(NOW - 7_200_000L, NOW, "UTC"),
-                    problem = null,
-                    saving = false,
-                    timeUiFormatter = previewTimeFormatter,
-                    actions = AddPastAttackActions({}, {}, {}, {}, {}, {}),
-                    messages = {}
-                )
-            }
-        }
-    )
-
-    private fun underBar(fontScale: Float) = rule.auditTouchTargets(fontScale, screens)
+    private fun underBar(fontScale: Float) = rule.auditTouchTargets(fontScale, attackScreens)
 
     @Test
     @Config(sdk = [35], qualifiers = "w360dp-h800dp")

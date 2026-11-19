@@ -21,9 +21,6 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
-private val TODAY = LocalDate.of(2026, 11, 19)
-private val VISIT = TODAY.plusDays(3)
-
 /**
  * Touch-target audit of Reminders and Today's visit card before exact bounds land on them (#255, design D5; lead decision 2026-11-19, option
  * 1): every control inside a page is 48 dp of its own, at 360 and 411 dp wide and 100% and 200% font.
@@ -34,38 +31,7 @@ class RemindersTouchTargetAuditTest {
     @get:Rule
     val rule = createAndroidComposeRule<ComponentActivity>()
 
-    private val screens: Map<String, @Composable () -> Unit> = mapOf(
-        "Reminders" to {
-            MigrelyTheme {
-                RemindersContents(
-                    viewState = RemindersViewStateUiModel.Ready(
-                        RemindersUiModel(
-                            dailyEnabled = true,
-                            dailyMinuteOfDay = 1200,
-                            effectEnabled = true,
-                            notificationsAllowed = true,
-                            mayAskPermission = true,
-                            todayEpochDay = TODAY.toEpochDay(),
-                            nextVisitEpochDay = VISIT.toEpochDay(),
-                            visitRemovable = true,
-                            visitChannelOff = false
-                        )
-                    ),
-                    actions = RemindersActions({}, {}, {}, {}, {}, {}),
-                    messages = {}
-                )
-            }
-        },
-        "Today's visit card" to {
-            MigrelyTheme {
-                Column(Modifier.verticalScroll(rememberScrollState())) {
-                    VisitCardContents(VISIT, onReport = {}, onClose = {})
-                }
-            }
-        }
-    )
-
-    private fun underBar(fontScale: Float) = rule.auditTouchTargets(fontScale, screens)
+    private fun underBar(fontScale: Float) = rule.auditTouchTargets(fontScale, remindersScreens)
 
     @Test
     @Config(sdk = [35], application = Application::class, qualifiers = "w360dp-h800dp")

@@ -78,19 +78,23 @@ class TalkBackTree(private val activity: ComponentActivity) {
 
     /**
      * The words TalkBack says for [node], read from the unmerged tree as TalkBack builds them: the node's own
-     * description; else its own text, then the words of each child that is in the tree now and is not a stop of its
-     * own. A child cut off by the visible edge is out of the tree, so its words are missing here, as they are in
-     * TalkBack (#255, design D7). Pass a node fetched with `useUnmergedTree = true`. Empty when nothing is said.
+     * description and text, then the words of each child that is in the tree now and is not a stop of its own. A
+     * child cut off by the visible edge is out of the tree, and one hidden from accessibility is not visible to the
+     * user, so their words are missing here, as they are in TalkBack (#255, design D7). Pass a node fetched with `useUnmergedTree = true`.
      */
-    fun spokenName(node: SemanticsNode): String {
-        val description = node.config.getOrNull(SemanticsProperties.ContentDescription)
-        if (description != null) return description.joinToString(" ")
+    fun spokenName(node: SemanticsNode): String = spokenParts(node).joinToString(" ")
+
+    /** [spokenName] in the parts TalkBack joins: own description, own text, then each child's words. */
+    fun spokenParts(node: SemanticsNode): List<String> {
+        val description = node.config.getOrNull(
+            SemanticsProperties.ContentDescription
+        )?.joinToString(" ")
         val own = node.config.getOrNull(SemanticsProperties.Text)?.joinToString(" ")
             ?: node.config.getOrNull(SemanticsProperties.EditableText)?.text
         val children = node.children
-            .filter { child -> !child.isOwnStop() && node(child.id) != null }
+            .filter { child -> !child.isOwnStop() && node(child.id)?.isVisibleToUser == true }
             .map(::spokenName)
-        return (listOfNotNull(own) + children).filter { it.isNotBlank() }.joinToString(" ")
+        return (listOfNotNull(description, own) + children).filter { it.isNotBlank() }
     }
 
     private fun SemanticsNode.isOwnStop() = config.isMergingSemanticsOfDescendants

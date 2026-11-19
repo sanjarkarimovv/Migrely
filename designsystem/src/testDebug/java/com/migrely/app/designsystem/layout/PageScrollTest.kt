@@ -271,6 +271,24 @@ class PageScrollTest {
             read.toMap()
         )
     }
+
+    @Test
+    fun `Step only, for Material's pickers, keeps the touch target and the half step`() {
+        var inside: ViewConfiguration? = null
+        show {
+            Column(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.navigationBars)) {
+                PageScroll(exactBounds = false) {
+                    Column(Modifier.fillMaxWidth().weight(1f).pageScroll(scrollState)) {
+                        inside = LocalViewConfiguration.current
+                        Spacer(Modifier.height(LEAD_DP.dp))
+                        Spacer(Modifier.height(LEAD_DP.dp))
+                    }
+                }
+            }
+        }
+        assertEquals(DpSize(48.dp, 48.dp), inside!!.minimumTouchTargetSize)
+        assertWithinOnePx(scrollState.viewportSize / 2, accessibilityScrollForward())
+    }
 }
 
 /** Values no device has, so a member that does not come from the configuration around the scroll shows. */

@@ -29,35 +29,7 @@ class SubscriptionTouchTargetAuditTest {
     @get:Rule
     val rule = createAndroidComposeRule<ComponentActivity>()
 
-    private val screens: Map<String, @Composable () -> Unit> = mapOf(
-        "Paywall" to {
-            MigrelyTheme {
-                PaywallContents(
-                    context = PaywallContextUiModel.Report,
-                    viewState = PaywallViewStateUiModel.Ready(PREVIEW_OFFERS),
-                    chosen = null,
-                    unlocked = null,
-                    actions = PaywallActions({}, {}, {}, {}, {}, {}, {}),
-                    messages = {}
-                )
-            }
-        },
-        "Today's trial banner" to {
-            MigrelyTheme {
-                Column(Modifier.verticalScroll(rememberScrollState())) {
-                    TrialBannerContents(
-                        endsToday = true,
-                        renews = true,
-                        offlineNote = null,
-                        onManage = {},
-                        onDismiss = {}
-                    )
-                }
-            }
-        }
-    )
-
-    private fun underBar(fontScale: Float) = rule.auditTouchTargets(fontScale, screens)
+    private fun underBar(fontScale: Float) = rule.auditTouchTargets(fontScale, subscriptionScreens)
 
     @Test
     @Config(sdk = [35], qualifiers = "w360dp-h800dp")

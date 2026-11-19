@@ -44,14 +44,22 @@ import kotlin.math.floor
  *
  * TalkBack's (and Switch Access's) scroll action moves half of what shows, so the item TalkBack is on stays on screen
  * and it keeps its place, where a whole page made it skip a block (see [PageScrollScope.pageScroll]).
+ *
+ * [exactBounds] false keeps the half step but not exact bounds, only for Material's date and time pickers: Material
+ * draws controls under 48 dp there that only Compose's widening makes large enough to touch (design D5 T2, T3; BRD
+ * D193), so an item just outside their visible part can still be a stop.
  */
 @Composable
-fun PageScroll(content: @Composable PageScrollScope.() -> Unit) {
-    val around = LocalViewConfiguration.current
-    val exact = remember(around) { ExactBoundsViewConfiguration(around) }
+fun PageScroll(exactBounds: Boolean = true, content: @Composable PageScrollScope.() -> Unit) {
     val obscuring = MigrelyInsets.barsAndKeyboard
     val scope = remember(obscuring) { PageScrollScopeImpl(obscuring) }
-    CompositionLocalProvider(LocalViewConfiguration provides exact) { scope.content() }
+    if (exactBounds) {
+        val around = LocalViewConfiguration.current
+        val exact = remember(around) { ExactBoundsViewConfiguration(around) }
+        CompositionLocalProvider(LocalViewConfiguration provides exact) { scope.content() }
+    } else {
+        scope.content()
+    }
 }
 
 /** Where [pageScroll] can be called: only inside [PageScroll], which gives it exact bounds. */

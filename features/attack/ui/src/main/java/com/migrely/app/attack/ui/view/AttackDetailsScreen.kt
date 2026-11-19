@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -70,6 +69,9 @@ import com.migrely.app.designsystem.input.TypingSpace
 import com.migrely.app.designsystem.input.rememberKeyboardRoom
 import com.migrely.app.designsystem.input.rememberTypingSpace
 import com.migrely.app.designsystem.layout.MigrelyInsets
+import com.migrely.app.designsystem.layout.PageScroll
+import com.migrely.app.designsystem.layout.ownWords
+import com.migrely.app.designsystem.layout.wordsShownOnly
 import com.migrely.app.designsystem.motion.rememberReduceMotion
 import com.migrely.app.designsystem.snackbar.LocalMessageClock
 import com.migrely.app.designsystem.snackbar.MessageLayout
@@ -479,55 +481,59 @@ private fun ReadyContents(
         }
     }
     Box(contentAlignment = Alignment.TopCenter, modifier = Modifier.fillMaxSize()) {
-        Column(
-            verticalArrangement = Arrangement.spacedBy(28.dp),
-            modifier = Modifier
-                .widthIn(max = CONTENT_MAX_WIDTH)
-                .fillMaxWidth()
-                // Before the reveal's area, so in card mode "the top of the content" is below the message (D165 (2)).
-                .clearOfMessage(localState.messageClearance)
-                // Before the scroll, so its visible part ends at the keyboard's top, or the navigation bar's when that is
-                // higher, and the note's cursor line is kept in view against it (BRD D180 (2), #141).
-                .windowInsetsPadding(viewportInsets)
-                .then(reveal.viewportModifier)
-                .then(typingSpace.pageModifier)
-                .verticalScroll(scrollState)
-                .then(keyboardRoom.modifier)
-                .windowInsetsPadding(
-                    MigrelyInsets.barsAndKeyboard.only(WindowInsetsSides.Horizontal)
-                )
-                .padding(horizontal = 16.dp)
-        ) {
-            if (localState.safetyCardVisible) {
-                SafetyCard(
-                    onDismiss = localState.onDismissSafetyCard,
-                    announced = reveal.announces(arrivals),
-                    modifier = reveal.cardModifier
-                )
-            }
-            TimeSection(details, timeUiFormatter, localState.timeError, actions)
-            PainSection(details, timeUiFormatter, actions)
-            MedicationsSection(details, timeUiFormatter, actions)
-            ChoiceSections(details, labels, actions)
-            ImpactSection(details.functionalImpact, labels, actions.onImpact)
-            NoteSection(
-                attackId = details.id,
-                draft = localState.noteDraft,
-                savedNote = details.note,
-                onDraftChange = localState.onNoteDraft,
-                onNote = actions.onNote
-            )
-            TextButton(
-                onClick = actions.onDelete,
+        PageScroll {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(28.dp),
                 modifier = Modifier
+                    .widthIn(max = CONTENT_MAX_WIDTH)
                     .fillMaxWidth()
-                    .heightIn(min = 56.dp)
+                    // Before the reveal's area, so in card mode "the top of the content" is below the message (D165 (2)).
+                    .clearOfMessage(localState.messageClearance)
+                    // Before the scroll, so its visible part ends at the keyboard's top, or the navigation bar's when that is
+                    // higher, and the note's cursor line is kept in view against it (BRD D180 (2), #141).
+                    .windowInsetsPadding(viewportInsets)
+                    .then(reveal.viewportModifier)
+                    .then(typingSpace.pageModifier)
+                    .pageScroll(scrollState)
+                    .then(keyboardRoom.modifier)
+                    .windowInsetsPadding(
+                        MigrelyInsets.barsAndKeyboard.only(WindowInsetsSides.Horizontal)
+                    )
+                    .padding(horizontal = 16.dp)
             ) {
-                Text(
-                    text = stringResource(R.string.delete_attack),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.error
+                if (localState.safetyCardVisible) {
+                    SafetyCard(
+                        onDismiss = localState.onDismissSafetyCard,
+                        announced = reveal.announces(arrivals),
+                        modifier = reveal.cardModifier
+                    )
+                }
+                TimeSection(details, timeUiFormatter, localState.timeError, actions)
+                PainSection(details, timeUiFormatter, actions)
+                MedicationsSection(details, timeUiFormatter, actions)
+                ChoiceSections(details, labels, actions)
+                ImpactSection(details.functionalImpact, labels, actions.onImpact)
+                NoteSection(
+                    attackId = details.id,
+                    draft = localState.noteDraft,
+                    savedNote = details.note,
+                    onDraftChange = localState.onNoteDraft,
+                    onNote = actions.onNote
                 )
+                TextButton(
+                    onClick = actions.onDelete,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 56.dp)
+                        .ownWords(stringResource(R.string.delete_attack))
+                ) {
+                    Text(
+                        text = stringResource(R.string.delete_attack),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.wordsShownOnly()
+                    )
+                }
             }
         }
     }

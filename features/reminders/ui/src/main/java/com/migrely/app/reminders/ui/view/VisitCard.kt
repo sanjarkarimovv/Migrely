@@ -112,12 +112,15 @@ fun VisitCardContents(
                     Text(stringResource(R.string.reminders_visit_card_report))
                 }
             }
-            MigrelyIconButton(onClick = onClose) {
+            MigrelyIconButton(
+                contentDescription = stringResource(
+                    R.string.reminders_visit_card_close_description
+                ),
+                onClick = onClose
+            ) {
                 Icon(
                     MigrelyIcons.Close,
-                    contentDescription = stringResource(
-                        R.string.reminders_visit_card_close_description
-                    ),
+                    contentDescription = null,
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }

@@ -23,50 +23,7 @@ class OnboardingTouchTargetAuditTest {
     @get:Rule
     val rule = createAndroidComposeRule<ComponentActivity>()
 
-    private val screens: Map<String, @Composable () -> Unit> = mapOf(
-        "Onboarding step 0" to {
-            MigrelyTheme {
-                OnboardingContents(
-                    step = 0,
-                    actions = OnboardingActions({}, {}, {}, {}, {}),
-                    reminderOffer = {},
-                    messages = {}
-                )
-            }
-        },
-        "Onboarding step 1" to {
-            MigrelyTheme {
-                OnboardingContents(
-                    step = 1,
-                    actions = OnboardingActions({}, {}, {}, {}, {}),
-                    reminderOffer = {},
-                    messages = {}
-                )
-            }
-        },
-        "Onboarding step 2" to {
-            MigrelyTheme {
-                OnboardingContents(
-                    step = 2,
-                    actions = OnboardingActions({}, {}, {}, {}, {}),
-                    reminderOffer = {},
-                    messages = {}
-                )
-            }
-        },
-        "Onboarding step 3" to {
-            MigrelyTheme {
-                OnboardingContents(
-                    step = 3,
-                    actions = OnboardingActions({}, {}, {}, {}, {}),
-                    reminderOffer = {},
-                    messages = {}
-                )
-            }
-        }
-    )
-
-    private fun underBar(fontScale: Float) = rule.auditTouchTargets(fontScale, screens)
+    private fun underBar(fontScale: Float) = rule.auditTouchTargets(fontScale, onboardingScreens)
 
     @Test
     @Config(sdk = [35], qualifiers = "w360dp-h800dp")

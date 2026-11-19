@@ -21,6 +21,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.migrely.app.designsystem.layout.InsetInteractionSource
+import com.migrely.app.designsystem.layout.ownWords
+import com.migrely.app.designsystem.layout.wordsShownOnly
 
 // Material's minimum interactive size and its standard icon button's drawn circle.
 private val TouchSize = 48.dp
@@ -31,11 +33,13 @@ private val CircleSize = 40.dp
  * Material draws a 40 dp circle and makes the ring around it touchable only through the view configuration's minimum
  * touch target, which a page's exact bounds set to zero (`PageScroll`): a tap in that ring then did nothing. Here the
  * 48 dp node takes the click and the 40 dp circle draws the container, the icon and the ripple as Material does. Use it
- * for every icon button inside a page; a top bar's keeps Material's.
+ * for every icon button inside a page; a top bar's keeps Material's. It says [contentDescription] from that node, so
+ * an edge of the page that cuts the icon off still leaves its name; the icon itself is not read.
  */
 @Composable
 fun MigrelyIconButton(
     onClick: () -> Unit,
+    contentDescription: String,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     content: @Composable () -> Unit
@@ -57,6 +61,7 @@ fun MigrelyIconButton(
                 interactionSource = interactions,
                 indication = null
             )
+            .ownWords(contentDescription)
     ) {
         Box(
             contentAlignment = Alignment.Center,
@@ -70,7 +75,9 @@ fun MigrelyIconButton(
                 .indication(circleInteractions, ripple())
         ) {
             val contentColor = if (enabled) colors.contentColor else colors.disabledContentColor
-            CompositionLocalProvider(LocalContentColor provides contentColor, content = content)
+            CompositionLocalProvider(LocalContentColor provides contentColor) {
+                Box(Modifier.wordsShownOnly(), contentAlignment = Alignment.Center) { content() }
+            }
         }
     }
 }

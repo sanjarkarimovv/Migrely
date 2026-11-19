@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -51,6 +50,9 @@ import com.migrely.app.designsystem.input.rememberKeyboardRoom
 import com.migrely.app.designsystem.input.rememberLimitedField
 import com.migrely.app.designsystem.input.rememberTypingSpace
 import com.migrely.app.designsystem.layout.MigrelyInsets
+import com.migrely.app.designsystem.layout.PageScroll
+import com.migrely.app.designsystem.layout.ownWords
+import com.migrely.app.designsystem.layout.wordsShownOnly
 import com.migrely.app.designsystem.motion.rememberReduceMotion
 import com.migrely.app.designsystem.snackbar.MessageLayout
 import com.migrely.app.designsystem.snackbar.rememberParkWhenPressed
@@ -225,37 +227,39 @@ fun EditMedicationContents(
             val keyboardRoom = rememberKeyboardRoom(scrollState, viewportInsets)
             val announcer = rememberProblemAnnouncer()
             Box(contentAlignment = Alignment.TopCenter, modifier = Modifier.fillMaxSize()) {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(FORM_SPACING),
-                    modifier = Modifier
-                        .widthIn(max = CONTENT_MAX_WIDTH)
-                        .fillMaxWidth()
-                        // Before the scroll, so its visible part ends at the keyboard's top and a focused
-                        // field is kept above it (BRD D180 (2)).
-                        .windowInsetsPadding(viewportInsets)
-                        .then(typingSpace.pageModifier)
-                        .verticalScroll(scrollState)
-                        // After the scroll, never a child: the column's spacing would add a gap.
-                        .then(keyboardRoom.modifier)
-                        .windowInsetsPadding(
-                            MigrelyInsets.barsAndKeyboard.only(WindowInsetsSides.Horizontal)
-                        )
-                        .padding(horizontal = 16.dp, vertical = 8.dp)
-                ) {
-                    when {
-                        notFound -> Text(
-                            stringResource(R.string.edit_not_found),
-                            style = MaterialTheme.typography.bodyLarge
-                        )
-                        form != null -> MedicationForm(
-                            form,
-                            problem,
-                            problemArrivals,
-                            pending,
-                            announcer,
-                            onFormChange,
-                            onSave
-                        )
+                PageScroll {
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(FORM_SPACING),
+                        modifier = Modifier
+                            .widthIn(max = CONTENT_MAX_WIDTH)
+                            .fillMaxWidth()
+                            // Before the scroll, so its visible part ends at the keyboard's top and a focused
+                            // field is kept above it (BRD D180 (2)).
+                            .windowInsetsPadding(viewportInsets)
+                            .then(typingSpace.pageModifier)
+                            .pageScroll(scrollState)
+                            // After the scroll, never a child: the column's spacing would add a gap.
+                            .then(keyboardRoom.modifier)
+                            .windowInsetsPadding(
+                                MigrelyInsets.barsAndKeyboard.only(WindowInsetsSides.Horizontal)
+                            )
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                    ) {
+                        when {
+                            notFound -> Text(
+                                stringResource(R.string.edit_not_found),
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                            form != null -> MedicationForm(
+                                form,
+                                problem,
+                                problemArrivals,
+                                pending,
+                                announcer,
+                                onFormChange,
+                                onSave
+                            )
+                        }
                     }
                 }
                 ProblemAnnouncement(announcer, Modifier.align(Alignment.TopStart))
@@ -304,6 +308,8 @@ private fun MedicationForm(
         announcer = announcer,
         onFocusMoving = { problemFieldValue?.cursorToEnd() }
     )
+    val nameCounter = stringResource(R.string.edit_counter, form.name.length, MAXIMUM_NAME_LENGTH)
+    val doseCounter = stringResource(R.string.edit_counter, form.dose.length, MAXIMUM_DOSE_LENGTH)
     // Save turns disabled while it waits (BRD D181 (6)).
     val save = rememberParkWhenPressed()
     // Kept above the keyboard with its supporting line where that fits (BRD D180 (2), ux U1).
@@ -314,19 +320,16 @@ private fun MedicationForm(
         OutlinedTextField(
             value = nameField.value,
             onValueChange = nameField.onValueChange,
-            label = { Text(stringResource(R.string.edit_name)) },
+            label = { Text(stringResource(R.string.edit_name), Modifier.wordsShownOnly()) },
             singleLine = true,
             isError = nameProblem != null,
-            supportingText = {
-                FieldSupportingLine(
-                    nameText,
-                    stringResource(R.string.edit_counter, form.name.length, MAXIMUM_NAME_LENGTH)
-                )
-            },
+            supportingText = { FieldSupportingLine(nameText, nameCounter) },
             interactionSource = interactionSource,
             modifier = inView
                 .then(name.modifier)
                 .problemSemantics(nameText)
+                .ownWords(stringResource(R.string.edit_name))
+                .counterSemantics(nameText, nameCounter)
                 .fillMaxWidth()
         )
     }
@@ -348,12 +351,15 @@ private fun MedicationForm(
                                 role = Role.RadioButton,
                                 onClick = { onFormChange(form.copy(kind = kind)) }
                             )
+                            .ownWords(stringResource(label))
                     ) {
                         RadioButton(selected = form.kind == kind, onClick = null)
                         Text(
                             stringResource(label),
                             style = MaterialTheme.typography.bodyLarge,
-                            modifier = Modifier.padding(start = 12.dp)
+                            modifier = Modifier
+                                .padding(start = 12.dp)
+                                .wordsShownOnly()
                         )
                     }
                 }
@@ -385,20 +391,17 @@ private fun MedicationForm(
         OutlinedTextField(
             value = doseField.value,
             onValueChange = doseField.onValueChange,
-            label = { Text(stringResource(R.string.edit_dose)) },
+            label = { Text(stringResource(R.string.edit_dose), Modifier.wordsShownOnly()) },
             placeholder = { Text(stringResource(R.string.edit_dose_hint)) },
             singleLine = true,
             isError = doseProblem != null,
-            supportingText = {
-                FieldSupportingLine(
-                    doseText,
-                    stringResource(R.string.edit_counter, form.dose.length, MAXIMUM_DOSE_LENGTH)
-                )
-            },
+            supportingText = { FieldSupportingLine(doseText, doseCounter) },
             interactionSource = interactionSource,
             modifier = inView
                 .then(dose.modifier)
                 .problemSemantics(doseText)
+                .ownWords(stringResource(R.string.edit_dose))
+                .counterSemantics(doseText, doseCounter)
                 .fillMaxWidth()
         )
     }
@@ -411,8 +414,13 @@ private fun MedicationForm(
         modifier = save.modifier
             .fillMaxWidth()
             .heightIn(min = 56.dp)
+            .ownWords(stringResource(R.string.edit_save))
     ) {
-        Text(stringResource(R.string.edit_save), style = MaterialTheme.typography.labelLarge)
+        Text(
+            stringResource(R.string.edit_save),
+            style = MaterialTheme.typography.labelLarge,
+            modifier = Modifier.wordsShownOnly()
+        )
     }
 }
 

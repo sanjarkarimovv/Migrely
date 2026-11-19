@@ -114,10 +114,13 @@ fun TrialBannerContents(
                         style = MaterialTheme.typography.bodyMedium
                     )
                 }
-                MigrelyIconButton(onClick = onDismiss) {
+                MigrelyIconButton(
+                    contentDescription = stringResource(R.string.subscription_trial_dismiss),
+                    onClick = onDismiss
+                ) {
                     Icon(
                         MigrelyIcons.Close,
-                        contentDescription = stringResource(R.string.subscription_trial_dismiss)
+                        contentDescription = null
                     )
                 }
             }

@@ -26,28 +26,7 @@ class InsightsTouchTargetAuditTest {
     @get:Rule
     val rule = createAndroidComposeRule<ComponentActivity>()
 
-    private val screens: Map<String, @Composable () -> Unit> = mapOf(
-        "Insights" to {
-            MigrelyTheme {
-                InsightsContents(
-                    viewState = InsightsViewStateUiModel.Ready(
-                        InsightsUiModel(
-                            months = 6,
-                            patterns = InsightsPatternsUiModel.NotEnough(
-                                missingMigraines = 2,
-                                missingDays = 10
-                            ),
-                            trends = emptyList()
-                        )
-                    ),
-                    months = 6,
-                    actions = InsightsActions({}, {})
-                )
-            }
-        }
-    )
-
-    private fun underBar(fontScale: Float) = rule.auditTouchTargets(fontScale, screens)
+    private fun underBar(fontScale: Float) = rule.auditTouchTargets(fontScale, insightsScreens)
 
     @Test
     @Config(sdk = [35], qualifiers = "w360dp-h800dp")

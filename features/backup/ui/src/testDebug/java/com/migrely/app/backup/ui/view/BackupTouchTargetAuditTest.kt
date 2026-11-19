@@ -23,20 +23,7 @@ class BackupTouchTargetAuditTest {
     @get:Rule
     val rule = createAndroidComposeRule<ComponentActivity>()
 
-    private val screens: Map<String, @Composable () -> Unit> = mapOf(
-        "Your data" to {
-            MigrelyTheme {
-                YourDataContents(
-                    working = false,
-                    automaticCopy = null,
-                    actions = YourDataActions({}, {}, {}, {}, {}),
-                    messages = {}
-                )
-            }
-        }
-    )
-
-    private fun underBar(fontScale: Float) = rule.auditTouchTargets(fontScale, screens)
+    private fun underBar(fontScale: Float) = rule.auditTouchTargets(fontScale, backupScreens)
 
     @Test
     @Config(sdk = [35], qualifiers = "w360dp-h800dp")

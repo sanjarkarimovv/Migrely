@@ -70,7 +70,11 @@ class MigrelyIconButtonTest {
 
     @Test
     fun `A tap in the ring between the drawn circle and 48 dp acts`() {
-        assertTrue(tapInTheRingActs { onClick -> MigrelyIconButton(onClick) { CloseIcon() } })
+        assertTrue(
+            tapInTheRingActs { onClick ->
+                MigrelyIconButton(onClick, contentDescription = "Close") { CloseIcon() }
+            }
+        )
     }
 
     @Test
@@ -86,7 +90,10 @@ class MigrelyIconButtonTest {
                         IconButton(onClick = {}, enabled = enabled) { CloseIcon() }
                     }
                     Box(Modifier.testTag(MIGRELY)) {
-                        MigrelyIconButton(onClick = {}, enabled = enabled) { CloseIcon() }
+                        MigrelyIconButton(onClick = {
+                        }, contentDescription = "Close", enabled = enabled) {
+                            CloseIcon()
+                        }
                     }
                 }
             }

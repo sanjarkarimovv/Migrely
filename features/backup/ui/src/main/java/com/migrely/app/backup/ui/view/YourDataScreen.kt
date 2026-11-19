@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -70,6 +69,9 @@ import com.migrely.app.backup.ui.model.YourDataMessageUiModel
 import com.migrely.app.designsystem.dialog.MigrelyAlertDialog
 import com.migrely.app.designsystem.icon.MigrelyIcons
 import com.migrely.app.designsystem.layout.MigrelyInsets
+import com.migrely.app.designsystem.layout.PageScroll
+import com.migrely.app.designsystem.layout.ownWords
+import com.migrely.app.designsystem.layout.wordsShownOnly
 import com.migrely.app.designsystem.motion.rememberReduceMotion
 import com.migrely.app.designsystem.snackbar.LocalMessageClock
 import com.migrely.app.designsystem.snackbar.MESSAGE_OFFSET_BELOW_TOP_BAR
@@ -291,55 +293,57 @@ fun YourDataContents(
                 )
             }
             Box(contentAlignment = Alignment.TopCenter, modifier = Modifier.fillMaxSize()) {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
-                    modifier = Modifier
-                        .widthIn(max = CONTENT_MAX_WIDTH)
-                        .fillMaxWidth()
-                        .windowInsetsPadding(
-                            MigrelyInsets.bars.only(
-                                WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
+                PageScroll {
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                        modifier = Modifier
+                            .widthIn(max = CONTENT_MAX_WIDTH)
+                            .fillMaxWidth()
+                            .windowInsetsPadding(
+                                MigrelyInsets.bars.only(
+                                    WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
+                                )
                             )
-                        )
-                        .verticalScroll(rememberScrollState())
-                        .padding(vertical = 8.dp)
-                ) {
-                    ActionRow(
-                        title = stringResource(R.string.your_data_export_backup),
-                        summary = stringResource(R.string.your_data_export_backup_summary),
-                        enabled = !working,
-                        onClick = actions.onExportBackup
-                    )
-                    ActionRow(
-                        title = stringResource(R.string.your_data_export_csv),
-                        summary = stringResource(R.string.your_data_export_csv_summary),
-                        enabled = !working,
-                        onClick = actions.onExportCsv
-                    )
-                    ActionRow(
-                        title = stringResource(R.string.your_data_import),
-                        summary = stringResource(R.string.your_data_import_summary),
-                        enabled = !working,
-                        onClick = actions.onImport
-                    )
-                    // Only when there is a copy: the undo of the last "Replace" (BRD D98).
-                    if (automaticCopy != null) {
+                            .pageScroll(rememberScrollState())
+                            .padding(vertical = 8.dp)
+                    ) {
                         ActionRow(
-                            title = stringResource(
-                                R.string.your_data_restore_copy,
-                                automaticCopy.madeAtText()
-                            ),
-                            summary = stringResource(R.string.your_data_restore_copy_summary),
+                            title = stringResource(R.string.your_data_export_backup),
+                            summary = stringResource(R.string.your_data_export_backup_summary),
                             enabled = !working,
-                            onClick = actions.onRestoreCopy
+                            onClick = actions.onExportBackup
+                        )
+                        ActionRow(
+                            title = stringResource(R.string.your_data_export_csv),
+                            summary = stringResource(R.string.your_data_export_csv_summary),
+                            enabled = !working,
+                            onClick = actions.onExportCsv
+                        )
+                        ActionRow(
+                            title = stringResource(R.string.your_data_import),
+                            summary = stringResource(R.string.your_data_import_summary),
+                            enabled = !working,
+                            onClick = actions.onImport
+                        )
+                        // Only when there is a copy: the undo of the last "Replace" (BRD D98).
+                        if (automaticCopy != null) {
+                            ActionRow(
+                                title = stringResource(
+                                    R.string.your_data_restore_copy,
+                                    automaticCopy.madeAtText()
+                                ),
+                                summary = stringResource(R.string.your_data_restore_copy_summary),
+                                enabled = !working,
+                                onClick = actions.onRestoreCopy
+                            )
+                        }
+                        Text(
+                            text = stringResource(R.string.your_data_note),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
                         )
                     }
-                    Text(
-                        text = stringResource(R.string.your_data_note),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
-                    )
                 }
             }
         }
@@ -354,11 +358,13 @@ private fun ActionRow(title: String, summary: String, enabled: Boolean, onClick:
             .fillMaxWidth()
             .heightIn(min = 56.dp)
             .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
+            .ownWords(title, summary)
             .padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
         Column(Modifier.weight(1f)) {
             Text(
                 text = title,
+                modifier = Modifier.wordsShownOnly(),
                 style = MaterialTheme.typography.bodyLarge,
                 color = if (enabled) {
                     MaterialTheme.colorScheme.onSurface
@@ -369,7 +375,8 @@ private fun ActionRow(title: String, summary: String, enabled: Boolean, onClick:
             Text(
                 text = summary,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.wordsShownOnly()
             )
         }
     }
@@ -385,12 +392,18 @@ private fun ImportDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.your_data_confirm_title)) },
         text = {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.verticalScroll(rememberScrollState())
-            ) {
-                Text(pending.summary.text())
-                if (pending.phoneHasRecords) Text(stringResource(R.string.your_data_confirm_choice))
+            PageScroll {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.pageScroll(rememberScrollState())
+                ) {
+                    Text(pending.summary.text())
+                    if (pending.phoneHasRecords) {
+                        Text(
+                            stringResource(R.string.your_data_confirm_choice)
+                        )
+                    }
+                }
             }
         },
         confirmButton = {
@@ -433,12 +446,14 @@ private fun RestoreDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.your_data_restore_title, copy.madeAtText())) },
         text = {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.verticalScroll(rememberScrollState())
-            ) {
-                Text(copy.summary.text())
-                Text(stringResource(R.string.your_data_restore_replaces))
+            PageScroll {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.pageScroll(rememberScrollState())
+                ) {
+                    Text(copy.summary.text())
+                    Text(stringResource(R.string.your_data_restore_replaces))
+                }
             }
         },
         confirmButton = {

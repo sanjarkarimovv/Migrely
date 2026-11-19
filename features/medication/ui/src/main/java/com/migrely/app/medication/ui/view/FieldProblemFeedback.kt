@@ -29,7 +29,9 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.error
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
+import com.migrely.app.designsystem.layout.wordsShownOnly
 import kotlinx.coroutines.delay
 
 /**
@@ -73,12 +75,18 @@ internal fun Modifier.problemSemantics(problem: String?): Modifier =
  * A field's supporting line: its [problem], or else its [counter]. The problem is read once, as the field's error
  * ("Name, edit box, error: Enter a name."), so its visible line is not read a second time (ux F6).
  */
+
+/** The field's counter on its own node while no problem shows under it (#255). */
+internal fun Modifier.counterSemantics(problem: String?, counter: String): Modifier =
+    semantics { if (problem == null) stateDescription = counter }
+
 @Composable
 internal fun FieldSupportingLine(problem: String?, counter: String) {
     if (problem != null) {
         Text(problem, Modifier.clearAndSetSemantics { })
     } else {
-        Text(counter)
+        // Said from the field's own node ([counterSemantics]), so an edge that cuts this line off leaves it (#255).
+        Text(counter, Modifier.wordsShownOnly())
     }
 }
 

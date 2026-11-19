@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -41,6 +40,9 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.migrely.app.designsystem.icon.MigrelyIcons
 import com.migrely.app.designsystem.layout.MigrelyInsets
+import com.migrely.app.designsystem.layout.PageScroll
+import com.migrely.app.designsystem.layout.ownWords
+import com.migrely.app.designsystem.layout.wordsShownOnly
 import com.migrely.app.designsystem.theme.MigrelyTheme
 import com.migrely.app.settings.presentation.model.SettingsPagePresentationModel
 import com.migrely.app.settings.ui.R
@@ -180,17 +182,20 @@ private fun PolicyLink() {
             .clickable(role = Role.Button, onClickLabel = label) {
                 uriHandler.openInBrowserIfAny(PRIVACY_POLICY_URL)
             }
+            .ownWords(label, PRIVACY_POLICY_ADDRESS)
             .padding(vertical = 8.dp)
     ) {
         Text(
             text = label,
             style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.primary
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.wordsShownOnly()
         )
         Text(
             text = PRIVACY_POLICY_ADDRESS,
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.wordsShownOnly()
         )
     }
 }
@@ -259,20 +264,22 @@ private fun SettingsPage(
             )
         )
         Box(contentAlignment = Alignment.TopCenter, modifier = Modifier.fillMaxSize()) {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier
-                    .widthIn(max = CONTENT_MAX_WIDTH)
-                    .fillMaxWidth()
-                    .windowInsetsPadding(
-                        MigrelyInsets.bars.only(
-                            WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
+            PageScroll {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier
+                        .widthIn(max = CONTENT_MAX_WIDTH)
+                        .fillMaxWidth()
+                        .windowInsetsPadding(
+                            MigrelyInsets.bars.only(
+                                WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
+                            )
                         )
-                    )
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                content = content
-            )
+                        .pageScroll(rememberScrollState())
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    content = content
+                )
+            }
         }
     }
 }

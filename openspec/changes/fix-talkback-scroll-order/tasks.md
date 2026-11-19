@@ -173,21 +173,54 @@ to the pixel. Where a gap to the next stop is V/2 or more, the scroll test asser
 stop the sweep finds nameless gets its words on its own node (same string resource, inner `Text` cleared) and nothing else
 does; each such stop passes the D181 one-name check (heard once, visible words in order). List them per group here.
 
-- [ ] 4.1 G1 attack: Attack details (keyboard up and down; the aside bar at 360 dp keeps Back out of the tree, D192) and Add
+  **How (eng-255b, 2026-11-19).** Shared fixture `talkBackWalk` (`:architecture:ui-test`): for each screen of a module,
+  in a window drawn edge to edge with a 24 dp navigation bar, every vertical scroll area gets the order check down the
+  page (a step is wrong when it goes back up both in reading order, `traversalIndex` honoured, and on screen), the
+  swipe-back and swipe-on check (TalkBack's step; where the next item is not yet in view it steps again in the same
+  swipe, design D3; the item it was on must stay on screen while the gap is under V/2), the cut sweep, and a heard-once
+  check (no stop says a part of its words twice). It dumps each screen's window pixels. One `*TalkBackWalkTest` per ui
+  module (portrait 411 dp 100%, landscape 360 dp tall 200%) over the same screens as its audit (`*TestScreens.kt`).
+  Before (`4.0-walk-before-summary.txt`): red in 10 of 11 modules (home green both). Every site wired by one
+  mechanical change (`PageScroll { Column(… .pageScroll(state) …) }`), then the stops the sweep found get
+  `ownWords(...)` on their own node and `wordsShownOnly()` on their Text (`hideFromAccessibility`: out of TalkBack's
+  reading, still in the semantics tree, so tests, Maestro and Voice Access find the shown words). Fields: label on
+  the field's node, counter as its state description while no problem shows. After: 22 walk tests green; window
+  pixels of all 27 screens × 2 sizes byte-identical before and after (`4.x-pixels-final.txt`, 54 of 54).
+  Named per group: G1 Attack details' Got it, Add pain level, Add medication, the 4 impact choices, the note's
+  counter, Delete migraine, Add past attack's Add migraine; every in-page icon button through `MigrelyIconButton`'s
+  new `contentDescription`. G3 kind rows, category rows (title, examples), Save, Name and Dose fields (Edit and Log
+  medication). G4 Settings' switch, link and value rows, the policy link, the Delete field. G5 History's Period and
+  Pain-free switches, Add a past migraine, Show all of the month; Report's period chips, Custom, Create report; Your
+  data's two action rows; Reminders' two switch rows; Paywall's buy and Restore buttons; Onboarding's Restore;
+  Insights' period chips.
+
+- [x] 4.1 G1 attack: Attack details (keyboard up and down; the aside bar at 360 dp keeps Back out of the tree, D192) and Add
   past attack; `ChoiceChip` option 3 (`AttackChoiceSections.kt:204-262`). Verify: `:features:attack:ui:testDebugUnitTest` green; the 2.0 and 2.1 tests green;
   `MessageBarAsideTest`, `AttackDetailsKeyboardRoomTest` unchanged and green.
-- [ ] 4.2 G2 home: Today (3 sites) and attack mode (3 sites, 64 dp). Verify: `:features:home:ui:testDebugUnitTest` green.
-- [ ] 4.3 G3 medication: Edit medication, Log medication (normal and dark room), Medications. Verify:
+- [x] 4.2 G2 home: Today (3 sites) and attack mode (3 sites, 64 dp). Verify: `:features:home:ui:testDebugUnitTest` green.
+- [x] 4.3 G3 medication: Edit medication, Log medication (normal and dark room), Medications. Verify:
   `:features:medication:ui:testDebugUnitTest` green, `EditMedicationProblemFeedbackTest` and
   `FirstMedicationProblemFeedbackTest` unchanged and green.
-- [ ] 4.4 G4 settings: Settings, Settings pages, Delete all data. Verify: `:features:settings:ui:testDebugUnitTest` green,
+- [x] 4.4 G4 settings: Settings, Settings pages, Delete all data. Verify: `:features:settings:ui:testDebugUnitTest` green,
   `DeleteKeyboardTest` unchanged and green.
-- [ ] 4.5 G5: History, Insights, Report, Your data and its 2 dialogs, Reminders and its dialog, Paywall, Onboarding. Verify:
+- [x] 4.5 G5: History, Insights, Report, Your data and its 2 dialogs, Reminders and its dialog, Paywall, Onboarding. Verify:
   each module's `testDebugUnitTest` green.
-- [ ] 4.6 G6 `designsystem` pickers (3 sites; D2 only where 3.3 kept it, D3 on all). Verify: `:designsystem:testDebugUnitTest` green, `KeyboardRoomTest`,
+- [x] 4.6 G6 `designsystem` pickers (3 sites; D2 only where 3.3 kept it, D3 on all). Verify: `:designsystem:testDebugUnitTest` green, `KeyboardRoomTest`,
   `TopBarAsideTest`, `TypedLineMarginsTest` unchanged and green.
-- [ ] 4.7 The source check (2.4) green with no exceptions outside the entry point. Mutations on the final code: remove D2 →
+  Result 4.1-4.6 (`4.x-suites3.log`): designsystem 287 tests, attack 142, home 130, medication 160, settings 48,
+  history 69, report 14, backup 22, reminders 33, subscription 48, onboarding 11, insights 21, ui-test 2: 0 failed
+  (the walk's last fix, the geometric order, then re-ran the 22 walk tests green, `4.x-walk-final.log`). The 7 tests of
+  2.0/2.1 green; guards `MessageBarAsideTest`, `AttackDetailsKeyboardRoomTest`, `EditMedicationProblemFeedbackTest`,
+  `FirstMedicationProblemFeedbackTest`, `DeleteKeyboardTest`, `KeyboardRoomTest`, `TopBarAsideTest`,
+  `TypedLineMarginsTest` unchanged and green. 4.2: home was green before too (its screens' bands fall where the order
+  holds); it is wired all the same. 4.6: pickers and Reminders' time dialog use `PageScroll(exactBounds = false)`;
+  `PageScrollTest` "Step only…" (48 dp kept, half step) red with exact bounds forced on, green after. Mutation of the
+  heard-once check (`wordsShownOnly` a no-op): attack walk red, "said twice: Got it | Got it".
+- [x] 4.7 The source check (2.4) green with no exceptions outside the entry point. Mutations on the final code: remove D2 →
   order tests red; remove D3 → scroll tests red. Logs `4.7-*.log`.
+  Result: `ArchitectureScrollsTest` green (was 29 sites; its negative control is 2.4's). Mutations on the final code
+  (`mut-4.7-*.txt`): D2 forced off → 5 of 10 attack TalkBack tests red (the 3 order tests and both walks); the step
+  element removed → 6 of 10 red (the 4 scroll tests and both walks).
 
 ## 5. Gate (`android-engineer`)
 

@@ -41,6 +41,8 @@ import com.migrely.app.attack.ui.model.IntensityPointUiModel
 import com.migrely.app.designsystem.button.MigrelyIconButton
 import com.migrely.app.designsystem.dialog.MigrelyAlertDialog
 import com.migrely.app.designsystem.icon.MigrelyIcons
+import com.migrely.app.designsystem.layout.ownWords
+import com.migrely.app.designsystem.layout.wordsShownOnly
 import com.migrely.app.designsystem.picker.MigrelyDateTimePicker
 import kotlin.math.roundToInt
 
@@ -80,11 +82,14 @@ internal fun PainSection(
             modifier = Modifier
                 .padding(top = 8.dp)
                 .heightIn(min = 48.dp)
+                .ownWords(stringResource(R.string.pain_add))
         ) {
             Icon(MigrelyIcons.Add, contentDescription = null, modifier = Modifier.size(18.dp))
             Text(
                 text = stringResource(R.string.pain_add),
-                modifier = Modifier.padding(start = 8.dp)
+                modifier = Modifier
+                    .padding(start = 8.dp)
+                    .wordsShownOnly()
             )
         }
     }
@@ -127,10 +132,10 @@ private fun PainEntryRow(
             color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.weight(1f)
         )
-        MigrelyIconButton(onClick = onRemove) {
+        MigrelyIconButton(contentDescription = removeDescription, onClick = onRemove) {
             Icon(
                 imageVector = MigrelyIcons.Close,
-                contentDescription = removeDescription,
+                contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(20.dp)
             )
@@ -279,10 +284,16 @@ internal fun SafetyCard(
                 color = MaterialTheme.colorScheme.onTertiaryContainer,
                 modifier = Modifier.padding(top = 8.dp)
             )
-            TextButton(onClick = onDismiss, modifier = Modifier.heightIn(min = 48.dp)) {
+            TextButton(
+                onClick = onDismiss,
+                modifier = Modifier
+                    .heightIn(min = 48.dp)
+                    .ownWords(stringResource(R.string.safety_dismiss))
+            ) {
                 Text(
                     stringResource(R.string.safety_dismiss),
-                    color = MaterialTheme.colorScheme.tertiary
+                    color = MaterialTheme.colorScheme.tertiary,
+                    modifier = Modifier.wordsShownOnly()
                 )
             }
         }

@@ -41,7 +41,11 @@ class MigrelyIconButtonPressedTest {
                 IconButton(onClick = {}, modifier = Modifier.testTag(MATERIAL)) {
                     Icon(MigrelyIcons.Close, contentDescription = "Close")
                 }
-                MigrelyIconButton(onClick = {}, modifier = Modifier.testTag(MIGRELY)) {
+                MigrelyIconButton(
+                    onClick = {},
+                    contentDescription = "Close",
+                    modifier = Modifier.testTag(MIGRELY)
+                ) {
                     Icon(MigrelyIcons.Close, contentDescription = "Close")
                 }
             }

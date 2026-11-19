@@ -23,51 +23,7 @@ class SettingsTouchTargetAuditTest {
     @get:Rule
     val rule = createAndroidComposeRule<ComponentActivity>()
 
-    private val screens: Map<String, @Composable () -> Unit> = mapOf(
-        "Settings" to {
-            MigrelyTheme {
-                SettingsContents(
-                    settings = PREVIEW_SETTINGS,
-                    actions = SettingsActions({}, {}, {}, {}, {}, {}, {}, {}, {}, {}),
-                    messages = {}
-                )
-            }
-        },
-        "Warning signs" to {
-            MigrelyTheme {
-                WarningSignsContents(onBack = {})
-            }
-        },
-        "About Migrely" to {
-            MigrelyTheme {
-                AboutMigrelyContents(onBack = {})
-            }
-        },
-        "Privacy" to {
-            MigrelyTheme {
-                PrivacyContents(onBack = {})
-            }
-        },
-        "Licences" to {
-            MigrelyTheme {
-                LicencesContents(onBack = {})
-            }
-        },
-        "Delete all data" to {
-            MigrelyTheme {
-                DeleteAllDataContents(
-                    typed = "",
-                    word = "DELETE",
-                    confirmed = false,
-                    deleting = false,
-                    failed = false,
-                    actions = DeleteAllDataActions({}, {}, {})
-                )
-            }
-        }
-    )
-
-    private fun underBar(fontScale: Float) = rule.auditTouchTargets(fontScale, screens)
+    private fun underBar(fontScale: Float) = rule.auditTouchTargets(fontScale, settingsScreens)
 
     @Test
     @Config(sdk = [35], qualifiers = "w360dp-h800dp")
