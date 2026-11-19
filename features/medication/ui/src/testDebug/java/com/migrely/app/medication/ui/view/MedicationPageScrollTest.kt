@@ -37,8 +37,8 @@ private val FORMATTER = MedicationTimeUiFormatter(
 )
 
 /**
- * Each field on Log and Edit medication hands its keyboard follow to the page's own scroll, with no other nested-scroll
- * node between them (BRD D194, design D3; #259).
+ * Each field on Log and Edit medication is scrolled by the page's own scroll, with no other scroll or nested-scroll
+ * node between them (BRD D194; #259).
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])

@@ -25,6 +25,10 @@ internal class KeyboardFollow {
     // The keyboard height the follow's collector last acted on.
     private var keyboardFollowed = -1
 
+    /** Whether the line follows the keyboard now. */
+    val isFollowing: Boolean
+        get() = following
+
     /** The field brought its line into view itself, on focus or an edit. */
     fun onBroughtIntoView() {
         following = true

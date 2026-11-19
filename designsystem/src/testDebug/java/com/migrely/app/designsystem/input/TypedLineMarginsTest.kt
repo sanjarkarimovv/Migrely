@@ -105,6 +105,7 @@ class TypedLineMarginsTest {
             MigrelyTheme {
                 cursorColor = OutlinedTextFieldDefaults.colors().cursorColor.toArgb()
                 val space = rememberTypingSpace()
+                val pageScroll = rememberScrollState()
                 Column(Modifier.fillMaxSize()) {
                     // Stands for the top bar: the page's visible part starts under it, as on the four screens.
                     Box(
@@ -124,8 +125,8 @@ class TypedLineMarginsTest {
                             .windowInsetsPadding(
                                 MigrelyInsets.barsAndKeyboard.only(WindowInsetsSides.Bottom)
                             )
-                            .then(space.pageModifier)
-                            .verticalScroll(rememberScrollState())
+                            .then(space.page(pageScroll))
+                            .verticalScroll(pageScroll)
                             .padding(horizontal = 16.dp)
                     ) {
                         Spacer(Modifier.height(ABOVE))

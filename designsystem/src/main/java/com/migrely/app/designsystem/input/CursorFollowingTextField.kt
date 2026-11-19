@@ -44,8 +44,8 @@ private val CURSOR_MARGIN = 8.dp
  * An outlined text field, drawn as Material's, whose line with the cursor its scrolling parent keeps in view, [margin]
  * clear of the parent's visible edges, while it has focus (BRD D180 (2), EC-UX-39, #141): after typing, a tap, a paste,
  * a cursor move, and when the visible area shrinks as the keyboard opens while that line is in view (KeyboardFollow).
- * Inside a [TypingSpace] the keyboard's growth moves the page in the same turn as the keyboard (BRD D194,
- * [InStepScroll]); elsewhere the line is brought into view, animated, as for an edit.
+ * Inside a [TypingSpace] the page itself keeps that line in view as the keyboard grows, in the same layout pass
+ * (BRD D194, [TypingSpace.page]).
  * The keyboard ending the word it composes changes neither text nor cursor, so it moves nothing.
  * The page scrolls only as far as needed, so a tap on a line already in view moves nothing, and "Remove animations"
  * makes each scroll a jump.
@@ -66,7 +66,6 @@ fun CursorFollowingTextField(
     val interactionSource = remember { MutableInteractionSource() }
     val focused by interactionSource.collectIsFocusedAsState()
     val requester = remember { BringIntoViewRequester() }
-    val inStep = remember { InStepScroll() }
     val geometry = remember { CursorGeometry() }
     var layout by remember { mutableStateOf<TextLayoutResult?>(null) }
     val follow = remember { KeyboardFollow() }
@@ -77,10 +76,15 @@ fun CursorFollowingTextField(
     val cursor by rememberUpdatedState(value.selection.end)
     val space = LocalTypingSpace.current
 
-    // The line holding [offset] with the margins the visible part leaves it (ux R2), in the field's coordinates.
-    fun lineInView(layout: TextLayoutResult?, offset: Int): Rect? =
+    // The line holding [offset] with the margins the visible part, [visible] px tall where given, leaves it (ux R2), in
+    // the field's coordinates.
+    fun lineInView(layout: TextLayoutResult?, offset: Int, visible: Int? = null): Rect? =
         geometry.lineOf(layout, offset)?.let { line ->
-            val clearance = space?.marginAround(line.height, marginPx) ?: marginPx
+            val clearance = when {
+                space == null -> marginPx
+                visible == null -> space.marginAround(line.height, marginPx)
+                else -> space.marginAround(line.height, marginPx, visible)
+            }
             Rect(line.left, line.top - clearance, line.right, line.bottom + clearance)
         }
     // The text and the cursor, not the whole value: a keyboard ending the word it composes changes only the
@@ -97,10 +101,18 @@ fun CursorFollowingTextField(
     LaunchedEffect(focused) {
         if (!focused) return@LaunchedEffect
         follow.followKeyboard({ keyboard.getBottom(density) }) {
-            val line = lineInView(layout, cursor) ?: return@followKeyboard
-            // In a typing space, in step with the keyboard (#259); elsewhere, the animated bring as before.
-            if (!inStep.show(space, geometry.field, line)) requester.bringIntoView(line)
+            lineInView(layout, cursor)?.let { requester.bringIntoView(it) }
         }
+    }
+    // In a typing space the page keeps the caret's line in view as the keyboard grows, in the same layout pass (BRD D194);
+    // the bring above then finds it shown.
+    LaunchedEffect(focused, space) {
+        if (!focused || space == null) return@LaunchedEffect
+        space.keepInView(
+            KeptField({ geometry.field }, { follow.isFollowing }) { visible ->
+                listOfNotNull(lineInView(layout, cursor, visible))
+            }
+        )
     }
     // The line being typed is the caret's line box, as laid out (BRD D192, ux R5).
     LaunchedEffect(focused, space) {
@@ -116,7 +128,6 @@ fun CursorFollowingTextField(
             value = value,
             onValueChange = onValueChange,
             modifier = modifier
-                .then(inStep.modifier)
                 .bringIntoViewRequester(requester)
                 .onGloballyPositioned { geometry.field = it }
                 .then(OwnRequestsDropped)

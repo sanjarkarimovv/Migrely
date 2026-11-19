@@ -14,8 +14,8 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * The note hands its keyboard follow to the page's own scroll, with no other nested-scroll node between them (BRD D194,
- * design D3; #259): that page takes the distance in the keyboard's turn.
+ * The note is scrolled by the page's own scroll, with no other scroll or nested-scroll node between them (BRD D194;
+ * #259): the page keeps it in view as the keyboard grows.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])

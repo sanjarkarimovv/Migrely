@@ -76,6 +76,7 @@ class TypingSpaceFocusTest {
         rule.setContent {
             MigrelyTheme {
                 val space = rememberTypingSpace()
+                val pageScroll = rememberScrollState()
                 Column(Modifier.fillMaxSize()) {
                     TopAppBar(
                         title = { Text("Title") },
@@ -103,8 +104,8 @@ class TypingSpaceFocusTest {
                             .windowInsetsPadding(
                                 MigrelyInsets.barsAndKeyboard.only(WindowInsetsSides.Bottom)
                             )
-                            .then(space.pageModifier)
-                            .verticalScroll(rememberScrollState())
+                            .then(space.page(pageScroll))
+                            .verticalScroll(pageScroll)
                     ) {
                         TextButton(onClick = {}) { Text(ABOVE) }
                         ProvideTypingSpace(space) {

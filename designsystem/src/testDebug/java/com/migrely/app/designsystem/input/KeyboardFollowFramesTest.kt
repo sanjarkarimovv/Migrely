@@ -24,11 +24,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.input.nestedscroll.NestedScrollSource
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
@@ -111,14 +107,14 @@ class KeyboardFollowFramesTest {
 
     /**
      * The note on a page under a bar, its top [NOTE_SHOWN_PX] above the page's bottom, focused. With [typingSpace]
-     * false the page has no typing space, as a screen without D192's bar; [between] wraps the note. With [single] a
+     * false the page has no typing space, as a screen without D192's bar. With [single] a
      * labelled single-line field stands for the note, as on Log and Edit medication and Delete all data.
      */
     private fun focusNote(
         typingSpace: Boolean = true,
-        between: Modifier = Modifier,
         single: Boolean = false,
-        cutAfterFocusPx: Int = 0
+        cutAfterFocusPx: Int = 0,
+        shownPx: Int = NOTE_SHOWN_PX
     ) {
         singleLine = single
         rule.runOnUiThread { rule.activity.drawEdgeToEdge() }
@@ -133,7 +129,7 @@ class KeyboardFollowFramesTest {
                             .windowInsetsPadding(WindowInsets.statusBars)
                             .height(BAR)
                     )
-                    Page(if (typingSpace) space else null, between)
+                    Page(if (typingSpace) space else null)
                 }
             }
         }
@@ -142,7 +138,7 @@ class KeyboardFollowFramesTest {
         rule.runOnUiThread { rule.activity.setInsets(keyboardPx = 0, statusPx = STATUS_PX) }
         settle()
         val toNote = note.getUnclippedBoundsInRoot().top.value * density() -
-            (visiblePart().bottom - NOTE_SHOWN_PX)
+            (visiblePart().bottom - shownPx)
         page.performSemanticsAction(SemanticsActions.ScrollBy) { it(0f, toNote) }
         settle()
         note.requestFocus()
@@ -159,7 +155,7 @@ class KeyboardFollowFramesTest {
     }
 
     @Composable
-    private fun Page(space: TypingSpace?, between: Modifier) {
+    private fun Page(space: TypingSpace?) {
         Column(
             Modifier
                 .fillMaxSize()
@@ -171,12 +167,12 @@ class KeyboardFollowFramesTest {
                     }
                 }
                 .windowInsetsPadding(MigrelyInsets.barsAndKeyboard.only(WindowInsetsSides.Bottom))
-                .then(space?.pageModifier ?: Modifier)
+                .then(space?.page(scroll) ?: Modifier)
                 .verticalScroll(scroll)
                 .padding(horizontal = 16.dp)
         ) {
             Spacer(Modifier.height(ABOVE))
-            Box(between) {
+            Box {
                 if (space != null) {
                     ProvideTypingSpace(space) { Note() }
                 } else {
@@ -269,20 +265,30 @@ class KeyboardFollowFramesTest {
      */
     private fun openKeyboard(fractions: List<Float> = STEPS): List<Step> {
         rule.mainClock.autoAdvance = false
-        val steps = mutableListOf(Step(0, scroll.value, cursorLine(), fieldBounds(), visiblePart()))
+        val steps = mutableListOf(record(0))
+        var keyboard: Int? = null
         val opening = KeyboardAnimation(rule.activity, STATUS_PX, 0, KEYBOARD_PX) {
             frameAndAccessibilityLayout()
+            // What the frame and the accessibility service see, before any effect or collector has run.
+            keyboard?.let { frames += record(it) }
+            keyboard = null
             settle()
         }
         opening.start()
         fractions.forEach { fraction ->
+            keyboard = (KEYBOARD_PX * fraction).toInt()
             opening.progress(fraction)
-            val keyboard = (KEYBOARD_PX * fraction).toInt()
-            steps += Step(keyboard, scroll.value, cursorLine(), fieldBounds(), visiblePart())
+            steps += record((KEYBOARD_PX * fraction).toInt())
         }
         opening.end()
         return steps
     }
+
+    private fun record(keyboard: Int) =
+        Step(keyboard, scroll.value, cursorLine(), fieldBounds(), visiblePart())
+
+    // Each keyboard step as its frame's own layout left it, before the follow's collector ran.
+    private val frames = mutableListOf<Step>()
 
     private fun assertLineShows(step: String, line: Rect, visible: Rect) {
         val cutAbove = (visible.top - line.top).coerceAtLeast(0f)
@@ -294,12 +300,40 @@ class KeyboardFollowFramesTest {
         )
     }
 
+    // BRD D194 (1): the page moves the line in the layout pass that shrinks the visible part, so neither the frame nor
+    // Compose's accessibility layout after it ever has the line under the keyboard.
     @Test
-    fun `After each keyboard step the line being typed shows`() {
+    fun `In each keyboard frame's own layout the line being typed shows`() {
         focusNote()
 
-        openKeyboard().drop(1).forEach { step ->
-            assertLineShows("keyboard ${step.keyboard} px", step.line, step.visible)
+        openKeyboard()
+
+        assertEquals("frames recorded", STEPS.size, frames.size)
+        frames.forEach { frame ->
+            assertLineShows(
+                "keyboard ${frame.keyboard} px, the frame's layout",
+                frame.line,
+                frame.visible
+            )
+        }
+    }
+
+    // As above for a note wholly in view before the keyboard, as at the page's end: Compose's own scroll then brings
+    // the focused field back itself, animated, and the page must still move the line in the keyboard's frame.
+    @Test
+    fun `A note wholly in view before the keyboard shows in each keyboard frame`() {
+        focusNote(shownPx = WHOLE_NOTE_SHOWN_PX)
+        val before = fieldBounds()
+        assertTrue("the note starts wholly in view", before.bottom <= visiblePart().bottom)
+
+        openKeyboard()
+
+        frames.forEach { frame ->
+            assertLineShows(
+                "keyboard ${frame.keyboard} px, the frame's layout",
+                frame.line,
+                frame.visible
+            )
         }
     }
 
@@ -392,34 +426,7 @@ class KeyboardFollowFramesTest {
         )
     }
 
-    // Design D3: the distance goes to the page as a nested post-scroll, past whatever lies between. An ancestor that
-    // takes none of it sees what is offered and the page still moves the line into view.
-    @Test
-    fun `An ancestor between the note and the page sees the distance and leaves it to the page`() {
-        val offered = mutableListOf<Float>()
-        val watcher = object : NestedScrollConnection {
-            override fun onPostScroll(
-                consumed: Offset,
-                available: Offset,
-                source: NestedScrollSource
-            ): Offset {
-                offered += available.y
-                return Offset.Zero
-            }
-        }
-        focusNote(between = Modifier.nestedScroll(watcher))
-
-        val after = openKeyboard(listOf(1f)).last()
-
-        assertLineShows("keyboard up", after.line, after.visible)
-        assertTrue(
-            "the distance passed the ancestor: $offered",
-            offered.isNotEmpty() && offered.all { it < 0f }
-        )
-    }
-
-    // Design D3: the field's own nested-scroll connection takes no part in a drag: a drag that starts on the note
-    // scrolls the page as it did before.
+    // A drag that starts on the note still scrolls the page, as before.
     @Test
     fun `A drag that starts on the note scrolls the page as before`() {
         focusNote()
@@ -438,10 +445,15 @@ class KeyboardFollowFramesTest {
     fun `A single-line field cut at the bottom shows whole after the keyboard's first frame`() {
         focusNote(single = true, cutAfterFocusPx = SINGLE_CUT_PX)
 
-        val (before, after) = openKeyboard(listOf(STEPS.first()))
+        val before = openKeyboard(listOf(STEPS.first())).first()
 
         assertTrue("the field started cut", before.field.bottom > before.visible.bottom)
-        assertLineShows("keyboard ${after.keyboard} px, the field", after.field, after.visible)
+        val frame = frames.single()
+        assertLineShows(
+            "keyboard ${frame.keyboard} px, the field in the frame's layout",
+            frame.field,
+            frame.visible
+        )
     }
 
     @Test
@@ -458,24 +470,46 @@ class KeyboardFollowFramesTest {
         }
     }
 
-    // Design D3's limit: a field wholly in view before the keyboard is Compose's own focused child, which the page
-    // brings back itself, animated, once the keyboard clips it. While that runs the page takes no raw scroll, so the
-    // follow falls back to its old bring, which joins it: the field still ends whole, as on develop, not in step.
+    // The ContentInViewNode case: a field wholly in view before the keyboard is Compose's own focused child, which the
+    // page brings back itself, animated, once the keyboard clips it; while that runs a scrollable takes no raw scroll.
+    // The page's own layout keeps the field whole in each keyboard frame regardless (single-line fields are wholly in
+    // view after their focus bring).
     @Test
-    fun `A field wholly in view before the keyboard is brought back by the page itself`() {
+    fun `A field wholly in view before the keyboard stays whole in each keyboard frame`() {
         focusNote(single = true)
-        val steps = openKeyboard()
+        val before = fieldBounds()
+        assertTrue("the field starts wholly in view", before.bottom <= visiblePart().bottom)
 
-        assertTrue(
-            "the field was wholly in view before the keyboard",
-            steps.first().field.top >= steps.first().visible.top &&
-                steps.first().field.bottom <= steps.first().visible.bottom
-        )
-        assertTrue("the page's own animation was running", scroll.isScrollInProgress)
-        rule.mainClock.autoAdvance = true
-        rule.mainClock.advanceTimeBy(SETTLE_MILLIS)
+        openKeyboard()
+
+        assertEquals("frames recorded", STEPS.size, frames.size)
+        frames.forEach { frame ->
+            assertLineShows(
+                "keyboard ${frame.keyboard} px, the field in the frame's layout",
+                frame.field,
+                frame.visible
+            )
+        }
+    }
+
+    // BRD D180 (5): a person who scrolled the line away while the keyboard held still is not pulled back when it
+    // grows: the page keeps the line in view only while the field follows the keyboard.
+    @Test
+    fun `After a scroll away a growing keyboard leaves the page where it was put`() {
+        focusNote()
+        page.performSemanticsAction(SemanticsActions.ScrollBy) { it(0f, -SCROLLED_AWAY_PX) }
         settle()
-        assertLineShows("after the page's animation, the field", fieldBounds(), visiblePart())
+        val away = scroll.value
+
+        openKeyboard()
+
+        frames.forEach { frame ->
+            assertEquals(
+                "keyboard ${frame.keyboard} px: the scroll in the frame's layout",
+                away,
+                frame.scroll
+            )
+        }
     }
 
     private companion object {
@@ -484,5 +518,11 @@ class KeyboardFollowFramesTest {
 
         // How far the page is pulled down after the focus: the single-line field's bottom is cut, its input line not.
         const val SINGLE_CUT_PX = 40
+
+        // Where the note's top shows before the keyboard for it to be wholly in view, above the page's bottom.
+        const val WHOLE_NOTE_SHOWN_PX = 480
+
+        // How far the person scrolls the page back, the line out of view, before the keyboard opens.
+        const val SCROLLED_AWAY_PX = 900f
     }
 }

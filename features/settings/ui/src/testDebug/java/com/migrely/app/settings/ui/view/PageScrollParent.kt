@@ -4,11 +4,11 @@ import androidx.compose.ui.layout.LayoutInfo
 import androidx.compose.ui.semantics.SemanticsNode
 
 /**
- * What lies between a following field and the page that scrolls it, for the keyboard's in-step follow (BRD D194,
- * design D3): the field hands its distance to its nearest nested-scroll parent, which must be the page's scroll, so no
- * other nested-scroll node may sit between them. Returns null where that holds, or what is in the way. Modifier element
- * names are Compose's own (1.9): a renamed element fails this loudly rather than passing. The same file sits in each
- * UI module's tests, which share no test module.
+ * What lies between a typing field and the page that scrolls it (BRD D194): the page keeps the field in view by
+ * scrolling its own [androidx.compose.foundation.ScrollState] in its layout pass, which moves the field only if the
+ * page's scroll is the nearest one above it. Returns null where no other scroll or nested-scroll node sits between
+ * them, or what is in the way. Modifier element names are Compose's own (1.9): a renamed element fails this loudly
+ * rather than passing. The same file sits in each UI module's tests, which share no test module.
  */
 internal fun SemanticsNode.inTheWayOfThePage(page: SemanticsNode): String? {
     var node: LayoutInfo? = layoutInfo.parentInfo

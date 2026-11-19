@@ -264,7 +264,7 @@ private fun ColumnScope.Confirmation(
                 actions.onTyped,
                 scrollState,
                 keyboardRoom,
-                typingSpace.pageModifier
+                typingSpace.page(scrollState)
             )
         }
         // There is more to read above the button. Always laid out, only its colour changes: a divider that comes

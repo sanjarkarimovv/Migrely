@@ -13,8 +13,8 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * The confirmation word's field hands its keyboard follow to the page's own scroll, with no other nested-scroll node
- * between them (BRD D194, design D3; #259).
+ * The confirmation word's field is scrolled by the page's own scroll, with no other scroll or nested-scroll node
+ * between them (BRD D194; #259).
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
