@@ -234,11 +234,26 @@ does; each such stop passes the D181 one-name check (heard once, visible words i
 
 ## 6. Device walks (`android-engineer`, emulator-5570, TalkBack VERBOSE, console swipes)
 
-- [ ] 6.1 Attack details: previous from the end to Back and next from Back to the end, every stop once and named, at 100%
+- [x] 6.1 Attack details: previous from the end to Back and next from Back to the end, every stop once and named, at 100%
   portrait (no keyboard; keyboard up) and 200% landscape in the 360 dp window (`wm size 945x2100`; keyboard up, then closed
   with Back). Include a stop on a chip cut at an edge: it says "Not selected. Nausea" (or "Selected. …"). Verify: walk logs
   `6.1-*.txt` with stop counts and the cut chip's line; the same walk on `develop` loops or skips (control). Read each
   scroll's distance from the log: floor(V/2) within 1 px.
+  Result on 4cd24379 (eng-255b; logs `migrely-work/255b/6.x-*`), develop 4d141abe the control on the same data:
+  | Walk | Candidate | develop |
+  |---|---|---|
+  | 100% portrait, previous from the end | Delete → Back, 52-56 stops, no repeat, no bare state (3 runs; see note) | skips Stress → Back, then circles on bare "Not selected" |
+  | 100% portrait, next from the top | Migraine → Delete, 55 stops, clean | 58 stops, 1 repeat, 3 bare |
+  | 100% portrait, keyboard up, previous | Smell → Back, 45 stops, clean; nothing under the keyboard a stop | 54 stops, 1 repeat, 7 bare |
+  | 200% landscape, 360 dp window, previous | Delete → Back, 56 stops, clean | |
+  | 200% landscape, keyboard opened then closed with Back (the issue) | Delete → Back, 56 stops, clean | 52 stops, 1 repeat, 13 bare |
+  | 200% landscape, keyboard up | title, Migraine, Back: no page item is visible (see note) | same picture |
+  Step: 1,020 px each way = floor(2,041 / 2), V = 296..2,337 px; less than a step left scrolls to the end (707 px).
+  Cut chip: "Nausea" with 23 of its 47 px label shown at the bottom edge says "Selected. Nausea", as whole.
+  Notes: one of three portrait back walks skipped the top four items once: TalkBack's backward scroll returned true but
+  the next console gesture came 773 ms later and cancelled the animated scroll (host jitter; the other two runs were
+  clean). At 200% landscape with the keyboard up, the note's line sits under the keyboard and the top bar does not step
+  aside, on develop too: a #245 (D192) gap for `main`, not this change.
 - [ ] 6.2 One walk per other page and dialog at 100% portrait and 200% landscape, keyboard up on the four text-field screens.
   Verify: `6.2-*.txt`, each reaching both ends with no repeat.
 - [ ] 6.3 Hardware keyboard Tab and Shift+Tab on Attack details and one dialog: order unchanged, every stop in view. Verify:
@@ -247,8 +262,15 @@ does; each such stop passes the D181 one-name check (heard once, visible words i
   `ANDROID_SERIAL=emulator-5570 nice -n 19 ./gradlew --max-workers=2 :designsystem:connectedDebugAndroidTest
   -Pandroid.testInstrumentationRunnerArguments.class=com.migrely.app.designsystem.button.MigrelyIconButtonPressedTest`
   → BUILD SUCCESSFUL, 0 failed; log `6.4-pressed.log`.
-- [ ] 6.5 Restore font scale, rotation, `wm size`, density, animator scales, TalkBack and keyboard. Verify: settings read
+  Result (not ticked): both cases red on emulator-5570. Named difference for ux: inside the 40 dp pressed circle (radius
+  52.8 px) 8,190 pixels differ by at most 2/255 per channel (1,046 by 1, 7,144 by 2); outside it and the icon equal
+  (`6.4-pressed-row.png`). The test stays strict until ux judges it.
+- [x] 6.5 Restore font scale, rotation, `wm size`, density, animator scales, TalkBack and keyboard. Verify: settings read
   back. Never take a `uiautomator dump` during a TalkBack walk (it resets focus).
+  Result: font 1.0, rotation 0 with auto-rotate on, animator scales 1, 1080×2400, density 420, TalkBack off, its log
+  ERROR, keyboard down: read back identical to before (`6.5-device-after-r2.txt`); 5570 off. The test migraine's note,
+  filled with tab characters by a void Tab run (Tab inside the note types a tab, on develop too), was cleared and read
+  back empty. Open: 6.2 (other pages) and 6.3 (Tab: the dump does not name Compose's focused node; redo by TalkBack log).
 
 ## 7. Review (`code-reviewer`)
 
