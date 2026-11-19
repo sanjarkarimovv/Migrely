@@ -47,7 +47,8 @@ touch-target rule is recorded (BRD EC-UX-78, EC-UX-79, EC-UX-81, D193).
 ### Requirement: An item outside the visible part is not a stop
 An item wholly outside a scroll area's visible part SHALL NOT be in the accessibility tree, and no node in the tree SHALL
 have empty bounds in the window. This SHALL hold when the visible part ends above the window's bottom: with the keyboard up,
-above the navigation bar, above a dialog's buttons, and under a message or the top bar (BRD EC-UX-78, D193 (3a)).
+above the navigation bar, above a dialog's buttons, and under a message or the top bar. A picker left out of exact bounds
+is a recorded exception (BRD EC-UX-78, D193 (3a), (4)).
 
 #### Scenario: Just below the visible edge
 - **WHEN** a chip lies 1 to 24 dp below the visible part's bottom edge, with the keyboard up or above the navigation bar
@@ -125,29 +126,47 @@ and each such stop SHALL pass the D181 one-name check (BRD EC-UX-80, D181, D193 
 - **THEN** it matches that chip, as before this change
 
 ### Requirement: The traversal fix draws nothing new
-The fix SHALL change only the accessibility tree and TalkBack's scroll step. Every screen SHALL look the same to the pixel;
-touch, fling, Tab, Page Up and Page Down SHALL act as before; every clickable control inside a page SHALL keep 48 dp, 64 dp
-for attack mode's intensity choices, "Migraine ended" and a message's Undo and Dismiss, or its whole cell pitch where cells
-sit closer, measured before the change lands (BRD EC-UX-82, EC-UX-83, D193 (2), (4)).
+The fix SHALL change only semantics, touch nodes and TalkBack's scroll step. Every screen SHALL look the same to the
+pixel at rest and pressed. Inside exact bounds every clickable, toggleable or selectable node SHALL itself be at least 48×48
+dp (64 dp for attack mode's intensity choices, "Migraine ended", Undo and Dismiss), or its whole cell pitch where cells sit
+closer, from its own size, never from touch-target widening (BRD EC-UX-82, EC-UX-83, D193 (2), (4)).
 
 #### Scenario: Screens look the same
-- **WHEN** screenshots of each changed page are taken at 100% portrait and 200% landscape, before and after the change
-- **THEN** they are identical to the pixel
+- **WHEN** screenshots of each changed page are taken at 100% portrait and 200% landscape, before and after the change, at
+  rest and with a control pressed
+- **THEN** they are identical to the pixel; the pressed state is compared on a device, because Robolectric draws no ripple
+
+#### Scenario: TalkBack's outline shows the touch area
+- **WHEN** TalkBack focuses an in-page icon button or a History day
+- **THEN** its focus outline is the 48 dp node or the day's whole pitch, where it was the 40 dp circle or the drawn cell;
+  this is the one intended visible change, drawn by TalkBack and only while focused
+
+#### Scenario: In-page icon buttons
+- **WHEN** a tap lands 2 dp outside an in-page icon button's 40 dp circle but inside 48 dp, inside a scrolling page
+- **THEN** the button acts, as it did before the change; its circle, icon and ripple look as Material's do
+
+#### Scenario: Controls outside exact bounds
+- **WHEN** the audit looks at top-bar Back and actions, the Paywall's close row above its scroll, the message host, and the
+  checkbox, switch and radio rows
+- **THEN** the first three stay Material and outside exact bounds, and each toggle row is itself the node of 48 dp or more,
+  so none of them changes
 
 #### Scenario: A control smaller than 48 dp
 - **WHEN** the touch-target audit, at 360 and 411 dp wide and at 100% and 200% font, finds a clickable control under its bar
   on a page
-- **THEN** either its touch area grows with no visual change and is measured again, or the page is left out of the bounds
-  part, listed in `design.md` and D193, and #255 stays open for that page
+- **THEN** either its own node grows to its bar with no visual change and is measured again, or the page is left out of
+  the bounds part, listed in `design.md` and D193, and a follow-up issue is filed for it at close-out
 
 #### Scenario: History calendar days at 360 dp
 - **WHEN** History's month calendar is shown 360 dp wide at 200% font, where a day cell is about 41.7 dp with 6 dp gaps
-- **THEN** each day's touch area covers its whole cell pitch, a tap in a gap still opens the nearer day, and the drawn cell,
-  its clip and its focus ring stay as before
+- **THEN** each day's click, focus and semantics sit on a slot of its whole cell pitch (47 to 48 dp), a tap in a gap opens
+  the nearer day, and the drawn cell, its clip and its keyboard focus ring are identical to the pixel
 
-#### Scenario: A Material picker below 48 dp
-- **WHEN** any control in the date or time picker measures under 48 dp under exact bounds
-- **THEN** that picker stays out of the bounds part, keeps the scroll step, is recorded in D193, and #255 stays open there
+#### Scenario: The Material pickers stay out
+- **WHEN** the date picker, the date-time picker or Reminders' time dialog is open, whose mode toggle, month arrows,
+  month/year button, AM/PM and time-step Cancel and OK are 40 dp tall
+- **THEN** it is outside exact bounds and keeps the half step, D193 records it as a residual, and a follow-up issue is
+  filed for these pickers at close-out
 
 #### Scenario: Attack mode's secondary buttons
 - **WHEN** the audit measures Details, the move-start options and the long-check buttons in attack mode
@@ -180,9 +199,9 @@ bottom bars and dialog buttons SHALL stay outside it, with the system's touch ta
 - **THEN** that test fails
 
 ### Requirement: One entry point for every vertical scroll
-Every vertical scroll in the app's main code SHALL go through one `designsystem` entry point that applies both parts, so no
-screen keeps its own copy. A raw `verticalScroll(` in main code outside that entry point SHALL fail a check in the gate
-(BRD EC-UX-84, D193 (1), (3)).
+Every vertical scroll in the app's main code SHALL go through one `designsystem` entry point that applies both parts, or
+the step alone for a picker left out of exact bounds, so no screen keeps its own copy. A raw `verticalScroll(` in main code
+outside that entry point SHALL fail a check in the gate (BRD EC-UX-84, D193 (1), (3), (4)).
 
 #### Scenario: A new scrolling screen
 - **WHEN** a build adds `Modifier.verticalScroll(...)` directly in a feature's main code

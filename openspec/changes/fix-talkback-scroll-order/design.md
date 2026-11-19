@@ -73,10 +73,16 @@ Inside the scroll content, provide `LocalViewConfiguration` as a delegate of the
 `minimumTouchTargetSize = DpSize.Zero`. Every other member delegates (`doubleTapTimeoutMillis`, `longPressTimeoutMillis`,
 `touchSlop`, `doubleTapMinTimeMillis`, handwriting members), so the double-tap and lift rules (D161 family) and
 `ScreenDestination`'s double-tap timeout read the same values. Material3's `minimumInteractiveComponentSize` reads
-`LocalMinimumInteractiveComponentSize`, not this, so Material controls keep their 48 dp layout size.
+`LocalMinimumInteractiveComponentSize`, not this, so Material controls keep their 48 dp **layout** size. That holds for
+layout, not for touch (correction from task 3.1): a Material3 `IconButton` reserves 48 dp but its clickable node is 40 dp,
+and the 4 dp ring was touchable only through this widening. Under D2 a tap there misses.
 
 Effect beyond accessibility: Compose's pointer hit-test also uses `minimumTouchTargetSize` to extend small pointer-input
-nodes. Inside the page a clickable smaller than 48 dp would lose that extension. Hence D5.
+nodes. Inside the page a clickable smaller than 48 dp would lose that extension. Hence D5 and its option-1 rule.
+
+As built (task 2.3): `designsystem/layout/PageScroll.kt`, `PageScroll { Column(Modifier….pageScroll(state)) { … } }`. The
+provider wraps the scrolling layout itself (Compose widens the clip in that layout node's own `rectInParent`), still never
+the top bar, message host or dialog buttons (D4a).
 
 ### D3. TalkBack's scroll step (fixes A): floor(V/2) px (ux 1.1, lead decision 1)
 
@@ -137,14 +143,46 @@ message's Undo and Dismiss (attack-mode spec). Results go in `tasks.md` (task 3)
 | # | Where | Rule |
 |---|---|---|
 | T1 | History month calendar day cells, `designsystem/.../sky/MonthSkyCalendar.kt:320-345` (`clickable` at 338, `CellSpacing` 6 dp), inside History's scroll | At 360 dp wide a cell is about 41.7 dp with 6 dp gaps; today Compose's widening covers the gaps, under D2 a tap in a gap would hit nothing. Measure at 360 dp wide and 200%. If under 48 dp: a touch area covering the whole cell pitch (cell plus half the gap on each side, about 47.7 dp; seven 48 dp targets cannot fit 328 dp, so the pitch is today's real target). The drawn cell, its clip and its focus ring stay; screenshots identical. History is not left out. |
-| T2 | Date picker, `MigrelyDatePicker.kt:151`, `MigrelyDateTimePicker.kt:147` (Material3 `DatePicker`) | If any control measures under 48 dp under D2, that picker stays out of D2 (keeps D3), D193 records it, #255 stays open there. Touch wins: the picker has a text-entry mode for TalkBack users, a tremor has no other path. |
+| T2 | Date picker, `MigrelyDatePicker.kt:151`, `MigrelyDateTimePicker.kt:147` (Material3 `DatePicker`) | If any control measures under 48 dp under D2, that picker stays out of D2 (keeps D3) and D193 records it; result below: a residual with a follow-up issue. Touch wins: the picker has a text-entry mode for TalkBack users, a tremor has no other path. |
 | T3 | Time picker, `MigrelyDateTimePicker.kt:189`, Reminders dialog `RemindersScreen.kt:589` (Material3 `TimePicker`) | As T2. |
 | T4 | Attack mode, `AttackModeContents.kt:132, 170, 194` | No change: the 64 dp controls are a layout minimum D2 cannot shrink; Details, move-start and long-check buttons are 48 dp by design (D24) and pass at 48 dp. They are not enlarged and attack mode is not left out. |
 
-Everything else: any control under its bar either gets a touch area of its bar with no visual change, measured again with
-the screenshot unchanged, or its page is left out of D2, listed below, and recorded in D193; #255 stays open there.
+**Option-1 rule (team-lead 2026-11-19).** Inside D2 every clickable, toggleable or selectable node is itself at least
+48×48 dp (64 dp where attack mode's bar applies), from its own size, never from `ViewConfiguration` widening. Nothing drawn
+changes.
 
-Pages left out of D2: none yet (T2 and T3 decided by measurement in task 3).
+- **Icon buttons:** `designsystem/button/MigrelyIconButton`: a 48 dp clickable node with Material's 40 dp circle,
+  container, icon and ripple drawn inside it; presses are shifted by the 4 dp inset so the ripple starts under the finger.
+  Used by the 9 in-page icon buttons: Attack details' intake and pain-entry Close, History's month chevrons, Today's
+  Settings, a medication row's Close, the effect question's Skip, the visit card's and the trial banner's Close.
+  `MigrelyIconButtonTest`: a tap 2 dp outside the 40 dp circle inside a page acts (Material's misses); at rest and disabled
+  0 pixels differ from Material's. Pressed pixels: instrumented `MigrelyIconButtonPressedTest` (Robolectric draws no
+  ripple), run in the device round (6.4).
+- **Stay Material, outside D2:** top-bar Back and actions, the Paywall's close row above its scroll, the message host.
+- **Checkboxes, switches, radio buttons:** each passes a null handler; the row is the toggleable or selectable node, 48 dp
+  or more. No change.
+- **Audit result (3.1):** 48 tests in 11 `ui` modules at 360 and 411 dp wide, 100% and 200%, plus 800×360 dp landscape for
+  home and history; 31 screens and cards; every control at its bar (smallest 48.0 dp; attack mode's 64 dp controls 64;
+  History's days 47–48 dp, T1). Table `migrely-work/255b/touch-targets.md` (127 rows).
+
+**T1 as built (3.2).** Each History day's click, focus and semantics sit on a slot of the whole cell pitch (the 41.7 dp cell
+plus 3 dp, half the gap, on each side: 47–48 dp at 360 dp); the drawn cell (clip, sky, rings, keyboard focus ring, ripple)
+is inside it and the weeks are laid out 3 dp out, so each cell is drawn where it was. Pixels at 360 and 411 dp, 100% and
+200%: byte-identical (control: without the outset all four differ). `MonthSkyCalendarPitchTest`: taps 1 dp into each gap,
+red before (`[]`), green after (`[1, 2, 1, 8]`).
+
+**T2 and T3 result (3.3): residual.** The Material date picker, the date-time picker and Reminders' time dialog have 40 dp
+tall controls: the mode toggle and month arrows (40×40), the month/year button (193×40), AM/PM (52×40) and the time step's
+Cancel and OK. They stay out of D2 and keep D3's half step (the entry point has a step-only form). D193 records it; at
+close-out `qa-engineer` files a follow-up issue for these pickers and #255 closes on the rest. `PickerTouchTargetAuditTest`
+turns red if Material's controls ever reach 48 dp, the cue to bring them into D2.
+
+**TalkBack's focus outline (intended, team-lead).** It follows the node: 48 dp square for in-page icon buttons (was the 40
+dp circle) and the whole pitch for History days (was the drawn cell). It now shows the true touch area, is drawn by
+TalkBack, and shows only while focused. "Nothing drawn changes" (D193 (2)) means the resting and pressed UI. QA sees it in
+8.2.
+
+Pages left out of D2: `MigrelyDatePicker.kt:151`, `MigrelyDateTimePicker.kt:147, 189`, `RemindersScreen.kt:589`.
 
 ### D6. Guards (team-lead): must stay green unchanged
 
@@ -195,10 +233,10 @@ Pages left out of D2: none yet (T2 and T3 decided by measurement in task 3).
 | G5 | `features/insights/ui` | `InsightsScreen.kt:155` | Premium |
 | G5 | `features/report/ui` | `ReportScreen.kt:288` | Premium |
 | G5 | `features/backup/ui` | `YourDataScreen.kt:304`; dialogs `:390`, `:438` | dialogs |
-| G5 | `features/reminders/ui` | `RemindersScreen.kt:357`; dialog `:589` | dialog |
+| G5 | `features/reminders/ui` | `RemindersScreen.kt:357`; dialog `:589` | dialog `:589` (time picker): step only, out of D2 (D5) |
 | G5 | `features/subscription/ui` | `PaywallScreen.kt:269` | |
 | G5 | `features/onboarding/ui` | `OnboardingScreen.kt:180` | |
-| G6 | `designsystem/picker` | `MigrelyDatePicker.kt:151`, `MigrelyDateTimePicker.kt:147, 189` | dialogs |
+| G6 | `designsystem/picker` | `MigrelyDatePicker.kt:151`, `MigrelyDateTimePicker.kt:147, 189` | dialogs; step only, out of D2 (D5) |
 
 23 page sites, 6 dialog sites, 29 in all. Line numbers are from f70b6450; the source check is the authority.
 

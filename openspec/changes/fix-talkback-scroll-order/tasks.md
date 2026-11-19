@@ -7,11 +7,11 @@ EC-UX-78 to EC-UX-84, §13 row 57. Root cause: `migrely-work/255/eng-255-report.
 D8).
 
 Ownership:
-- `product-manager`: 0 (done) and 9;
+- `product-manager`: 0 (done) and 9.2;
 - `ux-designer`: 1, before any code in 2 to 4;
 - `android-engineer`: 2 to 6;
 - `code-reviewer`: 7;
-- `qa-engineer`: 8 (emulator-5580 API 36, then emulator-5582 API 26, one at a time).
+- `qa-engineer`: 8 and 9.1 (emulator-5580 API 36, then emulator-5582 API 26, one at a time).
 
 No `medical-reviewer`: no string and no health sentence changes. Every test is written first and shown red on `develop`
 f70b6450 (or on this branch before the fix), then green; each mutation must turn its test red again. Logs go to
@@ -162,6 +162,8 @@ D3 to D5.
   `product-manager` records it in D193, #255 stays open there. T4: attack mode's 64 dp controls measure 64 in
   landscape (in portrait they sit outside the scroll); its Details button is 48 dp or more. If Material's controls
   ever reach 48 dp the picker test turns red.
+  PM (team-lead 2026-11-19): recorded in D193 (4) and design D5 as a residual; instead of #255 staying open there, QA
+  files a follow-up issue for the pickers at close-out (9.1) and #255 closes on the rest.
 
 ## 4. Screens, red first per group (`android-engineer`, `ui` modules)
 
@@ -205,7 +207,11 @@ does; each such stop passes the D181 one-name check (heard once, visible words i
   Verify: `6.2-*.txt`, each reaching both ends with no repeat.
 - [ ] 6.3 Hardware keyboard Tab and Shift+Tab on Attack details and one dialog: order unchanged, every stop in view. Verify:
   `6.3-*.txt`.
-- [ ] 6.4 Restore font scale, rotation, `wm size`, density, animator scales, TalkBack and keyboard. Verify: settings read
+- [ ] 6.4 Pressed-state pixels of `MigrelyIconButton` against Material's (Robolectric draws no ripple). Verify:
+  `ANDROID_SERIAL=emulator-5570 nice -n 19 ./gradlew --max-workers=2 :designsystem:connectedDebugAndroidTest
+  -Pandroid.testInstrumentationRunnerArguments.class=com.migrely.app.designsystem.button.MigrelyIconButtonPressedTest`
+  → BUILD SUCCESSFUL, 0 failed; log `6.4-pressed.log`.
+- [ ] 6.5 Restore font scale, rotation, `wm size`, density, animator scales, TalkBack and keyboard. Verify: settings read
   back. Never take a `uiautomator dump` during a TalkBack walk (it resets focus).
 
 ## 7. Review (`code-reviewer`)
@@ -221,7 +227,9 @@ does; each such stop passes the D181 one-name check (heard once, visible words i
 - [ ] 8.2 Candidate: the 8.1 walks reach both ends with every stop once and named; one walk per other page and dialog;
   API 26 at 360 and 411 dp; RTL; Remove animations; a message showing; dark room attack mode; rotation and process death mid
   walk; Switch Access scan and scroll; Tab; a chip cut at the top and at the bottom edge says its name on the
-  candidate and only its state on `develop`. Verify: `docs/qa/fix-talkback-scroll-order.md` with each row, and what it does
+  candidate and only its state on `develop`; known, intended change: TalkBack's focus outline is the 48 dp node on in-page
+  icon buttons and the whole pitch on History days (was the 40 dp circle and the drawn cell), not a defect; the pickers and
+  Reminders' time dialog are a recorded residual (design D5), walked for the half step only. Verify: `docs/qa/fix-talkback-scroll-order.md` with each row, and what it does
   not prove.
 - [ ] 8.3 Guards on the candidate: #238 KR rows, #245 SW rows that touch TalkBack (SW5, SW9), #239 V1. Verify: same file.
 - [ ] 8.4 Maestro after names move to content descriptions (option 3 and any stop from the sweep): run the flows that select
@@ -232,6 +240,10 @@ does; each such stop passes the D181 one-name check (heard once, visible words i
 
 ## 9. Close-out (`product-manager`)
 
-- [ ] 9.1 D193 result line (QA verdict, pages left out if any, what stays unproven), spec sync and archive of
-  `fix-talkback-scroll-order`. Verify: `openspec validate --all --strict` exit 0 after archive; `openspec list` shows no
-  active change.
+- [ ] 9.1 (`qa-engineer`) File a follow-up issue for the residual: the Material date picker, the date-time picker and
+  Reminders' time dialog stay out of exact bounds (40 dp controls: mode toggle, month arrows, month/year button, AM/PM,
+  time-step Cancel and OK), so cause B can still reach them. #255 is then closed by QA on the rest after the retest.
+  Verify: `gh issue view <new>` shows the pickers, the measured sizes and a link to #255; `gh issue view 255` closed by QA.
+- [ ] 9.2 (`product-manager`) D193 result line (QA verdict, the picker residual with its follow-up issue number, what stays
+  unproven), spec sync and archive of `fix-talkback-scroll-order`. Verify: `openspec validate --all --strict` exit 0 after
+  archive; `openspec list` shows no active change.
