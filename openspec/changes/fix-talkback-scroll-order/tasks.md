@@ -224,10 +224,13 @@ does; each such stop passes the D181 one-name check (heard once, visible words i
 
 ## 5. Gate (`android-engineer`)
 
-- [ ] 5.1 Full gate. Verify: `set -o pipefail; nice -n 19 ./gradlew --max-workers=2 assembleDebug test ktlintCheck detekt
+- [x] 5.1 Full gate. Verify: `set -o pipefail; nice -n 19 ./gradlew --max-workers=2 assembleDebug test ktlintCheck detekt
   lint` → BUILD SUCCESSFUL, exit 0; test counts in `5.1-gate.log`.
-- [ ] 5.2 No permission, manifest or string change. Verify: `./gradlew :app:checkReleasePermissions` exit 0 and `git diff
+  Result (e8055704): exit 0, BUILD SUCCESSFUL in 6m 38s; 3,589 tests, 0 failed, 0 skipped, in 566 result files
+  (`migrely-work/255b/5.1-gate.log`).
+- [x] 5.2 No permission, manifest or string change. Verify: `./gradlew :app:checkReleasePermissions` exit 0 and `git diff
   origin/develop --stat -- '*AndroidManifest.xml' '*strings.xml'` empty.
+  Result: `:app:checkReleasePermissions` exit 0; the diff is empty (0 lines).
 
 ## 6. Device walks (`android-engineer`, emulator-5570, TalkBack VERBOSE, console swipes)
 
