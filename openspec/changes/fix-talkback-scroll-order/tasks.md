@@ -107,7 +107,7 @@ D3 to D5.
 
 ## 3. Touch-target audit (`android-engineer`, before D2 lands on each page)
 
-- [ ] 3.1 For every page and dialog in design D8, a test measures each clickable node's touch bounds, width and height, at
+- [x] 3.1 For every page and dialog in design D8, a test measures each clickable node's touch bounds, width and height, at
   360 and 411 dp wide and at 100% and 200% font, against its bar (48 dp; 64 dp for attack mode's intensity choices,
   "Migraine ended", a message's Undo and Dismiss). Verify: a table in `migrely-work/255/eng/touch-targets.md` (site,
   controls, smallest size) and the test names; summary line here.
@@ -129,13 +129,39 @@ D3 to D5.
   not show at rest (transparent container), and Robolectric draws no platform ripple (Material's own pressed button
   equals its resting one), so the pressed comparison is the instrumented `MigrelyIconButtonPressedTest` (compiles; to
   run on emulator-5570 in the device round). TalkBack's focus outline follows the node: 48 dp square, was 40 dp.
-- [ ] 3.2 T1 History calendar days (`MonthSkyCalendar.kt:320-345`) at 360 dp wide, 200% font: if a cell is under 48 dp, a
+  The 9 in-page icon buttons use it (Attack details' intake and pain-entry Close, History's month chevrons, Today's
+  Settings, a medication row's Close, the effect question's Skip, the visit card's and trial banner's Close); top-bar
+  ones, the Paywall's close row above its scroll and the message host stay Material. Checkboxes, switches, radios:
+  each passes `null` as its own handler, the row is the toggleable or selectable node, so no change (rule 2).
+  **Result 3.1:** `auditTouchTargets` fixture; one `*TouchTargetAuditTest` per ui module (attack, home, medication,
+  settings, history, report, backup, reminders, subscription, onboarding, insights) at 360 and 411 dp, 100% and 200%,
+  plus landscape 800×360 dp for home and history (two-pane sites): 48 tests, 0 failed; 31 screens and cards, every
+  control at its bar (smallest 48.0 dp; attack mode's 64 dp controls at 64; History's day cells 47-48 dp, T1). Table
+  `migrely-work/255b/touch-targets.md` (127 rows). Your data's two dialogs scroll text only; Warning signs, About,
+  Licences have no control in the page. With the full ui suites: every module green except the 7 known red attack
+  tests (4.1).
+- [x] 3.2 T1 History calendar days (`MonthSkyCalendar.kt:320-345`) at 360 dp wide, 200% font: if a cell is under 48 dp, a
   touch area covering the whole cell pitch, drawn cell, clip and focus ring unchanged. Verify: a test that a tap in the 6 dp
   gap opens the nearer day under D2 (red with D2 and no pitch area), and the History screenshot identical.
-- [ ] 3.3 T2 and T3 Material pickers (`MigrelyDatePicker.kt:151`, `MigrelyDateTimePicker.kt:147, 189`,
+  Result: at 360 dp a cell is 41.7 dp. The day's clickable, focus and semantics now sit on a slot of the whole pitch
+  (cell plus 3 dp, half the gap, on each side); the drawn cell (clip, sky, rings, focus ring, ripple from
+  `LocalIndication`, presses moved by the inset) is inside it, and the weeks are laid out 3 dp out on every side so
+  each cell is drawn where it was. `MonthSkyCalendarPitchTest`: inside `PageScroll`, taps 1 dp into the gap on each
+  side of day 1, across and down, red before (clicked `[]`), green after (`[1, 2, 1, 8]`). Pixels of the window at 360
+  and 411 dp, 100% and 200%, with the chosen, today, period and focus rings: byte-identical before and after
+  (`3.2-before/`); control: without the 3 dp outset all four differ. TalkBack's outline for a day is the pitch.
+- [x] 3.3 T2 and T3 Material pickers (`MigrelyDatePicker.kt:151`, `MigrelyDateTimePicker.kt:147, 189`,
   `RemindersScreen.kt:589`): if any control is under 48 dp under D2, that picker stays out of D2 (keeps D3); tell
   `product-manager` to record it in D193 (#255 stays open there). T4 attack mode: no change; the 48 dp secondary buttons
   pass. Verify: the 3.1 table rows for T2 to T4 and the decision written here.
+  Result (`PickerTouchTargetAuditTest`, 4 sizes): the date picker and the date-time picker's date step have the mode
+  toggle and month arrows at 40×40 dp and the month/year button at 193×40; the time step has AM/PM at 52×40 and its
+  Cancel/OK (inside its scroll) 40 dp tall; day cells and clock numbers are 48. **Decision: T2 and T3 apply** —
+  `MigrelyDatePicker.kt:151`, `MigrelyDateTimePicker.kt:147, 189` and Reminders' time dialog (`RemindersScreen.kt:589`,
+  same Material `TimePicker`) stay out of D2 and keep D3 (for 4.6: the entry point needs a step-only form);
+  `product-manager` records it in D193, #255 stays open there. T4: attack mode's 64 dp controls measure 64 in
+  landscape (in portrait they sit outside the scroll); its Details button is 48 dp or more. If Material's controls
+  ever reach 48 dp the picker test turns red.
 
 ## 4. Screens, red first per group (`android-engineer`, `ui` modules)
 
