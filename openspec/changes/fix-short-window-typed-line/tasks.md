@@ -230,18 +230,29 @@ by hand in Robolectric, as `KeyboardRoomTest` does.
 
 ## 7. Acceptance (`qa-engineer`, this diff only)
 
-- [ ] 7.1 SW1 to SW13 (ux section 7) and K1, K2 (design "Acceptance") on the PR head, with v1.3.1 as the negative control (SW1:
+- [x] 7.1 SW1 to SW13 (ux section 7) and K1, K2 (design "Acceptance") on the PR head, with v1.3.1 as the negative control (SW1:
   40 of 112 px; SW2 Edit and Log name: 68 of 112 px; dose and Delete all data measured on v1.3.1 first), the mutations named
   there, SW4 as an API 26 guard, SW13 only if 2.0 was red. APK hashes read back on the device. Verify: a QA record
   `docs/qa/fix-short-window-typed-line.md` with each row, build SHA, result and control result; an unreachable cell is "not
   reachable", never a pass.
-- [ ] 7.2 Restore every device setting. Verify: the settings read back in the QA record.
+  Done: `docs/qa/fix-short-window-typed-line.md` (qa-245, d7ba2b96, merged as 80d771e7): GO with recorded limits on
+  01e301fc, no open S1 or S2; F1 red on the device (R2 live); not run: SW10, SW12 RTL and hardware keyboard; #254, #255 filed.
+- [x] 7.2 Restore every device setting. Verify: the settings read back in the QA record.
+  Done: the record's "Restore (task 7.2)": emulator-5580 `settings_snapshot` `changed: {}`, TalkBack log ERROR read back;
+  emulator-5582 font, rotation, `wm size`, `show_ime_with_hard_keyboard` 0 as found; both off.
 
 ## 8. Close (`product-manager`, then `android-engineer`)
 
-- [ ] 8.1 Before archive: diff this change's MODIFIED "The window does not pan for the keyboard" and "Closing the keyboard never
+- [x] 8.1 Before archive: diff this change's MODIFIED "The window does not pan for the keyboard" and "Closing the keyboard never
   moves the page" against the live `openspec/specs/app-shell/spec.md`; sync if another change rewrote them since 2026-11-18.
   Verify: the diff shows only this change's body edits and the two rewritten scenarios.
+  Done 2026-11-19: the live `openspec/specs/app-shell/spec.md` was last changed by 0f1e6bba (T74), before the plan
+  8ed06eeb; #237 (44232d77) and #239 (4064dad6) touched only `in-app-messages`, `medication-intakes` and
+  `medication-list`, which this change does not touch. Each requirement extracted from both files and diffed: only this
+  change's body edits and the two rewritten scenarios ("The tightest window", "200% font in portrait and landscape").
+  Two drifts in this delta fixed: "Closing the keyboard never moves the page" had lost "otherwise none" and
+  "D189 (1), (7)" (put back, body 499 characters); "TalkBack with the keyboard open" now says Back is out of the tree
+  while the bar is aside (R11, QA's SW9), so the two requirements no longer contradict.
 - [ ] 8.2 BRD D192 updated with QA's results (what was proved, what stays open, the R2 outcome), then archive. Verify:
   `openspec archive fix-short-window-typed-line --yes` and `openspec validate --all --strict` exit 0.
 - [ ] 8.3 PR into `develop` with `Refs #245`, merge commit, worktree removed after merge, tracker T75 updated by `team-lead`.

@@ -198,6 +198,8 @@ shows"). Nothing SHALL draw under the status bar (BRD EC-UX-40, D180, D192).
 - **WHEN** TalkBack is on and the keyboard is open on the note
 - **THEN** swiping back from the note reaches the content above it, then the message if one shows, then Back, and activating
   Back leaves the screen
+- **AND** where the top bar has stepped aside, Back is not in the tree until the keyboard closes (requirement "An aside top
+  bar is gone for assistive technology and messages"); the system Back gesture still closes the keyboard first
 
 #### Scenario: The merged manifest
 - **WHEN** the debug and the release build are assembled
@@ -211,9 +213,9 @@ shows"). Nothing SHALL draw under the status bar (BRD EC-UX-40, D180, D192).
 
 ### Requirement: Closing the keyboard never moves the page
 On Attack details (note), Edit medication (name, dose), Log medication (name) and Delete all data (the word), when the keyboard
-closes or gets shorter, the scroll position SHALL stay the same to the pixel, on every API level and animation setting.
-If less than the visible part's growth lies below it, room of the difference SHALL appear after the last item. A top bar that
-was aside SHALL return and move the page down by its height, with no scroll (BRD EC-UX-61, EC-UX-65, EC-UX-75, D189, D192).
+closes or shrinks, the scroll position SHALL stay the same to the pixel on any API level and animation setting. If less
+than the visible part's growth lies below, room of the difference SHALL appear after the last item; otherwise none. An aside
+top bar SHALL return and lower the page by its height, with no scroll (BRD EC-UX-61, EC-UX-65, EC-UX-75, D189 (1), (7), D192).
 
 #### Scenario: Near the end on each screen
 - **WHEN** a field is focused near the page's end (less than a keyboard's height of content below the visible part) on any of
