@@ -61,7 +61,7 @@ D3 to D5.
   not mistaken for a name check. `setNavigationBar` moved there too. `SpokenNameReadTest`: 2 tests, 0 failures (whole chip
   "Nausea"; chip cut 8 dp above its text: new read "", merged "Nausea"). Attack TalkBack tests: 8 completed, 7 failed with
   the same named steps as 2.0 and 2.1 (`2.2-summary.txt`).
-- [ ] 2.3 The entry point (D1) with exact bounds (D2, scroll content only, D4a) and the step floor(V/2) px (D3).
+- [x] 2.3 The entry point (D1) with exact bounds (D2, scroll content only, D4a) and the step floor(V/2) px (D3).
   `ViewConfiguration` delegate: only `minimumTouchTargetSize` changes. Verify: a `designsystem` test that (a) a node 1 to 24
   dp below the visible edge with a bottom inset is absent from the tree, (b) one accessibility scroll moves floor(V/2) px
   within 1 px, also with an inset inside the scroll content (V = what shows, not `viewportSize`), (c)
@@ -69,6 +69,16 @@ D3 to D5.
   reads 48 dp in a top bar, a message host and dialog buttons beside the scroll and 0 inside it. Red first. Mutations: no D2
   → (a) red; no D3 or `viewportSize / 2` → (b) red; a non-delegating configuration → (c) red; D2 around the whole screen →
   (d) red.
+  Result: `designsystem/layout/PageScroll.kt`: `PageScroll { Column(Modifier….pageScroll(state)) { … } }`. The
+  provider wraps the scrolling layout itself, not only its children: Compose widens the clip in the clipping
+  coordinator's `rectInParent`, which reads that layout node's own configuration. `pageScroll` exists only in the
+  scope, so a page cannot get the step without exact bounds. V = the viewport's `boundsInRoot` less
+  `MigrelyInsets.barsAndKeyboard` over it, read when TalkBack scrolls. `PageScrollTest` red on a stub (7 tests, 6
+  failed: hidden items [1, 12, 23] dp in the tree, moved 867 and 891 px for 433, minimum target 48 inside), green
+  after (7, 0). Mutations, each red: no D2 → 4 failed (a, c, d); no D3 → 2 failed (b both); step from the viewport
+  (`viewportSize / 2`) → 1 failed (moved 445 for 433); non-delegating configuration → 1 failed (c); D2 around the
+  whole sample screen → 1 failed (d). `:designsystem:testDebugUnitTest` 273 tests, 0 failed (KeyboardRoomTest 9,
+  TopBarAsideTest 13, TypedLineMarginsTest 5 unchanged). Logs `2.3-*.log`, `mut-2.3-*.txt`.
 - [ ] 2.4 Source check (D1): fails on `verticalScroll(` in `src/main` outside `designsystem`'s entry point, naming file and
   line. Verify: red now with 29 sites listed (design D8); green at the end of 4; negative control: a scratch raw call turns it
   red again. Log `2.4-*.log`.
