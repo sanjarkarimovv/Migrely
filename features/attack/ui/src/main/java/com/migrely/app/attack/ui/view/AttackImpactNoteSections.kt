@@ -116,7 +116,6 @@ internal fun NoteSection(
         opensAtEnd = true,
         onTextChange = onDraftChange
     )
-    // The counter is said from the field's own node, so an edge that cuts it off the field still leaves it (#255).
     val counter = stringResource(R.string.note_counter, text.length)
     Column {
         SectionTitle(stringResource(R.string.section_note))
@@ -128,14 +127,11 @@ internal fun NoteSection(
             supportingText = {
                 Text(
                     text = counter,
-                    style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
-                    modifier = Modifier.wordsShownOnly()
+                    style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum")
                 )
             },
             minLines = 3,
-            modifier = Modifier
-                .fillMaxWidth()
-                .semantics { stateDescription = counter }
+            modifier = Modifier.fillMaxWidth()
         )
     }
 }

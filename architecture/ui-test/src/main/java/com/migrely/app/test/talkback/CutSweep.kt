@@ -4,6 +4,7 @@ import androidx.activity.ComponentActivity
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.junit4.AndroidComposeTestRule
@@ -96,13 +97,30 @@ private class Sweep<A : ComponentActivity>(
         }
     }
 
-    /** The stop's name as TalkBack builds it, or null when it is not in the tree. */
+    /**
+     * The stop's name as TalkBack builds it, or null when it is not in the tree. A text field's name is its own: its
+     * label (on its node) and its text. Its supporting line under it (a counter) is only extra, so it may go with the part
+     * an edge cuts off, as anything out of view does; TalkBack does not speak a field's state description, so the line
+     * stays a child (#255, device walk 6.1).
+     */
     private fun spokenName(id: Int): String? {
         val node = rule.unmergedNodes()[id] ?: return null
         var name: String? = null
         rule.runOnUiThread {
             val tree = TalkBackTree(rule.activity)
-            if (tree.node(id) != null) name = tree.spokenName(node)
+            if (tree.node(id) != null) {
+                val parts = tree.spokenParts(node)
+                name = if (node.config.contains(SemanticsProperties.EditableText)) {
+                    listOfNotNull(
+                        node.config.getOrNull(
+                            SemanticsProperties.ContentDescription
+                        )?.joinToString(" "),
+                        node.config[SemanticsProperties.EditableText].text
+                    ).filter { it.isNotBlank() }.joinToString(" ")
+                } else {
+                    parts.joinToString(" ")
+                }
+            }
         }
         return name
     }

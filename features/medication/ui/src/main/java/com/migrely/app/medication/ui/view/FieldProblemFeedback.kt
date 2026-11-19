@@ -76,17 +76,12 @@ internal fun Modifier.problemSemantics(problem: String?): Modifier =
  * ("Name, edit box, error: Enter a name."), so its visible line is not read a second time (ux F6).
  */
 
-/** The field's counter on its own node while no problem shows under it (#255). */
-internal fun Modifier.counterSemantics(problem: String?, counter: String): Modifier =
-    semantics { if (problem == null) stateDescription = counter }
-
 @Composable
 internal fun FieldSupportingLine(problem: String?, counter: String) {
     if (problem != null) {
         Text(problem, Modifier.clearAndSetSemantics { })
     } else {
-        // Said from the field's own node ([counterSemantics]), so an edge that cuts this line off leaves it (#255).
-        Text(counter, Modifier.wordsShownOnly())
+        Text(counter)
     }
 }
 

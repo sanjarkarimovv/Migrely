@@ -625,7 +625,6 @@ private fun FirstMedicationForm(
                 .then(nameField.modifier)
                 .problemSemantics(nameText)
                 .ownWords(stringResource(R.string.edit_name))
-                .counterSemantics(nameText, nameCounter)
                 .fillMaxWidth()
         )
     }
