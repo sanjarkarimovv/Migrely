@@ -24,6 +24,9 @@ import org.robolectric.annotation.GraphicsMode
 // A keyboard short enough for a landscape phone at 200 percent to keep some page above it.
 private const val LANDSCAPE_KEYBOARD_DP = 150
 
+// A gesture navigation bar: on the device (2.625 density) the page's visible part ended 63 px above the window.
+private const val NAVIGATION_BAR_DP = 24
+
 // Fewer items than this in TalkBack's order means it did not reach the page: the top bar alone has three.
 private const val MINIMUM_STOPS = 4
 
@@ -42,7 +45,7 @@ class AttackDetailsTalkBackOrderTest {
     @get:Rule
     val rule = createAndroidComposeRule<ComponentActivity>()
 
-    private fun show(fontScale: Float, keyboardDp: Int) {
+    private fun show(fontScale: Float, keyboardDp: Int, navigationBarDp: Int = 0) {
         rule.runOnUiThread {
             rule.activity.drawEdgeToEdge()
             rule.activity.turnOnTalkBack()
@@ -66,7 +69,13 @@ class AttackDetailsTalkBackOrderTest {
                 }
             }
         }
-        rule.runOnUiThread { rule.activity.setKeyboard(keyboardDp) }
+        rule.runOnUiThread {
+            if (navigationBarDp > 0) {
+                rule.activity.setNavigationBar(navigationBarDp)
+            } else {
+                rule.activity.setKeyboard(keyboardDp)
+            }
+        }
         rule.waitForIdle()
     }
 
@@ -144,6 +153,13 @@ class AttackDetailsTalkBackOrderTest {
     @Config(sdk = [35], qualifiers = "w411dp-h891dp")
     fun `Portrait at 100 percent, no keyboard, TalkBack's order runs down the page`() {
         show(fontScale = 1f, keyboardDp = 0)
+        assertEquals(emptyMap<Int, List<String>>(), wrongStepsDownThePage())
+    }
+
+    @Test
+    @Config(sdk = [35], qualifiers = "w411dp-h891dp")
+    fun `Portrait at 100 percent, navigation bar, no keyboard, the order runs down the page`() {
+        show(fontScale = 1f, keyboardDp = 0, navigationBarDp = NAVIGATION_BAR_DP)
         assertEquals(emptyMap<Int, List<String>>(), wrongStepsDownThePage())
     }
 }

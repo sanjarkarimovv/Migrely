@@ -45,8 +45,10 @@ D3 to D5.
   Result (eng-255b, 81323590): 7 tests completed, 6 failed; "no keyboard, order" passes; the 6 name their wrong step
   (e.g. "Back of the head -> Change when it ended", "Aura left the screen"). Logs are in `migrely-work/255b/` (`255/eng`
   links there): `2.0-red.log`, `2.0-red-summary.txt`.
-- [ ] 2.1 Navigation-bar case (design D7): an order test with a bottom system-bar inset so the visible part ends above the
+- [x] 2.1 Navigation-bar case (design D7): an order test with a bottom system-bar inset so the visible part ends above the
   window (as `walk-b1`). Verify: red on this branch before the fix, log `2.1-red.log`.
+  Result: `Portrait at 100 percent, navigation bar, no keyboard, the order runs down the page` (24 dp bar) red, 4 order
+  tests completed, 3 failed; wrong steps such as "Add your own symptom -> Pain" (`2.1-red-summary.txt`).
 - [ ] 2.2 Shared test fixture: move `TalkBackTree` (order from the traversal data, scroll by the accessibility action, "only N
   items" guard) where every `ui` module's tests can use it, no copies. Replace the merged-semantics `talkBackName()`
   (`TalkBackTree.kt:76`) with an unmerged read as TalkBack builds the name (own text or description, then visible
