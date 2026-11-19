@@ -51,7 +51,7 @@ Goals: every scrolling page and dialog walks end to end, each stop once and name
 changes and no touch target shrinks below 48 dp (EC-UX-82, EC-UX-83); one shared mechanism with a guard against new raw
 scrolls (EC-UX-84); every check can fail.
 
-Non-goals: reporting to Google (owner's send; note only), any visual, text or motion change, new accessibility features,
+Non-goals: blanket naming changes on stops that keep their name when cut; reporting to Google (owner's send; note only), any visual, text or motion change, new accessibility features,
 lazy lists and horizontal scrolls (none exist), #252, #254.
 
 Layers: `designsystem`, then feature `ui` modules. No domain, presentation, data, DI, navigation, manifest or string change.
@@ -78,11 +78,26 @@ Inside the scroll content, provide `LocalViewConfiguration` as a delegate of the
 Effect beyond accessibility: Compose's pointer hit-test also uses `minimumTouchTargetSize` to extend small pointer-input
 nodes. Inside the page a clickable smaller than 48 dp would lose that extension. Hence D5.
 
-### D3. TalkBack's scroll step (fixes A)
+### D3. TalkBack's scroll step (fixes A): floor(V/2) px (ux 1.1, lead decision 1)
 
-On the scroll node, `semantics { getScrollViewportLength { step } }` (public Compose API), where `step` is `ux-designer`'s
-value (D4). Compose's scroll-forward/backward accessibility actions then move by `step`. This is the same action Switch
-Access uses, so its scroll step changes too. Finger scroll, fling, keyboard Tab-into-view and Page Up/Down do not use it.
+On the scroll node, `semantics { getScrollViewportLength { step } }` (public Compose API) with `step = floor(V / 2)` px.
+V is the part of the scroll area actually visible: its height minus anything over it (top bar, message, keyboard,
+navigation bar, a dialog's buttons). Where `viewportSize` already ends at those edges (Attack details: insets, message
+clearance and `TypingSpace` sit before `verticalScroll`), V = `viewportSize`; where a page puts an inset or the keyboard room
+inside its scroll content, V is what shows, not `viewportSize`. Less than one step left: Compose stops at the end, as now.
+
+Compose's scroll-forward/backward actions then move by the step, eased by its spring (instant under Remove animations).
+Switch Access uses the same action, so it needs about twice as many scrolls on a long page (ux accepted the cost: keeping
+the place matters more). Finger scroll, fling, Tab-into-view and Page Up/Down do not use it.
+
+**What the step can promise (ux 1.1).** TalkBack 16 keeps its place only while the focused item stays on screen; after a
+scroll it searches from that item and scrolls again in the same swipe if the next one is not yet in view. A step of V/2
+keeps both on screen whenever the gap g to the next stop is under V/2 (the largest regular gap is the 28 dp section spacing,
+73.5 px at density 2.625). Where g ≥ V/2 (200% landscape, 411 dp, keyboard up on Attack details: V 137 px, step 68 px;
+large non-focusable blocks on Today, Paywall and Onboarding at 200% landscape) the focused item can leave the screen, but
+the next item is in view and TalkBack's fallback still lands on the next item in order. So the spec promises the order in
+every case and "the item stays on screen" only while g < V/2; those scroll tests assert the order, not the pivot. A 61 px
+visible part with a 73.5 px gap (the 360 dp window before #245) cannot be fixed by any step; D192 widens that window.
 
 #### Interaction with #238's keyboard room
 
@@ -90,28 +105,46 @@ D189 says the room goes only with the person's scroll, TalkBack's scroll action 
 shrink in two actions instead of one; it still shrinks only on the person's action. `KeyboardRoomTest`'s TalkBack case is a
 guard and must pass unchanged.
 
-### D4. Open design inputs: `ux-designer` decides before code (tasks 1.1, 1.2)
+### D4. Design inputs, decided (ux note `docs/ux/255-talkback-scroll-order.md`, 91ceda44; lead decisions 2, 3)
 
-1. **Step size.** Proposed: half the visible part (prototype; walks clean). Alternatives: another fraction, or "scroll so
-   the next item is fully in view". Consider Switch Access users (more actions per page) and 200% landscape (visible part
-   61 px in the 360 dp window with the keyboard up).
-2. **Chip name on the chip node (option 3).** The chip's `contentDescription` = its label and the inner Text's semantics
-   cleared, so a chip cut by the edge still says its name. It matches D181 (visible words in order). It changes what Maestro
-   sees (text → content description), so `qa-engineer` checks `.maestro/` selectors. If ux rejects it, ux names another way
-   to meet "Every stop says its name"; if there is none, `product-manager` changes that requirement before code. No other
-   requirement depends on this choice.
+1. **Step:** D3.
+2. **Chip names, option 3: yes, only together with D2.** On `ChoiceChip` (`AttackChoiceSections.kt:204-262`)
+   `contentDescription = spokenLabel ?: label` on the chip's clickable node, inner `Text` semantics cleared (prototype 1's
+   diff; the D181 (2) pattern already used by `PeriodToday` and attack mode's Details and move-start buttons). Compose puts
+   the description on a fake child that always keeps the chip's own clipped bounds, so whenever the chip is a stop its name
+   is too. Without D2 it fails (prototype 1: hidden chips in the 24 dp band had empty bounds); D2 without it leaves a cut
+   chip whose text child is out of the tree (prototype 2, "Back of the head", `walk-q1.txt` line 36). Spoken form, TalkBack
+   16 default verbosity, state first: "Not selected. Nausea", "Selected. Nausea", hint "Double-tap to toggle"; the add chip
+   and a user's own tag are unchanged. This is what a whole chip says today, so nothing new is heard.
+3. **Other stops: data-driven, not blanket (lead decision 3, KISS).** ux proposed that every stop whose name comes only
+   from a child `Text` carry its words on its own node. Not applied across the app. The cut sweep (D7) finds the stops that
+   lose their name when cut at the top or bottom edge; only those get their words on their own node (same string resource,
+   inner `Text` cleared), and each passes the D181 one-name check. A stop that keeps its name is not touched.
 
-### D5. Touch-target audit before D2 lands on a page (team-lead condition)
+### D4a. D2 wraps only the scroll content (ux 1.3, lead decision 5)
 
-Before D2 is applied to a page or dialog, a test measures every clickable node's touch bounds in it (at 100% portrait, the
-smallest default case): each ≥ 48 dp, ≥ 64 dp in attack mode. Results go in `tasks.md` (task 3) and the evidence file.
+The `ViewConfiguration` delegate is provided inside the scroll content only. The top bar, the message host (its 64 dp
+dark-room Undo and Dismiss, D182 (4)), bottom bars and dialog buttons stay outside, with the system's touch target and its
+widening. The prototype wrapped the whole `ReadyContents` box; the real code does not. Checked by a test that reads the
+minimum touch target outside (48 dp) and inside (0) on a changed page; wrapping too wide turns it red.
 
-- All pass: D2 lands.
-- One fails: give it a 48 dp (64 dp) touch area without changing what is drawn (for example
-  `minimumInteractiveComponentSize()` or padding inside its clickable bounds), measure again, and prove the screenshot
-  unchanged; or leave that page out of D2, list it below, and `product-manager` records it in D193. #255 stays open there.
+### D5. Touch-target audit before D2 lands on a page (team-lead condition; ux 1.3, lead decision 4)
 
-Pages left out of D2: none yet.
+Before D2 is applied to a page or dialog, a test measures every clickable node's touch bounds in it, width and height, at
+360 and 411 dp wide, at 100% and 200% font. Bars: 48 dp; 64 dp for attack mode's intensity choices, "Migraine ended" and a
+message's Undo and Dismiss (attack-mode spec). Results go in `tasks.md` (task 3) and the evidence file.
+
+| # | Where | Rule |
+|---|---|---|
+| T1 | History month calendar day cells, `designsystem/.../sky/MonthSkyCalendar.kt:320-345` (`clickable` at 338, `CellSpacing` 6 dp), inside History's scroll | At 360 dp wide a cell is about 41.7 dp with 6 dp gaps; today Compose's widening covers the gaps, under D2 a tap in a gap would hit nothing. Measure at 360 dp wide and 200%. If under 48 dp: a touch area covering the whole cell pitch (cell plus half the gap on each side, about 47.7 dp; seven 48 dp targets cannot fit 328 dp, so the pitch is today's real target). The drawn cell, its clip and its focus ring stay; screenshots identical. History is not left out. |
+| T2 | Date picker, `MigrelyDatePicker.kt:151`, `MigrelyDateTimePicker.kt:147` (Material3 `DatePicker`) | If any control measures under 48 dp under D2, that picker stays out of D2 (keeps D3), D193 records it, #255 stays open there. Touch wins: the picker has a text-entry mode for TalkBack users, a tremor has no other path. |
+| T3 | Time picker, `MigrelyDateTimePicker.kt:189`, Reminders dialog `RemindersScreen.kt:589` (Material3 `TimePicker`) | As T2. |
+| T4 | Attack mode, `AttackModeContents.kt:132, 170, 194` | No change: the 64 dp controls are a layout minimum D2 cannot shrink; Details, move-start and long-check buttons are 48 dp by design (D24) and pass at 48 dp. They are not enlarged and attack mode is not left out. |
+
+Everything else: any control under its bar either gets a touch area of its bar with no visual change, measured again with
+the screenshot unchanged, or its page is left out of D2, listed below, and recorded in D193; #255 stays open there.
+
+Pages left out of D2: none yet (T2 and T3 decided by measurement in task 3).
 
 ### D6. Guards (team-lead): must stay green unchanged
 
@@ -135,7 +168,15 @@ Pages left out of D2: none yet.
   window) must be red on f70b6450.
 - **Per screen group:** the same two checks (order, scroll) through a shared test fixture (move `TalkBackTree` to one place
   the `ui` modules can use; no copies), red on f70b6450 first, then green.
-- **Mutations:** remove D2 → order tests red; remove D3 → scroll tests red; raw `verticalScroll` → source check red.
+- **Cut sweep (lead decision 3):** for each stop on each page and dialog, scroll so that 1 px to 12 dp of it shows at the top
+  edge and then at the bottom edge, and read its name from the **unmerged** tree as TalkBack builds it (the node's own text
+  or description, then its visible non-focusable children). Today's `talkBackName()` (`TalkBackTree.kt:76`) reads merged
+  semantics, which always contain the clipped text, so it can never fail this way; it is replaced. Negative control: a chip
+  without option 3 under D2 is red.
+- **Mutations:** remove D2 → order tests red; remove D3 → scroll tests red; raw `verticalScroll` → source check red; D2
+  around the whole screen → scope test red; chip name back on the inner Text → cut sweep red.
+- **Scroll tests and large gaps:** where the gap to the next stop is V/2 or more (D3), the scroll test asserts the order
+  outcome, not that the focused item stayed on screen.
 - **Fragility:** the tests read Compose's test-only `EXTRA_DATA_TEST_TRAVERSALBEFORE_VAL`. If a Compose upgrade changes it,
   they fail with "only N items"; they never pass silently.
 - **Device:** QA walks TalkBack previous and next on the candidate with v1.3.1 and `develop` as the negative control (they
@@ -164,11 +205,16 @@ Pages left out of D2: none yet.
 ## Risks
 
 - **Touch area inside pages (D2).** Mitigated by D5; a missed control is a real regression for tremor or one-hand use.
-- **Step size (D3).** Too small makes Switch Access and TalkBack scroll slower; too large brings A back. ux decides; tests
-  pin the value.
+- **Step size (D3).** Half the visible part doubles Switch Access's scroll actions (accepted by ux). Where a gap is V/2 or
+  more the focused item can leave the screen; the order still holds and is what the tests bind. V must be measured, not
+  taken from `viewportSize`, on pages with an inset inside the scroll.
+- **Naming changes beyond chips.** The cut sweep may find buttons or rows that say only "Button" or a state when cut; each
+  fix widens the diff and the Maestro check.
 - **Compose upgrade.** May fix B (D2 can go) or change the test data (tests fail loudly). Note for the owner: worth
   reporting upstream; the team does not send it.
-- **Maestro selectors** if option 3 is chosen.
+- **Maestro selectors.** With option 3 the chip's name moves from a TextView's text to a content description on a fake
+  child with the chip's bounds. Maestro's `text` selector also matches content-desc, so `tapOn: "Nausea"` should still work;
+  `childOf`, `containsChild`, `index:` and `selected:`/`checked:` next to a text match may not (ux note, section 2).
 - **Robolectric is not TalkBack.** The tests model TalkBack's order from Compose's traversal data and its scroll action; only
   device walks prove the experience. Real phones and real gestures stay unproven.
 

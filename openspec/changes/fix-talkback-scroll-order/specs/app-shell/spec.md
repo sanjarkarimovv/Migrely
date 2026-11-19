@@ -61,32 +61,64 @@ above the navigation bar, above a dialog's buttons, and under a message or the t
 - **WHEN** a scrolling dialog, such as an import dialog on Your data, is open at 200% font and its content scrolls
 - **THEN** no item hidden behind or above its buttons is a stop, and TalkBack walks the dialog with every item once
 
-### Requirement: TalkBack's scroll keeps the focused item on screen
-When TalkBack, or Switch Access through the same scroll action, scrolls a page, one step SHALL move it by the step
-`ux-designer` sets (proposed: half the visible part), never a whole visible height. The focused item SHALL stay on screen,
-and the next stop SHALL be the next item in order (BRD EC-UX-79, D193 (3b), (5)).
+### Requirement: TalkBack's scroll keeps its place
+When TalkBack, or Switch Access through the same action, scrolls a page, one step SHALL move it by floor(V/2) px, where V is
+the part of the scroll area actually visible: its height minus any top bar, message, keyboard, navigation bar or dialog
+buttons over it. Less than a step left scrolls to the end. While the gap to the next stop is under V/2 the focused item SHALL
+stay on screen; in every case the next stop SHALL be the next item in order (BRD EC-UX-79, D193 (5)).
 
 #### Scenario: Swiping back past the top edge (v1.3.1 skipped a block)
 - **WHEN** TalkBack is on the "Stress" chip at the top of the visible part on Attack details and the user swipes previous
 - **THEN** the next stops are "Possible triggers", "Add your own symptom" and each symptom chip in order, and "Symptoms" comes
-  only after them; the focused item never leaves the screen
+  only after them; the focused item stays on screen
 
 #### Scenario: Swiping on past the bottom edge
-- **WHEN** TalkBack is on the last item above the visible part's bottom edge and the user swipes next
-- **THEN** the page scrolls by one step, the next stop is the item just below, and the focused item never leaves the screen
+- **WHEN** TalkBack is on the last item above the visible part's bottom edge, the gap to the next stop is under V/2, and the
+  user swipes next
+- **THEN** the page scrolls by one step, the next stop is the item just below, and the focused item stays on screen
+
+#### Scenario: A gap of half the visible part or more
+- **WHEN** at 200% landscape in a 411 dp tall window with the keyboard up on Attack details (V 137 px, step 68 px), or on a
+  page with a large block between stops, TalkBack crosses a gap of V/2 or more
+- **THEN** the next stop is still the next item in order, with no skip and no loop; the focused item may leave the screen,
+  and the test asserts the order, not that the item stayed
 
 #### Scenario: One scroll action
 - **WHEN** TalkBack's or Switch Access's scroll forward or backward action runs once on a scrolling page
-- **THEN** the page moves by the set step, within 1 px, and not by its whole visible height unless less than one step is left
+- **THEN** the page moves by floor(V/2) px within 1 px, with V measured from layout, and not by its whole visible height
+
+#### Scenario: An inset inside the scroll
+- **WHEN** a page puts an inset or a keyboard room inside its scroll content, so the scroll's viewport is taller than what
+  shows
+- **THEN** the step is half of what shows, not half of the viewport
 
 ### Requirement: Every stop says its name
-Every item TalkBack stops on SHALL say its visible name with its state, including a chip cut by the visible edge. A stop
-SHALL never say only a state such as "Not selected". The spoken name SHALL contain the visible words in the same order
-(BRD EC-UX-80, D181, D193 (5)).
+Every item TalkBack stops on SHALL say its visible words with its state, also when cut by the visible edge, never a state
+or role alone. Chips SHALL carry `spokenLabel ?: label` on their own node with the inner Text's semantics cleared, only with
+exact bounds. Other stops SHALL get their words on their own node only where the cut sweep shows them losing their name,
+and each such stop SHALL pass the D181 one-name check (BRD EC-UX-80, D181, D193 (5)).
 
 #### Scenario: A chip at the edge
 - **WHEN** a symptom chip is cut by the visible edge and TalkBack stops on it
-- **THEN** it says the chip's name with its state, for example "Not selected, Nausea", and never only "Not selected"
+- **THEN** it says "Not selected. Nausea", or "Selected. Nausea" when chosen, as a whole chip does, and never only "Not
+  selected"
+
+#### Scenario: The cut sweep
+- **WHEN** for each page and dialog, each stop is scrolled so that 1 px to 12 dp of it shows at the top edge and then at the
+  bottom edge, and its name is read from the unmerged tree as TalkBack builds it
+- **THEN** every stop's name is its full visible words; a stop whose name comes back empty or partial fails the sweep
+
+#### Scenario: Only where the sweep finds it
+- **WHEN** a stop keeps its name in the cut sweep
+- **THEN** its semantics are not changed
+
+#### Scenario: One name after the change
+- **WHEN** a chip or a stop found by the sweep is given its words on its own node
+- **THEN** TalkBack says its words once, not twice, and the spoken name contains the visible words in the same order
+
+#### Scenario: The sweep can fail
+- **WHEN** a chip without its own name runs the cut sweep with exact bounds, or the sweep reads the merged tree
+- **THEN** the unmerged sweep is red for that chip, which is why the merged read is not used
 
 #### Scenario: Voice Access by name
 - **WHEN** a voice command names a chip's visible text
@@ -94,18 +126,32 @@ SHALL never say only a state such as "Not selected". The spoken name SHALL conta
 
 ### Requirement: The traversal fix draws nothing new
 The fix SHALL change only the accessibility tree and TalkBack's scroll step. Every screen SHALL look the same to the pixel;
-touch, fling, Tab, Page Up and Page Down SHALL act as before; every clickable control inside a page SHALL keep a touch target
-of at least 48 dp, or 64 dp in attack mode, measured before the change lands on that page (BRD EC-UX-82, EC-UX-83, D193 (2),
-(4)).
+touch, fling, Tab, Page Up and Page Down SHALL act as before; every clickable control inside a page SHALL keep 48 dp, 64 dp
+for attack mode's intensity choices, "Migraine ended" and a message's Undo and Dismiss, or its whole cell pitch where cells
+sit closer, measured before the change lands (BRD EC-UX-82, EC-UX-83, D193 (2), (4)).
 
 #### Scenario: Screens look the same
 - **WHEN** screenshots of each changed page are taken at 100% portrait and 200% landscape, before and after the change
 - **THEN** they are identical to the pixel
 
 #### Scenario: A control smaller than 48 dp
-- **WHEN** the touch-target audit finds a clickable control under 48 dp (64 dp in attack mode) on a page
-- **THEN** either its touch area is made 48 dp (64 dp) with no visual change and measured again, or the page is left out of
-  the bounds part, listed in `design.md` and D193, and #255 stays open for that page
+- **WHEN** the touch-target audit, at 360 and 411 dp wide and at 100% and 200% font, finds a clickable control under its bar
+  on a page
+- **THEN** either its touch area grows with no visual change and is measured again, or the page is left out of the bounds
+  part, listed in `design.md` and D193, and #255 stays open for that page
+
+#### Scenario: History calendar days at 360 dp
+- **WHEN** History's month calendar is shown 360 dp wide at 200% font, where a day cell is about 41.7 dp with 6 dp gaps
+- **THEN** each day's touch area covers its whole cell pitch, a tap in a gap still opens the nearer day, and the drawn cell,
+  its clip and its focus ring stay as before
+
+#### Scenario: A Material picker below 48 dp
+- **WHEN** any control in the date or time picker measures under 48 dp under exact bounds
+- **THEN** that picker stays out of the bounds part, keeps the scroll step, is recorded in D193, and #255 stays open there
+
+#### Scenario: Attack mode's secondary buttons
+- **WHEN** the audit measures Details, the move-start options and the long-check buttons in attack mode
+- **THEN** they pass at 48 dp and are not enlarged, and attack mode is not left out because of them
 
 #### Scenario: Keyboard and Switch Access
 - **WHEN** the user moves through a changed page with Tab and Shift+Tab, or scans it with Switch Access
@@ -119,6 +165,19 @@ of at least 48 dp, or 64 dp in attack mode, measured before the change lands on 
 #### Scenario: One announcement for a refused Save
 - **WHEN** Save is refused for a field problem on Edit medication or Log medication with TalkBack on (#239)
 - **THEN** the problem is announced once, as D191 says
+
+### Requirement: Exact bounds cover only the scroll content
+Exact bounds SHALL wrap only the content inside a scroll area. The top bar, the message host with its Undo and Dismiss,
+bottom bars and dialog buttons SHALL stay outside it, with the system's touch target and its widening (BRD EC-UX-82, D193
+(3a)).
+
+#### Scenario: Outside the scroll
+- **WHEN** a test reads the minimum touch target in the top bar, the message host and a dialog's buttons on a changed page
+- **THEN** it is the system's 48 dp, and only nodes inside the scroll content read zero
+
+#### Scenario: Wrapped too wide
+- **WHEN** a build wraps a whole screen, as the prototype wrapped Attack details' content box, instead of the scroll content
+- **THEN** that test fails
 
 ### Requirement: One entry point for every vertical scroll
 Every vertical scroll in the app's main code SHALL go through one `designsystem` entry point that applies both parts, so no

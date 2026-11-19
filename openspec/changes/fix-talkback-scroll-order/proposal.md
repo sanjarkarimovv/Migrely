@@ -31,17 +31,21 @@ pages of 17 screens, 6 in dialogs), no `LazyColumn`, no horizontal scroll. BRD d
   target expansion is set to zero for accessibility bounds, so an item outside the visible part is not a stop. Every other
   view configuration value (double tap timeout, touch slop, long press) stays the system's.
 - **TalkBack's scroll step keeps its place (fixes A).** A scroll by TalkBack (and by Switch Access, which uses the same
-  action) moves the page by a step `ux-designer` sets, proposed half the visible part, never a whole height.
+  action) moves the page by floor(V/2) px, V being the part actually visible, never a whole height. The focused item stays on
+  screen while the gap to the next stop is under V/2; the next stop is always the next item in order (ux 91ceda44).
 - **One shared entry point.** Both parts live in `designsystem` and every one of the 29 sites uses them; a JVM source check
   fails on a raw `verticalScroll(` in main code outside `designsystem`.
-- **Every stop says its name.** A chip cut by the edge says its name, never only "Not selected". How (chip name on the chip
-  node, "option 3", or another way) is `ux-designer`'s decision before code.
+- **Every stop says its name.** A chip cut by the edge says "Not selected. Nausea", never only "Not selected": the chip
+  carries `spokenLabel ?: label` on its own node with the inner Text cleared ("option 3"), only together with exact bounds.
+  Other stops change only where a cut-sweep test shows them losing their name, each passing D181's one-name check.
+- **Exact bounds cover only the scroll content**, never the top bar, the message host or dialog buttons.
 - **Nothing drawn changes.** Screenshots stay identical to the pixel. Every clickable control inside an affected page is
-  measured at 48 dp or more (64 dp in attack mode) before the bounds part lands there; a smaller one is given a 48 dp touch
-  area without a visual change, or that page is left out and recorded.
+  measured before the bounds part lands there. History's calendar days at 360 dp get a touch area of their whole cell pitch;
+  a Material date or time picker with a control under 48 dp stays out of the bounds part and is recorded; attack mode is
+  unchanged.
 - **Guards.** #238 (closing the keyboard never scrolls, D189), #245 (`TopBarAside`, `TypingSpace`, D192), #239 (one
   announcement per refused Save, D191), D181 (one spoken name, Tab order), D178 (order: top bar, message, content).
-- **Records.** BRD D193, EC-UX-78 to EC-UX-84, §13 row 57. `app-shell` gets seven ADDED requirements.
+- **Records.** BRD D193, EC-UX-78 to EC-UX-84, §13 row 57. `app-shell` gets eight ADDED requirements.
 
 ## Out of scope
 
@@ -63,20 +67,21 @@ None.
 ### Modified Capabilities
 
 - `app-shell`: ADDED "TalkBack reaches every item on a scrolling page once", "An item outside the visible part is not a
-  stop", "TalkBack's scroll keeps the focused item on screen", "Every stop says its name", "The traversal fix draws nothing
-  new", "One entry point for every vertical scroll", "The traversal check can fail". No existing requirement changes: the
+  stop", "TalkBack's scroll keeps its place", "Every stop says its name", "The traversal fix draws nothing new", "Exact
+  bounds cover only the scroll content", "One entry point for every vertical scroll", "The traversal check can fail". No existing requirement changes: the
   D178, D181, D189, D191 and D192 requirements stay as written and are guards.
 
 ## Impact
 
 - **Code:** `designsystem` (the two parts and the entry point; the date and date-time pickers), then the `ui` modules of
-  `features/attack`, `home`, `medication`, `settings`, `history`, `insights`, `report`, `backup`, `reminders`,
+  `features/attack` (`ChoiceChip`), `home`, `medication`, `settings`, `history`, `insights`, `report`, `backup`, `reminders`,
   `subscription`, `onboarding`. A JVM source check (module chosen by the engineer).
 - **Tests:** eng-255's red tests (0ecb3bc6: `AttackDetailsTalkBackOrderTest`, `AttackDetailsTalkBackScrollTest`,
   `TalkBackTree`) stay; `TalkBackTree` likely moves to a shared test fixture for other modules. A navigation-bar-inset
   variant is added. Each screen group gets red-first traversal tests.
-- **Maestro:** if ux chooses option 3, chips expose their name as content description instead of text; `qa-engineer` checks
-  `.maestro/` selectors.
+- **Maestro:** chips expose their name as a content description on a fake child instead of a TextView's text;
+  `qa-engineer` checks `.maestro/` selectors (likely `attack-details/`, `custom-tags/`, `attack-logging/`, `past-attacks/`,
+  `a11y-tour/custom-tag-dialog.yaml`, `device/details-*.yaml`, more if the sweep reaches buttons and rows).
 - **No change to:** manifest, permissions, strings, Room schema, backup, Free or Premium.
 - **BRD:** D193, EC-UX-78 to EC-UX-84, §13 row 57.
 - **Issue:** `Refs #255` in every commit and the PR, never a closing keyword: QA filed #255 and closes it after the retest.
