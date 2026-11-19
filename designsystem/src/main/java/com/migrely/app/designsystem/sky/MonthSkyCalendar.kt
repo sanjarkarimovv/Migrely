@@ -1,9 +1,12 @@
 package com.migrely.app.designsystem.sky
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusGroup
+import androidx.compose.foundation.indication
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -50,6 +53,8 @@ import androidx.compose.ui.input.key.isShiftPressed
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.Role
@@ -61,8 +66,11 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.offset
+import com.migrely.app.designsystem.layout.InsetInteractionSource
 import com.migrely.app.designsystem.theme.MigrelyTheme
 import com.migrely.app.designsystem.theme.OnSurface
 import com.migrely.app.designsystem.theme.OnSurfaceVariant
@@ -210,26 +218,41 @@ fun MonthSkyCalendar(
             }
         }
         val cells: List<CalendarDay?> = List(leadingEmptyDays) { null } + days
-        cells.chunked(DAYS_PER_WEEK).forEach { week ->
-            Row(horizontalArrangement = Arrangement.spacedBy(CellSpacing)) {
-                week.forEach { day ->
-                    if (day == null) {
-                        Spacer(Modifier.weight(1f))
-                    } else {
-                        DayCell(
-                            day = day,
-                            chosenStateDescription = chosenStateDescription,
-                            focusRequester = requesters.getValue(day.dayOfMonth),
-                            onFocused = { focusedDay.day = day.dayOfMonth },
-                            onClick = { onDayClick(day.dayOfMonth) },
-                            modifier = Modifier.weight(1f)
-                        )
+        // Each day's touch area is its whole pitch, the cell and half the gap around it (#255, design D5 T1): seven
+        // 48 dp targets do not fit a narrow row, and inside a page's exact bounds nothing widens a cell over the gaps.
+        // The weeks lie half a gap out on every side, so each cell is drawn where it was.
+        Column(Modifier.outsetBy(CellSpacing / 2)) {
+            cells.chunked(DAYS_PER_WEEK).forEach { week ->
+                Row {
+                    week.forEach { day ->
+                        if (day == null) {
+                            Spacer(Modifier.weight(1f))
+                        } else {
+                            DayCell(
+                                day = day,
+                                chosenStateDescription = chosenStateDescription,
+                                focusRequester = requesters.getValue(day.dayOfMonth),
+                                onFocused = { focusedDay.day = day.dayOfMonth },
+                                onClick = { onDayClick(day.dayOfMonth) },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
                     }
+                    repeat(DAYS_PER_WEEK - week.size) { Spacer(Modifier.weight(1f)) }
                 }
-                repeat(DAYS_PER_WEEK - week.size) { Spacer(Modifier.weight(1f)) }
             }
         }
     }
+}
+
+/**
+ * Lays the content out [outset] wider on each side than the space it is given, and still takes only that space: the
+ * content reaches [outset] past every edge.
+ */
+private fun Modifier.outsetBy(outset: Dp) = layout { measurable, constraints ->
+    val px = outset.roundToPx()
+    val placeable = measurable.measure(constraints.offset(horizontal = 2 * px, vertical = 2 * px))
+    layout(placeable.width - 2 * px, placeable.height - 2 * px) { placeable.place(-px, -px) }
 }
 
 /**
@@ -317,12 +340,16 @@ private fun DayCell(
         notLogged = MaterialTheme.colorScheme.outline,
         logged = MaterialTheme.colorScheme.outline
     )
+    // The touch area: the cell's whole pitch (see MonthSkyCalendar). The press shows no ripple of its own: the
+    // drawn cell below shows it, clipped to its shape, as before.
+    val interactions = remember { MutableInteractionSource() }
+    val inset = with(LocalDensity.current) { (CellSpacing / 2).toPx() }
+    val cellInteractions =
+        remember(interactions, inset) { InsetInteractionSource(interactions, Offset(inset, inset)) }
     Box(
         // Merged into the clickable rather than replacing it, so a day stays focusable for keyboards and switch
         // access (BRD EC-UX-19); the day number inside is cleared so the description is read once.
         modifier = modifier
-            .aspectRatio(1f)
-            .clip(CellShape)
             .semantics {
                 contentDescription = day.description
                 if (day.isSelected) stateDescription = chosenStateDescription
@@ -336,6 +363,8 @@ private fun DayCell(
                             if (it.isFocused) onFocused()
                         }
                         .clickable(
+                            interactionSource = interactions,
+                            indication = null,
                             role = Role.Button,
                             onClick = onClick
                         )
@@ -343,22 +372,30 @@ private fun DayCell(
                     Modifier
                 }
             )
-            .then(ring)
+            .padding(CellSpacing / 2)
     ) {
-        Canvas(Modifier.matchParentSize()) {
-            drawDaySky(day.appearance, outlines)
-            if (day.hasPeriodMark) drawPeriodMark()
-        }
-        Text(
-            text = day.dayOfMonth.toString(),
-            style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"),
-            fontWeight = if (day.isToday) FontWeight.Bold else null,
-            color = colors.number,
+        Box(
             modifier = Modifier
-                .align(Alignment.TopStart)
-                .padding(start = 5.dp, top = 3.dp)
-                .clearAndSetSemantics { }
-        )
+                .aspectRatio(1f)
+                .clip(CellShape)
+                .indication(cellInteractions, LocalIndication.current)
+                .then(ring)
+        ) {
+            Canvas(Modifier.matchParentSize()) {
+                drawDaySky(day.appearance, outlines)
+                if (day.hasPeriodMark) drawPeriodMark()
+            }
+            Text(
+                text = day.dayOfMonth.toString(),
+                style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"),
+                fontWeight = if (day.isToday) FontWeight.Bold else null,
+                color = colors.number,
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(start = 5.dp, top = 3.dp)
+                    .clearAndSetSemantics { }
+            )
+        }
     }
 }
 

@@ -3,10 +3,7 @@ package com.migrely.app.designsystem.button
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.indication
-import androidx.compose.foundation.interaction.Interaction
-import androidx.compose.foundation.interaction.InteractionSource
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -23,8 +20,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
+import com.migrely.app.designsystem.layout.InsetInteractionSource
 
 // Material's minimum interactive size and its standard icon button's drawn circle.
 private val TouchSize = 48.dp
@@ -48,7 +44,7 @@ fun MigrelyIconButton(
     val interactions = remember { MutableInteractionSource() }
     val inset = with(LocalDensity.current) { ((TouchSize - CircleSize) / 2).toPx() }
     val circleInteractions = remember(interactions, inset) {
-        InsetInteractions(interactions, Offset(inset, inset))
+        InsetInteractionSource(interactions, Offset(inset, inset))
     }
     Box(
         contentAlignment = Alignment.Center,
@@ -75,35 +71,6 @@ fun MigrelyIconButton(
         ) {
             val contentColor = if (enabled) colors.contentColor else colors.disabledContentColor
             CompositionLocalProvider(LocalContentColor provides contentColor, content = content)
-        }
-    }
-}
-
-/**
- * The 48 dp node's interactions as the 40 dp circle sees them: a press moved by [inset], so the ripple starts under
- * the finger as Material's does. A release or cancel names the moved press.
- */
-private class InsetInteractions(private val source: InteractionSource, private val inset: Offset) :
-    InteractionSource {
-    override val interactions: Flow<Interaction> = flow {
-        val moved = mutableMapOf<PressInteraction.Press, PressInteraction.Press>()
-        source.interactions.collect { interaction ->
-            emit(
-                when (interaction) {
-                    is PressInteraction.Press ->
-                        PressInteraction.Press(interaction.pressPosition - inset)
-                            .also { moved[interaction] = it }
-                    is PressInteraction.Release ->
-                        PressInteraction.Release(
-                            moved.remove(interaction.press) ?: interaction.press
-                        )
-                    is PressInteraction.Cancel ->
-                        PressInteraction.Cancel(
-                            moved.remove(interaction.press) ?: interaction.press
-                        )
-                    else -> interaction
-                }
-            )
         }
     }
 }
