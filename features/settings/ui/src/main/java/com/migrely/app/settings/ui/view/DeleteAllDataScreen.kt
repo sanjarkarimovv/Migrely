@@ -26,6 +26,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.DividerDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -63,9 +64,12 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.migrely.app.designsystem.icon.MigrelyIcons
 import com.migrely.app.designsystem.input.KeyboardRoom
+import com.migrely.app.designsystem.input.ProvideTypingSpace
 import com.migrely.app.designsystem.input.SingleLineFieldInView
+import com.migrely.app.designsystem.input.TypingSpace
 import com.migrely.app.designsystem.input.inputLineRoom
 import com.migrely.app.designsystem.input.rememberKeyboardRoom
+import com.migrely.app.designsystem.input.rememberTypingSpace
 import com.migrely.app.designsystem.layout.MigrelyInsets
 import com.migrely.app.designsystem.theme.MigrelyDarkRoom
 import com.migrely.app.designsystem.theme.MigrelyTheme
@@ -163,6 +167,9 @@ fun DeleteAllDataContents(
     actions: DeleteAllDataActions,
     modifier: Modifier = Modifier
 ) = MigrelyDarkRoom(active = deleting) {
+    // The word's input line always shows: once the row is decided, the bar steps aside where the line cannot fit
+    // (BRD D192, #245). The page's visible part ends at the divider above the row's place.
+    val typingSpace = rememberTypingSpace(aboveKeyboard = DividerDefaults.Thickness)
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -193,13 +200,16 @@ fun DeleteAllDataContents(
                 ),
                 windowInsets = MigrelyInsets.bars.only(
                     WindowInsetsSides.Top + WindowInsetsSides.Horizontal
-                )
+                ),
+                modifier = typingSpace.barModifier
             )
         }
         if (deleting) {
             Deleting()
         } else {
-            Confirmation(typed, word, confirmed, failed, actions)
+            ProvideTypingSpace(typingSpace) {
+                Confirmation(typed, word, confirmed, failed, actions, typingSpace)
+            }
         }
     }
 }
@@ -210,7 +220,8 @@ private fun ColumnScope.Confirmation(
     word: String,
     confirmed: Boolean,
     failed: Boolean,
-    actions: DeleteAllDataActions
+    actions: DeleteAllDataActions,
+    typingSpace: TypingSpace
 ) {
     val scrollState = rememberScrollState()
     var area by remember { mutableIntStateOf(0) }
@@ -246,7 +257,15 @@ private fun ColumnScope.Confirmation(
                 // Read in layout, and consumes no inset.
                 .padding(bodyInsets.asPaddingValues())
         ) {
-            ConfirmationBody(typed, word, failed, actions.onTyped, scrollState, keyboardRoom)
+            ConfirmationBody(
+                typed,
+                word,
+                failed,
+                actions.onTyped,
+                scrollState,
+                keyboardRoom,
+                typingSpace.pageModifier
+            )
         }
         // There is more to read above the button. Always laid out, only its colour changes: a divider that comes
         // and goes would resize the body's visible part and scroll it by its 1 dp at the end (BRD D189, #238).
@@ -309,7 +328,8 @@ private fun ConfirmationBody(
     failed: Boolean,
     onTyped: (String) -> Unit,
     scrollState: ScrollState,
-    keyboardRoom: KeyboardRoom
+    keyboardRoom: KeyboardRoom,
+    pageModifier: Modifier
 ) {
     // Kept tight, so the warning and the field fit above the button in landscape at twice the font size.
     Column(
@@ -318,6 +338,7 @@ private fun ConfirmationBody(
             .widthIn(max = CONTENT_MAX_WIDTH)
             .fillMaxWidth()
             .windowInsetsPadding(MigrelyInsets.bars.only(WindowInsetsSides.Horizontal))
+            .then(pageModifier)
             .verticalScroll(scrollState)
             // After the scroll, never a child: the column's spacing would add a gap.
             .then(keyboardRoom.modifier)

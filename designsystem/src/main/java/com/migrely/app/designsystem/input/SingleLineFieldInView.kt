@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.TextUnit
@@ -45,7 +46,12 @@ private val BODY_LINE = 24.sp
  * input line sits: below half a floating label's line, as Material places it, and its content padding.
  *
  * Each new value of [inViewRequests] above 0 brings the field into view the same way without focus, once the frame
- * after the request is laid out, so a supporting line that has just appeared is included (BRD D191, ux F2).
+ * after the request is laid out, so a supporting line that has just appeared is included (BRD D191, ux F2). Inside a
+ * [TypingSpace] it keeps the same reduced margins as a focused field (BRD D192).
+ *
+ * The input line's height is the field's line as laid out in [LocalTextStyle], the style the field uses (BRD D192): not
+ * that style's line height in sp, which nonlinear font scaling converts to less (95 against 112 px at 200%). The same
+ * height gives [inputLineRoom]. A field that passes its own `textStyle` must provide it as [LocalTextStyle] around this.
  */
 @Composable
 fun SingleLineFieldInView(
@@ -67,13 +73,18 @@ fun SingleLineFieldInView(
     val lineTop = with(density) {
         labelHalf.toPx() + OutlinedTextFieldDefaults.contentPadding().calculateTopPadding().toPx()
     }
-    val lineHeight = with(density) { LocalTextStyle.current.lineHeight.orBodyLine().toPx() }
+    val lineHeight = inputLineHeight()
     val marginPx = with(density) { margin.toPx() }
-    suspend fun bringFieldIntoView(width: Float, height: Float) = requester.bringNestedIntoView(
-        Rect(0f, 0f, width, height),
-        Rect(0f, lineTop - marginPx, width, height),
-        Rect(0f, lineTop - marginPx, width, lineTop + lineHeight + marginPx)
-    )
+    val space = LocalTypingSpace.current
+    suspend fun bringFieldIntoView(width: Float, height: Float) {
+        // The input line keeps what margin the visible part leaves it (ux R2).
+        val clearance = space?.marginAround(lineHeight, marginPx) ?: marginPx
+        requester.bringNestedIntoView(
+            Rect(0f, 0f, width, height),
+            Rect(0f, lineTop - marginPx, width, height),
+            Rect(0f, lineTop - clearance, width, lineTop + lineHeight + clearance)
+        )
+    }
     LaunchedEffect(focused, size) {
         if (!focused || size == IntSize.Zero) return@LaunchedEffect
         bringFieldIntoView(size.width.toFloat(), size.height.toFloat())
@@ -83,6 +94,11 @@ fun SingleLineFieldInView(
         if (inViewRequests == 0) return@LaunchedEffect
         withFrameNanos { }
         if (size != IntSize.Zero) bringFieldIntoView(size.width.toFloat(), size.height.toFloat())
+    }
+    // The line being typed is the input line, laid out in the field's text style (BRD D192, ux R5).
+    LaunchedEffect(focused, space, lineHeight) {
+        if (!focused || space == null) return@LaunchedEffect
+        space.reportLine { lineHeight }
     }
     LaunchedEffect(focused) {
         if (!focused) return@LaunchedEffect
@@ -104,12 +120,25 @@ fun SingleLineFieldInView(
 
 /**
  * The height a focused single-line field needs to show its input line [margin] clear above and below, which is what
- * [SingleLineFieldInView] asks for at least (ux U1, U7).
+ * [SingleLineFieldInView] asks for at least (ux U1, U7), with the line as laid out ([inputLineHeight]).
  */
 @Composable
 fun inputLineRoom(margin: Dp = LINE_MARGIN): Dp =
-    with(LocalDensity.current) { LocalTextStyle.current.lineHeight.orBodyLine().toDp() } +
-        margin * 2
+    with(LocalDensity.current) { inputLineHeight().toDp() } + margin * 2
+
+/**
+ * The input line's height in px: one line laid out in [LocalTextStyle], the style the field uses, at the screen's density,
+ * not that style's line height in sp, which nonlinear font scaling converts to less (BRD D192; 95 against 112 px at 200%).
+ */
+@Composable
+private fun inputLineHeight(): Float {
+    val textStyle = LocalTextStyle.current
+    val density = LocalDensity.current
+    val measurer = rememberTextMeasurer()
+    return remember(textStyle, density, measurer) {
+        measurer.measure(text = "A", style = textStyle, density = density).size.height.toFloat()
+    }
+}
 
 private fun TextUnit.orBodyLine(): TextUnit = if (isSp) this else BODY_LINE
 
