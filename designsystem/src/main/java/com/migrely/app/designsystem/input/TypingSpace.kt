@@ -19,6 +19,8 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.findRootCoordinates
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -116,6 +118,24 @@ class TypingSpace internal constructor(
             }
         } finally {
             if (typed?.owner === line) typed = null
+        }
+    }
+
+    /**
+     * How far the page must scroll, in px, for [area] in [coordinates] to show in the visible part (BRD D194, design
+     * D2): 0 where it shows, its top first where it is taller than that part, null while the page is unknown or
+     * [coordinates] are detached. Both come from the latest layout, the one with the bar's current height, so a bar
+     * stepping aside in the same frame is never counted twice (ux C2).
+     */
+    internal fun scrollToShow(coordinates: LayoutCoordinates, area: Rect): Float? {
+        val page = page ?: return null
+        if (!coordinates.isAttached) return null
+        val top = coordinates.localToRoot(area.topLeft).y
+        val bottom = coordinates.localToRoot(area.bottomLeft).y
+        return when {
+            bottom > page.bottom -> minOf(bottom - page.bottom, top - page.top)
+            top < page.top -> top - page.top
+            else -> 0f
         }
     }
 
