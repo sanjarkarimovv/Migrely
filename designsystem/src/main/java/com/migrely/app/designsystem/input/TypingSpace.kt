@@ -121,6 +121,10 @@ class TypingSpace internal constructor(
         }
     }
 
+    /** The visible part's height in px, or null while the page is unknown. */
+    internal val visibleHeight: Int?
+        get() = page?.let { it.bottom - it.top }
+
     /**
      * How far the page must scroll, in px, for [area] in [coordinates] to show in the visible part (BRD D194, design
      * D2): 0 where it shows, its top first where it is taller than that part, null while the page is unknown or
