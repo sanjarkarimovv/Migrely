@@ -258,13 +258,20 @@ does; each such stop passes the D181 one-name check (heard once, visible words i
   Verify: `6.2-*.txt`, each reaching both ends with no repeat.
 - [ ] 6.3 Hardware keyboard Tab and Shift+Tab on Attack details and one dialog: order unchanged, every stop in view. Verify:
   `6.3-*.txt`.
-- [ ] 6.4 Pressed-state pixels of `MigrelyIconButton` against Material's (Robolectric draws no ripple). Verify:
+- [x] 6.4 Pressed-state pixels of `MigrelyIconButton` against Material's (Robolectric draws no ripple). Verify:
   `ANDROID_SERIAL=emulator-5570 nice -n 19 ./gradlew --max-workers=2 :designsystem:connectedDebugAndroidTest
   -Pandroid.testInstrumentationRunnerArguments.class=com.migrely.app.designsystem.button.MigrelyIconButtonPressedTest`
   → BUILD SUCCESSFUL, 0 failed; log `6.4-pressed.log`.
   Result (not ticked): both cases red on emulator-5570. Named difference for ux: inside the 40 dp pressed circle (radius
   52.8 px) 8,190 pixels differ by at most 2/255 per channel (1,046 by 1, 7,144 by 2); outside it and the icon equal
   (`6.4-pressed-row.png`). The test stays strict until ux judges it.
+  Cause and fix (2c727b5b, b977c805 and the Surface commit): the press inset was 10.5 px where Material's circle sits
+  at 11 px (Robolectric red, Offset 52.5 for 52), and the test captured the platform ripple mid-animation (the two
+  presses came in two injections; only the test clock advanced). Now one injected frame, a real-time wait, the row on
+  the theme's Surface. Result on emulator-5570 (2026-11-20, `6.4-pressed-r4.log`): 5 tests, 0 failed; 0 pixels differ
+  pressed in light, dark, dark room and off centre (also counted outside the test from the shots in `6.4-shots/`);
+  the 50 ms control differs from the settled row. Light and dark shots differ from each other; dark room equals dark
+  (it does not recolour a plain Surface). Threshold unchanged at 0.
 - [x] 6.5 Restore font scale, rotation, `wm size`, density, animator scales, TalkBack and keyboard. Verify: settings read
   back. Never take a `uiautomator dump` during a TalkBack walk (it resets focus).
   Result: font 1.0, rotation 0 with auto-rotate on, animator scales 1, 1080×2400, density 420, TalkBack off, its log

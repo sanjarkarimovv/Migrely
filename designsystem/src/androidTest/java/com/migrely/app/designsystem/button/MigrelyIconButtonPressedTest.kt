@@ -4,6 +4,7 @@ import android.os.SystemClock
 import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -47,16 +48,19 @@ class MigrelyIconButtonPressedTest {
 
     private fun show(theme: @Composable (@Composable () -> Unit) -> Unit) = rule.setContent {
         theme {
-            Row(Modifier.testTag(ROW)) {
-                IconButton(onClick = {}, modifier = Modifier.testTag(MATERIAL)) {
-                    Icon(MigrelyIcons.Close, contentDescription = "Close")
-                }
-                MigrelyIconButton(
-                    onClick = {},
-                    contentDescription = "Close",
-                    modifier = Modifier.testTag(MIGRELY)
-                ) {
-                    Icon(MigrelyIcons.Close, contentDescription = "Close")
+            // On the theme's surface, as in the app, so the icon and its ripple take the theme's content colour.
+            Surface {
+                Row(Modifier.testTag(ROW)) {
+                    IconButton(onClick = {}, modifier = Modifier.testTag(MATERIAL)) {
+                        Icon(MigrelyIcons.Close, contentDescription = "Close")
+                    }
+                    MigrelyIconButton(
+                        onClick = {},
+                        contentDescription = "Close",
+                        modifier = Modifier.testTag(MIGRELY)
+                    ) {
+                        Icon(MigrelyIcons.Close, contentDescription = "Close")
+                    }
                 }
             }
         }
