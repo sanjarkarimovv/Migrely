@@ -36,9 +36,15 @@ touch-target rule is recorded (BRD EC-UX-78, EC-UX-79, EC-UX-81, D193).
   reaches Back
 
 #### Scenario: Conditions that must not change the result
-- **WHEN** the walks run with a message showing, with Remove animations, right to left, on API 26 and API 36, in light,
-  dark and dark room, in Free and Premium, and in attack mode
+- **WHEN** the walks run with Remove animations, right to left, on API 26 and API 36, in light, dark and dark room, in Free
+  and Premium, and in attack mode
 - **THEN** each walk reaches both ends with every item once
+
+#### Scenario: A message over the top of the page
+- **WHEN** a message shows over the top of a page (D180 (4)) and the user swipes through the page with TalkBack
+- **THEN** the walk reaches the message, with its Dismiss, and every item it does not cover, each once; items under the
+  message are out of the tree while it shows, as on `develop`; after the message goes, the walk reaches both ends with every
+  item once
 
 #### Scenario: Rotation or process death during a walk
 - **WHEN** the phone is rotated, or the process is killed and restored, while TalkBack is partway down a page

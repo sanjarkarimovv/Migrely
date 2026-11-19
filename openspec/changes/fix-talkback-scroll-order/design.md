@@ -91,6 +91,15 @@ V is the part of the scroll area actually visible: its height minus anything ove
 navigation bar, a dialog's buttons). Where `viewportSize` already ends at those edges (Attack details: insets, message
 clearance and `TypingSpace` sit before `verticalScroll`), V = `viewportSize`; where a page puts an inset or the keyboard room
 inside its scroll content, V is what shows, not `viewportSize`. Less than one step left: Compose stops at the end, as now.
+A shown message is subtracted too (cr-255 F5): `MessageLayout` gives its message and its content a `MessageCover`
+(`designsystem/snackbar/MessageCover.kt`), `MigrelySnackbarHost` fills in the shown message's bounds in root coordinates,
+and `PageScroll` leaves that part out of V when TalkBack scrolls; null while no message shows. `PageScrollTest`: with the
+cover ignored, red (433 px for 403).
+
+**Known limit, kept (team-lead 2026-11-19):** a message drawn over the top of a page covers the items under it, and they
+leave TalkBack's tree while it shows; swiping back at the page's top ends at the first item not covered. `develop` does the
+same. The message is itself a stop with its own Dismiss, pauses under TalkBack focus (D182), and once it goes every item is
+reachable again. Moving the host is out of #255's scope; a possible later ux item.
 
 Compose's scroll-forward/backward actions then move by the step, eased by its spring (instant under Remove animations).
 Switch Access uses the same action, so it needs about twice as many scrolls on a long page (ux accepted the cost: keeping
