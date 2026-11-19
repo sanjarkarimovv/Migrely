@@ -13,12 +13,17 @@ private const val EDGE_TOLERANCE = 1f
  * Whether a focused field's line follows the keyboard (BRD D180 (2), (5); ux U6; review 7.1 F1, F2): only while the
  * line is in view. A layout in which the keyboard did not move records what the person sees, so a scroll away, by
  * hand or by the safety card's reveal (D167), ends the following; a layout in which the keyboard moved keeps the
- * record from before the move, as Compose's own resize tracking does. Only a growing keyboard asks for the line: one
- * that shrinks or closes never scrolls the page.
+ * record from before the move, as Compose's own resize tracking does. So does a layout at a height the follow has not
+ * acted on yet: with an accessibility service on, Compose lays the screen out again between the keyboard's frame and
+ * the follow, and that layout, with the line under the keyboard, ended the following (#259). Only a growing keyboard
+ * asks for the line: one that shrinks or closes never scrolls the page.
  */
 internal class KeyboardFollow {
     private var following = false
     private var keyboardAtLastLayout = -1
+
+    // The keyboard height the follow's collector last acted on.
+    private var keyboardFollowed = -1
 
     /** The field brought its line into view itself, on focus or an edit. */
     fun onBroughtIntoView() {
@@ -27,7 +32,9 @@ internal class KeyboardFollow {
 
     /** After a layout: [line], in [field]'s coordinates, is what the person must see; [keyboard] is its height now. */
     fun onPositioned(keyboard: Int, field: LayoutCoordinates?, line: Rect?) {
-        if (keyboard == keyboardAtLastLayout && field != null && line != null) {
+        // The keyboard held still since the last layout, and the follow has already acted on this height.
+        val settled = keyboard == keyboardAtLastLayout && keyboard == keyboardFollowed
+        if (settled && field != null && line != null) {
             following = field.showsWhole(line)
         }
         keyboardAtLastLayout = keyboard
@@ -39,6 +46,7 @@ internal class KeyboardFollow {
         snapshotFlow(keyboard).collectLatest { now ->
             val grew = last in 0 until now
             last = now
+            keyboardFollowed = now
             if (grew && following) bring()
         }
     }
