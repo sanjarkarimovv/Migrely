@@ -253,7 +253,10 @@ by hand in Robolectric, as `KeyboardRoomTest` does.
   Two drifts in this delta fixed: "Closing the keyboard never moves the page" had lost "otherwise none" and
   "D189 (1), (7)" (put back, body 499 characters); "TalkBack with the keyboard open" now says Back is out of the tree
   while the bar is aside (R11, QA's SW9), so the two requirements no longer contradict.
-- [ ] 8.2 BRD D192 updated with QA's results (what was proved, what stays open, the R2 outcome), then archive. Verify:
+- [x] 8.2 BRD D192 updated with QA's results (what was proved, what stays open, the R2 outcome), then archive. Verify:
   `openspec archive fix-short-window-typed-line --yes` and `openspec validate --all --strict` exit 0.
+  Done 2026-11-19: D192 (11) review (F3, the Delete row change, the clip fix) and (12) QA's GO: fixed cells against
+  v1.3.1, reduced R2 proven on a device (F1 red, so the clearance stays), guards, SW9 while aside as a by-design limit
+  (R11), open: #254 (S4, next patch), #255 (S3, pre-existing), #252, rows not run on a device. Archived with the CLI.
 - [ ] 8.3 PR into `develop` with `Refs #245`, merge commit, worktree removed after merge, tracker T75 updated by `team-lead`.
   Verify: `gh pr view <n> --json state,mergeCommit` shows MERGED.
