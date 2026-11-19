@@ -49,6 +49,7 @@ import com.migrely.app.designsystem.input.SingleLineFieldInView
 import com.migrely.app.designsystem.input.TapGuard
 import com.migrely.app.designsystem.input.rememberKeyboardRoom
 import com.migrely.app.designsystem.input.rememberLimitedField
+import com.migrely.app.designsystem.input.rememberTypingSpace
 import com.migrely.app.designsystem.layout.MigrelyInsets
 import com.migrely.app.designsystem.motion.rememberReduceMotion
 import com.migrely.app.designsystem.snackbar.MessageLayout
@@ -182,6 +183,8 @@ fun EditMedicationContents(
     problemArrivals: Int = 0,
     modifier: Modifier = Modifier
 ) {
+    // The line being typed always shows: the bar steps aside where it cannot (BRD D192, #245).
+    val typingSpace = rememberTypingSpace()
     MessageLayout(
         message = messages,
         modifier = modifier
@@ -212,7 +215,8 @@ fun EditMedicationContents(
                     WindowInsetsSides.Top + WindowInsetsSides.Horizontal
                 )
             )
-        }
+        },
+        typingSpace = typingSpace
     ) {
         Column(Modifier.fillMaxSize()) {
             val scrollState = rememberScrollState()
@@ -229,6 +233,7 @@ fun EditMedicationContents(
                         // Before the scroll, so its visible part ends at the keyboard's top and a focused
                         // field is kept above it (BRD D180 (2)).
                         .windowInsetsPadding(viewportInsets)
+                        .then(typingSpace.pageModifier)
                         .verticalScroll(scrollState)
                         // After the scroll, never a child: the column's spacing would add a gap.
                         .then(keyboardRoom.modifier)
