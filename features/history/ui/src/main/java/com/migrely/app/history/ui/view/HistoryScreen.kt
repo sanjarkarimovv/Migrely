@@ -57,6 +57,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.navigation.NavController
 import com.migrely.app.architecture.ui.view.ScreenEnterObserver
+import com.migrely.app.designsystem.button.MigrelyIconButton
 import com.migrely.app.designsystem.icon.MigrelyIcons
 import com.migrely.app.designsystem.layout.MigrelyInsets
 import com.migrely.app.designsystem.motion.rememberReduceMotion
@@ -367,7 +368,7 @@ private fun MonthHeader(
             .fillMaxWidth()
             .padding(bottom = 8.dp)
     ) {
-        IconButton(onClick = actions.onPreviousMonth, enabled = month.hasPreviousMonth) {
+        MigrelyIconButton(onClick = actions.onPreviousMonth, enabled = month.hasPreviousMonth) {
             Icon(
                 MigrelyIcons.ChevronStart,
                 contentDescription = stringResource(R.string.previous_month)
@@ -382,7 +383,7 @@ private fun MonthHeader(
                 .weight(1f)
                 .semantics { heading() }
         )
-        IconButton(onClick = actions.onNextMonth, enabled = month.hasNextMonth) {
+        MigrelyIconButton(onClick = actions.onNextMonth, enabled = month.hasNextMonth) {
             Icon(MigrelyIcons.ChevronEnd, contentDescription = stringResource(R.string.next_month))
         }
     }

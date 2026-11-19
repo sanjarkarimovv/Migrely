@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -29,6 +28,7 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.migrely.app.designsystem.button.MigrelyIconButton
 import com.migrely.app.designsystem.icon.MigrelyIcons
 import com.migrely.app.designsystem.theme.MigrelyTheme
 import com.migrely.app.subscription.ui.R
@@ -114,7 +114,7 @@ fun TrialBannerContents(
                         style = MaterialTheme.typography.bodyMedium
                     )
                 }
-                IconButton(onClick = onDismiss) {
+                MigrelyIconButton(onClick = onDismiss) {
                     Icon(
                         MigrelyIcons.Close,
                         contentDescription = stringResource(R.string.subscription_trial_dismiss)

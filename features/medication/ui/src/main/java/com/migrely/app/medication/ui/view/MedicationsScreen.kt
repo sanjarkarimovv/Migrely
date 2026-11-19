@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.navigation.NavController
 import com.migrely.app.architecture.ui.view.ScreenEnterObserver
+import com.migrely.app.designsystem.button.MigrelyIconButton
 import com.migrely.app.designsystem.icon.MigrelyIcons
 import com.migrely.app.designsystem.layout.MigrelyInsets
 import com.migrely.app.designsystem.motion.rememberReduceMotion
@@ -222,7 +223,7 @@ private fun MedicationRow(medication: MedicationUiModel, onOpen: () -> Unit, onR
                 )
             }
         }
-        IconButton(onClick = onRemove) {
+        MigrelyIconButton(onClick = onRemove) {
             Icon(
                 MigrelyIcons.Close,
                 contentDescription = stringResource(R.string.list_remove, medication.name)

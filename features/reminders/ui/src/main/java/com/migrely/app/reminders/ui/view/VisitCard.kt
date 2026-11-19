@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -28,6 +27,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.migrely.app.designsystem.button.MigrelyIconButton
 import com.migrely.app.designsystem.format.MigrelyDateFormat
 import com.migrely.app.designsystem.icon.MigrelyIcons
 import com.migrely.app.designsystem.theme.MigrelyTheme
@@ -112,7 +112,7 @@ fun VisitCardContents(
                     Text(stringResource(R.string.reminders_visit_card_report))
                 }
             }
-            IconButton(onClick = onClose) {
+            MigrelyIconButton(onClick = onClose) {
                 Icon(
                     MigrelyIcons.Close,
                     contentDescription = stringResource(

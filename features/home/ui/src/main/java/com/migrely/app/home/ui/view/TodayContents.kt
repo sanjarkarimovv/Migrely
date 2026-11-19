@@ -21,7 +21,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -45,6 +44,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.migrely.app.designsystem.button.MigrelyIconButton
 import com.migrely.app.designsystem.icon.MigrelyIcons
 import com.migrely.app.designsystem.layout.MigrelyInsets
 import com.migrely.app.designsystem.sky.SkyAppearance
@@ -256,7 +256,7 @@ private fun DayHeader(
                 .weight(1f)
                 .padding(start = 8.dp, top = 16.dp, bottom = 16.dp)
         )
-        IconButton(onClick = onSettings, modifier = settingsModifier) {
+        MigrelyIconButton(onClick = onSettings, modifier = settingsModifier) {
             Icon(
                 MigrelyIcons.Settings,
                 contentDescription = stringResource(R.string.home_settings),

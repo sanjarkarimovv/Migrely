@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
@@ -38,6 +37,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.traversalIndex
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.migrely.app.designsystem.button.MigrelyIconButton
 import com.migrely.app.designsystem.icon.MigrelyIcons
 import com.migrely.app.designsystem.input.TapGuard
 import com.migrely.app.designsystem.theme.MigrelyTheme
@@ -196,7 +196,7 @@ private fun EffectQuestion(
                         .semantics { contentDescription = spokenTaken }
                 )
             }
-            IconButton(
+            MigrelyIconButton(
                 onClick = { actions.onSkip(question.intakeId) },
                 modifier = Modifier.semantics { traversalIndex = 1f }
             ) {
