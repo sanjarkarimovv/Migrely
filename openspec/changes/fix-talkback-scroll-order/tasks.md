@@ -38,10 +38,13 @@ D3 to D5.
 
 ## 2. Shared mechanism (`android-engineer`, `designsystem`)
 
-- [ ] 2.0 Re-run eng-255's red tests on this branch (f70b6450 merged) before any fix. Verify: `nice -n 19 ./gradlew
+- [x] 2.0 Re-run eng-255's red tests on this branch (f70b6450 merged) before any fix. Verify: `nice -n 19 ./gradlew
   --max-workers=2 :features:attack:ui:testDebugUnitTest --tests '*AttackDetailsTalkBack*'` → 7 tests, the no-keyboard order
   test passes, the rest fail with a named wrong step; log `migrely-work/255/eng/2.0-red.log`. If the counts differ from
   0ecb3bc6's (6 of 7 red), report to `product-manager` before going on.
+  Result (eng-255b, 81323590): 7 tests completed, 6 failed; "no keyboard, order" passes; the 6 name their wrong step
+  (e.g. "Back of the head -> Change when it ended", "Aura left the screen"). Logs are in `migrely-work/255b/` (`255/eng`
+  links there): `2.0-red.log`, `2.0-red-summary.txt`.
 - [ ] 2.1 Navigation-bar case (design D7): an order test with a bottom system-bar inset so the visible part ends above the
   window (as `walk-b1`). Verify: red on this branch before the fix, log `2.1-red.log`.
 - [ ] 2.2 Shared test fixture: move `TalkBackTree` (order from the traversal data, scroll by the accessibility action, "only N
