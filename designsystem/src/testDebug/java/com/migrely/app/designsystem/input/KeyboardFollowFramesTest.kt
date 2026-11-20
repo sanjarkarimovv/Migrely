@@ -32,13 +32,16 @@ import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.requestFocus
+import androidx.compose.ui.test.swipeDown
 import androidx.compose.ui.test.swipeUp
 import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import com.migrely.app.designsystem.layout.MigrelyInsets
@@ -75,6 +78,17 @@ private val STEPS = listOf(0.3f, 0.7f, 1f)
 
 private const val TOLERANCE = 1f
 
+// Labels of the two single-line fields, as on Edit medication.
+private const val NAME = "Name"
+private const val DOSE = "Dose"
+
+// Ten keyboard frames, as a keyboard animates at 60 Hz on a phone, 16 ms apart.
+private val TEN_STEPS = listOf(0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1f)
+private const val FRAME_MILLIS = 16L
+
+// A keyboard switching to its symbols, taller by 73 px.
+private const val SYMBOLS_PX = 700
+
 /**
  * The note's line moves with the keyboard, in the same turn as the keyboard's frame, while the top bar steps aside
  * (BRD D194, design D2 to D4; tasks 3.2 to 3.5). Each keyboard step is run as on emulator-5570 with TalkBack on: the
@@ -96,13 +110,19 @@ class KeyboardFollowFramesTest {
 
     private var value by mutableStateOf(TextFieldValue(""))
     private var name by mutableStateOf("")
+    private var dose by mutableStateOf("")
     private var singleLine = false
     private val scroll = ScrollState(0)
 
     // Read where the page is placed: a change places the page and everything in it again, at the same spot.
     private var placements by mutableIntStateOf(0)
 
-    private val note get() = rule.onNode(hasSetTextAction())
+    // With two fields, the first (Name) is the one focused first.
+    private var twoFields = false
+    private val note get() = rule.onNode(
+        hasSetTextAction() and (if (twoFields) hasText(NAME) else hasSetTextAction())
+    )
+    private val focused get() = note
     private val page get() = rule.onNode(hasScrollAction())
 
     /**
@@ -114,7 +134,8 @@ class KeyboardFollowFramesTest {
         typingSpace: Boolean = true,
         single: Boolean = false,
         cutAfterFocusPx: Int = 0,
-        shownPx: Int = NOTE_SHOWN_PX
+        shownPx: Int = NOTE_SHOWN_PX,
+        bringRunningMillis: Long? = null
     ) {
         singleLine = single
         rule.runOnUiThread { rule.activity.drawEdgeToEdge() }
@@ -141,7 +162,16 @@ class KeyboardFollowFramesTest {
             (visiblePart().bottom - shownPx)
         page.performSemanticsAction(SemanticsActions.ScrollBy) { it(0f, toNote) }
         settle()
-        note.requestFocus()
+        if (bringRunningMillis != null) {
+            // The keyboard comes while the focus's own bring is still moving the page: [bringRunningMillis] of it.
+            rule.mainClock.autoAdvance = false
+            focused.requestFocus()
+            settle()
+            rule.mainClock.advanceTimeBy(bringRunningMillis)
+            settle()
+            return
+        }
+        focused.requestFocus()
         // The focus's own bring runs to its end before the keyboard comes.
         rule.mainClock.advanceTimeBy(SETTLE_MILLIS)
         settle()
@@ -167,8 +197,7 @@ class KeyboardFollowFramesTest {
                     }
                 }
                 .windowInsetsPadding(MigrelyInsets.barsAndKeyboard.only(WindowInsetsSides.Bottom))
-                .then(space?.page(scroll) ?: Modifier)
-                .verticalScroll(scroll)
+                .then(space?.scrollingPage(scroll) ?: Modifier.verticalScroll(scroll))
                 .padding(horizontal = 16.dp)
         ) {
             Spacer(Modifier.height(ABOVE))
@@ -184,7 +213,12 @@ class KeyboardFollowFramesTest {
     }
 
     @Composable
-    private fun Note() = if (singleLine) {
+    private fun Note() = if (twoFields) {
+        Column {
+            Field(NAME, name) { name = it }
+            Field(DOSE, dose) { dose = it }
+        }
+    } else if (singleLine) {
         SingleLineFieldInView(hasLabel = true) { inView, interactionSource ->
             OutlinedTextField(
                 value = name,
@@ -198,6 +232,19 @@ class KeyboardFollowFramesTest {
     } else {
         MultiLineNote()
     }
+
+    @Composable
+    private fun Field(label: String, text: String, onText: (String) -> Unit) =
+        SingleLineFieldInView(hasLabel = true) { inView, interactionSource ->
+            OutlinedTextField(
+                value = text,
+                onValueChange = onText,
+                singleLine = true,
+                label = { Text(label) },
+                interactionSource = interactionSource,
+                modifier = inView.fillMaxWidth()
+            )
+        }
 
     @Composable
     private fun MultiLineNote() = CursorFollowingTextField(
@@ -282,6 +329,44 @@ class KeyboardFollowFramesTest {
         }
         opening.end()
         return steps
+    }
+
+    /**
+     * As [openKeyboard], but a frame of time (16 ms) passes after each keyboard step, so an animation already running
+     * (the focus's own bring, Compose's scroll of a focused field) moves on with the keyboard, as on a device.
+     */
+    private fun openKeyboardTimed(fractions: List<Float>): List<Step> =
+        moveKeyboard(0, KEYBOARD_PX, fractions)
+
+    /** The keyboard going from [from] to [to] px through [fractions] of the way, a frame of time after each step. */
+    private fun moveKeyboard(from: Int, to: Int, fractions: List<Float>): List<Step> {
+        rule.mainClock.autoAdvance = false
+        val steps = mutableListOf(record(from))
+        var keyboard: Int? = null
+        val moving = KeyboardAnimation(rule.activity, STATUS_PX, from, to) {
+            frameAndAccessibilityLayout()
+            keyboard?.let { frames += record(it) }
+            keyboard = null
+            settle()
+            rule.mainClock.advanceTimeBy(FRAME_MILLIS)
+            settle()
+        }
+        moving.start()
+        fractions.forEach { fraction ->
+            keyboard = from + ((to - from) * fraction).toInt()
+            moving.progress(fraction)
+            steps += record(from + ((to - from) * fraction).toInt())
+        }
+        moving.end()
+        return steps
+    }
+
+    /** How far the page moves once the keyboard has stopped: a second of time, nothing else. */
+    private fun movementAfterKeyboard(): Int {
+        val atLastFrame = scroll.value
+        rule.mainClock.advanceTimeBy(SETTLE_MILLIS)
+        settle()
+        return scroll.value - atLastFrame
     }
 
     private fun record(keyboard: Int) =
@@ -512,6 +597,192 @@ class KeyboardFollowFramesTest {
         }
     }
 
+    // F1: the keyboard comes while the focus's own bring is still moving the page (#259 review cr-259 F1), the
+    // note's top only just showing at the page's bottom edge.
+    @Test
+    fun `With the focus bring still running, the line shows in each of ten keyboard frames`() {
+        focusNote(shownPx = EDGE_SHOWN_PX, bringRunningMillis = FRAME_MILLIS)
+
+        openKeyboardTimed(TEN_STEPS)
+
+        frames.forEach { frame ->
+            assertLineShows(
+                "keyboard ${frame.keyboard} px, the frame's layout",
+                frame.line,
+                frame.visible
+            )
+        }
+    }
+
+    @Test
+    fun `With the focus bring still running, a one-step keyboard shows the line in its frame`() {
+        focusNote(shownPx = EDGE_SHOWN_PX, bringRunningMillis = 0)
+
+        openKeyboardTimed(listOf(1f))
+
+        val frame = frames.single()
+        assertLineShows(
+            "keyboard ${frame.keyboard} px, the frame's layout",
+            frame.line,
+            frame.visible
+        )
+    }
+
+    // The note opens with its caret at the end (Attack details' `opensAtEnd`), so the focus's own bring has the furthest
+    // to go.
+    @Test
+    fun `With the caret at the end and the bring running, the line shows in each frame`() {
+        val text = (1..NOTE_LINES).joinToString("\n") { "Line $it of the note" }
+        value = TextFieldValue(text, TextRange(text.length))
+        focusNote(bringRunningMillis = FRAME_MILLIS)
+
+        openKeyboardTimed(TEN_STEPS)
+
+        frames.forEach { frame ->
+            assertLineShows(
+                "keyboard ${frame.keyboard} px, the frame's layout",
+                frame.line,
+                frame.visible
+            )
+        }
+    }
+
+    @Test
+    fun `With the caret at the note's end, a one-step keyboard shows the line in its frame`() {
+        val text = (1..NOTE_LINES).joinToString("\n") { "Line $it of the note" }
+        value = TextFieldValue(text, TextRange(text.length))
+        focusNote(bringRunningMillis = 0)
+
+        openKeyboardTimed(listOf(1f))
+
+        val frame = frames.single()
+        assertLineShows(
+            "keyboard ${frame.keyboard} px, the frame's layout",
+            frame.line,
+            frame.visible
+        )
+    }
+
+    // BRD D180 (5): a drag by the person while the focus's own bring runs cancels it and ends the following; the
+    // keyboard then leaves the page where the drag put it.
+    @Test
+    fun `A drag that cancels the focus bring still ends the following`() {
+        focusNote(bringRunningMillis = FRAME_MILLIS)
+        page.performTouchInput { swipeDown(durationMillis = DRAG_MILLIS) }
+        rule.mainClock.advanceTimeBy(SETTLE_MILLIS)
+        settle()
+        val dragged = scroll.value
+
+        openKeyboardTimed(TEN_STEPS)
+
+        frames.forEach { frame ->
+            assertEquals(
+                "keyboard ${frame.keyboard} px: the scroll in the frame's layout",
+                dragged,
+                frame.scroll
+            )
+        }
+    }
+
+    // F2: the note wholly in view mid-page before the keyboard (cr-259 cell G). Compose scrolls a focused field that
+    // was wholly in view back once the keyboard clips it; the page must land where that leaves nothing to do.
+    @Test
+    fun `A note wholly in view mid-page does not move after a one-step keyboard`() {
+        focusNote(shownPx = WHOLE_NOTE_SHOWN_PX)
+        assertTrue("the note starts wholly in view", fieldBounds().bottom <= visiblePart().bottom)
+
+        val after = openKeyboardTimed(listOf(1f)).last()
+
+        assertLineShows("keyboard up", after.line, after.visible)
+        assertEquals(
+            "px the page moved after the keyboard's last frame",
+            0,
+            movementAfterKeyboard()
+        )
+    }
+
+    @Test
+    fun `A note wholly in view mid-page does not move after a ten-step keyboard`() {
+        focusNote(shownPx = WHOLE_NOTE_SHOWN_PX)
+
+        openKeyboardTimed(TEN_STEPS)
+
+        frames.forEach { frame ->
+            assertLineShows(
+                "keyboard ${frame.keyboard} px, the frame's layout",
+                frame.line,
+                frame.visible
+            )
+        }
+        assertEquals(
+            "px the page moved after the keyboard's last frame",
+            0,
+            movementAfterKeyboard()
+        )
+    }
+
+    @Test
+    fun `A note cut by the page's bottom does not move after a ten-step keyboard`() {
+        focusNote()
+
+        openKeyboardTimed(TEN_STEPS)
+
+        assertEquals(
+            "px the page moved after the keyboard's last frame",
+            0,
+            movementAfterKeyboard()
+        )
+    }
+
+    // F5: a keyboard that grows while typing (its symbols) follows; one that shrinks back scrolls nothing (BRD D189).
+    @Test
+    fun `A keyboard growing while up keeps the line, and shrinking back scrolls nothing`() {
+        focusNote()
+        openKeyboardTimed(TEN_STEPS)
+        frames.clear()
+
+        moveKeyboard(KEYBOARD_PX, SYMBOLS_PX, listOf(0.5f, 1f))
+        frames.forEach { frame ->
+            assertLineShows("taller keyboard ${frame.keyboard} px", frame.line, frame.visible)
+        }
+        val atSymbols = scroll.value
+        frames.clear()
+
+        moveKeyboard(SYMBOLS_PX, KEYBOARD_PX, listOf(0.5f, 1f))
+        frames.forEach { frame ->
+            assertEquals(
+                "shorter keyboard ${frame.keyboard} px: the scroll",
+                atSymbols,
+                frame.scroll
+            )
+        }
+    }
+
+    // F5: moving to another field with the keyboard up (Edit medication: name, then dose) brings that field into view
+    // and the page keeps it, not the first one, as the keyboard grows.
+    @Test
+    fun `Moving to the next field with the keyboard up keeps that field in view`() {
+        twoFields = true
+        focusNote(single = true)
+        openKeyboardTimed(TEN_STEPS)
+        rule.onNode(hasSetTextAction() and hasText(DOSE)).requestFocus()
+        rule.mainClock.advanceTimeBy(SETTLE_MILLIS)
+        settle()
+        frames.clear()
+
+        moveKeyboard(KEYBOARD_PX, SYMBOLS_PX, listOf(0.5f, 1f))
+
+        // The dose field (244 px) no longer fits whole, so ux U1 shows it from its input line down, its bottom at the
+        // visible part's bottom.
+        val dose = rule.onNode(hasSetTextAction() and hasText(DOSE)).getUnclippedBoundsInRoot()
+        assertEquals(
+            "the dose field's bottom",
+            visiblePart().bottom,
+            dose.bottom.value * density(),
+            TOLERANCE
+        )
+    }
+
     private companion object {
         const val SETTLE_MILLIS = 1_000L
         const val SETTLE_ROUNDS = 5
@@ -524,5 +795,14 @@ class KeyboardFollowFramesTest {
 
         // How far the person scrolls the page back, the line out of view, before the keyboard opens.
         const val SCROLLED_AWAY_PX = 900f
+
+        // The note's top only just showing at the page's bottom edge before the keyboard (cr-259 F1).
+        const val EDGE_SHOWN_PX = 60
+
+        // A note of four lines, opened with its caret at the end.
+        const val NOTE_LINES = 4
+
+        // A slow drag, so the page takes it as the person's own scroll.
+        const val DRAG_MILLIS = 400L
     }
 }

@@ -97,7 +97,12 @@ fun SingleLineFieldInView(
         requester.bringNestedIntoView(*fieldAreas(width, height).toTypedArray())
     LaunchedEffect(focused, size) {
         if (!focused || size == IntSize.Zero) return@LaunchedEffect
-        bringFieldIntoView(size.width.toFloat(), size.height.toFloat())
+        follow.onBringing()
+        try {
+            bringFieldIntoView(size.width.toFloat(), size.height.toFloat())
+        } finally {
+            follow.onBringEnded()
+        }
         follow.onBroughtIntoView()
     }
     LaunchedEffect(inViewRequests) {

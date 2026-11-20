@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.imeAnimationSource
 import androidx.compose.foundation.layout.imeAnimationTarget
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -21,6 +22,7 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.findRootCoordinates
@@ -34,6 +36,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.constrainHeight
 import androidx.compose.ui.unit.dp
 import com.migrely.app.designsystem.layout.MigrelyInsets
+import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlinx.coroutines.awaitCancellation
 
@@ -45,8 +48,9 @@ import kotlinx.coroutines.awaitCancellation
  * - [barModifier] on the top bar: its height follows the keyboard's own inset animation, with no curve of its own and
  *   in one step where the keyboard jumps, down to the status bar, which stays. Its content is clipped, never faded or
  *   drawn over the page, and while aside it leaves the accessibility tree and takes no keyboard focus.
- * - [page] on the page, right before its `verticalScroll` with the same [ScrollState]: what it measures is the visible
- *   part, and while the keyboard grows it keeps the focused field's line in view in the same layout pass (BRD D194).
+ * - [scrollingPage] on the page in place of its `verticalScroll`: it scrolls the page with the given [ScrollState],
+ *   measures the visible part, and while the keyboard grows keeps the focused field's line in view in the same layout
+ *   pass (BRD D194).
  * - [ProvideTypingSpace] around the page, so its [CursorFollowingTextField]s and [SingleLineFieldInView]s report the
  *   line being typed, read the visible part and are kept in view.
  *
@@ -70,6 +74,7 @@ class TypingSpace internal constructor(
     // layout reads them and must not be laid out again because they change.
     private var kept: KeptField? = null
     private var keyboardAtLastPlacement = -1
+    private var visibleAtLastPlacement = -1
 
     // The clip first: it cuts the bar to the height the layout below reports, not to the bar's full height.
     private val barLayout: Modifier = Modifier
@@ -94,21 +99,30 @@ class TypingSpace internal constructor(
     }
 
     /**
-     * Put on the page right before its `verticalScroll([scrollState])`. While the keyboard grows, the focused field's
+     * Put on the page in place of its `verticalScroll(scrollState)`: the page scrolls with [scrollState], and that same
+     * state is the one kept in step with the keyboard, so the two can never differ (#259 review F3). A screen whose
+     * scroll needs more (a TalkBack step, #255) adds it after this, on the same state.
+     */
+    fun scrollingPage(scrollState: ScrollState): Modifier =
+        page(scrollState).verticalScroll(scrollState)
+
+    /**
+     * Right before the page's `verticalScroll([scrollState])`. While the keyboard grows, the focused field's
      * line is scrolled into the visible part within the layout pass that shrinks that part, before the page's content
      * is placed: no frame and no accessibility service ever sees the line under the keyboard, so TalkBack keeps its
      * focus on the field (BRD D194, #259). The line moves with the keyboard's own frames, with no curve of its own
      * (ux C1 to C3); a keyboard that shrinks or closes never scrolls the page (BRD D189).
      */
-    fun page(scrollState: ScrollState): Modifier = pageRecord.layout { measurable, constraints ->
-        val placeable = measurable.measure(constraints)
-        val keyboardNow = keyboard.getBottom(this)
-        layout(placeable.width, placeable.height) {
-            // The page's content is still where the last placement put it, so the field's place is read against it.
-            coordinates?.let { keepInView(it, placeable.height, keyboardNow, scrollState) }
-            placeable.place(0, 0)
+    private fun page(scrollState: ScrollState): Modifier =
+        pageRecord.layout { measurable, constraints ->
+            val placeable = measurable.measure(constraints)
+            val keyboardNow = keyboard.getBottom(this)
+            layout(placeable.width, placeable.height) {
+                // The page's content is still where the last placement put it, so the field's place is read against it.
+                coordinates?.let { keepInView(it, placeable.height, keyboardNow, scrollState) }
+                placeable.place(0, 0)
+            }
         }
-    }
 
     /**
      * With the keyboard grown since the last placement and the kept field following it, scrolls [scrollState] so the
@@ -121,7 +135,9 @@ class TypingSpace internal constructor(
         scrollState: ScrollState
     ) {
         val grew = keyboardAtLastPlacement in 0 until keyboardNow
+        val visibleBefore = visibleAtLastPlacement
         keyboardAtLastPlacement = keyboardNow
+        visibleAtLastPlacement = visible
         if (!grew) return
         Snapshot.withoutReadObservation {
             val field = kept?.takeIf { it.following() } ?: return@withoutReadObservation
@@ -132,7 +148,17 @@ class TypingSpace internal constructor(
                 areas.firstOrNull { it.height <= visible } ?: areas.lastOrNull()
                     ?: return@withoutReadObservation
             val top = page.localPositionOf(coordinates, area.topLeft).y
-            val shift = scrollToShow(top, top + area.height, visible)
+            var shift = scrollToShow(top, top + area.height, visible)
+            // A focused field wholly in view before the visible part shrank is one Compose's own scroll brings back
+            // once clipped, animated, after the keyboard has stopped. Land where it would, so it has nothing to do
+            // (ux C3); either way it lines up an edge of the field, so the line inside stays whole.
+            val fieldTop = page.localPositionOf(coordinates, Offset.Zero).y
+            val fieldHeight = coordinates.size.height.toFloat()
+            if (visibleBefore > 0 &&
+                focusedChildScroll(fieldTop, fieldHeight, visibleBefore) == 0f
+            ) {
+                shift += focusedChildScroll(fieldTop - shift, fieldHeight, visible)
+            }
             if (shift > 0f) scrollState.dispatchRawDelta(shift)
         }
     }
@@ -229,6 +255,21 @@ internal fun scrollToShow(top: Float, bottom: Float, visible: Int): Float = when
     bottom > visible -> minOf(bottom - visible, top)
     top < 0f -> top
     else -> 0f
+}
+
+/**
+ * How far Compose's own scroll moves a focused field from [top], [size] px tall, into a visible part [visible] px tall:
+ * Compose 1.9's default bring-into-view distance (`BringIntoViewSpec`), which its scrolling container uses to keep a
+ * focused child in view as the container shrinks. 0 where the field shows whole, or covers the whole part.
+ */
+internal fun focusedChildScroll(top: Float, size: Float, visible: Int): Float {
+    val bottom = top + size
+    return when {
+        top >= 0f && bottom <= visible -> 0f
+        top < 0f && bottom > visible -> 0f
+        abs(top) < abs(bottom - visible) -> top
+        else -> bottom - visible
+    }
 }
 
 /** Gone from TalkBack, Switch Access and Tab: a bar that is not on screen is never a stop. */

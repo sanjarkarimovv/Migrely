@@ -262,9 +262,8 @@ private fun ColumnScope.Confirmation(
                 word,
                 failed,
                 actions.onTyped,
-                scrollState,
                 keyboardRoom,
-                typingSpace.page(scrollState)
+                typingSpace.scrollingPage(scrollState)
             )
         }
         // There is more to read above the button. Always laid out, only its colour changes: a divider that comes
@@ -327,9 +326,8 @@ private fun ConfirmationBody(
     word: String,
     failed: Boolean,
     onTyped: (String) -> Unit,
-    scrollState: ScrollState,
     keyboardRoom: KeyboardRoom,
-    pageModifier: Modifier
+    scrollingPage: Modifier
 ) {
     // Kept tight, so the warning and the field fit above the button in landscape at twice the font size.
     Column(
@@ -338,8 +336,7 @@ private fun ConfirmationBody(
             .widthIn(max = CONTENT_MAX_WIDTH)
             .fillMaxWidth()
             .windowInsetsPadding(MigrelyInsets.bars.only(WindowInsetsSides.Horizontal))
-            .then(pageModifier)
-            .verticalScroll(scrollState)
+            .then(scrollingPage)
             // After the scroll, never a child: the column's spacing would add a gap.
             .then(keyboardRoom.modifier)
             .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 12.dp)

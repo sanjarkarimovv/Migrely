@@ -46,6 +46,9 @@ green; each mutation must turn its test red again. Logs go to `migrely-work/259/
   returning 0.
   Done 232a615c. `TypingSpaceScrollToShowTest` 6 of 6 green; returning 0 fails 5 of 6 (the inside cell is 0 by definition)
   (`eng/3.1-mutant.log`).
+  Since 4d1d0430 `scrollToShow` is a pure function of viewport numbers and `TypingSpaceScrollToShowTest` has 5 `@Test`
+  (inside, below, above, taller, exactly as tall); the detached-field and unknown-page cases moved to the page's own
+  layout pass (cr-259 F4).
 - [x] 3.2 `CursorFollowingTextField`: inside a typing space, on keyboard growth while following, hand `scrollToShow` of the
   caret's line box to the page in the same turn (design D3); outside a typing space keep `bringIntoView`. Robolectric test:
   a note in a `verticalScroll` inside a `TypingSpace`, IME insets driven by hand in steps (as `KeyboardRoomTest` does), with
@@ -183,6 +186,10 @@ window size afterwards. One JSON row per run in `migrely-work/259/rows.jsonl`.
 
 - [ ] 6.1 Review the diff against `develop` 4d141abe, with design D3's mechanism as an explicit question (side channel versus
   an explicit `ScrollState`); fixes go back to 2 to 5 and the gate reruns. Verify: review verdict recorded in the PR.
+  cr-259 round 1 (CHANGES REQUESTED on dd0210b7) fixed on the branch, see eng-259's report: F1 the follow holds while the
+  field's own bring runs; F2 the page lands where Compose's focused-child scroll leaves nothing to do; F3 one
+  `TypingSpace.scrollingPage(state)`, an Attack details frame test, `PageScrollParent` tests removed; F4 this row and 3.1;
+  F5 cells for a keyboard changing height and for moving between fields. Awaiting re-review.
 
 ## 7. Independent retest (`qa-engineer`)
 

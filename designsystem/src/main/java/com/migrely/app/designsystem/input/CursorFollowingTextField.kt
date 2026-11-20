@@ -95,7 +95,12 @@ fun CursorFollowingTextField(
         // An edit's own layout comes a frame after it.
         val laidOut = snapshotFlow { layout }.first { it?.layoutInput?.text?.text == text }
         val line = lineInView(laidOut, value.selection.end) ?: return@LaunchedEffect
-        requester.bringIntoView(line)
+        follow.onBringing()
+        try {
+            requester.bringIntoView(line)
+        } finally {
+            follow.onBringEnded()
+        }
         follow.onBroughtIntoView()
     }
     LaunchedEffect(focused) {

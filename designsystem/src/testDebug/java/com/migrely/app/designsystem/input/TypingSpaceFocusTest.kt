@@ -104,8 +104,7 @@ class TypingSpaceFocusTest {
                             .windowInsetsPadding(
                                 MigrelyInsets.barsAndKeyboard.only(WindowInsetsSides.Bottom)
                             )
-                            .then(space.page(pageScroll))
-                            .verticalScroll(pageScroll)
+                            .then(space.scrollingPage(pageScroll))
                     ) {
                         TextButton(onClick = {}) { Text(ABOVE) }
                         ProvideTypingSpace(space) {

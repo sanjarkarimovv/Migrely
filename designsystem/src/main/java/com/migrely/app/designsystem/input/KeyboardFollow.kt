@@ -25,9 +25,30 @@ internal class KeyboardFollow {
     // The keyboard height the follow's collector last acted on.
     private var keyboardFollowed = -1
 
+    // The field's own bring of its line is running: the line is on its way into view.
+    private var bringing = false
+
     /** Whether the line follows the keyboard now. */
     val isFollowing: Boolean
         get() = following
+
+    /**
+     * The field starts bringing its line into view itself, on focus or an edit: it follows the keyboard from now, not
+     * only once the bring ends, so a keyboard that comes while the page still moves keeps the line (#259 review F1).
+     * Layouts during the bring record nothing; [onBringEnded] ends it, ended or cancelled.
+     */
+    fun onBringing() {
+        bringing = true
+        following = true
+    }
+
+    /**
+     * The field's bring ended, done or cancelled (a drag by the person cancels it): the next layout in which the
+     * keyboard holds still records what the person sees again (BRD D180 (5)).
+     */
+    fun onBringEnded() {
+        bringing = false
+    }
 
     /** The field brought its line into view itself, on focus or an edit. */
     fun onBroughtIntoView() {
@@ -38,7 +59,7 @@ internal class KeyboardFollow {
     fun onPositioned(keyboard: Int, field: LayoutCoordinates?, line: Rect?) {
         // The keyboard held still since the last layout, and the follow has already acted on this height.
         val settled = keyboard == keyboardAtLastLayout && keyboard == keyboardFollowed
-        if (settled && field != null && line != null) {
+        if (settled && !bringing && field != null && line != null) {
             following = field.showsWhole(line)
         }
         keyboardAtLastLayout = keyboard

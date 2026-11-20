@@ -125,8 +125,7 @@ class TypedLineMarginsTest {
                             .windowInsetsPadding(
                                 MigrelyInsets.barsAndKeyboard.only(WindowInsetsSides.Bottom)
                             )
-                            .then(space.page(pageScroll))
-                            .verticalScroll(pageScroll)
+                            .then(space.scrollingPage(pageScroll))
                             .padding(horizontal = 16.dp)
                     ) {
                         Spacer(Modifier.height(ABOVE))
