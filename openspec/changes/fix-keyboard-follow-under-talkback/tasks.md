@@ -115,6 +115,14 @@ green; each mutation must turn its test red again. Logs go to `migrely-work/259/
   cr-259 round 3 S4-1 and S4-3 (`eng/r8-mut-*.log`): a cell at 350 px with the caret at the end checks the hold keeps no
   more than the line with its clearance; the cap dropped reds it (177 px shown against 154). A field covering the whole
   visible part is not held (split screen); the pure cell is red without that guard.
+  Device round 4 on emulator-5570 (`eng/r9-*.log`, rows `u-`/`dg-` in `rows.jsonl`): 43fb9202 failed u3 in 4 of 6
+  valid rows (note wholly hidden, focus to an impact radio, impact written; 2 more were ANR at load 26, void). A diag
+  build's log showed why: under TalkBack, Gboard's first reopen frame is 0 to 270 or 0 to 422 px, taking more of the
+  note than showed (87 to 89 px) in one frame; the hold, `held - shownInPage(now)` with the clamp at 0, scrolled only
+  89 px and left the note's top 50 px below the edge, and the next frame saw nothing showing. The hold is now
+  `fieldTop + held - visible` (its top `held` px above the bottom; equal to before while any part shows). Eight cells
+  replay those frames (0 to 270 and 0 to 422 px; 60 and 89 px shown; caret on line 1 and at the end), each with H1 and
+  H2: all red on 43fb9202 (0 px shown at 270 or 422 px), green now; the clamped form put back reds exactly these 8.
   Numbers (Robolectric, 360 dp at 200%, keyboard steps 62 to 63 px, bar 19 to 20 px; `eng/r7-hold.log`): every held
   frame moves the line 61 to 63 px, the note keeps 59 to 60, 150 or 153 to 154 px showing, 0 px after the keyboard. H3
   peaks, logged not capped (ux option 1, `eng/r7-h3-measure.log`): caret line 1 at 60 px, 26 px over 12 frames; caret

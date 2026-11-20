@@ -162,7 +162,9 @@ class TypingSpace internal constructor(
                     return@withoutReadObservation
                 }
                 val held = minOf(line, shownInPage(fieldTop, fieldHeight, visibleBefore))
-                val hold = held - shownInPage(fieldTop, fieldHeight, visible)
+                // Its top [held] px above the visible part's bottom: one frame may take more than showed (Gboard's
+                // first frame under TalkBack, 0 to 270 or 422 px), so measured from the top, not from what still shows.
+                val hold = fieldTop + held - visible
                 if (hold > 0f) scrollState.dispatchRawDelta(hold)
                 return@withoutReadObservation
             }

@@ -842,6 +842,49 @@ class KeyboardFollowFramesTest {
         assertKeepsShown(HELD_HIGH_PX, caretAtEnd = true)
     }
 
+    // Device rows u3 on emulator-5570 (#259 round 4): under TalkBack, Gboard's first reopen frame is a large step
+    // (0 to 270 or 0 to 422 px), taking more of the note than showed in one frame. The hold still keeps what showed
+    // (H2) and moves the line by no more than each frame's keyboard step (H1).
+    @Test
+    fun `Gboard's first step 0 to 270 px, 60 px shown, caret on line 1, is held`() {
+        assertHeldThroughout(HELD_LOW_PX, caretAtEnd = false, GBOARD_FIRST_270)
+    }
+
+    @Test
+    fun `Gboard's first step 0 to 270 px, 60 px shown, caret at the end, is held`() {
+        assertHeldThroughout(HELD_LOW_PX, caretAtEnd = true, GBOARD_FIRST_270)
+    }
+
+    @Test
+    fun `Gboard's first step 0 to 270 px, 89 px shown, caret on line 1, is held`() {
+        assertHeldThroughout(HELD_REOPEN_PX, caretAtEnd = false, GBOARD_FIRST_270)
+    }
+
+    @Test
+    fun `Gboard's first step 0 to 270 px, 89 px shown, caret at the end, is held`() {
+        assertHeldThroughout(HELD_REOPEN_PX, caretAtEnd = true, GBOARD_FIRST_270)
+    }
+
+    @Test
+    fun `Gboard's first step 0 to 422 px, 60 px shown, caret on line 1, is held`() {
+        assertHeldThroughout(HELD_LOW_PX, caretAtEnd = false, GBOARD_FIRST_422)
+    }
+
+    @Test
+    fun `Gboard's first step 0 to 422 px, 60 px shown, caret at the end, is held`() {
+        assertHeldThroughout(HELD_LOW_PX, caretAtEnd = true, GBOARD_FIRST_422)
+    }
+
+    @Test
+    fun `Gboard's first step 0 to 422 px, 89 px shown, caret on line 1, is held`() {
+        assertHeldThroughout(HELD_REOPEN_PX, caretAtEnd = false, GBOARD_FIRST_422)
+    }
+
+    @Test
+    fun `Gboard's first step 0 to 422 px, 89 px shown, caret at the end, is held`() {
+        assertHeldThroughout(HELD_REOPEN_PX, caretAtEnd = true, GBOARD_FIRST_422)
+    }
+
     // cr-259 S4-1: the hold keeps no more than the line with its clearance (8 dp each side), however much showed.
     @Test
     fun `H2 a reopen at 350 px holds no more than the line with its clearance`() {
@@ -989,8 +1032,18 @@ class KeyboardFollowFramesTest {
      * H2: from [shownPx] showing before the reopen, each frame's own layout and the end keep at least the lesser of
      * that and the line showing, so the note stays in the accessibility tree.
      */
-    private fun assertKeepsShown(shownPx: Int, caretAtEnd: Boolean) {
-        val after = reopenAt(shownPx, caretAtEnd).last()
+    private fun assertKeepsShown(shownPx: Int, caretAtEnd: Boolean) =
+        assertShownKept(shownPx, reopenAt(shownPx, caretAtEnd).last())
+
+    /** H1 and H2 for a reopen through [fractions] of the keyboard, from [shownPx] showing. */
+    private fun assertHeldThroughout(shownPx: Int, caretAtEnd: Boolean, fractions: List<Float>) {
+        val steps = reopenAt(shownPx, caretAtEnd, fractions)
+        assertShownKept(shownPx, steps.last())
+        assertMovesWithKeyboard(steps)
+    }
+
+    /** H2: each frame's own layout and [after] keep at least the lesser of [shownPx] and the line showing. */
+    private fun assertShownKept(shownPx: Int, after: Step) {
         val least = minOf(shownPx.toFloat(), cursorLine().height)
 
         (frames + after).forEach { step ->
@@ -1040,6 +1093,15 @@ class KeyboardFollowFramesTest {
         const val HELD_LOW_PX = 60
         const val HELD_MID_PX = 150
         const val HELD_HIGH_PX = 350
+
+        // u3 on emulator-5570: 87 to 89 px of the note showed before the reopen.
+        const val HELD_REOPEN_PX = 89
+
+        // Gboard's reopen frames under TalkBack on emulator-5570, in px of its 627 (R259 diag log).
+        val GBOARD_FIRST_270 = keyboardFractions(270, 508, 592, 619, 623, 627)
+        val GBOARD_FIRST_422 = keyboardFractions(422, 578, 619, 627)
+
+        fun keyboardFractions(vararg px: Int): List<Float> = px.map { it / KEYBOARD_PX.toFloat() }
 
         // H3: the frames watched after the first character, and those its line may take to settle.
         const val H3_FRAMES = 40
