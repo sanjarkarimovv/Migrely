@@ -51,7 +51,7 @@ class MonthSkyCalendarPitchTest {
 
     private val clicked = mutableListOf<Int>()
 
-    private fun show(fontScale: Float = 1f) = rule.setContent {
+    private fun show(fontScale: Float = 1f, lastSelectable: Int = DAYS) = rule.setContent {
         val density = LocalDensity.current
         CompositionLocalProvider(LocalDensity provides Density(density.density, fontScale)) {
             MigrelyTheme {
@@ -70,7 +70,7 @@ class MonthSkyCalendarPitchTest {
                                     },
                                     isToday = day == 10,
                                     isSelected = day == 5,
-                                    isSelectable = true,
+                                    isSelectable = day <= lastSelectable,
                                     description = "Day $day",
                                     hasPeriodMark = day == 12
                                 )
@@ -165,4 +165,16 @@ class MonthSkyCalendarPitchTest {
     @Test
     @Config(sdk = [35], qualifiers = "w411dp-h891dp")
     fun `Pixels at 411 dp, 200 percent`() = showAndCompare("411-200", 2f)
+
+    @Test
+    @Config(sdk = [35], qualifiers = "w360dp-h800dp")
+    fun `A day that cannot be chosen keeps its words on its drawn cell`() {
+        // #255 finding 6.2-F1: such a day has no place in Compose's traversal data, so TalkBack orders it by its
+        // bounds; spread over the pitch slot past the calendar's edge, TalkBack put Saturday 21 out of order.
+        show(lastSelectable = 20)
+        val gap = with(rule.density) { GAP_DP.dp.toPx() }
+        val chosen = rule.onNodeWithContentDescription("Day 20").fetchSemanticsNode().boundsInRoot
+        val future = rule.onNodeWithContentDescription("Day 21").fetchSemanticsNode().boundsInRoot
+        assertEquals("the chosen day's slot less a gap", chosen.width - gap, future.width, 1f)
+    }
 }

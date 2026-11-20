@@ -343,20 +343,24 @@ private fun DayCell(
     // The touch area: the cell's whole pitch (see MonthSkyCalendar). The press shows no ripple of its own: the
     // drawn cell below shows it, clipped to its shape, as before.
     val interactions = remember { MutableInteractionSource() }
-    val inset = with(LocalDensity.current) { (CellSpacing / 2).toPx() }
+    // Where the padding places the drawn cell, to the pixel.
+    val inset = with(LocalDensity.current) { (CellSpacing / 2).roundToPx().toFloat() }
     val cellInteractions =
         remember(interactions, inset) { InsetInteractionSource(interactions, Offset(inset, inset)) }
+    val words = Modifier.semantics {
+        contentDescription = day.description
+        if (day.isSelected) stateDescription = chosenStateDescription
+    }
     Box(
-        // Merged into the clickable rather than replacing it, so a day stays focusable for keyboards and switch
-        // access (BRD EC-UX-19); the day number inside is cleared so the description is read once.
+        // A day that can be chosen: its words merged into the clickable rather than replacing it, so it stays
+        // focusable for keyboards and switch access (BRD EC-UX-19); the day number inside is cleared so the
+        // description is read once. A day that cannot be chosen has no touch area and no place in TalkBack's
+        // traversal data: TalkBack orders it by its bounds, so its words stay on the drawn cell, inside the calendar,
+        // as before the pitch slot (#255 finding 6.2-F1).
         modifier = modifier
-            .semantics {
-                contentDescription = day.description
-                if (day.isSelected) stateDescription = chosenStateDescription
-            }
             .then(
                 if (selectable) {
-                    Modifier
+                    words
                         .focusRequester(focusRequester)
                         .onFocusChanged {
                             focused = it.isFocused
@@ -377,6 +381,7 @@ private fun DayCell(
         Box(
             modifier = Modifier
                 .aspectRatio(1f)
+                .then(if (selectable) Modifier else words)
                 .clip(CellShape)
                 .indication(cellInteractions, LocalIndication.current)
                 .then(ring)
