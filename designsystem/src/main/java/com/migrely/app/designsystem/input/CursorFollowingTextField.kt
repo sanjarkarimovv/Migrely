@@ -114,7 +114,7 @@ fun CursorFollowingTextField(
     LaunchedEffect(focused, space) {
         if (!focused || space == null) return@LaunchedEffect
         space.keepInView(
-            KeptField({ geometry.field }, { follow.isFollowing }) { visible ->
+            KeptField({ geometry.field }, follow) { visible ->
                 listOfNotNull(lineInView(layout, cursor, visible))
             }
         )

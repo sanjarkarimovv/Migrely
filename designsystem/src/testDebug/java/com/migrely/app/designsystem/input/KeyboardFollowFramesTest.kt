@@ -614,9 +614,12 @@ class KeyboardFollowFramesTest {
         }
     }
 
+    // A one-step keyboard leaves an unfollowed note less than its line, so the typing space keeps the note even
+    // without the bring's follow (#259 (a')): these one-step cells guard the outcome. The follow during the bring is
+    // pinned by the ten-step caret-at-end cell (cr-259 N4: no bring delay from 16 to 240 ms tells the two apart).
     @Test
     fun `With the focus bring still running, a one-step keyboard shows the line in its frame`() {
-        focusNote(shownPx = EDGE_SHOWN_PX, bringRunningMillis = 0)
+        focusNote(shownPx = EDGE_SHOWN_PX, bringRunningMillis = FRAME_MILLIS)
 
         openKeyboardTimed(listOf(1f))
 
@@ -651,7 +654,7 @@ class KeyboardFollowFramesTest {
     fun `With the caret at the note's end, a one-step keyboard shows the line in its frame`() {
         val text = (1..NOTE_LINES).joinToString("\n") { "Line $it of the note" }
         value = TextFieldValue(text, TextRange(text.length))
-        focusNote(bringRunningMillis = 0)
+        focusNote(bringRunningMillis = FRAME_MILLIS)
 
         openKeyboardTimed(listOf(1f))
 
@@ -789,6 +792,80 @@ class KeyboardFollowFramesTest {
     // tree), and once up the line shows.
     @Test
     fun `A keyboard opened again never hides the still-focused note wholly`() {
+        val after = reopenAtEdge().last()
+
+        frames.forEach { frame ->
+            val (field, visible) = frame.field to frame.visible
+            assertTrue(
+                "keyboard ${frame.keyboard} px: the note ${field.top}..${field.bottom} is hidden " +
+                    "from the visible part ${visible.top}..${visible.bottom}",
+                shownInPage(field.top - visible.top, field.height, visible.height.toInt()) >=
+                    MIN_SHOWN_PX
+            )
+        }
+        assertLineShows("keyboard up", after.line, after.visible)
+    }
+
+    // cr-259 R1 (N1): after the keyboard reopened and kept the note, the person scrolls it wholly away; the taller
+    // symbols keyboard then leaves the page where it was put, as after a normal opening (R1c, BRD D180 (5)).
+    @Test
+    fun `After a reopen kept the note, a scroll away is left alone by a growing keyboard`() {
+        reopenAtEdge()
+
+        assertScrollAwayHolds()
+    }
+
+    @Test
+    fun `After a normal opening, a scroll away is left alone by a growing keyboard`() {
+        focusNote()
+        openKeyboardTimed(TEN_STEPS)
+        rule.mainClock.advanceTimeBy(SETTLE_MILLIS)
+        settle()
+
+        assertScrollAwayHolds()
+    }
+
+    // cr-259 N3: the note's 60 px are less than its line, so the keyboard's first frame, which takes them, keeps the
+    // note; from then on the page follows in step, each later frame no further than the keyboard moved.
+    @Test
+    fun `From the keyboard's first frame the note is kept, then the page moves in step`() {
+        val steps = reopenAtEdge()
+
+        val moves = steps.zipWithNext().filter { (before, after) -> after.scroll != before.scroll }
+        assertEquals(
+            "the keyboard at the page's first move",
+            steps[1].keyboard,
+            moves.first().second.keyboard
+        )
+        moves.drop(1).forEach { (before, after) ->
+            assertTrue(
+                "keyboard ${before.keyboard} to ${after.keyboard} px: the page moved " +
+                    "${after.scroll - before.scroll} px",
+                after.scroll - before.scroll <= after.keyboard - before.keyboard + TOLERANCE
+            )
+        }
+    }
+
+    // cr-259 N1: with the caret at the end of a longer note (Attack details opens it there), the kept note follows
+    // the keyboard from then on, so its line stays in view in each later frame, not only the note's top.
+    @Test
+    fun `With the caret at the note's end, the line kept on reopening shows in each frame`() {
+        val text = (1..NOTE_LINES).joinToString("\n") { "Line $it of the note" }
+        value = TextFieldValue(text, TextRange(text.length))
+
+        reopenAtEdge()
+
+        frames.forEach { frame ->
+            assertLineShows(
+                "keyboard ${frame.keyboard} px, the frame's layout",
+                frame.line,
+                frame.visible
+            )
+        }
+    }
+
+    /** The keyboard closes with the note focused, the note's top 60 px above the page's bottom, and opens again. */
+    private fun reopenAtEdge(): List<Step> {
         focusNote()
         openKeyboardTimed(TEN_STEPS)
         moveKeyboard(KEYBOARD_PX, 0, listOf(0.5f, 1f))
@@ -803,45 +880,18 @@ class KeyboardFollowFramesTest {
             fieldBounds().top < visiblePart().bottom
         )
         frames.clear()
-
-        val after = openKeyboardTimed(TEN_STEPS).last()
-
-        frames.forEach { frame ->
-            val (field, visible) = frame.field to frame.visible
-            assertTrue(
-                "keyboard ${frame.keyboard} px: the note ${field.top}..${field.bottom} is hidden " +
-                    "from the visible part ${visible.top}..${visible.bottom}",
-                showsInPage(field.top - visible.top, field.height, visible.height.toInt())
-            )
-        }
-        assertLineShows("keyboard up", after.line, after.visible)
+        val steps = openKeyboardTimed(TEN_STEPS)
+        rule.mainClock.advanceTimeBy(SETTLE_MILLIS)
+        settle()
+        return steps
     }
 
-    // (a'): the keyboard's turn to keep a field it was about to hide ends with that field. The next field, once the
-    // person scrolls it partly out at the bottom, is not pulled up when the keyboard grows (BRD D180 (5)).
-    @Test
-    fun `After a reopen keeps one field, the next one scrolled partly away stays put`() {
-        twoFields = true
-        focusNote(single = true)
-        openKeyboardTimed(TEN_STEPS)
-        moveKeyboard(KEYBOARD_PX, 0, listOf(0.5f, 1f))
+    /** The person scrolls the note wholly away, then the keyboard grows to its symbols: the page stays put. */
+    private fun assertScrollAwayHolds() {
+        page.performSemanticsAction(SemanticsActions.ScrollBy) { it(0f, -SCROLLED_AWAY_PX) }
         rule.mainClock.advanceTimeBy(SETTLE_MILLIS)
         settle()
-        val toEdge = fieldBounds().top - (visiblePart().bottom - EDGE_SHOWN_PX)
-        page.performSemanticsAction(SemanticsActions.ScrollBy) { it(0f, toEdge) }
-        settle()
-        openKeyboardTimed(TEN_STEPS)
-        val doseField = rule.onNode(hasSetTextAction() and hasText(DOSE))
-        doseField.requestFocus()
-        rule.mainClock.advanceTimeBy(SETTLE_MILLIS)
-        settle()
-        val doseTop = doseField.getUnclippedBoundsInRoot().top.value * density()
-        val shownAfterGrowth = EDGE_SHOWN_PX + SYMBOLS_PX - KEYBOARD_PX
-        page.performSemanticsAction(SemanticsActions.ScrollBy) {
-            it(0f, doseTop - (visiblePart().bottom - shownAfterGrowth))
-        }
-        rule.mainClock.advanceTimeBy(SETTLE_MILLIS)
-        settle()
+        assertTrue("the note is wholly away", fieldBounds().top >= visiblePart().bottom)
         val away = scroll.value
         frames.clear()
 
@@ -850,8 +900,7 @@ class KeyboardFollowFramesTest {
         frames.forEach { frame ->
             assertEquals("keyboard ${frame.keyboard} px: the scroll", away, frame.scroll)
         }
-        val dose = doseField.getUnclippedBoundsInRoot()
-        assertTrue("the dose field still shows", dose.top.value * density() < visiblePart().bottom)
+        assertEquals("px the page moved after the keyboard", 0, movementAfterKeyboard())
     }
 
     private companion object {

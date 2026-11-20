@@ -94,16 +94,24 @@ green; each mutation must turn its test red again. Logs go to `migrely-work/259/
   checks no other scroll or nested-scroll node lies between each field and its page on Attack details, Log and Edit
   medication, Delete all data (4 tests); a nested scroll added inside Attack details' page fails it
   (`eng/3.5-screens-mutant.log`).
-  Reopen on a still-focused field (device row u3, team-lead decision (a')): when the keyboard grows under a focused field
-  that is not followed, the page brings its line in the same layout pass only if the field showed before and this
-  opening would hide it wholly; it then keeps the line for the rest of that opening, or until another field is kept
-  (the next field, scrolled partly away, stays put: red without that reset, `eng/r5-reset-red.log`, 1691 to 1838). A field still partly in view, or
-  one already scrolled wholly away, does not move (NoteKeyboardTest's reopen cell unchanged and green). "Shows" means at
-  least 1 px inside: Compose rounds a node's clipped bounds to whole pixels (`roundToIntRect`) and prunes empty ones, so
-  a sub-pixel sliver can drop out while 1 px always survives. Red on 3806e56e (`eng/r5-red.log`: at keyboard 125 px the
-  note 846..1266 is wholly below the visible part 218..820). Mutants (`eng/r5-mut-{A,B,C}.log`): rule removed, the new
-  cell red; 0 px floor, the two sub-pixel cells of `TypingSpaceShowsInPageTest` red; the shown-before guard removed,
-  NoteKeyboardTest's reopen cell red.
+  Reopen on a still-focused field (device row u3, team-lead decision (a'); reworked in cr-259 round 2, N1 and N3): a
+  focused field that is not followed and that a keyboard frame is about to hide (`keyboardHides`: it showed, at least
+  1 px; the keyboard takes some of it; less than its line would be left) is handed back to its own follow
+  (`KeyboardFollow.onBroughtIntoView`) and its line brought in that layout pass, for every user. From then the follow's
+  own rules apply: it keeps the line in step, and a settled layout after a scroll away ends it (no latch). A field
+  already scrolled wholly away, a field cut at the top, or one still showing a line does not move (NoteKeyboardTest's
+  reopen cell unchanged and green). 1 px: Compose rounds a node's clipped bounds to whole pixels (`roundToIntRect`) and
+  prunes empty ones. Red on b8a8a871's sources (`eng/r6-red-R1-on-b8a8a871.log`): R1, after a reopen, a scroll away,
+  then symbols, 595 to 1531; the first move at keyboard 125 px, not 62; R1c (the control) green. Mutants
+  (`eng/r6-mut-*.log`): T (back to wholly hidden) reds the first-frame cell and a pure cell; G (no "takes some" guard)
+  reds the cut-at-the-top cell; H (no hand-over) reds the caret-at-end reopen cell (line cut 22 px at 125 px); B (no
+  `onBringing`) reds the ten-step caret-at-end F1 cell. N3 per-frame numbers (keyboard step 62 to 63 px, bar 19 to
+  20 px): the rescue frame moves 158 px (u3/R2, 60 px shown; was 201), 118 (100 shown), 68 (150 shown), 494 (caret at
+  the end of 4 lines, 60 shown), 397 and 377 (caret at end, 200 and 350 shown); every later frame 42 to 44 px plus the
+  bar, the line whole; 0 px after the keyboard (`eng/r6-measure.log`). For ux: holding only what showed, up to a line,
+  instead of bringing the line, moves every frame by the keyboard step but leaves the caret line cut during the
+  opening (`eng/r6-measure-hold.log`); not adopted. N4: the one-step F1 cells now wait 16 ms, but no bring delay from
+  16 to 240 ms tells `onBringing` apart in one step, since the rescue keeps the note (`eng/r6-n4-*.log`).
 - [x] 3.6 Guards unchanged: `KeyboardRoomTest`, the screens' keyboard-room tests, D192's bar and margin tests (including
   `TypedLineMarginsTest`) pass without edits. Verify: `git diff 4d141abe -- '*Test.kt'` shows only added tests.
   Done. `git diff 4d141abe --numstat -- '*Test.kt'`: 6 new files, 0 lines removed; no existing test edited.
@@ -202,7 +210,9 @@ window size afterwards. One JSON row per run in `migrely-work/259/rows.jsonl`.
   cr-259 round 1 (CHANGES REQUESTED on dd0210b7) fixed on the branch, see eng-259's report: F1 the follow holds while the
   field's own bring runs; F2 the page lands where Compose's focused-child scroll leaves nothing to do; F3 one
   `TypingSpace.scrollingPage(state)`, an Attack details frame test, `PageScrollParent` tests removed; F4 this row and 3.1;
-  F5 cells for a keyboard changing height and for moving between fields. Awaiting re-review.
+  F5 cells for a keyboard changing height and for moving between fields.
+  cr-259 round 2 (CHANGES REQUESTED on b8a8a871; F1 to F4 closed, F5 rotation to QA): N1 latch replaced by the hand-over,
+  N3 rescue from the first frame leaving less than a line, N4 one-step cells at 16 ms, see 3.5. Awaiting re-review.
 
 ## 7. Independent retest (`qa-engineer`)
 
