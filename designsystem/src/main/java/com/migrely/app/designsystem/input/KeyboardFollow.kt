@@ -50,10 +50,7 @@ internal class KeyboardFollow {
         bringing = false
     }
 
-    /**
-     * The line was brought into view, by the field itself on focus or an edit, or by its typing space when the keyboard
-     * was about to hide the field (#259, decision (a')): it follows the keyboard until a settled layout says otherwise.
-     */
+    /** The field brought its line into view itself, on focus or an edit. */
     fun onBroughtIntoView() {
         following = true
     }

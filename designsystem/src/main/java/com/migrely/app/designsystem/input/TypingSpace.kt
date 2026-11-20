@@ -127,7 +127,8 @@ class TypingSpace internal constructor(
     /**
      * With the keyboard grown since the last placement and the kept field following it, scrolls [scrollState] so the
      * largest of the field's areas that fits [visible] shows in it (ux U1), measured against [page], the visible part.
-     * A field not followed that the keyboard is about to hide ([keyboardHides]) is handed back to its follow first.
+     * A field not followed that the keyboard is about to hide ([keyboardHides]) is held: the page keeps what of it
+     * showed, up to its line, moving with the keyboard and no further (#259, decision (a'), ux HOLD).
      */
     private fun keepInView(
         page: LayoutCoordinates,
@@ -150,16 +151,20 @@ class TypingSpace internal constructor(
             val area =
                 areas.firstOrNull { it.height <= visible } ?: areas.lastOrNull()
                     ?: return@withoutReadObservation
-            if (!field.follow.isFollowing) {
+            if (!field.following()) {
                 // Not followed (the person moved the page), but the keyboard must not hide the focused field: out of
                 // view it leaves the accessibility tree and TalkBack moves its focus to whatever the next double tap
-                // then sets (#259, decision (a')). From the frame that would leave less than its line showing, the
-                // field follows again, under the follow's own rules: a scroll away ends it.
+                // then sets (#259, decision (a')). Each frame that would leave less than its line keeps what showed,
+                // up to the line, so the field moves with the keyboard and no further; the first typed character
+                // brings the line itself (BRD D180 (2)). Nothing is kept from frame to frame.
                 val line = areas.last().height
                 if (!keyboardHides(fieldTop, fieldHeight, line, visibleBefore, visible)) {
                     return@withoutReadObservation
                 }
-                field.follow.onBroughtIntoView()
+                val held = minOf(line, shownInPage(fieldTop, fieldHeight, visibleBefore))
+                val hold = held - shownInPage(fieldTop, fieldHeight, visible)
+                if (hold > 0f) scrollState.dispatchRawDelta(hold)
+                return@withoutReadObservation
             }
             val top = page.localPositionOf(coordinates, area.topLeft).y
             var shift = scrollToShow(top, top + area.height, visible)
@@ -254,7 +259,7 @@ class TypingSpace internal constructor(
  */
 internal class KeptField(
     val coordinates: () -> LayoutCoordinates?,
-    val follow: KeyboardFollow,
+    val following: () -> Boolean,
     val areas: (visible: Int) -> List<Rect>
 )
 

@@ -114,7 +114,7 @@ fun SingleLineFieldInView(
     LaunchedEffect(focused, space) {
         if (!focused || space == null) return@LaunchedEffect
         space.keepInView(
-            KeptField({ placed.coordinates }, follow) { visible ->
+            KeptField({ placed.coordinates }, { follow.isFollowing }) { visible ->
                 fieldAreas(size.width.toFloat(), size.height.toFloat(), visible)
             }
         )

@@ -94,24 +94,28 @@ green; each mutation must turn its test red again. Logs go to `migrely-work/259/
   checks no other scroll or nested-scroll node lies between each field and its page on Attack details, Log and Edit
   medication, Delete all data (4 tests); a nested scroll added inside Attack details' page fails it
   (`eng/3.5-screens-mutant.log`).
-  Reopen on a still-focused field (device row u3, team-lead decision (a'); reworked in cr-259 round 2, N1 and N3): a
-  focused field that is not followed and that a keyboard frame is about to hide (`keyboardHides`: it showed, at least
-  1 px; the keyboard takes some of it; less than its line would be left) is handed back to its own follow
-  (`KeyboardFollow.onBroughtIntoView`) and its line brought in that layout pass, for every user. From then the follow's
-  own rules apply: it keeps the line in step, and a settled layout after a scroll away ends it (no latch). A field
-  already scrolled wholly away, a field cut at the top, or one still showing a line does not move (NoteKeyboardTest's
-  reopen cell unchanged and green). 1 px: Compose rounds a node's clipped bounds to whole pixels (`roundToIntRect`) and
-  prunes empty ones. Red on b8a8a871's sources (`eng/r6-red-R1-on-b8a8a871.log`): R1, after a reopen, a scroll away,
-  then symbols, 595 to 1531; the first move at keyboard 125 px, not 62; R1c (the control) green. Mutants
-  (`eng/r6-mut-*.log`): T (back to wholly hidden) reds the first-frame cell and a pure cell; G (no "takes some" guard)
-  reds the cut-at-the-top cell; H (no hand-over) reds the caret-at-end reopen cell (line cut 22 px at 125 px); B (no
-  `onBringing`) reds the ten-step caret-at-end F1 cell. N3 per-frame numbers (keyboard step 62 to 63 px, bar 19 to
-  20 px): the rescue frame moves 158 px (u3/R2, 60 px shown; was 201), 118 (100 shown), 68 (150 shown), 494 (caret at
-  the end of 4 lines, 60 shown), 397 and 377 (caret at end, 200 and 350 shown); every later frame 42 to 44 px plus the
-  bar, the line whole; 0 px after the keyboard (`eng/r6-measure.log`). For ux: holding only what showed, up to a line,
-  instead of bringing the line, moves every frame by the keyboard step but leaves the caret line cut during the
-  opening (`eng/r6-measure-hold.log`); not adopted. N4: the one-step F1 cells now wait 16 ms, but no bring delay from
-  16 to 240 ms tells `onBringing` apart in one step, since the rescue keeps the note (`eng/r6-n4-*.log`).
+  Reopen on a still-focused field (device row u3, team-lead decision (a'); cr-259 round 2; ux HOLD): a focused field
+  that is not followed and that a keyboard frame is about to hide (`keyboardHides`: it showed, at least 1 px; the
+  keyboard takes some of it; less than its line would be left) is held in that layout pass: the page keeps
+  min(line, what showed), so the field moves with the keyboard and no further and stays in the accessibility tree. No
+  state between frames (the N1 latch cannot return); no hand-over (team-lead accepted: HOLD with the hand-over brought
+  the line back in frame 2, 192 to 572 px, `eng/r7-hold-handover.log`). The first typed character brings the caret
+  line through the typing follow (BRD D180 (2)). 1 px: Compose rounds clipped bounds to whole pixels
+  (`roundToIntRect`) and prunes empty ones. NoteKeyboardTest's reopen cell unchanged and green.
+  Cells (`KeyboardFollowFramesTest`): H1 x4 (60 px caret line 1; 60 and 350 px caret at end; one-step), H2 x6 (60, 150,
+  350 px, caret on line 1 and at the end of 4 lines), H3 (one way, settled within 15 frames, cut 0, focus and text
+  kept), H4 (an ordinary opening, caret at end, line in each frame), R1 and R1c (a scroll away after a hold or a normal
+  opening stays put on symbols). Negative control (`eng/r7-negative-control-d7f985ac.log`): d7f985ac's BRING reds the
+  four H1 cells (the line moved 177, 513, 397 and 1078 px against 81, 81, 83 and 821 allowed). Mutants
+  (`eng/r7-mut-*.log`): H1 (hold doubled) reds 2 H1 cells; H2 (hold 1 px) reds the 6 H2 cells and H3; the shown-before
+  guard removed reds only the pure sub-pixel cell (the "takes some" guard already excludes a wholly hidden field); H3
+  (no typing bring) reds H3's final-cut check; H4 (hold for followed fields too) reds H4 and 15 ordinary cells; B (no
+  `onBringing`) reds all four F1 cells, the one-step ones included (N4 closed under HOLD).
+  Numbers (Robolectric, 360 dp at 200%, keyboard steps 62 to 63 px, bar 19 to 20 px; `eng/r7-hold.log`): every held
+  frame moves the line 61 to 63 px, the note keeps 59 to 60, 150 or 153 to 154 px showing, 0 px after the keyboard. H3
+  peaks, logged not capped (ux option 1, `eng/r7-h3-measure.log`): caret line 1 at 60 px, 26 px over 12 frames; caret
+  at end at 60, 150, 350 px, 100, 81, 79 px over 13 frames; final cut 0 in each. K2 (Remove animations: the typing
+  bring snaps in one step, up to about 430 px) is accepted; it is logged on the device row T7, not fixed.
 - [x] 3.6 Guards unchanged: `KeyboardRoomTest`, the screens' keyboard-room tests, D192's bar and margin tests (including
   `TypedLineMarginsTest`) pass without edits. Verify: `git diff 4d141abe -- '*Test.kt'` shows only added tests.
   Done. `git diff 4d141abe --numstat -- '*Test.kt'`: 6 new files, 0 lines removed; no existing test edited.
@@ -212,7 +216,9 @@ window size afterwards. One JSON row per run in `migrely-work/259/rows.jsonl`.
   `TypingSpace.scrollingPage(state)`, an Attack details frame test, `PageScrollParent` tests removed; F4 this row and 3.1;
   F5 cells for a keyboard changing height and for moving between fields.
   cr-259 round 2 (CHANGES REQUESTED on b8a8a871; F1 to F4 closed, F5 rotation to QA): N1 latch replaced by the hand-over,
-  N3 rescue from the first frame leaving less than a line, N4 one-step cells at 16 ms, see 3.5. Awaiting re-review.
+  N3 rescue from the first frame leaving less than a line, N4 one-step cells at 16 ms, see 3.5. N3 then ruled HOLD by
+  ux (the rescue keeps what showed instead of bringing the line), hand-over dropped, H3 amended (one way, within 15
+  frames, cut 0); see 3.5. Awaiting re-review.
 
 ## 7. Independent retest (`qa-engineer`)
 
