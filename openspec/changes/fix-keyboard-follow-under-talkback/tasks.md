@@ -94,9 +94,22 @@ green; each mutation must turn its test red again. Logs go to `migrely-work/259/
   checks no other scroll or nested-scroll node lies between each field and its page on Attack details, Log and Edit
   medication, Delete all data (4 tests); a nested scroll added inside Attack details' page fails it
   (`eng/3.5-screens-mutant.log`).
+  Reopen on a still-focused field (device row u3, team-lead decision (a')): when the keyboard grows under a focused field
+  that is not followed, the page brings its line in the same layout pass only if the field showed before and this
+  opening would hide it wholly; it then keeps the line for the rest of that opening, or until another field is kept
+  (the next field, scrolled partly away, stays put: red without that reset, `eng/r5-reset-red.log`, 1691 to 1838). A field still partly in view, or
+  one already scrolled wholly away, does not move (NoteKeyboardTest's reopen cell unchanged and green). "Shows" means at
+  least 1 px inside: Compose rounds a node's clipped bounds to whole pixels (`roundToIntRect`) and prunes empty ones, so
+  a sub-pixel sliver can drop out while 1 px always survives. Red on 3806e56e (`eng/r5-red.log`: at keyboard 125 px the
+  note 846..1266 is wholly below the visible part 218..820). Mutants (`eng/r5-mut-{A,B,C}.log`): rule removed, the new
+  cell red; 0 px floor, the two sub-pixel cells of `TypingSpaceShowsInPageTest` red; the shown-before guard removed,
+  NoteKeyboardTest's reopen cell red.
 - [x] 3.6 Guards unchanged: `KeyboardRoomTest`, the screens' keyboard-room tests, D192's bar and margin tests (including
   `TypedLineMarginsTest`) pass without edits. Verify: `git diff 4d141abe -- '*Test.kt'` shows only added tests.
   Done. `git diff 4d141abe --numstat -- '*Test.kt'`: 6 new files, 0 lines removed; no existing test edited.
+  Since 4d1d0430/3806e56e (one page API, cr-259 F3): `TypedLineMarginsTest`, `TypingSpaceBarTest`, `TypingSpaceCloseTest`
+  and `TypingSpaceFocusTest` changed only their harness from `pageModifier` + `verticalScroll` to `scrollingPage(state)`;
+  no assertion or expected value changed.
 
 ## 4. Gate (`android-engineer`)
 

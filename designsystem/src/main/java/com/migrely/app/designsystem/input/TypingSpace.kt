@@ -76,6 +76,10 @@ class TypingSpace internal constructor(
     private var keyboardAtLastPlacement = -1
     private var visibleAtLastPlacement = -1
 
+    // The keyboard was about to hide the kept field wholly, so the page keeps its line for the rest of this opening
+    // or until another field is kept.
+    private var rescuing = false
+
     // The clip first: it cuts the bar to the height the layout below reports, not to the bar's full height.
     private val barLayout: Modifier = Modifier
         .clipToBounds()
@@ -125,8 +129,9 @@ class TypingSpace internal constructor(
         }
 
     /**
-     * With the keyboard grown since the last placement and the kept field following it, scrolls [scrollState] so the
-     * largest of the field's areas that fits [visible] shows in it (ux U1), measured against [page], the visible part.
+     * With the keyboard grown since the last placement and the kept field following it, or about to be hidden wholly
+     * by it, scrolls [scrollState] so the largest of the field's areas that fits [visible] shows in it (ux U1),
+     * measured against [page], the visible part.
      */
     private fun keepInView(
         page: LayoutCoordinates,
@@ -138,11 +143,25 @@ class TypingSpace internal constructor(
         val visibleBefore = visibleAtLastPlacement
         keyboardAtLastPlacement = keyboardNow
         visibleAtLastPlacement = visible
+        if (keyboardNow == 0) rescuing = false
         if (!grew) return
         Snapshot.withoutReadObservation {
-            val field = kept?.takeIf { it.following() } ?: return@withoutReadObservation
+            val field = kept ?: return@withoutReadObservation
             val coordinates =
                 field.coordinates()?.takeIf { it.isAttached } ?: return@withoutReadObservation
+            val fieldTop = page.localPositionOf(coordinates, Offset.Zero).y
+            val fieldHeight = coordinates.size.height.toFloat()
+            if (!field.following() && !rescuing) {
+                // Not followed (the person moved the page), but the keyboard must never hide the focused field
+                // wholly: out of view it leaves the accessibility tree and TalkBack moves its focus to whatever the
+                // next double tap then sets (#259, decision (a')). While any part of it shows, nothing moves; a field
+                // the person had already scrolled wholly away stays where they put it.
+                val shownBefore = showsInPage(fieldTop, fieldHeight, visibleBefore)
+                if (!shownBefore || showsInPage(fieldTop, fieldHeight, visible)) {
+                    return@withoutReadObservation
+                }
+                rescuing = true
+            }
             val areas = field.areas(visible)
             val area =
                 areas.firstOrNull { it.height <= visible } ?: areas.lastOrNull()
@@ -152,8 +171,6 @@ class TypingSpace internal constructor(
             // A focused field wholly in view before the visible part shrank is one Compose's own scroll brings back
             // once clipped, animated, after the keyboard has stopped. Land where it would, so it has nothing to do
             // (ux C3); either way it lines up an edge of the field, so the line inside stays whole.
-            val fieldTop = page.localPositionOf(coordinates, Offset.Zero).y
-            val fieldHeight = coordinates.size.height.toFloat()
             if (visibleBefore > 0 &&
                 focusedChildScroll(fieldTop, fieldHeight, visibleBefore) == 0f
             ) {
@@ -166,6 +183,7 @@ class TypingSpace internal constructor(
     /** Until cancelled, [field] is the focused field the page keeps in view as the keyboard grows. */
     internal suspend fun keepInView(field: KeptField) {
         kept = field
+        rescuing = false
         try {
             awaitCancellation()
         } finally {
@@ -271,6 +289,16 @@ internal fun focusedChildScroll(top: Float, size: Float, visible: Int): Float {
         else -> bottom - visible
     }
 }
+
+private const val MIN_SHOWN_PX = 1f
+
+/**
+ * Whether at least [MIN_SHOWN_PX] of a field [size] px tall at [top] shows in a visible part [visible] px tall:
+ * Compose rounds a node's clipped bounds to whole pixels and drops a node whose rounded bounds are empty from the
+ * accessibility tree, which a sliver under one pixel can be.
+ */
+internal fun showsInPage(top: Float, size: Float, visible: Int): Boolean =
+    minOf(top + size, visible.toFloat()) - maxOf(top, 0f) >= MIN_SHOWN_PX
 
 /** Gone from TalkBack, Switch Access and Tab: a bar that is not on screen is never a stop. */
 private val GoneForAssistiveTechnology: Modifier = Modifier

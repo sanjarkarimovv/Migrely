@@ -783,6 +783,77 @@ class KeyboardFollowFramesTest {
         )
     }
 
+    // Device row u3 (#259, decision (a')): the keyboard closed with the note still focused, the person scrolled so the
+    // note's top sits just above the page's bottom edge, and the keyboard opens again on the same field. While part of
+    // the note shows nothing moves; the keyboard never leaves the focused note wholly hidden (out of the accessibility
+    // tree), and once up the line shows.
+    @Test
+    fun `A keyboard opened again never hides the still-focused note wholly`() {
+        focusNote()
+        openKeyboardTimed(TEN_STEPS)
+        moveKeyboard(KEYBOARD_PX, 0, listOf(0.5f, 1f))
+        rule.mainClock.advanceTimeBy(SETTLE_MILLIS)
+        settle()
+        val toEdge = fieldBounds().top - (visiblePart().bottom - EDGE_SHOWN_PX)
+        page.performSemanticsAction(SemanticsActions.ScrollBy) { it(0f, toEdge) }
+        rule.mainClock.advanceTimeBy(SETTLE_MILLIS)
+        settle()
+        assertTrue(
+            "the note's top shows at the page's bottom edge",
+            fieldBounds().top < visiblePart().bottom
+        )
+        frames.clear()
+
+        val after = openKeyboardTimed(TEN_STEPS).last()
+
+        frames.forEach { frame ->
+            val (field, visible) = frame.field to frame.visible
+            assertTrue(
+                "keyboard ${frame.keyboard} px: the note ${field.top}..${field.bottom} is hidden " +
+                    "from the visible part ${visible.top}..${visible.bottom}",
+                showsInPage(field.top - visible.top, field.height, visible.height.toInt())
+            )
+        }
+        assertLineShows("keyboard up", after.line, after.visible)
+    }
+
+    // (a'): the keyboard's turn to keep a field it was about to hide ends with that field. The next field, once the
+    // person scrolls it partly out at the bottom, is not pulled up when the keyboard grows (BRD D180 (5)).
+    @Test
+    fun `After a reopen keeps one field, the next one scrolled partly away stays put`() {
+        twoFields = true
+        focusNote(single = true)
+        openKeyboardTimed(TEN_STEPS)
+        moveKeyboard(KEYBOARD_PX, 0, listOf(0.5f, 1f))
+        rule.mainClock.advanceTimeBy(SETTLE_MILLIS)
+        settle()
+        val toEdge = fieldBounds().top - (visiblePart().bottom - EDGE_SHOWN_PX)
+        page.performSemanticsAction(SemanticsActions.ScrollBy) { it(0f, toEdge) }
+        settle()
+        openKeyboardTimed(TEN_STEPS)
+        val doseField = rule.onNode(hasSetTextAction() and hasText(DOSE))
+        doseField.requestFocus()
+        rule.mainClock.advanceTimeBy(SETTLE_MILLIS)
+        settle()
+        val doseTop = doseField.getUnclippedBoundsInRoot().top.value * density()
+        val shownAfterGrowth = EDGE_SHOWN_PX + SYMBOLS_PX - KEYBOARD_PX
+        page.performSemanticsAction(SemanticsActions.ScrollBy) {
+            it(0f, doseTop - (visiblePart().bottom - shownAfterGrowth))
+        }
+        rule.mainClock.advanceTimeBy(SETTLE_MILLIS)
+        settle()
+        val away = scroll.value
+        frames.clear()
+
+        moveKeyboard(KEYBOARD_PX, SYMBOLS_PX, listOf(0.5f, 1f))
+
+        frames.forEach { frame ->
+            assertEquals("keyboard ${frame.keyboard} px: the scroll", away, frame.scroll)
+        }
+        val dose = doseField.getUnclippedBoundsInRoot()
+        assertTrue("the dose field still shows", dose.top.value * density() < visiblePart().bottom)
+    }
+
     private companion object {
         const val SETTLE_MILLIS = 1_000L
         const val SETTLE_ROUNDS = 5
