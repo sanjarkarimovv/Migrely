@@ -256,6 +256,16 @@ does; each such stop passes the D181 one-name check (heard once, visible words i
   aside, on develop too: a #245 (D192) gap for `main`, not this change.
 - [ ] 6.2 One walk per other page and dialog at 100% portrait and 200% landscape, keyboard up on the four text-field screens.
   Verify: `6.2-*.txt`, each reaching both ends with no repeat.
+  Progress (eng-255b, 884d070d; `migrely-work/255b/6.2-*`): portrait 100%, previous from each end, all clean (no
+  repeat, no bare state): Settings 19, Warning signs 18, About 6, Privacy 9, Licences 20, Your data 6, Reminders 8,
+  Delete all data 7, History 41, Paywall 16 (via Settings, Insights and Report on the free tier), Log medication 12,
+  Medications 5, Edit medication 13, Add past attack 7, Today 27. 200% landscape 360 dp: Settings 19, History 41,
+  Paywall 16, Delete all data 5, Log medication 12 clean.
+  **Finding 6.2-F1 (S3, open):** Today, 200% landscape, 360 dp window, previous up the left pane: "Period today →
+  Saturday, November 21 → November. Opens History → Period today" (a future day out of order, two stops twice), 2 of 2
+  runs; develop 4d141abe on the same data and row is clean (24 stops). Not reproduced in Robolectric: the Today walk
+  with this month's calendar (title row, the calendar's real pitch layout, future days) is green in both orientations,
+  as is History's calendar. Next: device diagnosis of the cell's bounds and TalkBack's tree at that moment.
 - [ ] 6.3 Hardware keyboard Tab and Shift+Tab on Attack details and one dialog: order unchanged, every stop in view. Verify:
   `6.3-*.txt`.
 - [x] 6.4 Pressed-state pixels of `MigrelyIconButton` against Material's (Robolectric draws no ripple). Verify:
