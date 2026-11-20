@@ -224,22 +224,37 @@ window size afterwards. One JSON row per run in `migrely-work/259/rows.jsonl`.
 
 - [ ] 7.1 emulator-5580, API 36: rows T1 to T7 and M1 to M4 on the debug build of the candidate SHA, with v1.3.1 as the
   control (focus kept there) and v1.3.2 (focus jumps) as the negative control.
-- [ ] 7.2 The R8 release build of the same SHA: T1, T2, T6 at 360 dp.
-- [ ] 7.3 emulator-5582, API 26 (AOSP keyboard): M5, T1, T6 at 360 and 411 dp. Cases QA cannot reach (hardware or floating
+- [ ] 7.2 The R8 release build of the same SHA: T1, T2, T6 and U3 (7.6) at 360 dp.
+- [ ] 7.3 emulator-5582, API 26 (AOSP keyboard): M5, T1, T6 and U3 (the hold in one step) at 360 and 411 dp. Cases QA cannot reach (hardware or floating
   keyboard, split screen) are recorded as not reachable, not as a pass. Verify: QA's Go/No-Go record names the SHA, each row
   and what it does not prove; QA closes #259 after the retest.
 - [ ] 7.4 T5 and TalkBack-off T6 on emulator-5580 (not obtained on 5570, whose Gboard showed only its compact bar with
   TalkBack off): the four screens at 360 dp with the bar aside, line 112/112; close by Back, the hide key and Done, 0 px
   and 0 `TYPE_VIEW_SCROLLED`. Verify: rows in QA's folder, or "not reachable" with the reason, never a pass.
-- [ ] 7.5 The page-end opening (design D4, C3 limit): the note wholly in view at the page's end before the keyboard opens,
-  360 dp, TalkBack on, captured at 60 fps (`screenrecord`) with the cursor line's top y and the keyboard's top y per frame
-  from the keyboard's start to +500 ms. This is evidence and the negative-control baseline for QA's S4 follow-up. Verify:
-  a frame table in QA's folder.
-- [ ] 7.6 L1 to L4 on that capture and on the SW cells: the settle happens only in the page-end case (L1); at most one
-  settle, upward, at most 32 px, no bounce (L2); the cursor line still 112/112 afterwards, focus on the note, nothing
-  written, the field's top border may go under the status bar but the line may not (L3); with Remove animations a single
-  step of at most 32 px (L4). Any failure makes the tail a blocker. Verify: rows, and the Go/No-Go "does not prove" section
-  names the limit with these numbers (L5).
+- [ ] 7.5 Motion at 60 fps (design D4, general evidence): the note's opening at 360 dp, TalkBack on, from a cut start and
+  from a page-end start (the note wholly in view at the page's end), captured with `screenrecord`, with the cursor line's
+  top y and the keyboard's top y per frame from the keyboard's start to +500 ms. Pass: C1 and C2 per frame, and the +500 ms
+  frame equals the last frame from both starts (no settle, F2). Verify: a frame table in QA's folder.
+- [ ] 7.6 The reopen path U3 (design D6), independent of the engineer, 360 dp, TalkBack on. The note is focused, Back
+  closes the keyboard, the page is scrolled so the note's top is near the bottom edge, and a double tap reopens the
+  keyboard; then one more double tap. Run it on the candidate (at least 5 runs), on v1.3.1 (control: is production
+  affected?) and on develop (negative control: hidden, focus moves, writes). Pass on the candidate: focus on the note, 0
+  writes (database read before and after). H2: in every captured frame at least min(what showed before, the line) is
+  visible. H1: each held frame moves the line no more than the keyboard step plus the bar step plus 1 px, and 0 after the
+  keyboard stops. Verify: rows and a frame table.
+- [ ] 7.7 K1: U3 with the caret at the end of 4 lines and 60 px shown; type one character, then double tap. Pass: focus on
+  the note, 0 writes, the caret line whole afterwards (H3 (c)). Log the typing bring's peak px per frame; do not cap it.
+  Verify: rows.
+- [ ] 7.8 Rotation with the keyboard up (cr-259 F5, not reachable in unit tests), TalkBack on, on the note and on Edit
+  medication's name: rotate to portrait and back. Pass: the bar is decided again (D192 R5), the line shows, focus stays on
+  the field, nothing is written. Verify: rows.
+- [ ] 7.9 Go/No-Go "does not prove" section names these limits verbatim:
+  - H5: "On a reopen with focus kept, the caret line may stay cut until the first keystroke."
+  - K3: "The typing bring (D180 (2), unchanged) can move up to about 100 px per frame at its peak, eased, after a rescue or a
+    drag."
+  - K2: with Remove animations that bring is one step of up to about 430 px.
+
+  Also: real phones and keyboards other than Gboard and AOSP. Verify: the record names follow-up #260.
 
 ## 8. Archive (`product-manager`)
 

@@ -43,8 +43,8 @@ without the person's own action (BRD EC-UX-83, D194).
 ### Requirement: The line being typed comes into view with the keyboard
 Inside a screen's typing space, the line being typed SHALL come into view while the keyboard opens, in the same frames as
 the keyboard: never further in a frame than the keyboard's top moved plus 1 px, only upward, and still once the keyboard has
-settled, but for one settle of at most 32 px upward when the field starts wholly in view and is taller than the space left.
-Its rest position SHALL equal the one before this change within 1 px, TalkBack on or off (BRD EC-UX-84, EC-UX-87, D194).
+settled, from any start position. Its rest position SHALL equal the one before this change within 1 px, TalkBack on or off
+(BRD EC-UX-84, EC-UX-87, D194).
 
 #### Scenario: Frames while the keyboard opens
 - **WHEN** a 60 fps recording on API 36 with Gboard at 200% landscape in the 360 dp window covers the note's keyboard
@@ -53,17 +53,14 @@ Its rest position SHALL equal the one before this change within 1 px, TalkBack o
   in the frame where it steps aside, no frame moves it down, and no frame moves it twice
 
 #### Scenario: No tail
-- **WHEN** the same recording, with the note starting cut by the keyboard, is read at the keyboard's last frame and 500 ms
-  later
+- **WHEN** the same recording is read at the keyboard's last frame and 500 ms later
 - **THEN** the two frames are identical
 
-#### Scenario: The page-end settle (a known limit)
+#### Scenario: No settle from the page's end
 - **WHEN** the note starts wholly in view at the page's end, taller than the space the keyboard leaves, and the keyboard opens
   with TalkBack on, then with "Remove animations"
-- **THEN** after the keyboard's last frame the page settles at most once, upward only, by at most 32 px, with no bounce and,
-  with "Remove animations", in a single step
-- **AND** the cursor line still shows 112 of 112 px, focus stays on the note and nothing is written
-- **AND** no other starting position shows any movement after the keyboard's last frame
+- **THEN** the page lands where the system's own scroll to a focused field would put it, so the keyboard's last frame and
+  the frame 500 ms later are identical, and the cursor line shows 112 of 112 px
 
 #### Scenario: No catch-up leap
 - **WHEN** frames are skipped while the keyboard opens
@@ -95,18 +92,30 @@ Its rest position SHALL equal the one before this change within 1 px, TalkBack o
 - **THEN** the line moves after the keyboard's last frame, which shows the no-tail check can fail
 
 ### Requirement: Only the person ends the keyboard follow
-While the keyboard grows, the line being typed SHALL keep following it. A layout made by the app or by Compose SHALL NOT end
-the following; a scroll by the person while the keyboard holds still SHALL end it. A keyboard that shrinks or closes SHALL
-never scroll the page. A field outside a typing space SHALL keep its earlier bring into view (BRD EC-UX-85, EC-UX-86, D194).
+A focused field SHALL follow the keyboard from the start of its own bring into view. A layout made by the app or by Compose
+SHALL NOT end the following; a scroll by the person while the keyboard holds still, or a drag that stops the field's bring,
+SHALL end it. A keyboard that shrinks or closes SHALL never scroll the page. A field outside a typing space SHALL keep its
+earlier bring (BRD EC-UX-85, EC-UX-86, D194).
 
 #### Scenario: Compose's own layout before the follow
 - **WHEN** a layout at the keyboard's new height runs before the follow has acted on that height, as Compose's semantics check
   does under an accessibility service
 - **THEN** the following goes on and the line is brought into view, and on the next frames too
 
+#### Scenario: A keyboard that comes during the field's bring
+- **WHEN** the note is focused and the keyboard starts opening while the page is still bringing the note into view
+- **THEN** the note keeps following, and its line shows in every frame once it has shown
+
+#### Scenario: A drag during the field's bring
+- **WHEN** the user drags the page while the field's bring runs, moving the line out of view, and the keyboard then grows
+- **THEN** the drag stops the bring and ends the following, and the page is not pulled back to the line
+
 #### Scenario: A scroll away still ends it
 - **WHEN** the user scrolls the page away from the line while the keyboard holds still, and the keyboard then grows
 - **THEN** the page is not pulled back to the line
+- **AND** if the field was scrolled wholly out of view it stays where it is; if some of it still shows and the keyboard would
+  leave less than its line, the page holds what showed (requirement "The keyboard never hides a focused field that shows"),
+  and still does not pull it to its line
 
 #### Scenario: The keyboard changes height while typing
 - **WHEN** the line is followed and Gboard's suggestion strip appears, or the user switches to symbols or emoji
@@ -133,3 +142,58 @@ never scroll the page. A field outside a typing space SHALL keep its earlier bri
 #### Scenario: Moving between fields with the keyboard up
 - **WHEN** the keyboard is up and focus moves from Edit medication's name to its dose
 - **THEN** the dose is brought into view as before this change
+
+### Requirement: The keyboard never hides a focused field that shows
+When a keyboard frame would leave a focused field that is not following the keyboard, and showed at least 1 px, with less
+than its line, the page SHALL hold the lesser of its line and what showed, in that same frame, for every user. In each such
+frame the line SHALL move no further than the keyboard's and the bar's step plus 1 px, and not at all after the keyboard
+stops (BRD EC-UX-88, D194).
+
+#### Scenario: Reopening the keyboard with TalkBack (the reopen path)
+- **WHEN** TalkBack is on in the 360 dp window, the note is focused, Back closed the keyboard, the page was scrolled so the
+  note's top is near the bottom edge, and a double tap reopens the keyboard without moving the cursor
+- **THEN** in every frame at least the lesser of the line and what showed before stays visible, TalkBack's focus stays on
+  the note, and the next double tap writes nothing
+
+#### Scenario: Each held frame keeps to the keyboard
+- **WHEN** the same reopening is recorded frame by frame
+- **THEN** each held frame moves the line by at most the keyboard's step plus the bar's step plus 1 px, and 0 px once the
+  keyboard has stopped
+
+#### Scenario: Remove animations and API 26
+- **WHEN** the same reopening runs with "Remove animations" on, or on API 26
+- **THEN** the hold is one step with the keyboard, and the note stays in the accessibility tree
+
+#### Scenario: Later growth
+- **WHEN** the user scrolled the note partly out of view with the keyboard up, and then switches Gboard to symbols, which is
+  taller
+- **THEN** the page holds what showed, up to the line, and does not pull the note to its line
+
+#### Scenario: A field scrolled wholly away
+- **WHEN** the note was scrolled wholly out of view before the keyboard grows
+- **THEN** the page does not move for it
+
+#### Scenario: The first typed character after a hold
+- **WHEN** the note was held with its caret line cut, and the user types one character
+- **THEN** the typing follow (D180 (2), unchanged) brings the whole caret line in one direction, settles within 15 frames,
+  leaves it cut by 0 px, and focus and data are unchanged; its peak speed per frame is logged, not capped
+- **AND** with "Remove animations" that bring is one step, of up to about 430 px
+
+#### Scenario: Typing, then a double tap (device row K1)
+- **WHEN** TalkBack is on, the caret is at the end of 4 lines, 60 px of the note shows, the keyboard reopens, the user types
+  one character and then double taps
+- **THEN** focus stays on the note, nothing is written, and the caret line shows whole
+
+#### Scenario: Until the first keystroke (a known limit)
+- **WHEN** the keyboard reopens on a focused note whose cursor did not move, and the note is held
+- **THEN** the caret line may stay cut until the first keystroke, while the note stays visible and focused
+
+#### Scenario: Ordinary openings are unchanged
+- **WHEN** a field is opened by a tap or a double tap, so it follows the keyboard
+- **THEN** no hold applies, and the requirement "The line being typed comes into view with the keyboard" governs every frame
+
+#### Scenario: The checks can fail
+- **WHEN** the reopen path runs on develop
+- **THEN** the note is wholly hidden, TalkBack's focus moves, and the next double tap writes, which shows the row can fail
+- **AND** a build that brings the line instead of holding (rejected: its rescue frame moved 158 to 494 px against a 62 px
+  keyboard step) fails the per-frame row

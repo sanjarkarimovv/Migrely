@@ -25,23 +25,30 @@ same follow code, so they carry the same race.
 
 ## What Changes
 
-- **A layout the app or Compose makes does not end the follow.** Only a layout at a keyboard height the follow has already
-  acted on records what the person sees; a scroll away by the person while the keyboard holds still still ends it.
+- **Only the person ends the follow.** A layout the app or Compose makes does not end it; the field follows from the start of
+  its own bring into view; a scroll away by the person while the keyboard holds still, or a drag that stops the bring, still
+  ends it.
 - **The line comes into view in step with the keyboard.** Inside a typing space, the page moves in the same frames as the
   keyboard, not by a spring after it, so the line never leaves the tree and TalkBack finds the field when it hears of the
-  scroll. This is for everyone, TalkBack on or off: one path. The motion follows ux-259's verdict C1 to C6, with one
-  accepted limit: a note that starts wholly in view at the page's end settles once, upward, by at most 32 px (L1 to L5).
+  scroll. The page lands where the system's own focused-field scroll would, so nothing moves once the keyboard stops, from any
+  start position. This is for everyone, TalkBack on or off: one path. The motion follows ux-259's verdict C1 to C6.
+- **The keyboard never hides a focused field that shows (new path, rule (a')).** The path: the note is focused, Back closed
+  the keyboard, and the page was scrolled so the note's top is near the bottom edge. A TalkBack double tap then reopens the
+  keyboard without moving the cursor. On develop the note is wholly hidden, focus moves and the next tap writes (4 of 5 on
+  5570). The new rule: the page holds the lesser of the field's line and what showed, frame by frame, moving with the
+  keyboard and no further (ux HOLD, H1 to H5).
 - **Unchanged:** the bar still steps aside (D192 R3 to R11); closing the keyboard never scrolls (#238, D189); the rest
-  position of the line (D192's acceptance, 112/112 with TalkBack off); fields outside a typing space keep the old bring.
-- **Records.** BRD D194, EC-UX-83 to EC-UX-87 (new), EC-UX-39 (pointer), section 13 row 58.
+  position of the line (D192's acceptance, 112/112 with TalkBack off); fields outside a typing space keep the old bring; the
+  typing follow (D180 (2)).
+- **Records.** BRD D194, EC-UX-83 to EC-UX-88 (new), EC-UX-39 (pointer), section 13 row 58.
 
 ## Out of scope
 
 - #255 (D193, TalkBack scroll order): release 1.3.4.
-- Removing the page-end settle (D4 limit L1 to L5): QA files an S4 follow-up (ux/motion, 1.3.4 or later).
+- #260 (S4, follow-up): after a hold the caret line may stay cut until the first keystroke (H5), and the unchanged typing
+  bring can move up to about 100 px per frame at its peak (K3), one step of about 430 px with Remove animations (K2).
 - The custom tag dialog's field on Attack details: a plain dialog field with no keyboard follow.
-- Moving between fields while the keyboard is up (no follow; the old path applies) and the follow while typing new lines
-  (D180 (2)): kept as they are.
+- Any change to moving between fields while the keyboard is up, or to the follow while typing new lines (D180 (2)).
 - Any new rule for the bar (R1 to R12), the keyboard room (#238), messages, strings, the Free and Premium split.
 - Domain, presentation, data, DI, navigation, manifest, permission, Room schema, backup, migration. No health sentence, so no
   `medical-reviewer`.
@@ -55,19 +62,22 @@ None.
 ### Modified Capabilities
 
 - `app-shell`: ADDED "Opening a field with TalkBack keeps focus on it", "The line being typed comes into view with the
-  keyboard" and "Only the person ends the keyboard follow". No existing requirement changes: D192's rules hold as written.
+  keyboard", "Only the person ends the keyboard follow" and "The keyboard never hides a focused field that shows". No existing
+  requirement changes: D192's rules hold as written.
 
 ## Impact
 
-- **Code:** `designsystem` (`input/KeyboardFollow.kt`, `input/TypingSpace.kt` with `page(scrollState)`, `KeptField` and
-  `scrollToShow`, `input/CursorFollowingTextField.kt`, `input/SingleLineFieldInView.kt`), and one line on each of the four
-  screens (`AttackDetailsScreen`, `LogMedicationScreen`, `EditMedicationScreen`, `DeleteAllDataScreen`): `pageModifier`
-  becomes `page(scrollState)` with the page's own `ScrollState` (design D3, explicit route, 4d1d0430). Prototype 2's nested
-  post-scroll side channel was tried and removed (3 of 17 openings still moved focus).
-- **Tests:** the red `KeyboardFollowTest` cells (2bf5857c), `TypingSpaceScrollToShowTest`, `KeyboardFollowFramesTest` (C1 to
-  C3), per-screen `PageScrollParent` tests, the fallback outside a typing space; `KeyboardRoom` tests and D192's tests stay
-  green, unedited, as guards.
+- **Code:** `designsystem` (`input/KeyboardFollow.kt` with `onBringing`/`onBringEnded`, `input/TypingSpace.kt` with
+  `scrollingPage(scrollState)`, `KeptField`, `scrollToShow`, `focusedChildScroll`, `keyboardHides`,
+  `input/CursorFollowingTextField.kt`, `input/SingleLineFieldInView.kt`), and on each of the four screens
+  (`AttackDetailsScreen`, `LogMedicationScreen`, `EditMedicationScreen`, `DeleteAllDataScreen`) `pageModifier` plus
+  `verticalScroll` becomes `scrollingPage(scrollState)` (design D3). Prototype 2's nested post-scroll side channel was tried
+  and removed (3 of 17 openings still moved focus); BRING and the N1 hand-over were tried and rejected (design D6).
+- **Tests:** the red `KeyboardFollowTest` cells (2bf5857c), `TypingSpaceScrollToShowTest`, `TypingSpaceKeyboardHidesTest`,
+  `KeyboardFollowFramesTest` (C1 to C3, F1, F2, F5, H1 to H4, R1), `AttackDetailsKeyboardFramesTest` (the real screen's
+  wiring), the fallback outside a typing space. `KeyboardRoom` tests and D192's tests keep every assertion; four harnesses
+  moved to `scrollingPage`. The interim `PageScrollParent` tests are removed.
 - **No change to:** manifest, permissions, strings, Room schema, backup, Free or Premium.
-- **BRD:** D194, EC-UX-39, EC-UX-83 to EC-UX-87, section 13 row 58.
-- **Issue:** `Refs #259` in every commit and the PR, never a closing keyword: QA retests and closes it.
+- **BRD:** D194, EC-UX-39, EC-UX-83 to EC-UX-88, section 13 row 58.
+- **Issue:** `Refs #259` in every commit and the PR, never a closing keyword: QA retests and closes it. Follow-up #260.
 - **Release:** 1.3.3 = `develop` 4d141abe plus this fix, its only content.
