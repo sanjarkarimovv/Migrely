@@ -35,7 +35,7 @@ same follow code, so they carry the same race.
 - **The keyboard never hides a focused field that shows (new path, rule (a')).** The path: the note is focused, Back closed
   the keyboard, and the page was scrolled so the note's top is near the bottom edge. A TalkBack double tap then reopens the
   keyboard without moving the cursor. On develop the note is wholly hidden, focus moves and the next tap writes (4 of 5 on
-  5570). The new rule: the page holds the lesser of the field's line and what showed, frame by frame, moving with the
+  5570). The new rule: the page holds the lesser of the field's line with its clearance and what showed, frame by frame, moving with the
   keyboard and no further (ux HOLD, H1 to H5).
 - **Unchanged:** the bar still steps aside (D192 R3 to R11); closing the keyboard never scrolls (#238, D189); the rest
   position of the line (D192's acceptance, 112/112 with TalkBack off); fields outside a typing space keep the old bring; the

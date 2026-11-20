@@ -145,14 +145,15 @@ earlier bring (BRD EC-UX-85, EC-UX-86, D194).
 
 ### Requirement: The keyboard never hides a focused field that shows
 When a keyboard frame would leave a focused field that is not following the keyboard, and showed at least 1 px, with less
-than its line, the page SHALL hold the lesser of its line and what showed, in that same frame, for every user. In each such
-frame the line SHALL move no further than the keyboard's and the bar's step plus 1 px, and not at all after the keyboard
-stops (BRD EC-UX-88, D194).
+than its line, the page SHALL hold the lesser of its line with its clearance and what showed, in that same frame, for every
+user. In each such frame the line SHALL move no further than the keyboard's and the bar's step plus 1 px, and not at all
+after the keyboard stops (BRD EC-UX-88, D194).
 
 #### Scenario: Reopening the keyboard with TalkBack (the reopen path)
 - **WHEN** TalkBack is on in the 360 dp window, the note is focused, Back closed the keyboard, the page was scrolled so the
   note's top is near the bottom edge, and a double tap reopens the keyboard without moving the cursor
-- **THEN** in every frame at least the lesser of the line and what showed before stays visible, TalkBack's focus stays on
+- **THEN** in every frame at least the lesser of the line with its clearance (up to 8 dp each side) and what showed before
+  stays visible, TalkBack's focus stays on
   the note, and the next double tap writes nothing
 
 #### Scenario: Each held frame keeps to the keyboard

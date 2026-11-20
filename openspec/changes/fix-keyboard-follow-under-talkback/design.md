@@ -172,7 +172,9 @@ the note wholly, it leaves the accessibility tree, TalkBack moves its focus, and
 develop z2 too). Whether v1.3.1 does the same is pending the v1.3.1 control rows (×3).
 
 **The rule.** For every user, with no TalkBack branch: when a keyboard frame would leave a focused, unfollowed field that
-showed with less than its line, the page holds min(line, what showed) in that layout pass (`keyboardHides`, `shownInPage`).
+showed with less than its line, the page holds min(the line with its clearance, what showed) in that layout pass
+(`keyboardHides`, `shownInPage`). The line with its clearance is the caret line plus the margin D192 R2 leaves, up to 21 px
+(8 dp) each side, so up to about 154 px at 200%, not the 112 px line alone (cr-259 round 3, S4-2); within H1 and H2.
 - "Showed" means at least 1 px (`MIN_SHOWN_PX`), because Compose rounds clipped bounds to whole pixels (`roundToIntRect`) and
   prunes empty ones.
 - The hold is stateless: it reads only this frame and the last placement's visible height.
@@ -184,7 +186,7 @@ showed with less than its line, the page holds min(line, what showed) in that la
 - **H1** Each held frame moves the line by at most the keyboard step plus the bar step plus 1 px; 0 after the keyboard stops;
   one step with Remove animations or API 26. Robolectric at 360 dp, 200%: keyboard steps 62 to 63 px, bar 19 to 20 px; held
   frames move the line 61 to 63 px.
-- **H2** At least min(shown before, line) shows in every frame (cells at 60, 150 and 350 px, the caret on line 1 and at the
+- **H2** At least min(shown before, the line with its clearance) shows in every frame (cells at 60, 150 and 350 px, the caret on line 1 and at the
   end of 4 lines: 59 to 60, 150, and 153 to 154 px kept).
 - **H3 (amended)** One typed character after a hold brings the whole caret line through the unchanged D180 (2) spring, with
   four checks:

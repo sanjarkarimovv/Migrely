@@ -239,7 +239,7 @@ window size afterwards. One JSON row per run in `migrely-work/259/rows.jsonl`.
   closes the keyboard, the page is scrolled so the note's top is near the bottom edge, and a double tap reopens the
   keyboard; then one more double tap. Run it on the candidate (at least 5 runs), on v1.3.1 (control: is production
   affected?) and on develop (negative control: hidden, focus moves, writes). Pass on the candidate: focus on the note, 0
-  writes (database read before and after). H2: in every captured frame at least min(what showed before, the line) is
+  writes (database read before and after). H2: in every captured frame at least min(what showed before, the line with its clearance, up to 8 dp each side) is
   visible. H1: each held frame moves the line no more than the keyboard step plus the bar step plus 1 px, and 0 after the
   keyboard stops. Verify: rows and a frame table.
 - [ ] 7.7 K1: U3 with the caret at the end of 4 lines and 60 px shown; type one character, then double tap. Pass: focus on
