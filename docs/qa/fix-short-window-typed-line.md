@@ -1,5 +1,23 @@
 # QA record: fix-short-window-typed-line (#245, T75, BRD D192)
 
+## Post-merge gap (2026-11-19): #259
+
+This acceptance missed a regression, now **#259 (S2, accessibility)**. On Attack details at 360 dp landscape and 200%
+font, opening the note by TalkBack's double tap with TalkBack already on makes the bar step aside. Then TalkBack's
+focus jumps to an Impact radio button, the typed line goes under the keyboard (0 of 112 px), and the next double tap
+records an impact level. In the database the impact went from empty to 2.
+
+- **Counts:** v1.3.2 code jumps 8 of 8; v1.3.1 0 of 4. At 411 dp, where the bar stays, 0 of 1.
+- **Evidence:** `migrely-work/qa-245c/`, rows `x1`–`x7`.
+- **The gap:** **no row here opened the keyboard by double tap with TalkBack on.**
+  - SW1, SW5/K2, SW9 and the #239 V1 row all opened the keyboard by touch with TalkBack off, then turned TalkBack
+    on, or reached Save by swipes with the keyboard already up.
+  - Turning TalkBack on with the keyboard up closes Gboard (#238's known trap). That is why the opening path a
+    TalkBack user actually takes was never exercised.
+  - The retest of #259, and any future change to the bar, must include that row on all four screens, with v1.3.1 as
+    the control.
+- The GO below is superseded for 1.3.2 by `docs/qa/go-no-go-1.3.2.md`, "Post-tag verdict: NO-GO".
+
 ## Verdict
 
 **QA (qa-245), 2026-11-19: GO with recorded limits** for merging `bugfix/245-short-window-line` @
