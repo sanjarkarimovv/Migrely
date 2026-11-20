@@ -192,6 +192,18 @@ window size afterwards. One JSON row per run in `migrely-work/259/rows.jsonl`.
 - [ ] 7.3 emulator-5582, API 26 (AOSP keyboard): M5, T1, T6 at 360 and 411 dp. Cases QA cannot reach (hardware or floating
   keyboard, split screen) are recorded as not reachable, not as a pass. Verify: QA's Go/No-Go record names the SHA, each row
   and what it does not prove; QA closes #259 after the retest.
+- [ ] 7.4 T5 and TalkBack-off T6 on emulator-5580 (not obtained on 5570, whose Gboard showed only its compact bar with
+  TalkBack off): the four screens at 360 dp with the bar aside, line 112/112; close by Back, the hide key and Done, 0 px
+  and 0 `TYPE_VIEW_SCROLLED`. Verify: rows in QA's folder, or "not reachable" with the reason, never a pass.
+- [ ] 7.5 The page-end opening (design D4, C3 limit): the note wholly in view at the page's end before the keyboard opens,
+  360 dp, TalkBack on, captured at 60 fps (`screenrecord`) with the cursor line's top y and the keyboard's top y per frame
+  from the keyboard's start to +500 ms. This is evidence and the negative-control baseline for QA's S4 follow-up. Verify:
+  a frame table in QA's folder.
+- [ ] 7.6 L1 to L4 on that capture and on the SW cells: the settle happens only in the page-end case (L1); at most one
+  settle, upward, at most 32 px, no bounce (L2); the cursor line still 112/112 afterwards, focus on the note, nothing
+  written, the field's top border may go under the status bar but the line may not (L3); with Remove animations a single
+  step of at most 32 px (L4). Any failure makes the tail a blocker. Verify: rows, and the Go/No-Go "does not prove" section
+  names the limit with these numbers (L5).
 
 ## 8. Archive (`product-manager`)
 

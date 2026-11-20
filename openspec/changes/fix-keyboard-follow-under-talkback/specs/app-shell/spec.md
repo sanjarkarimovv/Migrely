@@ -43,8 +43,8 @@ without the person's own action (BRD EC-UX-83, D194).
 ### Requirement: The line being typed comes into view with the keyboard
 Inside a screen's typing space, the line being typed SHALL come into view while the keyboard opens, in the same frames as
 the keyboard: never further in a frame than the keyboard's top moved plus 1 px, only upward, and still once the keyboard has
-settled. Its final position SHALL equal the position before this change within 1 px. TalkBack on or off SHALL NOT change
-this (BRD EC-UX-84, EC-UX-87, D194).
+settled, but for one settle of at most 32 px upward when the field starts wholly in view and is taller than the space left.
+Its rest position SHALL equal the one before this change within 1 px, TalkBack on or off (BRD EC-UX-84, EC-UX-87, D194).
 
 #### Scenario: Frames while the keyboard opens
 - **WHEN** a 60 fps recording on API 36 with Gboard at 200% landscape in the 360 dp window covers the note's keyboard
@@ -53,8 +53,17 @@ this (BRD EC-UX-84, EC-UX-87, D194).
   in the frame where it steps aside, no frame moves it down, and no frame moves it twice
 
 #### Scenario: No tail
-- **WHEN** the same recording is read at the keyboard's last frame and 500 ms later
+- **WHEN** the same recording, with the note starting cut by the keyboard, is read at the keyboard's last frame and 500 ms
+  later
 - **THEN** the two frames are identical
+
+#### Scenario: The page-end settle (a known limit)
+- **WHEN** the note starts wholly in view at the page's end, taller than the space the keyboard leaves, and the keyboard opens
+  with TalkBack on, then with "Remove animations"
+- **THEN** after the keyboard's last frame the page settles at most once, upward only, by at most 32 px, with no bounce and,
+  with "Remove animations", in a single step
+- **AND** the cursor line still shows 112 of 112 px, focus stays on the note and nothing is written
+- **AND** no other starting position shows any movement after the keyboard's last frame
 
 #### Scenario: No catch-up leap
 - **WHEN** frames are skipped while the keyboard opens

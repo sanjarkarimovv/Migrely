@@ -29,7 +29,8 @@ same follow code, so they carry the same race.
   acted on records what the person sees; a scroll away by the person while the keyboard holds still still ends it.
 - **The line comes into view in step with the keyboard.** Inside a typing space, the page moves in the same frames as the
   keyboard, not by a spring after it, so the line never leaves the tree and TalkBack finds the field when it hears of the
-  scroll. This is for everyone, TalkBack on or off: one path. The motion follows ux-259's verdict C1 to C6.
+  scroll. This is for everyone, TalkBack on or off: one path. The motion follows ux-259's verdict C1 to C6, with one
+  accepted limit: a note that starts wholly in view at the page's end settles once, upward, by at most 32 px (L1 to L5).
 - **Unchanged:** the bar still steps aside (D192 R3 to R11); closing the keyboard never scrolls (#238, D189); the rest
   position of the line (D192's acceptance, 112/112 with TalkBack off); fields outside a typing space keep the old bring.
 - **Records.** BRD D194, EC-UX-83 to EC-UX-87 (new), EC-UX-39 (pointer), section 13 row 58.
@@ -37,6 +38,7 @@ same follow code, so they carry the same race.
 ## Out of scope
 
 - #255 (D193, TalkBack scroll order): release 1.3.4.
+- Removing the page-end settle (D4 limit L1 to L5): QA files an S4 follow-up (ux/motion, 1.3.4 or later).
 - The custom tag dialog's field on Attack details: a plain dialog field with no keyboard follow.
 - Moving between fields while the keyboard is up (no follow; the old path applies) and the follow while typing new lines
   (D180 (2)): kept as they are.
@@ -57,11 +59,14 @@ None.
 
 ## Impact
 
-- **Code:** `designsystem` only, four files, from eng-259's prototype 2 (`migrely-work/259/proto2.diff`, +82/−5):
-  `input/KeyboardFollow.kt`, `input/TypingSpace.kt` (new `scrollToShow`), `input/CursorFollowingTextField.kt`,
-  `input/SingleLineFieldInView.kt`. No screen changes.
-- **Tests:** the red `KeyboardFollowTest` cells (2bf5857c), unit tests for `scrollToShow`, Robolectric frame tests for C1 to
-  C3, the fallback outside a typing space; `KeyboardRoom` tests and D192's tests stay green as guards.
+- **Code:** `designsystem` (`input/KeyboardFollow.kt`, `input/TypingSpace.kt` with `page(scrollState)`, `KeptField` and
+  `scrollToShow`, `input/CursorFollowingTextField.kt`, `input/SingleLineFieldInView.kt`), and one line on each of the four
+  screens (`AttackDetailsScreen`, `LogMedicationScreen`, `EditMedicationScreen`, `DeleteAllDataScreen`): `pageModifier`
+  becomes `page(scrollState)` with the page's own `ScrollState` (design D3, explicit route, 4d1d0430). Prototype 2's nested
+  post-scroll side channel was tried and removed (3 of 17 openings still moved focus).
+- **Tests:** the red `KeyboardFollowTest` cells (2bf5857c), `TypingSpaceScrollToShowTest`, `KeyboardFollowFramesTest` (C1 to
+  C3), per-screen `PageScrollParent` tests, the fallback outside a typing space; `KeyboardRoom` tests and D192's tests stay
+  green, unedited, as guards.
 - **No change to:** manifest, permissions, strings, Room schema, backup, Free or Premium.
 - **BRD:** D194, EC-UX-39, EC-UX-83 to EC-UX-87, section 13 row 58.
 - **Issue:** `Refs #259` in every commit and the PR, never a closing keyword: QA retests and closes it.
