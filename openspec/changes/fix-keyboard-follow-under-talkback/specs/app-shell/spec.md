@@ -147,7 +147,7 @@ earlier bring (BRD EC-UX-85, EC-UX-86, D194).
 When a keyboard frame would leave a focused field that is not following the keyboard, and showed at least 1 px, with less
 than its line, the page SHALL hold the lesser of its line with its clearance and what showed, in that same frame, for every
 user. In each such frame the line SHALL move no further than the keyboard's and the bar's step plus 1 px, and not at all
-after the keyboard stops (BRD EC-UX-88, D194).
+after the keyboard stops. A field that covers the whole visible part SHALL NOT be held (BRD EC-UX-88, D194).
 
 #### Scenario: Reopening the keyboard with TalkBack (the reopen path)
 - **WHEN** TalkBack is on in the 360 dp window, the note is focused, Back closed the keyboard, the page was scrolled so the
@@ -173,6 +173,11 @@ after the keyboard stops (BRD EC-UX-88, D194).
 #### Scenario: A field scrolled wholly away
 - **WHEN** the note was scrolled wholly out of view before the keyboard grows
 - **THEN** the page does not move for it
+
+#### Scenario: A field that covers the whole visible part
+- **WHEN** the note already covers the whole visible part before the keyboard grows, as in a split screen where that part is
+  under about 154 px
+- **THEN** the page does not hold it, and the keyboard's frame moves nothing for it
 
 #### Scenario: The first typed character after a hold
 - **WHEN** the note was held with its caret line cut, and the user types one character

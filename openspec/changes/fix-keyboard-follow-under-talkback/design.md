@@ -181,6 +181,8 @@ showed with less than its line, the page holds min(the line with its clearance, 
 - The field moves with the keyboard and no further, and stays in the tree.
 - It also fires on later growth, for example symbols after a partial scroll-away.
 - It never pulls the field to its line, and a field scrolled wholly away stays put (R1).
+- A field that covers the whole visible part is not held (`before < visibleBefore`, 43fb9202, cr-259 round 4): in a split
+  screen whose visible part is under about 154 px, holding the line with its clearance is not possible.
 
 **Conditions (ux-259, accepted by team-lead).**
 - **H1** Each held frame moves the line by at most the keyboard step plus the bar step plus 1 px; 0 after the keyboard stops;
