@@ -87,6 +87,9 @@ private const val DOSE = "Dose"
 private val TEN_STEPS = listOf(0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1f)
 private const val FRAME_MILLIS = 16L
 
+// The clearance kept above and below the caret's line (CursorFollowingTextField's margin).
+private val LINE_CLEARANCE = 8.dp
+
 // A keyboard switching to its symbols, taller by 73 px.
 private const val SYMBOLS_PX = 700
 
@@ -837,6 +840,20 @@ class KeyboardFollowFramesTest {
     @Test
     fun `H2 a reopen at 350 px with the caret at the end keeps the line's height`() {
         assertKeepsShown(HELD_HIGH_PX, caretAtEnd = true)
+    }
+
+    // cr-259 S4-1: the hold keeps no more than the line with its clearance (8 dp each side), however much showed.
+    @Test
+    fun `H2 a reopen at 350 px holds no more than the line with its clearance`() {
+        val after = reopenAt(HELD_HIGH_PX, caretAtEnd = true).last()
+
+        val lineWithClearance = cursorLine().height + 2 * LINE_CLEARANCE.value * density()
+        assertTrue(
+            "${shown(
+                after
+            )} px of the note show, the line with its clearance is $lineWithClearance",
+            shown(after) <= lineWithClearance + TOLERANCE
+        )
     }
 
     // H3 (ux, amended): the first typed character brings the caret's whole line through the typing follow (BRD

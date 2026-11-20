@@ -12,6 +12,9 @@ private const val AFTER = 150
 private const val FIELD = 300f
 private const val LINE = 100f
 
+// A line with its clearance taller than what the keyboard leaves (cr-259 S4-3's probe).
+private const val COVERING_LINE = 160f
+
 /**
  * How much of a field shows, and whether a keyboard frame is about to hide it (#259, decision (a')): a field shows
  * with at least one pixel inside, since Compose drops a node whose clipped bounds round to nothing from the
@@ -50,5 +53,11 @@ class TypingSpaceKeyboardHidesTest {
     @Test
     fun `A field cut at the top, which the keyboard does not reach, is not hidden by it`() {
         assertFalse(keyboardHides(-250f, FIELD, LINE, BEFORE, AFTER))
+    }
+
+    // cr-259 S4-3: a field taller than the visible part (split screen) and covering it still fills what is left.
+    @Test
+    fun `A field that covers the visible part is not hidden by the keyboard`() {
+        assertFalse(keyboardHides(-50f, 400f, COVERING_LINE, BEFORE, AFTER))
     }
 }

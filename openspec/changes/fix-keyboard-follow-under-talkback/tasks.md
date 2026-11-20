@@ -96,8 +96,9 @@ green; each mutation must turn its test red again. Logs go to `migrely-work/259/
   (`eng/3.5-screens-mutant.log`).
   Reopen on a still-focused field (device row u3, team-lead decision (a'); cr-259 round 2; ux HOLD): a focused field
   that is not followed and that a keyboard frame is about to hide (`keyboardHides`: it showed, at least 1 px; the
-  keyboard takes some of it; less than its line would be left) is held in that layout pass: the page keeps
-  min(line, what showed), so the field moves with the keyboard and no further and stays in the accessibility tree. No
+  keyboard takes some of it; less than its line would be left; it does not already cover the whole visible part) is
+  held in that layout pass: the page keeps min(the line with its clearance, what showed), the line being the caret line
+  plus up to 21 px (8 dp) each side, so the field moves with the keyboard and no further and stays in the accessibility tree. No
   state between frames (the N1 latch cannot return); no hand-over (team-lead accepted: HOLD with the hand-over brought
   the line back in frame 2, 192 to 572 px, `eng/r7-hold-handover.log`). The first typed character brings the caret
   line through the typing follow (BRD D180 (2)). 1 px: Compose rounds clipped bounds to whole pixels
@@ -111,6 +112,9 @@ green; each mutation must turn its test red again. Logs go to `migrely-work/259/
   guard removed reds only the pure sub-pixel cell (the "takes some" guard already excludes a wholly hidden field); H3
   (no typing bring) reds H3's final-cut check; H4 (hold for followed fields too) reds H4 and 15 ordinary cells; B (no
   `onBringing`) reds all four F1 cells, the one-step ones included (N4 closed under HOLD).
+  cr-259 round 3 S4-1 and S4-3 (`eng/r8-mut-*.log`): a cell at 350 px with the caret at the end checks the hold keeps no
+  more than the line with its clearance; the cap dropped reds it (177 px shown against 154). A field covering the whole
+  visible part is not held (split screen); the pure cell is red without that guard.
   Numbers (Robolectric, 360 dp at 200%, keyboard steps 62 to 63 px, bar 19 to 20 px; `eng/r7-hold.log`): every held
   frame moves the line 61 to 63 px, the note keeps 59 to 60, 150 or 153 to 154 px showing, 0 px after the keyboard. H3
   peaks, logged not capped (ux option 1, `eng/r7-h3-measure.log`): caret line 1 at 60 px, 26 px over 12 frames; caret
@@ -131,6 +135,8 @@ green; each mutation must turn its test red again. Logs go to `migrely-work/259/
   modules, 0 failed (`eng/gate.log`); `:app:checkReleasePermissions` exit 0; merged release manifest: ACCESS_NETWORK_STATE,
   POST_NOTIFICATIONS, RECEIVE_BOOT_COMPLETED, WAKE_LOCK, BILLING, the dynamic receiver permission; no INTERNET.
   Rerun at 4d1d0430: exit 0, 3510 tests in 53 modules, 0 failed; permissions exit 0, same set, no INTERNET.
+  Final head (HOLD with cr-259 round 3 S4-1 and S4-3, `eng/r8-gate.log`): exit 0, 3539 tests in 53 modules, 0 failed;
+  `:app:checkReleasePermissions` exit 0, no INTERNET.
 
 ## 5. Device walk on emulator-5570 (`android-engineer`)
 
@@ -218,7 +224,8 @@ window size afterwards. One JSON row per run in `migrely-work/259/rows.jsonl`.
   cr-259 round 2 (CHANGES REQUESTED on b8a8a871; F1 to F4 closed, F5 rotation to QA): N1 latch replaced by the hand-over,
   N3 rescue from the first frame leaving less than a line, N4 one-step cells at 16 ms, see 3.5. N3 then ruled HOLD by
   ux (the rescue keeps what showed instead of bringing the line), hand-over dropped, H3 amended (one way, within 15
-  frames, cut 0); see 3.5. Awaiting re-review.
+  frames, cut 0); see 3.5. cr-259 round 3 APPROVES the code at 9e3ed175; its S4-1 (a cell for the cap at the line) and
+  S4-3 (no hold for a field covering the visible part) are added after it, see 3.5.
 
 ## 7. Independent retest (`qa-engineer`)
 

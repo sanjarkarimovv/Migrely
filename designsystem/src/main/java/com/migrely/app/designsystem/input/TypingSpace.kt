@@ -302,7 +302,8 @@ internal fun shownInPage(top: Float, size: Float, visible: Int): Float =
 /**
  * Whether a keyboard that shrinks the visible part from [visibleBefore] to [visible] px is about to hide a field [size]
  * px tall at [top] whose line is [line] px tall: the field showed ([MIN_SHOWN_PX]), the keyboard takes some of it, and
- * less than its line would be left. A field the person had already scrolled wholly away is not one.
+ * less than its line would be left. A field the person had already scrolled wholly away is not one, nor one that
+ * covers the whole visible part, which keeps showing whatever the keyboard takes.
  */
 internal fun keyboardHides(
     top: Float,
@@ -313,7 +314,7 @@ internal fun keyboardHides(
 ): Boolean {
     val before = shownInPage(top, size, visibleBefore)
     val now = shownInPage(top, size, visible)
-    return before >= MIN_SHOWN_PX && now < before && now < line
+    return before >= MIN_SHOWN_PX && before < visibleBefore && now < before && now < line
 }
 
 /** Gone from TalkBack, Switch Access and Tab: a bar that is not on screen is never a stop. */
