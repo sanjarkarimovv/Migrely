@@ -169,11 +169,16 @@ the typing follow (D180 (2)) is unchanged; moving between fields is covered by f
 
 The field is focused but not following (the person moved the page), so D2 does nothing. On develop the keyboard's frame hides
 the note wholly, it leaves the accessibility tree, TalkBack moves its focus, and the next double tap writes (4 of 5 on 5570;
-develop z2 too). Whether v1.3.1 does the same is pending the v1.3.1 control rows (×3).
+develop z2 too). v1.3.1 (production) moves focus too, to "Back. Button", but writes nothing (3 of 3 rows on 5570): the path
+was already in production as an accessibility fault, and 1.3.3 fixes it there as well.
 
 **The rule.** For every user, with no TalkBack branch: when a keyboard frame would leave a focused, unfollowed field that
 showed with less than its line, the page holds min(the line with its clearance, what showed) in that layout pass
-(`keyboardHides`, `shownInPage`). The line with its clearance is the caret line plus the margin D192 R2 leaves, up to 21 px
+(`keyboardHides`). The hold is measured from the field's top, `hold = fieldTop + held - visible`, so that its top stays
+`held` px above the visible part's bottom (d7aa097e). While any part shows this equals the earlier
+`held - shownInPage(now)`; it differs when one keyboard frame takes more than showed, as Gboard's first reopen frame under
+TalkBack does (0 to 270 or 0 to 422 px against 87 to 89 px shown), where the clamped form left the note wholly hidden on
+43fb9202. The line with its clearance is the caret line plus the margin D192 R2 leaves, up to 21 px
 (8 dp) each side, so up to about 154 px at 200%, not the 112 px line alone (cr-259 round 3, S4-2); within H1 and H2.
 - "Showed" means at least 1 px (`MIN_SHOWN_PX`), because Compose rounds clipped bounds to whole pixels (`roundToIntRect`) and
   prunes empty ones.
@@ -238,7 +243,7 @@ build) and emulator-5582 (API 26). Rows go to `migrely-work/259/` (engineer) and
 | T5 | TalkBack off, 360 dp, bar aside | line 112/112 | |
 | T6 | #238 close (Back, hide, Done), TalkBack on and off | 0 scroll events, 0 px (bar height where aside) | a close that scrolls |
 | T7 | Remove animations, TalkBack on | focus kept, one-step move, at most one hidden frame; K2 logged | |
-| U3 | D6's reopen path, TalkBack, 360 dp, then one more double tap | focus on the note, 0 writes; H2 in every frame | develop: hidden, focus moves, writes (4/5); v1.3.1 ×3 to tell if production is affected |
+| U3 | D6's reopen path, TalkBack, 360 dp, then one more double tap | focus on the note, 0 writes; H2 in every frame | develop: hidden, focus moves, writes (4/5); 43fb9202: hidden, moves, writes; v1.3.1: focus to "Back", 0 writes (3/3) |
 | K1 | U3 with the caret at the end of 4 lines, 60 px shown; type one character, then double tap | focus kept, 0 writes, line whole | |
 | F5 | rotation with the keyboard up, TalkBack on | bar decided again, line shows, focus kept | not reachable in unit tests |
 | M1 | 60 fps record, note, 360 dp, TalkBack off and on, candidate and develop, including a page-end start | C1, C2 per frame; last frame equals +500 ms | develop's spring moves after the last frame |
@@ -262,15 +267,24 @@ On 4d1d0430 (debug, sha256 e86fdac9…; lead re-counted):
 | M1 | no captured frame with the field hidden; no C1 or C2 break | about 5 fps on 5570; the 24 px page-end settle seen here is removed by F2 |
 | M2 | rest caret 185..297 at 360 dp, 278..390 at 411 dp, identical to develop | |
 
-**Pending on the final head (9e3ed175), engineer on 5570:**
-- the v1.3.1 control in the u3 geometry ×3;
-- u3 at least 5 runs, and K1;
-- T1 at least 20 runs, F2 (page-end start, no settle), T2, T4 and T6;
-- T7 with K2, and M2.
+On the final head d7aa097e (debug "cand8", sha256 787d7a3f…; rows in `migrely-work/259/rows.jsonl`, summary
+`python3 migrely-work/259/lib/r4sum.py`). Setup: API 36, Gboard, 360 dp landscape, 200% font, TalkBack on. A row counts only
+if the 1-minute load was under 8 at its start and its end and at least 3 GB of disk was free; other rows are void.
 
-Until those rows exist, the results above prove the 4d1d0430 build only.
+| Row | Result | Gap |
+|---|---|---|
+| U3 | 6 valid rows: 0 focus moves, 0 writes. Where the caret line shows, 48 to 52 px of it shows; elsewhere less than the line (H5, expected) | |
+| K1 | 3 valid rows: 0 focus moves; the only write is the typed "x"; caret line whole at 185..297, 112/112 | |
+| T1 360 dp | 17 valid rows: 0 moves, 0 writes, 112/112 | |
+| F2 | page-end start, animations on and off: 2 valid rows, 0 px settle at +0.5 s and +1.0 s; the negative control saw a 20 px shift | mid-page start: 2 rows, both void |
+| U3 control, 43fb9202 | its diag build: 4 rows, 3 focus moves to an impact radio, 3 impact writes (Gboard's first reopen frame 0 to 270 or 422 px) | the plain debug: 2 finished rows, 1 moved and wrote at load 8.6 (void) |
+| U3 control, v1.3.1 | 3 rows: 3 focus moves to "Back. Button", 0 writes | control rows record only the end load |
 
-Not proven by the engineer: 60 fps motion, real phones, the R8 build, API 26, other keyboards, rotation. QA's task 7 covers
+Not run by the engineer on the final head (team-lead decision 2026-11-20, to speed up 1.3.3 as the owner asked): T3, T5,
+T6, M1 and M2 to M4; also T4, T7 with K2, M2 and T2's impact preset. QA covers them independently in 7.1, 7.4 and 7.5.
+
+Not proven by the engineer: per-frame motion (on 5570 `screenrecord` kept 2 to 3 keyboard frames per opening), real
+phones, the R8 build, API 26, other keyboards than Gboard, rotation. QA's task 7 covers
 them.
 
 ## Risks
@@ -283,8 +297,8 @@ them.
   back. Mitigation: the F2 frame cells and M1's +500 ms check; recheck on every Compose bump.
 - **H5 and K3.** After a hold the caret line can stay cut until the first keystroke, and that keystroke's spring can move up
   to about 100 px per frame (one step of about 430 px with Remove animations). Both are recorded limits, with follow-up #260.
-- **Production exposure of the reopen path.** Unknown until the v1.3.1 control rows: if v1.3.1 also hides the note there,
-  the path is pre-existing in production.
+- **Production exposure of the reopen path.** v1.3.1 moves focus to "Back" on that path (3 of 3 on 5570) without a write:
+  an accessibility fault already in production, fixed by 1.3.3. Only Gboard on API 36 was measured.
 - **TalkBack off on 5570.** T5 and TalkBack-off T6 have no device row on the explicit route. QA must measure both on 5580.
 - **Unordered reads.** A detached field is skipped and never scrolled on stale coordinates.
 - Real phones and other keyboards are not proven; recorded in NOT CHECKED, not claimed.

@@ -151,6 +151,13 @@ green; each mutation must turn its test red again. Logs go to `migrely-work/259/
 API 36, Gboard, 200% font, landscape; window 360 dp and 411 dp tall. Restore font, rotation, animator scales, TalkBack and
 window size afterwards. One JSON row per run in `migrely-work/259/rows.jsonl`.
 
+Final head d7aa097e (debug "cand8", sha256 787d7a3f…; `python3 migrely-work/259/lib/r4sum.py`; TalkBack on, 360 dp). A
+row counts only if the 1-minute load was under 8 at its start and end and at least 3 GB of disk was free. U3 6 valid rows,
+K1 3, T1 17, F2 page-end 2 (mid-page 2, both void): 0 focus moves, 0 writes but the typed "x" in K1; details in BRD D194
+(10) and design "Engineer's results on 5570". Controls: 43fb9202 (diag build 4 rows: 3 moves, 3 impact writes) and v1.3.1
+(3 rows: 3 moves to "Back. Button", 0 writes). Lead decision 2026-11-20 (to speed up 1.3.3, as the owner asked): the
+engineer's rows not run on this head go to QA, and the tasks below stay unticked until QA's result.
+
 - [x] 5.1 T1, T4: TalkBack double tap on the note at 360 dp (6 runs) and 411 dp (2 runs): focus still on the note after 3 s
   (TalkBack VERBOSE log), line 112/112. Verify: rows with `focus_kept` true in every run.
   NOT MET (candidate 9eb83586 debug, sha256 50d8e381…; 5570, 2026-11-20). 360 dp: 17 TalkBack openings of the note,
@@ -164,6 +171,8 @@ window size afterwards. One JSON row per run in `migrely-work/259/rows.jsonl`.
   112/112: 13 plain (`v1`), 9 with the recorder running (`v2` ×5, `v8` ×4), 4 with the note wholly in view before the
   keyboard (`v8`, reference shots `shots/v8-refs.png`), 3 more page-end starts (`v6`), 2 Remove animations (`v4`), T2
   and T6 openings. 411 dp 2 of 2. Previous route (edae56a4): 3 of 17 moved.
+  Final head d7aa097e: T1 at 360 dp 17 valid rows, 0 moves, 0 writes, 112/112. T4 (411 dp) handed to QA 7.1 (lead
+  decision 2026-11-20).
 - [x] 5.2 T2: a migraine with impact 2 recorded, and one with none; TalkBack opens the note, one more double tap. Verify: a
   database read before and after (`adb shell run-as … sqlite3` or the debug export) unchanged in every run.
   Partly. Candidate, impact 2 recorded, TalkBack opens the note, one more double tap: attack row identical before and
@@ -172,6 +181,8 @@ window size afterwards. One JSON row per run in `migrely-work/259/rows.jsonl`.
   the preset leaves the note in a position the first keyboard frame does not hide, so that control cannot fail.
   Explicit route: impact 2 recorded, attack row identical after the opening and one more double tap, in the preset
   geometry and in the plain T1 geometry where develop cleared it (`v1-tb2i`, last `v1-tb2`).
+  Final head d7aa097e: the impact preset row (`t-tb2i`) was void (load 50 at its end); T2's impact preset handed to QA
+  7.1 (lead decision 2026-11-20).
 - [ ] 5.3 T3: Log medication (usual and dark room), Edit medication (name, dose), Delete all data, TalkBack double tap, at
   360 and 411 dp, 2 runs each: focus kept, no intake, medication or deletion written. Verify: rows per screen.
   Partly. TalkBack double tap, candidate: Log medication 360 ×2, 411 ×2; Delete all data 360 ×3, 411 ×2; Edit
@@ -179,6 +190,7 @@ window size afterwards. One JSON row per run in `migrely-work/259/rows.jsonl`.
   room was run TalkBack off only (`m4`). Develop (earlier, `d2`, `d3`): no jump on these screens either (latent).
   Explicit route, one opening each at 360 dp: Log medication, Delete all data, Edit medication name and dose: focus kept,
   nothing written (`v5`).
+  Handed to QA 7.1 (lead decision 2026-11-20): not run on the final head d7aa097e.
 - [ ] 5.4 T5: TalkBack off, 360 dp, bar aside: line 112/112 on the four screens. Verify: layout dump bounds.
   Partly. TalkBack off, Gboard's full keyboard, bar aside, 112/112: note (`m1c-off-det-360`), Log medication name
   (`w2-off-log-360`), Edit medication name (`w6-off-edit-360`), Log medication in the dark room (`m4`). Delete all data not
@@ -187,6 +199,7 @@ window size afterwards. One JSON row per run in `migrely-work/259/rows.jsonl`.
   Explicit route: not obtained on 5570 (Gboard's compact bar with TalkBack off in every attempt, including a TalkBack
   warm-up, `v5`, `v7`). The in-pass follow has no TalkBack branch; the frame tests cover it without an accessibility
   service.
+  Handed to QA 7.4 (lead decision 2026-11-20): not run on the final head d7aa097e.
 - [ ] 5.5 T6 (#238): close by Back, hide key, Done; TalkBack on and off: 0 `TYPE_VIEW_SCROLLED` from the page, scroll
   position 0 px (bar height where aside), focus on the field. Verify: rows and TalkBack log lines.
   Partly. TalkBack on, Back (`w1-tbclose-det-360`): 0 `TYPE_VIEW_SCROLLED`, no focus move, "keyboard hidden". TalkBack
@@ -194,10 +207,13 @@ window size afterwards. One JSON row per run in `migrely-work/259/rows.jsonl`.
   on prototype 2 (`p4-close-det-360`). Hide key and Done with the full keyboard: not obtained (compact bar).
   Explicit route: TalkBack + Back (`v1-tbclose`): 0 `TYPE_VIEW_SCROLLED`, no focus move, "keyboard hidden". TalkBack off:
   not obtained with the full keyboard.
+  Handed to QA 7.1 (T6, TalkBack on) and 7.4 (TalkBack off, hide key, Done) (lead decision 2026-11-20): not run on the
+  final head d7aa097e.
 - [x] 5.6 T7: Remove animations with TalkBack on, 360 dp: focus kept, one-step move. Verify: rows.
   Done. Remove animations (all three scales 0, restored), TalkBack, 360 dp: 2 of 2 focus kept, 112/112, nothing
   written (`w3`).
   Explicit route: 2 of 2 kept, 112/112 (`v4`).
+  Final head d7aa097e: T7 with K2 handed to QA 7.1 (lead decision 2026-11-20).
 - [ ] 5.7 M1: 60 fps `screenrecord` of the note's keyboard opening at 360 dp, TalkBack off and on, candidate and develop:
   frames at keyboard start, middle, last and +500 ms with the cursor line's top y and the keyboard's top y. Pass C1 and C2 on
   every frame, last equals +500 ms. Negative control: develop's frame +500 ms differs from its last frame. Verify: a frame
@@ -211,6 +227,9 @@ window size afterwards. One JSON row per run in `migrely-work/259/rows.jsonl`.
   jump in one captured frame; no C1 or C2 break; C3 settled where the note started cut (`v2`). Where the note starts
   wholly in view (`v8`), Compose's own focused-child scroll still moves it about 24 px after the keyboard settles, to
   align the field's top (the field is taller than the 255 px left): line in view, focus kept, a C3 tail for ux.
+  Handed to QA 7.5 (lead decision 2026-11-20): not run on the final head d7aa097e; 5570 cannot measure per frame. Run
+  there instead: F2 at the page end with animations on and off, 2 valid rows, 0 px settle at +0.5 s and +1.0 s, the
+  negative control saw a 20 px shift; mid-page 2 rows, both void.
 - [ ] 5.8 M2 to M4: final frames against develop at 411 and 360 dp (within 1 px; SW13 band if reached); the note at the page
   end and Delete all data in the dark theme, no stretch or glow; Log medication from attack mode, no lighter frame. Verify:
   shots in `migrely-work/259/shots/` and a short table.
@@ -220,10 +239,12 @@ window size afterwards. One JSON row per run in `migrely-work/259/rows.jsonl`.
   and the page's own animation moved it 71 px after the keyboard settled (the 3.3 limit, as on develop). M4: the band's
   colour is the dark room's (4, 6, 9) in all 61 frames, no lighter frame.
   Explicit route: rest caret 185..297 at 360 dp (19 rows) and 278..390 at 411 dp (2), the same as edae56a4.
+  Handed to QA 7.1 (lead decision 2026-11-20): M2 to M4 not run on the final head d7aa097e (its T1 rows rest at
+  185..297, as before).
 
 ## 6. Review (`code-reviewer`)
 
-- [ ] 6.1 Review the diff against `develop` 4d141abe, with design D3's mechanism as an explicit question (side channel versus
+- [x] 6.1 Review the diff against `develop` 4d141abe, with design D3's mechanism as an explicit question (side channel versus
   an explicit `ScrollState`); fixes go back to 2 to 5 and the gate reruns. Verify: review verdict recorded in the PR.
   cr-259 round 1 (CHANGES REQUESTED on dd0210b7) fixed on the branch, see eng-259's report: F1 the follow holds while the
   field's own bring runs; F2 the page lands where Compose's focused-child scroll leaves nothing to do; F3 one
@@ -233,7 +254,9 @@ window size afterwards. One JSON row per run in `migrely-work/259/rows.jsonl`.
   N3 rescue from the first frame leaving less than a line, N4 one-step cells at 16 ms, see 3.5. N3 then ruled HOLD by
   ux (the rescue keeps what showed instead of bringing the line), hand-over dropped, H3 amended (one way, within 15
   frames, cut 0); see 3.5. cr-259 round 3 APPROVES the code at 9e3ed175; its S4-1 (a cell for the cap at the line) and
-  S4-3 (no hold for a field covering the visible part) are added after it, see 3.5.
+  S4-3 (no hold for a field covering the visible part) are added after it, see 3.5. Rounds 3 and 4 approved the earlier heads.
+  cr-259 round 5 APPROVES d7aa097e (2026-11-20 11:52, diff 43fb9202..d7aa097e): the hold `fieldTop + held - visible`
+  equals the earlier form while any part of the field shows, cannot over-scroll, and keeps H1.
 
 ## 7. Independent retest (`qa-engineer`)
 
