@@ -22,9 +22,9 @@ import org.robolectric.annotation.GraphicsMode
 
 private const val LARGE_BAR_DP = 64f
 
-// A day of the month card's calendar ("Sunday, November 1: …"): its bar is its whole cell pitch (design D5 T1), as in
-// History's audit; less a pixel, as a row splits into whole pixels.
-private val DAY = Regex("""^\p{L}+, \p{L}+ \d+""")
+// A day of the month card's calendar ("Sunday, November 1: …", today "Today, Friday, November 20: …"): its bar
+// is its whole cell pitch (design D5 T1), as in History's audit; less a pixel, as a row splits into whole pixels.
+private val DAY = Regex("""^(Today, )?\p{L}+, \p{L}+ \d+""")
 private const val DAY_PITCH_BAR_DP = 47f
 
 /**

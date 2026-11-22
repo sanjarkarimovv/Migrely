@@ -19,9 +19,10 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
-// A calendar day ("Thursday, 1 October: …"): its bar is its whole cell pitch (design D5 T1), 47.7 dp in a 328 dp row,
-// as seven 48 dp targets do not fit there; less a pixel, as a row splits into whole pixels.
-private val DAY = Regex("""^\p{L}+, \d+ \p{L}+:""")
+// A calendar day ("Thursday, 1 October: …", today "Today, Friday, 23 October: …"): its bar is its whole cell pitch
+// (design D5 T1), 47.7 dp in a 328 dp row, as seven 48 dp targets do not fit there; less a pixel, as a row splits into
+// whole pixels.
+private val DAY = Regex("""^(Today, )?\p{L}+, \d+ \p{L}+:""")
 private const val DAY_PITCH_BAR_DP = 47f
 
 /**
