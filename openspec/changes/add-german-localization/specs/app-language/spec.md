@@ -3,11 +3,16 @@
 ### Requirement: English and German
 The app SHALL show every word of its own in German when its language is German, and in English otherwise, on every
 screen, dialog, message, notification, content description and launcher shortcut. Words the person typed SHALL stay as
-typed. No other language and no right-to-left layout SHALL be added (BRD EC-L10N-01, EC-L10N-22, D195).
+typed. No other language and no right-to-left layout SHALL be added (BRD EC-L10N-01, EC-L10N-22, EC-L10N-25, D195).
 
 #### Scenario: A phone in German
 - **WHEN** the phone's language is German (Germany) and Migrely is opened
 - **THEN** home, attack mode, History, Insights, Settings, the paywall and every other screen show German words
+
+#### Scenario: The launcher shortcut
+- **WHEN** the phone's list is Russian (Russia), English (United States), then German (Germany), and the app icon is
+  long-pressed
+- **THEN** the shortcut label is English, like the app, and with German first it is German
 
 #### Scenario: The person's own words
 - **WHEN** the app is in German and a migraine has a note, a trigger and a medication typed in English
@@ -77,9 +82,10 @@ language and nothing SHALL be lost: a migraine in progress, unsaved typed text w
 - **THEN** Migrely opens on the same screen in the new language with nothing lost
 
 ### Requirement: Notifications speak the app's language
-Each notification SHALL be written in the app's language at the moment it is shown. Android's notification settings
-SHALL show channel names and descriptions in the app's language after each app start and language change, updating only
-channels that already exist (BRD EC-L10N-07, EC-L10N-19, D195).
+Each notification, its dates included, SHALL be in the app's language when shown, and its full text SHALL be readable
+when expanded. Android's notification settings SHALL show channel names and descriptions in the app's language after
+each app start and language change, updating only channels that already exist (BRD EC-L10N-07, EC-L10N-19, EC-L10N-26,
+D195).
 
 #### Scenario: A daily reminder in German
 - **WHEN** the app's language is German and the daily reminder fires
@@ -93,14 +99,23 @@ channels that already exist (BRD EC-L10N-07, EC-L10N-19, D195).
 - **WHEN** the language changes to German and Migrely is opened once
 - **THEN** Android's notification settings list Migrely's existing channels with German names, and no new channel appears
 
+#### Scenario: Long German text in the shade
+- **WHEN** the daily reminder, "Did it help?" or the visit reminder shows in German and is expanded
+- **THEN** its whole text is readable, and the collapsed line still carries the meaning
+
+#### Scenario: The visit date on a phone in another language
+- **WHEN** the app is English on a phone in Russian (Russia) and the doctor-visit reminder fires
+- **THEN** its date is English with the Russian region, like the app's screens, and no longer Russian
+
 #### Scenario: After the update to this version
 - **WHEN** a German phone updates from 1.3.x with a reminder planned
 - **THEN** the first opening is German, entries and settings are unchanged, and the planned reminder fires in German
 
 ### Requirement: No untranslated text passes the gate
-Every string, plural and string array in every module's default resources SHALL have a German value, or be marked
-`translatable="false"`. Placeholders and array lengths SHALL match English. A German value equal to English SHALL be
-allowed only from a reviewed list. The local gate SHALL fail otherwise (BRD EC-L10N-12, EC-L10N-13, D195).
+Every string, plural and array in every module's default resources SHALL have a German value, or be marked
+`translatable="false"`. Placeholders and array lengths SHALL match English. A copy of English SHALL come only from a
+reviewed list. No value SHALL hold a soft hyphen or zero-width character, or a plain space between a number and its unit.
+The gate SHALL fail otherwise (BRD EC-L10N-12, EC-L10N-13, D195).
 
 #### Scenario: A new English-only string
 - **WHEN** a change adds a string to any module's `values/strings.xml` without a German value
@@ -119,23 +134,48 @@ allowed only from a reviewed list. The local gate SHALL fail otherwise (BRD EC-L
   "Migrely", "Premium", "PDF", "CSV" and "Stress"
 - **THEN** the gate fails
 
+#### Scenario: An invisible break or a split unit
+- **WHEN** a German value holds a soft hyphen or a zero-width space, or "15 Min." with a plain space
+- **THEN** the gate fails, and passes with a no-break space between the number and its unit
+
+#### Scenario: The English shortcut copy drifts
+- **WHEN** a shortcut label in `values-en` differs from its `values/` source
+- **THEN** the gate fails
+
 #### Scenario: Not to translate
-- **WHEN** a string is the app's name or lives only in the debug build
+- **WHEN** a string is the app's name, a licence or library name, or lives only in the debug build
 - **THEN** it is marked `translatable="false"` and the gate passes without a German value
 
 ### Requirement: German fits at the largest font
 German text SHALL keep the no-break rule (D181): at 200% font on a 360 dp phone, in portrait and landscape, no label
 SHALL break inside a word, be cut or be ellipsized, and type SHALL NOT shrink. Every German word over 16 letters SHALL
-be on a reviewed list, seen in place at that size. Umlauts, ß and „ “ SHALL be drawn in the brand fonts (BRD
-EC-L10N-02, EC-L10N-14, D181, D195).
+be on a reviewed list, seen in place at that size. A German-only failure SHALL block the merge. Umlauts, ß and „ “ SHALL
+be drawn in the brand fonts (BRD EC-L10N-02, EC-L10N-14, D181, D195).
 
 #### Scenario: Buttons and chips at 200%
 - **WHEN** the app is German at 200% font on a 360 dp phone, in portrait and landscape
 - **THEN** every button, chip, tab and attack-mode control shows whole words, and none is cut or ellipsized
 
+#### Scenario: Layouts that switch at a font size
+- **WHEN** the app is German at 130% font on a 360 dp phone in portrait, on the "Did it help?" card, Insights bars, the
+  doctor visit section and the onboarding header
+- **THEN** every word is whole in the layout that size chooses
+
+#### Scenario: A failure English shares
+- **WHEN** a layout fails in German and also fails in English at the same settings
+- **THEN** it is filed as an issue and does not block this change, unless it is on a safety path, where it blocks
+
+#### Scenario: A failure only German has
+- **WHEN** a layout fails in German and passes in English at the same settings
+- **THEN** the change does not merge until it is fixed, by shorter copy first and never by smaller type
+
 #### Scenario: A long compound word
 - **WHEN** a German value contains a word over 16 letters, such as "Lichtempfindlichkeit", that is not on the list
 - **THEN** the gate fails, and the word joins the list only after it was seen whole in its place at 200% on 360 dp
+
+#### Scenario: A number and its unit
+- **WHEN** a duration, percent, pain score or price wraps at 200% in German
+- **THEN** the number and its unit stay on one line
 
 #### Scenario: German letters
 - **WHEN** a title in Fraunces or a label in Figtree contains ä, ö, ü, ß or „ “
@@ -155,6 +195,16 @@ never a cause. `medical-reviewer` SHALL pass every such key before release (BRD 
 - **WHEN** the medication overuse card shows in German
 - **THEN** it says what the English card says about days with attack medication, using the glossary term, and adds no
   claim
+
+#### Scenario: Overuse wording is not a limit
+- **WHEN** any German overuse or indicator string is read
+- **THEN** it holds none of Grenze, Grenzwert, Limit, erlaubt, sicher, Höchstmenge, zu viel, Übergebrauch, absetzen,
+  reduzieren or Pause, and says "kann" where English says "can"
+
+#### Scenario: The report is for a doctor
+- **WHEN** a German string names the doctor report
+- **THEN** it says the report is for a doctor's practice, never "Arztbericht", and the lock-screen visit reminder never
+  says "Arzt"
 
 #### Scenario: A key without a pass
 - **WHEN** any German health or safety key has no `medical-reviewer` PASS
@@ -192,11 +242,15 @@ German, TalkBack SHALL read Migrely in German (BRD EC-L10N-17, D195).
 
 ### Requirement: German letters in typed names
 Triggers, medications and notes typed with umlauts or ß SHALL be saved and shown unchanged within the existing length
-limits. The duplicate check SHALL stay as it is (BRD EC-L10N-18, D195).
+limits. The duplicate check and the "DELETE" keyword SHALL stay as they are (BRD EC-L10N-18, EC-L10N-27, D195).
 
 #### Scenario: A trigger with umlauts
 - **WHEN** the person adds the trigger "Rotwein & Käse" and a medication "Ibuprofen 400"
 - **THEN** both are saved and shown exactly as typed
+
+#### Scenario: The delete keyword in German
+- **WHEN** the app is German and the person opens Delete all data
+- **THEN** the keyword to type is still "DELETE", the German label says so, and typing it works on a German keyboard
 
 #### Scenario: ß and SS
 - **WHEN** the person has a trigger "Straße" and adds "STRASSE"

@@ -24,6 +24,10 @@ New rule, still in one place:
 3. Otherwise call today's rule on `locales[0]` unchanged. So `[ru-RU, en-US, de-DE]` stays `en-RU`, as in 1.3.3: no one
    without German ahead of English sees any change.
 
+As built (603c58b2, accepted): `FormattingLocaleResolver.resolve(phoneLocales: List<Locale>)` takes a Kotlin list, not
+Android's `LocaleList`, so the resolver stays a plain JVM class and its tests need no Robolectric; `FormattingLocales`
+converts the configuration's list.
+
 | Phone list | App language | Formatting locale |
 |---|---|---|
 | de-DE | German | de-DE |
@@ -55,6 +59,16 @@ exist (`manager.notificationChannelsCompat`) with the localized name and descrip
 `MigrelyApplication` calls it in `onCreate` and in `onConfigurationChanged` when the locale list changed. No channel is
 created there (EC-L10N-07).
 
+As built (febaf0df, accepted, D195 (15)): the doctor-visit notification's date is now formatted with the app's
+formatting locale from `localizedContext`, not with the phone's own `locales[0]`. Before, an English app on a Russian
+phone titled the notification with a Russian date while every screen said English, against D117, which already names
+notifications. Visible change for English users on non-English phones: the date becomes English with their region
+(EC-L10N-26).
+
+Expanded text (404c989b, lead decision on ux E6): the daily reminder, "Did it help?" and the visit reminder set
+`BigTextStyle().bigText(text)`, so longer German, and any language at 200%, is readable in full when expanded. Each German
+text stays short enough to carry its meaning collapsed. `NotificationExpandedTextTest` 3 of 3 red before, green after.
+
 ## D3. Android 13+ app language
 
 - `app/src/main/res/xml/locales_config.xml` with `en` and `de`; `android:localeConfig="@xml/locales_config"` on
@@ -64,6 +78,12 @@ created there (EC-L10N-07).
 - API 26 to 32: follow the phone. No in-app picker (out of scope; it needs AppCompat or our own storage and a new screen).
 - A unit test reads `locales_config.xml` and asserts its languages equal `APP_LANGUAGES` and the set of `values-<lang>`
   folders plus `en`, so a future `values-fr` without config, or config without strings, fails.
+- Launcher shortcut (e31ac30e, lead decision on ux E7): static shortcut labels are resolved by the launcher from the
+  system's list, not by D1, and the default `values/` is not tagged English, so `[ru-RU, en-US, de-DE]` would show the
+  German label beside an English app. `app/src/main/res/values-en/strings.xml` holds only the two shortcut labels
+  (`shortcut_start_attack`, `shortcut_start_attack_long`), a test asserts they equal `values/`, and `app/lint.xml` ignores
+  only "not translated in en" for `MissingTranslation`; every other language stays fully checked (EC-L10N-25). With
+  per-app German on an English phone the launcher may still show English: recorded, observed in 8.2 and 12.1 (ux N04).
 
 ## D4. What stays English
 
@@ -78,6 +98,10 @@ created there (EC-L10N-07).
   Resources.getSystem().configuration.locales[0] }`. Below API 33 this is the same value as today.
 - **Backup JSON**: untouched. Built-in tags are stored by key and named by the UI, so they follow the language already.
 - **Debug strings** (`app/src/debug`): `translatable="false"`. `app_name` "Migrely": `translatable="false"`.
+- **Licence and library names** (as built, accepted): `settings_licence_apache`, `settings_licences_apache`,
+  `settings_licence_ofl`, `settings_licences_ofl` are `translatable="false"`. They are proper names of licences and
+  libraries ("Apache License 2.0", "SIL Open Font License 1.1"), which are not translated. `stat_no_peak` ("—") was
+  already not translatable.
 
 ## D5. Translation, glossary and voice
 
@@ -86,56 +110,92 @@ rewrite any string (findings back to the engineer); `medical-reviewer` passes ev
 `legal-finance-analyst` checks subscription and privacy keys. No external translation service: strings are public, but
 the team does not add a vendor for this.
 
-Voice: informal "du", short sentences, verbs first on buttons, as in English. Reason: shorter strings at 200% and the
-app's direct English tone. `ux-designer` may switch to "Sie" with evidence before the copy review closes; the switch is
-then total, never mixed.
+Voice: informal "du", **confirmed by `ux-designer`** (`migrely-work/de/ux-checks-verdict.md`, voice section): of 18
+German migraine apps in the German App Store, 13 use "du" (personal diaries), 4 use "Sie" (clinics and institutions).
+Migrely is a private diary with no clinician's voice, and "du" is shorter at 200% ("Wähle" against "Wählen Sie"). Lowercase
+"du" and "dein" in running text, never mixed with "Sie". Calm and adult: no slang, exclamation marks, emoji, diminutives
+or cheerleading. Buttons may be infinitives ("Zeit ändern") with no pronoun.
 
-Typography: „…“ quotes, "…" ellipsis character, a no-break space between a number and its unit where English has none
-only if the line already wraps; decimals come from the locale, never typed into a string.
+Typography: „…“ quotes and the "…" character. A **no-break space (U+00A0) between a number and its unit** in every
+duration, percent, "x/10" and price string ("1 Std. 20 Min.", "25 %", "7/10"), because these lines wrap at 200% (ux E4;
+this replaces the earlier "only if the line already wraps"). **No soft hyphen (U+00AD) and no zero-width character** in
+any string: they slip past the long-word check and TTS reads them oddly. Decimals come from the locale, never typed into a
+string.
 
-Glossary (binding; a change needs `ux-designer`, and for health terms `medical-reviewer`):
+Glossary (binding; a change needs `ux-designer`, and for health terms `medical-reviewer`). The health terms come from
+`medical-reviewer`'s pre-check (`migrely-work/de/medical-precheck.md`, 2026-11-22; sources: DGN/DMKG S1 guideline AWMF
+030/131, DMKG Kopfschmerzkalender, gesundheitsinformation.de, Duden, BfArM). The pre-check passes no key; the per-key PASS
+is task 10.3.
 
 | English (app) | German | Note |
 |---|---|---|
 | migraine (the condition) | Migräne | |
-| migraine / attack (one episode, countable) | Migräneattacke; short: Attacke | DMKG guideline term "Migräneattacke"; plural "Attacken". Not "Anfall" |
-| Migraine started (button) | Migräne beginnt | Short, present tense; `ux-designer` confirms at 64 dp |
+| migraine / attack (one episode, countable) | Migräneattacke; short: Attacke | DMKG term. Never "Anfall": "Krampfanfall" is a warning sign and must stay unmistakable |
+| Migraine started (button) | Migräne beginnt | `ux-designer` confirms at 64 dp |
 | Migraine ended | Migräne vorbei | |
 | migraine day(s) | Migränetag(e) | |
 | headache | Kopfschmerz(en) | |
+| headache diary | "Tagebuch für Kopfschmerzen" in app copy | `medical-reviewer` suggested "Kopfschmerztagebuch" (19 letters: long-word list or hyphenated). The engineer used the phrase to avoid a 19-letter word at 200%. Pending `medical-reviewer` (10.3) and `ux-designer` (10.1) |
 | pain level, peak pain | Schmerzstärke, stärkster Schmerz | |
-| mild / moderate / severe | leicht / mittel / stark | |
-| trigger | Auslöser | Never implies cause beyond the English (D174) |
+| mild / moderate / severe | **leicht / mäßig / stark** | Not "mittel": colloquial, and "Mittel" means a remedy (IQWiG "mäßige bis starke Kopfschmerzen") |
+| pain-free | schmerzfrei | |
+| trigger | Auslöser; section title "Mögliche Auslöser" | Insights keep co-occurrence wording ("Oft zusammen mit deiner Migräne eingetragen"), never a cause (D174) |
 | symptom | Symptom | |
-| aura | Aura | Same as English: on the identical-value list |
+| aura | Aura | Identical-value list |
 | nausea | Übelkeit | |
-| sensitivity to light / sound / smell | lichtempfindlich / lärmempfindlich / geruchsempfindlich | Adjectives keep words short; nouns ("Lichtempfindlichkeit") only where the layout was seen |
-| attack medication, acute medication | Akutmedikation; "Mittel gegen Attacken" where a plain phrase reads better | One term per screen |
-| days with attack medication | Tage mit Akutmedikation | |
-| preventive | vorbeugend | Not "prophylaktisch" in UI |
-| simple painkiller | einfaches Schmerzmittel | |
+| sensitivity to light / sound / smell | lichtempfindlich / lärmempfindlich (or geräuschempfindlich, one only) / geruchsempfindlich | Adjectives keep words short |
+| neck pain (`symptom_neck_pain`) | **Nackenschmerzen** | Never "Nackensteife": that is the meningitis sign |
+| stiff neck (warning signs) | steifer Nacken | |
+| meningitis | Hirnhautentzündung (Meningitis) | |
+| seizure, fit | Krampfanfall | |
+| attack medication, acute medication | **Akutmedikation** (uncountable) / **Akutmedikamente** (plural) | Never "Mittel gegen Attacken": "Mittel gegen X" implies the medicine works (D174) |
+| kind: acute / preventive | Bei Attacken / Vorbeugend | Not "prophylaktisch" in UI |
+| days with attack medication | Tage mit Akutmedikation; legend "Nur Akutmedikation" | |
+| simple painkiller | einfaches Schmerzmittel | Examples "Ibuprofen, Paracetamol, ASS", not "Aspirin" (a brand) |
 | triptan | Triptan | Identical-value list |
 | combination or other | Kombipräparat oder anderes | |
-| medication overuse headache | Kopfschmerz durch Übergebrauch von Schmerz- oder Migränemitteln | `medical-reviewer` fixes the final wording; no abbreviation in UI |
-| Did it help? | Hat es geholfen? | Answers: Gar nicht / Etwas / Deutlich / Vollständig, `medical-reviewer` checks the scale |
+| medication overuse headache (PDF, store, site; no current app string) | Kopfschmerz bei Übergebrauch von Schmerz- oder Migränemitteln | Title of AWMF 030/131. Never Missbrauch, Schmerzmittelkopfschmerz, medikamenteninduziert, arzneimittelbedingt; no "MOH" in the UI |
+| Did it help? | Hat es geholfen? | Answers Gar nicht / Etwas / Deutlich / Vollständig, the same words in `medication_helped_*` and `insights_helped` |
 | impact: No impact / Less active / Had to stop / Bed rest | Keine Einschränkung / Weniger aktiv / Musste aufhören / Bettruhe | |
 | Warning signs | Warnzeichen | |
-| your local emergency number | den Notruf | No number (D95, D171): users are in many countries |
-| urgent medical advice | dringend ärztlichen Rat | Not "heute" (D171) |
-| doctor report | Arztbericht | |
-| doctor visit | Arzttermin | |
+| your local emergency number | den Notruf; verb "Wähle den Notruf" | No digits (D95, D171). Never Notarzt, Krankenwagen or 112. "jetzt" only where English says "now" |
+| get urgent medical advice | Hol dir dringend ärztlichen Rat | Never sofort, heute or Notaufnahme (D171) |
+| medical advice | medizinischer Rat | |
+| not a medical device | kein Medizinprodukt | Never "medizinisches Gerät" |
+| doctor report | **Bericht für die Arztpraxis** | Not "Arztbericht": Duden defines it as a report written *by* a doctor, which contradicts "patient-entered, not a diagnosis". `ux-designer` may reword, but it must say *for* a doctor |
+| doctor visit | Arzttermin | The lock-screen visit notification (`notification_visit_title`, `notification_visit_text`) never says "Arzt" (D168, D169) |
 | diary | Tagebuch | |
 | reminder | Erinnerung | |
-| notification | Benachrichtigung | 18 letters: long-word list after it is seen in place |
+| notification | Benachrichtigung | 18 letters: long-word list once seen in place |
 | History | Verlauf | |
 | Insights | Auswertung | Not "Erkenntnisse" (claim) |
-| period (menstrual) | Periode | |
+| period (menstrual) | Periode | A time span (`report_period`) is "Zeitraum" |
+| Custom (period chip) | Eigener Zeitraum | Never "Benutzerdefiniert" (17 letters, ux R07) |
 | Your data | Deine Daten | |
-| backup / restore / export | Sicherung / wiederherstellen / exportieren | |
+| backup / restore / export | Sicherung / wiederherstellen / exportieren | No "wiederherstellen" in a dialog title (ux R03): "zurückholen" there |
 | Premium, Free | Premium, Kostenlos | "Premium" identical-value list |
-| Undo | Rückgängig | |
+| Undo | Rückgängig | Spoken names keep the visible word ("Löschen rückgängig machen", ux T02) |
 | Save / Done / Cancel / Delete | Speichern / Fertig / Abbrechen / Löschen | |
 | Not a diagnosis | Keine Diagnose | |
+| DELETE (Delete all data keyword) | DELETE, unchanged | The keyword stays ASCII "DELETE" in 1.4.0 (`DeleteConfirmationResolver` is outside this diff; typeable on QWERTZ). Label short, e.g. "DELETE eingeben" (ux R19) |
+
+Fixed wording from the pre-check (`ux-designer` owns the final copy; order and numbers must match English):
+
+- Overuse title: `overuse_title_multiple` "Akutmedikamente an %1$d der letzten 30 Tage"; variants "Schmerzmittel an …",
+  "Triptane an …", "Kombipräparate oder andere Medikamente an …".
+- `indicator_row_*`: "Einfache Schmerzmittel: %1$d Tage", "Triptane: …", "Kombipräparat oder anderes: …",
+  "Akutmedikation gesamt: %1$d Tage". `indicator_row_reached`: "%1$s. Ärztinnen und Ärzte achten auf %2$d oder mehr Tage
+  im Monat."
+- `overuse_body_soft`: "Häufige Einnahme kann zu mehr Kopfschmerzen führen. Behalte das im Blick." The "kann" is
+  mandatory. `overuse_body_doctor` and `indicator_reached` keep "this often" and "month after month" ("So häufige
+  Einnahme, Monat für Monat, … kann Kopfschmerzen häufiger machen. Sprich am besten mit deiner Ärztin oder deinem Arzt
+  darüber.").
+- **Banned in every overuse and indicator string:** Grenze, Grenzwert, Limit, erlaubt, sicher, Höchstmenge, zu viel,
+  Übergebrauch, absetzen, reduzieren, Pause. The day counts are numbers linked to a diagnosis, not safe limits (D151).
+- History: `chronic_notice` never says "chronisch" (a diagnosis); `progress_*` are neutral counts (D55), no "besser",
+  "Erfolg" or "nur noch". `edit_dose_hint` "Zum Beispiel 400 mg" is an example, never a recommendation.
+- The safety block (Warning signs list in NHS order, `safety_body` with the same words as list item 1 (D173),
+  `long_check_body`, `settings_about_*`) follows the pre-check's reference German.
 
 ## D6. Checks that can fail
 
@@ -150,13 +210,18 @@ Glossary (binding; a change needs `ux-designer`, and for health terms `medical-r
 5. A German word over 16 letters fails unless it is in `app/src/test/resources/l10n/long-german-words.txt`, each line with
    the screen where it was seen at 200% on 360 dp.
 6. `locales_config.xml` languages equal `APP_LANGUAGES` and the `values-<lang>` folders plus `en` (D3).
+7. As built (e31ac30e, accepted): no soft hyphen (U+00AD) or zero-width character (U+200B, U+200C, U+200D, U+2060, U+FEFF) in
+   any German value, and no plain space between a number and its unit (Min., Std., Tg., %, mg, €; D5 typography, ux E4).
+8. The two `values-en` shortcut labels equal their `values/` source (D3).
 
 Android Lint (already in the gate, default severity Error): `MissingTranslation`, `ExtraTranslation`,
 `StringFormatMatches`, `StringFormatCount`, `MissingQuantity`. Lint does not see a module with no translation at all,
 hence check 1.
 
 Negative controls (each shown red, then reverted): remove one German string; change `%1$d` to `%1$s`; copy an English
-value; add a 17-letter word; delete one module's `values-de`; add an empty `values-fr`.
+value; add a 17-letter word; delete one module's `values-de`; add an empty `values-fr`. Built with three more: a soft
+hyphen, a plain space before a unit, a `values-en` label that differs. All nine were red, then the clean tree green
+(`migrely-work/de/7.2-controls.log`).
 
 `FormattingLocaleResolverTest`: every row of the D1 table, plus the regional first-day keyword in German.
 `FormattingLocales` Robolectric test: `localizedContext` with `[ru-RU, en-US, de-DE]` reads English and with
@@ -167,18 +232,49 @@ devices (D7).
 
 ## D7. Layout and accessibility checks (`ux-designer` defines, engineer and QA run)
 
-Matrix: German, 360 x 640 dp portrait and 640 x 360 dp landscape, font 200%, plus 100% at 411 dp as a sanity pass.
-Per state: no word broken inside, no hyphen, no ellipsis, no clipped text, buttons and chips keep 48 dp (64 dp in attack
-mode) and whole words, the layout stacks where it must (D181), TalkBack names in German.
+`ux-designer`'s verdict (`migrely-work/de/ux-checks-verdict.md`, task 10.2) confirms and extends this section. Its risk
+rows R01 to R29, N01 to N04 and T01 to T09 are the walk list; the rules below are binding.
 
-Engineer's walk (5570, before review): home calm and with an attack, attack mode with its message, Attack details top and
-bottom, the custom tag dialog, Log medication (normal and Dark room), My medications, Edit medication, History month and a
-day, Insights, the paywall, the doctor report period screen with the new line, Settings, Warning signs, About, Privacy,
-Reminders, Your data, Delete all data, onboarding pages, the overuse card, "Still going?" at 72 hours.
+Matrix: German, 360 x 640 dp portrait and 640 x 360 dp landscape at font 200%; **130% at 360 dp portrait** for the
+layouts that switch at a font threshold (`MedicationPromptCard`, `InsightsBars`, `DoctorVisitSection`, the onboarding
+header, Reminders, Insights; 115% for attack mode's intensity row), because those thresholds were tuned with English and
+130% is the largest font Android 8 to 13 offer; plus 100% at 411 dp as a sanity pass. Confirm the font scale before every
+screenshot: a pass at the wrong size proves nothing. Restore size, density, font, rotation and locale afterwards.
+
+Per state: no word broken inside, no hyphen, no ellipsis, no clipped text, buttons and chips keep 48 dp (64 and 72 dp in
+attack mode and Dark room) and whole words, the layout stacks where it must (D181), type never shrinks, TalkBack names in
+German with the visible words in order.
+
+Binding rules from the verdict:
+
+1. **English comparison.** Every failure is compared with app locale `en-US` at the same settings. A German-only failure
+   is a finding of this change and blocks the merge. A failure English shares is pre-existing: file an issue, not a
+   blocker, unless it is on a safety path (Warning signs, the first-10 card, "Still going?", the overuse card), where it
+   blocks.
+2. **Words of 13 to 16 letters** in titles, buttons, chips and dialog titles are checked on the device, though the gate's
+   limit is 16: a top bar or dialog title fits about 13 letters at 200%. Run the section-4 scan of the verdict before the
+   walk.
+3. **Number and unit on one line**: a number never ends a line with its unit on the next; prices never split (D5).
+4. **One theme per state**: walk dark (the migraine default, and attack mode is always dark), plus one light screen as a
+   sanity check. Strings do not change colour or contrast.
+5. **No soft hyphens or zero-width spaces** (D5; the gate enforces it).
+6. **E6**: the full notification text is readable when expanded (done, D2). **E7**: the launcher shortcut label matches
+   the app's language for the system list (done for `[ru-RU, en-US, de-DE]`, D3).
+7. **DELETE stays** as the Delete all data keyword in 1.4.0 (D5).
+8. An accessibility-tree scan for English on every walked state (E10), with an `en-US` control that must report hits.
+
+Predicted failures to fix before merge (German-only, from the code): the onboarding step header (R05), the full-screen
+date pickers' top row (R02), and top bar titles that need two lines in a 64 dp bar (R01; fix order: a shorter natural
+title from 10.1 first, then a bar that grows with its title, never smaller type). These are layout code changes, allowed
+by this change because German is what breaks them.
+
+Engineer's walk (5570, before review): every R row at 200% portrait and landscape, the 130% rows, 100% at 411 dp for R01,
+R11, R24 and N01, and the T01 scan, in a table with an English-comparison column (`migrely-work/de/8.1-walk.md`).
 
 QA's a11y tour (5580) can reuse the English selectors: drive each state in English, then
 `adb shell cmd locale set-app-locales com.migrely.app --locales de-DE`, capture with `qa/a11y_audit.py`, and set it back.
-This also exercises EC-L10N-06 on every state. API 26 has no per-app locale: a short walk with the system set to de-DE.
+This also exercises EC-L10N-06 on every state. API 26 has no per-app locale: a short walk with the system set to de-DE,
+plus R02, R03, R05 and R06, because linear 200% there is the harshest case for long words.
 
 ## D8. Medical and legal review packets
 

@@ -23,69 +23,107 @@ merge the latest `origin/develop` (with #255) so the translated set is final; if
   `app-language` spec, `app-shell`, `doctor-report` and `data-backup` deltas, tasks. Verify:
   `openspec validate add-german-localization --strict` and `openspec validate --all --strict` exit 0.
 
+- [x] 0.2 Fold in the medical pre-check glossary, `ux-designer`'s D7 verdict (8 points, "du" confirmed), the lead's E6
+  and E7 decisions and eng-de's deviations: BRD D195 (15) to (17), EC-L10N-07, -12, -14 updated, EC-L10N-25 to -27, D117
+  line; design D1 to D7; `app-language` scenarios. Verify: both `openspec validate` commands exit 0.
+
 ## 1. The language rule (`:app`, `locale/`, domain of this change)
 
-- [ ] 1.1 Red first: extend `FormattingLocaleResolverTest` with every row of design D1's table (input a `LocaleList`),
+- [x] 1.1 Red first: extend `FormattingLocaleResolverTest` with every row of design D1's table (input a `LocaleList`),
   including German with a regional Sunday first day. Verify: `./gradlew :app:testDebugUnitTest --tests
   '*FormattingLocaleResolverTest'` fails on the German rows and passes the unchanged English rows.
-- [ ] 1.2 `FormattingLocaleResolver.resolve(phoneLocales: LocaleList)` and `APP_LANGUAGES = setOf("en", "de")` (D1);
+  Done 603c58b2: red on the German rows (`migrely-work/de/1.1-red.log`, exit 1).
+- [x] 1.2 `FormattingLocaleResolver.resolve(phoneLocales: LocaleList)` and `APP_LANGUAGES = setOf("en", "de")` (D1);
   `FormattingLocales.of` passes `configuration.locales`. KDoc names D195. Verify: the 1.1 tests green; `git grep -n
   'locales\[0\]' app/src/main/java/com/migrely/app/locale` shows only the first-day and fallback reads.
 
+  Done 603c58b2: green (`migrely-work/de/1.2-green.log`, exit 0). Built as `resolve(phoneLocales: List<Locale>)`, accepted
+  (design D1, D195 (15)).
 ## 2. Strings outside the activity (`:app` datasource)
 
-- [ ] 2.1 `FormattingLocales.localizedContext(context)` (D2) and a Robolectric test: `[ru-RU, en-US, de-DE]` reads an
+- [x] 2.1 `FormattingLocales.localizedContext(context)` (D2) and a Robolectric test: `[ru-RU, en-US, de-DE]` reads an
   English string, `[ru-RU, de-DE]` the German one, using a key of `app/src/main/res/values-de/strings.xml` (write the
   `app` module's German file of 5.2 first). Verify: `./gradlew :app:testDebugUnitTest --tests '*FormattingLocales*'` green, red
   with `localizedContext` returning the plain context.
-- [ ] 2.2 `NotificationDataSourceImpl` reads every string through `localizedContext`; `refreshChannelNames()` re-registers
+  Done febaf0df: red then green (`migrely-work/de/2.1-red.log`, `migrely-work/de/2.1-green.log`).
+- [x] 2.2 `NotificationDataSourceImpl` reads every string through `localizedContext`; `refreshChannelNames()` re-registers
   only existing channels; `MigrelyApplication` calls it in `onCreate` and on a locale-list change. Grep and convert any
   other non-UI `getString`. Verify: `git grep -n 'context.getString\|getQuantityString' -- app/src/main datasource` lists
   only localized reads; a Robolectric test shows no channel is created by the refresh and an existing one is renamed.
 
+  Done febaf0df: `NotificationLanguageTest` red on the visit date and the channel rename, then green
+  (`migrely-work/de/2.2-red.log`, `migrely-work/de/2.2-green.log`). The visit date now uses the app's formatting locale (design D2, EC-L10N-26).
+- [x] 2.3 Expanded notification text (ux E6, lead decision): `BigTextStyle` on the daily, "Did it help?" and visit
+  notifications. Verify: `NotificationExpandedTextTest` 3 of 3 red then green.
+  Done 404c989b (`migrely-work/de/E6-red.log`, `migrely-work/de/E6-green.log`).
+
 ## 3. CSV separator (data wiring)
 
-- [ ] 3.1 `BackupModule`: `locale = { Resources.getSystem().configuration.locales[0] }` with a comment naming D195 (5) and
+- [x] 3.1 `BackupModule`: `locale = { Resources.getSystem().configuration.locales[0] }` with a comment naming D195 (5) and
   D72. Verify: `./gradlew :features:backup:data:test :app:testDebugUnitTest` green; `git grep -n 'getSystem()'
   app/src/main/java/com/migrely/app/di/BackupModule.kt` shows the line.
 
+  Done (`migrely-work/de/3-4-verify.log`).
 ## 4. Android 13+ app language (manifest and resources)
 
-- [ ] 4.1 `res/xml/locales_config.xml` (en, de) and `android:localeConfig` on `<application>`. Verify: `./gradlew
+- [x] 4.1 `res/xml/locales_config.xml` (en, de) and `android:localeConfig` on `<application>`. Verify: `./gradlew
   :app:processDebugMainManifest` then `find app/build/intermediates -path '*merged_manifest*' -name AndroidManifest.xml
   -exec grep -l localeConfig {} +` names the merged manifest; `./gradlew :app:checkReleasePermissions` passes with no new permission.
 
+  Done 265e4fab (`migrely-work/de/3-4-verify.log`): `localeConfig` in the merged manifest; release permissions unchanged.
+- [x] 4.2 Launcher shortcut labels (ux E7, lead decision): `values-en` with the two shortcut labels, `app/lint.xml`
+  ignoring only "not translated in en", a test that they equal `values/`. Verify: `./gradlew :app:lintDebug` exit 0.
+  Done e31ac30e (`migrely-work/de/E7-lint.log`, exit 0).
+
 ## 5. German strings (resources, all 12 main modules)
 
-- [ ] 5.1 `translatable="false"` on `app_name` and every string in `app/src/debug/res/values/strings.xml`. Verify:
+- [x] 5.1 `translatable="false"` on `app_name` and every string in `app/src/debug/res/values/strings.xml`. Verify:
   `grep -c 'translatable="false"' app/src/debug/res/values/strings.xml` equals its string count (15).
-- [ ] 5.2 `values-de/strings.xml` for `app` and the 11 feature `ui` modules, same key order as English, glossary D5, "du",
+  Done; also the four licence and library names (design D4, D195 (15)). Style run `migrely-work/de/1-4-style.log`, exit 0.
+- [x] 5.2 `values-de/strings.xml` for `app` and the 11 feature `ui` modules, same key order as English, glossary D5, "du",
   „ “ quotes, plurals `one` and `other`. One commit per two or three modules. Verify per commit: `./gradlew
   :features:<m>:ui:lint` shows 0 `MissingTranslation`, 0 `StringFormatMatches`, 0 `ExtraTranslation` for those modules.
-- [ ] 5.3 Write `migrely-work/de/review-medical.tsv` and `review-legal.tsv` (design D8) and send them to
+  Done 11a0c809, f88ef88d, e3f88675, 8abb6516, a5d8fd61: lint 0 translation issues (`migrely-work/de/5.2-lint.log`, exit 0).
+  medical pre-check glossary applied: no "mittel", "Arztbericht", "Mittel gegen" or "Nackensteife" in any
+  `values-de`; the 14 overuse and indicator strings hold none of the banned words (0 hits; the same pattern finds 19
+  elsewhere, so it can fail).
+- [ ] 5.3 (partial) Write `migrely-work/de/review-medical.tsv` and `review-legal.tsv` (design D8) and send them to
   `medical-reviewer` and `legal-finance-analyst` with the glossary. Verify: `wc -l` of both files; every key named in
   design D8's prefixes is present (`grep -c`).
 
+  Partial: `migrely-work/de/review-medical.tsv` (281 keys) and `migrely-work/de/review-legal.tsv` (106 keys) written, with the pre-check's
+  extra keys (sample of 10 checked present); `medical-reviewer`'s pre-check done (`migrely-work/de/medical-precheck.md`, no key
+  passed). Open: per-key verdicts (10.3, 10.4).
 ## 6. Report screen line (UI)
 
-- [ ] 6.1 `features/report/ui`: `report_pdf_language_note` (English "The PDF is in English.", German per glossary), shown
+- [x] 6.1 `features/report/ui`: `report_pdf_language_note` (English "The PDF is in English.", German per glossary), shown
   only when `LocalConfiguration.current.locales[0].language != "en"`, wrapping, read once by TalkBack. Verify: a Compose
   test in `features/report/ui` with `de` and `en` configurations shows and hides the line.
 
+  Done a5d8fd61: `ReportPdfLanguageNoteTest` red then green (`migrely-work/de/6.1-red.log`, `migrely-work/de/6.1-green.log`).
 ## 7. The translation gate (tests)
 
-- [ ] 7.1 `LocalizationCompletenessTest` with checks 1 to 6 of design D6, and the two lists in
+- [ ] 7.1 (partial) `LocalizationCompletenessTest` with checks 1 to 6 of design D6, and the two lists in
   `app/src/test/resources/l10n/` (every long word with the screen where it was seen at 200% on 360 dp; filled after 8.1).
   Verify: `./gradlew :app:testDebugUnitTest --tests '*LocalizationCompletenessTest'` green.
-- [ ] 7.2 Negative controls, each red then reverted, logged in `migrely-work/de/7.2-controls.log`: remove one German
+  Partial (e31ac30e): the test runs checks 1 to 8 of design D6 and is green in the gate (`migrely-work/de/7.1-red.log` red with 11
+  modules missing; `migrely-work/de/9.1-gate.log`). Open: the four long words in `long-german-words.txt` are "not yet seen" until
+  the 8.1 walk.
+- [x] 7.2 Negative controls, each red then reverted, logged in `migrely-work/de/7.2-controls.log`: remove one German
   string; `%1$d` to `%1$s`; copy one English value; add a 17-letter word; delete one module's `values-de`; add an empty
   `values-fr/strings.xml`. Verify: six failing runs named in the log, then a green run on the clean tree.
 
+  Done: nine controls (the six above plus soft hyphen, plain space before a unit, a drifting `values-en` label), each
+  red, then the clean tree green (`migrely-work/de/7.2-controls.log`, `migrely-work/de/7.2-last-run.log`).
 ## 8. Device walk (`android-engineer`, 5570)
 
-- [ ] 8.1 Walk design D7's list in German at 200%, 360 x 640 dp portrait and landscape, and at 100% 411 dp; fix or report
-  every break, cut or ellipsis; fill the long-word list. Restore font scale, size and rotation. Verify: screenshots and a
-  table in `migrely-work/de/8.1-walk.md` (state, portrait, landscape, result); `adb shell settings get system font_scale`
+- [ ] 8.1 Walk design D7's list (the verdict's R01 to R29 and N01 to N04, plus the T01 scan) in German at 200%, 360 x 640
+  dp portrait and landscape, 130% for the threshold layouts, and 100% at 411 dp; dark theme plus one light screen;
+  compare every failure with `en-US` at the same settings; fix every German-only failure (R01, R02, R05 predicted) and
+  file shared ones as issues (safety paths block); check 13 to 16-letter words in titles and buttons; fill the long-word
+  list. Restore font scale, size and rotation. Verify: screenshots and a
+  table in `migrely-work/de/8.1-walk.md` (row ID, state, 200% portrait, 200% landscape, 130%, 100% at 411, English
+  comparison, result, screenshot); `adb shell settings get system font_scale`
   back to 1.0.
 - [ ] 8.2 Language rule on device: system de-DE; `[ru-RU, en-US, de-DE]`; per-app `cmd locale set-app-locales` de-DE on
   an English system and back; change during attack mode and with an unsaved note; a reminder fired in German; channel names
@@ -94,16 +132,20 @@ merge the latest `origin/develop` (with #255) so the translated set is final; if
 
 ## 9. Gate (`android-engineer`)
 
-- [ ] 9.1 Verify: `set -o pipefail; ./gradlew assembleDebug test ktlintCheck detekt lint 2>&1 | tail -30` exits 0, and
+- [x] 9.1 Verify: `set -o pipefail; ./gradlew assembleDebug test ktlintCheck detekt lint 2>&1 | tail -30` exits 0, and
   `./gradlew :app:checkReleasePermissions` exits 0 with the same permission list as v1.3.3.
 
+  Done at e31ac30e: GATE_EXIT=0 (`migrely-work/de/9.1-gate.log`); 3600 tests, 0 failures, 0 errors (`migrely-work/de/9.1-test-count.txt`);
+  release manifest 6 permissions, no INTERNET (`migrely-work/de/9.1-release-permissions.txt`).
 ## 10. Reviews
 
 - [ ] 10.1 `ux-designer`: review every German string (voice, length, glossary, TalkBack words), rewrite findings go to the
   engineer, confirm "du" or switch totally to "Sie". Verify: a verdict file `migrely-work/de/ux-copy-verdict.md` with 0
   open findings.
-- [ ] 10.2 `ux-designer`: confirm or extend design D7's matrix and state list before 8.1 and 12; check 8.1's table.
+- [x] 10.2 `ux-designer`: confirm or extend design D7's matrix and state list before 8.1 and 12; check 8.1's table.
   Verify: verdict in `migrely-work/de/ux-checks-verdict.md`.
+  Matrix and state list done (`migrely-work/de/ux-checks-verdict.md`, D7 confirmed and extended, "du" confirmed,
+  folded into design D5 and D7). Still open inside it: checking 8.1's table after the walk.
 - [ ] 10.3 `medical-reviewer`: PASS or FAIL per medical key, against English, its citation and a back-translation; final
   wording for the overuse term. Verify: `migrely-work/de/medical-verdict.md` lists every key of `review-medical.tsv` with
   PASS; no FAIL left.
