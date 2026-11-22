@@ -43,8 +43,9 @@ pages of 17 screens, 6 in dialogs), no `LazyColumn`, no horizontal scroll. BRD d
   measured before the bounds part lands there. History's calendar days at 360 dp get a touch area of their whole cell pitch;
   a Material date or time picker with a control under 48 dp stays out of the bounds part and is recorded; attack mode is
   unchanged.
-- **Guards.** #238 (closing the keyboard never scrolls, D189), #245 (`TopBarAside`, `TypingSpace`, D192), #239 (one
-  announcement per refused Save, D191), D181 (one spoken name, Tab order), D178 (order: top bar, message, content).
+- **Guards.** #238 (closing the keyboard never scrolls, D189), #245 (`TopBarAside`, `TypingSpace`, D192), #259 (keyboard
+  follow on the four typing screens, D194), #239 (one announcement per refused Save, D191), D181 (one spoken name, Tab
+  order), D178 (order: top bar, message, content).
 - **Records.** BRD D193, EC-UX-78 to EC-UX-82, EC-UX-89 and EC-UX-90, §13 row 57. `app-shell` gets eight ADDED requirements.
 
 ## Out of scope
@@ -85,4 +86,6 @@ None.
 - **No change to:** manifest, permissions, strings, Room schema, backup, Free or Premium.
 - **BRD:** D193, EC-UX-78 to EC-UX-82, EC-UX-89 and EC-UX-90, §13 row 57.
 - **Issue:** `Refs #255` in every commit and the PR, never a closing keyword: QA filed #255 and closes it after the retest.
-- **Release:** 1.3.3 (team-lead decision 2026-11-19), new tracker row. Branch `bugfix/255-details-talkback-order`.
+- **Release:** 1.4.0, its first item, with German (T23) and the share and rating loops (T72). Planned for 1.3.3 on
+  2026-11-19 (team-lead); moved to 1.4.0 on 2026-11-20 because #259 took 1.3.3 (v1.3.3 tagged 2026-11-22 without
+  #255) and the owner chose no separate 1.3.4. New tracker row T76. Branch `bugfix/255-details-talkback-order`.

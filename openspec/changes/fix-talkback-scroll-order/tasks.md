@@ -1,7 +1,8 @@
 # Tasks
 
 Base: `bugfix/255-details-talkback-order` (worktree `migraine-app-255`): eng-255's red tests 0ecb3bc6 on 05b37589, with
-`origin/develop` f70b6450 (#245) merged in 3ad21ac7. Release 1.3.3 (team-lead 2026-11-19), new tracker row. Write `Refs #255`
+`origin/develop` f70b6450 (#245) merged in 3ad21ac7. Release 1.4.0 (planned for 1.3.3 on 2026-11-19; moved to 1.4.0 on 2026-11-20 because #259 took
+1.3.3), tracker row T76. Write `Refs #255`
 in every commit and in the PR into `develop`, never a closing keyword: QA filed #255 and closes it after the retest. BRD D193,
 EC-UX-78 to EC-UX-82, EC-UX-89 and EC-UX-90, §13 row 57. Root cause: `migrely-work/255/eng-255-report.md`. Design: this change's `design.md` (D1 to
 D8).

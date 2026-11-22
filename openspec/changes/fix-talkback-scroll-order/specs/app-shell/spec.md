@@ -206,8 +206,9 @@ bottom bars and dialog buttons SHALL stay outside it, with the system's touch ta
 
 ### Requirement: One entry point for every vertical scroll
 Every vertical scroll in the app's main code SHALL go through one `designsystem` entry point that applies both parts, or
-the step alone for a picker left out of exact bounds, so no screen keeps its own copy. A raw `verticalScroll(` in main code
-outside that entry point SHALL fail a check in the gate (BRD EC-UX-90, D193 (1), (3), (4)).
+the step alone for a picker left out of exact bounds, so no screen keeps its own copy. The one other raw `verticalScroll(`
+SHALL be the typing space's `scrollingPage` (D194), called only by the entry point's typing-space overload. Any other raw
+`verticalScroll(` or `scrollingPage(` call in main code SHALL fail a check in the gate (BRD EC-UX-90, D193 (1), (3), (4)).
 
 #### Scenario: A new scrolling screen
 - **WHEN** a build adds `Modifier.verticalScroll(...)` directly in a feature's main code
@@ -216,6 +217,16 @@ outside that entry point SHALL fail a check in the gate (BRD EC-UX-90, D193 (1),
 #### Scenario: All sites covered
 - **WHEN** the source check runs on the candidate
 - **THEN** it passes, and the entry point is used at all 29 sites of `develop` f70b6450 (23 page, 6 dialog)
+
+#### Scenario: A typing screen keeps the keyboard follow
+- **WHEN** Attack details, Log medication, Edit medication or Delete all data scrolls
+- **THEN** it goes through the entry point's typing-space overload, which sets TalkBack's step and then applies the typing
+  space's `scrollingPage` on the same scroll state, so #259's keyboard follow (D194) is unchanged
+
+#### Scenario: A way around the entry point
+- **WHEN** a build calls `scrollingPage(` from any file but the entry point, or adds a second raw `verticalScroll(` in the
+  typing space
+- **THEN** the source check fails and names the file
 
 ### Requirement: The traversal check can fail
 Each traversal and scroll-step test SHALL be shown red on `develop` f70b6450 before the fix, with a case that passes there,

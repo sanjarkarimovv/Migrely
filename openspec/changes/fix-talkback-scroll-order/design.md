@@ -1,7 +1,9 @@
 # Design
 
-Release 1.3.3 (team-lead 2026-11-19; 1.3.2 is QA-accepted and not widened), issue #255 (S3, accessibility, pre-existing on
-v1.3.1 and `develop`). BRD D193, EC-UX-78 to EC-UX-82, EC-UX-89 and EC-UX-90; guards D178, D181, D189, D191, D192. Root cause and prototypes:
+Release 1.4.0 (planned for 1.3.3 on 2026-11-19; moved to 1.4.0 on 2026-11-20 because #259 took 1.3.3), issue #255 (S3, accessibility, pre-existing on
+v1.3.1 and `develop`). BRD D193, EC-UX-78 to EC-UX-82, EC-UX-89 and EC-UX-90; guards D178, D181, D189, D191, D192, D194 (#259:
+the four typing screens call `pageScroll(state, typingSpace)`, TalkBack's step first, then `TypingSpace.scrollingPage` on the
+same state, so #259's keyboard follow is untouched). Root cause and prototypes:
 eng-255, `migrely-work/255/eng-255-report.md` (device walks, TalkBack order dumps, `prototype/proto2.diff`,
 `prototype/TalkBackScrollStep2.kt`). This file binds what the person hears and what QA checks; the code shape is the
 engineer's call within it.
@@ -199,6 +201,7 @@ Pages left out of D2: `MigrelyDatePicker.kt:151`, `MigrelyDateTimePicker.kt:147,
 |---|---|---|
 | #238, D189 | closing the keyboard never scrolls; TalkBack focus stays on the field; room only with the person's scroll | `*KeyboardRoom*`, `AttackDetailsKeyboardRoomTest`, `DeleteKeyboardTest` |
 | #245, D192 | `TopBarAside`, `TypingSpace`; aside bar's nodes out of the tree | `TopBarAsideTest`, `TypedLineMarginsTest`, `MessageBarAsideTest` |
+| #259, D194 | field opened with TalkBack keeps focus; typed line follows the keyboard in the layout pass; nothing written without the person | `KeyboardFollowTest`, `KeyboardFollowFramesTest`, `TypingSpace*Test`, `AttackDetailsKeyboardFramesTest` |
 | #239, D191 | one announcement per refused Save | `EditMedicationProblemFeedbackTest`, `FirstMedicationProblemFeedbackTest` |
 | D181 | one spoken name, Tab stops visible and in view, Shift+Tab reverse | existing D181 tests |
 | D178 | order: top bar, message, content | existing message-order tests |
