@@ -6,7 +6,7 @@
     <string name="notification_channel_daily">Tägliche Erinnerung</string>
     <string name="notification_channel_effect">Hat es geholfen?</string>
     <string name="notification_daily_title">Wie war dein Tag?</string>
-    <string name="notification_daily_text">Markiere einen schmerzfreien Tag oder notiere eine Migräne.</string>
+    <string name="notification_daily_text">Schmerzfreien Tag markieren oder Migräne notieren.</string>
     <string name="notification_daily_pain_free">Schmerzfreier Tag</string>
     <string name="notification_daily_log">Migräne notieren</string>
     <string name="notification_attack_logged">Nicht markiert. Öffne Migrely, um den Tag zu sehen.</string>

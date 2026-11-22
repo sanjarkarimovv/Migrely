@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- German (BRD D195): glossary and voice in openspec change add-german-localization, design D5. -->
+<resources>
+    <string name="reminders_title">Erinnerungen</string>
+    <string name="reminders_back">Zurück</string>
+    <string name="reminders_daily_title">Tägliche Erinnerung</string>
+    <string name="reminders_daily_summary">„Wie war dein Tag?“ einmal täglich, damit du einen schmerzfreien Tag markieren kannst</string>
+    <string name="reminders_daily_time">Uhrzeit</string>
+    <string name="reminders_daily_time_description">Erinnerungszeit, %1$s. Ändern.</string>
+    <string name="reminders_effect_title">Fragen, ob ein Medikament geholfen hat</string>
+    <string name="reminders_effect_summary">Zwei Stunden, nachdem du ein Medikament gegen eine Attacke notiert hast</string>
+    <string name="reminders_notifications_off">Benachrichtigungen sind für Migrely aus, deshalb kommen keine Erinnerungen an.</string>
+    <string name="reminders_open_settings">Einstellungen öffnen</string>
+    <string name="reminders_unavailable">Erinnerungen können gerade nicht angezeigt werden.</string>
+    <string name="reminders_picker_title">Erinnerungszeit</string>
+    <string name="reminders_picker_ok">OK</string>
+    <string name="reminders_picker_cancel">Abbrechen</string>
+    <string name="reminders_message_saved">Gespeichert.</string>
+    <string name="reminders_message_storage_full">Nicht gespeichert. Der Speicher deines Handys ist voll.</string>
+    <string name="reminders_message_something_went_wrong">Etwas ist schiefgelaufen. Versuch es noch einmal.</string>
+    <string name="reminders_message_dismiss">Schließen</string>
+    <string name="reminders_offer_turn_on">Um %1$s einschalten</string>
+    <string name="reminders_offer_not_now">Nicht jetzt</string>
+    <string name="reminders_visit_title">Arzttermin</string>
+    <string name="reminders_visit_summary">Eine Erinnerung zwei Tage vorher, um einen Bericht für die Arztpraxis zu erstellen</string>
+    <string name="reminders_visit_next">Nächster Termin</string>
+    <string name="reminders_visit_not_set">Nicht festgelegt</string>
+    <string name="reminders_visit_description">Nächster Termin, %1$s. Ändern.</string>
+    <string name="reminders_visit_description_not_set">Nächster Termin, nicht festgelegt. Datum festlegen.</string>
+    <string name="reminders_visit_remove">Entfernen</string>
+    <string name="reminders_visit_remove_description">Nächsten Termin entfernen</string>
+    <string name="reminders_visit_home_only">Diese Erinnerung erscheint nur auf der Startseite.</string>
+    <string name="reminders_visit_channel_off">Benachrichtigungen für Arzttermine sind aus, deshalb erscheint diese Erinnerung nur auf der Startseite.</string>
+    <string name="reminders_open_settings_description">Einstellungen für Benachrichtigungen öffnen</string>
+    <string name="reminders_message_visit_removed">Termin entfernt</string>
+    <string name="reminders_snackbar_undo">Rückgängig</string>
+    <string name="reminders_snackbar_undo_visit_description">Entfernen des Termins rückgängig machen</string>
+    <string name="reminders_message_undone">Rückgängig gemacht.</string>
+    <string name="reminders_visit_picker_title">Nächster Termin</string>
+    <string name="reminders_visit_picker_none">Tag auswählen</string>
+    <string name="reminders_visit_picker_done">Fertig</string>
+    <string name="reminders_visit_picker_cancel">Abbrechen</string>
+    <string name="reminders_visit_card_text">Dein Arzttermin ist am %1$s.</string>
+    <string name="reminders_visit_card_report">Bericht erstellen</string>
+    <string name="reminders_visit_card_close_description">Erinnerung an den Termin schließen</string>
+</resources>

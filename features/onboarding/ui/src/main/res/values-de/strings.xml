@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- German (BRD D195): glossary and voice in openspec change add-german-localization, design D5. -->
+<resources>
+    <string name="onboarding_step">Schritt %1$d von %2$d</string>
+    <string name="onboarding_skip">Überspringen</string>
+    <string name="onboarding_skip_description">Diesen Schritt überspringen</string>
+    <string name="onboarding_goal_title">Was führt dich zu Migrely?</string>
+    <string name="onboarding_goal_doctor">Aufzeichnungen für den Arzttermin</string>
+    <string name="onboarding_goal_triggers">Herausfinden, was meine Migräne auslöst</string>
+    <string name="onboarding_goal_painkillers">Meine Tage mit Medikamenten im Blick behalten</string>
+    <string name="onboarding_disclaimer">Migrely ist ein Tagebuch für Kopfschmerzen. Es stellt keine Diagnose und behandelt nicht.</string>
+    <string name="onboarding_restore">Aus einer Sicherungsdatei wiederherstellen</string>
+    <string name="onboarding_frequency_title">Wie oft hast du Migräne?</string>
+    <string name="onboarding_frequency_under_four">Weniger als 4 im Monat</string>
+    <string name="onboarding_frequency_four_to_fourteen">4 bis 14 im Monat</string>
+    <string name="onboarding_frequency_fifteen_or_more">15 oder mehr im Monat</string>
+    <string name="onboarding_period_title">Auch deine Periode erfassen?</string>
+    <string name="onboarding_period_body">Migräne folgt oft dem Zyklus. Du kannst das in den Einstellungen ändern.</string>
+    <string name="onboarding_period_yes">Ja</string>
+    <string name="onboarding_period_no">Nein</string>
+    <string name="onboarding_reminder_title">Täglich kurz nachfragen?</string>
+    <string name="onboarding_reminder_body">Jeden Abend fragt Migrely, wie dein Tag war, damit auch schmerzfreie Tage zählen.</string>
+    <string name="onboarding_not_saved">Die Antwort wurde nicht gespeichert. Migrely funktioniert auch ohne sie.</string>
+    <string name="onboarding_message_dismiss">Schließen</string>
+</resources>
