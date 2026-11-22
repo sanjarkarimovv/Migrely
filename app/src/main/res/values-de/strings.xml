@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- German (BRD D195): glossary and voice in openspec change add-german-localization, design D5. -->
+<resources>
+    <string name="shortcut_start_attack">Migräne beginnt</string>
+    <string name="shortcut_start_attack_long">Notieren, dass eine Migräne beginnt</string>
+    <string name="notification_channel_daily">Tägliche Erinnerung</string>
+    <string name="notification_channel_effect">Hat es geholfen?</string>
+    <string name="notification_daily_title">Wie war dein Tag?</string>
+    <string name="notification_daily_text">Markiere einen schmerzfreien Tag oder notiere eine Migräne.</string>
+    <string name="notification_daily_pain_free">Schmerzfreier Tag</string>
+    <string name="notification_daily_log">Migräne notieren</string>
+    <string name="notification_attack_logged">Nicht markiert. Öffne Migrely, um den Tag zu sehen.</string>
+    <string name="notification_effect_title">Hat es geholfen?</string>
+    <string name="notification_effect_text">Tippe, um in Migrely zu antworten.</string>
+    <string name="notification_public_title">Erinnerung</string>
+    <string name="notification_channel_visit">Arzttermin</string>
+    <string name="notification_channel_visit_description">Eine Erinnerung zwei Tage vor deinem nächsten Termin</string>
+    <string name="notification_visit_title">Dein Termin ist am %1$s</string>
+    <string name="notification_visit_text">Erstelle einen Bericht zum Mitnehmen.</string>
+</resources>

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Migrely</string>
+    <string name="app_name" translatable="false">Migrely</string>
     <string name="shortcut_start_attack">Migraine started</string>
     <string name="shortcut_start_attack_long">Log that a migraine started</string>
     <string name="notification_channel_daily">Daily reminder</string>
