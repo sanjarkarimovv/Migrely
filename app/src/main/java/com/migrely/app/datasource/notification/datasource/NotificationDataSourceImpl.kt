@@ -38,7 +38,7 @@ class NotificationDataSourceImpl(
         notify(DAILY_ID, CHANNEL_DAILY) { text ->
             setSilent(quiet)
                 .setContentTitle(text.getString(R.string.notification_daily_title))
-                .setContentText(text.getString(R.string.notification_daily_text))
+                .setBody(text.getString(R.string.notification_daily_text))
                 .addAction(
                     0,
                     text.getString(R.string.notification_daily_pain_free),
@@ -68,7 +68,7 @@ class NotificationDataSourceImpl(
     override fun showEffectQuestion(intakeId: String) =
         notify(effectId(intakeId), CHANNEL_EFFECT) { text ->
             setContentTitle(text.getString(R.string.notification_effect_title))
-                .setContentText(text.getString(R.string.notification_effect_text))
+                .setBody(text.getString(R.string.notification_effect_text))
         }
 
     override fun cancelEffectQuestion(intakeId: String) = manager.cancel(effectId(intakeId))
@@ -87,7 +87,7 @@ class NotificationDataSourceImpl(
                     )
                 )
             )
-                .setContentText(text.getString(R.string.notification_visit_text))
+                .setBody(text.getString(R.string.notification_visit_text))
                 .setContentIntent(openDoctorReport())
                 .setTimeoutAfter(
                     Duration.between(Instant.now(), until).toMillis().coerceAtLeast(1L)
@@ -113,6 +113,10 @@ class NotificationDataSourceImpl(
             .filter { it.id in CHANNEL_NAMES }
             .forEach { createChannel(it.id, text) }
     }
+
+    // Expanded, the whole text shows, so longer German, and any language at 200%, is never cut (BRD D195).
+    private fun NotificationCompat.Builder.setBody(body: String): NotificationCompat.Builder =
+        setContentText(body).setStyle(NotificationCompat.BigTextStyle().bigText(body))
 
     private fun localizedText(): Context = formattingLocales.localizedContext(context)
 
