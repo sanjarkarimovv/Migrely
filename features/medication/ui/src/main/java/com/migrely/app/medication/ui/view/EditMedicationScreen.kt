@@ -233,8 +233,7 @@ fun EditMedicationContents(
                         // Before the scroll, so its visible part ends at the keyboard's top and a focused
                         // field is kept above it (BRD D180 (2)).
                         .windowInsetsPadding(viewportInsets)
-                        .then(typingSpace.pageModifier)
-                        .verticalScroll(scrollState)
+                        .then(typingSpace.scrollingPage(scrollState))
                         // After the scroll, never a child: the column's spacing would add a gap.
                         .then(keyboardRoom.modifier)
                         .windowInsetsPadding(

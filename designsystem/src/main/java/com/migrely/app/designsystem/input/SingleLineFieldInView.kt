@@ -18,6 +18,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.rememberTextMeasurer
@@ -64,6 +65,7 @@ fun SingleLineFieldInView(
     val focused by interactionSource.collectIsFocusedAsState()
     val requester = remember { BringIntoViewRequester() }
     var size by remember { mutableStateOf(IntSize.Zero) }
+    val placed = remember { Placed() }
     val follow = remember { KeyboardFollow() }
     val density = LocalDensity.current
     // The insets object, not its value: the keyboard's frames do not recompose the screen.
@@ -76,24 +78,46 @@ fun SingleLineFieldInView(
     val lineHeight = inputLineHeight()
     val marginPx = with(density) { margin.toPx() }
     val space = LocalTypingSpace.current
-    suspend fun bringFieldIntoView(width: Float, height: Float) {
-        // The input line keeps what margin the visible part leaves it (ux R2).
-        val clearance = space?.marginAround(lineHeight, marginPx) ?: marginPx
-        requester.bringNestedIntoView(
+
+    // ux U1's areas, the largest first: the whole field, then from the input line down, then the input line, which
+    // keeps what margin the visible part, [visible] px tall where given, leaves it (ux R2).
+    fun fieldAreas(width: Float, height: Float, visible: Int? = null): List<Rect> {
+        val clearance = when {
+            space == null -> marginPx
+            visible == null -> space.marginAround(lineHeight, marginPx)
+            else -> space.marginAround(lineHeight, marginPx, visible)
+        }
+        return listOf(
             Rect(0f, 0f, width, height),
             Rect(0f, lineTop - marginPx, width, height),
             Rect(0f, lineTop - clearance, width, lineTop + lineHeight + clearance)
         )
     }
+    suspend fun bringFieldIntoView(width: Float, height: Float) =
+        requester.bringNestedIntoView(*fieldAreas(width, height).toTypedArray())
     LaunchedEffect(focused, size) {
         if (!focused || size == IntSize.Zero) return@LaunchedEffect
-        bringFieldIntoView(size.width.toFloat(), size.height.toFloat())
+        follow.onBringing()
+        try {
+            bringFieldIntoView(size.width.toFloat(), size.height.toFloat())
+        } finally {
+            follow.onBringEnded()
+        }
         follow.onBroughtIntoView()
     }
     LaunchedEffect(inViewRequests) {
         if (inViewRequests == 0) return@LaunchedEffect
         withFrameNanos { }
         if (size != IntSize.Zero) bringFieldIntoView(size.width.toFloat(), size.height.toFloat())
+    }
+    // In a typing space the page keeps the field in view as the keyboard grows, in the same layout pass (BRD D194).
+    LaunchedEffect(focused, space) {
+        if (!focused || space == null) return@LaunchedEffect
+        space.keepInView(
+            KeptField({ placed.coordinates }, { follow.isFollowing }) { visible ->
+                fieldAreas(size.width.toFloat(), size.height.toFloat(), visible)
+            }
+        )
     }
     // The line being typed is the input line, laid out in the field's text style (BRD D192, ux R5).
     LaunchedEffect(focused, space, lineHeight) {
@@ -111,6 +135,7 @@ fun SingleLineFieldInView(
             .bringIntoViewRequester(requester)
             .onGloballyPositioned {
                 size = it.size
+                placed.coordinates = it
                 val line = Rect(0f, lineTop, it.size.width.toFloat(), lineTop + lineHeight)
                 follow.onPositioned(keyboard.getBottom(density), it, line)
             },
@@ -138,6 +163,11 @@ private fun inputLineHeight(): Float {
     return remember(textStyle, density, measurer) {
         measurer.measure(text = "A", style = textStyle, density = density).size.height.toFloat()
     }
+}
+
+/** Where the field was last placed, for the page to keep it in view: not state, so placing it never recomposes. */
+private class Placed {
+    var coordinates: LayoutCoordinates? = null
 }
 
 private fun TextUnit.orBodyLine(): TextUnit = if (isSp) this else BODY_LINE
