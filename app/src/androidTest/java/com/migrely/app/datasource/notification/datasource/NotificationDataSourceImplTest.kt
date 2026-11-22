@@ -8,6 +8,7 @@ import android.os.SystemClock
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.migrely.app.locale.FormattingLocales
 import java.time.LocalDate
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -28,7 +29,7 @@ private const val POLL_MILLIS = 50L
 class NotificationDataSourceImplTest {
     private val context: Context = ApplicationProvider.getApplicationContext()
     private val manager = context.getSystemService(NotificationManager::class.java)
-    private val classUnderTest = NotificationDataSourceImpl(context)
+    private val classUnderTest = NotificationDataSourceImpl(context, FormattingLocales())
 
     @Before
     fun setUp() {

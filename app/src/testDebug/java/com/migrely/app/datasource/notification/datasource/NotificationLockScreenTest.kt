@@ -4,6 +4,7 @@ import android.app.Application
 import android.app.Notification
 import android.app.NotificationManager
 import androidx.core.app.NotificationCompat
+import com.migrely.app.locale.FormattingLocales
 import java.time.Instant
 import java.time.LocalDate
 import org.junit.Assert.assertEquals
@@ -27,7 +28,7 @@ import org.robolectric.annotation.Config
 class NotificationLockScreenTest {
     private val context: Application = RuntimeEnvironment.getApplication()
     private val manager = context.getSystemService(NotificationManager::class.java)
-    private val classUnderTest = NotificationDataSourceImpl(context)
+    private val classUnderTest = NotificationDataSourceImpl(context, FormattingLocales())
 
     private fun posted(): List<Notification> = manager.activeNotifications.map { it.notification }
 
