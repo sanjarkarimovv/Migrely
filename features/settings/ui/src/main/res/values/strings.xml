@@ -81,10 +81,11 @@
     <string name="settings_privacy_files">Apart from Android\'s own backup and moving to a new phone, your entries leave the phone only in a file you export yourself: a backup, a spreadsheet or a report for your doctor. That file goes wherever you send it.</string>
     <string name="settings_privacy_delete">Delete all data, at the end of Settings, removes everything Migrely keeps on this phone.</string>
 
-    <!-- Open-source licences: what the release app ships, from gradle/libs.versions.toml (BRD D97). -->
+    <!-- Open-source licences: what the release app ships, from gradle/libs.versions.toml (BRD D97). Licence and library
+         names are proper names, the same in every language (D195). -->
     <string name="settings_licences_intro">Migrely is built with these open-source libraries and fonts.</string>
-    <string name="settings_licence_apache">Apache License 2.0</string>
-    <string-array name="settings_licences_apache">
+    <string name="settings_licence_apache" translatable="false">Apache License 2.0</string>
+    <string-array name="settings_licences_apache" translatable="false">
         <item>AndroidX Activity</item>
         <item>AndroidX Core and Core Splashscreen</item>
         <item>AndroidX Fragment</item>
@@ -99,8 +100,8 @@
         <item>Kotlin coroutines</item>
         <item>Kotlin serialization</item>
     </string-array>
-    <string name="settings_licence_ofl">SIL Open Font License 1.1</string>
-    <string-array name="settings_licences_ofl">
+    <string name="settings_licence_ofl" translatable="false">SIL Open Font License 1.1</string>
+    <string-array name="settings_licences_ofl" translatable="false">
         <item>Figtree</item>
         <item>Fraunces</item>
     </string-array>
