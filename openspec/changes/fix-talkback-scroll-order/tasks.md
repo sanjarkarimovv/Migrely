@@ -231,6 +231,17 @@ does; each such stop passes the D181 one-name check (heard once, visible words i
 - [x] 5.2 No permission, manifest or string change. Verify: `./gradlew :app:checkReleasePermissions` exit 0 and `git diff
   origin/develop --stat -- '*AndroidManifest.xml' '*strings.xml'` empty.
   Result: `:app:checkReleasePermissions` exit 0; the diff is empty (0 lines).
+- [x] 5.3 After merging `develop` 224dad3d (#259, D194; 1.3.3) into this branch (merge 2e6f5ad8): the four typing
+  screens scroll through `pageScroll(state, typingSpace)`, which puts the TalkBack step first, then #259's
+  `TypingSpace.scrollingPage` (its layout-pass follow and `verticalScroll` on the same state). `scrollingPage` is
+  `internal`; the source check pins its one caller (the entry point) and the two raw scroll lines (entry point 1,
+  TypingSpace 1). Negative controls, each red for its reason: a `scrollingPage(` call in another file, a second raw
+  scroll in TypingSpace, a raw scroll in a screen (`neg1.log`, `neg2.log`). BRD: this change's EC-UX-83 and 84 became
+  EC-UX-89 and 90 (#259's rows merged first; references in this change renumbered).
+  Verify: full gate and `:app:checkReleasePermissions`.
+  Result: 2e6f5ad8 exit 0, 3,660 tests, 0 failed, #259's TypingSpace, KeyboardFollow and AttackDetailsKeyboardFrames
+  suites rerun green (`gate-merge.log`); ac0a7695 (the 6.2-F1 fix) exit 0, 3,660 tests, 0 failed (`gate-ac0a7695.log`).
+  INTERNET still rejected in the merged release manifest; manifest and strings diff against develop empty.
 
 ## 6. Device walks (`android-engineer`, emulator-5570, TalkBack VERBOSE, console swipes)
 
@@ -266,8 +277,51 @@ does; each such stop passes the D181 one-name check (heard once, visible words i
   runs; develop 4d141abe on the same data and row is clean (24 stops). Not reproduced in Robolectric: the Today walk
   with this month's calendar (title row, the calendar's real pitch layout, future days) is green in both orientations,
   as is History's calendar. Next: device diagnosis of the cell's bounds and TalkBack's tree at that moment.
-- [ ] 6.3 Hardware keyboard Tab and Shift+Tab on Attack details and one dialog: order unchanged, every stop in view. Verify:
+  **6.2-F1 resolved (ac0a7695).** 88734f1d did not fix it: at the emulator date 2026-11-20 (the finding's date; on
+  2026-11-22 no future day shares a week with past days, so no build can show it, the pre-fix build included) the
+  same walk stayed red on 2e6f5ad8, 2 of 2, as on 884d070d and on a no-outset scratch; develop 4d141abe clean (24
+  stops). Single-factor scratches: exact bounds off and step kept, clean; step off and exact bounds kept, red. Cause:
+  a day that cannot be chosen had no traversal data (Compose left it out of its order), so TalkBack placed it by its
+  own rules, which exact bounds changed at the pane's edge. Fix: its words are a merging node with no action, so
+  Compose orders it after the day before. Robolectric: TalkBack's order over the calendar reads days 1 to 30, red
+  with 1 to 20 on 2e6f5ad8. Device on ac0a7695 at 2026-11-20: Today 200% landscape previous 2 of 2 clean (TalkBack
+  starts on Sunday 15 now, so the walk goes 14 → Settings, 18 stops) and next from there: 15 … 20, 21 … 30, the
+  legend, then the right pane, each once; Today 100% portrait one full cycle clean, the days to come now right after
+  today (before: after the action buttons); History portrait and landscape 51 stops each, clean (41 before: the days
+  to come were never reached). Also fixes a pre-existing order fault seen on develop the same day (2026-11-22, next
+  walk: 24 … 30 read before 15 … 22, `6.2-m-l-today-next-dev.txt`).
+  Dialogs, 200% landscape, 360 dp (2e6f5ad8/ac0a7695 against develop 4d141abe, same row): the start date dialog
+  (Material date picker, step only) reached Cancel, Next and the title both ways, each day once, in 1 of 2 runs; in
+  the other the previous walk jumped from November 1 to disabled days at the bottom before the header (develop clean
+  in its 1 run): the recorded picker residual (an item just outside the edge can still be a stop). December days of
+  the pager's next page are stops on both builds. Reminders' time dialog: the previous walk loops (title, 11 … 12,
+  PM … hour, title) and never reaches Cancel or OK, the next walk skips 4 … 8 o'clock once and has a bare "Not
+  selected" stop, identical on develop: pre-existing, Material's time picker; for the 9.1 follow-up.
+  Keyboard up with TalkBack already on, the field opened by a TalkBack double tap, 100% portrait (ac0a7695): the
+  keyboard opens, no focus event follows the double tap (focus stays on the field), then previous and next walks:
+  Delete all data 9 and 9, Log medication 13 and 13, Attack details note 40 and 40, no repeat (the walk passes from
+  the app's first item into the keyboard's window: its own Back button is the second "Back"). Edit medication: no
+  route on this data (no medicine); its opening is in the #259 rows below.
+  #259's core rows on this build (its harness `migrely-work/259/lib/x259.py`, build m255ac = ac0a7695, 200%
+  landscape, Gboard, TalkBack on, the field opened by a TalkBack double tap; rows `m1-*`, `m1k-*` in
+  `migrely-work/259/rows.jsonl`, load 2.1 to 3.7): Attack details note at 360 dp x3, with "Impact on your day" set,
+  at 411 dp, then closed with Back; Log medication, Edit medication and Delete all data at 360 dp: in all 9 no focus
+  event after the double tap, 0 database writes, the whole typed line shown (112 of 112 px at 360 dp, the bar aside;
+  106 of 106 at 411 dp); closing scrolled 0 px with no focus move; settings read back unchanged. The reopen (K1: four
+  lines, the note's top 60 px above the edge, keyboard reopened by double tap, one character typed): no focus move on
+  reopen or after typing, the line whole after typing (112 px), the only write the typed text. #255 does not reopen
+  #259.
+  Open in 6.2: onboarding, attack mode, Your data's import and restore dialogs (need a backup file), Edit medication
+  with the keyboard up as a walk (only its opening above), Today and History in attack mode.
+- [x] 6.3 Hardware keyboard Tab and Shift+Tab on Attack details and one dialog: order unchanged, every stop in view. Verify:
   `6.3-*.txt`.
+  Result (ac0a7695 against develop 4d141abe, TalkBack off; the dump's `focused` node, its bounds against the screen):
+  Attack details 100% portrait, Tab from the top: Back, start time, pain, medication, the chips, symptoms, triggers,
+  impact, the note (39 presses; stopped there, as Tab inside the note types a tab), each in view, order identical to
+  develop's. Shift+Tab from Weather: the exact reverse up to Back, then Delete migraine and the note (31 presses), each
+  in view (a first run at load 16 discarded and rerun at 4). The start date-time picker at 200% landscape 360 dp: Tab
+  46 and Shift+Tab 46 presses, each in view, both orders identical to develop's (Shift+Tab from November 1 pages into
+  October: Material's own grid).
 - [x] 6.4 Pressed-state pixels of `MigrelyIconButton` against Material's (Robolectric draws no ripple). Verify:
   `ANDROID_SERIAL=emulator-5570 nice -n 19 ./gradlew --max-workers=2 :designsystem:connectedDebugAndroidTest
   -Pandroid.testInstrumentationRunnerArguments.class=com.migrely.app.designsystem.button.MigrelyIconButtonPressedTest`
