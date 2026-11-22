@@ -302,3 +302,7 @@ them.
 - **TalkBack off on 5570.** T5 and TalkBack-off T6 have no device row on the explicit route. QA must measure both on 5580.
 - **Unordered reads.** A detached field is skipped and never scrolled on stale coordinates.
 - Real phones and other keyboards are not proven; recorded in NOT CHECKED, not claimed.
+- **QA findings, known limits (team-lead decision 2026-11-22; QA record 9967de02, GO with recorded limits).** #262 (S4):
+  with a one-step inset the hold keeps 1 px less than showed (56 of 57, 62 of 63). #264 (S3, also in v1.3.1): rotating
+  with the keyboard up and TalkBack on closes the keyboard and moves focus to Back; planned for 1.4.0. #263 was a harness
+  artifact (TalkBack's start scroll measured as the close's) and is closed.

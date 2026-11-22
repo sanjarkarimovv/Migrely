@@ -121,14 +121,16 @@ earlier bring (BRD EC-UX-85, EC-UX-86, D194).
 - **WHEN** the line is followed and Gboard's suggestion strip appears, or the user switches to symbols or emoji
 - **THEN** a taller keyboard moves the line up with it, a shorter one scrolls nothing, and focus stays on the field
 
-#### Scenario: Rotation with the keyboard up
+#### Scenario: Rotation with the keyboard up (known limit #264)
 - **WHEN** the phone rotates with the keyboard up and TalkBack on
-- **THEN** the bar's decision is made again as D192 says, the line shows, and focus stays on the field
+- **THEN** the behaviour is the same as in v1.3.1: the keyboard closes and TalkBack's focus moves to Back
+- **AND** this is a known limit (#264, S3, planned for 1.4.0), not a behaviour this change promises
 
 #### Scenario: Closing the keyboard
 - **WHEN** the keyboard closes by Back, the hide key or Done, with TalkBack on and off
-- **THEN** zero TYPE_VIEW_SCROLLED come from the page, the scroll position moves 0 px (or by the bar's height where it was
-  aside), and TalkBack's focus stays on the field
+- **THEN** the scroll position moves 0 px (or by the bar's height where it was aside) and the field keeps focus
+- **AND** with TalkBack on, zero TYPE_VIEW_SCROLLED come from the page after the close and TalkBack's focus stays on the
+  field
 
 #### Scenario: No bottom keyboard inset
 - **WHEN** a hardware keyboard, a floating keyboard or a split screen gives no bottom keyboard inset
@@ -145,8 +147,8 @@ earlier bring (BRD EC-UX-85, EC-UX-86, D194).
 
 ### Requirement: The keyboard never hides a focused field that shows
 When a keyboard frame would leave a focused field that is not following the keyboard, and showed at least 1 px, with less
-than its line, the page SHALL hold the lesser of its line with its clearance and what showed, in that same frame, for every
-user. In each such frame the line SHALL move no further than the keyboard's and the bar's step plus 1 px, and not at all
+than its line, the page SHALL hold the lesser of its line with its clearance and what showed (within 1 px), in that same frame,
+for every user. In each such frame the line SHALL move no further than the keyboard's and the bar's step plus 1 px, and not at all
 after the keyboard stops. A field that covers the whole visible part SHALL NOT be held (BRD EC-UX-88, D194).
 
 #### Scenario: Reopening the keyboard with TalkBack (the reopen path)
@@ -164,6 +166,7 @@ after the keyboard stops. A field that covers the whole visible part SHALL NOT b
 #### Scenario: Remove animations and API 26
 - **WHEN** the same reopening runs with "Remove animations" on, or on API 26
 - **THEN** the hold is one step with the keyboard, and the note stays in the accessibility tree
+- **AND** what showed is kept within 1 px: a one-step inset may keep 1 px less (#262, S4, a known limit)
 
 #### Scenario: Later growth
 - **WHEN** the user scrolled the note partly out of view with the keyboard up, and then switches Gboard to symbols, which is

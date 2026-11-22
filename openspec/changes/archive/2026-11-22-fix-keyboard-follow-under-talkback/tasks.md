@@ -183,7 +183,7 @@ engineer's rows not run on this head go to QA, and the tasks below stay unticked
   geometry and in the plain T1 geometry where develop cleared it (`v1-tb2i`, last `v1-tb2`).
   Final head d7aa097e: the impact preset row (`t-tb2i`) was void (load 50 at its end); T2's impact preset handed to QA
   7.1 (lead decision 2026-11-20).
-- [ ] 5.3 T3: Log medication (usual and dark room), Edit medication (name, dose), Delete all data, TalkBack double tap, at
+- [x] 5.3 T3: Log medication (usual and dark room), Edit medication (name, dose), Delete all data, TalkBack double tap, at
   360 and 411 dp, 2 runs each: focus kept, no intake, medication or deletion written. Verify: rows per screen.
   Partly. TalkBack double tap, candidate: Log medication 360 ×2, 411 ×2; Delete all data 360 ×3, 411 ×2; Edit
   medication name 360 ×2, 411 ×1, dose 360 ×2, 411 ×1: focus kept and nothing written in all 15. Log medication in the dark
@@ -191,7 +191,9 @@ engineer's rows not run on this head go to QA, and the tasks below stay unticked
   Explicit route, one opening each at 360 dp: Log medication, Delete all data, Edit medication name and dose: focus kept,
   nothing written (`v5`).
   Handed to QA 7.1 (lead decision 2026-11-20): not run on the final head d7aa097e.
-- [ ] 5.4 T5: TalkBack off, 360 dp, bar aside: line 112/112 on the four screens. Verify: layout dump bounds.
+  QA 7.1 on 5580, d7aa097e: 10 of 10 pass (Log medication usual ×2 and dark room ×2, Edit name ×2, dose ×2, Delete all
+  data ×2, at 360 and 411 dp): focus kept, nothing written.
+- [x] 5.4 T5: TalkBack off, 360 dp, bar aside: line 112/112 on the four screens. Verify: layout dump bounds.
   Partly. TalkBack off, Gboard's full keyboard, bar aside, 112/112: note (`m1c-off-det-360`), Log medication name
   (`w2-off-log-360`), Edit medication name (`w6-off-edit-360`), Log medication in the dark room (`m4`). Delete all data not
   obtained: 5570's Gboard mostly showed its compact physical-keyboard bar with TalkBack off (and `dumpsys` reported a
@@ -200,7 +202,8 @@ engineer's rows not run on this head go to QA, and the tasks below stay unticked
   warm-up, `v5`, `v7`). The in-pass follow has no TalkBack branch; the frame tests cover it without an accessibility
   service.
   Handed to QA 7.4 (lead decision 2026-11-20): not run on the final head d7aa097e.
-- [ ] 5.5 T6 (#238): close by Back, hide key, Done; TalkBack on and off: 0 `TYPE_VIEW_SCROLLED` from the page, scroll
+  QA 7.4 on 5580: line 112/112 with the bar aside on the note, Log name, Edit name and the Delete word (4 of 4).
+- [x] 5.5 T6 (#238): close by Back, hide key, Done; TalkBack on and off: 0 `TYPE_VIEW_SCROLLED` from the page, scroll
   position 0 px (bar height where aside), focus on the field. Verify: rows and TalkBack log lines.
   Partly. TalkBack on, Back (`w1-tbclose-det-360`): 0 `TYPE_VIEW_SCROLLED`, no focus move, "keyboard hidden". TalkBack
   off, Back: 0 px on the candidate only with the compact bar (bar not aside); with the full keyboard and the bar aside, 0 px
@@ -209,6 +212,11 @@ engineer's rows not run on this head go to QA, and the tasks below stay unticked
   not obtained with the full keyboard.
   Handed to QA 7.1 (T6, TalkBack on) and 7.4 (TalkBack off, hide key, Done) (lead decision 2026-11-20): not run on the
   final head d7aa097e.
+  QA: TalkBack on, Back, hide key and Done (Gboard's action key) 10 of 10, judged on the close itself (#263 was a harness
+  artifact): the field moves by exactly the bar's height (194 px note, 168 px others), 0 `TYPE_VIEW_SCROLLED` after the
+  close, focus on the field. TalkBack off, four screens × three closes: 11 of 11 by px. PM acceptance: with TalkBack off
+  the px result is the check; no accessibility service is there to receive scroll events, and QA's stand-in client had no
+  positive control, so its event count proves nothing.
 - [x] 5.6 T7: Remove animations with TalkBack on, 360 dp: focus kept, one-step move. Verify: rows.
   Done. Remove animations (all three scales 0, restored), TalkBack, 360 dp: 2 of 2 focus kept, 112/112, nothing
   written (`w3`).
@@ -230,7 +238,11 @@ engineer's rows not run on this head go to QA, and the tasks below stay unticked
   Handed to QA 7.5 (lead decision 2026-11-20): not run on the final head d7aa097e; 5570 cannot measure per frame. Run
   there instead: F2 at the page end with animations on and off, 2 valid rows, 0 px settle at +0.5 s and +1.0 s, the
   negative control saw a 20 px shift; mid-page 2 rows, both void.
-- [ ] 5.8 M2 to M4: final frames against develop at 411 and 360 dp (within 1 px; SW13 band if reached); the note at the page
+  QA 7.5: cut start, TalkBack on 2 of 2 and off 1 of 1 pass C1, C2 and +500 ms; develop (v1.3.2) fails C3 2 of 2.
+  Not ticked: in TalkBack openings Gboard's keyboard arrived in one captured frame, so C1 is shown per captured interval,
+  not per 60 Hz frame; at the page end 1 of 3 runs drifted 2 px, within the anchor's noise, so C3 there is not proven to
+  the pixel.
+- [x] 5.8 M2 to M4: final frames against develop at 411 and 360 dp (within 1 px; SW13 band if reached); the note at the page
   end and Delete all data in the dark theme, no stretch or glow; Log medication from attack mode, no lighter frame. Verify:
   shots in `migrely-work/259/shots/` and a short table.
   Partly. M2: 411 dp final caret 278..390 on candidate and develop (0 px); 360 dp candidate 185..297, as QA's develop row
@@ -241,6 +253,8 @@ engineer's rows not run on this head go to QA, and the tasks below stay unticked
   Explicit route: rest caret 185..297 at 360 dp (19 rows) and 278..390 at 411 dp (2), the same as edae56a4.
   Handed to QA 7.1 (lead decision 2026-11-20): M2 to M4 not run on the final head d7aa097e (its T1 rows rest at
   185..297, as before).
+  QA 7.1: M2 equal to v1.3.2 to the pixel (note 185..297 at 360 dp, 278..390 at 411 dp; name 82..194); M3 no stretch or
+  glow; M4 no lighter frame (mean at most 18.4 at the start, 11.8 settled). SW13 band not reached.
 
 ## 6. Review (`code-reviewer`)
 
@@ -260,42 +274,71 @@ engineer's rows not run on this head go to QA, and the tasks below stay unticked
 
 ## 7. Independent retest (`qa-engineer`)
 
-- [ ] 7.1 emulator-5580, API 36: rows T1 to T7 and M1 to M4 on the debug build of the candidate SHA, with v1.3.1 as the
+- [x] 7.1 emulator-5580, API 36: rows T1 to T7 and M1 to M4 on the debug build of the candidate SHA, with v1.3.1 as the
   control (focus kept there) and v1.3.2 (focus jumps) as the negative control.
-- [ ] 7.2 The R8 release build of the same SHA: T1, T2, T6 and U3 (7.6) at 360 dp.
+  Done (QA record `docs/qa/fix-keyboard-follow-under-talkback.md` (9967de02, GO with recorded limits, 2026-11-22); QA's own build of d7aa097e, sha256 2b3c151f…). T1 12/12, T2 6/6 (impact 2 read back), T3 10/10, T4 3/3, T5
+  4/4, T6 10/10, T7 3/3, M2 to M4 pass: focus kept, 0 writes. v1.3.2: T1 3/3 jump to an impact radio and write impact;
+  v1.3.1: T1 3/3 kept. M1 is 7.5.
+- [x] 7.2 The R8 release build of the same SHA: T1, T2, T6 and U3 (7.6) at 360 dp.
+  Done: T1 ×3 and T2 ×1 judged, U3 ×3 (load 13 to 72), T6 Back ×1 (194 px): focus kept, 0 writes in all. R8 v1.3.2 T1
+  2/2 wrote impact. Release permissions equal v1.3.2's, no INTERNET. The R8 build is locally signed, not Play-signed.
 - [ ] 7.3 emulator-5582, API 26 (AOSP keyboard): M5, T1, T6 and U3 (the hold in one step) at 360 and 411 dp. Cases QA cannot reach (hardware or floating
   keyboard, split screen) are recorded as not reachable, not as a pass. Verify: QA's Go/No-Go record names the SHA, each row
   and what it does not prove; QA closes #259 after the retest.
-- [ ] 7.4 T5 and TalkBack-off T6 on emulator-5580 (not obtained on 5570, whose Gboard showed only its compact bar with
+  Not ticked: partly proven. TalkBack is not installed on the API 26 image, so T1 and U3 as TalkBack rows are not
+  reachable. Stand-in, a tap with an accessibility client attached: 4/4, 0 writes, line whole. T6 Back on the note and
+  Edit name, 360 and 411 dp: 4/4 at 0 px; Done and the hide key not reachable on AOSP. U3 by a tap: 1 run held in one
+  step (65 px shown, 65 kept, line cut, H5), 1 run took the follow path, 0 writes. M5 not proven: `screenrecord` missed
+  the opening. Hardware and floating keyboards and split screen: not reachable. QA closed #259 on 2026-11-22.
+- [x] 7.4 T5 and TalkBack-off T6 on emulator-5580 (not obtained on 5570, whose Gboard showed only its compact bar with
   TalkBack off): the four screens at 360 dp with the bar aside, line 112/112; close by Back, the hide key and Done, 0 px
   and 0 `TYPE_VIEW_SCROLLED`. Verify: rows in QA's folder, or "not reachable" with the reason, never a pass.
+  Done: T5 4/4 at 112/112; TalkBack-off T6, four screens × Back, hide key, Done, 11/11 by px (the bar's height, field
+  focused). The event count with TalkBack off is not proven (see 5.5, PM acceptance on px).
 - [ ] 7.5 Motion at 60 fps (design D4, general evidence): the note's opening at 360 dp, TalkBack on, from a cut start and
   from a page-end start (the note wholly in view at the page's end), captured with `screenrecord`, with the cursor line's
   top y and the keyboard's top y per frame from the keyboard's start to +500 ms. Pass: C1 and C2 per frame, and the +500 ms
   frame equals the last frame from both starts (no settle, F2). Verify: a frame table in QA's folder.
-- [ ] 7.6 The reopen path U3 (design D6), independent of the engineer, 360 dp, TalkBack on. The note is focused, Back
+  Not ticked: partly proven. Cut start: TalkBack on 2/2 and off 1/1 pass C1, C2 and +500 ms = the keyboard's stop;
+  v1.3.2 fails C3 2/2 (its spring moves after). Page-end start: 2/2 within 1 px, 1 run 2 px on a low-texture anchor.
+  Per-frame C1 in TalkBack openings is per captured interval only (Gboard arrived in one captured frame), and C3 at the
+  page end is not proven to the pixel.
+- [x] 7.6 The reopen path U3 (design D6), independent of the engineer, 360 dp, TalkBack on. The note is focused, Back
   closes the keyboard, the page is scrolled so the note's top is near the bottom edge, and a double tap reopens the
   keyboard; then one more double tap. Run it on the candidate (at least 5 runs), on v1.3.1 (control: is production
   affected?) and on develop (negative control: hidden, focus moves, writes). Pass on the candidate: focus on the note, 0
   writes (database read before and after). H2: in every captured frame at least min(what showed before, the line with its clearance, up to 8 dp each side) is
   visible. H1: each held frame moves the line no more than the keyboard step plus the bar step plus 1 px, and 0 after the
   keyboard stops. Verify: rows and a frame table.
-- [ ] 7.7 K1: U3 with the caret at the end of 4 lines and 60 px shown; type one character, then double tap. Pass: focus on
+  Done: 6/6 (60 px caret line 1 ×2, caret end ×2, 150 px, 350 px): focus kept, 0 writes; H1 and H2 in every captured
+  frame (kept 62 to 71, 152, 154 px; captures 18 to 19 ms apart). v1.3.2 3/3 hidden, focus to a radio, impact written;
+  v1.3.1 3/3 focus to Back, Back activated, 0 writes. Known limit #262 (S4): with a one-step inset (R8 rows) the hold
+  keeps 1 px less than showed (56 of 57, 62 of 63 ×3).
+- [x] 7.7 K1: U3 with the caret at the end of 4 lines and 60 px shown; type one character, then double tap. Pass: focus on
   the note, 0 writes, the caret line whole afterwards (H3 (c)). Log the typing bring's peak px per frame; do not cap it.
   Verify: rows.
+  Done: 3/3 and K2 (Remove animations) 1/1: focus kept, the double tap wrote 0, the only change the typed "k", caret line
+  185..297 whole. QA corrected its typed-cell rule (a change of only the note and its updated-at passes; any other write
+  fails). Typing bring logged: one direction, 9 to 10 captured frames, peak 46 to 99 px per frame; K2 one step of 177 px.
 - [ ] 7.8 Rotation with the keyboard up (cr-259 F5, not reachable in unit tests), TalkBack on, on the note and on Edit
   medication's name: rotate to portrait and back. Pass: the bar is decided again (D192 R5), the line shows, focus stays on
   the field, nothing is written. Verify: rows.
-- [ ] 7.9 Go/No-Go "does not prove" section names these limits verbatim:
+  Not met, 4/4 (note ×2, Edit name ×2): the rotation closes the keyboard and TalkBack's focus moves to Back, the same on
+  v1.3.2 and v1.3.1. Pre-existing, not a #259 regression: #264 (S3), known limit by lead decision 2026-11-22, planned for
+  1.4.0; the spec scenario says so.
+- [x] 7.9 Go/No-Go "does not prove" section names these limits verbatim:
   - H5: "On a reopen with focus kept, the caret line may stay cut until the first keystroke."
   - K3: "The typing bring (D180 (2), unchanged) can move up to about 100 px per frame at its peak, eased, after a rescue or a
     drag."
   - K2: with Remove animations that bring is one step of up to about 430 px.
 
   Also: real phones and keyboards other than Gboard and AOSP. Verify: the record names follow-up #260.
+  Done: the record names H5, K3 and K2 verbatim (K2 measured 177 px), #260, #262, #264, real phones and other keyboards.
 
 ## 8. Archive (`product-manager`)
 
-- [ ] 8.1 After review and QA: record results in D194's evidence, archive the change into `openspec/specs/app-shell`; then
+- [x] 8.1 After review and QA: record results in D194's evidence, archive the change into `openspec/specs/app-shell`; then
   `android-engineer` opens the PR into `develop` with `Refs #259`. Verify: `openspec archive fix-keyboard-follow-under-talkback --yes` and
   `openspec validate --all --strict` exit 0.
+  Done 2026-11-22: QA's results in BRD D194 (11); the spec scenarios for rotation (#264), the one-step hold (#262) and the
+  close's event count set to what QA measured; archived. The PR into `develop` is the lead's merge walk.
