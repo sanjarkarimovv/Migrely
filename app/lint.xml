@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<lint>
+    <!--
+      values-en holds only the launcher shortcut's labels (BRD D195, ux E7): the default values/ is already English,
+      so "not translated in en" is never a missing translation. Every other language stays fully checked.
+    -->
+    <issue id="MissingTranslation">
+        <ignore regexp="is not translated in &quot;en&quot;" />
+    </issue>
+</lint>

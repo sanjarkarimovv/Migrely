@@ -1,0 +1,7 @@
+# German words over 16 letters (BRD D195, design D6 check 5). One word per line, then a tab, the screen where it shows,
+# and whether it was seen whole at 200% font on a 360 dp phone in portrait and landscape (task 8.1). A word without a
+# screen fails the gate. "not yet seen" is replaced by the date of the 8.1 walk, or the word is rewritten.
+Benachrichtigungen	Reminders: notifications-off line, visit channel-off line, open-settings button name (TalkBack); not yet seen (8.1)
+Geruchsempfindlich	Attack details: symptom chip; not yet seen (8.1)
+Hirnhautentzündung	Settings > Warning signs: list item 7; not yet seen (8.1)
+Datenschutzerklärung	Settings > Privacy: policy link; not yet seen (8.1)

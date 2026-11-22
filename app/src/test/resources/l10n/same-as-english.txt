@@ -1,0 +1,13 @@
+# German values that are rightly the same as English (BRD D195, design D6 check 4). One whole string value per line,
+# then a tab and why. ux-designer reviews this list in task 10.1; a value is not a word, so "OK" here allows only a
+# string that is exactly "OK".
+Migrely	brand name
+Premium	product tier name, glossary D5
+Migrely Premium	brand and tier name
+OK	Android's own German dialog button
+Name	German word, same spelling
+Details	German word, same spelling
+Version	German word, same spelling
+Aura	medical term, glossary D5
+Triptan	medication class, glossary D5
+Stress	German word, same spelling (spec app-language)
