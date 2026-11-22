@@ -17,6 +17,8 @@
     <string name="report_create">Create report</string>
     <string name="report_nothing_logged">Nothing was logged in this period.</string>
     <string name="report_working">Making your report</string>
+    <!-- The PDF stays English in 1.4.0; shown only when the app's language is not English (BRD D195, EC-L10N-09). -->
+    <string name="report_pdf_language_note">The PDF is in English.</string>
     <string name="report_about">A PDF for your doctor: the summary, a calendar, your migraines and medications. Each page says it is patient-entered data, not a diagnosis.</string>
     <string name="report_unavailable">Your entries can\'t be read right now. Try again in a moment.</string>
     <string name="report_share">Share report</string>

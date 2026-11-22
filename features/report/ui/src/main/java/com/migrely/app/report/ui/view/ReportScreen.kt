@@ -92,6 +92,7 @@ import com.migrely.app.report.ui.model.ShownReportMessageUiModel
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
+import java.util.Locale
 import kotlinx.coroutines.flow.onSubscription
 
 private val CONTENT_MAX_WIDTH = 600.dp
@@ -374,6 +375,14 @@ fun ReportContents(
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                    // The PDF stays English in 1.4.0 (BRD D195, EC-L10N-09): said once, only in another language.
+                    if (LocalConfiguration.current.locales[0].language != Locale.ENGLISH.language) {
+                        Text(
+                            stringResource(R.string.report_pdf_language_note),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
         }

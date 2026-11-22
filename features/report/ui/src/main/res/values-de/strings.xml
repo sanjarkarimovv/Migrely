@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- German (BRD D195): glossary and voice in openspec change add-german-localization, design D5. -->
+<resources>
+    <string name="report_title">Bericht für die Arztpraxis</string>
+    <string name="report_back">Zurück</string>
+    <string name="report_period">Zeitraum</string>
+    <plurals name="report_months">
+        <item quantity="one">%d Monat</item>
+        <item quantity="other">%d Monate</item>
+    </plurals>
+    <string name="report_custom">Frei wählen</string>
+    <string name="report_covers">%1$s bis %2$s</string>
+    <string name="report_since_visit">Seit %1$s</string>
+    <string name="report_since_visit_description">Seit deinem letzten Termin, %1$s</string>
+    <string name="report_covers_since_visit">Seit deinem letzten Termin: %1$s bis %2$s</string>
+    <string name="report_notes">Notizen aufnehmen</string>
+    <string name="report_notes_summary">Deine Notizen zu jeder Migräne. Sie sind persönlich und bleiben draußen, außer du wählst sie aus.</string>
+    <string name="report_create">Bericht erstellen</string>
+    <string name="report_nothing_logged">In diesem Zeitraum wurde nichts notiert.</string>
+    <string name="report_working">Dein Bericht wird erstellt</string>
+    <string name="report_pdf_language_note">Das PDF ist auf Englisch.</string>
+    <string name="report_about">Ein PDF für die Arztpraxis: die Übersicht, ein Kalender, deine Migräneattacken und Medikamente. Jede Seite sagt, dass es selbst eingetragene Daten sind, keine Diagnose.</string>
+    <string name="report_unavailable">Deine Einträge können gerade nicht gelesen werden. Versuch es gleich noch einmal.</string>
+    <string name="report_share">Bericht teilen</string>
+    <string name="report_range_title">Zeitraum wählen</string>
+    <string name="report_range_confirm">Fertig</string>
+    <string name="report_range_cancel">Abbrechen</string>
+    <string name="report_message_nothing">In diesem Zeitraum wurde nichts notiert.</string>
+    <string name="report_message_storage">Dein Handy ist voll. Gib etwas Speicher frei und versuch es noch einmal.</string>
+    <string name="report_message_failed">Etwas ist schiefgelaufen. Versuch es noch einmal.</string>
+    <string name="report_message_no_app">Auf diesem Handy gibt es keine App, um den Bericht zu teilen.</string>
+    <string name="report_message_dismiss">Schließen</string>
+</resources>
