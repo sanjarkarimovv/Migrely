@@ -10,7 +10,7 @@
     <string name="legend_moderate">Mäßig</string>
     <string name="legend_severe">Stark</string>
     <string name="history_legend_medication_only">Nur Akutmedikation</string>
-    <string name="legend_not_logged">Nicht eingetragen</string>
+    <string name="legend_not_logged">Nicht notiert</string>
     <string name="legend_pain_free">Schmerzfrei</string>
     <string name="legend_period">Periode</string>
     <string name="day_today">Heute, %1$s</string>
@@ -70,11 +70,11 @@
     <string name="show_all_month">Ganzen %1$s zeigen</string>
     <string name="history_add_past_attack">Frühere Migräne hinzufügen</string>
     <string name="attack_range">%1$s – %2$s</string>
-    <string name="attack_in_progress">Läuft</string>
+    <string name="attack_in_progress">Läuft noch</string>
     <string name="attack_peak">%1$d/10</string>
     <string name="attack_peak_not_recorded">Nicht erfasst</string>
     <string name="attack_description">%1$s bis %2$s, %3$s. Öffnet die Details.</string>
-    <string name="attack_in_progress_description">%1$s, läuft, %2$s. Öffnet die Details.</string>
+    <string name="attack_in_progress_description">%1$s, läuft noch, %2$s. Öffnet die Details.</string>
     <string name="attack_peak_spoken">stärkster Schmerz %1$d von 10</string>
     <string name="attack_peak_not_recorded_spoken">stärkster Schmerz nicht erfasst</string>
     <string name="empty_title">Noch keine Migräne notiert</string>

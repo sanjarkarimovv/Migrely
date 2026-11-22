@@ -42,7 +42,7 @@
     <string name="long_check_title">Hält sie noch an?</string>
     <string name="long_check_body">Wenn sie nach 72 Stunden noch anhält, hol dir dringend ärztlichen Rat.</string>
     <string name="long_check_still_going">Hält noch an</string>
-    <string name="long_check_ended">Sie ist vorbei</string>
+    <string name="long_check_ended">Ist vorbei</string>
     <string name="long_check_dont_ask">Bei dieser Attacke nicht mehr fragen</string>
     <string name="end_time_title">Wann war sie vorbei?</string>
     <string name="home_picker_next">Weiter</string>

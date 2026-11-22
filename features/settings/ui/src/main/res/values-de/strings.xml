@@ -63,12 +63,12 @@
     <string name="settings_about_doctor">Sprich mit einer Ärztin oder einem Arzt über deine Kopfschmerzen, und bevor du ein Medikament beginnst, absetzt oder änderst.</string>
     <string name="settings_about_urgent">Wenn Kopfschmerzen mit einem der Notfallzeichen auf der Seite „Warnzeichen“ auftreten, wähle den Notruf.</string>
     <string name="settings_privacy_offline">Migrely hat keine Berechtigung für das Internet, deshalb kann die App selbst nichts über das Internet senden. Es gibt kein Konto und keine Anmeldung.</string>
-    <string name="settings_privacy_purchase">Premium wird über Google Play gekauft, das für den Kauf online geht.</string>
+    <string name="settings_privacy_purchase">Premium wird über Google Play gekauft. Für den Kauf verbindet sich Google Play mit dem Internet.</string>
     <string name="settings_privacy_phone">Deine Einträge bleiben auf diesem Handy. Wenn Androids eigene Sicherung an ist, kann sie deine Einträge auch in dein Google-Konto kopieren. Ab Android 9 tut sie das nur, wenn sie die Kopie Ende-zu-Ende verschlüsseln kann, wofür eine Displaysperre nötig ist. Unter Android 8 kann Migrely das nicht verlangen, deshalb ist die Kopie dort eventuell nicht Ende-zu-Ende-verschlüsselt. Android kann deine Einträge auch auf ein neues Handy übertragen, wenn du es einrichtest.</string>
     <string name="settings_privacy_files">Abgesehen von Androids eigener Sicherung und dem Umzug auf ein neues Handy verlassen deine Einträge das Handy nur in einer Datei, die du selbst exportierst: einer Sicherung, einer Tabelle oder einem Bericht für die Arztpraxis. Diese Datei geht dorthin, wohin du sie schickst.</string>
     <string name="settings_privacy_delete">„Alle Daten löschen“ am Ende der Einstellungen entfernt alles, was Migrely auf diesem Handy speichert.</string>
     <string name="settings_licences_intro">Migrely ist mit diesen Open-Source-Bibliotheken und Schriften gebaut.</string>
     <string name="settings_not_saved">Das wurde nicht gespeichert. Versuch es noch einmal.</string>
     <string name="settings_message_dismiss">Schließen</string>
-    <string name="settings_privacy_policy_link">Die ganze Datenschutzerklärung lesen</string>
+    <string name="settings_privacy_policy_link">Ganze Datenschutzerklärung lesen (auf Englisch)</string>
 </resources>

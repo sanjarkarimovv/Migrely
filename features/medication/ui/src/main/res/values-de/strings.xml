@@ -48,7 +48,7 @@
     <string name="message_archived">Medikament entfernt</string>
     <string name="message_undo_archive_description">Entfernen des Medikaments rückgängig machen</string>
     <string name="medication_message_undone">Rückgängig gemacht.</string>
-    <string name="message_intake_undone">Entfernt. Nichts wurde notiert.</string>
+    <string name="message_intake_undone">Entfernt. Es wurde nichts notiert.</string>
     <string name="message_in_future">Wähle eine Zeit bis jetzt.</string>
     <string name="message_limit_reached">Du kannst bis zu 50 Medikamente speichern. Entferne eines, das du nicht mehr nimmst.</string>
     <string name="medication_message_storage_full">Nicht gespeichert. Der Speicher deines Handys ist voll.</string>

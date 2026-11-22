@@ -9,19 +9,19 @@
     <string name="your_data_export_csv_summary">Eine Zeile pro Migräne, zum Lesen oder Teilen</string>
     <string name="your_data_import">Sicherung importieren</string>
     <string name="your_data_import_summary">Aus einer Migrely-Sicherungsdatei</string>
-    <string name="your_data_restore_copy">Kopie vom %1$s wiederherstellen</string>
+    <string name="your_data_restore_copy">Kopie vom %1$s zurückholen</string>
     <string name="your_data_restore_copy_summary">Auf diesem Handy gespeichert, bevor deine Einträge zuletzt ersetzt wurden</string>
-    <string name="your_data_restore_title">Kopie vom %1$s wiederherstellen?</string>
-    <string name="your_data_restore_replaces">Sie ersetzt, was jetzt auf diesem Handy ist. Vorher wird eine Kopie davon gespeichert, damit du zurückwechseln kannst.</string>
-    <string name="your_data_restore">Wiederherstellen</string>
+    <string name="your_data_restore_title">Kopie vom %1$s zurückholen?</string>
+    <string name="your_data_restore_replaces">Die Kopie ersetzt, was jetzt auf diesem Handy ist. Vorher wird gesichert, was jetzt hier ist, damit du zurückwechseln kannst.</string>
+    <string name="your_data_restore">Zurückholen</string>
     <plurals name="your_data_restored">
         <item quantity="one">Kopie zurückgeholt: %d Migräneattacke.</item>
         <item quantity="other">Kopie zurückgeholt: %d Migräneattacken.</item>
     </plurals>
     <string name="your_data_note">Migrely hat keine Berechtigung für das Internet. Deine Einträge bleiben auf diesem Handy, in Androids eigener Sicherung, wenn sie an ist, bei einer Übertragung auf ein neues Handy und in jeder Datei, die du exportierst.</string>
-    <string name="your_data_working">Deine Datei wird bearbeitet</string>
+    <string name="your_data_working">Deine Datei wird verarbeitet</string>
     <string name="your_data_confirm_title">Diese Sicherung importieren?</string>
-    <string name="your_data_confirm_holds">Sie enthält %1$s, %2$s und %3$s.</string>
+    <string name="your_data_confirm_holds">Die Sicherung enthält %1$s, %2$s und %3$s.</string>
     <plurals name="your_data_migraines">
         <item quantity="one">%d Migräneattacke</item>
         <item quantity="other">%d Migräneattacken</item>

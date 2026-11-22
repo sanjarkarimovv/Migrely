@@ -6,9 +6,9 @@
     <string name="reminders_daily_title">Tägliche Erinnerung</string>
     <string name="reminders_daily_summary">„Wie war dein Tag?“ einmal täglich, damit du einen schmerzfreien Tag markieren kannst</string>
     <string name="reminders_daily_time">Uhrzeit</string>
-    <string name="reminders_daily_time_description">Erinnerungszeit, %1$s. Ändern.</string>
+    <string name="reminders_daily_time_description">Uhrzeit der Erinnerung, %1$s. Ändern.</string>
     <string name="reminders_effect_title">Fragen, ob ein Medikament geholfen hat</string>
-    <string name="reminders_effect_summary">Zwei Stunden, nachdem du ein Medikament gegen eine Attacke notiert hast</string>
+    <string name="reminders_effect_summary">Zwei Stunden, nachdem du ein Medikament bei einer Attacke notiert hast</string>
     <string name="reminders_notifications_off">Benachrichtigungen sind für Migrely aus, deshalb kommen keine Erinnerungen an.</string>
     <string name="reminders_open_settings">Einstellungen öffnen</string>
     <string name="reminders_unavailable">Erinnerungen können gerade nicht angezeigt werden.</string>

@@ -6,7 +6,7 @@
     <string name="section_time">Zeit</string>
     <string name="time_started">Beginn</string>
     <string name="time_ended">Ende</string>
-    <string name="time_in_progress">Läuft</string>
+    <string name="time_in_progress">Läuft noch</string>
     <string name="time_duration">Dauer %1$s</string>
     <string name="time_duration_so_far">Bisher %1$s</string>
     <string name="time_change_start">Beginn ändern, jetzt %1$s</string>
@@ -20,7 +20,7 @@
         <item quantity="other">Das würde sich mit %1$d Migräneattacken überschneiden: %2$s.</item>
     </plurals>
     <string name="overlap_range">%1$s bis %2$s</string>
-    <string name="overlap_range_in_progress">seit %1$s, läuft</string>
+    <string name="overlap_range_in_progress">seit %1$s, läuft noch</string>
     <string name="overlap_separator">"; "</string>
     <string name="time_merge">Zusammenführen</string>
     <string name="picker_start_title">Wann hat sie begonnen?</string>
@@ -57,7 +57,7 @@
     <string name="impact_level">%1$d · %2$s</string>
     <string name="custom_add_symptom">Eigenes Symptom hinzufügen</string>
     <string name="custom_add_trigger">Eigenen Auslöser hinzufügen</string>
-    <string name="custom_add_chip">+ Eigenes</string>
+    <string name="custom_add_chip">+ Hinzufügen</string>
     <string name="custom_dialog_symptom_title">Eigenes Symptom</string>
     <string name="custom_dialog_trigger_title">Eigener Auslöser</string>
     <string name="custom_dialog_label">Name</string>
@@ -72,7 +72,7 @@
     <string name="past_add">Migräne hinzufügen</string>
     <string name="past_merge_explanation">Beim Zusammenführen wird daraus eine Migräne mit allen Zeiten, Schmerzstärken und Details.</string>
     <string name="past_change_times">Zeiten ändern</string>
-    <string name="picker_past_start_out_of_range">Wähle eine Zeit vor jetzt.</string>
+    <string name="picker_past_start_out_of_range">Wähle eine Zeit in der Vergangenheit.</string>
     <string name="not_found_title">Diese Migräne gibt es nicht mehr</string>
     <string name="not_found_back">Zurück</string>
     <string name="attack_snackbar_undo">Rückgängig</string>

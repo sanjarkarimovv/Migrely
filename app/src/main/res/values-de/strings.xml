@@ -9,7 +9,7 @@
     <string name="notification_daily_text">Schmerzfreien Tag markieren oder Migräne notieren.</string>
     <string name="notification_daily_pain_free">Schmerzfreier Tag</string>
     <string name="notification_daily_log">Migräne notieren</string>
-    <string name="notification_attack_logged">Nicht markiert. Öffne Migrely, um den Tag zu sehen.</string>
+    <string name="notification_attack_logged">Nicht markiert. Sieh in Migrely nach.</string>
     <string name="notification_effect_title">Hat es geholfen?</string>
     <string name="notification_effect_text">Tippe, um in Migrely zu antworten.</string>
     <string name="notification_public_title">Erinnerung</string>

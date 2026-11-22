@@ -5,3 +5,4 @@ Benachrichtigungen	Reminders: notifications-off line, visit channel-off line, op
 Geruchsempfindlich	Attack details: symptom chip; not yet seen (8.1)
 Hirnhautentzündung	Settings > Warning signs: list item 7; not yet seen (8.1)
 Datenschutzerklärung	Settings > Privacy: policy link; not yet seen (8.1)
+Sicherheitshinweis	Paywall: free-stays line under the benefits; not yet seen (8.1)

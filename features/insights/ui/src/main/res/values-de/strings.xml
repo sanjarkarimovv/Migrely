@@ -4,8 +4,8 @@
     <string name="insights_title">Auswertung</string>
     <string name="insights_back">Zurück</string>
     <plurals name="insights_months">
-        <item quantity="one">%d Monat</item>
-        <item quantity="other">%d Monate</item>
+        <item quantity="one">%d Monat</item>
+        <item quantity="other">%d Monate</item>
     </plurals>
     <string name="insights_loading">Deine Einträge werden gelesen</string>
     <string name="insights_percent">%d %%</string>
@@ -20,12 +20,12 @@
         <item quantity="one">Muster erscheinen nach 30 Tagen mit Einträgen: noch %d Tag.</item>
         <item quantity="other">Muster erscheinen nach 30 Tagen mit Einträgen: noch %d Tage.</item>
     </plurals>
-    <string name="insights_triggers_title">Oft zusammen mit deiner Migräne eingetragen</string>
+    <string name="insights_triggers_title">Oft zusammen mit deiner Migräne notiert</string>
     <plurals name="insights_trigger_share">
         <item quantity="one">%1$s — %2$d von %3$d Migräneattacke (%4$s)</item>
         <item quantity="other">%1$s — %2$d von %3$d Migräneattacken (%4$s)</item>
     </plurals>
-    <string name="insights_no_triggers">In diesem Zeitraum wurden keine Auslöser eingetragen.</string>
+    <string name="insights_no_triggers">In diesem Zeitraum wurden keine Auslöser notiert.</string>
     <string name="insights_trigger_stress">Stress</string>
     <string name="insights_trigger_too_little_sleep">Zu wenig Schlaf</string>
     <string name="insights_trigger_too_much_sleep">Zu viel Schlaf</string>
@@ -86,14 +86,14 @@
         <item quantity="other">Diese Tage sind %1$s von %4$s (%2$d von %3$d Tagen).</item>
     </plurals>
     <string name="insights_cycle_text">%1$s %2$s</string>
-    <string name="insights_cycle_window">Die Tage um deine Periode reichen von 2 Tagen vor ihrem Beginn bis zu ihrem dritten Tag.</string>
+    <string name="insights_cycle_window">Die Tage um deine Periode reichen von 2 Tagen vor ihrem Beginn bis einschließlich ihres dritten Tages.</string>
     <string name="insights_medications_title">Wie du deine Medikamente bewertet hast</string>
     <plurals name="insights_helped">
         <item quantity="one">Deutlich oder vollständig geholfen: %1$d von %2$d Antwort (%3$s)</item>
         <item quantity="other">Deutlich oder vollständig geholfen: %1$d von %2$d Antworten (%3$s)</item>
     </plurals>
     <string name="insights_needs_answers">Braucht 3 Antworten (hat %1$d)</string>
-    <string name="insights_no_medications">In diesem Zeitraum wurde keine Akutmedikation eingetragen.</string>
+    <string name="insights_no_medications">In diesem Zeitraum wurde keine Akutmedikation notiert.</string>
     <string name="insights_trends_title">Die letzten 12 Monate</string>
     <string name="insights_trends_note">Die Balken zeigen die Migränetage in jedem Monat.</string>
     <plurals name="insights_migraine_days">
