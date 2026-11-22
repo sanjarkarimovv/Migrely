@@ -1,0 +1,224 @@
+## ADDED Requirements
+
+### Requirement: English and German
+The app SHALL show every word of its own in German when its language is German, and in English otherwise, on every
+screen, dialog, message, notification, content description and launcher shortcut. Words the person typed SHALL stay as
+typed. No other language and no right-to-left layout SHALL be added (BRD EC-L10N-01, EC-L10N-22, D195).
+
+#### Scenario: A phone in German
+- **WHEN** the phone's language is German (Germany) and Migrely is opened
+- **THEN** home, attack mode, History, Insights, Settings, the paywall and every other screen show German words
+
+#### Scenario: The person's own words
+- **WHEN** the app is in German and a migraine has a note, a trigger and a medication typed in English
+- **THEN** they show exactly as typed
+
+#### Scenario: A phone in another language
+- **WHEN** the phone's language is Russian, Uzbek, French or Hebrew with no German or English in its list
+- **THEN** the app is English, dates follow D117 and the layout stays left to right, as before
+
+### Requirement: One rule picks the app's language
+The app's language SHALL be the first language in the phone's language list that the app supports, English or German.
+When it is German, the formatting locale SHALL be that German locale; otherwise D117 SHALL apply unchanged. Screens,
+notifications, channel names and the default locale SHALL follow this one rule (BRD EC-L10N-04, D117, D195).
+
+#### Scenario: German first
+- **WHEN** the phone's list is German (Germany), German (Austria) or German (Switzerland) alone
+- **THEN** the app is German, with dates in that locale
+
+#### Scenario: German after an unsupported language
+- **WHEN** the phone's list is Russian (Russia), then German (Germany)
+- **THEN** the app is German, with dates in German (Germany)
+
+#### Scenario: English before German
+- **WHEN** the phone's list is Russian (Russia), English (United States), then German (Germany)
+- **THEN** the app is English with dates in English (Russia), as before, and its notifications are English too
+
+#### Scenario: English with a German region
+- **WHEN** the phone's language is English (Germany)
+- **THEN** the app is English with dates in English (Germany), as before
+
+### Requirement: The system's app language on Android 13 and newer
+On Android 13 and newer the app SHALL offer English and German in the system's "App language" setting, and that choice
+SHALL win over the phone's language. On Android 8 to 12 the app SHALL follow the phone's language and offer no choice
+inside the app (BRD EC-L10N-05, D195).
+
+#### Scenario: German for Migrely on an English phone
+- **WHEN** on Android 13 or newer the phone is in English and Deutsch is chosen for Migrely in the system settings
+- **THEN** Migrely is German and other apps stay English
+
+#### Scenario: English for Migrely on a German phone
+- **WHEN** on Android 13 or newer the phone is in German and English is chosen for Migrely
+- **THEN** Migrely is English, with dates in that English locale
+
+#### Scenario: The list offered
+- **WHEN** the system's "App language" page for Migrely is opened
+- **THEN** it lists English and Deutsch and no other language
+
+#### Scenario: Android 8 to 12
+- **WHEN** the phone runs Android 8 to 12 in German
+- **THEN** Migrely is German, and switching the phone to English switches Migrely to English
+
+### Requirement: A language change keeps what is on screen
+When the app's language changes while Migrely is open or in the background, the screen SHALL come back in the new
+language and nothing SHALL be lost: a migraine in progress, unsaved typed text with its cursor, the open screen and data
+(BRD EC-L10N-06, D195).
+
+#### Scenario: During a migraine
+- **WHEN** attack mode is open and the language changes from English to German
+- **THEN** attack mode shows again in German with the same start time and the timer still running
+
+#### Scenario: Unsaved typed text
+- **WHEN** a note on Attack details has unsaved text and the language changes
+- **THEN** the text and its cursor are still there in the new language
+
+#### Scenario: After process death
+- **WHEN** the language changes while Migrely is in the background and Android has ended its process
+- **THEN** Migrely opens on the same screen in the new language with nothing lost
+
+### Requirement: Notifications speak the app's language
+Each notification SHALL be written in the app's language at the moment it is shown. Android's notification settings
+SHALL show channel names and descriptions in the app's language after each app start and language change, updating only
+channels that already exist (BRD EC-L10N-07, EC-L10N-19, D195).
+
+#### Scenario: A daily reminder in German
+- **WHEN** the app's language is German and the daily reminder fires
+- **THEN** its title and text are German
+
+#### Scenario: A notification already shown
+- **WHEN** a reminder is in the shade and the language then changes
+- **THEN** it stays in the old language until it is replaced or dismissed, and the next one is in the new language
+
+#### Scenario: Channel names
+- **WHEN** the language changes to German and Migrely is opened once
+- **THEN** Android's notification settings list Migrely's existing channels with German names, and no new channel appears
+
+#### Scenario: After the update to this version
+- **WHEN** a German phone updates from 1.3.x with a reminder planned
+- **THEN** the first opening is German, entries and settings are unchanged, and the planned reminder fires in German
+
+### Requirement: No untranslated text passes the gate
+Every string, plural and string array in every module's default resources SHALL have a German value, or be marked
+`translatable="false"`. Placeholders and array lengths SHALL match English. A German value equal to English SHALL be
+allowed only from a reviewed list. The local gate SHALL fail otherwise (BRD EC-L10N-12, EC-L10N-13, D195).
+
+#### Scenario: A new English-only string
+- **WHEN** a change adds a string to any module's `values/strings.xml` without a German value
+- **THEN** `./gradlew assembleDebug test ktlintCheck detekt lint` fails and names the string
+
+#### Scenario: A module with no German file
+- **WHEN** a module has `values/strings.xml` and no `values-de/strings.xml`
+- **THEN** the gate fails, although Android Lint alone would not see it
+
+#### Scenario: A broken placeholder
+- **WHEN** a German value drops `%1$d` or turns it into `%1$s`, or a German array has another number of items
+- **THEN** the gate fails
+
+#### Scenario: A copied English value
+- **WHEN** a German value is identical to its English one and is not in the reviewed list, which holds words such as
+  "Migrely", "Premium", "PDF", "CSV" and "Stress"
+- **THEN** the gate fails
+
+#### Scenario: Not to translate
+- **WHEN** a string is the app's name or lives only in the debug build
+- **THEN** it is marked `translatable="false"` and the gate passes without a German value
+
+### Requirement: German fits at the largest font
+German text SHALL keep the no-break rule (D181): at 200% font on a 360 dp phone, in portrait and landscape, no label
+SHALL break inside a word, be cut or be ellipsized, and type SHALL NOT shrink. Every German word over 16 letters SHALL
+be on a reviewed list, seen in place at that size. Umlauts, ß and „ “ SHALL be drawn in the brand fonts (BRD
+EC-L10N-02, EC-L10N-14, D181, D195).
+
+#### Scenario: Buttons and chips at 200%
+- **WHEN** the app is German at 200% font on a 360 dp phone, in portrait and landscape
+- **THEN** every button, chip, tab and attack-mode control shows whole words, and none is cut or ellipsized
+
+#### Scenario: A long compound word
+- **WHEN** a German value contains a word over 16 letters, such as "Lichtempfindlichkeit", that is not on the list
+- **THEN** the gate fails, and the word joins the list only after it was seen whole in its place at 200% on 360 dp
+
+#### Scenario: German letters
+- **WHEN** a title in Fraunces or a label in Figtree contains ä, ö, ü, ß or „ “
+- **THEN** they are drawn in that font, with no fallback glyph and no empty box
+
+### Requirement: German health and safety words say what the English says
+Every German health or safety sentence SHALL carry the meaning of its English source and add no claim, time frame or
+number. The emergency line SHALL name the emergency services without a number. Insights SHALL describe what was logged,
+never a cause. `medical-reviewer` SHALL pass every such key before release (BRD EC-L10N-15, D95, D171, D174, D195).
+
+#### Scenario: Warning signs in German
+- **WHEN** the app is German and the Warning signs page is opened
+- **THEN** it lists the same emergency and urgent signs as English, in the same order, and tells the person to call the
+  emergency services, with no phone number
+
+#### Scenario: The overuse warning in German
+- **WHEN** the medication overuse card shows in German
+- **THEN** it says what the English card says about days with attack medication, using the glossary term, and adds no
+  claim
+
+#### Scenario: A key without a pass
+- **WHEN** any German health or safety key has no `medical-reviewer` PASS
+- **THEN** the release is No-Go until it is rewritten and passes
+
+#### Scenario: Clinician review still open
+- **WHEN** the German text ships without a German-speaking clinician's review (T31)
+- **THEN** the BRD records it as a limit, and no screen, listing or page calls the text medically reviewed
+
+### Requirement: German subscription words match English
+The German paywall, trial, renewal, cancellation and privacy words SHALL carry the meaning of the English ones. Prices and
+periods SHALL come from Google Play, and Google's own sheets SHALL show in Google's language (BRD EC-L10N-16, EC-L10N-23,
+D195).
+
+#### Scenario: The paywall in German
+- **WHEN** the app is German and the paywall opens with products loaded
+- **THEN** its words are German, prices and periods are the ones Google returns, and `legal-finance-analyst` has checked
+  the renewal and cancellation words against English
+
+#### Scenario: Google's purchase sheet
+- **WHEN** buy is tapped in the German app
+- **THEN** Google Play's sheet shows in Google's own language and the app adds no text to it
+
+### Requirement: TalkBack in German
+Every content description, state and action label SHALL be German when the app is German. On a phone whose language is
+German, TalkBack SHALL read Migrely in German (BRD EC-L10N-17, D195).
+
+#### Scenario: A German phone with TalkBack
+- **WHEN** the phone is in German and TalkBack moves through home, attack mode and Log medication
+- **THEN** every control's name, state and hint is read in German, and none is English
+
+#### Scenario: German for Migrely on an English phone
+- **WHEN** on Android 13 or newer the phone is English, Migrely is German and TalkBack is on
+- **THEN** QA records which voice reads Migrely's text, and an English voice is a known limit, not a pass
+
+### Requirement: German letters in typed names
+Triggers, medications and notes typed with umlauts or ß SHALL be saved and shown unchanged within the existing length
+limits. The duplicate check SHALL stay as it is (BRD EC-L10N-18, D195).
+
+#### Scenario: A trigger with umlauts
+- **WHEN** the person adds the trigger "Rotwein & Käse" and a medication "Ibuprofen 400"
+- **THEN** both are saved and shown exactly as typed
+
+#### Scenario: ß and SS
+- **WHEN** the person has a trigger "Straße" and adds "STRASSE"
+- **THEN** they are two names, as the duplicate check ignores case only with `Locale.ROOT`
+
+### Requirement: German outside the app follows the app
+The German store listing SHALL be a de-DE translation of the main listing and SHALL promise only what the German app
+does. The site's German page SHALL open only after the German app is live (D148). Swiss German SHALL use the German text.
+No permission SHALL be added (BRD EC-L10N-20, EC-L10N-21, EC-L10N-24, D148, D195).
+
+#### Scenario: The doctor report in the listing
+- **WHEN** the German listing mentions the doctor report
+- **THEN** it does not say the PDF is in German
+
+#### Scenario: The site before the German app is live
+- **WHEN** the German build is not yet live on Google Play
+- **THEN** migrely.health has no German page
+
+#### Scenario: A phone in Swiss German
+- **WHEN** the phone's language is German (Switzerland)
+- **THEN** the app shows the German text, with ß, and dates in the Swiss locale
+
+#### Scenario: Permissions of the German build
+- **WHEN** `./gradlew :app:checkReleasePermissions` runs on this change
+- **THEN** it passes with the same permissions as 1.3.3, and the merged manifest has no INTERNET
