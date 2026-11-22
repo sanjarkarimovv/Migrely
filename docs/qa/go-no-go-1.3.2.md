@@ -1,6 +1,47 @@
 # Release Go/No-Go: Migrely 1.3.2 (versionCode 14)
 
-## Decision
+## Post-tag verdict: NO-GO (2026-11-19)
+
+**QA's verdict after the tag: NO-GO.** It supersedes the GO below; that section is kept as it was.
+
+- **Cause: #259 (S2, accessibility, filed by QA).** This is a 1.3.2 regression from #245's bar stepping aside. On
+  Attack details, in a 360 dp landscape window at 200% font, a TalkBack user opens the note with the usual double
+  tap. Three things then happen:
+  1. The keyboard opens and the top bar steps aside.
+  2. About 1 s later TalkBack's focus moves to "Radio button, 3 of 4" (Impact on your day), and the page scrolls
+     there. 0 of 112 px of the typed line are visible.
+  3. The user's next double tap records an impact level.
+- **Rows** (`migrely-work/qa-245c/rows.jsonl`, `x1`–`x7`; emulator-5580, API 36, Gboard, TalkBack 16 at VERBOSE
+  during the cells and ERROR after, both read back):
+  - **The jump.** On the v1.3.2 code (QA's debug `c1c0afab`, sha256 `9f280590…`, the same product code as tag
+    v1.3.2), opening the keyboard under TalkBack at 360 dp jumped **8 of 8** times over 4 fresh installs (7 by double
+    tap, 1 by `input tap`).
+  - **The write.** After the jump, the next double tap says "Selected". The database read with `sqlite3` shows the
+    past migraine's impact going from **empty to 2**, with its updated-at time changed (`x6-tbdt2`). The second
+    run (`x4`) also said "Selected".
+  - **Control v1.3.1** (debug `f626c2d0`, `fde165db…`): **0 of 4** jump. 40 of 112 px of the line visible, TalkBack
+    stays on the note, database unchanged (`x7-tbdt2`).
+  - **Cause isolated:** the same v1.3.2 build at 411 dp, where the bar stays, does not jump (0 of 1) and keeps the
+    line whole (`x4-tbdt411`). Rotation 1 against 3, the note empty or holding text, the notification shade, and
+    Home-and-back do not produce it.
+- **Why the 1.3.2 rows missed it.** #245's SW1, K1 and K2 rows, and this record's R8 rows, opened the keyboard with
+  TalkBack **off**. Turning TalkBack on afterwards closes Gboard (#238's known trap), so no row ever opened the
+  keyboard by double tap with TalkBack already on. That is the row missing from the acceptance and from this release
+  check.
+- **Not proven:**
+  - the R8 build (`c7a027f6`) and a real phone were not run for #259;
+  - Log medication, Edit medication and Delete all data, which use the same bar code, were not run with the
+    double-tap opening;
+  - overwriting an impact that was already recorded was not tested (the seed had none). If replacing a recorded
+    value counts as data loss, #259 is S1.
+- **Team-lead's decision (2026-11-19):**
+  - v1.3.2 stays tagged and is **never uploaded**; the Desktop AAB copy is removed.
+  - versionCode 14 and 1.3.2 are not reused.
+  - 1.3.3 = develop + the #259 fix only; #255 moves to 1.3.4.
+  - QA retests #259 on the 1.3.3 candidate with the double-tap opening on all four screens, with v1.3.1 as the
+    control.
+
+## Decision (superseded by the post-tag NO-GO above)
 
 **QA's verdict, 2026-11-19 16:30: GO with recorded risks, for `release/1.3.2` @
 c1c0afab2e9f0c3a9331eb1866ce4458a18987a8** (versionCode 14, versionName 1.3.2).

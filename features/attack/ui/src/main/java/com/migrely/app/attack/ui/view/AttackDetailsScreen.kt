@@ -493,8 +493,7 @@ private fun ReadyContents(
                     // higher, and the note's cursor line is kept in view against it (BRD D180 (2), #141).
                     .windowInsetsPadding(viewportInsets)
                     .then(reveal.viewportModifier)
-                    .then(typingSpace.pageModifier)
-                    .pageScroll(scrollState)
+                    .pageScroll(scrollState, typingSpace)
                     .then(keyboardRoom.modifier)
                     .windowInsetsPadding(
                         MigrelyInsets.barsAndKeyboard.only(WindowInsetsSides.Horizontal)

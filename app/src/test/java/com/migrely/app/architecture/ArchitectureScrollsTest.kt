@@ -8,6 +8,10 @@ import org.junit.Test
 private const val ENTRY_POINT_PATH =
     "/designsystem/src/main/java/com/migrely/app/designsystem/layout/PageScroll.kt"
 
+/** The page scroll with a typed field's keyboard follow on the same state, which only the entry point calls (#259). */
+private const val TYPING_SPACE_PATH =
+    "/designsystem/src/main/java/com/migrely/app/designsystem/input/TypingSpace.kt"
+
 private const val PICKER_DIR = "/designsystem/src/main/java/com/migrely/app/designsystem/picker/"
 private const val REMINDERS =
     "/features/reminders/ui/src/main/java/com/migrely/app/reminders/ui/view/RemindersScreen.kt"
@@ -21,6 +25,12 @@ private val RAW_SCROLL = Regex(
         """\b(LazyColumn|LazyRow|LazyVerticalGrid|LazyVerticalStaggeredGrid|LazyHorizontalGrid|""" +
         """LazyHorizontalStaggeredGrid|HorizontalPager|VerticalPager)\s*[({]"""
 )
+
+/** The only lines in production that scroll by Compose's own means, each with its count. */
+private val RAW_SCROLL_SITES = mapOf(ENTRY_POINT_PATH to 1, TYPING_SPACE_PATH to 1)
+
+/** A call of the typing space's page scroll, not its declaration. */
+private val SCROLLING_PAGE_CALL = Regex("""(?<!fun )\bscrollingPage\(""")
 
 /** `PageScroll(exactBounds = false)`, however it is spaced, named or not. */
 private val STEP_ONLY = Regex("""\bPageScroll\(\s*(exactBounds\s*=\s*)?false\s*\)""")
@@ -42,8 +52,9 @@ private fun String.isRawScroll() =
 
 /**
  * A page that scrolls by Compose's own means would keep TalkBack's loop and skip (issue #255, BRD D193): every scroll
- * goes through `PageScroll`'s `pageScroll`, which brings exact bounds and the half step. Only the entry point's file
- * names a raw scroll. Failures name each file and line.
+ * goes through `PageScroll`'s `pageScroll`, which brings exact bounds and the half step. Only the entry point names a
+ * raw scroll, and the typing space's `scrollingPage`, which only the entry point calls (BRD D194). Failures name each
+ * file and line.
  */
 class ArchitectureScrollsTest {
     private val files = Konsist.scopeFromProduction().files
@@ -51,15 +62,34 @@ class ArchitectureScrollsTest {
     @Test
     fun `only the entry point scrolls by Compose's own means`() {
         val raw = files
-            .filter { it.projectPath != ENTRY_POINT_PATH }
             .flatMap { file ->
                 file.text.lines().withIndex()
                     .filter { (_, line) -> line.isRawScroll() }
-                    .map { (index, _) -> "${file.projectPath}:${index + 1}" }
+                    .map { (index, _) -> file.projectPath to index + 1 }
             }
+        val unexpected = raw
+            .filter { (path, _) -> path !in RAW_SCROLL_SITES }
+            .map { (path, line) -> "$path:$line" }
             .sorted()
 
-        assertEquals("raw scrolls: ${raw.size}", emptyList<String>(), raw)
+        assertEquals("raw scrolls: ${unexpected.size}", emptyList<String>(), unexpected)
+        assertEquals(RAW_SCROLL_SITES, raw.groupingBy { (path, _) -> path }.eachCount())
+    }
+
+    @Test
+    fun `only the entry point calls the typing space's page scroll`() {
+        val callers = files
+            .flatMap { file ->
+                file.text.lines().withIndex()
+                    .filter { (_, line) ->
+                        !COMMENT.containsMatchIn(line) && SCROLLING_PAGE_CALL.containsMatchIn(line)
+                    }
+                    .map { file.projectPath }
+            }
+            .groupingBy { it }
+            .eachCount()
+
+        assertEquals(mapOf(ENTRY_POINT_PATH to 1), callers)
     }
 
     @Test

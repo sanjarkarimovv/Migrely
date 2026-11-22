@@ -3,6 +3,23 @@
 Each release's text for Play Console › Create new release › Release notes. Play allows at most 500 characters per
 language. en-US is the default, and other languages fall back to it.
 
+## 1.3.3 (versionCode 15)
+
+1.3.2 never reached users: QA gave NO-GO after the tag, for #259. 1.3.3 ships the same three fixes, D190 (#237), D191
+(#239) and D192 (#245), plus the #259 fix (D194). That fix keeps TalkBack's focus on a field when the keyboard opens, which
+restores the expected behaviour, so it adds no new claim and the 1.3.2 text is reused byte for byte. `medical-reviewer`
+(med-132) checked this exact text on 2026-11-19, and nothing it describes has changed since. It does not say "medically
+reviewed" or "approved" (the clinician sign-off, T31, is open). The text is 497 of 500 characters.
+
+```
+<en-US>
+Fixes on medication screens and with large text:
+• "Medication taken": a successful log now clears an earlier "Couldn't save" message, so it no longer covers what you logged.
+• Edit medication: Save with an empty name now brings Name into view, and TalkBack says "Enter a name."
+• Very large text in landscape: the line you are typing stays above the keyboard in a migraine's details, when logging or editing a medication, and in Delete all data. If needed, the top bar steps aside while you type.
+</en-US>
+```
+
 ## 1.3.2 (versionCode 14)
 
 The text covers `develop` f70b6450 since `v1.3.1`: D190 (#237), D191 (#239) and D192 (#245). `aso-seo-specialist` (aso-132)

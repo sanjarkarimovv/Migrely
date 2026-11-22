@@ -135,7 +135,7 @@ and each such stop SHALL pass the D181 one-name check (BRD EC-UX-80, D181, D193 
 The fix SHALL change only semantics, touch nodes and TalkBack's scroll step. Every screen SHALL look the same to the
 pixel at rest and pressed. Inside exact bounds every clickable, toggleable or selectable node SHALL itself be at least 48×48
 dp (64 dp for attack mode's intensity choices, "Migraine ended", Undo and Dismiss), or its whole cell pitch where cells sit
-closer, from its own size, never from touch-target widening (BRD EC-UX-82, EC-UX-83, D193 (2), (4)).
+closer, from its own size, never from touch-target widening (BRD EC-UX-82, EC-UX-89, D193 (2), (4)).
 
 #### Scenario: Screens look the same
 - **WHEN** screenshots of each changed page are taken at 100% portrait and 200% landscape, before and after the change, at
@@ -207,7 +207,7 @@ bottom bars and dialog buttons SHALL stay outside it, with the system's touch ta
 ### Requirement: One entry point for every vertical scroll
 Every vertical scroll in the app's main code SHALL go through one `designsystem` entry point that applies both parts, or
 the step alone for a picker left out of exact bounds, so no screen keeps its own copy. A raw `verticalScroll(` in main code
-outside that entry point SHALL fail a check in the gate (BRD EC-UX-84, D193 (1), (3), (4)).
+outside that entry point SHALL fail a check in the gate (BRD EC-UX-90, D193 (1), (3), (4)).
 
 #### Scenario: A new scrolling screen
 - **WHEN** a build adds `Modifier.verticalScroll(...)` directly in a feature's main code
@@ -220,7 +220,7 @@ outside that entry point SHALL fail a check in the gate (BRD EC-UX-84, D193 (1),
 ### Requirement: The traversal check can fail
 Each traversal and scroll-step test SHALL be shown red on `develop` f70b6450 before the fix, with a case that passes there,
 and removing either part SHALL turn its tests red again. A Compose change to the test-only traversal data SHALL fail loudly,
-never pass silently (BRD EC-UX-84, D193 (7)).
+never pass silently (BRD EC-UX-90, D193 (7)).
 
 #### Scenario: Red before the fix
 - **WHEN** the order and scroll tests run on `develop` f70b6450

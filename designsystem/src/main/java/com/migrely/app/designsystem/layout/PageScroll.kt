@@ -24,6 +24,7 @@ import androidx.compose.ui.platform.ViewConfiguration
 import androidx.compose.ui.semantics.SemanticsPropertyReceiver
 import androidx.compose.ui.semantics.getScrollViewportLength
 import androidx.compose.ui.unit.DpSize
+import com.migrely.app.designsystem.input.TypingSpace
 import com.migrely.app.designsystem.snackbar.LocalMessageCover
 import com.migrely.app.designsystem.snackbar.MessageCover
 import kotlin.math.floor
@@ -76,6 +77,13 @@ interface PageScrollScope {
      * left scrolls to the end. Finger scroll, fling, Tab and Page Up or Down do not use the step.
      */
     fun Modifier.pageScroll(state: ScrollState): Modifier
+
+    /**
+     * [pageScroll] for a page with fields typed in: [typingSpace] scrolls it with the same [state] and keeps the
+     * focused field's line in view as the keyboard grows, in the layout pass (BRD D194), with the same step and exact
+     * bounds, so TalkBack keeps its focus on the field (#259) and its order on the page (#255).
+     */
+    fun Modifier.pageScroll(state: ScrollState, typingSpace: TypingSpace): Modifier
 }
 
 private class PageScrollScopeImpl(
@@ -85,6 +93,9 @@ private class PageScrollScopeImpl(
     // The step's node first: on one layout node the outer semantics win, and it measures the scroll's viewport.
     override fun Modifier.pageScroll(state: ScrollState): Modifier =
         this then TalkBackStepElement(obscuring, cover) then Modifier.verticalScroll(state)
+
+    override fun Modifier.pageScroll(state: ScrollState, typingSpace: TypingSpace): Modifier =
+        this then TalkBackStepElement(obscuring, cover) then typingSpace.scrollingPage(state)
 }
 
 /** The configuration around the page, with no minimum touch target: nothing else may differ (design D2). */

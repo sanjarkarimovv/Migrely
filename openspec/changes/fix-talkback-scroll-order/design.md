@@ -1,7 +1,7 @@
 # Design
 
 Release 1.3.3 (team-lead 2026-11-19; 1.3.2 is QA-accepted and not widened), issue #255 (S3, accessibility, pre-existing on
-v1.3.1 and `develop`). BRD D193, EC-UX-78 to EC-UX-84; guards D178, D181, D189, D191, D192. Root cause and prototypes:
+v1.3.1 and `develop`). BRD D193, EC-UX-78 to EC-UX-82, EC-UX-89 and EC-UX-90; guards D178, D181, D189, D191, D192. Root cause and prototypes:
 eng-255, `migrely-work/255/eng-255-report.md` (device walks, TalkBack order dumps, `prototype/proto2.diff`,
 `prototype/TalkBackScrollStep2.kt`). This file binds what the person hears and what QA checks; the code shape is the
 engineer's call within it.
@@ -48,8 +48,8 @@ name" is a separate requirement.
 ## Goals and non-goals
 
 Goals: every scrolling page and dialog walks end to end, each stop once and named (EC-UX-78 to EC-UX-81); nothing drawn
-changes and no touch target shrinks below 48 dp (EC-UX-82, EC-UX-83); one shared mechanism with a guard against new raw
-scrolls (EC-UX-84); every check can fail.
+changes and no touch target shrinks below 48 dp (EC-UX-82, EC-UX-89); one shared mechanism with a guard against new raw
+scrolls (EC-UX-90); every check can fail.
 
 Non-goals: blanket naming changes on stops that keep their name when cut; reporting to Google (owner's send; note only), any visual, text or motion change, new accessibility features,
 lazy lists and horizontal scrolls (none exist), #252, #254.

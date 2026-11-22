@@ -45,7 +45,7 @@ pages of 17 screens, 6 in dialogs), no `LazyColumn`, no horizontal scroll. BRD d
   unchanged.
 - **Guards.** #238 (closing the keyboard never scrolls, D189), #245 (`TopBarAside`, `TypingSpace`, D192), #239 (one
   announcement per refused Save, D191), D181 (one spoken name, Tab order), D178 (order: top bar, message, content).
-- **Records.** BRD D193, EC-UX-78 to EC-UX-84, §13 row 57. `app-shell` gets eight ADDED requirements.
+- **Records.** BRD D193, EC-UX-78 to EC-UX-82, EC-UX-89 and EC-UX-90, §13 row 57. `app-shell` gets eight ADDED requirements.
 
 ## Out of scope
 
@@ -83,6 +83,6 @@ None.
   `qa-engineer` checks `.maestro/` selectors (likely `attack-details/`, `custom-tags/`, `attack-logging/`, `past-attacks/`,
   `a11y-tour/custom-tag-dialog.yaml`, `device/details-*.yaml`, more if the sweep reaches buttons and rows).
 - **No change to:** manifest, permissions, strings, Room schema, backup, Free or Premium.
-- **BRD:** D193, EC-UX-78 to EC-UX-84, §13 row 57.
+- **BRD:** D193, EC-UX-78 to EC-UX-82, EC-UX-89 and EC-UX-90, §13 row 57.
 - **Issue:** `Refs #255` in every commit and the PR, never a closing keyword: QA filed #255 and closes it after the retest.
 - **Release:** 1.3.3 (team-lead decision 2026-11-19), new tracker row. Branch `bugfix/255-details-talkback-order`.
