@@ -85,6 +85,7 @@ class TypingSpaceBarTest {
         rule.setContent {
             MigrelyTheme {
                 val space = rememberTypingSpace()
+                val pageScroll = rememberScrollState()
                 Column(Modifier.fillMaxSize()) {
                     if (paintedBar) {
                         Box(
@@ -116,8 +117,7 @@ class TypingSpaceBarTest {
                             .windowInsetsPadding(
                                 MigrelyInsets.barsAndKeyboard.only(WindowInsetsSides.Bottom)
                             )
-                            .then(space.pageModifier)
-                            .verticalScroll(rememberScrollState())
+                            .then(space.scrollingPage(pageScroll))
                             .padding(horizontal = 16.dp)
                     ) {
                         TextButton(onClick = {}) { Text(ABOVE) }

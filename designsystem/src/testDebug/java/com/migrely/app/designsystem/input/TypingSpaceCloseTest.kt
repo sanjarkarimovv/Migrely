@@ -101,8 +101,7 @@ class TypingSpaceCloseTest {
                         Modifier
                             .fillMaxSize()
                             .windowInsetsPadding(insets)
-                            .then(space.pageModifier)
-                            .verticalScroll(scroll)
+                            .then(space.scrollingPage(scroll))
                             .then(room.modifier)
                             .padding(horizontal = 16.dp)
                     ) {
