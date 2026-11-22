@@ -351,12 +351,14 @@ private fun DayCell(
         contentDescription = day.description
         if (day.isSelected) stateDescription = chosenStateDescription
     }
+    // Merging, with no action: Compose then gives the day its place in TalkBack's traversal data, after the day
+    // before it. Without it TalkBack placed the day by rules of its own, out of the calendar's order (#255 finding
+    // 6.2-F1, also on develop for the days to come).
+    val futureWords = Modifier.semantics(mergeDescendants = true) {}
     Box(
         // A day that can be chosen: its words merged into the clickable rather than replacing it, so it stays
         // focusable for keyboards and switch access (BRD EC-UX-19); the day number inside is cleared so the
-        // description is read once. A day that cannot be chosen has no touch area and no place in TalkBack's
-        // traversal data: TalkBack orders it by its bounds, so its words stay on the drawn cell, inside the calendar,
-        // as before the pitch slot (#255 finding 6.2-F1).
+        // description is read once. A day that cannot be chosen has no touch area; its words are on the drawn cell.
         modifier = modifier
             .then(
                 if (selectable) {
@@ -381,7 +383,7 @@ private fun DayCell(
         Box(
             modifier = Modifier
                 .aspectRatio(1f)
-                .then(if (selectable) Modifier else words)
+                .then(if (selectable) Modifier else futureWords.then(words))
                 .clip(CellShape)
                 .indication(cellInteractions, LocalIndication.current)
                 .then(ring)

@@ -24,6 +24,9 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import com.migrely.app.designsystem.layout.PageScroll
 import com.migrely.app.designsystem.theme.MigrelyTheme
+import com.migrely.app.test.talkback.TalkBackTree
+import com.migrely.app.test.talkback.mergedNodes
+import com.migrely.app.test.talkback.turnOnTalkBack
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -168,13 +171,19 @@ class MonthSkyCalendarPitchTest {
 
     @Test
     @Config(sdk = [35], qualifiers = "w360dp-h800dp")
-    fun `A day that cannot be chosen keeps its words on its drawn cell`() {
-        // #255 finding 6.2-F1: such a day has no place in Compose's traversal data, so TalkBack orders it by its
-        // bounds; spread over the pitch slot past the calendar's edge, TalkBack put Saturday 21 out of order.
+    fun `TalkBack reads every day in order, the days that cannot be chosen too`() {
+        // #255 finding 6.2-F1: a day that cannot be chosen had no place in Compose's traversal data, so TalkBack placed
+        // it by rules of its own: inside a page's exact bounds Saturday 21 came between "Period today" and the month,
+        // and on develop too the days to come were read before the weeks above them.
+        rule.runOnUiThread { rule.activity.turnOnTalkBack() }
         show(lastSelectable = 20)
-        val gap = with(rule.density) { GAP_DP.dp.toPx() }
-        val chosen = rule.onNodeWithContentDescription("Day 20").fetchSemanticsNode().boundsInRoot
-        val future = rule.onNodeWithContentDescription("Day 21").fetchSemanticsNode().boundsInRoot
-        assertEquals("the chosen day's slot less a gap", chosen.width - gap, future.width, 1f)
+        val days = (1..DAYS).associateBy { day ->
+            rule.onNodeWithContentDescription("Day $day").fetchSemanticsNode().id
+        }
+        val ids = rule.mergedNodes().keys
+        var order: List<Int> = emptyList()
+        rule.runOnUiThread { order = TalkBackTree(rule.activity).order(ids) }
+
+        assertEquals((1..DAYS).toList(), order.mapNotNull(days::get))
     }
 }
