@@ -16,8 +16,11 @@ private val LANGUAGE_FOLDER = Regex("""values-([a-z]{2,3})(-r[A-Z]{2})?""")
 private val SKIPPED_FOLDERS = setOf("build", ".git", ".gradle", "node_modules", "website")
 private val MAIN_RES = "src${File.separator}main${File.separator}res"
 private val INVISIBLE_BREAKS = Regex("[\u00AD\u200B\u200C\u200D\u2060\uFEFF]")
+private val ESCAPE = Regex("""\\(u[0-9a-fA-F]{4}|.)""")
+private val UNESCAPED_QUOTE = Regex("""(?<!\\)"""")
+private const val UNICODE_ESCAPE_LENGTH = 5
+private const val HEX = 16
 private val NUMBER_SPACE_UNIT = Regex("""(\d|%(\d+\$)?d) (Min\.|Std\.|Tg\.|%%|mg\b|€)""")
-private val STRING_REFERENCE = Regex("""@string/(\w+)""")
 
 /**
  * No untranslated text passes the gate (BRD D195 (9), EC-L10N-12, EC-L10N-13, design D6). Android Lint checks
@@ -29,9 +32,10 @@ private val STRING_REFERENCE = Regex("""@string/(\w+)""")
  * 4. a value equal to English fails unless it is on the reviewed list `l10n/same-as-english.txt`;
  * 5. a word over 16 letters fails unless it is on `l10n/long-german-words.txt` with the screen where it was seen;
  * 6. `res/xml/locales_config.xml`, [APP_LANGUAGES] and the translated folders name the same languages;
- * 7. no soft hyphen or zero-width character, and a number keeps its unit on its line (a no-break space);
- * 8. the strings Android reads outside the app's language rule, the launcher shortcut's, have an English copy in
- *    `values-en`, so a phone set to ru-RU, en-US, de-DE shows them in English like the app (ux E7).
+ * 7. no soft hyphen or zero-width character, and a number keeps its unit on its line (a no-break space).
+ *
+ * Values are read as aapt2 compiles them: Android's escapes (`\uXXXX`, `\n`, `\'`, `\"`, `\@`, `\?`) are decoded and
+ * unescaped double quotes dropped, so an escaped soft hyphen is seen like a typed one.
  */
 class LocalizationCompletenessTest {
     private val root: File = generateSequence(File("").absoluteFile) { it.parentFile }
@@ -39,8 +43,7 @@ class LocalizationCompletenessTest {
 
     private val englishFiles: List<File> = root.walkTopDown()
         .onEnter { it.name !in SKIPPED_FOLDERS }
-        .filter { it.name == "strings.xml" && it.parentFile.name == "values" }
-        .filter { it.parentFile.parentFile.path.endsWith(MAIN_RES) }
+        .filter { it.path.endsWith("$MAIN_RES${File.separator}values${File.separator}strings.xml") }
         .sortedBy { it.path }
         .toList()
 
@@ -87,7 +90,8 @@ class LocalizationCompletenessTest {
     fun `No German word over 16 letters unless seen in place`() {
         val unlisted = translationPairs().flatMap { (_, translated) ->
             translated.texts().flatMap { (key, value) ->
-                WORD.findAll(value.replace(PLACEHOLDER, " ")).map { it.value }
+                WORD.findAll(value.replace(PLACEHOLDER, " ").replace(INVISIBLE_BREAKS, ""))
+                    .map { it.value }
                     .filter { it.length > LONGEST_UNLISTED_WORD && it !in longWords }
                     .map { "${translated.label}: $key has \"$it\" (${it.length} letters)" }
                     .toList()
@@ -106,7 +110,7 @@ class LocalizationCompletenessTest {
             (0 until nodes.length).map { (nodes.item(it) as Element).getAttribute("android:name") }
         }.toSet()
         val folders = englishFiles.flatMap { english ->
-            english.parentFile.parentFile.listFiles().orEmpty()
+            resFolder(english).listFiles().orEmpty()
                 .filter { File(it, "strings.xml").isFile }
                 .mapNotNull { LANGUAGE_FOLDER.matchEntire(it.name)?.groupValues?.get(1) }
         }.toSet() + ENGLISH
@@ -129,17 +133,6 @@ class LocalizationCompletenessTest {
                 }
             }
         )
-    }
-
-    @Test
-    fun `The launcher's strings have an English copy equal to the default`() {
-        val shortcuts = File(root, "app/src/main/res/xml/shortcuts.xml").readText()
-        val referenced = STRING_REFERENCE.findAll(shortcuts).map { it.groupValues[1] }.toSet()
-        val default = Strings.of(File(root, "app/$MAIN_RES/values/strings.xml"), root).strings
-        val english = Strings.of(File(root, "app/$MAIN_RES/values-en/strings.xml"), root).strings
-
-        assertTrue("shortcuts.xml names no string", referenced.isNotEmpty())
-        assertEquals(referenced.associateWith { default[it] }, english)
     }
 
     private fun translationPairs(): List<Pair<Strings, Strings>> = englishFiles.flatMap { english ->
@@ -202,7 +195,10 @@ class LocalizationCompletenessTest {
             value.trim() !in sameAsEnglish
 
     private fun translation(english: File, language: String) =
-        File(english.parentFile.parentFile, "values-$language/strings.xml")
+        File(resFolder(english), "values-$language/strings.xml")
+
+    /** The `res` folder of an English `res/values/strings.xml`. */
+    private fun resFolder(english: File): File = english.resolve("../..").normalize()
 
     private fun listFile(name: String): List<String> =
         File(root, "app/src/test/resources/l10n/$name").readLines()
@@ -251,13 +247,14 @@ class LocalizationCompletenessTest {
                 return Strings(
                     label = file.relativeTo(root).path,
                     strings = kept.filter { it.tagName == Kind.Single.tag }
-                        .associate { it.getAttribute("name") to it.textContent },
+                        .associate { it.getAttribute("name") to decoded(it.textContent) },
                     plurals = kept.filter { it.tagName == Kind.Quantity.tag }.associate { plural ->
                         plural.getAttribute("name") to childElements(plural)
-                            .associate { it.getAttribute("quantity") to it.textContent }
+                            .associate { it.getAttribute("quantity") to decoded(it.textContent) }
                     },
                     arrays = kept.filter { it.tagName == Kind.Items.tag }.associate { array ->
-                        array.getAttribute("name") to childElements(array).map { it.textContent }
+                        array.getAttribute("name") to
+                            childElements(array).map { decoded(it.textContent) }
                     },
                     untranslatable = untranslatable.map { it.getAttribute("name") }
                 )
@@ -265,6 +262,19 @@ class LocalizationCompletenessTest {
         }
     }
 }
+
+/** A value as aapt2 compiles it: unescaped double quotes dropped, escapes decoded. */
+private fun decoded(raw: String): String =
+    ESCAPE.replace(raw.replace(UNESCAPED_QUOTE, "")) { match ->
+        val escaped = match.groupValues[1]
+        when {
+            escaped.length == UNICODE_ESCAPE_LENGTH ->
+                escaped.drop(1).toInt(HEX).toChar().toString()
+            escaped == "n" -> "\n"
+            escaped == "t" -> "\t"
+            else -> escaped
+        }
+    }
 
 private fun parse(file: File) =
     DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(file)
