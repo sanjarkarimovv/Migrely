@@ -33,9 +33,10 @@ import com.migrely.app.designsystem.motion.rememberReduceMotion
  * dialog title's style, is a heading, and names the pane for TalkBack. [modifier] applies to the visible area, before
  * the scroll.
  *
- * While more lies below or above, a soft fade in the dialog's colour shows it at that edge (ux F6): a person in a
- * migraine does not explore a dialog for hidden controls. It eases in and out, at once with reduced motion, draws over
- * the content only, and has no semantics.
+ * While more lies below or above, that edge shows it (ux F6): a person in a migraine does not explore a dialog for
+ * hidden controls. A soft fade in the dialog's colour softens cut text, and Material's scrolling-dialog divider, a 1 dp
+ * line in outlineVariant, is the cue that shows even over a blank-looking peek (R04r). Both ease in and out, at once
+ * with reduced motion, draw over the content only, and have no semantics.
  */
 @Composable
 fun ScrollingDialogContent(
@@ -44,19 +45,20 @@ fun ScrollingDialogContent(
     content: @Composable ColumnScope.() -> Unit
 ) {
     val scrollState = rememberScrollState()
-    val fades = edgeFades(scrollState.canScrollBackward, scrollState.canScrollForward)
+    val cues = edgeCues(scrollState.canScrollBackward, scrollState.canScrollForward)
     val fadeSpec: AnimationSpec<Float> = if (rememberReduceMotion()) snap() else tween(FADE_MILLIS)
     val topFade by animateFloatAsState(
-        targetValue = if (fades.top) 1f else 0f,
+        targetValue = if (cues.top) 1f else 0f,
         animationSpec = fadeSpec,
         label = "topFade"
     )
     val bottomFade by animateFloatAsState(
-        targetValue = if (fades.bottom) 1f else 0f,
+        targetValue = if (cues.bottom) 1f else 0f,
         animationSpec = fadeSpec,
         label = "bottomFade"
     )
     val surface = AlertDialogDefaults.containerColor
+    val divider = MaterialTheme.colorScheme.outlineVariant
     PageScroll {
         // The top padding leaves room for the title's tall letters, drawn above its line at large fonts.
         Column(
@@ -64,6 +66,7 @@ fun ScrollingDialogContent(
                 .drawWithContent {
                     drawContent()
                     val fade = FADE_HEIGHT.toPx().coerceAtMost(size.height / 2)
+                    val line = DIVIDER_THICKNESS.toPx()
                     if (topFade > 0f) {
                         drawRect(
                             Brush.verticalGradient(
@@ -72,6 +75,7 @@ fun ScrollingDialogContent(
                             ),
                             size = Size(size.width, fade)
                         )
+                        drawRect(divider.copy(alpha = topFade), size = Size(size.width, line))
                     }
                     if (bottomFade > 0f) {
                         drawRect(
@@ -82,6 +86,11 @@ fun ScrollingDialogContent(
                             ),
                             topLeft = Offset(0f, size.height - fade),
                             size = Size(size.width, fade)
+                        )
+                        drawRect(
+                            divider.copy(alpha = bottomFade),
+                            topLeft = Offset(0f, size.height - line),
+                            size = Size(size.width, line)
                         )
                     }
                 }
@@ -102,11 +111,12 @@ fun ScrollingDialogContent(
     }
 }
 
-/** Which edges of a scrolling dialog area show a fade: the ones with more content beyond them. */
-internal data class EdgeFades(val top: Boolean, val bottom: Boolean)
+/** Which edges of a scrolling dialog area show the fade and the divider: the ones with more content beyond them. */
+internal data class EdgeCues(val top: Boolean, val bottom: Boolean)
 
-internal fun edgeFades(canScrollBackward: Boolean, canScrollForward: Boolean) =
-    EdgeFades(top = canScrollBackward, bottom = canScrollForward)
+internal fun edgeCues(canScrollBackward: Boolean, canScrollForward: Boolean) =
+    EdgeCues(top = canScrollBackward, bottom = canScrollForward)
 
 private const val FADE_MILLIS = 150
 private val FADE_HEIGHT = 24.dp
+private val DIVIDER_THICKNESS = 1.dp
