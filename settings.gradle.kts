@@ -25,6 +25,7 @@ include(":features:patterns:domain")
 
 setOf(
     "ui",
+    "ui-test",
     "instrumentation-test", 
     "presentation",
     "presentation-test",

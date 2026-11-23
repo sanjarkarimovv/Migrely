@@ -20,7 +20,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -52,6 +51,7 @@ import androidx.compose.ui.unit.dp
 import com.migrely.app.designsystem.icon.MigrelyIcons
 import com.migrely.app.designsystem.input.TapGuard
 import com.migrely.app.designsystem.layout.MigrelyInsets
+import com.migrely.app.designsystem.layout.PageScroll
 import com.migrely.app.designsystem.picker.DateTimePickerLabels
 import com.migrely.app.designsystem.picker.MigrelyDateTimePicker
 import com.migrely.app.designsystem.sky.SkyAppearance
@@ -126,18 +126,20 @@ private fun StackedAttackLayout(
     modifier: Modifier
 ) {
     Column(modifier = modifier) {
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .verticalScroll(rememberScrollState())
-        ) {
-            Spacer(Modifier.height(16.dp))
-            RainCard(startedAt = startedAt, reduceMotion = reduceMotion) {
-                actions.onAttackDetails(attack.id)
-            }
-            if (attack.longAttackCheckDue) {
+        PageScroll {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .pageScroll(rememberScrollState())
+            ) {
                 Spacer(Modifier.height(16.dp))
-                LongAttackCheckCard(attack = attack, nowMillis = nowMillis, actions = actions)
+                RainCard(startedAt = startedAt, reduceMotion = reduceMotion) {
+                    actions.onAttackDetails(attack.id)
+                }
+                if (attack.longAttackCheckDue) {
+                    Spacer(Modifier.height(16.dp))
+                    LongAttackCheckCard(attack = attack, nowMillis = nowMillis, actions = actions)
+                }
             }
         }
         MoveStartOptions(onMoveStartEarlier = actions.onMoveStartEarlier)
@@ -164,21 +166,27 @@ private fun SideBySideAttackLayout(
             // While a message shows over this column, the column's visible part starts below it, so no line is
             // covered, scrolled or not (BRD D52). The column's own top space then separates its first line from the
             // message.
-            Column(
-                modifier = Modifier
-                    .clearOfMessage(messageBottom)
-                    .verticalScroll(rememberScrollState())
-            ) {
-                Spacer(Modifier.height(16.dp))
-                AttackGuidance(startedAt = startedAt, textAlign = TextAlign.Start) {
-                    actions.onAttackDetails(attack.id)
-                }
-                if (attack.longAttackCheckDue) {
+            PageScroll {
+                Column(
+                    modifier = Modifier
+                        .clearOfMessage(messageBottom)
+                        .pageScroll(rememberScrollState())
+                ) {
                     Spacer(Modifier.height(16.dp))
-                    LongAttackCheckCard(attack = attack, nowMillis = nowMillis, actions = actions)
+                    AttackGuidance(startedAt = startedAt, textAlign = TextAlign.Start) {
+                        actions.onAttackDetails(attack.id)
+                    }
+                    if (attack.longAttackCheckDue) {
+                        Spacer(Modifier.height(16.dp))
+                        LongAttackCheckCard(
+                            attack = attack,
+                            nowMillis = nowMillis,
+                            actions = actions
+                        )
+                    }
+                    Spacer(Modifier.height(16.dp))
+                    MoveStartOptions(onMoveStartEarlier = actions.onMoveStartEarlier)
                 }
-                Spacer(Modifier.height(16.dp))
-                MoveStartOptions(onMoveStartEarlier = actions.onMoveStartEarlier)
             }
             // The column's controls move with it, so a tap while it moves could land on a different one: a quick
             // second "2 h earlier" after a rejected move, say (review of D52).
@@ -188,13 +196,15 @@ private fun SideBySideAttackLayout(
                 modifier = Modifier.matchParentSize()
             )
         }
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .verticalScroll(rememberScrollState())
-        ) {
-            Spacer(Modifier.height(16.dp))
-            AttackControls(attack = attack, actions = actions)
+        PageScroll {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .pageScroll(rememberScrollState())
+            ) {
+                Spacer(Modifier.height(16.dp))
+                AttackControls(attack = attack, actions = actions)
+            }
         }
     }
 }

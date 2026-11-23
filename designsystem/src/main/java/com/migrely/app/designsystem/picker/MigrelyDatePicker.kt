@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDefaults
 import androidx.compose.material3.DatePickerState
@@ -39,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogWindowProvider
 import com.migrely.app.designsystem.dialog.MigrelyDialog
 import com.migrely.app.designsystem.format.MigrelyDateFormat
+import com.migrely.app.designsystem.layout.PageScroll
 import java.time.LocalDate
 
 /** The words the day picker shows; the calling feature owns them as string resources. */
@@ -146,17 +146,19 @@ internal fun DatePickerScreen(
                 val headerShown =
                     state.displayMode != DisplayMode.Input ||
                         maxHeight >= ROOM_FOR_HEADER_WHILE_TYPING
-                DatePicker(
-                    state = state,
-                    modifier = Modifier.verticalScroll(rememberScrollState()),
-                    title = null,
-                    headline = if (headerShown) {
-                        { Headline(picked?.utcDate(), labels.none, today) }
-                    } else {
-                        null
-                    },
-                    showModeToggle = headerShown
-                )
+                PageScroll(exactBounds = false) {
+                    DatePicker(
+                        state = state,
+                        modifier = Modifier.pageScroll(rememberScrollState()),
+                        title = null,
+                        headline = if (headerShown) {
+                            { Headline(picked?.utcDate(), labels.none, today) }
+                        } else {
+                            null
+                        },
+                        showModeToggle = headerShown
+                    )
+                }
             }
         }
     }

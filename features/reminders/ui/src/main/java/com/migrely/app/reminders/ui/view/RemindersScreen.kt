@@ -30,7 +30,6 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -77,6 +76,9 @@ import com.migrely.app.architecture.ui.view.ScreenLeaveObserver
 import com.migrely.app.designsystem.dialog.MigrelyDialog
 import com.migrely.app.designsystem.icon.MigrelyIcons
 import com.migrely.app.designsystem.layout.MigrelyInsets
+import com.migrely.app.designsystem.layout.PageScroll
+import com.migrely.app.designsystem.layout.ownWords
+import com.migrely.app.designsystem.layout.wordsShownOnly
 import com.migrely.app.designsystem.motion.rememberReduceMotion
 import com.migrely.app.designsystem.picker.DatePickerLabels
 import com.migrely.app.designsystem.picker.MigrelyDatePicker
@@ -344,30 +346,32 @@ fun RemindersContents(
     ) {
         Column(Modifier.fillMaxSize()) {
             Box(contentAlignment = Alignment.TopCenter, modifier = Modifier.fillMaxSize()) {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier
-                        .widthIn(max = CONTENT_MAX_WIDTH)
-                        .fillMaxWidth()
-                        .windowInsetsPadding(
-                            MigrelyInsets.bars.only(
-                                WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
+                PageScroll {
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier
+                            .widthIn(max = CONTENT_MAX_WIDTH)
+                            .fillMaxWidth()
+                            .windowInsetsPadding(
+                                MigrelyInsets.bars.only(
+                                    WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
+                                )
                             )
-                        )
-                        .verticalScroll(rememberScrollState())
-                        .padding(16.dp)
-                ) {
-                    when (viewState) {
-                        RemindersViewStateUiModel.Loading -> Unit
-                        is RemindersViewStateUiModel.Ready -> ReminderRows(
-                            viewState.reminders,
-                            actions
-                        )
-                        RemindersViewStateUiModel.Unavailable -> Text(
-                            text = stringResource(R.string.reminders_unavailable),
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                            .pageScroll(rememberScrollState())
+                            .padding(16.dp)
+                    ) {
+                        when (viewState) {
+                            RemindersViewStateUiModel.Loading -> Unit
+                            is RemindersViewStateUiModel.Ready -> ReminderRows(
+                                viewState.reminders,
+                                actions
+                            )
+                            RemindersViewStateUiModel.Unavailable -> Text(
+                                text = stringResource(R.string.reminders_unavailable),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 }
             }
@@ -492,13 +496,15 @@ private fun SwitchRow(
             .fillMaxWidth()
             .heightIn(min = 56.dp)
             .toggleable(value = checked, role = Role.Switch, onValueChange = onCheckedChange)
+            .ownWords(title)
             .padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 title,
                 style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.wordsShownOnly()
             )
             Text(
                 summary,
@@ -583,24 +589,32 @@ private fun TimeDialog(minuteOfDay: Int, onPick: (Int) -> Unit, onDismiss: () ->
             shape = RoundedCornerShape(28.dp),
             color = MaterialTheme.colorScheme.surfaceContainerHigh
         ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier
-                    .verticalScroll(rememberScrollState())
-                    .padding(24.dp)
-            ) {
-                Text(
-                    text = stringResource(R.string.reminders_picker_title),
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(bottom = 16.dp)
-                )
-                TimePicker(state = state, layoutType = TimePickerLayoutType.Vertical)
-                Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
-                    TextButton(onClick = onDismiss) {
-                        Text(stringResource(R.string.reminders_picker_cancel))
-                    }
-                    TextButton(onClick = { onPick(state.hour * MINUTES_PER_HOUR + state.minute) }) {
-                        Text(stringResource(R.string.reminders_picker_ok))
+            // Material's time picker has controls under 48 dp: the half step only (design D5 T3, BRD D193).
+            PageScroll(exactBounds = false) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier
+                        .pageScroll(rememberScrollState())
+                        .padding(24.dp)
+                ) {
+                    Text(
+                        text = stringResource(R.string.reminders_picker_title),
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    )
+                    TimePicker(state = state, layoutType = TimePickerLayoutType.Vertical)
+                    Row(
+                        horizontalArrangement = Arrangement.End,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        TextButton(onClick = onDismiss) {
+                            Text(stringResource(R.string.reminders_picker_cancel))
+                        }
+                        TextButton(onClick = {
+                            onPick(state.hour * MINUTES_PER_HOUR + state.minute)
+                        }) {
+                            Text(stringResource(R.string.reminders_picker_ok))
+                        }
                     }
                 }
             }
