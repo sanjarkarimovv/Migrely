@@ -31,8 +31,9 @@ for about one day of engineering, and the larger PDF work is split out.
   checks subscription and privacy keys. A German-speaking clinician (T31) and a native linguist are recorded limits.
 - **Notifications and the launcher (D195 (15), (16)):** the text notifications expand to their full text
   (`BigTextStyle`); the visit notification's date follows the app's formatting locale, a visible fix for English users on
-  non-English phones (D117 already named notifications); the two static shortcut labels also live in `values-en`, so the
-  launcher matches the app for `[ru-RU, en-US, de-DE]`.
+  non-English phones (D117 already named notifications). The static launcher shortcut label is resolved by Android, not
+  by our rule: on `[tr-TR, de-DE]` or `[ru-RU, de-DE]` it can stay English beside a German app (known limit; a
+  `values-en` attempt was removed after code review because it changed nothing).
 - **Layout fixes German needs:** where a layout passes in English and fails in German at the same settings (predicted:
   the onboarding header, the date pickers' top row, two-line top bar titles), it is fixed in this change, shorter copy
   first, never smaller type. Failures English shares become issues, except on safety paths.
@@ -73,12 +74,14 @@ for about one day of engineering, and the larger PDF work is split out.
 
 - **Code:** `:app` `locale/FormattingLocaleResolver.kt`, `locale/FormattingLocales.kt` (`localizedContext`),
   `MigrelyApplication.kt` (channel refresh), `datasource/notification/NotificationDataSourceImpl.kt`, `di/BackupModule.kt`
-  (system locale for the CSV separator), `res/xml/locales_config.xml`, `AndroidManifest.xml` (`android:localeConfig`),
-  `res/values/strings.xml` (`app_name` not translatable), `res/values-en/strings.xml` (two shortcut labels),
-  `app/lint.xml`, `src/debug/res/values/strings.xml` (not translatable);
+  and `locale/SystemLocale.kt` (system language for the CSV separator: `LocaleManager.getSystemLocales()` on API 33+,
+  the system configuration below), `res/xml/locales_config.xml`, `AndroidManifest.xml` (`android:localeConfig`),
+  `res/values/strings.xml` (`app_name` not translatable), `src/debug/res/values/strings.xml` (not
+  translatable);
   `values-de/strings.xml` in `app` and the 11 feature `ui` modules; `features/report/ui` (one line and its string).
-- **Tests:** `FormattingLocaleResolverTest`, a `FormattingLocales` Robolectric test, `LocalizationCompletenessTest` with
-  two reviewed lists in `app/src/test/resources/l10n/`.
+- **Tests:** `FormattingLocaleResolverTest`, a `FormattingLocales` Robolectric test, `SystemLocaleTest`,
+  `NotificationExpandedTextTest`, `NotificationLockScreenGermanTest`, `LocalizationCompletenessTest` with two reviewed
+  lists in `app/src/test/resources/l10n/`.
 - **No change to:** permissions (proved by `:app:checkReleasePermissions`), INTERNET (none), Room schema, backup, Free and
   Premium, navigation, domain and presentation layers.
 - **Process:** every later change that adds a string must add its German value (the gate enforces it). T72 adds 15.

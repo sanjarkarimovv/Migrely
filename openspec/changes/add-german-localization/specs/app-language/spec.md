@@ -2,17 +2,21 @@
 
 ### Requirement: English and German
 The app SHALL show every word of its own in German when its language is German, and in English otherwise, on every
-screen, dialog, message, notification, content description and launcher shortcut. Words the person typed SHALL stay as
-typed. No other language and no right-to-left layout SHALL be added (BRD EC-L10N-01, EC-L10N-22, EC-L10N-25, D195).
+screen, dialog, message, notification and content description. The static launcher shortcut SHALL be German wherever
+Android picks German. Words the person typed SHALL stay as typed. No other language and no right-to-left layout SHALL be added (BRD EC-L10N-01, EC-L10N-22, EC-L10N-25, D195).
 
 #### Scenario: A phone in German
 - **WHEN** the phone's language is German (Germany) and Migrely is opened
 - **THEN** home, attack mode, History, Insights, Settings, the paywall and every other screen show German words
 
-#### Scenario: The launcher shortcut
-- **WHEN** the phone's list is Russian (Russia), English (United States), then German (Germany), and the app icon is
-  long-pressed
-- **THEN** the shortcut label is English, like the app, and with German first it is German
+#### Scenario: The launcher shortcut with German first
+- **WHEN** the phone's list is German (Germany) and the app icon is long-pressed
+- **THEN** the shortcut label is German
+
+#### Scenario: The launcher shortcut after another language
+- **WHEN** the phone's list is Turkish (Turkey) then German (Germany), or Russian (Russia) then German (Germany)
+- **THEN** the app is German and the static shortcut label may be English, because Android picks it from every language
+  its libraries ship; this is recorded as a known limit, not a pass
 
 #### Scenario: The person's own words
 - **WHEN** the app is in German and a migraine has a note, a trigger and a medication typed in English
@@ -114,8 +118,8 @@ D195).
 ### Requirement: No untranslated text passes the gate
 Every string, plural and array in every module's default resources SHALL have a German value, or be marked
 `translatable="false"`. Placeholders and array lengths SHALL match English. A copy of English SHALL come only from a
-reviewed list. No value SHALL hold a soft hyphen or zero-width character, or a plain space between a number and its unit.
-The gate SHALL fail otherwise (BRD EC-L10N-12, EC-L10N-13, D195).
+reviewed list. No value, read as compiled with escapes decoded, SHALL hold a soft hyphen, a zero-width character or a
+plain space between a number and its unit. The gate SHALL fail otherwise (BRD EC-L10N-12, EC-L10N-13, D195).
 
 #### Scenario: A new English-only string
 - **WHEN** a change adds a string to any module's `values/strings.xml` without a German value
@@ -138,8 +142,12 @@ The gate SHALL fail otherwise (BRD EC-L10N-12, EC-L10N-13, D195).
 - **WHEN** a German value holds a soft hyphen or a zero-width space, or "15 Min." with a plain space
 - **THEN** the gate fails, and passes with a no-break space between the number and its unit
 
-#### Scenario: The English shortcut copy drifts
-- **WHEN** a shortcut label in `values-en` differs from its `values/` source
+#### Scenario: An escaped invisible break
+- **WHEN** a German value writes a soft hyphen as the escape `\u00AD` inside a 17-letter word
+- **THEN** the gate decodes the escape and fails, as it does for the character itself
+
+#### Scenario: A long word without a walk date
+- **WHEN** after the 8.1 walk a line of the long-word list has no `seen YYYY-MM-DD` date
 - **THEN** the gate fails
 
 #### Scenario: Not to translate
@@ -149,7 +157,7 @@ The gate SHALL fail otherwise (BRD EC-L10N-12, EC-L10N-13, D195).
 ### Requirement: German fits at the largest font
 German text SHALL keep the no-break rule (D181): at 200% font on a 360 dp phone, in portrait and landscape, no label
 SHALL break inside a word, be cut or be ellipsized, and type SHALL NOT shrink. Every German word over 16 letters SHALL
-be on a reviewed list, seen in place at that size. A German-only failure SHALL block the merge. Umlauts, ß and „ “ SHALL
+be on a reviewed list with the date it was seen in place at that size. A German-only failure SHALL block the merge. Umlauts, ß and „ “ SHALL
 be drawn in the brand fonts (BRD EC-L10N-02, EC-L10N-14, D181, D195).
 
 #### Scenario: Buttons and chips at 200%

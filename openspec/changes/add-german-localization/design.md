@@ -78,12 +78,14 @@ text stays short enough to carry its meaning collapsed. `NotificationExpandedTex
 - API 26 to 32: follow the phone. No in-app picker (out of scope; it needs AppCompat or our own storage and a new screen).
 - A unit test reads `locales_config.xml` and asserts its languages equal `APP_LANGUAGES` and the set of `values-<lang>`
   folders plus `en`, so a future `values-fr` without config, or config without strings, fails.
-- Launcher shortcut (e31ac30e, lead decision on ux E7): static shortcut labels are resolved by the launcher from the
-  system's list, not by D1, and the default `values/` is not tagged English, so `[ru-RU, en-US, de-DE]` would show the
-  German label beside an English app. `app/src/main/res/values-en/strings.xml` holds only the two shortcut labels
-  (`shortcut_start_attack`, `shortcut_start_attack_long`), a test asserts they equal `values/`, and `app/lint.xml` ignores
-  only "not translated in en" for `MissingTranslation`; every other language stays fully checked (EC-L10N-25). With
-  per-app German on an English phone the launcher may still show English: recorded, observed in 8.2 and 12.1 (ux N04).
+- Launcher shortcut (ux E7): static shortcut labels are resolved by Android from the system's list, not by D1. A first
+  fix put the two labels in `values-en` (e31ac30e); the lead reversed it after cr-de round 1 (45811ea5 removed
+  `values-en`, `app/lint.xml` and the equality check). Reason, from the framework source and `aapt2 dump configurations`:
+  Android picks one best language from every language in the APK, and the AndroidX libraries ship about 80 (ru, tr and
+  more), so `values-en` never changed the label. **Known limit (EC-L10N-25):** on `[tr-TR, de-DE]` or `[ru-RU, de-DE]`
+  the app is German (D1) while the static shortcut label is English, because Android settles on the first list language
+  the APK has at all. 8.2 and 12.1 walk `[ru-RU, en-US, de-DE]` and `[tr-TR, de-DE]` and record what the launcher shows,
+  also with per-app German on an English phone (ux N04). A real fix (dynamic shortcuts set from D1) is out of scope.
 
 ## D4. What stays English
 
@@ -94,8 +96,12 @@ text stays short enough to carry its meaning collapsed. `NotificationExpandedTex
   `LocalConfiguration.current.locales[0].language != "en"` (UI-only fact, no presentation change). English text:
   "The PDF is in English." German per glossary.
 - **CSV** (`AttacksCsvMapper`): English column names and values, permanently (D72, data portability). The separator
-  moves from the application context's locale to the system's: `BackupModule` `locale = {
-  Resources.getSystem().configuration.locales[0] }`. Below API 33 this is the same value as today.
+  follows the system's language, never Migrely's own: `BackupModule` reads `app/locale/SystemLocale` (ca7a32c9). On
+  API 33+ it uses `LocaleManager.getSystemLocales()`, which ignores the app-specific language; below 33 it reads the
+  system configuration, where no per-app language exists. `Resources.getSystem()` is not enough: on API 33+ it carries
+  the per-app language too (cr-de round 1, finding 1, from `ResourcesManager`). `SystemLocaleTest` covers both API paths
+  and both directions (en-US system with German app gives a comma, de-DE system with English app a semicolon); the two
+  API 33+ rows were red with the configuration-only read. The CSV bytes on a device stay in 8.2 and 12.1.
 - **Backup JSON**: untouched. Built-in tags are stored by key and named by the UI, so they follow the language already.
 - **Debug strings** (`app/src/debug`): `translatable="false"`. `app_name` "Migrely": `translatable="false"`.
 - **Licence and library names** (as built, accepted): `settings_licence_apache`, `settings_licences_apache`,
@@ -207,12 +213,17 @@ Fixed wording from the pre-check (`ux-designer` owns the final copy; order and n
    `other`, and German `one` uses no placeholder that English `other` lacks (it may drop the number). Arrays have the
    same item count.
 4. A German value equal to its English one fails unless it is in `app/src/test/resources/l10n/same-as-english.txt`.
-5. A German word over 16 letters fails unless it is in `app/src/test/resources/l10n/long-german-words.txt`, each line with
-   the screen where it was seen at 200% on 360 dp.
+5. A German word over 16 letters fails unless it is in `app/src/test/resources/l10n/long-german-words.txt`, each line
+   `word<TAB>screen<TAB>seen YYYY-MM-DD`, the date of the 8.1 walk where it was seen whole at 200% on 360 dp. Until 8.1
+   the lines say "not yet seen"; the dated format becomes mandatory in the last commit of 8.1, after which "not yet seen"
+   or a line without a date fails.
 6. `locales_config.xml` languages equal `APP_LANGUAGES` and the `values-<lang>` folders plus `en` (D3).
 7. As built (e31ac30e, accepted): no soft hyphen (U+00AD) or zero-width character (U+200B, U+200C, U+200D, U+2060, U+FEFF) in
    any German value, and no plain space between a number and its unit (Min., Std., Tg., %, mg, €; D5 typography, ux E4).
-8. The two `values-en` shortcut labels equal their `values/` source (D3).
+
+Every check reads a value as aapt2 compiles it (45811ea5, cr-de round 1, finding 3): Android escapes (`\uXXXX`, `\n`,
+`\'`, `\"`, `\@`, `\?`) are decoded and unescaped quotes dropped first, and invisible breaks are removed before words are
+measured. Before this, an escaped soft hyphen inside a 17-letter word passed.
 
 Android Lint (already in the gate, default severity Error): `MissingTranslation`, `ExtraTranslation`,
 `StringFormatMatches`, `StringFormatCount`, `MissingQuantity`. Lint does not see a module with no translation at all,
@@ -221,7 +232,14 @@ hence check 1.
 Negative controls (each shown red, then reverted): remove one German string; change `%1$d` to `%1$s`; copy an English
 value; add a 17-letter word; delete one module's `values-de`; add an empty `values-fr`. Built with three more: a soft
 hyphen, a plain space before a unit, a `values-en` label that differs. All nine were red, then the clean tree green
-(`migrely-work/de/7.2-controls.log`).
+(`migrely-work/de/7.2-controls.log`). After cr-de round 1 the `values-en` control went with `values-en`, and control 10
+was added: an escaped soft hyphen (`\u00AD`) inside a 17-letter word, red before the decoding and red after it for the
+right reason (`migrely-work/de/cr1-3-red.log`, `cr1-23-green.log`).
+
+`NotificationLockScreenGermanTest` (`de-rDE`, f9fd99b6), the twin of `NotificationLockScreenTest`: every notification is
+private with the public version "Erinnerung", and the visit reminder's title, text and public version name no "arzt",
+"migräne", "kopfschmerz" or "premium" (D168, D169). Mutations went red: a visit text naming "Arztpraxis", a public title
+"Migräne-Erinnerung" (`migrely-work/de/cr1-5-red-green.log`).
 
 `FormattingLocaleResolverTest`: every row of the D1 table, plus the regional first-day keyword in German.
 `FormattingLocales` Robolectric test: `localizedContext` with `[ru-RU, en-US, de-DE]` reads English and with
@@ -258,8 +276,9 @@ Binding rules from the verdict:
 4. **One theme per state**: walk dark (the migraine default, and attack mode is always dark), plus one light screen as a
    sanity check. Strings do not change colour or contrast.
 5. **No soft hyphens or zero-width spaces** (D5; the gate enforces it).
-6. **E6**: the full notification text is readable when expanded (done, D2). **E7**: the launcher shortcut label matches
-   the app's language for the system list (done for `[ru-RU, en-US, de-DE]`, D3).
+6. **E6**: the full notification text is readable when expanded (done, D2). **E7**: the static launcher shortcut label
+   cannot follow D1 (D3, EC-L10N-25): the walk records the label for `[ru-RU, en-US, de-DE]`, `[tr-TR, de-DE]` and
+   per-app German, and an English label on a German app is the known limit, not a failure.
 7. **DELETE stays** as the Delete all data keyword in 1.4.0 (D5).
 8. An accessibility-tree scan for English on every walked state (E10), with an `en-US` control that must report hits.
 

@@ -63,7 +63,10 @@ merge the latest `origin/develop` (with #255) so the translated set is final; if
   D72. Verify: `./gradlew :features:backup:data:test :app:testDebugUnitTest` green; `git grep -n 'getSystem()'
   app/src/main/java/com/migrely/app/di/BackupModule.kt` shows the line.
 
-  Done (`migrely-work/de/3-4-verify.log`).
+  Done (`migrely-work/de/3-4-verify.log`). Superseded by cr-de round 1, finding 1 (ca7a32c9): on API 33+
+  `Resources.getSystem()` carries the per-app language, so `BackupModule` now reads `app/locale/SystemLocale`
+  (`LocaleManager.getSystemLocales()` on 33+, the system configuration below). `SystemLocaleTest` 4 of 4 green, its two
+  API 33+ rows red with the configuration-only read (`migrely-work/de/cr1-1-red.log`, `migrely-work/de/cr1-1-green.log`).
 ## 4. Android 13+ app language (manifest and resources)
 
 - [x] 4.1 `res/xml/locales_config.xml` (en, de) and `android:localeConfig` on `<application>`. Verify: `./gradlew
@@ -73,7 +76,9 @@ merge the latest `origin/develop` (with #255) so the translated set is final; if
   Done 265e4fab (`migrely-work/de/3-4-verify.log`): `localeConfig` in the merged manifest; release permissions unchanged.
 - [x] 4.2 Launcher shortcut labels (ux E7, lead decision): `values-en` with the two shortcut labels, `app/lint.xml`
   ignoring only "not translated in en", a test that they equal `values/`. Verify: `./gradlew :app:lintDebug` exit 0.
-  Done e31ac30e (`migrely-work/de/E7-lint.log`, exit 0).
+  Done e31ac30e (`migrely-work/de/E7-lint.log`, exit 0). **Reversed** by the lead after cr-de round 1, finding 2 (45811ea5): Android
+  picks the label's language from every language in the APK (AndroidX ships about 80), so `values-en` changed nothing;
+  `values-en`, `app/lint.xml` and the equality check are removed. Known limit EC-L10N-25, walked in 8.2.
 
 ## 5. German strings (resources, all 12 main modules)
 
@@ -108,13 +113,18 @@ merge the latest `origin/develop` (with #255) so the translated set is final; if
   Verify: `./gradlew :app:testDebugUnitTest --tests '*LocalizationCompletenessTest'` green.
   Partial (e31ac30e): the test runs checks 1 to 8 of design D6 and is green in the gate (`migrely-work/de/7.1-red.log` red with 11
   modules missing; `migrely-work/de/9.1-gate.log`). Open: the four long words in `long-german-words.txt` are "not yet seen" until
-  the 8.1 walk.
+  the 8.1 walk. Since cr-de round 1 (45811ea5) every check reads values as compiled (escapes decoded, invisible breaks
+  removed before measuring); the `values-en` check is gone. The rule that each long-word line ends with
+  `seen YYYY-MM-DD` is ready (`migrely-work/de/item4-long-words-walk-date.patch`, red control `migrely-work/de/item4-red.log`) and lands as the
+  last commit of 8.1, with the dates of the walk. "Sicherheitshinweis" joined the list in 2a4f2261, also not yet seen.
 - [x] 7.2 Negative controls, each red then reverted, logged in `migrely-work/de/7.2-controls.log`: remove one German
   string; `%1$d` to `%1$s`; copy one English value; add a 17-letter word; delete one module's `values-de`; add an empty
   `values-fr/strings.xml`. Verify: six failing runs named in the log, then a green run on the clean tree.
 
   Done: nine controls (the six above plus soft hyphen, plain space before a unit, a drifting `values-en` label), each
-  red, then the clean tree green (`migrely-work/de/7.2-controls.log`, `migrely-work/de/7.2-last-run.log`).
+  red, then the clean tree green (`migrely-work/de/7.2-controls.log`, `migrely-work/de/7.2-last-run.log`). After cr-de round 1 the `values-en`
+  control went with `values-en`; control 10, an escaped soft hyphen (`\u00AD`) inside a 17-letter word, passed before
+  the decoding and fails now (`migrely-work/de/cr1-3-red.log`, `migrely-work/de/cr1-23-green.log`).
 ## 8. Device walk (`android-engineer`, 5570)
 
 - [ ] 8.1 Walk design D7's list (the verdict's R01 to R29 and N01 to N04, plus the T01 scan) in German at 200%, 360 x 640
@@ -125,7 +135,8 @@ merge the latest `origin/develop` (with #255) so the translated set is final; if
   table in `migrely-work/de/8.1-walk.md` (row ID, state, 200% portrait, 200% landscape, 130%, 100% at 411, English
   comparison, result, screenshot); `adb shell settings get system font_scale`
   back to 1.0.
-- [ ] 8.2 Language rule on device: system de-DE; `[ru-RU, en-US, de-DE]`; per-app `cmd locale set-app-locales` de-DE on
+- [ ] 8.2 Language rule on device: system de-DE; `[ru-RU, en-US, de-DE]`; `[tr-TR, de-DE]` (the app German, the static
+  shortcut label recorded as observed, EC-L10N-25); the launcher label in every row; per-app `cmd locale set-app-locales` de-DE on
   an English system and back; change during attack mode and with an unsaved note; a reminder fired in German; channel names
   in system settings; CSV separator on an en-US system with per-app German. Verify: rows in `migrely-work/de/8.2-rule.md`
   with the exact `adb` commands and results; system locale restored.
@@ -156,6 +167,15 @@ merge the latest `origin/develop` (with #255) so the translated set is final; if
 
 - [ ] 11.1 Review the diff against design D1 to D6 and this spec; check that no locale read bypasses `FormattingLocales`.
   Verify: review verdict with 0 open blocking findings; fixes re-run 9.1.
+  Round 1 (cr-de, at e31ac30e plus fix batch 1, 2a4f2261) answered:
+  1. CSV separator followed the per-app language on API 33+: `SystemLocale` (ca7a32c9).
+  2. `values-en` did not change the shortcut label: removed, known limit EC-L10N-25 (lead decision, 45811ea5).
+  3. Escapes slipped past the gate: values decoded before every check, control 10 (45811ea5).
+  4. Long words without a walk date: the `seen YYYY-MM-DD` rule, landing as the last commit of 8.1.
+  5. No German lock-screen test: `NotificationLockScreenGermanTest` (f9fd99b6), the scenario "the lock-screen visit
+     reminder never says Arzt" (`migrely-work/de/cr1-5-red-green.log`).
+  6. `MainActivity`'s locale KDoc named only D117: now D195 too, no code change (749897b2).
+  Gate after round 1: GATE_EXIT=0 at 749897b2 (`migrely-work/de/cr1-gate.log`). Open: round 2 after 8.1, on the walk's layout fixes.
 
 ## 12. QA (`qa-engineer`, Go/No-Go rows for this diff)
 
