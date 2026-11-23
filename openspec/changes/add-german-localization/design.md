@@ -213,10 +213,35 @@ Fixed wording from the pre-check (`ux-designer` owns the final copy; order and n
    `other`, and German `one` uses no placeholder that English `other` lacks (it may drop the number). Arrays have the
    same item count.
 4. A German value equal to its English one fails unless it is in `app/src/test/resources/l10n/same-as-english.txt`.
-5. A German word over 16 letters fails unless it is in `app/src/test/resources/l10n/long-german-words.txt`, each line
+5. A German word longer than 16 characters (`LONGEST_UNLISTED_WORD = 16`: 16 passes, 17 fails), counted by
+   `wordsOver()`, fails unless it is in `app/src/test/resources/l10n/long-german-words.txt`, each line
    `word<TAB>screen<TAB>seen YYYY-MM-DD`, the date of the 8.1 walk where it was seen whole at 200% on 360 dp. Until 8.1
    the lines say "not yet seen"; the dated format becomes mandatory in the last commit of 8.1, after which "not yet seen"
    or a line without a date fails.
+
+   How `wordsOver()` counts a word (5ceb0fdd, cr-de round 2 cb11fb9c), in this order, on the value as compiled (below):
+   - it composes the value (Unicode NFC), so an umlaut written as a base letter plus a combining diaeresis is one
+     character and does not split the word;
+   - it removes the invisible breaks (U+00AD, U+200B, U+200C, U+200D, U+2060, U+FEFF), which check 7 forbids anyway;
+   - it replaces each format placeholder (`%1$s`, `%d`, `%%` and the like) by as many letters as the placeholder has
+     characters, so `%1$s` counts as 4 letters and joins the letters next to it;
+   - a word is a run of letters (`\p{L}`) in which a hyphen-minus (U+002D), a non-breaking hyphen (U+2011) or a
+     no-break space (U+00A0) standing between two letters joins them, because Android breaks a line at none of them
+     (ux R16, R18). A hyphenated compound is one word: "Open-Source-Bibliotheken" is 24, though no part is over 16;
+   - the length counts every character of the word, its joiners included ("Migrely-Sicherung" is 17);
+   - anything else ends a word: a plain space, a digit, an en dash, a slash, a full stop. A number with a no-break space
+     before its unit ("12 Min.") is no word over the limit, because a digit is not a letter.
+
+   A word is reported, and matched against the list, as written after composing and removing the breaks, with its
+   placeholder as typed ("%1$s-Sicherungsdatei" is one 20-character word). `WordsOverTest` holds one fixture per rule,
+   each over 16 only when counted this way; the four new fixtures fail on the earlier counter and pass now.
+
+   Known limits of the count (team-lead 2026-11-23; none occurs in today's `values-de`):
+   - a placeholder counts at its written length (`%1$s` is 4), not at the length it takes at runtime. "%1$s-Sicherung"
+     (14) cannot fail, though at runtime it reads "Migrely-Sicherung" (17). For that reason "Migrely-Sicherung" is on
+     the long-word list, and the list with its walked screen stays the check for such words;
+   - a run joined by a full stop and a no-break space ("Std. …") counts as separate words, though Android does not
+     break a line there. The device walk, not the gate, checks such runs.
 6. `locales_config.xml` languages equal `APP_LANGUAGES` and the `values-<lang>` folders plus `en` (D3).
 7. As built (e31ac30e, accepted): no soft hyphen (U+00AD) or zero-width character (U+200B, U+200C, U+200D, U+2060, U+FEFF) in
    any German value, and no plain space between a number and its unit (Min., Std., Tg., %, mg, €; D5 typography, ux E4).
@@ -311,6 +336,63 @@ privacy and data lines. The release is No-Go while any medical key lacks a PASS.
   After this change merges, T72's gate fails until it adds their German values: intended (D195 (9)). If T72 merges first,
   this change translates those strings before its own merge.
 - D195 and row 59 were free on every remote branch on 2026-11-22 (scan of all `refs/remotes/origin/*`).
+- EC-L10N-28 to EC-L10N-30 were free on every remote branch on 2026-11-23 (same scan, after a fetch over HTTPS). No new
+  D-number: the walk's layout fixes extend D195 as item (18).
+
+## D10. Layout fixes from the walk that English users see too (BRD D195 (18))
+
+German broke these layouts in the 8.1 walk (rows R02, R03, R04). The fixes live in the design system or the shared
+dialog, so English gets them as well. Each is a behaviour change for English users and has a scenario. Refs #276 (the
+pain and effect dialogs at 200% in landscape, English and German; its reporter retests and closes it after merge).
+
+1. **Range picker headline** (`designsystem/picker/RangeHeadline`, ed38f8f2, 6d28caa6; ux A22). Material's one-row
+   "Start date - End date" squeezed the end until German "Enddatum" broke letter by letter (English "End date" after
+   "En" too). `RangeHeadline` replaces it: each side, a date or its placeholder, stays whole (no-break spaces inside a
+   side), the line wraps only between the sides (`FlowRow`, 8 dp apart), and the en dash stays with the start after a
+   no-break space. Style and colour stay Material's. TalkBack hears one merged node, announced politely when a date
+   changes, named by `report_range_headline_description`; the two shown texts are hidden from accessibility so nothing
+   is said twice (D181 (2), #217). English: "Start date, not chosen, end date, not chosen"; German: "Startdatum, nicht
+   gewählt, Enddatum, nicht gewählt"; a chosen side speaks its date in the formatter's spoken form. Four new strings in
+   `features/report/ui`, English and German: `report_range_start`, `report_range_end`,
+   `report_range_headline_description`, `report_range_not_chosen`, carried by `DateRangePickerLabels`.
+2. **Full-screen picker title** (`designsystem/picker/PickerTopRow`, 2be7d8a6, used by the date and date-range
+   pickers). When the title's longest word (its minimum intrinsic width) does not fit between Cancel and Done, the
+   title takes its own line under them, whole and start-aligned; otherwise the row is as before. Type never shrinks.
+   The stacked title stays a heading. TalkBack order in the stacked row is Cancel, Done, then the title (eb4de2be,
+   `PickerTopRowTalkBackTest`; cr-de accepted it: the buttons keep their places and the heading still names the screen).
+3. **Wide dialogs in a short window** (b48d26e7, 938e8e7c). `isCompactHeight()` (window height under 480 dp, one copy in
+   `designsystem/layout`, Home and History use it too) makes the pain, effect and custom tag dialogs leave the platform's
+   default width, so Material's maximum of 560 dp with 24 dp margins applies and two buttons can share one row.
+   Portrait and normal heights keep the platform width.
+4. **The title scrolls with the content** (`designsystem/dialog/ScrollingDialogContent`, 938e8e7c). Material's title
+   slot does not scroll: a long title (an effect question naming a long typed medication) or stacked buttons left the
+   content no height. The three dialogs put their title and content in one `PageScroll` area; the title keeps the
+   dialog title's style, is a heading and names the pane (`paneTitle`) for TalkBack. The title scrolls away before an
+   answer is cut.
+5. **Edge cues** (88011716, 35524bfc; ux F6, R04r). While more lies below, the bottom edge shows a 24 dp fade in the
+   dialog's surface colour and Material's scrolling-dialog divider (1 dp, `outlineVariant`); while more lies above, the
+   top edge shows both. They ease over 150 ms, at once with reduced motion, draw over the content only and have no
+   semantics. Nothing shows when the content fits. The divider is the cue that shows even over a blank-looking peek.
+6. **Custom tag dialog narrows only to type** (team-lead decision 2026-11-23, after cr-de round 2 F1, F2; supersedes
+   the rule built in 87c3b424, which narrowed on every press and waited 1000 ms; earlier 3202e821, fbbc64f4). A wide
+   dialog is not panned for the keyboard, so the typed line would sit behind it. The decided `KeyboardWidthRule`:
+   - an intent to type narrows the dialog at once to the platform width, which Android pans: a completed tap on the
+     field (`PressInteraction.Release`) or the field gaining focus (also on opening);
+   - a press that ends in `PressInteraction.Cancel` (a drag to scroll) and a long press (to paste) are not intents and
+     leave the width as it is;
+   - while a hardware keyboard is attached (`Configuration.hardKeyboardHidden == HARDKEYBOARDHIDDEN_NO`) it never
+     narrows;
+   - if no on-screen keyboard is up 3000 ms after the latest intent, the dialog is wide again (time, not "the next
+     layout", because the dialog's own narrowing relays out before any IME can show; 3000 ms leaves room for a slow
+     keyboard under host load);
+   - a keyboard rising narrows it; a keyboard closing widens it, even with the field still focused.
+   The keyboard is read from the root view's insets, because a dialog window that fits its system bars shows Compose
+   no IME inset. `android-engineer` implements this after this plan is pushed; until then the branch holds 87c3b424.
+
+Not proved by unit tests, left to the 8.1 walk (tasks 8.1): the root-inset keyboard reading, 7037cc0e and b5e2a08e, the
+fade's alpha and its reduced-motion snap, F2 on a device, the dialogs' spoken pane name (F3: Material's
+`BasicAlertDialog` already names its pane "Dialog", so TalkBack may say it twice), and `PageScroll`'s TalkBack step
+inside a dialog while a message shows behind it.
 
 ## Risks
 

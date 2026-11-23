@@ -16,7 +16,8 @@ Android picks German. Words the person typed SHALL stay as typed. No other langu
 #### Scenario: The launcher shortcut after another language
 - **WHEN** the phone's list is Turkish (Turkey) then German (Germany), or Russian (Russia) then German (Germany)
 - **THEN** the app is German and the static shortcut label may be English, because Android picks it from every language
-  its libraries ship; this is recorded as a known limit, not a pass
+  its libraries ship; this is recorded as a known limit, not a pass (seen in 8.2 on 2026-11-23: on `[tr-TR, de-DE]` the
+  app showed "Montag, 23. November" and the shortcut "Migraine started")
 
 #### Scenario: The person's own words
 - **WHEN** the app is in German and a migraine has a note, a trigger and a medication typed in English
@@ -155,10 +156,10 @@ plain space between a number and its unit. The gate SHALL fail otherwise (BRD EC
 - **THEN** it is marked `translatable="false"` and the gate passes without a German value
 
 ### Requirement: German fits at the largest font
-German text SHALL keep the no-break rule (D181): at 200% font on a 360 dp phone, in portrait and landscape, no label
-SHALL break inside a word, be cut or be ellipsized, and type SHALL NOT shrink. Every German word over 16 letters SHALL
-be on a reviewed list with the date it was seen in place at that size. A German-only failure SHALL block the merge. Umlauts, ß and „ “ SHALL
-be drawn in the brand fonts (BRD EC-L10N-02, EC-L10N-14, D181, D195).
+German text SHALL keep the no-break rule (D181) at 200% font on a 360 dp phone, portrait and landscape: no word broken,
+cut or ellipsized, no smaller type. A German word over 16 characters, counted whole across the joins Android never
+breaks at, SHALL be on a reviewed list with the date it was seen in place. A German-only failure SHALL block the merge.
+Umlauts, ß and „ “ SHALL use the brand fonts (BRD EC-L10N-02, EC-L10N-14, D181, D195).
 
 #### Scenario: Buttons and chips at 200%
 - **WHEN** the app is German at 200% font on a 360 dp phone, in portrait and landscape
@@ -178,8 +179,32 @@ be drawn in the brand fonts (BRD EC-L10N-02, EC-L10N-14, D181, D195).
 - **THEN** the change does not merge until it is fixed, by shorter copy first and never by smaller type
 
 #### Scenario: A long compound word
-- **WHEN** a German value contains a word over 16 letters, such as "Lichtempfindlichkeit", that is not on the list
+- **WHEN** a German value contains a word over 16 characters, such as "Lichtempfindlichkeit", that is not on the list
 - **THEN** the gate fails, and the word joins the list only after it was seen whole in its place at 200% on 360 dp
+
+#### Scenario: A hyphenated compound
+- **WHEN** a German value holds "Open-Source-Bibliotheken", 24 characters with its hyphens and no part over 16, and the
+  word is not on the list
+- **THEN** the gate counts it as one word and fails, because Android does not break a line at a written hyphen
+
+#### Scenario: Umlauts written decomposed
+- **WHEN** a German value writes "Migränetagebücher" with each umlaut as a base letter and a combining diaeresis
+- **THEN** the gate composes the value first (NFC), counts one 17-character word and fails
+
+#### Scenario: A non-breaking hyphen or a no-break space
+- **WHEN** a German value joins letters with U+2011, as "Ende‑zu‑Ende‑Schutz", or joins "Kopfschmerz" and "Tagebuch"
+  with a no-break space (U+00A0)
+- **THEN** the gate counts the joined letters as one word, over 16, and fails
+
+#### Scenario: A placeholder joined to a word
+- **WHEN** a German value holds "%1$s-Sicherungsdatei"
+- **THEN** the placeholder counts as letters of its own length, the gate sees one 20-character word and fails unless that
+  word is on the list as written
+
+#### Scenario: At the limit
+- **WHEN** a German word has exactly 16 characters, such as "Kopfschmerztagen", or a number stands before its unit
+  with a no-break space, as "12 Min."
+- **THEN** the gate passes it without a list entry
 
 #### Scenario: A number and its unit
 - **WHEN** a duration, percent, pain score or price wraps at 200% in German

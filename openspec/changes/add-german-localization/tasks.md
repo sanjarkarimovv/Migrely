@@ -1,7 +1,8 @@
 # Tasks
 
 Base: `feature/add-german-localization` (worktree `migraine-app-de`) from `origin/develop` 224dad3d. Release 1.4.0, after
-#255 and before T72. Write `Refs T23` in commits; no issue is closed by this change. BRD D195, EC-L10N-01 to EC-L10N-24.
+#255 and before T72. Write `Refs T23` in commits; no issue is closed by this change (also `Refs #276`, never a closing
+keyword: its reporter retests and closes it). BRD D195, EC-L10N-01, EC-L10N-04 to EC-L10N-30.
 Design: this change's `design.md` (D1 to D9, glossary in D5).
 
 Ownership:
@@ -26,6 +27,11 @@ merge the latest `origin/develop` (with #255) so the translated set is final; if
 - [x] 0.2 Fold in the medical pre-check glossary, `ux-designer`'s D7 verdict (8 points, "du" confirmed), the lead's E6
   and E7 decisions and eng-de's deviations: BRD D195 (15) to (17), EC-L10N-07, -12, -14 updated, EC-L10N-25 to -27, D117
   line; design D1 to D7; `app-language` scenarios. Verify: both `openspec validate` commands exit 0.
+
+- [x] 0.3 Fold in code-review finding 5 and the walk's layout fixes (6f96d002..cb11fb9c) and the lead's custom tag
+  width rule of 2026-11-23: design D6 check 5 (the gate's word count and its known limits) and D10; `app-language`
+  long-word scenarios; `app-shell`, `doctor-report` and `custom-tags` ADDED requirements; BRD D195 (18), EC-L10N-14,
+  EC-L10N-25 (8.2 observation), EC-L10N-28 to EC-L10N-30, row 59. Verify: both `openspec validate` commands exit 0.
 
 ## 1. The language rule (`:app`, `locale/`, domain of this change)
 
@@ -138,11 +144,32 @@ merge the latest `origin/develop` (with #255) so the translated set is final; if
   Known gaps the walk covers, not unit tests (cr-de round 2, F6): the keyboard seen through the root window insets in
   the custom tag dialog; 7037cc0e (only the field brought into view at rest); b5e2a08e (asked again when the area
   resizes); the edge fade's alpha and its reduced-motion snap.
+  Open device rows after cr-de round 2 (each at 640 x 360 dp landscape unless named; record EN and DE, the font scale
+  and the screenshot in `8.1-walk.md`; run them after 8.3 lands):
+  - [ ] F2: tap the custom tag field, press Back, tap again and type. Is the typed line visible above the keyboard? At
+    EN 100% and DE 200%.
+  - [ ] F2 under host load: the same steps with the host load noted (`uptime`) at 20 or more; a slow keyboard must not
+    leave the dialog wide under it.
+  - [ ] Drag on the custom tag field to scroll the dialog: the dialog's width must not change. EN 100% and DE 200%.
+  - [ ] Long-press the custom tag field to paste: the dialog's width must not change. EN 100% and DE 200%.
+  - [ ] F3: Material's `BasicAlertDialog` names its pane "Dialog" and `ScrollingDialogContent` names it by the title.
+    Is each of the pain, effect and custom tag dialogs announced once when it opens, in EN and DE (TalkBack on,
+    `adb logcat` of the spoken text or a screen recording)? A double announcement is a finding for `android-engineer`.
+  - [ ] `PageScroll`'s TalkBack step inside a dialog while a message shows behind it (for example an Undo message on
+    Attack details, then the pain dialog opened): each answer reached once, by name, and the step keeps its place.
 - [ ] 8.2 Language rule on device: system de-DE; `[ru-RU, en-US, de-DE]`; `[tr-TR, de-DE]` (the app German, the static
   shortcut label recorded as observed, EC-L10N-25); the launcher label in every row; per-app `cmd locale set-app-locales` de-DE on
   an English system and back; change during attack mode and with an unsaved note; a reminder fired in German; channel names
   in system settings; CSV separator on an en-US system with per-app German. Verify: rows in `migrely-work/de/8.2-rule.md`
   with the exact `adb` commands and results; system locale restored.
+
+- [ ] 8.3 (`android-engineer`) Build the lead's custom tag width rule (design D10 item 6, `custom-tags` spec): narrow on
+  `PressInteraction.Release` or focus gained, not on `PressInteraction.Cancel` or a long press, never while
+  `Configuration.hardKeyboardHidden == HARDKEYBOARDHIDDEN_NO`, wide again 3000 ms after the latest intent with no
+  on-screen keyboard up; a rising keyboard narrows, a closing one widens. Red first for each new case (cancelled drag,
+  long press, hardware keyboard, the 3000 ms wait). Verify: `./gradlew :features:attack:ui:testDebugUnitTest --tests
+  '*KeyboardWidthRule*' --tests '*CustomTagTypingIntent*' --tests '*CustomTagDialogWidth*'` green, each new case shown
+  red on 87c3b424's rule (`migrely-work/de/8.3-*.log`); then 9.1.
 
 ## 9. Gate (`android-engineer`)
 
@@ -185,7 +212,9 @@ merge the latest `origin/develop` (with #255) so the translated set is final; if
 - [ ] 12.1 API 36 (5580): system de-DE walk of the a11y tour via per-app switching (design D7) at 100%, 200% and
   landscape; TalkBack in German on home, attack mode and Log medication; notifications in German; CSV bytes (English
   headers, `;`); backup made in English restored in German and back; update from v1.3.3 on de-DE with a planned reminder;
-  `[ru-RU, en-US, de-DE]` stays English. Verify: rows in the 1.4.0 Go/No-Go with commands and counts.
+  `[ru-RU, en-US, de-DE]` stays English. TalkBack speech when each of the pain, effect and custom tag dialogs opens, in
+  English and German, at 100% portrait and 200% landscape: spoken once, by its title (design D10, F3). Verify: rows in
+  the 1.4.0 Go/No-Go with commands and counts.
 - [ ] 12.2 API 26 (5582): system de-DE, short walk (home, attack mode, Log medication, Warning signs, History), no app
   language entry exists, switching the phone to English switches the app. Verify: rows in the Go/No-Go.
 - [ ] 12.3 Negative controls: v1.3.3 (English-only) on de-DE shows English on the same states (the check sees language);

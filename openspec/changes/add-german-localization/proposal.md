@@ -37,8 +37,16 @@ for about one day of engineering, and the larger PDF work is split out.
 - **Layout fixes German needs:** where a layout passes in English and fails in German at the same settings (predicted:
   the onboarding header, the date pickers' top row, two-line top bar titles), it is fixed in this change, shorter copy
   first, never smaller type. Failures English shares become issues, except on safety paths.
-- **Records:** BRD D195 (with (15) to (17) after the build and reviews), EC-L10N-01 (updated), EC-L10N-04 to EC-L10N-27
-  (new), a pointer in D117, section 13 row 59.
+- **Layout fixes from the walk that English sees too (D195 (18), design D10; Refs #276):** the range picker's headline
+  keeps each side whole and is said once by TalkBack (4 new report strings in English and German); a full-screen
+  picker's title moves under its buttons when a word would not fit; the pain, effect and custom tag dialogs grow wide in
+  a short window, scroll their title with their content and show an edge fade and divider while more lies beyond; the
+  custom tag dialog narrows only for an intent to type (team-lead rule of 2026-11-23). This also fixes #276, the pain
+  and effect dialogs at 200% in landscape, in English and German.
+- **The long-word gate counts a word as Android breaks it (design D6 check 5):** composed (NFC), a hyphenated compound
+  whole, U+2011 and a no-break space between letters as joiners, a placeholder as letters of its written length.
+- **Records:** BRD D195 (with (15) to (18) after the build, the walk and the reviews), EC-L10N-01 (updated), EC-L10N-04
+  to EC-L10N-30 (new), a pointer in D117, section 13 row 59.
 
 ## Out of scope
 
@@ -51,7 +59,10 @@ for about one day of engineering, and the larger PDF work is split out.
 - The store listing and the site page: separate steps after the app, owned by `aso-seo-specialist`; uploading,
   "Publish changes" and deploys are the owner's. The site's German page opens only after the German app is live (D148).
 - Any change to data, Room schema, backup format, Free and Premium, permissions or navigation; screen changes beyond the
-  report screen's one line and the German-only layout fixes above.
+  report screen's one line, the German-only layout fixes and the shared picker and dialog fixes above (design D10).
+- Other dialogs and pickers: only the pain, effect and custom tag dialogs take the short-window rules, and only the
+  full-screen date and date-range pickers take the stacked title. Material's date-time picker and Reminders' time dialog
+  are unchanged (#269 stays open).
 - Layout failures English shares at the same settings (pre-existing): filed as issues, unless on a safety path.
 - Changing the "DELETE" keyword of Delete all data (stays ASCII in 1.4.0).
 
@@ -67,7 +78,11 @@ for about one day of engineering, and the larger PDF work is split out.
 
 - `app-shell`: RENAMED "Dates and times in English" to "Dates and times in the app's language" and MODIFIED it for German
   (D117 unchanged for every other language).
-- `doctor-report`: ADDED "The report screen names the PDF's language".
+- `app-shell`: ADDED "A full-screen picker's title moves under its buttons when a word would not fit", "A dialog in a
+  short window keeps its title and answers in reach" and "A scrolling dialog shows that more lies beyond".
+- `doctor-report`: ADDED "The report screen names the PDF's language" and "The custom range's headline stays whole and
+  is said once".
+- `custom-tags`: ADDED "The custom tag dialog narrows only to type".
 - `data-backup`: ADDED "Exports stay language-neutral" (CSV words and separator, backup across languages).
 
 ## Impact
@@ -78,13 +93,19 @@ for about one day of engineering, and the larger PDF work is split out.
   the system configuration below), `res/xml/locales_config.xml`, `AndroidManifest.xml` (`android:localeConfig`),
   `res/values/strings.xml` (`app_name` not translatable), `src/debug/res/values/strings.xml` (not
   translatable);
-  `values-de/strings.xml` in `app` and the 11 feature `ui` modules; `features/report/ui` (one line and its string).
+  `values-de/strings.xml` in `app` and the 11 feature `ui` modules; `features/report/ui` (one line and its string, and
+  the range headline's 4 strings). Design system: `picker/RangeHeadline`, `picker/PickerTopRow`,
+  `dialog/ScrollingDialogContent`, `dialog/MigrelyDialogs` (`wide`), `layout/CompactHeight` (`isCompactHeight`, shared
+  with Home and History); `features/attack/ui` pain, effect and custom tag dialogs (`KeyboardWidthRule`).
 - **Tests:** `FormattingLocaleResolverTest`, a `FormattingLocales` Robolectric test, `SystemLocaleTest`,
   `NotificationExpandedTextTest`, `NotificationLockScreenGermanTest`, `LocalizationCompletenessTest` with two reviewed
-  lists in `app/src/test/resources/l10n/`.
+  lists in `app/src/test/resources/l10n/`, `WordsOverTest`; `RangeHeadlineTest`, `PickerTopRowTest`,
+  `PickerTopRowTalkBackTest`, `ScrollingDialogContentTest`, `EdgeCuesTest`, `KeyboardWidthRuleTest`,
+  `CustomTagTypingIntentTest`, `CustomTagDialogWidthTest`, `AttackDialogWidthTest`.
 - **No change to:** permissions (proved by `:app:checkReleasePermissions`), INTERNET (none), Room schema, backup, Free and
   Premium, navigation, domain and presentation layers.
+- **Issues:** Refs #276 (fixed here, closed by its reporter after the retest).
 - **Process:** every later change that adds a string must add its German value (the gate enforces it). T72 adds 15.
-- **BRD:** D195, EC-L10N-01, EC-L10N-04 to EC-L10N-27, D117 pointer, section 13 row 59.
+- **BRD:** D195, EC-L10N-01, EC-L10N-04 to EC-L10N-30, D117 pointer, section 13 row 59.
 - **Owner steps (after the app):** upload of the 1.4.0 AAB, the de-DE listing translation and German screenshots in Play
   Console, and the later site deploy. No money, no account.

@@ -48,3 +48,77 @@ SHALL come from the phone (BRD EC-L10N-03, EC-L10N-08, EC-TIM-05, D117, D195).
 #### Scenario: The CSV on a phone in Russian
 - **WHEN** a phone in Russian exports the CSV
 - **THEN** its columns are still separated by semicolons, by the phone's own language (D72)
+
+## ADDED Requirements
+
+### Requirement: A full-screen picker's title moves under its buttons when a word would not fit
+A full-screen date or date-range picker SHALL show Cancel, its title and Done in one row while the title's longest word
+fits between the buttons. Otherwise the title SHALL take its own line under them, whole and a heading, and TalkBack
+SHALL go Cancel, Done, then the title. Type SHALL NOT shrink (BRD EC-L10N-28, D127, D181, D195 (18)).
+
+#### Scenario: A German title at the largest font
+- **WHEN** the app is German at 200% font on a 360 dp phone and the "Nächster Termin" or "Zeitraum wählen" picker opens
+- **THEN** the title shows on its own line under "Abbrechen" and "Fertig", and every line of it ends at a space
+
+#### Scenario: A title that fits
+- **WHEN** the title's longest word fits between Cancel and Done, as in English at 100% font
+- **THEN** Cancel, the title and Done share one row, as before
+
+#### Scenario: TalkBack on a stacked title
+- **WHEN** TalkBack is on and the title sits under the buttons
+- **THEN** TalkBack goes Cancel, Done, then the title, which it names as a heading
+
+### Requirement: A dialog in a short window keeps its title and answers in reach
+In a window under 480 dp tall, the pain, effect and custom tag dialogs SHALL leave the platform's narrow width, up to
+560 dp with 24 dp margins. Each SHALL hold its title and content in one scrolling area, the title a heading that names
+the pane, so every answer and the time row can be reached at 200% font, in English and German. Taller windows SHALL keep
+the platform width (BRD EC-L10N-29, D181, D193, D195 (18), #276).
+
+#### Scenario: The pain dialog in landscape
+- **WHEN** the app is English or German at 200% font in a 640 x 360 dp landscape window and the pain dialog opens
+- **THEN** the dialog is wide, and the score line ("5/10 · Mäßig" in German), the time row and every answer can be
+  scrolled into view and reached
+
+#### Scenario: The effect dialog with a long medication name
+- **WHEN** at 200% font in a 640 x 360 dp landscape window the effect question names a long typed medication
+- **THEN** the title scrolls away with the content, and every answer can be scrolled into view and chosen, in English
+  and German
+
+#### Scenario: The custom tag dialog at rest in landscape
+- **WHEN** the German app at 200% font in a 640 x 360 dp landscape window opens the custom tag dialog and no keyboard is
+  up
+- **THEN** the dialog is wide and "Abbrechen" and "Hinzufügen" can share one row
+
+#### Scenario: A phone in portrait
+- **WHEN** the window is 480 dp tall or taller
+- **THEN** the three dialogs keep the platform width, as before
+
+#### Scenario: TalkBack opens a dialog
+- **WHEN** TalkBack is on and the pain, effect or custom tag dialog opens, in English or German
+- **THEN** the dialog is announced once, by its title, and the title is a heading
+
+### Requirement: A scrolling dialog shows that more lies beyond
+While a dialog's scrolling area has more below, its bottom edge SHALL show a 24 dp fade in the dialog's colour and a 1 dp
+divider; while it has more above, its top edge SHALL show both. They SHALL ease over 150 ms, appear at once with reduced
+motion, draw over the content only and add nothing for TalkBack. Content that fits SHALL show neither (BRD EC-L10N-29,
+D195 (18)).
+
+#### Scenario: At the start of a long dialog
+- **WHEN** a dialog's area opens scrolled to the top and more content lies below
+- **THEN** the bottom edge shows the fade and the divider, and the top edge shows neither
+
+#### Scenario: At the end
+- **WHEN** the person scrolls the area to its end
+- **THEN** the top edge shows the fade and the divider, and the bottom edge shows neither
+
+#### Scenario: Content that fits
+- **WHEN** the whole dialog fits, as at 100% font in portrait
+- **THEN** no fade and no divider show, as before
+
+#### Scenario: Reduced motion
+- **WHEN** Remove animations is on and the area starts or stops being able to scroll one way
+- **THEN** that edge's fade and divider appear or go at once, with no easing
+
+#### Scenario: TalkBack over the cues
+- **WHEN** TalkBack moves through a dialog whose edges show the cues
+- **THEN** it makes no stop and says nothing for them
