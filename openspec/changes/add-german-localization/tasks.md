@@ -240,6 +240,11 @@ merge the latest `origin/develop` (with #255) so the translated set is final; if
   field as `CustomTagNameField` with the area's height from the dialog. `ScrollingDialogContentTest`: one pane and one
   heading, the title (control: without the pane the wrapper's pane was `[Dialog]`,
   `migrely-work/de/wrapper-negative-control.log`).
+  Re-review 2d99dabd..d37c75a2 (cr-de): approved. Minor 1: production code outside the design system's dialog folder
+  may not name `ScrollingDialogContent` (`ArchitectureDialogsTest`, Konsist); chosen over `internal`, which would stop
+  the two area tests from rendering the area alone at the squeezed size (control: an import in `AttackPainSection`
+  turns it red, `migrely-work/de/area-rule-negative-control.log`). Minor 4: gate logs start with the head and the load
+  again (`migrely-work/de/gate3.sh`). Findings 2 and 3 accepted as limits, covered by device rows.
 
 ## 12. QA (`qa-engineer`, Go/No-Go rows for this diff)
 

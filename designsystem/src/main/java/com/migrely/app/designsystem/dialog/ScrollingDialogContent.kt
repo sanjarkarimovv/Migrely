@@ -30,8 +30,9 @@ import com.migrely.app.designsystem.motion.rememberReduceMotion
  * rows R03, R04). Material's title slot does not scroll: at large fonts in a short window a long title, or stacked
  * buttons, left the content no height at all. Here the title scrolls away before the content is cut. It keeps the
  * dialog title's style and is a heading. A dialog uses it through [MigrelyScrollingAlertDialog], which names the pane
- * by the same title, so TalkBack announces it once, by the title (T23 8.1 F3). [modifier] applies to the visible area,
- * before the scroll.
+ * by the same title, so TalkBack announces it once, by the title (T23 8.1 F3); `ArchitectureDialogsTest` keeps other
+ * production code from naming it. Public for tests that render the area alone. [modifier] applies to the visible
+ * area, before the scroll.
  *
  * While more lies below or above, that edge shows it (ux F6): a person in a migraine does not explore a dialog for
  * hidden controls. A soft fade in the dialog's colour softens cut text, and Material's scrolling-dialog divider, a 1 dp
