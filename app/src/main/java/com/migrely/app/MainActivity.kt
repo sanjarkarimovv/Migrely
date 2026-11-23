@@ -139,9 +139,11 @@ class MainActivity : ComponentActivity() {
     }
 
     /**
-     * Dates and times in English with the phone's region (BRD D117): Compose's configuration, Material's date and time
-     * pickers and the resources read the formatting locale. A new system language recreates the activity, which
-     * applies it again.
+     * The app's language and its dates (BRD D117, D195): the first language of the phone's list that Migrely speaks,
+     * English or German, with Android 13's per-app language first in that list. German keeps its own locale; anything
+     * else is English with the phone's region. Compose's configuration, Material's date and time pickers and the
+     * resources, words and plural rules included, read this one locale, so words and dates never disagree. A new system
+     * or app language recreates the activity, which applies it again.
      */
     override fun attachBaseContext(newBase: Context) {
         super.attachBaseContext(newBase)
