@@ -122,3 +122,23 @@ D195 (18)).
 #### Scenario: TalkBack over the cues
 - **WHEN** TalkBack moves through a dialog whose edges show the cues
 - **THEN** it makes no stop and says nothing for them
+
+### Requirement: A scrolling dialog is announced once, by its title
+A dialog whose title scrolls with its content SHALL name its one pane by that title, in place of Material's "Dialog",
+and show the title as a heading, set from one title, so TalkBack announces it once, by its title. Production code SHALL
+build such a dialog only through the design system's scrolling alert dialog, and a check SHALL fail otherwise (BRD
+EC-L10N-29, D181, D195 (19)).
+
+#### Scenario: The pain dialog opens with TalkBack
+- **WHEN** TalkBack is on and the pain dialog opens, at any font size and window
+- **THEN** TalkBack announces "How strong was it?" in English or "Wie stark war es?" in German, once, and never
+  "Dialog" or "Dialogfeld"
+
+#### Scenario: The effect and custom tag dialogs
+- **WHEN** TalkBack is on and the effect dialog or the custom tag dialog opens, in English or German
+- **THEN** each is announced once, by its own title, such as "Your own symptom" or "Eigenes Symptom"
+
+#### Scenario: A new dialog built around the scrolling area
+- **WHEN** production code outside the design system's dialog folder uses the scrolling dialog area directly
+- **THEN** the gate's architecture check fails, so the new dialog uses the scrolling alert dialog and cannot be
+  announced as "Dialog"

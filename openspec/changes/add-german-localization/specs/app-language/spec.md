@@ -86,6 +86,45 @@ language and nothing SHALL be lost: a migraine in progress, unsaved typed text w
 - **WHEN** the language changes while Migrely is in the background and Android has ended its process
 - **THEN** Migrely opens on the same screen in the new language with nothing lost
 
+### Requirement: A per-app language is read fresh and applied on return
+On Android 13 and newer the app SHALL read its per-app language from the system, not from a configuration kept across a
+process death. A per-app language the platform did not deliver SHALL be applied when Migrely next comes to the front, by
+recreating the screen once, with nothing lost and words and dates in one language. Notifications and channel names SHALL
+resolve the language fresh each time (BRD EC-L10N-06, D195 (19)).
+
+#### Scenario: A change while the process is dead
+- **WHEN** Migrely is German, Android ends its process in the background, and English is chosen for Migrely in the
+  system settings before it is opened again
+- **THEN** the restored screen shows English words and English dates
+
+#### Scenario: A change back that the platform does not deliver
+- **WHEN** after such a restore German is chosen for Migrely again while it is in the background, and no configuration
+  change reaches the app
+- **THEN** when Migrely next comes to the front it recreates the screen once and shows German words and German dates, on
+  the same screen, with typed text and a migraine in progress kept
+
+#### Scenario: Words and dates agree
+- **WHEN** a restored screen is rebuilt for a language the platform did not deliver
+- **THEN** no screen shows a title in one language and a date in the other
+
+#### Scenario: One recreate per change
+- **WHEN** Migrely comes to the front after an undelivered change, or is finishing, or is rotating
+- **THEN** the screen is recreated at most once for that language, never while finishing or changing configuration, and
+  again after a later process death and restore if the language is stale once more
+
+#### Scenario: A notification after the change
+- **WHEN** the per-app language changed while Migrely was not opened and a reminder fires
+- **THEN** the reminder and the channel names are in the new language
+
+#### Scenario: A change while Migrely stays in front
+- **WHEN** the per-app language changes while Migrely's screen stays started, as side by side in multi-window or by
+  `adb` with Migrely in front, and the platform delivers no configuration change
+- **THEN** the change applies the next time Migrely starts; this is a recorded limit, not a pass
+
+#### Scenario: Android 8 to 12
+- **WHEN** the phone runs Android 8 to 12
+- **THEN** the language is read from the configuration, as before, because there is no per-app language
+
 ### Requirement: Notifications speak the app's language
 Each notification, its dates included, SHALL be in the app's language when shown, and its full text SHALL be readable
 when expanded. Android's notification settings SHALL show channel names and descriptions in the app's language after

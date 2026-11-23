@@ -180,6 +180,9 @@ merge the latest `origin/develop` (with #255) so the translated set is final; if
   in system settings; CSV separator on an en-US system with per-app German. Verify: rows in `migrely-work/de/8.2-rule.md`
   with the exact `adb` commands and results; system locale restored.
 
+  Moved to QA (team-lead decision, 2026-11-24): the 8.1 and 8.2 rows not yet walked go to 12.5 and are QA's to run.
+  8.1 and 8.2 stay open here for what the engineer walked; nothing in 12.5 counts as walked until QA records it.
+
 - [x] 8.3 (`android-engineer`) Build the lead's custom tag width rule (design D10 item 6, `custom-tags` spec): narrow on
   `PressInteraction.Release` or focus gained, not on `PressInteraction.Cancel` or a long press, never while
   `Configuration.hardKeyboardHidden == HARDKEYBOARDHIDDEN_NO`, wide again 3000 ms after the latest intent with no
@@ -278,6 +281,22 @@ merge the latest `origin/develop` (with #255) so the translated set is final; if
 - [ ] 12.3 Negative controls: v1.3.3 (English-only) on de-DE shows English on the same states (the check sees language);
   the gate's 7.2 controls re-run once on the release SHA. Verify: control rows in the Go/No-Go.
 - [ ] 12.4 Record EC-L10N-17's per-app TalkBack voice as observed, a known limit, not a pass.
+- [ ] 12.5 Rows moved from 8.1 and 8.2 (team-lead decision, 2026-11-24), on the release candidate, German with the
+  English comparison of design D7 rule 1. Each gets its own Go/No-Go row; none is ticked until QA has walked it:
+  - [ ] R06, R07, R09, R10 (200% portrait and landscape, 360 dp);
+  - [ ] R14 in its logged state;
+  - [ ] R19 in landscape;
+  - [ ] R22, R26 (200% portrait and landscape, 360 dp);
+  - [ ] R27 in landscape;
+  - [ ] R29;
+  - [ ] N01, N02, N04;
+  - [ ] the 130% rows at 360 dp portrait (design D7: the threshold layouts, 115% for attack mode's intensity row);
+  - [ ] the 100% rows at 411 dp (R01, R11, R24, N01);
+  - [ ] the light-theme sanity screen (design D7 rule 4);
+  - [ ] the launcher label and static shortcut with the system in de-DE (EC-L10N-25);
+  - [ ] the expanded "Did it help?" and visit notifications in German, full text readable (design D2, ux E6).
+  Verify: one Go/No-Go row each, with the font scale and size read back before the screenshot, the English comparison,
+  and settings restored.
 
 ## 13. Records and archive (`product-manager`)
 

@@ -42,6 +42,27 @@ converts the configuration's list.
 `FormattingLocales.of(configuration)` passes `configuration.locales`. `activityOverride`, `applyToProcess` and the DI
 formatters keep reading `of(...)`, so nothing else in the features changes.
 
+As built after the 8.2 walk (c086095d, 2d99dabd, 056f5423, 9902f069, 2756cb9a, 5024ecae; cr-de reviewed; BRD D195
+(19)): an activity restored after its process died, and the restarted process's application context, are given the
+configuration they had before the death, so a per-app language changed meanwhile did not show (8.2 rows 9, 9d, 9e).
+- **Where the list comes from:** `PhoneLanguages`. On Android 13 and newer it is `LocaleManager.applicationLocales`
+  followed by `LocaleManager.systemLocales`, or the system list alone when Migrely follows the system (`[]`). Below
+  Android 13 it is the configuration's list, as before. A null `LocaleManager` falls back to the configuration.
+  The resolver of the table above is unchanged; only its input moved.
+- **Cache:** `FormattingLocales` resolves once and keeps the result, because two binder calls per formatted date in
+  composition were too many. It is refreshed in `MigrelyApplication.onCreate` and `onConfigurationChanged` and in
+  `MainActivity.attachBaseContext` (the formatters' own instance through `LocaleEntryPoint`).
+- **An undelivered change:** after a restore the platform can keep the per-app language it held before the death, so a
+  change back to it reaches Migrely with no configuration change. `MainActivity.onStart` reads the language again
+  (`FormattingLocales.fresh`, which leaves the cache alone) and, when it differs from the one the activity was built
+  with, recreates once (`StaleLocaleRecreation`), never while finishing or changing configuration. The guard is once per
+  language across instances, kept in the saved state; an instance that starts in the app's language clears it, so a
+  later stale restore recreates again. A recreate also renames the notification channels. One recreate applies a new
+  language and a new zone together.
+- **Known limit:** a per-app change that arrives while the activity stays started (multi-window side by side, or `adb`
+  with Migrely in front) and brings no configuration change applies at Migrely's next start.
+- **Unchanged:** the CSV separator still reads `SystemLocale` (D195 (5)).
+
 Why not let Android resolve the list: for `[ru, en, de]` Android's resource matching picks `values-de` (the default
 `values/` is not tagged English), while our formatting would say English. One rule for words and dates avoids a German
 screen with English dates or the reverse.
@@ -64,6 +85,10 @@ formatting locale from `localizedContext`, not with the phone's own `locales[0]`
 phone titled the notification with a Russian date while every screen said English, against D117, which already names
 notifications. Visible change for English users on non-English phones: the date becomes English with their region
 (EC-L10N-26).
+
+Fresh each time (9902f069, 2756cb9a): notifications and channel names resolve the language anew for every post or
+rename (`FormattingLocales.localizedContext`), without writing the formatters' cache, so only main-thread refreshes
+change it. A reminder fired after an undelivered per-app change speaks the new language.
 
 Expanded text (404c989b, lead decision on ux E6): the daily reminder, "Did it help?" and the visit reminder set
 `BigTextStyle().bigText(text)`, so longer German, and any language at 200%, is readable in full when expanded. Each German
@@ -217,7 +242,7 @@ Fixed wording from the pre-check (`ux-designer` owns the final copy; order and n
    `wordsOver()`, fails unless it is in `app/src/test/resources/l10n/long-german-words.txt`, each line
    `word<TAB>screen<TAB>seen YYYY-MM-DD`, the date of the 8.1 walk where it was seen whole at 200% on 360 dp. Until 8.1
    the lines say "not yet seen"; the dated format becomes mandatory in the last commit of 8.1, after which "not yet seen"
-   or a line without a date fails.
+   or a line without a date fails. Landed in f935623b: all seven words carry `seen 2026-11-24`.
 
    How `wordsOver()` counts a word (5ceb0fdd, cr-de round 2 cb11fb9c), in this order, on the value as compiled (below):
    - it composes the value (Unicode NFC), so an umlaut written as a base letter plus a combining diaeresis is one
@@ -371,6 +396,11 @@ pain and effect dialogs at 200% in landscape, English and German; its reporter r
    pane by the title (`MigrelyAlertDialog(paneTitle = …)`, on the outermost modifier, in place of Material's
    "Dialog"). In the 8.1 walk (F3) the area's own pane name beside Material's made TalkBack announce whichever pane
    appeared last: "Dialogfeld" for the pain and custom tag dialogs, the title for the effect dialog.
+   Built as one entry point (0a1a4446, d37c75a2, 015e2510; BRD D195 (19)): `MigrelyScrollingAlertDialog(title, …)` takes
+   the title once and sets both the pane name and the heading, so a caller cannot forget one; the custom tag field is
+   `CustomTagNameField`, its area's height given by the dialog. `ArchitectureDialogsTest` (Konsist) fails when
+   production code outside `designsystem/dialog` names `ScrollingDialogContent`; tests may still render the area alone.
+   Chosen over `internal`, which would stop the two area tests from rendering it at the squeezed size.
 5. **Edge cues** (88011716, 35524bfc; ux F6, R04r). While more lies below, the bottom edge shows a 24 dp fade in the
    dialog's surface colour and Material's scrolling-dialog divider (1 dp, `outlineVariant`); while more lies above, the
    top edge shows both. They ease over 150 ms, at once with reduced motion, draw over the content only and have no
