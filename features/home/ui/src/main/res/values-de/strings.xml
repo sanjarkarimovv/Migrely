@@ -8,8 +8,8 @@
     <string name="period_today">Periode</string>
     <string name="period_today_description">Periode heute</string>
     <plurals name="today_attack_count">
-        <item quantity="one">%d Migräneattacke heute</item>
-        <item quantity="other">%d Migräneattacken heute</item>
+        <item quantity="one">%d Attacke heute</item>
+        <item quantity="other">%d Attacken heute</item>
     </plurals>
     <string name="today_peak_mild">Stärkster Schmerz: leicht</string>
     <string name="today_peak_moderate">Stärkster Schmerz: mäßig</string>

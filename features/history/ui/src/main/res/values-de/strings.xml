@@ -62,8 +62,8 @@
     <string name="peak_severe">stark</string>
     <string name="peak_not_recorded">nicht erfasst</string>
     <plurals name="month_attack_count">
-        <item quantity="one">%1$d Migräneattacke im %2$s</item>
-        <item quantity="other">%1$d Migräneattacken im %2$s</item>
+        <item quantity="one">%1$d Attacke im %2$s</item>
+        <item quantity="other">%1$d Attacken im %2$s</item>
     </plurals>
     <string name="month_no_attacks">Keine Migräne im %1$s notiert</string>
     <string name="day_no_attacks">An diesem Tag ist keine Migräne notiert.</string>
