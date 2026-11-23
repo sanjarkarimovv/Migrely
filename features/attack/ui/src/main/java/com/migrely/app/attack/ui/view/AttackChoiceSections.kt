@@ -334,10 +334,12 @@ internal fun CustomTagNameArea(
         if (typing) fieldWithRoomInView.bringIntoView() else fieldInView.bringIntoView()
     }
     PageScroll {
+        // The top padding leaves room for the title's tall letters, drawn above its line at large fonts.
         Column(
             Modifier
                 .onSizeChanged { visibleHeight = it.height }
                 .pageScroll(rememberScrollState())
+                .padding(top = 4.dp)
                 .semantics { paneTitle = title }
         ) {
             Text(
