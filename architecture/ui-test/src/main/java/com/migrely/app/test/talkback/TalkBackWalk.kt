@@ -148,10 +148,19 @@ private class Walk<A : ComponentActivity>(private val rule: AndroidComposeTestRu
                 }
             }
             val repeated = parts.withIndex().any { (index, part) ->
-                parts.withIndex().any { (other, words) -> other != index && part in words }
+                parts.withIndex().any { (other, words) ->
+                    other != index && words.saysWordsOf(part)
+                }
             }
             if (repeated) "said twice: ${parts.joinToString(" | ")}" else null
         }
+    }
+
+    /** [part]'s words, whole and in order, within these: a switch's "On" is not in "One small line". */
+    private fun String.saysWordsOf(part: String): Boolean {
+        val said = WORD.findAll(this).map { it.value }.toList()
+        val words = WORD.findAll(part).map { it.value }.toList()
+        return words.isNotEmpty() && said.windowed(words.size).any { it == words }
     }
 
     /** The screen's reading order: the semantics tree depth first, which follows each page from the top down. */

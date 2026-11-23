@@ -519,9 +519,15 @@ private fun SwitchRow(
                 role = Role.Switch,
                 onValueChange = onChange
             )
+            // Its name from its own node, so a row cut by an edge still says it (#255, BRD D181 (2)).
+            .ownWords(title)
     ) {
         Column(Modifier.weight(1f)) {
-            Text(title, style = MaterialTheme.typography.bodyLarge)
+            Text(
+                title,
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.wordsShownOnly()
+            )
             Text(
                 summary,
                 style = MaterialTheme.typography.bodyMedium,
