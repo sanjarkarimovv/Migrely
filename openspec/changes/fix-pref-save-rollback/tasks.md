@@ -17,7 +17,8 @@ Base: `bugfix/pref-save-rollback` from `origin/develop` 82df348f (team-lead deci
   (waits for a 5570 slot).
   Done 2026-11-23 on emulator-5570 (API 36): 2/2 with the fix (`migrely-work/loops/278-connected-fix-20261123-1929.log`);
   negative control with the fix reverted locally, never committed: 2/2 red
-  (`migrely-work/loops/278-connected-control-20261123-2002.log`).
+  (`migrely-work/loops/278-connected-control-20261123-2002.log`). Rerun on the final head baba80ba (after the lock and
+  the marks): 2/2, exit 0 (`migrely-work/loops/278-connected-head-20261123-2305.log`).
 
 ## 3. Presentation
 
@@ -41,5 +42,6 @@ Base: `bugfix/pref-save-rollback` from `origin/develop` 82df348f (team-lead deci
   Done 2026-11-23 (`migrely-work/walks/278/row.log`, shots): full disk, Track periods shows "Couldn't save that. Try
   again." and stays on (row R1b; the first R1 dump came before the message); the theme stays Dark with the message (R2);
   the same after freeing and after a restart (R3, R4); a later successful theme write leaves `period_tracking` stored on
-  (R5).
+  (R5). Run on the 841aade9 build; at baba80ba the settings path is the same helper with the lock added, proved by 2.3's
+  rerun on baba80ba; the device row itself was not repeated.
 - [ ] 4.3 `code-reviewer`, then QA's check of the diff's reach, then archive and PR into `develop` (`Refs #278`).
