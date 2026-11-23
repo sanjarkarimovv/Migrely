@@ -27,8 +27,8 @@
     <string name="attack_rest">Ruh dich aus. Wir behalten die Zeit im Blick.</string>
     <string name="attack_started_at">Beginn: %1$s · %2$s</string>
     <string name="elapsed_minutes">%d Min.</string>
-    <string name="elapsed_hours_minutes">%1$d Std. %2$d Min.</string>
-    <string name="elapsed_days_hours">%1$d Tg. %2$d Std.</string>
+    <string name="elapsed_hours_minutes">%1$d Std. %2$d Min.</string>
+    <string name="elapsed_days_hours">%1$d Tg. %2$d Std.</string>
     <string name="intensity_mild">Leicht</string>
     <string name="intensity_moderate">Mäßig</string>
     <string name="intensity_severe">Stark</string>
