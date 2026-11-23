@@ -18,7 +18,8 @@ import java.util.Locale
  *   Material's date and time pickers, resources and their plural rules use it;
  * - [localizedContext] is the same override for strings read outside an activity, such as notifications and their
  *   channel names (design D2): the application context keeps the phone's own list, from which Android's resource
- *   matching could pick German while the screens are English;
+ *   matching could pick German while the screens are English. It resolves fresh, off the main thread and rarely: a
+ *   per-app change can reach the app with no configuration change, so with no refresh (T23 8.2 row 9d);
  * - [applyToProcess] makes it the default locale, for code that formats with the default. `MigrelyApplication` calls
  *   it at start and on every configuration change. Android sets the default back to the phone's own language on
  *   updates it does not report to the application, so the app's own formatters never rely on it.
@@ -43,7 +44,7 @@ class FormattingLocales(
         Configuration().apply { setLocale(of(base)) }
 
     fun localizedContext(context: Context): Context =
-        context.createConfigurationContext(activityOverride(context))
+        context.createConfigurationContext(Configuration().apply { setLocale(refresh(context)) })
 
     fun applyToProcess(context: Context) {
         Locale.setDefault(of(context))

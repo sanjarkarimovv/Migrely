@@ -29,6 +29,16 @@ class NotificationLanguageTest {
     private val formattingLocales = FormattingLocales()
     private val classUnderTest = NotificationDataSourceImpl(context, formattingLocales)
 
+    @Test
+    fun `Given English resolved when German comes with no refresh then the reminder is German`() {
+        formattingLocales.of(context)
+        RuntimeEnvironment.setQualifiers("de-rDE")
+
+        classUnderTest.showDailyReminder(LocalDate.parse("2026-11-24"), quiet = false)
+
+        assertEquals("Wie war dein Tag?", posted().title())
+    }
+
     private fun posted(): Notification = manager.activeNotifications.single().notification
 
     private fun Notification.title() =
@@ -74,8 +84,7 @@ class NotificationLanguageTest {
         assertEquals("Doctor visit", manager.getNotificationChannel("visit").name)
 
         RuntimeEnvironment.setQualifiers("de-rDE")
-        // As `MigrelyApplication.onConfigurationChanged` does: the locale first, then the channel names.
-        formattingLocales.refresh(context)
+        // No refresh first: the channel names read the language fresh, as the notifications do (T23 8.2 row 9d).
         classUnderTest.refreshChannelNames()
 
         val channel = manager.getNotificationChannel("visit")

@@ -68,4 +68,18 @@ class FormattingLocalesCacheTest {
         val override = classUnderTest.activityOverride(application)
         assertEquals("en-US", override.locales[0].toLanguageTag())
     }
+
+    /**
+     * T23 8.2 row 9d: a per-app change can reach the app with no configuration change, so no refresh. Words outside an
+     * activity, the notifications and their channel names, are resolved fresh each time.
+     */
+    @Test
+    fun `Given the per-app language changed with no refresh then the localized context is fresh`() {
+        classUnderTest.of(application)
+        appLanguages = LocaleList.forLanguageTags("en-US")
+
+        val localized = classUnderTest.localizedContext(application)
+
+        assertEquals("en-US", localized.resources.configuration.locales[0].toLanguageTag())
+    }
 }

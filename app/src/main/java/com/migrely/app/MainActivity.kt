@@ -35,6 +35,7 @@ import com.migrely.app.designsystem.theme.LocalDarkScreens
 import com.migrely.app.designsystem.theme.MigrelyColors
 import com.migrely.app.designsystem.theme.MigrelyTheme
 import com.migrely.app.locale.LocaleEntryPoint
+import com.migrely.app.locale.StaleLocaleRecreation
 import com.migrely.app.premium.PremiumStartChecks
 import com.migrely.app.start.StartEntryPoint
 import com.migrely.app.subscription.domain.model.RefreshPremiumRequestDomainModel
@@ -152,9 +153,17 @@ class MainActivity : ComponentActivity() {
         val formattingLocales = EntryPointAccessors
             .fromApplication(newBase, LocaleEntryPoint::class.java)
             .formattingLocales()
-        formattingLocales.refresh(newBase)
+        val builtWith = formattingLocales.refresh(newBase)
         applyOverrideConfiguration(formattingLocales.activityOverride(newBase))
+        staleLocale = StaleLocaleRecreation(
+            builtWith = builtWith,
+            current = { formattingLocales.refresh(applicationContext) },
+            recreate = ::recreate
+        )
     }
+
+    /** A per-app change the platform did not deliver as a configuration change (EC-L10N-06, T23 8.2 row 9d). */
+    private lateinit var staleLocale: StaleLocaleRecreation
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()
@@ -333,7 +342,8 @@ class MainActivity : ComponentActivity() {
             IntentFilter(Intent.ACTION_TIMEZONE_CHANGED),
             ContextCompat.RECEIVER_NOT_EXPORTED
         )
-        recreateIfZoneChanged()
+        // One recreate applies both a new language and a new zone.
+        if (!staleLocale.onStart(isFinishing, isChangingConfigurations)) recreateIfZoneChanged()
     }
 
     override fun onStop() {

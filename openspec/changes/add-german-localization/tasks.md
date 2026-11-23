@@ -245,6 +245,12 @@ merge the latest `origin/develop` (with #255) so the translated set is final; if
   the two area tests from rendering the area alone at the squeezed size (control: an import in `AttackPainSection`
   turns it red, `migrely-work/de/area-rule-negative-control.log`). Minor 4: gate logs start with the head and the load
   again (`migrely-work/de/gate3.sh`). Findings 2 and 3 accepted as limits, covered by device rows.
+  8.2 row 9d (eng-de3 on 015e2510, lead decision "fix go"): after a process-death restore, a per-app change back to
+  the language the platform held before the death came with no configuration change, so the app stayed in the old
+  language and the formatters' cache was not refreshed. Fix: `MainActivity.onStart` resolves again and recreates once
+  per activity, never while finishing or changing configuration (`StaleLocaleRecreation`); notifications and channel
+  names resolve fresh (`FormattingLocales.localizedContext`). Tests red then green (`migrely-work/de/9d-red.log`,
+  `9d-green.log`); flag control: without it the activity is recreated twice (`9d-flag-control.log`).
 
 ## 12. QA (`qa-engineer`, Go/No-Go rows for this diff)
 
