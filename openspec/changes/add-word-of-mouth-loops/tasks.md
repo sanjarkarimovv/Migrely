@@ -208,3 +208,67 @@ switch summary drift from it.
      `SaidTwiceTest` 5 tests, red where it applies (`f2-red.log`), including Couldn't/Couldn’t.
   3. This record.
 - Still not run: `ReportCreditLayoutTest` on emulator-5570 (4.2, 4.3; compiles), 7.1, 7.2 and 7.3.
+
+2026-11-23, `eng-loops`, device step on emulator-5570 (Migrely_API_36, 1080x2400, 420 dpi, en-US), debug build of
+db22284d (APK md5 97eabd9f…; `:app:assembleDebug` up to date at that head). Evidence: `migrely-work/walks/t72/`
+(`walk.log`, shots, PDFs) and `migrely-work/loops/connected-20261123-1624.log`.
+- Connected (`ANDROID_SERIAL=emulator-5570 … :datasource:implementation:connectedDebugAndroidTest
+  :designsystem:connectedDebugAndroidTest`), exit 1:
+  - datasource 133/133, `ReportCreditLayoutTest` 3/3 (tasks 4.2, 4.3);
+  - designsystem 70 run, 1 failed, 7 skipped. The failure, `MonthSkyCalendarTest.leadingEmptyDaysPushTheFirstDayToItsWeekday`,
+    also fails on develop 82df348f (1 of 6, same device). It is pre-existing, outside T72's diff: #277.
+- 7.1 Settings:
+  - order and sections as specified, no chevron on the two rows, "Warning signs" first in Help;
+  - Share opens the system sheet with the exact text and link, a text-only preview, no grant flag. Messages composes
+    the text with no attachment (not sent);
+  - this emulator's Play Store is a 1.8 stub that resolves no `market://` (START -91). So Rate falls back to the https
+    page in Chrome (EC-SHR-01), also with Play disabled. With Chrome disabled as well, "This phone has no app that can
+    open Google Play." shows, the app keeps running, and a second tap 3 s later is spoken again by TalkBack (valid
+    runs, TalkBack stayed on);
+  - guard: two taps 40 ms apart start one share sheet; Share then Rate starts only the sheet; held Enter on Rate gives
+    one activation; Space on Share opens one sheet; Tab reaches the rows in visual order;
+  - TalkBack (100%, portrait): "Share Migrely. Send someone … included. Button" then "Double-tap to choose an app to
+    share with"; "Rate Migrely on Google Play. Opens … outside the app. Button" then "Double-tap to open Google Play";
+  - 200% font in landscape: both rows wrap in full, no "…";
+  - back from the share sheet after a rotation, and after process death: Settings as before, no message. Process
+    death on Settings at 200% landscape: restored;
+  - attack: Settings cannot be opened during an attack in the UI (only home's today mode has the gear, and the
+    shortcut clears the stack). An ongoing attack written from outside, then a resume, hides the section; ending it
+    and resuming brings it back;
+  - offline (airplane): the page intent starts and Migrely adds nothing;
+  - Free, subscription trial and lifetime (simulated store): the same rows;
+  - Delete all data: the rows as on a new install, and the credit, safety and review entries removed.
+- 7.1 Doctor report:
+  - the switch is after "Include notes", on by default, its summary equal to the spec; TalkBack "On. Mention Migrely in
+    the report. One small line …. Switch"; wraps at 200% landscape; disabled while a report is made;
+  - PDFs checked page by page with `pdftotext` and renders:
+    - Letter (en-US) 3 pages: credit on page 3 only, under the disclaimer, clear of "Page 3 of 3";
+    - A4 (app locale en-GB) 2 pages: credit on page 2 only;
+    - switch off: same page counts, the disclaimer on every page, no credit, pages before the last pixel-identical;
+    - app locale ar: the PDF stays English, left to right;
+  - a shared file is unchanged after the switch changes, and the next report follows the switch;
+  - kept off after process death and after a restart; Free shows the paywall without the switch and keeps the
+    choice; after Delete all data the switch is on again.
+  - Not saved, **failed**: on a full disk the message shows, but the switch shows the new value while the stored one is
+    the old (3 of 3, also "Track periods"; pre-existing write helper). Filed as #278. EC-REP-12 is not met until it is
+    fixed.
+- 7.2 (debug FakeReviewManager, read through `review_request_count`; paywall mark moved 4 days back so it does not block):
+  - overuse card on home: no review, the mark renewed;
+  - no card and the mark 3 d 1 min old: review asked (count 1, the positive control);
+  - mark 3 d minus 1 min: none; mark 1 day in the future: none;
+  - first-10 card (attack started from the shortcut), attack ended, then a home load and a restart: none;
+  - "Still going?" on a 73 h attack, ended, then a home load and a restart: none.
+  - One run was discarded: its home load during setup asked before the card was shown.
+- Not checked on 5570, with reasons:
+  - the real Google Play page and its offline state (Play stub);
+  - the EC-SHR-13 focus move with TalkBack, and the 200 ms fade next to the theme flip: no UI path changes the
+    attack state while Settings stays on screen;
+  - TalkBack speech at 200% or landscape (the JVM #255 walk covers both);
+  - a one-page report (this data makes 2 pages at least; JVM `ReportFooterLinesTest`);
+  - the 50-page cap (JVM);
+  - "No app can take it" for Share: the system sheet always starts;
+  - backup restore of the marks; JSON export content (4.4 JVM);
+  - the clock actually moved back (a mark in the future stands in);
+  - API 26; 7.3 (owner's phone).
+- Device restored: eng-de's T23 APK reinstalled (md5 12268bf1…); app data from the snapshot (DB dump 68c6413f…, three
+  prefs files identical); settings read back identical; TalkBack log level ERROR again; 5570 off.
