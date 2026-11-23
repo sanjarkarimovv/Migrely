@@ -12,10 +12,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.semantics.LiveRegionMode
-import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import com.migrely.app.designsystem.layout.ownWords
+import com.migrely.app.designsystem.layout.wordsShownOnly
 
 /**
  * The range picker's headline, in place of Material's, whose one row squeezed the end until German "Enddatum" broke
@@ -24,7 +25,7 @@ import androidx.compose.ui.unit.dp
  * and colour are Material's: the picker provides the text style, and both sides take its headline colour.
  *
  * TalkBack hears one node, [DateRangePickerLabels.headlineDescription], announced politely when a date changes, as
- * Material's was.
+ * Material's was. The shown words are not read again after it (D181 (2), #217), yet tests still find them.
  */
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -48,14 +49,21 @@ internal fun RangeHeadline(
         spoken(endMillis)
     )
     FlowRow(
-        modifier = modifier.semantics(mergeDescendants = true) {
-            contentDescription = description
-            liveRegion = LiveRegionMode.Polite
-        },
+        modifier = modifier
+            .semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite }
+            .ownWords(description),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Text(text = shown(startMillis, labels.startDate) + NO_BREAK_SPACE + "–", color = color)
-        Text(text = shown(endMillis, labels.endDate), color = color)
+        Text(
+            text = shown(startMillis, labels.startDate) + NO_BREAK_SPACE + "–",
+            color = color,
+            modifier = Modifier.wordsShownOnly()
+        )
+        Text(
+            text = shown(endMillis, labels.endDate),
+            color = color,
+            modifier = Modifier.wordsShownOnly()
+        )
     }
 }
 

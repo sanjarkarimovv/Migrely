@@ -1,6 +1,7 @@
 package com.migrely.app.designsystem.picker
 
 import android.app.Application
+import androidx.activity.ComponentActivity
 import androidx.compose.material3.DisplayMode
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.rememberDateRangePickerState
@@ -9,11 +10,15 @@ import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.text.TextLayoutResult
 import com.migrely.app.designsystem.theme.MigrelyTheme
+import com.migrely.app.test.talkback.TalkBackTree
+import com.migrely.app.test.talkback.turnOnTalkBack
 import java.time.LocalDate
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -34,7 +39,7 @@ import org.robolectric.annotation.GraphicsMode
 @Config(sdk = [35], application = Application::class, qualifiers = "de-w360dp-h640dp-port-xxhdpi")
 class RangeHeadlineTest {
     @get:Rule
-    val rule = createComposeRule()
+    val rule = createAndroidComposeRule<ComponentActivity>()
 
     private fun show(
         labels: DateRangePickerLabels,
@@ -102,12 +107,8 @@ class RangeHeadlineTest {
     fun `Given no dates then TalkBack hears both sides as not chosen, politely`() {
         show(GERMAN)
 
-        rule.onNode(hasText("Enddatum")).assert(
-            SemanticsMatcher.expectValue(
-                SemanticsProperties.ContentDescription,
-                listOf("Startdatum, nicht gewählt, Enddatum, nicht gewählt")
-            ) and
-                SemanticsMatcher.expectValue(SemanticsProperties.LiveRegion, LiveRegionMode.Polite)
+        rule.onNode(hasContentDescription(NONE_CHOSEN)).assert(
+            SemanticsMatcher.expectValue(SemanticsProperties.LiveRegion, LiveRegionMode.Polite)
         )
     }
 
@@ -115,16 +116,29 @@ class RangeHeadlineTest {
     fun `Given a start only then TalkBack hears its date and the end as not chosen`() {
         show(GERMAN, LocalDate.of(2026, 10, 1))
 
-        rule.onNode(hasText("Enddatum")).assert(
-            SemanticsMatcher.expectValue(
-                SemanticsProperties.ContentDescription,
-                listOf("Startdatum, Donnerstag, 1. Oktober 2026, Enddatum, nicht gewählt")
+        rule.onNode(
+            hasContentDescription(
+                "Startdatum, Donnerstag, 1. Oktober 2026, Enddatum, nicht gewählt"
             )
-        )
+        ).assertExists()
+    }
+
+    /** D181 (2), #217: TalkBack says a merged node's Text after its description, so the shown words are hidden. */
+    @Test
+    fun `Given the headline then TalkBack hears only its one name`() {
+        rule.runOnUiThread { rule.activity.turnOnTalkBack() }
+        show(GERMAN)
+
+        val headline = rule.onNode(hasContentDescription(NONE_CHOSEN), useUnmergedTree = true)
+            .fetchSemanticsNode()
+        var spoken = ""
+        rule.runOnUiThread { spoken = TalkBackTree(rule.activity).spokenName(headline) }
+        assertEquals(NONE_CHOSEN, spoken)
     }
 
     private companion object {
-        const val NBSP = ' '
+        const val NBSP = '\u00A0'
+        const val NONE_CHOSEN = "Startdatum, nicht gewählt, Enddatum, nicht gewählt"
         val GERMAN = DateRangePickerLabels(
             title = "Zeitraum wählen",
             confirm = "Fertig",
