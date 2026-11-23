@@ -15,6 +15,7 @@ import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.migrely.app.designsystem.theme.MigrelyTheme
 import org.junit.Assert.assertTrue
@@ -35,6 +36,11 @@ private val SQUEEZED_TEXT_AREA = 138.dp
 // The dialog's content width there: 816 px at 480 dpi.
 private val DIALOG_CONTENT_WIDTH = 272.dp
 
+// With the wide dialog in that window: Material's 560 dp less its 24 dp padding on each side, and the 116 dp text area
+// plus the 48 dp the second button row gave back.
+private val WIDE_CONTENT_WIDTH = 512.dp
+private val WIDE_TEXT_AREA = 164.dp
+
 /**
  * The custom symptom or trigger dialog keeps its Name field reachable when its buttons stack and leave the text area
  * little room (T23 8.1 row R03): the area scrolls, and the field with its counter can be brought into view whole.
@@ -48,11 +54,15 @@ class CustomTagDialogLargeFontTest {
     val rule = createComposeRule()
 
     // The system's font scale, so text grows as on the device: non-linearly at 200% from API 34.
-    private fun showSqueezedTextArea(title: String) {
+    private fun showSqueezedTextArea(
+        title: String,
+        width: Dp = DIALOG_CONTENT_WIDTH,
+        height: Dp = SQUEEZED_TEXT_AREA
+    ) {
         RuntimeEnvironment.setFontScale(LARGEST_FONT)
         rule.setContent {
             MigrelyTheme {
-                Box(Modifier.size(DIALOG_CONTENT_WIDTH, SQUEEZED_TEXT_AREA).clipToBounds()) {
+                Box(Modifier.size(width, height).clipToBounds()) {
                     CustomTagNameArea(title, TextFieldValue()) {}
                 }
             }
@@ -114,6 +124,21 @@ class CustomTagDialogLargeFontTest {
         showSqueezedTextArea("Eigenes Symptom")
 
         assertFieldInViewOnOpening("Eigenes Symptom")
+    }
+
+    @Test
+    @Config(qualifiers = "+de-rDE")
+    fun `Given German at 200 percent in the wide dialog then the field and counter show at once`() {
+        showSqueezedTextArea("Eigenes Symptom", WIDE_CONTENT_WIDTH, WIDE_TEXT_AREA)
+
+        rule.waitForIdle()
+        listOf(hasSetTextAction(), hasText("0/40")).forEach { matcher ->
+            val shown = rule.onNode(matcher).fetchSemanticsNode()
+            assertTrue(
+                "${matcher.description} shows ${shown.boundsInRoot.height} of ${shown.size.height} px",
+                shown.size.height > 0 && shown.boundsInRoot.height >= shown.size.height - 1f
+            )
+        }
     }
 
     @Test

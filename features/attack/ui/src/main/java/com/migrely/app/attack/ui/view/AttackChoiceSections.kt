@@ -60,6 +60,7 @@ import com.migrely.app.designsystem.dialog.MigrelyAlertDialog
 import com.migrely.app.designsystem.dialog.MigrelyDropdownMenu
 import com.migrely.app.designsystem.input.limitedEdit
 import com.migrely.app.designsystem.layout.PageScroll
+import com.migrely.app.designsystem.layout.isCompactHeight
 
 private const val MAXIMUM_TAG_NAME_LENGTH = 40
 
@@ -363,6 +364,8 @@ internal fun CustomTagDialog(kind: TagKindUiModel, onAdd: (String) -> Unit, onDi
         text = {
             CustomTagNameArea(title, name) { name = limitedEdit(name, it, MAXIMUM_TAG_NAME_LENGTH) }
         },
+        // In a short window the default width stacks the buttons and hides the field (T23 8.1 row R03).
+        wide = isCompactHeight(),
         confirmButton = {
             TextButton(onClick = { onAdd(name.text.trim()) }, enabled = name.text.isNotBlank()) {
                 Text(stringResource(R.string.custom_dialog_add))
