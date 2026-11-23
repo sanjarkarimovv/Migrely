@@ -301,6 +301,7 @@ internal fun CustomTagNameArea(
     onNameChange: (TextFieldValue) -> Unit
 ) {
     val fieldInView = remember { BringIntoViewRequester() }
+    val fieldWithRoomInView = remember { BringIntoViewRequester() }
     var focused by remember { mutableStateOf(false) }
     val keyboard = WindowInsets.ime.getBottom(LocalDensity.current)
     // The dialog settles over a few frames and the keyboard resizes it, so each new visible height asks again.
@@ -308,7 +309,10 @@ internal fun CustomTagNameArea(
     LaunchedEffect(focused, keyboard, visibleHeight) {
         // After a frame, so the field has been laid out and its place is known.
         withFrameNanos { }
-        fieldInView.bringIntoView()
+        // Typing: the room around the field too (the floating label's overhang, the counter's glyphs). At rest: the
+        // field alone, so a title that fits is not pushed off by a few pixels.
+        val typing = focused || keyboard > 0
+        if (typing) fieldWithRoomInView.bringIntoView() else fieldInView.bringIntoView()
     }
     PageScroll {
         Column(
@@ -329,7 +333,7 @@ internal fun CustomTagNameArea(
             // the counter's glyphs, taller than their line at large fonts.
             Box(
                 Modifier
-                    .bringIntoViewRequester(fieldInView)
+                    .bringIntoViewRequester(fieldWithRoomInView)
                     .padding(vertical = 4.dp)
             ) {
                 OutlinedTextField(
@@ -340,7 +344,9 @@ internal fun CustomTagNameArea(
                         Text(stringResource(R.string.custom_dialog_counter, name.text.length))
                     },
                     singleLine = true,
-                    modifier = Modifier.onFocusChanged { focused = it.isFocused }
+                    modifier = Modifier
+                        .bringIntoViewRequester(fieldInView)
+                        .onFocusChanged { focused = it.isFocused }
                 )
             }
         }
