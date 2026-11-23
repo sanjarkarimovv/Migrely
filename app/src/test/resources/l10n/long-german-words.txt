@@ -1,10 +1,10 @@
-# German words over 16 letters (BRD D195, design D6 check 5). One word per line, then a tab, the screen where it shows,
-# and whether it was seen whole at 200% font on a 360 dp phone in portrait and landscape (task 8.1). A word without a
-# screen fails the gate. "not yet seen" is replaced by the date of the 8.1 walk, or the word is rewritten.
-Benachrichtigungen	Reminders: notifications-off line, visit channel-off line, open-settings button name (TalkBack); not yet seen (8.1)
-Geruchsempfindlich	Attack details: symptom chip; not yet seen (8.1)
-Hirnhautentzündung	Settings > Warning signs: list item 7; not yet seen (8.1)
-Datenschutzerklärung	Settings > Privacy: policy link; not yet seen (8.1)
-Sicherheitshinweis	Paywall: free-stays line under the benefits; not yet seen (8.1)
-Migrely-Sicherungsdatei	Your data: "Sicherung importieren" row summary; seen whole 2026-11-23 at 200% 360 dp portrait, landscape not yet seen (8.1)
-Migrely-Sicherung	Your data: message after importing a file that is not a backup; not yet seen (8.1)
+# German words over 16 letters (BRD D195, design D6 check 5). One word per line: the word, a tab, the screen where it
+# shows, a tab, and "seen YYYY-MM-DD": the date of the 8.1 walk where it was seen whole at 200% font on a 360 dp phone
+# in portrait and landscape. A word without that date fails the gate; a word that does not fit is rewritten.
+Benachrichtigungen	Reminders: notifications-off line (walked); also the visit channel-off line and the open-settings button name (TalkBack)	seen 2026-11-24
+Geruchsempfindlich	Attack details: symptom chip	seen 2026-11-24
+Hirnhautentzündung	Settings > Warning signs: list item 7	seen 2026-11-24
+Datenschutzerklärung	Settings > Privacy: policy link	seen 2026-11-24
+Sicherheitshinweis	Paywall: free-stays line under the benefits	seen 2026-11-24
+Migrely-Sicherungsdatei	Your data: "Sicherung importieren" row summary	seen 2026-11-24
+Migrely-Sicherung	Your data: message after importing a file that is not a backup	seen 2026-11-24

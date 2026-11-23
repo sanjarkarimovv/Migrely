@@ -24,6 +24,8 @@ private val ESCAPE = Regex("""\\(u[0-9a-fA-F]{4}|.)""")
 private val UNESCAPED_QUOTE = Regex("""(?<!\\)"""")
 private const val UNICODE_ESCAPE_LENGTH = 5
 private const val HEX = 16
+private val WALK_DATE = Regex("""\tseen \d{4}-\d{2}-\d{2}""")
+private const val NOT_SEEN = "not yet seen"
 private val NUMBER_SPACE_UNIT = Regex("""(\d|%(\d+\$)?d) (Min\.|Std\.|Tg\.|%%|mg\b|€)""")
 
 /**
@@ -35,7 +37,8 @@ private val NUMBER_SPACE_UNIT = Regex("""(\d|%(\d+\$)?d) (Min\.|Std\.|Tg\.|%%|mg
  * 3. placeholders match as a multiset (a plural's `one` may drop the number), arrays have as many items;
  * 4. a value equal to English fails unless it is on the reviewed list `l10n/same-as-english.txt`;
  * 5. a word over 16 characters, counted as [wordsOver] does, fails unless it is on
- *    `l10n/long-german-words.txt` with the screen where it was seen;
+ *    `l10n/long-german-words.txt` with its screen and the date of the 8.1 walk where it was seen whole
+ *    ("word<TAB>screen<TAB>seen YYYY-MM-DD");
  * 6. `res/xml/locales_config.xml`, [APP_LANGUAGES] and the translated folders name the same languages;
  * 7. no soft hyphen or zero-width character, and a number keeps its unit on its line (a no-break space).
  *
@@ -101,9 +104,8 @@ class LocalizationCompletenessTest {
                     .toList()
             }
         }
-        val unseen = longWords.filterValues(String::isBlank).keys.map {
-            "long-german-words.txt: \"$it\" names no screen where it was seen"
-        }
+        val unseen = longWords.filterValues { !WALK_DATE.containsMatchIn(it) || NOT_SEEN in it }
+            .keys.map { "long-german-words.txt: \"$it\" has no 8.1 walk date (seen YYYY-MM-DD)" }
         assertNoProblems(unlisted + unseen)
     }
 
