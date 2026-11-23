@@ -1968,9 +1968,15 @@ def check_t2_pages(built, cleared):
         except (AttributeError, ValueError):
             raise SystemExit("SITE_DEPLOY is set but the policy's \"Effective date: D Month YYYY\" line cannot be read.")
         if not T2_POLICY_FROM <= stamp <= date.today():
-            raise SystemExit(f"SITE_DEPLOY is set and the counter is on: the policy's effective date {stamp} must be the "
-                             f'deploy day, between {T2_POLICY_FROM} and today ({date.today()}).')
-    if function_code(T2_FUNCTION.read_text()) != T2_FUNCTION_CODE:
+            raise SystemExit(f"SITE_DEPLOY is set and the counter is on: the policy's effective date {stamp} must be "
+                             f'between {T2_POLICY_FROM} and today ({date.today()}, this machine\'s clock, Tashkent). Set it '
+                             'to the deploy day.')
+    raw = T2_FUNCTION.read_bytes()
+    odd = sorted({b for b in raw if b != 10 and not 0x20 <= b <= 0x7E})
+    if odd:
+        raise SystemExit(f'the Function must be plain ASCII with \\n line ends only (JavaScript ends a comment at '
+                         f'U+2028 and U+2029, Python does not): found bytes {odd}.')
+    if function_code(raw.decode('ascii')) != T2_FUNCTION_CODE:
         raise SystemExit('the Function must be exactly the expected code: the test-2 Play link, a 302 for every request, '
                          'and nothing read, stored or called (BRD D196).')
 

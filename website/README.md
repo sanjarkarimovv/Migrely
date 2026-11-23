@@ -100,6 +100,7 @@ Live since 26 October 2026:
    files", which makes a Worker).
    - Choose **Upload assets** and name it `migrely`.
    - Upload `website/public` as a zip, with its files at the zip's root (`index.html`, `_headers`, …), and deploy.
+   - Then deploy once with the update recipe below (wrangler, with `functions/`); `/go/android-t2` must answer 302.
    - Pages applies `_headers` and serves `404.html` for missing pages.
 4. **Turn off Email Address Obfuscation** (search for it in the dashboard; under Security → Settings, or Scrape
    Shield). If it is on, Cloudflare rewrites every address on the site into "[email protected]" and adds a script that
@@ -120,6 +121,7 @@ Live since 26 October 2026:
      `/support/` and `/delete-data/` answer 200,
      and a missing page answers 404;
    - `www` and `http` redirect with 301;
+   - `https://migrely.health/go/android-t2` answers 302 with the Play link;
    - the response headers include the `Content-Security-Policy` from `_headers`;
    - the pages show `support@` and `privacy@` as plain addresses, with no `email-decode` script;
    - an email from another mailbox to each address arrives.
@@ -128,7 +130,7 @@ Live since 26 October 2026:
 `302` to the test-2 Play link and reads, stores and logs nothing; the count is the project's "Functions metrics" in the
 Cloudflare dashboard (Requests, up to three months). A dashboard zip upload does **not** compile `functions/`
 (Cloudflare, "Direct Upload", read 2026-11-23), so the recipe below uses wrangler only.
-**Deploy-day steps for the counter (BRD D196).** The branch is not merged into `develop` before deploy day: on that day the main session sets the date, merges and the owner deploys from that merge. (1) before anything, screenshot Cloudflare → Workers & Pages → migrely → Settings, showing Functions / Logs and any Logpush job; (2) the main session sets the policy's `Effective date:` in `docs/release/privacy-policy.md` to the deploy day in one commit, then regenerates `privacy-policy.html`; (3) build with `SITE_DEPLOY=1 python3 website/build.py`, which stops on an older date; (4) deploy with wrangler from the folder that holds `functions/`; (5) `curl -I /go/android-t2` must be 302.
+**Deploy-day steps for the counter (BRD D196).** The branch is not merged into `develop` before deploy day: on that day the main session sets the date, merges and the owner deploys from that merge. (1) before anything, screenshot Cloudflare → Workers & Pages → migrely → Settings, showing Functions / Logs and any Logpush job; (2) the main session sets the policy's `Effective date:` in `docs/release/privacy-policy.md` to the deploy day in one commit, then regenerates `privacy-policy.html`; (3) build with `SITE_DEPLOY=1 python3 website/build.py`, which stops on an older date; (4) deploy with wrangler from the folder that holds `functions/`; (5) `curl -I /go/android-t2` must be 302. The date check runs only under `SITE_DEPLOY`: after the date commit, builds with and without it pass on that day; a `SITE_DEPLOY` build dated before 23 November 2026 or after today stops, and on a later day the old date still passes.
 To go back to a direct Play link, set `T2_COUNT = False` in `build.py` and delete `website/functions/`.
 
 To update the site (one recipe; a dashboard zip upload is not used, it cannot compile `functions/`):
