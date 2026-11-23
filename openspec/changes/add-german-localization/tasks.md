@@ -160,6 +160,10 @@ merge the latest `origin/develop` (with #255) so the translated set is final; if
   - [ ] Switch Access: the same steps (select the already-focused field after Back, then type). Is the typed line
     visible? EN 100% and DE 200%. If not, a finding for `android-engineer`, as above.
   - [ ] A Bluetooth (or emulated hardware) keyboard attached, with "Use on-screen keyboard" forced on: tap the field.
+    eng-de3, 5570 at 5024ecae (`8.1-walk.md`, HW-kbd): forced on PASS (narrow with the keyboard, typed line visible,
+    wide after Back). Setting off: not produced on this image (Gboard rises beside the emulated keyboard and the dialog
+    narrows, as specified for a rising keyboard); "wide while typing on the hardware keyboard alone" rests on
+    `CustomTagDialogWiringTest`.
     The on-screen keyboard rises and the dialog narrows, the typed line visible above it; close the keyboard and the
     dialog is wide again. With the setting off: the dialog stays wide while typing on the hardware keyboard.
   - [x] F3: Material's `BasicAlertDialog` names its pane "Dialog" and `ScrollingDialogContent` names it by the title.
