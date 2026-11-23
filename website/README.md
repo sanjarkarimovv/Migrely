@@ -126,19 +126,22 @@ Live since 26 October 2026:
 
 **The tap counter (BRD D196).** `website/functions/go/android-t2.js` is the project's only Pages Function. It answers
 `302` to the test-2 Play link and reads, stores and logs nothing; the count is the project's "Functions metrics" in the
-Cloudflare dashboard (Requests, up to three months). A dashboard zip upload does **not** compile `functions/`, so a site
-that carries it is deployed with `wrangler pages deploy <site folder>` run in the folder that also holds `functions/`
-(Cloudflare, "Direct Upload", read 2026-11-23). After every deploy run `curl -I https://migrely.health/go/android-t2`:
-it must be `302` with the Play link, because a deploy without `functions/` leaves `/android-t2/` with a dead button.
-**Deploy-day steps for the counter (BRD D196):** (1) before anything, screenshot Cloudflare → Workers & Pages → migrely → Settings, showing Functions / Logs and any Logpush job; (2) the main session sets the policy's `Effective date:` in `docs/release/privacy-policy.md` to the deploy day in one commit, then regenerates `privacy-policy.html`; (3) build with `SITE_DEPLOY=1 python3 website/build.py`, which stops on an older date; (4) deploy with wrangler from the folder that holds `functions/`; (5) `curl -I /go/android-t2` must be 302.
+Cloudflare dashboard (Requests, up to three months). A dashboard zip upload does **not** compile `functions/`
+(Cloudflare, "Direct Upload", read 2026-11-23), so the recipe below uses wrangler only.
+**Deploy-day steps for the counter (BRD D196).** The branch is not merged into `develop` before deploy day: on that day the main session sets the date, merges and the owner deploys from that merge. (1) before anything, screenshot Cloudflare → Workers & Pages → migrely → Settings, showing Functions / Logs and any Logpush job; (2) the main session sets the policy's `Effective date:` in `docs/release/privacy-policy.md` to the deploy day in one commit, then regenerates `privacy-policy.html`; (3) build with `SITE_DEPLOY=1 python3 website/build.py`, which stops on an older date; (4) deploy with wrangler from the folder that holds `functions/`; (5) `curl -I /go/android-t2` must be 302.
 To go back to a direct Play link, set `T2_COUNT = False` in `build.py` and delete `website/functions/`.
 
-To update the site:
+To update the site (one recipe; a dashboard zip upload is not used, it cannot compile `functions/`):
 
-1. Run `./gradlew :app:checkReleasePermissions`, then `python3 website/build.py`.
+1. Run `./gradlew :app:checkReleasePermissions`, then `python3 website/build.py` (`SITE_DEPLOY=1 python3 website/build.py`
+   for a deploy build: with the counter on it refuses a policy date before 23 November 2026 or after today).
 2. Commit `website/public` and `website/lastmod.json`.
-3. Zip `website/public` again with its files at the root.
-4. Deployments → **Create deployment** → upload.
+3. In a clean folder put `site/` (a copy of `website/public`, committed bytes) and `functions/` (a copy of
+   `website/functions`). From that folder run
+   `CLOUDFLARE_ACCOUNT_ID=<account> npx wrangler@4.158.0 pages deploy site --project-name migrely --branch main --commit-hash <sha>`
+   (the login is the owner's click). The Pages project's other deploy steps are in the owner's launch notes.
+4. After every deploy run `curl -I https://migrely.health/go/android-t2`: it must answer `302` with the Play link.
+   A deploy without `functions/` answers 404 and leaves `/android-t2/` with dead buttons.
 
 ## Google Play
 

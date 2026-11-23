@@ -12,28 +12,28 @@ The site SHALL serve `/android-t2/`, a `noindex` page outside the sitemap, `llms
 
 #### Scenario: No other page leads to it
 
-- **WHEN** any other page links to `/android-t2/` or `/go/`
+- **WHEN** any other page, `404.html` or `llms.txt` links to `/android-t2/` or `/go/`
 - **THEN** the build stops
 
 ### Requirement: The Play button can count taps without storing anything
 
-With `T2_COUNT` on, both Play buttons on `/android-t2/` SHALL link to `/go/android-t2`, served by the project's only Pages Function, which answers 302 to the exact test-2 Play link with `utm_*` and `referrer` unchanged and reads, stores and calls nothing. With it off, both buttons SHALL carry the Play link and `website/functions/` SHALL be empty.
+With `T2_COUNT` on, both Play buttons on `/android-t2/` SHALL link to `/go/android-t2`, served by the project's only Pages Function, which answers every request, whatever its method, with the same 302 to the exact test-2 Play link with `utm_*` and `referrer` unchanged, and reads, stores and calls nothing. With it off, both buttons SHALL carry the Play link and `website/functions/` SHALL be empty.
 
 #### Scenario: A visitor taps the button
 
-- **WHEN** `GET /go/android-t2` is requested, with or without a cookie, a `Referer` or a query string
+- **WHEN** `/go/android-t2` is requested with any method, with or without a cookie, a `Referer` or a query string
 - **THEN** the response is `302` and `Location` equals the test-2 Play link byte for byte
 - **AND** it sets no cookie and its headers include `Cache-Control: no-store` and `Referrer-Policy: no-referrer`
 
 #### Scenario: The Function drifts
 
-- **WHEN** the Function's link differs from the page's, answers 301, reads the request's headers or IP, logs, or a second Function file exists
+- **WHEN** the Function's text differs in any non-comment line from the expected code (another link or status, a header or IP read, a branch, an import, a log), or a second Function file exists
 - **THEN** the build stops
 
 #### Scenario: The counter is not used
 
 - **WHEN** `T2_COUNT` is false
-- **THEN** both buttons carry the test-2 Play link directly, `play.google.com` appears twice in the page, and the build stops if any file remains under `website/functions/`
+- **THEN** both buttons carry the test-2 Play link directly, `play.google.com` appears twice and `/go/` not at all in the page, and the build stops if any file remains under `website/functions/`
 
 #### Scenario: A deploy leaves the Function out
 

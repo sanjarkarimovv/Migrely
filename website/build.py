@@ -1870,8 +1870,25 @@ def check_bio_pages(built):
             raise fail('viewport needs viewport-fit=cover and must allow zoom.')
 
 
-T2_FORBIDDEN_IN_FUNCTION = re.compile(r'request\.headers|cf-connecting-ip|\bcf\b|console\.|\benv\b|fetch\(|cookie|\.put\(|'
-                                      r'waitUntil|\.text\(|\.json\(|\.url\b|new URL|KV|D1|Analytics', re.I)
+# The Function, line by line, apart from comment lines. An allowlist: anything else (a header read, a branch, an import, a
+# trailing comment, a second export) stops the build, so "unconditional and reads nothing" is checked, not trusted.
+T2_FUNCTION_CODE = f"""const PLAY = '{T2_PLAY_EXPECTED}';
+export function onRequest() {{
+return new Response(null, {{
+status: 302,
+headers: {{
+Location: PLAY,
+'Cache-Control': 'no-store',
+'Referrer-Policy': 'no-referrer',
+'X-Robots-Tag': 'noindex',
+}},
+}});
+}}"""
+
+
+def function_code(source):
+    """The Function's lines without comment lines, blank lines and indentation."""
+    return '\n'.join(line.strip() for line in source.split('\n') if line.strip() and not line.strip().startswith('//'))
 
 
 def text_segments(content):
@@ -1894,6 +1911,8 @@ def check_t2_pages(built, cleared):
                 raise fail(f'must have exactly two buttons to {T2_GO} and no Play link of its own.')
         elif content.count(f'href="{esc(T2_PLAY_EXPECTED)}"') != 2 or content.count('play.google.com') != 2:
             raise fail('must carry the exact test-2 Play link on exactly two buttons.')
+        elif '/go/' in content:
+            raise fail('T2_COUNT is off, so the page must not link to /go/.')
         if '<meta name="robots" content="noindex">' not in content:
             raise fail('must be noindex.')
         if f'<link rel="canonical" href="{BASE}{path}">' not in content:
@@ -1943,20 +1962,17 @@ def check_t2_pages(built, cleared):
         raise SystemExit('with T2_COUNT on, the privacy policy must describe the counter and no longer say the site runs '
                          'no "analytics" (BRD D196): it goes live no later than /go/.')
     if os.environ.get('SITE_DEPLOY'):
-        dated = re.search(r'Effective date: (\d+ \w+ \d{4})', policy)
-        stamp = datetime.strptime(dated.group(1), '%d %B %Y').date() if dated else None
-        if stamp is None or stamp < T2_POLICY_FROM:
-            raise SystemExit(f'SITE_DEPLOY is set and the counter is on: the policy\'s effective date must be the deploy '
-                             f'day, not earlier than {T2_POLICY_FROM} (found {dated.group(1) if dated else "none"}).')
-    source = T2_FUNCTION.read_text()
-    if re.findall(r"'(https://play\.google\.com[^']*)'", source) != [T2_PLAY_EXPECTED]:
-        raise SystemExit('the Function must hold exactly the test-2 Play link.')
-    if 'status: 302' not in source or 'Location: PLAY' not in source:
-        raise SystemExit('the Function must answer 302 with Location: PLAY.')
-    code = re.sub(r'//[^\n]*', '', source)
-    found = T2_FORBIDDEN_IN_FUNCTION.search(code)
-    if found:
-        raise SystemExit(f'the Function must read, store and call nothing: found {found.group(0)}.')
+        dated = re.search(r'Effective date: (\d{1,2} [A-Z][a-z]+ \d{4})', policy)
+        try:
+            stamp = datetime.strptime(dated.group(1), '%d %B %Y').date()
+        except (AttributeError, ValueError):
+            raise SystemExit("SITE_DEPLOY is set but the policy's \"Effective date: D Month YYYY\" line cannot be read.")
+        if not T2_POLICY_FROM <= stamp <= date.today():
+            raise SystemExit(f"SITE_DEPLOY is set and the counter is on: the policy's effective date {stamp} must be the "
+                             f'deploy day, between {T2_POLICY_FROM} and today ({date.today()}).')
+    if function_code(T2_FUNCTION.read_text()) != T2_FUNCTION_CODE:
+        raise SystemExit('the Function must be exactly the expected code: the test-2 Play link, a 302 for every request, '
+                         'and nothing read, stored or called (BRD D196).')
 
 
 def check_no_links_to(pages, targets):
@@ -2094,7 +2110,9 @@ def main():
     cleared = text_segments(ads['/android/'][1]) | text_segments(bio['/instagram/'][1])
     check_t2_pages(t2, cleared)
     check_no_links_to({**built, **ads, **bio, **t2}, [*ads, *bio, *t2])
-    for path, (_, content) in {**built, **ads, **bio}.items():
+    llms_text = llms_txt()
+    for path, content in [*((p, c) for p, (_, c) in {**built, **ads, **bio}.items()), ('/404.html', not_found()),
+                          ('/llms.txt', llms_text)]:
         if '/go/' in content:
             raise SystemExit(f'{path} links to /go/, which only /android-t2/ may.')
     check_orphans(built)
