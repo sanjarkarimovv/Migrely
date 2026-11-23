@@ -16,12 +16,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -45,8 +43,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.migrely.app.designsystem.button.MigrelyIconButton
 import com.migrely.app.designsystem.icon.MigrelyIcons
 import com.migrely.app.designsystem.layout.MigrelyInsets
+import com.migrely.app.designsystem.layout.PageScroll
 import com.migrely.app.designsystem.sky.SkyAppearance
 import com.migrely.app.designsystem.sky.SkyCanvas
 import com.migrely.app.designsystem.theme.MigrelyTheme
@@ -91,53 +91,59 @@ fun TodayContents(
     val appearance = skyAppearanceUiMapper.toAppearance(today.sky)
     if (isCompactHeight()) {
         Row(horizontalArrangement = Arrangement.spacedBy(24.dp), modifier = screenModifier) {
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .verticalScroll(rememberScrollState())
-            ) {
-                DayHeader(dayTitle, onSettings, onSettingsRowHeight, settingsModifier)
-                Column(Modifier.fillMaxWidth()) {
-                    trialBanner()
-                    TodaySkyCard(today = today, appearance = appearance)
-                    if (today.periodOffered) PeriodToday(today.periodToday, onPeriodToday)
-                    medicationPrompt()
-                    visitCard()
-                    TodayAttackList(today.attacks, nowMillis, timeUiFormatter, onAttackDetails)
-                    monthCalendar()
+            PageScroll {
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .pageScroll(rememberScrollState())
+                ) {
+                    DayHeader(dayTitle, onSettings, onSettingsRowHeight, settingsModifier)
+                    Column(Modifier.fillMaxWidth()) {
+                        trialBanner()
+                        TodaySkyCard(today = today, appearance = appearance)
+                        if (today.periodOffered) PeriodToday(today.periodToday, onPeriodToday)
+                        medicationPrompt()
+                        visitCard()
+                        TodayAttackList(today.attacks, nowMillis, timeUiFormatter, onAttackDetails)
+                        monthCalendar()
+                    }
+                    Spacer(Modifier.height(24.dp))
                 }
-                Spacer(Modifier.height(24.dp))
             }
-            Column(
-                verticalArrangement = Arrangement.Center,
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight()
-                    .verticalScroll(rememberScrollState())
-            ) {
-                StartAttackButton(onStartAttack)
-                Spacer(Modifier.height(8.dp))
-                QuietLinks(onAddPastAttack, onLogMedication, lastModifier)
+            PageScroll {
+                Column(
+                    verticalArrangement = Arrangement.Center,
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .pageScroll(rememberScrollState())
+                ) {
+                    StartAttackButton(onStartAttack)
+                    Spacer(Modifier.height(8.dp))
+                    QuietLinks(onAddPastAttack, onLogMedication, lastModifier)
+                }
             }
         }
     } else {
         Column(modifier = screenModifier) {
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .verticalScroll(rememberScrollState())
-            ) {
-                DayHeader(dayTitle, onSettings, onSettingsRowHeight, settingsModifier)
-                Column(Modifier.fillMaxWidth()) {
-                    trialBanner()
-                    TodaySkyCard(today = today, appearance = appearance)
-                    if (today.periodOffered) PeriodToday(today.periodToday, onPeriodToday)
-                    medicationPrompt()
-                    visitCard()
-                    TodayAttackList(today.attacks, nowMillis, timeUiFormatter, onAttackDetails)
-                    monthCalendar()
+            PageScroll {
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .pageScroll(rememberScrollState())
+                ) {
+                    DayHeader(dayTitle, onSettings, onSettingsRowHeight, settingsModifier)
+                    Column(Modifier.fillMaxWidth()) {
+                        trialBanner()
+                        TodaySkyCard(today = today, appearance = appearance)
+                        if (today.periodOffered) PeriodToday(today.periodToday, onPeriodToday)
+                        medicationPrompt()
+                        visitCard()
+                        TodayAttackList(today.attacks, nowMillis, timeUiFormatter, onAttackDetails)
+                        monthCalendar()
+                    }
+                    Spacer(Modifier.height(8.dp))
                 }
-                Spacer(Modifier.height(8.dp))
             }
             Spacer(Modifier.height(16.dp))
             StartAttackButton(onStartAttack)
@@ -256,10 +262,14 @@ private fun DayHeader(
                 .weight(1f)
                 .padding(start = 8.dp, top = 16.dp, bottom = 16.dp)
         )
-        IconButton(onClick = onSettings, modifier = settingsModifier) {
+        MigrelyIconButton(
+            contentDescription = stringResource(R.string.home_settings),
+            onClick = onSettings,
+            modifier = settingsModifier
+        ) {
             Icon(
                 MigrelyIcons.Settings,
-                contentDescription = stringResource(R.string.home_settings),
+                contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }

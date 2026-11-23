@@ -20,7 +20,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -64,6 +63,9 @@ import androidx.navigation.NavController
 import com.migrely.app.architecture.ui.view.ScreenEnterObserver
 import com.migrely.app.designsystem.icon.MigrelyIcons
 import com.migrely.app.designsystem.layout.MigrelyInsets
+import com.migrely.app.designsystem.layout.PageScroll
+import com.migrely.app.designsystem.layout.ownWords
+import com.migrely.app.designsystem.layout.wordsShownOnly
 import com.migrely.app.designsystem.motion.rememberReduceMotion
 import com.migrely.app.designsystem.snackbar.MessageLayout
 import com.migrely.app.designsystem.snackbar.MigrelySnackbar
@@ -256,23 +258,25 @@ fun PaywallContents(
                 )
             }
             Box(contentAlignment = Alignment.TopCenter, modifier = Modifier.fillMaxSize()) {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                    modifier = Modifier
-                        .widthIn(max = CONTENT_MAX_WIDTH)
-                        .fillMaxWidth()
-                        .windowInsetsPadding(
-                            MigrelyInsets.bars.only(
-                                WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
+                PageScroll {
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                        modifier = Modifier
+                            .widthIn(max = CONTENT_MAX_WIDTH)
+                            .fillMaxWidth()
+                            .windowInsetsPadding(
+                                MigrelyInsets.bars.only(
+                                    WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
+                                )
                             )
-                        )
-                        .verticalScroll(rememberScrollState())
-                        .padding(start = 24.dp, end = 24.dp, bottom = 24.dp)
-                ) {
-                    if (unlocked != null) {
-                        PaywallSuccess(unlocked, actions)
-                    } else {
-                        PaywallOffer(context, viewState, chosen, actions)
+                            .pageScroll(rememberScrollState())
+                            .padding(start = 24.dp, end = 24.dp, bottom = 24.dp)
+                    ) {
+                        if (unlocked != null) {
+                            PaywallSuccess(unlocked, actions)
+                        } else {
+                            PaywallOffer(context, viewState, chosen, actions)
+                        }
                     }
                 }
             }
@@ -331,9 +335,12 @@ private fun PaywallOffer(
     TextButton(
         onClick = actions.onRestore,
         enabled = !working && viewState != PaywallViewStateUiModel.Unavailable,
-        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 48.dp)
+            .ownWords(stringResource(R.string.subscription_restore))
     ) {
-        Text(stringResource(R.string.subscription_restore))
+        Text(stringResource(R.string.subscription_restore), modifier = Modifier.wordsShownOnly())
     }
     Benefits()
 }
@@ -423,9 +430,12 @@ private fun Plans(
         Button(
             onClick = { actions.onBuy(choice) },
             enabled = !working,
-            modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 56.dp)
+                .ownWords(stringResource(choice.buyLabel()))
         ) {
-            Text(stringResource(choice.buyLabel()))
+            Text(stringResource(choice.buyLabel()), modifier = Modifier.wordsShownOnly())
         }
         Text(
             terms(choice),

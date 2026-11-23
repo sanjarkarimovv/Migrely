@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -42,6 +41,9 @@ import androidx.navigation.NavController
 import com.migrely.app.architecture.ui.view.ScreenEnterObserver
 import com.migrely.app.designsystem.icon.MigrelyIcons
 import com.migrely.app.designsystem.layout.MigrelyInsets
+import com.migrely.app.designsystem.layout.PageScroll
+import com.migrely.app.designsystem.layout.ownWords
+import com.migrely.app.designsystem.layout.wordsShownOnly
 import com.migrely.app.designsystem.theme.MigrelyTheme
 import com.migrely.app.insights.ui.R
 import com.migrely.app.insights.ui.di.InsightsDependencies
@@ -142,51 +144,62 @@ fun InsightsContents(
                 )
             )
             Box(contentAlignment = Alignment.TopCenter, modifier = Modifier.fillMaxSize()) {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                    modifier = Modifier
-                        .widthIn(max = CONTENT_MAX_WIDTH)
-                        .fillMaxWidth()
-                        .windowInsetsPadding(
-                            MigrelyInsets.bars.only(
-                                WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
+                PageScroll {
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                        modifier = Modifier
+                            .widthIn(max = CONTENT_MAX_WIDTH)
+                            .fillMaxWidth()
+                            .windowInsetsPadding(
+                                MigrelyInsets.bars.only(
+                                    WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
+                                )
                             )
-                        )
-                        .verticalScroll(rememberScrollState())
-                        .padding(16.dp)
-                ) {
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        MONTH_CHOICES.forEach { choice ->
-                            FilterChip(
-                                selected = months == choice,
-                                onClick = { if (choice != months) actions.onPeriod(choice) },
-                                label = {
-                                    Text(
-                                        pluralStringResource(
-                                            R.plurals.insights_months,
-                                            choice,
-                                            choice
+                            .pageScroll(rememberScrollState())
+                            .padding(16.dp)
+                    ) {
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            MONTH_CHOICES.forEach { choice ->
+                                FilterChip(
+                                    selected = months == choice,
+                                    onClick = { if (choice != months) actions.onPeriod(choice) },
+                                    label = {
+                                        Text(
+                                            pluralStringResource(
+                                                R.plurals.insights_months,
+                                                choice,
+                                                choice
+                                            ),
+                                            modifier = Modifier.wordsShownOnly()
                                         )
-                                    )
-                                },
-                                modifier = Modifier.heightIn(min = 48.dp)
-                            )
+                                    },
+                                    modifier = Modifier
+                                        .heightIn(min = 48.dp)
+                                        .ownWords(
+                                            pluralStringResource(
+                                                R.plurals.insights_months,
+                                                choice,
+                                                choice
+                                            )
+                                        )
+                                )
+                            }
                         }
-                    }
-                    when (viewState) {
-                        is InsightsViewStateUiModel.Ready -> InsightsBody(viewState.insights)
-                        InsightsViewStateUiModel.Unavailable -> Text(
-                            stringResource(R.string.insights_unavailable),
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        InsightsViewStateUiModel.Loading -> {
-                            val description = stringResource(R.string.insights_loading)
-                            LinearProgressIndicator(
-                                modifier = Modifier.fillMaxWidth().semantics {
-                                    contentDescription = description
-                                }
+                        when (viewState) {
+                            is InsightsViewStateUiModel.Ready -> InsightsBody(viewState.insights)
+                            InsightsViewStateUiModel.Unavailable -> Text(
+                                stringResource(R.string.insights_unavailable),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
+                            InsightsViewStateUiModel.Loading -> {
+                                val description = stringResource(R.string.insights_loading)
+                                LinearProgressIndicator(
+                                    modifier = Modifier.fillMaxWidth().semantics {
+                                        contentDescription = description
+                                    }
+                                )
+                            }
                         }
                     }
                 }

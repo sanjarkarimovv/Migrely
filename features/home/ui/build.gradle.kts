@@ -74,6 +74,7 @@ dependencies {
     testDebugImplementation(platform(libs.compose.bom))
     testDebugImplementation(libs.test.compose.ui.junit4)
     testDebugImplementation(libs.test.robolectric)
+    testDebugImplementation(projects.architecture.uiTest)
     debugImplementation(libs.compose.ui.test.manifest)
     testImplementation(libs.test.mockito.kotlin)
 }
