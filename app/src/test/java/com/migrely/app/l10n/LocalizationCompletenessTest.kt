@@ -2,6 +2,7 @@ package com.migrely.app.l10n
 
 import com.migrely.app.locale.APP_LANGUAGES
 import java.io.File
+import java.text.Normalizer
 import javax.xml.parsers.DocumentBuilderFactory
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -12,8 +13,9 @@ private const val ENGLISH = "en"
 private const val LONGEST_UNLISTED_WORD = 16
 private val PLACEHOLDER = Regex("""%(\d+\$)?[-#+ 0,(]*\d*(\.\d+)?[a-zA-Z%]""")
 
-// A hyphenated compound counts as one word: Android does not break a line at a written hyphen (ux R16, R18).
-private val WORD = Regex("""\p{L}+(-\p{L}+)*""")
+// A word Android cannot break counts whole: letters joined by a hyphen (Android does not break at a written hyphen,
+// ux R16, R18), a non-breaking hyphen (U+2011) or a no-break space (cr-de round 2).
+private val WORD = Regex("""\p{L}+([-\u2011\u00A0]\p{L}+)*""")
 private val LANGUAGE_FOLDER = Regex("""values-([a-z]{2,3})(-r[A-Z]{2})?""")
 private val SKIPPED_FOLDERS = setOf("build", ".git", ".gradle", "node_modules", "website")
 private val MAIN_RES = "src${File.separator}main${File.separator}res"
@@ -32,7 +34,7 @@ private val NUMBER_SPACE_UNIT = Regex("""(\d|%(\d+\$)?d) (Min\.|Std\.|Tg\.|%%|mg
  * 2. the names of strings, plurals and arrays match, after dropping `translatable="false"`;
  * 3. placeholders match as a multiset (a plural's `one` may drop the number), arrays have as many items;
  * 4. a value equal to English fails unless it is on the reviewed list `l10n/same-as-english.txt`;
- * 5. a word over 16 characters, a hyphenated compound counted whole, fails unless it is on
+ * 5. a word over 16 characters, counted as [wordsOver] does, fails unless it is on
  *    `l10n/long-german-words.txt` with the screen where it was seen;
  * 6. `res/xml/locales_config.xml`, [APP_LANGUAGES] and the translated folders name the same languages;
  * 7. no soft hyphen or zero-width character, and a number keeps its unit on its line (a no-break space).
@@ -93,9 +95,8 @@ class LocalizationCompletenessTest {
     fun `No German word over 16 letters unless seen in place`() {
         val unlisted = translationPairs().flatMap { (_, translated) ->
             translated.texts().flatMap { (key, value) ->
-                WORD.findAll(value.replace(PLACEHOLDER, " ").replace(INVISIBLE_BREAKS, ""))
-                    .map { it.value }
-                    .filter { it.length > LONGEST_UNLISTED_WORD && it !in longWords }
+                wordsOver(LONGEST_UNLISTED_WORD, value)
+                    .filter { it !in longWords }
                     .map { "${translated.label}: $key has \"$it\" (${it.length} letters)" }
                     .toList()
             }
@@ -284,3 +285,18 @@ private fun parse(file: File) =
 
 private fun childElements(parent: Element): List<Element> =
     (0 until parent.childNodes.length).mapNotNull { parent.childNodes.item(it) as? Element }
+
+/**
+ * The words of [value] longer than [limit] characters, as the gate counts them (design D6, cr-de round 2): composed
+ * (NFC), so a decomposed umlaut does not split a word; joined by a hyphen, a non-breaking hyphen or a no-break space;
+ * and with each placeholder counted as letters of its own length, so "%1$s-Sicherung" is one word. The words are given
+ * as written.
+ */
+internal fun wordsOver(limit: Int, value: String): List<String> {
+    val text = Normalizer.normalize(value, Normalizer.Form.NFC).replace(INVISIBLE_BREAKS, "")
+    val placeholdersAsLetters = PLACEHOLDER.replace(text) { "x".repeat(it.value.length) }
+    return WORD.findAll(placeholdersAsLetters)
+        .filter { it.value.length > limit }
+        .map { text.substring(it.range) }
+        .toList()
+}
