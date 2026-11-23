@@ -163,7 +163,7 @@ merge the latest `origin/develop` (with #255) so the translated set is final; if
   in system settings; CSV separator on an en-US system with per-app German. Verify: rows in `migrely-work/de/8.2-rule.md`
   with the exact `adb` commands and results; system locale restored.
 
-- [ ] 8.3 (`android-engineer`) Build the lead's custom tag width rule (design D10 item 6, `custom-tags` spec): narrow on
+- [x] 8.3 (`android-engineer`) Build the lead's custom tag width rule (design D10 item 6, `custom-tags` spec): narrow on
   `PressInteraction.Release` or focus gained, not on `PressInteraction.Cancel` or a long press, never while
   `Configuration.hardKeyboardHidden == HARDKEYBOARDHIDDEN_NO`, wide again 3000 ms after the latest intent with no
   on-screen keyboard up; a rising keyboard narrows, a closing one widens. Red first for each new case (cancelled drag,
