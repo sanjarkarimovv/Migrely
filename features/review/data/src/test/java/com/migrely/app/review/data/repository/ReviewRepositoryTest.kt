@@ -214,4 +214,12 @@ class ReviewRepositoryTest {
 
         assertEquals(LastSafetyCardDomainModel.ShownAt(NOW), classUnderTest.lastSafetyCardShown())
     }
+
+    @Test
+    fun `Given a stored safety-card mark later than an unsaved one then the stored one counts`() {
+        given(preferencesDataSource.safetyCardLastShownMillis()).willReturn(NOW.toEpochMilli())
+        unsavedMarksDataSource.keepSafetyCardShown(NOW.minusSeconds(3_600).toEpochMilli())
+
+        assertEquals(LastSafetyCardDomainModel.ShownAt(NOW), classUnderTest.lastSafetyCardShown())
+    }
 }

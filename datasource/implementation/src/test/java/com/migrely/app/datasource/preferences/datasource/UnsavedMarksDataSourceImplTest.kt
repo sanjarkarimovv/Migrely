@@ -44,4 +44,18 @@ class UnsavedMarksDataSourceImplTest {
 
         assertEquals(30L, classUnderTest.lastSafetyCardShownMillis())
     }
+
+    @Test
+    fun `When cleared then no mark is left`() {
+        classUnderTest.keepPaywallShown(PaywallTriggerDataModel.FifthMigraine, 20L)
+        classUnderTest.keepReviewRequested(5L)
+        classUnderTest.keepSafetyCardShown(30L)
+
+        classUnderTest.clear()
+
+        assertEquals(emptySet<PaywallTriggerDataModel>(), classUnderTest.paywallShown())
+        assertNull(classUnderTest.lastPaywallShownMillis())
+        assertEquals(emptyList<Long>(), classUnderTest.reviewRequestsMillis())
+        assertNull(classUnderTest.lastSafetyCardShownMillis())
+    }
 }

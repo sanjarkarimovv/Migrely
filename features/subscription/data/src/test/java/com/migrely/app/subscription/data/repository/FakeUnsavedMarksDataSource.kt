@@ -30,4 +30,11 @@ class FakeUnsavedMarksDataSource : UnsavedMarksDataSource {
     override fun keepSafetyCardShown(atMillis: Long) {
         lastSafetyCardShownMillis = maxOf(lastSafetyCardShownMillis ?: atMillis, atMillis)
     }
+
+    override fun clear() {
+        paywallShown.clear()
+        lastPaywallShownMillis = null
+        reviewRequestsMillis.clear()
+        lastSafetyCardShownMillis = null
+    }
 }

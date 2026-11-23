@@ -36,4 +36,12 @@ class UnsavedMarksDataSourceImpl : UnsavedMarksDataSource {
     override fun keepSafetyCardShown(atMillis: Long) {
         lastSafetyCardShownMillis = maxOf(lastSafetyCardShownMillis ?: atMillis, atMillis)
     }
+
+    @Synchronized
+    override fun clear() {
+        paywallShown.clear()
+        lastPaywallShownMillis = null
+        reviewRequestsMillis.clear()
+        lastSafetyCardShownMillis = null
+    }
 }

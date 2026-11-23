@@ -23,4 +23,7 @@ interface UnsavedMarksDataSource {
     fun lastSafetyCardShownMillis(): Long?
 
     fun keepSafetyCardShown(atMillis: Long)
+
+    /** "Delete all data": the app is as on a new install in this process too. */
+    fun clear()
 }

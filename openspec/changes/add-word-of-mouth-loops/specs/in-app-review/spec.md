@@ -27,7 +27,12 @@ passes it (BRD D188, EC-REV-14).
 - **WHEN** the clock is moved back so that the last safety card's moment is in the future
 - **THEN** nothing is asked until the clock passes that moment and 3 more days have gone by
 
+#### Scenario: Storage full when a safety card appears
+- **WHEN** the phone's storage is full when a safety card appears, so its mark cannot be saved
+- **THEN** the mark counts until the process ends, and no rating is requested within 3 days of the card in that process
+  (BRD D197)
+
 #### Scenario: Delete all data and restore
 - **WHEN** the user deletes all data, or restores Android's backup on a new phone
-- **THEN** the mark is gone after deleting, and travels with the other review marks after a restore; the JSON export has
-  no such field
+- **THEN** the mark is gone after deleting, also one this process could not save, and travels with the other review
+  marks after a restore; the JSON export has no such field
