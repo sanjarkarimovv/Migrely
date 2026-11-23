@@ -3,6 +3,8 @@ package com.migrely.app.attack.ui.view
 import android.view.ViewTreeObserver
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,9 +15,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.AlertDialogDefaults
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -30,6 +30,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
@@ -45,7 +46,6 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.TextFieldValue
@@ -63,10 +63,13 @@ import com.migrely.app.designsystem.dialog.MigrelyAlertDialog
 import com.migrely.app.designsystem.dialog.MigrelyDropdownMenu
 import com.migrely.app.designsystem.dialog.ScrollingDialogContent
 import com.migrely.app.designsystem.input.limitedEdit
-import com.migrely.app.designsystem.layout.PageScroll
 import com.migrely.app.designsystem.layout.isCompactHeight
+import kotlinx.coroutines.delay
 
 private const val MAXIMUM_TAG_NAME_LENGTH = 40
+
+/** How long an intent to type waits for the keyboard to rise; under load the IME has taken several hundred ms. */
+private const val KEYBOARD_WAIT_MILLIS = 1_000L
 
 /** One choice as the chips show it: what to send, how to label it, and the custom tag id when it is the user's own. */
 private data class Choice(val tag: AttackTagUiModel, val label: String, val customTagId: String?)
@@ -302,23 +305,33 @@ private fun ChoiceChip(
 internal fun CustomTagNameArea(
     title: String,
     name: TextFieldValue,
-    onFocusChange: (Boolean) -> Unit = {},
+    onTypingIntent: () -> Unit = {},
     onKeyboardChange: (Boolean) -> Unit = {},
     onNameChange: (TextFieldValue) -> Unit
 ) {
     val fieldInView = remember { BringIntoViewRequester() }
     val fieldWithRoomInView = remember { BringIntoViewRequester() }
     var focused by remember { mutableStateOf(false) }
+    // Every press on the field is an intent to type: after Back closed the keyboard the field keeps focus, and the
+    // next tap raises the keyboard again (cr-de round 2, F2).
+    val fieldInteractions = remember { MutableInteractionSource() }
+    val currentOnTypingIntent by rememberUpdatedState(onTypingIntent)
+    LaunchedEffect(fieldInteractions) {
+        fieldInteractions.interactions.collect {
+            if (it is PressInteraction.Press) currentOnTypingIntent()
+        }
+    }
     // From the root insets: a dialog window that fits its system bars shows Compose no keyboard inset.
     val view = LocalView.current
     var keyboard by remember { mutableStateOf(false) }
+    val currentOnKeyboardChange by rememberUpdatedState(onKeyboardChange)
     DisposableEffect(view) {
         val listener = ViewTreeObserver.OnGlobalLayoutListener {
             val insets = ViewCompat.getRootWindowInsets(view)
             val up = insets?.isVisible(WindowInsetsCompat.Type.ime()) == true
             if (up != keyboard) {
                 keyboard = up
-                onKeyboardChange(up)
+                currentOnKeyboardChange(up)
             }
         }
         view.viewTreeObserver.addOnGlobalLayoutListener(listener)
@@ -351,12 +364,13 @@ internal fun CustomTagNameArea(
                     Text(stringResource(R.string.custom_dialog_counter, name.text.length))
                 },
                 singleLine = true,
+                interactionSource = fieldInteractions,
                 modifier = Modifier
                     .fillMaxWidth()
                     .bringIntoViewRequester(fieldInView)
                     .onFocusChanged {
+                        if (it.isFocused && !focused) onTypingIntent()
                         focused = it.isFocused
-                        onFocusChange(it.isFocused)
                     }
             )
         }
@@ -364,20 +378,33 @@ internal fun CustomTagNameArea(
 }
 
 /**
- * When the custom tag dialog keeps the platform's narrow width (T23 8.1 row R03): from the moment the field takes focus,
- * before the keyboard rises, so Android pans the dialog and the typed line stays above the keyboard, and while the
- * keyboard is up. Once the keyboard closes, the dialog may be wide again, even with the field still focused.
+ * When the custom tag dialog keeps the platform's narrow width (T23 8.1 row R03): from an intent to type (the field
+ * takes focus, or is pressed), before the keyboard rises, so Android pans the dialog and the typed line stays above the
+ * keyboard, and while the keyboard is up. Once the keyboard closes the dialog may be wide again, even with the field
+ * still focused. When no keyboard has risen by the end of the wait after the latest intent (a hardware keyboard, or no
+ * IME), it is wide again too (cr-de round 2, F1): narrowing is only ever for a keyboard.
  */
 internal class KeyboardWidthRule {
     var narrow by mutableStateOf(false)
         private set
 
-    fun onFieldFocus(focused: Boolean) {
-        narrow = focused
+    var typingIntents by mutableIntStateOf(0)
+        private set
+
+    private var keyboardUp = false
+
+    fun onTypingIntent() {
+        narrow = true
+        typingIntents++
     }
 
     fun onKeyboard(up: Boolean) {
+        keyboardUp = up
         narrow = up
+    }
+
+    fun onKeyboardWaitOver() {
+        if (!keyboardUp) narrow = false
     }
 }
 
@@ -394,13 +421,20 @@ internal fun CustomTagDialog(kind: TagKindUiModel, onAdd: (String) -> Unit, onDi
         }
     )
     val widthRule = remember { KeyboardWidthRule() }
+    // Each intent to type starts the wait again; a keyboard that has not risen by its end is not coming.
+    LaunchedEffect(widthRule.typingIntents) {
+        if (widthRule.typingIntents > 0) {
+            delay(KEYBOARD_WAIT_MILLIS)
+            widthRule.onKeyboardWaitOver()
+        }
+    }
     MigrelyAlertDialog(
         onDismissRequest = onDismiss,
         text = {
             CustomTagNameArea(
                 title = title,
                 name = name,
-                onFocusChange = widthRule::onFieldFocus,
+                onTypingIntent = widthRule::onTypingIntent,
                 onKeyboardChange = widthRule::onKeyboard
             ) { name = limitedEdit(name, it, MAXIMUM_TAG_NAME_LENGTH) }
         },
