@@ -188,3 +188,23 @@ switch summary drift from it.
   test made able to fail (mutation C); (2) `OpeningGuardLifecycleTest` (mutations A, B); (3) page-count test that never
   read the credit dropped, the pixel test compares rendered page counts; (4) the credit switch follows a save while the
   options are unavailable (red: 2 `ReportCreditSwitchTest` cases, then green; 0b826f63).
+
+2026-11-23, `eng-loops`, develop 82df348f merged in (018a865c), walk fix (efe99e0d), code review 8.1 Minor fixes
+(11f0d4be, f5b996ee):
+- Gate on f5b996ee: `nice -n 19 ./gradlew --max-workers=2 assembleDebug test ktlintCheck detekt lint
+  :app:checkReleasePermissions --continue`, exit 0, log `migrely-work/loops/gate-cr-20261123-1156.log`. Unit test XML
+  under all `build/test-results`: 3774 tests, 0 failures, 0 errors, 0 skipped (debug and release variants), among them
+  the #255 `TalkBackWalkTest` in all 11 ui modules (22 tests). Release permissions unchanged: the same six, no INTERNET.
+- Merge conflicts: BRD kept both sides with no renumbering (§13 rows 50–58 in order, D185–D188 then D189–D194, no
+  shared ids); Settings and Report keep develop's `PageScroll`/`pageScroll` and `ownWords` with this change's rows inside;
+  Settings messages use develop's countdown (D182).
+- Code review 8.1 (`cr-loops`, APPROVE on `origin/develop...efe99e0d`, no Critical or Important), Minor findings:
+  1. `latestLoad` unused, credit reload with the tapped period: fixed in 11f0d4be. `load()` shows only the latest read;
+     a saved switch reads again the period of the latest read. Red first, 2 tests (`f1-red.log`), green 14/14. The unused
+     `latestLoad` was on develop too (since add-doctor-report), so the period race was pre-existing.
+  2. `saidTwice` matching (lead decision): fixed in f5b996ee. Whole words, any case, a word of 4 letters or more matches
+     a longer word it starts. That rule made the switch state "On" equal "on" in the credit summary, so the comparison
+     leaves the state out (TalkBack's word for the value, not the control's words; `f2-literal-rule.log`).
+     `SaidTwiceTest` 5 tests, red where it applies (`f2-red.log`), including Couldn't/Couldn’t.
+  3. This record.
+- Still not run: `ReportCreditLayoutTest` on emulator-5570 (4.2, 4.3; compiles), 7.1, 7.2 and 7.3.
