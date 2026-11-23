@@ -20,9 +20,11 @@ class CustomTagDialogWidthTest {
     @get:Rule
     val rule = createComposeRule()
 
-    private fun wide(widthRule: KeyboardWidthRule): Boolean {
+    private fun wide(widthRule: KeyboardWidthRule, hardwareKeyboard: Boolean = false): Boolean {
         var wide: Boolean? = null
-        rule.setContent { wide = customTagDialogWide(widthRule) }
+        rule.setContent {
+            WithHardwareKeyboard(hardwareKeyboard) { wide = customTagDialogWide(widthRule) }
+        }
         rule.waitForIdle()
         return checkNotNull(wide)
     }
@@ -43,5 +45,13 @@ class CustomTagDialogWidthTest {
     @Config(qualifiers = "w411dp-h891dp-port")
     fun `Given a tall window then the dialog is not wide`() {
         assertFalse(wide(KeyboardWidthRule()))
+    }
+
+    /** Spec custom-tags, "A hardware keyboard is attached": no on-screen keyboard comes, so it never narrows. */
+    @Test
+    fun `Given a hardware keyboard when the person means to type then the dialog stays wide`() {
+        val widthRule = KeyboardWidthRule().apply { onTypingIntent() }
+
+        assertTrue(wide(widthRule, hardwareKeyboard = true))
     }
 }
