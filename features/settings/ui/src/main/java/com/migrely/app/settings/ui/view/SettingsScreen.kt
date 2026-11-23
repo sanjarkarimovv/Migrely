@@ -24,7 +24,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.toggleable
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -65,6 +64,9 @@ import com.migrely.app.architecture.ui.view.ScreenEnterObserver
 import com.migrely.app.architecture.ui.view.ScreenLeaveObserver
 import com.migrely.app.designsystem.icon.MigrelyIcons
 import com.migrely.app.designsystem.layout.MigrelyInsets
+import com.migrely.app.designsystem.layout.PageScroll
+import com.migrely.app.designsystem.layout.ownWords
+import com.migrely.app.designsystem.layout.wordsShownOnly
 import com.migrely.app.designsystem.motion.rememberReduceMotion
 import com.migrely.app.designsystem.snackbar.MESSAGE_OFFSET_BELOW_TOP_BAR
 import com.migrely.app.designsystem.snackbar.MessageLayout
@@ -72,6 +74,7 @@ import com.migrely.app.designsystem.snackbar.MigrelySnackbar
 import com.migrely.app.designsystem.snackbar.MigrelySnackbarHost
 import com.migrely.app.designsystem.snackbar.SnackbarTone
 import com.migrely.app.designsystem.snackbar.messageTimeoutMillis
+import com.migrely.app.designsystem.snackbar.rememberMessageCountdown
 import com.migrely.app.designsystem.theme.MigrelyTheme
 import com.migrely.app.settings.presentation.model.SettingsViewState
 import com.migrely.app.settings.ui.R
@@ -82,7 +85,6 @@ import com.migrely.app.settings.ui.model.SettingsMessageUiModel
 import com.migrely.app.settings.ui.model.SettingsUiModel
 import com.migrely.app.settings.ui.model.ShownSettingsMessageUiModel
 import com.migrely.app.settings.ui.model.ThemeUiModel
-import kotlinx.coroutines.delay
 
 internal val CONTENT_MAX_WIDTH = 600.dp
 private val ROW_MIN_HEIGHT = 56.dp
@@ -168,15 +170,14 @@ fun SettingsDependencies.Settings(
             }
         }
     }
-    // Every Settings message is an error: 8 s, stretched to the accessibility timeout (BRD EC-UX-16; QA #56).
-    val messageTimeout = messageTimeoutMillis(READING_MILLIS)
-    LaunchedEffect(message, messageTimeout) {
-        val current = message
-        if (current != null && messageTimeout != null) {
-            delay(current.remainingMillis(System.currentTimeMillis(), messageTimeout))
-            message = null
-        }
-    }
+    // Every Settings message is an error: 8 s, stretched to "Time to take action", paused while focus holds it
+    // (BRD EC-UX-16, D182).
+    val countdown = rememberMessageCountdown(
+        message = message,
+        timeoutMillis = messageTimeoutMillis(READING_MILLIS),
+        undoActionWallMillis = null,
+        onExpired = { message = null }
+    )
     // An error belongs to the visit: Back or forward clears it; the share sheet and Google Play keep it (D178 (2)).
     ScreenLeaveObserver(navController) { message = null }
     SettingsContents(
@@ -197,9 +198,10 @@ fun SettingsDependencies.Settings(
         ),
         messages = {
             MigrelySnackbarHost(
-                message = message,
+                message = message?.takeUnless { countdown.isOver },
                 reduceMotion = rememberReduceMotion(),
-                topOffset = MESSAGE_OFFSET_BELOW_TOP_BAR
+                topOffset = MESSAGE_OFFSET_BELOW_TOP_BAR,
+                countdown = countdown
             ) { shown ->
                 MigrelySnackbar(
                     text = stringResource(shown.message.text()),
@@ -275,20 +277,22 @@ fun SettingsContents(
     ) {
         Column(Modifier.fillMaxSize()) {
             Box(contentAlignment = Alignment.TopCenter, modifier = Modifier.fillMaxSize()) {
-                Column(
-                    modifier = Modifier
-                        .widthIn(max = CONTENT_MAX_WIDTH)
-                        .fillMaxWidth()
-                        .windowInsetsPadding(
-                            MigrelyInsets.bars.only(
-                                WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
+                PageScroll {
+                    Column(
+                        modifier = Modifier
+                            .widthIn(max = CONTENT_MAX_WIDTH)
+                            .fillMaxWidth()
+                            .windowInsetsPadding(
+                                MigrelyInsets.bars.only(
+                                    WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
+                                )
                             )
-                        )
-                        .verticalScroll(rememberScrollState())
-                        .padding(bottom = 16.dp)
-                ) {
-                    premiumSection()
-                    SettingsItems(settings, actions, openingGuard)
+                            .pageScroll(rememberScrollState())
+                            .padding(bottom = 16.dp)
+                    ) {
+                        premiumSection()
+                        SettingsItems(settings, actions, openingGuard)
+                    }
                 }
             }
         }
@@ -492,6 +496,7 @@ private fun SwitchRow(
             .fillMaxWidth()
             .heightIn(min = ROW_MIN_HEIGHT)
             .toggleable(value = checked, role = Role.Switch, onValueChange = onCheckedChange)
+            .ownWords(title)
             .padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
         RowTexts(title, summary, MaterialTheme.colorScheme.onSurface, Modifier.weight(1f))
@@ -529,6 +534,7 @@ private fun LinkRow(
                 role = Role.Button,
                 onClick = onClick
             )
+            .ownWords(title)
             .padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
         RowTexts(title, summary, titleColor, Modifier.weight(1f))
@@ -551,6 +557,7 @@ private fun ValueRow(title: String, value: String) {
             .fillMaxWidth()
             .heightIn(min = ROW_MIN_HEIGHT)
             .semantics(mergeDescendants = true) { }
+            .ownWords(title)
             .padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
         RowTexts(title, value, MaterialTheme.colorScheme.onSurface, Modifier.weight(1f))
@@ -560,7 +567,13 @@ private fun ValueRow(title: String, value: String) {
 @Composable
 private fun RowTexts(title: String, summary: String, titleColor: Color, modifier: Modifier) {
     Column(modifier) {
-        Text(text = title, style = MaterialTheme.typography.bodyLarge, color = titleColor)
+        // The row says both from its own node (#255).
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodyLarge,
+            color = titleColor,
+            modifier = Modifier.wordsShownOnly()
+        )
         Text(
             text = summary,
             style = MaterialTheme.typography.bodyMedium,

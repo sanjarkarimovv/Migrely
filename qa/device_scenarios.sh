@@ -146,8 +146,8 @@ kill_in_foreground() {
   [[ -z "$(app_pid)" ]] || { echo "  FAILED: the app process survived the kill"; return 1; }
   echo "    app process $pid killed in the foreground"
 }
-open_from_launcher() { # like tapping the app icon: brings back the existing task
-  adbq shell monkey -p "$APP" -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1
+open_from_launcher() { # like tapping the app icon: brings back the existing task (qa_launch_app, qa/lib.sh)
+  qa_launch_app || { echo "  FAILED: the app did not open from the launcher"; return 1; }
   sleep 3
 }
 STEP=0
@@ -414,7 +414,7 @@ for n in ET.fromstring(sys.stdin.read()).iter('node'):
   echo "  FAILED: \"$1\" is checked=${state:-not found}, expected $2"
   return 1
 }
-open_app() { adbq shell monkey -p "$APP" -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1; sleep 4; }
+open_app() { qa_launch_app || { echo "  FAILED: the app did not open"; return 1; }; sleep 4; }
 # The package of the activity in front, from the activity manager (topResumedActivity, or mResumedActivity before
 # Android 10).
 resumed_package() {
@@ -590,7 +590,7 @@ scenario_history_death() {
   echo "Scenario history_death: History keeps its month and day after process death (EC-ATK-10)"
   run_flow history-setup || return 1
   background_and_kill || return 1
-  open_from_launcher
+  open_from_launcher || return 1
   run_flow history-restored || return 1
 }
 
@@ -598,7 +598,7 @@ scenario_past_death() {
   echo "Scenario past_death: picked times survive process death and nothing is stored (EC-ATK-10)"
   run_flow past-setup || return 1
   background_and_kill || return 1
-  open_from_launcher
+  open_from_launcher || return 1
   run_flow past-restored || return 1
 }
 
@@ -607,7 +607,7 @@ scenario_details_kill() {
   run_flow details-setup || return 1
   sleep 1
   kill_in_foreground || return 1
-  open_from_launcher
+  open_from_launcher || return 1
   run_flow details-restored || return 1
 }
 
@@ -660,7 +660,7 @@ scenario_zone_attack() {
   adbq shell input keyevent KEYCODE_HOME
   sleep 2
   set_zone Asia/Tashkent || return 1
-  open_from_launcher
+  open_from_launcher || return 1
   run_flow zone-attack-after || return 1
 }
 
@@ -1121,7 +1121,7 @@ scenario_reminder_permission() {
   set_clock_millis "$start" || return 1
   run_flow clean || return 1
   notifications_permission reset
-  open_app
+  open_app || return 1
   # Opening Reminders: "Daily reminder" is off at 8:00 PM.
   run_flow reminders-open || return 1
   expect_switch "Daily reminder" false || return 1
@@ -1134,12 +1134,12 @@ scenario_reminder_permission() {
   expect_switch "Daily reminder" false || return 1
   adbq shell input keyevent HOME
   set_clock_millis $((start + 29 * 86400000)) || return 1
-  open_app
+  open_app || return 1
   run_flow_env reminders-turn-on CHOICE=none || return 1
   adbq shell input keyevent HOME
   # 31 days later it asks again; allowed, the reminder is on.
   set_clock_millis $((start + 31 * 86400000)) || return 1
-  open_app
+  open_app || return 1
   run_flow_env reminders-turn-on CHOICE=Allow || return 1
   expect_switch "Daily reminder" true || return 1
   adbq shell dumpsys package "$APP" | grep -q "POST_NOTIFICATIONS: granted=true" || {
@@ -1445,27 +1445,27 @@ scenario_theme_check() {
   echo "Scenario theme_check: Light at once and at the next start; attack mode and its screens dark; Match the phone (D94)"
   set_clock_millis "$(when_millis 0 15 12:00)" || return 1
   run_flow clean || return 1
-  open_app
+  open_app || return 1
   expect_theme dark || return 1
   run_flow_env theme-choose THEME=Light || return 1
   echo "    Settings, right after choosing Light:"; expect_theme light || return 1
-  adbq shell am force-stop "$APP"; open_app
+  adbq shell am force-stop "$APP"; open_app || return 1
   echo "    home at the next start:"; expect_theme light || return 1
   run_flow attack-start-keep || return 1
-  open_app
+  open_app || return 1
   echo "    attack mode:"; expect_theme dark || return 1
   run_flow attack-details-open || return 1
   echo "    details opened from attack mode:"; expect_theme dark || return 1
   adbq shell input keyevent BACK
   run_flow attack-end || return 1
-  open_app
+  open_app || return 1
   echo "    home after the attack:"; expect_theme light || return 1
   run_flow_env theme-choose "THEME=Match the phone" || return 1
   adbq shell cmd uimode night no >/dev/null
-  open_app
+  open_app || return 1
   expect_theme light || return 1
   adbq shell cmd uimode night yes >/dev/null
-  open_app
+  open_app || return 1
   expect_theme dark || return 1
   adbq shell cmd uimode night "$ORIGINAL_NIGHT" >/dev/null
 }
@@ -1933,7 +1933,7 @@ scenario_report_heavy() {
   files="$(adbq shell run-as "$APP" find cache/reports -mindepth 1 | tr -d '\r')" || { echo "  FAILED: cache/reports unreadable"; return 1; }
   [[ -n "$files" ]] || { echo "  FAILED: no report had started when the app was closed"; return 1; }
   echo "    closed 0.5 s after Create report: $(grep -c . <<<"$files") entries under cache/reports"
-  open_app
+  open_app || return 1
   sleep 3
   files="$(adbq shell "run-as $APP find cache/reports -mindepth 1 \\( -name '*.partial' -o -type d -empty \\)" | tr -d '\r')" ||
     { echo "  FAILED: cache/reports unreadable"; return 1; }
@@ -1948,7 +1948,7 @@ scenario_report_heavy() {
     grep -q "$want\$" <<<"$planted" || { echo "  FAILED: could not plant $want"; return 1; }
   done
   adbq shell am force-stop "$APP"
-  open_app
+  open_app || return 1
   sleep 3
   files="$(adbq shell run-as "$APP" find cache/reports -mindepth 1 | tr -d '\r')" || { echo "  FAILED: cache/reports unreadable"; return 1; }
   if grep -q 'qa-' <<<"$files"; then echo "  FAILED: left after the next start: $(grep 'qa-' <<<"$files" | tr '\n' ' ')"; return 1; fi
@@ -2345,7 +2345,7 @@ scenario_insights_upgrade() {
   adbq uninstall "$APP" >/dev/null 2>&1 || true
   adbq install "$QA_OLD_APK" >/dev/null || { echo "  FAILED: could not install $QA_OLD_APK"; return 1; }
   echo "    installed the older build $(adbq shell dumpsys package "$APP" | grep -m1 versionCode | tr -s ' ')"
-  adbq shell monkey -p "$APP" -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1
+  qa_launch_app || { echo "  FAILED: the older build did not open"; return 1; }
   sleep 5
   adbq shell am force-stop "$APP"
   run_flow clean || return 1

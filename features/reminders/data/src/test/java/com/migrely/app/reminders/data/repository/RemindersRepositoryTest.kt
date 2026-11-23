@@ -130,6 +130,15 @@ class RemindersRepositoryTest {
     }
 
     @Test
+    fun `When showing the daily reminder then quiet or not reaches the notifications unchanged`() {
+        classUnderTest.showDailyReminder(DATE, quiet = true)
+        verify(notificationDataSource).showDailyReminder(DATE, quiet = true)
+
+        classUnderTest.showDailyReminder(DATE, quiet = false)
+        verify(notificationDataSource).showDailyReminder(DATE, quiet = false)
+    }
+
+    @Test
     fun `When planning the daily reminder only if none then the schedule datasource keeps one`() {
         classUnderTest.planDailyReminderIfNone(TO, DATE)
 

@@ -31,6 +31,10 @@ android {
         }
     }
 
+    // Robolectric needs the merged resources for the Compose test rule's activity.
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
+    }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -70,4 +74,11 @@ dependencies {
     testImplementation(projects.features.patterns.domain)
     testImplementation(libs.test.mockito.kotlin)
     testImplementation(libs.test.kotlinx.coroutines)
+
+    // Debug only: the Compose test rule needs the debug test manifest.
+    testDebugImplementation(platform(libs.compose.bom))
+    testDebugImplementation(libs.test.compose.ui.junit4)
+    testDebugImplementation(libs.test.robolectric)
+    testDebugImplementation(projects.architecture.uiTest)
+    debugImplementation(libs.compose.ui.test.manifest)
 }

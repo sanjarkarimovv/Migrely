@@ -107,7 +107,8 @@ class RemindersRepository(
 
     override fun cancelDailyReminder() = reminderScheduleDataSource.cancelDaily()
 
-    override fun showDailyReminder(date: LocalDate) = notificationDataSource.showDailyReminder(date)
+    override fun showDailyReminder(date: LocalDate, quiet: Boolean) =
+        notificationDataSource.showDailyReminder(date, quiet)
 
     override fun showAttackLoggedToday() = notificationDataSource.showAttackLoggedToday()
 

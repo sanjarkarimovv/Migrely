@@ -968,3 +968,1049 @@ the kind of failure, never diary content (BRD EC-STO-07, D170).
 #### Scenario: Nothing private in the log
 - **WHEN** the check logs a failure
 - **THEN** the line holds no diary content, no medication or attack data, and no setting value
+
+### Requirement: The window does not pan for the keyboard
+`MainActivity` SHALL declare `adjustResize`. With the on-screen keyboard open on any screen, the window SHALL NOT pan: the top
+bar and Back SHALL stay where they are, never scroll away, and answer a first tap, at every font size and orientation. The
+one exception is a top bar that steps aside while the line being typed cannot fit (requirement "The line being typed always
+shows"). Nothing SHALL draw under the status bar (BRD EC-UX-40, D180, D192).
+
+#### Scenario: The note on Attack details
+- **WHEN** the user opens a migraine's details, scrolls to Note and taps it, at 100% or 200% font, in portrait or landscape
+- **THEN** the keyboard opens, the top bar with Back keeps its place and size, and a first tap on Back leaves the screen
+- **AND** no trigger chip or other content draws under the status bar
+
+#### Scenario: The tightest window
+- **WHEN** the keyboard is open on the note at 200% font in landscape on a window 360 dp tall
+- **THEN** where the line being typed fits under the top bar (API 26, 156 px), the top bar with Back stays whole and fixed;
+  where it does not (API 36 with Gboard, 61 px for a 112 px line), the top bar steps aside while the keyboard is up and the
+  window still does not pan; nothing draws under the status bar in either case
+
+#### Scenario: TalkBack with the keyboard open
+- **WHEN** TalkBack is on and the keyboard is open on the note
+- **THEN** swiping back from the note reaches the content above it, then the message if one shows, then Back, and activating
+  Back leaves the screen
+- **AND** where the top bar has stepped aside, Back is not in the tree until the keyboard closes (requirement "An aside top
+  bar is gone for assistive technology and messages"); the system Back gesture still closes the keyboard first
+
+#### Scenario: The merged manifest
+- **WHEN** the debug and the release build are assembled
+- **THEN** `MainActivity`'s merged manifest entry declares `adjustResize`, and the permission report equals 1.2.1's
+
+#### Scenario: The checks can fail
+- **WHEN** the note row runs on develop ea41869a on API 36, which has no `adjustResize` and pans
+- **THEN** Back's bounds are `[0,0][0,0]` with the keyboard open, as in #83, which shows the row can fail
+- **AND** a test of `MainActivity`'s window fails without `adjustResize`, and on Android 8 the copy rows that pass on this
+  change stay stale on develop ea41869a
+
+### Requirement: A focused field stays above the keyboard
+On Attack details, Edit medication and Log medication the scroll's visible part SHALL end at the keyboard's top. A focused
+single-line field SHALL show its box and its supporting line when they fit; if not, its input line first, then the supporting
+line, then the label. A field SHALL follow a growing keyboard only while its line was in view before. Controls below SHALL be
+reachable by scrolling (BRD EC-UX-40, D180).
+
+#### Scenario: Edit medication at 200% in landscape
+- **WHEN** the user taps the name or the dose field on Edit medication, at 200% font in landscape
+- **THEN** the field's input line shows at least 8 dp above the keyboard, its supporting line too when it fits, and scrolling
+  down reaches Save while the keyboard stays open
+
+#### Scenario: A medication error while typing
+- **WHEN** a name or dose error appears in the field's supporting line while the keyboard is open
+- **THEN** the input line keeps priority, the error line shows if it fits, and it shows again when the keyboard closes
+
+#### Scenario: A field 3 dp under the scroll's edge
+- **WHEN** the user taps the dose field on Edit medication while a few dp of it lie under the scroll's lower edge, at 100% font
+  in portrait
+- **THEN** the whole field with its supporting line shows above the keyboard
+
+#### Scenario: Log medication's name field
+- **WHEN** the user types a name on Log medication, at 100% or 200% font, in portrait or landscape, on API 36 or API 26
+- **THEN** the input line shows above the keyboard, and the buttons below it can be scrolled to
+
+#### Scenario: Without the change on Edit medication
+- **WHEN** the Edit medication row runs on a build with `adjustResize` and with the keyboard padding still inside the scroll
+- **THEN** the field or Save can end under the keyboard, which shows the check can fail
+
+### Requirement: Delete all data with the keyboard open
+On Delete all data the Delete row SHALL ride above the keyboard only while the input line, with 8 dp above and below it, still
+shows above the row.
+Otherwise the row SHALL stay at the window's bottom, behind the keyboard, and Done or Back shows the field and the row together.
+This SHALL be decided once per keyboard opening, from the keyboard's final height (BRD EC-UX-40, D180).
+
+#### Scenario: A window with room
+- **WHEN** the user types in the confirmation field at 100% or 200% font in portrait, or at 200% in landscape on a 411 dp tall
+  window where the input line with 8 dp above and below it fits above the Delete row
+- **THEN** the input line and the Delete row both show above the keyboard
+
+#### Scenario: A short window
+- **WHEN** the user types in the confirmation field at 200% font in landscape on a window 360 dp tall, where the input line
+  would not show above the Delete row
+- **THEN** the input line shows above the keyboard, the Delete row stays behind it, and after Done the field and "Delete
+  everything" show together
+
+#### Scenario: No jump while the keyboard moves
+- **WHEN** the keyboard animates open or closed on Delete all data
+- **THEN** the Delete row takes its place once, from the keyboard's final height, and does not jump midway
+
+#### Scenario: API 26
+- **WHEN** the user types in the confirmation field on Android 8, with no text toolbar shown
+- **THEN** the input line shows above the keyboard, and the Delete row follows the same rule, never left under the keyboard
+  with the field hidden
+
+#### Scenario: TalkBack order
+- **WHEN** TalkBack is on at 100% font in portrait on Delete all data
+- **THEN** it reads the warning, then the field, then "Delete everything"
+
+### Requirement: A screen without a text field ignores the keyboard
+Home, History, Insights, Settings and its pages, the paywall, Doctor report, My medications, Your data, Reminders and
+onboarding SHALL pad only for the system bars and the display cutout, never for the keyboard. One shared inset SHALL serve them
+and the message's fit rule (BRD EC-UX-42, D180).
+
+#### Scenario: A keyboard inset reaches Home
+- **WHEN** a test gives Home Today and History a keyboard inset of 250 dp
+- **THEN** their layout is the same as with no keyboard: Home shows every day cell, and History's list ends at the same place
+
+#### Scenario: Back from the note with the keyboard open
+- **WHEN** the keyboard is open on the note and the user presses Back until Home or History shows, at 200% font, in portrait
+  or landscape
+- **THEN** Home shows its whole month and History its whole list, with no blank lower part
+
+#### Scenario: Android 8 after a copy
+- **WHEN** on Android 8 the user long-presses a word in the note, in an Edit medication field or in the Delete all data field,
+  taps COPY in the toolbar and presses Back until Home shows, then opens History
+- **THEN** Home shows its day cells and History its whole list, with no blank lower half, and no restart is needed (#145)
+
+#### Scenario: Android 8 after a copy, back on a field screen
+- **WHEN** on Android 8 the user copies from a field's toolbar, closes the keyboard and stays on that screen or opens another
+  screen with a field
+- **THEN** the screen keeps no space for a keyboard that is closed
+
+#### Scenario: Without the change on Android 8
+- **WHEN** the copy rows run on the build of develop ea41869a
+- **THEN** Home loses the keyboard's height and History ends early, as QA measured for #145, which shows the check can fail
+
+#### Scenario: Short window on Home
+- **WHEN** the keyboard state changes while Home Today is in a short window
+- **THEN** Home keeps the same layout choice, because the choice reads the window's height and not the keyboard
+
+### Requirement: Closing the keyboard and other keyboards
+When the keyboard closes, the page SHALL NOT move or scroll to the field, and focus SHALL stay in the field. Near the page's
+end the area the keyboard leaves SHALL show the page's own background until the person scrolls back (the keyboard room).
+With a hardware or floating keyboard, split screen or a full-screen editor, Migrely SHALL follow Android's inset and add
+nothing. "Remove animations" SHALL make every scroll a jump. Nothing SHALL be announced (BRD EC-UX-43, D180, D189).
+
+#### Scenario: The keyboard closes
+- **WHEN** the keyboard is open on a field and the user closes it with Back, the keyboard's hide key or Done
+- **THEN** the page does not scroll back and does not settle down: its scroll position is the same, and near the page's end
+  the keyboard room shows below the content instead
+- **AND** the first Back closes only the keyboard, and the second leaves the screen
+
+#### Scenario: Closing after scrolling away
+- **WHEN** the keyboard is open on the note, or on Edit medication's name, and the user scrolls the page away from the field,
+  then closes the keyboard, with or without "Remove animations"
+- **THEN** the page stays where the user left it and does not scroll back to the field
+
+#### Scenario: The keyboard grows after scrolling away
+- **WHEN** the user has scrolled the field's line out of view and the keyboard then grows, as when it reopens or changes height
+- **THEN** the page does not scroll back to the field, and the next tap, edit or cursor move in the field brings its line into
+  view again
+
+#### Scenario: The strip the keyboard uncovers
+- **WHEN** the keyboard slides away in the dark theme, in the light theme, or during an attack, on API 36 or API 26
+- **THEN** the uncovered strip, the keyboard room included, has the page's own colour at every frame, never a lighter, dark or
+  white band
+
+#### Scenario: Rotation with the keyboard open
+- **WHEN** the phone rotates portrait to landscape to portrait while the keyboard is open on the note, at 200% font
+- **THEN** the note keeps its text and cursor, and if the keyboard opens again its cursor line shows 8 dp above it
+
+#### Scenario: Background and process death
+- **WHEN** the app goes to the background with the keyboard open, and its activity is recreated or its process is restored
+  later
+- **THEN** on return no keyboard room is left at the bottom, and the note keeps what was typed
+
+#### Scenario: A hardware keyboard
+- **WHEN** a hardware keyboard is used and no on-screen keyboard shows
+- **THEN** no space is kept for a keyboard, Tab gives one stop into the note with the cursor at the end, and the cursor line
+  stays inside the window above the navigation bar as the user types or moves with arrow keys
+
+#### Scenario: A floating keyboard or split screen
+- **WHEN** the keyboard floats, or the app runs in split screen, and Android gives no bottom keyboard inset
+- **THEN** Migrely adds no space of its own, no keyboard room ever appears, and the screen works as without a keyboard
+
+#### Scenario: The keyboard's full-screen editor
+- **WHEN** a keyboard opens its own full-screen editor in landscape
+- **THEN** Migrely adds nothing, and on return the note shows the text typed there; if QA cannot reach this editor, the row is
+  recorded as not reachable, not as a pass
+
+#### Scenario: Remove animations
+- **WHEN** "Remove animations" is on and the keyboard opens on a field, or the cursor moves under it
+- **THEN** the content moves to show the line with no frames in between
+
+#### Scenario: Right to left
+- **WHEN** the layout is right to left and the keyboard is open on a field
+- **THEN** the same rules hold, mirrored, and nothing draws under the status bar
+
+#### Scenario: TalkBack while the keyboard opens and closes
+- **WHEN** TalkBack is on and the keyboard opens or closes on the note, or the page scrolls for the cursor
+- **THEN** nothing extra is announced, accessibility focus stays on the note, and the reading order is D178's: top bar,
+  message, content
+
+### Requirement: One spoken name per control
+A control SHALL have one spoken name. When its spoken label differs from its visible text, the visible text SHALL be left
+out of its semantics, and the label SHALL contain the visible words in the same order. Role, action, focus, size and look
+SHALL not change. Each site SHALL be proven with a failing test before it is fixed, and a site that does not read twice
+SHALL be left alone (BRD EC-UX-45, D181).
+
+#### Scenario: A message's Undo
+- **WHEN** TalkBack focuses the Undo of "Migraine started" on any screen
+- **THEN** it says "Undo the start, Button", once, and the message's text stays readable as before
+
+#### Scenario: Attack mode
+- **WHEN** TalkBack focuses "Details" or the "15 min" chip under "Started earlier?" in attack mode
+- **THEN** it says "Details of this migraine, Button" or "Move the start 15 min earlier, Button", once each
+
+#### Scenario: Reminders
+- **WHEN** TalkBack focuses the visit's "Remove" or the notice's "Open settings" on Reminders
+- **THEN** it says "Remove the next visit, Button" or "Open settings for notifications, Button", once each
+
+#### Scenario: The pain dialog's time
+- **WHEN** TalkBack focuses the time button "At 14:30" in the pain dialog
+- **THEN** it says "At 14:30, change the time, Button", once, and the button still opens the time picker
+
+#### Scenario: Label in name
+- **WHEN** any control's spoken label differs from its visible text
+- **THEN** the spoken label contains the visible words in the same order, so a voice command naming the visible text can
+  match it
+
+#### Scenario: The fix changes nothing else
+- **WHEN** a fixed control is tapped, focused with Tab, or reached by Switch Access
+- **THEN** it acts, looks and measures as before, and its touch target is still at least 48 dp, or 64 dp in attack mode
+
+### Requirement: Every keyboard stop is visible and in view
+Every Tab stop SHALL show a visible focus indicator and SHALL be scrolled fully into view, at every font size and in
+both orientations. A node that cannot show one, such as a group, a scroll container, the legend or a spacer, SHALL never
+be a stop. Shift+Tab SHALL be the exact reverse of Tab (BRD EC-UX-46, EC-UX-19, D181).
+
+#### Scenario: No invisible stop
+- **WHEN** the user moves through any screen with Tab and Shift+Tab on a hardware keyboard, at 100% and 200% font
+- **THEN** each stop shows its focus indicator fully on screen, and no key press lands on a stop that shows nothing
+
+#### Scenario: Reverse order
+- **WHEN** the user presses Tab from one control and then Shift+Tab
+- **THEN** focus is back on the control it started from
+
+### Requirement: No label breaks inside a word
+No label SHALL break inside a word, with or without a hyphen, at any font size or width. Where a label's longest word
+does not fit, the layout SHALL change, for example by stacking, and the type SHALL NOT shrink: 200% stays 200%. Wrapping
+at a space is allowed (BRD EC-UX-48, D181).
+
+#### Scenario: Largest font size on a narrow phone
+- **WHEN** the font size is 200% on a 360 dp phone
+- **THEN** every label shows whole words, and none is cut, ellipsized or hyphenated
+
+### Requirement: Closing the keyboard never moves the page
+On Attack details (note), Edit medication (name, dose), Log medication (name) and Delete all data (the word), when the keyboard
+closes or shrinks, the scroll position SHALL stay the same to the pixel on any API level and animation setting. If less
+than the visible part's growth lies below, room of the difference SHALL appear after the last item; otherwise none. An aside
+top bar SHALL return and lower the page by its height, with no scroll (BRD EC-UX-61, EC-UX-65, EC-UX-75, D189 (1), (7), D192).
+
+#### Scenario: Near the end on each screen
+- **WHEN** a field is focused near the page's end (less than a keyboard's height of content below the visible part) on any of
+  the four screens, at 100% font in portrait on API 36, and the user presses Back once
+- **THEN** the field's bounds are the same before and after the keyboard is gone (within 1 px), and the keyboard room fills
+  the area the keyboard left
+
+#### Scenario: API 26
+- **WHEN** the same steps run on Android 8, where the keyboard inset changes in one step
+- **THEN** the field's bounds are the same before and after, and the page does not jump down
+
+#### Scenario: Far from the end
+- **WHEN** the note is focused mid-page with more than a keyboard's height of content below the visible part, and the user
+  presses Back
+- **THEN** no keyboard room appears, nothing on screen moves, and hidden content is uncovered in place
+
+#### Scenario: 200% font in portrait and landscape
+- **WHEN** the same steps run at 200% font in portrait and in landscape on windows 411 dp and 360 dp tall
+- **THEN** the field's bounds are the same, or, where the top bar had stepped aside (API 36 with Gboard at 360 dp), lower by
+  exactly the bar's height; the scroll position is the same, the room is never taller than the keyboard was, and the field,
+  its input line and its supporting line stay fully visible
+
+#### Scenario: Remove animations
+- **WHEN** "Remove animations" is on and the keyboard closes near the page's end on Attack details or Delete all data
+- **THEN** the keyboard goes in one frame and the field's bounds are the same; no frame shows the page lower
+
+#### Scenario: Free, Premium and first use
+- **WHEN** the screen is opened by a Free or a Premium user, or Log medication shows its first-use form, and the keyboard has
+  not closed yet on this visit
+- **THEN** there is no keyboard room, and after a close the same rules apply to both
+
+#### Scenario: Without the room
+- **WHEN** the near-the-end steps run on v1.3.0, or on the candidate with the room removed from the screen under test
+- **THEN** the field moves down by more than 0 px, which shows the check can fail
+
+### Requirement: The keyboard room looks like the page
+The keyboard room SHALL be the screen's own background only: the theme background, or the dark room background when the
+screen shows in attack mode. It SHALL have no divider, shadow, gradient, end marker or other colour, at any frame of the
+keyboard's animation, and SHALL sit below the bottom padding the page already has (BRD EC-UX-61, EC-UX-65, D189 (2)).
+
+#### Scenario: Dark and light theme
+- **WHEN** the keyboard closes near the page's end on Attack details and on Log medication, in the dark theme and in the light
+  theme
+- **THEN** every pixel of the room equals the page background sampled at the top of the same screenshot, and none is brighter
+  than it; in the light theme the room is the light page background, not white and not a surface tint
+
+#### Scenario: Log medication from attack mode
+- **WHEN** Log medication is opened from attack mode, the first-use Name field is focused near the page's end, and the keyboard
+  closes
+- **THEN** every pixel of the room equals `MigrelyColors.AttackModeBackground`, and the screen only gets darker as the light
+  keyboard goes
+
+#### Scenario: The colour check can fail
+- **WHEN** the same pixel check runs on the keyboard area of the keyboard-open screenshot
+- **THEN** it fails, which shows the check can tell the keyboard from the page
+
+### Requirement: The keyboard room goes only with the person's scroll
+The keyboard room SHALL shrink only as the person scrolls up (finger, fling, TalkBack's scroll action, Tab or Shift+Tab, Page
+Up, mouse wheel), in step with that scroll, or as the keyboard reopens or grows, and SHALL never grow back from scrolling or be
+animated away. Content that grows SHALL use the room up. The page SHALL NOT move because of the room (BRD EC-UX-62, D189 (3)).
+
+#### Scenario: Scrolling back up
+- **WHEN** the room shows and the user swipes up slowly by about a third of it, then by more than it, then scrolls to the end
+- **THEN** the field moves with the finger and the room shrinks by the same amount; after the second swipe there is no room,
+  and at the end the page ends with its normal bottom padding
+
+#### Scenario: TalkBack, Tab and Page Up scroll the room away
+- **WHEN** the room shows and the page is scrolled up by TalkBack's scroll action, by Tab or Shift+Tab bringing a control
+  into view, by Page Up or by a mouse wheel
+- **THEN** the room shrinks by the scrolled amount, as with a finger
+
+#### Scenario: The keyboard reopens
+- **WHEN** the room shows and the user taps the field again
+- **THEN** the keyboard opens, the room shrinks as the visible part shrinks, the page does not jump, and the cursor line is at
+  least 8 dp above the keyboard (EC-UX-39), with single-line fields as U1 says
+
+#### Scenario: The keyboard changes height while open
+- **WHEN** the keyboard gets shorter (a suggestion strip goes, another layout or keyboard) or taller while open on a field
+- **THEN** a shorter keyboard adds room as a close does, and a taller one uses room first and then follows D180 (2)
+
+#### Scenario: Content changes while the room shows
+- **WHEN** the room shows and a chip is added, an error line appears, or Log medication's form is replaced after "Add and log"
+- **THEN** the grown content uses the room up and the page does not move because of the room
+
+#### Scenario: A message while the room shows
+- **WHEN** the room shows on Attack details and a message appears, or the keyboard closes while a message shows
+- **THEN** the message's position equals its position with no room, and it does not cover Back (D180 (4))
+
+#### Scenario: A room that never shrinks
+- **WHEN** the scrolling rows run on a mutation build whose room never shrinks
+- **THEN** the room shows again at the page's end, which shows the check can fail
+
+### Requirement: The keyboard room is not kept
+The keyboard room SHALL NOT be saved. After rotation, process death, or leaving the screen and coming back, the screen SHALL
+show no room, at its saved scroll position or the nearest one the page allows. Background and return without recreation SHALL
+keep the room as it was. With no bottom keyboard inset, no room SHALL ever appear (BRD EC-UX-63, D189 (4), (5)).
+
+#### Scenario: Rotation and process death with the room
+- **WHEN** the room shows on Attack details or Edit medication and the phone rotates and back, or the app goes to the
+  background, its process is killed and it returns from recents
+- **THEN** there is no room after each, the note or form keeps its text, and nothing is cut off
+
+#### Scenario: Leaving and coming back
+- **WHEN** the room shows and the user leaves the screen with Back, or opens a forward screen and returns
+- **THEN** the screen shows no room, and TalkBack starts where Android and D178 put it on any screen entry
+
+#### Scenario: Background without recreation
+- **WHEN** the room shows and the app goes to the background and returns with its activity kept
+- **THEN** the room is as it was; if the keyboard reopens because the field still has focus, the reopen rule applies
+
+#### Scenario: No keyboard inset
+- **WHEN** a hardware keyboard is used on Attack details, or a floating keyboard or split screen gives no bottom keyboard inset
+- **THEN** no room appears and nothing changes on close; a case QA cannot reach is recorded as not reachable, not a pass
+
+### Requirement: The keyboard room is invisible to assistive technology
+The keyboard room SHALL have no semantics, SHALL NOT be focusable or a Tab stop, and a tap in it SHALL do nothing. Closing the
+keyboard SHALL send no scroll event from the page, SHALL keep input and TalkBack focus on the field, and SHALL announce nothing
+new: no string, live region or state change (BRD EC-UX-61, D189 (6)).
+
+#### Scenario: TalkBack stays on the field
+- **WHEN** on each of the four screens, on API 36 with TalkBack on the field near the page's end at 100% font in portrait, the
+  user presses Back once
+- **THEN** within 3 s TalkBack says only the field itself or "keyboard hidden", and one more double tap reopens the keyboard
+  in that field with no chip, radio or kind changed in the record
+
+#### Scenario: Other ways to close
+- **WHEN** on Attack details and on one single-line screen, with TalkBack on, the keyboard is closed with its hide key, then
+  with Done where the field has it
+- **THEN** TalkBack stays on the field as with Back
+
+#### Scenario: No scroll event
+- **WHEN** an accessibility event log runs across Back from the near-the-end set-up on each screen
+- **THEN** it shows no TYPE_VIEW_SCROLLED from the page's scroll container within 3 s
+
+#### Scenario: Nothing to tap in the room
+- **WHEN** after the close a layout dump is read at the place where the keyboard's hide key was on Attack details, and that
+  place is tapped
+- **THEN** there is no clickable or focusable node there, and the tap changes nothing: no focus cleared, no keyboard, no ripple
+
+#### Scenario: TalkBack walk past the room
+- **WHEN** at 200% font in landscape on Attack details, after the close, the user swipes forward from the note and then back
+  several items
+- **THEN** forward reaches "Delete migraine" and then the end of the page, never the room, and back walks in D178 order with
+  no jump
+
+#### Scenario: The focus check can fail
+- **WHEN** the TalkBack and scroll-event steps run on v1.3.0, or on the mutation build with the room removed
+- **THEN** on Attack details TalkBack's focus moves to "Not selected. Stress" and the log shows a scroll event; on a screen
+  where v1.3.0 shows no jump, the row proves only that no jump was observed
+
+### Requirement: Delete all data keeps the field still
+On Delete all data, closing the keyboard SHALL NOT move the confirmation field. Only the Delete row SHALL move with the keyboard
+as D180 (8) defines, and after Done or Back the field and "Delete everything" SHALL show together. With the page's end in view
+the divider above the row SHALL stay hidden (BRD EC-UX-64, D180 (8), D189 (8)).
+
+#### Scenario: The row rides above the keyboard
+- **WHEN** at 100% font in portrait the word is typed, with the Delete row above the keyboard, and the user taps Done
+- **THEN** the field's bounds are the same, the field and "Delete everything" show together, and no divider shows above the row
+
+#### Scenario: The row stays behind the keyboard
+- **WHEN** at 200% font in landscape on a window 360 dp tall the word is typed, with the Delete row behind the keyboard, and the
+  user taps Done
+- **THEN** the field's bounds are the same and the field and "Delete everything" show together
+
+#### Scenario: Delete all data without the room
+- **WHEN** the same steps run on the candidate with the room removed from Delete all data, and on v1.3.0
+- **THEN** the field moves down on the mutation build, which shows the check can fail; v1.3.0's result is recorded as it is,
+  and a v1.3.0 field that does not move proves nothing either way
+
+### Requirement: The line being typed always shows
+On Attack details (note), Edit medication (name, dose), Log medication (name) and Delete all data (the word), while the
+keyboard is up, the line being typed SHALL be fully visible. If the visible part H under the top bar is at least the line
+height L plus 8 dp above and below, nothing changes. If H < L, the top bar SHALL step aside while the keyboard is up, and the
+line SHALL show with 8 dp on both sides where that fits (BRD EC-UX-72, EC-UX-77, D192).
+
+#### Scenario: Attack details in the 360 dp window (the issue)
+- **WHEN** on API 36 with Gboard, at 200% font in landscape in a window 360 dp tall, the user types 9 lines in the note, with
+  the cursor at the end, then at the start, then in the middle
+- **THEN** the cursor line shows whole, 112 of 112 px, with at least 8 dp on both sides, Back and the title are absent from
+  the layout dump, and the status bar is unchanged
+
+#### Scenario: Single-line fields in the 360 dp window
+- **WHEN** the same window is used for Edit medication's name and dose, Log medication's name and Delete all data's word
+- **THEN** the input line shows whole, the supporting line too where it fits (U1 order), and the top bar steps aside only if
+  the input line did not fit under it
+
+#### Scenario: Delete all data decides the row first
+- **WHEN** the keyboard opens on Delete all data in the 360 dp window
+- **THEN** the Delete row is decided first as D180 (8) says, and the top bar steps aside only if the input line still does not
+  fit
+
+#### Scenario: Log medication from attack mode
+- **WHEN** Log medication was opened from attack mode in the 360 dp window and the user types a first medication's name
+- **THEN** the same happens, and the status bar and the area the bar leaves are the dark room background with no lighter
+  frame
+
+#### Scenario: The 411 dp window keeps the bar
+- **WHEN** on API 36 at 200% landscape in a window 411 dp tall, the user types in the note (H 137 px, L 112 px)
+- **THEN** the top bar stays at its usual bounds and the line shows whole, with the margins as today (4 and 21 px by cursor
+  direction), not evened out
+
+#### Scenario: API 26 keeps the bar
+- **WHEN** on API 26 with the AOSP keyboard at 200% landscape, in windows 411 dp and 360 dp tall, the user types in the note
+  and the single-line fields
+- **THEN** the top bar stays, and the line shows whole with at least 8 dp on both sides, as on v1.3.1
+
+#### Scenario: Portrait keeps the bar
+- **WHEN** the user types on any of the four screens at 100% or 200% font in portrait
+- **THEN** the top bar never steps aside, and EC-UX-39 and EC-UX-40 hold as before
+
+#### Scenario: A window too small even without the bar
+- **WHEN** the line would not fit even with the top bar aside
+- **THEN** the app does nothing beyond stepping the bar aside, and the result is recorded as "window too small", never as a
+  pass
+
+#### Scenario: Free and Premium, light and dark
+- **WHEN** the same steps run on Free and on Premium, in the light and the dark theme
+- **THEN** the result is the same
+
+### Requirement: Margins give way before the line is cut
+When the line height L fits the visible part H but L plus 8 dp above and below does not, the line SHALL stay whole and the
+margins SHALL take what is left, down to 0 dp. The page SHALL move only as far as the line needs to stay whole, never to even
+out the margins, and the top bar SHALL stay. This requirement ships only if a test shows the line cut on v1.3.1 in that band
+(BRD EC-UX-73, D192).
+
+#### Scenario: A window in the band
+- **WHEN** on API 36 with Gboard at 200% landscape, in a window where 112 ≤ H < 133 px (about 401 dp for Attack details,
+  about 384 dp for Edit medication), the user types with the cursor at the end, then at the start
+- **THEN** the line shows whole, 112 of 112 px, the top bar stays, and the margins are what is left
+
+#### Scenario: v1.3.1 in the band
+- **WHEN** the same steps run on v1.3.1 in the same window
+- **THEN** the line is cut by up to 21 px at the keyboard edge (end) or the bar edge (start); if it is whole there, this
+  requirement is dropped from the release
+
+#### Scenario: No evening out
+- **WHEN** a build evens out the two margins in the 411 dp window
+- **THEN** the line moves by about 8 px while typing, and the check for "margins as today" fails
+
+### Requirement: The top bar's decision holds while the keyboard is up
+The top bar SHALL step aside when H < L, with H from the keyboard's final height and L the real height of the line being typed
+from layout, never a dp or sp constant. It SHALL be decided once per keyboard opening and SHALL NOT change while the keyboard
+stays up. A new opening, a rotation or a font change SHALL decide again. With no bottom keyboard inset it SHALL never step
+aside (BRD EC-UX-74, EC-UX-77, D192).
+
+#### Scenario: Moving and typing while the bar is aside
+- **WHEN** the bar is aside and the user moves the cursor up with arrow keys or the handle, types 10 more lines, or scrolls the
+  page by hand
+- **THEN** the bar does not come back or flicker, and the cursor line keeps at least 8 dp from the status bar when it moves up
+
+#### Scenario: The keyboard changes height
+- **WHEN** the bar is aside and the user switches Gboard to symbols or to emoji
+- **THEN** the bar stays aside
+
+#### Scenario: A message while the bar is aside
+- **WHEN** the bar is aside and a message appears
+- **THEN** the bar stays aside
+
+#### Scenario: Rotation with the keyboard up
+- **WHEN** the bar is aside and the phone rotates to portrait and back to landscape with the keyboard up
+- **THEN** in portrait the bar shows, and back in landscape the decision is made again
+
+#### Scenario: A trigger that is a constant
+- **WHEN** a build sets the trigger to a constant 64 dp and runs on API 26 at 360 dp (H 156 px)
+- **THEN** the bar leaves there, which v1.3.1 and the candidate never do, and the guard row fails
+
+#### Scenario: Hardware or floating keyboard
+- **WHEN** a hardware keyboard, a floating keyboard or a split screen gives no bottom keyboard inset
+- **THEN** the bar never steps aside; a case QA cannot reach is recorded as not reachable, not a pass
+
+### Requirement: The top bar moves with the keyboard
+The top bar SHALL leave and come back following the keyboard's own inset animation, in the same frames, with no curve of the
+app's own, in one step on API 26 to 29 and with "Remove animations". It SHALL NOT fade through another colour, SHALL NOT be
+drawn half over the page's text, and the area it leaves SHALL be the page's own background (BRD EC-UX-76, D192).
+
+#### Scenario: Animations on
+- **WHEN** a 60 fps recording on API 36 runs across the keyboard opening and closing in the 360 dp window
+- **THEN** the bar moves in the same frames as the keyboard and no frame shows a lighter colour
+
+#### Scenario: Remove animations and API 26
+- **WHEN** "Remove animations" is on, or the device is on API 26 to 29
+- **THEN** the bar goes and comes back in one step, with no frame showing it half drawn over text
+
+#### Scenario: Right to left
+- **WHEN** the steps run in a right-to-left language
+- **THEN** Back is mirrored when the bar returns
+
+### Requirement: Closing the keyboard brings the top bar back without a scroll
+When the keyboard closes while the bar is aside (Back, the hide key, Done, focus leaving, a dialog), the bar SHALL come back
+in the same frames. The scroll position SHALL stay the same: the page moves down by the bar's height and the keyboard room
+fills the rest. No scroll event SHALL be sent, TalkBack's focus SHALL stay on the field, and nothing SHALL be announced (BRD
+EC-UX-75, D189, D192).
+
+#### Scenario: Back closes the keyboard
+- **WHEN** the bar is aside in the 360 dp window and the user presses Back once
+- **THEN** the keyboard closes, the bar is back at the bounds it had before typing, the line being typed is still on screen,
+  lower by the bar's height, and a second Back leaves the screen
+
+#### Scenario: Hide key and Done
+- **WHEN** the keyboard is closed with its hide key, or with Done on a single-line field
+- **THEN** the same happens as with Back
+
+#### Scenario: TalkBack stays on the field
+- **WHEN** TalkBack is on (VERBOSE log) and the keyboard closes while the bar is aside
+- **THEN** within 3 s TalkBack says only the field or "keyboard hidden", stays on the field, and zero TYPE_VIEW_SCROLLED come
+  from the page
+
+#### Scenario: After a drag to the page's end
+- **WHEN** the user dragged the page to its end while typing with the bar aside, and then closes the keyboard
+- **THEN** the scroll position is the same, the room fills the rest, and no scroll event is sent
+
+#### Scenario: A close that scrolls
+- **WHEN** a build keeps the line's screen position on close by scrolling
+- **THEN** a scroll event is sent, and the TalkBack row fails
+
+#### Scenario: The keyboard-room guards
+- **WHEN** the keyboard-room tests of #238 run on the candidate
+- **THEN** they all pass unchanged, except that a case with the bar aside expects the field lower by exactly the bar's height
+
+### Requirement: An aside top bar is gone for assistive technology and messages
+While the bar is aside, its nodes SHALL be removed from the accessibility tree, not merely hidden, so TalkBack, Switch Access
+and Tab never land on it, and nothing SHALL be announced when it leaves or returns. A message SHALL keep its D180 (4)
+coordinates to the pixel: the bar never moves it, and a message never brings the bar back (BRD EC-UX-76, D192).
+
+#### Scenario: TalkBack swipe while the bar is aside
+- **WHEN** the bar is aside and the user swipes back from the field with TalkBack
+- **THEN** TalkBack reaches the content above the field and then the top of the page, never Back or the title
+
+#### Scenario: After closing
+- **WHEN** the keyboard is closed and the user swipes back again
+- **THEN** Back is reachable in D178 order
+
+#### Scenario: Tab and Switch Access
+- **WHEN** the bar is aside and the user presses Shift+Tab from the field, or scans with Switch Access
+- **THEN** no stop lands on Back, the title or a bar action
+
+#### Scenario: A message with the bar aside
+- **WHEN** a message shows and the keyboard opens and closes in the 360 dp window
+- **THEN** the message's bounds are identical with and without the keyboard and the bar
+
+#### Scenario: A message moved by the bar
+- **WHEN** a build offsets the message by the bar's height
+- **THEN** the message row fails
+
+### Requirement: Opening a field with TalkBack keeps focus on it
+On Attack details (note), Log medication (name), Edit medication (name, dose) and Delete all data (the word), when TalkBack
+or another accessibility service opens a text field, accessibility focus SHALL stay on that field while the keyboard opens.
+No other control SHALL gain accessibility focus or be activated without the person, and no stored value SHALL change
+without the person's own action (BRD EC-UX-83, D194).
+
+#### Scenario: The note in the 360 dp window (the issue)
+- **WHEN** TalkBack is on, on API 36 with Gboard at 200% font in landscape in a window 360 dp tall, and the user opens
+  Attack details' note by double tap
+- **THEN** within 3 s TalkBack's focus is still on the note and on no radio, chip or heading, and the line being typed shows
+  112 of 112 px once the keyboard has settled
+- **AND** the top bar has stepped aside as D192 says
+
+#### Scenario: A recorded impact stays recorded
+- **WHEN** a migraine has "Impact on your day" recorded as 2, TalkBack opens its note in the 360 dp window, and the user
+  double taps once more
+- **THEN** the double tap lands in the note, and the database still holds impact 2 for that migraine
+
+#### Scenario: An empty impact stays empty
+- **WHEN** the same steps run on a migraine with no impact recorded
+- **THEN** the database still holds no impact for that migraine
+
+#### Scenario: The other three screens
+- **WHEN** TalkBack opens Log medication's name (in the usual and the dark room form), Edit medication's name and dose, and
+  Delete all data's word, in the 360 dp and the 411 dp window
+- **THEN** focus stays on the field, and no intake, medication or deletion is written by the next double tap
+
+#### Scenario: The 411 dp window
+- **WHEN** TalkBack opens the note in a window 411 dp tall, where the top bar stays
+- **THEN** focus stays on the note and the line shows whole
+
+#### Scenario: Remove animations and API 26
+- **WHEN** TalkBack opens the note with "Remove animations" on, or on API 26 with the AOSP keyboard, at 360 dp and 411 dp
+- **THEN** focus stays on the note and the database is unchanged
+
+#### Scenario: The checks can fail
+- **WHEN** the note row runs in the 360 dp window on a build without this change (v1.3.2)
+- **THEN** TalkBack's focus moves to an impact choice, which shows the row can fail
+- **AND** on v1.3.1 the same row keeps focus on the note, as before D192
+
+### Requirement: The line being typed comes into view with the keyboard
+Inside a screen's typing space, the line being typed SHALL come into view while the keyboard opens, in the same frames as
+the keyboard: never further in a frame than the keyboard's top moved plus 1 px, only upward, and still once the keyboard has
+settled, from any start position. Its rest position SHALL equal the one before this change within 1 px, TalkBack on or off
+(BRD EC-UX-84, EC-UX-87, D194).
+
+#### Scenario: Frames while the keyboard opens
+- **WHEN** a 60 fps recording on API 36 with Gboard at 200% landscape in the 360 dp window covers the note's keyboard
+  opening, with TalkBack off and then on
+- **THEN** in each frame the cursor line moved up no further than the keyboard's top did plus 1 px, counting the bar's step
+  in the frame where it steps aside, no frame moves it down, and no frame moves it twice
+
+#### Scenario: No tail
+- **WHEN** the same recording is read at the keyboard's last frame and 500 ms later
+- **THEN** the two frames are identical
+
+#### Scenario: No settle from the page's end
+- **WHEN** the note starts wholly in view at the page's end, taller than the space the keyboard leaves, and the keyboard opens
+  with TalkBack on, then with "Remove animations"
+- **THEN** the page lands where the system's own scroll to a focused field would put it, so the keyboard's last frame and
+  the frame 500 ms later are identical, and the cursor line shows 112 of 112 px
+
+#### Scenario: No catch-up leap
+- **WHEN** frames are skipped while the keyboard opens
+- **THEN** the line never moves more than the keyboard's top moved across the same frames, plus 1 px
+
+#### Scenario: The rest position is unchanged
+- **WHEN** the final frame is compared with develop's in each #245 cell, at 411 dp (margins 4 and 21 px by cursor
+  direction), at 360 dp, and in the margins band where QA reaches it
+- **THEN** the line's position is the same within 1 px, and at 360 dp it shows 112 of 112 px with TalkBack off
+
+#### Scenario: Remove animations and API 26 to 29
+- **WHEN** "Remove animations" is on, or the device is on API 26 to 29
+- **THEN** the page moves in one step with the keyboard, and at most one frame shows the line hidden
+
+#### Scenario: The page's end
+- **WHEN** the keyboard opens on the note at the bottom of Attack details or on Delete all data's word, in the dark theme
+- **THEN** no overscroll stretch or glow shows
+
+#### Scenario: Dark backgrounds
+- **WHEN** the keyboard opens on Log medication opened from attack mode (dark room) in the 360 dp window
+- **THEN** no frame shows a lighter colour
+
+#### Scenario: Free, Premium, light theme and right to left
+- **WHEN** the same steps run on Free and Premium, in the light theme and in a right-to-left language
+- **THEN** the result is the same
+
+#### Scenario: The motion checks can fail
+- **WHEN** the recording runs on develop, whose follow is an animated bring
+- **THEN** the line moves after the keyboard's last frame, which shows the no-tail check can fail
+
+### Requirement: Only the person ends the keyboard follow
+A focused field SHALL follow the keyboard from the start of its own bring into view. A layout made by the app or by Compose
+SHALL NOT end the following; a scroll by the person while the keyboard holds still, or a drag that stops the field's bring,
+SHALL end it. A keyboard that shrinks or closes SHALL never scroll the page. A field outside a typing space SHALL keep its
+earlier bring (BRD EC-UX-85, EC-UX-86, D194).
+
+#### Scenario: Compose's own layout before the follow
+- **WHEN** a layout at the keyboard's new height runs before the follow has acted on that height, as Compose's semantics check
+  does under an accessibility service
+- **THEN** the following goes on and the line is brought into view, and on the next frames too
+
+#### Scenario: A keyboard that comes during the field's bring
+- **WHEN** the note is focused and the keyboard starts opening while the page is still bringing the note into view
+- **THEN** the note keeps following, and its line shows in every frame once it has shown
+
+#### Scenario: A drag during the field's bring
+- **WHEN** the user drags the page while the field's bring runs, moving the line out of view, and the keyboard then grows
+- **THEN** the drag stops the bring and ends the following, and the page is not pulled back to the line
+
+#### Scenario: A scroll away still ends it
+- **WHEN** the user scrolls the page away from the line while the keyboard holds still, and the keyboard then grows
+- **THEN** the page is not pulled back to the line
+- **AND** if the field was scrolled wholly out of view it stays where it is; if some of it still shows and the keyboard would
+  leave less than its line, the page holds what showed (requirement "The keyboard never hides a focused field that shows"),
+  and still does not pull it to its line
+
+#### Scenario: The keyboard changes height while typing
+- **WHEN** the line is followed and Gboard's suggestion strip appears, or the user switches to symbols or emoji
+- **THEN** a taller keyboard moves the line up with it, a shorter one scrolls nothing, and focus stays on the field
+
+#### Scenario: Rotation with the keyboard up (known limit #264)
+- **WHEN** the phone rotates with the keyboard up and TalkBack on
+- **THEN** the behaviour is the same as in v1.3.1: the keyboard closes and TalkBack's focus moves to Back
+- **AND** this is a known limit (#264, S3, planned for 1.4.0), not a behaviour this change promises
+
+#### Scenario: Closing the keyboard
+- **WHEN** the keyboard closes by Back, the hide key or Done, with TalkBack on and off
+- **THEN** the scroll position moves 0 px (or by the bar's height where it was aside) and the field keeps focus
+- **AND** with TalkBack on, zero TYPE_VIEW_SCROLLED come from the page after the close and TalkBack's focus stays on the
+  field
+
+#### Scenario: No bottom keyboard inset
+- **WHEN** a hardware keyboard, a floating keyboard or a split screen gives no bottom keyboard inset
+- **THEN** the page does not move for the keyboard and focus stays on the field; a case QA cannot reach is recorded as not
+  reachable, not as a pass
+
+#### Scenario: A field outside a typing space
+- **WHEN** a following field is placed outside any typing space and the keyboard grows
+- **THEN** its line is brought into view as before this change
+
+#### Scenario: Moving between fields with the keyboard up
+- **WHEN** the keyboard is up and focus moves from Edit medication's name to its dose
+- **THEN** the dose is brought into view as before this change
+
+### Requirement: The keyboard never hides a focused field that shows
+When a keyboard frame would leave a focused field that is not following the keyboard, and showed at least 1 px, with less
+than its line, the page SHALL hold the lesser of its line with its clearance and what showed (within 1 px), in that same frame,
+for every user. In each such frame the line SHALL move no further than the keyboard's and the bar's step plus 1 px, and not at all
+after the keyboard stops. A field that covers the whole visible part SHALL NOT be held (BRD EC-UX-88, D194).
+
+#### Scenario: Reopening the keyboard with TalkBack (the reopen path)
+- **WHEN** TalkBack is on in the 360 dp window, the note is focused, Back closed the keyboard, the page was scrolled so the
+  note's top is near the bottom edge, and a double tap reopens the keyboard without moving the cursor
+- **THEN** in every frame at least the lesser of the line with its clearance (up to 8 dp each side) and what showed before
+  stays visible, TalkBack's focus stays on
+  the note, and the next double tap writes nothing
+
+#### Scenario: Each held frame keeps to the keyboard
+- **WHEN** the same reopening is recorded frame by frame
+- **THEN** each held frame moves the line by at most the keyboard's step plus the bar's step plus 1 px, and 0 px once the
+  keyboard has stopped
+
+#### Scenario: Remove animations and API 26
+- **WHEN** the same reopening runs with "Remove animations" on, or on API 26
+- **THEN** the hold is one step with the keyboard, and the note stays in the accessibility tree
+- **AND** what showed is kept within 1 px: a one-step inset may keep 1 px less (#262, S4, a known limit)
+
+#### Scenario: Later growth
+- **WHEN** the user scrolled the note partly out of view with the keyboard up, and then switches Gboard to symbols, which is
+  taller
+- **THEN** the page holds what showed, up to the line, and does not pull the note to its line
+
+#### Scenario: A field scrolled wholly away
+- **WHEN** the note was scrolled wholly out of view before the keyboard grows
+- **THEN** the page does not move for it
+
+#### Scenario: A field that covers the whole visible part
+- **WHEN** the note already covers the whole visible part before the keyboard grows, as in a split screen where that part is
+  under about 154 px
+- **THEN** the page does not hold it, and the keyboard's frame moves nothing for it
+
+#### Scenario: The first typed character after a hold
+- **WHEN** the note was held with its caret line cut, and the user types one character
+- **THEN** the typing follow (D180 (2), unchanged) brings the whole caret line in one direction, settles within 15 frames,
+  leaves it cut by 0 px, and focus and data are unchanged; its peak speed per frame is logged, not capped
+- **AND** with "Remove animations" that bring is one step, of up to about 430 px
+
+#### Scenario: Typing, then a double tap (device row K1)
+- **WHEN** TalkBack is on, the caret is at the end of 4 lines, 60 px of the note shows, the keyboard reopens, the user types
+  one character and then double taps
+- **THEN** focus stays on the note, nothing is written, and the caret line shows whole
+
+#### Scenario: Until the first keystroke (a known limit)
+- **WHEN** the keyboard reopens on a focused note whose cursor did not move, and the note is held
+- **THEN** the caret line may stay cut until the first keystroke, while the note stays visible and focused
+
+#### Scenario: Ordinary openings are unchanged
+- **WHEN** a field is opened by a tap or a double tap, so it follows the keyboard
+- **THEN** no hold applies, and the requirement "The line being typed comes into view with the keyboard" governs every frame
+
+#### Scenario: The checks can fail
+- **WHEN** the reopen path runs on develop
+- **THEN** the note is wholly hidden, TalkBack's focus moves, and the next double tap writes, which shows the row can fail
+- **AND** a build that brings the line instead of holding (rejected: its rescue frame moved 158 to 494 px against a 62 px
+  keyboard step) fails the per-frame row
+
+### Requirement: TalkBack reaches every item on a scrolling page once
+On every vertically scrolling page and dialog, swiping next or previous with TalkBack SHALL reach each focusable item exactly
+once in D178 order, SHALL end at the top bar's Back (the page's top while the bar is aside) and at the last item, and SHALL
+never loop or skip a block, at any font size, in both orientations, with the keyboard up or down. A page left out under the
+touch-target rule is recorded (BRD EC-UX-78, EC-UX-79, EC-UX-81, D193).
+
+#### Scenario: Swiping back from the note (the issue)
+- **WHEN** TalkBack is on at 200% font in landscape in a window 360 dp tall, on Attack details of a past migraine with
+  Severe pain and Nausea, focus is on the note, the keyboard is closed with Back, and the user swipes previous 40 times
+- **THEN** focus moves up the page through every item once, in order, and reaches Back; no item is heard twice
+
+#### Scenario: Portrait at 100% with no keyboard
+- **WHEN** TalkBack is on at 100% font in portrait on a 411 dp wide phone with a navigation bar, no keyboard, and the user
+  swipes previous from "Delete migraine" on Attack details
+- **THEN** focus reaches Back with every item once, and swiping next from Back reaches "Delete migraine" with every item once
+
+#### Scenario: Keyboard up
+- **WHEN** the keyboard is up on the note at 100% portrait and at 200% landscape, and the user swipes previous from the note
+- **THEN** focus reaches the top of the page with every item once and named, and no item below the keyboard is a stop
+
+#### Scenario: Every scrolling page and dialog
+- **WHEN** the same walks run on Add past attack, Today, attack mode, History, Insights, Report, Medications, Edit
+  medication, Log medication, Your data and its two import dialogs, Reminders and its dialog, Settings, each Settings page,
+  Delete all data, Paywall, Onboarding, and the date and date-time pickers, at 100% portrait and 200% landscape
+- **THEN** each walk reaches both ends with every item once, or the page is listed as left out under the touch-target rule
+
+#### Scenario: A page that does not scroll
+- **WHEN** a page's content fits the window, so nothing scrolls
+- **THEN** TalkBack's order and stops are the same as on the build before this change
+
+#### Scenario: The top bar aside
+- **WHEN** the top bar is aside on Attack details in the 360 dp window (D192) and the user swipes previous from the note
+- **THEN** focus reaches the top of the page with every item once and never Back; after the keyboard closes, swiping previous
+  reaches Back
+
+#### Scenario: Conditions that must not change the result
+- **WHEN** the walks run with Remove animations, right to left, on API 26 and API 36, in light, dark and dark room, in Free
+  and Premium, and in attack mode
+- **THEN** each walk reaches both ends with every item once
+
+#### Scenario: A message over the top of the page
+- **WHEN** a message shows over the top of a page (D180 (4)) and the user swipes through the page with TalkBack
+- **THEN** the walk reaches the message, with its Dismiss, and every item it does not cover, each once; items under the
+  message are out of the tree while it shows, as on `develop`; after the message goes, the walk reaches both ends with every
+  item once
+
+#### Scenario: Rotation or process death during a walk
+- **WHEN** the phone is rotated, or the process is killed and restored, while TalkBack is partway down a page
+- **THEN** TalkBack starts where Android and D178 put it, and the walk from there reaches both ends with every item once
+
+### Requirement: An item outside the visible part is not a stop
+An item wholly outside a scroll area's visible part SHALL NOT be in the accessibility tree, and no node in the tree SHALL
+have empty bounds in the window. This SHALL hold when the visible part ends above the window's bottom: with the keyboard up,
+above the navigation bar, above a dialog's buttons, and under a message or the top bar. A picker left out of exact bounds
+is a recorded exception (BRD EC-UX-78, D193 (3a), (4)).
+
+#### Scenario: Just below the visible edge
+- **WHEN** a chip lies 1 to 24 dp below the visible part's bottom edge, with the keyboard up or above the navigation bar
+- **THEN** the chip is not in the accessibility tree, and it is not placed after the top bar in TalkBack's order
+
+#### Scenario: Just above the visible edge
+- **WHEN** an item lies 1 to 24 dp above the visible part's top edge after a scroll
+- **THEN** it is not in the accessibility tree
+
+#### Scenario: A dialog at 200%
+- **WHEN** a scrolling dialog, such as an import dialog on Your data, is open at 200% font and its content scrolls
+- **THEN** no item hidden behind or above its buttons is a stop, and TalkBack walks the dialog with every item once
+
+### Requirement: TalkBack's scroll keeps its place
+When TalkBack, or Switch Access through the same action, scrolls a page, one step SHALL move it by floor(V/2) px, where V is
+the part of the scroll area actually visible: its height minus any top bar, message, keyboard, navigation bar or dialog
+buttons over it. Less than a step left scrolls to the end. While the gap to the next stop is under V/2 the focused item SHALL
+stay on screen; in every case the next stop SHALL be the next item in order (BRD EC-UX-79, D193 (5)).
+
+#### Scenario: Swiping back past the top edge (v1.3.1 skipped a block)
+- **WHEN** TalkBack is on the "Stress" chip at the top of the visible part on Attack details and the user swipes previous
+- **THEN** the next stops are "Possible triggers", "Add your own symptom" and each symptom chip in order, and "Symptoms" comes
+  only after them; the focused item stays on screen
+
+#### Scenario: Swiping on past the bottom edge
+- **WHEN** TalkBack is on the last item above the visible part's bottom edge, the gap to the next stop is under V/2, and the
+  user swipes next
+- **THEN** the page scrolls by one step, the next stop is the item just below, and the focused item stays on screen
+
+#### Scenario: A gap of half the visible part or more
+- **WHEN** at 200% landscape in a 411 dp tall window with the keyboard up on Attack details (V 137 px, step 68 px), or on a
+  page with a large block between stops, TalkBack crosses a gap of V/2 or more
+- **THEN** the next stop is still the next item in order, with no skip and no loop; the focused item may leave the screen,
+  and the test asserts the order, not that the item stayed
+
+#### Scenario: One scroll action
+- **WHEN** TalkBack's or Switch Access's scroll forward or backward action runs once on a scrolling page
+- **THEN** the page moves by floor(V/2) px within 1 px, with V measured from layout, and not by its whole visible height
+
+#### Scenario: An inset inside the scroll
+- **WHEN** a page puts an inset or a keyboard room inside its scroll content, so the scroll's viewport is taller than what
+  shows
+- **THEN** the step is half of what shows, not half of the viewport
+
+### Requirement: Every stop says its name
+Every item TalkBack stops on SHALL say its visible words with its state, also when cut by the visible edge, never a state
+or role alone. Chips SHALL carry `spokenLabel ?: label` on their own node with the inner Text's semantics cleared, only with
+exact bounds. Other stops SHALL get their words on their own node only where the cut sweep shows them losing their name,
+and each such stop SHALL pass the D181 one-name check (BRD EC-UX-80, D181, D193 (5)).
+
+#### Scenario: A chip at the edge
+- **WHEN** a symptom chip is cut by the visible edge and TalkBack stops on it
+- **THEN** it says "Not selected. Nausea", or "Selected. Nausea" when chosen, as a whole chip does, and never only "Not
+  selected"
+
+#### Scenario: The cut sweep
+- **WHEN** for each page and dialog, each stop is scrolled so that 1 px to 12 dp of it shows at the top edge and then at the
+  bottom edge, and its name is read from the unmerged tree as TalkBack builds it
+- **THEN** every stop's name is its full visible words; a stop whose name comes back empty or partial fails the sweep
+
+#### Scenario: Only where the sweep finds it
+- **WHEN** a stop keeps its name in the cut sweep
+- **THEN** its semantics are not changed
+
+#### Scenario: One name after the change
+- **WHEN** a chip or a stop found by the sweep is given its words on its own node
+- **THEN** TalkBack says its words once, not twice, and the spoken name contains the visible words in the same order
+
+#### Scenario: The sweep can fail
+- **WHEN** a chip without its own name runs the cut sweep with exact bounds, or the sweep reads the merged tree
+- **THEN** the unmerged sweep is red for that chip, which is why the merged read is not used
+
+#### Scenario: Voice Access by name
+- **WHEN** a voice command names a chip's visible text
+- **THEN** it matches that chip, as before this change
+
+### Requirement: The traversal fix draws nothing new
+The fix SHALL change only semantics, touch nodes and TalkBack's scroll step. Every screen SHALL look the same to the
+pixel at rest and pressed. Inside exact bounds every clickable, toggleable or selectable node SHALL itself be at least 48×48
+dp (64 dp for attack mode's intensity choices, "Migraine ended", Undo and Dismiss), or its whole cell pitch where cells sit
+closer, from its own size, never from touch-target widening (BRD EC-UX-82, EC-UX-89, D193 (2), (4)).
+
+#### Scenario: Screens look the same
+- **WHEN** screenshots of each changed page are taken at 100% portrait and 200% landscape, before and after the change, at
+  rest and with a control pressed
+- **THEN** they are identical to the pixel; the pressed state is compared on a device, because Robolectric draws no ripple
+
+#### Scenario: TalkBack's outline shows the touch area
+- **WHEN** TalkBack focuses an in-page icon button or a History day
+- **THEN** its focus outline is the 48 dp node or the day's whole pitch, where it was the 40 dp circle or the drawn cell;
+  this is the one intended visible change, drawn by TalkBack and only while focused
+
+#### Scenario: In-page icon buttons
+- **WHEN** a tap lands 2 dp outside an in-page icon button's 40 dp circle but inside 48 dp, inside a scrolling page
+- **THEN** the button acts, as it did before the change; its circle, icon and ripple look as Material's do
+
+#### Scenario: Controls outside exact bounds
+- **WHEN** the audit looks at top-bar Back and actions, the Paywall's close row above its scroll, the message host, and the
+  checkbox, switch and radio rows
+- **THEN** the first three stay Material and outside exact bounds, and each toggle row is itself the node of 48 dp or more,
+  so none of them changes
+
+#### Scenario: A control smaller than 48 dp
+- **WHEN** the touch-target audit, at 360 and 411 dp wide and at 100% and 200% font, finds a clickable control under its bar
+  on a page
+- **THEN** either its own node grows to its bar with no visual change and is measured again, or the page is left out of
+  the bounds part, listed in `design.md` and D193, and a follow-up issue is filed for it at close-out
+
+#### Scenario: History calendar days at 360 dp
+- **WHEN** History's month calendar is shown 360 dp wide at 200% font, where a day cell is about 41.7 dp with 6 dp gaps
+- **THEN** each day's click, focus and semantics sit on a slot of its whole cell pitch (47 to 48 dp), a tap in a gap opens
+  the nearer day, and the drawn cell, its clip and its keyboard focus ring are identical to the pixel
+
+#### Scenario: The Material pickers stay out
+- **WHEN** the date picker, the date-time picker or Reminders' time dialog is open, whose mode toggle, month arrows,
+  month/year button, AM/PM and time-step Cancel and OK are 40 dp tall
+- **THEN** it is outside exact bounds and keeps the half step, D193 records it as a residual, and a follow-up issue is
+  filed for these pickers at close-out
+
+#### Scenario: Attack mode's secondary buttons
+- **WHEN** the audit measures Details, the move-start options and the long-check buttons in attack mode
+- **THEN** they pass at 48 dp and are not enlarged, and attack mode is not left out because of them
+
+#### Scenario: Keyboard and Switch Access
+- **WHEN** the user moves through a changed page with Tab and Shift+Tab, or scans it with Switch Access
+- **THEN** the order and the stops are the same as before, and each stop shows its focus indicator in view
+
+#### Scenario: The keyboard guards
+- **WHEN** the keyboard closes on the four screens with a text field, with TalkBack on the field (#238, #245)
+- **THEN** no scroll event is sent, focus stays on the field, the keyboard room and the top bar behave as D189 and D192 say,
+  and the keyboard-room and top-bar tests pass unchanged
+
+#### Scenario: One announcement for a refused Save
+- **WHEN** Save is refused for a field problem on Edit medication or Log medication with TalkBack on (#239)
+- **THEN** the problem is announced once, as D191 says
+
+### Requirement: Exact bounds cover only the scroll content
+Exact bounds SHALL wrap only the content inside a scroll area. The top bar, the message host with its Undo and Dismiss,
+bottom bars and dialog buttons SHALL stay outside it, with the system's touch target and its widening (BRD EC-UX-82, D193
+(3a)).
+
+#### Scenario: Outside the scroll
+- **WHEN** a test reads the minimum touch target in the top bar, the message host and a dialog's buttons on a changed page
+- **THEN** it is the system's 48 dp, and only nodes inside the scroll content read zero
+
+#### Scenario: Wrapped too wide
+- **WHEN** a build wraps a whole screen, as the prototype wrapped Attack details' content box, instead of the scroll content
+- **THEN** that test fails
+
+### Requirement: One entry point for every vertical scroll
+Every vertical scroll in the app's main code SHALL go through one `designsystem` entry point that applies both parts, or
+the step alone for a picker left out of exact bounds, so no screen keeps its own copy. The one other raw `verticalScroll(`
+SHALL be the typing space's `scrollingPage` (D194), called only by the entry point's typing-space overload. Any other raw
+`verticalScroll(` or `scrollingPage(` call in main code SHALL fail a check in the gate (BRD EC-UX-90, D193 (1), (3), (4)).
+
+#### Scenario: A new scrolling screen
+- **WHEN** a build adds `Modifier.verticalScroll(...)` directly in a feature's main code
+- **THEN** the source check fails and names the file and line
+
+#### Scenario: All sites covered
+- **WHEN** the source check runs on the candidate
+- **THEN** it passes, and the entry point is used at all 29 sites of `develop` f70b6450 (23 page, 6 dialog)
+
+#### Scenario: A typing screen keeps the keyboard follow
+- **WHEN** Attack details, Log medication, Edit medication or Delete all data scrolls
+- **THEN** it goes through the entry point's typing-space overload, which sets TalkBack's step and then applies the typing
+  space's `scrollingPage` on the same scroll state, so #259's keyboard follow (D194) is unchanged
+
+#### Scenario: A way around the entry point
+- **WHEN** a build calls `scrollingPage(` from any file but the entry point, or adds a second raw `verticalScroll(` in the
+  typing space
+- **THEN** the source check fails and names the file
+
+### Requirement: The traversal check can fail
+Each traversal and scroll-step test SHALL be shown red on `develop` f70b6450 before the fix, with a case that passes there,
+and removing either part SHALL turn its tests red again. A Compose change to the test-only traversal data SHALL fail loudly,
+never pass silently (BRD EC-UX-90, D193 (7)).
+
+#### Scenario: Red before the fix
+- **WHEN** the order and scroll tests run on `develop` f70b6450
+- **THEN** the keyboard and landscape order tests, the navigation-bar case and the scroll tests fail with the wrong step named,
+  and the portrait no-keyboard order test without an inset passes
+
+#### Scenario: Each part is needed
+- **WHEN** the bounds part is removed from the candidate, or the scroll step part is removed
+- **THEN** the order tests, or the scroll tests, fail again
+
+#### Scenario: Compose changes its test data
+- **WHEN** a Compose upgrade stops exposing the traversal data the tests read
+- **THEN** the tests fail with "only N items", not pass
+
+#### Scenario: The device control
+- **WHEN** QA runs the device walks on v1.3.1 and on `develop` f70b6450
+- **THEN** the walk on Attack details loops or skips a block, so the same walk on the candidate can show the fix
