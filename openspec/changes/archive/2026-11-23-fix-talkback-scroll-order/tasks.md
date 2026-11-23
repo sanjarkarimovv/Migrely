@@ -266,7 +266,7 @@ does; each such stop passes the D181 one-name check (heard once, visible words i
   the next console gesture came 773 ms later and cancelled the animated scroll (host jitter; the other two runs were
   clean). At 200% landscape with the keyboard up, the note's line sits under the keyboard and the top bar does not step
   aside, on develop too: a #245 (D192) gap for `main`, not this change.
-- [ ] 6.2 One walk per other page and dialog at 100% portrait and 200% landscape, keyboard up on the four text-field screens.
+- [x] 6.2 One walk per other page and dialog at 100% portrait and 200% landscape, keyboard up on the four text-field screens.
   Verify: `6.2-*.txt`, each reaching both ends with no repeat.
   Progress (eng-255b, 884d070d; `migrely-work/255b/6.2-*`): portrait 100%, previous from each end, all clean (no
   repeat, no bare state): Settings 19, Warning signs 18, About 6, Privacy 9, Licences 20, Your data 6, Reminders 8,
@@ -314,6 +314,12 @@ does; each such stop passes the D181 one-name check (heard once, visible words i
   #259.
   Open in 6.2: onboarding, attack mode, Your data's import and restore dialogs (need a backup file), Edit medication
   with the keyboard up as a walk (only its opening above), Today and History in attack mode.
+  Closed (team-lead, 2026-11-23): covered. eng-255b's rows above (6.2-F1 fixed in ac0a7695, the dialogs, keyboard up,
+  #259 core rows 9/9); the rows left open were walked by QA in 8.2 (`docs/qa/fix-talkback-scroll-order.md`,
+  `qa/255-acceptance` 412b5ff1): onboarding (landscape counted, portrait LOAD), attack mode in the dark room (landscape
+  counted, portrait LOAD), the import dialog (portrait and landscape) and Edit medication with the keyboard up
+  (portrait counted, landscape LOAD). Walked by no one: the Your data restore dialog, NOT CHECKED in the QA record and
+  in BRD D193 (11). Attack mode's History is also NOT CHECKED there.
 - [x] 6.3 Hardware keyboard Tab and Shift+Tab on Attack details and one dialog: order unchanged, every stop in view. Verify:
   `6.3-*.txt`.
   Result (ac0a7695 against develop 4d141abe, TalkBack off; the dump's `focused` node, its bounds against the screen):
@@ -346,7 +352,7 @@ does; each such stop passes the D181 one-name check (heard once, visible words i
 
 ## 7. Review (`code-reviewer`)
 
-- [ ] 7.1 Independent review of the diff against this spec and design: one entry point, delegate correctness, no drawn
+- [x] 7.1 Independent review of the diff against this spec and design: one entry point, delegate correctness, no drawn
   change, touch-target audit complete, guards untouched, tests red first with mutations. Verify: review verdict with
   findings fixed or answered, recorded here.
   Engineer's fixes for cr-255's round 1 on f8d958da (eng-255b; logs `migrely-work/255b/r1-*`), each red first:
@@ -384,6 +390,10 @@ does; each such stop passes the D181 one-name check (heard once, visible words i
     tests red at the file, green once removed.
   - Fixture rule: a non-editable node's description replaces its text, as TalkBack reads it. No node on the walked
     pages turned red with it.
+  Verdict (team-lead, 2026-11-23): closed. cr-255 round 3 on b977c805..b86cadd2: APPROVE, no Critical or Important
+  findings. Its three Minor findings are fixed: Minor 1 and 2 (docs) in f71041a1; Minor 3 (the Home and History audit
+  regex) in 5e39100d, checked by the lead: red on a 47 dp column, green after, gate exit 0, 3,660 tests. Rounds 1
+  (f8d958da) and 2 (d42efba7) are above.
 
 ## 8. Acceptance (`qa-engineer`)
 
