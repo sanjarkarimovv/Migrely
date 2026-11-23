@@ -67,6 +67,7 @@ switch summary drift from it.
 - [x] 3.2 report: credit switch in the view state (hidden while loading, disabled while working) and its action; a failed
   save reverts the value and emits the "not saved" message. Tests. Verify: `./gradlew :features:report:presentation:test`.
   Done (73ecda05): `onCreditAction(on, period)`; a failed save notifies `NotSaved` and reloads, so the switch shows the stored value.
+  Unit level; device fails on full disk, #278 (the switch keeps the failed value; fixed in `bugfix/pref-save-rollback`, D197).
 - [x] 3.3 attack, home, medication presentation: call the mark when the card's state first becomes visible, once per
   appearance (rotation does not mark again). Tests. Verify: `./gradlew :features:attack:presentation:test
   :features:home:presentation:test :features:medication:presentation:test`.
@@ -77,16 +78,16 @@ switch summary drift from it.
 - [x] 4.1 preferences: `report_credit_shown` (absent = true) and `safety_card_last_shown`; "Delete all data" removes
   both (check design D3). Tests in the datasource module. Verify: `./gradlew :datasource:implementation:test`.
   Done (5b4fb49f): keys `safety_card_last_shown`, `report_credit_shown` (absent = true, tested with an empty file). `clear()` clears the whole file (existing test), so "Delete all data" removes both.
-- [ ] 4.2 `ReportDocumentDataModel.credit: String?`; `ReportDocumentMapper` fills the credit constant when on;
+- [x] 4.2 `ReportDocumentDataModel.credit: String?`; `ReportDocumentMapper` fills the credit constant when on;
   `ReportPageLayout` draws it on the last page only, at line 1's top plus line 1's measured height (design D2). Tests:
   mapper on and off; instrumented layout test on A4 and Letter: `lineCount == 1`, `getEllipsisCount(0) == 0`, same page
   count on and off, absent on pages before the last. Verify: `./gradlew :features:report:data:test` and
   `ANDROID_SERIAL=emulator-5570 ./gradlew :datasource:implementation:connectedDebugAndroidTest`.
-  Code and JVM tests done (73ecda05): mapper on and off (final text word for word), `footerLines()` per page. `ReportCreditLayoutTest` (androidTest, 3 tests: one line and no ellipsis on A4 and Letter; rendered page counts equal and a pixel diff only on the last page, only in the band below the disclaimer; the disclaimer band on every page with the switch off) is written but NOT RUN: emulator-5570 was not booted (host swap above 6 GB). Tick after the connected run.
-- [ ] 4.3 Disclaimer with the switch off (medical-reviewer condition, unit level): the rendered text of every page of a
+  Code and JVM tests done (73ecda05): mapper on and off (final text word for word), `footerLines()` per page. `ReportCreditLayoutTest` (androidTest, 3 tests: one line and no ellipsis on A4 and Letter; rendered page counts equal and a pixel diff only on the last page, only in the band below the disclaimer; the disclaimer band on every page with the switch off) is written but NOT RUN: emulator-5570 was not booted (host swap above 6 GB). Tick after the connected run. Connected run 2026-11-23: `ReportCreditLayoutTest` 3/3 on emulator-5570 (`migrely-work/loops/connected-20261123-1624.log`).
+- [x] 4.3 Disclaimer with the switch off (medical-reviewer condition, unit level): the rendered text of every page of a
   multi-page report with `credit = null` contains "Patient-entered data. Not a diagnosis." and no "Made with Migrely".
   Verify: the same connected test run as 4.2, test name in the record.
-  Unit level done: `ReportFooterLinesTest` "Given the switch off then every page has the disclaimer and none the credit" (7-page report). Rendered check written, NOT RUN: `ReportCreditLayoutTest.givenTheSwitchOff_thenEveryPageStillHasTheDisclaimer` (disclaimer band differs from a blank footer on every page, A4 and Letter). Tick after the connected run.
+  Unit level done: `ReportFooterLinesTest` "Given the switch off then every page has the disclaimer and none the credit" (7-page report). Rendered check written, NOT RUN: `ReportCreditLayoutTest.givenTheSwitchOff_thenEveryPageStillHasTheDisclaimer` (disclaimer band differs from a blank footer on every page, A4 and Letter). Tick after the connected run. Connected run 2026-11-23: `givenTheSwitchOff_thenEveryPageStillHasTheDisclaimer` passed (`ReportCreditLayoutTest` 3/3, `migrely-work/loops/connected-20261123-1624.log`).
 - [x] 4.4 JSON and CSV unchanged: the existing backup round-trip and CSV tests pass unmodified. Verify:
   `git diff origin/develop -- '**/backup/**/test/**'` is empty and `./gradlew :features:backup:data:test` passes.
   Done: `git diff origin/develop -- features/backup` is empty (0 lines); `:features:backup:data:test` passes in the gate.
@@ -113,6 +114,7 @@ switch summary drift from it.
   - Compose: hidden while loading, disabled while working, reverted with the message on a failed save.
   Verify: `./gradlew :features:report:ui:testDebugUnitTest`.
   Done (73ecda05): `SwitchRow(title, summary, …)` used twice. W6: `ReportCreditSummaryTest` in `:app` (the summary is written out and must equal `One small line on the last page: "$REPORT_CREDIT"`). `ReportCreditSwitchTest` (5): hidden while loading, one Switch node with title, quoting summary and state, tap asks and shows the stored value until saved, disabled while working, Create takes the shown value. 200% wrap is task 7.
+  Unit level; device fails on full disk, #278 (the switch keeps the failed value; fixed in `bugfix/pref-save-rollback`, D197).
 
 ## 6. Wiring and manifest
 
@@ -153,6 +155,7 @@ switch summary drift from it.
 
 - [ ] 9.1 Diff each delta against the live specs (stale-delta check), then `openspec archive add-word-of-mouth-loops
   --yes` on the feature branch. Verify: `openspec validate --specs --strict` exits 0.
+  **Blocked** until #278 (`bugfix/pref-save-rollback`) is merged into `develop` and `develop` is merged into this branch, and EC-REP-12 passes on a device.
 - [ ] 9.2 Tell `aso-seo-specialist` the share link is live in 1.4.0 so the table's state column changes. Verify: message
   sent with the release tag.
 
@@ -272,3 +275,11 @@ db22284d (APK md5 97eabd9f…; `:app:assembleDebug` up to date at that head). Ev
   - API 26; 7.3 (owner's phone).
 - Device restored: eng-de's T23 APK reinstalled (md5 12268bf1…); app data from the snapshot (DB dump 68c6413f…, three
   prefs files identical); settings read back identical; TalkBack log level ERROR again; 5570 off.
+
+2026-11-23, `eng-loops`, code review of 19b2e83d (`cr-loops`, approve, 3 Minor):
+1. Report: a finished report reads again the period of the latest read. Red first (`t72-cr2-red.log`).
+2. Walk: the state counts as a repeat when another whole part equals it, as a switch titled "On". Red first.
+3. This file: 4.2 and 4.3 ticked from the connected run; 3.2 and 5.2 annotated with #278; 9.1 blocked on #278.
+- Gate on the code commit: `nice -n 19 ./gradlew --max-workers=2 assembleDebug test ktlintCheck detekt lint
+  :app:checkReleasePermissions --continue`, exit 0, log `migrely-work/loops/gate-t72-cr2-20261123-1727.log`; 3776 unit
+  tests, 0 failures (22 #255 walk tests in 11 ui modules); release permissions unchanged, no INTERNET.
