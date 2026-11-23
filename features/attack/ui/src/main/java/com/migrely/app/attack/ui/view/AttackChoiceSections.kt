@@ -298,6 +298,7 @@ private fun ChoiceChip(
 internal fun CustomTagNameArea(
     title: String,
     name: TextFieldValue,
+    onFocusChange: (Boolean) -> Unit = {},
     onNameChange: (TextFieldValue) -> Unit
 ) {
     val fieldInView = remember { BringIntoViewRequester() }
@@ -346,7 +347,10 @@ internal fun CustomTagNameArea(
                     singleLine = true,
                     modifier = Modifier
                         .bringIntoViewRequester(fieldInView)
-                        .onFocusChanged { focused = it.isFocused }
+                        .onFocusChanged {
+                            focused = it.isFocused
+                            onFocusChange(it.isFocused)
+                        }
                 )
             }
         }
@@ -365,13 +369,17 @@ internal fun CustomTagDialog(kind: TagKindUiModel, onAdd: (String) -> Unit, onDi
             TagKindUiModel.Trigger -> R.string.custom_dialog_trigger_title
         }
     )
+    var typing by remember { mutableStateOf(false) }
     MigrelyAlertDialog(
         onDismissRequest = onDismiss,
         text = {
-            CustomTagNameArea(title, name) { name = limitedEdit(name, it, MAXIMUM_TAG_NAME_LENGTH) }
+            CustomTagNameArea(title, name, onFocusChange = { typing = it }) {
+                name = limitedEdit(name, it, MAXIMUM_TAG_NAME_LENGTH)
+            }
         },
-        // In a short window the default width stacks the buttons and hides the field (T23 8.1 row R03).
-        wide = isCompactHeight(),
+        // In a short window the default width stacks the buttons and hides the field (T23 8.1 row R03). While typing
+        // the platform width returns, so Android pans the dialog and the typed line stays above the keyboard.
+        wide = isCompactHeight() && !typing,
         confirmButton = {
             TextButton(onClick = { onAdd(name.text.trim()) }, enabled = name.text.isNotBlank()) {
                 Text(stringResource(R.string.custom_dialog_add))
