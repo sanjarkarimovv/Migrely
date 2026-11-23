@@ -143,13 +143,12 @@ class MainActivity : ComponentActivity() {
      * English or German, with Android 13's per-app language first in that list. German keeps its own locale; anything
      * else is English with the phone's region. Compose's configuration, Material's date and time pickers and the
      * resources, words and plural rules included, read this one locale, so words and dates never disagree. A new system
-     * or app language recreates the activity, which applies it again.
+     * or app language recreates the activity, which applies it again. The per-app language is read from LocaleManager,
+     * not from [newBase]'s configuration, which is stale in an activity restored after its process died (EC-L10N-06).
      */
     override fun attachBaseContext(newBase: Context) {
         super.attachBaseContext(newBase)
-        applyOverrideConfiguration(
-            FormattingLocales().activityOverride(newBase.resources.configuration)
-        )
+        applyOverrideConfiguration(FormattingLocales().activityOverride(newBase))
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

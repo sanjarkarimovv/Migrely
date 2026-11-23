@@ -11,7 +11,8 @@ import java.util.Locale
  *   first: the formatters `:app/di` provides use it with the application context, so a new language is followed at
  *   the next call;
  * - [activityOverride] is the change `MainActivity` makes to its own configuration, so Compose's `LocalConfiguration`,
- *   Material's date and time pickers, resources and their plural rules use it;
+ *   Material's date and time pickers, resources and their plural rules use it. For the activity it reads the language
+ *   list from [PhoneLanguages], as a restored activity's configuration can predate a per-app language change;
  * - [localizedContext] is the same override for strings read outside an activity, such as notifications and their
  *   channel names (design D2): the application context keeps the phone's own list, from which Android's resource
  *   matching could pick German while the screens are English;
@@ -29,7 +30,16 @@ class FormattingLocales(
     )
 
     fun activityOverride(phoneConfiguration: Configuration): Configuration =
-        Configuration().apply { setLocale(of(phoneConfiguration)) }
+        withLocale(of(phoneConfiguration))
+
+    /**
+     * [activityOverride] for an activity's [base] context, from [PhoneLanguages]: the per-app language as LocaleManager
+     * holds it now, not as the configuration Android restored the activity with says (EC-L10N-06).
+     */
+    fun activityOverride(base: Context): Configuration =
+        withLocale(resolver.resolve(PhoneLanguages.of(base).of(base.resources.configuration)))
+
+    private fun withLocale(locale: Locale) = Configuration().apply { setLocale(locale) }
 
     fun localizedContext(context: Context): Context =
         context.createConfigurationContext(activityOverride(context.resources.configuration))

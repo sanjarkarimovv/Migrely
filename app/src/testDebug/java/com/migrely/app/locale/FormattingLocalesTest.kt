@@ -1,6 +1,7 @@
 package com.migrely.app.locale
 
 import android.app.Application
+import android.app.LocaleManager
 import android.content.res.Configuration
 import android.os.LocaleList
 import com.migrely.app.R
@@ -46,6 +47,30 @@ class FormattingLocalesTest {
     @Test
     fun `Given an unsupported language alone then English words`() {
         assertEquals("Reminder", reminderTitle("ru-RU"))
+    }
+
+    /**
+     * T23 8.2 on 5570: an activity restored after its process died is given the configuration it had then. Migrely's
+     * language was changed to English while the process was dead; the restored screen stayed German.
+     */
+    @Test
+    fun `Given a stale German configuration and English chosen then the activity is English`() {
+        application.getSystemService(LocaleManager::class.java)
+            .applicationLocales = LocaleList.forLanguageTags("en-US")
+
+        val override = classUnderTest.activityOverride(phone("de-DE,en-US"))
+
+        assertEquals("en-US", override.locales[0].toLanguageTag())
+    }
+
+    @Test
+    fun `Given a stale English configuration and German chosen then the activity is German`() {
+        application.getSystemService(LocaleManager::class.java)
+            .applicationLocales = LocaleList.forLanguageTags("de-DE")
+
+        val override = classUnderTest.activityOverride(phone("en-US"))
+
+        assertEquals("de-DE", override.locales[0].toLanguageTag())
     }
 
     @Test
