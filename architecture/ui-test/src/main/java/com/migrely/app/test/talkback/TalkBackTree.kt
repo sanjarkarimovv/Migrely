@@ -91,10 +91,14 @@ class TalkBackTree(private val activity: ComponentActivity) {
 
     /** [spokenName] in the parts TalkBack joins: [ownWords], the state, then each child's words. */
     fun spokenParts(node: SemanticsNode): List<String> {
-        val info = node(node.id) ?: return emptyList()
-        val state = info.stateDescription?.toString()?.takeUnless { node.isEditable() }
-        return (ownWords(node) + listOfNotNull(state) + childWords(node)).filter { it.isNotBlank() }
+        if (node(node.id) == null) return emptyList()
+        val parts = ownWords(node) + listOfNotNull(state(node)) + childWords(node)
+        return parts.filter { it.isNotBlank() }
     }
+
+    /** The state TalkBack says for [node] ("On", "Selected"), or null: none, or an edit box, where Compose drops it. */
+    fun state(node: SemanticsNode): String? = node(node.id)?.stateDescription?.toString()
+        ?.takeUnless { node.isEditable() || it.isBlank() }
 
     /** [spokenParts] without the state: the control's own words, which it must not say twice (BRD D181 (2)). */
     fun wordParts(node: SemanticsNode): List<String> {

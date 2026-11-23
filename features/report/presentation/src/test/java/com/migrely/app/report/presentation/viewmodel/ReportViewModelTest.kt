@@ -402,4 +402,31 @@ class ReportViewModelTest :
                 states.last()
             )
         }
+
+    @Test
+    fun `Given another period is chosen while a report is made then that period is read after`() =
+        runTest {
+            // The chips are disabled while working, but a tap can land in the frame before (code review 19b2e83d).
+            val reads = readsWait()
+            val creates = mutableListOf<(CreateReportResultDomainModel) -> Unit>()
+            willAnswer { creates += it.getArgument<(CreateReportResultDomainModel) -> Unit>(2) }
+                .given(useCaseExecutor).execute(
+                    useCase = eq(createReportUseCase),
+                    value = any(),
+                    onResult = any(),
+                    onException = any()
+                )
+
+            val states = statesDuring {
+                classUnderTest.onCreateAction(THREE, includeNotes = false, includeCredit = true)
+                classUnderTest.onPeriodAction(SIX)
+                creates.single()(CreateReportResultDomainModel.Created("content://r"))
+                reads.forEach { (_, answer) ->
+                    answer(ReportOptionsDomainModel.Ready(SIX_DATES, true, SIX_DOMAIN))
+                }
+            }
+
+            assertEquals(listOf(SIX_DOMAIN), reads.map { it.first })
+            assertEquals(READY_SIX, states.last())
+        }
 }

@@ -36,8 +36,8 @@ class ReportViewModel(
     private var latestLoad = 0
 
     /**
-     * The period of the latest read, which a saved credit switch reads again: a period chosen while the switch saves
-     * wins over the one at the tap.
+     * The period of the latest read, which a saved credit switch and a finished report read again: a period chosen
+     * meanwhile wins over the one at the tap.
      */
     private var latestPeriod: ReportPeriodPresentationModel? = null
 
@@ -100,7 +100,8 @@ class ReportViewModel(
                 val outcome = outcomeOf(result)
                 undelivered = outcome
                 notify(outcome)
-                load(period)
+                // A chip tapped in the frame before Working showed wins over the period of the tap.
+                load(latestPeriod ?: period)
             }
         )
     }

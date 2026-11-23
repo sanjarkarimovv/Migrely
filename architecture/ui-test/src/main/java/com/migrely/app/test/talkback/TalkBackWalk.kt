@@ -141,13 +141,16 @@ private class Walk<A : ComponentActivity>(private val rule: AndroidComposeTestRu
         val unmerged = rule.unmergedNodes()
         return rule.mergedNodes().values.filter { it.mergedWords() != null }.mapNotNull { stop ->
             val node = unmerged[stop.id] ?: return@mapNotNull null
-            val (parts, words) = onUi { tree.spokenParts(node) to tree.wordParts(node) }
-            // The state ("On") is TalkBack's word for the value, not the control's: "on" in a summary is no repeat.
+            val (parts, words, state) = onUi {
+                Triple(tree.spokenParts(node), tree.wordParts(node), tree.state(node))
+            }
+            // The state ("On") repeats only as a whole part, as a switch titled "On"; the word "on" in a summary is
+            // no repeat.
             val repeated = words.withIndex().any { (index, part) ->
                 words.withIndex().any { (other, text) ->
                     other != index && text.saysWordsOf(part)
                 }
-            }
+            } || state != null && words.any { it.trim().equals(state.trim(), ignoreCase = true) }
             if (repeated) "said twice: ${parts.joinToString(" | ")}" else null
         }
     }

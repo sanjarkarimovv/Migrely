@@ -34,9 +34,10 @@ private fun switchRow(
 /**
  * The walk's "said twice" check compares the control's words, whole and in any case (BRD D181 (2)): a part repeated as
  * words fails, also as a shorter form of 4 letters or more ("note" in "notes"); a shorter word that only starts another
- * ("On" in "One", "Off" in "Offline") is not a repeat, and neither is the state ("On") next to the word "on" in a
- * summary. Red first: the state test on the substring check and again on the case-blind check, the case and
- * short-form tests on the exact-word check.
+ * ("On" in "One", "Off" in "Offline") is not a repeat. The state ("On") counts only when another part is exactly the
+ * same word, as a switch titled "On"; next to the word "on" in a summary it is no repeat. Red first: the state test on
+ * the substring check and again on the case-blind check, the case and short-form tests on the exact-word check, the
+ * title-equals-state test on the check that left the state out (code review of 19b2e83d).
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -92,12 +93,27 @@ class SaidTwiceTest {
     )
 
     @Test
-    fun `Given a short word that only starts another then not said twice`() = assertEquals(
-        emptyList<String>(),
+    fun `Given a title that is exactly the state then said twice`() = assertEquals(
+        listOf(
+            "On: said twice: On | On | One small line",
+            "Off: said twice: Off | Off | Offline backup"
+        ),
         saidTwice(
             mapOf(
                 "On" to switchRow("On", "One small line"),
                 "Off" to switchRow("Off", "Offline backup", checked = false)
+            )
+        )
+    )
+
+    @Test
+    fun `Given a short word that only starts another then not said twice`() = assertEquals(
+        emptyList<String>(),
+        saidTwice(
+            mapOf(
+                "On" to switchRow("On", "One small line", checked = false),
+                "Off" to switchRow("Off", "Offline backup"),
+                "Clean" to switchRow("Mention Migrely", "One small line on the last page")
             )
         )
     )
