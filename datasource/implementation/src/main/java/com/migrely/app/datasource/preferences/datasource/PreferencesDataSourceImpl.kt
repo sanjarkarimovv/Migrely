@@ -205,8 +205,42 @@ class PreferencesDataSourceImpl(
     private inline fun write(change: SharedPreferences.Editor.() -> Unit) =
         preferences.write(change)
 
+    /**
+     * One commit. Android puts a change into memory before it writes the file, so a commit that fails would leave the
+     * change readable, and the next successful write of any key would save it too. A failed write therefore puts back
+     * each key it changed, and every setting reads as stored (#278, BRD EC-STO-13). One write per file at a time: a
+     * second write that read the map while the first one's change was in memory would put that change back.
+     */
     private inline fun SharedPreferences.write(change: SharedPreferences.Editor.() -> Unit) {
-        if (!edit().apply(change).commit()) throw FileDataException("Preferences not saved")
+        synchronized(this) {
+            val stored = all.toMap()
+            if (!edit().apply(change).commit()) {
+                restore(stored)
+                throw FileDataException("Preferences not saved")
+            }
+        }
+    }
+
+    // Memory changes even when this commit's own file write fails too, which is what puts the stored values back.
+    private fun SharedPreferences.restore(stored: Map<String, *>) {
+        val current = all
+        val changed = (stored.keys + current.keys).filter { stored[it] != current[it] }
+        if (changed.isNotEmpty()) {
+            edit().apply { changed.forEach { key -> putStored(key, stored[key]) } }.commit()
+        }
+    }
+
+    private fun SharedPreferences.Editor.putStored(key: String, value: Any?) {
+        when (value) {
+            null -> remove(key)
+            is Boolean -> putBoolean(key, value)
+            is Int -> putInt(key, value)
+            is Long -> putLong(key, value)
+            is Float -> putFloat(key, value)
+            is String -> putString(key, value)
+            is Set<*> -> putStringSet(key, value.filterIsInstance<String>().toSet())
+            else -> error("A preference of type ${value::class.simpleName}")
+        }
     }
 
     companion object {

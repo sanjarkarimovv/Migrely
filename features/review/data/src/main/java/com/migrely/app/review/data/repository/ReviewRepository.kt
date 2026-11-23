@@ -5,6 +5,7 @@ import com.migrely.app.datasource.attack.datasource.AttackDataSource
 import com.migrely.app.datasource.clock.datasource.ClockDataSource
 import com.migrely.app.datasource.exception.DataException
 import com.migrely.app.datasource.preferences.datasource.PreferencesDataSource
+import com.migrely.app.datasource.preferences.datasource.UnsavedMarksDataSource
 import com.migrely.app.datasource.review.datasource.ReviewDataSource
 import com.migrely.app.review.data.mapper.ReviewFlowDomainMapper
 import com.migrely.app.review.domain.model.LastSafetyCardDomainModel
@@ -31,6 +32,7 @@ import java.time.Instant
 class ReviewRepository(
     private val attackDataSource: AttackDataSource,
     private val preferencesDataSource: PreferencesDataSource,
+    private val unsavedMarksDataSource: UnsavedMarksDataSource,
     private val appInfoDataSource: AppInfoDataSource,
     private val clockDataSource: ClockDataSource,
     private val reviewDataSource: ReviewDataSource,
@@ -61,8 +63,11 @@ class ReviewRepository(
         null
     }
 
-    override fun lastPaywallShown(): Instant? =
-        preferencesDataSource.lastPaywallShownMillis()?.let(Instant::ofEpochMilli)
+    /** Stored or, if its write failed, kept for this process (#278, BRD D197). */
+    override fun lastPaywallShown(): Instant? = listOfNotNull(
+        preferencesDataSource.lastPaywallShownMillis(),
+        unsavedMarksDataSource.lastPaywallShownMillis()
+    ).maxOrNull()?.let(Instant::ofEpochMilli)
 
     /** A mark that cannot be read is [LastSafetyCardDomainModel.Unknown], which the rules take as recent (D188). */
     override fun lastSafetyCardShown(): LastSafetyCardDomainModel = try {
@@ -75,11 +80,14 @@ class ReviewRepository(
 
     override fun previousExitCrashed(): Boolean = appInfoDataSource.previousExitCrashed()
 
+    /** The stored requests and the ones this process could not save (#278, BRD D197). */
     override fun reviewMarks(): ReviewMarksDomainModel {
         val requests = preferencesDataSource.reviewRequests()
+        val unsaved = unsavedMarksDataSource.reviewRequestsMillis()
         return ReviewMarksDomainModel(
-            requests = requests.count,
-            lastRequested = requests.lastMillis?.let(Instant::ofEpochMilli)
+            requests = requests.count + unsaved.size,
+            lastRequested = (listOfNotNull(requests.lastMillis) + unsaved).maxOrNull()
+                ?.let(Instant::ofEpochMilli)
         )
     }
 
@@ -94,7 +102,8 @@ class ReviewRepository(
         try {
             preferencesDataSource.markReviewRequested(at.toEpochMilli())
         } catch (_: DataException) {
-            // Dropped: at worst the app asks once more (BRD D131).
+            // Kept for this process, so Home does not ask again on every load while the storage is full (#278, D197).
+            unsavedMarksDataSource.keepReviewRequested(at.toEpochMilli())
         }
     }
 }
