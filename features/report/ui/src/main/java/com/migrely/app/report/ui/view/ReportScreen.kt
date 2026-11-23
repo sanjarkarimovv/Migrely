@@ -404,7 +404,8 @@ fun ReportContents(
                         )
                         // The PDF stays English in 1.4.0 (BRD D195, EC-L10N-09): said once, only in another
                         // language.
-                        if (LocalConfiguration.current.locales[0].language != Locale.ENGLISH.language) {
+                        val appLanguage = LocalConfiguration.current.locales[0].language
+                        if (appLanguage != Locale.ENGLISH.language) {
                             Text(
                                 stringResource(R.string.report_pdf_language_note),
                                 style = MaterialTheme.typography.bodyMedium,
