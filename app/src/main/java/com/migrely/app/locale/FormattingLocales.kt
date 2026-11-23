@@ -13,7 +13,7 @@ import java.util.Locale
  * - [refresh] resolves them again from [PhoneLanguages], the phone's language list with Android 13's per-app language
  *   first, from LocaleManager rather than a configuration that can predate it (EC-L10N-06). The app refreshes at
  *   start, on every configuration change, which a new system or per-app language is, and as `MainActivity` is
- *   created and started, so the formatters `:app/di` provides follow a new language from then on;
+ *   created, so the formatters `:app/di` provides follow a new language from then on;
  * - [activityOverride] is the change `MainActivity` makes to its own configuration, so Compose's `LocalConfiguration`,
  *   Material's date and time pickers, resources and their plural rules use it;
  * - [localizedContext] is the same override for strings read outside an activity, such as notifications and their
@@ -38,18 +38,19 @@ class FormattingLocales(
 
     fun of(context: Context): Locale = current ?: refresh(context)
 
-    fun refresh(context: Context): Locale = resolve(context).also { current = it }
+    fun refresh(context: Context): Locale = fresh(context).also { current = it }
 
     fun activityOverride(base: Context): Configuration =
         Configuration().apply { setLocale(of(base)) }
 
     fun localizedContext(context: Context): Context =
-        context.createConfigurationContext(Configuration().apply { setLocale(resolve(context)) })
+        context.createConfigurationContext(Configuration().apply { setLocale(fresh(context)) })
+
+    /** The locale as the phone's language list gives it now, leaving what [of] gives alone. */
+    fun fresh(context: Context): Locale =
+        resolver.resolve(phoneLanguages(context).of(context.resources.configuration))
 
     fun applyToProcess(context: Context) {
         Locale.setDefault(of(context))
     }
-
-    private fun resolve(context: Context): Locale =
-        resolver.resolve(phoneLanguages(context).of(context.resources.configuration))
 }

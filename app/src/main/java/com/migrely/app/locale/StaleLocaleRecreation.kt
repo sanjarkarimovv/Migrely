@@ -12,7 +12,11 @@ import java.util.Locale
  * At most once per language, carried across instances in the saved state ([saved], [restore]): [current] and the
  * locale the activity was built with come from one source on Android 13 and newer, but with no LocaleManager each
  * reads a configuration, the activity's and the application's, which can stay apart, so every new instance would
- * otherwise recreate once, forever (cr-de on 9902f069). Returns whether it recreated.
+ * otherwise recreate once, forever (cr-de on 9902f069). The mark lasts only while the mismatch does: an instance that
+ * starts in the app's language clears it, so after a later process death a stale restored activity is recreated
+ * again (T23 8.2 row 9e). [current] does not change the formatters' locale; the recreated activity refreshes it as it
+ * is attached, so a recreate held back never leaves words in one language and dates in another. Returns whether it
+ * recreated.
  */
 class StaleLocaleRecreation(
     private val builtWith: Locale,
@@ -32,7 +36,12 @@ class StaleLocaleRecreation(
     fun onStart(finishing: Boolean, changingConfigurations: Boolean): Boolean {
         if (finishing || changingConfigurations) return false
         val now = current()
-        if (now == builtWith || now == recreatedFor) return false
+        if (now == builtWith) {
+            // In the app's language: an earlier recreate has done its work, and must not hold back a later one.
+            recreatedFor = null
+            return false
+        }
+        if (now == recreatedFor) return false
         recreatedFor = now
         languageChanged()
         recreate()

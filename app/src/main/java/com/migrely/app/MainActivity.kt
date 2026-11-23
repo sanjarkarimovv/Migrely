@@ -158,7 +158,7 @@ class MainActivity : ComponentActivity() {
         applyOverrideConfiguration(formattingLocales.activityOverride(newBase))
         staleLocale = StaleLocaleRecreation(
             builtWith = builtWith,
-            current = { formattingLocales.refresh(applicationContext) },
+            current = { formattingLocales.fresh(applicationContext) },
             recreate = ::recreate,
             // Android's notification settings name the channels in the new language too. Off the main thread: it asks
             // the notification service for the channels.

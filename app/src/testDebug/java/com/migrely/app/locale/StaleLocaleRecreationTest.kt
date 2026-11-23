@@ -68,6 +68,26 @@ class StaleLocaleRecreationTest {
         assertEquals(1, recreations)
     }
 
+    /**
+     * T23 8.2 row 9e on 5570 (2756cb9a): the marker of one recreate outlived it in the saved state and, after the next
+     * process death, kept a restored stale activity from being recreated. A new instance that starts in the app's
+     * language clears it.
+     */
+    @Test
+    fun `Given a recreate that applied then a later stale restore recreates again`() {
+        val stale = instance()
+        stale.onStart(finishing = false, changingConfigurations = false)
+        val applied = instance(builtWith = Locale.GERMANY, savedRecreatedFor = stale.saved())
+        applied.onStart(finishing = false, changingConfigurations = false)
+        val restoredAfterDeath = instance(savedRecreatedFor = applied.saved())
+
+        val recreated =
+            restoredAfterDeath.onStart(finishing = false, changingConfigurations = false)
+
+        assertTrue(recreated)
+        assertEquals(2, recreations)
+    }
+
     @Test
     fun `Given a recreate for German then a later change to another language recreates again`() {
         val first = instance()

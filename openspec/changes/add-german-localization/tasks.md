@@ -256,6 +256,10 @@ merge the latest `origin/develop` (with #255) so the translated set is final; if
   the formatters' cache; a stale-language recreate also renames the channels. Red then green (`cr3-red.log`, 4 red;
   `cr3-green.log`). Known limit: a per-app change that arrives while the activity stays started (adb with Migrely in
   front, or multi-window) applies at its next start.
+  8.2 row 9e on 2756cb9a (eng-de3): the guard's mark outlived its recreate in the saved state and, after the next process
+  death, held back a needed recreate: title English, date German (the `onStart` read had refreshed the formatters).
+  Fix: an instance that starts in the app's language clears the mark; `onStart` reads with `FormattingLocales.fresh`,
+  which leaves the formatters alone. Red then green (`migrely-work/de/9e-red.log`, `9e-green.log`).
 
 ## 12. QA (`qa-engineer`, Go/No-Go rows for this diff)
 
