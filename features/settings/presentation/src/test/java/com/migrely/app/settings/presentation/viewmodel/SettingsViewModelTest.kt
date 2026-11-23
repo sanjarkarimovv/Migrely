@@ -81,6 +81,22 @@ class SettingsViewModelTest :
     }
 
     @Test
+    fun `Given Track periods is not saved then the stored value is read again and shown`() =
+        runTest {
+            // The datasource puts a failed change back (#278), so the switch shows what is stored.
+            getSettingsUseCase.givenSuccessfulExecution(SETTINGS.copy(periodTracking = true))
+            setPeriodTrackingUseCase.givenSuccessfulExecution(
+                false,
+                SettingsWriteResultDomainModel.Failed
+            )
+            val state = async(start = UNDISPATCHED) { classUnderTest.viewState.first() }
+
+            classUnderTest.onPeriodTrackingAction(false)
+
+            assertEquals(SettingsViewState.Ready(SHOWN.copy(periodTracking = true)), state.await())
+        }
+
+    @Test
     fun `When Track periods is saved then the settings are read again`() = runTest {
         getSettingsUseCase.givenSuccessfulExecution(SETTINGS)
         setPeriodTrackingUseCase.givenSuccessfulExecution(
