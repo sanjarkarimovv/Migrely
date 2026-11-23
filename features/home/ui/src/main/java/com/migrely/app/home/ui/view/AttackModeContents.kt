@@ -4,6 +4,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -39,6 +40,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -82,6 +84,9 @@ private val MOVE_START_OPTIONS = listOf(
     120 to R.string.move_start_120
 )
 
+// Fewer title lines than this left for the guidance above the controls make the whole page scroll as one (#274).
+private const val GUIDANCE_MIN_LINES = 3
+
 /**
  * The "dark room" (BRD 18.3 B): one line of text, the elapsed time and large controls in the lower half. It is dark in
  * every theme, its time picker included (BRD D94).
@@ -115,6 +120,12 @@ fun AttackModeContents(
     }
 }
 
+/**
+ * The guidance (the calming line, the start time, Details and the 72-hour card) above the controls. At the largest
+ * fonts on a short phone the controls alone can fill the height and leave the guidance no room at all (#274), so when
+ * less than [GUIDANCE_MIN_LINES] title lines would be left for it, the whole page scrolls as one instead: guidance,
+ * then the start options, then the controls. Type never shrinks, and the order stays the same (BRD D171).
+ */
 @Suppress("LongParameterList")
 @Composable
 private fun StackedAttackLayout(
@@ -125,26 +136,49 @@ private fun StackedAttackLayout(
     actions: HomeActions,
     modifier: Modifier
 ) {
-    Column(modifier = modifier) {
-        PageScroll {
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .pageScroll(rememberScrollState())
-            ) {
-                Spacer(Modifier.height(16.dp))
-                RainCard(startedAt = startedAt, reduceMotion = reduceMotion) {
-                    actions.onAttackDetails(attack.id)
+    val density = LocalDensity.current
+    var controlsHeight by remember { mutableStateOf(0.dp) }
+    val guidanceMinHeight = with(density) {
+        MaterialTheme.typography.titleLarge.lineHeight.toDp() * GUIDANCE_MIN_LINES
+    }
+    val guidance: @Composable () -> Unit = {
+        Spacer(Modifier.height(16.dp))
+        RainCard(startedAt = startedAt, reduceMotion = reduceMotion) {
+            actions.onAttackDetails(attack.id)
+        }
+        if (attack.longAttackCheckDue) {
+            Spacer(Modifier.height(16.dp))
+            LongAttackCheckCard(attack = attack, nowMillis = nowMillis, actions = actions)
+        }
+    }
+    val controls: @Composable () -> Unit = {
+        // Measured where it is drawn; its height does not depend on which layout holds it.
+        Column(Modifier.onSizeChanged { controlsHeight = with(density) { it.height.toDp() } }) {
+            MoveStartOptions(onMoveStartEarlier = actions.onMoveStartEarlier)
+            Spacer(Modifier.height(12.dp))
+            AttackControls(attack = attack, actions = actions)
+        }
+    }
+    BoxWithConstraints(modifier = modifier) {
+        if (maxHeight - controlsHeight >= guidanceMinHeight) {
+            Column(Modifier.fillMaxSize()) {
+                PageScroll {
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .pageScroll(rememberScrollState())
+                    ) { guidance() }
                 }
-                if (attack.longAttackCheckDue) {
-                    Spacer(Modifier.height(16.dp))
-                    LongAttackCheckCard(attack = attack, nowMillis = nowMillis, actions = actions)
+                controls()
+            }
+        } else {
+            PageScroll {
+                Column(Modifier.fillMaxSize().pageScroll(rememberScrollState())) {
+                    guidance()
+                    controls()
                 }
             }
         }
-        MoveStartOptions(onMoveStartEarlier = actions.onMoveStartEarlier)
-        Spacer(Modifier.height(12.dp))
-        AttackControls(attack = attack, actions = actions)
     }
 }
 
