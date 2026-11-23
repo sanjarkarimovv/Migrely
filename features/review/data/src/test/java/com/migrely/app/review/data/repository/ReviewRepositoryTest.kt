@@ -198,4 +198,20 @@ class ReviewRepositoryTest {
             restarted.reviewMarks()
         )
     }
+
+    @Test
+    fun `Given a safety-card mark was not saved then the rating waits as for a stored one`() {
+        given(preferencesDataSource.safetyCardLastShownMillis()).willReturn(5L)
+        unsavedMarksDataSource.keepSafetyCardShown(NOW.toEpochMilli())
+
+        assertEquals(LastSafetyCardDomainModel.ShownAt(NOW), classUnderTest.lastSafetyCardShown())
+    }
+
+    @Test
+    fun `Given only an unsaved safety-card mark then it is the last one shown`() {
+        given(preferencesDataSource.safetyCardLastShownMillis()).willReturn(null)
+        unsavedMarksDataSource.keepSafetyCardShown(NOW.toEpochMilli())
+
+        assertEquals(LastSafetyCardDomainModel.ShownAt(NOW), classUnderTest.lastSafetyCardShown())
+    }
 }

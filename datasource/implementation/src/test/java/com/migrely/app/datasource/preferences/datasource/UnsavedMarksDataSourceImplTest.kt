@@ -34,4 +34,14 @@ class UnsavedMarksDataSourceImplTest {
 
         assertEquals(listOf(5L, 9L), classUnderTest.reviewRequestsMillis())
     }
+
+    @Test
+    fun `When safety-card marks are kept then the latest, in any order`() {
+        assertNull(classUnderTest.lastSafetyCardShownMillis())
+
+        classUnderTest.keepSafetyCardShown(30L)
+        classUnderTest.keepSafetyCardShown(10L)
+
+        assertEquals(30L, classUnderTest.lastSafetyCardShownMillis())
+    }
 }

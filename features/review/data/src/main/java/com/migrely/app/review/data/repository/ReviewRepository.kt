@@ -69,9 +69,15 @@ class ReviewRepository(
         unsavedMarksDataSource.lastPaywallShownMillis()
     ).maxOrNull()?.let(Instant::ofEpochMilli)
 
-    /** A mark that cannot be read is [LastSafetyCardDomainModel.Unknown], which the rules take as recent (D188). */
+    /**
+     * The later of the stored mark and one this process could not save (#278, D197). A mark that cannot be read is
+     * [LastSafetyCardDomainModel.Unknown], which the rules take as recent (D188).
+     */
     override fun lastSafetyCardShown(): LastSafetyCardDomainModel = try {
-        preferencesDataSource.safetyCardLastShownMillis()
+        listOfNotNull(
+            preferencesDataSource.safetyCardLastShownMillis(),
+            unsavedMarksDataSource.lastSafetyCardShownMillis()
+        ).maxOrNull()
             ?.let { LastSafetyCardDomainModel.ShownAt(Instant.ofEpochMilli(it)) }
             ?: LastSafetyCardDomainModel.Never
     } catch (_: DataException) {

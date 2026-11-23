@@ -4,6 +4,7 @@ import com.migrely.app.datasource.attack.datasource.AttackDataSource
 import com.migrely.app.datasource.clock.datasource.ClockDataSource
 import com.migrely.app.datasource.daymark.datasource.DayMarkDataSource
 import com.migrely.app.datasource.preferences.datasource.PreferencesDataSource
+import com.migrely.app.datasource.preferences.datasource.UnsavedMarksDataSource
 import com.migrely.app.home.data.mapper.AttackDomainMapper
 import com.migrely.app.home.data.mapper.IntensityPointDomainMapper
 import com.migrely.app.home.data.repository.HomeRepository
@@ -121,6 +122,11 @@ internal object HomeDataModule {
     @Provides
     fun providesHomeMarkSafetyCardShownRepository(
         preferencesDataSource: PreferencesDataSource,
+        unsavedMarksDataSource: UnsavedMarksDataSource,
         clockDataSource: ClockDataSource
-    ): MarkSafetyCardShownRepository = SafetyCardRepository(preferencesDataSource, clockDataSource)
+    ): MarkSafetyCardShownRepository = SafetyCardRepository(
+        preferencesDataSource,
+        unsavedMarksDataSource,
+        clockDataSource
+    )
 }

@@ -155,7 +155,7 @@ switch summary drift from it.
 
 - [ ] 9.1 Diff each delta against the live specs (stale-delta check), then `openspec archive add-word-of-mouth-loops
   --yes` on the feature branch. Verify: `openspec validate --specs --strict` exits 0.
-  **Blocked** until #278 (`bugfix/pref-save-rollback`) is merged into `develop` and `develop` is merged into this branch, and EC-REP-12 passes on a device.
+  ~~Blocked~~ **Unblocked 2026-11-24:** #278 merged into `develop` (64c3a675, PR #281) and `develop` merged here (fbc390a5). Still open: EC-REP-12 on a device (QA re-walks it in its T72 run on the merged SHA). Was: until #278 (`bugfix/pref-save-rollback`) is merged into `develop` and `develop` is merged into this branch, and EC-REP-12 passes on a device.
 - [ ] 9.2 Tell `aso-seo-specialist` the share link is live in 1.4.0 so the table's state column changes. Verify: message
   sent with the release tag.
 

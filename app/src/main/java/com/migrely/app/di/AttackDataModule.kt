@@ -44,6 +44,7 @@ import com.migrely.app.datasource.attack.datasource.AttackDataSource
 import com.migrely.app.datasource.clock.datasource.ClockDataSource
 import com.migrely.app.datasource.medication.datasource.MedicationDataSource
 import com.migrely.app.datasource.preferences.datasource.PreferencesDataSource
+import com.migrely.app.datasource.preferences.datasource.UnsavedMarksDataSource
 import com.migrely.app.datasource.tag.datasource.TagDataSource
 import dagger.Module
 import dagger.Provides
@@ -203,6 +204,11 @@ internal object AttackDataModule {
     @Provides
     fun providesAttackMarkSafetyCardShownRepository(
         preferencesDataSource: PreferencesDataSource,
+        unsavedMarksDataSource: UnsavedMarksDataSource,
         clockDataSource: ClockDataSource
-    ): MarkSafetyCardShownRepository = SafetyCardRepository(preferencesDataSource, clockDataSource)
+    ): MarkSafetyCardShownRepository = SafetyCardRepository(
+        preferencesDataSource,
+        unsavedMarksDataSource,
+        clockDataSource
+    )
 }

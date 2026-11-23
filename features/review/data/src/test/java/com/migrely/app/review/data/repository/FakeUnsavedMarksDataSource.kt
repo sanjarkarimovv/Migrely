@@ -8,6 +8,7 @@ class FakeUnsavedMarksDataSource : UnsavedMarksDataSource {
     private val paywallShown = mutableSetOf<PaywallTriggerDataModel>()
     private var lastPaywallShownMillis: Long? = null
     private val reviewRequestsMillis = mutableListOf<Long>()
+    private var lastSafetyCardShownMillis: Long? = null
 
     override fun paywallShown(): Set<PaywallTriggerDataModel> = paywallShown.toSet()
 
@@ -22,5 +23,11 @@ class FakeUnsavedMarksDataSource : UnsavedMarksDataSource {
 
     override fun keepReviewRequested(atMillis: Long) {
         reviewRequestsMillis += atMillis
+    }
+
+    override fun lastSafetyCardShownMillis(): Long? = lastSafetyCardShownMillis
+
+    override fun keepSafetyCardShown(atMillis: Long) {
+        lastSafetyCardShownMillis = maxOf(lastSafetyCardShownMillis ?: atMillis, atMillis)
     }
 }
