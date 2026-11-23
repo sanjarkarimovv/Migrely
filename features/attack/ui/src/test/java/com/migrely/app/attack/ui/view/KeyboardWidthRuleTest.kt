@@ -56,7 +56,7 @@ class KeyboardWidthRuleTest {
 
     /** F2: Back closed the keyboard and the field kept focus; a second tap raises it again. */
     @Test
-    fun `Given the keyboard closed when the person taps the field again then it is narrow before the keyboard rises`() {
+    fun `Given the keyboard closed when the field is tapped again then it is narrow at once`() {
         classUnderTest.onTypingIntent()
         classUnderTest.onKeyboard(true)
         classUnderTest.onKeyboard(false)

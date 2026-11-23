@@ -27,9 +27,11 @@ class CustomTagTypingIntentTest {
 
     private fun show() = rule.setContent {
         MigrelyTheme {
-            CustomTagNameArea(title = "Your own symptom", name = TextFieldValue(), onTypingIntent = {
-                intents++
-            }) {}
+            CustomTagNameArea(
+                title = "Your own symptom",
+                name = TextFieldValue(),
+                onTypingIntent = { intents++ }
+            ) {}
         }
     }
 
