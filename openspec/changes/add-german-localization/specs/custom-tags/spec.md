@@ -2,10 +2,10 @@
 
 ### Requirement: The custom tag dialog narrows only to type
 In a short window the custom tag dialog SHALL be wide while no one types. A completed tap on its name field, or the
-field gaining focus, SHALL narrow it to the platform width, which Android pans above a keyboard; a cancelled drag or a
-long press SHALL NOT. It SHALL never narrow while a hardware keyboard is attached. With no on-screen keyboard up 3000 ms
-after the latest intent it SHALL widen. A rising keyboard SHALL narrow it, a closing one widen it (BRD EC-L10N-30, D192,
-D195 (18)).
+field gaining focus, SHALL narrow it to the platform width, which Android pans. A cancelled drag, a long
+press on the focused field, or a tap or focus with a hardware keyboard attached SHALL NOT. With no on-screen keyboard up
+3000 ms after the latest intent it SHALL widen. An on-screen keyboard rising SHALL narrow it, closing widen it (BRD
+EC-L10N-30, D192, D195 (18)).
 
 #### Scenario: Typing with the on-screen keyboard
 - **WHEN** the window is 640 x 360 dp in landscape and the person taps the name field and the keyboard rises
@@ -26,12 +26,18 @@ D195 (18)).
 - **THEN** the dialog's width does not change
 
 #### Scenario: A long press to paste
-- **WHEN** the person long-presses the field to paste
+- **WHEN** the field already has focus and the keyboard is down, and the person long-presses it to paste
 - **THEN** the dialog's width does not change
 
 #### Scenario: A hardware keyboard is attached
-- **WHEN** a hardware keyboard is attached and the person taps the field or the field takes focus
-- **THEN** the dialog stays wide, and stays wide while the person types
+- **WHEN** a hardware keyboard is attached, no on-screen keyboard rises, and the person taps the field or the field
+  takes focus
+- **THEN** the dialog stays wide, and stays wide while the person types on the hardware keyboard
+
+#### Scenario: An on-screen keyboard rises beside a hardware keyboard
+- **WHEN** a hardware keyboard is attached and an on-screen keyboard rises anyway, as with "Use on-screen keyboard"
+  turned on while the physical keyboard is active
+- **THEN** the dialog narrows, so the typed line shows above that keyboard, and widens again when it closes
 
 #### Scenario: No on-screen keyboard comes
 - **WHEN** no hardware keyboard is attached, the field takes focus and no on-screen keyboard is up 3000 ms after the

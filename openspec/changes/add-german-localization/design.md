@@ -378,16 +378,22 @@ pain and effect dialogs at 200% in landscape, English and German; its reporter r
    dialog is not panned for the keyboard, so the typed line would sit behind it. The decided `KeyboardWidthRule`:
    - an intent to type narrows the dialog at once to the platform width, which Android pans: a completed tap on the
      field (`PressInteraction.Release`) or the field gaining focus (also on opening);
-   - a press that ends in `PressInteraction.Cancel` (a drag to scroll) and a long press (to paste) are not intents and
-     leave the width as it is;
-   - while a hardware keyboard is attached (`Configuration.hardKeyboardHidden == HARDKEYBOARDHIDDEN_NO`) it never
-     narrows;
+   - a press that ends in `PressInteraction.Cancel` (a drag to scroll) is not an intent, and neither is a long press
+     on a field that already has focus (to paste): the width stays as it is. On a field without focus, Compose's long
+     press requests focus and the on-screen keyboard rises; that is an intent under the focus clause, which is correct
+     (cr-de on 5827ef17);
+   - an attached hardware keyboard (`Configuration.hardKeyboardHidden == HARDKEYBOARDHIDDEN_NO`) blocks only the typing
+     intents, a tap or focus gained (team-lead decision on cr-de finding 2, 2026-11-23). It does not block a keyboard
+     that actually rises: with "Use on-screen keyboard" on while the physical keyboard is active, the rising on-screen
+     keyboard still narrows the dialog, and its closing widens it;
    - if no on-screen keyboard is up 3000 ms after the latest intent, the dialog is wide again (time, not "the next
      layout", because the dialog's own narrowing relays out before any IME can show; 3000 ms leaves room for a slow
      keyboard under host load);
-   - a keyboard rising narrows it; a keyboard closing widens it, even with the field still focused.
+   - an on-screen keyboard rising narrows it; closing widens it, even with the field still focused.
    The keyboard is read from the root view's insets, because a dialog window that fits its system bars shows Compose
-   no IME inset. `android-engineer` implements this after this plan is pushed; until then the branch holds 87c3b424.
+   no IME inset. Built in a115465f (task 8.3, cr-de approved 5827ef17), except the hardware-keyboard clause: there
+   `customTagDialogWide()` still vetoes every narrowing while a hardware keyboard is attached, including a risen
+   on-screen keyboard. Task 8.4 brings it to the rule above.
 
 Not proved by unit tests, left to the 8.1 walk (tasks 8.1): the root-inset keyboard reading, 7037cc0e and b5e2a08e, the
 fade's alpha and its reduced-motion snap, F2 on a device, the dialogs' spoken pane name (F3: Material's

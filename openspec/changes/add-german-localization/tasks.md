@@ -151,7 +151,17 @@ merge the latest `origin/develop` (with #255) so the translated set is final; if
   - [ ] F2 under host load: the same steps with the host load noted (`uptime`) at 20 or more; a slow keyboard must not
     leave the dialog wide under it.
   - [ ] Drag on the custom tag field to scroll the dialog: the dialog's width must not change. EN 100% and DE 200%.
-  - [ ] Long-press the custom tag field to paste: the dialog's width must not change. EN 100% and DE 200%.
+  - [ ] With the custom tag field already focused and the keyboard down, long-press it to paste: the dialog's width
+    must not change. EN 100% and DE 200%. (On a field without focus the long press gives focus and the keyboard
+    rises: narrowing there is correct.)
+  - [ ] TalkBack: double-tap the already-focused custom tag field after Back, then type. Is the typed line visible above
+    the keyboard? EN 100% and DE 200%. If not, it is a finding for `android-engineer` (idea: count TalkBack's
+    accessibility click as an intent).
+  - [ ] Switch Access: the same steps (select the already-focused field after Back, then type). Is the typed line
+    visible? EN 100% and DE 200%. If not, a finding for `android-engineer`, as above.
+  - [ ] A Bluetooth (or emulated hardware) keyboard attached, with "Use on-screen keyboard" forced on: tap the field.
+    The on-screen keyboard rises and the dialog narrows, the typed line visible above it; close the keyboard and the
+    dialog is wide again. With the setting off: the dialog stays wide while typing on the hardware keyboard.
   - [ ] F3: Material's `BasicAlertDialog` names its pane "Dialog" and `ScrollingDialogContent` names it by the title.
     Is each of the pain, effect and custom tag dialogs announced once when it opens, in EN and DE (TalkBack on,
     `adb logcat` of the spoken text or a screen recording)? A double announcement is a finding for `android-engineer`.
@@ -170,6 +180,13 @@ merge the latest `origin/develop` (with #255) so the translated set is final; if
   long press, hardware keyboard, the 3000 ms wait). Verify: `./gradlew :features:attack:ui:testDebugUnitTest --tests
   '*KeyboardWidthRule*' --tests '*CustomTagTypingIntent*' --tests '*CustomTagDialogWidth*'` green, each new case shown
   red on 87c3b424's rule (`migrely-work/de/8.3-*.log`); then 9.1.
+- [ ] 8.4 (`android-engineer`) Hardware keyboard clause, team-lead decision on cr-de finding 2 (design D10 item 6,
+  `custom-tags` scenarios "A hardware keyboard is attached" and "An on-screen keyboard rises beside a hardware
+  keyboard"): an attached hardware keyboard blocks only the typing intents (tap, focus gained); an on-screen keyboard
+  that rises anyway still narrows the dialog and its closing widens it. a115465f's `customTagDialogWide()` vetoes every
+  narrowing instead. Red first: hardware keyboard attached plus a risen keyboard reported, expected narrow. Verify:
+  `./gradlew :features:attack:ui:testDebugUnitTest --tests '*KeyboardWidthRule*' --tests '*CustomTagDialogWidth*'
+  --tests '*CustomTagDialogWiring*'` green, the new case red on a115465f (`migrely-work/de/8.4-*.log`); then 9.1.
 
 ## 9. Gate (`android-engineer`)
 
