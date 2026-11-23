@@ -36,8 +36,7 @@ import com.migrely.app.attack.ui.model.AttackDetailsUiModel
 import com.migrely.app.attack.ui.model.AttackIntakeEffectUiModel
 import com.migrely.app.attack.ui.model.AttackIntakeUiModel
 import com.migrely.app.designsystem.button.MigrelyIconButton
-import com.migrely.app.designsystem.dialog.MigrelyAlertDialog
-import com.migrely.app.designsystem.dialog.ScrollingDialogContent
+import com.migrely.app.designsystem.dialog.MigrelyScrollingAlertDialog
 import com.migrely.app.designsystem.icon.MigrelyIcons
 import com.migrely.app.designsystem.layout.isCompactHeight
 import com.migrely.app.designsystem.layout.ownWords
@@ -165,32 +164,30 @@ private fun EffectDialog(
     onDismiss: () -> Unit
 ) {
     val title = stringResource(R.string.medication_effect_title, intake.medicationName)
-    MigrelyAlertDialog(
+    MigrelyScrollingAlertDialog(
+        title = title,
         onDismissRequest = onDismiss,
-        paneTitle = title,
-        text = {
+        content = {
             // A long typed name makes a long title: title and answers scroll together (T23 8.1 row R04).
-            ScrollingDialogContent(title) {
-                Column(Modifier.selectableGroup()) {
-                    AttackIntakeEffectUiModel.entries.forEach { effect ->
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .heightIn(min = 48.dp)
-                                .selectable(
-                                    selected = intake.effect == effect,
-                                    role = Role.RadioButton,
-                                    onClick = { onChoose(effect) }
-                                )
-                        ) {
-                            RadioButton(selected = intake.effect == effect, onClick = null)
-                            Text(
-                                text = stringResource(effect.answerLabel()),
-                                style = MaterialTheme.typography.bodyLarge,
-                                modifier = Modifier.padding(start = 12.dp)
+            Column(Modifier.selectableGroup()) {
+                AttackIntakeEffectUiModel.entries.forEach { effect ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = 48.dp)
+                            .selectable(
+                                selected = intake.effect == effect,
+                                role = Role.RadioButton,
+                                onClick = { onChoose(effect) }
                             )
-                        }
+                    ) {
+                        RadioButton(selected = intake.effect == effect, onClick = null)
+                        Text(
+                            text = stringResource(effect.answerLabel()),
+                            style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier.padding(start = 12.dp)
+                        )
                     }
                 }
             }

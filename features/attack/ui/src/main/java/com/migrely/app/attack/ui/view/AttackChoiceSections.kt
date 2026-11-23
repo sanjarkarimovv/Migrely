@@ -61,9 +61,8 @@ import com.migrely.app.attack.ui.model.HeadLocationUiModel
 import com.migrely.app.attack.ui.model.SymptomUiModel
 import com.migrely.app.attack.ui.model.TagKindUiModel
 import com.migrely.app.attack.ui.model.TriggerUiModel
-import com.migrely.app.designsystem.dialog.MigrelyAlertDialog
 import com.migrely.app.designsystem.dialog.MigrelyDropdownMenu
-import com.migrely.app.designsystem.dialog.ScrollingDialogContent
+import com.migrely.app.designsystem.dialog.MigrelyScrollingAlertDialog
 import com.migrely.app.designsystem.input.limitedEdit
 import com.migrely.app.designsystem.layout.isCompactHeight
 import kotlinx.coroutines.delay
@@ -297,16 +296,16 @@ private fun ChoiceChip(
 }
 
 /**
- * The custom tag dialog's title and name field, in one area that scrolls (T23 8.1 row R03). At 200% in landscape,
- * German's buttons stack and leave the dialog little height: the title then scrolls away before the field is cut, so
- * the field and its counter can always be brought into view whole. The title keeps the dialog title's style and is a
- * heading for TalkBack; the dialog names its pane by it. On opening, on focus and while the keyboard moves, the whole
- * field, its floating label included, is brought into view, so a short dialog never opens on a title alone.
+ * The custom tag dialog's name field, under the title in one area that scrolls (T23 8.1 row R03,
+ * [MigrelyScrollingAlertDialog]). At 200% in landscape, German's buttons stack and leave the dialog little height: the
+ * title then scrolls away before the field is cut, so the field and its counter can always be brought into view whole.
+ * On opening, on focus, while the keyboard moves and at each new [visibleHeight] of the area, the whole field, its
+ * floating label included, is brought into view, so a short dialog never opens on a title alone.
  */
 @Composable
-internal fun CustomTagNameArea(
-    title: String,
+internal fun CustomTagNameField(
     name: TextFieldValue,
+    visibleHeight: Int,
     onTypingIntent: () -> Unit = {},
     onKeyboardChange: (Boolean) -> Unit = {},
     onNameChange: (TextFieldValue) -> Unit
@@ -341,7 +340,6 @@ internal fun CustomTagNameArea(
         onDispose { view.viewTreeObserver.removeOnGlobalLayoutListener(listener) }
     }
     // The dialog settles over a few frames and the keyboard resizes it, so each new visible height asks again.
-    var visibleHeight by remember { mutableIntStateOf(0) }
     LaunchedEffect(focused, keyboard, visibleHeight) {
         // After a frame, so the field has been laid out and its place is known.
         withFrameNanos { }
@@ -350,33 +348,31 @@ internal fun CustomTagNameArea(
         val typing = focused || keyboard
         if (typing) fieldWithRoomInView.bringIntoView() else fieldInView.bringIntoView()
     }
-    ScrollingDialogContent(title, Modifier.onSizeChanged { visibleHeight = it.height }) {
-        // The space around the field is brought into view with it: above, the floating label's overhang; below,
-        // the counter's glyphs, taller than their line at large fonts.
-        Box(
-            Modifier
+    // The space around the field is brought into view with it: above, the floating label's overhang; below,
+    // the counter's glyphs, taller than their line at large fonts.
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .bringIntoViewRequester(fieldWithRoomInView)
+            .padding(vertical = 4.dp)
+    ) {
+        OutlinedTextField(
+            value = name,
+            onValueChange = onNameChange,
+            label = { Text(stringResource(R.string.custom_dialog_label)) },
+            supportingText = {
+                Text(stringResource(R.string.custom_dialog_counter, name.text.length))
+            },
+            singleLine = true,
+            interactionSource = fieldInteractions,
+            modifier = Modifier
                 .fillMaxWidth()
-                .bringIntoViewRequester(fieldWithRoomInView)
-                .padding(vertical = 4.dp)
-        ) {
-            OutlinedTextField(
-                value = name,
-                onValueChange = onNameChange,
-                label = { Text(stringResource(R.string.custom_dialog_label)) },
-                supportingText = {
-                    Text(stringResource(R.string.custom_dialog_counter, name.text.length))
-                },
-                singleLine = true,
-                interactionSource = fieldInteractions,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .bringIntoViewRequester(fieldInView)
-                    .onFocusChanged {
-                        if (it.isFocused && !focused) currentOnTypingIntent()
-                        focused = it.isFocused
-                    }
-            )
-        }
+                .bringIntoViewRequester(fieldInView)
+                .onFocusChanged {
+                    if (it.isFocused && !focused) currentOnTypingIntent()
+                    focused = it.isFocused
+                }
+        )
     }
 }
 
@@ -462,13 +458,16 @@ internal fun CustomTagDialog(kind: TagKindUiModel, onAdd: (String) -> Unit, onDi
     val widthRule = remember { KeyboardWidthRule() }
     HardwareKeyboardWatch(widthRule)
     KeyboardWait(widthRule)
-    MigrelyAlertDialog(
+    // The area's height, so the field is brought into view again as the dialog settles and the keyboard resizes it.
+    var visibleHeight by remember { mutableIntStateOf(0) }
+    MigrelyScrollingAlertDialog(
+        title = title,
         onDismissRequest = onDismiss,
-        paneTitle = title,
-        text = {
-            CustomTagNameArea(
-                title = title,
+        areaModifier = Modifier.onSizeChanged { visibleHeight = it.height },
+        content = {
+            CustomTagNameField(
                 name = name,
+                visibleHeight = visibleHeight,
                 onTypingIntent = widthRule::onTypingIntent,
                 onKeyboardChange = widthRule::onKeyboard
             ) { name = limitedEdit(name, it, MAXIMUM_TAG_NAME_LENGTH) }

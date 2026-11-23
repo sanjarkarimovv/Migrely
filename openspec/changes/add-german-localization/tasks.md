@@ -235,6 +235,11 @@ merge the latest `origin/develop` (with #255) so the translated set is final; if
      Device check still open in 8.2: a live per-app change reaches `onConfigurationChanged` on API 36; rows 7 to 10 again.
   2. Minor: a null LocaleManager fell into a non-null parameter. It now falls back to the configuration's list;
      `PhoneLanguagesTest` (control: red with an NPE on the old code).
+  Review of 0a1a4446 (cr-de), Minor 1, DRY: the pain, effect and custom tag dialogs passed the title to the pane and to
+  the area. `MigrelyScrollingAlertDialog(title, …)` sets both from one parameter; the three moved to it, the custom tag
+  field as `CustomTagNameField` with the area's height from the dialog. `ScrollingDialogContentTest`: one pane and one
+  heading, the title (control: without the pane the wrapper's pane was `[Dialog]`,
+  `migrely-work/de/wrapper-negative-control.log`).
 
 ## 12. QA (`qa-engineer`, Go/No-Go rows for this diff)
 

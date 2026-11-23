@@ -63,7 +63,7 @@ class CustomTagDialogLargeFontTest {
         rule.setContent {
             MigrelyTheme {
                 Box(Modifier.size(width, height).clipToBounds()) {
-                    CustomTagNameArea(title, TextFieldValue()) {}
+                    CustomTagArea(title, TextFieldValue()) {}
                 }
             }
         }

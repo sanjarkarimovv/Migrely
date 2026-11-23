@@ -39,8 +39,7 @@ import com.migrely.app.attack.ui.mapper.AttackTimeUiFormatter
 import com.migrely.app.attack.ui.model.AttackDetailsUiModel
 import com.migrely.app.attack.ui.model.IntensityPointUiModel
 import com.migrely.app.designsystem.button.MigrelyIconButton
-import com.migrely.app.designsystem.dialog.MigrelyAlertDialog
-import com.migrely.app.designsystem.dialog.ScrollingDialogContent
+import com.migrely.app.designsystem.dialog.MigrelyScrollingAlertDialog
 import com.migrely.app.designsystem.icon.MigrelyIcons
 import com.migrely.app.designsystem.layout.isCompactHeight
 import com.migrely.app.designsystem.layout.ownWords
@@ -186,40 +185,38 @@ private fun AddPainDialog(
         details.startZoneId
     )
     val title = stringResource(R.string.pain_dialog_title)
-    MigrelyAlertDialog(
+    MigrelyScrollingAlertDialog(
+        title = title,
         onDismissRequest = onDismiss,
-        paneTitle = title,
-        text = {
+        content = {
             // Title and content scroll together, so the time row stays reachable at large fonts (T23 8.1 row R04).
-            ScrollingDialogContent(title) {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    text = "${stringResource(R.string.pain_dialog_value, value)} · $levelName",
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontFeatureSettings = "tnum"
+                    ),
+                    modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
+                )
+                Slider(
+                    value = level,
+                    onValueChange = { level = it },
+                    valueRange = MINIMUM_LEVEL..MAXIMUM_LEVEL,
+                    steps = SLIDER_STEPS,
+                    modifier = Modifier.semantics { stateDescription = "$value, $levelName" }
+                )
+                val changeTime = stringResource(R.string.pain_dialog_change_time, timeText)
+                TextButton(
+                    onClick = { pickingTime = true },
+                    modifier = Modifier
+                        .heightIn(min = 48.dp)
+                        .semantics { contentDescription = changeTime }
+                ) {
+                    // One spoken name (BRD D181 (2)): "At 14:30, change the time" only.
                     Text(
-                        text = "${stringResource(R.string.pain_dialog_value, value)} · $levelName",
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontFeatureSettings = "tnum"
-                        ),
-                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
+                        text = stringResource(R.string.pain_dialog_time, timeText),
+                        modifier = Modifier.clearAndSetSemantics { }
                     )
-                    Slider(
-                        value = level,
-                        onValueChange = { level = it },
-                        valueRange = MINIMUM_LEVEL..MAXIMUM_LEVEL,
-                        steps = SLIDER_STEPS,
-                        modifier = Modifier.semantics { stateDescription = "$value, $levelName" }
-                    )
-                    val changeTime = stringResource(R.string.pain_dialog_change_time, timeText)
-                    TextButton(
-                        onClick = { pickingTime = true },
-                        modifier = Modifier
-                            .heightIn(min = 48.dp)
-                            .semantics { contentDescription = changeTime }
-                    ) {
-                        // One spoken name (BRD D181 (2)): "At 14:30, change the time" only.
-                        Text(
-                            text = stringResource(R.string.pain_dialog_time, timeText),
-                            modifier = Modifier.clearAndSetSemantics { }
-                        )
-                    }
                 }
             }
         },

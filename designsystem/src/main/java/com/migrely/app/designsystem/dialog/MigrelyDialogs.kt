@@ -191,8 +191,8 @@ private fun rememberPropertiesInTheWait(properties: DialogProperties): DialogPro
  * content little height (T23 8.1 row R03).
  *
  * [paneTitle] names the dialog's pane for TalkBack in place of Material's "Dialog", for a dialog whose title is in
- * [text] ([ScrollingDialogContent]). A window with two pane names was announced by whichever appeared last, often
- * "Dialog" (T23 8.1 F3). Set on the outermost modifier, it is the one name the pane has.
+ * [text], as [MigrelyScrollingAlertDialog] sets it. A window with two pane names was announced by whichever appeared
+ * last, often "Dialog" (T23 8.1 F3). Set on the outermost modifier, it is the one name the pane has.
  */
 @Composable
 fun MigrelyAlertDialog(
@@ -215,6 +215,32 @@ fun MigrelyAlertDialog(
         title = title,
         text = text,
         properties = rememberPropertiesInTheWait(alertDialogProperties(wide))
+    )
+}
+
+/**
+ * [MigrelyAlertDialog] with its title and [content] in one area that scrolls ([ScrollingDialogContent]), for a dialog
+ * whose title can be long or whose buttons can stack (T23 8.1 rows R03, R04). The one [title] heads the area and names
+ * the pane for TalkBack, so the two cannot differ and no caller can leave the pane as Material's "Dialog" (T23 8.1 F3,
+ * cr-de on 0a1a4446). [areaModifier] applies to the visible area, before the scroll.
+ */
+@Composable
+fun MigrelyScrollingAlertDialog(
+    title: String,
+    onDismissRequest: () -> Unit,
+    confirmButton: @Composable () -> Unit,
+    dismissButton: (@Composable () -> Unit)? = null,
+    wide: Boolean = false,
+    areaModifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    MigrelyAlertDialog(
+        onDismissRequest = onDismissRequest,
+        confirmButton = confirmButton,
+        dismissButton = dismissButton,
+        text = { ScrollingDialogContent(title, areaModifier, content) },
+        wide = wide,
+        paneTitle = title
     )
 }
 

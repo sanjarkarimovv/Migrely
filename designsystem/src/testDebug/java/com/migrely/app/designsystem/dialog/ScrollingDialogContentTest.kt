@@ -135,6 +135,32 @@ class ScrollingDialogContentTest {
         assertEquals(listOf(TITLE), panes)
     }
 
+    /**
+     * cr-de, review of 0a1a4446: three dialogs passed the title twice, to the pane and to the area, and one that forgot
+     * the pane would be announced as "Dialog". The wrapper takes it once, so its one pane and its heading are the title.
+     */
+    @Test
+    fun `Given the scrolling alert dialog then its one pane and its heading are the title`() {
+        rule.setContent {
+            MigrelyTheme {
+                MigrelyScrollingAlertDialog(
+                    title = TITLE,
+                    onDismissRequest = {},
+                    confirmButton = { TextButton(onClick = {}) { Text("OK") } }
+                ) { Text(ANSWERS.first()) }
+            }
+        }
+
+        val panes = rule.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsProperties.PaneTitle))
+            .fetchSemanticsNodes()
+            .map { it.config[SemanticsProperties.PaneTitle] }
+        assertEquals(listOf(TITLE), panes)
+        assertEquals(
+            1,
+            rule.onAllNodes(hasText(TITLE) and isHeading).fetchSemanticsNodes().size
+        )
+    }
+
     /** ux F6 follow-up: a fade in the surface colour over a blank-looking peek showed nothing (R04r). */
     @Test
     fun `Given more below then a divider shows at the bottom edge only`() {

@@ -43,7 +43,7 @@ class CustomTagTypingIntentTest {
         rule.setContent {
             MigrelyTheme {
                 Box(Modifier.size(272.dp, 138.dp).clipToBounds()) {
-                    CustomTagNameArea(
+                    CustomTagArea(
                         title = "Your own symptom",
                         name = TextFieldValue(),
                         onTypingIntent = { intents++ }
