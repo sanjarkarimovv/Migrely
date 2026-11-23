@@ -124,6 +124,14 @@ Live since 26 October 2026:
    - the pages show `support@` and `privacy@` as plain addresses, with no `email-decode` script;
    - an email from another mailbox to each address arrives.
 
+**The tap counter (BRD D196).** `website/functions/go/android-t2.js` is the project's only Pages Function. It answers
+`302` to the test-2 Play link and reads, stores and logs nothing; the count is the project's "Functions metrics" in the
+Cloudflare dashboard (Requests, up to three months). A dashboard zip upload does **not** compile `functions/`, so a site
+that carries it is deployed with `wrangler pages deploy <site folder>` run in the folder that also holds `functions/`
+(Cloudflare, "Direct Upload", read 2026-11-23). After every deploy run `curl -I https://migrely.health/go/android-t2`:
+it must be `302` with the Play link, because a deploy without `functions/` leaves `/android-t2/` with a dead button.
+To go back to a direct Play link, set `T2_COUNT = False` in `build.py` and delete `website/functions/`.
+
 To update the site:
 
 1. Run `./gradlew :app:checkReleasePermissions`, then `python3 website/build.py`.

@@ -382,6 +382,22 @@ BIO_PLAY_EXPECTED = ('https://play.google.com/store/apps/details?id=com.migrely.
                      '%26utm_campaign%3Dbio')
 
 
+# The test-2 landing page /android-t2/ (tracker T62, BRD D196): the ad test ig-ads-test2's destination. Same words as
+# /android/, fewer of them before the button, and the button counts taps (see T2_COUNT).
+T2_TAGS = 'utm_source=instagram&utm_medium=paid_social&utm_campaign=ig-ads-test2'
+T2_PLAY = f'{PLAY}&{T2_TAGS}&referrer={quote(T2_TAGS, safe="")}'
+T2_PLAY_EXPECTED = ('https://play.google.com/store/apps/details?id=com.migrely.app&utm_source=instagram'
+                    '&utm_medium=paid_social&utm_campaign=ig-ads-test2&referrer=utm_source%3Dinstagram'
+                    '%26utm_medium%3Dpaid_social%26utm_campaign%3Dig-ads-test2')
+# True: the page's two buttons point at our own /go/android-t2, a Pages Function that only answers 302 to T2_PLAY, so
+# Cloudflare's Functions metrics count taps (no IP, cookie, script or log of ours). False: the buttons point straight
+# at Play and the tap stays uncounted. The owner's device test decides (BRD D196); flip this one value to fall back.
+T2_COUNT = True
+T2_GO = '/go/android-t2'
+T2_FUNCTION = ROOT / 'website/functions/go/android-t2.js'
+T2_QR_FILE = 'qr-ig-ads-test2-v1.svg'
+
+
 def ad_play_button(label='Get it on Google Play', link=None):
     return (f'<a class="play" href="{esc(link or AD_PLAY)}">'
             '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">'
@@ -860,6 +876,45 @@ def instagram_bio():
   <ul class="ticks" role="list"><li>No account</li><li>No ads</li></ul>
   <p>{esc(AD_BACKUP)}</p>
   <p>Check it yourself: <a href="/privacy-check/">migrely.health/privacy-check</a></p>
+</div></section>
+'''
+    return page(path, 'Migrely: private migraine diary for Android',
+                '3 taps log an attack, even in a dark room. No account, no internet permission. Free to log on '
+                'Google Play.', body, landing=True)
+
+
+def android_t2_landing():
+    """/android-t2/: where the Instagram ad test ig-ads-test2 sends people (tracker T62, BRD D196). Test 1 lost most
+    people between the page and Google Play, so the button comes first: app name, headline, the Android-only line,
+    the button. Every sentence is copied word for word from /android/ or /instagram/; nothing new is claimed."""
+    path = '/android-t2/'
+    link = T2_GO if T2_COUNT else T2_PLAY
+    body = f'''
+<section class="ad-hero" id="hero" aria-labelledby="hero-h"><div class="wrap">
+  <div class="hero-copy">
+    <p class="eyebrow">Migraine diary for Android</p>
+    <h1 id="hero-h"><span class="h1-a">3 taps.</span> <span class="h1-b">Migraine logged.</span></h1>
+    <p class="meta">For Android {MIN_ANDROID_NUMBER} and later. Not available for iPhone.</p>
+    {ad_play_button(link=link)}
+    <p class="meta">Free to log on Google Play</p>
+    <p class="lead">Even in a dark room. Migrely keeps the time until the end is logged.</p>
+    <div class="qr"><img src="/assets/img/{T2_QR_FILE}" alt="QR code for Migrely on Google Play" width="160" height="160" loading="lazy">
+      <p>{esc(AD_QR_NOTE)}</p></div>
+  </div>
+</div></section>
+
+<section class="ad-sec band" id="privacy" aria-labelledby="privacy-h"><div class="wrap stack">
+  <p class="eyebrow">Private by design</p>
+  <h2 id="privacy-h">No internet permission.</h2>
+  <p>Android lists every app's permissions. The internet permission, shown as \u201chave full network access\u201d, is not on Migrely's list.</p>
+  <ul class="ticks" role="list"><li>No account</li><li>No ads</li></ul>
+  <p>{esc(AD_BACKUP)}</p>
+  <p>Check it yourself: <a href="/privacy-check/">migrely.health/privacy-check</a></p>
+</div></section>
+
+<section class="ad-sec" id="diary" aria-labelledby="diary-h"><div class="wrap stack">
+  <h2 id="diary-h">It's a diary.</h2><p class="lead">{esc(AD_DIARY)}</p>
+  {ad_play_button(link=link)}
 </div></section>
 '''
     return page(path, 'Migrely: private migraine diary for Android',
@@ -1700,6 +1755,8 @@ PAGES = [('/', 'index.html', home), ('/about/', 'about/index.html', about),
 AD_PAGES = [('/android/', 'android/index.html', android_landing)]
 # The Instagram bio page: same rules (noindex, off the sitemap, linked from nowhere), its own Play link and its own check.
 BIO_PAGES = [('/instagram/', 'instagram/index.html', instagram_bio)]
+# The test-2 page: same rules, two buttons that share one destination (T2_COUNT), and a QR code that always goes to Play.
+T2_PAGES = [('/android-t2/', 'android-t2/index.html', android_t2_landing)]
 
 
 BANNED_AD = re.compile(r'never goes online|100% offline|nothing leaves your phone|your migraine|your month|while you rest'
@@ -1796,6 +1853,81 @@ def check_bio_pages(built):
         viewport = re.search(r'<meta name="viewport" content="([^"]*)"', content).group(1)
         if 'viewport-fit=cover' not in viewport or 'maximum-scale' in viewport or 'user-scalable' in viewport:
             raise fail('viewport needs viewport-fit=cover and must allow zoom.')
+
+
+T2_FORBIDDEN_IN_FUNCTION = re.compile(r'request\.headers|cf-connecting-ip|\bcf\b|console\.|\benv\b|fetch\(|cookie|\.put\(|'
+                                      r'waitUntil|\.text\(|\.json\(|\.url\b|new URL|KV|D1|Analytics', re.I)
+
+
+def text_segments(content):
+    return {seg.strip() for seg in re.split(r'<[^>]+>', html.unescape(content)) if seg.strip()}
+
+
+def check_t2_pages(built, cleared):
+    """Stops the build when /android-t2/ or its counter drifts (BRD D196): the exact test-2 Play link, on the two
+    buttons directly (T2_COUNT off) or through /go/android-t2 (on), where the Function must carry the same link and
+    read, store and call nothing; noindex, no script, image or style beyond the QR; every text segment already on
+    /android/ or /instagram/; at most 20 words and the Android-only line before the first button; and no other page
+    links to /go/."""
+    if T2_PLAY != T2_PLAY_EXPECTED:
+        raise SystemExit(f'The test-2 Play link changed: {T2_PLAY}')
+    for path, (_, content) in built.items():
+        fail = lambda why: SystemExit(f'{path}: {why}')
+        if T2_COUNT:
+            if content.count(f'href="{T2_GO}"') != 2 or 'play.google.com' in content:
+                raise fail(f'must have exactly two buttons to {T2_GO} and no Play link of its own.')
+        elif content.count(f'href="{esc(T2_PLAY_EXPECTED)}"') != 2 or content.count('play.google.com') != 2:
+            raise fail('must carry the exact test-2 Play link on exactly two buttons.')
+        if '<meta name="robots" content="noindex">' not in content:
+            raise fail('must be noindex.')
+        if f'<link rel="canonical" href="{BASE}{path}">' not in content:
+            raise fail('needs a canonical to itself.')
+        if re.search(r'<script|<video|autoplay|iframe', content):
+            raise fail('must have no script, video or iframe.')
+        for bad in ['market://', 'intent://', 'http-equiv="refresh"', 'target="_blank"', ' style="', '<style', 'onclick']:
+            if bad in content:
+                raise fail(f'must not contain {bad}.')
+        if len(re.findall(r'<h1\b', content)) != 1:
+            raise fail('needs exactly one h1.')
+        images = re.findall(r'<img\b[^>]*>', content.replace('<img src="/favicon.svg"', ''))
+        if len(images) != 1 or f'/assets/img/{T2_QR_FILE}' not in images[0] or 'loading="lazy"' not in images[0]:
+            raise fail('the only image is the lazy QR code.')
+        found = BANNED_AD.search(html.unescape(content))
+        if found:
+            raise fail(f'banned wording: {found.group(0)}')
+        viewport = re.search(r'<meta name="viewport" content="([^"]*)"', content).group(1)
+        if 'viewport-fit=cover' not in viewport or 'maximum-scale' in viewport or 'user-scalable' in viewport:
+            raise fail('viewport needs viewport-fit=cover and must allow zoom.')
+        new = text_segments(content[content.index('<main'):content.index('</main>')]) - cleared
+        if new:
+            raise fail(f'text that is not on /android/ or /instagram/: {sorted(new)}')
+        before = content[content.index('<main'):content.index('class="play"')]
+        words = len(re.sub(r'<[^>]+>', ' ', html.unescape(before)).split())
+        if words > 20:
+            raise fail(f'{words} words before the first button, at most 20.')
+        if f'Not available for iPhone.' not in before:
+            raise fail('the Android-only line must come before the first button.')
+    if not (SITE / 'assets/img' / T2_QR_FILE).exists():
+        raise SystemExit(f'{T2_QR_FILE} is missing.')
+    functions = sorted(p.relative_to(ROOT / 'website') for p in (ROOT / 'website/functions').rglob('*') if p.is_file()) \
+        if (ROOT / 'website/functions').exists() else []
+    if not T2_COUNT:
+        if functions:
+            raise SystemExit(f'T2_COUNT is off, so website/functions must be empty, found {functions}.')
+        return
+    if T2_GO != '/go/' + T2_FUNCTION.stem or T2_FUNCTION.parent.name != 'go':
+        raise SystemExit(f'{T2_GO} must be the path of the Function file {T2_FUNCTION}.')
+    if [str(f) for f in functions] != ['functions/go/android-t2.js']:
+        raise SystemExit(f'the project must have exactly one Function (its metrics are project-wide), found {functions}.')
+    source = T2_FUNCTION.read_text()
+    if re.findall(r"'(https://play\.google\.com[^']*)'", source) != [T2_PLAY_EXPECTED]:
+        raise SystemExit('the Function must hold exactly the test-2 Play link.')
+    if 'status: 302' not in source or 'Location: PLAY' not in source:
+        raise SystemExit('the Function must answer 302 with Location: PLAY.')
+    code = re.sub(r'//[^\n]*', '', source)
+    found = T2_FORBIDDEN_IN_FUNCTION.search(code)
+    if found:
+        raise SystemExit(f'the Function must read, store and call nothing: found {found.group(0)}.')
 
 
 def check_no_links_to(pages, targets):
@@ -1929,23 +2061,31 @@ def main():
     check_ad_pages(ads)
     bio = {path: (rel, build()) for path, rel, build in BIO_PAGES}
     check_bio_pages(bio)
-    check_no_links_to({**built, **ads, **bio}, [*ads, *bio])
+    t2 = {path: (rel, build()) for path, rel, build in T2_PAGES}
+    cleared = text_segments(ads['/android/'][1]) | text_segments(bio['/instagram/'][1])
+    check_t2_pages(t2, cleared)
+    check_no_links_to({**built, **ads, **bio, **t2}, [*ads, *bio, *t2])
+    for path, (_, content) in {**built, **ads, **bio}.items():
+        if '/go/' in content:
+            raise SystemExit(f'{path} links to /go/, which only /android-t2/ may.')
     check_orphans(built)
     check_direct_answers(built)
     llms = llms_txt()
     check_llms(llms, built)
-    for rel, content in [*built.values(), *ads.values(), *bio.values(), ('404.html', not_found())]:
+    for rel, content in [*built.values(), *ads.values(), *bio.values(), *t2.values(), ('404.html', not_found())]:
         target = SITE / rel
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(content)
     images()
-    dates = lastmods({path: content for path, (_, content) in {**built, **ads, **bio}.items()})
+    dates = lastmods({path: content for path, (_, content) in {**built, **ads, **bio, **t2}.items()})
     (SITE / 'sitemap.xml').write_text(
         '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
         + ''.join(f'  <url><loc>{BASE}{path}</loc><lastmod>{dates[path]}</lastmod></url>\n' for path in built)
         + '</urlset>\n')
-    (SITE / 'robots.txt').write_text(f'User-agent: *\nAllow: /\nSitemap: {BASE}/sitemap.xml\n')
+    (SITE / 'robots.txt').write_text(f'User-agent: *\nAllow: /\nDisallow: /go/\nSitemap: {BASE}/sitemap.xml\n')
     (SITE / 'llms.txt').write_text(llms)
+    if T2_COUNT and 'Disallow: /go/\n' not in (SITE / 'robots.txt').read_text():
+        raise SystemExit('robots.txt must disallow /go/, so crawlers do not inflate the tap count.')
     print('built', ', '.join(built), '404.html and llms.txt')
 
 

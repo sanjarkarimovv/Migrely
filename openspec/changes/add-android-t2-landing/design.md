@@ -1,0 +1,42 @@
+# Design
+
+## Context
+
+The site is static, on Cloudflare Pages (project `migrely`, deployed with the wrangler CLI). The Pages Free plan counts
+no path: zone analytics show Requests, Bandwidth, Unique Visitors and Requests by country, and the Path and Query filters
+are Pro and above (Cloudflare, "Zone analytics", read 2026-11-23). `/assets/*` is immutable for a year; a changed
+asset takes a new name.
+
+## Decisions
+
+| # | Decision | Why |
+|---|---|---|
+| 1 | Count with a Pages Function and read the count in Pages "Functions metrics" | The metrics "aggregate request data for an individual Pages project" and keep "up to three months" (Cloudflare, "Functions metrics", 2026-11-23). It needs four lines of code and stores nothing of ours |
+| 2 | Not a static `_redirects` rule | It redirects, but Free plan analytics cannot count one path |
+| 3 | Not a Worker with KV, D1 or Analytics Engine | More code, and a store of ours that holds a number the dashboard already holds |
+| 4 | The Function must be the project's only one | The metric is per project, so a second Function would be counted with the first. The build stops on any other file under `functions/` |
+| 5 | The Function reads nothing from the request | No IP, user agent, `Referer`, cookie, URL or body; no `console`, `fetch`, storage or `waitUntil`. The build greps for them |
+| 6 | Response headers `Cache-Control: no-store`, `Referrer-Policy: no-referrer`, `X-Robots-Tag: noindex` | `_headers` does not apply to a Function's response; `no-store` keeps an edge copy from answering without the Function (and so from being counted) |
+| 7 | `GET` and `HEAD` answer 302, other methods 405 | A 405 for a POST is not a tap; HEAD is counted (a limit, below) |
+| 8 | Wrangler's generated routes include only `/go/android-t2` (`wrangler pages functions build --output-routes-path`, wrangler 4.158.0) | Static requests never invoke a Function, so the quota and the count stay clean |
+| 9 | `Disallow: /go/` in `robots.txt`, and no page but `/android-t2/` links to `/go/` | Crawlers that follow links do not inflate the count |
+| 10 | QR code: the direct Play link | A desktop visitor who scans it is a different step from a tap on the button; the QR is not counted |
+| 11 | `T2_COUNT` flag | If the device test or `legal-finance-analyst` says no, one value returns the page to the direct link |
+| 12 | Page words: a subset of cleared text, enforced | `text_segments()` of `/android-t2/`'s `<main>` must all appear on `/android/` or `/instagram/` |
+
+## What Cloudflare processes anyway
+
+Cloudflare sees the IP and the path of every request to any page of the site, and publishes no fixed retention for edge
+logs (its privacy policy: kept "as long as consistent with its business purposes"). The privacy policy's "This website"
+section already says so. New here: a tap is one more request to our own domain before Google Play.
+
+## Risks
+
+- **Does Instagram's in-app browser open the Play app after a 302?** Unknown until the device test (2 phones, one not the
+  owner's). A direct link opened Play on the owner's Redmi; a redirect is a different path through the WebView.
+- **The count is requests, not people.** HEAD, link prefetch, a reload and a double tap are counted; it is an upper bound
+  on taps. The metrics also lag a few minutes.
+- **A later deploy without `functions/` silently kills the button** (404). Mitigation: the deploy check
+  `curl -I /go/android-t2`, written in the README and in the owner's steps. A dashboard zip upload cannot deploy it.
+- **The Free quota** (100,000 Functions and Workers requests a day, shared) is far above the test's traffic.
+- The page being "better" than `/android/` is not shown; test 2 measures it.

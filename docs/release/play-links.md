@@ -23,7 +23,7 @@ the site collect nothing: attribution is only what Play Console shows. Structure
 ## Table
 
 Each URL was built by script and checked: top-level tags equal the decoded `referrer` tags, and the two live strings
-(`/android/`, `/instagram/`) are reproduced byte for byte.
+(`/android/`, `/instagram/`) are reproduced byte for byte. The `ig-ads-test2` row was added 2026-11-23: its URL is the `T2_PLAY` constant in `website/build.py`, which the build compares to the literal in `website/functions/go/android-t2.js`, and the QR code decodes to it.
 
 | Placement | utm_source | utm_medium | utm_campaign | State today | URL |
 |---|---|---|---|---|---|
@@ -32,6 +32,7 @@ Each URL was built by script and checked: top-level tags equal the decoded `refe
 | Site: `/privacy-check/` | `migrely.health` | `website` | `privacy-check` | referrer-only: `privacy-check` (kept as its own row: the proof page) | `https://play.google.com/store/apps/details?id=com.migrely.app&utm_source=migrely.health&utm_medium=website&utm_campaign=privacy-check&referrer=utm_source%3Dmigrely.health%26utm_medium%3Dwebsite%26utm_campaign%3Dprivacy-check` |
 | Site: `/about/`, `/privacy/`, `/support/`, `/delete-data/`, `/404.html` | `migrely.health` | `website` | `trust` | referrer-only, one campaign per page today | `https://play.google.com/store/apps/details?id=com.migrely.app&utm_source=migrely.health&utm_medium=website&utm_campaign=trust&referrer=utm_source%3Dmigrely.health%26utm_medium%3Dwebsite%26utm_campaign%3Dtrust` |
 | `/android/` (paid ad landing, live) | `instagram` | `paid_social` | `ig-ads-test1` | LIVE, both forms. Keep exactly as is | `https://play.google.com/store/apps/details?id=com.migrely.app&utm_source=instagram&utm_medium=paid_social&utm_campaign=ig-ads-test1&referrer=utm_source%3Dinstagram%26utm_medium%3Dpaid_social%26utm_campaign%3Dig-ads-test1` |
+| `/android-t2/` (paid ad landing for test 2; built, not deployed; BRD D196) | `instagram` | `paid_social` | `ig-ads-test2` | BUILT 2026-11-23, both forms. Its two buttons point at `/go/android-t2`, which answers 302 to this exact URL (`T2_COUNT` in `website/build.py`; if the counter is not used the buttons carry this URL directly). The desktop QR code encodes this URL directly | `https://play.google.com/store/apps/details?id=com.migrely.app&utm_source=instagram&utm_medium=paid_social&utm_campaign=ig-ads-test2&referrer=utm_source%3Dinstagram%26utm_medium%3Dpaid_social%26utm_campaign%3Dig-ads-test2` |
 | `/instagram/` (bio link page, live) | `instagram` | `social` | `bio` | LIVE, both forms, since 2026-11-16 | `https://play.google.com/store/apps/details?id=com.migrely.app&utm_source=instagram&utm_medium=social&utm_campaign=bio&referrer=utm_source%3Dinstagram%26utm_medium%3Dsocial%26utm_campaign%3Dbio` |
 | YouTube video description | `youtube` | `social` | `video_desc` | planned | `https://play.google.com/store/apps/details?id=com.migrely.app&utm_source=youtube&utm_medium=social&utm_campaign=video_desc&referrer=utm_source%3Dyoutube%26utm_medium%3Dsocial%26utm_campaign%3Dvideo_desc` |
 | Instagram story link sticker | `instagram` | `social` | `story` | planned (scheme in `account.md`) | `https://play.google.com/store/apps/details?id=com.migrely.app&utm_source=instagram&utm_medium=social&utm_campaign=story&referrer=utm_source%3Dinstagram%26utm_medium%3Dsocial%26utm_campaign%3Dstory` |
@@ -52,6 +53,7 @@ Each URL was built by script and checked: top-level tags equal the decoded `refe
   page campaigns into `home`, `guide`, `privacy-check` and `trust` (the table). The price of folding: Console can no
   longer say which guide page converted. At our traffic every page campaign would be "Other" anyway. It amends D137, so
   it is its own OpenSpec change, and it goes live only on the owner's deploy. Nothing is deployed by this PR.
+- **`/android-t2/` and `/go/android-t2` (BRD D196):** a new page and a new Pages Function. Live only on the owner's deploy, and only with `wrangler pages deploy` run in a folder that holds `functions/` (a dashboard zip upload does not compile it). A later deploy made without `functions/` turns the button into a 404.
 - **No site change:** `/android/` (a live ad uses it, do not touch), `/instagram/` (live), YouTube, stories, DMs,
   collabs, directories. These need only the owner to paste the link.
 - **App change (`pm-loops`):** the share link and the PDF footer. The footer's visible text is plain `migrely.health`; a
