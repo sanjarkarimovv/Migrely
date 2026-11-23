@@ -10,6 +10,8 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsNode
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -82,6 +84,21 @@ class CustomTagDialogLargeFontTest {
         }
     }
 
+    /** On opening, with no scroll, the field and its floating label show whole; the title can be scrolled to. */
+    private fun assertFieldInViewOnOpening(title: String) {
+        rule.waitForIdle()
+        val field = rule.onNode(hasSetTextAction()).fetchSemanticsNode()
+        assertTrue(
+            "on opening the field shows ${field.boundsInRoot.height} of ${field.size.height} px",
+            field.size.height > 0 && field.boundsInRoot.height >= field.size.height - 1f
+        )
+        assertTrue(
+            "the area names the dialog for TalkBack",
+            rule.onAllNodes(SemanticsMatcher.expectValue(SemanticsProperties.PaneTitle, title))
+                .fetchSemanticsNodes().size == 1
+        )
+    }
+
     private fun hasScrollingAncestor(node: SemanticsNode): Boolean =
         generateSequence(node.parent) { it.parent }
             .any { SemanticsActions.ScrollBy in it.config }
@@ -92,6 +109,22 @@ class CustomTagDialogLargeFontTest {
         showSqueezedTextArea("Eigenes Symptom")
 
         assertFieldReachable("0/40")
+    }
+
+    @Test
+    @Config(qualifiers = "+de-rDE")
+    fun `Given German at 200 percent then a squeezed text area opens on the field`() {
+        showSqueezedTextArea("Eigenes Symptom")
+
+        assertFieldInViewOnOpening("Eigenes Symptom")
+    }
+
+    @Test
+    @Config(qualifiers = "+en-rUS")
+    fun `Given English at 200 percent then a squeezed text area opens on the field`() {
+        showSqueezedTextArea("Your own symptom")
+
+        assertFieldInViewOnOpening("Your own symptom")
     }
 
     @Test

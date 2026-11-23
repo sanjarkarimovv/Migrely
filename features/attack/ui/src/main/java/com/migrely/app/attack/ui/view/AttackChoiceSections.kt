@@ -7,8 +7,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialogDefaults
@@ -26,8 +30,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.Role
@@ -35,6 +42,7 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.TextFieldValue
@@ -279,8 +287,9 @@ private fun ChoiceChip(
 /**
  * The custom tag dialog's title and name field, in one area that scrolls (T23 8.1 row R03). At 200% in landscape,
  * German's buttons stack and leave the dialog little height: the title then scrolls away before the field is cut, so
- * the field and its counter can always be brought into view whole. The title keeps the dialog title's style and is a
- * heading for TalkBack.
+ * the field and its counter can always be brought into view whole. The title keeps the dialog title's style, is a
+ * heading for TalkBack and names the pane. On opening, on focus and while the keyboard moves, the whole field, its
+ * floating label included, is brought into view, so a short dialog never opens on a title alone.
  */
 @Composable
 internal fun CustomTagNameArea(
@@ -288,9 +297,22 @@ internal fun CustomTagNameArea(
     name: TextFieldValue,
     onNameChange: (TextFieldValue) -> Unit
 ) {
+    val fieldInView = remember { BringIntoViewRequester() }
+    var focused by remember { mutableStateOf(false) }
+    val keyboard = WindowInsets.ime.getBottom(LocalDensity.current)
+    LaunchedEffect(focused, keyboard) {
+        // After a frame, so the field has been laid out and its place is known.
+        withFrameNanos { }
+        fieldInView.bringIntoView()
+    }
     PageScroll {
         // The bottom padding keeps the counter's glyphs, taller than its line at large fonts, inside the scroll's end.
-        Column(Modifier.pageScroll(rememberScrollState()).padding(bottom = 8.dp)) {
+        Column(
+            Modifier
+                .pageScroll(rememberScrollState())
+                .padding(bottom = 8.dp)
+                .semantics { paneTitle = title }
+        ) {
             Text(
                 text = title,
                 style = MaterialTheme.typography.headlineSmall,
@@ -306,7 +328,10 @@ internal fun CustomTagNameArea(
                 supportingText = {
                     Text(stringResource(R.string.custom_dialog_counter, name.text.length))
                 },
-                singleLine = true
+                singleLine = true,
+                modifier = Modifier
+                    .bringIntoViewRequester(fieldInView)
+                    .onFocusChanged { focused = it.isFocused }
             )
         }
     }
