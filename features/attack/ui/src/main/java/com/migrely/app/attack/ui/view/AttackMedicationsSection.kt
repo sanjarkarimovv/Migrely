@@ -37,7 +37,9 @@ import com.migrely.app.attack.ui.model.AttackIntakeEffectUiModel
 import com.migrely.app.attack.ui.model.AttackIntakeUiModel
 import com.migrely.app.designsystem.button.MigrelyIconButton
 import com.migrely.app.designsystem.dialog.MigrelyAlertDialog
+import com.migrely.app.designsystem.dialog.ScrollingDialogContent
 import com.migrely.app.designsystem.icon.MigrelyIcons
+import com.migrely.app.designsystem.layout.isCompactHeight
 import com.migrely.app.designsystem.layout.ownWords
 import com.migrely.app.designsystem.layout.wordsShownOnly
 
@@ -164,32 +166,38 @@ private fun EffectDialog(
 ) {
     MigrelyAlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.medication_effect_title, intake.medicationName)) },
         text = {
-            Column(Modifier.selectableGroup()) {
-                AttackIntakeEffectUiModel.entries.forEach { effect ->
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(min = 48.dp)
-                            .selectable(
-                                selected = intake.effect == effect,
-                                role = Role.RadioButton,
-                                onClick = { onChoose(effect) }
+            // A long typed name makes a long title: title and answers scroll together (T23 8.1 row R04).
+            ScrollingDialogContent(
+                stringResource(R.string.medication_effect_title, intake.medicationName)
+            ) {
+                Column(Modifier.selectableGroup()) {
+                    AttackIntakeEffectUiModel.entries.forEach { effect ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(min = 48.dp)
+                                .selectable(
+                                    selected = intake.effect == effect,
+                                    role = Role.RadioButton,
+                                    onClick = { onChoose(effect) }
+                                )
+                        ) {
+                            RadioButton(selected = intake.effect == effect, onClick = null)
+                            Text(
+                                text = stringResource(effect.answerLabel()),
+                                style = MaterialTheme.typography.bodyLarge,
+                                modifier = Modifier.padding(start = 12.dp)
                             )
-                    ) {
-                        RadioButton(selected = intake.effect == effect, onClick = null)
-                        Text(
-                            text = stringResource(effect.answerLabel()),
-                            style = MaterialTheme.typography.bodyLarge,
-                            modifier = Modifier.padding(start = 12.dp)
-                        )
+                        }
                     }
                 }
             }
         },
         confirmButton = {},
+        // In a short window the default width leaves the answers little height (T23 8.1 row R04).
+        wide = isCompactHeight(),
         dismissButton = {
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.attack_picker_cancel)) }
         }

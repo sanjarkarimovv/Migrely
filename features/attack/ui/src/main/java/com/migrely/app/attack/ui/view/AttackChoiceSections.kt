@@ -61,6 +61,7 @@ import com.migrely.app.attack.ui.model.TagKindUiModel
 import com.migrely.app.attack.ui.model.TriggerUiModel
 import com.migrely.app.designsystem.dialog.MigrelyAlertDialog
 import com.migrely.app.designsystem.dialog.MigrelyDropdownMenu
+import com.migrely.app.designsystem.dialog.ScrollingDialogContent
 import com.migrely.app.designsystem.input.limitedEdit
 import com.migrely.app.designsystem.layout.PageScroll
 import com.migrely.app.designsystem.layout.isCompactHeight
@@ -333,48 +334,31 @@ internal fun CustomTagNameArea(
         val typing = focused || keyboard
         if (typing) fieldWithRoomInView.bringIntoView() else fieldInView.bringIntoView()
     }
-    PageScroll {
-        // The top padding leaves room for the title's tall letters, drawn above its line at large fonts.
-        Column(
+    ScrollingDialogContent(title, Modifier.onSizeChanged { visibleHeight = it.height }) {
+        // The space around the field is brought into view with it: above, the floating label's overhang; below,
+        // the counter's glyphs, taller than their line at large fonts.
+        Box(
             Modifier
-                .onSizeChanged { visibleHeight = it.height }
-                .pageScroll(rememberScrollState())
-                .padding(top = 4.dp)
-                .semantics { paneTitle = title }
+                .fillMaxWidth()
+                .bringIntoViewRequester(fieldWithRoomInView)
+                .padding(vertical = 4.dp)
         ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.headlineSmall,
-                color = AlertDialogDefaults.titleContentColor,
+            OutlinedTextField(
+                value = name,
+                onValueChange = onNameChange,
+                label = { Text(stringResource(R.string.custom_dialog_label)) },
+                supportingText = {
+                    Text(stringResource(R.string.custom_dialog_counter, name.text.length))
+                },
+                singleLine = true,
                 modifier = Modifier
-                    .padding(bottom = 16.dp)
-                    .semantics { heading() }
-            )
-            // The space around the field is brought into view with it: above, the floating label's overhang; below,
-            // the counter's glyphs, taller than their line at large fonts.
-            Box(
-                Modifier
                     .fillMaxWidth()
-                    .bringIntoViewRequester(fieldWithRoomInView)
-                    .padding(vertical = 4.dp)
-            ) {
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = onNameChange,
-                    label = { Text(stringResource(R.string.custom_dialog_label)) },
-                    supportingText = {
-                        Text(stringResource(R.string.custom_dialog_counter, name.text.length))
-                    },
-                    singleLine = true,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .bringIntoViewRequester(fieldInView)
-                        .onFocusChanged {
-                            focused = it.isFocused
-                            onFocusChange(it.isFocused)
-                        }
-                )
-            }
+                    .bringIntoViewRequester(fieldInView)
+                    .onFocusChanged {
+                        focused = it.isFocused
+                        onFocusChange(it.isFocused)
+                    }
+            )
         }
     }
 }

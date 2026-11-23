@@ -40,7 +40,9 @@ import com.migrely.app.attack.ui.model.AttackDetailsUiModel
 import com.migrely.app.attack.ui.model.IntensityPointUiModel
 import com.migrely.app.designsystem.button.MigrelyIconButton
 import com.migrely.app.designsystem.dialog.MigrelyAlertDialog
+import com.migrely.app.designsystem.dialog.ScrollingDialogContent
 import com.migrely.app.designsystem.icon.MigrelyIcons
+import com.migrely.app.designsystem.layout.isCompactHeight
 import com.migrely.app.designsystem.layout.ownWords
 import com.migrely.app.designsystem.layout.wordsShownOnly
 import com.migrely.app.designsystem.picker.MigrelyDateTimePicker
@@ -185,36 +187,42 @@ private fun AddPainDialog(
     )
     MigrelyAlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.pain_dialog_title)) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(
-                    text = "${stringResource(R.string.pain_dialog_value, value)} · $levelName",
-                    style = MaterialTheme.typography.titleMedium.copy(fontFeatureSettings = "tnum"),
-                    modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
-                )
-                Slider(
-                    value = level,
-                    onValueChange = { level = it },
-                    valueRange = MINIMUM_LEVEL..MAXIMUM_LEVEL,
-                    steps = SLIDER_STEPS,
-                    modifier = Modifier.semantics { stateDescription = "$value, $levelName" }
-                )
-                val changeTime = stringResource(R.string.pain_dialog_change_time, timeText)
-                TextButton(
-                    onClick = { pickingTime = true },
-                    modifier = Modifier
-                        .heightIn(min = 48.dp)
-                        .semantics { contentDescription = changeTime }
-                ) {
-                    // One spoken name (BRD D181 (2)): "At 14:30, change the time" only.
+            // Title and content scroll together, so the time row stays reachable at large fonts (T23 8.1 row R04).
+            ScrollingDialogContent(stringResource(R.string.pain_dialog_title)) {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(
-                        text = stringResource(R.string.pain_dialog_time, timeText),
-                        modifier = Modifier.clearAndSetSemantics { }
+                        text = "${stringResource(R.string.pain_dialog_value, value)} · $levelName",
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontFeatureSettings = "tnum"
+                        ),
+                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
                     )
+                    Slider(
+                        value = level,
+                        onValueChange = { level = it },
+                        valueRange = MINIMUM_LEVEL..MAXIMUM_LEVEL,
+                        steps = SLIDER_STEPS,
+                        modifier = Modifier.semantics { stateDescription = "$value, $levelName" }
+                    )
+                    val changeTime = stringResource(R.string.pain_dialog_change_time, timeText)
+                    TextButton(
+                        onClick = { pickingTime = true },
+                        modifier = Modifier
+                            .heightIn(min = 48.dp)
+                            .semantics { contentDescription = changeTime }
+                    ) {
+                        // One spoken name (BRD D181 (2)): "At 14:30, change the time" only.
+                        Text(
+                            text = stringResource(R.string.pain_dialog_time, timeText),
+                            modifier = Modifier.clearAndSetSemantics { }
+                        )
+                    }
                 }
             }
         },
+        // In a short window the default width stacks the buttons and squeezes the content out (T23 8.1 row R04).
+        wide = isCompactHeight(),
         confirmButton = {
             TextButton(onClick = { onAdd(IntensityPointUiModel(at, value)) }) {
                 Text(stringResource(R.string.pain_dialog_add))
