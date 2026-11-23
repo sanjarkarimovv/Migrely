@@ -306,11 +306,9 @@ internal fun CustomTagNameArea(
         fieldInView.bringIntoView()
     }
     PageScroll {
-        // The bottom padding keeps the counter's glyphs, taller than its line at large fonts, inside the scroll's end.
         Column(
             Modifier
                 .pageScroll(rememberScrollState())
-                .padding(bottom = 8.dp)
                 .semantics { paneTitle = title }
         ) {
             Text(
@@ -321,18 +319,24 @@ internal fun CustomTagNameArea(
                     .padding(bottom = 16.dp)
                     .semantics { heading() }
             )
-            OutlinedTextField(
-                value = name,
-                onValueChange = onNameChange,
-                label = { Text(stringResource(R.string.custom_dialog_label)) },
-                supportingText = {
-                    Text(stringResource(R.string.custom_dialog_counter, name.text.length))
-                },
-                singleLine = true,
-                modifier = Modifier
+            // The space around the field is brought into view with it: above, the floating label's overhang; below,
+            // the counter's glyphs, taller than their line at large fonts.
+            Box(
+                Modifier
                     .bringIntoViewRequester(fieldInView)
-                    .onFocusChanged { focused = it.isFocused }
-            )
+                    .padding(vertical = 4.dp)
+            ) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = onNameChange,
+                    label = { Text(stringResource(R.string.custom_dialog_label)) },
+                    supportingText = {
+                        Text(stringResource(R.string.custom_dialog_counter, name.text.length))
+                    },
+                    singleLine = true,
+                    modifier = Modifier.onFocusChanged { focused = it.isFocused }
+                )
+            }
         }
     }
 }

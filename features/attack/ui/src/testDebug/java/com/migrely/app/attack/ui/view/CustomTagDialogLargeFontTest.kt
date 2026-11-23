@@ -4,10 +4,8 @@ import android.app.Application
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
@@ -17,7 +15,6 @@ import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.text.input.TextFieldValue
-import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import com.migrely.app.designsystem.theme.MigrelyTheme
 import org.junit.Assert.assertTrue
@@ -25,6 +22,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
@@ -49,14 +47,13 @@ class CustomTagDialogLargeFontTest {
     @get:Rule
     val rule = createComposeRule()
 
+    // The system's font scale, so text grows as on the device: non-linearly at 200% from API 34.
     private fun showSqueezedTextArea(title: String) {
+        RuntimeEnvironment.setFontScale(LARGEST_FONT)
         rule.setContent {
-            val density = LocalDensity.current
-            CompositionLocalProvider(LocalDensity provides Density(density.density, LARGEST_FONT)) {
-                MigrelyTheme {
-                    Box(Modifier.size(DIALOG_CONTENT_WIDTH, SQUEEZED_TEXT_AREA).clipToBounds()) {
-                        CustomTagNameArea(title, TextFieldValue()) {}
-                    }
+            MigrelyTheme {
+                Box(Modifier.size(DIALOG_CONTENT_WIDTH, SQUEEZED_TEXT_AREA).clipToBounds()) {
+                    CustomTagNameArea(title, TextFieldValue()) {}
                 }
             }
         }
