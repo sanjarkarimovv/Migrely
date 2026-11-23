@@ -3,6 +3,8 @@ package com.migrely.app.di
 import android.content.Context
 import com.migrely.app.datasource.preferences.datasource.PreferencesDataSource
 import com.migrely.app.datasource.preferences.datasource.PreferencesDataSourceImpl
+import com.migrely.app.datasource.preferences.datasource.UnsavedMarksDataSource
+import com.migrely.app.datasource.preferences.datasource.UnsavedMarksDataSourceImpl
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -30,4 +32,9 @@ internal object PreferencesDataSourceModule {
                 Context.MODE_PRIVATE
             )
         )
+
+    /** One for the app: marks that were not saved count until the process ends (#278, D197). */
+    @Provides
+    @Singleton
+    fun providesUnsavedMarksDataSource(): UnsavedMarksDataSource = UnsavedMarksDataSourceImpl()
 }

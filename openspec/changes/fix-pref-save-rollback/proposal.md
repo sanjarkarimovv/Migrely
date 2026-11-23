@@ -18,12 +18,15 @@ the change the user was told was not saved gets saved later, without a word.
 - The shared write helper keeps the values held in memory before each write. When `commit()` fails, every key that write
   changed goes back to its earlier value (or is removed again), and then `FileDataException` is thrown as today, so "Couldn't
   save that. Try again." stays (D197).
-- This covers every setting and mark written through the helper, including the entitlement file. No string, permission,
+- This covers every setting and mark written through the helper, including the entitlement file, one write per file at a
+  time. A paywall or rating-request mark that is not saved counts for the rest of the process, so neither opens again on every
+  Home load (code review cr-278). No string, permission,
   migration or UI code changes. The view models already read again after a failed save.
 
 ## Impact
 
-- Code: `datasource/implementation` (`PreferencesDataSourceImpl`), with JVM tests on a fake that behaves as Android does,
-  and one instrumented test on real preferences in a read-only folder.
+- Code: `datasource/implementation` (`PreferencesDataSourceImpl`, with JVM tests on a fake that behaves as Android does
+  and an instrumented test on real preferences in a read-only folder); `UnsavedMarksDataSource` (in memory, one for the
+  app); `features/subscription/data` and `features/review/data` repositories; `:app` DI.
 - BRD: D197, EC-STO-13, §13 row 60. T72 (`add-word-of-mouth-loops`) picks this up by merging `develop`, and its EC-REP-12
   then holds on a device.

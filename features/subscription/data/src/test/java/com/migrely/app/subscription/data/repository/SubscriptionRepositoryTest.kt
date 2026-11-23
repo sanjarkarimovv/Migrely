@@ -42,12 +42,14 @@ private val NOW: Instant = Instant.parse("2026-10-25T09:00:00Z")
 class SubscriptionRepositoryTest {
     private val billingDataSource: BillingDataSource = mock()
     private val preferencesDataSource: PreferencesDataSource = mock()
+    private val unsavedMarksDataSource = FakeUnsavedMarksDataSource()
     private val attackDataSource: AttackDataSource = mock()
     private val clockDataSource: ClockDataSource = mock { on { now() } doReturn NOW }
     private val premiumCheckScheduleDataSource: PremiumCheckScheduleDataSource = mock()
     private val classUnderTest = SubscriptionRepository(
         billingDataSource,
         preferencesDataSource,
+        unsavedMarksDataSource,
         attackDataSource,
         clockDataSource,
         premiumCheckScheduleDataSource,
@@ -131,6 +133,7 @@ class SubscriptionRepositoryTest {
         val repository = SubscriptionRepository(
             billingDataSource,
             preferencesDataSource,
+            unsavedMarksDataSource,
             failing,
             clockDataSource,
             premiumCheckScheduleDataSource,
@@ -220,5 +223,51 @@ class SubscriptionRepositoryTest {
         classUnderTest.saveLaunchedPurchase(null)
 
         verify(preferencesDataSource).setLaunchedPurchase(null)
+    }
+
+    @Test
+    fun `Given the paywall mark is not saved then it counts, so no Home load opens it again`() {
+        given(preferencesDataSource.lastPaywallShownMillis()).willReturn(null)
+        given(
+            preferencesDataSource.markPaywallShown(
+                PaywallTriggerDataModel.FifthMigraine,
+                NOW.toEpochMilli()
+            )
+        ).willThrow(FileDataException())
+
+        assertEquals(
+            SubscriptionWriteResultDomainModel.Failed,
+            classUnderTest.markPaywallShown(PaywallTriggerDomainModel.FifthMigraine, NOW)
+        )
+
+        // The datasource put the stored marks back (#278); this process still counts the paywall as shown (D197).
+        assertEquals(
+            PaywallMarksDomainModel(setOf(PaywallTriggerDomainModel.FifthMigraine), NOW),
+            classUnderTest.paywallMarks()
+        )
+    }
+
+    @Test
+    fun `Given an unsaved paywall mark when the app starts again then only stored marks count`() {
+        given(preferencesDataSource.lastPaywallShownMillis()).willReturn(null)
+        given(
+            preferencesDataSource.markPaywallShown(
+                PaywallTriggerDataModel.FifthMigraine,
+                NOW.toEpochMilli()
+            )
+        ).willThrow(FileDataException())
+        classUnderTest.markPaywallShown(PaywallTriggerDomainModel.FifthMigraine, NOW)
+
+        val restarted = SubscriptionRepository(
+            billingDataSource,
+            preferencesDataSource,
+            FakeUnsavedMarksDataSource(),
+            attackDataSource,
+            clockDataSource,
+            premiumCheckScheduleDataSource,
+            SubscriptionDataMappers.create()
+        )
+
+        assertEquals(PaywallMarksDomainModel(emptySet(), null), restarted.paywallMarks())
     }
 }

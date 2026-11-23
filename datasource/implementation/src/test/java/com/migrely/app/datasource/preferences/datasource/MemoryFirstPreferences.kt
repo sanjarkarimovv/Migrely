@@ -12,9 +12,18 @@ class MemoryFirstPreferences(initial: Map<String, Any> = emptyMap()) : SharedPre
     var disk: Map<String, Any> = initial.toMap()
         private set
     var diskWorks = true
+
+    /** Runs on every read of the whole map, as a snapshot is taken. */
+    var onGetAll: () -> Unit = {}
+
+    /** Runs in a commit after memory changed and before the file is written. */
+    var afterMemoryChange: () -> Unit = {}
     private val listeners = mutableListOf<SharedPreferences.OnSharedPreferenceChangeListener>()
 
-    override fun getAll(): Map<String, *> = memory.toMap()
+    override fun getAll(): Map<String, *> {
+        onGetAll()
+        return synchronized(memory) { memory.toMap() }
+    }
 
     override fun getString(key: String, defValue: String?): String? =
         memory[key] as String? ?: defValue
@@ -71,11 +80,14 @@ class MemoryFirstPreferences(initial: Map<String, Any> = emptyMap()) : SharedPre
 
         // As SharedPreferencesImpl: memory first, then the file, and the listeners either way.
         override fun commit(): Boolean {
-            if (clearFirst) memory.clear()
-            changes.forEach { (key, value) ->
-                if (value == null) memory.remove(key) else memory[key] = value
+            synchronized(memory) {
+                if (clearFirst) memory.clear()
+                changes.forEach { (key, value) ->
+                    if (value == null) memory.remove(key) else memory[key] = value
+                }
             }
-            if (diskWorks) disk = memory.toMap()
+            afterMemoryChange()
+            if (diskWorks) disk = synchronized(memory) { memory.toMap() }
             changes.keys.forEach { key ->
                 listeners.forEach { it.onSharedPreferenceChanged(this@MemoryFirstPreferences, key) }
             }

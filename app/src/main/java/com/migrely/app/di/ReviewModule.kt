@@ -6,6 +6,7 @@ import com.migrely.app.datasource.appinfo.datasource.AppInfoDataSource
 import com.migrely.app.datasource.attack.datasource.AttackDataSource
 import com.migrely.app.datasource.clock.datasource.ClockDataSource
 import com.migrely.app.datasource.preferences.datasource.PreferencesDataSource
+import com.migrely.app.datasource.preferences.datasource.UnsavedMarksDataSource
 import com.migrely.app.datasource.review.datasource.ReviewDataSource
 import com.migrely.app.review.data.mapper.ReviewFlowDomainMapper
 import com.migrely.app.review.data.repository.ReviewRepository
@@ -31,12 +32,14 @@ internal object ReviewModule {
     fun providesReviewRepository(
         attackDataSource: AttackDataSource,
         preferencesDataSource: PreferencesDataSource,
+        unsavedMarksDataSource: UnsavedMarksDataSource,
         appInfoDataSource: AppInfoDataSource,
         clockDataSource: ClockDataSource,
         reviewDataSource: ReviewDataSource
     ) = ReviewRepository(
         attackDataSource,
         preferencesDataSource,
+        unsavedMarksDataSource,
         appInfoDataSource,
         clockDataSource,
         reviewDataSource,

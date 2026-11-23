@@ -197,13 +197,16 @@ class PreferencesDataSourceImpl(
     /**
      * One commit. Android puts a change into memory before it writes the file, so a commit that fails would leave the
      * change readable, and the next successful write of any key would save it too. A failed write therefore puts back
-     * each key it changed, and every setting reads as stored (#278, BRD EC-STO-13).
+     * each key it changed, and every setting reads as stored (#278, BRD EC-STO-13). One write per file at a time: a
+     * second write that read the map while the first one's change was in memory would put that change back.
      */
     private inline fun SharedPreferences.write(change: SharedPreferences.Editor.() -> Unit) {
-        val stored = all.toMap()
-        if (!edit().apply(change).commit()) {
-            restore(stored)
-            throw FileDataException("Preferences not saved")
+        synchronized(this) {
+            val stored = all.toMap()
+            if (!edit().apply(change).commit()) {
+                restore(stored)
+                throw FileDataException("Preferences not saved")
+            }
         }
     }
 
