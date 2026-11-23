@@ -289,7 +289,8 @@ internal fun CustomTagNameArea(
     onNameChange: (TextFieldValue) -> Unit
 ) {
     PageScroll {
-        Column(Modifier.pageScroll(rememberScrollState())) {
+        // The bottom padding keeps the counter's glyphs, taller than its line at large fonts, inside the scroll's end.
+        Column(Modifier.pageScroll(rememberScrollState()).padding(bottom = 8.dp)) {
             Text(
                 text = title,
                 style = MaterialTheme.typography.headlineSmall,
