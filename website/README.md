@@ -1,7 +1,7 @@
 # migrely.health
 
-The website for Migrely (BRD D119). It is static: no scripts, cookies, analytics or third-party requests. Fonts and
-images are served from the site itself, and the privacy policy is built from `docs/release/privacy-policy.md`.
+The website for Migrely (BRD D119). It is static, except one redirect Function that only answers 302 (BRD D196): no scripts, cookies or third-party
+requests. Fonts and images are served from the site itself, and the privacy policy is built from `docs/release/privacy-policy.md`.
 
 ## Build
 

@@ -19,9 +19,11 @@ asset takes a new name.
 | 6 | Response headers `Cache-Control: no-store`, `Referrer-Policy: no-referrer`, `X-Robots-Tag: noindex` | `_headers` does not apply to a Function's response; `no-store` keeps an edge copy from answering without the Function (and so from being counted) |
 | 7 | `GET` and `HEAD` answer 302, other methods 405 | A 405 for a POST is not a tap; HEAD is counted (a limit, below) |
 | 8 | Wrangler's generated routes include only `/go/android-t2` (`wrangler pages functions build --output-routes-path`, wrangler 4.158.0) | Static requests never invoke a Function, so the quota and the count stay clean |
-| 9 | `Disallow: /go/` in `robots.txt`, and no page but `/android-t2/` links to `/go/` | Crawlers that follow links do not inflate the count |
+| 9 | No `Disallow: /go/`; no page but `/android-t2/` links to `/go/` | legal (2026-11-23): a Disallow is the one line Meta's cloaking rules could be read against. Crawlers rarely find the path; if one does, the count is an upper bound anyway |
 | 10 | QR code: the direct Play link | A desktop visitor who scans it is a different step from a tap on the button; the QR is not counted |
 | 11 | `T2_COUNT` flag | If the device test or `legal-finance-analyst` says no, one value returns the page to the direct link |
+| 13 | The Function never branches on user agent, IP or country, and stores nothing per visit, ever | legal condition (Meta cloaking; a stored IP or Referer would be a per-person record of health interest) |
+| 14 | With the counter on, the build stops unless `privacy-policy.md` describes it and no longer says the site runs no "analytics" | the policy goes live no later than `/go/` |
 | 12 | Page words: a subset of cleared text, enforced | `text_segments()` of `/android-t2/`'s `<main>` must all appear on `/android/` or `/instagram/` |
 
 ## What Cloudflare processes anyway

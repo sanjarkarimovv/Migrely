@@ -25,12 +25,13 @@ button up by only 11 to 40 px; its value is the tap count, the shorter lead-in a
 - **`T2_COUNT`** in `website/build.py`: one value that returns the two buttons to the direct Play link and requires
   `website/functions/` to be empty.
 - A desktop QR code that encodes the Play link directly (decoded and negative-controlled).
-- `robots.txt` gets `Disallow: /go/`.
+- The privacy policy's "This website" section is changed (legal's DRAFT wording, verbatim): "analytics," removed, a counter sentence added; the build stops if it is missing while the counter is on. The effective date is set on deploy day.
+- The Free and Premium block of `/android/` returns to the page unchanged (legal).
 - Build checks for all of it (exact link, one Function only, no reading or storing in it, cleared words only, at most 20
   words before the button, no other page links to `/go/`), each with a negative control.
 - `docs/release/play-links.md` gets the `ig-ads-test2` row; `website/README.md` gets the deploy rule for the Function.
 
-**Out of scope:** the privacy-policy text (`legal-finance-analyst`'s), any deploy, Play Console, the ad and its copy,
+**Out of scope:** any deploy, the effective date, Play Console, the ad and its copy,
 `/android/` (stays byte for byte), any app code.
 
 ## Capabilities

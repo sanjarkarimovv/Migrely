@@ -1,8 +1,8 @@
 """Builds migrely.health into website/public (BRD D119).
 
-The site is static, fast and sends nothing anywhere: no scripts, no cookies, no analytics, and fonts and images are
-served from the site itself, as Migrely's promise of privacy deserves. The privacy policy is generated from
-docs/release/privacy-policy.md, so the store, the app and the site always say the same thing.
+The site is static, except one redirect Function that only answers 302 (BRD D196). It sends nothing anywhere: no
+scripts, no cookies, and fonts and images are served from the site itself, as Migrely's promise of privacy deserves.
+The privacy policy is generated from docs/release/privacy-policy.md, so the store, the app and the site always say the same thing.
 
 Run from the repo root: python3 website/build.py
 It needs Pillow and the cwebp tool for the images. It checks /privacy-check/ against the release build's permission
@@ -910,6 +910,17 @@ def android_t2_landing():
   <ul class="ticks" role="list"><li>No account</li><li>No ads</li></ul>
   <p>{esc(AD_BACKUP)}</p>
   <p>Check it yourself: <a href="/privacy-check/">migrely.health/privacy-check</a></p>
+</div></section>
+
+<section class="ad-sec" id="plans" aria-labelledby="plans-h"><div class="wrap stack">
+  <h2 id="plans-h">Free, and Premium</h2>
+  <div class="plans">
+    <article class="plan"><h3>Free</h3><ul class="ticks" role="list"><li>Logging</li><li>The full history</li><li>Medications</li><li>Reminders</li><li>Backup and spreadsheet export</li></ul>
+      <p class="meta">Safety warnings are never Premium.</p></article>
+    <article class="plan premium"><h3>Premium</h3><ul class="ticks" role="list"><li>The doctor report</li><li>Insights</li></ul>
+      <p>{esc(AD_PREMIUM_TERMS)}</p>
+      <p class="meta">{esc(AD_PREMIUM_BUY)}</p></article>
+  </div>
 </div></section>
 
 <section class="ad-sec" id="diary" aria-labelledby="diary-h"><div class="wrap stack">
@@ -1868,7 +1879,8 @@ def check_t2_pages(built, cleared):
     buttons directly (T2_COUNT off) or through /go/android-t2 (on), where the Function must carry the same link and
     read, store and call nothing; noindex, no script, image or style beyond the QR; every text segment already on
     /android/ or /instagram/; at most 20 words and the Android-only line before the first button; and no other page
-    links to /go/."""
+    links to /go/. robots.txt is left alone on purpose (BRD D196): a Disallow would add nothing a crawler needs and
+    is the one line Meta's cloaking rules could be read against."""
     if T2_PLAY != T2_PLAY_EXPECTED:
         raise SystemExit(f'The test-2 Play link changed: {T2_PLAY}')
     for path, (_, content) in built.items():
@@ -1895,6 +1907,9 @@ def check_t2_pages(built, cleared):
         found = BANNED_AD.search(html.unescape(content))
         if found:
             raise fail(f'banned wording: {found.group(0)}')
+        for needed in (AD_BACKUP, AD_DIARY, AD_PREMIUM_TERMS, AD_PREMIUM_BUY):
+            if needed not in html.unescape(content):
+                raise fail(f'missing: {needed}')
         viewport = re.search(r'<meta name="viewport" content="([^"]*)"', content).group(1)
         if 'viewport-fit=cover' not in viewport or 'maximum-scale' in viewport or 'user-scalable' in viewport:
             raise fail('viewport needs viewport-fit=cover and must allow zoom.')
@@ -1919,6 +1934,10 @@ def check_t2_pages(built, cleared):
         raise SystemExit(f'{T2_GO} must be the path of the Function file {T2_FUNCTION}.')
     if [str(f) for f in functions] != ['functions/go/android-t2.js']:
         raise SystemExit(f'the project must have exactly one Function (its metrics are project-wide), found {functions}.')
+    policy = (ROOT / 'docs/release/privacy-policy.md').read_text().replace('\n', ' ')
+    if 'Cloudflare, counts how many times that link is used' not in policy or 'scripts, analytics' in policy:
+        raise SystemExit('with T2_COUNT on, the privacy policy must describe the counter and no longer say the site runs '
+                         'no "analytics" (BRD D196): it goes live no later than /go/.')
     source = T2_FUNCTION.read_text()
     if re.findall(r"'(https://play\.google\.com[^']*)'", source) != [T2_PLAY_EXPECTED]:
         raise SystemExit('the Function must hold exactly the test-2 Play link.')
@@ -2082,10 +2101,8 @@ def main():
         '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
         + ''.join(f'  <url><loc>{BASE}{path}</loc><lastmod>{dates[path]}</lastmod></url>\n' for path in built)
         + '</urlset>\n')
-    (SITE / 'robots.txt').write_text(f'User-agent: *\nAllow: /\nDisallow: /go/\nSitemap: {BASE}/sitemap.xml\n')
+    (SITE / 'robots.txt').write_text(f'User-agent: *\nAllow: /\nSitemap: {BASE}/sitemap.xml\n')
     (SITE / 'llms.txt').write_text(llms)
-    if T2_COUNT and 'Disallow: /go/\n' not in (SITE / 'robots.txt').read_text():
-        raise SystemExit('robots.txt must disallow /go/, so crawlers do not inflate the tap count.')
     print('built', ', '.join(built), '404.html and llms.txt')
 
 

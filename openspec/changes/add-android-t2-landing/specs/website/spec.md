@@ -2,7 +2,7 @@
 
 ### Requirement: A short ad landing page for test 2
 
-The site SHALL serve `/android-t2/`, a `noindex` page outside the sitemap, `llms.txt` and every navigation, with no script and one lazy image, the QR code. Every text segment in its `<main>` SHALL already appear on `/android/` or `/instagram/`, and at most 20 words SHALL come before its first Play button, which SHALL follow the line "Not available for iPhone."
+The site SHALL serve `/android-t2/`, a `noindex` page outside the sitemap, `llms.txt` and every navigation, with no script and one lazy image, the QR code, and the Free and Premium block of `/android/` unchanged. Every text segment in its `<main>` SHALL already appear on `/android/` or `/instagram/`, and at most 20 words SHALL come before its first Play button, which SHALL follow the line "Not available for iPhone."
 
 #### Scenario: The page is built
 
@@ -40,13 +40,13 @@ With `T2_COUNT` on, both Play buttons on `/android-t2/` SHALL link to `/go/andro
 - **WHEN** the site is deployed without the `functions/` folder (for example a dashboard zip upload)
 - **THEN** `/go/android-t2` does not answer 302, and the deploy check `curl -I https://migrely.health/go/android-t2` fails, so the deploy is not accepted
 
-### Requirement: Crawlers are told to stay out of the counter
+### Requirement: The counter is disclosed before it runs
 
-`robots.txt` SHALL contain `Disallow: /go/` while the counter is on, and the build SHALL stop if it does not.
+With `T2_COUNT` on, the build SHALL stop unless `docs/release/privacy-policy.md` says the host counts uses of the short link and holds a number only, and no longer says the site runs no "analytics". The Function SHALL branch on nothing in the request and the project SHALL keep no per-visit record.
 
-#### Scenario: robots.txt loses the rule
+#### Scenario: The policy lacks the sentence
 
-- **WHEN** the generated `robots.txt` has no `Disallow: /go/` and `T2_COUNT` is true
+- **WHEN** `T2_COUNT` is true and the policy has no counter sentence, or still says "scripts, analytics"
 - **THEN** the build stops
 
 ### Requirement: The test-2 desktop QR code matches the Play link
