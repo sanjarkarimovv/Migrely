@@ -54,6 +54,8 @@ import com.migrely.app.designsystem.icon.MigrelyIcons
 import com.migrely.app.designsystem.input.TapGuard
 import com.migrely.app.designsystem.layout.MigrelyInsets
 import com.migrely.app.designsystem.layout.PageScroll
+import com.migrely.app.designsystem.layout.ownWords
+import com.migrely.app.designsystem.layout.wordsShownOnly
 import com.migrely.app.designsystem.picker.DateTimePickerLabels
 import com.migrely.app.designsystem.picker.MigrelyDateTimePicker
 import com.migrely.app.designsystem.sky.SkyAppearance
@@ -245,6 +247,9 @@ private fun SideBySideAttackLayout(
 
 @Composable
 private fun AttackControls(attack: AttackInProgressUiModel, actions: HomeActions) {
+    // Each control says its name from its own node, so a page edge that cuts it never leaves it nameless (#255, #274).
+    val medicationTaken = stringResource(R.string.medication_taken)
+    val endAttack = stringResource(R.string.end_attack)
     IntensityChoices(selected = attack.currentLevel, onIntensity = actions.onIntensity)
     Spacer(Modifier.height(12.dp))
     // A large, dim control for the dark room (BRD 18.3 B, D34, EC-UX-02).
@@ -256,12 +261,15 @@ private fun AttackControls(attack: AttackInProgressUiModel, actions: HomeActions
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = 64.dp)
+            .ownWords(medicationTaken)
     ) {
         Icon(MigrelyIcons.Add, contentDescription = null, modifier = Modifier.size(20.dp))
         Text(
-            text = stringResource(R.string.medication_taken),
+            text = medicationTaken,
             style = MaterialTheme.typography.labelLarge,
-            modifier = Modifier.padding(start = 8.dp)
+            modifier = Modifier
+                .padding(start = 8.dp)
+                .wordsShownOnly()
         )
     }
     Spacer(Modifier.height(16.dp))
@@ -275,10 +283,12 @@ private fun AttackControls(attack: AttackInProgressUiModel, actions: HomeActions
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = 72.dp)
+            .ownWords(endAttack)
     ) {
         Text(
-            text = stringResource(R.string.end_attack),
-            style = MaterialTheme.typography.labelLarge
+            text = endAttack,
+            style = MaterialTheme.typography.labelLarge,
+            modifier = Modifier.wordsShownOnly()
         )
     }
     Spacer(Modifier.height(24.dp))
@@ -453,6 +463,7 @@ private fun IntensityChip(
     } else {
         MigrelyColors.AttackModeText
     }
+    val label = stringResource(level.label())
     Surface(
         shape = RoundedCornerShape(32.dp),
         color = container,
@@ -460,13 +471,15 @@ private fun IntensityChip(
         modifier = modifier
             .heightIn(min = 64.dp)
             .selectable(selected = isSelected, onClick = { onIntensity(level) })
+            .ownWords(label)
     ) {
         Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(vertical = 12.dp)) {
             Text(
-                text = stringResource(level.label()),
+                text = label,
                 style = MaterialTheme.typography.bodyLarge,
                 color = textColor,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
+                modifier = Modifier.wordsShownOnly()
             )
         }
     }
@@ -534,8 +547,13 @@ private fun LongAttackCheckCard(
 
 @Composable
 private fun LongCheckButton(label: Int, onClick: () -> Unit) {
-    TextButton(onClick = onClick, modifier = Modifier.heightIn(min = 48.dp)) {
-        Text(text = stringResource(label), color = MigrelyColors.AttackModeSelectedOutline)
+    val name = stringResource(label)
+    TextButton(onClick = onClick, modifier = Modifier.heightIn(min = 48.dp).ownWords(name)) {
+        Text(
+            text = name,
+            color = MigrelyColors.AttackModeSelectedOutline,
+            modifier = Modifier.wordsShownOnly()
+        )
     }
 }
 
