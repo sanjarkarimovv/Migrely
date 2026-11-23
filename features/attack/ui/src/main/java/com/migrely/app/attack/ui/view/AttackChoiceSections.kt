@@ -9,7 +9,9 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialogDefaults
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -32,6 +34,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.TextFieldValue
@@ -46,6 +49,7 @@ import com.migrely.app.attack.ui.model.TriggerUiModel
 import com.migrely.app.designsystem.dialog.MigrelyAlertDialog
 import com.migrely.app.designsystem.dialog.MigrelyDropdownMenu
 import com.migrely.app.designsystem.input.limitedEdit
+import com.migrely.app.designsystem.layout.PageScroll
 
 private const val MAXIMUM_TAG_NAME_LENGTH = 40
 
@@ -272,34 +276,57 @@ private fun ChoiceChip(
     }
 }
 
-/** The user's own symptom or trigger: 1 to 40 characters, input stops at 40 (BRD EC-ATK-12). */
+/**
+ * The custom tag dialog's title and name field, in one area that scrolls (T23 8.1 row R03). At 200% in landscape,
+ * German's buttons stack and leave the dialog little height: the title then scrolls away before the field is cut, so
+ * the field and its counter can always be brought into view whole. The title keeps the dialog title's style and is a
+ * heading for TalkBack.
+ */
 @Composable
-internal fun CustomTagDialog(kind: TagKindUiModel, onAdd: (String) -> Unit, onDismiss: () -> Unit) {
-    var name by rememberSaveable(stateSaver = TextFieldValue.Saver) {
-        mutableStateOf(TextFieldValue())
-    }
-    MigrelyAlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
+internal fun CustomTagNameArea(
+    title: String,
+    name: TextFieldValue,
+    onNameChange: (TextFieldValue) -> Unit
+) {
+    PageScroll {
+        Column(Modifier.pageScroll(rememberScrollState())) {
             Text(
-                stringResource(
-                    when (kind) {
-                        TagKindUiModel.Symptom -> R.string.custom_dialog_symptom_title
-                        TagKindUiModel.Trigger -> R.string.custom_dialog_trigger_title
-                    }
-                )
+                text = title,
+                style = MaterialTheme.typography.headlineSmall,
+                color = AlertDialogDefaults.titleContentColor,
+                modifier = Modifier
+                    .padding(bottom = 16.dp)
+                    .semantics { heading() }
             )
-        },
-        text = {
             OutlinedTextField(
                 value = name,
-                onValueChange = { name = limitedEdit(name, it, MAXIMUM_TAG_NAME_LENGTH) },
+                onValueChange = onNameChange,
                 label = { Text(stringResource(R.string.custom_dialog_label)) },
                 supportingText = {
                     Text(stringResource(R.string.custom_dialog_counter, name.text.length))
                 },
                 singleLine = true
             )
+        }
+    }
+}
+
+/** The user's own symptom or trigger: 1 to 40 characters, input stops at 40 (BRD EC-ATK-12). */
+@Composable
+internal fun CustomTagDialog(kind: TagKindUiModel, onAdd: (String) -> Unit, onDismiss: () -> Unit) {
+    var name by rememberSaveable(stateSaver = TextFieldValue.Saver) {
+        mutableStateOf(TextFieldValue())
+    }
+    val title = stringResource(
+        when (kind) {
+            TagKindUiModel.Symptom -> R.string.custom_dialog_symptom_title
+            TagKindUiModel.Trigger -> R.string.custom_dialog_trigger_title
+        }
+    )
+    MigrelyAlertDialog(
+        onDismissRequest = onDismiss,
+        text = {
+            CustomTagNameArea(title, name) { name = limitedEdit(name, it, MAXIMUM_TAG_NAME_LENGTH) }
         },
         confirmButton = {
             TextButton(onClick = { onAdd(name.text.trim()) }, enabled = name.text.isNotBlank()) {
