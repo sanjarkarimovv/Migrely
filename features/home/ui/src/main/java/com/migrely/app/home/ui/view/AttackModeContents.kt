@@ -33,6 +33,7 @@ import androidx.compose.material3.TimePicker
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -139,7 +140,8 @@ private fun StackedAttackLayout(
     modifier: Modifier
 ) {
     val density = LocalDensity.current
-    var controlsHeight by remember { mutableStateOf(0.dp) }
+    // Saved, so after a language change or process death the page opens in the right layout at its saved scroll.
+    var controlsHeightDp by rememberSaveable { mutableFloatStateOf(0f) }
     val guidanceMinHeight = with(density) {
         MaterialTheme.typography.titleLarge.lineHeight.toDp() * GUIDANCE_MIN_LINES
     }
@@ -155,14 +157,16 @@ private fun StackedAttackLayout(
     }
     val controls: @Composable () -> Unit = {
         // Measured where it is drawn; its height does not depend on which layout holds it.
-        Column(Modifier.onSizeChanged { controlsHeight = with(density) { it.height.toDp() } }) {
+        Column(
+            Modifier.onSizeChanged { controlsHeightDp = with(density) { it.height.toDp().value } }
+        ) {
             MoveStartOptions(onMoveStartEarlier = actions.onMoveStartEarlier)
             Spacer(Modifier.height(12.dp))
             AttackControls(attack = attack, actions = actions)
         }
     }
     BoxWithConstraints(modifier = modifier) {
-        if (maxHeight - controlsHeight >= guidanceMinHeight) {
+        if (maxHeight - controlsHeightDp.dp >= guidanceMinHeight) {
             Column(Modifier.fillMaxSize()) {
                 PageScroll {
                     Column(
@@ -177,6 +181,8 @@ private fun StackedAttackLayout(
             PageScroll {
                 Column(Modifier.fillMaxSize().pageScroll(rememberScrollState())) {
                     guidance()
+                    // The same gap as between the two cards, so the start options read as their own group.
+                    Spacer(Modifier.height(16.dp))
                     controls()
                 }
             }
