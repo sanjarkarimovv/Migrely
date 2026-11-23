@@ -101,11 +101,16 @@ described above. If you have a question about your rights, contact us at the add
 
 This section is about the website migrely.health, not the app.
 
-The website sets no cookies and runs no scripts, analytics, advertising or tracking code of its own. Its host,
+The website sets no cookies and runs no scripts, advertising or tracking code of its own. Its host,
 Cloudflare, delivers each page and, like most web hosts, may keep standard technical records of requests, such as the
 IP address and the page asked for. We do not use them to identify you. Cloudflare also asks some browsers to send it a
 short report when a page fails to load; visits that load are not reported. Cloudflare handles this under its own
 privacy policy.
+
+On some pages, the "Get it on Google Play" button goes through a short link on this site that sends you straight on to
+Google Play. Our host, Cloudflare, counts how many times that link is used, and we read that total in our Cloudflare
+account. The count is a number only: it holds no IP address, cookie, browser or device details, or the page you came
+from, and we cannot tell who used the link.
 
 If you arrive from an ad, the link may carry campaign tags, for example utm_source=instagram. Our pages do not use
 them. The "Get it on Google Play" button passes the same tags on to Google Play, which uses them in install reports for
