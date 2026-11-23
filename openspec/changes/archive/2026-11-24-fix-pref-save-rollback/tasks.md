@@ -44,4 +44,8 @@ Base: `bugfix/pref-save-rollback` from `origin/develop` 82df348f (team-lead deci
   the same after freeing and after a restart (R3, R4); a later successful theme write leaves `period_tracking` stored on
   (R5). Run on the 841aade9 build; at baba80ba the settings path is the same helper with the lock added, proved by 2.3's
   rerun on baba80ba; the device row itself was not repeated.
-- [ ] 4.3 `code-reviewer`, then QA's check of the diff's reach, then archive and PR into `develop` (`Refs #278`).
+- [x] 4.3 `code-reviewer`, then QA's check of the diff's reach, then archive and PR into `develop` (`Refs #278`).
+  Done: cr-278 approved 10ee25c2 (findings 1–3 fixed in 8225676a, 10ee25c2; text in baba80ba). QA (qa-140) GO at
+  ede18a75, 2026-11-24 (`migrely-work/qa-140/278/logs/rows.jsonl`): P-01 the self-shown paywall shows once on a full
+  disk and does not reopen (the 841aade9 control reopened); S-01 head rerun PASS; API 26 PASS, with develop failing as
+  the control. QA closes #278 after its retest on `develop`.
