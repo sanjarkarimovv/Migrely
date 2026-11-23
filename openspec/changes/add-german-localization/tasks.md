@@ -135,6 +135,9 @@ merge the latest `origin/develop` (with #255) so the translated set is final; if
   table in `migrely-work/de/8.1-walk.md` (row ID, state, 200% portrait, 200% landscape, 130%, 100% at 411, English
   comparison, result, screenshot); `adb shell settings get system font_scale`
   back to 1.0.
+  Known gaps the walk covers, not unit tests (cr-de round 2, F6): the keyboard seen through the root window insets in
+  the custom tag dialog; 7037cc0e (only the field brought into view at rest); b5e2a08e (asked again when the area
+  resizes); the edge fade's alpha and its reduced-motion snap.
 - [ ] 8.2 Language rule on device: system de-DE; `[ru-RU, en-US, de-DE]`; `[tr-TR, de-DE]` (the app German, the static
   shortcut label recorded as observed, EC-L10N-25); the launcher label in every row; per-app `cmd locale set-app-locales` de-DE on
   an English system and back; change during attack mode and with an unsaved note; a reminder fired in German; channel names

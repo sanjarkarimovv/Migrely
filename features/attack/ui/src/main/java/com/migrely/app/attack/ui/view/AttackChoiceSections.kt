@@ -408,6 +408,14 @@ internal class KeyboardWidthRule {
     }
 }
 
+/**
+ * Whether the custom tag dialog takes the wide width: in a short window, where the default width stacks the buttons and
+ * hides the field (T23 8.1 row R03), except while it is narrow for the keyboard ([KeyboardWidthRule]).
+ */
+@Composable
+internal fun customTagDialogWide(widthRule: KeyboardWidthRule): Boolean =
+    isCompactHeight() && !widthRule.narrow
+
 /** The user's own symptom or trigger: 1 to 40 characters, input stops at 40 (BRD EC-ATK-12). */
 @Composable
 internal fun CustomTagDialog(kind: TagKindUiModel, onAdd: (String) -> Unit, onDismiss: () -> Unit) {
@@ -438,8 +446,7 @@ internal fun CustomTagDialog(kind: TagKindUiModel, onAdd: (String) -> Unit, onDi
                 onKeyboardChange = widthRule::onKeyboard
             ) { name = limitedEdit(name, it, MAXIMUM_TAG_NAME_LENGTH) }
         },
-        // In a short window the default width stacks the buttons and hides the field (T23 8.1 row R03).
-        wide = isCompactHeight() && !widthRule.narrow,
+        wide = customTagDialogWide(widthRule),
         confirmButton = {
             TextButton(onClick = { onAdd(name.text.trim()) }, enabled = name.text.isNotBlank()) {
                 Text(stringResource(R.string.custom_dialog_add))
