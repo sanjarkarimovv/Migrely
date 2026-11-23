@@ -367,8 +367,10 @@ pain and effect dialogs at 200% in landscape, English and German; its reporter r
 4. **The title scrolls with the content** (`designsystem/dialog/ScrollingDialogContent`, 938e8e7c). Material's title
    slot does not scroll: a long title (an effect question naming a long typed medication) or stacked buttons left the
    content no height. The three dialogs put their title and content in one `PageScroll` area; the title keeps the
-   dialog title's style, is a heading and names the pane (`paneTitle`) for TalkBack. The title scrolls away before an
-   answer is cut.
+   dialog title's style and is a heading. The title scrolls away before an answer is cut. The dialog names its one
+   pane by the title (`MigrelyAlertDialog(paneTitle = …)`, on the outermost modifier, in place of Material's
+   "Dialog"). In the 8.1 walk (F3) the area's own pane name beside Material's made TalkBack announce whichever pane
+   appeared last: "Dialogfeld" for the pain and custom tag dialogs, the title for the effect dialog.
 5. **Edge cues** (88011716, 35524bfc; ux F6, R04r). While more lies below, the bottom edge shows a 24 dp fade in the
    dialog's surface colour and Material's scrolling-dialog divider (1 dp, `outlineVariant`); while more lies above, the
    top edge shows both. They ease over 150 ms, at once with reduced motion, draw over the content only and have no
@@ -396,9 +398,9 @@ pain and effect dialogs at 200% in landscape, English and German; its reporter r
    on-screen keyboard. Task 8.4 brings it to the rule above.
 
 Not proved by unit tests, left to the 8.1 walk (tasks 8.1): the root-inset keyboard reading, 7037cc0e and b5e2a08e, the
-fade's alpha and its reduced-motion snap, F2 on a device, the dialogs' spoken pane name (F3: Material's
-`BasicAlertDialog` already names its pane "Dialog", so TalkBack may say it twice), and `PageScroll`'s TalkBack step
-inside a dialog while a message shows behind it.
+fade's alpha and its reduced-motion snap, F2 on a device, the dialogs' spoken pane name (F3: the unit tests prove one
+pane name, the title; what TalkBack says is the walk's), and `PageScroll`'s TalkBack step inside a dialog while a
+message shows behind it.
 
 ## Risks
 

@@ -1,10 +1,17 @@
 package com.migrely.app.attack.ui.view
 
 import android.app.Application
+import android.view.View
+import android.view.ViewGroup
 import android.view.WindowManager
+import androidx.compose.ui.platform.ViewRootForTest
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.core.view.children
 import com.migrely.app.attack.ui.model.TagKindUiModel
 import com.migrely.app.designsystem.theme.MigrelyTheme
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -70,6 +77,24 @@ class CustomTagDialogWiringTest {
 
         assertTrue(wide())
     }
+
+    /**
+     * T23 8.1 F3: Material names its own pane "Dialog"; TalkBack announced whichever name appeared last. Read from the
+     * dialog window's own semantics tree: the test rule's queries wait for an idle this dialog never reaches.
+     */
+    @Test
+    fun `Given the dialog then its one pane is named by its title`() {
+        open()
+
+        val root = ShadowDialog.getLatestDialog().window!!.decorView.composeRoot()!!
+        val panes = generateSequence(listOf(root.semanticsOwner.unmergedRootSemanticsNode)) { level ->
+            level.flatMap { it.children }.takeIf { it.isNotEmpty() }
+        }.flatten().mapNotNull { it.config.getOrNull(SemanticsProperties.PaneTitle) }.toList()
+        assertEquals(listOf("Your own symptom"), panes)
+    }
+
+    private fun View.composeRoot(): ViewRootForTest? = this as? ViewRootForTest
+        ?: (this as? ViewGroup)?.children?.firstNotNullOfOrNull { it.composeRoot() }
 
     private companion object {
         const val SETTLED = 500L

@@ -27,6 +27,8 @@ import androidx.compose.ui.node.currentValueOf
 import androidx.compose.ui.node.requireLayoutCoordinates
 import androidx.compose.ui.platform.InspectorInfo
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.paneTitle
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -187,6 +189,10 @@ private fun rememberPropertiesInTheWait(properties: DialogProperties): DialogPro
  * Material's `AlertDialog`, with the wait. [wide] lets it grow past the platform's default width, up to Material's
  * 560 dp with 24 dp margins: in a short window at large fonts the default width stacks the buttons and leaves the
  * content little height (T23 8.1 row R03).
+ *
+ * [paneTitle] names the dialog's pane for TalkBack in place of Material's "Dialog", for a dialog whose title is in
+ * [text] ([ScrollingDialogContent]). A window with two pane names was announced by whichever appeared last, often
+ * "Dialog" (T23 8.1 F3). Set on the outermost modifier, it is the one name the pane has.
  */
 @Composable
 fun MigrelyAlertDialog(
@@ -195,12 +201,14 @@ fun MigrelyAlertDialog(
     dismissButton: (@Composable () -> Unit)? = null,
     title: (@Composable () -> Unit)? = null,
     text: (@Composable () -> Unit)? = null,
-    wide: Boolean = false
+    wide: Boolean = false,
+    paneTitle: String? = null
 ) {
+    val named = paneTitle?.let { name -> Modifier.semantics { this.paneTitle = name } } ?: Modifier
     AlertDialog(
         onDismissRequest = onDismissRequest,
         confirmButton = confirmButton,
-        modifier = Modifier
+        modifier = named
             .dialogWait()
             .then(if (wide) Modifier.padding(horizontal = WIDE_DIALOG_MARGIN) else Modifier),
         dismissButton = dismissButton,

@@ -299,9 +299,9 @@ private fun ChoiceChip(
 /**
  * The custom tag dialog's title and name field, in one area that scrolls (T23 8.1 row R03). At 200% in landscape,
  * German's buttons stack and leave the dialog little height: the title then scrolls away before the field is cut, so
- * the field and its counter can always be brought into view whole. The title keeps the dialog title's style, is a
- * heading for TalkBack and names the pane. On opening, on focus and while the keyboard moves, the whole field, its
- * floating label included, is brought into view, so a short dialog never opens on a title alone.
+ * the field and its counter can always be brought into view whole. The title keeps the dialog title's style and is a
+ * heading for TalkBack; the dialog names its pane by it. On opening, on focus and while the keyboard moves, the whole
+ * field, its floating label included, is brought into view, so a short dialog never opens on a title alone.
  */
 @Composable
 internal fun CustomTagNameArea(
@@ -464,6 +464,7 @@ internal fun CustomTagDialog(kind: TagKindUiModel, onAdd: (String) -> Unit, onDi
     KeyboardWait(widthRule)
     MigrelyAlertDialog(
         onDismissRequest = onDismiss,
+        paneTitle = title,
         text = {
             CustomTagNameArea(
                 title = title,

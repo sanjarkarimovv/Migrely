@@ -20,7 +20,6 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.migrely.app.designsystem.layout.PageScroll
@@ -30,8 +29,9 @@ import com.migrely.app.designsystem.motion.rememberReduceMotion
  * An alert dialog's title and content in one area that scrolls, for the dialog's `text` slot with no `title` (T23 8.1
  * rows R03, R04). Material's title slot does not scroll: at large fonts in a short window a long title, or stacked
  * buttons, left the content no height at all. Here the title scrolls away before the content is cut. It keeps the
- * dialog title's style, is a heading, and names the pane for TalkBack. [modifier] applies to the visible area, before
- * the scroll.
+ * dialog title's style and is a heading. The dialog names its pane by the same title ([MigrelyAlertDialog]'s
+ * `paneTitle`), so TalkBack announces it once, by the title (T23 8.1 F3). [modifier] applies to the visible area,
+ * before the scroll.
  *
  * While more lies below or above, that edge shows it (ux F6): a person in a migraine does not explore a dialog for
  * hidden controls. A soft fade in the dialog's colour softens cut text, and Material's scrolling-dialog divider, a 1 dp
@@ -96,7 +96,6 @@ fun ScrollingDialogContent(
                 }
                 .pageScroll(scrollState)
                 .padding(top = 4.dp)
-                .semantics { paneTitle = title }
         ) {
             Text(
                 text = title,

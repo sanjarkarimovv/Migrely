@@ -185,11 +185,13 @@ private fun AddPainDialog(
         details.startEpochMillis,
         details.startZoneId
     )
+    val title = stringResource(R.string.pain_dialog_title)
     MigrelyAlertDialog(
         onDismissRequest = onDismiss,
+        paneTitle = title,
         text = {
             // Title and content scroll together, so the time row stays reachable at large fonts (T23 8.1 row R04).
-            ScrollingDialogContent(stringResource(R.string.pain_dialog_title)) {
+            ScrollingDialogContent(title) {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(
                         text = "${stringResource(R.string.pain_dialog_value, value)} · $levelName",

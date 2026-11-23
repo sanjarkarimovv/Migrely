@@ -2,6 +2,8 @@ package com.migrely.app.attack.ui.view
 
 import android.app.Application
 import android.view.WindowManager
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.isDialog
@@ -12,6 +14,7 @@ import androidx.compose.ui.test.performScrollTo
 import com.migrely.app.attack.ui.model.AttackDetailsViewStateUiModel
 import com.migrely.app.attack.ui.model.AttackIntakeUiModel
 import com.migrely.app.designsystem.theme.MigrelyTheme
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -23,7 +26,8 @@ import org.robolectric.shadows.ShadowDialog
 
 /**
  * In a short window the pain and effect dialogs take the wide width, so their buttons do not stack over the content
- * (T23 8.1 row R04, cr-de round 2 F6 (b)); in a tall window they keep the platform's.
+ * (T23 8.1 row R04, cr-de round 2 F6 (b)); in a tall window they keep the platform's. Each dialog's one pane is named
+ * by its title, not by Material's "Dialog" as well (T23 8.1 F3).
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], application = Application::class, qualifiers = "w640dp-h360dp-land")
@@ -81,6 +85,27 @@ class AttackDialogWidthTest {
             hasContentDescription("Ibuprofen 400 mg, ", substring = true) and hasClickAction()
         )
             .performScrollTo().performClick()
+    }
+
+    private fun paneTitles(): List<String> =
+        rule.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsProperties.PaneTitle))
+            .fetchSemanticsNodes()
+            .map { it.config[SemanticsProperties.PaneTitle] }
+
+    @Test
+    fun `Given the pain dialog then its one pane is named by its title`() {
+        show()
+        openPain()
+
+        assertEquals(listOf("How strong was it?"), paneTitles())
+    }
+
+    @Test
+    fun `Given the effect dialog then its one pane is named by its title`() {
+        show()
+        openEffect()
+
+        assertEquals(listOf("How much did Ibuprofen help?"), paneTitles())
     }
 
     @Test

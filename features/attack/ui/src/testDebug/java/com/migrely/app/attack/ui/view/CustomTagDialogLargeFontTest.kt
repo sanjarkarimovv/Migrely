@@ -100,8 +100,8 @@ class CustomTagDialogLargeFontTest {
             field.size.height > 0 && field.boundsInRoot.height >= field.size.height - 1f
         )
         assertTrue(
-            "the area names the dialog for TalkBack",
-            rule.onAllNodes(SemanticsMatcher.expectValue(SemanticsProperties.PaneTitle, title))
+            "the title is a heading for TalkBack",
+            rule.onAllNodes(hasText(title) and SemanticsMatcher.keyIsDefined(SemanticsProperties.Heading))
                 .fetchSemanticsNodes().size == 1
         )
     }

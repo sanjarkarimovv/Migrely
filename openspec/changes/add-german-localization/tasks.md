@@ -162,9 +162,12 @@ merge the latest `origin/develop` (with #255) so the translated set is final; if
   - [ ] A Bluetooth (or emulated hardware) keyboard attached, with "Use on-screen keyboard" forced on: tap the field.
     The on-screen keyboard rises and the dialog narrows, the typed line visible above it; close the keyboard and the
     dialog is wide again. With the setting off: the dialog stays wide while typing on the hardware keyboard.
-  - [ ] F3: Material's `BasicAlertDialog` names its pane "Dialog" and `ScrollingDialogContent` names it by the title.
+  - [x] F3: Material's `BasicAlertDialog` names its pane "Dialog" and `ScrollingDialogContent` names it by the title.
     Is each of the pain, effect and custom tag dialogs announced once when it opens, in EN and DE (TalkBack on,
     `adb logcat` of the spoken text or a screen recording)? A double announcement is a finding for `android-engineer`.
+    Found: announced once, but by whichever pane name appeared last ("Dialogfeld"/"Dialog" for pain and custom tag,
+    the title for effect). Fixed: the dialog names its one pane by the title (`MigrelyAlertDialog(paneTitle)`); on the
+    fix each dialog is announced once, by its title, in EN and DE at 100% portrait (`8.1-walk.md`, F3 rows).
   - [ ] `PageScroll`'s TalkBack step inside a dialog while a message shows behind it (for example an Undo message on
     Attack details, then the pain dialog opened): each answer reached once, by name, and the step keeps its place.
 - [ ] 8.2 Language rule on device: system de-DE; `[ru-RU, en-US, de-DE]`; `[tr-TR, de-DE]` (the app German, the static

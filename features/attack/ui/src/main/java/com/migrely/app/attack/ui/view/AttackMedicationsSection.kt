@@ -164,13 +164,13 @@ private fun EffectDialog(
     onChoose: (AttackIntakeEffectUiModel) -> Unit,
     onDismiss: () -> Unit
 ) {
+    val title = stringResource(R.string.medication_effect_title, intake.medicationName)
     MigrelyAlertDialog(
         onDismissRequest = onDismiss,
+        paneTitle = title,
         text = {
             // A long typed name makes a long title: title and answers scroll together (T23 8.1 row R04).
-            ScrollingDialogContent(
-                stringResource(R.string.medication_effect_title, intake.medicationName)
-            ) {
+            ScrollingDialogContent(title) {
                 Column(Modifier.selectableGroup()) {
                     AttackIntakeEffectUiModel.entries.forEach { effect ->
                         Row(
