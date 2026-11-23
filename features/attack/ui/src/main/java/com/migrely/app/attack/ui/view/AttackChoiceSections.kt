@@ -25,6 +25,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -34,6 +35,7 @@ import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
@@ -300,7 +302,9 @@ internal fun CustomTagNameArea(
     val fieldInView = remember { BringIntoViewRequester() }
     var focused by remember { mutableStateOf(false) }
     val keyboard = WindowInsets.ime.getBottom(LocalDensity.current)
-    LaunchedEffect(focused, keyboard) {
+    // The dialog settles over a few frames and the keyboard resizes it, so each new visible height asks again.
+    var visibleHeight by remember { mutableIntStateOf(0) }
+    LaunchedEffect(focused, keyboard, visibleHeight) {
         // After a frame, so the field has been laid out and its place is known.
         withFrameNanos { }
         fieldInView.bringIntoView()
@@ -308,6 +312,7 @@ internal fun CustomTagNameArea(
     PageScroll {
         Column(
             Modifier
+                .onSizeChanged { visibleHeight = it.height }
                 .pageScroll(rememberScrollState())
                 .semantics { paneTitle = title }
         ) {
