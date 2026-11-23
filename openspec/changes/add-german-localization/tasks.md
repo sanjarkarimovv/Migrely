@@ -251,6 +251,11 @@ merge the latest `origin/develop` (with #255) so the translated set is final; if
   per activity, never while finishing or changing configuration (`StaleLocaleRecreation`); notifications and channel
   names resolve fresh (`FormattingLocales.localizedContext`). Tests red then green (`migrely-work/de/9d-red.log`,
   `9d-green.log`); flag control: without it the activity is recreated twice (`9d-flag-control.log`).
+  cr-de on 9902f069 (3 Minor, lead: fix all): the guard is once per language across instances, through the saved state
+  (with no LocaleManager the two reads can differ in every new instance); `localizedContext` resolves without writing
+  the formatters' cache; a stale-language recreate also renames the channels. Red then green (`cr3-red.log`, 4 red;
+  `cr3-green.log`). Known limit: a per-app change that arrives while the activity stays started (adb with Migrely in
+  front, or multi-window) applies at its next start.
 
 ## 12. QA (`qa-engineer`, Go/No-Go rows for this diff)
 

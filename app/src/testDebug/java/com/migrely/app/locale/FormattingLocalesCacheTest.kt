@@ -82,4 +82,18 @@ class FormattingLocalesCacheTest {
 
         assertEquals("en-US", localized.resources.configuration.locales[0].toLanguageTag())
     }
+
+    /**
+     * cr-de on 9902f069: a notification resolved off the main thread must not change what the formatters read in the
+     * middle of a composition; only the main-thread refreshes do.
+     */
+    @Test
+    fun `Given a fresh localized context then the formatters' locale is unchanged`() {
+        classUnderTest.of(application)
+        appLanguages = LocaleList.forLanguageTags("en-US")
+
+        classUnderTest.localizedContext(application)
+
+        assertEquals("de-DE", classUnderTest.of(application).toLanguageTag())
+    }
 }

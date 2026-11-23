@@ -13,13 +13,15 @@ import java.util.Locale
  * - [refresh] resolves them again from [PhoneLanguages], the phone's language list with Android 13's per-app language
  *   first, from LocaleManager rather than a configuration that can predate it (EC-L10N-06). The app refreshes at
  *   start, on every configuration change, which a new system or per-app language is, and as `MainActivity` is
- *   created, so the formatters `:app/di` provides follow a new language from then on;
+ *   created and started, so the formatters `:app/di` provides follow a new language from then on;
  * - [activityOverride] is the change `MainActivity` makes to its own configuration, so Compose's `LocalConfiguration`,
  *   Material's date and time pickers, resources and their plural rules use it;
  * - [localizedContext] is the same override for strings read outside an activity, such as notifications and their
  *   channel names (design D2): the application context keeps the phone's own list, from which Android's resource
  *   matching could pick German while the screens are English. It resolves fresh, off the main thread and rarely: a
- *   per-app change can reach the app with no configuration change, so with no refresh (T23 8.2 row 9d);
+ *   per-app change can reach the app with no configuration change, so with no refresh (T23 8.2 row 9d). It leaves
+ *   what [of] gives alone, so a notification cannot change the formatters' locale in the middle of a composition: only
+ *   the main thread's refreshes do;
  * - [applyToProcess] makes it the default locale, for code that formats with the default. `MigrelyApplication` calls
  *   it at start and on every configuration change. Android sets the default back to the phone's own language on
  *   updates it does not report to the application, so the app's own formatters never rely on it.
@@ -36,17 +38,18 @@ class FormattingLocales(
 
     fun of(context: Context): Locale = current ?: refresh(context)
 
-    fun refresh(context: Context): Locale =
-        resolver.resolve(phoneLanguages(context).of(context.resources.configuration))
-            .also { current = it }
+    fun refresh(context: Context): Locale = resolve(context).also { current = it }
 
     fun activityOverride(base: Context): Configuration =
         Configuration().apply { setLocale(of(base)) }
 
     fun localizedContext(context: Context): Context =
-        context.createConfigurationContext(Configuration().apply { setLocale(refresh(context)) })
+        context.createConfigurationContext(Configuration().apply { setLocale(resolve(context)) })
 
     fun applyToProcess(context: Context) {
         Locale.setDefault(of(context))
     }
+
+    private fun resolve(context: Context): Locale =
+        resolver.resolve(phoneLanguages(context).of(context.resources.configuration))
 }
