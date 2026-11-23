@@ -107,30 +107,27 @@ internal fun DateRangePickerScreen(
     ) {
         // Clear of the keyboard too, so the window is never pushed up past Cancel and Done.
         Column(Modifier.safeDrawingPadding()) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
+            PickerTopRow(
+                title = labels.title,
+                cancel = { TextButton(onClick = onDismiss) { Text(labels.cancel) } },
+                confirm = {
+                    TextButton(
+                        onClick = {
+                            if (start != null &&
+                                end != null
+                            ) {
+                                onConfirm(start.utcDate(), end.utcDate())
+                            }
+                        },
+                        // Not on a start alone: in text input mode, a changed start drops the end while its field
+                        // still shows it, and an end that is not allowed is dropped too.
+                        enabled = start != null && end != null
+                    ) { Text(labels.confirm) }
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 8.dp)
-            ) {
-                TextButton(onClick = onDismiss) { Text(labels.cancel) }
-                Text(
-                    text = labels.title,
-                    style = MaterialTheme.typography.titleLarge,
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(horizontal = 8.dp)
-                        .semantics { heading() }
-                )
-                TextButton(
-                    onClick = {
-                        if (start != null && end != null) onConfirm(start.utcDate(), end.utcDate())
-                    },
-                    // Not on a start alone: in text input mode, a changed start drops the end while its field
-                    // still shows it, and an end that is not allowed is dropped too.
-                    enabled = start != null && end != null
-                ) { Text(labels.confirm) }
-            }
+            )
             // The picker's header does not scroll, and the months get only the height left under it (#102). So the
             // picker fills the screen, its title is in the row above instead of a header line, and the headline
             // starts 24 dp in rather than Material's 64 dp, so the two dates wrap less.

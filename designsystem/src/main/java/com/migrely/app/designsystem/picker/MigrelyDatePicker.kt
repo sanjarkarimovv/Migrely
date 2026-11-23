@@ -121,26 +121,19 @@ internal fun DatePickerScreen(
         color = DatePickerDefaults.colors().containerColor
     ) {
         Column(Modifier.safeDrawingPadding()) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
+            PickerTopRow(
+                title = labels.title,
+                cancel = { TextButton(onClick = onDismiss) { Text(labels.cancel) } },
+                confirm = {
+                    TextButton(
+                        onClick = { picked?.let { onConfirm(it.utcDate()) } },
+                        enabled = picked != null
+                    ) { Text(labels.confirm) }
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 8.dp)
-            ) {
-                TextButton(onClick = onDismiss) { Text(labels.cancel) }
-                Text(
-                    text = labels.title,
-                    style = MaterialTheme.typography.titleLarge,
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(horizontal = 8.dp)
-                        .semantics { heading() }
-                )
-                TextButton(
-                    onClick = { picked?.let { onConfirm(it.utcDate()) } },
-                    enabled = picked != null
-                ) { Text(labels.confirm) }
-            }
+            )
             BoxWithConstraints(Modifier.weight(1f)) {
                 // Typing a date over the keyboard leaves little room: the date field shows the date then (D127).
                 val headerShown =
