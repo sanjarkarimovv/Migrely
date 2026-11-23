@@ -27,7 +27,8 @@ Base: `bugfix/pref-save-rollback` from `origin/develop` 82df348f (team-lead deci
 
 - [x] 3b.1 Important, the paywall loop on a full disk: a paywall or rating-request mark whose write fails counts as set
   for the process (`UnsavedMarksDataSource`, one for the app; the rule in `SubscriptionRepository` and
-  `ReviewRepository`, which also reads the paywall's time). Red first: 4 repository tests; 2 restart controls.
+  `ReviewRepository`, which also reads the paywall's time). Tests: 5 repository tests (3 review + 2 subscription), 4 red before the fix, including the subscription
+  restart control; the review restart control passed before and after.
 - [x] 3b.2 Minor, overlapping writes: one write per preferences file at a time. Red first: the overlap test without the
   lock.
 - [x] 3b.3 Minor: EC-STO-13 names the marks that go through the helper; D197's sentence on the accepted window replaced.
