@@ -5,6 +5,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
 import androidx.compose.ui.platform.ViewRootForTest
+import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -87,11 +88,15 @@ class CustomTagDialogWiringTest {
         open()
 
         val root = ShadowDialog.getLatestDialog().window!!.decorView.composeRoot()!!
-        val panes = generateSequence(listOf(root.semanticsOwner.unmergedRootSemanticsNode)) { level ->
-            level.flatMap { it.children }.takeIf { it.isNotEmpty() }
-        }.flatten().mapNotNull { it.config.getOrNull(SemanticsProperties.PaneTitle) }.toList()
-        assertEquals(listOf("Your own symptom"), panes)
+        assertEquals(
+            listOf("Your own symptom"),
+            root.semanticsOwner.unmergedRootSemanticsNode.paneTitles()
+        )
     }
+
+    private fun SemanticsNode.paneTitles(): List<String> =
+        listOfNotNull(config.getOrNull(SemanticsProperties.PaneTitle)) +
+            children.flatMap { it.paneTitles() }
 
     private fun View.composeRoot(): ViewRootForTest? = this as? ViewRootForTest
         ?: (this as? ViewGroup)?.children?.firstNotNullOfOrNull { it.composeRoot() }

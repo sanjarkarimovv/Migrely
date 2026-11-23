@@ -101,8 +101,9 @@ class CustomTagDialogLargeFontTest {
         )
         assertTrue(
             "the title is a heading for TalkBack",
-            rule.onAllNodes(hasText(title) and SemanticsMatcher.keyIsDefined(SemanticsProperties.Heading))
-                .fetchSemanticsNodes().size == 1
+            rule.onAllNodes(
+                hasText(title) and SemanticsMatcher.keyIsDefined(SemanticsProperties.Heading)
+            ).fetchSemanticsNodes().size == 1
         )
     }
 

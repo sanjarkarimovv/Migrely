@@ -37,6 +37,7 @@ import org.robolectric.annotation.GraphicsMode
 private const val LARGEST_FONT = 2f
 private const val TITLE = "Wie gut hat Ibuprofen-Lysinat Schmerztabletten 400 geholfen?"
 private const val AREA = "area"
+private val isHeading = SemanticsMatcher.keyIsDefined(SemanticsProperties.Heading)
 private val ANSWERS = listOf("Gar nicht", "Etwas", "Deutlich", "Vollständig")
 
 /**
@@ -101,8 +102,7 @@ class ScrollingDialogContentTest {
 
         assertEquals(
             1,
-            rule.onAllNodes(hasText(TITLE) and SemanticsMatcher.keyIsDefined(SemanticsProperties.Heading))
-                .fetchSemanticsNodes().size
+            rule.onAllNodes(hasText(TITLE) and isHeading).fetchSemanticsNodes().size
         )
         assertEquals(
             0,
