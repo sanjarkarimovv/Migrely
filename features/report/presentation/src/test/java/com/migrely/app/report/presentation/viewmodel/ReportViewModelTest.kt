@@ -24,11 +24,15 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.mockito.BDDMockito.willAnswer
 import org.mockito.Mock
 import org.mockito.junit.MockitoJUnitRunner
 import org.mockito.kotlin.any
@@ -39,6 +43,20 @@ import org.mockito.kotlin.verify
 private val THREE = ReportPeriodPresentationModel.LastMonths(3)
 private val THREE_DOMAIN = ReportPeriodDomainModel.LastMonths(3)
 private val DATES = ReportDatesDomainModel(LocalDate.of(2026, 7, 26), LocalDate.of(2026, 10, 25))
+private val SIX = ReportPeriodPresentationModel.LastMonths(6)
+private val SIX_DOMAIN = ReportPeriodDomainModel.LastMonths(6)
+private val SIX_DATES =
+    ReportDatesDomainModel(LocalDate.of(2026, 4, 26), LocalDate.of(2026, 10, 25))
+private val READY_SIX = ReportViewState.Ready(
+    ReportOptionsPresentationModel(
+        SIX_DATES.from,
+        SIX_DATES.to,
+        anythingLogged = true,
+        period = SIX,
+        lastVisit = null,
+        creditShown = true
+    )
+)
 private val READY = ReportViewState.Ready(
     ReportOptionsPresentationModel(
         LocalDate.of(2026, 7, 26),
@@ -49,6 +67,8 @@ private val READY = ReportViewState.Ready(
         creditShown = true
     )
 )
+
+private typealias OptionsAnswer = (ReportOptionsDomainModel) -> Unit
 
 @RunWith(MockitoJUnitRunner::class)
 class ReportViewModelTest :
@@ -312,4 +332,74 @@ class ReportViewModelTest :
             }
         )
     }
+
+    /** Each options read waits, with the period it asked for, until the test answers it. */
+    private fun readsWait(): MutableList<Pair<ReportPeriodDomainModel, OptionsAnswer>> {
+        val reads = mutableListOf<Pair<ReportPeriodDomainModel, OptionsAnswer>>()
+        willAnswer {
+            reads += it.getArgument<ReportPeriodDomainModel>(1) to
+                it.getArgument<OptionsAnswer>(2)
+        }.given(useCaseExecutor).execute(
+            useCase = eq(getReportOptionsUseCase),
+            value = any(),
+            onResult = any(),
+            onException = any()
+        )
+        return reads
+    }
+
+    private fun TestScope.statesDuring(action: () -> Unit): List<ReportViewState> {
+        val states = mutableListOf<ReportViewState>()
+        val collector = launch(start = UNDISPATCHED) { classUnderTest.viewState.toList(states) }
+        action()
+        runCurrent()
+        collector.cancel()
+        return states
+    }
+
+    @Test
+    fun `Given an older read answers after a newer one then only the newer period shows`() =
+        runTest {
+            // A quick change of period never shows stale dates (trap "latest read wins").
+            val reads = readsWait()
+
+            val states = statesDuring {
+                classUnderTest.onPeriodAction(THREE)
+                classUnderTest.onPeriodAction(SIX)
+                reads[1].second(ReportOptionsDomainModel.Ready(SIX_DATES, true, SIX_DOMAIN))
+                reads[0].second(ReportOptionsDomainModel.Ready(DATES, true, THREE_DOMAIN))
+            }
+
+            assertEquals(listOf(READY_SIX), states)
+        }
+
+    @Test
+    fun `Given another period is chosen while the credit saves then that period is read again`() =
+        runTest {
+            val reads = readsWait()
+            val writes = mutableListOf<(ReportCreditWriteResultDomainModel) -> Unit>()
+            willAnswer { writes += it.getArgument<(ReportCreditWriteResultDomainModel) -> Unit>(2) }
+                .given(useCaseExecutor).execute(
+                    useCase = eq(setReportCreditUseCase),
+                    value = eq(false),
+                    onResult = any(),
+                    onException = any()
+                )
+
+            val states = statesDuring {
+                classUnderTest.onCreditAction(false, THREE)
+                classUnderTest.onPeriodAction(SIX)
+                writes.single()(ReportCreditWriteResultDomainModel.Saved)
+                reads.forEach { (period, answer) ->
+                    val dates = if (period == SIX_DOMAIN) SIX_DATES else DATES
+                    answer(ReportOptionsDomainModel.Ready(dates, true, period, creditShown = false))
+                }
+            }
+
+            assertEquals(listOf(SIX_DOMAIN, SIX_DOMAIN), reads.map { it.first })
+            assertEquals(
+                ReportViewState.Ready(READY_SIX.options.copy(creditShown = false)),
+                states.last()
+            )
+        }
 }

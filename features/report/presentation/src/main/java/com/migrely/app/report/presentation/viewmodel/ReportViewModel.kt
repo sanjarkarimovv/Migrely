@@ -35,6 +35,12 @@ class ReportViewModel(
     /** Only the latest read of the options is shown, so a quick change of period never shows stale dates. */
     private var latestLoad = 0
 
+    /**
+     * The period of the latest read, which a saved credit switch reads again: a period chosen while the switch saves
+     * wins over the one at the tap.
+     */
+    private var latestPeriod: ReportPeriodPresentationModel? = null
+
     /** A new visit: an outcome left from an earlier one is not shown again. */
     fun onEnter(period: ReportPeriodPresentationModel) {
         undelivered = null
@@ -68,7 +74,7 @@ class ReportViewModel(
                     ReportCreditWriteResultDomainModel.Failed ->
                         notify(ReportPresentationNotification.NotSaved)
                 }
-                load(period)
+                load(latestPeriod ?: period)
             }
         )
     }
@@ -107,6 +113,8 @@ class ReportViewModel(
     }
 
     private fun load(period: ReportPeriodPresentationModel) {
+        val load = ++latestLoad
+        latestPeriod = period
         if (working) {
             updateViewState(ReportViewState.Working)
             return
@@ -114,7 +122,9 @@ class ReportViewModel(
         getReportOptionsUseCase(
             value = reportPeriodDomainMapper.toDomain(period),
             onResult = {
-                if (!working) updateViewState(reportOptionsPresentationMapper.toPresentation(it))
+                if (load == latestLoad && !working) {
+                    updateViewState(reportOptionsPresentationMapper.toPresentation(it))
+                }
             }
         )
     }
