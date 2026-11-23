@@ -130,6 +130,7 @@ Cloudflare dashboard (Requests, up to three months). A dashboard zip upload does
 that carries it is deployed with `wrangler pages deploy <site folder>` run in the folder that also holds `functions/`
 (Cloudflare, "Direct Upload", read 2026-11-23). After every deploy run `curl -I https://migrely.health/go/android-t2`:
 it must be `302` with the Play link, because a deploy without `functions/` leaves `/android-t2/` with a dead button.
+**Deploy-day steps for the counter (BRD D196):** (1) before anything, screenshot Cloudflare → Workers & Pages → migrely → Settings, showing Functions / Logs and any Logpush job; (2) the main session sets the policy's `Effective date:` in `docs/release/privacy-policy.md` to the deploy day in one commit, then regenerates `privacy-policy.html`; (3) build with `SITE_DEPLOY=1 python3 website/build.py`, which stops on an older date; (4) deploy with wrangler from the folder that holds `functions/`; (5) `curl -I /go/android-t2` must be 302.
 To go back to a direct Play link, set `T2_COUNT = False` in `build.py` and delete `website/functions/`.
 
 To update the site:

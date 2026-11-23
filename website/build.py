@@ -12,9 +12,10 @@ committed with the site (BRD D136).
 import hashlib
 import html
 import json
+import os
 import re
 import subprocess
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 from urllib.parse import quote
 
@@ -396,6 +397,9 @@ T2_COUNT = True
 T2_GO = '/go/android-t2'
 T2_FUNCTION = ROOT / 'website/functions/go/android-t2.js'
 T2_QR_FILE = 'qr-ig-ads-test2-v1.svg'
+# A deploy build (SITE_DEPLOY=1) with the counter on stops while the policy still carries a date from before the counter
+# sentence existed; the main session sets the real deploy day in the policy first (BRD D196).
+T2_POLICY_FROM = date(2026, 11, 23)
 
 
 def ad_play_button(label='Get it on Google Play', link=None):
@@ -1907,7 +1911,7 @@ def check_t2_pages(built, cleared):
         found = BANNED_AD.search(html.unescape(content))
         if found:
             raise fail(f'banned wording: {found.group(0)}')
-        for needed in (AD_BACKUP, AD_DIARY, AD_PREMIUM_TERMS, AD_PREMIUM_BUY):
+        for needed in (AD_BACKUP, AD_DIARY, AD_PREMIUM_TERMS, AD_PREMIUM_BUY, 'not a medical device'):
             if needed not in html.unescape(content):
                 raise fail(f'missing: {needed}')
         viewport = re.search(r'<meta name="viewport" content="([^"]*)"', content).group(1)
@@ -1938,6 +1942,12 @@ def check_t2_pages(built, cleared):
     if 'Cloudflare, counts how many times that link is used' not in policy or 'scripts, analytics' in policy:
         raise SystemExit('with T2_COUNT on, the privacy policy must describe the counter and no longer say the site runs '
                          'no "analytics" (BRD D196): it goes live no later than /go/.')
+    if os.environ.get('SITE_DEPLOY'):
+        dated = re.search(r'Effective date: (\d+ \w+ \d{4})', policy)
+        stamp = datetime.strptime(dated.group(1), '%d %B %Y').date() if dated else None
+        if stamp is None or stamp < T2_POLICY_FROM:
+            raise SystemExit(f'SITE_DEPLOY is set and the counter is on: the policy\'s effective date must be the deploy '
+                             f'day, not earlier than {T2_POLICY_FROM} (found {dated.group(1) if dated else "none"}).')
     source = T2_FUNCTION.read_text()
     if re.findall(r"'(https://play\.google\.com[^']*)'", source) != [T2_PLAY_EXPECTED]:
         raise SystemExit('the Function must hold exactly the test-2 Play link.')
