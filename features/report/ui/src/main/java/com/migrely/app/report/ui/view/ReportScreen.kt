@@ -524,7 +524,11 @@ private fun RangeDialog(
         labels = DateRangePickerLabels(
             title = stringResource(R.string.report_range_title),
             confirm = stringResource(R.string.report_range_confirm),
-            cancel = stringResource(R.string.report_range_cancel)
+            cancel = stringResource(R.string.report_range_cancel),
+            startDate = stringResource(R.string.report_range_start),
+            endDate = stringResource(R.string.report_range_end),
+            notChosen = stringResource(R.string.report_range_not_chosen),
+            headlineDescription = stringResource(R.string.report_range_headline_description)
         ),
         onConfirm = { start, end -> onPick(start.toEpochDay(), end.toEpochDay()) },
         onDismiss = onDismiss

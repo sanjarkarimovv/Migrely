@@ -25,6 +25,10 @@
     <string name="report_range_title">Zeitraum wählen</string>
     <string name="report_range_confirm">Fertig</string>
     <string name="report_range_cancel">Abbrechen</string>
+    <string name="report_range_start">Startdatum</string>
+    <string name="report_range_end">Enddatum</string>
+    <string name="report_range_headline_description">Startdatum, %1$s, Enddatum, %2$s</string>
+    <string name="report_range_not_chosen">nicht gewählt</string>
     <string name="report_message_nothing">In diesem Zeitraum wurde nichts notiert.</string>
     <string name="report_message_storage">Dein Handy ist voll. Gib etwas Speicher frei und versuch es noch einmal.</string>
     <string name="report_message_failed">Etwas ist schiefgelaufen. Versuch es noch einmal.</string>

@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material3.DatePickerDefaults
 import androidx.compose.material3.DateRangePicker
-import androidx.compose.material3.DateRangePickerDefaults
 import androidx.compose.material3.DateRangePickerState
 import androidx.compose.material3.DisplayMode
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -37,9 +36,21 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
 
-/** The words the range picker shows; the calling feature owns them as string resources. */
+/**
+ * The words the range picker shows; the calling feature owns them as string resources. [startDate] and [endDate]
+ * stand in the headline for a side not chosen yet. [headlineDescription] is the headline's spoken name, with the
+ * start as %1$s and the end as %2$s, each a date or [notChosen].
+ */
 @Immutable
-data class DateRangePickerLabels(val title: String, val confirm: String, val cancel: String)
+data class DateRangePickerLabels(
+    val title: String,
+    val confirm: String,
+    val cancel: String,
+    val startDate: String,
+    val endDate: String,
+    val notChosen: String,
+    val headlineDescription: String
+)
 
 /**
  * Picks a range of days up to [lastDate] in the years of [yearRange], full screen as Material advises for a range
@@ -145,11 +156,11 @@ internal fun DateRangePickerScreen(
                     title = null,
                     headline = if (headerShown) {
                         {
-                            DateRangePickerDefaults.DateRangePickerHeadline(
-                                selectedStartDateMillis = state.selectedStartDateMillis,
-                                selectedEndDateMillis = state.selectedEndDateMillis,
-                                displayMode = state.displayMode,
+                            RangeHeadline(
+                                startMillis = state.selectedStartDateMillis,
+                                endMillis = state.selectedEndDateMillis,
                                 dateFormatter = dateFormatter,
+                                labels = labels,
                                 modifier = Modifier.padding(
                                     start = 24.dp,
                                     end = 12.dp,
