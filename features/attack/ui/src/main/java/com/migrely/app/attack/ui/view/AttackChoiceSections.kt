@@ -41,7 +41,6 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.Role
@@ -67,9 +66,7 @@ import com.migrely.app.designsystem.dialog.MigrelyDropdownMenu
 import com.migrely.app.designsystem.dialog.ScrollingDialogContent
 import com.migrely.app.designsystem.input.limitedEdit
 import com.migrely.app.designsystem.layout.isCompactHeight
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
 private const val MAXIMUM_TAG_NAME_LENGTH = 40
 
@@ -318,24 +315,13 @@ internal fun CustomTagNameArea(
     val fieldWithRoomInView = remember { BringIntoViewRequester() }
     var focused by remember { mutableStateOf(false) }
     // A completed tap on the field is an intent to type: after Back closed the keyboard the field keeps focus, and the
-    // next tap raises the keyboard again. A press that ends cancelled (a drag to scroll) or outlasts a long press (to
-    // paste) is not (design D10 item 6).
+    // next tap raises the keyboard again. A drag to scroll and a long press to paste end the press as Cancel, not
+    // Release, so they are not (design D10 item 6).
     val fieldInteractions = remember { MutableInteractionSource() }
     val currentOnTypingIntent by rememberUpdatedState(onTypingIntent)
-    val longPressMillis = LocalViewConfiguration.current.longPressTimeoutMillis
-    LaunchedEffect(fieldInteractions, longPressMillis) {
-        var shortPress: Job? = null
+    LaunchedEffect(fieldInteractions) {
         fieldInteractions.interactions.collect {
-            when (it) {
-                is PressInteraction.Press -> shortPress = launch { delay(longPressMillis) }
-                is PressInteraction.Release -> if (shortPress?.isActive ==
-                    true
-                ) {
-                    currentOnTypingIntent()
-                }
-                else -> Unit
-            }
-            if (it !is PressInteraction.Press) shortPress?.cancel()
+            if (it is PressInteraction.Release) currentOnTypingIntent()
         }
     }
     // From the root insets: a dialog window that fits its system bars shows Compose no keyboard inset.

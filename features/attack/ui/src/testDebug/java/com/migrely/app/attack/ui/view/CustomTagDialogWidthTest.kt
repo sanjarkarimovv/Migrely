@@ -60,14 +60,14 @@ class CustomTagDialogWidthTest {
 
     /** Spec custom-tags, "An on-screen keyboard rises beside a hardware keyboard". */
     @Test
-    fun `Given a hardware keyboard when an on-screen keyboard rises anyway then the dialog is not wide`() {
+    fun `Given a hardware keyboard when an on-screen keyboard rises then it is not wide`() {
         val widthRule = KeyboardWidthRule().apply { onKeyboard(true) }
 
         assertFalse(wide(widthRule, hardwareKeyboard = true))
     }
 
     @Test
-    fun `Given a hardware keyboard when the on-screen keyboard closes then the dialog is wide again`() {
+    fun `Given a hardware keyboard when the on-screen keyboard closes then it is wide`() {
         val widthRule = KeyboardWidthRule().apply {
             onKeyboard(true)
             onKeyboard(false)

@@ -84,7 +84,7 @@ class KeyboardWidthRuleTest {
 
     /** Design D10 item 6: with a hardware keyboard no on-screen keyboard is expected, so an intent changes nothing. */
     @Test
-    fun `Given a hardware keyboard when the person means to type then it stays wide and no wait starts`() {
+    fun `Given a hardware keyboard when one means to type then no narrowing and no wait`() {
         classUnderTest.onHardwareKeyboard(true)
 
         classUnderTest.onTypingIntent()
