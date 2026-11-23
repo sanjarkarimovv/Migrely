@@ -1,5 +1,6 @@
 package com.migrely.app.attack.ui.view
 
+import android.view.ViewTreeObserver
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -7,9 +8,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
@@ -23,6 +23,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -36,7 +37,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.Role
@@ -49,6 +50,8 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import com.migrely.app.attack.ui.R
 import com.migrely.app.attack.ui.model.AttackDetailsUiModel
 import com.migrely.app.attack.ui.model.AttackTagUiModel
@@ -299,12 +302,27 @@ internal fun CustomTagNameArea(
     title: String,
     name: TextFieldValue,
     onFocusChange: (Boolean) -> Unit = {},
+    onKeyboardChange: (Boolean) -> Unit = {},
     onNameChange: (TextFieldValue) -> Unit
 ) {
     val fieldInView = remember { BringIntoViewRequester() }
     val fieldWithRoomInView = remember { BringIntoViewRequester() }
     var focused by remember { mutableStateOf(false) }
-    val keyboard = WindowInsets.ime.getBottom(LocalDensity.current)
+    // From the root insets: a dialog window that fits its system bars shows Compose no keyboard inset.
+    val view = LocalView.current
+    var keyboard by remember { mutableStateOf(false) }
+    DisposableEffect(view) {
+        val listener = ViewTreeObserver.OnGlobalLayoutListener {
+            val insets = ViewCompat.getRootWindowInsets(view)
+            val up = insets?.isVisible(WindowInsetsCompat.Type.ime()) == true
+            if (up != keyboard) {
+                keyboard = up
+                onKeyboardChange(up)
+            }
+        }
+        view.viewTreeObserver.addOnGlobalLayoutListener(listener)
+        onDispose { view.viewTreeObserver.removeOnGlobalLayoutListener(listener) }
+    }
     // The dialog settles over a few frames and the keyboard resizes it, so each new visible height asks again.
     var visibleHeight by remember { mutableIntStateOf(0) }
     LaunchedEffect(focused, keyboard, visibleHeight) {
@@ -312,7 +330,7 @@ internal fun CustomTagNameArea(
         withFrameNanos { }
         // Typing: the room around the field too (the floating label's overhang, the counter's glyphs). At rest: the
         // field alone, so a title that fits is not pushed off by a few pixels.
-        val typing = focused || keyboard > 0
+        val typing = focused || keyboard
         if (typing) fieldWithRoomInView.bringIntoView() else fieldInView.bringIntoView()
     }
     PageScroll {
@@ -334,6 +352,7 @@ internal fun CustomTagNameArea(
             // the counter's glyphs, taller than their line at large fonts.
             Box(
                 Modifier
+                    .fillMaxWidth()
                     .bringIntoViewRequester(fieldWithRoomInView)
                     .padding(vertical = 4.dp)
             ) {
@@ -346,6 +365,7 @@ internal fun CustomTagNameArea(
                     },
                     singleLine = true,
                     modifier = Modifier
+                        .fillMaxWidth()
                         .bringIntoViewRequester(fieldInView)
                         .onFocusChanged {
                             focused = it.isFocused
@@ -354,6 +374,24 @@ internal fun CustomTagNameArea(
                 )
             }
         }
+    }
+}
+
+/**
+ * When the custom tag dialog keeps the platform's narrow width (T23 8.1 row R03): from the moment the field takes focus,
+ * before the keyboard rises, so Android pans the dialog and the typed line stays above the keyboard, and while the
+ * keyboard is up. Once the keyboard closes, the dialog may be wide again, even with the field still focused.
+ */
+internal class KeyboardWidthRule {
+    var narrow by mutableStateOf(false)
+        private set
+
+    fun onFieldFocus(focused: Boolean) {
+        narrow = focused
+    }
+
+    fun onKeyboard(up: Boolean) {
+        narrow = up
     }
 }
 
@@ -369,17 +407,19 @@ internal fun CustomTagDialog(kind: TagKindUiModel, onAdd: (String) -> Unit, onDi
             TagKindUiModel.Trigger -> R.string.custom_dialog_trigger_title
         }
     )
-    var typing by remember { mutableStateOf(false) }
+    val widthRule = remember { KeyboardWidthRule() }
     MigrelyAlertDialog(
         onDismissRequest = onDismiss,
         text = {
-            CustomTagNameArea(title, name, onFocusChange = { typing = it }) {
-                name = limitedEdit(name, it, MAXIMUM_TAG_NAME_LENGTH)
-            }
+            CustomTagNameArea(
+                title = title,
+                name = name,
+                onFocusChange = widthRule::onFieldFocus,
+                onKeyboardChange = widthRule::onKeyboard
+            ) { name = limitedEdit(name, it, MAXIMUM_TAG_NAME_LENGTH) }
         },
-        // In a short window the default width stacks the buttons and hides the field (T23 8.1 row R03). While typing
-        // the platform width returns, so Android pans the dialog and the typed line stays above the keyboard.
-        wide = isCompactHeight() && !typing,
+        // In a short window the default width stacks the buttons and hides the field (T23 8.1 row R03).
+        wide = isCompactHeight() && !widthRule.narrow,
         confirmButton = {
             TextButton(onClick = { onAdd(name.text.trim()) }, enabled = name.text.isNotBlank()) {
                 Text(stringResource(R.string.custom_dialog_add))
