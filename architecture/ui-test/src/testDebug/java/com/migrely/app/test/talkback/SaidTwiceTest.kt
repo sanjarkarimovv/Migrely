@@ -16,17 +16,27 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
-/** A switch row with a [title] and a [summary]; TalkBack says the state ("On"), the title and the summary. */
-private fun switchRow(title: String, summary: String): @Composable () -> Unit = {
-    Column(Modifier.toggleable(value = true, role = Role.Switch, onValueChange = {})) {
+/**
+ * A switch row with a [title] and a [summary]; TalkBack says the state ("On", or "Off" when not [checked]), the title
+ * and the summary.
+ */
+private fun switchRow(
+    title: String,
+    summary: String,
+    checked: Boolean = true
+): @Composable () -> Unit = {
+    Column(Modifier.toggleable(value = checked, role = Role.Switch, onValueChange = {})) {
         BasicText(title)
         BasicText(summary)
     }
 }
 
 /**
- * The walk's "said twice" check compares whole words (BRD D181 (2)): a part repeated as words fails, a part that is
- * only the start of another word (the state "On" in "One") does not. The second test failed on the substring check.
+ * The walk's "said twice" check compares the control's words, whole and in any case (BRD D181 (2)): a part repeated as
+ * words fails, also as a shorter form of 4 letters or more ("note" in "notes"); a shorter word that only starts another
+ * ("On" in "One", "Off" in "Offline") is not a repeat, and neither is the state ("On") next to the word "on" in a
+ * summary. Red first: the state test on the substring check and again on the case-blind check, the case and
+ * short-form tests on the exact-word check.
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -54,8 +64,41 @@ class SaidTwiceTest {
         )
 
     @Test
-    fun `Given the state only starts a word of the text then not said twice`() {
+    fun `Given the state's word in the summary then not said twice, it is not the control's`() {
         val row = switchRow("Mention Migrely", "One small line on the last page")
-        assertEquals(emptyList<String>(), saidTwice(mapOf("Start" to row)))
+        assertEquals(emptyList<String>(), saidTwice(mapOf("State" to row)))
     }
+
+    @Test
+    fun `Given the same words in another case or a shorter form then said twice`() = assertEquals(
+        listOf(
+            "Case: said twice: On | Include notes | include notes on each migraine",
+            "Form: said twice: On | Include note | Include notes on each migraine"
+        ),
+        saidTwice(
+            mapOf(
+                "Case" to switchRow("Include notes", "include notes on each migraine"),
+                "Form" to switchRow("Include note", "Include notes on each migraine")
+            )
+        )
+    )
+
+    @Test
+    fun `Given the same words with another apostrophe then said twice`() = assertEquals(
+        listOf("Apostrophe: said twice: On | Couldn't save that | Couldn\u2019t save that"),
+        saidTwice(
+            mapOf("Apostrophe" to switchRow("Couldn't save that", "Couldn\u2019t save that"))
+        )
+    )
+
+    @Test
+    fun `Given a short word that only starts another then not said twice`() = assertEquals(
+        emptyList<String>(),
+        saidTwice(
+            mapOf(
+                "On" to switchRow("On", "One small line"),
+                "Off" to switchRow("Off", "Offline backup", checked = false)
+            )
+        )
+    )
 }

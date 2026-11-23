@@ -93,11 +93,19 @@ class TalkBackTree(private val activity: ComponentActivity) {
     fun spokenParts(node: SemanticsNode): List<String> {
         val info = node(node.id) ?: return emptyList()
         val state = info.stateDescription?.toString()?.takeUnless { node.isEditable() }
-        val children = node.children
-            .filter { child -> !child.isOwnStop() && node(child.id)?.isVisibleToUser == true }
-            .map(::spokenName)
-        return (ownWords(node) + listOfNotNull(state) + children).filter { it.isNotBlank() }
+        return (ownWords(node) + listOfNotNull(state) + childWords(node)).filter { it.isNotBlank() }
     }
+
+    /** [spokenParts] without the state: the control's own words, which it must not say twice (BRD D181 (2)). */
+    fun wordParts(node: SemanticsNode): List<String> {
+        if (node(node.id) == null) return emptyList()
+        return (ownWords(node) + childWords(node)).filter { it.isNotBlank() }
+    }
+
+    /** The words of each child that is visible to the user and not a stop of its own. */
+    private fun childWords(node: SemanticsNode): List<String> = node.children
+        .filter { child -> !child.isOwnStop() && node(child.id)?.isVisibleToUser == true }
+        .map(::spokenName)
 
     /** The words Android exposes on [node] itself: its content description, as Compose hands it over, and its text. */
     fun ownWords(node: SemanticsNode): List<String> {
