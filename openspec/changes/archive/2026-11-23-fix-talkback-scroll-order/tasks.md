@@ -387,28 +387,47 @@ does; each such stop passes the D181 one-name check (heard once, visible words i
 
 ## 8. Acceptance (`qa-engineer`)
 
-- [ ] 8.1 Negative control: TalkBack walks on Attack details on v1.3.1 and `develop` f70b6450 loop or skip (issue steps at
+- [x] 8.1 Negative control: TalkBack walks on Attack details on v1.3.1 and `develop` f70b6450 loop or skip (issue steps at
   360 dp 200% landscape; 100% portrait no keyboard). Verify: QA rows with APK hashes read back.
-- [ ] 8.2 Candidate: the 8.1 walks reach both ends with every stop once and named; one walk per other page and dialog;
+  Result (qa-255, 2026-11-23, `docs/qa/fix-talkback-scroll-order.md` (`qa/255-acceptance` 412b5ff1)): control `develop` 224dad3d instead of f70b6450 (team-lead: newer, carries #259
+  and 1.3.3). Both controls fail in 4 of 4 rows: develop a 13-stop loop with 18 bare stops, Back never reached; v1.3.1 a
+  15-stop loop; at 100% portrait develop skips Symptoms, v1.3.1 skips 10. APK hashes read back on the device.
+- [x] 8.2 Candidate: the 8.1 walks reach both ends with every stop once and named; one walk per other page and dialog;
   API 26 at 360 and 411 dp; RTL; Remove animations; a message showing; dark room attack mode; rotation and process death mid
   walk; Switch Access scan and scroll; Tab; a chip cut at the top and at the bottom edge says its name on the
   candidate and only its state on `develop`; known, intended change: TalkBack's focus outline is the 48 dp node on in-page
   icon buttons and the whole pitch on History days (was the 40 dp circle and the drawn cell), not a defect; the pickers and
   Reminders' time dialog are a recorded residual (design D5), walked for the half step only. Verify: `docs/qa/fix-talkback-scroll-order.md` with each row, and what it does
   not prove.
-- [ ] 8.3 Guards on the candidate: #238 KR rows, #245 SW rows that touch TalkBack (SW5, SW9), #239 V1. Verify: same file.
-- [ ] 8.4 Maestro after names move to content descriptions (option 3 and any stop from the sweep): run the flows that select
+  Result (`docs/qa/fix-talkback-scroll-order.md` (`qa/255-acceptance` 412b5ff1)): **GO with recorded limits** on 5e39100d (APKs from b86cadd2; the rest is docs, openspec and
+  `src/testDebug`). Issue steps reach Back, every stop once and named, 3 of 3 debug rows and 1 of 1 R8; 100% portrait
+  56-57 stops both ways, no repeat, none bare (also Remove animations, 200% landscape, R8). Today's first focus moves
+  from a day to come to the page title (portrait): a fix. NOT CHECKED: API 26 (no TalkBack image), RTL, Switch Access,
+  History walks, the restore dialog; the edge-cut chip is inconclusive (both builds alike); small samples. Observations
+  for QA to file: F1 Today 200% landscape loops over 7 stops after wrapping past the title; F0 (pre-existing) Delete all
+  data starts TalkBack on Back when it is turned on while typing.
+- [x] 8.3 Guards on the candidate: #238 KR rows, #245 SW rows that touch TalkBack (SW5, SW9), #239 V1. Verify: same file.
+  Result (`docs/qa/fix-talkback-scroll-order.md` (`qa/255-acceptance` 412b5ff1)): #259 focus kept and 0 writes 6/6 debug, 2/2 R8; #238 KR1/KR3 0 px, 0 scroll events 3/3; #245 SW5 the
+  bar's 194 px exactly; #239 V1 one announcement. #238 KR on Log medication NOT CHECKED (data had a saved medicine).
+- [x] 8.4 Maestro after names move to content descriptions (option 3 and any stop from the sweep): run the flows that select
   chips or those stops by text (`attack-details/`, `custom-tags/`, `attack-logging/`, `past-attacks/`,
   `a11y-tour/custom-tag-dialog.yaml`, `device/details-*.yaml`, more if the sweep reaches buttons and rows); check `childOf`,
   `containsChild`, `index:` and `selected:`/`checked:` next to a text match. QA updates any that need it. Verify: the flows'
   run output on the candidate and on `develop`.
+  Result (`docs/qa/fix-talkback-scroll-order.md` (`qa/255-acceptance` 412b5ff1)): every named flow passes on both builds (32 each, plus the process-death pair); no flow needed a change.
+  Logs `migrely-work/qa-255/logs/m/`.
 
 ## 9. Close-out (`product-manager`)
 
-- [ ] 9.1 (`qa-engineer`) File a follow-up issue for the residual: the Material date picker, the date-time picker and
+- [x] 9.1 (`qa-engineer`) File a follow-up issue for the residual: the Material date picker, the date-time picker and
   Reminders' time dialog stay out of exact bounds (40 dp controls: mode toggle, month arrows, month/year button, AM/PM,
   time-step Cancel and OK), so cause B can still reach them. #255 is then closed by QA on the rest after the retest.
   Verify: `gh issue view <new>` shows the pickers, the measured sizes and a link to #255; `gh issue view 255` closed by QA.
-- [ ] 9.2 (`product-manager`) D193 result line (QA verdict, the picker residual with its follow-up issue number, what stays
+  Result (`docs/qa/fix-talkback-scroll-order.md` (`qa/255-acceptance` 412b5ff1)): #269 filed (S3, `pre-existing`) with QA's sizes and a walk. #255 stays open until QA's retest after
+  the merge.
+- [x] 9.2 (`product-manager`) D193 result line (QA verdict, the picker residual with its follow-up issue number, what stays
   unproven), spec sync and archive of `fix-talkback-scroll-order`. Verify: `openspec validate --all --strict` exit 0 after
   archive; `openspec list` shows no active change.
+  Result (pm-255, 2026-11-23): D193 (11) records the verdict, #269, Today's first focus, what stays unproven, F1 and F0.
+  Stale-delta check: `openspec/specs` equals `origin/develop` 224dad3d (#259 included); 0 of 8 ADDED names collide; the
+  29 sites still hold. Archived; validate and list results in the commit.
