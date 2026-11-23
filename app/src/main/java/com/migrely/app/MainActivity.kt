@@ -34,7 +34,7 @@ import com.migrely.app.designsystem.theme.DarkScreens
 import com.migrely.app.designsystem.theme.LocalDarkScreens
 import com.migrely.app.designsystem.theme.MigrelyColors
 import com.migrely.app.designsystem.theme.MigrelyTheme
-import com.migrely.app.locale.FormattingLocales
+import com.migrely.app.locale.LocaleEntryPoint
 import com.migrely.app.premium.PremiumStartChecks
 import com.migrely.app.start.StartEntryPoint
 import com.migrely.app.subscription.domain.model.RefreshPremiumRequestDomainModel
@@ -145,10 +145,15 @@ class MainActivity : ComponentActivity() {
      * resources, words and plural rules included, read this one locale, so words and dates never disagree. A new system
      * or app language recreates the activity, which applies it again. The per-app language is read from LocaleManager,
      * not from [newBase]'s configuration, which is stale in an activity restored after its process died (EC-L10N-06).
+     * It refreshes the formatters' locale too, which they read without asking LocaleManager each time.
      */
     override fun attachBaseContext(newBase: Context) {
         super.attachBaseContext(newBase)
-        applyOverrideConfiguration(FormattingLocales().activityOverride(newBase))
+        val formattingLocales = EntryPointAccessors
+            .fromApplication(newBase, LocaleEntryPoint::class.java)
+            .formattingLocales()
+        formattingLocales.refresh(newBase)
+        applyOverrideConfiguration(formattingLocales.activityOverride(newBase))
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

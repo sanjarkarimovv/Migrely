@@ -226,6 +226,15 @@ merge the latest `origin/develop` (with #255) so the translated set is final; if
      reminder never says Arzt" (`migrely-work/de/cr1-5-red-green.log`).
   6. `MainActivity`'s locale KDoc named only D117: now D195 too, no code change (749897b2).
   Gate after round 1: GATE_EXIT=0 at 749897b2 (`migrely-work/de/cr1-gate.log`). Open: round 2 after 8.1, on the walk's layout fixes.
+  Review of 2d99dabd (cr-de) answered:
+  1. Important: `FormattingLocales.of` read LocaleManager, two binder calls, for each formatted date and time, on the
+     main thread in composition. Now resolved once and cached; refreshed in `MigrelyApplication.onCreate` and
+     `onConfigurationChanged` and in `MainActivity.attachBaseContext`, the formatters' own instance through
+     `LocaleEntryPoint`. `FormattingLocalesCacheTest`: no list read after the first resolve, a refresh picks up a
+     changed per-app list (control: red on the uncached `of`, 8 reads for 2, `migrely-work/de/cache-negative-control.log`).
+     Device check still open in 8.2: a live per-app change reaches `onConfigurationChanged` on API 36; rows 7 to 10 again.
+  2. Minor: a null LocaleManager fell into a non-null parameter. It now falls back to the configuration's list;
+     `PhoneLanguagesTest` (control: red with an NPE on the old code).
 
 ## 12. QA (`qa-engineer`, Go/No-Go rows for this diff)
 

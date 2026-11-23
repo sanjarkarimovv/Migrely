@@ -27,21 +27,28 @@ class PhoneLanguages(
     }
 
     companion object {
-        /** LocaleManager's lists on Android 13 and newer; the configuration's list below. */
+        /**
+         * LocaleManager's lists on Android 13 and newer; the configuration's list below, and with no LocaleManager, as
+         * the CSV's `SystemLocale` does: the service is platform-typed, and a null must not stop the app starting.
+         */
         fun of(context: Context): PhoneLanguages =
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 fromLocaleManager(context.getSystemService(LocaleManager::class.java))
             } else {
-                PhoneLanguages(
-                    appLanguages = { null },
-                    systemLanguages = { LocaleList.getEmptyLocaleList() }
-                )
+                configurationOnly()
             }
 
         @RequiresApi(Build.VERSION_CODES.TIRAMISU)
-        private fun fromLocaleManager(manager: LocaleManager) = PhoneLanguages(
-            appLanguages = { manager.applicationLocales },
-            systemLanguages = { manager.systemLocales }
+        private fun fromLocaleManager(manager: LocaleManager?) = manager?.let {
+            PhoneLanguages(
+                appLanguages = { it.applicationLocales },
+                systemLanguages = { it.systemLocales }
+            )
+        } ?: configurationOnly()
+
+        private fun configurationOnly() = PhoneLanguages(
+            appLanguages = { null },
+            systemLanguages = { LocaleList.getEmptyLocaleList() }
         )
     }
 }

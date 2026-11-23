@@ -8,6 +8,7 @@ import android.util.Log
 import com.migrely.app.activity.CurrentActivityHolder
 import com.migrely.app.datasource.notification.datasource.NotificationDataSource
 import com.migrely.app.locale.FormattingLocales
+import com.migrely.app.locale.LocaleEntryPoint
 import com.migrely.app.premium.PurchaseUpdatesWatcher
 import com.migrely.app.reminder.ReminderEntryPoint
 import com.migrely.app.reminders.domain.model.RescheduleRemindersRequestDomainModel
@@ -32,7 +33,11 @@ class MigrelyApplication : Application() {
     @Inject
     lateinit var notificationDataSource: NotificationDataSource
 
-    private val formattingLocales = FormattingLocales()
+    // The formatters' own instance, so a refresh here reaches them (T23 review of 2d99dabd). From an entry point, not
+    // injected: the locale is applied before `super.onCreate()`, where Hilt injects.
+    private val formattingLocales: FormattingLocales by lazy {
+        EntryPointAccessors.fromApplication(this, LocaleEntryPoint::class.java).formattingLocales()
+    }
 
     /** The language list the channel names were last written in (BRD D195). */
     private var channelLocales: LocaleList? = null
@@ -46,6 +51,7 @@ class MigrelyApplication : Application() {
 
     override fun onCreate() {
         // Dates and times in the app's language (BRD D117, D195), before anything formats one.
+        formattingLocales.refresh(this)
         formattingLocales.applyToProcess(this)
         super.onCreate()
         // Google Play's purchase sheet and messages open over the activity on screen (design D1).
@@ -68,9 +74,13 @@ class MigrelyApplication : Application() {
         }
     }
 
-    /** The system language can change while the app runs; the default and channel names follow (BRD D117, D195). */
+    /**
+     * The system or per-app language can change while the app runs; the formatters, the default and channel names
+     * follow (BRD D117, D195).
+     */
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
+        formattingLocales.refresh(this)
         formattingLocales.applyToProcess(this)
         refreshChannelNames(newConfig)
     }

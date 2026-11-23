@@ -26,7 +26,8 @@ import org.robolectric.annotation.Config
 class NotificationLanguageTest {
     private val context: Application = RuntimeEnvironment.getApplication()
     private val manager = context.getSystemService(NotificationManager::class.java)
-    private val classUnderTest = NotificationDataSourceImpl(context, FormattingLocales())
+    private val formattingLocales = FormattingLocales()
+    private val classUnderTest = NotificationDataSourceImpl(context, formattingLocales)
 
     private fun posted(): Notification = manager.activeNotifications.single().notification
 
@@ -73,6 +74,8 @@ class NotificationLanguageTest {
         assertEquals("Doctor visit", manager.getNotificationChannel("visit").name)
 
         RuntimeEnvironment.setQualifiers("de-rDE")
+        // As `MigrelyApplication.onConfigurationChanged` does: the locale first, then the channel names.
+        formattingLocales.refresh(context)
         classUnderTest.refreshChannelNames()
 
         val channel = manager.getNotificationChannel("visit")

@@ -1,12 +1,15 @@
 package com.migrely.app.locale
 
 import android.app.Application
+import android.content.Context
+import android.content.ContextWrapper
 import android.content.res.Configuration
 import android.os.LocaleList
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
 /** Which list the app's language is decided from (BRD D195, EC-L10N-06). */
@@ -48,5 +51,16 @@ class PhoneLanguagesTest {
         )
 
         assertEquals("de-DE,en-US", tags(languages))
+    }
+
+    /** LocaleManager's service is platform-typed; with none the app must still start (review of 2d99dabd). */
+    @Test
+    fun `Given no LocaleManager then the configuration's list`() {
+        val noLocaleManager = object : ContextWrapper(RuntimeEnvironment.getApplication()) {
+            override fun getSystemService(name: String): Any? =
+                if (name == Context.LOCALE_SERVICE) null else super.getSystemService(name)
+        }
+
+        assertEquals("de-DE,en-US", tags(PhoneLanguages.of(noLocaleManager)))
     }
 }
