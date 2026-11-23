@@ -11,7 +11,9 @@ import org.w3c.dom.Element
 private const val ENGLISH = "en"
 private const val LONGEST_UNLISTED_WORD = 16
 private val PLACEHOLDER = Regex("""%(\d+\$)?[-#+ 0,(]*\d*(\.\d+)?[a-zA-Z%]""")
-private val WORD = Regex("""\p{L}+""")
+
+// A hyphenated compound counts as one word: Android does not break a line at a written hyphen (ux R16, R18).
+private val WORD = Regex("""\p{L}+(-\p{L}+)*""")
 private val LANGUAGE_FOLDER = Regex("""values-([a-z]{2,3})(-r[A-Z]{2})?""")
 private val SKIPPED_FOLDERS = setOf("build", ".git", ".gradle", "node_modules", "website")
 private val MAIN_RES = "src${File.separator}main${File.separator}res"
@@ -30,7 +32,8 @@ private val NUMBER_SPACE_UNIT = Regex("""(\d|%(\d+\$)?d) (Min\.|Std\.|Tg\.|%%|mg
  * 2. the names of strings, plurals and arrays match, after dropping `translatable="false"`;
  * 3. placeholders match as a multiset (a plural's `one` may drop the number), arrays have as many items;
  * 4. a value equal to English fails unless it is on the reviewed list `l10n/same-as-english.txt`;
- * 5. a word over 16 letters fails unless it is on `l10n/long-german-words.txt` with the screen where it was seen;
+ * 5. a word over 16 characters, a hyphenated compound counted whole, fails unless it is on
+ *    `l10n/long-german-words.txt` with the screen where it was seen;
  * 6. `res/xml/locales_config.xml`, [APP_LANGUAGES] and the translated folders name the same languages;
  * 7. no soft hyphen or zero-width character, and a number keeps its unit on its line (a no-break space).
  *
