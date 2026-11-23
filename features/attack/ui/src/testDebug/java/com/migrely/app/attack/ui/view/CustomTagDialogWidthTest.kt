@@ -23,7 +23,10 @@ class CustomTagDialogWidthTest {
     private fun wide(widthRule: KeyboardWidthRule, hardwareKeyboard: Boolean = false): Boolean {
         var wide: Boolean? = null
         rule.setContent {
-            WithHardwareKeyboard(hardwareKeyboard) { wide = customTagDialogWide(widthRule) }
+            WithHardwareKeyboard(hardwareKeyboard) {
+                HardwareKeyboardWatch(widthRule)
+                wide = customTagDialogWide(widthRule)
+            }
         }
         rule.waitForIdle()
         return checkNotNull(wide)
@@ -51,6 +54,24 @@ class CustomTagDialogWidthTest {
     @Test
     fun `Given a hardware keyboard when the person means to type then the dialog stays wide`() {
         val widthRule = KeyboardWidthRule().apply { onTypingIntent() }
+
+        assertTrue(wide(widthRule, hardwareKeyboard = true))
+    }
+
+    /** Spec custom-tags, "An on-screen keyboard rises beside a hardware keyboard". */
+    @Test
+    fun `Given a hardware keyboard when an on-screen keyboard rises anyway then the dialog is not wide`() {
+        val widthRule = KeyboardWidthRule().apply { onKeyboard(true) }
+
+        assertFalse(wide(widthRule, hardwareKeyboard = true))
+    }
+
+    @Test
+    fun `Given a hardware keyboard when the on-screen keyboard closes then the dialog is wide again`() {
+        val widthRule = KeyboardWidthRule().apply {
+            onKeyboard(true)
+            onKeyboard(false)
+        }
 
         assertTrue(wide(widthRule, hardwareKeyboard = true))
     }

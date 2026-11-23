@@ -81,4 +81,44 @@ class KeyboardWidthRuleTest {
 
         assertEquals(2, classUnderTest.typingIntents)
     }
+
+    /** Design D10 item 6: with a hardware keyboard no on-screen keyboard is expected, so an intent changes nothing. */
+    @Test
+    fun `Given a hardware keyboard when the person means to type then it stays wide and no wait starts`() {
+        classUnderTest.onHardwareKeyboard(true)
+
+        classUnderTest.onTypingIntent()
+
+        assertFalse(classUnderTest.narrow)
+        assertEquals(0, classUnderTest.typingIntents)
+    }
+
+    /** Spec custom-tags, "An on-screen keyboard rises beside a hardware keyboard" (cr-de finding 2). */
+    @Test
+    fun `Given a hardware keyboard when an on-screen keyboard rises anyway then it is narrow`() {
+        classUnderTest.onHardwareKeyboard(true)
+
+        classUnderTest.onKeyboard(true)
+
+        assertTrue(classUnderTest.narrow)
+    }
+
+    @Test
+    fun `Given a hardware keyboard when the on-screen keyboard closes then it is wide again`() {
+        classUnderTest.onHardwareKeyboard(true)
+        classUnderTest.onKeyboard(true)
+
+        classUnderTest.onKeyboard(false)
+
+        assertFalse(classUnderTest.narrow)
+    }
+
+    @Test
+    fun `Given narrow for an intent when a hardware keyboard is attached then it is wide again`() {
+        classUnderTest.onTypingIntent()
+
+        classUnderTest.onHardwareKeyboard(true)
+
+        assertFalse(classUnderTest.narrow)
+    }
 }

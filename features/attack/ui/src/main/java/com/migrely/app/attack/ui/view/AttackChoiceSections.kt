@@ -399,8 +399,9 @@ internal fun CustomTagNameArea(
  * type (a completed tap on the field, or the field gaining focus), before the keyboard rises, so Android pans the dialog
  * and the typed line stays above the keyboard, and while the keyboard is up. Once the keyboard closes the dialog is wide
  * again, even with the field still focused. When no keyboard is up when [KeyboardWait] ends after the latest intent, it
- * is wide again too: narrowing is only ever for an on-screen keyboard. A hardware keyboard vetoes it
- * ([customTagDialogWide]).
+ * is wide again too: narrowing is only ever for an on-screen keyboard. While a hardware keyboard is attached
+ * ([HardwareKeyboardWatch]) an intent to type does not narrow it, as no on-screen keyboard is expected; one that rises
+ * anyway still narrows it, and its closing widens it (design D10 item 6, cr-de finding 2).
  */
 internal class KeyboardWidthRule {
     var narrow by mutableStateOf(false)
@@ -410,10 +411,17 @@ internal class KeyboardWidthRule {
         private set
 
     private var keyboardUp = false
+    private var hardwareKeyboard = false
 
     fun onTypingIntent() {
+        if (hardwareKeyboard) return
         narrow = true
         typingIntents++
+    }
+
+    fun onHardwareKeyboard(attached: Boolean) {
+        hardwareKeyboard = attached
+        if (attached && !keyboardUp) narrow = false
     }
 
     fun onKeyboard(up: Boolean) {
@@ -439,16 +447,19 @@ internal fun KeyboardWait(widthRule: KeyboardWidthRule) {
 
 /**
  * Whether the custom tag dialog takes the wide width: in a short window, where the default width stacks the buttons and
- * hides the field (T23 8.1 row R03), except while it is narrow for an on-screen keyboard ([KeyboardWidthRule]). With a
- * hardware keyboard attached no on-screen keyboard comes, so it never narrows.
+ * hides the field (T23 8.1 row R03), except while it is narrow for an on-screen keyboard ([KeyboardWidthRule]).
  */
 @Composable
 internal fun customTagDialogWide(widthRule: KeyboardWidthRule): Boolean =
-    isCompactHeight() && (!widthRule.narrow || hardwareKeyboardAttached())
+    isCompactHeight() && !widthRule.narrow
 
+/** Tells [widthRule] whether a hardware keyboard is attached, as the configuration says now. */
 @Composable
-private fun hardwareKeyboardAttached(): Boolean =
-    LocalConfiguration.current.hardKeyboardHidden == Configuration.HARDKEYBOARDHIDDEN_NO
+internal fun HardwareKeyboardWatch(widthRule: KeyboardWidthRule) {
+    val attached =
+        LocalConfiguration.current.hardKeyboardHidden == Configuration.HARDKEYBOARDHIDDEN_NO
+    LaunchedEffect(attached) { widthRule.onHardwareKeyboard(attached) }
+}
 
 /** The user's own symptom or trigger: 1 to 40 characters, input stops at 40 (BRD EC-ATK-12). */
 @Composable
@@ -463,6 +474,7 @@ internal fun CustomTagDialog(kind: TagKindUiModel, onAdd: (String) -> Unit, onDi
         }
     )
     val widthRule = remember { KeyboardWidthRule() }
+    HardwareKeyboardWatch(widthRule)
     KeyboardWait(widthRule)
     MigrelyAlertDialog(
         onDismissRequest = onDismiss,
