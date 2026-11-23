@@ -31,7 +31,7 @@ class PhoneLanguagesTest {
     }
 
     @Test
-    fun `Given Migrely follows the system then the system's list alone`() {
+    fun `Given Migrely follows the system then the system's list, not the configuration`() {
         val languages = PhoneLanguages(
             appLanguages = { LocaleList.getEmptyLocaleList() },
             systemLanguages = { LocaleList.forLanguageTags("en-US") }

@@ -16,7 +16,9 @@ import org.robolectric.annotation.Config
  * Strings read outside an activity follow the app's language, not Android's resource matching (BRD D195, design D2):
  * for ru-RU, en-US, de-DE Android alone would pick `values-de`, while the screens are English.
  *
- * SDK 35: Robolectric's Android 16 sandbox needs a JDK internals export.
+ * SDK 35: Robolectric's Android 16 sandbox needs a JDK internals export. The tests that model the phone's language list
+ * by a configuration run on SDK 26: from Android 13 the list is LocaleManager's ([PhoneLanguages]), which those test
+ * separately.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], application = Application::class)
@@ -35,16 +37,19 @@ class FormattingLocalesTest {
         classUnderTest.localizedContext(phone(tags)).getString(R.string.notification_public_title)
 
     @Test
+    @Config(sdk = [26])
     fun `Given English ahead of German then English words`() {
         assertEquals("Reminder", reminderTitle("ru-RU,en-US,de-DE"))
     }
 
     @Test
+    @Config(sdk = [26])
     fun `Given German after an unsupported language then German words`() {
         assertEquals("Erinnerung", reminderTitle("ru-RU,de-DE"))
     }
 
     @Test
+    @Config(sdk = [26])
     fun `Given an unsupported language alone then English words`() {
         assertEquals("Reminder", reminderTitle("ru-RU"))
     }
@@ -64,6 +69,14 @@ class FormattingLocalesTest {
     }
 
     @Test
+    fun `Given a stale German configuration and English chosen then dates are English`() {
+        application.getSystemService(LocaleManager::class.java)
+            .applicationLocales = LocaleList.forLanguageTags("en-US")
+
+        assertEquals("en-US", classUnderTest.of(phone("de-DE,en-US")).toLanguageTag())
+    }
+
+    @Test
     fun `Given a stale English configuration and German chosen then the activity is German`() {
         application.getSystemService(LocaleManager::class.java)
             .applicationLocales = LocaleList.forLanguageTags("de-DE")
@@ -74,6 +87,7 @@ class FormattingLocalesTest {
     }
 
     @Test
+    @Config(sdk = [26])
     fun `Given German then the localized context formats in German`() {
         val localized = classUnderTest.localizedContext(phone("ru-RU,de-DE"))
 

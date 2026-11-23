@@ -46,7 +46,7 @@ class MigrelyApplication : Application() {
 
     override fun onCreate() {
         // Dates and times in the app's language (BRD D117, D195), before anything formats one.
-        formattingLocales.applyToProcess(resources.configuration)
+        formattingLocales.applyToProcess(this)
         super.onCreate()
         // Google Play's purchase sheet and messages open over the activity on screen (design D1).
         registerActivityLifecycleCallbacks(currentActivityHolder)
@@ -71,7 +71,7 @@ class MigrelyApplication : Application() {
     /** The system language can change while the app runs; the default and channel names follow (BRD D117, D195). */
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
-        formattingLocales.applyToProcess(newConfig)
+        formattingLocales.applyToProcess(this)
         refreshChannelNames(newConfig)
     }
 

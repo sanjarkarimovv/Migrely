@@ -70,7 +70,7 @@ internal object AttackUiModule {
         @ApplicationContext context: Context,
         formattingLocales: FormattingLocales
     ) = AttackTimeUiFormatter(
-        locale = { formattingLocales.of(context.resources.configuration) },
+        locale = { formattingLocales.of(context) },
         is24HourFormat = { DateFormat.is24HourFormat(context) },
         deviceZone = { ZoneId.systemDefault() },
         bestDateTimePattern = { locale, skeleton ->

@@ -5,14 +5,13 @@ import android.content.res.Configuration
 import java.util.Locale
 
 /**
- * The app's language and formatting locale (BRD D117, D195) of a configuration, and where they are applied, so every
+ * The app's language and formatting locale (BRD D117, D195) of a context, and where they are applied, so every
  * feature follows them without choosing a locale itself:
- * - [of] reads them from the configuration as it is now, the phone's language list with Android 13's per-app language
- *   first: the formatters `:app/di` provides use it with the application context, so a new language is followed at
- *   the next call;
+ * - [of] reads them as they are now from [PhoneLanguages], the phone's language list with Android 13's per-app language
+ *   first, from LocaleManager rather than a configuration that can predate it (EC-L10N-06): the formatters `:app/di`
+ *   provides use it with the application context, so a new language is followed at the next call;
  * - [activityOverride] is the change `MainActivity` makes to its own configuration, so Compose's `LocalConfiguration`,
- *   Material's date and time pickers, resources and their plural rules use it. For the activity it reads the language
- *   list from [PhoneLanguages], as a restored activity's configuration can predate a per-app language change;
+ *   Material's date and time pickers, resources and their plural rules use it;
  * - [localizedContext] is the same override for strings read outside an activity, such as notifications and their
  *   channel names (design D2): the application context keeps the phone's own list, from which Android's resource
  *   matching could pick German while the screens are English;
@@ -25,26 +24,16 @@ import java.util.Locale
 class FormattingLocales(
     private val resolver: FormattingLocaleResolver = FormattingLocaleResolver()
 ) {
-    fun of(phoneConfiguration: Configuration): Locale = resolver.resolve(
-        List(phoneConfiguration.locales.size()) { phoneConfiguration.locales[it] }
-    )
+    fun of(context: Context): Locale =
+        resolver.resolve(PhoneLanguages.of(context).of(context.resources.configuration))
 
-    fun activityOverride(phoneConfiguration: Configuration): Configuration =
-        withLocale(of(phoneConfiguration))
-
-    /**
-     * [activityOverride] for an activity's [base] context, from [PhoneLanguages]: the per-app language as LocaleManager
-     * holds it now, not as the configuration Android restored the activity with says (EC-L10N-06).
-     */
     fun activityOverride(base: Context): Configuration =
-        withLocale(resolver.resolve(PhoneLanguages.of(base).of(base.resources.configuration)))
-
-    private fun withLocale(locale: Locale) = Configuration().apply { setLocale(locale) }
+        Configuration().apply { setLocale(of(base)) }
 
     fun localizedContext(context: Context): Context =
-        context.createConfigurationContext(activityOverride(context.resources.configuration))
+        context.createConfigurationContext(activityOverride(context))
 
-    fun applyToProcess(phoneConfiguration: Configuration) {
-        Locale.setDefault(of(phoneConfiguration))
+    fun applyToProcess(context: Context) {
+        Locale.setDefault(of(context))
     }
 }

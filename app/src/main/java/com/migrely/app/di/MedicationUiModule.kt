@@ -76,7 +76,7 @@ internal object MedicationUiModule {
         @ApplicationContext context: Context,
         formattingLocales: FormattingLocales
     ) = MedicationTimeUiFormatter(
-        locale = { formattingLocales.of(context.resources.configuration) },
+        locale = { formattingLocales.of(context) },
         is24HourFormat = { DateFormat.is24HourFormat(context) },
         deviceZone = { ZoneId.systemDefault() },
         bestDateTimePattern = { locale, skeleton ->
