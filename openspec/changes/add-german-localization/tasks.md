@@ -180,7 +180,7 @@ merge the latest `origin/develop` (with #255) so the translated set is final; if
   long press, hardware keyboard, the 3000 ms wait). Verify: `./gradlew :features:attack:ui:testDebugUnitTest --tests
   '*KeyboardWidthRule*' --tests '*CustomTagTypingIntent*' --tests '*CustomTagDialogWidth*'` green, each new case shown
   red on 87c3b424's rule (`migrely-work/de/8.3-*.log`); then 9.1.
-- [ ] 8.4 (`android-engineer`) Hardware keyboard clause, team-lead decision on cr-de finding 2 (design D10 item 6,
+- [x] 8.4 (`android-engineer`) Hardware keyboard clause, team-lead decision on cr-de finding 2 (design D10 item 6,
   `custom-tags` scenarios "A hardware keyboard is attached" and "An on-screen keyboard rises beside a hardware
   keyboard"): an attached hardware keyboard blocks only the typing intents (tap, focus gained); an on-screen keyboard
   that rises anyway still narrows the dialog and its closing widens it. a115465f's `customTagDialogWide()` vetoes every
