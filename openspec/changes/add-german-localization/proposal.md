@@ -23,7 +23,8 @@ for about one day of engineering, and the larger PDF work is split out.
   day and 12/24 hours from the phone, as D117.
 - **What stays English:** the PDF doctor report in this release (the report screen says so in one German line; follow-up
   `add-german-doctor-report`); the CSV's column names and values permanently (D72), with its separator now read from the
-  system's language rather than Migrely's per-app language; the backup format, untouched.
+  system's language rather than Migrely's per-app language; the shared message's text and subject until the de-DE
+  listing (T79) is approved, while the chooser and rows are German (D195 (20) (a)); the backup format, untouched.
 - **A gate that fails on untranslated text (D195 (9)):** Android Lint's translation checks plus a JVM test for missing
   modules, placeholders, arrays, copied English and over-long German words, with negative controls.
 - **Reviews (D195 (8)):** `ux-designer` owns and reviews the German copy and defines the 200% / 360 dp / landscape /

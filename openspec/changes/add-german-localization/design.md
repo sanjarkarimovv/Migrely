@@ -127,6 +127,11 @@ text stays short enough to carry its meaning collapsed. `NotificationExpandedTex
   the per-app language too (cr-de round 1, finding 1, from `ResourcesManager`). `SystemLocaleTest` covers both API paths
   and both directions (en-US system with German app gives a comma, de-DE system with English app a semicolon); the two
   API 33+ rows were red with the configuration-only read. The CSV bytes on a device stay in 8.2 and 12.1.
+- **The shared message** (team-lead decision 2026-11-24, BRD D195 (20) (a)): `settings_share_text` (T72) and
+  `settings_share_subject` (ade1d892) are `translatable="false"`. D185 (4) builds the message only from approved store
+  words, and the link opens the English Play page until the de-DE listing (T79) is approved, so the recipient gets one
+  message in one language. The sender's own UI stays German: the chooser title "Migrely teilen", the rows, the messages.
+  `ExternalAppLauncherTest` holds it. Revisit when T79's de-DE listing is approved.
 - **Backup JSON**: untouched. Built-in tags are stored by key and named by the UI, so they follow the language already.
 - **Debug strings** (`app/src/debug`): `translatable="false"`. `app_name` "Migrely": `translatable="false"`.
 - **Licence and library names** (as built, accepted): `settings_licence_apache`, `settings_licences_apache`,
@@ -331,6 +336,12 @@ Binding rules from the verdict:
    per-app German, and an English label on a German app is the known limit, not a failure.
 7. **DELETE stays** as the Delete all data keyword in 1.4.0 (D5).
 8. An accessibility-tree scan for English on every walked state (E10), with an `en-US` control that must report hits.
+9. **Click labels** (team-lead decision 2026-11-24, BRD D195 (20) (b)): German TalkBack speaks a click label in
+   "Zum %s doppeltippen" (google/talkback `values-de` `template_custom_hint_for_actions`), so every label has a key of
+   its own, never the visible text reused, and its German is a noun form: `settings_privacy_policy_action`,
+   `custom_remove_from_list_action`, `settings_share_action`, `settings_rate_action`. Known limit: with an English system
+   and per-app German, TalkBack's English frame wraps the German label ("Double-tap to Auswählen …"); no label can fix
+   it, so the walk records it, not a failure.
 
 Predicted failures to fix before merge (German-only, from the code): the onboarding step header (R05), the full-screen
 date pickers' top row (R02), and top bar titles that need two lines in a 64 dp bar (R01; fix order: a shorter natural

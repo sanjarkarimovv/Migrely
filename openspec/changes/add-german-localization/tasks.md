@@ -238,7 +238,7 @@ merge the latest `origin/develop` (with #255) so the translated set is final; if
     script drops non-translatable keys itself and fails if one has a German value). `review_t72.py check` exits 0;
     negative controls exit 1: the old 14-row table, one value changed in a temp copy, „…“ swapped for ASCII quotes
     (`migrely-work/de/t72-review-check-13.log`, `t72-review-check.log`).
-  - Gate on the final code head ade1d892: GATE_EXIT=0 (`migrely-work/de/ade1d892-gate.log`, header `HEAD=ade1d892…`,
+  - Gate on the code head ade1d892: GATE_EXIT=0 (`migrely-work/de/ade1d892-gate.log`, header `HEAD=ade1d892…`,
     clean tree); 4004 unit tests, 0 failures, 0 errors, 0 skipped, from 626 XML results
     (`migrely-work/de/ade1d892-test-count.txt`); `:app:checkReleasePermissions` passed, release manifest 6
     permissions, no INTERNET (same list as 9.1).

@@ -2,8 +2,10 @@
 
 ### Requirement: English and German
 The app SHALL show every word of its own in German when its language is German, and in English otherwise, on every
-screen, dialog, message, notification and content description. The static launcher shortcut SHALL be German wherever
-Android picks German. Words the person typed SHALL stay as typed. No other language and no right-to-left layout SHALL be added (BRD EC-L10N-01, EC-L10N-22, EC-L10N-25, D195).
+screen, dialog, message, notification and content description, except the shared message's text and subject, which
+SHALL stay English. The static launcher shortcut SHALL be German wherever Android picks German. Words the person typed
+SHALL stay as typed. No other language and no right-to-left layout SHALL be added (BRD EC-L10N-01, EC-L10N-22,
+EC-L10N-25, EC-SHR-07, D185, D195).
 
 #### Scenario: A phone in German
 - **WHEN** the phone's language is German (Germany) and Migrely is opened
@@ -18,6 +20,12 @@ Android picks German. Words the person typed SHALL stay as typed. No other langu
 - **THEN** the app is German and the static shortcut label may be English, because Android picks it from every language
   its libraries ship; this is recorded as a known limit, not a pass (seen in 8.2 on 2026-11-23: on `[tr-TR, de-DE]` the
   app showed "Montag, 23. November" and the shortcut "Migraine started")
+
+#### Scenario: Sharing Migrely from the German app
+- **WHEN** the app is German and the person taps "Share Migrely"
+- **THEN** the chooser title ("Migrely teilen"), the row and any message are German, while the shared text and subject
+  stay English, one message in one language, because the link opens the English Play page until the de-DE listing (T79)
+  is approved
 
 #### Scenario: The person's own words
 - **WHEN** the app is in German and a migraine has a note, a trigger and a medication typed in English
@@ -301,8 +309,9 @@ D195).
 - **THEN** Google Play's sheet shows in Google's own language and the app adds no text to it
 
 ### Requirement: TalkBack in German
-Every content description, state and action label SHALL be German when the app is German. On a phone whose language is
-German, TalkBack SHALL read Migrely in German (BRD EC-L10N-17, D195).
+Every content description, state and action label SHALL be German when the app is German. Each click label SHALL have
+a key of its own, never the visible text reused, and its German SHALL be a noun form that fits TalkBack's "Zum %s
+doppeltippen". On a phone whose language is German, TalkBack SHALL read Migrely in German (BRD EC-L10N-17, D195).
 
 #### Scenario: A German phone with TalkBack
 - **WHEN** the phone is in German and TalkBack moves through home, attack mode and Log medication
@@ -311,6 +320,17 @@ German, TalkBack SHALL read Migrely in German (BRD EC-L10N-17, D195).
 #### Scenario: German for Migrely on an English phone
 - **WHEN** on Android 13 or newer the phone is English, Migrely is German and TalkBack is on
 - **THEN** QA records which voice reads Migrely's text, and an English voice is a known limit, not a pass
+
+#### Scenario: A click label in German
+- **WHEN** the phone is in German and TalkBack focuses the privacy policy link in Settings
+- **THEN** it says "Zum Lesen der ganzen Datenschutzerklärung doppeltippen", from the label's own key, not the link's
+  visible words
+
+#### Scenario: English frame around a German label
+- **WHEN** on Android 13 or newer the phone is English, Migrely is German and TalkBack focuses a control with a click
+  label
+- **THEN** TalkBack's English frame wraps the German label ("Double-tap to …"), and QA records it as a known limit that
+  no label can fix, not a pass
 
 ### Requirement: German letters in typed names
 Triggers, medications and notes typed with umlauts or ß SHALL be saved and shown unchanged within the existing length
