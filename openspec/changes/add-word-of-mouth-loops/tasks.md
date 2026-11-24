@@ -127,37 +127,68 @@ switch summary drift from it.
 
 ## 7. Device walk and promo verification (`android-engineer`)
 
-- [ ] 7.1 emulator-5570: walk every scenario of the four spec deltas, including TalkBack (`uiautomator dump` labels, the
+- [x] 7.1 emulator-5570: walk every scenario of the four spec deltas, including TalkBack (`uiautomator dump` labels, the
   focus move of EC-SHR-13 with TalkBack on, and report what Compose does if it cannot move there), 200% font, landscape,
   keyboard, rotation and process death on Settings and Doctor report; Play app disabled (`pm disable-user
   com.android.vending`, restore after) and no browser; offline; Free, Premium subscription and lifetime (simulated store);
   a PDF on A4 (locale en-GB) and Letter (en-US), opened and checked page by page; the share preview in at least one
   messenger. Judge the 200 ms fade next to the dark theme flip (design D5). Restore every device setting. Verify: a
   verification record below with counts and what was not checked.
-- [ ] 7.2 Review gap: first-10 card, "Still going?" and overuse card each followed by a home load with D130 met; then
+  Done: record "2026-11-23, `eng-loops`, device step" below, with its "Not checked" list. Its one failure, EC-REP-12
+  (#278), was fixed in change 60 and passed QA on 69dff460 (8.2).
+- [x] 7.2 Review gap: first-10 card, "Still going?" and overuse card each followed by a home load with D130 met; then
   the mark moved back 3 days via preferences in a debug build. Verify: no review flow in the first three, one in the last
   (debug `FakeReviewManager`, observed through the review marks).
+  Done: same record, 7.2 part: no review after each of the three cards, one at 3 d 1 min (positive control).
 - [ ] 7.3 Promo codes on the owner's phone, with the owner, design D7 cases 1 and 2 (3 optional); check the exact Play
   "Redeem code" menu path for 10.1. Verify: result per case recorded below; a failure is filed as an issue with `Refs`
   in this file.
 
 ## 8. Review and QA
 
-- [ ] 8.1 `code-reviewer` on `git diff origin/develop...feature/add-word-of-mouth-loops`, briefed with the specs and the
+- [x] 8.1 `code-reviewer` on `git diff origin/develop...feature/add-word-of-mouth-loops`, briefed with the specs and the
   risks (three safety hosts, PDF geometry, the tap guard, no manifest change, the W3 and W6 tests). Verify: findings
   answered in this file.
-- [ ] 8.2 `qa-engineer`: independent check of the diff's reach with negative controls (owner rule 2026-11-09), API 36 and
+  Done: `cr-loops` APPROVE in three rounds, no Critical or Important: `origin/develop...efe99e0d` (records below),
+  19b2e83d (record below), and 6dc6ea28..b7e62ff0, whose findings are fixed and recorded in 69dff460 (a stored mark later
+  than an unsaved one counts; "Delete all data" clears the unsaved marks; delta and BRD wording).
+- [x] 8.2 `qa-engineer`: independent check of the diff's reach with negative controls (owner rule 2026-11-09), API 36 and
   26. Must include: (a) **switch off: "Patient-entered data. Not a diagnosis." on every page of a multi-page PDF**
   (medical-reviewer condition); (b) the share intent text-only on a device (no attachment reaches the target); (c) a
   double tap on Share with and without the guard (ux §8.6). Verify: QA verdict recorded with its SHA.
+  Done: `qa-engineer` **GO on 69dff460**, 2026-11-24, API 36 (emulator-5580, 03:01–05:16) and API 26 (emulator-5582).
+  Evidence: `migrely-work/qa-140/t72/logs/rows.jsonl`, `migrely-work/qa-140/t72-26/logs/rows.jsonl`,
+  `migrely-work/qa-140/t72/logs/readback-end.txt` (DIFFS 0, device settings restored).
+  - PASS: S-01 text-only share, API 36 and 26 (b; the PDF share as a flagged control); R-01/R-02 the disclaimer on every
+    page with the switch off and the credit on the last page only with it on, API 36 and 26 (a); R-04; R-05/EC-REP-12
+    (control 6dc6ea28 fails as expected); R-06 keyboard and TalkBack; V-01…V-05; V-06 a safety card on a full disk keeps
+    its mark for the process and the rating is asked exactly once 3 days later (control fbc390a5 asks at once, fails as
+    expected); S-02 tap guard (c; a guard-removed mutant gives 2 sheets, fails as expected); S-03, S-04, S-05, S-07,
+    S-08 (control changes the checksum), S-09; R-08(a); U-01 upgrade from v1.3.3; 200% font and landscape, 0 failures.
+    #278 retest on `develop` passed, #278 closed.
+  - Unit-only, not a device row: V-07 (Delete all data clears unsaved marks): a successful delete always ends the process
+    (`restartApp` → `exitProcess(0)`, new PID seen), so the clear has no separate effect on a device; JVM-tested.
+    S-06/EC-SHR-13: no UI path changes the attack state while Settings is on screen (team-lead accepted).
+  - Not proven, carried: 7.3 promo codes and the real Play page (owner's phone); 10.2 live privacy policy (1.4.0
+    Go/No-Go row); a signed R8 upgrade; R-08(b) Auto Backup restore of the marks; R-08(c) JSON export with the switch
+    off (QA's export flow exited 1, `features/backup` unchanged, QA classifies the flow failure separately); T72's
+    German strings (T23, after this merges).
+  - Lead decision: the first page's "Made with Migrely on <date>." stays with the switch off; not a defect (D186 (2),
+    EC-REP-07 and the doctor-report delta reworded). Seen, not T72's: after process death Settings reopens at the top
+    (all of Settings; EC-SHR-06 reworded so it promises no scroll position).
 
 ## 9. Docs and archive (`product-manager`)
 
 - [ ] 9.1 Diff each delta against the live specs (stale-delta check), then `openspec archive add-word-of-mouth-loops
   --yes` on the feature branch. Verify: `openspec validate --specs --strict` exits 0.
-  **BLOCKED** until QA's device result for EC-REP-12 on the final SHA. #278 is in `develop` (64c3a675, PR #281) and merged here (fbc390a5); that part of the block is lifted. Was: until #278 (`bugfix/pref-save-rollback`) is merged into `develop` and `develop` is merged into this branch, and EC-REP-12 passes on a device.
+  **Unblocked** 2026-11-24: QA's EC-REP-12 device row (R-05) passed on 69dff460, the final code SHA. Was **BLOCKED**
+  until QA's device result for EC-REP-12 on the final SHA. #278 is in `develop` (64c3a675, PR #281) and merged here (fbc390a5); that part of the block is lifted. Was: until #278 (`bugfix/pref-save-rollback`) is merged into `develop` and `develop` is merged into this branch, and EC-REP-12 passes on a device.
 - [ ] 9.2 Tell `aso-seo-specialist` the share link is live in 1.4.0 so the table's state column changes. Verify: message
   sent with the release tag.
+
+**Open by design at archive (2026-11-24, `product-manager`):** 7.3 (owner's phone, with the owner), 9.2 (after the
+1.4.0 release), 10.1 (the owner sends the gift message) and 10.2 (site PR #234, live before 1.4.0 reaches users). They
+are tracked in T72 and the 1.4.0 Go/No-Go; the archive does not close them.
 
 ## 10. Outside the app code, before gifts and before 1.4.0 reaches users
 

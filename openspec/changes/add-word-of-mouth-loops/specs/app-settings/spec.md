@@ -9,7 +9,8 @@ Settings SHALL list, in sections:
 - "Share and rate": Share Migrely, Rate Migrely on Google Play, only while no attack is in progress;
 - then "Delete all data".
 
-It SHALL offer no analytics switch, since Migrely sends nothing (BRD SET-F1, SET-F2, D93, D185).
+It SHALL offer no analytics switch, since Migrely has no internet permission and no analytics (BRD SET-F1, SET-F2, D93,
+D181, D185).
 
 #### Scenario: Opening Settings
 - **WHEN** the user taps the gear on home and no attack is in progress
@@ -109,7 +110,8 @@ Free, subscription, lifetime and promo-code Premium, store nothing, and add no p
 (BRD SET-F2, D185).
 
 #### Scenario: During an attack
-- **WHEN** Settings is opened while an attack is in progress, from attack mode or the dark room
+- **WHEN** an attack is in progress while Settings is shown or loads again (the UI opens Settings only from home's
+  today mode, never from attack mode or the dark room)
 - **THEN** the "Share and rate" header and both rows are absent, and they return once the attack has ended (EC-SHR-03)
 
 #### Scenario: Loading
@@ -120,16 +122,19 @@ Free, subscription, lifetime and promo-code Premium, store nothing, and add no p
 - **WHEN** an attack starts while Settings is open and TalkBack or keyboard focus is on the section's header or a row
 - **THEN** the section fades and collapses in 200 ms (at once with "Remove animations"), focus moves to "Open-source
   licences" (or, if TalkBack focus cannot be moved there, to the "Settings" title), never to "Delete all data", and
-  nothing is announced (EC-SHR-13)
+  nothing is announced (EC-SHR-13; unit and Compose tests only, since no UI path changes the attack state while
+  Settings stays on screen)
 
 #### Scenario: The attack ends while Settings is open
 - **WHEN** the attack ends while Settings is open
-- **THEN** the section returns, focus stays where it was, and nothing is announced (EC-SHR-13)
+- **THEN** the section returns, focus stays where it was, and nothing is announced (EC-SHR-13; unit and Compose tests
+  only)
 
 #### Scenario: Back from Google Play or the share sheet
 - **WHEN** the user returns from Google Play or the share sheet, after a rotation there, or after Android killed Migrely's
   process meanwhile
-- **THEN** Settings shows as before, with no message, and nothing was written or counted (EC-SHR-06)
+- **THEN** Settings shows with no message, and nothing was written or counted; the scroll position after process death
+  is not promised, as for all of Settings before this change (EC-SHR-06)
 
 #### Scenario: TalkBack, 200% font, landscape and keyboard
 - **WHEN** the rows are reached with TalkBack, at 200% font, in landscape or with a keyboard

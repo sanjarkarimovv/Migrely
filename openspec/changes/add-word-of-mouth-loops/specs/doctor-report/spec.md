@@ -29,6 +29,8 @@ never be cut or overlap the page number, and not change the page count (BRD REP-
 - **WHEN** the switch is off and a report is made
 - **THEN** the PDF has no credit line, its pages are laid out as before this change, and "Patient-entered data. Not a
   diagnosis." is still on every page (EC-REP-07; QA negative control, medical-reviewer condition)
+- **AND** the first page keeps its sentence "Made with Migrely on <date>.", shipped before this change, since the switch
+  governs only the credit line (D186)
 
 #### Scenario: Changed after sharing
 - **WHEN** a report was shared and the switch is changed afterwards

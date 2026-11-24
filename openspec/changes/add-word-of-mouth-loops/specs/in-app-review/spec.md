@@ -34,5 +34,6 @@ passes it (BRD D188, EC-REV-14).
 
 #### Scenario: Delete all data and restore
 - **WHEN** the user deletes all data, or restores Android's backup on a new phone
-- **THEN** the mark is gone after deleting, also one this process could not save, and travels with the other review
-  marks after a restore; the JSON export has no such field
+- **THEN** the mark is gone after deleting, as a successful delete starts the app again in a new process; one this
+  process could not save is also cleared just before (unit-tested, not visible on a device); it travels with the other
+  review marks after a restore, and the JSON export has no such field
