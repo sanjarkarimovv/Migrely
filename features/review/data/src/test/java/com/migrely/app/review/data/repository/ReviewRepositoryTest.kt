@@ -12,6 +12,7 @@ import com.migrely.app.datasource.preferences.model.ReviewRequestsDataModel
 import com.migrely.app.datasource.review.datasource.ReviewDataSource
 import com.migrely.app.datasource.review.model.ReviewFlowDataModel
 import com.migrely.app.review.data.mapper.ReviewFlowDomainMapper
+import com.migrely.app.review.domain.model.LastSafetyCardDomainModel
 import com.migrely.app.review.domain.model.ReviewFlowResultDomainModel
 import com.migrely.app.review.domain.model.ReviewMarksDomainModel
 import java.time.Instant
@@ -89,6 +90,23 @@ class ReviewRepositoryTest {
 
         assertNull(classUnderTest.lastPaywallShown())
         assertEquals(ReviewMarksDomainModel(0, null), classUnderTest.reviewMarks())
+    }
+
+    @Test
+    fun `Given a safety card appeared then its time, and none when it never did`() {
+        given(preferencesDataSource.safetyCardLastShownMillis()).willReturn(NOW.toEpochMilli())
+        assertEquals(LastSafetyCardDomainModel.ShownAt(NOW), classUnderTest.lastSafetyCardShown())
+
+        given(preferencesDataSource.safetyCardLastShownMillis()).willReturn(null)
+        assertEquals(LastSafetyCardDomainModel.Never, classUnderTest.lastSafetyCardShown())
+    }
+
+    @Test
+    fun `Given the safety card mark cannot be read then it is unknown, not never`() {
+        given(preferencesDataSource.safetyCardLastShownMillis())
+            .willThrow(FileDataException("Not read"))
+
+        assertEquals(LastSafetyCardDomainModel.Unknown, classUnderTest.lastSafetyCardShown())
     }
 
     @Test
@@ -179,5 +197,29 @@ class ReviewRepositoryTest {
             ReviewMarksDomainModel(requests = 1, lastRequested = Instant.ofEpochMilli(5L)),
             restarted.reviewMarks()
         )
+    }
+
+    @Test
+    fun `Given a safety-card mark was not saved then the rating waits as for a stored one`() {
+        given(preferencesDataSource.safetyCardLastShownMillis()).willReturn(5L)
+        unsavedMarksDataSource.keepSafetyCardShown(NOW.toEpochMilli())
+
+        assertEquals(LastSafetyCardDomainModel.ShownAt(NOW), classUnderTest.lastSafetyCardShown())
+    }
+
+    @Test
+    fun `Given only an unsaved safety-card mark then it is the last one shown`() {
+        given(preferencesDataSource.safetyCardLastShownMillis()).willReturn(null)
+        unsavedMarksDataSource.keepSafetyCardShown(NOW.toEpochMilli())
+
+        assertEquals(LastSafetyCardDomainModel.ShownAt(NOW), classUnderTest.lastSafetyCardShown())
+    }
+
+    @Test
+    fun `Given a stored safety-card mark later than an unsaved one then the stored one counts`() {
+        given(preferencesDataSource.safetyCardLastShownMillis()).willReturn(NOW.toEpochMilli())
+        unsavedMarksDataSource.keepSafetyCardShown(NOW.minusSeconds(3_600).toEpochMilli())
+
+        assertEquals(LastSafetyCardDomainModel.ShownAt(NOW), classUnderTest.lastSafetyCardShown())
     }
 }

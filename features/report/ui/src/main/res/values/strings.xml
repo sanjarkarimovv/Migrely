@@ -14,6 +14,9 @@
     <string name="report_covers_since_visit">Since your last visit: %1$s to %2$s</string>
     <string name="report_notes">Include notes</string>
     <string name="report_notes_summary">Your notes on each migraine. They are personal, so they are left out unless you choose.</string>
+    <!-- The credit switch (BRD REP-F5, D186). The summary quotes REPORT_CREDIT in ReportDocumentMapper word for word; ReportCreditSummaryTest in :app keeps them equal (medical-reviewer W6). -->
+    <string name="report_credit_switch">Mention Migrely in the report</string>
+    <string name="report_credit_switch_summary">One small line on the last page: \"Made with Migrely, a personal migraine diary app. Not a medical device. migrely.health\"</string>
     <string name="report_create">Create report</string>
     <string name="report_nothing_logged">Nothing was logged in this period.</string>
     <string name="report_working">Making your report</string>
@@ -27,5 +30,6 @@
     <string name="report_message_storage">Your phone is full. Free up some space and try again.</string>
     <string name="report_message_failed">Something went wrong. Try again.</string>
     <string name="report_message_no_app">This phone has no app to share the report with.</string>
+    <string name="report_message_not_saved">Couldn\'t save that. Try again.</string>
     <string name="report_message_dismiss">Dismiss</string>
 </resources>

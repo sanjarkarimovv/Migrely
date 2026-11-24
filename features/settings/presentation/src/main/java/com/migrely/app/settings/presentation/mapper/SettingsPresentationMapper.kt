@@ -7,6 +7,7 @@ class SettingsPresentationMapper(private val themePresentationMapper: ThemePrese
     fun toPresentation(settings: SettingsDomainModel) = SettingsPresentationModel(
         periodTracking = settings.periodTracking,
         theme = themePresentationMapper.toPresentation(settings.theme),
-        version = settings.version
+        version = settings.version,
+        showShareAndRate = settings.attackInProgress == false
     )
 }

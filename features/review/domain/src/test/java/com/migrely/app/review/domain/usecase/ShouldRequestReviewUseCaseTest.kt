@@ -1,10 +1,12 @@
 package com.migrely.app.review.domain.usecase
 
 import com.migrely.app.coroutine.CoroutineContextProvider
+import com.migrely.app.review.domain.model.LastSafetyCardDomainModel
 import com.migrely.app.review.domain.model.ReviewMarksDomainModel
 import com.migrely.app.review.domain.repository.GetAttackInProgressRepository
 import com.migrely.app.review.domain.repository.GetCurrentTimeRepository
 import com.migrely.app.review.domain.repository.GetLastPaywallShownRepository
+import com.migrely.app.review.domain.repository.GetLastSafetyCardShownRepository
 import com.migrely.app.review.domain.repository.GetMigraineCountRepository
 import com.migrely.app.review.domain.repository.GetPreviousExitRepository
 import com.migrely.app.review.domain.repository.GetReviewMarksRepository
@@ -27,6 +29,9 @@ class ShouldRequestReviewUseCaseTest {
     private val getLastPaywallShownRepository: GetLastPaywallShownRepository = mock {
         on { lastPaywallShown() } doReturn null
     }
+    private val getLastSafetyCardShownRepository: GetLastSafetyCardShownRepository = mock {
+        on { lastSafetyCardShown() } doReturn LastSafetyCardDomainModel.Never
+    }
     private val getPreviousExitRepository: GetPreviousExitRepository = mock {
         on { previousExitCrashed() } doReturn false
     }
@@ -42,6 +47,7 @@ class ShouldRequestReviewUseCaseTest {
     private val classUnderTest = ShouldRequestReviewUseCase(
         getMigraineCountRepository,
         getLastPaywallShownRepository,
+        getLastSafetyCardShownRepository,
         getPreviousExitRepository,
         getReviewMarksRepository,
         getAttackInProgressRepository,
@@ -177,5 +183,71 @@ class ShouldRequestReviewUseCaseTest {
         given(getLastPaywallShownRepository.lastPaywallShown()).willReturn(NOW.plusSeconds(60))
 
         assertFalse(asks())
+    }
+
+    private fun safetyCardShown(at: Instant) = given(
+        getLastSafetyCardShownRepository.lastSafetyCardShown()
+    ).willReturn(LastSafetyCardDomainModel.ShownAt(at))
+
+    @Test
+    fun `Given a safety card appeared just under 3 days ago then the app does not ask`() {
+        safetyCardShown(NOW.minus(Duration.ofDays(3)).plusSeconds(1))
+
+        assertFalse(asks())
+    }
+
+    @Test
+    fun `Given a safety card appeared an hour ago then the app does not ask`() {
+        safetyCardShown(NOW.minus(Duration.ofHours(1)))
+
+        assertFalse(asks())
+    }
+
+    @Test
+    fun `Given a safety card appeared exactly 3 days ago then the app asks`() {
+        safetyCardShown(NOW.minus(Duration.ofDays(3)))
+
+        assertTrue(asks())
+    }
+
+    @Test
+    fun `Given a safety card dated after now, as when the clock moved back, then no`() {
+        safetyCardShown(NOW.plusSeconds(60))
+
+        assertFalse(asks())
+    }
+
+    @Test
+    fun `Given the safety card mark cannot be read then it counts as recent`() {
+        given(getLastSafetyCardShownRepository.lastSafetyCardShown())
+            .willReturn(LastSafetyCardDomainModel.Unknown)
+
+        assertFalse(asks())
+    }
+
+    @Test
+    fun `Given no safety card ever appeared then only the other rules decide`() {
+        given(getLastSafetyCardShownRepository.lastSafetyCardShown())
+            .willReturn(LastSafetyCardDomainModel.Never)
+
+        assertTrue(asks())
+    }
+
+    @Test
+    fun `Given a recent safety card then neither the previous run nor the migraines are read`() {
+        safetyCardShown(NOW.minus(Duration.ofHours(1)))
+
+        asks()
+
+        verifyNoInteractions(getPreviousExitRepository, getMigraineCountRepository)
+    }
+
+    @Test
+    fun `Given a paywall showed itself recently then the safety card mark is not read`() {
+        given(getLastPaywallShownRepository.lastPaywallShown()).willReturn(NOW)
+
+        asks()
+
+        verifyNoInteractions(getLastSafetyCardShownRepository)
     }
 }

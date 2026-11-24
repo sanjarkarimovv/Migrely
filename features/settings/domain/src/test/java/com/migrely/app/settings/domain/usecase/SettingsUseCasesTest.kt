@@ -30,7 +30,8 @@ class SettingsUseCasesTest {
         val settings = SettingsDomainModel(
             periodTracking = false,
             theme = ThemeDomainModel.Light,
-            version = "1.2.0"
+            version = "1.2.0",
+            attackInProgress = false
         )
         given(get.settings()).willReturn(settings)
         given(set.setPeriodTracking(true)).willReturn(SettingsWriteResultDomainModel.Failed)

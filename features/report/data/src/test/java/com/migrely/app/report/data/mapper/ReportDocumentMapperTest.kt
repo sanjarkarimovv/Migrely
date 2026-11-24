@@ -59,7 +59,8 @@ private fun report(
     medications: List<ReportMedicationDomainModel> = emptyList(),
     notes: List<ReportNoteDomainModel> = emptyList(),
     attacks: List<ReportAttackDomainModel> =
-        listOf(attack(TASHKENT, Instant.parse("2026-10-20T06:15:00Z")))
+        listOf(attack(TASHKENT, Instant.parse("2026-10-20T06:15:00Z"))),
+    includeCredit: Boolean = true
 ) = ReportDomainModel(
     dates = ReportDatesDomainModel(LocalDate.of(2026, 7, 26), LocalDate.of(2026, 10, 25)),
     madeOn = LocalDate.of(2026, 10, 25),
@@ -74,7 +75,8 @@ private fun report(
     ),
     attacks = attacks,
     medications = medications,
-    notes = notes
+    notes = notes,
+    includeCredit = includeCredit
 )
 
 class ReportDocumentMapperTest {
@@ -101,6 +103,30 @@ class ReportDocumentMapperTest {
         assertEquals("Patient-entered data. Not a diagnosis.", document.footer)
         assertEquals("Page 2 of 5", document.pageLabel.format(2, 5))
         assertEquals(50, document.maxPages)
+    }
+
+    @Test
+    fun `Given the credit switch on then the final approved credit line, word for word`() {
+        val document = classUnderTest.toData(report(), ReportPaperDataModel.A4, TASHKENT)
+
+        // The text medical-reviewer and legal passed (design "Final copy"); a change goes back to them first.
+        assertEquals(
+            "Made with Migrely, a personal migraine diary app. Not a medical device. migrely.health",
+            document.credit
+        )
+        assertEquals(REPORT_CREDIT, document.credit)
+    }
+
+    @Test
+    fun `Given the credit switch off then no credit line, and the disclaimer stays`() {
+        val document = classUnderTest.toData(
+            report(includeCredit = false),
+            ReportPaperDataModel.A4,
+            TASHKENT
+        )
+
+        assertEquals(null, document.credit)
+        assertEquals("Patient-entered data. Not a diagnosis.", document.footer)
     }
 
     @Test

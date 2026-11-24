@@ -40,6 +40,9 @@ private const val PERCENT = 100
 // Letters and digits only, so punctuation and spacing do not count.
 private val WORD = Regex("""[\p{L}\p{N}]+""")
 
+// A word this long or longer is the same as a longer word it starts ("note", "notes"); "On" and "One" are not.
+private const val SHORT_FORM_LETTERS = 4
+
 // More steps than any page needs between two items: a check that cannot loop for ever.
 private const val MAX_STEPS_PER_SWIPE = 20
 
@@ -138,20 +141,39 @@ private class Walk<A : ComponentActivity>(private val rule: AndroidComposeTestRu
         val unmerged = rule.unmergedNodes()
         return rule.mergedNodes().values.filter { it.mergedWords() != null }.mapNotNull { stop ->
             val node = unmerged[stop.id] ?: return@mapNotNull null
-            val parts = onUi {
-                if (tree.node(stop.id) !=
-                    null
-                ) {
-                    tree.spokenParts(node)
-                } else {
-                    emptyList()
+            val (parts, words, state) = onUi {
+                Triple(tree.spokenParts(node), tree.wordParts(node), tree.state(node))
+            }
+            // The state ("On") repeats only as a whole part, as a switch titled "On"; the word "on" in a summary is
+            // no repeat.
+            val repeated = words.withIndex().any { (index, part) ->
+                words.withIndex().any { (other, text) ->
+                    other != index && text.saysWordsOf(part)
                 }
-            }
-            val repeated = parts.withIndex().any { (index, part) ->
-                parts.withIndex().any { (other, words) -> other != index && part in words }
-            }
+            } || state != null && words.any { it.trim().equals(state.trim(), ignoreCase = true) }
             if (repeated) "said twice: ${parts.joinToString(" | ")}" else null
         }
+    }
+
+    /**
+     * [part]'s words, whole and in order and in any case, within these. A word of [SHORT_FORM_LETTERS] letters or more
+     * also matches a longer word it starts ("note" in "notes"); a shorter one does not ("On" in "One").
+     */
+    private fun String.saysWordsOf(part: String): Boolean {
+        val said = words(this)
+        val words = words(part)
+        return words.isNotEmpty() &&
+            said.windowed(words.size).any { window ->
+                window.zip(words).all { (a, b) -> sameWord(a, b) }
+            }
+    }
+
+    private fun words(text: String) = WORD.findAll(text.lowercase()).map { it.value }.toList()
+
+    private fun sameWord(a: String, b: String): Boolean {
+        val (shorter, longer) = if (a.length <= b.length) a to b else b to a
+        return shorter == longer ||
+            shorter.length >= SHORT_FORM_LETTERS && longer.startsWith(shorter)
     }
 
     /** The screen's reading order: the semantics tree depth first, which follows each page from the top down. */

@@ -106,7 +106,9 @@ data class ReportActions(
     val onPeriod: (ReportPeriodUiModel) -> Unit,
     val onCustom: () -> Unit,
     val onNotes: (Boolean) -> Unit,
-    val onCreate: () -> Unit
+    val onCredit: (Boolean) -> Unit,
+    /** Takes the credit switch as shown at the tap, which the report uses (BRD EC-REP-13). */
+    val onCreate: (includeCredit: Boolean) -> Unit
 )
 
 /**
@@ -187,8 +189,15 @@ fun ReportDependencies.Report(navController: NavController, modifier: Modifier =
             },
             onCustom = { pickingRange = true },
             onNotes = { includeNotes = it },
-            onCreate = {
-                reportViewModel.onCreateAction(toPresentation.toPresentation(period), includeNotes)
+            onCredit = {
+                reportViewModel.onCreditAction(it, toPresentation.toPresentation(period))
+            },
+            onCreate = { includeCredit ->
+                reportViewModel.onCreateAction(
+                    toPresentation.toPresentation(period),
+                    includeNotes,
+                    includeCredit
+                )
             }
         ),
         messages = {
@@ -302,6 +311,16 @@ fun ReportContents(
                         }
                         val options = (viewState as? ReportViewStateUiModel.Ready)?.options
                         if (options != null) shownOptions = options
+                        // The stored credit switch, from the options or, when they cannot be read, on its own, so
+                        // it follows a save in either state; kept while a report is made (BRD EC-REP-12, EC-REP-13).
+                        var shownCredit by rememberSaveable { mutableStateOf<Boolean?>(null) }
+                        when (viewState) {
+                            is ReportViewStateUiModel.Ready ->
+                                shownCredit = viewState.options.creditShown
+                            is ReportViewStateUiModel.Unavailable ->
+                                shownCredit = viewState.creditShown
+                            ReportViewStateUiModel.Loading, ReportViewStateUiModel.Working -> Unit
+                        }
                         // Until a period is chosen, the one the options made of the default is shown chosen (EC-REP-04).
                         val chosen = if (period ==
                             ReportPeriodUiModel.Default
@@ -367,16 +386,33 @@ fun ReportContents(
                             )
                         }
                         shownOptions?.let { Covers(it) }
-                        if (viewState == ReportViewStateUiModel.Unavailable) {
+                        if (viewState is ReportViewStateUiModel.Unavailable) {
                             Text(
                                 stringResource(R.string.report_unavailable),
                                 style = MaterialTheme.typography.bodyLarge,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
-                        NotesRow(includeNotes, enabled = !working, onChange = actions.onNotes)
+                        SwitchRow(
+                            title = stringResource(R.string.report_notes),
+                            summary = stringResource(R.string.report_notes_summary),
+                            checked = includeNotes,
+                            enabled = !working,
+                            onChange = actions.onNotes
+                        )
+                        // Shown once its stored value is read, and kept while a report is made (BRD EC-REP-13).
+                        shownCredit?.let {
+                            SwitchRow(
+                                title = stringResource(R.string.report_credit_switch),
+                                summary = stringResource(R.string.report_credit_switch_summary),
+                                checked = it,
+                                enabled = !working,
+                                onChange = actions.onCredit
+                            )
+                        }
                         Button(
-                            onClick = actions.onCreate,
+                            // Enabled only with options, so the switch's value is the one shown.
+                            onClick = { options?.let { actions.onCreate(it.creditShown) } },
                             enabled = !working && options?.anythingLogged == true,
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -463,9 +499,15 @@ private fun Covers(options: ReportOptionsUiModel) {
     )
 }
 
-/** One node with Role switch, like the app's other switches (EC-UX-04). */
+/** One node with Role switch, like the app's other switches (EC-UX-04): "Include notes" and the credit switch. */
 @Composable
-private fun NotesRow(checked: Boolean, enabled: Boolean, onChange: (Boolean) -> Unit) {
+private fun SwitchRow(
+    title: String,
+    summary: String,
+    checked: Boolean,
+    enabled: Boolean,
+    onChange: (Boolean) -> Unit
+) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
@@ -477,11 +519,17 @@ private fun NotesRow(checked: Boolean, enabled: Boolean, onChange: (Boolean) -> 
                 role = Role.Switch,
                 onValueChange = onChange
             )
+            // Its name from its own node, so a row cut by an edge still says it (#255, BRD D181 (2)).
+            .ownWords(title)
     ) {
         Column(Modifier.weight(1f)) {
-            Text(stringResource(R.string.report_notes), style = MaterialTheme.typography.bodyLarge)
             Text(
-                stringResource(R.string.report_notes_summary),
+                title,
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.wordsShownOnly()
+            )
+            Text(
+                summary,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -543,6 +591,7 @@ private fun ReportMessageUiModel.text() = when (this) {
     ReportMessageUiModel.StorageFull -> R.string.report_message_storage
     ReportMessageUiModel.SomethingWentWrong -> R.string.report_message_failed
     ReportMessageUiModel.NoAppToShare -> R.string.report_message_no_app
+    ReportMessageUiModel.NotSaved -> R.string.report_message_not_saved
 }
 
 @Preview(name = "Doctor report")
@@ -555,7 +604,7 @@ private fun ReportPreview() {
             ),
             period = DEFAULT_PERIOD,
             includeNotes = false,
-            actions = ReportActions({}, {}, {}, {}, {}),
+            actions = ReportActions({}, {}, {}, {}, {}, {}),
             messages = {}
         )
     }
@@ -571,7 +620,7 @@ private fun ReportEmptyPreview() {
             ),
             period = ReportPeriodUiModel.LastMonths(1),
             includeNotes = false,
-            actions = ReportActions({}, {}, {}, {}, {}),
+            actions = ReportActions({}, {}, {}, {}, {}, {}),
             messages = {}
         )
     }

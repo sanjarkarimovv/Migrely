@@ -14,10 +14,11 @@ class ReportOptionsPresentationMapper {
                 options.dates.to,
                 options.anythingLogged,
                 toPresentation(options.period),
-                options.lastVisit
+                options.lastVisit,
+                options.creditShown
             )
         )
-        ReportOptionsDomainModel.Failed -> ReportViewState.Unavailable
+        is ReportOptionsDomainModel.Failed -> ReportViewState.Unavailable(options.creditShown)
     }
 
     private fun toPresentation(period: ReportPeriodDomainModel): ReportPeriodPresentationModel =

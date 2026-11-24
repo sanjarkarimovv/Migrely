@@ -60,6 +60,7 @@ internal object ReviewModule {
         shouldRequestReviewUseCase = ShouldRequestReviewUseCase(
             getMigraineCountRepository = reviewRepository,
             getLastPaywallShownRepository = reviewRepository,
+            getLastSafetyCardShownRepository = reviewRepository,
             getPreviousExitRepository = reviewRepository,
             getReviewMarksRepository = reviewRepository,
             getAttackInProgressRepository = reviewRepository,
@@ -73,6 +74,7 @@ internal object ReviewModule {
         requestReviewUseCase = RequestReviewUseCase(
             getAttackInProgressRepository = reviewRepository,
             getLastPaywallShownRepository = reviewRepository,
+            getLastSafetyCardShownRepository = reviewRepository,
             launchReviewFlowRepository = reviewRepository,
             markReviewRequestedRepository = reviewRepository,
             getCurrentTimeRepository = reviewRepository,

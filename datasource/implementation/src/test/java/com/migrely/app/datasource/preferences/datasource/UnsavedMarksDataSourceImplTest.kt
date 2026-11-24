@@ -34,4 +34,28 @@ class UnsavedMarksDataSourceImplTest {
 
         assertEquals(listOf(5L, 9L), classUnderTest.reviewRequestsMillis())
     }
+
+    @Test
+    fun `When safety-card marks are kept then the latest, in any order`() {
+        assertNull(classUnderTest.lastSafetyCardShownMillis())
+
+        classUnderTest.keepSafetyCardShown(30L)
+        classUnderTest.keepSafetyCardShown(10L)
+
+        assertEquals(30L, classUnderTest.lastSafetyCardShownMillis())
+    }
+
+    @Test
+    fun `When cleared then no mark is left`() {
+        classUnderTest.keepPaywallShown(PaywallTriggerDataModel.FifthMigraine, 20L)
+        classUnderTest.keepReviewRequested(5L)
+        classUnderTest.keepSafetyCardShown(30L)
+
+        classUnderTest.clear()
+
+        assertEquals(emptySet<PaywallTriggerDataModel>(), classUnderTest.paywallShown())
+        assertNull(classUnderTest.lastPaywallShownMillis())
+        assertEquals(emptyList<Long>(), classUnderTest.reviewRequestsMillis())
+        assertNull(classUnderTest.lastSafetyCardShownMillis())
+    }
 }

@@ -11,6 +11,7 @@ import com.migrely.app.home.domain.repository.GetDayMarksRepository
 import com.migrely.app.home.domain.repository.GetPeriodTrackingRepository
 import com.migrely.app.home.domain.repository.GetPreviousAttackEndRepository
 import com.migrely.app.home.domain.repository.GetTodayRepository
+import com.migrely.app.home.domain.repository.MarkSafetyCardShownRepository
 import com.migrely.app.home.domain.repository.ReopenAttackRepository
 import com.migrely.app.home.domain.repository.ReplaceLatestIntensityPointRepository
 import com.migrely.app.home.domain.repository.RestoreDeletedAttackRepository
@@ -21,6 +22,7 @@ import com.migrely.app.home.domain.repository.UpdateLongAttackCheckRepository
 import com.migrely.app.home.domain.usecase.AnswerLongAttackCheckUseCase
 import com.migrely.app.home.domain.usecase.EndAttackUseCase
 import com.migrely.app.home.domain.usecase.GetTodayUseCase
+import com.migrely.app.home.domain.usecase.MarkSafetyCardShownUseCase
 import com.migrely.app.home.domain.usecase.MoveAttackStartEarlierUseCase
 import com.migrely.app.home.domain.usecase.RecordIntensityUseCase
 import com.migrely.app.home.domain.usecase.RestoreDeletedAttackUseCase
@@ -174,6 +176,7 @@ internal object HomeModule {
         answerLongAttackCheckUseCase: AnswerLongAttackCheckUseCase,
         restoreDeletedAttackUseCase: RestoreDeletedAttackUseCase,
         setPeriodTodayUseCase: SetPeriodTodayUseCase,
+        markSafetyCardShownUseCase: MarkSafetyCardShownUseCase,
         todayPresentationMapper: TodayPresentationMapper,
         intensityLevelDomainMapper: IntensityLevelDomainMapper,
         useCaseExecutor: UseCaseExecutor
@@ -188,8 +191,15 @@ internal object HomeModule {
         answerLongAttackCheckUseCase = answerLongAttackCheckUseCase,
         restoreDeletedAttackUseCase = restoreDeletedAttackUseCase,
         setPeriodTodayUseCase = setPeriodTodayUseCase,
+        markSafetyCardShownUseCase = markSafetyCardShownUseCase,
         todayPresentationMapper = todayPresentationMapper,
         intensityLevelDomainMapper = intensityLevelDomainMapper,
         useCaseExecutor = useCaseExecutor
     )
+
+    @Provides
+    fun providesHomeMarkSafetyCardShownUseCase(
+        markSafetyCardShownRepository: MarkSafetyCardShownRepository,
+        coroutineContextProvider: CoroutineContextProvider
+    ) = MarkSafetyCardShownUseCase(markSafetyCardShownRepository, coroutineContextProvider)
 }

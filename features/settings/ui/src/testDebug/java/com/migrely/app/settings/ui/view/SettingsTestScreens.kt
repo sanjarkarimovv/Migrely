@@ -19,7 +19,7 @@ internal val settingsScreens: Map<String, @Composable () -> Unit> = mapOf(
         MigrelyTheme {
             SettingsContents(
                 settings = PREVIEW_SETTINGS,
-                actions = SettingsActions({}, {}, {}, {}, {}, {}, {}, {}, {}, {}),
+                actions = PREVIEW_SETTINGS_ACTIONS,
                 messages = {}
             )
         }

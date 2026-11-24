@@ -14,7 +14,8 @@ import com.migrely.app.report.domain.repository.WriteReportRepository
 
 /**
  * Makes the doctor report for a period (BRD REP-F1–F4, EC-REP-01–03, D81–D85). Leftovers of earlier reports go first.
- * Notes are part of it only when asked for, since they are personal.
+ * Notes are part of it only when asked for, since they are personal; the credit line as the switch was at the tap
+ * (REP-F5, D186).
  */
 class CreateReportUseCase(
     private val getCurrentTimeRepository: GetCurrentTimeRepository,
@@ -50,7 +51,8 @@ class CreateReportUseCase(
             months = calculator.months(records),
             attacks = calculator.attacks(records),
             medications = calculator.medications(records),
-            notes = if (request.includeNotes) calculator.notes(records) else emptyList()
+            notes = if (request.includeNotes) calculator.notes(records) else emptyList(),
+            includeCredit = request.includeCredit
         )
         return when (val written = writeReportRepository.writeReport(report)) {
             is ReportWriteResultDomainModel.Written -> CreateReportResultDomainModel.Created(

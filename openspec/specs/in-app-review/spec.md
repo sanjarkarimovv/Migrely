@@ -137,3 +137,41 @@ rating away as a stored one does. After a restart only the stored marks SHALL co
 #### Scenario: Storage full when a rating is asked
 - **WHEN** the phone's storage is full and the rating request opens
 - **THEN** the next Home loads in this process do not ask again
+
+### Requirement: Quiet after a safety card
+The app SHALL not ask for a rating within 3 days after the first-10 safety card, the "Still going?" card or the
+medication overuse card appeared. The moment each appears SHALL be kept with the review marks: moved by Android's backup,
+removed by "Delete all data", left out of the JSON export. A moment dated after now SHALL count as recent until the clock
+passes it (BRD D188, EC-REV-14).
+
+#### Scenario: After the first 10
+- **WHEN** the first-10 safety card appeared on an attack, the attack ended, and home returns to today's mode within
+  3 days with every D130 condition met
+- **THEN** nothing is asked (EC-REV-14)
+
+#### Scenario: After "Still going?"
+- **WHEN** "Still going?" appeared on a long attack, and the attack is ended within the next 3 days
+- **THEN** nothing is asked until 3 days after that card appeared (EC-REV-14)
+
+#### Scenario: The overuse card on home
+- **WHEN** the medication overuse card appears on home
+- **THEN** no review flow starts on that visit or in the next 3 days (EC-REV-14)
+
+#### Scenario: Three days later
+- **WHEN** the last safety card appeared at least 3 days ago and every D130 condition holds
+- **THEN** the next home load in today's mode may ask, as before
+
+#### Scenario: Clock moved back
+- **WHEN** the clock is moved back so that the last safety card's moment is in the future
+- **THEN** nothing is asked until the clock passes that moment and 3 more days have gone by
+
+#### Scenario: Storage full when a safety card appears
+- **WHEN** the phone's storage is full when a safety card appears, so its mark cannot be saved
+- **THEN** the mark counts until the process ends, and no rating is requested within 3 days of the card in that process
+  (BRD D197)
+
+#### Scenario: Delete all data and restore
+- **WHEN** the user deletes all data, or restores Android's backup on a new phone
+- **THEN** the mark is gone after deleting, as a successful delete starts the app again in a new process; one this
+  process could not save is also cleared just before (unit-tested, not visible on a device); it travels with the other
+  review marks after a restore, and the JSON export has no such field

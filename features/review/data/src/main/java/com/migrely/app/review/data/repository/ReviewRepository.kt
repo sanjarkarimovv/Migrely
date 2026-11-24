@@ -8,11 +8,13 @@ import com.migrely.app.datasource.preferences.datasource.PreferencesDataSource
 import com.migrely.app.datasource.preferences.datasource.UnsavedMarksDataSource
 import com.migrely.app.datasource.review.datasource.ReviewDataSource
 import com.migrely.app.review.data.mapper.ReviewFlowDomainMapper
+import com.migrely.app.review.domain.model.LastSafetyCardDomainModel
 import com.migrely.app.review.domain.model.ReviewFlowResultDomainModel
 import com.migrely.app.review.domain.model.ReviewMarksDomainModel
 import com.migrely.app.review.domain.repository.GetAttackInProgressRepository
 import com.migrely.app.review.domain.repository.GetCurrentTimeRepository
 import com.migrely.app.review.domain.repository.GetLastPaywallShownRepository
+import com.migrely.app.review.domain.repository.GetLastSafetyCardShownRepository
 import com.migrely.app.review.domain.repository.GetMigraineCountRepository
 import com.migrely.app.review.domain.repository.GetPreviousExitRepository
 import com.migrely.app.review.domain.repository.GetReviewMarksRepository
@@ -38,6 +40,7 @@ class ReviewRepository(
 ) : GetMigraineCountRepository,
     GetAttackInProgressRepository,
     GetLastPaywallShownRepository,
+    GetLastSafetyCardShownRepository,
     GetPreviousExitRepository,
     GetReviewMarksRepository,
     GetCurrentTimeRepository,
@@ -65,6 +68,21 @@ class ReviewRepository(
         preferencesDataSource.lastPaywallShownMillis(),
         unsavedMarksDataSource.lastPaywallShownMillis()
     ).maxOrNull()?.let(Instant::ofEpochMilli)
+
+    /**
+     * The later of the stored mark and one this process could not save (#278, D197). A mark that cannot be read is
+     * [LastSafetyCardDomainModel.Unknown], which the rules take as recent (D188).
+     */
+    override fun lastSafetyCardShown(): LastSafetyCardDomainModel = try {
+        listOfNotNull(
+            preferencesDataSource.safetyCardLastShownMillis(),
+            unsavedMarksDataSource.lastSafetyCardShownMillis()
+        ).maxOrNull()
+            ?.let { LastSafetyCardDomainModel.ShownAt(Instant.ofEpochMilli(it)) }
+            ?: LastSafetyCardDomainModel.Never
+    } catch (_: DataException) {
+        LastSafetyCardDomainModel.Unknown
+    }
 
     override fun previousExitCrashed(): Boolean = appInfoDataSource.previousExitCrashed()
 

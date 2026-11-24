@@ -6,6 +6,7 @@ import com.migrely.app.datasource.backup.datasource.BackupDataSource
 import com.migrely.app.datasource.backupfile.datasource.BackupFileDataSource
 import com.migrely.app.datasource.notification.datasource.NotificationDataSource
 import com.migrely.app.datasource.preferences.datasource.PreferencesDataSource
+import com.migrely.app.datasource.preferences.datasource.UnsavedMarksDataSource
 import com.migrely.app.datasource.report.datasource.ReportDocumentDataSource
 import com.migrely.app.datasource.schedule.datasource.PremiumCheckScheduleDataSource
 import com.migrely.app.datasource.schedule.datasource.ReminderScheduleDataSource
@@ -44,6 +45,7 @@ internal object SettingsDataModule {
         notificationDataSource: NotificationDataSource,
         backupDataSource: BackupDataSource,
         preferencesDataSource: PreferencesDataSource,
+        unsavedMarksDataSource: UnsavedMarksDataSource,
         backupFileDataSource: BackupFileDataSource,
         reportDocumentDataSource: ReportDocumentDataSource,
         premiumCheckScheduleDataSource: PremiumCheckScheduleDataSource
@@ -52,6 +54,7 @@ internal object SettingsDataModule {
         notificationDataSource,
         backupDataSource,
         preferencesDataSource,
+        unsavedMarksDataSource,
         backupFileDataSource,
         reportDocumentDataSource,
         premiumCheckScheduleDataSource
