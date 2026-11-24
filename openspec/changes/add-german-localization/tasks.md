@@ -243,6 +243,21 @@ merge the latest `origin/develop` (with #255) so the translated set is final; if
     (`migrely-work/de/ade1d892-test-count.txt`); `:app:checkReleasePermissions` passed, release manifest 6
     permissions, no INTERNET (same list as 9.1).
   - Not checked here: the German T72 rows on a device. That is QA's delta row X-02 on this head.
+- [x] 9.3 (eng-de4, 2026-11-24) ux T72 verdict C, team-lead decision (S3, German TalkBack only): German TalkBack reads a
+  click label in "Zum %s doppeltippen", and two labels reused visible words.
+  - 6cc852a5: new click-label keys, the visible text and names unchanged. `settings_privacy_policy_action` (en "read the
+    full privacy policy", de "Lesen der ganzen Datenschutzerklärung") on the privacy link; `custom_remove_from_list_action`
+    (en "remove from my list", de "Entfernen aus meiner Liste") on a custom chip's long press, while the actions menu keeps
+    `custom_remove_from_list`. English speech differs only in letter case: the old labels were "Read the full privacy
+    policy" and "Remove from my list", ux's English proposals lowercased.
+  - `PolicyLinkActionLabelTest` and `CustomChipRemoveLabelTest`, German and English: red first, 4 of 4 (German heard the
+    visible words, English the capital; `migrely-work/de/c-labels-red.log`), green after (`c-labels-green.log`).
+  - Key check from the shipped files: `migrely-work/de/review-action-labels.tsv` (`review_action_labels.py`), exit 0; a
+    temp copy with the German long-press label set back to the menu's phrase exits 1 (`c-labels-check.log`).
+  - Gate on 6cc852a5: GATE_EXIT=1, ktlint in the new test (`6cc852a5-gate.log`); fixed in 6a1ca60a. Gate on 6a1ca60a:
+    GATE_EXIT=0 (`migrely-work/de/6a1ca60a-gate.log`, header `HEAD=6a1ca60a…`, clean tree); 4008 unit tests, 0 failures,
+    0 errors, 0 skipped, from 628 XML results (`6a1ca60a-test-count.txt`).
+  - Not checked here: what TalkBack speaks on a device (X-02).
 ## 10. Reviews
 
 - [ ] 10.1 `ux-designer`: review every German string (voice, length, glossary, TalkBack words), rewrite findings go to the
