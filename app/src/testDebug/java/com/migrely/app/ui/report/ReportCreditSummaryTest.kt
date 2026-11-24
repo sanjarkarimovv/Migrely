@@ -35,4 +35,17 @@ class ReportCreditSummaryTest {
     fun `The summary is the approved text, and nothing more`() {
         assertEquals("One small line on the last page: \"$REPORT_CREDIT\"", summary)
     }
+
+    /**
+     * The PDF stays English in 1.4.0 (EC-REP-10), so the German summary quotes the English line,
+     * in German quotes.
+     */
+    @Test
+    @Config(qualifiers = "de")
+    fun `The German summary quotes the PDF's English credit line exactly`() {
+        assertTrue(
+            "\"$summary\" should quote \"$REPORT_CREDIT\" in „…“",
+            summary.contains("„$REPORT_CREDIT“")
+        )
+    }
 }

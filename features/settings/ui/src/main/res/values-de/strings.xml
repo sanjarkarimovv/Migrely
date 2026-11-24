@@ -28,6 +28,20 @@
     <string name="settings_licences">Lizenzen</string>
     <string name="settings_licences_summary">Die Bibliotheken und Schriften, mit denen Migrely gebaut ist</string>
     <string name="settings_version">Version</string>
+
+    <!-- Share and rate (BRD SET-F2, D185). settings_share_text stays English (translatable="false" in values). The two
+         *_action strings follow German TalkBack's "Zum … doppeltippen", so they are nominalised infinitives. -->
+    <string name="settings_section_share">Teilen und bewerten</string>
+    <string name="settings_share">Migrely teilen</string>
+    <string name="settings_share_summary">Schick jemandem den Link zu Migrely. Deine Einträge sind nicht dabei.</string>
+    <string name="settings_share_action">Auswählen einer App zum Teilen</string>
+    <string name="settings_rate">Migrely bei Google Play bewerten</string>
+    <string name="settings_rate_summary">Öffnet die Store-Seite von Migrely, außerhalb der App</string>
+    <string name="settings_rate_action">Öffnen von Google Play</string>
+    <string name="settings_share_subject">Migrely, ein Migränetagebuch für Android</string>
+    <string name="settings_share_chooser">Migrely teilen</string>
+    <string name="settings_play_unavailable">Auf diesem Handy gibt es keine App, die Google Play öffnen kann.</string>
+    <string name="settings_share_unavailable">Auf diesem Handy gibt es keine App, um den Link zu teilen.</string>
     <string name="settings_delete_all">Alle Daten löschen</string>
     <string name="settings_delete_all_summary">Jeder Eintrag, jede Einstellung und jede Kopie auf diesem Handy</string>
     <string name="settings_delete_title">Alles löschen?</string>

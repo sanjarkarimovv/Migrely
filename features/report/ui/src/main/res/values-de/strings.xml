@@ -15,6 +15,9 @@
     <string name="report_covers_since_visit">Seit deinem letzten Termin: %1$s bis %2$s</string>
     <string name="report_notes">Notizen aufnehmen</string>
     <string name="report_notes_summary">Deine Notizen zu jeder Migräne. Weil sie persönlich sind, kommen sie nur in den Bericht, wenn du das wählst.</string>
+    <!-- The quoted line is the PDF's English credit line (REPORT_CREDIT), word for word: the PDF stays English (EC-REP-10). -->
+    <string name="report_credit_switch">Migrely im Bericht nennen</string>
+    <string name="report_credit_switch_summary">Eine kleine Zeile auf der letzten Seite: „Made with Migrely, a personal migraine diary app. Not a medical device. migrely.health“</string>
     <string name="report_create">Bericht erstellen</string>
     <string name="report_nothing_logged">In diesem Zeitraum wurde nichts notiert.</string>
     <string name="report_working">Dein Bericht wird erstellt</string>
@@ -33,5 +36,6 @@
     <string name="report_message_storage">Dein Handy ist voll. Gib etwas Speicher frei und versuch es noch einmal.</string>
     <string name="report_message_failed">Etwas ist schiefgelaufen. Versuch es noch einmal.</string>
     <string name="report_message_no_app">Auf diesem Handy gibt es keine App, um den Bericht zu teilen.</string>
+    <string name="report_message_not_saved">Das wurde nicht gespeichert. Versuch es noch einmal.</string>
     <string name="report_message_dismiss">Schließen</string>
 </resources>
