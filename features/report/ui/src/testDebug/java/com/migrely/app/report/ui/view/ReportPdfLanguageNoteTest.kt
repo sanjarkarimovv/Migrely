@@ -34,7 +34,7 @@ class ReportPdfLanguageNoteTest {
                     ),
                     period = ReportPeriodUiModel.Default,
                     includeNotes = false,
-                    actions = ReportActions({}, {}, {}, {}, {}),
+                    actions = ReportActions({}, {}, {}, {}, {}, {}),
                     messages = {}
                 )
             }
