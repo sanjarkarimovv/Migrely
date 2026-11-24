@@ -213,23 +213,35 @@ merge the latest `origin/develop` (with #255) so the translated set is final; if
     now reads "#255 va T72 dan keyin". The strings files and specs merged without conflict; T72's spec requirements
     (`doctor-report`, `app-settings`) do not overlap this change's deltas. `openspec validate --specs --strict`: 30
     passed, exit 0; `openspec validate add-german-localization --strict`: valid.
-  - a80f1f5e: German for the 14 translatable keys (`settings_share_text` is `translatable="false"` and stays English):
-    `settings_section_share`, `settings_share`, `settings_share_summary`, `settings_share_action`, `settings_rate`,
-    `settings_rate_summary`, `settings_rate_action`, `settings_share_subject`, `settings_share_chooser`,
+  - T72 adds 15 keys: 13 get German, 2 stay English only (`translatable="false"`, no values-de entry):
+    `settings_share_text` (T72) and `settings_share_subject` (ade1d892, below).
+  - a80f1f5e: German for the 13 keys `settings_section_share`, `settings_share`, `settings_share_summary`,
+    `settings_share_action`, `settings_rate`, `settings_rate_summary`, `settings_rate_action`, `settings_share_chooser`,
     `settings_play_unavailable`, `settings_share_unavailable`, `report_credit_switch`, `report_credit_switch_summary`,
-    `report_message_not_saved`. The credit summary quotes `REPORT_CREDIT` in English inside „…“ (EC-REP-10);
-    `ReportCreditSummaryTest` checks the German summary too (red before the strings, `migrely-work/de/t72-credit-red.log`;
-    green, `t72-credit-green.log`). `report_message_not_saved` reuses `settings_not_saved`. The two `*_action` labels
-    are nominalised infinitives for German TalkBack's "Zum … doppeltippen". No new word over 16 letters.
-  - Review table from the shipped files: `migrely-work/de/review-t72-strings.tsv` (`review_t72.py write`); `review_t72.py
-    check` exits 0; two negative controls (one value changed in a temp copy, „…“ swapped for ASCII quotes) exit 1
-    (`migrely-work/de/t72-review-check.log`).
-  - Gate on a80f1f5e: GATE_EXIT=1 (`migrely-work/de/a80f1f5e-gate.log`): the merge broke T23's
-    `ReportPdfLanguageNoteTest`, because T72 gave `ReportActions` a sixth callback (`onCreate` with the credit switch,
-    EC-REP-13). a7d92b3a passes six, as T72's report tests do.
-  - Gate on a7d92b3a: GATE_EXIT=0 (`migrely-work/de/a7d92b3a-gate.log`, header `HEAD=a7d92b3a…`, clean tree); 4003
-    unit tests, 0 failures, 0 errors, 0 skipped, from 626 XML results (`migrely-work/de/a7d92b3a-test-count.txt`);
-    `:app:checkReleasePermissions` passed, release manifest 6 permissions, no INTERNET (same list as 9.1).
+    `report_message_not_saved` (it also translated `settings_share_subject`, removed in ade1d892). The credit summary
+    quotes `REPORT_CREDIT` in English inside „…“ (EC-REP-10); `ReportCreditSummaryTest` checks the German summary too
+    (red before the strings, `migrely-work/de/t72-credit-red.log`; green, `t72-credit-green.log`).
+    `report_message_not_saved` reuses `settings_not_saved`. The two `*_action` labels are nominalised infinitives for
+    German TalkBack's "Zum … doppeltippen". No new word over 16 letters.
+  - Bisect warning: 6a4d0c0d and a80f1f5e do not compile their unit tests. T72 gave `ReportActions` a sixth callback
+    (`onCreate` with the credit switch, EC-REP-13) and T23's `ReportPdfLanguageNoteTest` still passed five, so
+    `:features:report:ui:compileDebugUnitTestKotlin` fails (gate on a80f1f5e: GATE_EXIT=1,
+    `migrely-work/de/a80f1f5e-gate.log`). a7d92b3a passes six, as T72's report tests do; gate on a7d92b3a: GATE_EXIT=0
+    (`a7d92b3a-gate.log`).
+  - ade1d892, lead decision 2026-11-24: the shared message stays English as one message in one language (D185 (4); the
+    link opens the English Play page until the de-DE listing, T79). `settings_share_subject` is `translatable="false"`
+    like `settings_share_text`, and its German value is gone; the chooser, rows and messages stay German.
+    `ExternalAppLauncherTest` "Given German then the shared message stays English and the chooser is German": red before
+    the change on the subject (`migrely-work/de/t72-subject-red.log`), green after (`t72-subject-green.log`). Lint and
+    `LocalizationCompletenessTest` needed no exclusion: both skip `translatable="false"`, as for `settings_share_text`.
+  - Review table from the shipped files: `migrely-work/de/review-t72-strings.tsv`, 13 rows (`review_t72.py write`; the
+    script drops non-translatable keys itself and fails if one has a German value). `review_t72.py check` exits 0;
+    negative controls exit 1: the old 14-row table, one value changed in a temp copy, „…“ swapped for ASCII quotes
+    (`migrely-work/de/t72-review-check-13.log`, `t72-review-check.log`).
+  - Gate on the final code head ade1d892: GATE_EXIT=0 (`migrely-work/de/ade1d892-gate.log`, header `HEAD=ade1d892…`,
+    clean tree); 4004 unit tests, 0 failures, 0 errors, 0 skipped, from 626 XML results
+    (`migrely-work/de/ade1d892-test-count.txt`); `:app:checkReleasePermissions` passed, release manifest 6
+    permissions, no INTERNET (same list as 9.1).
   - Not checked here: the German T72 rows on a device. That is QA's delta row X-02 on this head.
 ## 10. Reviews
 
