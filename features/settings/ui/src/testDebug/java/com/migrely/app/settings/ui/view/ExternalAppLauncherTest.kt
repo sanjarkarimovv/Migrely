@@ -68,6 +68,28 @@ class ExternalAppLauncherTest {
         assertEquals("Share Migrely", chooser.getCharSequenceExtra(Intent.EXTRA_TITLE).toString())
     }
 
+    /**
+     * The recipient gets one message in one language: the approved English store words, whose link
+     * opens the English Play page (D185 (4), lead decision for T23). Only the sender's chooser
+     * follows the app's language.
+     */
+    @Test
+    @Config(qualifiers = "de")
+    fun `Given German then the shared message stays English and the chooser is German`() {
+        share()
+
+        val chooser = started.single()
+        val subject = "Migrely, a migraine diary for Android"
+        assertEquals(subject, chooser.sent().getStringExtra(Intent.EXTRA_SUBJECT))
+        assertEquals(subject, chooser.sent().getStringExtra(Intent.EXTRA_TITLE))
+        assertEquals(
+            "Migrely is a private migraine diary for Android. " +
+                "No internet permission, no account, no ads.\n" + SHARE_LINK,
+            chooser.sent().getStringExtra(Intent.EXTRA_TEXT)
+        )
+        assertEquals("Migrely teilen", chooser.getCharSequenceExtra(Intent.EXTRA_TITLE).toString())
+    }
+
     @Test
     fun `Given no app takes the share then nothing could open, and nothing is thrown`() {
         assertEquals(

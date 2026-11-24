@@ -43,7 +43,8 @@
     <string name="settings_rate_action">open Google Play</string>
     <!-- The shared text, then the fixed Play link (%1$s) on its own line, so messengers show it as a link (W1, W3). -->
     <string name="settings_share_text" translatable="false">Migrely is a private migraine diary for Android. No internet permission, no account, no ads.\n%1$s</string>
-    <string name="settings_share_subject">Migrely, a migraine diary for Android</string>
+    <!-- The recipient gets one message in one language, so the subject stays English with the text (D185 (4), T23 lead). -->
+    <string name="settings_share_subject" translatable="false">Migrely, a migraine diary for Android</string>
     <string name="settings_share_chooser">Share Migrely</string>
     <string name="settings_play_unavailable">This phone has no app that can open Google Play.</string>
     <string name="settings_share_unavailable">This phone has no app to share the link with.</string>
