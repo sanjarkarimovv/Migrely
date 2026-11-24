@@ -64,6 +64,8 @@
     <string name="custom_dialog_counter">%1$d/40</string>
     <string name="custom_dialog_add">Hinzufügen</string>
     <string name="custom_remove_from_list">Aus meiner Liste entfernen</string>
+    <!-- Long-press label only: German TalkBack says "Zum … doppeltippen und halten", so a nominalised infinitive. -->
+    <string name="custom_remove_from_list_action">Entfernen aus meiner Liste</string>
     <string name="note_hint">Was du dir sonst noch merken möchtest</string>
     <string name="note_counter">%1$d/1000</string>
     <string name="delete_attack">Migräne löschen</string>

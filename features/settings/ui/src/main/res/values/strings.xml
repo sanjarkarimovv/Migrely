@@ -126,4 +126,6 @@
     <string name="settings_not_saved">Couldn\'t save that. Try again.</string>
     <string name="settings_message_dismiss">Dismiss</string>
     <string name="settings_privacy_policy_link">Read the full privacy policy</string>
+    <!-- Click label only (TalkBack: "Double-tap to …"; German "Zum … doppeltippen"), never shown. -->
+    <string name="settings_privacy_policy_action">read the full privacy policy</string>
 </resources>

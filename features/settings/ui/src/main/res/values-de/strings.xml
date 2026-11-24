@@ -85,4 +85,6 @@
     <string name="settings_not_saved">Das wurde nicht gespeichert. Versuch es noch einmal.</string>
     <string name="settings_message_dismiss">Schließen</string>
     <string name="settings_privacy_policy_link">Ganze Datenschutzerklärung lesen (auf Englisch)</string>
+    <!-- Click label only: German TalkBack says "Zum … doppeltippen", so a nominalised infinitive. -->
+    <string name="settings_privacy_policy_action">Lesen der ganzen Datenschutzerklärung</string>
 </resources>

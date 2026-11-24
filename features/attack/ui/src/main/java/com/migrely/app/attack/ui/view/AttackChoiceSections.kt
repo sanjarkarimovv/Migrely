@@ -234,6 +234,9 @@ private fun ChoiceChip(
 ) {
     var menuOpen by remember { mutableStateOf(false) }
     val removeLabel = stringResource(R.string.custom_remove_from_list)
+    // TalkBack says "Double-tap and hold to" before the long press's label (T23);
+    // the actions menu shows removeLabel alone.
+    val removeAction = stringResource(R.string.custom_remove_from_list_action)
     val colors = MaterialTheme.colorScheme
     val container = if (selected) colors.secondaryContainer else colors.surface
     val border = if (selected) colors.secondary else colors.outline
@@ -251,7 +254,7 @@ private fun ChoiceChip(
                 .heightIn(min = 48.dp)
                 .combinedClickable(
                     role = if (isAction) Role.Button else null,
-                    onLongClickLabel = if (onArchive != null) removeLabel else null,
+                    onLongClickLabel = if (onArchive != null) removeAction else null,
                     onLongClick = onArchive?.let { { menuOpen = true } },
                     onClick = onClick
                 )
