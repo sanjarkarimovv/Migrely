@@ -205,6 +205,32 @@ merge the latest `origin/develop` (with #255) so the translated set is final; if
 
   Done at e31ac30e: GATE_EXIT=0 (`migrely-work/de/9.1-gate.log`); 3600 tests, 0 failures, 0 errors (`migrely-work/de/9.1-test-count.txt`);
   release manifest 6 permissions, no INTERNET (`migrely-work/de/9.1-release-permissions.txt`).
+- [x] 9.2 (eng-de4, 2026-11-24) Merge `origin/develop` 38b14be2 (#278 change 60 D197, T72 change 52 D185 to D188) and
+  translate T72's strings.
+  - Merge 6a4d0c0d (`--no-ff`, parents 8fca5905 and 38b14be2). Only `docs/BRD.md` conflicted, in two places, both kept
+    in numeric order: section 13 rows 59 (T23) and 60 (#278); section 17 D195 (T23) and D197 (#278). D196 is free on
+    every remote branch (scan of all `refs/heads/*` on 2026-11-24), so nothing is renumbered. Row 59's "T72 dan oldin"
+    now reads "#255 va T72 dan keyin". The strings files and specs merged without conflict; T72's spec requirements
+    (`doctor-report`, `app-settings`) do not overlap this change's deltas. `openspec validate --specs --strict`: 30
+    passed, exit 0; `openspec validate add-german-localization --strict`: valid.
+  - a80f1f5e: German for the 14 translatable keys (`settings_share_text` is `translatable="false"` and stays English):
+    `settings_section_share`, `settings_share`, `settings_share_summary`, `settings_share_action`, `settings_rate`,
+    `settings_rate_summary`, `settings_rate_action`, `settings_share_subject`, `settings_share_chooser`,
+    `settings_play_unavailable`, `settings_share_unavailable`, `report_credit_switch`, `report_credit_switch_summary`,
+    `report_message_not_saved`. The credit summary quotes `REPORT_CREDIT` in English inside „…“ (EC-REP-10);
+    `ReportCreditSummaryTest` checks the German summary too (red before the strings, `migrely-work/de/t72-credit-red.log`;
+    green, `t72-credit-green.log`). `report_message_not_saved` reuses `settings_not_saved`. The two `*_action` labels
+    are nominalised infinitives for German TalkBack's "Zum … doppeltippen". No new word over 16 letters.
+  - Review table from the shipped files: `migrely-work/de/review-t72-strings.tsv` (`review_t72.py write`); `review_t72.py
+    check` exits 0; two negative controls (one value changed in a temp copy, „…“ swapped for ASCII quotes) exit 1
+    (`migrely-work/de/t72-review-check.log`).
+  - Gate on a80f1f5e: GATE_EXIT=1 (`migrely-work/de/a80f1f5e-gate.log`): the merge broke T23's
+    `ReportPdfLanguageNoteTest`, because T72 gave `ReportActions` a sixth callback (`onCreate` with the credit switch,
+    EC-REP-13). a7d92b3a passes six, as T72's report tests do.
+  - Gate on a7d92b3a: GATE_EXIT=0 (`migrely-work/de/a7d92b3a-gate.log`, header `HEAD=a7d92b3a…`, clean tree); 4003
+    unit tests, 0 failures, 0 errors, 0 skipped, from 626 XML results (`migrely-work/de/a7d92b3a-test-count.txt`);
+    `:app:checkReleasePermissions` passed, release manifest 6 permissions, no INTERNET (same list as 9.1).
+  - Not checked here: the German T72 rows on a device. That is QA's delta row X-02 on this head.
 ## 10. Reviews
 
 - [ ] 10.1 `ux-designer`: review every German string (voice, length, glossary, TalkBack words), rewrite findings go to the
