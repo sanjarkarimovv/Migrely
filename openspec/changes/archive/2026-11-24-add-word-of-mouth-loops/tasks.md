@@ -179,10 +179,15 @@ switch summary drift from it.
 
 ## 9. Docs and archive (`product-manager`)
 
-- [ ] 9.1 Diff each delta against the live specs (stale-delta check), then `openspec archive add-word-of-mouth-loops
+- [x] 9.1 Diff each delta against the live specs (stale-delta check), then `openspec archive add-word-of-mouth-loops
   --yes` on the feature branch. Verify: `openspec validate --specs --strict` exits 0.
   **Unblocked** 2026-11-24: QA's EC-REP-12 device row (R-05) passed on 69dff460, the final code SHA. Was **BLOCKED**
   until QA's device result for EC-REP-12 on the final SHA. #278 is in `develop` (64c3a675, PR #281) and merged here (fbc390a5); that part of the block is lifted. Was: until #278 (`bugfix/pref-save-rollback`) is merged into `develop` and `develop` is merged into this branch, and EC-REP-12 passes on a device.
+  Done 2026-11-24 (`pm-loops-close`): stale-delta check against `origin/develop` 64c3a675. Live specs changed since the
+  base 50c784e5 in app-settings (D181, change 60), in-app-review and subscription (change 60, added requirements only).
+  One stale line fixed before archiving: "The settings list" kept develop's D181 wording. The other deltas only add
+  requirements, with no name shared with a live one. `openspec archive add-word-of-mouth-loops --yes`: +8, ~1, -0;
+  `openspec validate --specs --strict`: 30 passed, 0 failed, exit 0.
 - [ ] 9.2 Tell `aso-seo-specialist` the share link is live in 1.4.0 so the table's state column changes. Verify: message
   sent with the release tag.
 
