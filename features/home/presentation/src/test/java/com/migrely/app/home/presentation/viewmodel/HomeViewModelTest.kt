@@ -21,6 +21,7 @@ import com.migrely.app.home.domain.model.WriteResultDomainModel
 import com.migrely.app.home.domain.usecase.AnswerLongAttackCheckUseCase
 import com.migrely.app.home.domain.usecase.EndAttackUseCase
 import com.migrely.app.home.domain.usecase.GetTodayUseCase
+import com.migrely.app.home.domain.usecase.MarkSafetyCardShownUseCase
 import com.migrely.app.home.domain.usecase.MoveAttackStartEarlierUseCase
 import com.migrely.app.home.domain.usecase.RecordIntensityUseCase
 import com.migrely.app.home.domain.usecase.RestoreDeletedAttackUseCase
@@ -58,6 +59,8 @@ import org.mockito.Mock
 import org.mockito.junit.MockitoJUnitRunner
 import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.never
+import org.mockito.kotlin.verify
 
 /** Where the use case executor takes the answer callback of a use case with no input. */
 private const val NO_INPUT_ON_RESULT_INDEX = 1
@@ -96,6 +99,8 @@ class HomeViewModelTest :
 
     @Mock private lateinit var setPeriodTodayUseCase: SetPeriodTodayUseCase
 
+    @Mock private lateinit var markSafetyCardShownUseCase: MarkSafetyCardShownUseCase
+
     @Before
     fun setUp() {
         classUnderTest = HomeViewModel(
@@ -109,9 +114,36 @@ class HomeViewModelTest :
             answerLongAttackCheckUseCase,
             restoreDeletedAttackUseCase,
             setPeriodTodayUseCase,
+            markSafetyCardShownUseCase,
             TodayPresentationMapper(IntensityLevelPresentationMapper()),
             IntensityLevelDomainMapper(),
             useCaseExecutor
+        )
+    }
+
+    @Test
+    fun `Given "Still going?" is due when home loads then its moment is kept (D188)`() {
+        givenToday(TodayDomainModel.AttackInProgress(ATTACK, longAttackCheckDue = true))
+
+        classUnderTest.onResume()
+
+        verify(useCaseExecutor).execute(
+            useCase = eq(markSafetyCardShownUseCase),
+            onResult = any(),
+            onException = any()
+        )
+    }
+
+    @Test
+    fun `Given an attack without "Still going?" when home loads then no safety card is marked`() {
+        givenToday(TodayDomainModel.AttackInProgress(ATTACK, longAttackCheckDue = false))
+
+        classUnderTest.onResume()
+
+        verify(useCaseExecutor, never()).execute(
+            useCase = eq(markSafetyCardShownUseCase),
+            onResult = any(),
+            onException = any()
         )
     }
 

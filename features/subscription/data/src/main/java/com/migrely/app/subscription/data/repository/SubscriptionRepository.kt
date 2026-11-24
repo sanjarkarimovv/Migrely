@@ -8,6 +8,7 @@ import com.migrely.app.datasource.exception.BillingDataException
 import com.migrely.app.datasource.exception.BillingUnavailableDataException
 import com.migrely.app.datasource.exception.DataException
 import com.migrely.app.datasource.preferences.datasource.PreferencesDataSource
+import com.migrely.app.datasource.preferences.datasource.UnsavedMarksDataSource
 import com.migrely.app.datasource.schedule.datasource.PremiumCheckScheduleDataSource
 import com.migrely.app.subscription.data.mapper.SubscriptionDataMappers
 import com.migrely.app.subscription.data.mapper.SubscriptionProducts
@@ -66,6 +67,7 @@ internal val PREMIUM_OFFER_MEMORY: Duration = Duration.ofHours(1)
 class SubscriptionRepository(
     private val billingDataSource: BillingDataSource,
     private val preferencesDataSource: PreferencesDataSource,
+    private val unsavedMarksDataSource: UnsavedMarksDataSource,
     private val attackDataSource: AttackDataSource,
     private val clockDataSource: ClockDataSource,
     private val premiumCheckScheduleDataSource: PremiumCheckScheduleDataSource,
@@ -226,18 +228,36 @@ class SubscriptionRepository(
 
     override fun zone(): ZoneId = clockDataSource.zone()
 
-    override fun paywallMarks() = PaywallMarksDomainModel(
-        shown = PaywallTriggerDomainModel.entries.filter {
-            preferencesDataSource.paywallShown(mappers.paywallTriggerDataMapper.toData(it))
-        }.toSet(),
-        lastShown = preferencesDataSource.lastPaywallShownMillis()?.let(Instant::ofEpochMilli)
-    )
-
-    override fun markPaywallShown(trigger: PaywallTriggerDomainModel, at: Instant) = write {
-        preferencesDataSource.markPaywallShown(
-            mappers.paywallTriggerDataMapper.toData(trigger),
-            at.toEpochMilli()
+    /** The stored marks and the ones this process could not save, which count until it ends (#278, BRD D197). */
+    override fun paywallMarks(): PaywallMarksDomainModel {
+        val unsaved = unsavedMarksDataSource.paywallShown()
+        return PaywallMarksDomainModel(
+            shown = PaywallTriggerDomainModel.entries.filter {
+                val trigger = mappers.paywallTriggerDataMapper.toData(it)
+                preferencesDataSource.paywallShown(trigger) || trigger in unsaved
+            }.toSet(),
+            lastShown = listOfNotNull(
+                preferencesDataSource.lastPaywallShownMillis(),
+                unsavedMarksDataSource.lastPaywallShownMillis()
+            ).maxOrNull()?.let(Instant::ofEpochMilli)
         )
+    }
+
+    /**
+     * A mark that is not saved still counts for this process: the paywall shows once, not on every Home load while the
+     * storage stays full (#278, BRD D197).
+     */
+    override fun markPaywallShown(
+        trigger: PaywallTriggerDomainModel,
+        at: Instant
+    ): SubscriptionWriteResultDomainModel {
+        val mark = mappers.paywallTriggerDataMapper.toData(trigger)
+        val result = write { preferencesDataSource.markPaywallShown(mark, at.toEpochMilli()) }
+        return result.also {
+            if (it == SubscriptionWriteResultDomainModel.Failed) {
+                unsavedMarksDataSource.keepPaywallShown(mark, at.toEpochMilli())
+            }
+        }
     }
 
     override fun dismissedTrialEnd(): Instant? =

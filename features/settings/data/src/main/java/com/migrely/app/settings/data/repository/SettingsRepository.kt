@@ -32,8 +32,16 @@ class SettingsRepository(
     override fun settings() = SettingsDomainModel(
         periodTracking = preferencesDataSource.periodTracking(),
         theme = themeDomainMapper.toDomain(preferencesDataSource.theme()),
-        version = appInfoDataSource.versionName()
+        version = appInfoDataSource.versionName(),
+        attackInProgress = attackInProgressNow()
     )
+
+    /** Null when the diary cannot be read, which keeps "Share and rate" hidden (BRD EC-SHR-12). */
+    private fun attackInProgressNow(): Boolean? = try {
+        attackDataSource.inProgress() != null
+    } catch (_: DataException) {
+        null
+    }
 
     override fun setPeriodTracking(on: Boolean): SettingsWriteResultDomainModel = write {
         preferencesDataSource.setPeriodTracking(on)

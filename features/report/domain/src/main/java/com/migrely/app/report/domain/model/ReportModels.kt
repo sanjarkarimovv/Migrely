@@ -24,9 +24,11 @@ data class ReportDatesDomainModel(val from: LocalDate, val to: LocalDate)
 
 data class CurrentTimeDomainModel(val instant: Instant, val zone: ZoneId)
 
+/** [includeCredit] is the credit switch as it was at the tap on "Create report" (BRD REP-F5, D186, EC-REP-13). */
 data class CreateReportRequestDomainModel(
     val period: ReportPeriodDomainModel,
-    val includeNotes: Boolean
+    val includeNotes: Boolean,
+    val includeCredit: Boolean
 )
 
 /**
@@ -107,7 +109,9 @@ data class ReportDomainModel(
     val months: List<ReportMonthDomainModel>,
     val attacks: List<ReportAttackDomainModel>,
     val medications: List<ReportMedicationDomainModel>,
-    val notes: List<ReportNoteDomainModel>
+    val notes: List<ReportNoteDomainModel>,
+    /** Whether the last page names Migrely (BRD REP-F5, D186). */
+    val includeCredit: Boolean
 )
 
 /**
@@ -158,16 +162,18 @@ sealed interface ReportOptionsDomainModel {
     /**
      * [anythingLogged] is false when the period holds no attack, intake or pain-free mark (BRD EC-REP-01). [period] is
      * the one asked for, with [ReportPeriodDomainModel.Default] made concrete, and [lastVisit] is the last doctor visit
-     * when "Since last visit" is offered (EC-REP-04).
+     * when "Since last visit" is offered (EC-REP-04). [creditShown] is the stored credit switch (REP-F5, D186).
      */
     data class Ready(
         val dates: ReportDatesDomainModel,
         val anythingLogged: Boolean,
         val period: ReportPeriodDomainModel,
-        val lastVisit: LocalDate? = null
+        val lastVisit: LocalDate? = null,
+        val creditShown: Boolean = true
     ) : ReportOptionsDomainModel
 
-    data object Failed : ReportOptionsDomainModel
+    /** The records cannot be read; the credit switch, a preference, still can (BRD EC-REP-12). */
+    data class Failed(val creditShown: Boolean) : ReportOptionsDomainModel
 }
 
 sealed interface ReportWriteResultDomainModel {
@@ -187,4 +193,10 @@ sealed interface CreateReportResultDomainModel {
     data object StorageFull : CreateReportResultDomainModel
 
     data object Failed : CreateReportResultDomainModel
+}
+
+/** How saving the credit switch went (BRD EC-REP-12). */
+enum class ReportCreditWriteResultDomainModel {
+    Saved,
+    Failed
 }

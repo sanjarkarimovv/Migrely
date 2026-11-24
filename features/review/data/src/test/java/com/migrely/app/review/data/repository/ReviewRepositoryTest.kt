@@ -7,10 +7,12 @@ import com.migrely.app.datasource.clock.datasource.ClockDataSource
 import com.migrely.app.datasource.exception.DatabaseDataException
 import com.migrely.app.datasource.exception.FileDataException
 import com.migrely.app.datasource.preferences.datasource.PreferencesDataSource
+import com.migrely.app.datasource.preferences.model.PaywallTriggerDataModel
 import com.migrely.app.datasource.preferences.model.ReviewRequestsDataModel
 import com.migrely.app.datasource.review.datasource.ReviewDataSource
 import com.migrely.app.datasource.review.model.ReviewFlowDataModel
 import com.migrely.app.review.data.mapper.ReviewFlowDomainMapper
+import com.migrely.app.review.domain.model.LastSafetyCardDomainModel
 import com.migrely.app.review.domain.model.ReviewFlowResultDomainModel
 import com.migrely.app.review.domain.model.ReviewMarksDomainModel
 import java.time.Instant
@@ -29,12 +31,14 @@ private val NOW: Instant = Instant.parse("2026-11-20T18:00:00Z")
 class ReviewRepositoryTest {
     private val attackDataSource: AttackDataSource = mock()
     private val preferencesDataSource: PreferencesDataSource = mock()
+    private val unsavedMarksDataSource = FakeUnsavedMarksDataSource()
     private val appInfoDataSource: AppInfoDataSource = mock()
     private val clockDataSource: ClockDataSource = mock { on { now() } doReturn NOW }
     private val reviewDataSource: ReviewDataSource = mock()
     private val classUnderTest = ReviewRepository(
         attackDataSource,
         preferencesDataSource,
+        unsavedMarksDataSource,
         appInfoDataSource,
         clockDataSource,
         reviewDataSource,
@@ -89,6 +93,23 @@ class ReviewRepositoryTest {
     }
 
     @Test
+    fun `Given a safety card appeared then its time, and none when it never did`() {
+        given(preferencesDataSource.safetyCardLastShownMillis()).willReturn(NOW.toEpochMilli())
+        assertEquals(LastSafetyCardDomainModel.ShownAt(NOW), classUnderTest.lastSafetyCardShown())
+
+        given(preferencesDataSource.safetyCardLastShownMillis()).willReturn(null)
+        assertEquals(LastSafetyCardDomainModel.Never, classUnderTest.lastSafetyCardShown())
+    }
+
+    @Test
+    fun `Given the safety card mark cannot be read then it is unknown, not never`() {
+        given(preferencesDataSource.safetyCardLastShownMillis())
+            .willThrow(FileDataException("Not read"))
+
+        assertEquals(LastSafetyCardDomainModel.Unknown, classUnderTest.lastSafetyCardShown())
+    }
+
+    @Test
     fun `When asking how the previous run ended then the app info answers`() {
         given(appInfoDataSource.previousExitCrashed()).willReturn(true)
         assertTrue(classUnderTest.previousExitCrashed())
@@ -128,5 +149,77 @@ class ReviewRepositoryTest {
     @Test
     fun `When asking the time then the clock's`() {
         assertEquals(NOW, classUnderTest.now())
+    }
+
+    @Test
+    fun `Given a rating request is not saved then it counts, so no Home load asks again`() {
+        given(preferencesDataSource.reviewRequests()).willReturn(ReviewRequestsDataModel(1, 5L))
+        given(preferencesDataSource.markReviewRequested(NOW.toEpochMilli()))
+            .willThrow(FileDataException("Preferences not saved"))
+
+        classUnderTest.markReviewRequested(NOW)
+
+        assertEquals(
+            ReviewMarksDomainModel(requests = 2, lastRequested = NOW),
+            classUnderTest.reviewMarks()
+        )
+    }
+
+    @Test
+    fun `Given a paywall mark was not saved then the rating waits as for a stored one`() {
+        given(preferencesDataSource.lastPaywallShownMillis()).willReturn(null)
+        unsavedMarksDataSource.keepPaywallShown(
+            PaywallTriggerDataModel.FifthMigraine,
+            NOW.toEpochMilli()
+        )
+
+        assertEquals(NOW, classUnderTest.lastPaywallShown())
+    }
+
+    @Test
+    fun `Given an unsaved rating request when the app starts again then only stored ones count`() {
+        given(preferencesDataSource.reviewRequests()).willReturn(ReviewRequestsDataModel(1, 5L))
+        given(preferencesDataSource.markReviewRequested(NOW.toEpochMilli()))
+            .willThrow(FileDataException("Preferences not saved"))
+        classUnderTest.markReviewRequested(NOW)
+
+        val restarted = ReviewRepository(
+            attackDataSource,
+            preferencesDataSource,
+            FakeUnsavedMarksDataSource(),
+            appInfoDataSource,
+            clockDataSource,
+            reviewDataSource,
+            ReviewFlowDomainMapper()
+        )
+
+        assertEquals(
+            ReviewMarksDomainModel(requests = 1, lastRequested = Instant.ofEpochMilli(5L)),
+            restarted.reviewMarks()
+        )
+    }
+
+    @Test
+    fun `Given a safety-card mark was not saved then the rating waits as for a stored one`() {
+        given(preferencesDataSource.safetyCardLastShownMillis()).willReturn(5L)
+        unsavedMarksDataSource.keepSafetyCardShown(NOW.toEpochMilli())
+
+        assertEquals(LastSafetyCardDomainModel.ShownAt(NOW), classUnderTest.lastSafetyCardShown())
+    }
+
+    @Test
+    fun `Given only an unsaved safety-card mark then it is the last one shown`() {
+        given(preferencesDataSource.safetyCardLastShownMillis()).willReturn(null)
+        unsavedMarksDataSource.keepSafetyCardShown(NOW.toEpochMilli())
+
+        assertEquals(LastSafetyCardDomainModel.ShownAt(NOW), classUnderTest.lastSafetyCardShown())
+    }
+
+    @Test
+    fun `Given a stored safety-card mark later than an unsaved one then the stored one counts`() {
+        given(preferencesDataSource.safetyCardLastShownMillis()).willReturn(NOW.toEpochMilli())
+        unsavedMarksDataSource.keepSafetyCardShown(NOW.minusSeconds(3_600).toEpochMilli())
+
+        assertEquals(LastSafetyCardDomainModel.ShownAt(NOW), classUnderTest.lastSafetyCardShown())
     }
 }

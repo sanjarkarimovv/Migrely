@@ -7,6 +7,7 @@ import com.migrely.app.architecture.domain.UseCaseExecutor
 import com.migrely.app.coroutine.CoroutineContextProvider
 import com.migrely.app.datasource.backup.datasource.BackupDataSource
 import com.migrely.app.datasource.clock.datasource.ClockDataSource
+import com.migrely.app.datasource.preferences.datasource.PreferencesDataSource
 import com.migrely.app.datasource.report.datasource.ReportDocumentDataSource
 import com.migrely.app.datasource.report.datasource.ReportDocumentDataSourceImpl
 import com.migrely.app.locale.FormattingLocales
@@ -18,6 +19,7 @@ import com.migrely.app.report.data.repository.ReportRepository
 import com.migrely.app.report.domain.usecase.CleanUpReportsUseCase
 import com.migrely.app.report.domain.usecase.CreateReportUseCase
 import com.migrely.app.report.domain.usecase.GetReportOptionsUseCase
+import com.migrely.app.report.domain.usecase.SetReportCreditUseCase
 import com.migrely.app.report.presentation.mapper.ReportOptionsPresentationMapper
 import com.migrely.app.report.presentation.mapper.ReportPeriodDomainMapper
 import com.migrely.app.report.presentation.viewmodel.ReportViewModel
@@ -52,11 +54,13 @@ internal object ReportModule {
         formattingLocales: FormattingLocales,
         backupDataSource: BackupDataSource,
         reportDocumentDataSource: ReportDocumentDataSource,
-        clockDataSource: ClockDataSource
+        clockDataSource: ClockDataSource,
+        preferencesDataSource: PreferencesDataSource
     ) = ReportRepository(
         backupDataSource,
         reportDocumentDataSource,
         clockDataSource,
+        preferencesDataSource,
         ReportRecordsDomainMapper(),
         ReportDocumentMapper(
             ReportDateTimeFormatter(
@@ -83,8 +87,9 @@ internal object ReportModule {
         coroutines: CoroutineContextProvider,
         useCaseExecutor: UseCaseExecutor
     ) = ReportViewModel(
-        GetReportOptionsUseCase(repository, repository, coroutines),
+        GetReportOptionsUseCase(repository, repository, repository, coroutines),
         CreateReportUseCase(repository, repository, repository, repository, coroutines),
+        SetReportCreditUseCase(repository, coroutines),
         ReportPeriodDomainMapper(),
         ReportOptionsPresentationMapper(),
         useCaseExecutor

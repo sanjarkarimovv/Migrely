@@ -20,14 +20,18 @@ sealed interface ReportPeriodUiModel : Parcelable {
     data object Default : ReportPeriodUiModel
 }
 
-/** [period] is the one the dates are for; [lastVisitEpochDay] is set when "Since last visit" is offered. */
+/**
+ * [period] is the one the dates are for; [lastVisitEpochDay] is set when "Since last visit" is offered; [creditShown] is
+ * the stored credit switch (BRD REP-F5, D186).
+ */
 @Parcelize
 data class ReportOptionsUiModel(
     val fromEpochDay: Long,
     val toEpochDay: Long,
     val anythingLogged: Boolean,
     val period: ReportPeriodUiModel = ReportPeriodUiModel.Default,
-    val lastVisitEpochDay: Long? = null
+    val lastVisitEpochDay: Long? = null,
+    val creditShown: Boolean = true
 ) : Parcelable
 
 sealed interface ReportViewStateUiModel {
@@ -37,7 +41,8 @@ sealed interface ReportViewStateUiModel {
 
     data object Working : ReportViewStateUiModel
 
-    data object Unavailable : ReportViewStateUiModel
+    /** [creditShown] is the stored credit switch, which still shows (BRD EC-REP-12). */
+    data class Unavailable(val creditShown: Boolean) : ReportViewStateUiModel
 }
 
 sealed interface ReportEventUiModel {
@@ -50,5 +55,6 @@ enum class ReportMessageUiModel {
     NothingLogged,
     StorageFull,
     SomethingWentWrong,
-    NoAppToShare
+    NoAppToShare,
+    NotSaved
 }

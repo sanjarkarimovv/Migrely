@@ -60,11 +60,13 @@ import java.time.LocalDate
 
 private val paywallOriginUiMapper = PaywallOriginUiMapper()
 
+/** [attackInProgress] is the app's live attack state; Settings follows it (BRD EC-SHR-13). */
 @Composable
 fun AppNavHostDependencies.AppNavHost(
     navController: NavHostController,
     startDestination: Any,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    attackInProgress: Boolean = false
 ) {
     deleteAllDataDependencies.DeleteAllDataObserver(navController)
     ScreenNavHost(
@@ -158,6 +160,7 @@ fun AppNavHostDependencies.AppNavHost(
         screen<Settings>(navController) {
             settingsDependencies.Settings(
                 navController,
+                attackInProgress = attackInProgress,
                 // Settings shows the subscription's Premium section first (BRD D112).
                 premiumSection = { premiumSectionDependencies.PremiumSection(navController) }
             )

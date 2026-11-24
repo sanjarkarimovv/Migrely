@@ -292,7 +292,8 @@ class MainActivity : ComponentActivity() {
                         val controller = rememberNavController().also { navController = it }
                         appNavHostDependencies.AppNavHost(
                             navController = controller,
-                            startDestination = start
+                            startDestination = start,
+                            attackInProgress = shown.attackInProgress
                         )
                         LaunchedEffect(controller) {
                             if (pendingDoctorReport) {

@@ -4,9 +4,11 @@ import com.migrely.app.datasource.attack.datasource.AttackDataSource
 import com.migrely.app.datasource.clock.datasource.ClockDataSource
 import com.migrely.app.datasource.daymark.datasource.DayMarkDataSource
 import com.migrely.app.datasource.preferences.datasource.PreferencesDataSource
+import com.migrely.app.datasource.preferences.datasource.UnsavedMarksDataSource
 import com.migrely.app.home.data.mapper.AttackDomainMapper
 import com.migrely.app.home.data.mapper.IntensityPointDomainMapper
 import com.migrely.app.home.data.repository.HomeRepository
+import com.migrely.app.home.data.repository.SafetyCardRepository
 import com.migrely.app.home.domain.repository.AddIntensityPointRepository
 import com.migrely.app.home.domain.repository.DeleteAttackRepository
 import com.migrely.app.home.domain.repository.EndAttackRepository
@@ -16,6 +18,7 @@ import com.migrely.app.home.domain.repository.GetDayMarksRepository
 import com.migrely.app.home.domain.repository.GetPeriodTrackingRepository
 import com.migrely.app.home.domain.repository.GetPreviousAttackEndRepository
 import com.migrely.app.home.domain.repository.GetTodayRepository
+import com.migrely.app.home.domain.repository.MarkSafetyCardShownRepository
 import com.migrely.app.home.domain.repository.ReopenAttackRepository
 import com.migrely.app.home.domain.repository.ReplaceLatestIntensityPointRepository
 import com.migrely.app.home.domain.repository.RestoreDeletedAttackRepository
@@ -114,4 +117,16 @@ internal object HomeDataModule {
     fun providesRestoreDeletedAttackRepository(
         repository: HomeRepository
     ): RestoreDeletedAttackRepository = repository
+
+    /** The moment "Still going?" appeared (BRD D188). */
+    @Provides
+    fun providesHomeMarkSafetyCardShownRepository(
+        preferencesDataSource: PreferencesDataSource,
+        unsavedMarksDataSource: UnsavedMarksDataSource,
+        clockDataSource: ClockDataSource
+    ): MarkSafetyCardShownRepository = SafetyCardRepository(
+        preferencesDataSource,
+        unsavedMarksDataSource,
+        clockDataSource
+    )
 }

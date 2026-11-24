@@ -26,7 +26,7 @@ internal val reportScreens: Map<String, @Composable () -> Unit> = mapOf(
                 ),
                 period = ReportPeriodUiModel.Default,
                 includeNotes = false,
-                actions = ReportActions({}, {}, {}, {}, {}),
+                actions = ReportActions({}, {}, {}, {}, {}, {}),
                 messages = {}
             )
         }

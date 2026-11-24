@@ -5,6 +5,7 @@ import com.migrely.app.datasource.backupfile.datasource.BackupFileDataSource
 import com.migrely.app.datasource.exception.DataException
 import com.migrely.app.datasource.notification.datasource.NotificationDataSource
 import com.migrely.app.datasource.preferences.datasource.PreferencesDataSource
+import com.migrely.app.datasource.preferences.datasource.UnsavedMarksDataSource
 import com.migrely.app.datasource.report.datasource.ReportDocumentDataSource
 import com.migrely.app.datasource.schedule.datasource.PremiumCheckScheduleDataSource
 import com.migrely.app.datasource.schedule.datasource.ReminderScheduleDataSource
@@ -21,6 +22,7 @@ class DeleteAllDataRepository(
     private val notificationDataSource: NotificationDataSource,
     private val backupDataSource: BackupDataSource,
     private val preferencesDataSource: PreferencesDataSource,
+    private val unsavedMarksDataSource: UnsavedMarksDataSource,
     private val backupFileDataSource: BackupFileDataSource,
     private val reportDocumentDataSource: ReportDocumentDataSource,
     private val premiumCheckScheduleDataSource: PremiumCheckScheduleDataSource
@@ -37,7 +39,11 @@ class DeleteAllDataRepository(
 
     override fun deleteRecords() = step { backupDataSource.deleteAll() }
 
-    override fun deletePreferences() = step { preferencesDataSource.clear() }
+    /** Then the marks this process could not save, so it is as on a new install; not if the settings stayed (D197). */
+    override fun deletePreferences() = step {
+        preferencesDataSource.clear()
+        unsavedMarksDataSource.clear()
+    }
 
     override fun deleteFiles() = step {
         backupFileDataSource.deleteAll()
