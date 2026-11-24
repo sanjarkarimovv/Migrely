@@ -54,8 +54,7 @@ class CustomChipRemoveLabelTest {
 
     private fun SemanticsNode.longClickLabel() = config[SemanticsActions.OnLongClick].label
 
-    private fun SemanticsNode.menuLabels() =
-        config[SemanticsActions.CustomActions].map { it.label }
+    private fun SemanticsNode.menuLabels() = config[SemanticsActions.CustomActions].map { it.label }
 
     @Test
     @Config(qualifiers = "de")
