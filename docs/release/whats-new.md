@@ -3,6 +3,30 @@
 Each release's text for Play Console › Create new release › Release notes. Play allows at most 500 characters per
 language. en-US is the default, and other languages fall back to it.
 
+## 1.4.0 (versionCode 16)
+
+The text covers `develop` 860d03e4 since `v1.3.3`: D193 (#255), D197 (#278), D185, D186 and D188 (change 52, T72) and
+D195 (change 59, T23) with the #274 and #276 fixes. German follows the phone's language list or, on Android 13 and later,
+Android's per-app language; the PDF report and CSV stay English (D195 (4), (5)), so the notes say the PDF does. The credit
+line is on by default (D186 (2)), so the notes say "now ends" and name the switch's screen. D188 (no review request for 3
+days after a safety card) is not announced, and nothing asks for a rating or offers a reward. Only en-US: the de-DE
+listing does not exist yet (T79), so German users see this text. `medical-reviewer` checked it on 2026-11-25 (all lines
+PASS after its two replacements, which are applied word for word). It does not say "medically reviewed" or "approved"
+(the clinician sign-off, T31, is open). The text is 497 of 500 characters.
+
+```
+<en-US>
+New:
+• Migrely in German. It follows your phone's language, or the app language in Android 13 and later. The PDF report stays in English.
+• Settings has a "Share and rate" section.
+• The doctor report now ends with one line naming Migrely. Turn it off in Doctor report.
+Fixes:
+• TalkBack moves in order on most scrolling pages and dialogs.
+• At very large text, you can reach the "Still going?" card and all of the pain and effect dialogs.
+• A setting that couldn't be saved no longer looks saved.
+</en-US>
+```
+
 ## 1.3.3 (versionCode 15)
 
 1.3.2 never reached users: QA gave NO-GO after the tag, for #259. 1.3.3 ships the same three fixes, D190 (#237), D191
