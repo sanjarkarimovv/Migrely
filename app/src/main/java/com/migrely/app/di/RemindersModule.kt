@@ -16,6 +16,7 @@ import com.migrely.app.datasource.schedule.datasource.ReminderScheduleDataSource
 import com.migrely.app.datasource.schedule.datasource.ReminderScheduleDataSourceImpl
 import com.migrely.app.datasource.screen.datasource.AppOnScreenDataSource
 import com.migrely.app.datasource.screen.datasource.AppOnScreenDataSourceImpl
+import com.migrely.app.locale.FormattingLocales
 import com.migrely.app.navigation.mapper.RemindersNavigationEventDestinationMapper
 import com.migrely.app.navigation.mapper.VisitCardNavigationEventDestinationMapper
 import com.migrely.app.reminders.data.mapper.DoctorVisitDomainMapper
@@ -77,8 +78,9 @@ internal object RemindersModule {
 
     @Provides
     fun providesNotificationDataSource(
-        @ApplicationContext context: Context
-    ): NotificationDataSource = NotificationDataSourceImpl(context)
+        @ApplicationContext context: Context,
+        formattingLocales: FormattingLocales
+    ): NotificationDataSource = NotificationDataSourceImpl(context, formattingLocales)
 
     @Provides
     fun providesAppOnScreenDataSource(): AppOnScreenDataSource = AppOnScreenDataSourceImpl()

@@ -43,7 +43,8 @@
     <string name="settings_rate_action">open Google Play</string>
     <!-- The shared text, then the fixed Play link (%1$s) on its own line, so messengers show it as a link (W1, W3). -->
     <string name="settings_share_text" translatable="false">Migrely is a private migraine diary for Android. No internet permission, no account, no ads.\n%1$s</string>
-    <string name="settings_share_subject">Migrely, a migraine diary for Android</string>
+    <!-- The recipient gets one message in one language, so the subject stays English with the text (D185 (4), T23 lead). -->
+    <string name="settings_share_subject" translatable="false">Migrely, a migraine diary for Android</string>
     <string name="settings_share_chooser">Share Migrely</string>
     <string name="settings_play_unavailable">This phone has no app that can open Google Play.</string>
     <string name="settings_share_unavailable">This phone has no app to share the link with.</string>
@@ -97,10 +98,11 @@
     <string name="settings_privacy_files">Apart from Android\'s own backup and moving to a new phone, your entries leave the phone only in a file you export yourself: a backup, a spreadsheet or a report for your doctor. That file goes wherever you send it.</string>
     <string name="settings_privacy_delete">Delete all data, at the end of Settings, removes everything Migrely keeps on this phone.</string>
 
-    <!-- Open-source licences: what the release app ships, from gradle/libs.versions.toml (BRD D97). -->
+    <!-- Open-source licences: what the release app ships, from gradle/libs.versions.toml (BRD D97). Licence and library
+         names are proper names, the same in every language (D195). -->
     <string name="settings_licences_intro">Migrely is built with these open-source libraries and fonts.</string>
-    <string name="settings_licence_apache">Apache License 2.0</string>
-    <string-array name="settings_licences_apache">
+    <string name="settings_licence_apache" translatable="false">Apache License 2.0</string>
+    <string-array name="settings_licences_apache" translatable="false">
         <item>AndroidX Activity</item>
         <item>AndroidX Core and Core Splashscreen</item>
         <item>AndroidX Fragment</item>
@@ -115,8 +117,8 @@
         <item>Kotlin coroutines</item>
         <item>Kotlin serialization</item>
     </string-array>
-    <string name="settings_licence_ofl">SIL Open Font License 1.1</string>
-    <string-array name="settings_licences_ofl">
+    <string name="settings_licence_ofl" translatable="false">SIL Open Font License 1.1</string>
+    <string-array name="settings_licences_ofl" translatable="false">
         <item>Figtree</item>
         <item>Fraunces</item>
     </string-array>
@@ -124,4 +126,6 @@
     <string name="settings_not_saved">Couldn\'t save that. Try again.</string>
     <string name="settings_message_dismiss">Dismiss</string>
     <string name="settings_privacy_policy_link">Read the full privacy policy</string>
+    <!-- Click label only (TalkBack: "Double-tap to …"; German "Zum … doppeltippen"), never shown. -->
+    <string name="settings_privacy_policy_action">read the full privacy policy</string>
 </resources>

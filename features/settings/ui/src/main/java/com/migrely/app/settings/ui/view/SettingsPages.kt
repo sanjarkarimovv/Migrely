@@ -174,12 +174,14 @@ fun PrivacyContents(onBack: () -> Unit, modifier: Modifier = Modifier) = Setting
 private fun PolicyLink() {
     val uriHandler = LocalUriHandler.current
     val label = stringResource(R.string.settings_privacy_policy_link)
+    // TalkBack says "Double-tap to" before it, so it is an action, not the link's words (T23).
+    val action = stringResource(R.string.settings_privacy_policy_action)
     Column(
         verticalArrangement = Arrangement.spacedBy(2.dp),
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = 48.dp)
-            .clickable(role = Role.Button, onClickLabel = label) {
+            .clickable(role = Role.Button, onClickLabel = action) {
                 uriHandler.openInBrowserIfAny(PRIVACY_POLICY_URL)
             }
             .ownWords(label)

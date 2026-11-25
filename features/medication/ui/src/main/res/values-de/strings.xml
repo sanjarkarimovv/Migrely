@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- German (BRD D195): glossary and voice in openspec change add-german-localization, design D5. -->
+<resources>
+    <string name="medication_navigate_back">Zurück</string>
+    <string name="log_title">Medikament genommen</string>
+    <string name="log_taken_at">Genommen um</string>
+    <string name="log_manage">Medikamente verwalten</string>
+    <string name="log_logged">%1$s um %2$s notiert</string>
+    <string name="log_undo">Rückgängig</string>
+    <string name="log_done">Fertig</string>
+    <string name="log_medication_description">%1$s notieren</string>
+    <string name="log_first_title">Füge das Medikament hinzu, das du genommen hast</string>
+    <string name="log_first_body">Dosis und weitere Medikamente kannst du später unter „Meine Medikamente“ hinzufügen.</string>
+    <string name="log_add_and_log">Hinzufügen und notieren</string>
+    <string name="picker_title">Wann hast du es genommen?</string>
+    <string name="picker_out_of_range">Wähle eine Zeit bis jetzt.</string>
+    <string name="medication_picker_next">Weiter</string>
+    <string name="medication_picker_cancel">Abbrechen</string>
+    <string name="medication_picker_confirm">OK</string>
+    <string name="list_title">Meine Medikamente</string>
+    <string name="list_add">Medikament hinzufügen</string>
+    <string name="list_empty">Noch keine Medikamente. Füge die hinzu, die du bei Migräne nimmst, damit du sie mit zwei Fingertipps notieren kannst.</string>
+    <string name="list_remove">%1$s entfernen</string>
+    <string name="list_item_description">%1$s. Öffnet die Bearbeitung.</string>
+    <string name="edit_title_add">Neues Medikament</string>
+    <string name="edit_title_edit">Medikament ändern</string>
+    <string name="edit_name">Name</string>
+    <string name="edit_dose">Übliche Dosis (optional)</string>
+    <string name="edit_dose_hint">Zum Beispiel 400 mg</string>
+    <string name="edit_counter">%1$d/%2$d</string>
+    <string name="edit_kind">Art</string>
+    <string name="kind_acute">Bei Attacken</string>
+    <string name="kind_preventive">Vorbeugend</string>
+    <string name="edit_category">Typ</string>
+    <string name="edit_save">Speichern</string>
+    <string name="edit_not_found">Dieses Medikament gibt es nicht mehr.</string>
+    <string name="category_simple">Einfaches Schmerzmittel</string>
+    <string name="category_simple_examples">Ibuprofen, Paracetamol, ASS</string>
+    <string name="category_triptan">Triptan</string>
+    <string name="category_triptan_examples">Sumatriptan, Rizatriptan, Zolmitriptan</string>
+    <string name="category_combination">Kombipräparat oder anderes</string>
+    <string name="category_combination_examples">Kombitabletten, andere verschriebene Medikamente</string>
+    <string name="category_not_sure">Nicht sicher</string>
+    <string name="problem_duplicate">%1$s hast du schon.</string>
+    <string name="problem_archived_name">%1$s ist in deinem Archiv. Füge es als neues Medikament hinzu, um es zurückzuholen.</string>
+    <string name="problem_invalid_name">Gib einen Namen ein.</string>
+    <string name="problem_invalid_dose">Die Dosis darf höchstens 20 Zeichen haben.</string>
+    <string name="message_archived">Medikament entfernt</string>
+    <string name="message_undo_archive_description">Entfernen des Medikaments rückgängig machen</string>
+    <string name="medication_message_undone">Rückgängig gemacht.</string>
+    <string name="message_intake_undone">Entfernt. Es wurde nichts notiert.</string>
+    <string name="message_in_future">Wähle eine Zeit bis jetzt.</string>
+    <string name="message_limit_reached">Du kannst bis zu 50 Medikamente speichern. Entferne eines, das du nicht mehr nimmst.</string>
+    <string name="medication_message_storage_full">Nicht gespeichert. Der Speicher deines Handys ist voll.</string>
+    <string name="medication_message_generic">Etwas ist schiefgelaufen. Bitte versuch es noch einmal.</string>
+    <string name="medication_message_intake_kept_storage_full">Weiterhin notiert. Der Speicher deines Handys ist voll.</string>
+    <string name="medication_message_intake_kept_generic">Weiterhin notiert. Etwas ist schiefgelaufen. Bitte versuch es noch einmal.</string>
+    <string name="medication_snackbar_undo">Rückgängig</string>
+    <string name="medication_snackbar_dismiss">Schließen</string>
+    <string name="prompt_effect_title">Wie gut hat %1$s geholfen?</string>
+    <string name="prompt_effect_taken">Genommen um %1$s</string>
+    <string name="prompt_effect_taken_dose">Genommen um %1$s · %2$s</string>
+    <string name="prompt_effect_taken_dose_spoken">Genommen um %1$s, %2$s</string>
+    <string name="prompt_effect_skip">Bei diesem nicht mehr fragen</string>
+    <string name="effect_not_at_all">Gar nicht</string>
+    <string name="effect_a_little">Etwas</string>
+    <string name="effect_a_lot">Deutlich</string>
+    <string name="effect_completely">Vollständig</string>
+    <plurals name="overuse_title_simple">
+        <item quantity="one">Schmerzmittel an %1$d der letzten 30 Tage</item>
+        <item quantity="other">Schmerzmittel an %1$d der letzten 30 Tage</item>
+    </plurals>
+    <plurals name="overuse_title_triptan">
+        <item quantity="one">Triptane an %1$d der letzten 30 Tage</item>
+        <item quantity="other">Triptane an %1$d der letzten 30 Tage</item>
+    </plurals>
+    <plurals name="overuse_title_other">
+        <item quantity="one">Kombipräparate oder andere Medikamente an %1$d der letzten 30 Tage</item>
+        <item quantity="other">Kombipräparate oder andere Medikamente an %1$d der letzten 30 Tage</item>
+    </plurals>
+    <plurals name="overuse_title_multiple">
+        <item quantity="one">Akutmedikamente an %1$d der letzten 30 Tage</item>
+        <item quantity="other">Akutmedikamente an %1$d der letzten 30 Tage</item>
+    </plurals>
+    <string name="overuse_body_soft">Häufige Einnahme kann zu mehr Kopfschmerzen führen. Behalte das im Blick.</string>
+    <string name="overuse_body_doctor">So häufige Einnahme kann Kopfschmerzen häufiger machen. Sprich am besten mit deiner Ärztin oder deinem Arzt darüber.</string>
+    <string name="overuse_got_it">Verstanden</string>
+    <string name="indicator_title">Letzte 30 Tage</string>
+    <plurals name="indicator_row_simple">
+        <item quantity="one">Einfache Schmerzmittel: %1$d Tag</item>
+        <item quantity="other">Einfache Schmerzmittel: %1$d Tage</item>
+    </plurals>
+    <plurals name="indicator_row_triptan">
+        <item quantity="one">Triptane: %1$d Tag</item>
+        <item quantity="other">Triptane: %1$d Tage</item>
+    </plurals>
+    <plurals name="indicator_row_other">
+        <item quantity="one">Kombipräparat oder anderes: %1$d Tag</item>
+        <item quantity="other">Kombipräparat oder anderes: %1$d Tage</item>
+    </plurals>
+    <plurals name="indicator_row_multiple">
+        <item quantity="one">Akutmedikation gesamt: %1$d Tag</item>
+        <item quantity="other">Akutmedikation gesamt: %1$d Tage</item>
+    </plurals>
+    <string name="indicator_row_reached">%1$s. Ärztinnen und Ärzte achten auf %2$d oder mehr Tage im Monat.</string>
+    <string name="indicator_reached">So häufige Einnahme, Monat für Monat, kann Kopfschmerzen häufiger machen. Sprich am besten mit deiner Ärztin oder deinem Arzt darüber.</string>
+</resources>

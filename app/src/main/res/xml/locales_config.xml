@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The languages Android 13 and newer offer for Migrely under "App language" (BRD D195, design D3). The same list as
+  APP_LANGUAGES in locale/FormattingLocaleResolver.kt and the values-<lang> folders; LocalizationCompletenessTest checks it.
+-->
+<locale-config xmlns:android="http://schemas.android.com/apk/res/android">
+    <locale android:name="en" />
+    <locale android:name="de" />
+</locale-config>

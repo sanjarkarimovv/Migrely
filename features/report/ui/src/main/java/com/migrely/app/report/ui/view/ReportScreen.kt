@@ -94,6 +94,7 @@ import com.migrely.app.report.ui.model.ShownReportMessageUiModel
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
+import java.util.Locale
 import kotlinx.coroutines.flow.onSubscription
 
 private val CONTENT_MAX_WIDTH = 600.dp
@@ -437,6 +438,16 @@ fun ReportContents(
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
+                        // The PDF stays English in 1.4.0 (BRD D195, EC-L10N-09): said once, only in another
+                        // language.
+                        val appLanguage = LocalConfiguration.current.locales[0].language
+                        if (appLanguage != Locale.ENGLISH.language) {
+                            Text(
+                                stringResource(R.string.report_pdf_language_note),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 }
             }
@@ -561,7 +572,11 @@ private fun RangeDialog(
         labels = DateRangePickerLabels(
             title = stringResource(R.string.report_range_title),
             confirm = stringResource(R.string.report_range_confirm),
-            cancel = stringResource(R.string.report_range_cancel)
+            cancel = stringResource(R.string.report_range_cancel),
+            startDate = stringResource(R.string.report_range_start),
+            endDate = stringResource(R.string.report_range_end),
+            notChosen = stringResource(R.string.report_range_not_chosen),
+            headlineDescription = stringResource(R.string.report_range_headline_description)
         ),
         onConfirm = { start, end -> onPick(start.toEpochDay(), end.toEpochDay()) },
         onDismiss = onDismiss

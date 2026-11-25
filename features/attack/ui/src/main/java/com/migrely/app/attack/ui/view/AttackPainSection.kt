@@ -39,8 +39,9 @@ import com.migrely.app.attack.ui.mapper.AttackTimeUiFormatter
 import com.migrely.app.attack.ui.model.AttackDetailsUiModel
 import com.migrely.app.attack.ui.model.IntensityPointUiModel
 import com.migrely.app.designsystem.button.MigrelyIconButton
-import com.migrely.app.designsystem.dialog.MigrelyAlertDialog
+import com.migrely.app.designsystem.dialog.MigrelyScrollingAlertDialog
 import com.migrely.app.designsystem.icon.MigrelyIcons
+import com.migrely.app.designsystem.layout.isCompactHeight
 import com.migrely.app.designsystem.layout.ownWords
 import com.migrely.app.designsystem.layout.wordsShownOnly
 import com.migrely.app.designsystem.picker.MigrelyDateTimePicker
@@ -183,14 +184,18 @@ private fun AddPainDialog(
         details.startEpochMillis,
         details.startZoneId
     )
-    MigrelyAlertDialog(
+    val title = stringResource(R.string.pain_dialog_title)
+    MigrelyScrollingAlertDialog(
+        title = title,
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.pain_dialog_title)) },
-        text = {
+        content = {
+            // Title and content scroll together, so the time row stays reachable at large fonts (T23 8.1 row R04).
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(
                     text = "${stringResource(R.string.pain_dialog_value, value)} · $levelName",
-                    style = MaterialTheme.typography.titleMedium.copy(fontFeatureSettings = "tnum"),
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontFeatureSettings = "tnum"
+                    ),
                     modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
                 )
                 Slider(
@@ -215,6 +220,8 @@ private fun AddPainDialog(
                 }
             }
         },
+        // In a short window the default width stacks the buttons and squeezes the content out (T23 8.1 row R04).
+        wide = isCompactHeight(),
         confirmButton = {
             TextButton(onClick = { onAdd(IntensityPointUiModel(at, value)) }) {
                 Text(stringResource(R.string.pain_dialog_add))

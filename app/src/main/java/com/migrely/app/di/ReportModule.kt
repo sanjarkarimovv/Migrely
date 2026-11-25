@@ -64,7 +64,7 @@ internal object ReportModule {
         ReportRecordsDomainMapper(),
         ReportDocumentMapper(
             ReportDateTimeFormatter(
-                locale = { formattingLocales.of(context.resources.configuration) },
+                locale = { formattingLocales.of(context) },
                 is24HourFormat = { DateFormat.is24HourFormat(context) },
                 bestDateTimePattern = { locale, skeleton ->
                     DateFormat.getBestDateTimePattern(locale, skeleton)

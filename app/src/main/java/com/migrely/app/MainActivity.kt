@@ -34,7 +34,8 @@ import com.migrely.app.designsystem.theme.DarkScreens
 import com.migrely.app.designsystem.theme.LocalDarkScreens
 import com.migrely.app.designsystem.theme.MigrelyColors
 import com.migrely.app.designsystem.theme.MigrelyTheme
-import com.migrely.app.locale.FormattingLocales
+import com.migrely.app.locale.LocaleEntryPoint
+import com.migrely.app.locale.StaleLocaleRecreation
 import com.migrely.app.premium.PremiumStartChecks
 import com.migrely.app.start.StartEntryPoint
 import com.migrely.app.subscription.domain.model.RefreshPremiumRequestDomainModel
@@ -54,6 +55,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import dagger.hilt.android.EntryPointAccessors
 import java.time.ZoneId
 import javax.inject.Inject
+import kotlin.concurrent.thread
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -74,6 +76,7 @@ private const val STARTS_WITH_ONBOARDING = "starts_with_onboarding"
 private const val THEME = "theme"
 private const val ATTACK_IN_PROGRESS = "attack_in_progress"
 private const val PAYMENT_MESSAGES_ASKED = "payment_messages_asked"
+private const val RECREATED_FOR_LANGUAGE = "recreated_for_language"
 private const val START_DECISION_MILLIS = 2_000L
 
 @AndroidEntryPoint
@@ -139,16 +142,32 @@ class MainActivity : ComponentActivity() {
     }
 
     /**
-     * Dates and times in English with the phone's region (BRD D117): Compose's configuration, Material's date and time
-     * pickers and the resources read the formatting locale. A new system language recreates the activity, which
-     * applies it again.
+     * The app's language and its dates (BRD D117, D195): the first language of the phone's list that Migrely speaks,
+     * English or German, with Android 13's per-app language first in that list. German keeps its own locale; anything
+     * else is English with the phone's region. Compose's configuration, Material's date and time pickers and the
+     * resources, words and plural rules included, read this one locale, so words and dates never disagree. A new system
+     * or app language recreates the activity, which applies it again. The per-app language is read from LocaleManager,
+     * not from [newBase]'s configuration, which is stale in an activity restored after its process died (EC-L10N-06).
+     * It refreshes the formatters' locale too, which they read without asking LocaleManager each time.
      */
     override fun attachBaseContext(newBase: Context) {
         super.attachBaseContext(newBase)
-        applyOverrideConfiguration(
-            FormattingLocales().activityOverride(newBase.resources.configuration)
+        val locale = EntryPointAccessors.fromApplication(newBase, LocaleEntryPoint::class.java)
+        val formattingLocales = locale.formattingLocales()
+        val builtWith = formattingLocales.refresh(newBase)
+        applyOverrideConfiguration(formattingLocales.activityOverride(newBase))
+        staleLocale = StaleLocaleRecreation(
+            builtWith = builtWith,
+            current = { formattingLocales.fresh(applicationContext) },
+            recreate = ::recreate,
+            // Android's notification settings name the channels in the new language too. Off the main thread: it asks
+            // the notification service for the channels.
+            languageChanged = { thread { locale.notificationDataSource().refreshChannelNames() } }
         )
     }
+
+    /** A per-app change the platform did not deliver as a configuration change (EC-L10N-06, T23 8.2 row 9d). */
+    private lateinit var staleLocale: StaleLocaleRecreation
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()
@@ -156,6 +175,7 @@ class MainActivity : ComponentActivity() {
         // Dark like the splash; the chosen theme's bars follow with the first frame.
         applySystemBars(dark = true)
         super.onCreate(savedInstanceState)
+        staleLocale.restore(savedInstanceState?.getString(RECREATED_FOR_LANGUAGE))
         dismissDailyReminderIfAsked(intent)
         // A recreated activity restores its back stack instead, and one opened from recents is not a new tap.
         pendingDoctorReport = savedInstanceState == null && opensDoctorReport(intent)
@@ -230,6 +250,7 @@ class MainActivity : ComponentActivity() {
         outState.putString(THEME, appearance.theme.name)
         outState.putBoolean(ATTACK_IN_PROGRESS, appearance.attackInProgress)
         outState.putBoolean(PAYMENT_MESSAGES_ASKED, premiumStartChecks.paymentMessagesAsked)
+        outState.putString(RECREATED_FOR_LANGUAGE, staleLocale.saved())
     }
 
     private fun showContent(startAttack: Boolean) {
@@ -328,7 +349,8 @@ class MainActivity : ComponentActivity() {
             IntentFilter(Intent.ACTION_TIMEZONE_CHANGED),
             ContextCompat.RECEIVER_NOT_EXPORTED
         )
-        recreateIfZoneChanged()
+        // One recreate applies both a new language and a new zone.
+        if (!staleLocale.onStart(isFinishing, isChangingConfigurations)) recreateIfZoneChanged()
     }
 
     override fun onStop() {
