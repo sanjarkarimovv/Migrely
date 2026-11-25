@@ -9,9 +9,9 @@ The text covers `develop` 860d03e4 since `v1.3.3`: D193 (#255), D197 (#278), D18
 D195 (change 59, T23) with the #274 and #276 fixes. German follows the phone's language list or, on Android 13 and later,
 Android's per-app language; the PDF report and CSV stay English (D195 (4), (5)), so the notes say the PDF does. The credit
 line is on by default (D186 (2)), so the notes say "now ends" and name the switch's screen. D188 (no review request for 3
-days after a safety card) is not announced, and nothing mentions reviews, ratings or promotions. Only en-US: the de-DE
+days after a safety card) is not announced, and nothing asks for a rating or offers a reward. Only en-US: the de-DE
 listing does not exist yet (T79), so German users see this text. It is waiting for `medical-reviewer`. It does not say
-"medically reviewed" or "approved" (the clinician sign-off, T31, is open). The text is 493 of 500 characters.
+"medically reviewed" or "approved" (the clinician sign-off, T31, is open). The text is 497 of 500 characters.
 
 ```
 <en-US>
@@ -20,8 +20,8 @@ New:
 • Settings has a "Share and rate" section.
 • The doctor report now ends with one line naming Migrely. Turn it off in Doctor report.
 Fixes:
-• TalkBack moves through scrolling pages and dialogs in order.
-• At very large text, the "Still going?" card and the pain and effect dialogs scroll into view.
+• TalkBack moves in order on most scrolling pages and dialogs.
+• At very large text, you can reach the "Still going?" card and all of the pain and effect dialogs.
 • A setting that couldn't be saved no longer looks saved.
 </en-US>
 ```
