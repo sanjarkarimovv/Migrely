@@ -10,8 +10,9 @@ D195 (change 59, T23) with the #274 and #276 fixes. German follows the phone's l
 Android's per-app language; the PDF report and CSV stay English (D195 (4), (5)), so the notes say the PDF does. The credit
 line is on by default (D186 (2)), so the notes say "now ends" and name the switch's screen. D188 (no review request for 3
 days after a safety card) is not announced, and nothing asks for a rating or offers a reward. Only en-US: the de-DE
-listing does not exist yet (T79), so German users see this text. It is waiting for `medical-reviewer`. It does not say
-"medically reviewed" or "approved" (the clinician sign-off, T31, is open). The text is 497 of 500 characters.
+listing does not exist yet (T79), so German users see this text. `medical-reviewer` checked it on 2026-11-25 (all lines
+PASS after its two replacements, which are applied word for word). It does not say "medically reviewed" or "approved"
+(the clinician sign-off, T31, is open). The text is 497 of 500 characters.
 
 ```
 <en-US>
