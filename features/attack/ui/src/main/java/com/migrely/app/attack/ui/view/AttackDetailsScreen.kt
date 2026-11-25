@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -66,8 +65,15 @@ import com.migrely.app.attack.ui.model.ShownAttackMessageUiModel
 import com.migrely.app.attack.ui.model.TagKindUiModel
 import com.migrely.app.attack.ui.model.TimeErrorUiModel
 import com.migrely.app.designsystem.icon.MigrelyIcons
+import com.migrely.app.designsystem.input.TypingSpace
+import com.migrely.app.designsystem.input.rememberKeyboardRoom
+import com.migrely.app.designsystem.input.rememberTypingSpace
 import com.migrely.app.designsystem.layout.MigrelyInsets
+import com.migrely.app.designsystem.layout.PageScroll
+import com.migrely.app.designsystem.layout.ownWords
+import com.migrely.app.designsystem.layout.wordsShownOnly
 import com.migrely.app.designsystem.motion.rememberReduceMotion
+import com.migrely.app.designsystem.snackbar.LocalMessageClock
 import com.migrely.app.designsystem.snackbar.MessageLayout
 import com.migrely.app.designsystem.snackbar.clearOfMessage
 import com.migrely.app.designsystem.theme.MigrelyTheme
@@ -156,6 +162,7 @@ fun AttackDetailsDependencies.AttackDetails(
         mutableStateOf<ShownAttackMessageUiModel?>(null)
     }
     val messageBottom = remember { mutableStateOf(0.dp) }
+    val messageClock = LocalMessageClock.current
     // Read by the event collector, which outlives each state.
     val ready by rememberUpdatedState(uiState is AttackDetailsViewStateUiModel.Ready)
 
@@ -176,7 +183,7 @@ fun AttackDetailsDependencies.AttackDetails(
     // of the latest event has been announced, plus CARD_FIRST_MILLIS, it is not shown: TalkBack speaks the card first.
     fun post(message: AttackMessageUiModel) {
         if (!messageHeld()) shownBeforeHold = shownMessage
-        shownMessage = ShownAttackMessageUiModel(message, System.currentTimeMillis())
+        shownMessage = ShownAttackMessageUiModel(message, messageClock.wallMillis())
         if (messageReleasedFor < safetyCardArrivals) messageHeldFor = safetyCardArrivals
     }
 
@@ -188,7 +195,7 @@ fun AttackDetailsDependencies.AttackDetails(
             delay(CARD_FIRST_MILLIS)
             // Its time starts when it can be seen.
             if (messageHeld() && messageHeldFor <= announced) {
-                shownMessage = shownMessage?.copy(shownAtEpochMillis = System.currentTimeMillis())
+                shownMessage = shownMessage?.copy(shownAtEpochMillis = messageClock.wallMillis())
             }
             messageReleasedFor = announced
         }
@@ -382,19 +389,29 @@ fun AttackDetailsContents(
     messages: @Composable () -> Unit = {}
 ) {
     val details = (viewState as? AttackDetailsViewStateUiModel.Ready)?.details
+    // The note's line being typed always shows: the bar steps aside where it cannot (BRD D192, #245).
+    val typingSpace = rememberTypingSpace()
     // The bar, then the message, then the content, for keyboard and TalkBack (BRD D178 (4)).
     MessageLayout(
         message = messages,
         modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background),
-        topBar = { AttackDetailsTopBar(details, timeUiFormatter, actions.onBack) }
+        topBar = { AttackDetailsTopBar(details, timeUiFormatter, actions.onBack) },
+        typingSpace = typingSpace
     ) {
         when (viewState) {
             AttackDetailsViewStateUiModel.Loading -> Box(Modifier.fillMaxSize())
             AttackDetailsViewStateUiModel.NotFound -> NotFoundContents(actions.onBack)
             is AttackDetailsViewStateUiModel.Ready ->
-                ReadyContents(viewState.details, timeUiFormatter, labels, localState, actions)
+                ReadyContents(
+                    viewState.details,
+                    timeUiFormatter,
+                    labels,
+                    localState,
+                    actions,
+                    typingSpace
+                )
         }
     }
 }
@@ -446,12 +463,16 @@ private fun ReadyContents(
     timeUiFormatter: AttackTimeUiFormatter,
     labels: AttackLabels,
     localState: AttackDetailsLocalState,
-    actions: AttackDetailsActions
+    actions: AttackDetailsActions,
+    typingSpace: TypingSpace
 ) {
     val scrollState = rememberScrollState()
     val arrivals = localState.safetyCardArrivals
     val reveal = rememberSafetyCardReveal(scrollState, arrivals)
     val reduceMotion = rememberReduceMotion()
+    val viewportInsets = MigrelyInsets.barsAndKeyboard.only(WindowInsetsSides.Bottom)
+    // Closing the keyboard leaves the page where it is, so TalkBack stays on the note (#238).
+    val keyboardRoom = rememberKeyboardRoom(scrollState, viewportInsets)
     // Keyed on the card's event, not on its restored visibility (BRD D167).
     LaunchedEffect(arrivals) {
         if (arrivals > 0) {
@@ -460,53 +481,58 @@ private fun ReadyContents(
         }
     }
     Box(contentAlignment = Alignment.TopCenter, modifier = Modifier.fillMaxSize()) {
-        Column(
-            verticalArrangement = Arrangement.spacedBy(28.dp),
-            modifier = Modifier
-                .widthIn(max = CONTENT_MAX_WIDTH)
-                .fillMaxWidth()
-                // Before the reveal's area, so in card mode "the top of the content" is below the message (D165 (2)).
-                .clearOfMessage(localState.messageClearance)
-                // Before the scroll, so its visible part ends at the keyboard's top, or the navigation bar's when that is
-                // higher, and the note's cursor line is kept in view against it (BRD D180 (2), #141).
-                .windowInsetsPadding(MigrelyInsets.barsAndKeyboard.only(WindowInsetsSides.Bottom))
-                .then(reveal.viewportModifier)
-                .verticalScroll(scrollState)
-                .windowInsetsPadding(
-                    MigrelyInsets.barsAndKeyboard.only(WindowInsetsSides.Horizontal)
-                )
-                .padding(horizontal = 16.dp)
-        ) {
-            if (localState.safetyCardVisible) {
-                SafetyCard(
-                    onDismiss = localState.onDismissSafetyCard,
-                    announced = reveal.announces(arrivals),
-                    modifier = reveal.cardModifier
-                )
-            }
-            TimeSection(details, timeUiFormatter, localState.timeError, actions)
-            PainSection(details, timeUiFormatter, actions)
-            MedicationsSection(details, timeUiFormatter, actions)
-            ChoiceSections(details, labels, actions)
-            ImpactSection(details.functionalImpact, labels, actions.onImpact)
-            NoteSection(
-                attackId = details.id,
-                draft = localState.noteDraft,
-                savedNote = details.note,
-                onDraftChange = localState.onNoteDraft,
-                onNote = actions.onNote
-            )
-            TextButton(
-                onClick = actions.onDelete,
+        PageScroll {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(28.dp),
                 modifier = Modifier
+                    .widthIn(max = CONTENT_MAX_WIDTH)
                     .fillMaxWidth()
-                    .heightIn(min = 56.dp)
+                    // Before the reveal's area, so in card mode "the top of the content" is below the message (D165 (2)).
+                    .clearOfMessage(localState.messageClearance)
+                    // Before the scroll, so its visible part ends at the keyboard's top, or the navigation bar's when that is
+                    // higher, and the note's cursor line is kept in view against it (BRD D180 (2), #141).
+                    .windowInsetsPadding(viewportInsets)
+                    .then(reveal.viewportModifier)
+                    .pageScroll(scrollState, typingSpace)
+                    .then(keyboardRoom.modifier)
+                    .windowInsetsPadding(
+                        MigrelyInsets.barsAndKeyboard.only(WindowInsetsSides.Horizontal)
+                    )
+                    .padding(horizontal = 16.dp)
             ) {
-                Text(
-                    text = stringResource(R.string.delete_attack),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.error
+                if (localState.safetyCardVisible) {
+                    SafetyCard(
+                        onDismiss = localState.onDismissSafetyCard,
+                        announced = reveal.announces(arrivals),
+                        modifier = reveal.cardModifier
+                    )
+                }
+                TimeSection(details, timeUiFormatter, localState.timeError, actions)
+                PainSection(details, timeUiFormatter, actions)
+                MedicationsSection(details, timeUiFormatter, actions)
+                ChoiceSections(details, labels, actions)
+                ImpactSection(details.functionalImpact, labels, actions.onImpact)
+                NoteSection(
+                    attackId = details.id,
+                    draft = localState.noteDraft,
+                    savedNote = details.note,
+                    onDraftChange = localState.onNoteDraft,
+                    onNote = actions.onNote
                 )
+                TextButton(
+                    onClick = actions.onDelete,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 56.dp)
+                        .ownWords(stringResource(R.string.delete_attack))
+                ) {
+                    Text(
+                        text = stringResource(R.string.delete_attack),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.wordsShownOnly()
+                    )
+                }
             }
         }
     }

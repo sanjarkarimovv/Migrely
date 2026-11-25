@@ -24,7 +24,6 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -33,6 +32,7 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.navigation.NavController
 import com.migrely.app.architecture.ui.view.ScreenEnterObserver
 import com.migrely.app.designsystem.input.TapGuard
+import com.migrely.app.designsystem.layout.isCompactHeight
 import com.migrely.app.designsystem.motion.rememberReduceMotion
 import com.migrely.app.designsystem.snackbar.MESSAGE_OFFSET_BELOW_TOP_BAR
 import com.migrely.app.designsystem.snackbar.MessageLayout
@@ -53,7 +53,6 @@ import kotlinx.coroutines.delay
 private const val TICK_MILLIS = 30_000L
 private const val MODE_FADE_IN_MILLIS = 1_200
 private const val MODE_FADE_OUT_MILLIS = 600
-private const val COMPACT_HEIGHT_DP = 480
 private const val MODE_TAP_GUARD_MILLIS = 1_000L
 private const val GUIDANCE_COLUMN_WIDTH_FRACTION = 0.5f
 
@@ -62,11 +61,6 @@ private val SETTINGS_ROW_GAP = 2.dp
 
 /** Holds the mode shown last without being snapshot state, so reading it never recomposes. */
 private class ShownMode(var mode: HomeMode)
-
-/** True in a short window (a phone in landscape), where the home layouts put text and controls side by side. */
-@Composable
-internal fun isCompactHeight(): Boolean =
-    LocalConfiguration.current.screenHeightDp < COMPACT_HEIGHT_DP
 
 /**
  * [monthCalendar] is drawn under today's card and list; `:app` fills it with this month's calendar

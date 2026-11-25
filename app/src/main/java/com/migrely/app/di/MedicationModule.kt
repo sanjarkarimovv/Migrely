@@ -22,6 +22,7 @@ import com.migrely.app.medication.domain.repository.GetMedicationRepository
 import com.migrely.app.medication.domain.repository.GetOveruseNoticesRepository
 import com.migrely.app.medication.domain.repository.GetPendingEffectQuestionOfRepository
 import com.migrely.app.medication.domain.repository.GetPendingEffectQuestionRepository
+import com.migrely.app.medication.domain.repository.MarkSafetyCardShownRepository
 import com.migrely.app.medication.domain.repository.SetIntakeEffectRepository
 import com.migrely.app.medication.domain.repository.SetMedicationArchivedRepository
 import com.migrely.app.medication.domain.repository.UpdateMedicationRepository
@@ -34,6 +35,7 @@ import com.migrely.app.medication.domain.usecase.GetMedicationUseCase
 import com.migrely.app.medication.domain.usecase.GetMedicationsUseCase
 import com.migrely.app.medication.domain.usecase.GetOveruseStatusUseCase
 import com.migrely.app.medication.domain.usecase.LogIntakeUseCase
+import com.migrely.app.medication.domain.usecase.MarkSafetyCardShownUseCase
 import com.migrely.app.medication.domain.usecase.RestoreMedicationUseCase
 import com.migrely.app.medication.domain.usecase.RunEffectQuestionUseCase
 import com.migrely.app.medication.domain.usecase.SaveMedicationUseCase
@@ -236,12 +238,14 @@ internal object MedicationModule {
         answerEffectUseCase: AnswerEffectUseCase,
         skipEffectQuestionUseCase: SkipEffectQuestionUseCase,
         acknowledgeOveruseUseCase: AcknowledgeOveruseUseCase,
+        markSafetyCardShownUseCase: MarkSafetyCardShownUseCase,
         useCaseExecutor: UseCaseExecutor
     ) = MedicationPromptViewModel(
         getMedicationPromptUseCase,
         answerEffectUseCase,
         skipEffectQuestionUseCase,
         acknowledgeOveruseUseCase,
+        markSafetyCardShownUseCase,
         MedicationPromptPresentationMapper(OveruseCategoryPresentationMapper()),
         MedicationPromptDomainMapper(),
         useCaseExecutor
@@ -293,4 +297,10 @@ internal object MedicationModule {
         SaveProblemPresentationMapper(),
         useCaseExecutor
     )
+
+    @Provides
+    fun providesMedicationMarkSafetyCardShownUseCase(
+        markSafetyCardShownRepository: MarkSafetyCardShownRepository,
+        coroutineContextProvider: CoroutineContextProvider
+    ) = MarkSafetyCardShownUseCase(markSafetyCardShownRepository, coroutineContextProvider)
 }

@@ -4,6 +4,7 @@ import android.os.SystemClock
 import android.view.ViewConfiguration
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.runtime.Composable
@@ -26,7 +27,10 @@ import androidx.compose.ui.node.currentValueOf
 import androidx.compose.ui.node.requireLayoutCoordinates
 import androidx.compose.ui.platform.InspectorInfo
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.paneTitle
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import kotlinx.coroutines.delay
@@ -181,25 +185,70 @@ private fun rememberPropertiesInTheWait(properties: DialogProperties): DialogPro
     }
 }
 
-/** Material's `AlertDialog`, with the wait. */
+/**
+ * Material's `AlertDialog`, with the wait. [wide] lets it grow past the platform's default width, up to Material's
+ * 560 dp with 24 dp margins: in a short window at large fonts the default width stacks the buttons and leaves the
+ * content little height (T23 8.1 row R03).
+ *
+ * [paneTitle] names the dialog's pane for TalkBack in place of Material's "Dialog", for a dialog whose title is in
+ * [text], as [MigrelyScrollingAlertDialog] sets it. A window with two pane names was announced by whichever appeared
+ * last, often "Dialog" (T23 8.1 F3). Set on the outermost modifier, it is the one name the pane has.
+ */
 @Composable
 fun MigrelyAlertDialog(
     onDismissRequest: () -> Unit,
     confirmButton: @Composable () -> Unit,
     dismissButton: (@Composable () -> Unit)? = null,
     title: (@Composable () -> Unit)? = null,
-    text: (@Composable () -> Unit)? = null
+    text: (@Composable () -> Unit)? = null,
+    wide: Boolean = false,
+    paneTitle: String? = null
 ) {
+    val named = paneTitle?.let { name -> Modifier.semantics { this.paneTitle = name } } ?: Modifier
     AlertDialog(
         onDismissRequest = onDismissRequest,
         confirmButton = confirmButton,
-        modifier = Modifier.dialogWait(),
+        modifier = named
+            .dialogWait()
+            .then(if (wide) Modifier.padding(horizontal = WIDE_DIALOG_MARGIN) else Modifier),
         dismissButton = dismissButton,
         title = title,
         text = text,
-        properties = rememberPropertiesInTheWait(DialogProperties())
+        properties = rememberPropertiesInTheWait(alertDialogProperties(wide))
     )
 }
+
+/**
+ * [MigrelyAlertDialog] with its title and [content] in one area that scrolls ([ScrollingDialogContent]), for a dialog
+ * whose title can be long or whose buttons can stack (T23 8.1 rows R03, R04). The one [title] heads the area and names
+ * the pane for TalkBack, so the two cannot differ and no caller can leave the pane as Material's "Dialog" (T23 8.1 F3,
+ * cr-de on 0a1a4446). [areaModifier] applies to the visible area, before the scroll.
+ */
+@Composable
+fun MigrelyScrollingAlertDialog(
+    title: String,
+    onDismissRequest: () -> Unit,
+    confirmButton: @Composable () -> Unit,
+    dismissButton: (@Composable () -> Unit)? = null,
+    wide: Boolean = false,
+    areaModifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    MigrelyAlertDialog(
+        onDismissRequest = onDismissRequest,
+        confirmButton = confirmButton,
+        dismissButton = dismissButton,
+        text = { ScrollingDialogContent(title, areaModifier, content) },
+        wide = wide,
+        paneTitle = title
+    )
+}
+
+/** A wide dialog leaves the platform's default width, so Material's own maximum of 560 dp applies. */
+internal fun alertDialogProperties(wide: Boolean): DialogProperties =
+    DialogProperties(usePlatformDefaultWidth = !wide)
+
+private val WIDE_DIALOG_MARGIN = 24.dp
 
 /** Material's `DatePickerDialog`, with the wait. */
 @Composable

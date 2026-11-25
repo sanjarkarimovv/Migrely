@@ -11,8 +11,11 @@ interface NotificationDataSource {
     /** Whether the user allows Migrely's notifications. */
     fun areEnabled(): Boolean
 
-    /** "How was today?" about [date], with "Pain-free day" (which marks [date]) and "Log a migraine". */
-    fun showDailyReminder(date: LocalDate)
+    /**
+     * "How was today?" about [date], with "Pain-free day" (which marks [date]) and "Log a migraine". A [quiet] one makes
+     * no sound and no vibration and is otherwise the same (BRD D183).
+     */
+    fun showDailyReminder(date: LocalDate, quiet: Boolean)
 
     /** Replaces the daily reminder after "Pain-free day" on a day with an attack (BRD EC-REM-06, EC-REM-21). */
     fun showAttackLoggedToday()
@@ -34,4 +37,10 @@ interface NotificationDataSource {
 
     /** Removes every notification Migrely shows (BRD D96). */
     fun cancelAll()
+
+    /**
+     * Names the channels that already exist in the app's language, for Android's notification settings, and creates
+     * none (BRD D195, EC-L10N-07); the user's choices for each channel stay.
+     */
+    fun refreshChannelNames()
 }

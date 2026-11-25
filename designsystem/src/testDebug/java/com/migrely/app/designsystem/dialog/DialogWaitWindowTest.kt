@@ -171,7 +171,11 @@ class DialogWaitWindowTest {
                     labels = DateRangePickerLabels(
                         title = "Range",
                         cancel = "Cancel",
-                        confirm = "Done"
+                        confirm = "Done",
+                        startDate = "Start date",
+                        endDate = "End date",
+                        notChosen = "not chosen",
+                        headlineDescription = "Start date, %1\$s, end date, %2\$s"
                     ),
                     onConfirm = { _, _ -> },
                     onDismiss = { dismissed++ }

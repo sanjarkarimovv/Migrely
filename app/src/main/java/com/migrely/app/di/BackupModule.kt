@@ -1,6 +1,9 @@
 package com.migrely.app.di
 
+import android.app.LocaleManager
 import android.content.Context
+import android.content.res.Resources
+import android.os.Build
 import com.migrely.app.architecture.domain.UseCaseExecutor
 import com.migrely.app.backup.data.mapper.AttacksCsvMapper
 import com.migrely.app.backup.data.mapper.BackupSummaryDomainMapper
@@ -40,6 +43,7 @@ import com.migrely.app.datasource.document.datasource.DocumentDataSourceImpl
 import com.migrely.app.datasource.medication.mapper.MedicationLocalMapper
 import com.migrely.app.datasource.schedule.datasource.ReminderScheduleDataSource
 import com.migrely.app.datasource.tag.mapper.CustomTagLocalMapper
+import com.migrely.app.locale.SystemLocale
 import com.migrely.app.navigation.mapper.YourDataNavigationEventDestinationMapper
 import dagger.Module
 import dagger.Provides
@@ -101,9 +105,20 @@ internal object BackupModule {
         reminderScheduleDataSource,
         AttacksCsvMapper(),
         BackupSummaryDomainMapper(),
-        // The phone's own language, not the formatting locale (BRD D117): the CSV opens in a spreadsheet of the
-        // phone's region, which expects semicolons where decimals take a comma (D72).
-        locale = { context.resources.configuration.locales[0] }
+        // The system's own language, not the formatting locale (BRD D117) nor Migrely's per-app language (D195 (5)):
+        // the CSV opens in a spreadsheet of the phone's region, which expects semicolons where decimals take a comma
+        // (D72). On Android 13+ only LocaleManager's system locales skip the per-app language; below, the system
+        // configuration is the phone's own, as before.
+        locale = SystemLocale(
+            appLanguageIgnored = {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    context.getSystemService(LocaleManager::class.java)?.systemLocales?.get(0)
+                } else {
+                    null
+                }
+            },
+            systemConfiguration = { Resources.getSystem().configuration.locales[0] }
+        )::current
     )
 
     /** One for the app, so a file being written or read survives a rotation (ARCHITECTURE section 13). */

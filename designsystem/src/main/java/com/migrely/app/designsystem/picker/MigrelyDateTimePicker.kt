@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerState
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -34,6 +33,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.migrely.app.designsystem.dialog.MigrelyDatePickerDialog
 import com.migrely.app.designsystem.dialog.MigrelyDialog
+import com.migrely.app.designsystem.layout.PageScroll
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
@@ -142,11 +142,13 @@ private fun DateStep(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun DateStepCalendar(state: DatePickerState, title: String) {
-    DatePicker(
-        state = state,
-        modifier = Modifier.verticalScroll(rememberScrollState()),
-        title = { Text(title, Modifier.padding(16.dp)) }
-    )
+    PageScroll(exactBounds = false) {
+        DatePicker(
+            state = state,
+            modifier = Modifier.pageScroll(rememberScrollState()),
+            title = { Text(title, Modifier.padding(16.dp)) }
+        )
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -183,33 +185,38 @@ private fun TimeStep(
             shape = RoundedCornerShape(28.dp),
             color = MaterialTheme.colorScheme.surfaceContainerHigh
         ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier
-                    .verticalScroll(rememberScrollState())
-                    .padding(24.dp)
-            ) {
-                Text(
-                    text = labels.title,
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(bottom = 16.dp)
-                )
-                // Vertical in every orientation: the horizontal layout Material picks in landscape is wider than a
-                // dialog and hid the afternoon hours (QA #79); in landscape the column scrolls instead.
-                TimePicker(state = state, layoutType = TimePickerLayoutType.Vertical)
-                if (!inRange) {
+            PageScroll(exactBounds = false) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier
+                        .pageScroll(rememberScrollState())
+                        .padding(24.dp)
+                ) {
                     Text(
-                        text = labels.outOfRange,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.error
+                        text = labels.title,
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.padding(bottom = 16.dp)
                     )
-                }
-                Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
-                    TextButton(onClick = onDismiss) { Text(labels.cancel) }
-                    TextButton(onClick = {
-                        onConfirm(pickedEpochMillis.coerceIn(range))
-                    }, enabled = inRange) {
-                        Text(labels.confirm)
+                    // Vertical in every orientation: the horizontal layout Material picks in landscape is wider than a
+                    // dialog and hid the afternoon hours (QA #79); in landscape the column scrolls instead.
+                    TimePicker(state = state, layoutType = TimePickerLayoutType.Vertical)
+                    if (!inRange) {
+                        Text(
+                            text = labels.outOfRange,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                    Row(
+                        horizontalArrangement = Arrangement.End,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        TextButton(onClick = onDismiss) { Text(labels.cancel) }
+                        TextButton(onClick = {
+                            onConfirm(pickedEpochMillis.coerceIn(range))
+                        }, enabled = inRange) {
+                            Text(labels.confirm)
+                        }
                     }
                 }
             }

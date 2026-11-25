@@ -15,6 +15,14 @@ sealed interface MedicationMessageUiModel : Parcelable {
     @Parcelize
     data object IntakeUndone : MedicationMessageUiModel
 
+    /** "Undo" found the disk full; the intake is still stored (BRD D190 (2)). */
+    @Parcelize
+    data object IntakeKeptStorageFull : MedicationMessageUiModel
+
+    /** "Undo" failed another way; the intake is still stored (BRD D190 (2)). */
+    @Parcelize
+    data object IntakeKeptFailed : MedicationMessageUiModel
+
     @Parcelize
     data object InFuture : MedicationMessageUiModel
 

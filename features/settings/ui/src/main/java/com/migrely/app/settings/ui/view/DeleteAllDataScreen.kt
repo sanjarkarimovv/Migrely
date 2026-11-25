@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.exclude
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -21,9 +23,9 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.DividerDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -46,6 +48,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
@@ -59,9 +62,17 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.migrely.app.designsystem.icon.MigrelyIcons
+import com.migrely.app.designsystem.input.KeyboardRoom
+import com.migrely.app.designsystem.input.ProvideTypingSpace
 import com.migrely.app.designsystem.input.SingleLineFieldInView
+import com.migrely.app.designsystem.input.TypingSpace
 import com.migrely.app.designsystem.input.inputLineRoom
+import com.migrely.app.designsystem.input.rememberKeyboardRoom
+import com.migrely.app.designsystem.input.rememberTypingSpace
 import com.migrely.app.designsystem.layout.MigrelyInsets
+import com.migrely.app.designsystem.layout.PageScroll
+import com.migrely.app.designsystem.layout.ownWords
+import com.migrely.app.designsystem.layout.wordsShownOnly
 import com.migrely.app.designsystem.theme.MigrelyDarkRoom
 import com.migrely.app.designsystem.theme.MigrelyTheme
 import com.migrely.app.settings.presentation.model.DeleteAllDataViewState
@@ -158,6 +169,9 @@ fun DeleteAllDataContents(
     actions: DeleteAllDataActions,
     modifier: Modifier = Modifier
 ) = MigrelyDarkRoom(active = deleting) {
+    // The word's input line always shows: once the row is decided, the bar steps aside where the line cannot fit
+    // (BRD D192, #245). The page's visible part ends at the divider above the row's place.
+    val typingSpace = rememberTypingSpace(aboveKeyboard = DividerDefaults.Thickness)
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -188,13 +202,16 @@ fun DeleteAllDataContents(
                 ),
                 windowInsets = MigrelyInsets.bars.only(
                     WindowInsetsSides.Top + WindowInsetsSides.Horizontal
-                )
+                ),
+                modifier = typingSpace.barModifier
             )
         }
         if (deleting) {
             Deleting()
         } else {
-            Confirmation(typed, word, confirmed, failed, actions)
+            ProvideTypingSpace(typingSpace) {
+                Confirmation(typed, word, confirmed, failed, actions, typingSpace)
+            }
         }
     }
 }
@@ -205,16 +222,29 @@ private fun ColumnScope.Confirmation(
     word: String,
     confirmed: Boolean,
     failed: Boolean,
-    actions: DeleteAllDataActions
+    actions: DeleteAllDataActions,
+    typingSpace: TypingSpace
 ) {
     val scrollState = rememberScrollState()
     var area by remember { mutableIntStateOf(0) }
     var row by remember { mutableIntStateOf(0) }
     val rides = rememberRowRidesAboveKeyboard(area, row)
-    val density = LocalDensity.current
-    val behindKeyboard = with(density) {
-        val keyboard = WindowInsets.ime.getBottom(density)
-        (keyboard - row - MigrelyInsets.bars.getBottom(density)).coerceAtLeast(0).toDp()
+    // The row's bottom: above the keyboard while it rides, else above the bars.
+    val rowInsets = (if (rides) MigrelyInsets.barsAndKeyboard else MigrelyInsets.bars)
+        .only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom)
+    // With the row left behind the keyboard, the body still ends at the keyboard's top.
+    val bodyInsets = if (rides) {
+        WindowInsets(0)
+    } else {
+        WindowInsets.ime.exclude(MigrelyInsets.bars).exclude(WindowInsets(bottom = row))
+            .only(WindowInsetsSides.Bottom)
+    }
+    // Closing the keyboard leaves the body where it is (BRD D189, #238). The insets are read in layout, as the row's
+    // and the body's paddings read them. `row` comes from an earlier pass and holds still while the keyboard moves
+    // (the row's size excludes its insets). `rides` is chosen in composition, only as a keyboard starts to open,
+    // where the room can only shrink, or is gone, where both of its cases give the same bottom.
+    val keyboardRoom = rememberKeyboardRoom(scrollState) {
+        row + rowInsets.getBottom(this) + bodyInsets.getBottom(this)
     }
     Column(
         Modifier
@@ -226,23 +256,33 @@ private fun ColumnScope.Confirmation(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
-                // With the row left behind the keyboard, the body still ends at the keyboard's top.
-                .padding(bottom = if (rides) 0.dp else behindKeyboard)
+                // Read in layout, and consumes no inset.
+                .padding(bodyInsets.asPaddingValues())
         ) {
-            ConfirmationBody(typed, word, failed, actions.onTyped, scrollState)
+            ConfirmationBody(
+                typed,
+                word,
+                failed,
+                actions.onTyped,
+                scrollState,
+                keyboardRoom,
+                typingSpace
+            )
         }
-        // There is more to read above the button.
-        if (scrollState.canScrollForward) {
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-        }
+        // There is more to read above the button. Always laid out, only its colour changes: a divider that comes
+        // and goes would resize the body's visible part and scroll it by its 1 dp at the end (BRD D189, #238).
+        HorizontalDivider(
+            color = if (scrollState.canScrollForward) {
+                MaterialTheme.colorScheme.outlineVariant
+            } else {
+                Color.Transparent
+            }
+        )
         Box(
             contentAlignment = Alignment.Center,
             modifier = Modifier
                 .fillMaxWidth()
-                .windowInsetsPadding(
-                    (if (rides) MigrelyInsets.barsAndKeyboard else MigrelyInsets.bars)
-                        .only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom)
-                )
+                .windowInsetsPadding(rowInsets)
                 .onSizeChanged { row = it.height }
                 .padding(horizontal = 16.dp, vertical = 8.dp)
         ) {
@@ -289,56 +329,69 @@ private fun ConfirmationBody(
     word: String,
     failed: Boolean,
     onTyped: (String) -> Unit,
-    scrollState: ScrollState
+    scrollState: ScrollState,
+    keyboardRoom: KeyboardRoom,
+    typingSpace: TypingSpace
 ) {
     // Kept tight, so the warning and the field fit above the button in landscape at twice the font size.
-    Column(
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-        modifier = Modifier
-            .widthIn(max = CONTENT_MAX_WIDTH)
-            .fillMaxWidth()
-            .windowInsetsPadding(MigrelyInsets.bars.only(WindowInsetsSides.Horizontal))
-            .verticalScroll(scrollState)
-            .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 12.dp)
-    ) {
-        Text(
-            text = stringResource(R.string.settings_delete_warning),
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurface
-        )
-        SingleLineFieldInView(hasLabel = true) { inView, interactionSource ->
-            OutlinedTextField(
-                value = typed,
-                onValueChange = onTyped,
-                singleLine = true,
-                label = { Text(stringResource(R.string.settings_delete_field, word)) },
-                keyboardOptions = KeyboardOptions(
-                    capitalization = KeyboardCapitalization.Characters,
-                    autoCorrectEnabled = false,
-                    imeAction = ImeAction.Done
-                ),
-                interactionSource = interactionSource,
-                modifier = inView.fillMaxWidth()
-            )
-        }
-        if (failed) {
+    PageScroll {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier
+                .widthIn(max = CONTENT_MAX_WIDTH)
+                .fillMaxWidth()
+                .windowInsetsPadding(MigrelyInsets.bars.only(WindowInsetsSides.Horizontal))
+                .pageScroll(scrollState, typingSpace)
+                // After the scroll, never a child: the column's spacing would add a gap.
+                .then(keyboardRoom.modifier)
+                .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 12.dp)
+        ) {
             Text(
-                text = stringResource(R.string.settings_not_deleted),
+                text = stringResource(R.string.settings_delete_warning),
                 style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            SingleLineFieldInView(hasLabel = true) { inView, interactionSource ->
+                OutlinedTextField(
+                    value = typed,
+                    onValueChange = onTyped,
+                    singleLine = true,
+                    label = {
+                        Text(
+                            stringResource(R.string.settings_delete_field, word),
+                            Modifier.wordsShownOnly()
+                        )
+                    },
+                    keyboardOptions = KeyboardOptions(
+                        capitalization = KeyboardCapitalization.Characters,
+                        autoCorrectEnabled = false,
+                        imeAction = ImeAction.Done
+                    ),
+                    interactionSource = interactionSource,
+                    modifier = inView
+                        .fillMaxWidth()
+                        .ownWords(stringResource(R.string.settings_delete_field, word))
+                )
+            }
+            if (failed) {
+                Text(
+                    text = stringResource(R.string.settings_not_deleted),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
+                )
+            }
+            Text(
+                text = stringResource(R.string.settings_delete_what),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = stringResource(R.string.settings_android_backup),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-        Text(
-            text = stringResource(R.string.settings_delete_what),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Text(
-            text = stringResource(R.string.settings_android_backup),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
     }
 }
 

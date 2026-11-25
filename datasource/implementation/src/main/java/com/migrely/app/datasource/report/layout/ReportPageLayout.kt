@@ -285,10 +285,19 @@ internal class ReportPageLayout(private val document: ReportDocumentDataModel) {
         }
     }
 
+    /**
+     * The disclaimer on every page; on the last page only, the credit line under it, placed by the disclaimer's
+     * measured height (BRD REP-F5, D186, design D2). It sits in the bottom margin, so pagination does not change.
+     */
     private fun drawFooter(canvas: Canvas, page: Int, pages: Int) {
         val top = height - MARGIN - FOOTER_HEIGHT / 2
         canvas.drawLine(MARGIN, top - GAP / 2, MARGIN + contentWidth, top - GAP / 2, linePaint)
-        draw(canvas, layout(document.footer, smallPaint, contentWidth * 2 / 3), MARGIN, top)
+        val lines = footerLines(document.footer, document.credit, page, pages)
+        val disclaimer = layout(lines.first(), smallPaint, contentWidth * 2 / 3)
+        draw(canvas, disclaimer, MARGIN, top)
+        lines.getOrNull(1)?.let { credit ->
+            draw(canvas, creditLayout(credit), MARGIN, top + disclaimer.height)
+        }
         val label =
             layout(
                 String.format(Locale.ENGLISH, document.pageLabel, page, pages),
@@ -297,6 +306,9 @@ internal class ReportPageLayout(private val document: ReportDocumentDataModel) {
             )
         draw(canvas, label, MARGIN + contentWidth - label.getLineWidth(0), top)
     }
+
+    /** The credit line across the content width, in the footer's type (design D2). */
+    fun creditLayout(credit: String): StaticLayout = layout(credit, smallPaint, contentWidth)
 
     private fun shade(level: ReportDayLevelDataModel) = when (level) {
         ReportDayLevelDataModel.Outside,
@@ -328,6 +340,13 @@ internal class ReportPageLayout(private val document: ReportDocumentDataModel) {
     private fun paint(size: Float, bold: Boolean = false, color: Int = Color.BLACK) =
         reportTextPaint(size, bold, color)
 }
+
+/**
+ * The footer lines of page [page] of [pages]: [footer], the disclaimer, on every page, and [credit] under it on the last
+ * page only, when there is one (BRD REP-F5, D186, EC-REP-05–07).
+ */
+internal fun footerLines(footer: String, credit: String?, page: Int, pages: Int): List<String> =
+    if (credit != null && page == pages) listOf(footer, credit) else listOf(footer)
 
 /**
  * Text for a PDF page, whose unit is a point. Hinted metrics would round each glyph's advance to a whole point: at

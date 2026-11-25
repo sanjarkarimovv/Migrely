@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -41,18 +40,21 @@ import androidx.navigation.NavController
 import com.migrely.app.architecture.ui.view.ScreenEnterObserver
 import com.migrely.app.designsystem.input.TapGuard
 import com.migrely.app.designsystem.layout.MigrelyInsets
+import com.migrely.app.designsystem.layout.PageScroll
+import com.migrely.app.designsystem.layout.ownWords
+import com.migrely.app.designsystem.layout.wordsShownOnly
 import com.migrely.app.designsystem.motion.rememberReduceMotion
 import com.migrely.app.designsystem.snackbar.MessageLayout
 import com.migrely.app.designsystem.snackbar.MigrelySnackbar
 import com.migrely.app.designsystem.snackbar.MigrelySnackbarHost
 import com.migrely.app.designsystem.snackbar.SnackbarTone
 import com.migrely.app.designsystem.snackbar.messageTimeoutMillis
+import com.migrely.app.designsystem.snackbar.rememberMessageCountdown
 import com.migrely.app.designsystem.theme.MigrelyTheme
 import com.migrely.app.onboarding.presentation.model.AttackFrequencyPresentationModel
 import com.migrely.app.onboarding.presentation.model.OnboardingGoalPresentationModel
 import com.migrely.app.onboarding.ui.R
 import com.migrely.app.onboarding.ui.di.OnboardingDependencies
-import kotlinx.coroutines.delay
 
 private const val STEPS = 4
 private const val GOAL = 0
@@ -93,13 +95,13 @@ fun OnboardingDependencies.Onboarding(
     LaunchedEffect(onboardingEventPresenter) {
         onboardingEventPresenter.notSaved.collect { notSavedAt = System.currentTimeMillis() }
     }
-    val notSavedTimeout = messageTimeoutMillis(READING_MILLIS)
-    LaunchedEffect(notSavedAt, notSavedTimeout) {
-        if (notSavedAt != null && notSavedTimeout != null) {
-            delay(notSavedTimeout)
-            notSavedAt = null
-        }
-    }
+    // Stretched to "Time to take action", paused while focus holds it (BRD EC-UX-16, D182).
+    val countdown = rememberMessageCountdown(
+        message = notSavedAt,
+        timeoutMillis = messageTimeoutMillis(READING_MILLIS),
+        undoActionWallMillis = null,
+        onExpired = { notSavedAt = null }
+    )
     BackHandler(enabled = step > GOAL) { step-- }
     val next: () -> Unit = {
         if (step < REMINDER) step++ else onboardingViewModel.onFinishAction()
@@ -125,8 +127,9 @@ fun OnboardingDependencies.Onboarding(
         reminderOffer = { reminderOffer(onboardingViewModel::onFinishAction) },
         messages = {
             MigrelySnackbarHost(
-                message = notSavedAt,
-                reduceMotion = rememberReduceMotion()
+                message = notSavedAt?.takeUnless { countdown.isOver },
+                reduceMotion = rememberReduceMotion(),
+                countdown = countdown
             ) {
                 MigrelySnackbar(
                     text = stringResource(R.string.onboarding_not_saved),
@@ -170,21 +173,23 @@ private fun OnboardingSteps(
 ) {
     Box(Modifier.fillMaxSize()) {
         Box(contentAlignment = Alignment.TopCenter, modifier = Modifier.fillMaxSize()) {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier
-                    .widthIn(max = CONTENT_MAX_WIDTH)
-                    .fillMaxWidth()
-                    .windowInsetsPadding(MigrelyInsets.bars)
-                    .verticalScroll(rememberScrollState())
-                    .padding(16.dp)
-            ) {
-                StepHeader(step = step, onSkip = actions.onSkip)
-                when (step) {
-                    GOAL -> GoalStep(actions)
-                    FREQUENCY -> FrequencyStep(actions)
-                    PERIOD -> PeriodStep(actions)
-                    else -> ReminderStep(reminderOffer)
+            PageScroll {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier
+                        .widthIn(max = CONTENT_MAX_WIDTH)
+                        .fillMaxWidth()
+                        .windowInsetsPadding(MigrelyInsets.bars)
+                        .pageScroll(rememberScrollState())
+                        .padding(16.dp)
+                ) {
+                    StepHeader(step = step, onSkip = actions.onSkip)
+                    when (step) {
+                        GOAL -> GoalStep(actions)
+                        FREQUENCY -> FrequencyStep(actions)
+                        PERIOD -> PeriodStep(actions)
+                        else -> ReminderStep(reminderOffer)
+                    }
                 }
             }
         }
@@ -279,8 +284,13 @@ private fun GoalStep(actions: OnboardingActions) {
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(top = 8.dp)
     )
-    TextButton(onClick = actions.onRestore, modifier = Modifier.heightIn(min = 48.dp)) {
-        Text(stringResource(R.string.onboarding_restore))
+    TextButton(
+        onClick = actions.onRestore,
+        modifier = Modifier
+            .heightIn(min = 48.dp)
+            .ownWords(stringResource(R.string.onboarding_restore))
+    ) {
+        Text(stringResource(R.string.onboarding_restore), modifier = Modifier.wordsShownOnly())
     }
 }
 

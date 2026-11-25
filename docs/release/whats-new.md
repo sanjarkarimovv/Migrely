@@ -3,6 +3,78 @@
 Each release's text for Play Console › Create new release › Release notes. Play allows at most 500 characters per
 language. en-US is the default, and other languages fall back to it.
 
+## 1.3.3 (versionCode 15)
+
+1.3.2 never reached users: QA gave NO-GO after the tag, for #259. 1.3.3 ships the same three fixes, D190 (#237), D191
+(#239) and D192 (#245), plus the #259 fix (D194). That fix keeps TalkBack's focus on a field when the keyboard opens, which
+restores the expected behaviour, so it adds no new claim and the 1.3.2 text is reused byte for byte. `medical-reviewer`
+(med-132) checked this exact text on 2026-11-19, and nothing it describes has changed since. It does not say "medically
+reviewed" or "approved" (the clinician sign-off, T31, is open). The text is 497 of 500 characters.
+
+```
+<en-US>
+Fixes on medication screens and with large text:
+• "Medication taken": a successful log now clears an earlier "Couldn't save" message, so it no longer covers what you logged.
+• Edit medication: Save with an empty name now brings Name into view, and TalkBack says "Enter a name."
+• Very large text in landscape: the line you are typing stays above the keyboard in a migraine's details, when logging or editing a medication, and in Delete all data. If needed, the top bar steps aside while you type.
+</en-US>
+```
+
+## 1.3.2 (versionCode 14)
+
+The text covers `develop` f70b6450 since `v1.3.1`: D190 (#237), D191 (#239) and D192 (#245). `aso-seo-specialist` (aso-132)
+drafted it. `medical-reviewer` (med-132) checked it on 2026-11-19 against f70b6450 and narrowed it to what the code does:
+"Medication taken" is the screen's title (the Home link is "Log medication"); the first bullet names the "Couldn't save"
+message; the second says Name is brought into view; and the top bar steps aside only "if needed", because the trigger is the
+measured room, not a font size. It does not say "medically reviewed" or "approved" (the clinician sign-off, T31, is open). The
+text is 497 of 500 characters.
+
+```
+<en-US>
+Fixes on medication screens and with large text:
+• "Medication taken": a successful log now clears an earlier "Couldn't save" message, so it no longer covers what you logged.
+• Edit medication: Save with an empty name now brings Name into view, and TalkBack says "Enter a name."
+• Very large text in landscape: the line you are typing stays above the keyboard in a migraine's details, when logging or editing a medication, and in Delete all data. If needed, the top bar steps aside while you type.
+</en-US>
+```
+
+## 1.3.1 (versionCode 13)
+
+The text covers `develop` 9075aff8 since `v1.3.0`: D182 (T64) and D189 (#238, T74). `medical-reviewer` (med-131)
+checked the text on 2026-11-18 against 9075aff8 and narrowed it to what the code does: the keyboard bullet names the
+four screens, the message bullet does not claim every message, and the larger buttons are only on Home during a
+migraine and on "Medication taken" opened from it. The Undo limit (D182 (3)) is not announced. It does not say
+"medically reviewed" or "approved" (the clinician sign-off, T31, is open). The text is 494 of 500 characters.
+
+```
+<en-US>
+Easier with TalkBack and "Time to take action":
+• Closing the keyboard in a migraine's details, when logging or editing a medication, or in Delete all data no longer moves the page or pulls TalkBack off the field you were typing in.
+• Messages such as "Saved." now follow Android's "Time to take action" setting and pause while TalkBack or keyboard focus is on them.
+• Between "Migraine started" and "Migraine ended", message buttons on Home and on "Medication taken" opened from it are larger.
+</en-US>
+```
+
+## 1.3.0 (versionCode 12)
+
+The text covers `develop` e46f2b22 since `v1.2.1`: D177, D178, D180, D181 and D183. T64 (D182) is not in 1.3.0.
+`medical-reviewer` checked the text on 2026-11-16, word for word against e46f2b22; bullets 1 and 4 changed on its
+verdict. `legal-finance-analyst` passed the privacy bullet. It does not say "medically reviewed" or "approved" (the
+clinician sign-off, T31, is open). Fixes that need no action from users (D172 to D176) are not announced. The text is
+494 of 500 characters.
+
+```
+<en-US>
+New:
+• The daily reminder, if held up more than an hour past its time, now arrives quietly.
+• While you type a note or a medication name, the line you are typing stays above the keyboard and the top bar with Back stays in place.
+• Clearer privacy wording: no internet permission, how Premium is bought, what Android's own backup may copy.
+Fixes:
+• A goal on the first setup screen now reads "Keep track of my medication days".
+• After a failed save, the next save that works replaces the error.
+</en-US>
+```
+
 ## 1.2.1 (versionCode 11)
 
 Replaces 1.2.0, which was tagged but never uploaded (D170). Users never saw 1.2.0. 1.2.1 also rewrote the in-app

@@ -3,18 +3,15 @@ package com.migrely.app.designsystem.picker
 import android.view.WindowManager
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material3.DatePickerDefaults
 import androidx.compose.material3.DateRangePicker
-import androidx.compose.material3.DateRangePickerDefaults
 import androidx.compose.material3.DateRangePickerState
 import androidx.compose.material3.DisplayMode
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -24,10 +21,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -37,9 +32,21 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
 
-/** The words the range picker shows; the calling feature owns them as string resources. */
+/**
+ * The words the range picker shows; the calling feature owns them as string resources. [startDate] and [endDate]
+ * stand in the headline for a side not chosen yet. [headlineDescription] is the headline's spoken name, with the
+ * start as %1$s and the end as %2$s, each a date or [notChosen].
+ */
 @Immutable
-data class DateRangePickerLabels(val title: String, val confirm: String, val cancel: String)
+data class DateRangePickerLabels(
+    val title: String,
+    val confirm: String,
+    val cancel: String,
+    val startDate: String,
+    val endDate: String,
+    val notChosen: String,
+    val headlineDescription: String
+)
 
 /**
  * Picks a range of days up to [lastDate] in the years of [yearRange], full screen as Material advises for a range
@@ -107,30 +114,27 @@ internal fun DateRangePickerScreen(
     ) {
         // Clear of the keyboard too, so the window is never pushed up past Cancel and Done.
         Column(Modifier.safeDrawingPadding()) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
+            PickerTopRow(
+                title = labels.title,
+                cancel = { TextButton(onClick = onDismiss) { Text(labels.cancel) } },
+                confirm = {
+                    TextButton(
+                        onClick = {
+                            if (start != null &&
+                                end != null
+                            ) {
+                                onConfirm(start.utcDate(), end.utcDate())
+                            }
+                        },
+                        // Not on a start alone: in text input mode, a changed start drops the end while its field
+                        // still shows it, and an end that is not allowed is dropped too.
+                        enabled = start != null && end != null
+                    ) { Text(labels.confirm) }
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 8.dp)
-            ) {
-                TextButton(onClick = onDismiss) { Text(labels.cancel) }
-                Text(
-                    text = labels.title,
-                    style = MaterialTheme.typography.titleLarge,
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(horizontal = 8.dp)
-                        .semantics { heading() }
-                )
-                TextButton(
-                    onClick = {
-                        if (start != null && end != null) onConfirm(start.utcDate(), end.utcDate())
-                    },
-                    // Not on a start alone: in text input mode, a changed start drops the end while its field
-                    // still shows it, and an end that is not allowed is dropped too.
-                    enabled = start != null && end != null
-                ) { Text(labels.confirm) }
-            }
+            )
             // The picker's header does not scroll, and the months get only the height left under it (#102). So the
             // picker fills the screen, its title is in the row above instead of a header line, and the headline
             // starts 24 dp in rather than Material's 64 dp, so the two dates wrap less.
@@ -148,11 +152,11 @@ internal fun DateRangePickerScreen(
                     title = null,
                     headline = if (headerShown) {
                         {
-                            DateRangePickerDefaults.DateRangePickerHeadline(
-                                selectedStartDateMillis = state.selectedStartDateMillis,
-                                selectedEndDateMillis = state.selectedEndDateMillis,
-                                displayMode = state.displayMode,
+                            RangeHeadline(
+                                startMillis = state.selectedStartDateMillis,
+                                endMillis = state.selectedEndDateMillis,
                                 dateFormatter = dateFormatter,
+                                labels = labels,
                                 modifier = Modifier.padding(
                                     start = 24.dp,
                                     end = 12.dp,

@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -43,8 +42,10 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.navigation.NavController
 import com.migrely.app.architecture.ui.view.ScreenEnterObserver
+import com.migrely.app.designsystem.button.MigrelyIconButton
 import com.migrely.app.designsystem.icon.MigrelyIcons
 import com.migrely.app.designsystem.layout.MigrelyInsets
+import com.migrely.app.designsystem.layout.PageScroll
 import com.migrely.app.designsystem.motion.rememberReduceMotion
 import com.migrely.app.designsystem.snackbar.MessageLayout
 import com.migrely.app.designsystem.theme.MigrelyTheme
@@ -145,45 +146,47 @@ fun MedicationsContents(
             val medications = (viewState as? MedicationsViewStateUiModel.Ready)?.medications
             if (medications != null) {
                 Box(contentAlignment = Alignment.TopCenter, modifier = Modifier.fillMaxSize()) {
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier
-                            .widthIn(max = CONTENT_MAX_WIDTH)
-                            .fillMaxWidth()
-                            .verticalScroll(rememberScrollState())
-                            .windowInsetsPadding(
-                                MigrelyInsets.bars.only(
-                                    WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
-                                )
-                            )
-                            .padding(horizontal = 16.dp, vertical = 8.dp)
-                    ) {
-                        if (medications.isEmpty()) {
-                            Text(
-                                text = stringResource(R.string.list_empty),
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(vertical = 8.dp)
-                            )
-                        }
-                        medications.forEach { medication ->
-                            MedicationRow(
-                                medication = medication,
-                                onOpen = { actions.onMedication(medication.id) },
-                                onRemove = { actions.onRemove(medication.id) }
-                            )
-                        }
-                        Button(
-                            onClick = actions.onAdd,
+                    PageScroll {
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
                             modifier = Modifier
+                                .widthIn(max = CONTENT_MAX_WIDTH)
                                 .fillMaxWidth()
-                                .padding(top = 8.dp)
-                                .heightIn(min = 56.dp)
+                                .pageScroll(rememberScrollState())
+                                .windowInsetsPadding(
+                                    MigrelyInsets.bars.only(
+                                        WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
+                                    )
+                                )
+                                .padding(horizontal = 16.dp, vertical = 8.dp)
                         ) {
-                            Text(
-                                stringResource(R.string.list_add),
-                                style = MaterialTheme.typography.labelLarge
-                            )
+                            if (medications.isEmpty()) {
+                                Text(
+                                    text = stringResource(R.string.list_empty),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(vertical = 8.dp)
+                                )
+                            }
+                            medications.forEach { medication ->
+                                MedicationRow(
+                                    medication = medication,
+                                    onOpen = { actions.onMedication(medication.id) },
+                                    onRemove = { actions.onRemove(medication.id) }
+                                )
+                            }
+                            Button(
+                                onClick = actions.onAdd,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 8.dp)
+                                    .heightIn(min = 56.dp)
+                            ) {
+                                Text(
+                                    stringResource(R.string.list_add),
+                                    style = MaterialTheme.typography.labelLarge
+                                )
+                            }
                         }
                     }
                 }
@@ -222,10 +225,13 @@ private fun MedicationRow(medication: MedicationUiModel, onOpen: () -> Unit, onR
                 )
             }
         }
-        IconButton(onClick = onRemove) {
+        MigrelyIconButton(
+            contentDescription = stringResource(R.string.list_remove, medication.name),
+            onClick = onRemove
+        ) {
             Icon(
                 MigrelyIcons.Close,
-                contentDescription = stringResource(R.string.list_remove, medication.name)
+                contentDescription = null
             )
         }
     }

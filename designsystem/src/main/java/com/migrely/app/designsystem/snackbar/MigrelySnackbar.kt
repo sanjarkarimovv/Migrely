@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -36,6 +37,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -53,6 +56,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.positionInRoot
@@ -69,6 +73,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.migrely.app.designsystem.input.TapGuard
 import com.migrely.app.designsystem.layout.MigrelyInsets
+import com.migrely.app.designsystem.theme.LocalInDarkRoom
 import com.migrely.app.designsystem.theme.MigrelyColors
 import com.migrely.app.designsystem.theme.MigrelyTheme
 import kotlin.math.roundToInt
@@ -95,6 +100,10 @@ private val END_PADDING = 4.dp
 private val ICON_GAP = 12.dp
 private val TEXT_VERTICAL_PADDING = 12.dp
 private val MIN_HEIGHT = 52.dp
+
+// In an active dark room every target is 64 dp, a message and its control too (BRD D182 (4), ux B3); elsewhere 48 dp.
+private val DARK_ROOM_TARGET = 64.dp
+private val CONTROL_MIN = 48.dp
 private val TIME_LEFT_STROKE = 2.dp
 
 /**
@@ -159,6 +168,9 @@ private fun SnackbarSurface(
     announcePolitely: Boolean
 ) {
     val lineColor = MaterialTheme.colorScheme.primary.copy(alpha = TIME_LEFT_ALPHA)
+    // Read where it is drawn, so a room that switches under the message resizes it in the same frame, with no
+    // animation of its own, and the control keeps its node and its focus.
+    val inDarkRoom = LocalInDarkRoom.current
     val liveRegionMode = if (tone == SnackbarTone.Error && !announcePolitely) {
         LiveRegionMode.Assertive
     } else {
@@ -173,6 +185,7 @@ private fun SnackbarSurface(
             .semantics { liveRegion = liveRegionMode }
     ) {
         SnackbarLayout(
+            minHeight = if (inDarkRoom) DARK_ROOM_TARGET else MIN_HEIGHT,
             // Inside the surface, so the rounded shape clips the line at the corners.
             modifier = Modifier.drawWithContent {
                 drawContent()
@@ -202,7 +215,7 @@ private fun SnackbarSurface(
                     modifier = Modifier.padding(vertical = TEXT_VERTICAL_PADDING)
                 )
             },
-            action = { SnackbarEndControl(action, dismissLabel, onDismiss) }
+            action = { SnackbarEndControl(action, dismissLabel, onDismiss, inDarkRoom) }
         )
     }
 }
@@ -211,13 +224,20 @@ private fun SnackbarSurface(
 private fun SnackbarEndControl(
     action: SnackbarAction?,
     dismissLabel: String,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    inDarkRoom: Boolean
 ) {
     if (action != null) {
         TextButton(
             onClick = action.onClick,
             modifier = Modifier
-                .heightIn(min = 48.dp)
+                .then(
+                    if (inDarkRoom) {
+                        Modifier.sizeIn(minWidth = DARK_ROOM_TARGET, minHeight = DARK_ROOM_TARGET)
+                    } else {
+                        Modifier.heightIn(min = CONTROL_MIN)
+                    }
+                )
                 .semantics { contentDescription = action.spokenLabel }
         ) {
             // One spoken name (BRD D181 (2)): the button says its spoken label ("Undo the start"),
@@ -231,7 +251,10 @@ private fun SnackbarEndControl(
             )
         }
     } else {
-        IconButton(onClick = onDismiss) {
+        IconButton(
+            onClick = onDismiss,
+            modifier = if (inDarkRoom) Modifier.size(DARK_ROOM_TARGET) else Modifier
+        ) {
             Icon(
                 imageVector = SnackbarIcons.Close,
                 contentDescription = dismissLabel,
@@ -255,6 +278,7 @@ private fun SnackbarTone.color(): Color = when (this) {
  */
 @Composable
 private fun SnackbarLayout(
+    minHeight: Dp,
     modifier: Modifier,
     icon: @Composable () -> Unit,
     text: @Composable () -> Unit,
@@ -288,7 +312,7 @@ private fun SnackbarLayout(
             Constraints(maxWidth = (if (inline) inlineTextWidth else besideIcon).coerceAtLeast(0))
         )
         val inlineActionHeight = if (inline) actionPlaceable.height else 0
-        val firstRowHeight = maxOf(textPlaceable.height, inlineActionHeight, MIN_HEIGHT.roundToPx())
+        val firstRowHeight = maxOf(textPlaceable.height, inlineActionHeight, minHeight.roundToPx())
         val height = if (inline) firstRowHeight else firstRowHeight + actionPlaceable.height
         val actionX = width - endPadding - actionPlaceable.width
         layout(width, height) {
@@ -330,6 +354,9 @@ private fun SnackbarLayout(
  * A leaving message is out of the focus order and the semantics tree from its first exit frame, and focus on it clears
  * when it leaves or is replaced, never moving on to another control (BRD D178 (4), ux F8). Put the host in the message
  * slot of [MessageLayout] for the reading order.
+ *
+ * [countdown], from [rememberMessageCountdown] for the same [message], hears keyboard and TalkBack focus on the message
+ * shown, which pause it (BRD D182 (2)).
  */
 @Suppress("LongParameterList", "LongMethod")
 @Composable
@@ -340,15 +367,30 @@ fun <T : Any> MigrelySnackbarHost(
     topOffset: Dp = 0.dp,
     guardMillis: Long = GUARD_MILLIS,
     onMessageBottomChanged: (Dp) -> Unit = {},
+    countdown: MessageCountdownState? = null,
     content: @Composable (T) -> Unit
 ) {
     val density = LocalDensity.current
     val guard = remember { ReplacementGuard() }
     val bottom = remember { MessageBottom() }
+    val inScreen = remember { MessageInScreen() }
     guard.target(message)
     bottom.target(message)
-    val focus = rememberMessageFocus(message)
+    val currentCountdown by rememberUpdatedState(countdown)
+    val focus = rememberMessageFocus(message) { currentCountdown?.keyboardFocus = it }
+    if (countdown != null) {
+        ScreenReaderFocusEffect(
+            messageInScreen = { inScreen.bounds },
+            onChanged = { currentCountdown?.screenReaderFocus = it }
+        )
+    }
     val currentOnMessageBottomChanged by rememberUpdatedState(onMessageBottomChanged)
+    // Where the message covers the page beneath, for TalkBack's scroll step there (#255).
+    val cover = LocalMessageCover.current
+    DisposableEffect(cover, message == null) {
+        if (message == null) cover?.bounds = null
+        onDispose { cover?.bounds = null }
+    }
     Box(
         contentAlignment = Alignment.TopCenter,
         modifier = modifier
@@ -413,6 +455,11 @@ fun <T : Any> MigrelySnackbarHost(
                 Box(
                     modifier = Modifier
                         .widthIn(max = MAX_WIDTH)
+                        .onGloballyPositioned {
+                            inScreen.place(it)
+                            // A leaving message is laid out again as it fades: it no longer covers the page.
+                            if (!leaving) cover?.bounds = it.boundsInRoot()
+                        }
                         // Measured at full size from the first frame, while the slide only moves it.
                         .onSizeChanged { size ->
                             if (size.height >
@@ -425,7 +472,17 @@ fun <T : Any> MigrelySnackbarHost(
                             }
                         }
                         .then(focus.modifier(leaving))
-                ) { key(shown) { content(shown) } }
+                ) {
+                    DisposableEffect(cover, leaving) {
+                        if (leaving) cover?.bounds = null
+                        onDispose { cover?.bounds = null }
+                    }
+                    // The countdown this message entered with, kept while it leaves (cr-t64 S4 #5).
+                    val ownCountdown = remember(shown) { countdown }
+                    CompositionLocalProvider(LocalShownCountdown provides ownCountdown) {
+                        key(shown) { content(shown) }
+                    }
+                }
             }
         }
     }

@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
@@ -64,8 +63,12 @@ import com.migrely.app.attack.ui.model.TimeErrorReasonUiModel
 import com.migrely.app.attack.ui.model.TimeErrorUiModel
 import com.migrely.app.attack.ui.model.TimeFieldUiModel
 import com.migrely.app.designsystem.icon.MigrelyIcons
+import com.migrely.app.designsystem.layout.PageScroll
+import com.migrely.app.designsystem.layout.ownWords
+import com.migrely.app.designsystem.layout.wordsShownOnly
 import com.migrely.app.designsystem.motion.rememberReduceMotion
 import com.migrely.app.designsystem.picker.MigrelyDateTimePicker
+import com.migrely.app.designsystem.snackbar.LocalMessageClock
 import com.migrely.app.designsystem.snackbar.MessageLayout
 import com.migrely.app.designsystem.theme.MigrelyTheme
 import java.time.Instant
@@ -107,6 +110,7 @@ fun AddPastAttackDependencies.AddPastAttack(
     }
     var problem by rememberSaveable { mutableStateOf<PastAttackProblemUiModel?>(null) }
     var shownMessage by rememberSaveable { mutableStateOf<ShownAttackMessageUiModel?>(null) }
+    val messageClock = LocalMessageClock.current
     var saving by remember { mutableStateOf(false) }
 
     LaunchedEffect(addPastAttackEventPresenter) {
@@ -115,10 +119,8 @@ fun AddPastAttackDependencies.AddPastAttack(
             when (event) {
                 is AddPastAttackEventUiModel.Problem -> problem = event.problem
                 is AddPastAttackEventUiModel.Message ->
-                    shownMessage = ShownAttackMessageUiModel(
-                        event.message,
-                        System.currentTimeMillis()
-                    )
+                    shownMessage =
+                        ShownAttackMessageUiModel(event.message, messageClock.wallMillis())
             }
         }
     }
@@ -255,64 +257,72 @@ private fun DraftContents(
         }
     }
     Box(contentAlignment = Alignment.TopCenter, modifier = Modifier.fillMaxSize()) {
-        Column(
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            modifier = Modifier
-                .widthIn(max = CONTENT_MAX_WIDTH)
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-                .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal))
-                .padding(horizontal = 16.dp)
-        ) {
-            Text(
-                text = stringResource(R.string.past_intro),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 4.dp)
-            )
-            Column {
-                DraftTimeRows(draft, timeError, timeUiFormatter, startedFocus) { field ->
-                    picking = field
-                }
+        PageScroll {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                modifier = Modifier
+                    .widthIn(max = CONTENT_MAX_WIDTH)
+                    .fillMaxWidth()
+                    .pageScroll(rememberScrollState())
+                    .windowInsetsPadding(
+                        WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)
+                    )
+                    .padding(horizontal = 16.dp)
+            ) {
                 Text(
-                    text = stringResource(
-                        R.string.time_duration,
-                        durationText(draft.endEpochMillis - draft.startEpochMillis)
-                    ),
-                    style = MaterialTheme.typography.bodyMedium.copy(fontFeatureSettings = "tnum"),
+                    text = stringResource(R.string.past_intro),
+                    style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 8.dp, start = 4.dp)
+                    modifier = Modifier.padding(horizontal = 4.dp)
                 )
-            }
-            if (problem is PastAttackProblemUiModel.Overlaps) {
-                // The card's two choices replace "Add migraine", which would only show the card again.
-                OverlapCard(
-                    problem.attacks,
-                    draft.zoneId,
-                    timeUiFormatter,
-                    saving,
-                    actions.copy(
-                        onChangeTimes = {
-                            focusStarted = true
-                            actions.onChangeTimes()
-                        }
-                    )
-                )
-            } else {
-                Button(
-                    onClick = actions.onAdd,
-                    enabled = !saving,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = 56.dp)
-                ) {
+                Column {
+                    DraftTimeRows(draft, timeError, timeUiFormatter, startedFocus) { field ->
+                        picking = field
+                    }
                     Text(
-                        text = stringResource(R.string.past_add),
-                        style = MaterialTheme.typography.labelLarge
+                        text = stringResource(
+                            R.string.time_duration,
+                            durationText(draft.endEpochMillis - draft.startEpochMillis)
+                        ),
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            fontFeatureSettings = "tnum"
+                        ),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 8.dp, start = 4.dp)
                     )
                 }
+                if (problem is PastAttackProblemUiModel.Overlaps) {
+                    // The card's two choices replace "Add migraine", which would only show the card again.
+                    OverlapCard(
+                        problem.attacks,
+                        draft.zoneId,
+                        timeUiFormatter,
+                        saving,
+                        actions.copy(
+                            onChangeTimes = {
+                                focusStarted = true
+                                actions.onChangeTimes()
+                            }
+                        )
+                    )
+                } else {
+                    Button(
+                        onClick = actions.onAdd,
+                        enabled = !saving,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = 56.dp)
+                            .ownWords(stringResource(R.string.past_add))
+                    ) {
+                        Text(
+                            text = stringResource(R.string.past_add),
+                            style = MaterialTheme.typography.labelLarge,
+                            modifier = Modifier.wordsShownOnly()
+                        )
+                    }
+                }
+                Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
             }
-            Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
         }
     }
     DraftPicker(picking, draft, now, actions) { picking = null }

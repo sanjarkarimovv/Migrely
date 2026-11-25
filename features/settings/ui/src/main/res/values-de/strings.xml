@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- German (BRD D195): glossary and voice in openspec change add-german-localization, design D5. -->
+<resources>
+    <string name="settings_title">Einstellungen</string>
+    <string name="settings_back">Zurück</string>
+    <string name="settings_cancel">Abbrechen</string>
+    <string name="settings_section_diary">Dein Tagebuch</string>
+    <string name="settings_section_look">Aussehen</string>
+    <string name="settings_section_help">Hilfe</string>
+    <string name="settings_section_privacy">Datenschutz und Info</string>
+    <string name="settings_reminders">Erinnerungen</string>
+    <string name="settings_reminders_summary">Tägliche Nachfrage und die Frage, ob ein Medikament geholfen hat</string>
+    <string name="settings_your_data">Deine Daten</string>
+    <string name="settings_your_data_summary">Sichern, für Excel exportieren und importieren</string>
+    <string name="settings_track_periods">Periode erfassen</string>
+    <string name="settings_track_periods_summary">Periodentage auf der Startseite und im Verlauf markieren. Gespeicherte Markierungen bleiben in jedem Fall.</string>
+    <string name="settings_theme">Design</string>
+    <string name="settings_theme_dark">Dunkel</string>
+    <string name="settings_theme_light">Hell</string>
+    <string name="settings_theme_system">Wie das Handy</string>
+    <string name="settings_theme_note">Während einer Migräne bleibt Migrely dunkel.</string>
+    <string name="settings_warning_signs">Warnzeichen</string>
+    <string name="settings_warning_signs_summary">Wann Kopfschmerzen dringend ärztliche Hilfe brauchen</string>
+    <string name="settings_about">Über Migrely</string>
+    <string name="settings_about_summary">Was Migrely ist und was nicht</string>
+    <string name="settings_privacy">Datenschutz</string>
+    <string name="settings_privacy_summary">Was Migrely speichert und wo</string>
+    <string name="settings_licences">Lizenzen</string>
+    <string name="settings_licences_summary">Die Bibliotheken und Schriften, mit denen Migrely gebaut ist</string>
+    <string name="settings_version">Version</string>
+
+    <!-- Share and rate (BRD SET-F2, D185). settings_share_text and settings_share_subject stay English
+         (translatable="false" in values): the recipient gets one message in one language. The two *_action strings
+         follow German TalkBack's "Zum … doppeltippen", so they are nominalised infinitives. -->
+    <string name="settings_section_share">Teilen und bewerten</string>
+    <string name="settings_share">Migrely teilen</string>
+    <string name="settings_share_summary">Schick jemandem den Link zu Migrely. Deine Einträge sind nicht dabei.</string>
+    <string name="settings_share_action">Auswählen einer App zum Teilen</string>
+    <string name="settings_rate">Migrely bei Google Play bewerten</string>
+    <string name="settings_rate_summary">Öffnet die Store-Seite von Migrely, außerhalb der App</string>
+    <string name="settings_rate_action">Öffnen von Google Play</string>
+    <string name="settings_share_chooser">Migrely teilen</string>
+    <string name="settings_play_unavailable">Auf diesem Handy gibt es keine App, die Google Play öffnen kann.</string>
+    <string name="settings_share_unavailable">Auf diesem Handy gibt es keine App, um den Link zu teilen.</string>
+    <string name="settings_delete_all">Alle Daten löschen</string>
+    <string name="settings_delete_all_summary">Jeder Eintrag, jede Einstellung und jede Kopie auf diesem Handy</string>
+    <string name="settings_delete_title">Alles löschen?</string>
+    <string name="settings_delete_warning">Alles, was Migrely auf diesem Handy speichert, wird gelöscht. Das lässt sich nicht rückgängig machen.</string>
+    <string name="settings_delete_what">Das sind alle Migräneattacken, Medikamente und markierten Tage, deine Einstellungen, die automatischen Kopien und alle Berichte, und die Erinnerungen enden. Exportierte Sicherungen bleiben, wo du sie gespeichert hast.</string>
+    <string name="settings_android_backup">Androids eigene Sicherung von Migrely wird bei der nächsten Sicherung deines Handys ersetzt, meist innerhalb eines Tages.</string>
+    <string name="settings_delete_field">Zum Bestätigen %1$s eingeben</string>
+    <string name="settings_delete_confirm">Alles löschen</string>
+    <string name="settings_deleting">Deine Daten werden gelöscht</string>
+    <string name="settings_not_deleted">Nicht alles wurde gelöscht. Versuch es noch einmal.</string>
+    <string name="settings_warning_signs_call">Wähle den Notruf, wenn Kopfschmerzen mit einem dieser Zeichen auftreten:</string>
+    <string-array name="settings_warning_signs_list">
+        <item>Extrem starke Schmerzen, die plötzlich eingesetzt haben</item>
+        <item>Schwäche oder Lähmung auf einer Seite des Körpers oder des Gesichts</item>
+        <item>Probleme beim Sprechen oder Erinnern</item>
+        <item>Sehverlust, verschwommenes Sehen oder Doppelbilder</item>
+        <item>Schläfrigkeit oder Verwirrtheit</item>
+        <item>Ein Krampfanfall</item>
+        <item>Sehr hohes Fieber und Anzeichen einer Hirnhautentzündung (Meningitis), etwa ein steifer Nacken</item>
+        <item>Ein Ausschlag, der nicht verblasst, wenn du ein Glas dagegen drückst (auf brauner oder schwarzer Haut ist das eventuell schwerer zu sehen)</item>
+        <item>Eine Kopfverletzung in den letzten 3 Monaten</item>
+    </string-array>
+    <string name="settings_warning_signs_no_drive">Fahr nicht selbst ins Krankenhaus. Wähle den Notruf.</string>
+    <string name="settings_warning_signs_urgent">Hol dir dringend ärztlichen Rat, wenn du eine Migräneattacke hast und:</string>
+    <string-array name="settings_warning_signs_urgent_list">
+        <item>sie länger als 72 Stunden dauert</item>
+        <item>Aurasymptome jeweils länger als 1 Stunde anhalten</item>
+        <item>du schwanger bist oder gerade ein Kind bekommen hast</item>
+    </string-array>
+    <string name="settings_warning_signs_other">Wenn du andere Symptome hast, die dich beunruhigen, hol dir dringend ärztlichen Rat.</string>
+    <string name="settings_about_diary">Migrely ist ein Tagebuch für Kopfschmerzen. Es hilft dir, deine Migräneattacken, deine Medikamente und mögliche Auslöser festzuhalten, damit du Muster siehst und mit deiner Ärztin oder deinem Arzt darüber sprechen kannst.</string>
+    <string name="settings_about_not_medical">Migrely ist kein Medizinprodukt. Es stellt keine Diagnose, behandelt nicht und beugt keiner Erkrankung vor, und nichts darin ist medizinischer Rat. Zahlen und Muster stammen nur aus deinen Einträgen.</string>
+    <string name="settings_about_doctor">Sprich mit einer Ärztin oder einem Arzt über deine Kopfschmerzen, und bevor du ein Medikament beginnst, absetzt oder änderst.</string>
+    <string name="settings_about_urgent">Wenn Kopfschmerzen mit einem der Notfallzeichen auf der Seite „Warnzeichen“ auftreten, wähle den Notruf.</string>
+    <string name="settings_privacy_offline">Migrely hat keine Berechtigung für das Internet, deshalb kann die App selbst nichts über das Internet senden. Es gibt kein Konto und keine Anmeldung.</string>
+    <string name="settings_privacy_purchase">Premium wird über Google Play gekauft. Für den Kauf verbindet sich Google Play mit dem Internet.</string>
+    <string name="settings_privacy_phone">Deine Einträge bleiben auf diesem Handy. Wenn Androids eigene Sicherung an ist, kann sie deine Einträge auch in dein Google-Konto kopieren. Ab Android 9 tut sie das nur, wenn sie die Kopie Ende-zu-Ende verschlüsseln kann, wofür eine Displaysperre nötig ist. Unter Android 8 kann Migrely das nicht verlangen, deshalb ist die Kopie dort eventuell nicht Ende-zu-Ende verschlüsselt. Android kann deine Einträge auch auf ein neues Handy übertragen, wenn du es einrichtest.</string>
+    <string name="settings_privacy_files">Abgesehen von Androids eigener Sicherung und dem Umzug auf ein neues Handy verlassen deine Einträge das Handy nur in einer Datei, die du selbst exportierst: einer Sicherung, einer Tabelle oder einem Bericht für die Arztpraxis. Diese Datei geht dorthin, wohin du sie schickst.</string>
+    <string name="settings_privacy_delete">„Alle Daten löschen“ am Ende der Einstellungen entfernt alles, was Migrely auf diesem Handy speichert.</string>
+    <string name="settings_licences_intro">Migrely ist mit diesen Bibliotheken und Schriften gebaut. Alle sind Open Source.</string>
+    <string name="settings_not_saved">Das wurde nicht gespeichert. Versuch es noch einmal.</string>
+    <string name="settings_message_dismiss">Schließen</string>
+    <string name="settings_privacy_policy_link">Ganze Datenschutzerklärung lesen (auf Englisch)</string>
+    <!-- Click label only: German TalkBack says "Zum … doppeltippen", so a nominalised infinitive. -->
+    <string name="settings_privacy_policy_action">Lesen der ganzen Datenschutzerklärung</string>
+</resources>

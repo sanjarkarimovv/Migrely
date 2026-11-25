@@ -140,3 +140,45 @@ already too close counting as reminded (BRD EC-BAK-03, EC-BAK-06, EC-REM-08, D16
 #### Scenario: Replace
 - **WHEN** the phone's next visit is November 20 and the user replaces with a backup whose next visit is December 3
 - **THEN** the next visit is December 3, and its reminder is planned for about 10:00 on December 1
+
+### Requirement: Your data names every way entries leave
+Your data's note SHALL read "Migrely has no internet permission. Your entries stay on this phone, in Android's own
+backup if it's on, in a transfer to a new phone, and in any file you export." It SHALL be the same for Free and Premium,
+on every Android version and offline, and SHALL wrap whole at 200% font (BRD EC-STO-11, D181).
+
+#### Scenario: The note
+- **WHEN** the user opens Settings, then "Your data"
+- **THEN** the note reads "Migrely has no internet permission. Your entries stay on this phone, in Android's own backup
+  if it's on, in a transfer to a new phone, and in any file you export."
+
+#### Scenario: Largest font size
+- **WHEN** the font size is 200% on a 360 dp phone in portrait or landscape
+- **THEN** the note wraps whole and the three actions stay reachable by scrolling
+
+### Requirement: Exports stay language-neutral
+The CSV's column names and fixed values SHALL stay English in every app language, and its separator SHALL follow the
+system's language, not Migrely's own app language. The JSON backup's keys and format SHALL NOT change: a file made in
+one app language SHALL restore in the other, built-in names SHALL show in the current language and typed names as typed
+(BRD EC-L10N-10, EC-L10N-11, D72, D195).
+
+#### Scenario: CSV from the German app on a German phone
+- **WHEN** the app and the phone are in German and the CSV is exported
+- **THEN** the column names and fixed values are English and the columns are separated by semicolons
+
+#### Scenario: CSV with German chosen for Migrely only
+- **WHEN** on Android 13 or newer the phone is in English (United States), Migrely's app language is German, and the CSV
+  is exported
+- **THEN** the columns are separated by commas, as on that phone before
+
+#### Scenario: CSV with English chosen for Migrely only
+- **WHEN** the phone is in German and Migrely's app language is English
+- **THEN** the columns are separated by semicolons
+
+#### Scenario: A backup moves between languages
+- **WHEN** a backup made in the English app is imported in the German app, and one made in German is imported in English
+- **THEN** every entry is restored, built-in triggers and symptoms show in the current app language, and triggers,
+  medications and notes the person typed show exactly as typed
+
+#### Scenario: A typed name next to a built-in one
+- **WHEN** a person had typed their own trigger "Stress" and the German built-in trigger is also "Stress"
+- **THEN** both stay as they were, as in English, and nothing is merged or renamed

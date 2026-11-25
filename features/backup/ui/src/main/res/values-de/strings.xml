@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- German (BRD D195): glossary and voice in openspec change add-german-localization, design D5. -->
+<resources>
+    <string name="your_data_title">Deine Daten</string>
+    <string name="your_data_back">Zurück</string>
+    <string name="your_data_export_backup">Sicherung exportieren (JSON)</string>
+    <string name="your_data_export_backup_summary">Alles, was du notiert hast, zum Wiederherstellen auf diesem oder einem neuen Handy</string>
+    <string name="your_data_export_csv">Für Excel exportieren (CSV)</string>
+    <string name="your_data_export_csv_summary">Eine Zeile pro Migräne, zum Lesen oder Teilen</string>
+    <string name="your_data_import">Sicherung importieren</string>
+    <string name="your_data_import_summary">Aus einer Migrely-Sicherungsdatei</string>
+    <string name="your_data_restore_copy">Kopie vom %1$s zurückholen</string>
+    <string name="your_data_restore_copy_summary">Auf diesem Handy gespeichert, bevor deine Einträge zuletzt ersetzt wurden</string>
+    <string name="your_data_restore_title">Kopie vom %1$s zurückholen?</string>
+    <string name="your_data_restore_replaces">Die Kopie ersetzt, was jetzt auf diesem Handy ist. Vorher wird gesichert, was jetzt hier ist, damit du zurückwechseln kannst.</string>
+    <string name="your_data_restore">Zurückholen</string>
+    <plurals name="your_data_restored">
+        <item quantity="one">Kopie zurückgeholt: %d Migräneattacke.</item>
+        <item quantity="other">Kopie zurückgeholt: %d Migräneattacken.</item>
+    </plurals>
+    <string name="your_data_note">Migrely hat keine Berechtigung für das Internet. Deine Einträge bleiben auf diesem Handy, in Androids eigener Sicherung, wenn sie an ist, bei einer Übertragung auf ein neues Handy und in jeder Datei, die du exportierst.</string>
+    <string name="your_data_working">Deine Datei wird verarbeitet</string>
+    <string name="your_data_confirm_title">Diese Sicherung importieren?</string>
+    <string name="your_data_confirm_holds">Die Sicherung enthält %1$s, %2$s und %3$s.</string>
+    <plurals name="your_data_migraines">
+        <item quantity="one">%d Migräneattacke</item>
+        <item quantity="other">%d Migräneattacken</item>
+    </plurals>
+    <plurals name="your_data_medications">
+        <item quantity="one">%d Medikament</item>
+        <item quantity="other">%d Medikamente</item>
+    </plurals>
+    <plurals name="your_data_marked_days">
+        <item quantity="one">%d markierten Tag</item>
+        <item quantity="other">%d markierte Tage</item>
+    </plurals>
+    <string name="your_data_confirm_choice">Auf diesem Handy gibt es schon Einträge.\n\n„Hinzufügen“ behält sie und fügt Neues hinzu.\n\n„Ersetzen“ tauscht sie gegen die Sicherung. Vorher wird eine Kopie davon gespeichert.</string>
+    <string name="your_data_add">Hinzufügen</string>
+    <string name="your_data_replace">Ersetzen</string>
+    <string name="your_data_import_confirm">Importieren</string>
+    <string name="your_data_cancel">Abbrechen</string>
+    <string name="your_data_backup_saved">Sicherung gespeichert.</string>
+    <string name="your_data_csv_saved">Für Excel gespeichert.</string>
+    <plurals name="your_data_replaced">
+        <item quantity="one">Sicherung importiert: %d Migräneattacke.</item>
+        <item quantity="other">Sicherung importiert: %d Migräneattacken.</item>
+    </plurals>
+    <plurals name="your_data_added">
+        <item quantity="one">%d Migräneattacke hinzugefügt.</item>
+        <item quantity="other">%d Migräneattacken hinzugefügt.</item>
+    </plurals>
+    <plurals name="your_data_already_here">
+        <item quantity="one">%d war schon da.</item>
+        <item quantity="other">%d waren schon da.</item>
+    </plurals>
+    <string name="your_data_added_others">Die anderen Einträge wurden hinzugefügt. Jede Migräneattacke darin war schon da.</string>
+    <string name="your_data_added_new_entries">Die neuen Einträge wurden hinzugefügt.</string>
+    <string name="your_data_nothing_new">Nichts Neues: Alles darin ist schon da.</string>
+    <string name="your_data_not_a_backup">Diese Datei ist keine Migrely-Sicherung. Nichts wurde geändert.</string>
+    <string name="your_data_newer">Aktualisiere Migrely, um diese Datei zu öffnen.</string>
+    <string name="your_data_storage_full">Dein Handy ist voll. Gib etwas Speicher frei und versuch es noch einmal.</string>
+    <string name="your_data_something_went_wrong">Etwas ist schiefgelaufen. Nichts wurde geändert.</string>
+    <string name="your_data_no_file_picker">Auf diesem Handy gibt es keine App, um eine Datei auszuwählen.</string>
+    <string name="your_data_message_dismiss">Schließen</string>
+</resources>

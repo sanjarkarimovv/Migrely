@@ -158,3 +158,140 @@ end; picking the same day twice SHALL give a range of one day (BRD EC-UX-03, EC-
 #### Scenario: One day
 - **WHEN** the user picks October 5 twice and taps "Done"
 - **THEN** the report covers October 5 alone
+
+### Requirement: The Migrely credit line
+While the credit switch is on, the last page SHALL carry "Made with Migrely, a personal migraine diary app. Not a medical
+device. migrely.health" as a second footer line under "Patient-entered data. Not a diagnosis.", placed by line 1's
+measured height, in the footer's small grey type across the content width. It SHALL have no logo, colour, QR or link,
+never be cut or overlap the page number, and not change the page count (BRD REP-F5, D186).
+
+#### Scenario: A three-month report
+- **WHEN** a Premium user with the switch on, as by default, makes a report of several pages
+- **THEN** only the last page shows the credit line, below the footer rule and under the disclaimer, and no other page
+  or content block shows it (EC-REP-05)
+
+#### Scenario: One page
+- **WHEN** the report has one page
+- **THEN** that page shows the credit line (EC-REP-06)
+
+#### Scenario: A4 and Letter
+- **WHEN** the report is made on A4 (595 × 842) or on Letter (612 × 792)
+- **THEN** the credit line lays out as one line with no ellipsis (`lineCount == 1`, `getEllipsisCount(0) == 0`), inside
+  the bottom margin, clear of "Page N of M", and the page count equals that of the same report with the switch off
+  (EC-REP-06)
+
+#### Scenario: The 50-page cap
+- **WHEN** a report is cut at the page limit (EC-REP-02)
+- **THEN** the credit line is on the last page drawn
+
+#### Scenario: Turned off
+- **WHEN** the switch is off and a report is made
+- **THEN** the PDF has no credit line, its pages are laid out as before this change, and "Patient-entered data. Not a
+  diagnosis." is still on every page (EC-REP-07; QA negative control, medical-reviewer condition)
+- **AND** the first page keeps its sentence "Made with Migrely on <date>.", shipped before this change, since the switch
+  governs only the credit line (D186)
+
+#### Scenario: Changed after sharing
+- **WHEN** a report was shared and the switch is changed afterwards
+- **THEN** the shared file is unchanged, and the next report follows the new choice (EC-REP-08)
+
+#### Scenario: Another device language
+- **WHEN** the phone's language is not English, or is right to left
+- **THEN** the PDF and the credit line stay English and left to right, as the report is today (EC-REP-10)
+
+### Requirement: The credit switch
+The Doctor report SHALL offer "Mention Migrely in the report", after "Include notes", on by default; its summary SHALL
+quote the credit line exactly. The choice SHALL survive restarts and process death, move with Android's backup, return to
+on after "Delete all data", and stay out of JSON and CSV exports, whose content and `schemaVersion` SHALL not change
+(BRD REP-F5, D71, D186).
+
+#### Scenario: The summary quotes the line
+- **WHEN** the switch's summary is shown
+- **THEN** it reads 'One small line on the last page: "Made with Migrely, a personal migraine diary app. Not a medical
+  device. migrely.health"', and a test asserts it contains the mapper's credit constant exactly (medical-reviewer
+  condition W6)
+
+#### Scenario: Kept
+- **WHEN** the user turns the switch off, then the app restarts or its process is killed and restored
+- **THEN** the switch is still off
+
+#### Scenario: Not saved
+- **WHEN** the choice cannot be saved, as with storage full or a write error
+- **THEN** the switch returns to the stored value and the report shows "Couldn't save that. Try again." as an error
+  message, so a switch never looks changed when it is not (EC-REP-12)
+
+#### Scenario: Loading and making a report
+- **WHEN** the screen is loading, or a report is being made
+- **THEN** the switch is hidden until its value is read, and is shown but disabled while the report is made, which uses
+  the value at the tap on "Create report" (EC-REP-13)
+
+#### Scenario: Delete all data
+- **WHEN** the user deletes all data
+- **THEN** the switch is on again (EC-REP-07)
+
+#### Scenario: Exports unchanged
+- **WHEN** the user exports JSON or CSV with the switch on or off
+- **THEN** the files are the same as before this change, and `schemaVersion` is unchanged (EC-REP-07)
+
+#### Scenario: Free or lapsed Premium
+- **WHEN** a Free user, or one whose Premium ended, opens the doctor report
+- **THEN** the paywall shows, the switch is not shown, and the stored choice is kept for when Premium returns (EC-REP-09)
+
+#### Scenario: TalkBack, 200% font, landscape and keyboard
+- **WHEN** the switch is reached with TalkBack, at 200% font, in landscape or with a keyboard
+- **THEN** it is one node with its title, its summary, its on or off state and the switch role, the text wraps without
+  "…", and Tab reaches it between "Include notes" and "Create report"; Space toggles it (EC-REP-11)
+
+### Requirement: The report screen names the PDF's language
+The PDF report SHALL stay in English in this release, whatever the app's language (D82). When the app's language is not
+English, the report screen SHALL say in one line, in the app's language, that the PDF is in English. In English the line
+SHALL NOT show. Free and Premium rules SHALL NOT change (BRD EC-L10N-09, D195).
+
+#### Scenario: Making a report in German
+- **WHEN** a Premium user with the app in German opens the doctor report screen and makes a PDF
+- **THEN** the screen says in German that the PDF is in English, and the PDF's words are English, the same as in the
+  English app
+
+#### Scenario: Making a report in English
+- **WHEN** the app is in English
+- **THEN** the report screen shows no line about the PDF's language
+
+#### Scenario: The line at the largest font
+- **WHEN** the app is in German at 200% font on a 360 dp phone, in portrait and in landscape
+- **THEN** the line wraps at spaces, is not cut, and TalkBack reads it once with the screen's other text
+
+### Requirement: The custom range's headline stays whole and is said once
+The custom range picker's headline SHALL show the start and the end, each a date or its placeholder, whole. It SHALL
+wrap only between them, the dash kept after the start, in Material's style and colour. TalkBack SHALL say it once, as
+one polite node: the start, then the end, each its date or "not chosen", in English and German (BRD EC-L10N-28, D181,
+D195 (18)).
+
+#### Scenario: German at the largest font
+- **WHEN** the app is German at 200% font on a 360 dp phone and the custom range picker opens with no date chosen
+- **THEN** the headline shows "Startdatum –" and "Enddatum", each whole, the end on the next line if both do not fit,
+  and no word breaks inside
+
+#### Scenario: English at the largest font
+- **WHEN** the app is English at 200% font on a 360 dp phone and the custom range picker opens
+- **THEN** "Start date –" and "End date" each stay whole, and "End date" never breaks after "En"
+
+#### Scenario: Chosen dates
+- **WHEN** a start and an end are chosen at 200% font on a 360 dp phone
+- **THEN** each date, such as "23. Nov. 2026", stays on one line, and the line wraps only between the two dates
+
+#### Scenario: Room for both
+- **WHEN** the headline fits on one line, as at 100% font
+- **THEN** the start, the dash and the end show on one line
+
+#### Scenario: TalkBack in English
+- **WHEN** TalkBack is on, the app is English and no date is chosen
+- **THEN** the headline is one stop that says "Start date, not chosen, end date, not chosen" once, and the shown words
+  are not read again after it
+
+#### Scenario: TalkBack in German
+- **WHEN** TalkBack is on, the app is German and no date is chosen
+- **THEN** the headline says "Startdatum, nicht gewählt, Enddatum, nicht gewählt" once
+
+#### Scenario: A date is picked
+- **WHEN** TalkBack is on and the person picks the start date
+- **THEN** the headline is announced politely, with the start's date in its spoken form and the end "not chosen"

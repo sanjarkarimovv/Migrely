@@ -1,10 +1,12 @@
 package com.migrely.app.review.domain.usecase
 
 import com.migrely.app.coroutine.CoroutineContextProvider
+import com.migrely.app.review.domain.model.LastSafetyCardDomainModel
 import com.migrely.app.review.domain.model.ReviewFlowResultDomainModel
 import com.migrely.app.review.domain.repository.GetAttackInProgressRepository
 import com.migrely.app.review.domain.repository.GetCurrentTimeRepository
 import com.migrely.app.review.domain.repository.GetLastPaywallShownRepository
+import com.migrely.app.review.domain.repository.GetLastSafetyCardShownRepository
 import com.migrely.app.review.domain.repository.LaunchReviewFlowRepository
 import com.migrely.app.review.domain.repository.MarkReviewRequestedRepository
 import java.time.Duration
@@ -29,6 +31,9 @@ class RequestReviewUseCaseTest {
     private val getLastPaywallShownRepository: GetLastPaywallShownRepository = mock {
         on { lastPaywallShown() } doReturn null
     }
+    private val getLastSafetyCardShownRepository: GetLastSafetyCardShownRepository = mock {
+        on { lastSafetyCardShown() } doReturn LastSafetyCardDomainModel.Never
+    }
     private val launchReviewFlowRepository: LaunchReviewFlowRepository = mock()
     private val markReviewRequestedRepository: MarkReviewRequestedRepository = mock()
     private val getCurrentTimeRepository: GetCurrentTimeRepository = mock {
@@ -37,6 +42,7 @@ class RequestReviewUseCaseTest {
     private val classUnderTest = RequestReviewUseCase(
         getAttackInProgressRepository,
         getLastPaywallShownRepository,
+        getLastSafetyCardShownRepository,
         launchReviewFlowRepository,
         markReviewRequestedRepository,
         getCurrentTimeRepository,
@@ -64,6 +70,15 @@ class RequestReviewUseCaseTest {
     @Test
     fun `Given an attack started while Google Play prepared then nothing opens or counts`() {
         given(getAttackInProgressRepository.attackInProgress()).willReturn(true)
+
+        assertFalse(classUnderTest.executeInBackground(Unit))
+        verifyNoInteractions(launchReviewFlowRepository, markReviewRequestedRepository)
+    }
+
+    @Test
+    fun `Given a safety card appeared while Google Play prepared then nothing opens or counts`() {
+        given(getLastSafetyCardShownRepository.lastSafetyCardShown())
+            .willReturn(LastSafetyCardDomainModel.ShownAt(ENDED.minusSeconds(1)))
 
         assertFalse(classUnderTest.executeInBackground(Unit))
         verifyNoInteractions(launchReviewFlowRepository, markReviewRequestedRepository)

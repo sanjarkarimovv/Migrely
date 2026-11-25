@@ -20,7 +20,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -64,11 +63,15 @@ import androidx.navigation.NavController
 import com.migrely.app.architecture.ui.view.ScreenEnterObserver
 import com.migrely.app.designsystem.icon.MigrelyIcons
 import com.migrely.app.designsystem.layout.MigrelyInsets
+import com.migrely.app.designsystem.layout.PageScroll
+import com.migrely.app.designsystem.layout.ownWords
+import com.migrely.app.designsystem.layout.wordsShownOnly
 import com.migrely.app.designsystem.motion.rememberReduceMotion
 import com.migrely.app.designsystem.snackbar.MessageLayout
 import com.migrely.app.designsystem.snackbar.MigrelySnackbar
 import com.migrely.app.designsystem.snackbar.MigrelySnackbarHost
 import com.migrely.app.designsystem.snackbar.messageTimeoutMillis
+import com.migrely.app.designsystem.snackbar.rememberMessageCountdown
 import com.migrely.app.designsystem.theme.MigrelyTheme
 import com.migrely.app.subscription.presentation.model.PaywallViewState
 import com.migrely.app.subscription.ui.R
@@ -82,7 +85,6 @@ import com.migrely.app.subscription.ui.model.PaywallViewStateUiModel
 import com.migrely.app.subscription.ui.model.PremiumPlanUiModel
 import com.migrely.app.subscription.ui.model.PremiumStatusUiModel
 import com.migrely.app.subscription.ui.model.TrialLengthUiModel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.onSubscription
 
 /** Only for a trial Google Play gives in months and days at once, which it does not today. */
@@ -153,16 +155,15 @@ fun PaywallDependencies.Paywall(
     LaunchedEffect(purchaseUpdates) {
         purchaseUpdates.collect { paywallViewModel.onPurchaseUpdatedAction(presentationContext) }
     }
-    // Stretched to the accessibility timeout (BRD EC-UX-16; QA #56).
-    val messageTimeout = messageTimeoutMillis(
-        message?.let { paywallMessageBehaviourUiMapper.toUi(it.message).baseDurationMillis }
+    // Stretched to "Time to take action", paused while focus holds it (BRD EC-UX-16, D182; QA #56).
+    val countdown = rememberMessageCountdown(
+        message = message,
+        timeoutMillis = messageTimeoutMillis(
+            message?.let { paywallMessageBehaviourUiMapper.toUi(it.message).baseDurationMillis }
+        ),
+        undoActionWallMillis = null,
+        onExpired = { message = null }
     )
-    LaunchedEffect(message, messageTimeout) {
-        if (message != null && messageTimeout != null) {
-            delay(messageTimeout)
-            message = null
-        }
-    }
     val onClose = { paywallViewModel.onCloseAction(presentationContext) }
     BackHandler(onBack = onClose)
     PaywallContents(
@@ -188,10 +189,11 @@ fun PaywallDependencies.Paywall(
         ),
         messages = {
             MigrelySnackbarHost(
-                message = message,
+                message = message?.takeUnless { countdown.isOver },
                 reduceMotion = rememberReduceMotion(),
                 topOffset = MESSAGE_BELOW_CLOSE_ROW,
-                guardMillis = MESSAGE_GUARD_MILLIS
+                guardMillis = MESSAGE_GUARD_MILLIS,
+                countdown = countdown
             ) { shown ->
                 val behaviour = paywallMessageBehaviourUiMapper.toUi(shown.message)
                 MigrelySnackbar(
@@ -256,23 +258,25 @@ fun PaywallContents(
                 )
             }
             Box(contentAlignment = Alignment.TopCenter, modifier = Modifier.fillMaxSize()) {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                    modifier = Modifier
-                        .widthIn(max = CONTENT_MAX_WIDTH)
-                        .fillMaxWidth()
-                        .windowInsetsPadding(
-                            MigrelyInsets.bars.only(
-                                WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
+                PageScroll {
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                        modifier = Modifier
+                            .widthIn(max = CONTENT_MAX_WIDTH)
+                            .fillMaxWidth()
+                            .windowInsetsPadding(
+                                MigrelyInsets.bars.only(
+                                    WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
+                                )
                             )
-                        )
-                        .verticalScroll(rememberScrollState())
-                        .padding(start = 24.dp, end = 24.dp, bottom = 24.dp)
-                ) {
-                    if (unlocked != null) {
-                        PaywallSuccess(unlocked, actions)
-                    } else {
-                        PaywallOffer(context, viewState, chosen, actions)
+                            .pageScroll(rememberScrollState())
+                            .padding(start = 24.dp, end = 24.dp, bottom = 24.dp)
+                    ) {
+                        if (unlocked != null) {
+                            PaywallSuccess(unlocked, actions)
+                        } else {
+                            PaywallOffer(context, viewState, chosen, actions)
+                        }
                     }
                 }
             }
@@ -331,9 +335,12 @@ private fun PaywallOffer(
     TextButton(
         onClick = actions.onRestore,
         enabled = !working && viewState != PaywallViewStateUiModel.Unavailable,
-        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 48.dp)
+            .ownWords(stringResource(R.string.subscription_restore))
     ) {
-        Text(stringResource(R.string.subscription_restore))
+        Text(stringResource(R.string.subscription_restore), modifier = Modifier.wordsShownOnly())
     }
     Benefits()
 }
@@ -423,9 +430,12 @@ private fun Plans(
         Button(
             onClick = { actions.onBuy(choice) },
             enabled = !working,
-            modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 56.dp)
+                .ownWords(stringResource(choice.buyLabel()))
         ) {
-            Text(stringResource(choice.buyLabel()))
+            Text(stringResource(choice.buyLabel()), modifier = Modifier.wordsShownOnly())
         }
         Text(
             terms(choice),

@@ -50,6 +50,23 @@ QA_BASELINE=("system accelerometer_rotation=1" "system user_rotation=0" "system 
 
 qa_adb() { "${ADB:-${ANDROID_HOME:-$HOME/Library/Android/sdk}/platform-tools/adb}" -s "$QA_SERIAL" "$@"; }
 
+# Opens the app as its launcher icon does: the launcher's intent and flags (NEW_TASK | RESET_TASK_IF_NEEDED, as monkey
+# used), so an existing task comes back with its saved state. Not `monkey -p … 1`: on an API 36 image booted without a
+# hardware keyboard that one-event monkey exits 251 ("SYS_KEYS has no physical keys") and opens nothing. Not
+# `am start -W`: it can hang on API 26. am start can exit 0 without starting anything, so this waits up to 10 s for the
+# app's process and fails without it.
+qa_launch_app() {
+  local app="com.migrely.app"
+  qa_adb shell am start -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -f 0x10200000 \
+    -n "$app/.MainActivity" >/dev/null || return 1
+  for _ in {1..10}; do
+    [[ -n "$(qa_adb shell pidof "$app" | tr -d '\r')" ]] && return 0
+    sleep 1
+  done
+  echo "The app did not start on $QA_SERIAL." >&2
+  return 1
+}
+
 qa_check_baseline() {
   local entry key want have
   for entry in "${QA_BASELINE[@]}"; do
