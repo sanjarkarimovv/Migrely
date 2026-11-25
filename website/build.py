@@ -439,7 +439,7 @@ FAQ = [
      'The app itself sends nothing over the internet: it has no internet permission, so Android stops it from connecting. Three things '
      'are up to Android, Google Play or you. Android\'s own backup may copy Migrely\'s entries to your Google account. '
      f'{BACKUP_RULE} Google Play handles buying Premium and ratings, under Google\'s privacy policy. And a backup, '
-     'spreadsheet or PDF report, or the text you share with Share Migrely, goes wherever you choose to send it.',
+     'spreadsheet or PDF report, or, from version 1.4.0, the text you share with Share Migrely, goes wherever you choose to send it.',
      ('Check Migrely\'s privacy yourself', '/privacy-check/')),
     ('What does Premium cost?',
      f'Premium is {PREMIUM_PRICES}. The yearly plan\'s free trial is for new subscribers. Google Play shows the '
@@ -704,8 +704,8 @@ def privacy_check():
       settings.</li>
     <li><strong>Google Play.</strong> When you buy Premium or rate Migrely, Google Play's own window handles it, under
       Google's privacy policy. Migrely never sees your payment details or your rating.</li>
-    <li><strong>Files and text you share.</strong> A backup, spreadsheet or PDF report, or the text you share with
-      Share Migrely, goes wherever you choose to send it.</li></ul>
+    <li><strong>Files and text you share.</strong> A backup, spreadsheet or PDF report, or, from version 1.4.0, the text you
+      share with Share Migrely, goes wherever you choose to send it.</li></ul>
   <p>The <a href="/privacy/">privacy policy</a> has the details.</p>
   <h2>How can a developer check it?</h2>
   <p>With USB debugging on and Migrely installed, run:</p>
