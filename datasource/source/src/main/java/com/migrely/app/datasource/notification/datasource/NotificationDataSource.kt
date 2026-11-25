@@ -37,4 +37,10 @@ interface NotificationDataSource {
 
     /** Removes every notification Migrely shows (BRD D96). */
     fun cancelAll()
+
+    /**
+     * Names the channels that already exist in the app's language, for Android's notification settings, and creates
+     * none (BRD D195, EC-L10N-07); the user's choices for each channel stay.
+     */
+    fun refreshChannelNames()
 }

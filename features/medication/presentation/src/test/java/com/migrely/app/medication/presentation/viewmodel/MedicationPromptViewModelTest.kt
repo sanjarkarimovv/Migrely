@@ -11,6 +11,7 @@ import com.migrely.app.medication.domain.model.WriteResultDomainModel
 import com.migrely.app.medication.domain.usecase.AcknowledgeOveruseUseCase
 import com.migrely.app.medication.domain.usecase.AnswerEffectUseCase
 import com.migrely.app.medication.domain.usecase.GetMedicationPromptUseCase
+import com.migrely.app.medication.domain.usecase.MarkSafetyCardShownUseCase
 import com.migrely.app.medication.domain.usecase.SkipEffectQuestionUseCase
 import com.migrely.app.medication.presentation.mapper.MedicationPromptDomainMapper
 import com.migrely.app.medication.presentation.mapper.MedicationPromptPresentationMapper
@@ -31,6 +32,10 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.mockito.Mock
 import org.mockito.junit.MockitoJUnitRunner
+import org.mockito.kotlin.any
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.never
+import org.mockito.kotlin.verify
 
 @RunWith(MockitoJUnitRunner::class)
 class MedicationPromptViewModelTest :
@@ -47,6 +52,8 @@ class MedicationPromptViewModelTest :
 
     @Mock private lateinit var acknowledgeOveruseUseCase: AcknowledgeOveruseUseCase
 
+    @Mock private lateinit var markSafetyCardShownUseCase: MarkSafetyCardShownUseCase
+
     private val warning = MedicationPromptDomainModel.Overuse(
         OveruseCategoryDomainModel.Triptan,
         OveruseLevelDomainModel.Doctor,
@@ -60,6 +67,7 @@ class MedicationPromptViewModelTest :
             answerEffectUseCase,
             skipEffectQuestionUseCase,
             acknowledgeOveruseUseCase,
+            markSafetyCardShownUseCase,
             MedicationPromptPresentationMapper(OveruseCategoryPresentationMapper()),
             MedicationPromptDomainMapper(),
             useCaseExecutor
@@ -82,6 +90,32 @@ class MedicationPromptViewModelTest :
                 )
             ),
             state.await()
+        )
+    }
+
+    @Test
+    fun `When a load shows an overuse warning then its moment is kept (D188)`() {
+        getMedicationPromptUseCase.givenSuccessfulExecution(warning)
+
+        classUnderTest.onEnter()
+
+        verify(useCaseExecutor).execute(
+            useCase = eq(markSafetyCardShownUseCase),
+            onResult = any(),
+            onException = any()
+        )
+    }
+
+    @Test
+    fun `When a load shows no card then no safety card is marked`() {
+        getMedicationPromptUseCase.givenSuccessfulExecution(MedicationPromptDomainModel.None)
+
+        classUnderTest.onEnter()
+
+        verify(useCaseExecutor, never()).execute(
+            useCase = eq(markSafetyCardShownUseCase),
+            onResult = any(),
+            onException = any()
         )
     }
 

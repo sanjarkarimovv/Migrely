@@ -55,7 +55,7 @@ class SettingsMessageOrderTest {
             MigrelyTheme {
                 SettingsContents(
                     settings = PREVIEW_SETTINGS,
-                    actions = SettingsActions({}, {}, {}, {}, {}, {}, {}, {}, {}, {}),
+                    actions = PREVIEW_SETTINGS_ACTIONS,
                     messages = { TestMessage() }
                 )
             }

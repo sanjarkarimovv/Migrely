@@ -25,6 +25,8 @@ class ReportMessageBehaviourUiMapperTest(
             ),
             arrayOf<Any>(ReportMessageUiModel.SomethingWentWrong, error),
             arrayOf<Any>(ReportMessageUiModel.NoAppToShare, error),
+            // The credit switch was not saved (BRD EC-REP-12).
+            arrayOf<Any>(ReportMessageUiModel.NotSaved, error),
             arrayOf<Any>(
                 ReportMessageUiModel.StorageFull,
                 ReportMessageBehaviourUiModel(SnackbarTone.Error, null)

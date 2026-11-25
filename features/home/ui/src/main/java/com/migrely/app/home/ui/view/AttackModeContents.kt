@@ -4,6 +4,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -20,7 +21,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -33,6 +33,7 @@ import androidx.compose.material3.TimePicker
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -40,6 +41,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -52,6 +54,10 @@ import androidx.compose.ui.unit.dp
 import com.migrely.app.designsystem.icon.MigrelyIcons
 import com.migrely.app.designsystem.input.TapGuard
 import com.migrely.app.designsystem.layout.MigrelyInsets
+import com.migrely.app.designsystem.layout.PageScroll
+import com.migrely.app.designsystem.layout.isCompactHeight
+import com.migrely.app.designsystem.layout.ownWords
+import com.migrely.app.designsystem.layout.wordsShownOnly
 import com.migrely.app.designsystem.picker.DateTimePickerLabels
 import com.migrely.app.designsystem.picker.MigrelyDateTimePicker
 import com.migrely.app.designsystem.sky.SkyAppearance
@@ -81,6 +87,9 @@ private val MOVE_START_OPTIONS = listOf(
     60 to R.string.move_start_60,
     120 to R.string.move_start_120
 )
+
+// Fewer title lines than this left for the guidance above the controls make the whole page scroll as one (#274).
+private const val GUIDANCE_MIN_LINES = 3
 
 /**
  * The "dark room" (BRD 18.3 B): one line of text, the elapsed time and large controls in the lower half. It is dark in
@@ -115,6 +124,12 @@ fun AttackModeContents(
     }
 }
 
+/**
+ * The guidance (the calming line, the start time, Details and the 72-hour card) above the controls. At the largest
+ * fonts on a short phone the controls alone can fill the height and leave the guidance no room at all (#274), so when
+ * less than [GUIDANCE_MIN_LINES] title lines would be left for it, the whole page scrolls as one instead: guidance,
+ * then the start options, then the controls. Type never shrinks, and the order stays the same (BRD D171).
+ */
 @Suppress("LongParameterList")
 @Composable
 private fun StackedAttackLayout(
@@ -125,24 +140,54 @@ private fun StackedAttackLayout(
     actions: HomeActions,
     modifier: Modifier
 ) {
-    Column(modifier = modifier) {
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .verticalScroll(rememberScrollState())
-        ) {
+    val density = LocalDensity.current
+    // Saved, so after a language change or process death the page opens in the right layout at its saved scroll.
+    var controlsHeightDp by rememberSaveable { mutableFloatStateOf(0f) }
+    val guidanceMinHeight = with(density) {
+        MaterialTheme.typography.titleLarge.lineHeight.toDp() * GUIDANCE_MIN_LINES
+    }
+    val guidance: @Composable () -> Unit = {
+        Spacer(Modifier.height(16.dp))
+        RainCard(startedAt = startedAt, reduceMotion = reduceMotion) {
+            actions.onAttackDetails(attack.id)
+        }
+        if (attack.longAttackCheckDue) {
             Spacer(Modifier.height(16.dp))
-            RainCard(startedAt = startedAt, reduceMotion = reduceMotion) {
-                actions.onAttackDetails(attack.id)
+            LongAttackCheckCard(attack = attack, nowMillis = nowMillis, actions = actions)
+        }
+    }
+    val controls: @Composable () -> Unit = {
+        // Measured where it is drawn; its height does not depend on which layout holds it.
+        Column(
+            Modifier.onSizeChanged { controlsHeightDp = with(density) { it.height.toDp().value } }
+        ) {
+            MoveStartOptions(onMoveStartEarlier = actions.onMoveStartEarlier)
+            Spacer(Modifier.height(12.dp))
+            AttackControls(attack = attack, actions = actions)
+        }
+    }
+    BoxWithConstraints(modifier = modifier) {
+        if (maxHeight - controlsHeightDp.dp >= guidanceMinHeight) {
+            Column(Modifier.fillMaxSize()) {
+                PageScroll {
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .pageScroll(rememberScrollState())
+                    ) { guidance() }
+                }
+                controls()
             }
-            if (attack.longAttackCheckDue) {
-                Spacer(Modifier.height(16.dp))
-                LongAttackCheckCard(attack = attack, nowMillis = nowMillis, actions = actions)
+        } else {
+            PageScroll {
+                Column(Modifier.fillMaxSize().pageScroll(rememberScrollState())) {
+                    guidance()
+                    // The same gap as between the two cards, so the start options read as their own group.
+                    Spacer(Modifier.height(16.dp))
+                    controls()
+                }
             }
         }
-        MoveStartOptions(onMoveStartEarlier = actions.onMoveStartEarlier)
-        Spacer(Modifier.height(12.dp))
-        AttackControls(attack = attack, actions = actions)
     }
 }
 
@@ -164,21 +209,27 @@ private fun SideBySideAttackLayout(
             // While a message shows over this column, the column's visible part starts below it, so no line is
             // covered, scrolled or not (BRD D52). The column's own top space then separates its first line from the
             // message.
-            Column(
-                modifier = Modifier
-                    .clearOfMessage(messageBottom)
-                    .verticalScroll(rememberScrollState())
-            ) {
-                Spacer(Modifier.height(16.dp))
-                AttackGuidance(startedAt = startedAt, textAlign = TextAlign.Start) {
-                    actions.onAttackDetails(attack.id)
-                }
-                if (attack.longAttackCheckDue) {
+            PageScroll {
+                Column(
+                    modifier = Modifier
+                        .clearOfMessage(messageBottom)
+                        .pageScroll(rememberScrollState())
+                ) {
                     Spacer(Modifier.height(16.dp))
-                    LongAttackCheckCard(attack = attack, nowMillis = nowMillis, actions = actions)
+                    AttackGuidance(startedAt = startedAt, textAlign = TextAlign.Start) {
+                        actions.onAttackDetails(attack.id)
+                    }
+                    if (attack.longAttackCheckDue) {
+                        Spacer(Modifier.height(16.dp))
+                        LongAttackCheckCard(
+                            attack = attack,
+                            nowMillis = nowMillis,
+                            actions = actions
+                        )
+                    }
+                    Spacer(Modifier.height(16.dp))
+                    MoveStartOptions(onMoveStartEarlier = actions.onMoveStartEarlier)
                 }
-                Spacer(Modifier.height(16.dp))
-                MoveStartOptions(onMoveStartEarlier = actions.onMoveStartEarlier)
             }
             // The column's controls move with it, so a tap while it moves could land on a different one: a quick
             // second "2 h earlier" after a rejected move, say (review of D52).
@@ -188,19 +239,24 @@ private fun SideBySideAttackLayout(
                 modifier = Modifier.matchParentSize()
             )
         }
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .verticalScroll(rememberScrollState())
-        ) {
-            Spacer(Modifier.height(16.dp))
-            AttackControls(attack = attack, actions = actions)
+        PageScroll {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .pageScroll(rememberScrollState())
+            ) {
+                Spacer(Modifier.height(16.dp))
+                AttackControls(attack = attack, actions = actions)
+            }
         }
     }
 }
 
 @Composable
 private fun AttackControls(attack: AttackInProgressUiModel, actions: HomeActions) {
+    // Each control says its name from its own node, so a page edge that cuts it never leaves it nameless (#255, #274).
+    val medicationTaken = stringResource(R.string.medication_taken)
+    val endAttack = stringResource(R.string.end_attack)
     IntensityChoices(selected = attack.currentLevel, onIntensity = actions.onIntensity)
     Spacer(Modifier.height(12.dp))
     // A large, dim control for the dark room (BRD 18.3 B, D34, EC-UX-02).
@@ -212,12 +268,15 @@ private fun AttackControls(attack: AttackInProgressUiModel, actions: HomeActions
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = 64.dp)
+            .ownWords(medicationTaken)
     ) {
         Icon(MigrelyIcons.Add, contentDescription = null, modifier = Modifier.size(20.dp))
         Text(
-            text = stringResource(R.string.medication_taken),
+            text = medicationTaken,
             style = MaterialTheme.typography.labelLarge,
-            modifier = Modifier.padding(start = 8.dp)
+            modifier = Modifier
+                .padding(start = 8.dp)
+                .wordsShownOnly()
         )
     }
     Spacer(Modifier.height(16.dp))
@@ -231,10 +290,12 @@ private fun AttackControls(attack: AttackInProgressUiModel, actions: HomeActions
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = 72.dp)
+            .ownWords(endAttack)
     ) {
         Text(
-            text = stringResource(R.string.end_attack),
-            style = MaterialTheme.typography.labelLarge
+            text = endAttack,
+            style = MaterialTheme.typography.labelLarge,
+            modifier = Modifier.wordsShownOnly()
         )
     }
     Spacer(Modifier.height(24.dp))
@@ -409,6 +470,7 @@ private fun IntensityChip(
     } else {
         MigrelyColors.AttackModeText
     }
+    val label = stringResource(level.label())
     Surface(
         shape = RoundedCornerShape(32.dp),
         color = container,
@@ -416,13 +478,15 @@ private fun IntensityChip(
         modifier = modifier
             .heightIn(min = 64.dp)
             .selectable(selected = isSelected, onClick = { onIntensity(level) })
+            .ownWords(label)
     ) {
         Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(vertical = 12.dp)) {
             Text(
-                text = stringResource(level.label()),
+                text = label,
                 style = MaterialTheme.typography.bodyLarge,
                 color = textColor,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
+                modifier = Modifier.wordsShownOnly()
             )
         }
     }
@@ -490,8 +554,13 @@ private fun LongAttackCheckCard(
 
 @Composable
 private fun LongCheckButton(label: Int, onClick: () -> Unit) {
-    TextButton(onClick = onClick, modifier = Modifier.heightIn(min = 48.dp)) {
-        Text(text = stringResource(label), color = MigrelyColors.AttackModeSelectedOutline)
+    val name = stringResource(label)
+    TextButton(onClick = onClick, modifier = Modifier.heightIn(min = 48.dp).ownWords(name)) {
+        Text(
+            text = name,
+            color = MigrelyColors.AttackModeSelectedOutline,
+            modifier = Modifier.wordsShownOnly()
+        )
     }
 }
 

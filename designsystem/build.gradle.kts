@@ -65,6 +65,7 @@ dependencies {
     testDebugImplementation(platform(libs.compose.bom))
     testDebugImplementation(libs.test.compose.ui.junit4)
     testDebugImplementation(libs.test.robolectric)
+    testDebugImplementation(projects.architecture.uiTest)
 
     androidTestImplementation(platform(libs.compose.bom))
     androidTestImplementation(libs.test.compose.ui.junit4)

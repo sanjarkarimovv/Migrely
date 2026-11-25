@@ -35,7 +35,7 @@ internal object HomeUiModule {
         @ApplicationContext context: Context,
         formattingLocales: FormattingLocales
     ) = TimeUiFormatter(
-        locale = { formattingLocales.of(context.resources.configuration) },
+        locale = { formattingLocales.of(context) },
         is24HourFormat = { DateFormat.is24HourFormat(context) },
         deviceZone = { ZoneId.systemDefault() },
         bestDateTimePattern = { locale, skeleton ->

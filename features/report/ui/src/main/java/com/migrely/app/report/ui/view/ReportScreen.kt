@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.toggleable
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -68,6 +67,9 @@ import com.migrely.app.architecture.ui.view.ScreenLeaveObserver
 import com.migrely.app.designsystem.format.MigrelyDateFormat
 import com.migrely.app.designsystem.icon.MigrelyIcons
 import com.migrely.app.designsystem.layout.MigrelyInsets
+import com.migrely.app.designsystem.layout.PageScroll
+import com.migrely.app.designsystem.layout.ownWords
+import com.migrely.app.designsystem.layout.wordsShownOnly
 import com.migrely.app.designsystem.motion.rememberReduceMotion
 import com.migrely.app.designsystem.picker.DateRangePickerLabels
 import com.migrely.app.designsystem.picker.MigrelyDateRangePicker
@@ -92,6 +94,7 @@ import com.migrely.app.report.ui.model.ShownReportMessageUiModel
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
+import java.util.Locale
 import kotlinx.coroutines.flow.onSubscription
 
 private val CONTENT_MAX_WIDTH = 600.dp
@@ -104,7 +107,9 @@ data class ReportActions(
     val onPeriod: (ReportPeriodUiModel) -> Unit,
     val onCustom: () -> Unit,
     val onNotes: (Boolean) -> Unit,
-    val onCreate: () -> Unit
+    val onCredit: (Boolean) -> Unit,
+    /** Takes the credit switch as shown at the tap, which the report uses (BRD EC-REP-13). */
+    val onCreate: (includeCredit: Boolean) -> Unit
 )
 
 /**
@@ -185,8 +190,15 @@ fun ReportDependencies.Report(navController: NavController, modifier: Modifier =
             },
             onCustom = { pickingRange = true },
             onNotes = { includeNotes = it },
-            onCreate = {
-                reportViewModel.onCreateAction(toPresentation.toPresentation(period), includeNotes)
+            onCredit = {
+                reportViewModel.onCreditAction(it, toPresentation.toPresentation(period))
+            },
+            onCreate = { includeCredit ->
+                reportViewModel.onCreateAction(
+                    toPresentation.toPresentation(period),
+                    includeNotes,
+                    includeCredit
+                )
             }
         ),
         messages = {
@@ -275,105 +287,168 @@ fun ReportContents(
                 )
             }
             Box(contentAlignment = Alignment.TopCenter, modifier = Modifier.fillMaxSize()) {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier
-                        .widthIn(max = CONTENT_MAX_WIDTH)
-                        .fillMaxWidth()
-                        .windowInsetsPadding(
-                            MigrelyInsets.bars.only(
-                                WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
+                PageScroll {
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier
+                            .widthIn(max = CONTENT_MAX_WIDTH)
+                            .fillMaxWidth()
+                            .windowInsetsPadding(
+                                MigrelyInsets.bars.only(
+                                    WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
+                                )
                             )
-                        )
-                        .verticalScroll(rememberScrollState())
-                        .padding(16.dp)
-                ) {
-                    Text(
-                        stringResource(R.string.report_period),
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.semantics { heading() }
-                    )
-                    // The dates stay while a report is made, so the screen does not jump (walk B1).
-                    var shownOptions by rememberSaveable {
-                        mutableStateOf<ReportOptionsUiModel?>(null)
-                    }
-                    val options = (viewState as? ReportViewStateUiModel.Ready)?.options
-                    if (options != null) shownOptions = options
-                    // Until a period is chosen, the one the options made of the default is shown chosen (EC-REP-04).
-                    val chosen = if (period ==
-                        ReportPeriodUiModel.Default
+                            .pageScroll(rememberScrollState())
+                            .padding(16.dp)
                     ) {
-                        shownOptions?.period
-                    } else {
-                        period
-                    }
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        shownOptions?.lastVisitEpochDay?.let { lastVisit ->
-                            SinceVisitChip(
-                                lastVisit = LocalDate.ofEpochDay(lastVisit),
-                                selected = chosen is ReportPeriodUiModel.SinceLastVisit,
-                                enabled = !working,
-                                onClick = {
-                                    actions.onPeriod(ReportPeriodUiModel.SinceLastVisit(lastVisit))
-                                }
-                            )
+                        Text(
+                            stringResource(R.string.report_period),
+                            style = MaterialTheme.typography.titleMedium,
+                            modifier = Modifier.semantics { heading() }
+                        )
+                        // The dates stay while a report is made, so the screen does not jump (walk B1).
+                        var shownOptions by rememberSaveable {
+                            mutableStateOf<ReportOptionsUiModel?>(null)
                         }
-                        MONTH_CHOICES.forEach { months ->
+                        val options = (viewState as? ReportViewStateUiModel.Ready)?.options
+                        if (options != null) shownOptions = options
+                        // The stored credit switch, from the options or, when they cannot be read, on its own, so
+                        // it follows a save in either state; kept while a report is made (BRD EC-REP-12, EC-REP-13).
+                        var shownCredit by rememberSaveable { mutableStateOf<Boolean?>(null) }
+                        when (viewState) {
+                            is ReportViewStateUiModel.Ready ->
+                                shownCredit = viewState.options.creditShown
+                            is ReportViewStateUiModel.Unavailable ->
+                                shownCredit = viewState.creditShown
+                            ReportViewStateUiModel.Loading, ReportViewStateUiModel.Working -> Unit
+                        }
+                        // Until a period is chosen, the one the options made of the default is shown chosen (EC-REP-04).
+                        val chosen = if (period ==
+                            ReportPeriodUiModel.Default
+                        ) {
+                            shownOptions?.period
+                        } else {
+                            period
+                        }
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            shownOptions?.lastVisitEpochDay?.let { lastVisit ->
+                                SinceVisitChip(
+                                    lastVisit = LocalDate.ofEpochDay(lastVisit),
+                                    selected = chosen is ReportPeriodUiModel.SinceLastVisit,
+                                    enabled = !working,
+                                    onClick = {
+                                        actions.onPeriod(
+                                            ReportPeriodUiModel.SinceLastVisit(lastVisit)
+                                        )
+                                    }
+                                )
+                            }
+                            MONTH_CHOICES.forEach { months ->
+                                FilterChip(
+                                    selected = chosen == ReportPeriodUiModel.LastMonths(months),
+                                    onClick = {
+                                        actions.onPeriod(ReportPeriodUiModel.LastMonths(months))
+                                    },
+                                    enabled = !working,
+                                    label = {
+                                        Text(
+                                            pluralStringResource(
+                                                R.plurals.report_months,
+                                                months,
+                                                months
+                                            ),
+                                            modifier = Modifier.wordsShownOnly()
+                                        )
+                                    },
+                                    modifier = Modifier
+                                        .heightIn(min = 48.dp)
+                                        .ownWords(
+                                            pluralStringResource(
+                                                R.plurals.report_months,
+                                                months,
+                                                months
+                                            )
+                                        )
+                                )
+                            }
                             FilterChip(
-                                selected = chosen == ReportPeriodUiModel.LastMonths(months),
-                                onClick = {
-                                    actions.onPeriod(ReportPeriodUiModel.LastMonths(months))
-                                },
+                                selected = chosen is ReportPeriodUiModel.Range,
+                                onClick = actions.onCustom,
                                 enabled = !working,
                                 label = {
                                     Text(
-                                        pluralStringResource(
-                                            R.plurals.report_months,
-                                            months,
-                                            months
-                                        )
+                                        stringResource(R.string.report_custom),
+                                        modifier = Modifier.wordsShownOnly()
                                     )
                                 },
-                                modifier = Modifier.heightIn(min = 48.dp)
+                                modifier = Modifier
+                                    .heightIn(min = 48.dp)
+                                    .ownWords(stringResource(R.string.report_custom))
                             )
                         }
-                        FilterChip(
-                            selected = chosen is ReportPeriodUiModel.Range,
-                            onClick = actions.onCustom,
+                        shownOptions?.let { Covers(it) }
+                        if (viewState is ReportViewStateUiModel.Unavailable) {
+                            Text(
+                                stringResource(R.string.report_unavailable),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        SwitchRow(
+                            title = stringResource(R.string.report_notes),
+                            summary = stringResource(R.string.report_notes_summary),
+                            checked = includeNotes,
                             enabled = !working,
-                            label = { Text(stringResource(R.string.report_custom)) },
-                            modifier = Modifier.heightIn(min = 48.dp)
+                            onChange = actions.onNotes
                         )
-                    }
-                    shownOptions?.let { Covers(it) }
-                    if (viewState == ReportViewStateUiModel.Unavailable) {
+                        // Shown once its stored value is read, and kept while a report is made (BRD EC-REP-13).
+                        shownCredit?.let {
+                            SwitchRow(
+                                title = stringResource(R.string.report_credit_switch),
+                                summary = stringResource(R.string.report_credit_switch_summary),
+                                checked = it,
+                                enabled = !working,
+                                onChange = actions.onCredit
+                            )
+                        }
+                        Button(
+                            // Enabled only with options, so the switch's value is the one shown.
+                            onClick = { options?.let { actions.onCreate(it.creditShown) } },
+                            enabled = !working && options?.anythingLogged == true,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(min = 56.dp)
+                                .ownWords(stringResource(R.string.report_create))
+                        ) {
+                            Text(
+                                stringResource(R.string.report_create),
+                                modifier = Modifier.wordsShownOnly()
+                            )
+                        }
+                        if (options != null && !options.anythingLogged) {
+                            Text(
+                                stringResource(R.string.report_nothing_logged),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
+                            )
+                        }
                         Text(
-                            stringResource(R.string.report_unavailable),
-                            style = MaterialTheme.typography.bodyLarge,
+                            stringResource(R.string.report_about),
+                            style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
+                        // The PDF stays English in 1.4.0 (BRD D195, EC-L10N-09): said once, only in another
+                        // language.
+                        val appLanguage = LocalConfiguration.current.locales[0].language
+                        if (appLanguage != Locale.ENGLISH.language) {
+                            Text(
+                                stringResource(R.string.report_pdf_language_note),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
-                    NotesRow(includeNotes, enabled = !working, onChange = actions.onNotes)
-                    Button(
-                        onClick = actions.onCreate,
-                        enabled = !working && options?.anythingLogged == true,
-                        modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)
-                    ) {
-                        Text(stringResource(R.string.report_create))
-                    }
-                    if (options != null && !options.anythingLogged) {
-                        Text(
-                            stringResource(R.string.report_nothing_logged),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
-                        )
-                    }
-                    Text(
-                        stringResource(R.string.report_about),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
                 }
             }
         }
@@ -435,9 +510,15 @@ private fun Covers(options: ReportOptionsUiModel) {
     )
 }
 
-/** One node with Role switch, like the app's other switches (EC-UX-04). */
+/** One node with Role switch, like the app's other switches (EC-UX-04): "Include notes" and the credit switch. */
 @Composable
-private fun NotesRow(checked: Boolean, enabled: Boolean, onChange: (Boolean) -> Unit) {
+private fun SwitchRow(
+    title: String,
+    summary: String,
+    checked: Boolean,
+    enabled: Boolean,
+    onChange: (Boolean) -> Unit
+) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
@@ -449,11 +530,17 @@ private fun NotesRow(checked: Boolean, enabled: Boolean, onChange: (Boolean) -> 
                 role = Role.Switch,
                 onValueChange = onChange
             )
+            // Its name from its own node, so a row cut by an edge still says it (#255, BRD D181 (2)).
+            .ownWords(title)
     ) {
         Column(Modifier.weight(1f)) {
-            Text(stringResource(R.string.report_notes), style = MaterialTheme.typography.bodyLarge)
             Text(
-                stringResource(R.string.report_notes_summary),
+                title,
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.wordsShownOnly()
+            )
+            Text(
+                summary,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -485,7 +572,11 @@ private fun RangeDialog(
         labels = DateRangePickerLabels(
             title = stringResource(R.string.report_range_title),
             confirm = stringResource(R.string.report_range_confirm),
-            cancel = stringResource(R.string.report_range_cancel)
+            cancel = stringResource(R.string.report_range_cancel),
+            startDate = stringResource(R.string.report_range_start),
+            endDate = stringResource(R.string.report_range_end),
+            notChosen = stringResource(R.string.report_range_not_chosen),
+            headlineDescription = stringResource(R.string.report_range_headline_description)
         ),
         onConfirm = { start, end -> onPick(start.toEpochDay(), end.toEpochDay()) },
         onDismiss = onDismiss
@@ -515,6 +606,7 @@ private fun ReportMessageUiModel.text() = when (this) {
     ReportMessageUiModel.StorageFull -> R.string.report_message_storage
     ReportMessageUiModel.SomethingWentWrong -> R.string.report_message_failed
     ReportMessageUiModel.NoAppToShare -> R.string.report_message_no_app
+    ReportMessageUiModel.NotSaved -> R.string.report_message_not_saved
 }
 
 @Preview(name = "Doctor report")
@@ -527,7 +619,7 @@ private fun ReportPreview() {
             ),
             period = DEFAULT_PERIOD,
             includeNotes = false,
-            actions = ReportActions({}, {}, {}, {}, {}),
+            actions = ReportActions({}, {}, {}, {}, {}, {}),
             messages = {}
         )
     }
@@ -543,7 +635,7 @@ private fun ReportEmptyPreview() {
             ),
             period = ReportPeriodUiModel.LastMonths(1),
             includeNotes = false,
-            actions = ReportActions({}, {}, {}, {}, {}),
+            actions = ReportActions({}, {}, {}, {}, {}, {}),
             messages = {}
         )
     }

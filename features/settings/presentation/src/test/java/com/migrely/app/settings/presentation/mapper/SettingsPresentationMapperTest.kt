@@ -14,10 +14,23 @@ class SettingsPresentationMapperTest {
     fun `When mapping then Track periods, the theme and the version as they are`() {
         listOf(true, false).forEach {
             assertEquals(
-                SettingsPresentationModel(it, ThemePresentationModel.System, "1.2.0"),
+                SettingsPresentationModel(it, ThemePresentationModel.System, "1.2.0", true),
                 SettingsPresentationMapper(ThemePresentationMapper()).toPresentation(
-                    SettingsDomainModel(it, ThemeDomainModel.System, "1.2.0")
+                    SettingsDomainModel(it, ThemeDomainModel.System, "1.2.0", false)
                 )
+            )
+        }
+    }
+
+    @Test
+    fun `Share and rate show only when no attack is known to be in progress`() {
+        mapOf(false to true, true to false, null to false).forEach { (attack, shown) ->
+            assertEquals(
+                "attack in progress: $attack",
+                shown,
+                SettingsPresentationMapper(ThemePresentationMapper()).toPresentation(
+                    SettingsDomainModel(true, ThemeDomainModel.Dark, "1.4.0", attack)
+                ).showShareAndRate
             )
         }
     }

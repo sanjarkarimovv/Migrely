@@ -52,9 +52,10 @@ private const val TOLERANCE = 1f
 
 /**
  * On Attack details the note's line being typed shows in every keyboard frame's own layout while the keyboard opens
- * (BRD D194, #259 review F3): the screen wires its page through `TypingSpace.scrollingPage`, so the state the page
- * scrolls with is the one kept in step with the keyboard. Each frame is laid out, then laid out again at the same height
- * (Compose's accessibility layout), and read before any effect runs: effects queue on their own dispatcher.
+ * (BRD D194, #259 review F3): the screen wires its page through `pageScroll(state, typingSpace)`, which calls
+ * `TypingSpace.scrollingPage`, so the state the page scrolls with is the one kept in step with the keyboard. Each frame
+ * is laid out, then laid out again at the same height (Compose's accessibility layout), and read before any effect
+ * runs: effects queue on their own dispatcher.
  */
 @OptIn(ExperimentalCoroutinesApi::class, ExperimentalTestApi::class)
 @RunWith(RobolectricTestRunner::class)

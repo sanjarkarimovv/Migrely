@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.compose.compiler)
+    id("kotlin-parcelize")
 
     alias(libs.plugins.ktlint)
     alias(libs.plugins.detekt)
@@ -77,6 +78,7 @@ dependencies {
     testDebugImplementation(platform(libs.compose.bom))
     testDebugImplementation(libs.test.compose.ui.junit4)
     testDebugImplementation(libs.test.robolectric)
+    testDebugImplementation(projects.architecture.uiTest)
     testDebugImplementation(projects.features.settings.domain)
     testDebugImplementation(projects.architecture.domain)
     testDebugImplementation(projects.coroutine)

@@ -1,31 +1,56 @@
 package com.migrely.app.locale
 
+import android.content.Context
 import android.content.res.Configuration
 import java.util.Locale
 
 /**
- * The formatting locale (BRD D117) of a configuration, and where it is applied, so every feature follows it without
- * choosing a locale itself:
- * - [of] reads it from the phone's configuration as it is now: the formatters `:app/di` provides use it with the
- *   application context, so a new system language is followed at the next call;
+ * The app's language and formatting locale (BRD D117, D195) of a context, and where they are applied, so every
+ * feature follows them without choosing a locale itself:
+ * - [of] gives them as [refresh] last resolved them, resolving once on the first call. Every formatted date and time
+ *   asks, in composition on the main thread, and on Android 13 and newer the phone's language list is two binder calls
+ *   to LocaleManager, so it is not read per string (T23 review of 2d99dabd);
+ * - [refresh] resolves them again from [PhoneLanguages], the phone's language list with Android 13's per-app language
+ *   first, from LocaleManager rather than a configuration that can predate it (EC-L10N-06). The app refreshes at
+ *   start, on every configuration change, which a new system or per-app language is, and as `MainActivity` is
+ *   created, so the formatters `:app/di` provides follow a new language from then on;
  * - [activityOverride] is the change `MainActivity` makes to its own configuration, so Compose's `LocalConfiguration`,
  *   Material's date and time pickers, resources and their plural rules use it;
+ * - [localizedContext] is the same override for strings read outside an activity, such as notifications and their
+ *   channel names (design D2): the application context keeps the phone's own list, from which Android's resource
+ *   matching could pick German while the screens are English. It resolves fresh, off the main thread and rarely: a
+ *   per-app change can reach the app with no configuration change, so with no refresh (T23 8.2 row 9d). It leaves
+ *   what [of] gives alone, so a notification cannot change the formatters' locale in the middle of a composition: only
+ *   the main thread's refreshes do;
  * - [applyToProcess] makes it the default locale, for code that formats with the default. `MigrelyApplication` calls
  *   it at start and on every configuration change. Android sets the default back to the phone's own language on
  *   updates it does not report to the application, so the app's own formatters never rely on it.
  *
- * The application context keeps the phone's own configuration, which the CSV export reads for its separator (D72).
+ * The CSV export reads its separator from the system's language instead, not from Migrely's (D72, D195).
  */
 class FormattingLocales(
-    private val resolver: FormattingLocaleResolver = FormattingLocaleResolver()
+    private val resolver: FormattingLocaleResolver = FormattingLocaleResolver(),
+    private val phoneLanguages: (Context) -> PhoneLanguages = PhoneLanguages::of
 ) {
-    fun of(phoneConfiguration: Configuration): Locale =
-        resolver.resolve(phoneConfiguration.locales[0] ?: Locale.getDefault())
+    // Written on the main thread, read by the formatters on any thread.
+    @Volatile
+    private var current: Locale? = null
 
-    fun activityOverride(phoneConfiguration: Configuration): Configuration =
-        Configuration().apply { setLocale(of(phoneConfiguration)) }
+    fun of(context: Context): Locale = current ?: refresh(context)
 
-    fun applyToProcess(phoneConfiguration: Configuration) {
-        Locale.setDefault(of(phoneConfiguration))
+    fun refresh(context: Context): Locale = fresh(context).also { current = it }
+
+    fun activityOverride(base: Context): Configuration =
+        Configuration().apply { setLocale(of(base)) }
+
+    fun localizedContext(context: Context): Context =
+        context.createConfigurationContext(Configuration().apply { setLocale(fresh(context)) })
+
+    /** The locale as the phone's language list gives it now, leaving what [of] gives alone. */
+    fun fresh(context: Context): Locale =
+        resolver.resolve(phoneLanguages(context).of(context.resources.configuration))
+
+    fun applyToProcess(context: Context) {
+        Locale.setDefault(of(context))
     }
 }

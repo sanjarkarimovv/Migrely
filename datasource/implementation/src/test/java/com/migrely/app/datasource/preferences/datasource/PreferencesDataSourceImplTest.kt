@@ -18,6 +18,7 @@ import org.junit.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.given
 import org.mockito.kotlin.inOrder
@@ -139,6 +140,67 @@ class PreferencesDataSourceImplTest {
             verify(editor).putLong("review_last_requested", 1_700_000_000_000L)
             verify(editor).commit()
         }
+    }
+
+    @Test
+    fun `Given no safety card ever appeared then no time`() {
+        assertNull(classUnderTest.safetyCardLastShownMillis())
+    }
+
+    @Test
+    fun `When a safety card appears then its time is kept under a key that never changes`() {
+        classUnderTest.markSafetyCardShown(1_700_000_000_000L)
+
+        inOrder(editor) {
+            verify(editor).putLong("safety_card_last_shown", 1_700_000_000_000L)
+            verify(editor).commit()
+        }
+    }
+
+    @Test
+    fun `Given a safety card appeared then its time`() {
+        given(preferences.contains("safety_card_last_shown")).willReturn(true)
+        given(preferences.getLong("safety_card_last_shown", 0L)).willReturn(1_700_000_000_000L)
+
+        assertEquals(1_700_000_000_000L, classUnderTest.safetyCardLastShownMillis())
+    }
+
+    @Test
+    fun `Given an empty file, as after an install or deleting all data, then credit is on`() {
+        // A file with nothing in it answers every read with its default.
+        val empty: SharedPreferences = mock {
+            on { getBoolean(any(), any()) } doAnswer { it.getArgument(1) }
+        }
+
+        assertEquals(
+            true,
+            PreferencesDataSourceImpl(empty, entitlementPreferences).reportCreditShown()
+        )
+    }
+
+    @Test
+    fun `When the credit is turned off then it is kept under a key that never changes`() {
+        classUnderTest.setReportCreditShown(false)
+
+        inOrder(editor) {
+            verify(editor).putBoolean("report_credit_shown", false)
+            verify(editor).commit()
+        }
+    }
+
+    @Test
+    fun `Given the credit was turned off then it reads off`() {
+        given(preferences.getBoolean("report_credit_shown", true)).willReturn(false)
+
+        assertEquals(false, classUnderTest.reportCreditShown())
+    }
+
+    @Test
+    fun `When the credit cannot be saved then the failure is reported`() {
+        given(editor.commit()).willReturn(false)
+
+        assertThrows(FileDataException::class.java) { classUnderTest.setReportCreditShown(false) }
+        assertThrows(FileDataException::class.java) { classUnderTest.markSafetyCardShown(1L) }
     }
 
     @Test

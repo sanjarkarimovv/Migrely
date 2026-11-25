@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -41,6 +40,9 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.migrely.app.designsystem.icon.MigrelyIcons
 import com.migrely.app.designsystem.layout.MigrelyInsets
+import com.migrely.app.designsystem.layout.PageScroll
+import com.migrely.app.designsystem.layout.ownWords
+import com.migrely.app.designsystem.layout.wordsShownOnly
 import com.migrely.app.designsystem.theme.MigrelyTheme
 import com.migrely.app.settings.presentation.model.SettingsPagePresentationModel
 import com.migrely.app.settings.ui.R
@@ -172,20 +174,24 @@ fun PrivacyContents(onBack: () -> Unit, modifier: Modifier = Modifier) = Setting
 private fun PolicyLink() {
     val uriHandler = LocalUriHandler.current
     val label = stringResource(R.string.settings_privacy_policy_link)
+    // TalkBack says "Double-tap to" before it, so it is an action, not the link's words (T23).
+    val action = stringResource(R.string.settings_privacy_policy_action)
     Column(
         verticalArrangement = Arrangement.spacedBy(2.dp),
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = 48.dp)
-            .clickable(role = Role.Button, onClickLabel = label) {
+            .clickable(role = Role.Button, onClickLabel = action) {
                 uriHandler.openInBrowserIfAny(PRIVACY_POLICY_URL)
             }
+            .ownWords(label)
             .padding(vertical = 8.dp)
     ) {
         Text(
             text = label,
             style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.primary
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.wordsShownOnly()
         )
         Text(
             text = PRIVACY_POLICY_ADDRESS,
@@ -259,20 +265,22 @@ private fun SettingsPage(
             )
         )
         Box(contentAlignment = Alignment.TopCenter, modifier = Modifier.fillMaxSize()) {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier
-                    .widthIn(max = CONTENT_MAX_WIDTH)
-                    .fillMaxWidth()
-                    .windowInsetsPadding(
-                        MigrelyInsets.bars.only(
-                            WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
+            PageScroll {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier
+                        .widthIn(max = CONTENT_MAX_WIDTH)
+                        .fillMaxWidth()
+                        .windowInsetsPadding(
+                            MigrelyInsets.bars.only(
+                                WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
+                            )
                         )
-                    )
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                content = content
-            )
+                        .pageScroll(rememberScrollState())
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    content = content
+                )
+            }
         }
     }
 }

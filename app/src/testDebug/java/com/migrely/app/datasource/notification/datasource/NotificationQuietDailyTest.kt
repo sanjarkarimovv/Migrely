@@ -4,6 +4,7 @@ import android.app.Application
 import android.app.Notification
 import android.app.NotificationManager
 import androidx.core.app.NotificationCompat
+import com.migrely.app.locale.FormattingLocales
 import java.time.LocalDate
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -29,7 +30,7 @@ private val DATE = LocalDate.parse("2026-11-18")
 class NotificationQuietDailyTest {
     private val context: Application = RuntimeEnvironment.getApplication()
     private val manager = context.getSystemService(NotificationManager::class.java)
-    private val classUnderTest = NotificationDataSourceImpl(context)
+    private val classUnderTest = NotificationDataSourceImpl(context, FormattingLocales())
 
     private fun posted(quiet: Boolean): Notification {
         classUnderTest.showDailyReminder(DATE, quiet)

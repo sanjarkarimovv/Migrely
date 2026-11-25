@@ -18,7 +18,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -69,6 +68,9 @@ import com.migrely.app.designsystem.input.limitedEdit
 import com.migrely.app.designsystem.input.rememberKeyboardRoom
 import com.migrely.app.designsystem.input.rememberTypingSpace
 import com.migrely.app.designsystem.layout.MigrelyInsets
+import com.migrely.app.designsystem.layout.PageScroll
+import com.migrely.app.designsystem.layout.ownWords
+import com.migrely.app.designsystem.layout.wordsShownOnly
 import com.migrely.app.designsystem.motion.rememberReduceMotion
 import com.migrely.app.designsystem.picker.DateTimePickerLabels
 import com.migrely.app.designsystem.picker.MigrelyDateTimePicker
@@ -345,52 +347,59 @@ fun LogMedicationContents(
             val keyboardRoom = rememberKeyboardRoom(scrollState, viewportInsets)
             val announcer = rememberProblemAnnouncer()
             Box(contentAlignment = Alignment.TopCenter, modifier = Modifier.fillMaxSize()) {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier
-                        .widthIn(max = CONTENT_MAX_WIDTH)
-                        .fillMaxWidth()
-                        // Before the scroll, so its visible part ends at the keyboard's top and a focused
-                        // field is kept above it (BRD D180 (2)).
-                        .windowInsetsPadding(viewportInsets)
-                        .then(typingSpace.scrollingPage(scrollState))
-                        // After the scroll, never a child: the column's spacing would add a gap.
-                        .then(keyboardRoom.modifier)
-                        .windowInsetsPadding(
-                            MigrelyInsets.barsAndKeyboard.only(WindowInsetsSides.Horizontal)
-                        )
-                        .padding(horizontal = 16.dp, vertical = 8.dp)
-                ) {
-                    when {
-                        logged != null -> LoggedContents(logged, colors, timeUiFormatter, actions)
-                        log == null || shownTime == null -> Unit
-                        else -> {
-                            TimeRow(shownTime, log.zoneId, colors, timeUiFormatter, actions)
-                            if (log.medications.isEmpty()) {
-                                FirstMedicationForm(
-                                    problem,
-                                    problemArrivals,
-                                    pending,
-                                    announcer,
-                                    colors,
-                                    actions
-                                )
-                            } else {
-                                log.medications.forEach { medication ->
-                                    MedicationButton(medication, pending, colors) {
-                                        actions.onMedication(medication)
+                PageScroll {
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier
+                            .widthIn(max = CONTENT_MAX_WIDTH)
+                            .fillMaxWidth()
+                            // Before the scroll, so its visible part ends at the keyboard's top and a focused
+                            // field is kept above it (BRD D180 (2)).
+                            .windowInsetsPadding(viewportInsets)
+                            .pageScroll(scrollState, typingSpace)
+                            // After the scroll, never a child: the column's spacing would add a gap.
+                            .then(keyboardRoom.modifier)
+                            .windowInsetsPadding(
+                                MigrelyInsets.barsAndKeyboard.only(WindowInsetsSides.Horizontal)
+                            )
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                    ) {
+                        when {
+                            logged != null -> LoggedContents(
+                                logged,
+                                colors,
+                                timeUiFormatter,
+                                actions
+                            )
+                            log == null || shownTime == null -> Unit
+                            else -> {
+                                TimeRow(shownTime, log.zoneId, colors, timeUiFormatter, actions)
+                                if (log.medications.isEmpty()) {
+                                    FirstMedicationForm(
+                                        problem,
+                                        problemArrivals,
+                                        pending,
+                                        announcer,
+                                        colors,
+                                        actions
+                                    )
+                                } else {
+                                    log.medications.forEach { medication ->
+                                        MedicationButton(medication, pending, colors) {
+                                            actions.onMedication(medication)
+                                        }
                                     }
-                                }
-                                TextButton(
-                                    onClick = actions.onManage,
-                                    colors = ButtonDefaults.textButtonColors(
-                                        contentColor = colors.accent
-                                    ),
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .heightIn(min = colors.buttonHeight)
-                                ) {
-                                    Text(stringResource(R.string.log_manage))
+                                    TextButton(
+                                        onClick = actions.onManage,
+                                        colors = ButtonDefaults.textButtonColors(
+                                            contentColor = colors.accent
+                                        ),
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .heightIn(min = colors.buttonHeight)
+                                    ) {
+                                        Text(stringResource(R.string.log_manage))
+                                    }
                                 }
                             }
                         }
@@ -596,6 +605,7 @@ private fun FirstMedicationForm(
         announcer = announcer,
         onFocusMoving = { name = name.copy(selection = TextRange(name.text.length)) }
     )
+    val nameCounter = stringResource(R.string.edit_counter, name.text.length, MAXIMUM_NAME_LENGTH)
     // Kept above the keyboard with its supporting line where that fits (BRD D180 (2), ux U1).
     SingleLineFieldInView(
         hasLabel = true,
@@ -604,20 +614,16 @@ private fun FirstMedicationForm(
         OutlinedTextField(
             value = name,
             onValueChange = { name = limitedEdit(name, it, MAXIMUM_NAME_LENGTH) },
-            label = { Text(stringResource(R.string.edit_name)) },
+            label = { Text(stringResource(R.string.edit_name), Modifier.wordsShownOnly()) },
             singleLine = true,
             isError = nameProblem != null,
-            supportingText = {
-                FieldSupportingLine(
-                    nameText,
-                    stringResource(R.string.edit_counter, name.text.length, MAXIMUM_NAME_LENGTH)
-                )
-            },
+            supportingText = { FieldSupportingLine(nameText, nameCounter) },
             colors = colors.textField,
             interactionSource = interactionSource,
             modifier = inView
                 .then(nameField.modifier)
                 .problemSemantics(nameText)
+                .ownWords(stringResource(R.string.edit_name))
                 .fillMaxWidth()
         )
     }
@@ -667,6 +673,7 @@ internal fun CategoryChoices(
                         role = Role.RadioButton,
                         onClick = { onSelect(choice) }
                     )
+                    .ownWords(categoryLabel(choice))
             ) {
                 RadioButton(
                     selected = choice == selected,
@@ -680,10 +687,15 @@ internal fun CategoryChoices(
                     Text(
                         text = categoryLabel(choice),
                         style = MaterialTheme.typography.bodyLarge,
-                        color = content
+                        color = content,
+                        modifier = Modifier.wordsShownOnly()
                     )
                     categoryExamples(choice)?.let {
-                        Text(text = it, style = MaterialTheme.typography.bodySmall, color = content)
+                        Text(
+                            text = it,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = content
+                        )
                     }
                 }
             }

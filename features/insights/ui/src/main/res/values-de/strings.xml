@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- German (BRD D195): glossary and voice in openspec change add-german-localization, design D5. -->
+<resources>
+    <string name="insights_title">Auswertung</string>
+    <string name="insights_back">Zurück</string>
+    <plurals name="insights_months">
+        <item quantity="one">%d Monat</item>
+        <item quantity="other">%d Monate</item>
+    </plurals>
+    <string name="insights_loading">Deine Einträge werden gelesen</string>
+    <string name="insights_percent">%d %%</string>
+    <string name="insights_percent_below">&lt;%d %%</string>
+    <string name="insights_percent_above">&gt;%d %%</string>
+    <string name="insights_unavailable">Deine Einträge können gerade nicht gelesen werden. Versuch es gleich noch einmal.</string>
+    <plurals name="insights_more_migraines">
+        <item quantity="one">Noch %d Migräneattacke, um deine Muster zu sehen</item>
+        <item quantity="other">Noch %d Migräneattacken, um deine Muster zu sehen</item>
+    </plurals>
+    <plurals name="insights_more_days">
+        <item quantity="one">Muster erscheinen nach 30 Tagen mit Einträgen: noch %d Tag.</item>
+        <item quantity="other">Muster erscheinen nach 30 Tagen mit Einträgen: noch %d Tage.</item>
+    </plurals>
+    <string name="insights_triggers_title">Oft zusammen mit deiner Migräne notiert</string>
+    <plurals name="insights_trigger_share">
+        <item quantity="one">%1$s — %2$d von %3$d Migräneattacke (%4$s)</item>
+        <item quantity="other">%1$s — %2$d von %3$d Migräneattacken (%4$s)</item>
+    </plurals>
+    <string name="insights_no_triggers">In diesem Zeitraum wurden keine Auslöser notiert.</string>
+    <string name="insights_trigger_stress">Stress</string>
+    <string name="insights_trigger_too_little_sleep">Zu wenig Schlaf</string>
+    <string name="insights_trigger_too_much_sleep">Zu viel Schlaf</string>
+    <string name="insights_trigger_skipped_meal">Mahlzeit ausgelassen</string>
+    <string name="insights_trigger_dehydration">Zu wenig getrunken</string>
+    <string name="insights_trigger_alcohol">Alkohol</string>
+    <string name="insights_trigger_caffeine">Koffein</string>
+    <string name="insights_trigger_period">Periode</string>
+    <string name="insights_trigger_weather">Wetter</string>
+    <string name="insights_trigger_bright_light_or_screens">Helles Licht oder Bildschirme</string>
+    <string name="insights_trigger_smell">Geruch</string>
+    <string name="insights_trigger_physical_effort">Körperliche Anstrengung</string>
+    <string name="insights_trigger_travel">Reisen</string>
+    <string name="insights_when_title">Wann Migräne auftritt</string>
+    <string name="insights_weekdays_title">Nach Wochentag</string>
+    <string name="insights_times_title">Nach Tageszeit</string>
+    <string name="insights_count_of">%1$d von %2$d</string>
+    <plurals name="insights_bar_description">
+        <item quantity="one">%1$s: %2$d von %3$d Migräneattacke</item>
+        <item quantity="other">%1$s: %2$d von %3$d Migräneattacken</item>
+    </plurals>
+    <string name="insights_busiest_monday">Am häufigsten montags: %1$d von %2$d</string>
+    <string name="insights_busiest_tuesday">Am häufigsten dienstags: %1$d von %2$d</string>
+    <string name="insights_busiest_wednesday">Am häufigsten mittwochs: %1$d von %2$d</string>
+    <string name="insights_busiest_thursday">Am häufigsten donnerstags: %1$d von %2$d</string>
+    <string name="insights_busiest_friday">Am häufigsten freitags: %1$d von %2$d</string>
+    <string name="insights_busiest_saturday">Am häufigsten samstags: %1$d von %2$d</string>
+    <string name="insights_busiest_sunday">Am häufigsten sonntags: %1$d von %2$d</string>
+    <string name="insights_no_busiest_day">Kein Tag sticht heraus</string>
+    <string name="insights_busiest_night">Am häufigsten nachts: %1$d von %2$d</string>
+    <string name="insights_busiest_morning">Am häufigsten vormittags: %1$d von %2$d</string>
+    <string name="insights_busiest_afternoon">Am häufigsten nachmittags: %1$d von %2$d</string>
+    <string name="insights_busiest_evening">Am häufigsten abends: %1$d von %2$d</string>
+    <string name="insights_no_busiest_time">Keine Tageszeit sticht heraus</string>
+    <string name="insights_monday">Montag</string>
+    <string name="insights_tuesday">Dienstag</string>
+    <string name="insights_wednesday">Mittwoch</string>
+    <string name="insights_thursday">Donnerstag</string>
+    <string name="insights_friday">Freitag</string>
+    <string name="insights_saturday">Samstag</string>
+    <string name="insights_sunday">Sonntag</string>
+    <string name="insights_night">Nacht, 00–06</string>
+    <string name="insights_morning">Vormittag, 06–12</string>
+    <string name="insights_afternoon">Nachmittag, 12–18</string>
+    <string name="insights_evening">Abend, 18–24</string>
+    <string name="insights_zone_note">Jede Migräne zählt in der Zeitzone, in der sie notiert wurde.</string>
+    <string name="insights_cycle_title">Rund um deine Periode</string>
+    <plurals name="insights_cycle_share">
+        <item quantity="one">%1$d von %2$d Migräneattacke (%3$s) begann in den Tagen um deine Periode.</item>
+        <item quantity="other">%1$d von %2$d Migräneattacken (%3$s) begannen in den Tagen um deine Periode.</item>
+    </plurals>
+    <plurals name="insights_cycle_months">
+        <item quantity="one">diesem %d Monat</item>
+        <item quantity="other">diesen %d Monaten</item>
+    </plurals>
+    <plurals name="insights_cycle_base">
+        <item quantity="one">Diese Tage sind %1$s von %4$s (%2$d von %3$d Tag).</item>
+        <item quantity="other">Diese Tage sind %1$s von %4$s (%2$d von %3$d Tagen).</item>
+    </plurals>
+    <string name="insights_cycle_text">%1$s %2$s</string>
+    <string name="insights_cycle_window">Die Tage um deine Periode reichen von 2 Tagen vor ihrem Beginn bis einschließlich ihres dritten Tages.</string>
+    <string name="insights_medications_title">Wie du deine Medikamente bewertet hast</string>
+    <plurals name="insights_helped">
+        <item quantity="one">Deutlich oder vollständig geholfen: %1$d von %2$d Antwort (%3$s)</item>
+        <item quantity="other">Deutlich oder vollständig geholfen: %1$d von %2$d Antworten (%3$s)</item>
+    </plurals>
+    <string name="insights_needs_answers">Braucht 3 Antworten (hat %1$d)</string>
+    <string name="insights_no_medications">In diesem Zeitraum wurde keine Akutmedikation notiert.</string>
+    <string name="insights_trends_title">Die letzten 12 Monate</string>
+    <string name="insights_trends_note">Die Balken zeigen die Migränetage in jedem Monat.</string>
+    <plurals name="insights_migraine_days">
+        <item quantity="one">%d Migränetag</item>
+        <item quantity="other">%d Migränetage</item>
+    </plurals>
+    <plurals name="insights_migraines">
+        <item quantity="one">%d Migräneattacke</item>
+        <item quantity="other">%d Migräneattacken</item>
+    </plurals>
+    <plurals name="insights_medication_days">
+        <item quantity="one">%d Tag mit Akutmedikation</item>
+        <item quantity="other">%d Tage mit Akutmedikation</item>
+    </plurals>
+    <plurals name="insights_bed_rest">
+        <item quantity="one">%d Migräneattacke mit Bettruhe</item>
+        <item quantity="other">%d Migräneattacken mit Bettruhe</item>
+    </plurals>
+    <string name="insights_month_details">%1$s, %2$s, %3$s</string>
+    <string name="insights_month_description">%1$s: %2$s, %3$s, %4$s, %5$s</string>
+</resources>

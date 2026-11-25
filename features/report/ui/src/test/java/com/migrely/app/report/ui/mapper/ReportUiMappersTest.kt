@@ -27,7 +27,8 @@ class ReportUiMappersTest {
                     20_751,
                     anythingLogged = true,
                     period = ReportPeriodUiModel.SinceLastVisit(20_660),
-                    lastVisitEpochDay = 20_660
+                    lastVisitEpochDay = 20_660,
+                    creditShown = false
                 )
             ),
             ReportViewStateUiMapper().toUi(
@@ -37,7 +38,8 @@ class ReportUiMappersTest {
                         LocalDate.ofEpochDay(20_751),
                         true,
                         ReportPeriodPresentationModel.SinceLastVisit(LocalDate.ofEpochDay(20_660)),
-                        LocalDate.ofEpochDay(20_660)
+                        LocalDate.ofEpochDay(20_660),
+                        creditShown = false
                     )
                 )
             )
@@ -80,7 +82,9 @@ class ReportUiMappersTest {
             ReportPresentationNotification.NothingLogged to
                 ReportEventUiModel.Message(ReportMessageUiModel.NothingLogged),
             ReportPresentationNotification.SomethingWentWrong to
-                ReportEventUiModel.Message(ReportMessageUiModel.SomethingWentWrong)
+                ReportEventUiModel.Message(ReportMessageUiModel.SomethingWentWrong),
+            ReportPresentationNotification.NotSaved to
+                ReportEventUiModel.Message(ReportMessageUiModel.NotSaved)
         ).forEach { (notification, expected) ->
             val shown = async(start = UNDISPATCHED) { presenter.events.first() }
             classUnderTest.toUi(notification).present()

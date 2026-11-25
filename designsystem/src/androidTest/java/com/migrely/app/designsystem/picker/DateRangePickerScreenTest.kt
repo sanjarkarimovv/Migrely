@@ -221,7 +221,11 @@ class DateRangePickerScreenTest {
         val LABELS = DateRangePickerLabels(
             title = "Choose the dates",
             confirm = "Done",
-            cancel = "Cancel"
+            cancel = "Cancel",
+            startDate = "Start date",
+            endDate = "End date",
+            notChosen = "not chosen",
+            headlineDescription = "Start date, %1\$s, end date, %2\$s"
         )
 
         /** A 1080×2400 phone at 420 dpi, less its status and navigation bars. */

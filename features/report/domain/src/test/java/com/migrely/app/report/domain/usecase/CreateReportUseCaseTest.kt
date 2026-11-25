@@ -13,6 +13,7 @@ import com.migrely.app.report.domain.model.ReportRecordsResultDomainModel
 import com.migrely.app.report.domain.model.ReportWriteResultDomainModel
 import com.migrely.app.report.domain.repository.CleanUpReportsRepository
 import com.migrely.app.report.domain.repository.GetCurrentTimeRepository
+import com.migrely.app.report.domain.repository.GetReportCreditRepository
 import com.migrely.app.report.domain.repository.GetReportRecordsRepository
 import com.migrely.app.report.domain.repository.WriteReportRepository
 import java.time.Instant
@@ -27,6 +28,7 @@ import org.mockito.kotlin.given
 import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 
 private val ZONE: ZoneId = ZoneId.of("Asia/Tashkent")
@@ -73,7 +75,11 @@ class CreateReportUseCaseTest {
         assertEquals(
             CreateReportResultDomainModel.Created("content://r"),
             classUnderTest.executeInBackground(
-                CreateReportRequestDomainModel(THREE_MONTHS, includeNotes = true)
+                CreateReportRequestDomainModel(
+                    THREE_MONTHS,
+                    includeNotes = true,
+                    includeCredit = true
+                )
             )
         )
 
@@ -99,7 +105,7 @@ class CreateReportUseCaseTest {
         ).willReturn(ReportWriteResultDomainModel.Written("content://r"))
 
         classUnderTest.executeInBackground(
-            CreateReportRequestDomainModel(THREE_MONTHS, includeNotes = true)
+            CreateReportRequestDomainModel(THREE_MONTHS, includeNotes = true, includeCredit = true)
         )
 
         val report = argumentCaptor<ReportDomainModel>()
@@ -119,7 +125,7 @@ class CreateReportUseCaseTest {
         ).willReturn(ReportWriteResultDomainModel.Written("content://r"))
 
         classUnderTest.executeInBackground(
-            CreateReportRequestDomainModel(THREE_MONTHS, includeNotes = false)
+            CreateReportRequestDomainModel(THREE_MONTHS, includeNotes = false, includeCredit = true)
         )
 
         val report = argumentCaptor<ReportDomainModel>()
@@ -128,11 +134,36 @@ class CreateReportUseCaseTest {
     }
 
     @Test
+    fun `Given the credit switch at the tap then the report carries it`() {
+        givenRecords(ATTACK)
+        given(
+            writeReportRepository.writeReport(any())
+        ).willReturn(ReportWriteResultDomainModel.Written("content://r"))
+
+        classUnderTest.executeInBackground(
+            CreateReportRequestDomainModel(
+                THREE_MONTHS,
+                includeNotes = false,
+                includeCredit = false
+            )
+        )
+        classUnderTest.executeInBackground(
+            CreateReportRequestDomainModel(THREE_MONTHS, includeNotes = false, includeCredit = true)
+        )
+
+        val report = argumentCaptor<ReportDomainModel>()
+        verify(writeReportRepository, times(2)).writeReport(report.capture())
+        assertEquals(listOf(false, true), report.allValues.map { it.includeCredit })
+    }
+
+    @Test
     fun `Given nothing logged, a failed read or a failed write then why`() {
         givenRecords()
         assertEquals(
             CreateReportResultDomainModel.NothingLogged,
-            classUnderTest.executeInBackground(CreateReportRequestDomainModel(THREE_MONTHS, true))
+            classUnderTest.executeInBackground(
+                CreateReportRequestDomainModel(THREE_MONTHS, true, true)
+            )
         )
         verify(writeReportRepository, never()).writeReport(any())
 
@@ -142,7 +173,9 @@ class CreateReportUseCaseTest {
         ).willReturn(ReportWriteResultDomainModel.StorageFull)
         assertEquals(
             CreateReportResultDomainModel.StorageFull,
-            classUnderTest.executeInBackground(CreateReportRequestDomainModel(THREE_MONTHS, true))
+            classUnderTest.executeInBackground(
+                CreateReportRequestDomainModel(THREE_MONTHS, true, true)
+            )
         )
 
         given(
@@ -150,7 +183,9 @@ class CreateReportUseCaseTest {
         ).willReturn(ReportRecordsResultDomainModel.Failed)
         assertEquals(
             CreateReportResultDomainModel.Failed,
-            classUnderTest.executeInBackground(CreateReportRequestDomainModel(THREE_MONTHS, true))
+            classUnderTest.executeInBackground(
+                CreateReportRequestDomainModel(THREE_MONTHS, true, true)
+            )
         )
     }
 
@@ -161,6 +196,7 @@ class CreateReportUseCaseTest {
             GetReportOptionsUseCase(
                 getCurrentTimeRepository,
                 getReportRecordsRepository,
+                mock<GetReportCreditRepository> { on { reportCreditShown() } doReturn false },
                 CoroutineContextProvider.Default
             )
 
@@ -171,7 +207,8 @@ class CreateReportUseCaseTest {
                     LocalDate.of(2026, 10, 25)
                 ),
                 anythingLogged = true,
-                period = ReportPeriodDomainModel.LastMonths(1)
+                period = ReportPeriodDomainModel.LastMonths(1),
+                creditShown = false
             ),
             options.executeInBackground(ReportPeriodDomainModel.LastMonths(1))
         )
@@ -179,7 +216,7 @@ class CreateReportUseCaseTest {
             getReportRecordsRepository.reportRecords()
         ).willReturn(ReportRecordsResultDomainModel.Failed)
         assertEquals(
-            ReportOptionsDomainModel.Failed,
+            ReportOptionsDomainModel.Failed(creditShown = false),
             options.executeInBackground(ReportPeriodDomainModel.LastMonths(1))
         )
     }

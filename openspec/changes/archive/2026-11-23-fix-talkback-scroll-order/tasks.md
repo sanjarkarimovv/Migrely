@@ -1,0 +1,443 @@
+# Tasks
+
+Base: `bugfix/255-details-talkback-order` (worktree `migraine-app-255`): eng-255's red tests 0ecb3bc6 on 05b37589, with
+`origin/develop` f70b6450 (#245) merged in 3ad21ac7. Release 1.4.0 (planned for 1.3.3 on 2026-11-19; moved to 1.4.0 on 2026-11-20 because #259 took
+1.3.3), tracker row T76. Write `Refs #255`
+in every commit and in the PR into `develop`, never a closing keyword: QA filed #255 and closes it after the retest. BRD D193,
+EC-UX-78 to EC-UX-82, EC-UX-89 and EC-UX-90, §13 row 57. Root cause: `migrely-work/255/eng-255-report.md`. Design: this change's `design.md` (D1 to
+D8).
+
+Ownership:
+- `product-manager`: 0 (done) and 9.2;
+- `ux-designer`: 1, before any code in 2 to 4;
+- `android-engineer`: 2 to 6;
+- `code-reviewer`: 7;
+- `qa-engineer`: 8 and 9.1 (emulator-5580 API 36, then emulator-5582 API 26, one at a time).
+
+No `medical-reviewer`: no string and no health sentence changes. Every test is written first and shown red on `develop`
+f70b6450 (or on this branch before the fix), then green; each mutation must turn its test red again. Logs go to
+`migrely-work/255/eng/`. Gradle under load: `nice -n 19 ./gradlew --max-workers=2 …`.
+
+## 0. Plan (`product-manager`)
+
+- [x] 0.1 BRD D193, EC-UX-78 to EC-UX-82, EC-UX-89 and EC-UX-90, §13 row 57; proposal, design, `app-shell` delta, tasks. Verify:
+  `openspec validate fix-talkback-scroll-order --strict` and `openspec validate --all --strict` exit 0.
+
+## 1. Design inputs (`ux-designer`, before code)
+
+All three in `docs/ux/255-talkback-scroll-order.md`, 91ceda44, with team-lead's decisions of 2026-11-19 folded into design
+D3 to D5.
+
+- [x] 1.1 TalkBack's scroll step: floor(V/2) px, V the actually visible part (ux section 1; design D3). The narrower
+  wording ("stays on screen while the gap is under V/2; the next stop is always next in order") is adopted in the spec.
+  Verify: `git log --oneline -1 -- docs/ux/255-talkback-scroll-order.md` → 91ceda44.
+- [x] 1.2 Chip names: option 3, yes, only with D2; spoken "Not selected. Nausea" / "Selected. Nausea" (ux section 2; design
+  D4.2). Other stops: data-driven through the cut sweep, not blanket (team-lead; design D4.3). Verify: the same note,
+  section 2.
+- [x] 1.3 Drawn: nothing drawn changes; D2 wraps only the scroll content; audit cases T1 to T4 (ux section 3; design D4a,
+  D5). Verify: the same note, section 3.
+
+## 2. Shared mechanism (`android-engineer`, `designsystem`)
+
+- [x] 2.0 Re-run eng-255's red tests on this branch (f70b6450 merged) before any fix. Verify: `nice -n 19 ./gradlew
+  --max-workers=2 :features:attack:ui:testDebugUnitTest --tests '*AttackDetailsTalkBack*'` → 7 tests, the no-keyboard order
+  test passes, the rest fail with a named wrong step; log `migrely-work/255/eng/2.0-red.log`. If the counts differ from
+  0ecb3bc6's (6 of 7 red), report to `product-manager` before going on.
+  Result (eng-255b, 81323590): 7 tests completed, 6 failed; "no keyboard, order" passes; the 6 name their wrong step
+  (e.g. "Back of the head -> Change when it ended", "Aura left the screen"). Logs are in `migrely-work/255b/` (`255/eng`
+  links there): `2.0-red.log`, `2.0-red-summary.txt`.
+- [x] 2.1 Navigation-bar case (design D7): an order test with a bottom system-bar inset so the visible part ends above the
+  window (as `walk-b1`). Verify: red on this branch before the fix, log `2.1-red.log`.
+  Result: `Portrait at 100 percent, navigation bar, no keyboard, the order runs down the page` (24 dp bar) red, 4 order
+  tests completed, 3 failed; wrong steps such as "Add your own symptom -> Pain" (`2.1-red-summary.txt`).
+- [x] 2.2 Shared test fixture: move `TalkBackTree` (order from the traversal data, scroll by the accessibility action, "only N
+  items" guard) where every `ui` module's tests can use it, no copies. Replace the merged-semantics `talkBackName()`
+  (`TalkBackTree.kt:76`) with an unmerged read as TalkBack builds the name (own text or description, then visible
+  non-focusable children), so a cut name can fail. Verify: the 2.0 and 2.1 tests still red for the same reason after the
+  move; a fixture test where a chip's text child is clipped out returns an empty name with the new read and the full name
+  with the old one (shows why the old read could not fail).
+  Result: new test-support module `:architecture:ui-test` (package `com.migrely.app.test.talkback`, like
+  `:architecture:presentation-test`), used through `testDebugImplementation`; attack's copy deleted. `TalkBackTree.spokenName`
+  is the unmerged read; the merged read is kept only to find stops and label failures, renamed `mergedWords()` so it is
+  not mistaken for a name check. `setNavigationBar` moved there too. `SpokenNameReadTest`: 2 tests, 0 failures (whole chip
+  "Nausea"; chip cut 8 dp above its text: new read "", merged "Nausea"). Attack TalkBack tests: 8 completed, 7 failed with
+  the same named steps as 2.0 and 2.1 (`2.2-summary.txt`).
+- [x] 2.3 The entry point (D1) with exact bounds (D2, scroll content only, D4a) and the step floor(V/2) px (D3).
+  `ViewConfiguration` delegate: only `minimumTouchTargetSize` changes. Verify: a `designsystem` test that (a) a node 1 to 24
+  dp below the visible edge with a bottom inset is absent from the tree, (b) one accessibility scroll moves floor(V/2) px
+  within 1 px, also with an inset inside the scroll content (V = what shows, not `viewportSize`), (c)
+  `doubleTapTimeoutMillis`, `longPressTimeoutMillis` and `touchSlop` inside equal those outside, (d) the minimum touch target
+  reads 48 dp in a top bar, a message host and dialog buttons beside the scroll and 0 inside it. Red first. Mutations: no D2
+  → (a) red; no D3 or `viewportSize / 2` → (b) red; a non-delegating configuration → (c) red; D2 around the whole screen →
+  (d) red.
+  Result: `designsystem/layout/PageScroll.kt`: `PageScroll { Column(Modifier….pageScroll(state)) { … } }`. The
+  provider wraps the scrolling layout itself, not only its children: Compose widens the clip in the clipping
+  coordinator's `rectInParent`, which reads that layout node's own configuration. `pageScroll` exists only in the
+  scope, so a page cannot get the step without exact bounds. V = the viewport's `boundsInRoot` less
+  `MigrelyInsets.barsAndKeyboard` over it, read when TalkBack scrolls. `PageScrollTest` red on a stub (7 tests, 6
+  failed: hidden items [1, 12, 23] dp in the tree, moved 867 and 891 px for 433, minimum target 48 inside), green
+  after (7, 0). Mutations, each red: no D2 → 4 failed (a, c, d); no D3 → 2 failed (b both); step from the viewport
+  (`viewportSize / 2`) → 1 failed (moved 445 for 433); non-delegating configuration → 1 failed (c); D2 around the
+  whole sample screen → 1 failed (d). `:designsystem:testDebugUnitTest` 273 tests, 0 failed (KeyboardRoomTest 9,
+  TopBarAsideTest 13, TypedLineMarginsTest 5 unchanged). Logs `2.3-*.log`, `mut-2.3-*.txt`.
+- [x] 2.4 Source check (D1): fails on `verticalScroll(` in `src/main` outside `designsystem`'s entry point, naming file and
+  line. Verify: red now with 29 sites listed (design D8); green at the end of 4; negative control: a scratch raw call turns it
+  red again. Log `2.4-*.log`.
+  Result: `app/src/test/.../architecture/ArchitectureScrollsTest` (Konsist, beside `ArchitectureDialogsTest`): red now,
+  "raw verticalScroll calls: 29", the 29 sites of D8 by file and line (`2.4-red-summary.txt`). Negative control: a
+  scratch `ScratchRawScroll.kt` in home ui → 30, naming `ScratchRawScroll.kt:8`, its comment line 7 not counted; file
+  removed → 29. It stays red, committed on purpose, until 4.7 turns it green.
+
+- [x] 2.5 Cut sweep in the shared fixture (design D7): for each stop, scroll so 1 px to 12 dp of it shows at the top edge,
+  then at the bottom edge, and read its name with the 2.2 read; report each stop whose name is empty or partial. Verify: on
+  Attack details under D2 alone (no option 3) the sweep is red for symptom chips (negative control, log `2.5-red.log`);
+  with option 3 on `ChoiceChip` it is green for chips.
+  Result: `cutSweep(page, of)` in `:architecture:ui-test` (`CutSweep.kt`): cuts of 1 px, 4, 8 and 12 dp at each edge,
+  compared with the stop's name when whole; a stop is any merged node with words, a click or merged children, and
+  one that says nothing even when whole is reported too. `AttackDetailsCutSweepTest` (portrait 100%, D2 given to the
+  whole screen by the test, as prototype 2): before option 3, 190 findings, every symptom, trigger and location chip
+  says '' when cut (`2.5-red-summary.txt`); with option 3 on `ChoiceChip` (`contentDescription = spokenLabel ?:
+  label`, inner `Text` cleared) the chip sweep is green (1 test, 0 failed). Mutations, each red: description back to
+  spokenLabel only → chips say nothing even when whole; the original code → 152 findings in 29 chips. A first run of
+  that mutation passed because the sweep skipped stops with no words; the sweep was fixed to count them. D181 checks
+  (`AttackSpokenNameTest`, the "Your own" chips) green; attack ui 136 tests, 7 failed = the 7 known red of 2.0/2.1.
+  **Input to 4.1 (D4.3, data-driven):** with chips fixed, 10 more stops on Attack details lose their name when cut
+  (38 findings): "Remove pain level 6 at 14:15" and "… 9 at 15:05" (icon buttons), "Add pain level", "Add medication",
+  the four impact choices ("0 · No impact" … "3 · Bed rest", radio rows), the note field (says its text without
+  "49/1000") and "Delete migraine" (`2.5-option3-summary.txt`). Expect the same for Material buttons on other pages.
+
+## 3. Touch-target audit (`android-engineer`, before D2 lands on each page)
+
+- [x] 3.1 For every page and dialog in design D8, a test measures each clickable node's touch bounds, width and height, at
+  360 and 411 dp wide and at 100% and 200% font, against its bar (48 dp; 64 dp for attack mode's intensity choices,
+  "Migraine ended", a message's Undo and Dismiss). Verify: a table in `migrely-work/255/eng/touch-targets.md` (site,
+  controls, smallest size) and the test names; summary line here.
+  **Stopped (eng-255b, 2026-11-19), decision needed:** fixture `touchTargets(page)` in `:architecture:ui-test` measures
+  the node that takes each click inside the page, with no widening. `AttackTouchTargetAuditTest` (Attack details, 360
+  and 411 dp, 100% and 200%): 43 controls in the page, 41 at 48 dp or more; the two "Remove pain level" Material3
+  `IconButton`s are **40×40 dp** at all four sizes (`3.1-attack-summary.txt`). Material's
+  `minimumInteractiveComponentSize` keeps a 48 dp layout, but the click lands on the 40 dp node and the 4 dp ring is
+  touchable only through `ViewConfiguration.minimumTouchTargetSize`, which D2 sets to 0. Design D2's note ("Material
+  controls keep their 48 dp layout size") holds for layout, not for touch. Not a T1 to T4 case; the same pattern
+  (Material icon buttons, checkboxes, switches) appears in 21 `src/main` files, not yet measured.
+  **Lead decision 2026-11-19, option 1:** inside D2 every clickable, toggleable or selectable node is itself at least
+  48×48 dp (its own size, never `ViewConfiguration` widening); nothing drawn changes. Icon buttons:
+  `designsystem/button/MigrelyIconButton` (48 dp clickable node; Material's 40 dp circle, container, icon and ripple
+  drawn inside it, presses moved by the 4 dp inset so the ripple starts under the finger). `MigrelyIconButtonTest`:
+  red on a stub that is Material's `IconButton` (tap 2 dp outside the 40 dp circle, inside 48 dp, inside a page: no
+  click), green after; the control test shows Material's button misses that tap inside a page. At rest and disabled:
+  0 pixels differ from Material's (mutation, icon moved: 198 pixels differ, red). Named limits: the circle's size does
+  not show at rest (transparent container), and Robolectric draws no platform ripple (Material's own pressed button
+  equals its resting one), so the pressed comparison is the instrumented `MigrelyIconButtonPressedTest` (compiles; to
+  run on emulator-5570 in the device round). TalkBack's focus outline follows the node: 48 dp square, was 40 dp.
+  The 9 in-page icon buttons use it (Attack details' intake and pain-entry Close, History's month chevrons, Today's
+  Settings, a medication row's Close, the effect question's Skip, the visit card's and trial banner's Close); top-bar
+  ones, the Paywall's close row above its scroll and the message host stay Material. Checkboxes, switches, radios:
+  each passes `null` as its own handler, the row is the toggleable or selectable node, so no change (rule 2).
+  **Result 3.1:** `auditTouchTargets` fixture; one `*TouchTargetAuditTest` per ui module (attack, home, medication,
+  settings, history, report, backup, reminders, subscription, onboarding, insights) at 360 and 411 dp, 100% and 200%,
+  plus landscape 800×360 dp for home and history (two-pane sites): 48 tests, 0 failed; 31 screens and cards, every
+  control at its bar (smallest 48.0 dp; attack mode's 64 dp controls at 64; History's day cells 47-48 dp, T1). Table
+  `migrely-work/255b/touch-targets.md` (127 rows). Your data's two dialogs scroll text only; Warning signs, About,
+  Licences have no control in the page. With the full ui suites: every module green except the 7 known red attack
+  tests (4.1).
+- [x] 3.2 T1 History calendar days (`MonthSkyCalendar.kt:320-345`) at 360 dp wide, 200% font: if a cell is under 48 dp, a
+  touch area covering the whole cell pitch, drawn cell, clip and focus ring unchanged. Verify: a test that a tap in the 6 dp
+  gap opens the nearer day under D2 (red with D2 and no pitch area), and the History screenshot identical.
+  Result: at 360 dp a cell is 41.7 dp. The day's clickable, focus and semantics now sit on a slot of the whole pitch
+  (cell plus 3 dp, half the gap, on each side); the drawn cell (clip, sky, rings, focus ring, ripple from
+  `LocalIndication`, presses moved by the inset) is inside it, and the weeks are laid out 3 dp out on every side so
+  each cell is drawn where it was. `MonthSkyCalendarPitchTest`: inside `PageScroll`, taps 1 dp into the gap on each
+  side of day 1, across and down, red before (clicked `[]`), green after (`[1, 2, 1, 8]`). Pixels of the window at 360
+  and 411 dp, 100% and 200%, with the chosen, today, period and focus rings: byte-identical before and after
+  (`3.2-before/`); control: without the 3 dp outset all four differ. TalkBack's outline for a day is the pitch.
+- [x] 3.3 T2 and T3 Material pickers (`MigrelyDatePicker.kt:151`, `MigrelyDateTimePicker.kt:147, 189`,
+  `RemindersScreen.kt:589`): if any control is under 48 dp under D2, that picker stays out of D2 (keeps D3); tell
+  `product-manager` to record it in D193 (#255 stays open there). T4 attack mode: no change; the 48 dp secondary buttons
+  pass. Verify: the 3.1 table rows for T2 to T4 and the decision written here.
+  Result (`PickerTouchTargetAuditTest`, 4 sizes): the date picker and the date-time picker's date step have the mode
+  toggle and month arrows at 40×40 dp and the month/year button at 193×40; the time step has AM/PM at 52×40 and its
+  Cancel/OK (inside its scroll) 40 dp tall; day cells and clock numbers are 48. **Decision: T2 and T3 apply** —
+  `MigrelyDatePicker.kt:151`, `MigrelyDateTimePicker.kt:147, 189` and Reminders' time dialog (`RemindersScreen.kt:589`,
+  same Material `TimePicker`) stay out of D2 and keep D3 (for 4.6: the entry point needs a step-only form);
+  `product-manager` records it in D193, #255 stays open there. T4: attack mode's 64 dp controls measure 64 in
+  landscape (in portrait they sit outside the scroll); its Details button is 48 dp or more. If Material's controls
+  ever reach 48 dp the picker test turns red.
+  PM (team-lead 2026-11-19): recorded in D193 (4) and design D5 as a residual; instead of #255 staying open there, QA
+  files a follow-up issue for the pickers at close-out (9.1) and #255 closes on the rest.
+
+## 4. Screens, red first per group (`android-engineer`, `ui` modules)
+
+For each group: order and scroll tests and the cut sweep (2.5) through the shared fixture at 100% portrait (with the bottom
+inset) and 200% landscape 360 dp, red before the entry point is applied, green after; screenshots before and after identical
+to the pixel. Where a gap to the next stop is V/2 or more, the scroll test asserts the order, not that the item stayed. A
+stop the sweep finds nameless gets its words on its own node (same string resource, inner `Text` cleared) and nothing else
+does; each such stop passes the D181 one-name check (heard once, visible words in order). List them per group here.
+
+  **How (eng-255b, 2026-11-19).** Shared fixture `talkBackWalk` (`:architecture:ui-test`): for each screen of a module,
+  in a window drawn edge to edge with a 24 dp navigation bar, every vertical scroll area gets the order check down the
+  page (a step is wrong when it goes back up both in reading order, `traversalIndex` honoured, and on screen), the
+  swipe-back and swipe-on check (TalkBack's step; where the next item is not yet in view it steps again in the same
+  swipe, design D3; the item it was on must stay on screen while the gap is under V/2), the cut sweep, and a heard-once
+  check (no stop says a part of its words twice). It dumps each screen's window pixels. One `*TalkBackWalkTest` per ui
+  module (portrait 411 dp 100%, landscape 360 dp tall 200%) over the same screens as its audit (`*TestScreens.kt`).
+  Before (`4.0-walk-before-summary.txt`): red in 10 of 11 modules (home green both). Every site wired by one
+  mechanical change (`PageScroll { Column(… .pageScroll(state) …) }`), then the stops the sweep found get
+  `ownWords(...)` on their own node and `wordsShownOnly()` on their Text (`hideFromAccessibility`: out of TalkBack's
+  reading, still in the semantics tree, so tests, Maestro and Voice Access find the shown words). Fields: label on
+  the field's node, counter as its state description while no problem shows. After: 22 walk tests green; window
+  pixels of all 27 screens × 2 sizes byte-identical before and after (`4.x-pixels-final.txt`, 54 of 54).
+  Named per group: G1 Attack details' Got it, Add pain level, Add medication, the 4 impact choices, the note's
+  counter, Delete migraine, Add past attack's Add migraine; every in-page icon button through `MigrelyIconButton`'s
+  new `contentDescription`. G3 kind rows, category rows (title, examples), Save, Name and Dose fields (Edit and Log
+  medication). G4 Settings' switch, link and value rows, the policy link, the Delete field. G5 History's Period and
+  Pain-free switches, Add a past migraine, Show all of the month; Report's period chips, Custom, Create report; Your
+  data's two action rows; Reminders' two switch rows; Paywall's buy and Restore buttons; Onboarding's Restore;
+  Insights' period chips.
+
+- [x] 4.1 G1 attack: Attack details (keyboard up and down; the aside bar at 360 dp keeps Back out of the tree, D192) and Add
+  past attack; `ChoiceChip` option 3 (`AttackChoiceSections.kt:204-262`). Verify: `:features:attack:ui:testDebugUnitTest` green; the 2.0 and 2.1 tests green;
+  `MessageBarAsideTest`, `AttackDetailsKeyboardRoomTest` unchanged and green.
+- [x] 4.2 G2 home: Today (3 sites) and attack mode (3 sites, 64 dp). Verify: `:features:home:ui:testDebugUnitTest` green.
+- [x] 4.3 G3 medication: Edit medication, Log medication (normal and dark room), Medications. Verify:
+  `:features:medication:ui:testDebugUnitTest` green, `EditMedicationProblemFeedbackTest` and
+  `FirstMedicationProblemFeedbackTest` unchanged and green.
+- [x] 4.4 G4 settings: Settings, Settings pages, Delete all data. Verify: `:features:settings:ui:testDebugUnitTest` green,
+  `DeleteKeyboardTest` unchanged and green.
+- [x] 4.5 G5: History, Insights, Report, Your data and its 2 dialogs, Reminders and its dialog, Paywall, Onboarding. Verify:
+  each module's `testDebugUnitTest` green.
+- [x] 4.6 G6 `designsystem` pickers (3 sites; D2 only where 3.3 kept it, D3 on all). Verify: `:designsystem:testDebugUnitTest` green, `KeyboardRoomTest`,
+  `TopBarAsideTest`, `TypedLineMarginsTest` unchanged and green.
+  Result 4.1-4.6 (`4.x-suites3.log`): designsystem 287 tests, attack 142, home 130, medication 160, settings 48,
+  history 69, report 14, backup 22, reminders 33, subscription 48, onboarding 11, insights 21, ui-test 2: 0 failed
+  (the walk's last fix, the geometric order, then re-ran the 22 walk tests green, `4.x-walk-final.log`). The 7 tests of
+  2.0/2.1 green; guards `MessageBarAsideTest`, `AttackDetailsKeyboardRoomTest`, `EditMedicationProblemFeedbackTest`,
+  `FirstMedicationProblemFeedbackTest`, `DeleteKeyboardTest`, `KeyboardRoomTest`, `TopBarAsideTest`,
+  `TypedLineMarginsTest` unchanged and green. 4.2: home was green before too (its screens' bands fall where the order
+  holds); it is wired all the same. 4.6: pickers and Reminders' time dialog use `PageScroll(exactBounds = false)`;
+  `PageScrollTest` "Step only…" (48 dp kept, half step) red with exact bounds forced on, green after. Mutation of the
+  heard-once check (`wordsShownOnly` a no-op): attack walk red, "said twice: Got it | Got it".
+- [x] 4.7 The source check (2.4) green with no exceptions outside the entry point. Mutations on the final code: remove D2 →
+  order tests red; remove D3 → scroll tests red. Logs `4.7-*.log`.
+  Result: `ArchitectureScrollsTest` green (was 29 sites; its negative control is 2.4's). Mutations on the final code
+  (`mut-4.7-*.txt`): D2 forced off → 5 of 10 attack TalkBack tests red (the 3 order tests and both walks); the step
+  element removed → 6 of 10 red (the 4 scroll tests and both walks).
+
+## 5. Gate (`android-engineer`)
+
+- [x] 5.1 Full gate. Verify: `set -o pipefail; nice -n 19 ./gradlew --max-workers=2 assembleDebug test ktlintCheck detekt
+  lint` → BUILD SUCCESSFUL, exit 0; test counts in `5.1-gate.log`.
+  Result (e8055704): exit 0, BUILD SUCCESSFUL in 6m 38s; 3,589 tests, 0 failed, 0 skipped, in 566 result files
+  (`migrely-work/255b/5.1-gate.log`).
+- [x] 5.2 No permission, manifest or string change. Verify: `./gradlew :app:checkReleasePermissions` exit 0 and `git diff
+  origin/develop --stat -- '*AndroidManifest.xml' '*strings.xml'` empty.
+  Result: `:app:checkReleasePermissions` exit 0; the diff is empty (0 lines).
+- [x] 5.3 After merging `develop` 224dad3d (#259, D194; 1.3.3) into this branch (merge 2e6f5ad8): the four typing
+  screens scroll through `pageScroll(state, typingSpace)`, which puts the TalkBack step first, then #259's
+  `TypingSpace.scrollingPage` (its layout-pass follow and `verticalScroll` on the same state). `scrollingPage` is
+  `internal`; the source check pins its one caller (the entry point) and the two raw scroll lines (entry point 1,
+  TypingSpace 1). Negative controls, each red for its reason: a `scrollingPage(` call in another file, a second raw
+  scroll in TypingSpace, a raw scroll in a screen (`neg1.log`, `neg2.log`). BRD: this change's EC-UX-83 and 84 became
+  EC-UX-89 and 90 (#259's rows merged first; references in this change renumbered).
+  Verify: full gate and `:app:checkReleasePermissions`.
+  Result: 2e6f5ad8 exit 0, 3,660 tests, 0 failed, #259's TypingSpace, KeyboardFollow and AttackDetailsKeyboardFrames
+  suites rerun green (`gate-merge.log`); ac0a7695 (the 6.2-F1 fix) exit 0, 3,660 tests, 0 failed (`gate-ac0a7695.log`).
+  INTERNET still rejected in the merged release manifest; manifest and strings diff against develop empty.
+
+## 6. Device walks (`android-engineer`, emulator-5570, TalkBack VERBOSE, console swipes)
+
+- [x] 6.1 Attack details: previous from the end to Back and next from Back to the end, every stop once and named, at 100%
+  portrait (no keyboard; keyboard up) and 200% landscape in the 360 dp window (`wm size 945x2100`; keyboard up, then closed
+  with Back). Include a stop on a chip cut at an edge: it says "Not selected. Nausea" (or "Selected. …"). Verify: walk logs
+  `6.1-*.txt` with stop counts and the cut chip's line; the same walk on `develop` loops or skips (control). Read each
+  scroll's distance from the log: floor(V/2) within 1 px.
+  Result on 4cd24379 (eng-255b; logs `migrely-work/255b/6.x-*`), develop 4d141abe the control on the same data:
+  | Walk | Candidate | develop |
+  |---|---|---|
+  | 100% portrait, previous from the end | Delete → Back, 52-56 stops, no repeat, no bare state (3 runs; see note) | skips Stress → Back, then circles on bare "Not selected" |
+  | 100% portrait, next from the top | Migraine → Delete, 55 stops, clean | 58 stops, 1 repeat, 3 bare |
+  | 100% portrait, keyboard up, previous | Smell → Back, 45 stops, clean; nothing under the keyboard a stop | 54 stops, 1 repeat, 7 bare |
+  | 200% landscape, 360 dp window, previous | Delete → Back, 56 stops, clean | |
+  | 200% landscape, keyboard opened then closed with Back (the issue) | Delete → Back, 56 stops, clean | 52 stops, 1 repeat, 13 bare |
+  | 200% landscape, keyboard up | title, Migraine, Back: no page item is visible (see note) | same picture |
+  Step: 1,020 px each way = floor(2,041 / 2), V = 296..2,337 px; less than a step left scrolls to the end (707 px).
+  Cut chip: "Nausea" with 23 of its 47 px label shown at the bottom edge says "Selected. Nausea", as whole.
+  Notes: one of three portrait back walks skipped the top four items once: TalkBack's backward scroll returned true but
+  the next console gesture came 773 ms later and cancelled the animated scroll (host jitter; the other two runs were
+  clean). At 200% landscape with the keyboard up, the note's line sits under the keyboard and the top bar does not step
+  aside, on develop too: a #245 (D192) gap for `main`, not this change.
+- [x] 6.2 One walk per other page and dialog at 100% portrait and 200% landscape, keyboard up on the four text-field screens.
+  Verify: `6.2-*.txt`, each reaching both ends with no repeat.
+  Progress (eng-255b, 884d070d; `migrely-work/255b/6.2-*`): portrait 100%, previous from each end, all clean (no
+  repeat, no bare state): Settings 19, Warning signs 18, About 6, Privacy 9, Licences 20, Your data 6, Reminders 8,
+  Delete all data 7, History 41, Paywall 16 (via Settings, Insights and Report on the free tier), Log medication 12,
+  Medications 5, Edit medication 13, Add past attack 7, Today 27. 200% landscape 360 dp: Settings 19, History 41,
+  Paywall 16, Delete all data 5, Log medication 12 clean.
+  **Finding 6.2-F1 (S3, open):** Today, 200% landscape, 360 dp window, previous up the left pane: "Period today →
+  Saturday, November 21 → November. Opens History → Period today" (a future day out of order, two stops twice), 2 of 2
+  runs; develop 4d141abe on the same data and row is clean (24 stops). Not reproduced in Robolectric: the Today walk
+  with this month's calendar (title row, the calendar's real pitch layout, future days) is green in both orientations,
+  as is History's calendar. Next: device diagnosis of the cell's bounds and TalkBack's tree at that moment.
+  **6.2-F1 resolved (ac0a7695).** 88734f1d did not fix it: at the emulator date 2026-11-20 (the finding's date; on
+  2026-11-22 no future day shares a week with past days, so no build can show it, the pre-fix build included) the
+  same walk stayed red on 2e6f5ad8, 2 of 2, as on 884d070d and on a no-outset scratch; develop 4d141abe clean (24
+  stops). Single-factor scratches: exact bounds off and step kept, clean; step off and exact bounds kept, red. Cause:
+  a day that cannot be chosen had no traversal data (Compose left it out of its order), so TalkBack placed it by its
+  own rules, which exact bounds changed at the pane's edge. Fix: its words are a merging node with no action, so
+  Compose orders it after the day before. Robolectric: TalkBack's order over the calendar reads days 1 to 30, red
+  with 1 to 20 on 2e6f5ad8. Device on ac0a7695 at 2026-11-20: Today 200% landscape previous 2 of 2 clean (TalkBack
+  starts on Sunday 15 now, so the walk goes 14 → Settings, 18 stops) and next from there: 15 … 20, 21 … 30, the
+  legend, then the right pane, each once; Today 100% portrait one full cycle clean, the days to come now right after
+  today (before: after the action buttons); History portrait and landscape 51 stops each, clean (41 before: the days
+  to come were never reached). Also fixes a pre-existing order fault seen on develop the same day (2026-11-22, next
+  walk: 24 … 30 read before 15 … 22, `6.2-m-l-today-next-dev.txt`).
+  Dialogs, 200% landscape, 360 dp (2e6f5ad8/ac0a7695 against develop 4d141abe, same row): the start date dialog
+  (Material date picker, step only) reached Cancel, Next and the title both ways, each day once, in 1 of 2 runs; in
+  the other the previous walk jumped from November 1 to disabled days at the bottom before the header (develop clean
+  in its 1 run): the recorded picker residual (an item just outside the edge can still be a stop). December days of
+  the pager's next page are stops on both builds. Reminders' time dialog: the previous walk loops (title, 11 … 12,
+  PM … hour, title) and never reaches Cancel or OK, the next walk skips 4 … 8 o'clock once and has a bare "Not
+  selected" stop, identical on develop: pre-existing, Material's time picker; for the 9.1 follow-up.
+  Keyboard up with TalkBack already on, the field opened by a TalkBack double tap, 100% portrait (ac0a7695): the
+  keyboard opens, no focus event follows the double tap (focus stays on the field), then previous and next walks:
+  Delete all data 9 and 9, Log medication 13 and 13, Attack details note 40 and 40, no repeat (the walk passes from
+  the app's first item into the keyboard's window: its own Back button is the second "Back"). Edit medication: no
+  route on this data (no medicine); its opening is in the #259 rows below.
+  #259's core rows on this build (its harness `migrely-work/259/lib/x259.py`, build m255ac = ac0a7695, 200%
+  landscape, Gboard, TalkBack on, the field opened by a TalkBack double tap; rows `m1-*`, `m1k-*` in
+  `migrely-work/259/rows.jsonl`, load 2.1 to 3.7): Attack details note at 360 dp x3, with "Impact on your day" set,
+  at 411 dp, then closed with Back; Log medication, Edit medication and Delete all data at 360 dp: in all 9 no focus
+  event after the double tap, 0 database writes, the whole typed line shown (112 of 112 px at 360 dp, the bar aside;
+  106 of 106 at 411 dp); closing scrolled 0 px with no focus move; settings read back unchanged. The reopen (K1: four
+  lines, the note's top 60 px above the edge, keyboard reopened by double tap, one character typed): no focus move on
+  reopen or after typing, the line whole after typing (112 px), the only write the typed text. #255 does not reopen
+  #259.
+  Open in 6.2: onboarding, attack mode, Your data's import and restore dialogs (need a backup file), Edit medication
+  with the keyboard up as a walk (only its opening above), Today and History in attack mode.
+  Closed (team-lead, 2026-11-23): covered. eng-255b's rows above (6.2-F1 fixed in ac0a7695, the dialogs, keyboard up,
+  #259 core rows 9/9); the rows left open were walked by QA in 8.2 (`docs/qa/fix-talkback-scroll-order.md`,
+  `qa/255-acceptance` 412b5ff1): onboarding (landscape counted, portrait LOAD), attack mode in the dark room (landscape
+  counted, portrait LOAD), the import dialog (portrait and landscape) and Edit medication with the keyboard up
+  (portrait counted, landscape LOAD). Walked by no one: the Your data restore dialog, NOT CHECKED in the QA record and
+  in BRD D193 (11). Attack mode's History is also NOT CHECKED there.
+- [x] 6.3 Hardware keyboard Tab and Shift+Tab on Attack details and one dialog: order unchanged, every stop in view. Verify:
+  `6.3-*.txt`.
+  Result (ac0a7695 against develop 4d141abe, TalkBack off; the dump's `focused` node, its bounds against the screen):
+  Attack details 100% portrait, Tab from the top: Back, start time, pain, medication, the chips, symptoms, triggers,
+  impact, the note (39 presses; stopped there, as Tab inside the note types a tab), each in view, order identical to
+  develop's. Shift+Tab from Weather: the exact reverse up to Back, then Delete migraine and the note (31 presses), each
+  in view (a first run at load 16 discarded and rerun at 4). The start date-time picker at 200% landscape 360 dp: Tab
+  46 and Shift+Tab 46 presses, each in view, both orders identical to develop's (Shift+Tab from November 1 pages into
+  October: Material's own grid).
+- [x] 6.4 Pressed-state pixels of `MigrelyIconButton` against Material's (Robolectric draws no ripple). Verify:
+  `ANDROID_SERIAL=emulator-5570 nice -n 19 ./gradlew --max-workers=2 :designsystem:connectedDebugAndroidTest
+  -Pandroid.testInstrumentationRunnerArguments.class=com.migrely.app.designsystem.button.MigrelyIconButtonPressedTest`
+  → BUILD SUCCESSFUL, 0 failed; log `6.4-pressed.log`.
+  Result (not ticked): both cases red on emulator-5570. Named difference for ux: inside the 40 dp pressed circle (radius
+  52.8 px) 8,190 pixels differ by at most 2/255 per channel (1,046 by 1, 7,144 by 2); outside it and the icon equal
+  (`6.4-pressed-row.png`). The test stays strict until ux judges it.
+  Cause and fix (2c727b5b, b977c805 and the Surface commit): the press inset was 10.5 px where Material's circle sits
+  at 11 px (Robolectric red, Offset 52.5 for 52), and the test captured the platform ripple mid-animation (the two
+  presses came in two injections; only the test clock advanced). Now one injected frame, a real-time wait, the row on
+  the theme's Surface. Result on emulator-5570 (2026-11-20, `6.4-pressed-r4.log`): 5 tests, 0 failed; 0 pixels differ
+  pressed in light, dark, dark room and off centre (also counted outside the test from the shots in `6.4-shots/`);
+  the 50 ms control differs from the settled row. Light and dark shots differ from each other; dark room equals dark
+  (it does not recolour a plain Surface). Threshold unchanged at 0.
+- [x] 6.5 Restore font scale, rotation, `wm size`, density, animator scales, TalkBack and keyboard. Verify: settings read
+  back. Never take a `uiautomator dump` during a TalkBack walk (it resets focus).
+  Result: font 1.0, rotation 0 with auto-rotate on, animator scales 1, 1080×2400, density 420, TalkBack off, its log
+  ERROR, keyboard down: read back identical to before (`6.5-device-after-r2.txt`); 5570 off. The test migraine's note,
+  filled with tab characters by a void Tab run (Tab inside the note types a tab, on develop too), was cleared and read
+  back empty. Open: 6.2 (other pages) and 6.3 (Tab: the dump does not name Compose's focused node; redo by TalkBack log).
+
+## 7. Review (`code-reviewer`)
+
+- [x] 7.1 Independent review of the diff against this spec and design: one entry point, delegate correctness, no drawn
+  change, touch-target audit complete, guards untouched, tests red first with mutations. Verify: review verdict with
+  findings fixed or answered, recorded here.
+  Engineer's fixes for cr-255's round 1 on f8d958da (eng-255b; logs `migrely-work/255b/r1-*`), each red first:
+  - Root cause: the fixture now reads what Android exposes (`AccessibilityNodeInfo`: the description Compose hands
+    over, first entry only and on a fake child for a merging node; text; state, not for an edit box; visibility), and
+    the walk checks that every word shown on a stop in view is said. On the old code it was red: 9-10 Settings rows,
+    category examples, Your data and Reminders rows (`r1-walk-red.txt`); M1 (counter hidden) red, "not said: '9/60'".
+  - F1: only a control's name goes on its own node (`ownWords(name)`, one string); summaries, values, disabled reasons,
+    examples and the policy address stay spoken children. F2/F7: counters are spoken children again (also heard on
+    the device, 6.1: "…remembering. 0/1000"); `FieldProblemFeedback.kt` is develop's text again.
+  - F3: `ArchitectureScrollsTest` also pins `PageScroll(exactBounds = false)` to the 3 picker sites and the time
+    dialog; M2 (date picker set to true) red. F8: it also rejects `horizontalScroll(`, `.scrollable(`, `LazyColumn`,
+    `LazyRow`, `LazyVerticalGrid` with `(` or `{`; a scratch `LazyColumn { }` red at its line, green once removed (a
+    first scratch with no parentheses passed and showed the gap).
+  - F4: `AttackDetailsExactBoundsScopeTest` on the real page with its message below the top bar: Back and Dismiss
+    expose 48×48 dp; M3 (exact bounds reaching the top bar) red, Back 40×40.
+  - F5: `MessageLayout` gives its message and content a `MessageCover`; `MigrelySnackbarHost` fills in the shown
+    message's bounds; `PageScroll` leaves that part out of V. `PageScrollTest` case with a message: cover ignored →
+    red (433 px for 403). Attack details with a message showing joined the walk and audit screens.
+  - F6: calendar pixels asserted against PNG goldens rendered from develop's calendar code (test resources, 24-31 KB);
+    no outset → red (18,719-35,450 pixels differ). `talkBackWalk`'s pixel dump is a manual tool, off unless
+    `MIGRELY_SCREEN_PIXELS` is set, never asserted.
+  - Open for product (not a regression; develop does the same): a message over the top of a page covers the items
+    under it, so they are out of TalkBack's tree until the message goes; at the page's top, swiping back ends at the
+    first uncovered item. The walk logs it as "COVERED at the top" instead of failing.
+  Engineer's fixes for cr-255's round 2 on d42efba7 (logs `migrely-work/255b/r2-*`), each red first:
+  - N1: a leaving message no longer writes its bounds and the shown message clears them when it goes.
+    `PageScrollTest` "Once the message has gone…": red before (403 px for 433), green after.
+  - N2: the visible-words check also runs once per screen on every stop shown whole, so pages that do not scroll are
+    checked. M1 (counter hidden from accessibility): red in portrait too (Edit medication "9/60", "0/20"). A Text
+    whose semantics are cleared leaves the tree, so no semantics check can see it (`clearAndSetSemantics` M1 stays
+    green): that limit is for the device walks.
+  - N3: the step-only pin takes any spacing and a positional `false`; the scroll pattern adds the staggered and
+    horizontal grids and both pagers. Scratch file with `PageScroll( false )` and `HorizontalPager(` as constants: both
+    tests red at the file, green once removed.
+  - Fixture rule: a non-editable node's description replaces its text, as TalkBack reads it. No node on the walked
+    pages turned red with it.
+  Verdict (team-lead, 2026-11-23): closed. cr-255 round 3 on b977c805..b86cadd2: APPROVE, no Critical or Important
+  findings. Its three Minor findings are fixed: Minor 1 and 2 (docs) in f71041a1; Minor 3 (the Home and History audit
+  regex) in 5e39100d, checked by the lead: red on a 47 dp column, green after, gate exit 0, 3,660 tests. Rounds 1
+  (f8d958da) and 2 (d42efba7) are above.
+
+## 8. Acceptance (`qa-engineer`)
+
+- [x] 8.1 Negative control: TalkBack walks on Attack details on v1.3.1 and `develop` f70b6450 loop or skip (issue steps at
+  360 dp 200% landscape; 100% portrait no keyboard). Verify: QA rows with APK hashes read back.
+  Result (qa-255, 2026-11-23, `docs/qa/fix-talkback-scroll-order.md` (`qa/255-acceptance` 412b5ff1)): control `develop` 224dad3d instead of f70b6450 (team-lead: newer, carries #259
+  and 1.3.3). Both controls fail in 4 of 4 rows: develop a 13-stop loop with 18 bare stops, Back never reached; v1.3.1 a
+  15-stop loop; at 100% portrait develop skips Symptoms, v1.3.1 skips 10. APK hashes read back on the device.
+- [x] 8.2 Candidate: the 8.1 walks reach both ends with every stop once and named; one walk per other page and dialog;
+  API 26 at 360 and 411 dp; RTL; Remove animations; a message showing; dark room attack mode; rotation and process death mid
+  walk; Switch Access scan and scroll; Tab; a chip cut at the top and at the bottom edge says its name on the
+  candidate and only its state on `develop`; known, intended change: TalkBack's focus outline is the 48 dp node on in-page
+  icon buttons and the whole pitch on History days (was the 40 dp circle and the drawn cell), not a defect; the pickers and
+  Reminders' time dialog are a recorded residual (design D5), walked for the half step only. Verify: `docs/qa/fix-talkback-scroll-order.md` with each row, and what it does
+  not prove.
+  Result (`docs/qa/fix-talkback-scroll-order.md` (`qa/255-acceptance` 412b5ff1)): **GO with recorded limits** on 5e39100d (APKs from b86cadd2; the rest is docs, openspec and
+  `src/testDebug`). Issue steps reach Back, every stop once and named, 3 of 3 debug rows and 1 of 1 R8; 100% portrait
+  56-57 stops both ways, no repeat, none bare (also Remove animations, 200% landscape, R8). Today's first focus moves
+  from a day to come to the page title (portrait): a fix. NOT CHECKED: API 26 (no TalkBack image), RTL, Switch Access,
+  History walks, the restore dialog; the edge-cut chip is inconclusive (both builds alike); small samples. Observations
+  for QA to file: F1 Today 200% landscape loops over 7 stops after wrapping past the title; F0 (pre-existing) Delete all
+  data starts TalkBack on Back when it is turned on while typing.
+- [x] 8.3 Guards on the candidate: #238 KR rows, #245 SW rows that touch TalkBack (SW5, SW9), #239 V1. Verify: same file.
+  Result (`docs/qa/fix-talkback-scroll-order.md` (`qa/255-acceptance` 412b5ff1)): #259 focus kept and 0 writes 6/6 debug, 2/2 R8; #238 KR1/KR3 0 px, 0 scroll events 3/3; #245 SW5 the
+  bar's 194 px exactly; #239 V1 one announcement. #238 KR on Log medication NOT CHECKED (data had a saved medicine).
+- [x] 8.4 Maestro after names move to content descriptions (option 3 and any stop from the sweep): run the flows that select
+  chips or those stops by text (`attack-details/`, `custom-tags/`, `attack-logging/`, `past-attacks/`,
+  `a11y-tour/custom-tag-dialog.yaml`, `device/details-*.yaml`, more if the sweep reaches buttons and rows); check `childOf`,
+  `containsChild`, `index:` and `selected:`/`checked:` next to a text match. QA updates any that need it. Verify: the flows'
+  run output on the candidate and on `develop`.
+  Result (`docs/qa/fix-talkback-scroll-order.md` (`qa/255-acceptance` 412b5ff1)): every named flow passes on both builds (32 each, plus the process-death pair); no flow needed a change.
+  Logs `migrely-work/qa-255/logs/m/`.
+
+## 9. Close-out (`product-manager`)
+
+- [x] 9.1 (`qa-engineer`) File a follow-up issue for the residual: the Material date picker, the date-time picker and
+  Reminders' time dialog stay out of exact bounds (40 dp controls: mode toggle, month arrows, month/year button, AM/PM,
+  time-step Cancel and OK), so cause B can still reach them. #255 is then closed by QA on the rest after the retest.
+  Verify: `gh issue view <new>` shows the pickers, the measured sizes and a link to #255; `gh issue view 255` closed by QA.
+  Result (`docs/qa/fix-talkback-scroll-order.md` (`qa/255-acceptance` 412b5ff1)): #269 filed (S3, `pre-existing`) with QA's sizes and a walk. #255 stays open until QA's retest after
+  the merge.
+- [x] 9.2 (`product-manager`) D193 result line (QA verdict, the picker residual with its follow-up issue number, what stays
+  unproven), spec sync and archive of `fix-talkback-scroll-order`. Verify: `openspec validate --all --strict` exit 0 after
+  archive; `openspec list` shows no active change.
+  Result (pm-255, 2026-11-23): D193 (11) records the verdict, #269, Today's first focus, what stays unproven, F1 and F0.
+  Stale-delta check: `openspec/specs` equals `origin/develop` 224dad3d (#259 included); 0 of 8 ADDED names collide; the
+  29 sites still hold. Archived; validate and list results in the commit.

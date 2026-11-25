@@ -48,9 +48,9 @@ import kotlinx.coroutines.awaitCancellation
  * - [barModifier] on the top bar: its height follows the keyboard's own inset animation, with no curve of its own and
  *   in one step where the keyboard jumps, down to the status bar, which stays. Its content is clipped, never faded or
  *   drawn over the page, and while aside it leaves the accessibility tree and takes no keyboard focus.
- * - [scrollingPage] on the page in place of its `verticalScroll`: it scrolls the page with the given [ScrollState],
- *   measures the visible part, and while the keyboard grows keeps the focused field's line in view in the same layout
- *   pass (BRD D194).
+ * - `PageScrollScope.pageScroll(scrollState, typingSpace)` on the page in place of its `verticalScroll`: through
+ *   [scrollingPage] it scrolls the page with the given [ScrollState], measures the visible part, and while the
+ *   keyboard grows keeps the focused field's line in view in the same layout pass (BRD D194).
  * - [ProvideTypingSpace] around the page, so its [CursorFollowingTextField]s and [SingleLineFieldInView]s report the
  *   line being typed, read the visible part and are kept in view.
  *
@@ -100,10 +100,10 @@ class TypingSpace internal constructor(
 
     /**
      * Put on the page in place of its `verticalScroll(scrollState)`: the page scrolls with [scrollState], and that same
-     * state is the one kept in step with the keyboard, so the two can never differ (#259 review F3). A screen whose
-     * scroll needs more (a TalkBack step, #255) adds it after this, on the same state.
+     * state is the one kept in step with the keyboard, so the two can never differ (#259 review F3). Only
+     * `PageScrollScope.pageScroll` calls it, which adds TalkBack's step and exact bounds on the same state (#255).
      */
-    fun scrollingPage(scrollState: ScrollState): Modifier =
+    internal fun scrollingPage(scrollState: ScrollState): Modifier =
         page(scrollState).verticalScroll(scrollState)
 
     /**

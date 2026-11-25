@@ -3,9 +3,12 @@ package com.migrely.app
 import android.app.Application
 import android.content.Context
 import android.content.res.Configuration
+import android.os.LocaleList
 import android.util.Log
 import com.migrely.app.activity.CurrentActivityHolder
+import com.migrely.app.datasource.notification.datasource.NotificationDataSource
 import com.migrely.app.locale.FormattingLocales
+import com.migrely.app.locale.LocaleEntryPoint
 import com.migrely.app.premium.PurchaseUpdatesWatcher
 import com.migrely.app.reminder.ReminderEntryPoint
 import com.migrely.app.reminders.domain.model.RescheduleRemindersRequestDomainModel
@@ -27,7 +30,17 @@ class MigrelyApplication : Application() {
     @Inject
     lateinit var purchaseUpdatesWatcher: PurchaseUpdatesWatcher
 
-    private val formattingLocales = FormattingLocales()
+    @Inject
+    lateinit var notificationDataSource: NotificationDataSource
+
+    // The formatters' own instance, so a refresh here reaches them (T23 review of 2d99dabd). From an entry point, not
+    // injected: the locale is applied before `super.onCreate()`, where Hilt injects.
+    private val formattingLocales: FormattingLocales by lazy {
+        EntryPointAccessors.fromApplication(this, LocaleEntryPoint::class.java).formattingLocales()
+    }
+
+    /** The language list the channel names were last written in (BRD D195). */
+    private var channelLocales: LocaleList? = null
 
     override fun attachBaseContext(base: Context) {
         super.attachBaseContext(base)
@@ -37,13 +50,15 @@ class MigrelyApplication : Application() {
     }
 
     override fun onCreate() {
-        // Dates and times in English with the phone's region (BRD D117), before anything formats one.
-        formattingLocales.applyToProcess(resources.configuration)
+        // Dates and times in the app's language (BRD D117, D195), before anything formats one.
+        formattingLocales.refresh(this)
+        formattingLocales.applyToProcess(this)
         super.onCreate()
         // Google Play's purchase sheet and messages open over the activity on screen (design D1).
         registerActivityLifecycleCallbacks(currentActivityHolder)
         // A payment completed while the app runs unlocks Premium at once (review I1).
         purchaseUpdatesWatcher.start()
+        refreshChannelNames(resources.configuration)
         // The reminders are planned here, at every process start, whatever starts it: a restored backup or a lost
         // WorkManager store brings the settings back but no planned run (BRD D66, D175, EC-REM-22). A daily run already
         // planned is kept, even a late one, so the start never loses today's reminder (D176, EC-REM-24).
@@ -59,9 +74,22 @@ class MigrelyApplication : Application() {
         }
     }
 
-    /** The system language can change while the app runs; the default follows it (BRD D117). */
+    /**
+     * The system or per-app language can change while the app runs; the formatters, the default and channel names
+     * follow (BRD D117, D195).
+     */
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
-        formattingLocales.applyToProcess(newConfig)
+        formattingLocales.refresh(this)
+        formattingLocales.applyToProcess(this)
+        refreshChannelNames(newConfig)
+    }
+
+    // Android's notification settings name Migrely's existing channels in the app's language; none is created here
+    // (EC-L10N-07). Off the main thread: it asks the notification service for the channels.
+    private fun refreshChannelNames(configuration: Configuration) {
+        if (configuration.locales == channelLocales) return
+        channelLocales = configuration.locales
+        thread { notificationDataSource.refreshChannelNames() }
     }
 }

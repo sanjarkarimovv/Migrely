@@ -49,11 +49,11 @@ internal object HistoryUiModule {
         formattingLocales: FormattingLocales
     ) = HistoryCalendarMappers(
         calendarLayoutUiMapper = CalendarLayoutUiMapper {
-            formattingLocales.of(context.resources.configuration)
+            formattingLocales.of(context)
         },
         daySkyAppearanceUiMapper = DaySkyAppearanceUiMapper(),
         historyTimeUiFormatter = HistoryTimeUiFormatter(
-            locale = { formattingLocales.of(context.resources.configuration) },
+            locale = { formattingLocales.of(context) },
             is24HourFormat = { DateFormat.is24HourFormat(context) },
             deviceZone = { ZoneId.systemDefault() },
             bestDateTimePattern = { locale, skeleton ->

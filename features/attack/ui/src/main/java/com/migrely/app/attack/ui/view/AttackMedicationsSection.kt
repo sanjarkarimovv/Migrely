@@ -11,7 +11,6 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.RadioButton
@@ -36,8 +35,12 @@ import com.migrely.app.attack.ui.mapper.AttackTimeUiFormatter
 import com.migrely.app.attack.ui.model.AttackDetailsUiModel
 import com.migrely.app.attack.ui.model.AttackIntakeEffectUiModel
 import com.migrely.app.attack.ui.model.AttackIntakeUiModel
-import com.migrely.app.designsystem.dialog.MigrelyAlertDialog
+import com.migrely.app.designsystem.button.MigrelyIconButton
+import com.migrely.app.designsystem.dialog.MigrelyScrollingAlertDialog
 import com.migrely.app.designsystem.icon.MigrelyIcons
+import com.migrely.app.designsystem.layout.isCompactHeight
+import com.migrely.app.designsystem.layout.ownWords
+import com.migrely.app.designsystem.layout.wordsShownOnly
 
 /**
  * The medications taken during the attack, oldest first. Each row shows how much it helped and opens that choice
@@ -79,11 +82,14 @@ internal fun MedicationsSection(
             modifier = Modifier
                 .padding(top = 8.dp)
                 .heightIn(min = 48.dp)
+                .ownWords(stringResource(R.string.medication_add))
         ) {
             Icon(MigrelyIcons.Add, contentDescription = null, modifier = Modifier.size(18.dp))
             Text(
                 text = stringResource(R.string.medication_add),
-                modifier = Modifier.padding(start = 8.dp)
+                modifier = Modifier
+                    .padding(start = 8.dp)
+                    .wordsShownOnly()
             )
         }
     }
@@ -139,10 +145,13 @@ private fun IntakeRow(
                 )
             }
         }
-        IconButton(onClick = onRemove) {
+        MigrelyIconButton(
+            contentDescription = stringResource(R.string.medication_remove, what),
+            onClick = onRemove
+        ) {
             Icon(
                 MigrelyIcons.Close,
-                contentDescription = stringResource(R.string.medication_remove, what)
+                contentDescription = null
             )
         }
     }
@@ -154,10 +163,12 @@ private fun EffectDialog(
     onChoose: (AttackIntakeEffectUiModel) -> Unit,
     onDismiss: () -> Unit
 ) {
-    MigrelyAlertDialog(
+    val title = stringResource(R.string.medication_effect_title, intake.medicationName)
+    MigrelyScrollingAlertDialog(
+        title = title,
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.medication_effect_title, intake.medicationName)) },
-        text = {
+        content = {
+            // A long typed name makes a long title: title and answers scroll together (T23 8.1 row R04).
             Column(Modifier.selectableGroup()) {
                 AttackIntakeEffectUiModel.entries.forEach { effect ->
                     Row(
@@ -182,6 +193,8 @@ private fun EffectDialog(
             }
         },
         confirmButton = {},
+        // In a short window the default width leaves the answers little height (T23 8.1 row R04).
+        wide = isCompactHeight(),
         dismissButton = {
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.attack_picker_cancel)) }
         }

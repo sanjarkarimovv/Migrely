@@ -3,13 +3,11 @@ package com.migrely.app.designsystem.picker
 import android.view.WindowManager
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDefaults
 import androidx.compose.material3.DatePickerState
@@ -25,13 +23,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
@@ -39,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogWindowProvider
 import com.migrely.app.designsystem.dialog.MigrelyDialog
 import com.migrely.app.designsystem.format.MigrelyDateFormat
+import com.migrely.app.designsystem.layout.PageScroll
 import java.time.LocalDate
 
 /** The words the day picker shows; the calling feature owns them as string resources. */
@@ -121,42 +118,37 @@ internal fun DatePickerScreen(
         color = DatePickerDefaults.colors().containerColor
     ) {
         Column(Modifier.safeDrawingPadding()) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
+            PickerTopRow(
+                title = labels.title,
+                cancel = { TextButton(onClick = onDismiss) { Text(labels.cancel) } },
+                confirm = {
+                    TextButton(
+                        onClick = { picked?.let { onConfirm(it.utcDate()) } },
+                        enabled = picked != null
+                    ) { Text(labels.confirm) }
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 8.dp)
-            ) {
-                TextButton(onClick = onDismiss) { Text(labels.cancel) }
-                Text(
-                    text = labels.title,
-                    style = MaterialTheme.typography.titleLarge,
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(horizontal = 8.dp)
-                        .semantics { heading() }
-                )
-                TextButton(
-                    onClick = { picked?.let { onConfirm(it.utcDate()) } },
-                    enabled = picked != null
-                ) { Text(labels.confirm) }
-            }
+            )
             BoxWithConstraints(Modifier.weight(1f)) {
                 // Typing a date over the keyboard leaves little room: the date field shows the date then (D127).
                 val headerShown =
                     state.displayMode != DisplayMode.Input ||
                         maxHeight >= ROOM_FOR_HEADER_WHILE_TYPING
-                DatePicker(
-                    state = state,
-                    modifier = Modifier.verticalScroll(rememberScrollState()),
-                    title = null,
-                    headline = if (headerShown) {
-                        { Headline(picked?.utcDate(), labels.none, today) }
-                    } else {
-                        null
-                    },
-                    showModeToggle = headerShown
-                )
+                PageScroll(exactBounds = false) {
+                    DatePicker(
+                        state = state,
+                        modifier = Modifier.pageScroll(rememberScrollState()),
+                        title = null,
+                        headline = if (headerShown) {
+                            { Headline(picked?.utcDate(), labels.none, today) }
+                        } else {
+                            null
+                        },
+                        showModeToggle = headerShown
+                    )
+                }
             }
         }
     }

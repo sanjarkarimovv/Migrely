@@ -54,12 +54,16 @@ fun MessageLayout(
     content: @Composable () -> Unit
 ) {
     val park = remember { MessageFocusPark() }
+    val cover = remember { MessageCover() }
     Layout(
         content = {
             FocusPark(park)
             Slot(TOP_BAR, order = 0f, typingSpace?.barModifier ?: Modifier, topBar)
             // The content may park focus too ([rememberFocusParking], BRD D181 (6)).
-            CompositionLocalProvider(LocalMessageFocusPark provides park) {
+            CompositionLocalProvider(
+                LocalMessageFocusPark provides park,
+                LocalMessageCover provides cover
+            ) {
                 Slot(MESSAGE, order = 1f, content = message)
                 Slot(CONTENT, order = 2f) {
                     if (typingSpace == null) content() else ProvideTypingSpace(typingSpace, content)

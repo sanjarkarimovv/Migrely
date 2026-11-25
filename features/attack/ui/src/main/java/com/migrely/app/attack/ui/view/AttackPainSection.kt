@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Slider
@@ -39,8 +38,12 @@ import com.migrely.app.attack.ui.R
 import com.migrely.app.attack.ui.mapper.AttackTimeUiFormatter
 import com.migrely.app.attack.ui.model.AttackDetailsUiModel
 import com.migrely.app.attack.ui.model.IntensityPointUiModel
-import com.migrely.app.designsystem.dialog.MigrelyAlertDialog
+import com.migrely.app.designsystem.button.MigrelyIconButton
+import com.migrely.app.designsystem.dialog.MigrelyScrollingAlertDialog
 import com.migrely.app.designsystem.icon.MigrelyIcons
+import com.migrely.app.designsystem.layout.isCompactHeight
+import com.migrely.app.designsystem.layout.ownWords
+import com.migrely.app.designsystem.layout.wordsShownOnly
 import com.migrely.app.designsystem.picker.MigrelyDateTimePicker
 import kotlin.math.roundToInt
 
@@ -80,11 +83,14 @@ internal fun PainSection(
             modifier = Modifier
                 .padding(top = 8.dp)
                 .heightIn(min = 48.dp)
+                .ownWords(stringResource(R.string.pain_add))
         ) {
             Icon(MigrelyIcons.Add, contentDescription = null, modifier = Modifier.size(18.dp))
             Text(
                 text = stringResource(R.string.pain_add),
-                modifier = Modifier.padding(start = 8.dp)
+                modifier = Modifier
+                    .padding(start = 8.dp)
+                    .wordsShownOnly()
             )
         }
     }
@@ -127,10 +133,10 @@ private fun PainEntryRow(
             color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.weight(1f)
         )
-        IconButton(onClick = onRemove) {
+        MigrelyIconButton(contentDescription = removeDescription, onClick = onRemove) {
             Icon(
                 imageVector = MigrelyIcons.Close,
-                contentDescription = removeDescription,
+                contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(20.dp)
             )
@@ -178,14 +184,18 @@ private fun AddPainDialog(
         details.startEpochMillis,
         details.startZoneId
     )
-    MigrelyAlertDialog(
+    val title = stringResource(R.string.pain_dialog_title)
+    MigrelyScrollingAlertDialog(
+        title = title,
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.pain_dialog_title)) },
-        text = {
+        content = {
+            // Title and content scroll together, so the time row stays reachable at large fonts (T23 8.1 row R04).
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(
                     text = "${stringResource(R.string.pain_dialog_value, value)} · $levelName",
-                    style = MaterialTheme.typography.titleMedium.copy(fontFeatureSettings = "tnum"),
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontFeatureSettings = "tnum"
+                    ),
                     modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
                 )
                 Slider(
@@ -210,6 +220,8 @@ private fun AddPainDialog(
                 }
             }
         },
+        // In a short window the default width stacks the buttons and squeezes the content out (T23 8.1 row R04).
+        wide = isCompactHeight(),
         confirmButton = {
             TextButton(onClick = { onAdd(IntensityPointUiModel(at, value)) }) {
                 Text(stringResource(R.string.pain_dialog_add))
@@ -279,10 +291,16 @@ internal fun SafetyCard(
                 color = MaterialTheme.colorScheme.onTertiaryContainer,
                 modifier = Modifier.padding(top = 8.dp)
             )
-            TextButton(onClick = onDismiss, modifier = Modifier.heightIn(min = 48.dp)) {
+            TextButton(
+                onClick = onDismiss,
+                modifier = Modifier
+                    .heightIn(min = 48.dp)
+                    .ownWords(stringResource(R.string.safety_dismiss))
+            ) {
                 Text(
                     stringResource(R.string.safety_dismiss),
-                    color = MaterialTheme.colorScheme.tertiary
+                    color = MaterialTheme.colorScheme.tertiary,
+                    modifier = Modifier.wordsShownOnly()
                 )
             }
         }

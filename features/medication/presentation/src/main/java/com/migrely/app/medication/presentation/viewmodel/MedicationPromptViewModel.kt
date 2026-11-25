@@ -4,9 +4,11 @@ import com.migrely.app.architecture.domain.UseCaseExecutor
 import com.migrely.app.architecture.presentation.viewmodel.BaseViewModel
 import com.migrely.app.medication.domain.model.AcknowledgeOveruseRequestDomainModel
 import com.migrely.app.medication.domain.model.AnswerEffectRequestDomainModel
+import com.migrely.app.medication.domain.model.MedicationPromptDomainModel
 import com.migrely.app.medication.domain.usecase.AcknowledgeOveruseUseCase
 import com.migrely.app.medication.domain.usecase.AnswerEffectUseCase
 import com.migrely.app.medication.domain.usecase.GetMedicationPromptUseCase
+import com.migrely.app.medication.domain.usecase.MarkSafetyCardShownUseCase
 import com.migrely.app.medication.domain.usecase.SkipEffectQuestionUseCase
 import com.migrely.app.medication.presentation.mapper.MedicationPromptDomainMapper
 import com.migrely.app.medication.presentation.mapper.MedicationPromptPresentationMapper
@@ -19,13 +21,15 @@ import com.migrely.app.medication.presentation.model.OveruseLevelPresentationMod
 /**
  * Home's one medication card (BRD D46): an overuse warning or "Did it help?" (MED-F4, MED-F5). It enters again every
  * time home loads, and loads again after every answer, skip or "Got it", so the next card follows at once. A failed
- * write loads the same card again, so the user can retry.
+ * write loads the same card again, so the user can retry. Every load that shows an overuse warning keeps the moment, so
+ * no rating is asked for on that visit or in the 3 days after (BRD D188, EC-REV-14).
  */
 class MedicationPromptViewModel(
     private val getMedicationPromptUseCase: GetMedicationPromptUseCase,
     private val answerEffectUseCase: AnswerEffectUseCase,
     private val skipEffectQuestionUseCase: SkipEffectQuestionUseCase,
     private val acknowledgeOveruseUseCase: AcknowledgeOveruseUseCase,
+    private val markSafetyCardShownUseCase: MarkSafetyCardShownUseCase,
     private val medicationPromptPresentationMapper: MedicationPromptPresentationMapper,
     private val medicationPromptDomainMapper: MedicationPromptDomainMapper,
     useCaseExecutor: UseCaseExecutor
@@ -65,6 +69,7 @@ class MedicationPromptViewModel(
         getMedicationPromptUseCase(
             onResult = { prompt ->
                 updateViewState(medicationPromptPresentationMapper.toPresentation(prompt))
+                if (prompt is MedicationPromptDomainModel.Overuse) markSafetyCardShownUseCase()
             }
         )
     }

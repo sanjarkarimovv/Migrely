@@ -13,7 +13,10 @@ import com.migrely.app.settings.presentation.model.SettingsViewState
 import com.migrely.app.settings.presentation.model.ThemePresentationModel
 import com.migrely.app.settings.presentation.navigation.SettingsPresentationNavigationEvent
 
-/** Settings (BRD SET-F1, D70, D79, D93–D97), reached from home's header. */
+/**
+ * Settings (BRD SET-F1, SET-F2, D70, D79, D93–D97, D185), reached from home's header. The one thing kept is the number
+ * of the latest read, so a read made before an attack started never shows "Share and rate" when it answers last.
+ */
 @Suppress("TooManyFunctions")
 class SettingsViewModel(
     private val getSettingsUseCase: GetSettingsUseCase,
@@ -23,10 +26,21 @@ class SettingsViewModel(
     private val themeDomainMapper: ThemeDomainMapper,
     useCaseExecutor: UseCaseExecutor
 ) : BaseViewModel<SettingsViewState, SettingsPresentationNotification>(useCaseExecutor) {
+    /** The number of the latest read; reads are made and answered on the main thread. */
+    private var latestRead = 0
+
     fun onEnter() = load()
 
     /** The screen shows again, after a rotation for example: the settings as they are. */
     fun onResume() = load()
+
+    /** An attack started or ended while Settings shows: "Share and rate" follows (BRD EC-SHR-13). */
+    fun onAttackChanged() = load()
+
+    /** Nothing is written, rewarded or counted (BRD D185). */
+    fun onShareAction() = notify(SettingsPresentationNotification.OpenShareSheet)
+
+    fun onRateAction() = notify(SettingsPresentationNotification.OpenStorePage)
 
     fun onBackAction() = emitNavigationEvent(SettingsPresentationNavigationEvent.OnBack)
 
@@ -69,9 +83,16 @@ class SettingsViewModel(
         load()
     }
 
-    private fun load() = getSettingsUseCase(
-        onResult = {
-            updateViewState(SettingsViewState.Ready(settingsPresentationMapper.toPresentation(it)))
-        }
-    )
+    private fun load() {
+        val read = ++latestRead
+        getSettingsUseCase(
+            onResult = {
+                if (read == latestRead) {
+                    updateViewState(
+                        SettingsViewState.Ready(settingsPresentationMapper.toPresentation(it))
+                    )
+                }
+            }
+        )
+    }
 }
