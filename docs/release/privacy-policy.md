@@ -1,6 +1,6 @@
 # Migrely privacy policy
 
-Effective date: 14 November 2026.
+Effective date: 25 November 2026.
 
 Migrely is a headache diary for Android, published on Google Play by Sulton UzDev ("we"). This policy explains what
 happens to the information you enter in the app, and, near the end, what happens on the website. In short: **Migrely has no internet permission, so the app cannot send your entries over the internet, and we never receive them.**
@@ -16,10 +16,11 @@ Migrely keeps what you enter on your phone:
 - your settings, such as reminders, the theme and whether you track periods;
 - whether Migrely Premium is on (see Purchases below);
 - how many times Google Play's rating window has run, and when it last did (see Rating Migrely below);
-- from version 1.4.0, whether your doctor report ends with a line saying it was made with Migrely (see Files you
-  choose to share below);
+- from version 1.4.0, whether the last page of your doctor report carries a line naming Migrely (see Files you choose
+  to share below);
 - from version 1.4.0, when Migrely last showed one of its safety cards (the "Sudden, extremely bad pain?" and "Still
-  going?" cards, and the card about your medication days in the last 30 days), so that it asks for no rating soon after one (see Rating Migrely below);
+  going?" cards, and the card about your medication days in the last 30 days), so that it asks for no rating soon
+  after one (see Rating Migrely below);
 - up to three automatic copies of your entries, made before an import replaces them.
 
 Migrely does not ask for your name, email, location, contacts, photos or any account. It has no internet permission,
@@ -49,9 +50,11 @@ You can export a backup file, a spreadsheet file or a PDF report for your doctor
 choose where it goes, for example by email or to a cloud drive. What happens to it then depends on the service you
 choose.
 
-From version 1.4.0, the PDF report for your doctor ends with one small line of plain text saying it was made with
-Migrely, with our web address. It has no link or code of its own and no tracking, and it adds nothing you entered. You can turn it off
-with the switch on the report screen.
+From version 1.4.0, the last page of the PDF report for your doctor carries one small line of plain text: "Made with
+Migrely, a personal migraine diary app. Not a medical device. migrely.health". It has no logo, link or code of its own
+and no tracking, and it adds nothing you entered. It is on by default, and you can turn it off with the switch in
+Doctor report. The first page of the report has always said "Made with Migrely" with the date it was made; that
+stays when the switch is off.
 
 ## Notifications
 
@@ -93,9 +96,11 @@ way: it is part of Android's backup, and Settings → Delete all data removes it
 From version 1.4.0, Settings has a "Share and rate" section. Share Migrely opens Android's share sheet with a short
 text and a link to Migrely on Google Play. Your entries are not included. The link carries campaign tags (for example
 utm_source=app), the same for everyone, which Google Play uses in install reports for the app's publisher. The Migrely
-app does not read them. Rate Migrely on Google Play opens Migrely's page in the Google Play app or a browser. What the
-app you choose does with the text is up to that app. Neither row shows while an attack is in progress, and Migrely
-keeps nothing about them.
+app does not read them. The text is the same for everyone, in English. Migrely does not learn which app or person you
+choose. Rate Migrely on Google Play opens Migrely's page in the Google Play app or a browser; once you are in Google
+Play, Google Play's own handling applies, under Google's privacy policy. What the app you choose does with the text is
+up to that app. Neither row shows while an attack is in progress. Neither is rewarded or counted, and Migrely keeps
+nothing about them. Migrely still has no internet permission: both only hand over to other apps.
 
 ## Deleting your information
 

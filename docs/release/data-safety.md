@@ -18,14 +18,21 @@ whenever a permission, a library or the billing changes.
 - **Ratings:** the app may ask Google Play to show its in-app rating window (BRD D129). Google Play's review library
   talks to the Play Store app over IPC and declares no permission. A rating goes to Google Play, under its policy, and
   Play does not tell the app whether one was given. The app keeps only how many times it asked and when it last did
-  (D131), in the settings, which are backed up with them. From 1.4.0 it also keeps when it last showed a safety card
-  ("Sudden, extremely bad pain?", "Still going?", the card about medication days in the last 30 days), so it asks for no rating within 3 days after one (D185, D188), and
-  whether the doctor report ends with the Migrely credit line (default on). Both sit in the same preferences, are
-  backed up with them and removed by "Delete all data"; neither is sent anywhere.
-- **Share and Rate (1.4.0):** the app opens the system share sheet with a text-only Play link (UTM tags
-  `utm_source=app`, `utm_medium=share`, `utm_campaign=settings_share`) or opens its Play page. Both are ACTION_SEND or
-  ACTION_VIEW hand-offs to other apps: no permission, no SDK, no network call by the app, no user data in the text.
-  The form answer stays "No data collected, no data shared".
+  (D131), in the settings, which are backed up with them. From 1.4.0 it also keeps two more values in the same
+  preferences file (`migrely_preferences`): when it last showed a safety card ("Sudden, extremely bad pain?", "Still
+  going?", the card about medication days in the last 30 days), so it asks for no rating within 3 days after one
+  (D185, D188; key `safety_card_last_shown`), and whether the last page of the doctor report carries the Migrely
+  credit line (default on; key `report_credit_shown`). Both are backed up with the settings and removed by "Delete all
+  data"; neither is sent anywhere. The first-page line "Made with Migrely on <date>." stays when the credit is off
+  (D186 (2)).
+- **Share and Rate (1.4.0):** the app opens the system share sheet with a fixed English text and a Play link (UTM tags
+  `utm_source=app`, `utm_medium=share`, `utm_campaign=settings_share`), or opens its Play page. Both are ACTION_SEND or
+  ACTION_VIEW hand-offs to other apps: no permission, no SDK, no network call by the app, no entries and no attachment
+  in the text, no way for the app to learn whom the person chose. Nothing is rewarded, counted or stored. Once the
+  person is in Google Play, Play's own handling applies. The form answer stays "No data collected, no data shared".
+- **App language (1.4.0, English and German):** not stored by the app; Android keeps the per-app language (Android 13
+  and later) or the phone follows its system language. The privacy policy page stays English (the app's link says
+  "(auf Englisch)" in German).
 - **Android's own backup** is an operating-system service that the user controls, not the app. From Android 9 the app
   allows only end-to-end encrypted cloud backup, which Play's guidance exempts from "collection" when no one but the
   user can read it. On Android 8 the system, not the app, sends the backup.
