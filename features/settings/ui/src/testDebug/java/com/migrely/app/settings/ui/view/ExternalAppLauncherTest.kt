@@ -134,6 +134,50 @@ class ExternalAppLauncherTest {
         }
     }
 
+    /** An outside app that crashes takes only its own task down, never Migrely's (EC-SHR-14, D4). */
+    @Test
+    fun `Rate starts the Google Play app in its own task`() {
+        ExternalAppLauncher { started += it }.openStorePage()
+
+        assertNewTask(started.single())
+    }
+
+    @Test
+    fun `Given no Google Play app then the browser starts in its own task`() {
+        ExternalAppLauncher {
+            if (it.`package` != null) throw ActivityNotFoundException()
+            started += it
+        }.openStorePage()
+
+        assertNewTask(started.single())
+    }
+
+    /** The chosen app gets the target intent's flags (design D5). */
+    @Test
+    fun `Share starts the chosen app in its own task`() {
+        share()
+
+        assertNewTask(started.single().sent())
+    }
+
+    /** A chooser in a task of its own would be a Recents card for a system sheet (design D5). */
+    @Test
+    fun `The share sheet itself stays in Migrely's task`() {
+        share()
+
+        assertEquals(0, started.single().flags and Intent.FLAG_ACTIVITY_NEW_TASK)
+    }
+
+    /** `NEW_TASK` only: `NEW_DOCUMENT` or `MULTIPLE_TASK` would add a Recents card per tap (D6). */
+    private fun assertNewTask(intent: Intent) = assertEquals(
+        Intent.FLAG_ACTIVITY_NEW_TASK,
+        intent.flags and (
+            Intent.FLAG_ACTIVITY_NEW_TASK or
+                Intent.FLAG_ACTIVITY_NEW_DOCUMENT or
+                Intent.FLAG_ACTIVITY_MULTIPLE_TASK
+            )
+    )
+
     @Test
     fun `The share text says nothing but the approved sentence before the link`() {
         // No outcome promise and nothing on what stays on or leaves the phone beyond "No internet permission".

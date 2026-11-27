@@ -26,6 +26,10 @@ internal const val PLAY_STORE_PACKAGE = "com.android.vending"
  * activity's `startActivity`. There is no `resolveActivity` and no `<queries>`: an implicit intent needs no package
  * visibility, and either would change the manifest. An app that cannot take it, or a work profile that forbids it
  * (`SecurityException`), counts as nothing opening, so the screen can say so (EC-SHR-01, EC-SHR-02).
+ *
+ * The other app runs in its own task (`FLAG_ACTIVITY_NEW_TASK`), so its crash or forced close never takes Migrely's
+ * task, and the person's place in it, down (EC-SHR-14). Only `NEW_TASK`: the page may join Play's or the browser's
+ * open task, and Back then shows that app's earlier page first (EC-SHR-15, design D6).
  */
 internal class ExternalAppLauncher(private val start: (Intent) -> Unit) {
     /** Google Play's page in the Play app, else the web page in a browser. Never the in-app review flow. */
@@ -36,13 +40,20 @@ internal class ExternalAppLauncher(private val start: (Intent) -> Unit) {
     fun share(text: String, subject: String, chooserTitle: String): ExternalAppResultUiModel =
         result(tryStart(shareChooser(text, subject, chooserTitle)))
 
-    fun storePageInPlay(): Intent =
-        Intent(Intent.ACTION_VIEW, Uri.parse(STORE_PAGE_IN_PLAY)).setPackage(PLAY_STORE_PACKAGE)
+    fun storePageInPlay(): Intent = Intent(Intent.ACTION_VIEW, Uri.parse(STORE_PAGE_IN_PLAY))
+        .setPackage(PLAY_STORE_PACKAGE)
+        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
 
     fun storePageOnWeb(): Intent = Intent(Intent.ACTION_VIEW, Uri.parse(STORE_PAGE_ON_WEB))
+        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
 
+    /**
+     * The flag goes on the `ACTION_SEND` intent, which the chooser starts the chosen app with, and not on the chooser:
+     * the sheet stays over Settings in Migrely's task instead of becoming a Recents card of its own (design D5).
+     */
     fun shareChooser(text: String, subject: String, chooserTitle: String): Intent {
         val send = Intent(Intent.ACTION_SEND)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             .setType("text/plain")
             .putExtra(Intent.EXTRA_TEXT, text)
             // Email apps take the subject; Android 10 and later show the title above the preview.
