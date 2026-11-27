@@ -17,6 +17,7 @@ import androidx.core.view.accessibility.AccessibilityNodeInfoCompat
 import androidx.core.view.accessibility.AccessibilityNodeProviderCompat
 import kotlin.math.roundToInt
 import org.robolectric.Shadows.shadowOf
+import org.robolectric.shadows.ShadowDialog
 
 /** Where Compose puts a merging node's content description: a fake child with this offset on its id. */
 private const val CONTENT_DESCRIPTION_FAKE_NODE = 2_000_000_000
@@ -27,13 +28,14 @@ private const val TRAVERSAL_BEFORE =
 
 /**
  * Accessibility on as with TalkBack running, so Compose builds the tree TalkBack reads (#255). Call it on the main
- * thread before the screen is composed.
+ * thread, before the screen is composed, or later to turn TalkBack on over a screen or dialog already shown (#279).
  */
 fun ComponentActivity.turnOnTalkBack() {
     val manager = shadowOf(getSystemService(AccessibilityManager::class.java))
-    manager.setEnabled(true)
-    manager.setTouchExplorationEnabled(true)
+    // The service first: Compose reads the list again when the state listeners fire, as TalkBack starting does.
     manager.setEnabledAccessibilityServiceList(listOf(AccessibilityServiceInfo()))
+    manager.setTouchExplorationEnabled(true)
+    manager.setEnabled(true)
 }
 
 /**
@@ -51,10 +53,13 @@ fun ComponentActivity.setNavigationBar(heightDp: Int) {
 }
 
 /** The accessibility tree TalkBack reads, as the window's Compose view gives it now. Use it on the main thread. */
-class TalkBackTree(private val activity: ComponentActivity) {
+class TalkBackTree private constructor(private val window: () -> View) {
+    /** The tree of [activity]'s own window. */
+    constructor(activity: ComponentActivity) : this({ activity.window.decorView })
+
     private val provider: AccessibilityNodeProviderCompat
         get() {
-            val view = composeViewIn(activity.window.decorView)!!
+            val view = composeViewIn(window())!!
             return ViewCompat.getAccessibilityDelegate(view)!!.getAccessibilityNodeProvider(view)!!
         }
 
@@ -133,13 +138,21 @@ class TalkBackTree(private val activity: ComponentActivity) {
 
     private fun SemanticsNode.isOwnStop() = config.isMergingSemanticsOfDescendants
 
-    private fun composeViewIn(view: View): View? = when {
-        view.javaClass.simpleName == "AndroidComposeView" -> view
-        view is ViewGroup -> (0 until view.childCount).firstNotNullOfOrNull {
-            composeViewIn(view.getChildAt(it))
+    companion object {
+        /** The tree of the latest dialog's window (#279). Use it on the main thread while the dialog shows. */
+        fun ofLatestDialog() = TalkBackTree {
+            checkNotNull(ShadowDialog.getLatestDialog()) { "no dialog shows" }.window!!.decorView
         }
-        else -> null
     }
+}
+
+/** The first Compose view in [view]'s hierarchy, or null. */
+internal fun composeViewIn(view: View): View? = when {
+    view.javaClass.simpleName == "AndroidComposeView" -> view
+    view is ViewGroup -> (0 until view.childCount).firstNotNullOfOrNull {
+        composeViewIn(view.getChildAt(it))
+    }
+    else -> null
 }
 
 /** Every semantics node of the screen by id, merged: a chip or button carries the words of all its children. */
