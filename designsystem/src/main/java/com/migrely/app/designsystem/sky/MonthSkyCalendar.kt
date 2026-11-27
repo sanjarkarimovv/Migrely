@@ -9,6 +9,7 @@ import androidx.compose.foundation.indication
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
@@ -63,14 +64,18 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.offset
 import com.migrely.app.designsystem.layout.InsetInteractionSource
+import com.migrely.app.designsystem.layout.ShownTextLayouts
+import com.migrely.app.designsystem.layout.shownTextLayouts
 import com.migrely.app.designsystem.theme.MigrelyTheme
 import com.migrely.app.designsystem.theme.OnSurface
 import com.migrely.app.designsystem.theme.OnSurfaceVariant
@@ -82,6 +87,14 @@ private val CellSpacing = 6.dp
 private val CellShape = RoundedCornerShape(10.dp)
 private val ChosenRingWidth = 2.5.dp
 private val FocusRingWidth = 2.5.dp
+
+// A day number's place in its cell: clear of the chosen and focus rings (BRD D198).
+private val NumberStartInset = 5.dp
+private val NumberEndInset = 3.dp
+private val NumberTopInset = 3.dp
+
+// The widest a day number can be; never the month's own days, so paging never resizes the numbers.
+private val TWO_DIGIT_DAYS = (10..31).map(Int::toString)
 
 /** The colours drawn on a day cell: its rings and its number. */
 private data class DayCellColors(
@@ -196,50 +209,119 @@ fun MonthSkyCalendar(
         rightToLeft = LocalLayoutDirection.current == LayoutDirection.Rtl,
         focusManager = LocalFocusManager.current
     )
-    Column(
-        verticalArrangement = Arrangement.spacedBy(CellSpacing),
+    BoxWithConstraints(
         modifier = modifier
             .onPreviewKeyEvent(keyboard::onKey)
             .focusProperties { onEnter = { keyboard.onEnter(requestedFocusDirection) } }
             .focusGroup()
     ) {
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(CellSpacing),
-            modifier = Modifier.clearAndSetSemantics { }
-        ) {
-            weekdayInitials.forEach { initial ->
-                Text(
-                    text = initial,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.weight(1f),
-                    textAlign = TextAlign.Center
-                )
-            }
+        val labelStyles = rememberLabelStyles(constraints.maxWidth, weekdayInitials)
+        Column(verticalArrangement = Arrangement.spacedBy(CellSpacing)) {
+            WeekdayInitials(weekdayInitials, labelStyles.initial)
+            Weeks(
+                cells = List(leadingEmptyDays) { null } + days,
+                numberStyle = labelStyles.number,
+                chosenStateDescription = chosenStateDescription,
+                requesters = requesters,
+                focusedDay = focusedDay,
+                onDayClick = onDayClick
+            )
         }
-        val cells: List<CalendarDay?> = List(leadingEmptyDays) { null } + days
-        // Each day's touch area is its whole pitch, the cell and half the gap around it (#255, design D5 T1): seven
-        // 48 dp targets do not fit a narrow row, and inside a page's exact bounds nothing widens a cell over the gaps.
-        // The weeks lie half a gap out on every side, so each cell is drawn where it was.
-        Column(Modifier.outsetBy(CellSpacing / 2)) {
-            cells.chunked(DAYS_PER_WEEK).forEach { week ->
-                Row {
-                    week.forEach { day ->
-                        if (day == null) {
-                            Spacer(Modifier.weight(1f))
-                        } else {
-                            DayCell(
-                                day = day,
-                                chosenStateDescription = chosenStateDescription,
-                                focusRequester = requesters.getValue(day.dayOfMonth),
-                                onFocused = { focusedDay.day = day.dayOfMonth },
-                                onClick = { onDayClick(day.dayOfMonth) },
-                                modifier = Modifier.weight(1f)
-                            )
-                        }
+    }
+}
+
+/** The styles of a grid's labels, each fitted to its column (BRD D198). */
+private class LabelStyles(val initial: TextStyle, val number: TextStyle)
+
+/**
+ * Fits the labels to the cells of a calendar [widthPx] wide: the weekday initials to a column, the day numbers to a
+ * drawn cell less their insets, so no label wraps or is cut (BRD D198, EC-HIS-05).
+ */
+@Composable
+private fun rememberLabelStyles(widthPx: Int, weekdayInitials: List<String>): LabelStyles {
+    // With no width to fit, every label keeps its style.
+    val (columnPx, numberRoomPx) = if (widthPx == Constraints.Infinity) {
+        Constraints.Infinity to Constraints.Infinity
+    } else {
+        with(LocalDensity.current) {
+            val gap = CellSpacing.roundToPx()
+            val halfGap = (CellSpacing / 2).roundToPx()
+            // A drawn cell: a seventh of the weeks, which lie half a gap out on each side, less half a gap each side.
+            val cell = (widthPx + 2 * halfGap) / DAYS_PER_WEEK - 2 * halfGap
+            val column = (widthPx - (DAYS_PER_WEEK - 1) * gap) / DAYS_PER_WEEK
+            column to cell - NumberStartInset.roundToPx() - NumberEndInset.roundToPx()
+        }
+    }
+    return LabelStyles(
+        initial = rememberFittedStyle(
+            style = MaterialTheme.typography.labelMedium,
+            samples = weekdayInitials,
+            widthPx = columnPx
+        ),
+        // Measured in Bold, so today, the one Bold number, is never wider than the size allows.
+        number = rememberFittedStyle(
+            style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"),
+            samples = TWO_DIGIT_DAYS,
+            widthPx = numberRoomPx,
+            measuredWeight = FontWeight.Bold
+        )
+    )
+}
+
+/** The weekday initials, hidden from screen readers: every day says its own weekday. */
+@Composable
+private fun WeekdayInitials(weekdayInitials: List<String>, style: TextStyle) {
+    val initialLayouts = remember { ShownTextLayouts() }
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(CellSpacing),
+        modifier = Modifier.clearAndSetSemantics { shownTextLayouts = initialLayouts }
+    ) {
+        weekdayInitials.forEachIndexed { index, initial ->
+            Text(
+                text = initial,
+                style = style,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.weight(1f),
+                textAlign = TextAlign.Center,
+                softWrap = false,
+                maxLines = 1,
+                onTextLayout = { initialLayouts.record(index, it) }
+            )
+        }
+    }
+}
+
+@Composable
+private fun Weeks(
+    cells: List<CalendarDay?>,
+    numberStyle: TextStyle,
+    chosenStateDescription: String,
+    requesters: Map<Int, FocusRequester>,
+    focusedDay: FocusedDay,
+    onDayClick: (dayOfMonth: Int) -> Unit
+) {
+    // Each day's touch area is its whole pitch, the cell and half the gap around it (#255, design D5 T1): seven 48 dp
+    // targets do not fit a narrow row, and inside a page's exact bounds nothing widens a cell over the gaps. The weeks
+    // lie half a gap out on every side, so each cell is drawn where it was.
+    Column(Modifier.outsetBy(CellSpacing / 2)) {
+        cells.chunked(DAYS_PER_WEEK).forEach { week ->
+            Row {
+                week.forEach { day ->
+                    if (day == null) {
+                        Spacer(Modifier.weight(1f))
+                    } else {
+                        DayCell(
+                            day = day,
+                            numberStyle = numberStyle,
+                            chosenStateDescription = chosenStateDescription,
+                            focusRequester = requesters.getValue(day.dayOfMonth),
+                            onFocused = { focusedDay.day = day.dayOfMonth },
+                            onClick = { onDayClick(day.dayOfMonth) },
+                            modifier = Modifier.weight(1f)
+                        )
                     }
-                    repeat(DAYS_PER_WEEK - week.size) { Spacer(Modifier.weight(1f)) }
                 }
+                repeat(DAYS_PER_WEEK - week.size) { Spacer(Modifier.weight(1f)) }
             }
         }
     }
@@ -312,6 +394,7 @@ private class FocusedDay {
 @Composable
 private fun DayCell(
     day: CalendarDay,
+    numberStyle: TextStyle,
     chosenStateDescription: String,
     focusRequester: FocusRequester,
     onFocused: () -> Unit,
@@ -355,6 +438,7 @@ private fun DayCell(
     // before it. Without it TalkBack placed the day by rules of its own, out of the calendar's order (#255 finding
     // 6.2-F1, also on develop for the days to come).
     val futureWords = Modifier.semantics(mergeDescendants = true) {}
+    val numberLayout = remember { ShownTextLayouts() }
     Box(
         // A day that can be chosen: its words merged into the clickable rather than replacing it, so it stays
         // focusable for keyboards and switch access (BRD EC-UX-19); the day number inside is cleared so the
@@ -392,15 +476,19 @@ private fun DayCell(
                 drawDaySky(day.appearance, outlines)
                 if (day.hasPeriodMark) drawPeriodMark()
             }
+            // One line, never broken or cut, in the grid's one size (BRD D198).
             Text(
                 text = day.dayOfMonth.toString(),
-                style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"),
+                style = numberStyle,
                 fontWeight = if (day.isToday) FontWeight.Bold else null,
                 color = colors.number,
+                softWrap = false,
+                maxLines = 1,
                 modifier = Modifier
                     .align(Alignment.TopStart)
-                    .padding(start = 5.dp, top = 3.dp)
-                    .clearAndSetSemantics { }
+                    .padding(start = NumberStartInset, top = NumberTopInset)
+                    .clearAndSetSemantics { shownTextLayouts = numberLayout },
+                onTextLayout = { numberLayout.record(0, it) }
             )
         }
     }
