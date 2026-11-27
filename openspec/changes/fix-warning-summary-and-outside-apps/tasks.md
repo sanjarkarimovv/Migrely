@@ -36,8 +36,11 @@ activity's `startActivity` to the launcher.
   `./gradlew :features:settings:ui:testDebugUnitTest --tests '*ExternalAppLauncherTest*'`.
 - [x] 3.2 `ExternalAppLauncher`: add the flag in `storePageInPlay()`, `storePageOnWeb()` and on the `send` intent in
   `shareChooser()`, never on the chooser. Update the KDoc (EC-SHR-14, design D4, D5). Verify: 3.1 green.
-- [x] 3.3 Scope check. Verify: `git diff --stat origin/develop` lists only the two strings files, `ExternalAppLauncher.kt`,
-  the two test files, and this change's docs; `ReportScreen.kt` and `PlayBillingDataSourceImpl.kt` untouched.
+- [x] 3.3 Scope check (phase 1, before 3.4–3.6). Verify: `git diff --stat origin/develop` lists only the two strings
+  files, `ExternalAppLauncher.kt`, the two test files, and this change's docs; `ReportScreen.kt` and
+  `PlayBillingDataSourceImpl.kt` untouched. Final scope after 3.4–3.6 (e9e0db66): the two strings files,
+  `ExternalAppLauncher.kt`, `SettingsPages.kt`, three test changes (`WarningSignsSummaryTest` and `PrivacyPolicyLinkTest`
+  added, `ExternalAppLauncherTest` edited, `PolicyLinkTest` deleted), `docs/BRD.md` and this change's docs.
 - [x] 3.4 Red first: a Robolectric test in `features/settings/ui/src/testDebug` that clicks the Privacy page's policy link
   and asserts the started intent (`shadowOf(application).nextStartedActivity`) is `ACTION_VIEW` on the policy URL with
   `FLAG_ACTIVITY_NEW_TASK`; plus the no-browser case: `ActivityNotFoundException` or `SecurityException` from the start

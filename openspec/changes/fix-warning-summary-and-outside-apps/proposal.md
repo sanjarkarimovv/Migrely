@@ -31,7 +31,9 @@ Code review (2026-11-27, `migrely-work/patch141/code-review-ab416647.md`, AOSP s
   - German: "Wann den Notruf wählen, wann dringend ärztlichen Rat holen"
 - Rate starts both its intents (`market://` in Google Play, then the https page) with `FLAG_ACTIVITY_NEW_TASK`.
 - The Privacy page's policy link opens through the launcher with `FLAG_ACTIVITY_NEW_TASK`; with no browser it still does
-  nothing, as today (the address is printed under the link).
+  nothing, as today (the address is printed under the link). A work profile's `SecurityException`, which escaped the
+  click and crashed the app on `develop`, now also opens nothing (an unreported crash, fixed on the way). The link keeps
+  no double-tap guard, as today.
 - Share puts `FLAG_ACTIVITY_NEW_TASK` on the `ACTION_SEND` intent inside the chooser, not on the chooser: a guard for
   choosers that do not add their own task flags (AOSP's does).
 - A JVM test pins each of these and fails on `develop` (negative control).

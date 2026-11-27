@@ -115,10 +115,19 @@ PM rewords. No new D-number: it is a platform limit of D185's promise, recorded 
 
 The Privacy page's policy link is the same #280 path in the same module, so it is in scope. It opens through a launcher
 method that builds the https `ACTION_VIEW` with `FLAG_ACTIVITY_NEW_TASK` and treats `ActivityNotFoundException` and
-`SecurityException` as nothing opening. The behaviour with no browser stays as it is: nothing opens and no message
-shows, since the address is printed under the link (`openInBrowserIfAny`'s rule). A Robolectric test clicks the link and
-asserts the started intent's flag; it is red on `develop` (Compose's handler sets no flag). The three other places with
-this pattern are outside the module and filed as #291.
+`SecurityException` as nothing opening. With no browser the behaviour stays as it is: nothing opens and no message
+shows, since the address is printed under the link (`openInBrowserIfAny`'s rule). A `SecurityException` (a work profile
+or managed phone that forbids the start) is a change: on `develop` it escaped the click handler and crashed the app,
+because Compose's `AndroidUriHandler` catches only `ActivityNotFoundException` and the deleted `openInBrowserIfAny`
+caught only `IllegalArgumentException` and `ActivityNotFoundException`. This branch fixes that unreported crash as well
+(code review of e9e0db66). A Robolectric test clicks the link and asserts the started intent's flag; it is red on
+`develop` (Compose's handler sets no flag). The three other places with this pattern are outside the module and filed as
+#291.
+
+The policy link stays without the double-tap guard (`OpeningGuard`), as on `develop`: EC-SHR-05 and "One opening per
+tap" cover Rate and Share only. A double tap may start the policy page twice (not measured; the browser decides what a
+second identical start does). Nothing is written, and the link is not a place people tap in a hurry, so a guard is not
+worth a new decision in a patch.
 
 ## Risks
 

@@ -121,8 +121,9 @@ limit. Tries, texts and messages SHALL not change (BRD SET-F2, D185, EC-SHR-14, 
 
 #### Scenario: No browser for the privacy policy
 - **WHEN** no app opens web pages, or a work profile forbids it, and the user opens the privacy policy link
-- **THEN** nothing opens and nothing is shown, as before: the address under the link can still be typed elsewhere, and
-  the app keeps running
+- **THEN** nothing opens and nothing is shown, the address under the link can still be typed elsewhere, and the app
+  keeps running; with no browser this is as before, while with a work profile's `SecurityException` it is new, since
+  `develop` let that exception escape the click and crash
 
 #### Scenario: One opening per tap still holds
 - **WHEN** the user double taps "Rate Migrely on Google Play" or "Share Migrely"
