@@ -17,7 +17,8 @@ class AttackNotificationUiMapper(
     private val attackDetailsEventPresenter: AttackDetailsEventPresenter,
     private val timeFieldUiMapper: TimeFieldUiMapper,
     private val attackRangeUiMapper: AttackRangeUiMapper,
-    private val attackIntakeUiMapper: AttackIntakeUiMapper
+    private val attackIntakeUiMapper: AttackIntakeUiMapper,
+    private val customTagUiMapper: CustomTagUiMapper
 ) : NotificationUiMapper<AttackDetailsPresentationNotification> {
     override fun toUi(notification: AttackDetailsPresentationNotification): UiNotification {
         val event = when (notification) {
@@ -59,6 +60,14 @@ class AttackNotificationUiMapper(
                     AttackMessageUiModel.IntakeRemoved(
                         notification.attackId,
                         attackIntakeUiMapper.toUi(notification.intake)
+                    )
+                )
+
+            is AttackDetailsPresentationNotification.CustomTagRemoved ->
+                AttackDetailsEventUiModel.Message(
+                    AttackMessageUiModel.CustomTagRemoved(
+                        notification.attackId,
+                        customTagUiMapper.toUi(notification.tag)
                     )
                 )
 

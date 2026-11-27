@@ -84,6 +84,7 @@
     <string name="message_point_removed">Schmerzstärke entfernt</string>
     <string name="message_point_outside">Diese Zeit liegt außerhalb dieser Migräne.</string>
     <string name="message_tag_limit">Deine Liste ist voll. Entferne einen Eintrag, um einen neuen hinzuzufügen.</string>
+    <string name="message_tag_removed">Aus deiner Liste entfernt</string>
     <string name="attack_message_undone">Rückgängig gemacht.</string>
     <string name="attack_message_saved">Gespeichert.</string>
     <string name="attack_message_undo_not_possible">Das lässt sich nicht mehr rückgängig machen.</string>

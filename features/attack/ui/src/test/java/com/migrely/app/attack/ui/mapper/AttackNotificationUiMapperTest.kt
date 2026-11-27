@@ -2,15 +2,19 @@ package com.migrely.app.attack.ui.mapper
 
 import com.migrely.app.attack.presentation.model.AttackDetailsPresentationNotification
 import com.migrely.app.attack.presentation.model.AttackRangePresentationModel
+import com.migrely.app.attack.presentation.model.CustomTagPresentationModel
 import com.migrely.app.attack.presentation.model.IntensityPointPresentationModel
 import com.migrely.app.attack.presentation.model.PointRejectionPresentationModel
+import com.migrely.app.attack.presentation.model.TagKindPresentationModel
 import com.migrely.app.attack.presentation.model.TimeFieldPresentationModel
 import com.migrely.app.attack.presentation.model.TimeRejectionPresentationModel
 import com.migrely.app.attack.presentation.model.TimesUndoPresentationModel
 import com.migrely.app.attack.ui.model.AttackDetailsEventUiModel
 import com.migrely.app.attack.ui.model.AttackMessageUiModel
 import com.migrely.app.attack.ui.model.AttackRangeUiModel
+import com.migrely.app.attack.ui.model.CustomTagUiModel
 import com.migrely.app.attack.ui.model.IntensityPointUiModel
+import com.migrely.app.attack.ui.model.TagKindUiModel
 import com.migrely.app.attack.ui.model.TimeErrorReasonUiModel
 import com.migrely.app.attack.ui.model.TimeErrorUiModel
 import com.migrely.app.attack.ui.model.TimeFieldUiModel
@@ -112,6 +116,24 @@ class AttackNotificationUiMapperTest(
             arrayOf<Any>(
                 AttackDetailsPresentationNotification.StorageFull,
                 AttackDetailsEventUiModel.Message(AttackMessageUiModel.StorageFull)
+            ),
+            // The tag travels with the message, for its spoken Undo name and the Undo itself (BRD D199).
+            arrayOf<Any>(
+                AttackDetailsPresentationNotification.CustomTagRemoved(
+                    "a",
+                    CustomTagPresentationModel(
+                        "t",
+                        TagKindPresentationModel.Trigger,
+                        "Perfume",
+                        archived = false
+                    )
+                ),
+                AttackDetailsEventUiModel.Message(
+                    AttackMessageUiModel.CustomTagRemoved(
+                        "a",
+                        CustomTagUiModel("t", TagKindUiModel.Trigger, "Perfume", archived = false)
+                    )
+                )
             )
         )
     }
@@ -124,7 +146,8 @@ class AttackNotificationUiMapperTest(
             presenter,
             TimeFieldUiMapper(),
             AttackRangeUiMapper(),
-            AttackIntakeUiMapper()
+            AttackIntakeUiMapper(),
+            CustomTagUiMapper(TagKindUiMapper())
         )
 
         // When

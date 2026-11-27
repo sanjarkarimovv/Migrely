@@ -5,6 +5,8 @@ import com.migrely.app.attack.presentation.viewmodel.AttackDetailsViewModel
 import com.migrely.app.attack.ui.di.AttackDetailsDependencies
 import com.migrely.app.attack.ui.mapper.AttackDetailsViewStateUiMapper
 import com.migrely.app.attack.ui.mapper.AttackMessageBehaviourUiMapper
+import com.migrely.app.attack.ui.mapper.CustomTagUiToPresentationMapper
+import com.migrely.app.attack.ui.mapper.TagKindUiToPresentationMapper
 import com.migrely.app.attack.ui.model.AttackDetailsViewStateUiModel
 import com.migrely.app.attack.ui.notification.AttackDetailsEventPresenter
 import kotlinx.coroutines.flow.emptyFlow
@@ -41,6 +43,9 @@ internal fun attackDetailsTestDependencies(
         intensityPointUiToPresentationMapper = mock(),
         timesUndoUiToPresentationMapper = mock(),
         attackIntakeUiToPresentationMapper = mock(),
+        customTagUiToPresentationMapper = CustomTagUiToPresentationMapper(
+            TagKindUiToPresentationMapper()
+        ),
         attackDetailsNavigationMapper = mock(),
         attackNotificationMapper = mock()
     )

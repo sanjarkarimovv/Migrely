@@ -90,13 +90,16 @@ internal object AttackUiModule {
         val tagKindUiToPresentationMapper = TagKindUiToPresentationMapper()
         val intensityPointUiToPresentationMapper = IntensityPointUiToPresentationMapper()
         val attackIntakeUiMapper = AttackIntakeUiMapper()
+        val customTagUiMapper = CustomTagUiMapper(tagKindUiMapper)
+        val customTagUiToPresentationMapper =
+            CustomTagUiToPresentationMapper(tagKindUiToPresentationMapper)
         return AttackDetailsDependencies(
             attackDetailsViewModel = attackDetailsViewModel,
             attackDetailsViewStateUiMapper = AttackDetailsViewStateUiMapper(
                 HeadLocationUiMapper(),
                 BuiltInSymptomUiMapper(),
                 BuiltInTriggerUiMapper(),
-                CustomTagUiMapper(tagKindUiMapper),
+                customTagUiMapper,
                 FunctionalImpactUiMapper(),
                 attackIntakeUiMapper
             ),
@@ -108,7 +111,7 @@ internal object AttackUiModule {
                 HeadLocationUiToPresentationMapper(),
                 BuiltInSymptomUiToPresentationMapper(),
                 BuiltInTriggerUiToPresentationMapper(),
-                CustomTagUiToPresentationMapper(tagKindUiToPresentationMapper)
+                customTagUiToPresentationMapper
             ),
             functionalImpactUiToPresentationMapper = FunctionalImpactUiToPresentationMapper(),
             tagKindUiToPresentationMapper = tagKindUiToPresentationMapper,
@@ -117,12 +120,14 @@ internal object AttackUiModule {
                 intensityPointUiToPresentationMapper
             ),
             attackIntakeUiToPresentationMapper = AttackIntakeUiToPresentationMapper(),
+            customTagUiToPresentationMapper = customTagUiToPresentationMapper,
             attackDetailsNavigationMapper = attackDetailsNavigationMapper,
             attackNotificationMapper = AttackNotificationUiMapper(
                 eventPresenter,
                 TimeFieldUiMapper(),
                 AttackRangeUiMapper(),
-                attackIntakeUiMapper
+                attackIntakeUiMapper,
+                customTagUiMapper
             )
         )
     }

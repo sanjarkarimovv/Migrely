@@ -17,6 +17,11 @@ sealed interface AttackMessageUiModel : Parcelable {
     data class IntakeRemoved(val attackId: String, val intake: AttackIntakeUiModel) :
         AttackMessageUiModel
 
+    /** A custom tag removed from the user's list (BRD D199, EC-ATK-25). */
+    @Parcelize
+    data class CustomTagRemoved(val attackId: String, val tag: CustomTagUiModel) :
+        AttackMessageUiModel
+
     @Parcelize
     data object PointOutsideAttack : AttackMessageUiModel
 

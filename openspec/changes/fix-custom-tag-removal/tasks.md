@@ -25,11 +25,11 @@ takes it after this plan. Phase 1 = groups 2, 3.1–3.3, 4.1–4.2; phase 2 (Und
 
 ## 3. Domain and presentation
 
-- [ ] 3.1 Red first: `AttackDetailsViewModelTest`: after a successful archive the view model emits the removed-tag message
+- [x] 3.1 Red first: `AttackDetailsViewModelTest`: after a successful archive the view model emits the removed-tag message
   (tag id, name, kind); a failed archive emits the existing error and no removed-tag message. Red on develop (no message;
   record). Verify: `./gradlew :features:attack:presentation:testDebugUnitTest --tests '*AttackDetailsViewModelTest*'`.
-- [ ] 3.2 Add the message model case and emit it in `onArchiveCustomTagAction` (design D3).
-- [ ] 3.3 Mapper and model tests for the new case (exhaustive `when`).
+- [x] 3.2 Add the message model case and emit it in `onArchiveCustomTagAction` (design D3).
+- [x] 3.3 Mapper and model tests for the new case (exhaustive `when`).
 - [ ] 3.4 Phase 2, red first: `RestoreCustomTagUseCaseTest` (`features/attack/domain/src/test`): under 100 active of that kind
   → `setCustomTagArchived(id, false)` and Restored; at 100 → LimitReached and no write; storage full and failure mapped.
   Verify: `./gradlew :features:attack:domain:test --tests '*RestoreCustomTagUseCaseTest*'`.
@@ -40,7 +40,7 @@ takes it after this plan. Phase 1 = groups 2, 3.1–3.3, 4.1–4.2; phase 2 (Und
 
 ## 4. UI
 
-- [ ] 4.1 Strings, phase 1: `message_tag_removed` EN "Removed from your list", DE "Aus deiner Liste entfernt". Verify: `git
+- [x] 4.1 Strings, phase 1: `message_tag_removed` EN "Removed from your list", DE "Aus deiner Liste entfernt". Verify: `git
   diff origin/develop -- 'features/attack/ui/src/main/res/values*/strings.xml'`.
 - [ ] 4.2 Red first, then implement: Compose test (`features/attack/ui/src/testDebug`): the menu item and the custom action
   "Remove from my list" each lead to "Removed from your list" shown and announced once (polite live region); keyboard focus
@@ -121,3 +121,23 @@ takes it after this plan. Phase 1 = groups 2, 3.1–3.3, 4.1–4.2; phase 2 (Und
   fail.
 - 2.3 `CustomChipMenuTapTest` (taps routed by window, as a finger's): 2 of 2; the control in it (the same tap with no
   menu toggles the chip) passes; mutation `PopupProperties(focusable = false)` fails it (the chip toggles).
+
+### Groups 3 and 4, phase 1, message without Undo (android-engineer, 2026-11-27, JVM only)
+
+- 3.1 red: with the new API stubbed (signature and model, no emission),
+  `:features:attack:presentation:test --tests '*AttackDetailsViewModelTest*'` exit 1, 52 tests, 1 failed: expected
+  `[CustomTagRemoved(a, Jaw pain)]` but was `[Saved]`, which is what develop sends. Green after 3.2: presentation
+  79 of 79. A failed or full-storage archive sends only the existing error (tests).
+- 3.3 `AttackNotificationUiMapperTest` 9 of 9 and `AttackMessageBehaviourUiMapperTest` 11 of 11 with the new case
+  (exhaustive `when`, no `else`).
+- 4.1 strings: `message_tag_removed` EN "Removed from your list", DE "Aus deiner Liste entfernt".
+- 4.2 `CustomTagRemovalMessageTest` 4 of 4: the menu item and TalkBack's custom action each hand the chip's tag to the
+  ViewModel and show "Removed from your list" once, as a polite live region; leaving ends it; a restore keeps it.
+  Mutation control: the removal mapped to `Saved` (develop's behaviour) fails 3 of 4 (the leaving test now first
+  proves the message showed). Not ticked: its keyboard-focus part. Observed in a probe (not committed): after a
+  keyboard removal through the menu, focus goes to the top bar's first control (bounds 8,15 to 48,55 px, likely Back)
+  and the next Tab to the first row, not to the next chip or "+ Your own". Writing focus code waits for a
+  product-manager decision (stop rule, design D4, R2).
+- `ArchitectureScrollsTest`: the menu's card now names Material's `verticalScroll` in `MigrelyMenus.kt`; listed as a
+  known site with its reason (no page, Material's tree kept), for code review.
+

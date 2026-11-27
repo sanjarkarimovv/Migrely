@@ -57,6 +57,7 @@ import androidx.core.view.WindowInsetsCompat
 import com.migrely.app.attack.ui.R
 import com.migrely.app.attack.ui.model.AttackDetailsUiModel
 import com.migrely.app.attack.ui.model.AttackTagUiModel
+import com.migrely.app.attack.ui.model.CustomTagUiModel
 import com.migrely.app.attack.ui.model.HeadLocationUiModel
 import com.migrely.app.attack.ui.model.SymptomUiModel
 import com.migrely.app.attack.ui.model.TagKindUiModel
@@ -73,7 +74,11 @@ private const val MAXIMUM_TAG_NAME_LENGTH = 40
 private const val KEYBOARD_WAIT_MILLIS = 3_000L
 
 /** One choice as the chips show it: what to send, how to label it, and the custom tag id when it is the user's own. */
-private data class Choice(val tag: AttackTagUiModel, val label: String, val customTagId: String?)
+private data class Choice(
+    val tag: AttackTagUiModel,
+    val label: String,
+    val customTag: CustomTagUiModel?
+)
 
 /**
  * Where it hurts, symptoms and triggers (BRD ATK-F5). A tap flips the chip at once and saves it; the shown state
@@ -133,7 +138,7 @@ internal fun ChoiceSections(
                     )
 
                 is SymptomUiModel.Custom ->
-                    Choice(AttackTagUiModel.Symptom(symptom), symptom.tag.name, symptom.tag.id)
+                    Choice(AttackTagUiModel.Symptom(symptom), symptom.tag.name, symptom.tag)
             }
         },
         isSelected = ::isSelected,
@@ -157,7 +162,7 @@ internal fun ChoiceSections(
                     )
 
                 is TriggerUiModel.Custom ->
-                    Choice(AttackTagUiModel.Trigger(trigger), trigger.tag.name, trigger.tag.id)
+                    Choice(AttackTagUiModel.Trigger(trigger), trigger.tag.name, trigger.tag)
             }
         },
         isSelected = ::isSelected,
@@ -186,7 +191,7 @@ private fun ChoiceGroup(
     choices: List<Choice>,
     isSelected: (AttackTagUiModel) -> Boolean,
     onToggle: (AttackTagUiModel) -> Unit,
-    onArchive: (tagId: String) -> Unit,
+    onArchive: (tag: CustomTagUiModel) -> Unit,
     addLabel: String?,
     onAdd: () -> Unit
 ) {
@@ -201,7 +206,7 @@ private fun ChoiceGroup(
                     label = choice.label,
                     selected = isSelected(choice.tag),
                     onClick = { onToggle(choice.tag) },
-                    onArchive = choice.customTagId?.let { id -> { onArchive(id) } }
+                    onArchive = choice.customTag?.let { tag -> { onArchive(tag) } }
                 )
             }
             if (addLabel != null) {

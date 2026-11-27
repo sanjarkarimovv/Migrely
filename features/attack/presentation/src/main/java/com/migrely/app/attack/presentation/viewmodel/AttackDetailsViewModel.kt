@@ -63,6 +63,7 @@ import com.migrely.app.attack.presentation.model.AttackDetailsViewState
 import com.migrely.app.attack.presentation.model.AttackIntakeEffectPresentationModel
 import com.migrely.app.attack.presentation.model.AttackIntakePresentationModel
 import com.migrely.app.attack.presentation.model.AttackTagPresentationModel
+import com.migrely.app.attack.presentation.model.CustomTagPresentationModel
 import com.migrely.app.attack.presentation.model.FunctionalImpactPresentationModel
 import com.migrely.app.attack.presentation.model.IntensityPointPresentationModel
 import com.migrely.app.attack.presentation.model.PointRejectionPresentationModel
@@ -341,10 +342,18 @@ class AttackDetailsViewModel(
         )
     }
 
-    fun onArchiveCustomTagAction(attackId: String, tagId: String) {
-        archiveCustomTagUseCase(value = tagId, onResult = { result ->
-            presentWrite(attackId, result)
-        })
+    /** Removes [tag] from the user's list, by any path, and says so (BRD D199, EC-ATK-25). */
+    fun onArchiveCustomTagAction(attackId: String, tag: CustomTagPresentationModel) {
+        archiveCustomTagUseCase(
+            value = tag.id,
+            onResult = { result ->
+                presentWrite(
+                    attackId,
+                    result,
+                    AttackDetailsPresentationNotification.CustomTagRemoved(attackId, tag)
+                )
+            }
+        )
     }
 
     fun onDeleteAction(attackId: String) {

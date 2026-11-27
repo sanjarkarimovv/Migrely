@@ -73,6 +73,7 @@ import com.migrely.app.attack.presentation.model.AttackIntakeEffectPresentationM
 import com.migrely.app.attack.presentation.model.AttackIntakePresentationModel
 import com.migrely.app.attack.presentation.model.AttackRangePresentationModel
 import com.migrely.app.attack.presentation.model.AttackTagPresentationModel
+import com.migrely.app.attack.presentation.model.CustomTagPresentationModel
 import com.migrely.app.attack.presentation.model.HeadLocationPresentationModel
 import com.migrely.app.attack.presentation.model.IntensityPointPresentationModel
 import com.migrely.app.attack.presentation.model.PointRejectionPresentationModel
@@ -975,12 +976,53 @@ class AttackDetailsViewModelTest :
         }
     }
 
-    @Test
-    fun `Given a custom tag is archived then says it saved`() = runTest {
-        archiveCustomTagUseCase.givenSuccessfulExecution("t", WriteResultDomainModel.Written)
-        givenDetails()
+    // Removing a tag from the list says so, on every path, and only when it was removed (BRD D199, EC-ATK-25).
 
-        assertSavedOnly { classUnderTest.onArchiveCustomTagAction("a", "t") }
+    private val jawPain = CustomTagPresentationModel(
+        "t",
+        TagKindPresentationModel.Symptom,
+        "Jaw pain",
+        archived = false
+    )
+
+    @Test
+    fun `When removing a custom tag then says it left the list and reloads the details`() =
+        runTest {
+            archiveCustomTagUseCase.givenSuccessfulExecution("t", WriteResultDomainModel.Written)
+            givenDetails()
+            val state = nextViewState()
+
+            val messages = messagesOf { classUnderTest.onArchiveCustomTagAction("a", jawPain) }
+
+            assertEquals(
+                listOf(AttackDetailsPresentationNotification.CustomTagRemoved("a", jawPain)),
+                messages
+            )
+            assertEquals(ready, state.await())
+        }
+
+    @Test
+    fun `Given storage is full when removing a custom tag then says so and not that it left`() =
+        runTest {
+            archiveCustomTagUseCase.givenSuccessfulExecution(
+                "t",
+                WriteResultDomainModel.StorageFull
+            )
+
+            assertEquals(
+                listOf(AttackDetailsPresentationNotification.StorageFull),
+                messagesOf { classUnderTest.onArchiveCustomTagAction("a", jawPain) }
+            )
+        }
+
+    @Test
+    fun `Given removing a custom tag fails then says so and not that it left`() = runTest {
+        archiveCustomTagUseCase.givenSuccessfulExecution("t", WriteResultDomainModel.Failed)
+
+        assertEquals(
+            listOf(AttackDetailsPresentationNotification.SomethingWentWrong),
+            messagesOf { classUnderTest.onArchiveCustomTagAction("a", jawPain) }
+        )
     }
 
     @Test

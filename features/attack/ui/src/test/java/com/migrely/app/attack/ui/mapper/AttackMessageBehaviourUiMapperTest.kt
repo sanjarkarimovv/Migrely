@@ -2,7 +2,9 @@ package com.migrely.app.attack.ui.mapper
 
 import com.migrely.app.attack.ui.model.AttackMessageBehaviourUiModel
 import com.migrely.app.attack.ui.model.AttackMessageUiModel
+import com.migrely.app.attack.ui.model.CustomTagUiModel
 import com.migrely.app.attack.ui.model.IntensityPointUiModel
+import com.migrely.app.attack.ui.model.TagKindUiModel
 import com.migrely.app.attack.ui.model.TimesUndoUiModel
 import com.migrely.app.designsystem.snackbar.SnackbarTone
 import org.junit.Assert.assertEquals
@@ -35,6 +37,14 @@ class AttackMessageBehaviourUiMapperTest(
             arrayOf<Any>(
                 AttackMessageUiModel.PointRemoved("a", IntensityPointUiModel(1L, 6)),
                 undo
+            ),
+            // Phase 1 of D199: the message without Undo.
+            arrayOf<Any>(
+                AttackMessageUiModel.CustomTagRemoved(
+                    "a",
+                    CustomTagUiModel("t", TagKindUiModel.Symptom, "Jaw pain", archived = false)
+                ),
+                information
             ),
             arrayOf<Any>(AttackMessageUiModel.PointOutsideAttack, information),
             arrayOf<Any>(AttackMessageUiModel.TagLimitReached, information),

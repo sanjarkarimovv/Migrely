@@ -22,6 +22,10 @@ sealed interface AttackDetailsPresentationNotification : PresentationNotificatio
     data class IntakeRemoved(val attackId: String, val intake: AttackIntakePresentationModel) :
         AttackDetailsPresentationNotification
 
+    /** A custom tag left the user's list; it stays on the attacks that use it (BRD D199, EC-ATK-11, EC-ATK-25). */
+    data class CustomTagRemoved(val attackId: String, val tag: CustomTagPresentationModel) :
+        AttackDetailsPresentationNotification
+
     /** The first 10 the user ever recorded (BRD SAF-F2). */
     data object FirstMaximumRecorded : AttackDetailsPresentationNotification
 

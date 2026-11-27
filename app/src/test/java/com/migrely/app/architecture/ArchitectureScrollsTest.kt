@@ -26,8 +26,16 @@ private val RAW_SCROLL = Regex(
         """LazyHorizontalStaggeredGrid|HorizontalPager|VerticalPager)\s*[({]"""
 )
 
+/**
+ * The popup menu's card: Material's own menu column, scroll included, which `MigrelyDropdownMenu` builds itself to
+ * place the menu off its anchor (#179, BRD EC-UX-91). Material's `DropdownMenu` scrolled the same way inside the library
+ * before; the menu is no page and keeps Material's tree (`MigrelyDropdownMenuTest`).
+ */
+private const val MENU_PATH =
+    "/designsystem/src/main/java/com/migrely/app/designsystem/dialog/MigrelyMenus.kt"
+
 /** The only lines in production that scroll by Compose's own means, each with its count. */
-private val RAW_SCROLL_SITES = mapOf(ENTRY_POINT_PATH to 1, TYPING_SPACE_PATH to 1)
+private val RAW_SCROLL_SITES = mapOf(ENTRY_POINT_PATH to 1, TYPING_SPACE_PATH to 1, MENU_PATH to 1)
 
 /** A call of the typing space's page scroll, not its declaration. */
 private val SCROLLING_PAGE_CALL = Regex("""(?<!fun )\bscrollingPage\(""")

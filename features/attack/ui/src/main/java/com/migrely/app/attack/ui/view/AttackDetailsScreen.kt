@@ -59,6 +59,7 @@ import com.migrely.app.attack.ui.model.AttackIntakeEffectUiModel
 import com.migrely.app.attack.ui.model.AttackIntakeUiModel
 import com.migrely.app.attack.ui.model.AttackMessageUiModel
 import com.migrely.app.attack.ui.model.AttackTagUiModel
+import com.migrely.app.attack.ui.model.CustomTagUiModel
 import com.migrely.app.attack.ui.model.FunctionalImpactUiModel
 import com.migrely.app.attack.ui.model.IntensityPointUiModel
 import com.migrely.app.attack.ui.model.ShownAttackMessageUiModel
@@ -102,7 +103,7 @@ data class AttackDetailsActions(
     val onImpact: (impact: FunctionalImpactUiModel?) -> Unit,
     val onNote: (note: String) -> Unit,
     val onAddCustomTag: (kind: TagKindUiModel, name: String) -> Unit,
-    val onArchiveCustomTag: (tagId: String) -> Unit,
+    val onArchiveCustomTag: (tag: CustomTagUiModel) -> Unit,
     val onDelete: () -> Unit,
     val onAddMedication: () -> Unit = {},
     val onRemoveIntake: (intake: AttackIntakeUiModel) -> Unit = {},
@@ -297,7 +298,12 @@ fun AttackDetailsDependencies.AttackDetails(
                 name
             )
         },
-        onArchiveCustomTag = { tagId -> viewModel.onArchiveCustomTagAction(attackId, tagId) },
+        onArchiveCustomTag = { tag ->
+            viewModel.onArchiveCustomTagAction(
+                attackId,
+                customTagUiToPresentationMapper.toPresentation(tag)
+            )
+        },
         onDelete = { viewModel.onDeleteAction(attackId) },
         onAddMedication = { viewModel.onLogMedicationAction(attackId) },
         onRemoveIntake = { intake ->

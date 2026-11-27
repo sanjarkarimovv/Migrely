@@ -19,6 +19,7 @@ class AttackMessageBehaviourUiMapper {
                 baseDurationMillis = UNDO_MILLIS
             )
 
+        is AttackMessageUiModel.CustomTagRemoved,
         AttackMessageUiModel.PointOutsideAttack,
         AttackMessageUiModel.TagLimitReached,
         AttackMessageUiModel.Undone,

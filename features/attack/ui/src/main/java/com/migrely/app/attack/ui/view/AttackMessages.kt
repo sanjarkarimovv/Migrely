@@ -133,6 +133,7 @@ private fun messageText(message: AttackMessageUiModel): String = when (message) 
 
     is AttackMessageUiModel.PointRemoved -> stringResource(R.string.message_point_removed)
     is AttackMessageUiModel.IntakeRemoved -> stringResource(R.string.message_intake_removed)
+    is AttackMessageUiModel.CustomTagRemoved -> stringResource(R.string.message_tag_removed)
     AttackMessageUiModel.PointOutsideAttack -> stringResource(R.string.message_point_outside)
     AttackMessageUiModel.TagLimitReached -> stringResource(R.string.message_tag_limit)
     AttackMessageUiModel.AttacksMerged -> stringResource(R.string.message_attacks_merged)
