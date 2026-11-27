@@ -47,8 +47,10 @@ activity's `startActivity` to the launcher.
 - [x] 5.1 Gate. Verify: `nice -n 19 ./gradlew --max-workers=2 assembleDebug test ktlintCheck detekt lint` exit 0 (check
   the host load first; a timeout under load is rerun, not called a result).
 - [x] 5.2 Permissions. Verify: `./gradlew :app:checkReleasePermissions` exit 0, and its permission list equals the one
-  from develop 476f7a27 (diff empty); `grep -c '<queries' app/build/intermediates/merged_manifest/release/**/AndroidManifest.xml`
-  is 0. What proves "no change": both, plus the diff of 3.3 touching no manifest or Gradle file.
+  from develop 476f7a27 (diff empty); no `<queries>` entry added: the merged release manifest
+  (`app/build/intermediates/merged_manifest/release/**/AndroidManifest.xml`) is identical to develop's (`cmp` exit 0).
+  Develop already has one `<queries>` block, from `com.android.billingclient:billing:8.3.0`, so a count is not the proof.
+  What proves "no change": both, plus the diff of 3.3 touching no manifest or Gradle file.
 - [ ] 5.3 Device walk, emulator-5570 (API 36), debug build of this branch; restore every setting changed:
   - (a) Settings row in EN and DE at 200% font on a 360 dp wide window (`wm size`), portrait and landscape: screenshot
     of the row each; no "…", no cut line. If the EN line does not fit, stop and tell PM (spec allows one shorter line).
@@ -93,8 +95,8 @@ android-engineer, 2026-11-27, phase 1 (no device). Evidence in `migrely-work/pat
 
 Deviation in 5.2: the planned `grep -c '<queries'` gives 1, not 0, on develop and on this branch alike. The one
 `<queries>` block comes from `com.android.billingclient:billing:8.3.0` (manifest merger report) and was already there.
-The requirement "no `<queries>` entry is added" holds: the merged manifests are byte-identical. product-manager to fix the
-verify line at archive.
+The requirement "no `<queries>` entry is added" holds: the merged manifests are byte-identical. product-manager fixed the
+verify line on 2026-11-27 (plan error, not a product finding).
 
 Not checked in phase 1: everything in 5.3 (no emulator in this phase), in particular that Android's chooser keeps the
 inner `NEW_TASK` (D5, R1) and the TalkBack return focus (D8, R3). The JVM tests prove the flags on the built intents only,
