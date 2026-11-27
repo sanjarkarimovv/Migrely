@@ -52,9 +52,9 @@ takes it after this plan. Phase 1 = groups 2, 3.1–3.3, 4.1–4.2; phase 2 (Und
 
 ## 5. Docs and verify
 
-- [ ] 5.1 Gate. Verify: `nice -n 19 ./gradlew --max-workers=2 assembleDebug test ktlintCheck detekt lint` exit 0 (check
+- [x] 5.1 Gate. Verify: `nice -n 19 ./gradlew --max-workers=2 assembleDebug test ktlintCheck detekt lint` exit 0 (check
   the load first; a timeout under load is rerun, not a result).
-- [ ] 5.2 Permissions. Verify: `./gradlew :app:checkReleasePermissions` exit 0; `reports/permissions/release.txt` equals
+- [x] 5.2 Permissions. Verify: `./gradlew :app:checkReleasePermissions` exit 0; `reports/permissions/release.txt` equals
   develop 476f7a27's, and the merged release manifest is identical to develop's (`cmp` exit 0). Develop already has one
   `<queries>` block from the Billing library; the proof is identity, not a count.
 - [ ] 5.3 Device walk, emulator-5570 (API 36), debug build of this branch; restore font scale, `wm size`, rotation, locale
@@ -168,3 +168,12 @@ takes it after this plan. Phase 1 = groups 2, 3.1–3.3, 4.1–4.2; phase 2 (Und
   140 s; 4052 tests, 0 failed, 0 skipped. `:app:checkReleasePermissions` exit 0: ACCESS_NETWORK_STATE,
   POST_NOTIFICATIONS, RECEIVE_BOOT_COMPLETED, WAKE_LOCK, BILLING, DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION; no
   INTERNET.
+
+### 5.1 and 5.2 (android-engineer, 2026-11-27)
+
+- Gate, each phase on its own tree, load under 8: phase 1 (de91fa42, detached) exit 0 in 103 s, 4035 tests, 0 failed;
+  phase 2 (da388b25 tree) exit 0 in 140 s, 4052 tests, 0 failed, 0 skipped.
+- `:app:checkReleasePermissions` exit 0 on the branch and on develop 476f7a27 (same worktree, detached): `release.txt`,
+  the merged release manifest (`merged_manifests/release`) and the merged main manifest (`merged_manifest/release`)
+  are identical (`cmp` exit 0 each). No INTERNET. The diff touches no manifest, Gradle file, catalog or Room schema.
+
