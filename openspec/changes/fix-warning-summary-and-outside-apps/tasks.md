@@ -16,25 +16,25 @@ activity's `startActivity` to the launcher.
 
 ## 2. Presentation resources (#288)
 
-- [ ] 2.1 Red first: new Robolectric `WarningSignsSummaryTest` in `features/settings/ui/src/testDebug`, default and
+- [x] 2.1 Red first: new Robolectric `WarningSignsSummaryTest` in `features/settings/ui/src/testDebug`, default and
   `@Config(qualifiers = "de")`: the summary equals the spec's string; EN has no "care" and no " or "; DE has no "oder",
   no "Hilfe" and no digit. Negative control: it fails on develop's strings (record the red run, 2 of 2 failing). Verify:
   `./gradlew :features:settings:ui:testDebugUnitTest --tests '*WarningSignsSummaryTest*'` red, then green after 2.2.
-- [ ] 2.2 Set `settings_warning_signs_summary` verbatim: `values/strings.xml` "When to call your local emergency number
+- [x] 2.2 Set `settings_warning_signs_summary` verbatim: `values/strings.xml` "When to call your local emergency number
   and when to get urgent medical advice"; `values-de/strings.xml` "Wann den Notruf wählen, wann dringend ärztlichen Rat
   holen". Mind the XML: no apostrophe, so no escape. Verify: `git diff origin/develop -- '*/res/values*/strings.xml'`
   shows exactly 2 changed lines, one per file, the same key.
 
 ## 3. UI: outside apps in their own task (#280)
 
-- [ ] 3.1 Red first in `ExternalAppLauncherTest`: (a) `openStorePage()` starts the Google Play intent with
+- [x] 3.1 Red first in `ExternalAppLauncherTest`: (a) `openStorePage()` starts the Google Play intent with
   `FLAG_ACTIVITY_NEW_TASK`; (b) the https fallback has it too; (c) the inner `ACTION_SEND` (`EXTRA_INTENT`) has it;
   (d) the chooser intent does not. Existing W3 asserts (no grant flag, no stream, no URI ClipData) stay. Negative
   control: (a), (b), (c) fail on develop's launcher (record the red run). Verify:
   `./gradlew :features:settings:ui:testDebugUnitTest --tests '*ExternalAppLauncherTest*'`.
-- [ ] 3.2 `ExternalAppLauncher`: add the flag in `storePageInPlay()`, `storePageOnWeb()` and on the `send` intent in
+- [x] 3.2 `ExternalAppLauncher`: add the flag in `storePageInPlay()`, `storePageOnWeb()` and on the `send` intent in
   `shareChooser()`, never on the chooser. Update the KDoc (EC-SHR-14, design D4, D5). Verify: 3.1 green.
-- [ ] 3.3 Scope check. Verify: `git diff --stat origin/develop` lists only the two strings files, `ExternalAppLauncher.kt`,
+- [x] 3.3 Scope check. Verify: `git diff --stat origin/develop` lists only the two strings files, `ExternalAppLauncher.kt`,
   the two test files, and this change's docs; `ReportScreen.kt` and `PlayBillingDataSourceImpl.kt` untouched.
 
 ## 4. Docs
@@ -44,9 +44,9 @@ activity's `startActivity` to the launcher.
 
 ## 5. Verify
 
-- [ ] 5.1 Gate. Verify: `nice -n 19 ./gradlew --max-workers=2 assembleDebug test ktlintCheck detekt lint` exit 0 (check
+- [x] 5.1 Gate. Verify: `nice -n 19 ./gradlew --max-workers=2 assembleDebug test ktlintCheck detekt lint` exit 0 (check
   the host load first; a timeout under load is rerun, not called a result).
-- [ ] 5.2 Permissions. Verify: `./gradlew :app:checkReleasePermissions` exit 0, and its permission list equals the one
+- [x] 5.2 Permissions. Verify: `./gradlew :app:checkReleasePermissions` exit 0, and its permission list equals the one
   from develop 476f7a27 (diff empty); `grep -c '<queries' app/build/intermediates/merged_manifest/release/**/AndroidManifest.xml`
   is 0. What proves "no change": both, plus the diff of 3.3 touching no manifest or Gradle file.
 - [ ] 5.3 Device walk, emulator-5570 (API 36), debug build of this branch; restore every setting changed:
@@ -79,3 +79,23 @@ activity's `startActivity` to the launcher.
 ## Verification record
 
 (Filled by android-engineer, then QA.)
+
+android-engineer, 2026-11-27, phase 1 (no device). Evidence in `migrely-work/patch141/`.
+
+| Task | Command | Result |
+|---|---|---|
+| 2.1, 3.1 red | `:features:settings:ui:testDebugUnitTest --tests '*WarningSignsSummaryTest*' --tests '*ExternalAppLauncherTest*'` on develop's strings and launcher | exit 1, 14 tests, 5 failed: both summary tests (`but was: When a headache needs urgent care`, `but was: Wann Kopfschmerzen dringend ärztliche Hilfe brauchen`), and (a), (b), (c) (`expected 268435456 but was 0`). (d) passes on develop, as it should: it guards against the flag on the chooser |
+| 2.1, 3.1 green | same, after 2.2 and 3.2 | exit 0; WarningSignsSummaryTest 2/2, ExternalAppLauncherTest 12/12 (8 before + 4 new), 0 failures |
+| 2.2 | `git diff origin/develop -- '*/res/values*/strings.xml'` | 2 files, 1 line each, key `settings_warning_signs_summary`; values equal `medical-verdict.md` lines 10–11 |
+| 3.3 | `git diff --stat origin/develop` | the 2 strings files, `ExternalAppLauncher.kt`, the 2 test files, this change's docs and `docs/BRD.md` (plan commit); no manifest, Gradle, `ReportScreen.kt` or `PlayBillingDataSourceImpl.kt` |
+| 5.1 | `nice -n 19 ./gradlew --max-workers=2 assembleDebug test ktlintCheck detekt lint` (1-min load 6.8 at start) | exit 0, BUILD SUCCESSFUL in 5m 22s; 4014 tests in the worktree's result files, 0 failures, 0 errors, 0 skipped |
+| 5.2 | `:app:checkReleasePermissions` on this branch and on a detached develop 476f7a27 worktree | both exit 0; `reports/permissions/release.txt` identical (6 entries: ACCESS_NETWORK_STATE, POST_NOTIFICATIONS, RECEIVE_BOOT_COMPLETED, WAKE_LOCK, com.android.vending.BILLING, DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION; no INTERNET); the merged release manifests are byte-identical (`diff` empty) |
+
+Deviation in 5.2: the planned `grep -c '<queries'` gives 1, not 0, on develop and on this branch alike. The one
+`<queries>` block comes from `com.android.billingclient:billing:8.3.0` (manifest merger report) and was already there.
+The requirement "no `<queries>` entry is added" holds: the merged manifests are byte-identical. product-manager to fix the
+verify line at archive.
+
+Not checked in phase 1: everything in 5.3 (no emulator in this phase), in particular that Android's chooser keeps the
+inner `NEW_TASK` (D5, R1) and the TalkBack return focus (D8, R3). The JVM tests prove the flags on the built intents only,
+not what a launcher, Play or a browser does with them.
