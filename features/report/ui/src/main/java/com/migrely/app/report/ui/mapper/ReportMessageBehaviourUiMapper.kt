@@ -13,7 +13,8 @@ class ReportMessageBehaviourUiMapper {
             ReportMessageBehaviourUiModel(SnackbarTone.Information, READING_MILLIS)
 
         ReportMessageUiModel.SomethingWentWrong,
-        ReportMessageUiModel.NoAppToShare ->
+        ReportMessageUiModel.NoAppToShare,
+        ReportMessageUiModel.NotSaved ->
             ReportMessageBehaviourUiModel(SnackbarTone.Error, READING_MILLIS)
 
         // No report was made, so the message stays until the user has seen it (EC-STO-01).

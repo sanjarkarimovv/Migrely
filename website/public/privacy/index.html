@@ -33,7 +33,7 @@
 <main id="main">
 <nav class="wrap narrow crumbs" aria-label="Breadcrumb"><ol><li><a href="/">Home</a></li><li><span aria-current="page">Privacy policy</span></li></ol></nav>
 <section class="wrap block narrow prose"><h1>Migrely privacy policy</h1>
-<p>Effective date: 14 November 2026.</p>
+<p>Effective date: 27 November 2026.</p>
 <p>Migrely is a headache diary for Android, published on Google Play by Sulton UzDev ("we"). This policy explains what happens to the information you enter in the app, and, near the end, what happens on the website. In short: <strong>Migrely has no internet permission, so the app cannot send your entries over the internet, and we never receive them.</strong></p>
 <h2>What Migrely keeps, and where</h2>
 <p>Migrely keeps what you enter on your phone:</p>
@@ -45,6 +45,8 @@
 <li>your settings, such as reminders, the theme and whether you track periods;</li>
 <li>whether Migrely Premium is on (see Purchases below);</li>
 <li>how many times Google Play's rating window has run, and when it last did (see Rating Migrely below);</li>
+<li>from version 1.4.0, whether the last page of your doctor report carries a line naming Migrely (see Files you choose to share below);</li>
+<li>from version 1.4.0, when Migrely last showed one of its safety cards (the "Sudden, extremely bad pain?" and "Still going?" cards, and the card about your medication days in the last 30 days), so that it asks for no rating soon after one (see Rating Migrely below);</li>
 <li>up to three automatic copies of your entries, made before an import replaces them.</li></ul>
 <p>Migrely does not ask for your name, email, location, contacts, photos or any account. It has no internet permission, so it cannot send anything to us or to anyone else over the internet. It contains no analytics, advertising or tracking code of its own. The Google Play billing library it uses for Premium includes Google's usage logging, which cannot send anything either without the internet permission. Google Play's rating library, which Migrely uses to ask for a rating, needs no permission at all.</p>
 <p><strong>Checking whether you are online.</strong> From version 1.1.1, Migrely asks Android for one network permission, shown on your phone as "view network connections". When you tap to buy Premium, restore a purchase or manage a subscription, Migrely checks at that moment whether your phone has any network that reaches the internet. If it has none, Migrely tells you that you are offline instead of opening a Google Play screen that cannot load. Migrely does not keep the result, does not send it anywhere, and does not use it for anything else. This permission does not let Migrely go on the internet: Migrely has no internet permission, in every version.</p>
@@ -52,6 +54,7 @@
 <p>Android may back up Migrely's entries and settings to your Google account, as it does for other apps, and restore them on a new phone. On Android 9 and later, Migrely allows this backup only when it is end-to-end encrypted, which needs a screen lock on your phone; without one, the entries move only to a new phone by direct transfer. Android 8 cannot require that encryption, so there the backup works as it does for other apps. This backup is run by Google under Google's privacy policy, and we cannot see it. You can turn it off in your phone's settings.</p>
 <h2>Files you choose to share</h2>
 <p>You can export a backup file, a spreadsheet file or a PDF report for your doctor. Migrely creates the file, and you choose where it goes, for example by email or to a cloud drive. What happens to it then depends on the service you choose.</p>
+<p>From version 1.4.0, the last page of the PDF report for your doctor carries one small line of plain text: "Made with Migrely, a personal migraine diary app. Not a medical device. migrely.health". It has no logo, link or code of its own and no tracking, and it adds nothing you entered. It is on by default, and you can turn it off with the switch in Doctor report. The first page of the report has always said "Made with Migrely" with the date it was made; that stays when the switch is off.</p>
 <h2>Notifications</h2>
 <p>Reminders and the "Did it help?" question are notifications made on your phone. They need the notification permission, which you can refuse or withdraw at any time.</p>
 <h2>Purchases</h2>
@@ -66,6 +69,9 @@
 <p>This record is not part of Android's backup, so on a new phone Migrely asks Google Play again for the Google account signed in there. Settings → Delete all data removes this record too, but not the purchase: it stays with your Google account, and Migrely finds it again at its next check or when you tap "Restore purchases". To cancel a subscription, use Google Play; Migrely cannot cancel it for you.</p>
 <h2>Rating Migrely</h2>
 <p>After a few migraines, at a calm moment and rarely, Migrely may ask Google Play to show its own rating window over the app. Whatever you choose or write there goes to Google Play under Google's privacy policy. Google Play does not tell Migrely whether you rated it or what you wrote, and we never receive it from the app. Migrely keeps only how many times Google Play's window has run and when it last did, so that it asks no more than once in 120 days and three times in all. This is kept with your settings: it is part of Android's backup, and Settings → Delete all data removes it.</p>
+<p>From version 1.4.0, Migrely also waits three days after one of its safety cards before it asks Google Play to show the rating window. For that it keeps when it last showed a safety card. This is kept with your settings in the same way: it is part of Android's backup, and Settings → Delete all data removes it.</p>
+<h2>Sharing and rating Migrely</h2>
+<p>From version 1.4.0, Settings has a "Share and rate" section. Share Migrely opens Android's share sheet with a short text and a link to Migrely on Google Play. Your entries are not included. The link carries campaign tags (for example utm_source=app), the same for everyone, which Google Play uses in install reports for the app's publisher. The Migrely app does not read them. The text is the same for everyone, in English. Migrely does not learn which app or person you choose. Rate Migrely on Google Play opens Migrely's page in the Google Play app or a browser; once you are in Google Play, Google Play's own handling applies, under Google's privacy policy. What the app you choose does with the text is up to that app. Neither row shows while an attack is in progress. Neither is rewarded or counted, and Migrely keeps nothing about them. Migrely still has no internet permission: both only hand over to other apps.</p>
 <h2>Deleting your information</h2>
 <ul>
 <li><strong>Settings → Delete all data</strong> removes every entry, setting and copy Migrely keeps on your phone. Android's own backup of Migrely is then replaced the next time your phone backs up, which Android usually does about once a day while the phone is idle, charging and on Wi-Fi.</li>

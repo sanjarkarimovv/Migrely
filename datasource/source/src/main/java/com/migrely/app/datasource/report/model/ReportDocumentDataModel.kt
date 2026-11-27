@@ -3,6 +3,7 @@ package com.migrely.app.datasource.report.model
 /**
  * A report to render (BRD REP-F2, REP-F3, D82). It is plain text and levels: what it says is decided before, and the
  * renderer only lays it out. [pageLabel] takes the page number and the page count, as in "Page %1$d of %2$d".
+ * [credit] is a second footer line on the last page only, or null for none (BRD REP-F5, D186).
  */
 data class ReportDocumentDataModel(
     val fileName: String,
@@ -10,7 +11,8 @@ data class ReportDocumentDataModel(
     val footer: String,
     val pageLabel: String,
     val maxPages: Int,
-    val blocks: List<ReportBlockDataModel>
+    val blocks: List<ReportBlockDataModel>,
+    val credit: String? = null
 )
 
 /** Page sizes in PostScript points. */

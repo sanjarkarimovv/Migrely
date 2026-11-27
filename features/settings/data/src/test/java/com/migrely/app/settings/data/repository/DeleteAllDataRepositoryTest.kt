@@ -6,6 +6,7 @@ import com.migrely.app.datasource.exception.DatabaseDataException
 import com.migrely.app.datasource.exception.FileDataException
 import com.migrely.app.datasource.notification.datasource.NotificationDataSource
 import com.migrely.app.datasource.preferences.datasource.PreferencesDataSource
+import com.migrely.app.datasource.preferences.datasource.UnsavedMarksDataSource
 import com.migrely.app.datasource.report.datasource.ReportDocumentDataSource
 import com.migrely.app.datasource.schedule.datasource.PremiumCheckScheduleDataSource
 import com.migrely.app.datasource.schedule.datasource.ReminderScheduleDataSource
@@ -24,6 +25,7 @@ class DeleteAllDataRepositoryTest {
     private val notificationDataSource: NotificationDataSource = mock()
     private val backupDataSource: BackupDataSource = mock()
     private val preferencesDataSource: PreferencesDataSource = mock()
+    private val unsavedMarksDataSource: UnsavedMarksDataSource = mock()
     private val backupFileDataSource: BackupFileDataSource = mock()
     private val reportDocumentDataSource: ReportDocumentDataSource = mock()
     private val premiumCheckScheduleDataSource: PremiumCheckScheduleDataSource = mock()
@@ -32,6 +34,7 @@ class DeleteAllDataRepositoryTest {
         notificationDataSource,
         backupDataSource,
         preferencesDataSource,
+        unsavedMarksDataSource,
         backupFileDataSource,
         reportDocumentDataSource,
         premiumCheckScheduleDataSource
@@ -76,5 +79,25 @@ class DeleteAllDataRepositoryTest {
         assertEquals(SettingsWriteResultDomainModel.Failed, classUnderTest.deleteFiles())
         verify(notificationDataSource, never()).cancelAll()
         verify(reportDocumentDataSource, never()).deleteAll()
+    }
+
+    @Test
+    fun `When the settings are deleted then the marks this process could not save go too`() {
+        assertEquals(SettingsWriteResultDomainModel.Done, classUnderTest.deletePreferences())
+
+        // As on a new install in this process too (#278, D197): no unsaved paywall, rating or safety-card mark is left.
+        inOrder(preferencesDataSource, unsavedMarksDataSource) {
+            verify(preferencesDataSource).clear()
+            verify(unsavedMarksDataSource).clear()
+        }
+    }
+
+    @Test
+    fun `Given the settings cannot be deleted then the unsaved marks stay, as stored ones do`() {
+        whenever(preferencesDataSource.clear()).doThrow(FileDataException())
+
+        assertEquals(SettingsWriteResultDomainModel.Failed, classUnderTest.deletePreferences())
+
+        verify(unsavedMarksDataSource, never()).clear()
     }
 }

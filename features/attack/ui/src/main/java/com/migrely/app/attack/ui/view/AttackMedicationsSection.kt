@@ -36,8 +36,9 @@ import com.migrely.app.attack.ui.model.AttackDetailsUiModel
 import com.migrely.app.attack.ui.model.AttackIntakeEffectUiModel
 import com.migrely.app.attack.ui.model.AttackIntakeUiModel
 import com.migrely.app.designsystem.button.MigrelyIconButton
-import com.migrely.app.designsystem.dialog.MigrelyAlertDialog
+import com.migrely.app.designsystem.dialog.MigrelyScrollingAlertDialog
 import com.migrely.app.designsystem.icon.MigrelyIcons
+import com.migrely.app.designsystem.layout.isCompactHeight
 import com.migrely.app.designsystem.layout.ownWords
 import com.migrely.app.designsystem.layout.wordsShownOnly
 
@@ -162,10 +163,12 @@ private fun EffectDialog(
     onChoose: (AttackIntakeEffectUiModel) -> Unit,
     onDismiss: () -> Unit
 ) {
-    MigrelyAlertDialog(
+    val title = stringResource(R.string.medication_effect_title, intake.medicationName)
+    MigrelyScrollingAlertDialog(
+        title = title,
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.medication_effect_title, intake.medicationName)) },
-        text = {
+        content = {
+            // A long typed name makes a long title: title and answers scroll together (T23 8.1 row R04).
             Column(Modifier.selectableGroup()) {
                 AttackIntakeEffectUiModel.entries.forEach { effect ->
                     Row(
@@ -190,6 +193,8 @@ private fun EffectDialog(
             }
         },
         confirmButton = {},
+        // In a short window the default width leaves the answers little height (T23 8.1 row R04).
+        wide = isCompactHeight(),
         dismissButton = {
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.attack_picker_cancel)) }
         }

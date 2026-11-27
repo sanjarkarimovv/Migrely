@@ -13,3 +13,13 @@ enum class ReviewFlowResultDomainModel {
     /** Google Play could not run it: no Play Store, no screen, an error or no answer in time. */
     Unavailable
 }
+
+/** When the first-10 card, "Still going?" or the medication overuse card last appeared (BRD D188, EC-REV-14). */
+sealed interface LastSafetyCardDomainModel {
+    data object Never : LastSafetyCardDomainModel
+
+    data class ShownAt(val at: Instant) : LastSafetyCardDomainModel
+
+    /** The mark could not be read; the rules take it as recent. */
+    data object Unknown : LastSafetyCardDomainModel
+}

@@ -10,12 +10,14 @@ import com.migrely.app.home.domain.model.LongAttackAnswerRequestDomainModel
 import com.migrely.app.home.domain.model.MoveStartResultDomainModel
 import com.migrely.app.home.domain.model.RecordIntensityResultDomainModel
 import com.migrely.app.home.domain.model.StartAttackResultDomainModel
+import com.migrely.app.home.domain.model.TodayDomainModel
 import com.migrely.app.home.domain.model.TodayResultDomainModel
 import com.migrely.app.home.domain.model.UndoResultDomainModel
 import com.migrely.app.home.domain.model.WriteResultDomainModel
 import com.migrely.app.home.domain.usecase.AnswerLongAttackCheckUseCase
 import com.migrely.app.home.domain.usecase.EndAttackUseCase
 import com.migrely.app.home.domain.usecase.GetTodayUseCase
+import com.migrely.app.home.domain.usecase.MarkSafetyCardShownUseCase
 import com.migrely.app.home.domain.usecase.MoveAttackStartEarlierUseCase
 import com.migrely.app.home.domain.usecase.RecordIntensityUseCase
 import com.migrely.app.home.domain.usecase.RestoreDeletedAttackUseCase
@@ -61,6 +63,7 @@ class HomeViewModel(
     private val answerLongAttackCheckUseCase: AnswerLongAttackCheckUseCase,
     private val restoreDeletedAttackUseCase: RestoreDeletedAttackUseCase,
     private val setPeriodTodayUseCase: SetPeriodTodayUseCase,
+    private val markSafetyCardShownUseCase: MarkSafetyCardShownUseCase,
     private val todayPresentationMapper: TodayPresentationMapper,
     private val intensityLevelDomainMapper: IntensityLevelDomainMapper,
     useCaseExecutor: UseCaseExecutor
@@ -255,6 +258,7 @@ class HomeViewModel(
                                     result.periodOffered || keepPeriodToggle
                                 )
                             )
+                            markIfStillGoingShows(result.today)
                         }
                         thenTell?.let(::notify)
                         val deleted = result.recentlyDeleted
@@ -272,5 +276,15 @@ class HomeViewModel(
             // Only what the executor reports: a throw inside a background use case does not get here.
             onException = { thenTell?.let(::notify) }
         )
+    }
+
+    /**
+     * Every load that shows "Still going?" keeps the moment, so no rating is asked for until 3 days after it last
+     * showed (BRD D188, EC-REV-14).
+     */
+    private fun markIfStillGoingShows(today: TodayDomainModel) {
+        if (today is TodayDomainModel.AttackInProgress && today.longAttackCheckDue) {
+            markSafetyCardShownUseCase()
+        }
     }
 }

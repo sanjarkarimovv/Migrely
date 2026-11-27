@@ -42,4 +42,4 @@ Modified: `website`.
 
 `website/build.py`, `website/functions/go/android-t2.js`, `website/public/` (new page, QR, `robots.txt`),
 `website/lastmod.json`, `website/README.md`, `docs/release/play-links.md`, `docs/BRD.md`. BRD: D196, EC-WEB-03 (changed),
-EC-WEB-27 to EC-WEB-29, change plan row 59.
+EC-WEB-27 to EC-WEB-29, change plan row 61.

@@ -26,6 +26,7 @@ import com.migrely.app.attack.domain.usecase.AddIntensityPointUseCase
 import com.migrely.app.attack.domain.usecase.ArchiveCustomTagUseCase
 import com.migrely.app.attack.domain.usecase.DeleteAttackUseCase
 import com.migrely.app.attack.domain.usecase.GetAttackDetailsUseCase
+import com.migrely.app.attack.domain.usecase.MarkSafetyCardShownUseCase
 import com.migrely.app.attack.domain.usecase.MergeAttacksUseCase
 import com.migrely.app.attack.domain.usecase.RemoveIntakeUseCase
 import com.migrely.app.attack.domain.usecase.RemoveIntensityPointUseCase
@@ -103,6 +104,7 @@ class AttackDetailsViewModel(
     private val restoreIntakeUseCase: RestoreIntakeUseCase,
     private val attackIntakeDomainMapper: AttackIntakeDomainMapper,
     private val setIntakeEffectUseCase: SetIntakeEffectUseCase,
+    private val markSafetyCardShownUseCase: MarkSafetyCardShownUseCase,
     useCaseExecutor: UseCaseExecutor
 ) : BaseViewModel<AttackDetailsViewState, AttackDetailsPresentationNotification>(useCaseExecutor) {
     /** [attacksMerged] is true when the screen opens on the result of a merge from the add screen. */
@@ -191,8 +193,11 @@ class AttackDetailsViewModel(
             ),
             onResult = { result ->
                 // The card comes first, whether or not the 10 was saved; the outcome's own message
-                // follows (BRD SAF-F2, D163).
-                if (result.firstMaximum) notify(FirstMaximumRecorded)
+                // follows (BRD SAF-F2, D163). Its moment keeps a rating request away (D188).
+                if (result.firstMaximum) {
+                    notify(FirstMaximumRecorded)
+                    markSafetyCardShownUseCase()
+                }
                 when (result) {
                     is AddIntensityPointResultDomainModel.Added -> saved(attackId)
                     is AddIntensityPointResultDomainModel.OutsideAttack ->

@@ -24,11 +24,12 @@ class ReportViewStateUiMapper {
                 viewState.options.to.toEpochDay(),
                 viewState.options.anythingLogged,
                 toUi(viewState.options.period),
-                viewState.options.lastVisit?.toEpochDay()
+                viewState.options.lastVisit?.toEpochDay(),
+                viewState.options.creditShown
             )
         )
         ReportViewState.Working -> ReportViewStateUiModel.Working
-        ReportViewState.Unavailable -> ReportViewStateUiModel.Unavailable
+        is ReportViewState.Unavailable -> ReportViewStateUiModel.Unavailable(viewState.creditShown)
     }
 
     private fun toUi(period: ReportPeriodPresentationModel): ReportPeriodUiModel = when (period) {
@@ -78,6 +79,8 @@ class ReportNotificationUiMapper(private val presenter: ReportEventPresenter) :
                 ReportEventUiModel.Message(ReportMessageUiModel.StorageFull)
             ReportPresentationNotification.SomethingWentWrong ->
                 ReportEventUiModel.Message(ReportMessageUiModel.SomethingWentWrong)
+            ReportPresentationNotification.NotSaved ->
+                ReportEventUiModel.Message(ReportMessageUiModel.NotSaved)
         }
         return UiNotification { presenter.show(event) }
     }

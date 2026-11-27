@@ -3,6 +3,8 @@ package com.migrely.app.di
 import com.migrely.app.datasource.attack.datasource.AttackDataSource
 import com.migrely.app.datasource.clock.datasource.ClockDataSource
 import com.migrely.app.datasource.medication.datasource.MedicationDataSource
+import com.migrely.app.datasource.preferences.datasource.PreferencesDataSource
+import com.migrely.app.datasource.preferences.datasource.UnsavedMarksDataSource
 import com.migrely.app.medication.data.mapper.AcuteIntakeDomainMapper
 import com.migrely.app.medication.data.mapper.IntakeEffectDataMapper
 import com.migrely.app.medication.data.mapper.LinkedAttackDomainMapper
@@ -15,6 +17,7 @@ import com.migrely.app.medication.data.mapper.PendingEffectQuestionDomainMapper
 import com.migrely.app.medication.data.mapper.ZoneDomainMapper
 import com.migrely.app.medication.data.repository.MedicationPromptRepository
 import com.migrely.app.medication.data.repository.MedicationRepository
+import com.migrely.app.medication.data.repository.SafetyCardRepository
 import com.migrely.app.medication.domain.repository.AcknowledgeOveruseRepository
 import com.migrely.app.medication.domain.repository.AddIntakeRepository
 import com.migrely.app.medication.domain.repository.CloseEffectQuestionRepository
@@ -31,6 +34,7 @@ import com.migrely.app.medication.domain.repository.GetMedicationRepository
 import com.migrely.app.medication.domain.repository.GetOveruseNoticesRepository
 import com.migrely.app.medication.domain.repository.GetPendingEffectQuestionOfRepository
 import com.migrely.app.medication.domain.repository.GetPendingEffectQuestionRepository
+import com.migrely.app.medication.domain.repository.MarkSafetyCardShownRepository
 import com.migrely.app.medication.domain.repository.SetIntakeEffectRepository
 import com.migrely.app.medication.domain.repository.SetMedicationArchivedRepository
 import com.migrely.app.medication.domain.repository.UpdateMedicationRepository
@@ -162,4 +166,16 @@ internal object MedicationDataModule {
     @Provides
     fun providesDeleteIntakeRepository(repository: MedicationRepository): DeleteIntakeRepository =
         repository
+
+    /** The moment the overuse card appeared (BRD D188). */
+    @Provides
+    fun providesMedicationMarkSafetyCardShownRepository(
+        preferencesDataSource: PreferencesDataSource,
+        unsavedMarksDataSource: UnsavedMarksDataSource,
+        clockDataSource: ClockDataSource
+    ): MarkSafetyCardShownRepository = SafetyCardRepository(
+        preferencesDataSource,
+        unsavedMarksDataSource,
+        clockDataSource
+    )
 }

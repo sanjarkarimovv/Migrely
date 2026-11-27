@@ -3,7 +3,7 @@
 > Migrely is a migraine and headache diary for Android. Log an attack in a few taps, see each month drawn as a night sky, and get your medicine days counted. It has no account and no internet permission, so it cannot send your entries over the internet. Logging is free; Premium adds a doctor report and Insights.
 
 - An Android app (Android 8 and later), in English, published by Sulton UzDev on Google Play: https://play.google.com/store/apps/details?id=com.migrely.app&referrer=utm_source%3Dmigrely.health%26utm_medium%3Dwebsite%26utm_campaign%3Dllms
-- No internet permission: Android stops it from connecting, so the app itself cannot send entries over the internet. Anyone can check this on their own phone: https://migrely.health/privacy-check/
+- No internet permission: Android stops it from connecting, so the app itself cannot send entries over the internet. On Android 13 and later, anyone can check this on their own phone: https://migrely.health/privacy-check/
 - Android's own backup may copy the entries to the user's Google account. On Android 9 and later the app allows this only end-to-end encrypted, which needs a screen lock; without one, the entries move only by direct transfer to a new phone. On Android 8 they are backed up like other apps' data. Files the user exports go wherever they send them.
 - No account, no ads, and no analytics or tracking code of its own.
 - Free: logging, the whole history, medications, reminders, backup and spreadsheet export, and every safety warning.
@@ -25,7 +25,7 @@
 
 - [Home page](https://migrely.health/): What Migrely does, a 30-second video, and questions asked before installing.
 - [About Migrely](https://migrely.health/about/): Who makes Migrely, how Premium pays for it, and what it will never do.
-- [Check Migrely's privacy yourself](https://migrely.health/privacy-check/): How to see on your own phone that Migrely has no internet permission, and what each of its permissions is for.
+- [Check Migrely's privacy yourself](https://migrely.health/privacy-check/): How to see on your own phone, on Android 13 and later, that Migrely has no internet permission, and what each of its permissions is for.
 - [Migrely help](https://migrely.health/support/): What can leave your phone, Premium prices, moving to a new phone, cancelling, refunds and deleting everything.
 - [Privacy policy](https://migrely.health/privacy/): What Migrely keeps on your phone, Android's backup, and how to delete everything.
 - [Delete your data](https://migrely.health/delete-data/): How to delete everything Migrely keeps on your phone, and Android's backup of it.

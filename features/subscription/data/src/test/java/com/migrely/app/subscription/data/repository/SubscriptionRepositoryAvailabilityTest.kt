@@ -43,6 +43,7 @@ class SubscriptionRepositoryAvailabilityTest {
     private val classUnderTest = SubscriptionRepository(
         billingDataSource,
         mock<PreferencesDataSource>(),
+        FakeUnsavedMarksDataSource(),
         mock<AttackDataSource>(),
         clockDataSource,
         mock<PremiumCheckScheduleDataSource>(),

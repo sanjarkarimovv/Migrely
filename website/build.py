@@ -72,7 +72,8 @@ PROMO_SCENES = [
     'and how you rated your medications." Insights in the app. "Sample data, not a real patient."',
     '"Private by design. No internet permission. Android lists every app\'s permissions. Internet is not on Migrely\'s '
     'list. No account. No ads. Check it yourself: migrely.health/privacy-check." Android\'s list of Migrely\'s '
-    'permissions: show notifications, view network connections, prevent phone from sleeping, and run at startup.',
+    'permissions: show notifications, view network connections, prevent phone from sleeping, and run at startup. '
+    'The video does not give the Android version: the check works on Android 13 and later.',
     '"Migrely. Private migraine diary for Android. Free to log on Google Play. migrely.health"',
     'Music: Erik Satie, Gymnopédie No. 1, played by Robin Alciatore (Musopen), public domain.',
 ]
@@ -109,7 +110,7 @@ GUIDES = [
 TRUST_PAGES = [
     ('/about/', 'About Migrely', 'Who makes Migrely, how Premium pays for it, and what it will never do.'),
     ('/privacy-check/', 'Check Migrely\'s privacy yourself',
-     'How to see on your own phone that Migrely has no internet permission, and what each of its permissions is for.'),
+     'How to see on your own phone, on Android 13 and later, that Migrely has no internet permission, and what each of its permissions is for.'),
     ('/support/', 'Migrely help',
      'What can leave your phone, Premium prices, moving to a new phone, cancelling, refunds and deleting everything.'),
     ('/privacy/', 'Privacy policy',
@@ -459,7 +460,7 @@ FAQ = [
      'The app itself sends nothing over the internet: it has no internet permission, so Android stops it from connecting. Three things '
      'are up to Android, Google Play or you. Android\'s own backup may copy Migrely\'s entries to your Google account. '
      f'{BACKUP_RULE} Google Play handles buying Premium and ratings, under Google\'s privacy policy. And a backup, '
-     'spreadsheet or PDF report goes wherever you choose to send it.',
+     'spreadsheet or PDF report, or, from version 1.4.0, the text you share with Share Migrely, goes wherever you choose to send it.',
      ('Check Migrely\'s privacy yourself', '/privacy-check/')),
     ('What does Premium cost?',
      f'Premium is {PREMIUM_PRICES}. The yearly plan\'s free trial is for new subscribers. Google Play shows the '
@@ -548,7 +549,7 @@ def home():
     <li>Export a backup or a spreadsheet, or delete everything, whenever you like. A file you export goes where you
       send it.</li>
   </ul>
-  <p><a class="quiet" href="/privacy-check/">Check it yourself in two minutes</a></p>
+  <p><a class="quiet" href="/privacy-check/">Check it yourself in two minutes (Android 13 and later)</a></p>
 </div></section>
 
 <section class="wrap block"><h2>Free guides</h2><div class="features">{guides}</div></section>
@@ -558,8 +559,8 @@ def home():
     <p>Logging, your whole history, medications, reminders, backup and spreadsheet export, and every safety
       warning are free. Premium adds only the doctor report and Insights, with a 7-day free trial on the yearly plan.</p></div>
   <div><h2>Safety first</h2>
-    <p>The warning signs that need urgent care are always in Settings. Migrely is a diary, not a medical device: it
-      helps you keep a record and talk to your doctor.</p></div>
+    <p>The warning signs, when to call your local emergency number and when to get urgent medical advice, are always
+      in Settings. Migrely is a diary, not a medical device: it helps you keep a record and talk to your doctor.</p></div>
 </section>
 
 <section class="wrap block measure faq"><h2>Questions before you install</h2>{questions}
@@ -646,7 +647,7 @@ def about():
   <h2>Why does Migrely keep everything on the phone?</h2>
   <p>A headache diary holds some of the most personal things a phone can know: when you were in pain, what you took
     and your cycle. Migrely keeps all of it on your phone and has no internet permission, so the app itself cannot send it to us or
-    over the internet. <a href="/privacy-check/">You can check that yourself</a>, and see what Android's own backup and
+    over the internet. <a href="/privacy-check/">On Android 13 and later you can check that yourself</a>, and see what Android's own backup and
     the files you choose to share do. <a href="/compare/">See how other migraine diaries compare</a>.</p>
   <p>It is built for the moment a migraine starts: one tap to log, a dark screen, and the details later.</p>
   <h2>How does Migrely make money?</h2>
@@ -694,19 +695,22 @@ def privacy_check():
     cards = ''.join(f'<article><h3>{esc(title)}</h3><p><code>{breakable(name)}</code></p><p>{esc(why)}</p></article>'
                     for title, name, why in PERMISSIONS)
     body = f'''<section class="wrap block narrow prose"><h1>Check Migrely's privacy yourself</h1>
-  <p class="lead">Many apps promise privacy. With Migrely you can check it: the app has no internet permission, so
-    Android itself stops it from connecting to the internet. It takes about two minutes.</p>
+  <p class="lead">Many apps promise privacy. With Migrely you can check it on Android 13 and later: the app has no internet
+    permission, so Android itself stops it from connecting to the internet. It takes about two minutes.</p>
   <h2>Does Migrely connect to the internet?</h2>
   <p>No. An Android app can reach the internet only if it asks for the internet permission, and Migrely does not ask
     for it. Android then blocks every connection the app tries, so the app itself cannot send what you enter over
     the internet.</p>
   <h2>How can I check it on my phone?</h2>
+  <p>This check works on Android 13 and later.</p>
   {steps_list(CHECK_STEPS)}
-  <p>The names can differ a little between phone makers. The check for developers below is the same on every
-    phone.</p>
+  <p>Migrely's list does show “view network connections”. That is not internet access (see below).</p>
+  <p>On Android 12 and earlier this path may not show the list: on Android 8, Migrely's Permissions row says “No
+    permissions requested”. Use the check for developers below, which works on every version (it needs a computer and USB debugging). The names can
+    differ a little between phone makers.</p>
   <h2>Does airplane mode prove it?</h2>
   <p>It shows half of it. Turn on airplane mode and Migrely works as usual: logging, your history, reminders and export
-    all work offline. That shows Migrely does not need the internet; the permission list shows it cannot use it.
+    all work offline. That shows Migrely does not need the internet; the permission list (Android 13 and later) or the developer check shows it cannot use it.
     Buying or restoring Premium, and rating Migrely, need Google Play to be online.</p>
   <h2>What are Migrely's {count} permissions for?</h2>
   <p>These are all the permissions Migrely asks for. Those in quotes appear in the list under those names. On
@@ -724,8 +728,8 @@ def privacy_check():
       settings.</li>
     <li><strong>Google Play.</strong> When you buy Premium or rate Migrely, Google Play's own window handles it, under
       Google's privacy policy. Migrely never sees your payment details or your rating.</li>
-    <li><strong>Files you share.</strong> A backup, spreadsheet or PDF report goes wherever you choose to send
-      it.</li></ul>
+    <li><strong>Files and text you share.</strong> A backup, spreadsheet or PDF report, or, from version 1.4.0, the text you
+      share with Share Migrely, goes wherever you choose to send it.</li></ul>
   <p>The <a href="/privacy/">privacy policy</a> has the details.</p>
   <h2>How can a developer check it?</h2>
   <p>With USB debugging on and Migrely installed, run:</p>
@@ -734,10 +738,11 @@ def privacy_check():
   <pre><code>adb shell dumpsys package com.migrely.app | grep INTERNET</code></pre>
   <p>It prints nothing.</p>
   <p>{play_button(path)}</p></section>'''
-    steps = how_to_ld(path, 'Check Migrely\'s privacy yourself', CHECK_STEPS, totalTime='PT2M')
+    steps = how_to_ld(path, 'Check Migrely\'s privacy yourself', CHECK_STEPS, totalTime='PT2M',
+                      description='This check works on Android 13 and later.')
     ld = page_ld(path, 'WebPage', 'Check Migrely\'s privacy yourself', steps, mainEntity={'@id': steps['@id']})
     return page(path, 'Check Migrely\'s privacy yourself · Migrely',
-                'Migrely has no internet permission. Check it on your own phone in two minutes, and see what each of '
+                'Migrely has no internet permission. On Android 13 and later, check it on your own phone in two minutes, and see what each of '
                 f'its {count} permissions is for.', body, ld)
 
 
@@ -819,10 +824,10 @@ def android_landing():
 <section class="ad-sec band" id="privacy" aria-labelledby="privacy-h"><div class="wrap split">
   <div class="stack"><p class="eyebrow">Private by design</p>
     <h2 id="privacy-h">No internet permission.</h2>
-    <p>Android lists every app's permissions. The internet permission, shown as \u201chave full network access\u201d, is not on Migrely's list.</p>
+    <p>On Android 13 and later, Android lists every app's permissions. The internet permission, shown as \u201chave full network access\u201d, is not on Migrely's list.</p>
     <ul class="ticks" role="list"><li>No account</li><li>No ads</li></ul>
     <p>{esc(AD_BACKUP)}</p>
-    <p>Check it yourself: <a href="/privacy-check/">migrely.health/privacy-check</a></p></div>
+    <p>Check it yourself (Android 13 and later): <a href="/privacy-check/">migrely.health/privacy-check</a></p></div>
   <figure class="window"><img src="/assets/img/ad1-perms-v1.webp" width="880" height="655" loading="lazy" alt="{esc(ALT_PERMS)}">
     <figcaption>{esc(AD_PERMS_NOTE)}</figcaption></figure>
 </div></section>
@@ -876,10 +881,10 @@ def instagram_bio():
 <section class="ad-sec band" id="privacy" aria-labelledby="privacy-h"><div class="wrap stack">
   <p class="eyebrow">Private by design</p>
   <h2 id="privacy-h">No internet permission.</h2>
-  <p>Android lists every app's permissions. The internet permission, shown as \u201chave full network access\u201d, is not on Migrely's list.</p>
+  <p>On Android 13 and later, Android lists every app's permissions. The internet permission, shown as \u201chave full network access\u201d, is not on Migrely's list.</p>
   <ul class="ticks" role="list"><li>No account</li><li>No ads</li></ul>
   <p>{esc(AD_BACKUP)}</p>
-  <p>Check it yourself: <a href="/privacy-check/">migrely.health/privacy-check</a></p>
+  <p>Check it yourself (Android 13 and later): <a href="/privacy-check/">migrely.health/privacy-check</a></p>
 </div></section>
 '''
     return page(path, 'Migrely: private migraine diary for Android',
@@ -910,10 +915,10 @@ def android_t2_landing():
 <section class="ad-sec band" id="privacy" aria-labelledby="privacy-h"><div class="wrap stack">
   <p class="eyebrow">Private by design</p>
   <h2 id="privacy-h">No internet permission.</h2>
-  <p>Android lists every app's permissions. The internet permission, shown as \u201chave full network access\u201d, is not on Migrely's list.</p>
+  <p>On Android 13 and later, Android lists every app's permissions. The internet permission, shown as \u201chave full network access\u201d, is not on Migrely's list.</p>
   <ul class="ticks" role="list"><li>No account</li><li>No ads</li></ul>
   <p>{esc(AD_BACKUP)}</p>
-  <p>Check it yourself: <a href="/privacy-check/">migrely.health/privacy-check</a></p>
+  <p>Check it yourself (Android 13 and later): <a href="/privacy-check/">migrely.health/privacy-check</a></p>
 </div></section>
 
 <section class="ad-sec" id="plans" aria-labelledby="plans-h"><div class="wrap stack">
@@ -1129,8 +1134,8 @@ def headache_diary():
     Page 6 of the template has boxes for these counts.</p>
   {urgent_help()}
   <h2>What's in the template?</h2>
-  <p>The free template is a 6-page PDF that covers 8 weeks. Page 1 explains how to use it and lists the warning signs
-    that need urgent care. Pages 2 to 5 have one row for each day, two weeks to a page. Page 6 is a summary for your
+  <p>The free template is a 6-page PDF that covers 8 weeks. Page 1 explains how to use it and lists the warning signs for
+    emergency help and for urgent medical advice. Pages 2 to 5 have one row for each day, two weeks to a page. Page 6 is a summary for your
     doctor, with medicine days counted by kind.</p>
   <p>It prints well in black and white, on A4 or US Letter.</p>
   <h2>Would you rather use your phone?</h2>
@@ -1543,13 +1548,13 @@ COMPARE_APPS = [
         ('Platforms', 'Android only'),
         ('Account', 'None'),
         ('Internet permission', 'None: Android stops it from connecting (see how to check, linked below)'),
-        ('Play Data safety: shared', 'Declared to Google Play: none shared. The Play listing is not public yet'),
+        ('Play Data safety: shared', 'Declared to Google Play: none shared. Migrely is on Google Play'),
         ('Free', 'Logging, the whole history, medications, reminders, backup and spreadsheet export, and every safety '
                  'warning'),
         ('Premium', f'Doctor PDF report and Insights: {PREMIUM_PRICES}'),
         ('Doctor report', 'A PDF report (Premium); spreadsheet export is free'),
         ('Does well', 'One-tap logging with a dark attack screen; medicine days counted by kind; privacy you can '
-                      'check yourself'),
+                      'check yourself on Android 13 and later'),
         ('Limits', 'New, with no reviews yet; Android only; English only; no weather, sleep or wearable data'),
     ], 'sources': [('Check Migrely\'s privacy yourself', '/privacy-check/'), ('About Migrely', '/about/')]},
     {'name': 'Bearable', 'maker': 'Bearable Ltd', 'rows': [
@@ -2069,7 +2074,7 @@ def llms_txt():
         f'An Android app ({MIN_ANDROID} and later), in English, published by Sulton UzDev on Google Play: '
         f'{play_link("llms")}',
         'No internet permission: Android stops it from connecting, so the app itself cannot send entries over the '
-        f'internet. Anyone can check this on their own phone: {BASE}/privacy-check/',
+        f'internet. On Android 13 and later, anyone can check this on their own phone: {BASE}/privacy-check/',
         'Android\'s own backup may copy the entries to the user\'s Google account. '
         + BACKUP_RULE.replace('Migrely allows this', 'the app allows this')
         + ' Files the user exports go wherever they send them.',

@@ -7,6 +7,7 @@ import com.migrely.app.datasource.billing.datasource.BillingDataSource
 import com.migrely.app.datasource.clock.datasource.ClockDataSource
 import com.migrely.app.datasource.network.datasource.NetworkStateDataSource
 import com.migrely.app.datasource.preferences.datasource.PreferencesDataSource
+import com.migrely.app.datasource.preferences.datasource.UnsavedMarksDataSource
 import com.migrely.app.datasource.schedule.datasource.PremiumCheckScheduleDataSource
 import com.migrely.app.navigation.mapper.PaywallGateNavigationEventDestinationMapper
 import com.migrely.app.navigation.mapper.PaywallNavigationEventDestinationMapper
@@ -80,12 +81,14 @@ internal object SubscriptionModule {
     fun providesSubscriptionRepository(
         billingDataSource: BillingDataSource,
         preferencesDataSource: PreferencesDataSource,
+        unsavedMarksDataSource: UnsavedMarksDataSource,
         attackDataSource: AttackDataSource,
         clockDataSource: ClockDataSource,
         premiumCheckScheduleDataSource: PremiumCheckScheduleDataSource
     ) = SubscriptionRepository(
         billingDataSource,
         preferencesDataSource,
+        unsavedMarksDataSource,
         attackDataSource,
         clockDataSource,
         premiumCheckScheduleDataSource,

@@ -11,6 +11,7 @@ import com.migrely.app.attack.domain.repository.GetActiveCustomTagsRepository
 import com.migrely.app.attack.domain.repository.GetAttackDetailsRepository
 import com.migrely.app.attack.domain.repository.GetCurrentTimeRepository
 import com.migrely.app.attack.domain.repository.GetMaximumRecordedRepository
+import com.migrely.app.attack.domain.repository.MarkSafetyCardShownRepository
 import com.migrely.app.attack.domain.repository.MergeAttacksRepository
 import com.migrely.app.attack.domain.repository.PurgeExpiredDeletionsRepository
 import com.migrely.app.attack.domain.repository.RemoveIntakeRepository
@@ -31,6 +32,7 @@ import com.migrely.app.attack.domain.usecase.CreatePastAttackUseCase
 import com.migrely.app.attack.domain.usecase.DeleteAttackUseCase
 import com.migrely.app.attack.domain.usecase.GetAttackDetailsUseCase
 import com.migrely.app.attack.domain.usecase.GetPastAttackDraftUseCase
+import com.migrely.app.attack.domain.usecase.MarkSafetyCardShownUseCase
 import com.migrely.app.attack.domain.usecase.MergeAttacksUseCase
 import com.migrely.app.attack.domain.usecase.PurgeExpiredDeletionsUseCase
 import com.migrely.app.attack.domain.usecase.RemoveIntakeUseCase
@@ -283,6 +285,7 @@ internal object AttackModule {
         removeIntakeUseCase: RemoveIntakeUseCase,
         restoreIntakeUseCase: RestoreIntakeUseCase,
         setIntakeEffectUseCase: SetIntakeEffectUseCase,
+        markSafetyCardShownUseCase: MarkSafetyCardShownUseCase,
         useCaseExecutor: UseCaseExecutor
     ): AttackDetailsViewModel {
         val tagKindDomainMapper = TagKindDomainMapper()
@@ -324,7 +327,14 @@ internal object AttackModule {
             restoreIntakeUseCase = restoreIntakeUseCase,
             attackIntakeDomainMapper = AttackIntakeDomainMapper(),
             setIntakeEffectUseCase = setIntakeEffectUseCase,
+            markSafetyCardShownUseCase = markSafetyCardShownUseCase,
             useCaseExecutor = useCaseExecutor
         )
     }
+
+    @Provides
+    fun providesAttackMarkSafetyCardShownUseCase(
+        markSafetyCardShownRepository: MarkSafetyCardShownRepository,
+        coroutineContextProvider: CoroutineContextProvider
+    ) = MarkSafetyCardShownUseCase(markSafetyCardShownRepository, coroutineContextProvider)
 }

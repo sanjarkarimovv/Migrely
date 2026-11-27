@@ -1,7 +1,7 @@
 # Tasks
 
 - [x] 1. Feasibility with sources (Cloudflare docs read 2026-11-23): zone analytics, Pages Functions metrics and pricing, `_redirects`, Direct Upload. Verify: design.md table.
-- [x] 2. BRD: D196, EC-WEB-03 changed, EC-WEB-27 to EC-WEB-29, row 59. Verify: `git show origin/develop:docs/BRD.md`; D-number scan of all branches (highest in range D195, taken by `feature/add-german-localization`).
+- [x] 2. BRD: D196, EC-WEB-03 changed, EC-WEB-27 to EC-WEB-29, row 61. Verify: `git show origin/develop:docs/BRD.md`; D-number scan of all branches (highest in range D195, taken by `feature/add-german-localization`).
 - [x] 3. `/android-t2/` page, `T2_*` constants, `T2_COUNT`, `check_t2_pages()`. Verify: `python3 website/build.py`.
 - [x] 4. `website/functions/go/android-t2.js`. Verify: `wrangler pages dev` and `curl -I`.
 - [x] 5. QR code `qr-ig-ads-test2-v1.svg`. Verify: decode equals the Play link; the test-1 QR is the negative control.

@@ -41,7 +41,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -60,6 +59,7 @@ import com.migrely.app.designsystem.button.MigrelyIconButton
 import com.migrely.app.designsystem.icon.MigrelyIcons
 import com.migrely.app.designsystem.layout.MigrelyInsets
 import com.migrely.app.designsystem.layout.PageScroll
+import com.migrely.app.designsystem.layout.isCompactHeight
 import com.migrely.app.designsystem.layout.ownWords
 import com.migrely.app.designsystem.layout.wordsShownOnly
 import com.migrely.app.designsystem.motion.rememberReduceMotion
@@ -77,7 +77,6 @@ import com.migrely.app.history.ui.model.HistoryViewStateUiModel
 import java.time.LocalDate
 import java.time.YearMonth
 
-private const val COMPACT_HEIGHT_DP = 480
 private val CONTENT_MAX_WIDTH = 600.dp
 
 /**
@@ -322,7 +321,7 @@ private fun MonthContents(
         ListSection(month, nothingLogged, selectedEpochDay, mappers.historyTimeUiFormatter, actions)
     }
     // A phone in landscape puts the calendar and the list side by side (BRD EC-UX-03).
-    if (LocalConfiguration.current.screenHeightDp < COMPACT_HEIGHT_DP) {
+    if (isCompactHeight()) {
         Row(horizontalArrangement = Arrangement.spacedBy(24.dp), modifier = contentModifier) {
             PageScroll {
                 Column(

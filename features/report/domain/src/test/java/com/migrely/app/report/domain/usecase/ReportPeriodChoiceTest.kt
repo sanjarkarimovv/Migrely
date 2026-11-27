@@ -13,6 +13,7 @@ import com.migrely.app.report.domain.model.ReportRecordsResultDomainModel
 import com.migrely.app.report.domain.model.ReportWriteResultDomainModel
 import com.migrely.app.report.domain.repository.CleanUpReportsRepository
 import com.migrely.app.report.domain.repository.GetCurrentTimeRepository
+import com.migrely.app.report.domain.repository.GetReportCreditRepository
 import com.migrely.app.report.domain.repository.GetReportRecordsRepository
 import com.migrely.app.report.domain.repository.WriteReportRepository
 import java.time.LocalDate
@@ -41,6 +42,7 @@ class ReportPeriodChoiceTest {
     private val options = GetReportOptionsUseCase(
         getCurrentTimeRepository,
         getReportRecordsRepository,
+        mock<GetReportCreditRepository> { on { reportCreditShown() } doReturn true },
         CoroutineContextProvider.Default
     )
     private val create = CreateReportUseCase(
@@ -133,7 +135,7 @@ class ReportPeriodChoiceTest {
         assertEquals(
             CreateReportResultDomainModel.Created("content://r"),
             create.executeInBackground(
-                CreateReportRequestDomainModel(ReportPeriodDomainModel.Default, false)
+                CreateReportRequestDomainModel(ReportPeriodDomainModel.Default, false, true)
             )
         )
 

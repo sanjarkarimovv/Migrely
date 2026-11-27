@@ -39,6 +39,8 @@ private const val PAYWALL_LAST_SHOWN = "paywall_last_shown"
 private const val REVIEW_REQUEST_COUNT = "review_request_count"
 private const val REVIEW_LAST_REQUESTED = "review_last_requested"
 private const val TRIAL_BANNER_DISMISSED = "trial_banner_dismissed"
+private const val SAFETY_CARD_LAST_SHOWN = "safety_card_last_shown"
+private const val REPORT_CREDIT_SHOWN = "report_credit_shown"
 
 /**
  * Over the app's `migrely_preferences` file ([FILE]). Writes use `commit()`, which is safe here
@@ -178,6 +180,15 @@ class PreferencesDataSourceImpl(
         putLong(REVIEW_LAST_REQUESTED, atMillis)
     }
 
+    override fun safetyCardLastShownMillis(): Long? = preferences.longOrNull(SAFETY_CARD_LAST_SHOWN)
+
+    override fun markSafetyCardShown(atMillis: Long) =
+        write { putLong(SAFETY_CARD_LAST_SHOWN, atMillis) }
+
+    override fun reportCreditShown(): Boolean = preferences.getBoolean(REPORT_CREDIT_SHOWN, true)
+
+    override fun setReportCreditShown(on: Boolean) = write { putBoolean(REPORT_CREDIT_SHOWN, on) }
+
     /** The entitlement first, so whatever stops this leaves no Premium behind (BRD D112). */
     override fun clear() {
         entitlementPreferences.write { clear() }
@@ -194,12 +205,49 @@ class PreferencesDataSourceImpl(
     private inline fun write(change: SharedPreferences.Editor.() -> Unit) =
         preferences.write(change)
 
+    /**
+     * One commit. Android puts a change into memory before it writes the file, so a commit that fails would leave the
+     * change readable, and the next successful write of any key would save it too. A failed write therefore puts back
+     * each key it changed, and every setting reads as stored (#278, BRD EC-STO-13). One write per file at a time: a
+     * second write that read the map while the first one's change was in memory would put that change back.
+     */
     private inline fun SharedPreferences.write(change: SharedPreferences.Editor.() -> Unit) {
-        if (!edit().apply(change).commit()) throw FileDataException("Preferences not saved")
+        synchronized(this) {
+            val stored = all.toMap()
+            if (!edit().apply(change).commit()) {
+                restore(stored)
+                throw FileDataException("Preferences not saved")
+            }
+        }
+    }
+
+    // Memory changes even when this commit's own file write fails too, which is what puts the stored values back.
+    private fun SharedPreferences.restore(stored: Map<String, *>) {
+        val current = all
+        val changed = (stored.keys + current.keys).filter { stored[it] != current[it] }
+        if (changed.isNotEmpty()) {
+            edit().apply { changed.forEach { key -> putStored(key, stored[key]) } }.commit()
+        }
+    }
+
+    private fun SharedPreferences.Editor.putStored(key: String, value: Any?) {
+        when (value) {
+            null -> remove(key)
+            is Boolean -> putBoolean(key, value)
+            is Int -> putInt(key, value)
+            is Long -> putLong(key, value)
+            is Float -> putFloat(key, value)
+            is String -> putString(key, value)
+            is Set<*> -> putStringSet(key, value.filterIsInstance<String>().toSet())
+            else -> error("A preference of type ${value::class.simpleName}")
+        }
     }
 
     companion object {
-        /** The settings, paywall and review marks and trial banner: backed up with the diary (BRD D74, D131). */
+        /**
+         * The settings, paywall, review and safety-card marks, the report credit switch and the trial banner: backed up
+         * with the diary (BRD D74, D131, D186, D188).
+         */
         const val FILE = "migrely_preferences"
 
         /** The premium entitlement, never backed up (BRD D115; res/xml/backup_rules.xml). */

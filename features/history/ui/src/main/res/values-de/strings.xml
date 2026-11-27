@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- German (BRD D195): glossary and voice in openspec change add-german-localization, design D5. -->
+<resources>
+    <string name="history_title">Verlauf</string>
+    <string name="history_navigate_back">Zurück</string>
+    <string name="previous_month">Vorheriger Monat</string>
+    <string name="next_month">Nächster Monat</string>
+    <string name="month_card_open">%1$s. Öffnet den Verlauf.</string>
+    <string name="legend_mild">Leicht</string>
+    <string name="legend_moderate">Mäßig</string>
+    <string name="legend_severe">Stark</string>
+    <string name="history_legend_medication_only">Nur Akutmedikation</string>
+    <string name="legend_not_logged">Nicht notiert</string>
+    <string name="legend_pain_free">Schmerzfrei</string>
+    <string name="legend_period">Periode</string>
+    <string name="day_today">Heute, %1$s</string>
+    <string name="day_chosen">Ausgewählt</string>
+    <string name="day_nothing_logged">%1$s: nichts notiert.</string>
+    <string name="history_day_medication_only">%1$s: Akutmedikation genommen, keine Migräne notiert.</string>
+    <string name="history_day_with_attack_medication">%1$s Akutmedikation genommen.</string>
+    <string name="day_pain_free">%1$s: schmerzfrei.</string>
+    <string name="day_with_period">%1$s Periode.</string>
+    <string name="day_future_with_period">%1$s: Periode.</string>
+    <string name="day_in_progress">%1$s: Regen. Migräne läuft gerade.</string>
+    <string name="day_attacks">%1$s: %2$s. %3$s. Stärkster Schmerz: %4$s.</string>
+    <plurals name="day_attack_count">
+        <item quantity="one">%d Migräneattacke</item>
+        <item quantity="other">%d Migräneattacken</item>
+    </plurals>
+    <string name="history_sky_hazy">diesig</string>
+    <string name="history_sky_cloudy">bewölkt</string>
+    <string name="history_sky_storm">Sturm</string>
+    <string name="summary_title_so_far">%1$s bisher</string>
+    <string name="stat_migraines">Begonnene Attacken</string>
+    <string name="stat_migraine_days">Migränetage</string>
+    <string name="stat_pain_free_days">Schmerzfreie Tage</string>
+    <string name="stat_average_peak">Stärkster Schmerz im Schnitt</string>
+    <string name="stat_attack_medication_days">Tage mit Akutmedikation</string>
+    <string name="stat_description">%1$s: %2$s</string>
+    <string name="stat_no_peak_description">keine Schmerzstärke notiert</string>
+    <string name="chronic_notice">15 oder mehr Migränetage im %1$s. Das ist viel. Sprich mit deiner Ärztin oder deinem Arzt darüber.</string>
+    <plurals name="progress_fewer_than_month">
+        <item quantity="one">%1$d Migränetag weniger als im %2$s</item>
+        <item quantity="other">%1$d Migränetage weniger als im %2$s</item>
+    </plurals>
+    <plurals name="progress_fewer_this_time">
+        <item quantity="one">%1$d Migränetag weniger als zur gleichen Zeit im Vormonat</item>
+        <item quantity="other">%1$d Migränetage weniger als zur gleichen Zeit im Vormonat</item>
+    </plurals>
+    <plurals name="progress_more_than_month">
+        <item quantity="one">%1$d Migränetag mehr als im %2$s</item>
+        <item quantity="other">%1$d Migränetage mehr als im %2$s</item>
+    </plurals>
+    <plurals name="progress_more_this_time">
+        <item quantity="one">%1$d Migränetag mehr als zur gleichen Zeit im Vormonat</item>
+        <item quantity="other">%1$d Migränetage mehr als zur gleichen Zeit im Vormonat</item>
+    </plurals>
+    <string name="progress_same_month">Gleich viele Migränetage wie im %1$s</string>
+    <string name="progress_same_this_time">Gleich viele Migränetage wie zur gleichen Zeit im Vormonat</string>
+    <string name="peak_mild">leicht</string>
+    <string name="peak_moderate">mäßig</string>
+    <string name="peak_severe">stark</string>
+    <string name="peak_not_recorded">nicht erfasst</string>
+    <plurals name="month_attack_count">
+        <item quantity="one">%1$d Attacke im %2$s</item>
+        <item quantity="other">%1$d Attacken im %2$s</item>
+    </plurals>
+    <string name="month_no_attacks">Keine Migräne im %1$s notiert</string>
+    <string name="day_no_attacks">An diesem Tag ist keine Migräne notiert.</string>
+    <string name="show_all_month">Ganzen %1$s zeigen</string>
+    <string name="history_add_past_attack">Frühere Migräne hinzufügen</string>
+    <string name="attack_range">%1$s – %2$s</string>
+    <string name="attack_in_progress">Läuft noch</string>
+    <string name="attack_peak">%1$d/10</string>
+    <string name="attack_peak_not_recorded">Nicht erfasst</string>
+    <string name="attack_description">%1$s bis %2$s, %3$s. Öffnet die Details.</string>
+    <string name="attack_in_progress_description">%1$s, läuft noch, %2$s. Öffnet die Details.</string>
+    <string name="attack_peak_spoken">stärkster Schmerz %1$d von 10</string>
+    <string name="attack_peak_not_recorded_spoken">stärkster Schmerz nicht erfasst</string>
+    <string name="empty_title">Noch keine Migräne notiert</string>
+    <string name="empty_body">Jeder Tag, den du notierst, wird zu einem kleinen Himmel: diesig, bewölkt oder Sturm, je nach seinem stärksten Schmerz. Dein Monat auf einen Blick, für dich und deine Arztpraxis.</string>
+    <string name="log_first_attack">Erste Migräne notieren</string>
+    <string name="history_snackbar_attack_deleted">Migräne gelöscht</string>
+    <string name="history_snackbar_undo">Rückgängig</string>
+    <string name="history_snackbar_undo_delete_description">Löschen rückgängig machen</string>
+    <string name="history_snackbar_dismiss">Schließen</string>
+    <string name="history_message_undone">Rückgängig gemacht.</string>
+    <string name="history_message_undo_not_possible">Das lässt sich nicht mehr rückgängig machen.</string>
+    <string name="history_message_generic">Etwas ist schiefgelaufen. Bitte versuch es noch einmal.</string>
+    <string name="mark_period">Periode</string>
+    <string name="mark_pain_free">Schmerzfreier Tag</string>
+    <string name="mark_pain_free_blocked">An diesem Tag ist eine Migräne notiert.</string>
+    <string name="message_attack_logged_on_day">An diesem Tag ist eine Migräne notiert, deshalb kann er nicht schmerzfrei sein.</string>
+    <string name="history_message_saved">Gespeichert.</string>
+    <string name="history_message_storage_full">Nicht gespeichert. Der Speicher deines Handys ist voll.</string>
+    <string name="history_doctor_report">Bericht für die Arztpraxis</string>
+    <string name="history_insights">Auswertung</string>
+</resources>
