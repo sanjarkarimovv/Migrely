@@ -35,7 +35,7 @@ No domain, data or datasource layer changes, and no strings.
   `w800dp-h360dp-land` keep two panes; both sides of the 456 dp threshold. Verify:
   `./gradlew :features:history:ui:testDebugUnitTest --tests '*HistoryPaneGuardTest*'`.
 - [x] 3.2 Implement the guard in `HistoryScreen.kt` (design D4).
-- [x] 3.3 Red first: `HistoryAttackRowStackTest`: `w640dp-h360dp-land`, 200%, EN and DE, peaks "7/10" and "Not recorded" /
+- [x] 3.3 (as built: stacking cases at `w606dp-h360dp-land-xxhdpi`, R25's 275 dp pane, and one `w640dp-h360dp-land` case for "no word breaks" only, design R6) Red first: `HistoryAttackRowStackTest`: `w640dp-h360dp-land`, 200%, EN and DE, peaks "7/10" and "Not recorded" /
   "Nicht erfasst", and an attack in progress: every line break of the date at a space (`PickerTopRowTest` pattern) and
   the peak's top below the date's bottom. Named negative control: 360 dp portrait at 100% and at 200% (411 dp too), where
   the peak stays beside the date. Red on develop for the landscape cases (record). Verify:
@@ -43,6 +43,11 @@ No domain, data or datasource layer changes, and no strings.
 - [x] 3.4 Implement in `AttackRow` (design D5), in the month list and the chosen day's list; the merged label and
   `Role.Button` unchanged (assert it).
 - [x] 3.5 `HistoryTouchTargetAuditTest` still passes (no pitch change). Verify: the module's test task.
+
+- [ ] 3.6 Ruling 2026-11-27 (product-manager): add one test to `HistoryAttackRowStackTest` at
+  `en-rUS-w360dp-h640dp-port-mdpi`, 200%, with an attack in progress: the row stacks and no word breaks. Named negative
+  control: red on develop ("In progres|s"). No product code change. Verify:
+  `./gradlew :features:history:ui:testDebugUnitTest --tests '*HistoryAttackRowStackTest*'`.
 
 ## 4. Docs
 

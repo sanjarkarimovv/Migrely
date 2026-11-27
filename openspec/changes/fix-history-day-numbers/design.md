@@ -16,8 +16,9 @@ must be the true day.
 
 ## Goals and non-goals
 
-Goals: no day number or weekday initial ever wraps or is cut, in any window; list rows never break inside a word; portrait
-at 360 and 411 dp unchanged to the pixel.
+Goals: no day number or weekday initial ever wraps or is cut, in any window; list rows never break inside a word; the
+calendar in portrait at 360 and 411 dp unchanged to the pixel; list rows unchanged wherever their date already fits beside
+the peak (a row whose date broke inside a word on `develop` stacks, in any orientation; D6).
 
 Non-goals: #283 touch pitch; any change to cells, gaps, colours, labels; the Today screen.
 
@@ -46,23 +47,45 @@ fontScale, density)` with `remember`, never on the month. The weekday row does t
 
 ### D3. Reaching the number in a test
 
-The number is under `clearAndSetSemantics {}` today. Expose its layout for tests (for example a test tag with
-`hideFromAccessibility()` in place of the clear) only if TalkBack's merged label stays identical; the existing TalkBack
-order test plus a label assertion prove that. If merging changes, use a `TextLayoutResult` callback captured in a test
-hook instead. Engineer's choice, stated in tasks.
+The number is under `clearAndSetSemantics {}` today. As built (accepted 2026-11-27): `hideFromAccessibility()` was
+rejected because Compose 1.9.3 merges hidden children into the parent's merged node, which would change the day's TalkBack
+label. Each hidden Text keeps `clearAndSetSemantics` and sets only a custom semantics key (`ShownTextLayoutsKey`,
+designsystem `layout/ShownTextLayouts.kt`) that is not important for accessibility and whose merge policy keeps the
+parent's value, so it never reaches the clickable node. For the same reason the list row's date and peak clear their
+semantics on each Text instead of on the Row. Proof: the label assertions (calendar 2.5, row "A stacked row says the same
+and stays one button") equal `develop`'s label; code review checks that an unstacked row's label is unchanged too.
 
 ### D4. Pane guard (D198 (4))
 
-Two panes iff `isCompactHeight()` and `(windowWidthDp − 2 × 16 dp page padding − 24 dp) / 2 ≥ 200 dp`, that is a window at
-least 456 dp wide. Use the same width source the layout already uses (`LocalConfiguration.screenWidthDp` or the
-`BoxWithConstraints` width the content gets); state which in the code and test both sides of 456 dp. 640 and 800 dp keep
-two panes.
+Two panes iff `isCompactHeight()` (height < 480 dp) and `(W − 2 × 16 dp page padding − 24 dp) / 2 ≥ 200 dp`, where W is the
+`BoxWithConstraints` width History's content gets less the horizontal system-bar and cutout insets
+(`LocalConfiguration.screenWidthDp` includes the bars on API 35+, so it is not used). Equivalently: two panes when the
+width left after the side bars and cutout is at least 456 dp. Confirmed as built; the tests check 455 dp (one column) and
+456 dp (two panes). A tester checks it with `wm size` and no side bars: 455 dp wide gives one column, 456 dp two panes.
+640 and 800 dp keep two panes; a 640 dp phone with a 48 dp side navigation bar leaves 592 dp, still two panes.
 
 ### D5. List row stacking (D181 (5))
 
-Measure the peak's single-line width and the date's `minIntrinsicWidth` (its widest unbreakable piece). Side by side iff
-`inner − 12 dp − peak ≥ dateMinIntrinsic`; else a `Column`: date at full width, peak 4 dp below, start aligned. Use the
-`PickerTopRowTest` line-break assertion pattern. The row keeps its merged label and `Role.Button`.
+Measure the peak's single-line width and the date's widest unbreakable piece. As built (accepted 2026-11-27): Compose's
+`minIntrinsicWidth` let the side-by-side branch through while the real layout broke inside "12:27" (78 px room in
+Robolectric), so the row measures its widest space-separated word itself with a `TextMeasurer` and the same style
+(`text/WidestWidth.kt`, shared with the calendar fit); a no-break space keeps its pieces together. A word is never
+narrower than any piece the layout could break it into, so the error can only be an extra stack, never a broken word.
+Side by side iff `inner − 12 dp − peak ≥ widest word`; else a `Column`: date at full width, peak 4 dp below, start
+aligned. Use the `PickerTopRowTest` line-break assertion pattern. The row keeps its merged label and `Role.Button`.
+
+Each row decides alone (ux L1). One list may therefore mix rows: in R25's geometry a "7/10" row stays beside its date
+while a "Not recorded" row stacks. Accepted: every row is whole and readable, and stacking every row would make short-peak
+rows taller in a 360 dp tall window, where height is scarce. A list-wide rule would be a new ux decision, not needed for
+this fix.
+
+### D6. A row that already broke on `develop` stacks, in any orientation
+
+The rule depends on measured widths, so it can also fire where the plan expected no change. In Robolectric at mdpi, 360 dp
+portrait at 200%, `develop` already broke "In progres|s"; this branch stacks that row. That is D181 (5)'s rule doing its
+job (a word broke, so the layout stacks), recorded as EC-HIS-07's covered case, not a regression. At xxhdpi (420–480 dpi
+phones) portrait 360 and 411 dp at 200% stay side by side, as the negative controls show. Rows whose date fits are
+unchanged at every density.
 
 ## Risks
 
@@ -73,3 +96,4 @@ Measure the peak's single-line width and the date's `minIntrinsicWidth` (its wid
 | R3 | The 24 dp-at-200% and 152 dp-pane numbers are worked out, not measured | Device walk measures R25 again plus split screen and side navigation |
 | R4 | One column in split screen is a new look for a few users | Existing portrait layout; no new code path for content |
 | R5 | API 26 (linear scale) and API 36 (non-linear) differ | Both in QA rows |
+| R6 | Robolectric draws no insets, so its 640 dp window gives 292 dp panes, wider than R25's 275 dp | Stacking tests use `w606dp-h360dp-land-xxhdpi` (R25's pane); a 640 dp case checks only that no word breaks; the device walk re-takes R25 |
