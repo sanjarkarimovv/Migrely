@@ -12,15 +12,15 @@ takes it after this plan. Phase 1 = groups 2, 3.1–3.3, 4.1–4.2; phase 2 (Und
 
 ## 2. Design system: menu placement (EC-UX-91, phase 1)
 
-- [ ] 2.1 Red first: `MigrelyDropdownMenuPlacementTest` (Robolectric, `designsystem/src/testDebug`): an anchor at 20%, 40%,
+- [x] 2.1 Red first: `MigrelyDropdownMenuPlacementTest` (Robolectric, `designsystem/src/testDebug`): an anchor at 20%, 40%,
   60% and 80% down `w411dp-h343dp` and `w411dp-h267dp` (1080 × 900 and 1080 × 700 px at 420 dpi), font 200%, a menu with
   one 48 dp item: the menu's bounds never intersect the anchor's; a full window (`w411dp-h914dp`) places it under the
   anchor; a keyboard inset counts as the bottom; RTL aligns to the start edge. Named negative control: red on develop at
   ~40% in the 900 px window (record). State in the test whether the "no room for one item" case is reachable. Verify:
   `./gradlew :designsystem:testDebugUnitTest --tests '*MigrelyDropdownMenuPlacementTest*'`.
-- [ ] 2.2 Implement the placement in `MigrelyMenus.kt` (design D2); the D164 lift guard untouched. Verify: 2.1 green and the
+- [x] 2.2 Implement the placement in `MigrelyMenus.kt` (design D2); the D164 lift guard untouched. Verify: 2.1 green and the
   existing menu lift tests (`app-shell` "The menu check can fail") pass.
-- [ ] 2.3 A tap on the anchor's place while open only closes: a Compose test in `features/attack/ui` taps the chip's centre
+- [x] 2.3 A tap on the anchor's place while open only closes: a Compose test in `features/attack/ui` taps the chip's centre
   with the menu open and asserts no archive call and no selection change.
 
 ## 3. Domain and presentation
@@ -101,3 +101,23 @@ takes it after this plan. Phase 1 = groups 2, 3.1–3.3, 4.1–4.2; phase 2 (Und
 ## Verification record
 
 (Filled by android-engineer, then QA.)
+
+### Group 2, menu placement (android-engineer, 2026-11-27, JVM only, no device)
+
+- 2.1 red on develop's `MigrelyMenus.kt` (476f7a27), Robolectric, native graphics, 420 dpi, font 200%:
+  `:designsystem:testDebugUnitTest --tests '*MigrelyDropdownMenuPlacementTest*'` exit 1, 15 tests, 4 failed: 40% of
+  700 px, menu (63,154,798,406) covers chip (63,280,429,429), Material's fallback to the anchor's middle; keyboard,
+  menu bottom 761 past keyboard top 506; long menu, top 0 (window-top fallback) instead of under the chip; no room,
+  menu under the keyboard. Green after 2.2: 15 of 15, and `MigrelyDropdownMenuTest` 11 of 11 (lift guard, and the
+  menu's tree and bounds equal Material's raw menu).
+- Deviation from the named control: at 40% of the 900 px window develop's menu does not cover the chip in Robolectric.
+  On a device Material bounds the menu by the window's visible frame, less the status and navigation bars; Robolectric's
+  popup sees the whole window. Two attempts to give Robolectric system bars (`SystemUi`, before and after launch) left
+  the frame unchanged. The same failure shows at 40% of 700 px; the 900 px control stays with 5.3 (a), develop first.
+- "No room for one item": reachable. 360 dp landscape at 200% with QA's Gboard cell (status 63 px, keyboard top
+  318 px): chip 57 dp, about 12 dp a side; the menu is a 12 dp strip that scrolls, off its chip, the keyboard and the
+  status bar (asserted).
+- Mutation controls: develop's menu, 4 of 15 fail (as above); the helper without the `ime` inset, the 2 keyboard tests
+  fail.
+- 2.3 `CustomChipMenuTapTest` (taps routed by window, as a finger's): 2 of 2; the control in it (the same tap with no
+  menu toggles the chip) passes; mutation `PopupProperties(focusable = false)` fails it (the chip toggles).
