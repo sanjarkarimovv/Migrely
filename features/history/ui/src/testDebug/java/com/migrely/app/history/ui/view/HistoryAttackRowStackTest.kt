@@ -276,4 +276,24 @@ class HistoryAttackRowStackTest {
 
         assertEveryRowSideBySide()
     }
+
+    @Test
+    @Config(
+        sdk = [35],
+        application = Application::class,
+        qualifiers = "en-rUS-w360dp-h640dp-port-mdpi"
+    )
+    fun `Portrait 360 dp mdpi at 200 percent - an attack in progress stacks, no word breaks`() {
+        // D6: at mdpi, develop broke "In progres|s" beside "Not recorded"; the rule stacks the row.
+        show(Locale.US, fontScale = 2f)
+
+        val rows = rows()
+        assertEquals(ATTACKS.size, rows.size)
+        rows.forEach(::assertNothingBroken)
+        val inProgress = rows.single { it.dateText.endsWith("In progress") }
+        assertTrue(
+            "\"${inProgress.peakText}\" is not under \"${inProgress.dateText}\"",
+            inProgress.stacked
+        )
+    }
 }

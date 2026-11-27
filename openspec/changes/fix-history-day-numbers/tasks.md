@@ -44,7 +44,7 @@ No domain, data or datasource layer changes, and no strings.
   `Role.Button` unchanged (assert it).
 - [x] 3.5 `HistoryTouchTargetAuditTest` still passes (no pitch change). Verify: the module's test task.
 
-- [ ] 3.6 Ruling 2026-11-27 (product-manager): add one test to `HistoryAttackRowStackTest` at
+- [x] 3.6 Ruling 2026-11-27 (product-manager): add one test to `HistoryAttackRowStackTest` at
   `en-rUS-w360dp-h640dp-port-mdpi`, 200%, with an attack in progress: the row stacks and no word breaks. Named negative
   control: red on develop ("In progres|s"). No product code change. Verify:
   `./gradlew :features:history:ui:testDebugUnitTest --tests '*HistoryAttackRowStackTest*'`.
@@ -130,3 +130,15 @@ worktree; `cmp` of `app/build/reports/permissions/release.txt` exit 0 and of the
 `AndroidManifest.xml` exit 0 (identical). INTERNET 0; the one `<queries>` block is develop's (Billing).
 
 Not checked in phase 1: anything on a device (5.3), the instrumented tests, API 26.
+
+### android-engineer, phase 1b (2026-11-27, no device)
+
+- 3.6, red on develop's History code plus the test hook only: `Portrait 360 dp mdpi at 200 percent - an attack in
+  progress stacks, no word breaks` fails with "breaks inside a word after "Fri, Oct 23, 12:27 PM – In progres"".
+  Green on this branch: `HistoryAttackRowStackTest` 9 passed, 0 failed. No product code change.
+- Merged origin/develop f83dda71 (#293, tests only) with a merge commit; no conflicts.
+- Gate on the merged tree (load 7.87 at start): exit 0, BUILD SUCCESSFUL in 3m 27s; 4037 JVM tests in 68 result sets,
+  0 failures, 0 errors, 0 skipped (develop's `DialogPaneEventTest` 6 and `PainDialogPaneEventTest` 3 included).
+- `:app:checkReleasePermissions` exit 0 here and on a detached f83dda71 worktree; `cmp` of `release.txt` and of the
+  merged release manifest both exit 0; INTERNET 0. Goldens: `git diff --stat origin/develop --
+  designsystem/src/testDebug/resources/calendar/` empty.
