@@ -59,12 +59,12 @@ Gentle on Your Eyes
 • Large text, TalkBack and keyboards work throughout
 
 Safety First
-• The warning signs that need urgent care are always at hand in Settings
+• The warning signs, with when to call your local emergency number and when to get urgent medical advice, are always at hand in Settings
 
 Migrely is a diary. It is not a medical device and does not diagnose, treat, cure or prevent any medical condition. Talk to a doctor or other healthcare professional about your headaches, and before you start, stop or change a medication. If a headache comes with any of the warning signs, call your local emergency number.
 ```
 
-The text is 2,901 characters (counted 2026-11-16; the old figure was stale). Paste it as it is: each paragraph is one line, because Play keeps line breaks.
+The text is 2,965 characters (counted 2026-11-27). Paste it as it is: each paragraph is one line, because Play keeps line breaks.
 
 ## Graphics
 

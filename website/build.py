@@ -109,7 +109,7 @@ GUIDES = [
 TRUST_PAGES = [
     ('/about/', 'About Migrely', 'Who makes Migrely, how Premium pays for it, and what it will never do.'),
     ('/privacy-check/', 'Check Migrely\'s privacy yourself',
-     'How to see on your own phone that Migrely has no internet permission, and what each of its permissions is for.'),
+     'How to see on your own phone, on Android 13 and later, that Migrely has no internet permission, and what each of its permissions is for.'),
     ('/support/', 'Migrely help',
      'What can leave your phone, Premium prices, moving to a new phone, cancelling, refunds and deleting everything.'),
     ('/privacy/', 'Privacy policy',
@@ -686,11 +686,11 @@ def privacy_check():
   {steps_list(CHECK_STEPS)}
   <p>Migrely's list does show “view network connections”. That is not internet access (see below).</p>
   <p>On Android 12 and earlier this path may not show the list: on Android 8, Migrely's Permissions row says “No
-    permissions requested”. Use the check for developers below, which works on every version. The names can
+    permissions requested”. Use the check for developers below, which works on every version (it needs a computer and USB debugging). The names can
     differ a little between phone makers.</p>
   <h2>Does airplane mode prove it?</h2>
   <p>It shows half of it. Turn on airplane mode and Migrely works as usual: logging, your history, reminders and export
-    all work offline. That shows Migrely does not need the internet; the permission list shows it cannot use it.
+    all work offline. That shows Migrely does not need the internet; the permission list (Android 13 and later) or the developer check shows it cannot use it.
     Buying or restoring Premium, and rating Migrely, need Google Play to be online.</p>
   <h2>What are Migrely's {count} permissions for?</h2>
   <p>These are all the permissions Migrely asks for. Those in quotes appear in the list under those names. On
@@ -718,7 +718,8 @@ def privacy_check():
   <pre><code>adb shell dumpsys package com.migrely.app | grep INTERNET</code></pre>
   <p>It prints nothing.</p>
   <p>{play_button(path)}</p></section>'''
-    steps = how_to_ld(path, 'Check Migrely\'s privacy yourself', CHECK_STEPS, totalTime='PT2M')
+    steps = how_to_ld(path, 'Check Migrely\'s privacy yourself', CHECK_STEPS, totalTime='PT2M',
+                      description='This check works on Android 13 and later.')
     ld = page_ld(path, 'WebPage', 'Check Migrely\'s privacy yourself', steps, mainEntity={'@id': steps['@id']})
     return page(path, 'Check Migrely\'s privacy yourself · Migrely',
                 'Migrely has no internet permission. On Android 13 and later, check it on your own phone in two minutes, and see what each of '
@@ -1477,7 +1478,7 @@ COMPARE_APPS = [
         ('Platforms', 'Android only'),
         ('Account', 'None'),
         ('Internet permission', 'None: Android stops it from connecting (see how to check, linked below)'),
-        ('Play Data safety: shared', 'Declared to Google Play: none shared. The Play listing is not public yet'),
+        ('Play Data safety: shared', 'Declared to Google Play: none shared. Migrely is on Google Play'),
         ('Free', 'Logging, the whole history, medications, reminders, backup and spreadsheet export, and every safety '
                  'warning'),
         ('Premium', f'Doctor PDF report and Insights: {PREMIUM_PRICES}'),
@@ -1890,7 +1891,7 @@ def llms_txt():
         f'An Android app ({MIN_ANDROID} and later), in English, published by Sulton UzDev on Google Play: '
         f'{play_link("llms")}',
         'No internet permission: Android stops it from connecting, so the app itself cannot send entries over the '
-        f'internet. Anyone can check this on their own phone: {BASE}/privacy-check/',
+        f'internet. On Android 13 and later, anyone can check this on their own phone: {BASE}/privacy-check/',
         'Android\'s own backup may copy the entries to the user\'s Google account. '
         + BACKUP_RULE.replace('Migrely allows this', 'the app allows this')
         + ' Files the user exports go wherever they send them.',
