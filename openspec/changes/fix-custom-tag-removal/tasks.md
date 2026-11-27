@@ -177,3 +177,62 @@ takes it after this plan. Phase 1 = groups 2, 3.1–3.3, 4.1–4.2; phase 2 (Und
   the merged release manifest (`merged_manifests/release`) and the merged main manifest (`merged_manifest/release`)
   are identical (`cmp` exit 0 each). No INTERNET. The diff touches no manifest, Gradle file, catalog or Room schema.
 
+### Merge of develop f83dda71 and gate on the merged tree (android-engineer, 2026-11-27)
+
+- `git merge origin/develop` (f83dda71, #293, tests only): no conflicts; merge commit 2c5b87c9. My tests use neither
+  `PaneEvents.kt` nor `TalkBackTree.kt`.
+- Each message test class alone first: `CustomTagRemovalMessageTest` 4 of 4, `CustomTagUndoTest` 6 of 6; each build
+  11 to 16 s (the first call also waited about 15 min for Gradle to start, before any task ran: shared daemon or lock).
+- KSP in the shared daemon then failed with "RestoreCustomTagUseCase could not be resolved" (24 errors) while the
+  class was in the domain jar and `:app:compileDebugKotlin -x kspDebugKotlin` passed: the stale-daemon pattern after my
+  detached checkouts. No daemon was stopped; the gate ran in a fresh single-use JVM:
+  `nice -n 19 ./gradlew --no-daemon --max-workers=2 assembleDebug test ktlintCheck detekt lint` exit 0, 4061 tests,
+  0 failed (7063 s wall time: the host slept on and off).
+- `:app:checkReleasePermissions` on the branch and on develop f83dda71 (detached, same worktree): `release.txt` and the
+  merged release manifest identical (`cmp` exit 0 each). No INTERNET.
+
+### 5.3 device walk, emulator-5570 (API 36), develop f83dda71 first, then the branch 2c5b87c9 (android-engineer)
+
+Evidence: `migrely-work/179/walk/` (`rows.jsonl`, shots, scripts). Fresh install (the app was not on the device),
+six custom tags added in the app. Not ticked: rows (b) and (e) below have open findings.
+
+- (a) 1080 x 900 and 1080 x 700 px, 200%, chip "Tingling" at several heights. Develop (control): the menu covers the
+  chip at 30% and 40% of 900 px and at 30% to 50% of 700 px (#179 reproduced, `a-develop-1080x900-Tingling-40.png`);
+  with the menu over the chip, a tap at the chip's centre removed the tag with no message. Branch: no overlap at 30%,
+  37%, 40%, 50%, 60%, 70% (900 px) and 30% to 60% (700 px); below where it fits, else above. A tap on the chip's place
+  with the menu open only closes it: the chip stays listed and unselected (2 heights). D164: a fast double tap on
+  "Remove from my list" removed once; the second tap opened nothing and toggled nothing.
+- (f) and the "no room" strip: in the 360 dp landscape window at 200% with Gboard up (keyboard top 318 px, "Perfume"
+  at 121 to 270 px), a long press never shows the 12 dp strip. The menu is a focusable popup (as Material's always
+  was), so window focus leaves the note and Gboard closes; the menu then opens full size below the chip. The recording
+  shows the menu appearing while the keyboard slides away, partly under it for about 3 frames, never on its chip
+  (`strip-360land-200-keyboard.png`, `strip-frames-sheet.png`, `strip-frames-early.png`). The strip that Robolectric
+  shows (2.1) is not reachable by a finger here.
+- (b) Menu path (no TalkBack): "Removed from your list" with Undo; Undo by finger touch: "Undone." and the chip back.
+  A selected tag ("Jaw pain") stays shown and selected while archived; Undo un-archives it. A second removal replaces
+  the message (one message, Undo spoken "Undo removing Neck stiffness") and Undo restores only the second tag.
+  TalkBack custom action: "Removed from your list" spoken once (1 of 1), Undo spoken "Undo removing Tingling".
+  **Finding:** TalkBack's menu path (double-tap-and-hold, double tap on the item): the message shows, but
+  "Removed from your list" is not spoken, 0 of 4 runs; the popup's closing moves focus and its speech ("Migrely",
+  then the focused node) replaces the polite announcement.
+- (c) List full: removed "Tingling", 97 symptoms added behind the app (100 active), Undo by finger: "Your list is full.
+  Remove one to add another."; the tag stayed archived (database), and adding its name later brought it back.
+- (d) EN and DE at 100% and 200%, portrait and the 360 dp landscape window: full text, no "...", Undo inside the window,
+  Undo by finger works in every cell (`m-en-sheet.png`, `m-de-sheet.png`). As the screen's other messages, it lies over
+  the page's first row of chips, and at 200% over part of the top bar's date line.
+- (e) Focus facts, observed only (no focus code):
+  - Keyboard (adb key events): 23 Tabs to "Tingling"; a long Enter opens its menu (focus on the item); Enter removes.
+    Focus then sits on the top bar's "Back"; the next Tab goes to "Undo removing Tingling". Enter on Undo: focus on no
+    node; the next Tab goes to "Back". The spec's next chip / "+ Your own" / restored chip are not met.
+  - TalkBack, custom action: focus ends on "Back" (speech "Undo removing Tingling", "Migrely", "Back"); the next double
+    tap pressed Back and left the screen, ending the Undo. No chip toggled.
+  - TalkBack, menu path: focus lands on the node that takes the removed chip's place: "Add your own symptom" after
+    "Tingling" (2 of 2), "Tingling" after "Neck stiffness". **The next double tap selected "Tingling" on this attack**
+    (speech "Selected"; its row appeared in `attack_tag`). This is R2: per design D4 the walk stopped here for a
+    product-manager decision.
+  - TalkBack, after Undo: "Undone." spoken; focus goes to "Dismiss", then "Back".
+- Restored: TalkBack off and its log level back to ERROR, developer settings and the action timeout unset, font 1.0,
+  size and density reset, rotation free, app locale reset, app uninstalled; settings snapshot before = after (no
+  difference); emulator off. Side effect fixed during the walk: Tab presses typed tab characters into the note twice;
+  the note was cleared both times (database length 0) before going on.
+
