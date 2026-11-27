@@ -1,7 +1,9 @@
 # Tasks
 
 Base: `feature/fix-warning-summary-and-outside-apps` from `origin/develop` 476f7a27 (team-lead decision 2026-11-27: 1.4.1
-patch, one change for #288 and #280). BRD EC-SAF-18, EC-SHR-14…16, §13 row 62; no new D-number. One writer at a time:
+patch, one change for #288 and #280). BRD EC-SAF-18, EC-SHR-14…17, §13 row 62; no new D-number. Plan corrected
+2026-11-27 after code review `migrely-work/patch141/code-review-ab416647.md` (findings 1–7, lead decisions): the code of
+2.x and 3.1–3.3 stays; 3.4–3.6 are new. One writer at a time:
 product-manager wrote the plan; android-engineer takes the branch next. Commit messages say `Refs #288` / `Refs #280`,
 never a closing keyword (QA retests and closes).
 
@@ -36,11 +38,24 @@ activity's `startActivity` to the launcher.
   `shareChooser()`, never on the chooser. Update the KDoc (EC-SHR-14, design D4, D5). Verify: 3.1 green.
 - [x] 3.3 Scope check. Verify: `git diff --stat origin/develop` lists only the two strings files, `ExternalAppLauncher.kt`,
   the two test files, and this change's docs; `ReportScreen.kt` and `PlayBillingDataSourceImpl.kt` untouched.
+- [ ] 3.4 Red first: a Robolectric test in `features/settings/ui/src/testDebug` that clicks the Privacy page's policy link
+  and asserts the started intent (`shadowOf(application).nextStartedActivity`) is `ACTION_VIEW` on the policy URL with
+  `FLAG_ACTIVITY_NEW_TASK`; plus the no-browser case: `ActivityNotFoundException` or `SecurityException` from the start
+  shows nothing and throws nothing. Named negative control: red on develop's `SettingsPages.kt` (Compose's
+  `AndroidUriHandler` sets no flag; record the run). Verify:
+  `./gradlew :features:settings:ui:testDebugUnitTest --tests '*PrivacyPolicyLink*'`.
+- [ ] 3.5 Route the policy link through `ExternalAppLauncher` (a method for an https page with `FLAG_ACTIVITY_NEW_TASK`,
+  catching both exceptions); drop `LocalUriHandler` and `openInBrowserIfAny` from `SettingsPages.kt` (design D10). Verify:
+  3.4 green; `git grep -n -E "LocalUriHandler|openUri" -- '*/src/main/*.kt'` finds nothing.
+- [ ] 3.6 Rename the inner-flag test and its KDoc to what it checks ("the ACTION_SEND intent carries NEW_TASK"), and say
+  in `assertNewTask`'s and the launcher's KDoc that AOSP's chooser already adds its own task flags, so this is a guard
+  (design D5). The launcher KDoc's "no `<queries>`" reads "adds no `<queries>`". Verify: the module's tests pass.
 
 ## 4. Docs
 
-- [ ] 4.1 No user doc changes. Record the verification below. Release-branch items are not in this change (see
-  proposal: de-DE release notes, the Android 13–15 self-check QA row).
+- [x] 4.1 No user doc changes. Phase 1 verification recorded below (2.1–3.3, 5.1, 5.2). Release-branch items are not in
+  this change (see proposal: de-DE release notes, the Android 13–15 self-check QA row).
+- [ ] 4.2 Final verification record after 3.4–3.6 and 5.3–5.6, with the scenario map below filled in.
 
 ## 5. Verify
 
@@ -51,32 +66,64 @@ activity's `startActivity` to the launcher.
   (`app/build/intermediates/merged_manifest/release/**/AndroidManifest.xml`) is identical to develop's (`cmp` exit 0).
   Develop already has one `<queries>` block, from `com.android.billingclient:billing:8.3.0`, so a count is not the proof.
   What proves "no change": both, plus the diff of 3.3 touching no manifest or Gradle file.
-- [ ] 5.3 Device walk, emulator-5570 (API 36), debug build of this branch; restore every setting changed:
+- [ ] 5.3 Device walk, emulator-5570 (API 36), debug build of this branch; restore every setting changed. The walk
+  proves task separation, focus and layout; it does not prove the crash (that needs QA's crash fixture, 5.6):
   - (a) Settings row in EN and DE at 200% font on a 360 dp wide window (`wm size`), portrait and landscape: screenshot
     of the row each; no "…", no cut line. If the EN line does not fit, stop and tell PM (spec allows one shorter line).
   - (b) TalkBack reads the row once: title, summary, button (EN and DE), from a `uiautomator dump` and TalkBack speech.
-  - (c) Rate and Share: `adb shell dumpsys activity activities` shows the other app's activity in another task than
-    `MainActivity`; the chooser in Migrely's task; Recents shows the other app as its own card.
+  - (c) Task ids, on develop's build first (negative control), then this branch: Rate (Play or the https page) and the
+    privacy policy link: `adb shell dumpsys activity activities` shows the other app's activity in Migrely's task on
+    develop and in another task on this branch. Share: record the chosen app's task on both builds (expected own task on
+    both, AOSP chooser, design D5); the chooser in Migrely's task. Recents shows the other app as its own card.
   - (d) Back from the other app returns Settings at the same place, no message. Then with Play (or the browser) already
     open on another page: record what Back shows (EC-SHR-15).
-  - (e) Force-stop the share target and the browser while they show (`am force-stop <pkg>`), and kill Migrely's process
-    while away (`am kill`): Settings shows on return, no message.
+  - (e) While the other app shows: rotate, and separately kill Migrely's process (`am kill`); Settings shows on return,
+    no message (EC-SHR-06). No `am force-stop` row: it finishes only that package and cannot fail on develop (review
+    finding 2).
   - (f) TalkBack focus on return: first on develop's build, then on this branch; pass = activated row or top of
     Settings, never "Delete all data". If it fails, stop and report to PM (design D8).
-  - (g) Double tap on each row opens one page or one sheet; split screen opens the other app without closing Migrely.
+  - (g) Double tap on each row opens one page or one sheet; split screen opens the other app without closing Migrely
+    and Back or Recents returns Settings (which half is not promised).
   - If emulator-5570 has no Google Play app, say so: the Play case is then NOT CHECKED here and goes to QA.
 - [ ] 5.4 medical-reviewer re-checks the shipped `features/settings/ui/src/main/res/values/strings.xml` and
   `values-de/strings.xml` (the diff, not a table) after 2.2. Verify: a PASS file in `migrely-work/288/`.
 - [ ] 5.5 Independent code review (`code-reviewer`) on `git diff origin/develop...HEAD`, briefed with this spec and
-  risks R1–R3. Fix real findings and record them here.
+  risks R1–R3. Done: APPROVE WITH FIXES at ab416647 (`migrely-work/patch141/code-review-ab416647.md`); findings 1, 2, 3,
+  5, 6, 7 answered in this plan, finding 4 taken into scope (3.4, 3.5). A short re-review of 3.4–3.6 before QA.
 - [ ] 5.6 QA independent check (Go/No-Go scope: only what this diff reaches, with negative controls):
-  - API 26, emulator-5582, the #280 image (no Play Store, a browser that crashes at launch): develop's build closes
-    Migrely (negative control, reproduces #280); this branch leaves Settings in place. Same with a share target that is
-    force-stopped.
+  - Crash fixture (QA-owned, under `qa/`): a small app that throws in `onCreate` and handles https `ACTION_VIEW` (and
+    `market://` if cheap), installed as the only handler (Google Play disabled or absent). `am force-stop` and a late
+    `am crash` are not valid proofs (review finding 2).
+  - API 36 (emulator-5580), positive proof: develop's build closes Migrely's screen on Rate and on the privacy link
+    (negative control); this branch leaves Settings and the Privacy page in place.
+  - API 26 (emulator-5582), the recorded limit: expected "still closes" on both builds (EC-SHR-17). Record what happens
+    and whether Migrely reopens at Home. If this branch keeps Migrely open there, report it to PM for a rewording.
+  - Share: no crash control (AOSP chooser, design D5); record the chosen app's task id on API 36.
   - API 36: the task check of 5.3 (c) and the TalkBack return focus of 5.3 (f).
   - The summary row in EN and DE at 200% font, 360 dp, portrait and landscape (screenshots), and TalkBack speech.
 - [ ] 5.7 Archive: `openspec archive fix-warning-summary-and-outside-apps --yes`; keep `app-settings` Purpose real;
   `openspec validate --specs --strict` passes.
+
+## Scenario map (review finding 7)
+
+| Scenario | Proof |
+|---|---|
+| Reading the row in English / German; old wording fails | `WarningSignsSummaryTest` (2.1) |
+| The page itself is unchanged | 2.2 diff: only the summary key changes |
+| 200% font, narrow and landscape; shorter line | 5.3 (a), 5.6 |
+| TalkBack reads the row once | 5.3 (b), 5.6 |
+| Free, Premium, offline and during an attack | No row: the summary is one unconditional `stringResource` (`SettingsScreen.kt:340`) with no theme, entitlement or network branch; the attack theme is D94's, unchanged |
+| Upgrade from a shipped version | No row: a resource value only, no data, migration or backup code |
+| The intents carry the flag; without the flag | `ExternalAppLauncherTest` (3.1), privacy link test (3.4) |
+| Browser / privacy page crashes at launch, API 28+ | 5.6 API 36 with the crash fixture |
+| API 26 and 27, a recorded limit | 5.6 API 26 |
+| Share on the system chooser; its own task on a device | 5.3 (c), 5.6 |
+| Back returns; already open; split screen | 5.3 (d), (g) |
+| TalkBack focus on return | 5.3 (f), 5.6 |
+| Nothing can open it; no browser for the privacy policy | `ExternalAppLauncherTest` (existing), 3.4 |
+| One opening per tap | 5.3 (g); existing `OpeningGuard` tests |
+| Rotation or process death while away | 5.3 (e) |
+| No permission or manifest change | 5.2 |
 
 ## Verification record
 

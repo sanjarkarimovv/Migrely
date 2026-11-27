@@ -49,35 +49,52 @@ person's headache or add a claim (BRD SAF-F1, D171, EC-SAF-18).
 - **THEN** the new summary shows at once; no data, migration or backup changes, since only a resource changes
 
 ### Requirement: Outside apps run in their own task
-"Rate Migrely on Google Play" SHALL start both its intents with `FLAG_ACTIVITY_NEW_TASK`. "Share Migrely" SHALL set
-`FLAG_ACTIVITY_NEW_TASK` on the `ACTION_SEND` intent inside the chooser and not on the chooser, so the chooser stays over
-Settings and the chosen app runs in its own task. A crash or forced close of the other app SHALL leave Migrely's task
-and Settings as they were. The order of tries, the texts and the messages SHALL not change (BRD SET-F2, D185, EC-SHR-14).
+Every outside app Settings starts SHALL get `FLAG_ACTIVITY_NEW_TASK`: Rate's Google Play and https intents, the privacy
+policy's https page, and the `ACTION_SEND` inside the Share chooser, never the chooser. On API 28 and later, a crash at
+launch of that app SHALL leave Migrely's task and Settings as they were; on API 26 and 27 this is a recorded platform
+limit. Tries, texts and messages SHALL not change (BRD SET-F2, D185, EC-SHR-14, EC-SHR-17).
 
 #### Scenario: The intents carry the flag
-- **WHEN** the launcher builds the Google Play intent, the https intent and the share chooser
-- **THEN** the Google Play and https intents have `FLAG_ACTIVITY_NEW_TASK`, the `ACTION_SEND` intent inside the chooser
-  has it, and the chooser itself does not
-- **AND** neither intent has a URI grant flag, and every extra stays as before (medical-reviewer condition W3)
+- **WHEN** the launcher builds the Google Play intent, the https intent, the privacy policy intent and the share chooser
+- **THEN** the Google Play, https and privacy policy intents have `FLAG_ACTIVITY_NEW_TASK`, the `ACTION_SEND` intent inside
+  the chooser has it, and the chooser itself does not
+- **AND** no intent has a URI grant flag, and every extra stays as before (medical-reviewer condition W3)
 
 #### Scenario: Without the flag (negative control)
-- **WHEN** the launcher test runs against `develop`'s `ExternalAppLauncher`
-- **THEN** the flag assertions fail, which shows the check can fail
+- **WHEN** the launcher tests and the privacy link test run against `develop`'s code
+- **THEN** the flag assertions fail, which shows the checks can fail
 
-#### Scenario: The browser crashes at launch
-- **WHEN** a phone has no Google Play app and its only browser crashes at launch, and the user taps "Rate Migrely on
-  Google Play" (API 26, as in #280)
-- **THEN** Migrely is not closed: its task stays, and when the person returns to it Settings shows with no message
+#### Scenario: The browser crashes at launch, API 28 and later
+- **WHEN** on API 28 or later (API 36 in QA) Google Play is missing or disabled, the only app for https pages crashes in
+  its `onCreate`, and the user taps "Rate Migrely on Google Play"
+- **THEN** Migrely is not closed: its task stays, and Settings shows with no message when the person returns
+- **AND** `develop`'s build on the same phone closes Migrely's screen, which shows the check can fail (EC-SHR-14)
+
+#### Scenario: The privacy policy page crashes at launch, API 28 and later
+- **WHEN** on API 28 or later the only app for https pages crashes in its `onCreate`, and the user opens the privacy
+  policy link on the Privacy page
+- **THEN** Migrely is not closed, and the Privacy page shows when the person returns; `develop`'s build closes it
   (EC-SHR-14)
 
-#### Scenario: A share target crashes
-- **WHEN** the user picks an app in the share sheet and that app crashes or is force-stopped
-- **THEN** Migrely's task stays, and Settings shows with no message when the person returns (EC-SHR-14)
+#### Scenario: API 26 and 27, a recorded limit
+- **WHEN** the same crash at launch happens on API 26 or 27
+- **THEN** Migrely's screen may still close, as on `develop`, because those versions keep all full-screen tasks in one
+  stack and the crash handler finishes the paused activity below; nothing is lost, since Settings holds no unsaved entry,
+  and opening Migrely again starts at Home
+- **AND** QA records what the device shows; if Migrely stays open there, QA reports it and this scenario is reworded
+  (EC-SHR-17)
+
+#### Scenario: Share on the system chooser
+- **WHEN** the user picks an app in the AOSP share sheet, on `develop` or on this branch
+- **THEN** the chosen app runs in a task of its own on both, because the chooser itself adds
+  `FLAG_ACTIVITY_NEW_DOCUMENT | FLAG_ACTIVITY_MULTIPLE_TASK` to an `ACTION_SEND` target; the inner flag only guards
+  choosers that do not, which is unproven (EC-SHR-14)
 
 #### Scenario: Its own task on a device
-- **WHEN** the user opens Google Play, the browser or a share target from Settings, on API 26 and on API 36
-- **THEN** `dumpsys activity activities` lists the other app's activity in a task other than Migrely's, and Recents
-  shows it as its own card; the share chooser itself is in Migrely's task
+- **WHEN** the user opens Google Play, the browser, the privacy policy page or a share target from Settings, on API 36
+- **THEN** `dumpsys activity activities` lists the other app's activity in a task other than Migrely's, where `develop`
+  listed Google Play, the browser and the privacy page in Migrely's task; the share chooser itself stays in Migrely's
+  task
 
 #### Scenario: Back returns to Settings
 - **WHEN** the other app was not open before and the user presses Back on its first page
@@ -102,6 +119,11 @@ and Settings as they were. The order of tries, the texts and the messages SHALL 
 - **THEN** the same messages as before show, "This phone has no app that can open Google Play." or "This phone has no
   app to share the link with." (EC-SHR-01, EC-SHR-02)
 
+#### Scenario: No browser for the privacy policy
+- **WHEN** no app opens web pages, or a work profile forbids it, and the user opens the privacy policy link
+- **THEN** nothing opens and nothing is shown, as before: the address under the link can still be typed elsewhere, and
+  the app keeps running
+
 #### Scenario: One opening per tap still holds
 - **WHEN** the user double taps "Rate Migrely on Google Play" or "Share Migrely"
 - **THEN** one Google Play page or one share sheet opens, as before (EC-SHR-05)
@@ -112,5 +134,5 @@ and Settings as they were. The order of tries, the texts and the messages SHALL 
 
 #### Scenario: No permission or manifest change
 - **WHEN** the release build's merged manifest is checked
-- **THEN** `:app:checkReleasePermissions` passes with the same permission list as `develop`, and no `<queries>` entry is
-  added
+- **THEN** `:app:checkReleasePermissions` passes with the same permission list as `develop`, and the merged release
+  manifest is identical to `develop`'s, so no `<queries>` entry is added
