@@ -1,11 +1,10 @@
 ## ADDED Requirements
 
 ### Requirement: A popup menu never covers its anchor
-A popup menu SHALL never cover any part of its anchor. It SHALL open below when it fits above the window's safe bottom
-edge with 8 dp, else above with 8 dp, else on the larger side, capped to that side, its content scrolling. Safe edges come
-from the system bars, the cutout and an open keyboard. It SHALL align to the anchor's start edge. While open, a tap
-outside, on the anchor too, SHALL only close it. The lift rule, no wait and the motion stay (BRD D199 (1), EC-UX-91,
-D164).
+A popup menu SHALL never cover its anchor: below if it fits above the safe bottom edge (system bars, cutout, keyboard)
+with 8 dp, else above with 8 dp, else on the larger side, capped, scrolling; aligned to the anchor's start. A tap outside,
+on the anchor too, SHALL only close it. An item SHALL take input at once; its effect SHALL run once the menu's window is
+gone, and never if a configuration change cut the closing short. The lift rule stays (BRD D199 (1), EC-UX-91, D164).
 
 #### Scenario: A short window at 200%
 - **WHEN** a custom tag's chip sits 20%, 40%, 60% or 80% down a 1080 × 900 or 1080 × 700 px window at 200% font, and the
@@ -13,8 +12,21 @@ D164).
 - **THEN** the menu's bounds never intersect the chip's bounds (EC-UX-91)
 
 #### Scenario: The check can fail
-- **WHEN** the placement test runs against `develop`'s menu at 1080 × 900 px, 200%, with the chip about 40% down
-- **THEN** the menu covers the chip and the test fails, as QA's `n1rep` measured (2 of 2)
+- **WHEN** the placement test runs against `develop`'s menu at 1080 × 700 px, 200%, with the chip about 40% down
+- **THEN** the menu covers the chip and the test fails
+- **AND** the 1080 × 900 px case, which Robolectric cannot show because it draws no system bars, fails on a device with
+  `develop`'s build (walk row (a); QA's `n1rep`, 2 of 2)
+
+#### Scenario: The item's effect comes after the menu has gone
+- **WHEN** the user taps "Remove from my list"
+- **THEN** the tap is taken at once, the menu closes, and the removal and its message come once the menu's window is gone
+  (about 0.3 s; at once with "Remove animations")
+
+#### Scenario: Rotation just after Remove
+- **WHEN** the user taps "Remove from my list" and the phone rotates, the window is resized in split screen, or the theme
+  or font changes before the menu has finished closing (about 0.3 s)
+- **THEN** the pick is dropped: the tag is still listed, nothing is written, and no message shows; the person can remove
+  it again (D199 (1))
 
 #### Scenario: A tap on the chip's place while the menu is open
 - **WHEN** the menu is open and the user taps where the chip is

@@ -88,14 +88,24 @@ show "Your list is full. Remove one to add another." (BRD D199, EC-ATK-25, EC-AT
 - **THEN** it holds the tag's archived state as stored, as before; no new data is kept for the message
 
 ### Requirement: An archived chip offers no remove
-A custom tag that is archived but still shown on an attack SHALL offer no remove: no long-press menu, no long-press label
-and no "Remove from my list" action, until Undo un-archives it. Its selection on that attack SHALL work as before (BRD
-EC-ATK-11, EC-ATK-28, D199 (3)).
+A custom tag that is archived but still shown on an attack SHALL offer no remove: no long-press menu or label and no
+"Remove from my list" action, until Undo un-archives it. A long press on it SHALL do nothing and change no
+selection; a plain tap SHALL work as before (BRD EC-ATK-11, EC-ATK-28, D199 (3)).
 
 #### Scenario: The removed tag was selected on this attack
 - **WHEN** the user removes "Jaw pain", which is selected on this attack, and the chip stays shown
 - **THEN** a long press opens no menu, the chip has no long-press label, and TalkBack's actions offer no "Remove from my
   list"; a second "Removed from your list" can never be shown for it (EC-ATK-28)
+
+#### Scenario: A long press on an archived chip
+- **WHEN** the user long-presses the archived "Jaw pain" chip with a finger, or double-taps and holds it with TalkBack, on
+  this attack or on a past attack
+- **THEN** nothing happens: no menu opens, the chip stays selected, nothing is written, and the chip stays on the attack
+  (on the code at d4b2dcac the long press acted as a tap, deselected it, and the chip vanished with no message)
+
+#### Scenario: A plain tap on an archived chip
+- **WHEN** the user taps the archived chip
+- **THEN** it toggles as before (pre-existing, EC-ATK-11): deselected, it leaves the attack after the reload
 
 #### Scenario: Undo brings the remove back
 - **WHEN** the user taps Undo for that removal

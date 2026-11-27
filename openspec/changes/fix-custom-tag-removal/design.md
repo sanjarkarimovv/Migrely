@@ -127,6 +127,30 @@ keeps the long-press menu, its label and the TalkBack action, on develop and on 
 has no menu, no long-press label and no custom action until Undo un-archives it. A pure fix under EC-ATK-11 and D199 (3):
 an EC row (EC-ATK-28) and one clause in D199 (3), no new D-number. Red-first Compose test on 2d3ca53f.
 
+Code review d4b2dcac (S1, lead decision 2026-11-28): with `onLongClick = null`, Foundation 1.9.3's tap detector waits for
+the finger to lift however long it was held and calls the tap, so a long press on an archived chip deselected it, and
+the chip then left the attack with no message and no Undo: new in this change (on develop the long press opened the menu
+and toggled nothing). Rule: a long press on an archived chip does nothing, with no long-click semantics (so no long-press
+label) and no haptic promise; a plain tap keeps toggling as before (pre-existing, EC-ATK-11). Engineer's mechanism, for
+example a long-press handler that consumes and does nothing, with no `onLongClickLabel`; the test asserts the selection
+is unchanged after a finger long press and after TalkBack's long-click action is absent.
+
+### D8. The item's effect runs once the menu has gone, never after a cut-short closing (code review S2)
+
+Since 4.4 the menu item's effect (the removal) runs when the menu's closing has finished, so the message is spoken
+(about 0.3 s later; at once with "Remove animations"). Input is still taken at once, so "A popup menu answers at once"
+holds; the ADDED requirement now says the effect waits for the window to go (review N2). The review found that `onClosed`
+also ran when the composition was disposed partway through the closing: a rotation, a split-screen resize, or a uiMode or
+font change in that ~0.3 s archived the tag while the message was lost with the old screen (a `MutableSharedFlow` with no
+replay), which is #179's silent removal again. Rule (lead decision 2026-11-28): the effect runs only when the closing
+finished; a pick cut short by a configuration change is dropped, and the tag stays visibly listed, so the person can
+remove it again. That is the safe direction: nothing changes without being seen. Back and Home cannot hit the window (the
+popup takes Back; Home pauses the frame clock and the removal runs on return, with its message); process death loses the
+pick and the chip stays.
+
+N1 (optional, engineer's call): `MigrelyMenus.kt` copies Material 1.4.0's standard springs. Switch to
+`MaterialTheme.motionScheme` specs only if the motion stays the same; otherwise keep the constants and document why.
+
 ## Risks
 
 | # | Risk | Mitigation |
@@ -134,6 +158,7 @@ an EC row (EC-ATK-28) and one clause in D199 (3), no new D-number. Red-first Com
 | R1 | The position provider changes the menu's place in full windows | Scenario "A full window is unchanged"; QA's 20-placement sweep |
 | R2 | TalkBack focus after removal lands on a neighbour and a quick double tap selects it (pre-existing) | Out of scope, #296 (1.5.0); stated as a known limit in D199 (5) and the spec; no focus code in this patch |
 | R6 | The announcement fix changes when the message appears on the touch path | Touch rows of 5.3 (b) rerun; the message still shows once, Undo still works |
+| R7 | A configuration change during the closing drops the pick (D8) | Accepted: the tag stays listed and the person sees it; walk row (i) |
 | R3 | The German spoken name reads badly | Shipped-file check (task 5.5) |
 | R4 | The 1 px floor case (showed 1 px) is untested | QA tries it; files a defect only if it fails |
 | R5 | Undo after the list refilled | Restore use case checks the limit first (EC-ATK-26) |

@@ -68,6 +68,18 @@ D2). Commits also say `Refs #296` where they touch the focus wording.
   list" custom action; after Undo (un-archived) all three return; a past attack's archived chip likewise offers none.
   Named negative control: red on 2d3ca53f (menu, label and action present). Then pass no `onArchive` for an archived
   tag in `ChoiceGroup`. Verify: `./gradlew :features:attack:ui:testDebugUnitTest --tests '*ArchivedChip*'`.
+- [ ] 4.7 Code review d4b2dcac S1 (design D7): a long press on an archived chip does nothing. Red first in
+  `ArchivedChipTest`: after a finger long press on the archived, selected chip the selection is unchanged and nothing is
+  sent to the ViewModel; the chip's semantics have no long-click action; a past attack's archived chip likewise. Named
+  negative control: red on d4b2dcac (the long press acts as a tap and deselects). Then implement; a plain tap still
+  toggles (assert). Verify: `./gradlew :features:attack:ui:testDebugUnitTest --tests '*ArchivedChip*'`.
+- [ ] 4.8 Code review S2 (design D8): run the item's effect only when the closing finished, e.g.
+  `onDispose { if (!expandedState.currentState) currentOnClosed() }` in `MigrelyMenus.kt`; invert
+  `MigrelyDropdownMenuClosedTest` "It tells when it leaves the screen while open" so that leaving the screen while
+  open or closing does not run the effect (red on d4b2dcac); update the KDoc at `MigrelyMenus.kt` (~line 68). Verify:
+  `./gradlew :designsystem:testDebugUnitTest --tests '*MigrelyDropdownMenu*'`.
+- [ ] 4.9 Optional, review N1: theme motion specs instead of the copied springs, only if the motion stays the same;
+  otherwise keep and document (design D8).
 
 ## 5. Docs and verify
 
@@ -81,7 +93,8 @@ D2). Commits also say `Refs #296` where they touch the focus wording.
   - (a) 1080 × 900 and 1080 × 700 px at 200%: long-press custom chips at several heights; the menu never covers the chip;
     tap the chip's place with the menu open: it only closes. Develop's build first (negative control: covers at ~40%).
   - (b) Remove by the menu item, by TalkBack's custom action and with a keyboard: message shown; Undo restores; a selected
-    tag stays on this attack. Done in the first walk; rerun the touch rows after 4.4 (R6).
+    tag stays on this attack. Done in the first walk. R6 touch rows after 4.4 and 4.8: the message shows once, Undo works,
+    and the D164 fast double tap on "Remove from my list" removes exactly once.
   - (c) Fill a kind to 100 after removing one, then Undo: "Your list is full…".
   - (d) EN and DE at 200%, portrait 360 dp and landscape 360 dp tall: the message wraps without "…" and sits where the
     screen's other messages sit; Undo inside the window. Take the same shot of develop's "Pain level removed" at 200% to
@@ -89,14 +102,20 @@ D2). Commits also say `Refs #296` where they touch the focus wording.
   - (e) Focus after removal: record only, for #296 (design D4); no stop rule in this change. Done in the first walk.
   - (f) Keyboard open while long-pressing (the note focused): the keyboard closes by itself and the menu opens full size,
     never on its chip. Done in the first walk (design D2).
-  - (g) After 4.4, TalkBack on (log level VERBOSE, restored after): the menu path (double-tap-and-hold, double tap "Remove
-    from my list") 3 runs and the custom-action path 3 runs; each run's TalkBack log shows the "Removed from your list"
-    live-region utterance once. Develop has no message, so no develop control; the 2d3ca53f result (0 of 6 on the menu
-    path) is the before.
-  - (h) After 4.6: remove a tag selected on this attack; long press it: no menu; TalkBack's actions: no "Remove from my
-    list"; Undo: menu and action back. Open a past attack with an archived tag: no remove.
+  - (g) After 4.4 and 4.8, TalkBack on (log level VERBOSE, restored after): the menu path (double-tap-and-hold, double tap
+    "Remove from my list") 3 runs and the custom-action path 3 runs. Pass: the TTS log shows "Removed from your list"
+    actually spoken, once per run, not only an event handled and not flushed by the window-change speech ("Migrely", then
+    the landing node). Record whether it comes before or after the landing node. Develop has no message, so no develop
+    control; the before is 0 of 6 on the menu path and 1 of 1 on the action path (2d3ca53f).
+  - (h) After 4.6 and 4.7: remove a tag selected on this attack; it offers no menu and TalkBack's actions offer no "Remove
+    from my list". A finger long press and TalkBack's double-tap-and-hold on it each leave its selection unchanged and the
+    chip on the attack (check the database). Undo: menu and action back. A past attack's archived chip: the same.
+  - (i) After 4.8: tap "Remove from my list" and rotate within about 0.3 s (also one split-screen resize): the tag is still
+    listed, the database shows it not archived, and no message shows. Then remove it normally: message and Undo.
 - [ ] 5.4 Independent code review (`code-reviewer`) on `git diff origin/develop...HEAD`, briefed with this spec and risks
-  R1–R5. Fix real findings and record them here.
+  R1–R5. Fix real findings and record them here. First full review: APPROVE WITH FIXES at d4b2dcac
+  (`migrely-work/179/code-review-d4b2dcac.md`): S1 → 4.7, S2 → 4.8, S3 and N2 → spec, N1 → 4.9 (optional). A delta review
+  of 4.7–4.9 before QA.
 - [x] 5.5 German check on the shipped `features/attack/ui/src/main/res/values-de/strings.xml` (the diff, not a table), T23
   style, by ux-designer: done on 6a60c850 (ux rulings §5.3): `message_tag_removed` PASS; `snackbar_undo_tag_description`
   "die Liste" → "deine Liste" (task 4.5). ux confirms the shipped line after 4.5 in one line. No medical-reviewer: no
@@ -104,9 +123,10 @@ D2). Commits also say `Refs #296` where they touch the focus wording.
 - [ ] 5.6 QA independent check (only what this diff reaches, with negative controls):
   - API 36 (emulator-5580): re-run `n1.py` and `n1rep.py` on the candidate (expected 0 overlaps; develop as the negative
     control); TalkBack rows for the menu path and the custom-action path (message spoken once each, from the TalkBack log;
-    Undo name spoken); the archived chip of 5.3 (h); the full-list refusal.
+    Undo name spoken); the archived chip of 5.3 (h), including a finger long press and double-tap-and-hold leaving its
+    selection unchanged; rotation just after Remove (5.3 (i)); the full-list refusal.
   - API 26 (emulator-5582), without TalkBack: (a) at 200%, one removal with Undo, and the archived chip's long press (no
-    menu).
+    menu, selection unchanged).
   - #262: re-read the existing #262 rows against `kept_px ≥ max(1, min(shown_px, line_with_clearance_px) − 1)` with the
     measured line; try the 1 px floor case (showed 1 px before a one-step reopen) and file a defect only if the field leaves
     the accessibility tree.
@@ -116,7 +136,10 @@ D2). Commits also say `Refs #296` where they touch the focus wording.
 
 | Scenario | Proof |
 |---|---|
-| Popup: short window; check can fail; full window; RTL | 2.1, 5.3 (a), 5.6 |
+| Popup: short window; full window; RTL | 2.1, 5.3 (a), 5.6 |
+| Popup: check can fail | 2.1 at 1080 × 700 px (JVM); 1080 × 900 px on the device, 5.3 (a) develop first; QA `n1rep` |
+| Popup: the item's effect after the menu has gone | 4.4, 4.8, 5.3 (b), (g) |
+| Popup: rotation just after Remove | 4.8, 5.3 (i) |
 | Popup: room for no item (arithmetic only) | 2.1 with a pinned inset; not reachable on a device, 5.3 (f) |
 | Popup: the keyboard is open | 5.3 (f) |
 | Popup: tap on the chip's place | 2.3, 5.3 (a) |
@@ -129,6 +152,7 @@ D2). Commits also say `Refs #296` where they touch the focus wording.
 | German; long and unusual names | 4.3, 4.5, 5.5 |
 | 200% and landscape | 5.3 (d) |
 | Archived chip: selected on this attack; Undo brings remove back; past attack; check can fail | 4.6, 5.3 (h), 5.6 |
+| Archived chip: a long press does nothing; a plain tap as before | 4.7, 5.3 (h), 5.6 |
 | During an attack, Free or Premium; backup and restore | No row: the message has no theme, entitlement or data branch; the archive flag and its backup are unchanged |
 | #262 reopen wording | 5.6 (#262 rows re-read) |
 
