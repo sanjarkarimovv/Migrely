@@ -46,7 +46,7 @@ Understand Your Patterns (Premium)
 • Triggers often logged with your migraines, the days and hours they come, the days around your period for menstrual migraine, how you rated your medications, and the last 12 months
 
 Migrely Premium
-• Premium adds the doctor report and Insights: yearly, with a 7-day free trial for new subscribers, monthly, or a single lifetime payment, all through Google Play
+• Premium adds the doctor report and Insights, all through Google Play: yearly (a 7-day free trial for new subscribers, then paid), monthly, or a single lifetime payment. Subscriptions renew automatically and can be cancelled in Google Play at any time
 • Logging, history, medications, reminders, backup and spreadsheet export, and every safety warning are free. Premium adds only the doctor report and Insights
 
 Private by Design
@@ -65,10 +65,10 @@ Gentle on Your Eyes
 Safety First
 • The warning signs that need urgent care are always at hand in Settings
 
-Migrely is a diary. It is not a medical device and does not diagnose, treat, cure or prevent any medical condition. Talk to a doctor or other healthcare professional about your headaches, and before you start, stop or change a medication. If a headache comes with any of the warning signs, call your local emergency number.
+Migrely is a diary. It is not a medical device and does not diagnose, treat, cure or prevent any medical condition. Talk to a doctor or other healthcare professional about your headaches, and before you start, stop or change a medication. If a headache comes with any of the emergency signs on the Warning signs page, call your local emergency number.
 ```
 
-The text is 3,118 characters (counted 2026-11-27 with the 1.4.0 additions below). Paste it as it is: each paragraph is one line, because Play keeps line breaks.
+The text is 3,236 characters (counted 2026-11-27 with the 1.4.0 additions below and the medical and legal changes). Paste it as it is: each paragraph is one line, because Play keeps line breaks.
 
 ## Changes for 1.4.0 (aso-140, 2026-11-27, proposed: nothing here is applied in Play Console)
 
@@ -77,6 +77,7 @@ The text is 3,118 characters (counted 2026-11-27 with the 1.4.0 additions below)
 | New section "In English and German" (2 bullets) | The app is in German from 1.4.0 (D195). The bullets also say the PDF and the spreadsheet stay English (D195 (4), (5)), the same as the release notes. Medical text is not touched. |
 | "Large text, TalkBack and keyboards work throughout" becomes "Supports large text, TalkBack and keyboards" | The 1.4.0 notes themselves say TalkBack moves in order "on most scrolling pages", so "throughout" says more than we can show. |
 | Title, short description and first sentence stay | D184's short description has been live since 2026-11-24. One snapshot three days later (positions.log, 2026-11-27) shows "migraine tracker" #15, "headache tracker" #26 and "migraine app", "migraine diary", "headache diary" outside the top 29, so there is no sign yet that "migraine diary" helped, and one snapshot cannot say it hurt. One variable at a time: repeat on 2026-12-01 and 2026-12-08 before changing the name. |
+| Disclaimer line and Premium bullet (verdicts 2026-11-27) | The last line now names the "Warning signs" page like the app (`settings_about_urgent`). The Premium bullet says the trial turns into a paid plan and that subscriptions renew and can be cancelled in Google Play. |
 | Left unchanged on purpose | The share and rate rows and the doctor report's credit line are not in the listing: they sell nothing the listing needs, and "rate" must never sound like a reward. |
 
 German listing (de-DE, DE, AT and CH): [`listing-de.md`](listing-de.md).

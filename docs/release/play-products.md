@@ -91,15 +91,15 @@ For the de-DE listing (`listing-de.md`). The words come from the app's German st
 "Bleibt dir erhalten" and "Eine Zahlung. Nichts verlängert sich." are `subscription_status_lifetime_summary`, `subscription_success_lifetime_text` and
 `subscription_terms_once` (T23 fix batch 1, §4: legal chose "Einmalkauf" over "lebenslang" and "Gehört dauerhaft dir"). Play's own
 limits (Play Console Help, read 2026-11-27): a subscription name up to 55 characters and up to four benefits of up to 40 characters.
-No limit was found for a one-time product's text. Benefit 3 is shorter than the app's "Wann Migräne auftritt und wie du deine Medikamente bewertet hast" (63).
+No limit was found for a one-time product's text. Benefits 1 and 3 follow the verdicts of 2026-11-27 (the PDF is English and the benefit stands alone in Play's purchase sheet; "deine Medikamentenbewertung" says who rates).
 The benefits' English versions are in the table at the top. Both products' IDs, base plans and prices do not change.
 
 | Field | German |
 |---|---|
 | Subscription `migrely_premium`, name (≤ 55) | Migrely Premium (15) |
-| Benefit 1 (≤ 40) | PDF-Bericht für die Arztpraxis (30) |
+| Benefit 1 (≤ 40) | PDF-Bericht für die Praxis (Englisch) (37) |
 | Benefit 2 (≤ 40) | Oft gemeinsam notierte Auslöser (31) |
-| Benefit 3 (≤ 40) | Migränezeiten, Medikamentenbewertung (36) |
+| Benefit 3 (≤ 40) | Zeitmuster, deine Medikamentenbewertung (39) |
 | Benefit 4 (≤ 40) | Die letzten 12 Monate auf einen Blick (37) |
 | One-time `migrely_lifetime`, name | Migrely Premium, Einmalkauf (27) |
 | One-time `migrely_lifetime`, description | Premium bleibt dir erhalten. Eine Zahlung. Nichts verlängert sich. (66) |

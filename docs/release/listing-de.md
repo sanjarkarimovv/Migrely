@@ -41,13 +41,13 @@ Akutmedikation im Blick
 
 Für deine Arztpraxis (Premium)
 • Ein PDF-Bericht mit Zusammenfassung, Kalender sowie jeder Migräne und jedem Medikament, den du deiner Ärztin oder deinem Arzt zeigen kannst
-• Der PDF-Bericht und die Tabellen-Datei (CSV) sind auf Englisch. Die App selbst gibt es auf Deutsch und Englisch
+• Der PDF-Bericht, die Tabellen-Datei (CSV) und die Datenschutzerklärung sind auf Englisch. Die App selbst gibt es auf Deutsch und Englisch
 
 Auswertung (Premium)
 • Auslöser, die oft zusammen mit deiner Migräne notiert wurden, wann sie auftritt, wie du deine Medikamente bewertet hast, die Tage um deine Periode und die letzten 12 Monate auf einen Blick
 
 Migrely Premium
-• Premium fügt den Bericht für die Arztpraxis und die Auswertung hinzu: jährlich, mit 7 Tagen kostenlosem Testzeitraum für neue Abonnentinnen und Abonnenten, monatlich oder als Einmalkauf, alles über Google Play
+• Premium fügt den Bericht für die Arztpraxis und die Auswertung hinzu, alles über Google Play: jährlich (7 Tage kostenlos testen für neue Abonnentinnen und Abonnenten, danach kostenpflichtig), monatlich oder als Einmalkauf. Abos verlängern sich automatisch und sind jederzeit in Google Play kündbar
 • Notieren, Verlauf, Medikamente, Erinnerungen, Sicherung, Export und jeder Sicherheitshinweis bleiben kostenlos
 
 Privat, nachprüfbar
@@ -62,10 +62,10 @@ Angenehm für die Augen
 Sicherheit zuerst
 • Die Warnzeichen, bei denen du den Notruf wählen oder dringend ärztlichen Rat holen sollst, findest du jederzeit in den Einstellungen unter „Warnzeichen“
 
-Migrely ist ein Tagebuch. Es ist kein Medizinprodukt, stellt keine Diagnose, behandelt und heilt nicht und beugt keiner Erkrankung vor. Sprich mit einer Ärztin oder einem Arzt über deine Kopfschmerzen, und bevor du ein Medikament beginnst, absetzt oder änderst. Wenn Kopfschmerzen mit einem der Warnzeichen auftreten, wähle den Notruf.
+Migrely ist ein Tagebuch. Es ist kein Medizinprodukt, stellt keine Diagnose, behandelt und heilt nicht und beugt keiner Erkrankung vor. Sprich mit einer Ärztin oder einem Arzt über deine Kopfschmerzen, und bevor du ein Medikament beginnst, absetzt oder änderst. Wenn Kopfschmerzen mit einem der Notfallzeichen auf der Seite „Warnzeichen“ auftreten, wähle den Notruf.
 ```
 
-The text is 3,815 characters (counted 2026-11-27). Paste it as it is: each paragraph is one line.
+The text is 3,960 characters (counted 2026-11-27, after the medical and legal verdicts). Paste it as it is: each paragraph is one line.
 
 ## Keywords
 
