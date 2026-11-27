@@ -83,3 +83,23 @@ after Play's conversion. The app never writes a price: it shows the one Play giv
 - **Real-time developer notifications:** none; Migrely has no server.
 - **License testers:** add the testers' Google accounts under Setup → License testing, so 13b can buy, cancel and
   renew on the internal testing track without being charged (D113).
+
+
+## German names (de-DE, DRAFT, T79, 2026-11-27)
+
+For the de-DE listing (`listing-de.md`). The words come from the app's German strings: "Einmalkauf" is `subscription_plan_lifetime`, and
+"Bleibt dir erhalten" and "Eine Zahlung. Nichts verlängert sich." are `subscription_status_lifetime_summary`, `subscription_success_lifetime_text` and
+`subscription_terms_once` (T23 fix batch 1, §4: legal chose "Einmalkauf" over "lebenslang" and "Gehört dauerhaft dir"). Play's own
+limits (Play Console Help, read 2026-11-27): a subscription name up to 55 characters and up to four benefits of up to 40 characters.
+No limit was found for a one-time product's text. Benefit 3 is shorter than the app's "Wann Migräne auftritt und wie du deine Medikamente bewertet hast" (63).
+The benefits' English versions are in the table at the top. Both products' IDs, base plans and prices do not change.
+
+| Field | German |
+|---|---|
+| Subscription `migrely_premium`, name (≤ 55) | Migrely Premium (15) |
+| Benefit 1 (≤ 40) | PDF-Bericht für die Arztpraxis (30) |
+| Benefit 2 (≤ 40) | Oft gemeinsam notierte Auslöser (31) |
+| Benefit 3 (≤ 40) | Migränezeiten, Medikamentenbewertung (36) |
+| Benefit 4 (≤ 40) | Die letzten 12 Monate auf einen Blick (37) |
+| One-time `migrely_lifetime`, name | Migrely Premium, Einmalkauf (27) |
+| One-time `migrely_lifetime`, description | Premium bleibt dir erhalten. Eine Zahlung. Nichts verlängert sich. (66) |

@@ -54,9 +54,13 @@ Private by Design
 • Your entries stay on your phone. If Android's own backup is on, it may also copy them to your Google account
 • Export a backup or a spreadsheet, or delete everything, whenever you like. A file you export goes where you send it
 
+In English and German
+• Migrely is available in English and German. It follows your phone's language or, on Android 13 and later, the app language you pick for it
+• The PDF report and the spreadsheet export stay in English
+
 Gentle on Your Eyes
 • Dark by default, with a light theme, and always dark during a migraine
-• Large text, TalkBack and keyboards work throughout
+• Supports large text, TalkBack and keyboards
 
 Safety First
 • The warning signs that need urgent care are always at hand in Settings
@@ -64,7 +68,18 @@ Safety First
 Migrely is a diary. It is not a medical device and does not diagnose, treat, cure or prevent any medical condition. Talk to a doctor or other healthcare professional about your headaches, and before you start, stop or change a medication. If a headache comes with any of the warning signs, call your local emergency number.
 ```
 
-The text is 2,901 characters (counted 2026-11-16; the old figure was stale). Paste it as it is: each paragraph is one line, because Play keeps line breaks.
+The text is 3,118 characters (counted 2026-11-27 with the 1.4.0 additions below). Paste it as it is: each paragraph is one line, because Play keeps line breaks.
+
+## Changes for 1.4.0 (aso-140, 2026-11-27, proposed: nothing here is applied in Play Console)
+
+| Change | Reason and evidence |
+|---|---|
+| New section "In English and German" (2 bullets) | The app is in German from 1.4.0 (D195). The bullets also say the PDF and the spreadsheet stay English (D195 (4), (5)), the same as the release notes. Medical text is not touched. |
+| "Large text, TalkBack and keyboards work throughout" becomes "Supports large text, TalkBack and keyboards" | The 1.4.0 notes themselves say TalkBack moves in order "on most scrolling pages", so "throughout" says more than we can show. |
+| Title, short description and first sentence stay | D184's short description has been live since 2026-11-24. One snapshot three days later (positions.log, 2026-11-27) shows "migraine tracker" #15, "headache tracker" #26 and "migraine app", "migraine diary", "headache diary" outside the top 29, so there is no sign yet that "migraine diary" helped, and one snapshot cannot say it hurt. One variable at a time: repeat on 2026-12-01 and 2026-12-08 before changing the name. |
+| Left unchanged on purpose | The share and rate rows and the doctor report's credit line are not in the listing: they sell nothing the listing needs, and "rate" must never sound like a reward. |
+
+German listing (de-DE, DE, AT and CH): [`listing-de.md`](listing-de.md).
 
 ## Graphics
 
@@ -98,8 +113,9 @@ Ranked from Play's own search suggestions on 2026-10-26. Play publishes no searc
 
 Position check (logged-out web search, 2026-11-16, `migrely-work/aso/positions.py`, one snapshot, 30 results): "migraine
 tracker" #14, "migraine app" #14, "migraine diary" #26, "migraine diary app" not in top 30, "headache diary" #15,
-"headache tracker" #19. The D184 text is not live: it is the baseline before it. Repeat the check 1 and 2 weeks after
-the owner publishes, and watch "migraine diary", the one phrase D184 adds (to the short description).
+"headache tracker" #19. That is the baseline before the D184 text, which went live on 2026-11-24. After it (2026-11-27):
+"migraine tracker" #15, "headache tracker" #26, and "migraine app", "migraine diary", "migraine diary app" and "headache
+diary" outside the top 29 or 30. Repeat on 2026-12-01 and 2026-12-08, and watch "migraine diary", the one phrase D184 adds.
 
 Each phrase appears once or twice. Play treats repetition as keyword stuffing.
 
@@ -138,5 +154,6 @@ From Play's metadata policy, preview-asset guidelines and health-app policy, che
   and EUIPO databases for "Migrely" before the production launch.
 - Premium features are the doctor report and Insights, marked "(PREMIUM)" above (BRD D108). Safety features are never
   premium (§7.1). The products and prices are in `play-products.md`.
-- English only for now. en-GB, en-AU, en-CA and en-IN listings may follow once the en-US listing has data (Store
-  listing experiments). Other languages wait until the app itself is translated.
+- English (en-US) is the default listing. German (de-DE) follows with 1.4.0, which ships the German app: see
+  `listing-de.md`. en-GB, en-AU, en-CA and en-IN listings may follow once the en-US listing has data (Store listing
+  experiments). Other languages wait until the app itself is translated.
