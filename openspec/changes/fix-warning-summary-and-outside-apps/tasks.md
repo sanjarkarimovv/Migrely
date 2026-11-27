@@ -198,3 +198,13 @@ equals `settings-after.txt`. Emulator off.
 
 Not checked here: the Google Play app path (stub on this image; goes to QA or the owner's phone); a browser already open
 on a real page (EC-SHR-15); the crash at launch (QA's fixture, 5.6); API 26–28 (QA).
+
+android-engineer, 2026-11-27, merge tree: `origin/develop` f83dda71 (PR #293, tests only) merged into this branch as
+f1bfd34c, no conflict. `git diff --name-only e9e0db66 HEAD -- . ':!openspec' ':!docs'` lists exactly the 4 files of
+`git diff --name-only 476f7a27 origin/develop` (`PaneEvents.kt`, `TalkBackTree.kt`, `DialogPaneEventTest.kt`,
+`PainDialogPaneEventTest.kt`), identical in content to develop's; so the walked and QA'd APK code is unchanged.
+
+| Check | Command | Result |
+|---|---|---|
+| 5.1 on the merge tree | `nice -n 19 ./gradlew --max-workers=2 assembleDebug test ktlintCheck detekt lint` (1-min load 7.0 at start) | exit 0, BUILD SUCCESSFUL in 3m 32s; 4022 tests (4013 + develop's 9), 0 failed |
+| 5.2 on the merge tree | `:app:checkReleasePermissions` here and on a detached develop f83dda71 worktree | both exit 0; `cmp` merged release manifest exit 0; `cmp` permission report exit 0; no INTERNET |
