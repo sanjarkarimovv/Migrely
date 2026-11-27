@@ -22,7 +22,7 @@ setup, and choose only what Migrely does.
 - **The medical text it shows:**
   - medication-overuse thresholds (ICHD-3);
   - the 72-hour attack note (status migrainosus);
-  - warning signs that need urgent care.
+  - warning signs: when to call the local emergency number and when to get urgent medical advice.
 
   Each one advises talking to a doctor or calling the local emergency number, and never prescribes (BRD §11.9).
 - **Health data:** stays on the phone, never transmitted, with no account (see `data-safety.md`).

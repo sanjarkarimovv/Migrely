@@ -63,12 +63,12 @@ Gentle on Your Eyes
 • Supports large text, TalkBack and keyboards
 
 Safety First
-• The warning signs that need urgent care are always at hand in Settings
+• The warning signs, with when to call your local emergency number and when to get urgent medical advice, are always at hand in Settings
 
 Migrely is a diary. It is not a medical device and does not diagnose, treat, cure or prevent any medical condition. Talk to a doctor or other healthcare professional about your headaches, and before you start, stop or change a medication. If a headache comes with any of the emergency signs on the Warning signs page, call your local emergency number.
 ```
 
-The text is 3,328 characters (counted 2026-11-27 with the 1.4.0 additions below, the medical and legal changes and the permission wording). Paste it as it is: each paragraph is one line, because Play keeps line breaks.
+The text is 3,392 characters (counted 2026-11-27 with the 1.4.0 additions below, the medical and legal changes and the permission wording). Paste it as it is: each paragraph is one line, because Play keeps line breaks.
 
 ## Changes for 1.4.0 (aso-140, 2026-11-27, proposed: nothing here is applied in Play Console)
 
