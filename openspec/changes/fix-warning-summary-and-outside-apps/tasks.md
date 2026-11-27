@@ -38,16 +38,16 @@ activity's `startActivity` to the launcher.
   `shareChooser()`, never on the chooser. Update the KDoc (EC-SHR-14, design D4, D5). Verify: 3.1 green.
 - [x] 3.3 Scope check. Verify: `git diff --stat origin/develop` lists only the two strings files, `ExternalAppLauncher.kt`,
   the two test files, and this change's docs; `ReportScreen.kt` and `PlayBillingDataSourceImpl.kt` untouched.
-- [ ] 3.4 Red first: a Robolectric test in `features/settings/ui/src/testDebug` that clicks the Privacy page's policy link
+- [x] 3.4 Red first: a Robolectric test in `features/settings/ui/src/testDebug` that clicks the Privacy page's policy link
   and asserts the started intent (`shadowOf(application).nextStartedActivity`) is `ACTION_VIEW` on the policy URL with
   `FLAG_ACTIVITY_NEW_TASK`; plus the no-browser case: `ActivityNotFoundException` or `SecurityException` from the start
   shows nothing and throws nothing. Named negative control: red on develop's `SettingsPages.kt` (Compose's
   `AndroidUriHandler` sets no flag; record the run). Verify:
   `./gradlew :features:settings:ui:testDebugUnitTest --tests '*PrivacyPolicyLink*'`.
-- [ ] 3.5 Route the policy link through `ExternalAppLauncher` (a method for an https page with `FLAG_ACTIVITY_NEW_TASK`,
+- [x] 3.5 Route the policy link through `ExternalAppLauncher` (a method for an https page with `FLAG_ACTIVITY_NEW_TASK`,
   catching both exceptions); drop `LocalUriHandler` and `openInBrowserIfAny` from `SettingsPages.kt` (design D10). Verify:
   3.4 green; `git grep -n -E "LocalUriHandler|openUri" -- '*/src/main/*.kt'` finds nothing.
-- [ ] 3.6 Rename the inner-flag test and its KDoc to what it checks ("the ACTION_SEND intent carries NEW_TASK"), and say
+- [x] 3.6 Rename the inner-flag test and its KDoc to what it checks ("the ACTION_SEND intent carries NEW_TASK"), and say
   in `assertNewTask`'s and the launcher's KDoc that AOSP's chooser already adds its own task flags, so this is a guard
   (design D5). The launcher KDoc's "no `<queries>`" reads "adds no `<queries>`". Verify: the module's tests pass.
 
@@ -148,3 +148,18 @@ verify line on 2026-11-27 (plan error, not a product finding).
 Not checked in phase 1: everything in 5.3 (no emulator in this phase), in particular that Android's chooser keeps the
 inner `NEW_TASK` (D5, R1) and the TalkBack return focus (D8, R3). The JVM tests prove the flags on the built intents only,
 not what a launcher, Play or a browser does with them.
+
+android-engineer, 2026-11-27, phase 1b (no device), after code review. Evidence in `migrely-work/patch141/`
+(`phase1b-evidence.txt`).
+
+| Task | Command | Result |
+|---|---|---|
+| 3.4 red | `:features:settings:ui:testDebugUnitTest --tests '*PrivacyPolicyLink*'` on develop's `SettingsPages.kt` | exit 1, 3 tests, 2 failed: "opens in its own task" (`expected 268435456 but was 0`; action and URL already right) and the work-profile case (`List is empty`: Compose's handler never reaches `LocalContext`). The no-browser case passes on develop, as it must: that behaviour stays |
+| 3.4, 3.5 green | `:features:settings:ui:testDebugUnitTest` (whole module) | exit 0; 20 suites, 84 tests, 0 failed; PrivacyPolicyLinkTest 3/3, ExternalAppLauncherTest 12/12 |
+| 3.5 | `git grep -n -E "LocalUriHandler\|openUri\|openInBrowserIfAny" -- '*.kt'` | nothing (exit 1). `ExternalAppLauncher.openWebPage(url)`; `storePageOnWeb()` and the policy link share one private `webPage(url)` builder. JVM `PolicyLinkTest` (tested the removed `openInBrowserIfAny`) deleted; its two cases live in `PrivacyPolicyLinkTest` |
+| 3.6 | same module run | test renamed "The ACTION_SEND intent inside the chooser carries NEW_TASK"; its KDoc, `assertNewTask`'s and the launcher's say the inner flag is a guard on AOSP; launcher KDoc says "adds no `<queries>`" and API 28+ / EC-SHR-17 |
+| 5.1 rerun | gate, 1-min load 4.4 at start | exit 0, BUILD SUCCESSFUL in 44s (unchanged modules up to date); 4013 tests, 0 failed (phase 1: 4014, minus `PolicyLinkTest`'s 2 in debug and release unit tests, plus 3) |
+| 5.2 rerun | `:app:checkReleasePermissions` on this branch and on a detached develop 476f7a27 worktree | both exit 0; `cmp` merged release manifest exit 0; `cmp` permission report exit 0; no INTERNET. No manifest, Gradle, `ReportScreen.kt`, `PlayBillingDataSourceImpl.kt` or `RemindersScreen.kt` in the branch diff |
+
+Not checked in phase 1b: everything in 5.3. The Robolectric test proves the flag on the intent the link starts, not what a
+browser or the crash handler does with it (QA's crash fixture, 5.6).
