@@ -3,10 +3,14 @@ package com.migrely.app.history.ui.view
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -36,11 +40,15 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.layout.Placeable
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -51,6 +59,8 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.navigation.NavController
@@ -59,11 +69,14 @@ import com.migrely.app.designsystem.button.MigrelyIconButton
 import com.migrely.app.designsystem.icon.MigrelyIcons
 import com.migrely.app.designsystem.layout.MigrelyInsets
 import com.migrely.app.designsystem.layout.PageScroll
+import com.migrely.app.designsystem.layout.ShownTextLayouts
 import com.migrely.app.designsystem.layout.isCompactHeight
 import com.migrely.app.designsystem.layout.ownWords
+import com.migrely.app.designsystem.layout.shownTextLayouts
 import com.migrely.app.designsystem.layout.wordsShownOnly
 import com.migrely.app.designsystem.motion.rememberReduceMotion
 import com.migrely.app.designsystem.snackbar.MessageLayout
+import com.migrely.app.designsystem.text.rememberWidestWidth
 import com.migrely.app.designsystem.theme.MigrelyTheme
 import com.migrely.app.history.presentation.model.HistoryViewState
 import com.migrely.app.history.ui.R
@@ -78,6 +91,11 @@ import java.time.LocalDate
 import java.time.YearMonth
 
 private val CONTENT_MAX_WIDTH = 600.dp
+private val PAGE_PADDING = 16.dp
+private val PANE_GAP = 24.dp
+private val MIN_PANE_WIDTH = 200.dp
+private val PEAK_GAP = 12.dp
+private val PEAK_UNDER_GAP = 4.dp
 
 /**
  * History (spec: attack-history). The month asked for and the chosen day are saveable, so rotation and process death
@@ -298,7 +316,7 @@ private fun MonthContents(
         .windowInsetsPadding(
             MigrelyInsets.bars.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom)
         )
-        .padding(horizontal = 16.dp)
+        .padding(horizontal = PAGE_PADDING)
     val calendar: @Composable () -> Unit = {
         MonthHeader(month, mappers.historyTimeUiFormatter, actions)
         HistoryCalendar(
@@ -320,47 +338,67 @@ private fun MonthContents(
     val list: @Composable () -> Unit = {
         ListSection(month, nothingLogged, selectedEpochDay, mappers.historyTimeUiFormatter, actions)
     }
-    // A phone in landscape puts the calendar and the list side by side (BRD EC-UX-03).
-    if (isCompactHeight()) {
-        Row(horizontalArrangement = Arrangement.spacedBy(24.dp), modifier = contentModifier) {
-            PageScroll {
-                Column(
-                    Modifier
-                        .weight(1f)
-                        .pageScroll(rememberScrollState())
-                ) {
-                    calendar()
-                    Spacer(Modifier.height(16.dp))
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        // A phone in landscape puts the calendar and the list side by side (BRD EC-UX-03), when each
+        // pane is wide enough.
+        if (showsTwoPanes(maxWidth)) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(PANE_GAP),
+                modifier = contentModifier
+            ) {
+                PageScroll {
+                    Column(
+                        Modifier
+                            .weight(1f)
+                            .pageScroll(rememberScrollState())
+                    ) {
+                        calendar()
+                        Spacer(Modifier.height(16.dp))
+                    }
+                }
+                PageScroll {
+                    Column(
+                        Modifier
+                            .weight(1f)
+                            .pageScroll(rememberScrollState())
+                    ) {
+                        list()
+                        Spacer(Modifier.height(16.dp))
+                    }
                 }
             }
-            PageScroll {
-                Column(
-                    Modifier
-                        .weight(1f)
-                        .pageScroll(rememberScrollState())
-                ) {
-                    list()
-                    Spacer(Modifier.height(16.dp))
-                }
-            }
-        }
-    } else {
-        Box(contentAlignment = Alignment.TopCenter, modifier = Modifier.fillMaxSize()) {
-            PageScroll {
-                Column(
-                    modifier = contentModifier
-                        .widthIn(max = CONTENT_MAX_WIDTH)
-                        .fillMaxWidth()
-                        .pageScroll(rememberScrollState())
-                ) {
-                    calendar()
-                    Spacer(Modifier.height(24.dp))
-                    list()
-                    Spacer(Modifier.height(24.dp))
+        } else {
+            Box(contentAlignment = Alignment.TopCenter, modifier = Modifier.fillMaxSize()) {
+                PageScroll {
+                    Column(
+                        modifier = contentModifier
+                            .widthIn(max = CONTENT_MAX_WIDTH)
+                            .fillMaxWidth()
+                            .pageScroll(rememberScrollState())
+                    ) {
+                        calendar()
+                        Spacer(Modifier.height(24.dp))
+                        list()
+                        Spacer(Modifier.height(24.dp))
+                    }
                 }
             }
         }
     }
+}
+
+/**
+ * True in a short window where each of the two panes would be at least 200 dp wide, so a day number never needs less
+ * than its 100% size (BRD D198 (4), EC-HIS-06); a split screen or a small pop-up window gets the one column instead.
+ * [width] is History's own; the panes get it less the side insets and the page padding.
+ */
+@Composable
+private fun showsTwoPanes(width: Dp): Boolean {
+    val direction = LocalLayoutDirection.current
+    val insets = MigrelyInsets.bars.only(WindowInsetsSides.Horizontal).asPaddingValues()
+    val contentWidth = width - insets.calculateStartPadding(direction) -
+        insets.calculateEndPadding(direction) - PAGE_PADDING * 2
+    return isCompactHeight() && (contentWidth - PANE_GAP) / 2 >= MIN_PANE_WIDTH
 }
 
 @Composable
@@ -653,6 +691,16 @@ private fun AttackRow(
     } else {
         stringResource(R.string.attack_description, spokenStart, end, spokenPeak)
     }
+    val dateText = stringResource(
+        R.string.attack_range,
+        start,
+        end ?: stringResource(R.string.attack_in_progress)
+    )
+    val dateStyle = MaterialTheme.typography.bodyLarge.copy(fontFeatureSettings = "tnum")
+    // The date breaks only at a plain space; a no-break space keeps "12:27 PM" whole where the locale uses one.
+    val dateWidestWord = rememberWidestWidth(dateText.split(' '), dateStyle)
+    val dateLayout = remember { ShownTextLayouts() }
+    val peakLayout = remember { ShownTextLayouts() }
     Surface(
         onClick = onClick,
         shape = RoundedCornerShape(16.dp),
@@ -666,28 +714,68 @@ private fun AttackRow(
                 role = Role.Button
             }
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .padding(horizontal = 16.dp, vertical = 12.dp)
-                .clearAndSetSemantics { }
-        ) {
-            Text(
-                text = stringResource(
-                    R.string.attack_range,
-                    start,
-                    end ?: stringResource(R.string.attack_in_progress)
-                ),
-                style = MaterialTheme.typography.bodyLarge.copy(fontFeatureSettings = "tnum"),
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.weight(1f)
-            )
-            Text(
-                text = peakText,
-                style = MaterialTheme.typography.bodyMedium.copy(fontFeatureSettings = "tnum"),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(start = 12.dp)
-            )
+        DateAndPeak(
+            dateWidestWord = dateWidestWord,
+            date = {
+                Text(
+                    text = dateText,
+                    style = dateStyle,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.clearAndSetSemantics { shownTextLayouts = dateLayout },
+                    onTextLayout = { dateLayout.record(0, it) }
+                )
+            },
+            peak = {
+                Text(
+                    text = peakText,
+                    style = MaterialTheme.typography.bodyMedium.copy(fontFeatureSettings = "tnum"),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.clearAndSetSemantics { shownTextLayouts = peakLayout },
+                    onTextLayout = { peakLayout.record(0, it) }
+                )
+            },
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+        )
+    }
+}
+
+/**
+ * A row's date range with its peak at the end, centred, while the room left beside the peak holds [dateWidestWord],
+ * the px width of the date's widest unbreakable piece ("12:27", "Mon,"). Otherwise the date takes the whole width,
+ * wrapping only between words, and the peak goes on its own line under it, at the start (BRD D181 (5), EC-HIS-07).
+ * No type shrinks.
+ */
+@Composable
+private fun DateAndPeak(
+    dateWidestWord: Int,
+    date: @Composable () -> Unit,
+    peak: @Composable () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Layout(contents = listOf(date, peak), modifier = modifier) { measurables, constraints ->
+        val width = constraints.maxWidth
+        val dateMeasurable = measurables[0].single()
+        val peakPlaceable = measurables[1].single().measure(Constraints(maxWidth = width))
+        val room = width - PEAK_GAP.roundToPx() - peakPlaceable.width
+        if (dateWidestWord <= room) {
+            val datePlaceable = dateMeasurable.measure(Constraints.fixedWidth(room))
+            val height = maxOf(constraints.minHeight, datePlaceable.height, peakPlaceable.height)
+            fun centred(placeable: Placeable) =
+                Alignment.CenterVertically.align(placeable.height, height)
+            layout(width, height) {
+                datePlaceable.placeRelative(0, centred(datePlaceable))
+                peakPlaceable.placeRelative(width - peakPlaceable.width, centred(peakPlaceable))
+            }
+        } else {
+            val datePlaceable = dateMeasurable.measure(Constraints(maxWidth = width))
+            val below = datePlaceable.height + PEAK_UNDER_GAP.roundToPx()
+            val contentHeight = below + peakPlaceable.height
+            val height = maxOf(constraints.minHeight, contentHeight)
+            val top = Alignment.CenterVertically.align(contentHeight, height)
+            layout(width, height) {
+                datePlaceable.placeRelative(0, top)
+                peakPlaceable.placeRelative(0, top + below)
+            }
         }
     }
 }
