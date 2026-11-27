@@ -21,14 +21,16 @@ D164).
 - **THEN** the menu only closes; nothing is removed or toggled
 
 #### Scenario: Room for no item on either side
-- **WHEN** neither side has room for one 48 dp item
-- **THEN** the menu opens on the larger side and may cover other content, but never its chip; the test states whether a
-  supported window reaches this
+- **WHEN** neither side has room for one 48 dp item, as a pinned keyboard inset makes it in a JVM test
+- **THEN** the menu opens on the larger side and may cover other content, but never its chip
+- **AND** this proves the placement arithmetic only: on a device the case was not reachable (see "The keyboard is open"),
+  so no person meets the narrow strip
 
 #### Scenario: The keyboard is open
-- **WHEN** the keyboard is up while the user long-presses a chip
-- **THEN** the area above the keyboard counts as the window's bottom, and the menu covers neither the chip nor sits under
-  the keyboard
+- **WHEN** the keyboard is up while the user long-presses a chip, as in a 360 dp tall landscape window at 200%
+- **THEN** the menu, a focusable popup as Material's always was, takes window focus, the keyboard closes by itself, and
+  the menu opens full size by the rule above; it may lie partly under the sliding keyboard for a few frames, never on its
+  chip (device walk 2026-11-27)
 
 #### Scenario: A full window is unchanged
 - **WHEN** the window is the full phone at 100% or 200% and the menu fits below

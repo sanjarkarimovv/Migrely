@@ -4,6 +4,10 @@ Base: `feature/fix-custom-tag-removal` from `origin/develop` 476f7a27 (team-lead
 branch, parallel to `fix-history-day-numbers`). BRD D199, EC-UX-91, EC-ATK-25, EC-ATK-26, EC-ATK-27, §13 row 64, D194 H2
 reworded (#262). Commits say `Refs #179` / `Refs #262`, never a closing keyword. One writer per branch: android-engineer
 takes it after this plan. Phase 1 = groups 2, 3.1–3.3, 4.1–4.2; phase 2 (Undo) = 3.4–3.6, 4.3 (design D6).
+Amended 2026-11-27 after the device walk and ux rulings §5 (team-lead scope decision): IN = placement, message and Undo as
+built, plus 4.4 (spoken on every path), 4.5 (German word), 4.6 (archived chip offers no remove). OUT = every focus target
+after a removal or an Undo (ux K1, K3, K4, K5), moved to #296 for 1.5.0 (design D4). DROPPED = ux N1, no code (design
+D2). Commits also say `Refs #296` where they touch the focus wording.
 
 ## 1. Plan
 
@@ -42,13 +46,28 @@ takes it after this plan. Phase 1 = groups 2, 3.1–3.3, 4.1–4.2; phase 2 (Und
 
 - [x] 4.1 Strings, phase 1: `message_tag_removed` EN "Removed from your list", DE "Aus deiner Liste entfernt". Verify: `git
   diff origin/develop -- 'features/attack/ui/src/main/res/values*/strings.xml'`.
-- [ ] 4.2 Red first, then implement: Compose test (`features/attack/ui/src/testDebug`): the menu item and the custom action
-  "Remove from my list" each lead to "Removed from your list" shown and announced once (polite live region); keyboard focus
-  moves to the next chip or "+ Your own". Red on develop (no message; record).
-- [ ] 4.3 Phase 2: the Undo action on the message (`attack_snackbar_undo`), spoken name `snackbar_undo_tag_description` EN
-  "Undo removing %1$s", DE "Rückgängig: %1$s zurück in die Liste"; Compose test: Undo restores a chip with the same label and
-  selected state and shows "Undone."; full-list refusal shows `message_tag_limit`; keyboard focus returns to the restored
-  chip; a 40-character name with an emoji is spoken whole.
+- [x] 4.2 Red first, then implement: Compose test (`features/attack/ui/src/testDebug`): the menu item and the custom action
+  "Remove from my list" each lead to "Removed from your list" shown and announced once (polite live region). Red on
+  develop (no message; record). The keyboard-focus part moved to #296 (design D4); done as recorded below.
+- [x] 4.3 Phase 2: the Undo action on the message (`attack_snackbar_undo`), spoken name `snackbar_undo_tag_description` EN
+  "Undo removing %1$s", DE as built "Rückgängig: %1$s zurück in die Liste" (changed by 4.5); Compose test: Undo restores
+  a chip with the same label and selected state and shows "Undone."; full-list refusal shows `message_tag_limit`; a
+  40-character name with an emoji is spoken whole. The keyboard-focus part moved to #296; done as recorded below.
+- [ ] 4.4 Spoken on every path (design D3). Red first: a Compose test that pins the chosen mechanism's observable
+  condition, for example: on the menu path the message's live-region node first appears only after the menu's popup root
+  is gone (no popup root in the rule's roots in that frame), and on the action path at once. Named negative control: red
+  on 2d3ca53f's code (the message appears while the popup is still closing). Then implement; the touch path still shows
+  the message once and Undo still works (rerun `CustomTagRemovalMessageTest`, `CustomTagUndoTest`). Verify:
+  `./gradlew :features:attack:ui:testDebugUnitTest --tests '*CustomTag*'`. Acceptance is on the device, 5.3 (g).
+- [ ] 4.5 German: `snackbar_undo_tag_description` in `values-de/strings.xml` becomes "Rückgängig: %1$s zurück in deine
+  Liste" (spec and design already say so); update the German assertion in `CustomTagUndoTest` first, so it is red on
+  2d3ca53f, then the string. Verify: `git diff origin/develop -- 'features/attack/ui/src/main/res/values-de/strings.xml'`
+  shows the two new keys with these values, and the test passes.
+- [ ] 4.6 Archived chip offers no remove (EC-ATK-28, design D7). Red first: a Compose test with a tag archived and selected
+  on this attack: a long press opens no menu, the chip has no `onLongClickLabel`, and its semantics have no "Remove from my
+  list" custom action; after Undo (un-archived) all three return; a past attack's archived chip likewise offers none.
+  Named negative control: red on 2d3ca53f (menu, label and action present). Then pass no `onArchive` for an archived
+  tag in `ChoiceGroup`. Verify: `./gradlew :features:attack:ui:testDebugUnitTest --tests '*ArchivedChip*'`.
 
 ## 5. Docs and verify
 
@@ -61,22 +80,33 @@ takes it after this plan. Phase 1 = groups 2, 3.1–3.3, 4.1–4.2; phase 2 (Und
   and TalkBack afterwards:
   - (a) 1080 × 900 and 1080 × 700 px at 200%: long-press custom chips at several heights; the menu never covers the chip;
     tap the chip's place with the menu open: it only closes. Develop's build first (negative control: covers at ~40%).
-  - (b) Remove by the menu item, by TalkBack's custom action and with a keyboard: message shown (and spoken once); Undo
-    restores; a selected tag stays on this attack.
+  - (b) Remove by the menu item, by TalkBack's custom action and with a keyboard: message shown; Undo restores; a selected
+    tag stays on this attack. Done in the first walk; rerun the touch rows after 4.4 (R6).
   - (c) Fill a kind to 100 after removing one, then Undo: "Your list is full…".
-  - (d) EN and DE at 200%, portrait 360 dp and landscape 360 dp tall: the message wraps, covers no control.
-  - (e) TalkBack focus after removal and after closing the menu: record where it lands; the next double tap toggles no
-    chip. If it does, stop and report to PM (design D4).
-  - (f) Keyboard open while long-pressing (custom tag dialog closed, the note focused): the menu stays above the keyboard.
+  - (d) EN and DE at 200%, portrait 360 dp and landscape 360 dp tall: the message wraps without "…" and sits where the
+    screen's other messages sit; Undo inside the window. Take the same shot of develop's "Pain level removed" at 200% to
+    show whether the top-bar overlap is pre-existing (design D3).
+  - (e) Focus after removal: record only, for #296 (design D4); no stop rule in this change. Done in the first walk.
+  - (f) Keyboard open while long-pressing (the note focused): the keyboard closes by itself and the menu opens full size,
+    never on its chip. Done in the first walk (design D2).
+  - (g) After 4.4, TalkBack on (log level VERBOSE, restored after): the menu path (double-tap-and-hold, double tap "Remove
+    from my list") 3 runs and the custom-action path 3 runs; each run's TalkBack log shows the "Removed from your list"
+    live-region utterance once. Develop has no message, so no develop control; the 2d3ca53f result (0 of 6 on the menu
+    path) is the before.
+  - (h) After 4.6: remove a tag selected on this attack; long press it: no menu; TalkBack's actions: no "Remove from my
+    list"; Undo: menu and action back. Open a past attack with an archived tag: no remove.
 - [ ] 5.4 Independent code review (`code-reviewer`) on `git diff origin/develop...HEAD`, briefed with this spec and risks
   R1–R5. Fix real findings and record them here.
-- [ ] 5.5 German check on the shipped `features/attack/ui/src/main/res/values-de/strings.xml` (the diff, not a table), T23
-  style, by ux-designer: `message_tag_removed` and `snackbar_undo_tag_description`. If a string changes, the spec and design
-  change first. No medical-reviewer: no health statement.
+- [x] 5.5 German check on the shipped `features/attack/ui/src/main/res/values-de/strings.xml` (the diff, not a table), T23
+  style, by ux-designer: done on 6a60c850 (ux rulings §5.3): `message_tag_removed` PASS; `snackbar_undo_tag_description`
+  "die Liste" → "deine Liste" (task 4.5). ux confirms the shipped line after 4.5 in one line. No medical-reviewer: no
+  health statement.
 - [ ] 5.6 QA independent check (only what this diff reaches, with negative controls):
   - API 36 (emulator-5580): re-run `n1.py` and `n1rep.py` on the candidate (expected 0 overlaps; develop as the negative
-    control); a TalkBack row for the custom action (message spoken, Undo name spoken); the full-list refusal.
-  - API 26 (emulator-5582): (a) at 200% and one removal with Undo.
+    control); TalkBack rows for the menu path and the custom-action path (message spoken once each, from the TalkBack log;
+    Undo name spoken); the archived chip of 5.3 (h); the full-list refusal.
+  - API 26 (emulator-5582), without TalkBack: (a) at 200%, one removal with Undo, and the archived chip's long press (no
+    menu).
   - #262: re-read the existing #262 rows against `kept_px ≥ max(1, min(shown_px, line_with_clearance_px) − 1)` with the
     measured line; try the 1 px floor case (showed 1 px before a one-step reopen) and file a defect only if the field leaves
     the accessibility tree.
@@ -86,15 +116,19 @@ takes it after this plan. Phase 1 = groups 2, 3.1–3.3, 4.1–4.2; phase 2 (Und
 
 | Scenario | Proof |
 |---|---|
-| Popup: short window; check can fail; full window; keyboard; RTL; no room | 2.1, 5.3 (a), (f), 5.6 |
+| Popup: short window; check can fail; full window; RTL | 2.1, 5.3 (a), 5.6 |
+| Popup: room for no item (arithmetic only) | 2.1 with a pinned inset; not reachable on a device, 5.3 (f) |
+| Popup: the keyboard is open | 5.3 (f) |
 | Popup: tap on the chip's place | 2.3, 5.3 (a) |
 | Popup: TalkBack, keyboard, reduced motion | existing menu tests (2.2), 5.3 (b) |
 | Removing from the menu / TalkBack's action; check can fail | 3.1, 4.2, 5.3 (b), 5.6 |
+| Removing with TalkBack through the menu (spoken once) | 4.4, 5.3 (g), 5.6 |
 | Undo; selected tag; list full; second removal; write fails | 3.4–3.6, 4.3, 5.3 (b), (c) |
 | Leaving the screen; rotation | existing message-host rules, 4.2 (one assertion each) |
-| Keyboard and TalkBack focus | 4.2, 4.3, 5.3 (e) |
-| German; long and unusual names | 4.3, 5.5 |
+| Focus after a removal, a known limit | 5.3 (e) record; #296 |
+| German; long and unusual names | 4.3, 4.5, 5.5 |
 | 200% and landscape | 5.3 (d) |
+| Archived chip: selected on this attack; Undo brings remove back; past attack; check can fail | 4.6, 5.3 (h), 5.6 |
 | During an attack, Free or Premium; backup and restore | No row: the message has no theme, entitlement or data branch; the archive flag and its backup are unchanged |
 | #262 reopen wording | 5.6 (#262 rows re-read) |
 

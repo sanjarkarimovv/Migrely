@@ -2,9 +2,9 @@
 
 ### Requirement: Removing a tag says so and can be undone
 Removing a custom tag from the list, by its menu, the TalkBack action, Switch Access or a keyboard, SHALL show "Removed
-from your list" with Undo in Attack details' message host, with the screen's message timing. Undo SHALL un-archive the
-tag, bring its chip back in place with its selection on this attack, and show "Undone.", unless that kind's list is full,
-when it SHALL show "Your list is full. Remove one to add another." (BRD D199, EC-ATK-25, EC-ATK-26, EC-ATK-27).
+from your list" with Undo in Attack details' message host, spoken once on every path. Undo SHALL un-archive the tag,
+restore its chip with its selection on this attack and show "Undone.", unless that kind's list is full, when it SHALL
+show "Your list is full. Remove one to add another." (BRD D199, EC-ATK-25, EC-ATK-26, EC-ATK-27).
 
 #### Scenario: Removing from the menu
 - **WHEN** the user long-presses "Jaw pain", which is not selected on this attack, and taps "Remove from my list"
@@ -12,8 +12,13 @@ when it SHALL show "Your list is full. Remove one to add another." (BRD D199, EC
 
 #### Scenario: Removing with TalkBack's action
 - **WHEN** a TalkBack user picks the custom action "Remove from my list" on a chip
-- **THEN** "Removed from your list" is announced politely, once, and the message offers Undo, whose spoken name is "Undo
+- **THEN** "Removed from your list" is spoken once, politely, and the message offers Undo, whose spoken name is "Undo
   removing Jaw pain"
+
+#### Scenario: Removing with TalkBack through the menu
+- **WHEN** a TalkBack user double-taps and holds a chip, then double-taps "Remove from my list" in the menu
+- **THEN** "Removed from your list" is spoken once after the menu has closed, and TalkBack's log shows the live-region
+  utterance; the menu's closing never swallows it (the build at 2d3ca53f spoke it 0 of 6 times)
 
 #### Scenario: The check can fail
 - **WHEN** the removal test runs against `develop`
@@ -48,19 +53,18 @@ when it SHALL show "Your list is full. Remove one to add another." (BRD D199, EC
 - **THEN** the screen's existing save-error message shows; on a failed removal the chip stays, on a failed Undo the tag
   stays archived (EC-ATK-27)
 
-#### Scenario: Keyboard focus
-- **WHEN** a keyboard user removes a chip, or undoes the removal
-- **THEN** focus moves to the next chip in the section, or to "+ Your own" if the removed chip was last; after Undo it
-  returns to the restored chip
-
-#### Scenario: TalkBack focus after removal
-- **WHEN** a TalkBack user removes a chip or closes the menu without removing
-- **THEN** focus is not forced; QA records where it lands, and the next double tap never toggles another chip
+#### Scenario: Focus after a removal, a known limit
+- **WHEN** a TalkBack or keyboard user removes a chip
+- **THEN** the app moves no focus, as on `develop`: focus lands on the chip that slides into the removed chip's place, or
+  on "Add your own symptom" after the last one; TalkBack may say that chip's state before its name, and a double tap in
+  the first seconds can select it on this attack, which is visible, saved and undone by one more double tap
+- **AND** this pre-existing behaviour and the keyboard targets after removal and after Undo are tracked in #296 (1.5.0),
+  not in this change
 
 #### Scenario: German
 - **WHEN** the app is German
-- **THEN** the message reads "Aus deiner Liste entfernt", the button "Rückgängig", its spoken name "Rückgängig: Jaw pain
-  zurück in die Liste", which starts with the visible word (EC-UX-45)
+- **THEN** the message reads "Aus deiner Liste entfernt", the button "Rückgängig", and its spoken name "Rückgängig: Jaw
+  pain zurück in deine Liste", which starts with the visible word (EC-UX-45)
 
 #### Scenario: Long and unusual names
 - **WHEN** the tag's name has 40 characters, emoji or letters with accents
@@ -68,7 +72,8 @@ when it SHALL show "Your list is full. Remove one to add another." (BRD D199, EC
 
 #### Scenario: 200% font and landscape
 - **WHEN** the message shows at 200% font, in portrait at 360 dp and in a 360 dp tall landscape window
-- **THEN** it wraps without "…", covers no control, and Undo stays reachable, as the screen's other messages do
+- **THEN** it wraps without "…", sits where the screen's other messages sit (the "Messages appear at the top and stay dim"
+  rule), which may lie over the page's first row of chips, and Undo stays inside the window and reachable
 
 #### Scenario: Rotation while the message shows
 - **WHEN** the phone is rotated while the message shows
@@ -81,3 +86,25 @@ when it SHALL show "Your list is full. Remove one to add another." (BRD D199, EC
 #### Scenario: Backup and restore
 - **WHEN** a backup is made after a removal or after an Undo
 - **THEN** it holds the tag's archived state as stored, as before; no new data is kept for the message
+
+### Requirement: An archived chip offers no remove
+A custom tag that is archived but still shown on an attack SHALL offer no remove: no long-press menu, no long-press label
+and no "Remove from my list" action, until Undo un-archives it. Its selection on that attack SHALL work as before (BRD
+EC-ATK-11, EC-ATK-28, D199 (3)).
+
+#### Scenario: The removed tag was selected on this attack
+- **WHEN** the user removes "Jaw pain", which is selected on this attack, and the chip stays shown
+- **THEN** a long press opens no menu, the chip has no long-press label, and TalkBack's actions offer no "Remove from my
+  list"; a second "Removed from your list" can never be shown for it (EC-ATK-28)
+
+#### Scenario: Undo brings the remove back
+- **WHEN** the user taps Undo for that removal
+- **THEN** the chip offers the menu, the long-press label and the TalkBack action again
+
+#### Scenario: A past attack shows an archived tag
+- **WHEN** the user opens a past attack that uses a tag removed earlier
+- **THEN** that chip shows as selected and offers no remove
+
+#### Scenario: The check can fail
+- **WHEN** the archived-chip test runs against the code at 2d3ca53f (or `develop`)
+- **THEN** the archived chip still offers the menu and the action, and the test fails

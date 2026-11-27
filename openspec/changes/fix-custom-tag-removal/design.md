@@ -20,10 +20,12 @@ explores the actions menu. A slip must never silently delete what they entered.
 
 ## Goals and non-goals
 
-Goals: the menu never sits on its chip; every removal is announced with a way back; #262's wording matches the code and
-QA's threshold.
+Goals: the menu never sits on its chip; every removal is announced with a way back, and spoken on every path; an
+archived chip offers no second remove; #262's wording matches the code and QA's threshold.
 
-Non-goals: other menus (there are none), other Undo messages, tag editing, any keyboard-follow change.
+Non-goals: other menus (there are none), other Undo messages, tag editing, any keyboard-follow change, and focus after a
+removal or an Undo (team-lead scope decision 2026-11-27: the keyboard and focus family is where #259 came from; moved to
+#296 for 1.5.0, D4).
 
 ## Decisions
 
@@ -48,6 +50,13 @@ the "every popup goes through a helper" rule stay; no wait, no new motion.
 | Lower Material's margin | Still overlaps when neither side fits | No |
 | Open a dialog instead of a menu | New pattern, more taps | No |
 
+Device fact (walk 2026-11-27, emulator-5570, API 36): the "no room for one item" strip is not reachable by a finger. The
+menu is a focusable popup, as Material's always was, so it takes window focus; Gboard closes by itself and the menu opens
+full size below the chip, partly under the sliding keyboard for about 3 frames, never on its chip. Robolectric reaches
+the strip only because the test pins the keyboard inset, so that test proves the placement arithmetic, not what a person
+meets. ux-designer's rule N1 (hide the keyboard first, then open the menu) is therefore dropped: Android already does it,
+and no code is added for it (team-lead decision 2026-11-27).
+
 ### D3. Message and Undo through the existing message system (D199 (2), (3))
 
 A new `AttackMessageUiModel` case for a removed tag carries the tag id and name. The view model emits it after a successful
@@ -63,19 +72,38 @@ Strings (`features/attack/ui`):
 | Key | EN | DE |
 |---|---|---|
 | `message_tag_removed` | Removed from your list | Aus deiner Liste entfernt |
-| `snackbar_undo_tag_description` | Undo removing %1$s | Rückgängig: %1$s zurück in die Liste |
+| `snackbar_undo_tag_description` | Undo removing %1$s | Rückgängig: %1$s zurück in deine Liste |
 
 The visible button reuses `attack_snackbar_undo`. The German follows the spoken-name rule (starts with the visible word,
-EC-UX-45); the existing German medication Undo name does not, so it is not a model. The German is a ux draft and gets the
-T23-style check on the shipped `values-de/strings.xml`; if that check changes it, this design and the spec change first.
-No health statement: no medical-reviewer.
+EC-UX-45); the existing German medication Undo name does not, so it is not a model. ux-designer's shipped-file check
+(ux rulings §5.3, 2026-11-27): `message_tag_removed` PASS; `snackbar_undo_tag_description` changes one word, "die Liste"
+→ "deine Liste", to match "Aus deiner Liste entfernt" and "Deine Liste ist voll". No health statement: no
+medical-reviewer.
 
-### D4. Focus (D199 (5))
+**Spoken on every path.** The device walk found the message silent on TalkBack's menu path (0 of 6 runs; spoken on the
+custom-action path). TalkBack's log: the content-change events sent while the popup closes fail with "node is null", and
+no live-region event is handled, so the announcement is dropped, not interrupted. The message must be spoken once on
+every path. The engineer picks the mechanism (for example, show or announce the message only after the popup's window is
+gone); the acceptance is on a device: TalkBack's log shows the live-region utterance, 3 of 3 on the menu path and 3 of 3
+on the action path. The JVM test pins the chosen mechanism's observable condition and is red on 2d3ca53f.
 
-Keyboard: after removal request focus on the next chip in the section, or "+ Your own" if it was last; after Undo on the
-restored chip; after closing the menu without removal on the chip. TalkBack: no forced focus (no public Compose API,
-D194); the polite announcement carries the outcome. QA records where TalkBack focus lands and that the next double tap
-toggles nothing.
+**Message placement (PM decision 2026-11-27).** The walk saw the message over the page's first row of chips, and at 200%
+over part of the top bar's date line. This message follows the screen's existing placement ("Messages appear at the top
+and stay dim", D158, D178), as "Pain level removed" does; the spec says so instead of promising "covers no control",
+which no message on this screen keeps. Whether the 200% overlap of the top bar's date line breaks that existing rule is a
+question for the message host, not for #179: QA compares it with develop's "Pain level removed" at 200% and files it if
+the same (pre-existing).
+
+### D4. Focus: out of this change (#296)
+
+Team-lead scope decision 2026-11-27. The device walk showed focus after a removal is pre-existing (develop equals the
+branch, 2 of 2 each): TalkBack and keyboard focus land on the chip that slides into the removed chip's place; TalkBack says
+its state ("Not selected") about 1 s before its name; a double tap in the first ~2 s selects that neighbour on this attack
+(an `attack_tag` row). After the last chip, focus lands on "Add your own symptom". Fixing it needs focus code in the chip
+group, the family where #259 came from, so it moves to #296 (S3, 1.5.0) with ux-designer's rules K1, K3, K4 (keyboard)
+and K5 (TalkBack's landing line). This change adds no focus code and promises no focus target. D199 (5) states the limit
+truthfully: the promise "the next double tap never toggles another chip" is withdrawn, since it cannot be met and is not
+a regression; a toggle is visible, saved and reversible.
 
 ### D5. #262: wording only
 
@@ -91,12 +119,21 @@ Phase 1 = placement (tasks 2) and the message without Undo (tasks 3.1–3.3, 4.1
 task list is ordered so phase 1 can merge alone; then the PM moves the Undo scenarios to a follow-up change before
 archive.
 
+### D7. An archived chip offers no remove (EC-ATK-28; ux K2)
+
+`ChoiceGroup` and `ChoiceChip` never read `archived`, so a tag that is archived but still shown on an attack (EC-ATK-11)
+keeps the long-press menu, its label and the TalkBack action, on develop and on the branch. Using it shows a second
+"Removed from your list" with an Undo whose effect is not established. Fix: pass no `onArchive` for an archived tag, so it
+has no menu, no long-press label and no custom action until Undo un-archives it. A pure fix under EC-ATK-11 and D199 (3):
+an EC row (EC-ATK-28) and one clause in D199 (3), no new D-number. Red-first Compose test on 2d3ca53f.
+
 ## Risks
 
 | # | Risk | Mitigation |
 |---|---|---|
 | R1 | The position provider changes the menu's place in full windows | Scenario "A full window is unchanged"; QA's 20-placement sweep |
-| R2 | TalkBack focus after removal lands on a neighbour and the next double tap toggles it | QA row; a stop rule: report to PM before adding focus code |
+| R2 | TalkBack focus after removal lands on a neighbour and a quick double tap selects it (pre-existing) | Out of scope, #296 (1.5.0); stated as a known limit in D199 (5) and the spec; no focus code in this patch |
+| R6 | The announcement fix changes when the message appears on the touch path | Touch rows of 5.3 (b) rerun; the message still shows once, Undo still works |
 | R3 | The German spoken name reads badly | Shipped-file check (task 5.5) |
 | R4 | The 1 px floor case (showed 1 px) is untested | QA tries it; files a defect only if it fails |
 | R5 | Undo after the list refilled | Restore use case checks the limit first (EC-ATK-26) |

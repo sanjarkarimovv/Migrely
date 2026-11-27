@@ -23,15 +23,25 @@ accessibility tree, the #259 S1 failure). Wording only; no code.
   scrolling content; a tap outside, on the chip too, only closes it (EC-UX-91; a fix, no new decision).
 - Every removal path shows "Removed from your list" with Undo; Undo un-archives the tag and restores the chip, unless the
   list is full (D199, new).
+- The message is spoken once on every removal path, TalkBack's menu path included (the device walk found it silent there,
+  0 of 6: the closing popup dropped the live-region event).
+- A tag that is archived but still shown on an attack offers no remove (no menu, no long-press label, no TalkBack action)
+  until Undo (EC-ATK-28; it offered one on develop and on the first build).
 - New strings in `features/attack/ui`: EN "Removed from your list", spoken Undo name "Undo removing %1$s"; DE "Aus deiner
-  Liste entfernt", "Rückgängig: %1$s zurück in die Liste" (ux drafts; the German is checked in the shipped file).
+  Liste entfernt", "Rückgängig: %1$s zurück in deine Liste" (ux shipped-file check, 2026-11-27).
 - #262: D194 H2 and the app-shell requirement "The keyboard never hides a focused field that shows" allow 1 px of rounding,
   never below 1 px; the QA threshold becomes `kept_px ≥ max(1, min(shown_px, line_with_clearance_px) − 1)`.
 
 ## Out of scope
 
 - Other Undo messages, editing tag names, a list of archived tags.
-- #283, #279, #273, #291.
+- Focus after a removal or an Undo, keyboard or TalkBack: pre-existing (develop behaves the same), needs focus code in the
+  chip group; moved to #296 for 1.5.0 (team-lead scope decision 2026-11-27). D199 (5) states the known limit.
+- ux rule N1 (hide the keyboard before the menu opens): dropped, no code. On a device the menu takes window focus and the
+  keyboard already closes by itself.
+- The message's position: it follows the screen's existing message placement; any overlap with the top bar at 200% is the
+  message host's, checked against develop by QA.
+- #283, #279, #273, #291, #296.
 - Any keyboard-follow code for #262 (wording only). The 1 px floor case is untested; QA tries it before anyone files it.
 
 ## Capabilities
@@ -48,7 +58,7 @@ accessibility tree, the #259 S1 failure). Wording only; no code.
   that checks the 100 limit), `features/attack/presentation` (`AttackDetailsViewModel`, a message model with Undo),
   `features/attack/ui` (`AttackChoiceSections.kt`, `AttackMessages.kt`, strings EN and DE), `app` DI; tests per layer.
 - No permission, manifest, schema, migration or backup change: the archive flag exists and is backed up today.
-- BRD: D199 (new), EC-UX-91, EC-ATK-25, EC-ATK-26, EC-ATK-27, §13 row 64, D194 H2 reworded in place.
+- BRD: D199 (new), EC-UX-91, EC-ATK-25, EC-ATK-26, EC-ATK-27, EC-ATK-28, §13 row 64, D194 H2 reworded in place.
 - If the patch must shrink: the placement fix and a message without Undo ship first, Undo after (D199 (6)); the PM then
   moves the Undo scenarios to a follow-up change before this one is archived.
 - 1.5.0 (T78, T70): no shared file.
