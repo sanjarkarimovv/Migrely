@@ -45,4 +45,4 @@ section already says so. New here: a tap is one more request to our own domain b
 
 ## Deploy rule (lead, 2026-11-23)
 
-The branch is **not** merged into `develop` before deploy day. On deploy day the main session sets the policy's effective date in one commit, merges (settling any `feature/policy-word-of-mouth` conflict in number order) and the owner deploys from that merge, the same day. Otherwise a routine deploy from `develop` would carry a policy dated before the counter sentence, or a button with no Function. `SITE_DEPLOY=1` makes the build refuse a date before 23 November 2026 or after today.
+The branch is **not** merged into `develop` before deploy day. On deploy day the main session sets the policy's effective date in one commit, merges (settling any `feature/policy-word-of-mouth` conflict in number order) and the owner deploys from that merge, the same day. Otherwise a routine deploy from `develop` would carry a policy dated before the counter sentence, or a button with no Function. `SITE_DEPLOY=1` makes the build refuse a date before 28 November 2026 (the day after the live policy's last date) or after today.

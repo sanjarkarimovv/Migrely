@@ -400,7 +400,7 @@ T2_FUNCTION = ROOT / 'website/functions/go/android-t2.js'
 T2_QR_FILE = 'qr-ig-ads-test2-v1.svg'
 # A deploy build (SITE_DEPLOY=1) with the counter on stops while the policy still carries a date from before the counter
 # sentence existed; the main session sets the real deploy day in the policy first (BRD D196).
-T2_POLICY_FROM = date(2026, 11, 23)
+T2_POLICY_FROM = date(2026, 11, 28)
 
 
 def ad_play_button(label='Get it on Google Play', link=None):
