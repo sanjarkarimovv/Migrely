@@ -64,6 +64,15 @@ width left after the side bars and cutout is at least 456 dp. Confirmed as built
 456 dp (two panes). A tester checks it with `wm size` and no side bars: 455 dp wide gives one column, 456 dp two panes.
 640 and 800 dp keep two panes; a 640 dp phone with a 48 dp side navigation bar leaves 592 dp, still two panes.
 
+What 200 dp buys (corrected after code review ee02ad70, N1): a 200 dp pane gives a drawn cell of (200 + 6) / 7 − 6 =
+23.4 dp and a number box of cell − 5 dp − 3 dp = 15.4 dp. The 100% number needs 15.2 dp (12 sp × 1.264 em), a 23.2 dp
+cell: 0.26 dp to spare, not the 3 dp the plan claimed (its "20.2 dp" counted only the start inset). At mdpi, hdpi and
+xhdpi pixel rounding uses that up: the number stays at the 100% floor and runs up to about 1 dp into the 3 dp end inset.
+The Text's own box is cell − 5 dp, so nothing wraps or is cut; at hdpi, in windows 456 to about 460 dp wide, its end
+touches the 2.5 dp chosen ring by about 0.5 px. Decision: the guard stays at 200 dp and the margin is accepted. Such a
+window (under 480 dp tall, 456–460 dp wide) is a rare split-screen size, nothing is cut, and raising the guard would move
+the threshold a tester checks. So D198 (3) is reachable up to pixel rounding, not "always".
+
 ### D5. List row stacking (D181 (5))
 
 Measure the peak's single-line width and the date's widest unbreakable piece. As built (accepted 2026-11-27): Compose's

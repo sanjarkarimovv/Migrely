@@ -2,9 +2,9 @@
 
 ### Requirement: Day numbers fit their cell on one line
 A day number SHALL be one line that never wraps, is never cut and never shows "…". All day numbers of a grid SHALL share
-one size: the person's `labelSmall` when the widest two-digit day, measured in Bold, fits the cell less 5 dp at the start
-and 3 dp at the end; else the largest size that fits, never below the 100% `labelSmall`. The weekday initials SHALL follow
-the same rule. Cells, gaps, pitch, drawings and colours SHALL not change (BRD D198, EC-HIS-05).
+one size: the person's `labelSmall` when the widest two-digit day, in Bold, fits the cell less 5 dp at the start and 3 dp
+at the end; else the largest size that fits, never below the lesser of the 100% size and the person's. Weekday initials
+SHALL follow the same rule. Cells, gaps, pitch, drawings and colours SHALL not change (BRD D198, EC-HIS-05).
 
 #### Scenario: Landscape at 200%
 - **WHEN** History shows a month at 200% font in a 640 × 360 dp landscape window, in English and in German
@@ -15,10 +15,19 @@ the same rule. Cells, gaps, pitch, drawings and colours SHALL not change (BRD D1
 - **WHEN** the grid had to step its size down
 - **THEN** one-digit days, two-digit days and today (Bold) all use that same size, so no day looks more important
 
+#### Scenario: The largest size that fits
+- **WHEN** the grid steps its size down
+- **THEN** the chosen size fits, and one px more would not fit
+
 #### Scenario: Never below the 100% size
 - **WHEN** the cell is too narrow even for the 100% size
-- **THEN** the number keeps the 100% size, and the History pane guard ("Two panes only when each pane is wide enough") is
-  what keeps such a cell from being shown
+- **THEN** the number keeps the 100% size on one line, inside its own box (the cell less 5 dp), and may run up to about
+  1 dp into the 3 dp end inset; the History pane guard keeps cells narrower than about 23 dp from being shown, and at a
+  200 dp pane pixel rounding can still leave the number at this floor (D198 (4))
+
+#### Scenario: A font smaller than 100%
+- **WHEN** the person's font scale is below 1.0 and their size does not fit
+- **THEN** the floor is the person's own size, so the fit never makes the number larger than the person chose
 
 #### Scenario: Portrait stays as it is (negative control)
 - **WHEN** the calendar renders at 360 dp and at 411 dp in portrait, at 100% and at 200%

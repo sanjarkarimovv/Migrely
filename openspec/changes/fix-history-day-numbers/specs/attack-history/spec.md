@@ -29,6 +29,7 @@ less than its 100% size (BRD D198 (4), EC-HIS-06).
 #### Scenario: Switching layout keeps the place
 - **WHEN** the window changes so History switches between one column and two panes
 - **THEN** the chosen day and the shown month stay, as they do on rotation today, and nothing is written
+- **AND** each pane's scroll position starts again at the top, as on `develop` when the layout flips
 
 ### Requirement: A list row puts the peak under the date when the date would break
 In History's month list and the chosen day's list, the peak SHALL sit beside the date range only while the room left

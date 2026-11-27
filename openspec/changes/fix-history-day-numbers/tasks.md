@@ -28,6 +28,23 @@ No domain, data or datasource layer changes, and no strings.
 - [x] 2.5 TalkBack unchanged: the existing calendar label and order tests pass, plus one assertion that a day's merged
   label equals develop's ("…, chosen" included).
 
+- [ ] 2.6 Code review ee02ad70 S1: in the 140 dp case also assert that the weekday initials have no visual overflow and are
+  no wider than their column (red on develop's code: the initials keep the person's size); in the landscape cases assert
+  that one px more than the chosen size no longer fits ("largest size that fits"). Verify:
+  `./gradlew :designsystem:testDebugUnitTest --tests '*MonthSkyCalendarDayNumberTest*'`.
+- [ ] 2.7 Code review N2: clamp the floor in `FittedLabelStyle.kt` to min(100% size, the person's size) (one line), with a
+  test at font scale 0.85 and a narrow width where the person's size does not fit: the result is never larger than the
+  person's size. Named negative control: red on the current branch code (ee02ad70) before the clamp.
+- [ ] 2.8 Code review N3: re-run every red run against the COMMITTED test files (2.1, 2.2, 2.6, 2.7, 3.1, 3.3, 3.6, each on
+  develop's product code with only the test hook), and keep the logs in `migrely-work/275/` with the commit SHA in the
+  name. The test names and failure lines in the log must match the committed files.
+- [ ] 2.9 Code review N5: "420–480 dpi unchanged" is pinned by the row tests at xxhdpi (480 dpi) and on the device by walk
+  (d). Add one 420 dpi (`w360dp-h640dp-port-420dpi`) case to the portrait negative controls of
+  `HistoryAttackRowStackTest`; it is one more `@Config` line.
+- [ ] 2.10 Instrumented on emulator-5570 (the calendar's focus modifiers moved onto a `BoxWithConstraints`): Verify:
+  `ANDROID_SERIAL=emulator-5570 ./gradlew :designsystem:connectedDebugAndroidTest` with `MonthSkyCalendarTest` and
+  `MonthSkyCalendarKeyboardTest` green (one Tab stop, Tab enters on the anchor day, arrows, Shift+Tab leaves the grid).
+
 ## 3. History UI: pane guard and list rows
 
 - [x] 3.1 Red first: `HistoryPaneGuardTest` (Robolectric, `features/history/ui/src/testDebug`): `w360dp-h380dp` at 100%
@@ -51,7 +68,8 @@ No domain, data or datasource layer changes, and no strings.
 
 ## 4. Docs
 
-- [ ] 4.1 Record the verification below. No user doc change.
+- [x] 4.1 Phase 1 verification recorded below (2.x, 3.x, 5.1, 5.2). No user doc change.
+- [ ] 4.2 Final record after 2.6–2.10, 5.3 and 5.5, with the scenario map below filled in.
 
 ## 5. Verify
 
@@ -69,14 +87,42 @@ No domain, data or datasource layer changes, and no strings.
   - (e) List rows in (a): date breaks only between words, peak below; an attack in progress row.
   - (f) TalkBack in (a): days and a stacked row say the same as on develop; keyboard Tab and arrows unchanged.
   - (g) Page months and rotate: numbers never jump between months.
+  - (h) In (a) at the fitted size, by eye and zoomed screenshot: the digits stay clear of the period drop, the chosen ring
+    and the focus ring (the line height stays at the person's size while the font shrinks).
+  - (i) A cutout on each side (Developer options › Display cutout) in landscape at 200%: panes and numbers as in (b).
+  - (j) uiautomator dump in (a): a stacked row and an unstacked row are each one node with the same label as on develop,
+    and no extra empty nodes appear; the days likewise.
+  - (k) "Force RTL layout direction" in (a): numbers at the top start, mirrored, whole; Tab and arrows unchanged.
+  - (l) Enter and leave split screen with History open on a chosen day in a past month: the month and the chosen day stay;
+    the scroll position starts again at the top, as on develop.
+  - (m) Display size Largest, portrait and landscape at 200%: the layout follows the 456 dp rule, numbers whole.
+  - (n) A pop-up (freeform) window, if the emulator offers one: the same rule; else record "not available".
 - [ ] 5.4 Independent code review (`code-reviewer`) on `git diff origin/develop...HEAD`, briefed with this spec and risks
   R1–R5. Fix real findings and record them here.
 - [ ] 5.5 QA independent check (only what this diff reaches, with negative controls):
   - API 36 (emulator-5580): R25 and R29 rows EN and DE, split screen in portrait, side navigation; the develop build as the
     negative control shows "1" for 16 in (a).
   - API 26 (emulator-5582, linear scale): (a) and (d) at 200%.
-  - TalkBack day labels and the stacked row.
+  - TalkBack day labels and the stacked row; a uiautomator dump with no extra empty nodes.
+  - API 36: Force RTL (k), entering and leaving split screen (l), Display size Largest (m), a cutout (i).
 - [ ] 5.6 Archive: `openspec archive fix-history-day-numbers --yes`; `openspec validate --specs --strict` passes.
+
+## Scenario map
+
+| Scenario | Proof |
+|---|---|
+| month-sky: landscape at 200%; all one size; largest that fits; floor; smaller font | 2.1, 2.2, 2.6, 2.7; walk (a), (b) |
+| month-sky: portrait stays (negative control); check can fail | 2.1, 2.4 goldens, 2.8; walk (d) |
+| month-sky: paging and rotating | walk (g) |
+| month-sky: rings, drops, future days | walk (h) |
+| month-sky: first use and loading | 2.1 (same drawing path); walk (a) on an empty diary is optional |
+| month-sky: TalkBack, keyboard, RTL | 2.5, 2.10; walk (f), (k); QA |
+| month-sky: dark, light, Premium, attack | No row: the fit has no theme, entitlement or attack branch |
+| attack-history: landscape; split screen; threshold; check can fail | 3.1; walk (b), (c), (i) |
+| attack-history: pop-up window or larger display size | walk (m), (n); QA |
+| attack-history: switching layout keeps the place | walk (l); QA |
+| attack-history rows: landscape; longest peak; room enough; portrait break; in progress; check can fail | 3.3, 3.6, 2.9; walk (e) |
+| attack-history rows: TalkBack and keyboard | 3.3 label case; walk (f), (j) |
 
 ## Verification record
 
