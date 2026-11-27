@@ -38,13 +38,13 @@ class AttackMessageBehaviourUiMapperTest(
                 AttackMessageUiModel.PointRemoved("a", IntensityPointUiModel(1L, 6)),
                 undo
             ),
-            // Phase 1 of D199: the message without Undo.
+            // D199: as the screen's other removals, with Undo.
             arrayOf<Any>(
                 AttackMessageUiModel.CustomTagRemoved(
                     "a",
                     CustomTagUiModel("t", TagKindUiModel.Symptom, "Jaw pain", archived = false)
                 ),
-                information
+                undo
             ),
             arrayOf<Any>(AttackMessageUiModel.PointOutsideAttack, information),
             arrayOf<Any>(AttackMessageUiModel.TagLimitReached, information),

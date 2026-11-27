@@ -37,6 +37,7 @@ import com.migrely.app.attack.domain.usecase.MergeAttacksUseCase
 import com.migrely.app.attack.domain.usecase.PurgeExpiredDeletionsUseCase
 import com.migrely.app.attack.domain.usecase.RemoveIntakeUseCase
 import com.migrely.app.attack.domain.usecase.RemoveIntensityPointUseCase
+import com.migrely.app.attack.domain.usecase.RestoreCustomTagUseCase
 import com.migrely.app.attack.domain.usecase.RestoreIntakeUseCase
 import com.migrely.app.attack.domain.usecase.SelectAttackTagUseCase
 import com.migrely.app.attack.domain.usecase.SetFunctionalImpactUseCase
@@ -201,6 +202,17 @@ internal object AttackModule {
     ) = ArchiveCustomTagUseCase(setCustomTagArchivedRepository, coroutineContextProvider)
 
     @Provides
+    fun providesRestoreCustomTagUseCase(
+        countActiveCustomTagsRepository: CountActiveCustomTagsRepository,
+        setCustomTagArchivedRepository: SetCustomTagArchivedRepository,
+        coroutineContextProvider: CoroutineContextProvider
+    ) = RestoreCustomTagUseCase(
+        countActiveCustomTagsRepository,
+        setCustomTagArchivedRepository,
+        coroutineContextProvider
+    )
+
+    @Provides
     fun providesDeleteAttackUseCase(
         deleteAttackRepository: DeleteAttackRepository,
         coroutineContextProvider: CoroutineContextProvider
@@ -280,6 +292,7 @@ internal object AttackModule {
         updateAttackNoteUseCase: UpdateAttackNoteUseCase,
         addCustomTagUseCase: AddCustomTagUseCase,
         archiveCustomTagUseCase: ArchiveCustomTagUseCase,
+        restoreCustomTagUseCase: RestoreCustomTagUseCase,
         deleteAttackUseCase: DeleteAttackUseCase,
         mergeAttacksUseCase: MergeAttacksUseCase,
         removeIntakeUseCase: RemoveIntakeUseCase,
@@ -300,6 +313,7 @@ internal object AttackModule {
             updateAttackNoteUseCase = updateAttackNoteUseCase,
             addCustomTagUseCase = addCustomTagUseCase,
             archiveCustomTagUseCase = archiveCustomTagUseCase,
+            restoreCustomTagUseCase = restoreCustomTagUseCase,
             deleteAttackUseCase = deleteAttackUseCase,
             mergeAttacksUseCase = mergeAttacksUseCase,
             attackDetailsPresentationMapper = AttackDetailsPresentationMapper(

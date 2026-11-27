@@ -12,14 +12,14 @@ class AttackMessageBehaviourUiMapper {
     fun toUi(message: AttackMessageUiModel): AttackMessageBehaviourUiModel = when (message) {
         is AttackMessageUiModel.PointsRemovedByTimeChange,
         is AttackMessageUiModel.PointRemoved,
-        is AttackMessageUiModel.IntakeRemoved ->
+        is AttackMessageUiModel.IntakeRemoved,
+        is AttackMessageUiModel.CustomTagRemoved ->
             AttackMessageBehaviourUiModel(
                 SnackbarTone.Information,
                 hasUndo = true,
                 baseDurationMillis = UNDO_MILLIS
             )
 
-        is AttackMessageUiModel.CustomTagRemoved,
         AttackMessageUiModel.PointOutsideAttack,
         AttackMessageUiModel.TagLimitReached,
         AttackMessageUiModel.Undone,

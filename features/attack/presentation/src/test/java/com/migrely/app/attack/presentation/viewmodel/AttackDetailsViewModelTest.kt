@@ -18,6 +18,8 @@ import com.migrely.app.attack.domain.model.IntensityPointDomainModel
 import com.migrely.app.attack.domain.model.MergeAttacksRequestDomainModel
 import com.migrely.app.attack.domain.model.MergeAttacksResultDomainModel
 import com.migrely.app.attack.domain.model.RemoveIntensityPointRequestDomainModel
+import com.migrely.app.attack.domain.model.RestoreCustomTagRequestDomainModel
+import com.migrely.app.attack.domain.model.RestoreCustomTagResultDomainModel
 import com.migrely.app.attack.domain.model.RestoreIntakeRequestDomainModel
 import com.migrely.app.attack.domain.model.SelectAttackTagRequestDomainModel
 import com.migrely.app.attack.domain.model.SetFunctionalImpactRequestDomainModel
@@ -40,6 +42,7 @@ import com.migrely.app.attack.domain.usecase.MarkSafetyCardShownUseCase
 import com.migrely.app.attack.domain.usecase.MergeAttacksUseCase
 import com.migrely.app.attack.domain.usecase.RemoveIntakeUseCase
 import com.migrely.app.attack.domain.usecase.RemoveIntensityPointUseCase
+import com.migrely.app.attack.domain.usecase.RestoreCustomTagUseCase
 import com.migrely.app.attack.domain.usecase.RestoreIntakeUseCase
 import com.migrely.app.attack.domain.usecase.SelectAttackTagUseCase
 import com.migrely.app.attack.domain.usecase.SetFunctionalImpactUseCase
@@ -148,6 +151,8 @@ class AttackDetailsViewModelTest :
 
     @Mock private lateinit var archiveCustomTagUseCase: ArchiveCustomTagUseCase
 
+    @Mock private lateinit var restoreCustomTagUseCase: RestoreCustomTagUseCase
+
     @Mock private lateinit var deleteAttackUseCase: DeleteAttackUseCase
 
     @Mock private lateinit var mergeAttacksUseCase: MergeAttacksUseCase
@@ -184,6 +189,7 @@ class AttackDetailsViewModelTest :
             updateAttackNoteUseCase,
             addCustomTagUseCase,
             archiveCustomTagUseCase,
+            restoreCustomTagUseCase,
             deleteAttackUseCase,
             mergeAttacksUseCase,
             presentationMapper,
@@ -1024,6 +1030,101 @@ class AttackDetailsViewModelTest :
             messagesOf { classUnderTest.onArchiveCustomTagAction("a", jawPain) }
         )
     }
+
+    // "Undo" brings the tag back unless its kind's list is full (BRD D199 (2), (3), EC-ATK-26).
+
+    private fun givenRestore(
+        result: RestoreCustomTagResultDomainModel,
+        tag: CustomTagPresentationModel = jawPain
+    ) {
+        restoreCustomTagUseCase.givenSuccessfulExecution(
+            RestoreCustomTagRequestDomainModel(tag.id, TagKindDomainModel.Symptom),
+            result
+        )
+    }
+
+    @Test
+    fun `When undoing a tag's removal then it is back, Undone shows and the details reload`() =
+        runTest {
+            givenRestore(RestoreCustomTagResultDomainModel.Restored)
+            givenDetails()
+            val state = nextViewState()
+
+            val messages = messagesOf {
+                classUnderTest.onUndoRemoveCustomTagAction("a", jawPain)
+            }
+
+            assertEquals(listOf(AttackDetailsPresentationNotification.Undone), messages)
+            assertEquals(ready, state.await())
+        }
+
+    @Test
+    fun `Given the list filled up when undoing a tag's removal then says the list is full`() =
+        runTest {
+            givenRestore(RestoreCustomTagResultDomainModel.LimitReached)
+
+            assertEquals(
+                listOf(AttackDetailsPresentationNotification.TagLimitReached),
+                messagesOf { classUnderTest.onUndoRemoveCustomTagAction("a", jawPain) }
+            )
+        }
+
+    @Test
+    fun `Given storage is full when undoing a tag's removal then says so`() = runTest {
+        givenRestore(RestoreCustomTagResultDomainModel.StorageFull)
+
+        assertEquals(
+            listOf(AttackDetailsPresentationNotification.StorageFull),
+            messagesOf { classUnderTest.onUndoRemoveCustomTagAction("a", jawPain) }
+        )
+    }
+
+    @Test
+    fun `Given undoing a tag's removal fails then says so`() = runTest {
+        givenRestore(RestoreCustomTagResultDomainModel.Failed)
+
+        assertEquals(
+            listOf(AttackDetailsPresentationNotification.SomethingWentWrong),
+            messagesOf { classUnderTest.onUndoRemoveCustomTagAction("a", jawPain) }
+        )
+    }
+
+    /** EC-ATK-27: the second message carries the second tag, and Undo brings back only the tag it is given. */
+    @Test
+    fun `Given a second removal then its message has the second tag and Undo restores only it`() =
+        runTest {
+            val perfume = CustomTagPresentationModel(
+                "p",
+                TagKindPresentationModel.Symptom,
+                "Perfume",
+                archived = false
+            )
+            archiveCustomTagUseCase.givenSuccessfulExecution("t", WriteResultDomainModel.Written)
+            archiveCustomTagUseCase.givenSuccessfulExecution("p", WriteResultDomainModel.Written)
+            givenRestore(RestoreCustomTagResultDomainModel.Restored, perfume)
+            givenDetails()
+
+            val messages = messagesOf {
+                classUnderTest.onArchiveCustomTagAction("a", jawPain)
+                classUnderTest.onArchiveCustomTagAction("a", perfume)
+                classUnderTest.onUndoRemoveCustomTagAction("a", perfume)
+            }
+
+            assertEquals(
+                listOf(
+                    AttackDetailsPresentationNotification.CustomTagRemoved("a", jawPain),
+                    AttackDetailsPresentationNotification.CustomTagRemoved("a", perfume),
+                    AttackDetailsPresentationNotification.Undone
+                ),
+                messages
+            )
+            verify(useCaseExecutor, never()).execute(
+                useCase = eq(restoreCustomTagUseCase),
+                value = eq(RestoreCustomTagRequestDomainModel("t", TagKindDomainModel.Symptom)),
+                onResult = any(),
+                onException = any()
+            )
+        }
 
     @Test
     fun `Given a write with its own message then it does not also say it saved`() = runTest {

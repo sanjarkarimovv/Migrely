@@ -38,6 +38,7 @@ internal fun AttackMessages(
     onUndoTimes: (TimesUndoUiModel) -> Unit,
     onUndoPoint: (AttackMessageUiModel.PointRemoved) -> Unit,
     onUndoIntake: (AttackMessageUiModel.IntakeRemoved) -> Unit = {},
+    onUndoTag: (AttackMessageUiModel.CustomTagRemoved) -> Unit = {},
     announcePolitely: Boolean = false,
     onMessageBottomChanged: (Dp) -> Unit = {},
     modifier: Modifier = Modifier
@@ -98,6 +99,21 @@ internal fun AttackMessages(
                     if (currentIsShown(visible)) {
                         currentOnClear(visible)
                         onUndoIntake(message)
+                    }
+                }
+            )
+
+            // The spoken name carries the tag's name: TalkBack may have removed it from the actions menu (D199).
+            is AttackMessageUiModel.CustomTagRemoved -> SnackbarAction(
+                label = stringResource(R.string.attack_snackbar_undo),
+                spokenLabel = stringResource(
+                    R.string.snackbar_undo_tag_description,
+                    message.tag.name
+                ),
+                onClick = {
+                    if (currentIsShown(visible)) {
+                        currentOnClear(visible)
+                        onUndoTag(message)
                     }
                 }
             )

@@ -10,6 +10,8 @@ import com.migrely.app.attack.domain.model.AttackDetailsResultDomainModel
 import com.migrely.app.attack.domain.model.MergeAttacksRequestDomainModel
 import com.migrely.app.attack.domain.model.MergeAttacksResultDomainModel
 import com.migrely.app.attack.domain.model.RemoveIntensityPointRequestDomainModel
+import com.migrely.app.attack.domain.model.RestoreCustomTagRequestDomainModel
+import com.migrely.app.attack.domain.model.RestoreCustomTagResultDomainModel
 import com.migrely.app.attack.domain.model.RestoreIntakeRequestDomainModel
 import com.migrely.app.attack.domain.model.SelectAttackTagRequestDomainModel
 import com.migrely.app.attack.domain.model.SetFunctionalImpactRequestDomainModel
@@ -30,6 +32,7 @@ import com.migrely.app.attack.domain.usecase.MarkSafetyCardShownUseCase
 import com.migrely.app.attack.domain.usecase.MergeAttacksUseCase
 import com.migrely.app.attack.domain.usecase.RemoveIntakeUseCase
 import com.migrely.app.attack.domain.usecase.RemoveIntensityPointUseCase
+import com.migrely.app.attack.domain.usecase.RestoreCustomTagUseCase
 import com.migrely.app.attack.domain.usecase.RestoreIntakeUseCase
 import com.migrely.app.attack.domain.usecase.SelectAttackTagUseCase
 import com.migrely.app.attack.domain.usecase.SetFunctionalImpactUseCase
@@ -91,6 +94,7 @@ class AttackDetailsViewModel(
     private val updateAttackNoteUseCase: UpdateAttackNoteUseCase,
     private val addCustomTagUseCase: AddCustomTagUseCase,
     private val archiveCustomTagUseCase: ArchiveCustomTagUseCase,
+    private val restoreCustomTagUseCase: RestoreCustomTagUseCase,
     private val deleteAttackUseCase: DeleteAttackUseCase,
     private val mergeAttacksUseCase: MergeAttacksUseCase,
     private val attackDetailsPresentationMapper: AttackDetailsPresentationMapper,
@@ -352,6 +356,24 @@ class AttackDetailsViewModel(
                     result,
                     AttackDetailsPresentationNotification.CustomTagRemoved(attackId, tag)
                 )
+            }
+        )
+    }
+
+    /** "Undo" after "Removed from your list": [tag] comes back unless its kind's list is full (BRD D199, EC-ATK-26). */
+    fun onUndoRemoveCustomTagAction(attackId: String, tag: CustomTagPresentationModel) {
+        restoreCustomTagUseCase(
+            value = RestoreCustomTagRequestDomainModel(
+                tag.id,
+                tagKindDomainMapper.toDomain(tag.kind)
+            ),
+            onResult = { result ->
+                when (result) {
+                    RestoreCustomTagResultDomainModel.Restored -> succeeded(attackId, Undone)
+                    RestoreCustomTagResultDomainModel.LimitReached -> notify(TagLimitReached)
+                    RestoreCustomTagResultDomainModel.StorageFull -> notify(StorageFull)
+                    RestoreCustomTagResultDomainModel.Failed -> notify(SomethingWentWrong)
+                }
             }
         )
     }

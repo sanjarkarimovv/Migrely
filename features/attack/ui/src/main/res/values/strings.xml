@@ -149,4 +149,5 @@
     <string name="medication_helped_completely">Helped completely</string>
     <string name="message_intake_removed">Medication removed</string>
     <string name="snackbar_undo_intake_description">Undo removing the medication</string>
+    <string name="snackbar_undo_tag_description">Undo removing %1$s</string>
 </resources>

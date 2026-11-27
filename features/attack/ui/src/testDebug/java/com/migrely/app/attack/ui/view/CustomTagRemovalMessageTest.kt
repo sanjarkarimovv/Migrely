@@ -2,6 +2,7 @@ package com.migrely.app.attack.ui.view
 
 import androidx.activity.ComponentActivity
 import androidx.compose.material3.Text
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
@@ -32,6 +33,7 @@ import com.migrely.app.attack.ui.mapper.CustomTagUiMapper
 import com.migrely.app.attack.ui.mapper.TagKindUiMapper
 import com.migrely.app.attack.ui.mapper.TimeFieldUiMapper
 import com.migrely.app.attack.ui.notification.AttackDetailsEventPresenter
+import com.migrely.app.designsystem.snackbar.LocalMessageClock
 import com.migrely.app.designsystem.theme.MigrelyTheme
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -51,7 +53,6 @@ private const val REMOVED = "Removed from your list"
 private const val DETAILS_ROUTE = "details"
 private const val OTHER_ROUTE = "other"
 private const val SETTLE_MILLIS = 1_000L
-private const val FRAMES = 30
 
 /** The preview's own symptom, as the screen hands it to the ViewModel. */
 private val JAW_PAIN = CustomTagPresentationModel(
@@ -76,6 +77,9 @@ class CustomTagRemovalMessageTest {
 
     private val events = AttackDetailsEventPresenter()
     private val dependencies = attackDetailsTestDependencies(events)
+
+    /** The message clocks move with the Compose test clock, as an Undo message times itself by them (D182). */
+    private val messageClock by lazy { ComposeMessageClock(rule.mainClock) }
     private val notifications = AttackNotificationUiMapper(
         events,
         TimeFieldUiMapper(),
@@ -85,6 +89,27 @@ class CustomTagRemovalMessageTest {
     )
     private val removed = mutableListOf<CustomTagPresentationModel>()
     private lateinit var navController: NavHostController
+
+    @Before
+    fun holdTheClock() {
+        rule.mainClock.autoAdvance = false
+    }
+
+    /**
+     * Every scroll and touch runs here, with the clock running: a scroll waits for its own frames and never ends under
+     * a held clock (it once ran a test JVM out of memory for minutes), and Robolectric can drop a tap there
+     * (`SaveMessageTest`). The clock is held again right after, as it was, so an Undo message's countdown is not run to
+     * its end by the waits. JUnit's timeout rule cannot guard this: it runs the test off Robolectric's main thread.
+     */
+    private fun <T> withClockRunning(input: () -> T): T {
+        val before = rule.mainClock.autoAdvance
+        rule.mainClock.autoAdvance = true
+        try {
+            return input()
+        } finally {
+            rule.mainClock.autoAdvance = before
+        }
+    }
 
     @Before
     fun answerRemovals() {
@@ -100,15 +125,17 @@ class CustomTagRemovalMessageTest {
     private fun show() {
         rule.setContent {
             MigrelyTheme {
-                navController = rememberNavController()
-                NavHost(navController, startDestination = OTHER_ROUTE) {
-                    composable(OTHER_ROUTE) { Text("Home") }
-                    composable(DETAILS_ROUTE) {
-                        dependencies.AttackDetails(
-                            attackId = "a",
-                            announceMerge = false,
-                            navController = navController
-                        )
+                CompositionLocalProvider(LocalMessageClock provides messageClock) {
+                    navController = rememberNavController()
+                    NavHost(navController, startDestination = OTHER_ROUTE) {
+                        composable(OTHER_ROUTE) { Text("Home") }
+                        composable(DETAILS_ROUTE) {
+                            dependencies.AttackDetails(
+                                attackId = "a",
+                                announceMerge = false,
+                                navController = navController
+                            )
+                        }
                     }
                 }
             }
@@ -126,20 +153,22 @@ class CustomTagRemovalMessageTest {
         rule.waitForIdle()
     }
 
-    private fun chip() = rule.onNode(hasContentDescription(CUSTOM_CHIP)).performScrollTo()
+    private fun chip() =
+        withClockRunning { rule.onNode(hasContentDescription(CUSTOM_CHIP)).performScrollTo() }
 
     private fun removeThroughTheMenu() {
-        chip().performTouchInput { longClick() }
-        repeat(FRAMES) { rule.mainClock.advanceTimeByFrame() }
-        rule.onNode(
-            hasText(REMOVE).and(hasAnyAncestor(isPopup())),
-            useUnmergedTree = true
-        ).performClick()
+        withClockRunning {
+            chip().performTouchInput { longClick() }
+            rule.waitForIdle()
+            rule.onNode(hasText(REMOVE).and(hasAnyAncestor(isPopup())), useUnmergedTree = true)
+                .performClick()
+        }
         settle()
     }
 
     private fun removeWithTheCustomAction() {
-        val action = chip().fetchSemanticsNode().config[SemanticsActions.CustomActions]
+        val action = chip().fetchSemanticsNode()
+            .config[SemanticsActions.CustomActions]
             .single { it.label == REMOVE }
         rule.runOnUiThread { action.action() }
         settle()
@@ -192,11 +221,13 @@ class CustomTagRemovalMessageTest {
         val restoration = StateRestorationTester(rule)
         restoration.setContent {
             MigrelyTheme {
-                dependencies.AttackDetails(
-                    attackId = "a",
-                    announceMerge = false,
-                    navController = NavController(rule.activity)
-                )
+                CompositionLocalProvider(LocalMessageClock provides messageClock) {
+                    dependencies.AttackDetails(
+                        attackId = "a",
+                        announceMerge = false,
+                        navController = NavController(rule.activity)
+                    )
+                }
             }
         }
         settle()

@@ -364,6 +364,12 @@ fun AttackDetailsDependencies.AttackDetails(
                         message.attackId,
                         attackIntakeUiToPresentationMapper.toPresentation(message.intake)
                     )
+                },
+                onUndoTag = { message ->
+                    viewModel.onUndoRemoveCustomTagAction(
+                        message.attackId,
+                        customTagUiToPresentationMapper.toPresentation(message.tag)
+                    )
                 }
             )
         }

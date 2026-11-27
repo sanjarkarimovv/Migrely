@@ -148,4 +148,5 @@
     <string name="medication_helped_completely">Hat vollständig geholfen</string>
     <string name="message_intake_removed">Medikament entfernt</string>
     <string name="snackbar_undo_intake_description">Entfernen des Medikaments rückgängig machen</string>
+    <string name="snackbar_undo_tag_description">Rückgängig: %1$s zurück in die Liste</string>
 </resources>

@@ -30,13 +30,13 @@ takes it after this plan. Phase 1 = groups 2, 3.1–3.3, 4.1–4.2; phase 2 (Und
   record). Verify: `./gradlew :features:attack:presentation:testDebugUnitTest --tests '*AttackDetailsViewModelTest*'`.
 - [x] 3.2 Add the message model case and emit it in `onArchiveCustomTagAction` (design D3).
 - [x] 3.3 Mapper and model tests for the new case (exhaustive `when`).
-- [ ] 3.4 Phase 2, red first: `RestoreCustomTagUseCaseTest` (`features/attack/domain/src/test`): under 100 active of that kind
+- [x] 3.4 Phase 2, red first: `RestoreCustomTagUseCaseTest` (`features/attack/domain/src/test`): under 100 active of that kind
   → `setCustomTagArchived(id, false)` and Restored; at 100 → LimitReached and no write; storage full and failure mapped.
   Verify: `./gradlew :features:attack:domain:test --tests '*RestoreCustomTagUseCaseTest*'`.
-- [ ] 3.5 Implement `RestoreCustomTagUseCase` (reusing `CountActiveCustomTagsRepository`, `SetCustomTagArchivedRepository`),
+- [x] 3.5 Implement `RestoreCustomTagUseCase` (reusing `CountActiveCustomTagsRepository`, `SetCustomTagArchivedRepository`),
   wire it in `app` DI (`AttackModule`), and `onUndoRemoveCustomTagAction` in the view model: Restored → "Undone."; LimitReached
   → `message_tag_limit`; failures → the existing save errors. View model tests for each.
-- [ ] 3.6 A second removal replaces the message and Undo restores only the second tag (view model test).
+- [x] 3.6 A second removal replaces the message and Undo restores only the second tag (view model test).
 
 ## 4. UI
 
@@ -141,3 +141,30 @@ takes it after this plan. Phase 1 = groups 2, 3.1–3.3, 4.1–4.2; phase 2 (Und
 - `ArchitectureScrollsTest`: the menu's card now names Material's `verticalScroll` in `MigrelyMenus.kt`; listed as a
   known site with its reason (no page, Material's tree kept), for code review.
 
+### Groups 3 and 4, phase 2, Undo (android-engineer, 2026-11-27, JVM only)
+
+- 3.4 red: `RestoreCustomTagUseCaseTest` against a stub that answers Restored and writes nothing,
+  `:features:attack:domain:test --tests '*RestoreCustomTagUseCaseTest*'` exit 1, 6 tests, 5 failed (LimitReached,
+  Failed twice, StorageFull, and the write never made). Green after 3.5: 6 of 6, domain 121 of 121. Mutation `>` for
+  `>=` at the limit: the full-list test fails.
+- 3.5 red: `AttackDetailsViewModelTest` with an empty `onUndoRemoveCustomTagAction`: 57 tests, 5 failed (Undone,
+  TagLimitReached, StorageFull, SomethingWentWrong, and 3.6). Green: presentation 84 of 84. `RestoreCustomTagUseCase`
+  reuses `CountActiveCustomTagsRepository` and `SetCustomTagArchivedRepository`; provided in `AttackModule`.
+- 3.6 a second removal sends a second message with the second tag, and Undo restores only that tag: the restore use
+  case is never run for the first tag (verified on the executor).
+- 4.3 red: `CustomTagUndoTest` before any UI change: 6 of 6 failed, no Undo button (the German one first failed on my
+  own helper, the German action label; fixed). Green after 4.3: 6 of 6 (Undo spoken "Undo removing Jaw pain"; Undo hands the tag back and
+  "Undone." shows; full list shows `message_tag_limit`; a second removal replaces the first and Undo restores only the
+  second; a 40-unit name with an emoji and accents spoken whole; German "Aus deiner Liste entfernt", "Rückgängig",
+  "Rückgängig: Jaw pain zurück in die Liste"). Undo is triggered by its click action (as TalkBack does), not a touch;
+  the touch path is the message host's existing one. Mutation: the screen's Undo wiring removed fails 3 of 6.
+  Not ticked: 4.3's keyboard-focus part (focus back on the restored chip), same stop rule as 4.2.
+- Test hang (fixed): an earlier run of `CustomTagRemovalMessageTest` called `performScrollTo` under a held Compose
+  clock; the scroll waits for its own frames, so it never ended and ran the test JVM out of memory for about 20 min.
+  Guard: in both classes every scroll and touch goes through `withClockRunning`, which restores the clock's previous
+  state; JUnit's timeout rule cannot run with Robolectric. Rerun alone: 4 of 4 in 10 s; `CustomTagUndoTest` 6 of 6 in
+  10 s.
+- Gate (phase 2 tree): `nice -n 19 ./gradlew --max-workers=2 assembleDebug test ktlintCheck detekt lint` exit 0 in
+  140 s; 4052 tests, 0 failed, 0 skipped. `:app:checkReleasePermissions` exit 0: ACCESS_NETWORK_STATE,
+  POST_NOTIFICATIONS, RECEIVE_BOOT_COMPLETED, WAKE_LOCK, BILLING, DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION; no
+  INTERNET.
