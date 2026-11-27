@@ -14,11 +14,15 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.migrely.app.designsystem.layout.ShownTextLayoutsKey
 import com.migrely.app.designsystem.theme.MigrelyTheme
+import kotlin.math.round
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -63,6 +67,8 @@ class MonthSkyCalendarDayNumberTest {
     val rule = createComposeRule()
 
     private lateinit var labelSmall: TextStyle
+    private lateinit var labelMedium: TextStyle
+    private lateinit var measurer: TextMeasurer
 
     private fun show(
         fontScale: Float,
@@ -73,15 +79,10 @@ class MonthSkyCalendarDayNumberTest {
         rule.setContent {
             MigrelyTheme {
                 labelSmall = MaterialTheme.typography.labelSmall
-                Box(
-                    if (calendarWidth ==
-                        null
-                    ) {
-                        Modifier.fillMaxWidth()
-                    } else {
-                        Modifier.width(calendarWidth)
-                    }
-                ) {
+                labelMedium = MaterialTheme.typography.labelMedium
+                measurer = rememberTextMeasurer()
+                val width = calendarWidth?.let { Modifier.width(it) } ?: Modifier.fillMaxWidth()
+                Box(width) {
                     MonthSkyCalendar(
                         weekdayInitials = initials,
                         leadingEmptyDays = 3,
@@ -135,6 +136,39 @@ class MonthSkyCalendarDayNumberTest {
         layoutInput.style.fontSize.toPx()
     }
 
+    /**
+     * The day number's room in whole px, as the calendar works it out: a drawn cell (a seventh of the weeks, which lie
+     * half a gap out on each side, less half a gap each side) less the 5 dp and 3 dp insets.
+     */
+    private fun numberRoomPx(): Int = with(rule.density) {
+        val width = rule.onNodeWithTag(CALENDAR).fetchSemanticsNode().size.width
+        val halfGap = (GAP / 2).roundToPx()
+        (width + 2 * halfGap) / WEEK - 2 * halfGap - 5.dp.roundToPx() - 3.dp.roundToPx()
+    }
+
+    /** One px above the grid's size, the widest two-digit day in Bold no longer fits: the size is the largest. */
+    private fun assertOnePxMoreDoesNotFit(numbers: List<TextLayoutResult>) {
+        val onePxMore = with(rule.density) { (round(numbers.first().fontSizePx()) + 1f).toSp() }
+        val style = labelSmall.copy(
+            fontFeatureSettings = "tnum",
+            fontWeight = FontWeight.Bold,
+            fontSize = onePxMore
+        )
+        val widest = (10..DAYS).maxOf { day ->
+            measurer.measure(
+                day.toString(),
+                style,
+                softWrap = false,
+                maxLines = 1,
+                density = rule.density
+            ).size.width
+        }
+        assertTrue(
+            "$widest px at one px more still fits ${numberRoomPx()} px",
+            widest > numberRoomPx()
+        )
+    }
+
     /** Every label of [layouts] is whole on one line within [roomPx], and they all share one size. */
     private fun assertWholeOnOneLine(what: String, layouts: List<TextLayoutResult>, roomPx: Float) {
         val broken = layouts.filter {
@@ -165,6 +199,7 @@ class MonthSkyCalendarDayNumberTest {
             numbers.first().fontSizePx() >
                 with(rule.density) { labelSmall.fontSize.value.dp.toPx() }
         )
+        assertOnePxMoreDoesNotFit(numbers)
     }
 
     @Test
@@ -206,6 +241,27 @@ class MonthSkyCalendarDayNumberTest {
             assertEquals(it.layoutInput.text.text, hundredPercent, it.fontSizePx(), 0.05f)
         }
         assertTrue(numbers.all { it.lineCount == 1 })
+        // Single letters still fit a 14.9 dp column once their size steps down.
+        assertWholeOnOneLine("Weekday initials", initials(), cellPx())
+    }
+
+    @Test
+    @Config(
+        sdk = [35],
+        application = Application::class,
+        qualifiers = "en-w640dp-h360dp-land-xxhdpi"
+    )
+    fun `At 85 percent a cell too narrow keeps the person's own size, never larger`() {
+        show(fontScale = 0.85f, calendarWidth = TOO_NARROW_CALENDAR)
+
+        val personsNumber = with(rule.density) { labelSmall.fontSize.toPx() }
+        dayNumbers().forEach {
+            assertEquals(it.layoutInput.text.text, personsNumber, it.fontSizePx(), 0.05f)
+        }
+        val personsInitial = with(rule.density) { labelMedium.fontSize.toPx() }
+        initials().forEach {
+            assertTrue(it.layoutInput.text.text, it.fontSizePx() <= personsInitial + 0.05f)
+        }
     }
 
     @Test

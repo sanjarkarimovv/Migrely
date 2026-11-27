@@ -16,9 +16,10 @@ import kotlin.math.floor
 /**
  * The one style that all labels of a calendar grid share (BRD D198, the only exception to "type never shrinks"):
  * [style] itself when the widest of [samples], measured in [measuredWeight] if given, fits [widthPx] on one line;
- * otherwise the largest whole-pixel size that fits; never below [style]'s size at 100%. Measured, not multiplied by
- * the font scale, because Android 14 scales sizes non-linearly. It is worked out again only when the width, the
- * style, the samples or the density (font scale included) change, never per month, so paging never resizes them.
+ * otherwise the largest whole-pixel size that fits; never below [style]'s size at 100% (nor above the person's own
+ * size when it is smaller). Measured, not multiplied by the font scale, because Android 14 scales sizes non-linearly.
+ * It is worked out again only when the width, the style, the samples or the density (font scale included) change,
+ * never per month, so paging never resizes them.
  */
 @Composable
 internal fun rememberFittedStyle(
@@ -46,9 +47,10 @@ private fun fittedStyle(
     fun widest(sized: TextStyle) = measurer.widestWidth(samples, sized, density)
     if (samples.isEmpty() || widest(measured) <= widthPx) return style
     with(density) {
-        val hundredPercentPx = style.fontSize.value.dp.toPx()
-        var fittedPx = hundredPercentPx
-        var low = ceil(hundredPercentPx).toInt()
+        // The 100% size, or the person's own when it is smaller: the floor never enlarges the text.
+        val floorPx = minOf(style.fontSize.value.dp.toPx(), style.fontSize.toPx())
+        var fittedPx = floorPx
+        var low = ceil(floorPx).toInt()
         var high = floor(style.fontSize.toPx()).toInt()
         while (low <= high) {
             val middle = (low + high) ushr 1

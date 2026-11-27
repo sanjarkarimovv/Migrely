@@ -281,6 +281,18 @@ class HistoryAttackRowStackTest {
     @Config(
         sdk = [35],
         application = Application::class,
+        qualifiers = "en-rUS-w360dp-h640dp-port-420dpi"
+    )
+    fun `Portrait 360 dp 420 dpi at 200 percent - the peak stays beside (negative control)`() {
+        show(Locale.US, fontScale = 2f)
+
+        assertEveryRowSideBySide()
+    }
+
+    @Test
+    @Config(
+        sdk = [35],
+        application = Application::class,
         qualifiers = "en-rUS-w360dp-h640dp-port-mdpi"
     )
     fun `Portrait 360 dp mdpi at 200 percent - an attack in progress stacks, no word breaks`() {
