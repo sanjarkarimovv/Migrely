@@ -27,6 +27,25 @@ Fixes:
 </en-US>
 ```
 
+German, DRAFT (T79, aso-140, 2026-11-27). It mirrors the en-US text bullet for bullet, with the app's own German labels
+("Hält sie noch an?", "Teilen und bewerten"). To fit 500 characters it is narrower than the English in three places, never wider:
+the switch is "(abschaltbar)" without naming its screen, TalkBack names "die meisten scrollbaren Seiten" without "dialogs",
+and "all of the pain and effect dialogs" became "die Dialoge zu Schmerz und Wirkung" (medical verdict: "Wirkung" is the app's label for the effect dialog). It needs `medical-reviewer`, and the owner pastes it
+once the de-DE listing exists. The text is 494 of 500 characters. **It targets the next release, not 1.4.0:** 1.4.0 is already in review with en-US notes only, so German users see the English text for 1.4.0.
+
+```
+<de-DE>
+Neu:
+• Deutsch: Migrely folgt der Handysprache, ab Android 13 der App-Sprache. Der PDF-Bericht bleibt auf Englisch.
+• „Teilen und bewerten“ ist neu in den Einstellungen.
+• Der Bericht für die Arztpraxis endet mit einer Zeile zu Migrely (abschaltbar).
+Korrekturen:
+• TalkBack liest die meisten scrollbaren Seiten der Reihe nach.
+• Bei sehr großer Schrift erreichst du „Hält sie noch an?“ und die Dialoge zu Schmerz und Wirkung.
+• Eine nicht gespeicherte Einstellung wirkt nicht mehr gespeichert.
+</de-DE>
+```
+
 ## 1.3.3 (versionCode 15)
 
 1.3.2 never reached users: QA gave NO-GO after the tag, for #259. 1.3.3 ships the same three fixes, D190 (#237), D191
