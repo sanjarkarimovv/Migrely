@@ -147,7 +147,7 @@ class TalkBackTree private constructor(private val window: () -> View) {
 }
 
 /** The first Compose view in [view]'s hierarchy, or null. */
-internal fun composeViewIn(view: View): View? = when {
+private fun composeViewIn(view: View): View? = when {
     view.javaClass.simpleName == "AndroidComposeView" -> view
     view is ViewGroup -> (0 until view.childCount).firstNotNullOfOrNull {
         composeViewIn(view.getChildAt(it))

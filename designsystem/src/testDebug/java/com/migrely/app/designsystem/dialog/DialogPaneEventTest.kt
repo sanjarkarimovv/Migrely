@@ -11,7 +11,9 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.hasScrollAction
+import androidx.compose.ui.test.isDialog
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.unit.dp
 import androidx.core.view.accessibility.AccessibilityNodeInfoCompat
@@ -33,12 +35,20 @@ private const val ANSWERS = 8
 // Longer than Compose's 100 ms between accessibility checks, several times over.
 private const val SETTLE_MILLIS = 2_000L
 
+// Material's name for a dialog's pane when the dialog names none itself.
+private const val MATERIAL_PANE = "Dialog"
+
+private const val PINS_COMPOSE =
+    "pins Compose 1.9.3 behaviour (panes are checked only on a change); see the class KDoc"
+
 /**
  * Compose names a dialog's pane to TalkBack once, when the pane first shows with TalkBack on (#279, BRD D181): a later
  * change in the dialog, such as TalkBack's scroll to its next item, sends no second PANE_APPEARED, which would make
  * TalkBack say the title again and cut the item it moved to. With TalkBack turned on over a dialog already open,
  * Compose names the pane at the first change after that instead (Compose 1.9.3 checks panes only on a change); the
- * last test pins that, so a Compose upgrade that changes it shows here.
+ * two "turned on over an open dialog" tests pin that, so a Compose upgrade that changes it shows here. They are also
+ * the controls of the "does not name the pane again" tests: the same action does make Compose send a pane event, and
+ * it is heard. A plain dialog has no pane at all, so TalkBack names its window instead.
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -153,17 +163,37 @@ class DialogPaneEventTest {
     }
 
     @Test
-    fun `With TalkBack on, a change in a plain dialog sends no pane event`() {
+    fun `A plain dialog has no pane, so it sends no pane event, also on a change`() {
         show(talkBackFirst = true) { PlainDialog() }
+        rule.onNode(isDialog()).assertExists()
 
-        assertEquals(emptyList<String>(), paneEventsOf(::changeLevel))
+        val panes = rule.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsProperties.PaneTitle))
+            .fetchSemanticsNodes()
+        assertEquals(emptyList<String>(), panes.map { it.config[SemanticsProperties.PaneTitle] })
+        assertEquals(emptyList<String>(), paneEvents() + paneEventsOf(::changeLevel))
     }
 
     @Test
-    fun `TalkBack turned on over an open dialog hears the pane at the first change`() {
+    fun `TalkBack turned on over an open scrolling dialog hears the pane at the first scroll`() {
         show(talkBackFirst = false) { ScrollingDialog() }
-        assertEquals("nothing when TalkBack comes on", emptyList<String>(), paneEvents())
+        assertEquals(
+            "nothing when TalkBack comes on; $PINS_COMPOSE",
+            emptyList<String>(),
+            paneEvents()
+        )
 
-        assertEquals(listOf("appeared: $TITLE"), paneEventsOf(::scrollForward))
+        assertEquals(PINS_COMPOSE, listOf("appeared: $TITLE"), paneEventsOf(::scrollForward))
+    }
+
+    @Test
+    fun `TalkBack turned on over an open alert dialog hears the pane at the first change`() {
+        show(talkBackFirst = false) { AlertDialog() }
+        assertEquals(
+            "nothing when TalkBack comes on; $PINS_COMPOSE",
+            emptyList<String>(),
+            paneEvents()
+        )
+
+        assertEquals(PINS_COMPOSE, listOf("appeared: $MATERIAL_PANE"), paneEventsOf(::changeLevel))
     }
 }

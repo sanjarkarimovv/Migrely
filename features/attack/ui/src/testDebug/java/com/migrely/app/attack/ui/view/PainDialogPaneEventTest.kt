@@ -30,13 +30,19 @@ private const val CHANGE_TIME = "Zeit ändern"
 // Longer than Compose's 100 ms between accessibility checks, several times over.
 private const val SETTLE_MILLIS = 2_000L
 
+private const val PINS_COMPOSE =
+    "pins Compose 1.9.3 behaviour (panes are checked only on a change); see the class KDoc"
+
 /**
  * #279: the pain dialog in German at 200% in a 640 dp wide landscape window, 340 dp high here for the 360 dp
  * emulator's system bars, so the time row shows only in part, as on the device. From the slider TalkBack asks for the
  * time row to be shown and the area scrolls to its end. With TalkBack on before the dialog opens, as a TalkBack user
  * opens it, that scroll names no pane again, so TalkBack says the time row next (BRD D181, D193). QA's walk turned
  * TalkBack on over the open dialog: Compose then names the pane at that first change (Compose 1.9.3 checks panes only
- * on a change), which TalkBack said before the time row. The last test pins that.
+ * on a change), and TalkBack said the title again before the time row. The last test pins that Compose behaviour and
+ * is the control of the second: the same action does send a pane event, and it is heard. What TalkBack then speaks,
+ * and when, is not in Robolectric. On the device the extra title came in 4 of 4 such runs, but TalkBack still began
+ * the time row after it each time: QA's skip (the row not spoken at all) came in 0 of 4.
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -125,8 +131,12 @@ class PainDialogPaneEventTest {
     @Test
     fun `TalkBack turned on over the open dialog hears its pane only when the time row is shown`() {
         openPainDialog(talkBackFirst = false)
-        assertEquals("nothing when TalkBack comes on", emptyList<String>(), paneEvents())
+        assertEquals(
+            "nothing when TalkBack comes on; $PINS_COMPOSE",
+            emptyList<String>(),
+            paneEvents()
+        )
 
-        assertEquals(listOf("appeared: $TITLE"), paneEventsOfShowingTheTimeRow())
+        assertEquals(PINS_COMPOSE, listOf("appeared: $TITLE"), paneEventsOfShowingTheTimeRow())
     }
 }
