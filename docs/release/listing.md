@@ -50,7 +50,7 @@ Migrely Premium
 • Logging, history, medications, reminders, backup and spreadsheet export, and every safety warning are free. Premium adds only the doctor report and Insights
 
 Private by Design
-• Migrely has no internet permission, and you can check that in Android's settings. Premium is bought through Google Play, which goes online for the purchase. There is no account and no ads, and Migrely has no analytics or tracking code of its own
+• Migrely has no internet permission. On Android 13 and later you can check it yourself: in the app's settings under All permissions, "have full network access" is not listed. Premium is bought through Google Play, which goes online for the purchase. There is no account and no ads, and Migrely has no analytics or tracking code of its own
 • Your entries stay on your phone. If Android's own backup is on, it may also copy them to your Google account
 • Export a backup or a spreadsheet, or delete everything, whenever you like. A file you export goes where you send it
 
@@ -68,7 +68,7 @@ Safety First
 Migrely is a diary. It is not a medical device and does not diagnose, treat, cure or prevent any medical condition. Talk to a doctor or other healthcare professional about your headaches, and before you start, stop or change a medication. If a headache comes with any of the emergency signs on the Warning signs page, call your local emergency number.
 ```
 
-The text is 3,236 characters (counted 2026-11-27 with the 1.4.0 additions below and the medical and legal changes). Paste it as it is: each paragraph is one line, because Play keeps line breaks.
+The text is 3,328 characters (counted 2026-11-27 with the 1.4.0 additions below, the medical and legal changes and the permission wording). Paste it as it is: each paragraph is one line, because Play keeps line breaks.
 
 ## Changes for 1.4.0 (aso-140, 2026-11-27, proposed: nothing here is applied in Play Console)
 
@@ -78,6 +78,7 @@ The text is 3,236 characters (counted 2026-11-27 with the 1.4.0 additions below 
 | "Large text, TalkBack and keyboards work throughout" becomes "Supports large text, TalkBack and keyboards" | The 1.4.0 notes themselves say TalkBack moves in order "on most scrolling pages", so "throughout" says more than we can show. |
 | Title, short description and first sentence stay | D184's short description has been live since 2026-11-24. One snapshot three days later (positions.log, 2026-11-27) shows "migraine tracker" #15, "headache tracker" #26 and "migraine app", "migraine diary", "headache diary" outside the top 29, so there is no sign yet that "migraine diary" helped, and one snapshot cannot say it hurt. One variable at a time: repeat on 2026-12-01 and 2026-12-08 before changing the name. |
 | Disclaimer line and Premium bullet (verdicts 2026-11-27) | The last line now names the "Warning signs" page like the app (`settings_about_urgent`). The Premium bullet says the trial turns into a paid plan and that subscriptions renew and can be cancelled in Google Play. |
+| Permission self-check (QA, `migrely-work/qa-140/aso-perm-check.md`) | "you can check that in Android's settings" held on Android 16 only. On Android 8 the Permissions row is greyed out ("No permissions requested"), probably up to Android 12. The line now limits the check to Android 13 and later and names the absent line. Migrely's list does show "view network connections" (reading whether a connection exists), which is not internet access. |
 | Left unchanged on purpose | The share and rate rows and the doctor report's credit line are not in the listing: they sell nothing the listing needs, and "rate" must never sound like a reward. |
 
 German listing (de-DE, DE, AT and CH): [`listing-de.md`](listing-de.md).

@@ -13,15 +13,16 @@ in English (D195 (4), (5)), so this listing never says the PDF is German and say
 
 | Field | Value |
 |---|---|
-| App name (≤ 30) | Migrely: Migräne-Tagebuch (25) |
+| App name (≤ 30) | Migrely: Kopfschmerztagebuch (28) |
 | Short description (≤ 80) | Privates Migräne- und Kopfschmerztagebuch. Auslöser und Akutmedikation notieren. (80) |
+| Name choice | "Migrely: Kopfschmerztagebuch" (team-lead, 2026-11-27): the trademark knock-out is in `reports/2026-11-27-legal-tm-knockout.md`, and "Migrely: Migräne-Tagebuch" is too close to the live "Migrelle: Migräne-Tagebuch". |
 | Contact email, website, privacy policy URL | as in `listing.md`. The policy page is English only, which the app also says ("auf Englisch") |
 | Graphics | German screenshots and feature graphic: later phase (`aso-140` plan, not in this file) |
 
 ## Full description (≤ 4000)
 
 ```text
-Migrely ist ein privates Migräne-Tagebuch und Kopfschmerztagebuch für Android. Notiere eine Attacke mit drei Fingertipps, auch im dunklen Zimmer, sieh jeden Monat als Nachthimmel und nimm einen übersichtlichen Bericht mit zur Arztpraxis.
+Migrely ist ein privates Migräne-Tagebuch für Android. Notiere eine Attacke mit drei Fingertipps, auch im dunklen Zimmer, sieh jeden Monat als Nachthimmel und nimm einen klaren Bericht mit zur Arztpraxis.
 
 Migräne in Sekunden notieren
 • „Migräne beginnt“ mit einem Tipp, in der App oder durch langes Drücken des App-Symbols
@@ -51,7 +52,7 @@ Migrely Premium
 • Notieren, Verlauf, Medikamente, Erinnerungen, Sicherung, Export und jeder Sicherheitshinweis bleiben kostenlos
 
 Privat, nachprüfbar
-• Migrely hat keine Berechtigung für das Internet. Das kannst du in den Android-Einstellungen selbst prüfen. Premium wird über Google Play gekauft. Für den Kauf verbindet sich Google Play mit dem Internet. Es gibt kein Konto und keine Werbung, und Migrely enthält keinen eigenen Analyse- oder Tracking-Code
+• Migrely hat keine Berechtigung für das Internet. Ab Android 13 kannst du das selbst prüfen: Unter „Alle Berechtigungen“ in den App-Infos fehlt „Auf alle Netzwerke zugreifen“. Premium wird über Google Play gekauft. Für den Kauf verbindet sich Google Play mit dem Internet. Es gibt kein Konto und keine Werbung, und Migrely enthält keinen eigenen Analyse- oder Tracking-Code
 • Deine Einträge bleiben auf deinem Handy. Wenn Androids eigene Sicherung an ist, kann sie deine Einträge auch in dein Google-Konto kopieren. Ab Android 9 tut sie das nur, wenn sie die Kopie Ende-zu-Ende verschlüsseln kann, wofür eine Displaysperre nötig ist. Unter Android 8 kann Migrely das nicht verlangen, deshalb ist die Kopie dort eventuell nicht Ende-zu-Ende verschlüsselt
 • Exportiere eine Sicherung oder eine Tabelle, oder lösche alles, wann du willst. Eine exportierte Datei geht dorthin, wohin du sie schickst
 
@@ -65,7 +66,7 @@ Sicherheit zuerst
 Migrely ist ein Tagebuch. Es ist kein Medizinprodukt, stellt keine Diagnose, behandelt und heilt nicht und beugt keiner Erkrankung vor. Sprich mit einer Ärztin oder einem Arzt über deine Kopfschmerzen, und bevor du ein Medikament beginnst, absetzt oder änderst. Wenn Kopfschmerzen mit einem der Notfallzeichen auf der Seite „Warnzeichen“ auftreten, wähle den Notruf.
 ```
 
-The text is 3,960 characters (counted 2026-11-27, after the medical and legal verdicts). Paste it as it is: each paragraph is one line.
+The text is 3,995 characters (counted 2026-11-27, after the verdicts and the name and permission decisions). Paste it as it is: each paragraph is one line.
 
 ## Keywords
 
@@ -74,8 +75,8 @@ page for the same words, both read on 2026-11-27 (private notes: `marketing/rese
 
 | Phrase | Where it is | Times |
 |---|---|---|
-| Migräne-Tagebuch | name, first sentence | 2 |
-| Kopfschmerztagebuch | short description, first sentence | 2 |
+| Kopfschmerztagebuch | name, short description | 2 |
+| Migräne-Tagebuch | first sentence | 1 |
 | Kopfschmerzkalender | "dein Kopfschmerzkalender" in "Deine Monate im Blick" | 1 |
 | Migräne (as a word) | everywhere, because it is the subject | many |
 | Auslöser, Akutmedikation, Aura, Periode | description | few |
