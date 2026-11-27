@@ -134,7 +134,7 @@ class ExternalAppLauncherTest {
         }
     }
 
-    /** An outside app that crashes takes only its own task down, never Migrely's (EC-SHR-14, D4). */
+    /** On API 28+, an outside app that crashes takes only its own task down, not Migrely's (EC-SHR-14, D4). */
     @Test
     fun `Rate starts the Google Play app in its own task`() {
         ExternalAppLauncher { started += it }.openStorePage()
@@ -152,9 +152,12 @@ class ExternalAppLauncherTest {
         assertNewTask(started.single())
     }
 
-    /** The chosen app gets the target intent's flags (design D5). */
+    /**
+     * A guard only: AOSP's chooser already starts a send target in a task of its own; this keeps it so
+     * under a chooser that only passes the target intent's own flags on (design D5).
+     */
     @Test
-    fun `Share starts the chosen app in its own task`() {
+    fun `The ACTION_SEND intent inside the chooser carries NEW_TASK`() {
         share()
 
         assertNewTask(started.single().sent())
@@ -168,7 +171,11 @@ class ExternalAppLauncherTest {
         assertEquals(0, started.single().flags and Intent.FLAG_ACTIVITY_NEW_TASK)
     }
 
-    /** `NEW_TASK` only: `NEW_DOCUMENT` or `MULTIPLE_TASK` would add a Recents card per tap (D6). */
+    /**
+     * The intent carries `NEW_TASK` and not `NEW_DOCUMENT` or `MULTIPLE_TASK`, which would add a
+     * Recents card per tap (D6). What the platform adds when it starts the intent is not checked here:
+     * AOSP's chooser adds those two itself to a send target (design D5).
+     */
     private fun assertNewTask(intent: Intent) = assertEquals(
         Intent.FLAG_ACTIVITY_NEW_TASK,
         intent.flags and (
