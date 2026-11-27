@@ -28,17 +28,17 @@ No domain, data or datasource layer changes, and no strings.
 - [x] 2.5 TalkBack unchanged: the existing calendar label and order tests pass, plus one assertion that a day's merged
   label equals develop's ("…, chosen" included).
 
-- [ ] 2.6 Code review ee02ad70 S1: in the 140 dp case also assert that the weekday initials have no visual overflow and are
+- [x] 2.6 Code review ee02ad70 S1: in the 140 dp case also assert that the weekday initials have no visual overflow and are
   no wider than their column (red on develop's code: the initials keep the person's size); in the landscape cases assert
   that one px more than the chosen size no longer fits ("largest size that fits"). Verify:
   `./gradlew :designsystem:testDebugUnitTest --tests '*MonthSkyCalendarDayNumberTest*'`.
-- [ ] 2.7 Code review N2: clamp the floor in `FittedLabelStyle.kt` to min(100% size, the person's size) (one line), with a
+- [x] 2.7 Code review N2: clamp the floor in `FittedLabelStyle.kt` to min(100% size, the person's size) (one line), with a
   test at font scale 0.85 and a narrow width where the person's size does not fit: the result is never larger than the
   person's size. Named negative control: red on the current branch code (ee02ad70) before the clamp.
-- [ ] 2.8 Code review N3: re-run every red run against the COMMITTED test files (2.1, 2.2, 2.6, 2.7, 3.1, 3.3, 3.6, each on
+- [x] 2.8 Code review N3: re-run every red run against the COMMITTED test files (2.1, 2.2, 2.6, 2.7, 3.1, 3.3, 3.6, each on
   develop's product code with only the test hook), and keep the logs in `migrely-work/275/` with the commit SHA in the
   name. The test names and failure lines in the log must match the committed files.
-- [ ] 2.9 Code review N5: "420–480 dpi unchanged" is pinned by the row tests at xxhdpi (480 dpi) and on the device by walk
+- [x] 2.9 Code review N5: "420–480 dpi unchanged" is pinned by the row tests at xxhdpi (480 dpi) and on the device by walk
   (d). Add one 420 dpi (`w360dp-h640dp-port-420dpi`) case to the portrait negative controls of
   `HistoryAttackRowStackTest`; it is one more `@Config` line.
 - [ ] 2.10 Instrumented on emulator-5570 (the calendar's focus modifiers moved onto a `BoxWithConstraints`): Verify:
@@ -187,4 +187,29 @@ Not checked in phase 1: anything on a device (5.3), the instrumented tests, API 
   0 failures, 0 errors, 0 skipped (develop's `DialogPaneEventTest` 6 and `PainDialogPaneEventTest` 3 included).
 - `:app:checkReleasePermissions` exit 0 here and on a detached f83dda71 worktree; `cmp` of `release.txt` and of the
   merged release manifest both exit 0; INTERNET 0. Goldens: `git diff --stat origin/develop --
+  designsystem/src/testDebug/resources/calendar/` empty.
+
+### android-engineer, phase 1c (2026-11-27, no device): review ee02ad70 fixes, commit 7df72cc5
+
+- 2.7 (N2), the only product-code change: `FittedLabelStyle.kt` floor is `minOf(100% size, the person's size)`.
+  Test `At 85 percent a cell too narrow keeps the person's own size, never larger`: red on ee02ad70's fit,
+  "expected 30.600002 but was 36.0" at `MonthSkyCalendarDayNumberTest.kt:259`; green after.
+- 2.6 (S1): mutants on 7df72cc5's tests (`migrely-work/275/mutants-2.6.txt`, `.log`): with the initials fit removed
+  the 140 dp case fails at `:181` from `:245` ("M (1 lines, 67.0 px of 44.57)", T, W, S too); with a fit that keeps
+  one px less than the largest that fits both landscape cases fail at `:166` ("78 px at one px more still fits 78 px").
+  Restored; green on the branch.
+- 2.8 (N3): `migrely-work/275/red-runs.sh` re-ran every red run against the committed test files of 7df72cc5. These
+  files replace `red-final.txt`, `red-final.log` and `red-3.6.txt`:
+  - `red-7df72cc5-develop-hook.txt` and `.log` (develop's product code plus only the test hook): DayNumber 3 fail
+    (`:181` EN and DE landscape "10 (2 lines, 45.0 px of 78.43)", `:241` floor "expected 36.0 but was 72.0"; the 85%
+    case passes there, as develop never fits); PaneGuard 2 fail (`:80` 360 × 380, `:93` 455 dp, "two panes");
+    RowStack 5 fail (`:133` EN after "Mon", DE after "Mo., 19. Okt., 12:2", chosen day's list, mdpi portrait after
+    "In progres"; `:241` "the row is not stacked", so the label still equals develop's). Every line named points at
+    the same assertion in the commit.
+  - `red-7df72cc5-ee02ad70-fit.txt` and `.log` (ee02ad70's fit): only the 85% case fails, at `:259`.
+- 2.9 (N5): `Portrait 360 dp 420 dpi at 200 percent - the peak stays beside (negative control)` passes on the
+  branch and on develop.
+- Gate on 7df72cc5 (load under 8): exit 0, BUILD SUCCESSFUL; 4039 JVM tests in 68 result sets, 0 failures, 0 errors,
+  0 skipped. `:app:checkReleasePermissions` exit 0 here and on a detached f83dda71 worktree; `cmp` of `release.txt`
+  and of the merged release manifest both exit 0; INTERNET 0. Goldens `git diff --stat origin/develop --
   designsystem/src/testDebug/resources/calendar/` empty.
