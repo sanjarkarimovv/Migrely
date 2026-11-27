@@ -69,7 +69,7 @@ activity's `startActivity` to the launcher.
   (`app/build/intermediates/merged_manifest/release/**/AndroidManifest.xml`) is identical to develop's (`cmp` exit 0).
   Develop already has one `<queries>` block, from `com.android.billingclient:billing:8.3.0`, so a count is not the proof.
   What proves "no change": both, plus the diff of 3.3 touching no manifest or Gradle file.
-- [ ] 5.3 Device walk, emulator-5570 (API 36), debug build of this branch; restore every setting changed. The walk
+- [x] 5.3 Device walk, emulator-5570 (API 36), debug build of this branch; restore every setting changed. The walk
   proves task separation, focus and layout; it does not prove the crash (that needs QA's crash fixture, 5.6):
   - (a) Settings row in EN and DE at 200% font on a 360 dp wide window (`wm size`), portrait and landscape: screenshot
     of the row each; no "…", no cut line. If the EN line does not fit, stop and tell PM (spec allows one shorter line).
@@ -166,3 +166,35 @@ android-engineer, 2026-11-27, phase 1b (no device), after code review. Evidence 
 
 Not checked in phase 1b: everything in 5.3. The Robolectric test proves the flag on the intent the link starts, not what a
 browser or the crash handler does with it (QA's crash fixture, 5.6).
+
+android-engineer, 2026-11-27, phase 2: device walk 5.3 on emulator-5570 (`Migrely_API_36`, API 36), debug builds of
+develop 476f7a27 (control) and this branch (code of e9e0db66, APK built at 5a0ba93c). Evidence:
+`migrely-work/patch141/walk/` (`walk.log`, `shots/`, scripts `k.py`, `row_*.py`). Task ids come from `dumpsys activity
+activities`, intent flags from `ActivityTaskManager: START u0` lines, and the task of every created activity, trampolines
+included, from the `wm_create_activity` event log.
+
+| Row | Develop (control) | This branch |
+|---|---|---|
+| (c) Rate | `market://` resolves nothing on this image (Play is a stub: `pm resolve-activity` "No activity found", START result -91), so Rate takes the https fallback in Chrome. Migrely's START has no `flg`; Chrome's `IntentDispatcher` is created **in Migrely's task 1583**, then moves itself to task 1587 (`flg=0x10800000`). The final dumpsys shows Chrome in its own task even on develop: Chrome's dispatcher does that, so only the event log shows the shared task | Both starts carry `flg=0x10000000`; `IntentDispatcher` is created directly in task 1591, never in Migrely's task 1590 |
+| (c) Privacy link | Same as Rate: no `flg`, `IntentDispatcher` created in task 1583, then task 1589 | `flg=0x10000000`; `IntentDispatcher` created in task 1593 |
+| (c) Share | Chooser (`ChooserActivityLauncher`) in Migrely's task 1583. The SEND reaches Messages with `flg=0xb080000` (the system chooser adds NEW_DOCUMENT and MULTIPLE_TASK), in its own task 1588: no #280 risk on develop, as design D5 says | Chooser in Migrely's task 1590; SEND `flg=0x1b080000` (adds our NEW_TASK), Messages in its own task 1592 |
+| (c) Recents | | While Chrome shows: Recents lists Chrome (1594) above Migrely (1590), two cards |
+| (d) Back | Rate, Share, policy: one Back returns Settings (or the Privacy page) with the same rows on top, no message | Same |
+| (d) Already open | Chrome is not set up on 5570 (first-run screen; setup not finished, to keep device state). With Chrome left open by Rate (Home pressed), the policy link opened Chrome in a new task (1606), and one Back returned the Privacy page | Same (1595), Back returned the Privacy page. A browser or Play already open **on another page** was NOT CHECKED: it needs Chrome set up |
+| (e) Rotate in Chrome | Back returns Settings in portrait, same rows, no message | Same |
+| (e) Process death | `am kill` while in Chrome (pid gone); Back starts a new process in task 1601: Settings, no message, **scrolled to the top** | Same, task 1590, Settings scrolled to the top. Existing behaviour, same on both builds; the spec promises "Settings shows, no message", which holds |
+| (f) TalkBack focus on return | After Back: "Migrely", then the activated row: "Rate Migrely on Google Play", "Share Migrely", "Read the full privacy policy" | Identical for all three (rerun after the emulator crash below). Never "Delete all data". Pass, no focus code |
+| (g) Double tap | | Rate: one Chrome page (one `IntentDispatcher`; the two Migrely STARTs are `market://` then https from one tap). Share: one chooser. Policy link: two STARTs reach the system, the second returns code 3 (delivered to the top instance): one page, one task. The link has no opening guard (recorded by PM in 5a0ba93c) |
+| (g) Split screen | | Recents → Migrely → Split screen, TalkBack settings as the other half. Rate from Migrely's half opens Chrome in that half in its own task 1618; Migrely's task 1610 stays; Back returns Settings in place (`shots/split-open-small.png`, `split-back2-small.png`). The `WMShell splitscreen moveToSideStage` shell command did not enter split on this image |
+| (a) Layout, 945x2100 (360 dp) | | EN and DE, 100% portrait and 200% portrait and landscape (2100x945, 360 dp tall): the summary node's text equals the spec string, lies inside the row node, no "…". Row heights: 100% EN 77 dp; 200% EN 210 dp (4 lines), DE 171 dp (3 lines); landscape EN 3 lines, DE 2 lines. Crops checked by eye: no cut line, no overlap (`shots/a-*-crop.png`). No layout defect, so no shorter line |
+| (b) TalkBack | | Console touch on the row, 12 s of speech: EN "Warning signs", "When to call your local emergency number and when to get urgent medical advice", "Button", "Double-tap to activate"; DE "Warnzeichen", "Wann den Notruf wählen, wann dringend ärztlichen Rat holen", "Button", "Double-tap to activate" (TalkBack's own words in English: only the app is German). One node, read once |
+
+Environment: the emulator crashed at 16:29 under host load (1-minute load 72, `mediaanalysisd` at 266% CPU; crash report
+in `walk/emu.log`) during the first branch run of (f). Environmental; rerun at load 5 after a restart: the result above.
+
+Restored on 5570: font 1.0, size and density reset, rotation 0 with auto-rotate on, animator scales 1, TalkBack off,
+TalkBack log level ERROR, app locale reset, Migrely uninstalled (it was not installed at the start); `settings-before.txt`
+equals `settings-after.txt`. Emulator off.
+
+Not checked here: the Google Play app path (stub on this image; goes to QA or the owner's phone); a browser already open
+on a real page (EC-SHR-15); the crash at launch (QA's fixture, 5.6); API 26–28 (QA).
