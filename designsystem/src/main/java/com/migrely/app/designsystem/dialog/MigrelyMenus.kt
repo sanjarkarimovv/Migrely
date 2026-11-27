@@ -20,10 +20,12 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
@@ -62,11 +64,16 @@ private const val FADE_STIFFNESS = 3800f
  *
  * The card, its padding, scrolling, scale and fade are Material's, so the menu looks, moves and reads as before, and
  * follows "Remove animations".
+ *
+ * [onClosed] runs once the menu's window is gone: after its closing, or when it leaves the screen while open. An item
+ * whose action changes the screen can run it there (issue #179, BRD D199): TalkBack drops what the screen announces
+ * while the menu's window is closing.
  */
 @Composable
 fun MigrelyDropdownMenu(
     expanded: Boolean,
     onDismissRequest: () -> Unit,
+    onClosed: () -> Unit = {},
     content: @Composable ColumnScope.() -> Unit
 ) {
     val expandedState = remember { MutableTransitionState(false) }
@@ -91,6 +98,9 @@ fun MigrelyDropdownMenu(
     val maximumHeight = anchor.value?.let {
         MenuRoom.of(it, safeTop, safeBottom, margin).maximumHeight
     }
+    val currentOnClosed by rememberUpdatedState(onClosed)
+    // Before the popup, so it is forgotten after it: the popup's own effect has removed the window when this runs.
+    DisposableEffect(Unit) { onDispose { currentOnClosed() } }
 
     Popup(
         onDismissRequest = onDismissRequest,

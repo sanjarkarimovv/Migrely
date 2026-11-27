@@ -217,7 +217,7 @@ class CustomTagUndoTest {
 
         rule.onNodeWithText("Aus deiner Liste entfernt").assertExists()
         rule.assertOneSpokenName(
-            spoken = "Rückgängig: Jaw pain zurück in die Liste",
+            spoken = "Rückgängig: Jaw pain zurück in deine Liste",
             visible = "Rückgängig"
         )
     }

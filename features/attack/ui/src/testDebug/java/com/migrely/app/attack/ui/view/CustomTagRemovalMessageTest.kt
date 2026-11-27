@@ -36,6 +36,9 @@ import com.migrely.app.attack.ui.notification.AttackDetailsEventPresenter
 import com.migrely.app.designsystem.snackbar.LocalMessageClock
 import com.migrely.app.designsystem.theme.MigrelyTheme
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -53,6 +56,9 @@ private const val REMOVED = "Removed from your list"
 private const val DETAILS_ROUTE = "details"
 private const val OTHER_ROUTE = "other"
 private const val SETTLE_MILLIS = 1_000L
+
+/** More frames than the menu's closing takes (Material's spring, about 0.3 s), so a message that never shows fails. */
+private const val MAXIMUM_FRAMES = 120
 
 /** The preview's own symptom, as the screen hands it to the ViewModel. */
 private val JAW_PAIN = CustomTagPresentationModel(
@@ -163,6 +169,9 @@ class CustomTagRemovalMessageTest {
             rule.onNode(hasText(REMOVE).and(hasAnyAncestor(isPopup())), useUnmergedTree = true)
                 .performClick()
         }
+        // The click lands at the next idle, under the held clock; the removal then waits for the menu's closing (D199),
+        // which settling runs. Idling with the clock running would run the Undo message's countdown out too.
+        rule.waitForIdle()
         settle()
     }
 
@@ -172,6 +181,42 @@ class CustomTagRemovalMessageTest {
             .single { it.label == REMOVE }
         rule.runOnUiThread { action.action() }
         settle()
+    }
+
+    /** TalkBack's double tap and hold: the chip's long-click action, no touch, so the clock stays held. */
+    private fun openTheMenuAsTalkBackDoes() {
+        val longClick = chip().fetchSemanticsNode().config[SemanticsActions.OnLongClick]
+        withClockRunning {
+            rule.runOnUiThread { longClick.action?.invoke() }
+            rule.waitForIdle()
+        }
+        settle()
+    }
+
+    /** TalkBack's double tap on the menu's item: its click action. */
+    private fun pickRemoveAsTalkBackDoes() {
+        val item = rule.onNode(hasText(REMOVE).and(hasAnyAncestor(isPopup()))).fetchSemanticsNode()
+        val click = item.config[SemanticsActions.OnClick]
+        rule.runOnUiThread { click.action?.invoke() }
+    }
+
+    private fun isPopupShown() =
+        rule.onAllNodes(isPopup(), useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty()
+
+    private fun isMessageShown() =
+        rule.onAllNodes(hasText(REMOVED), useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty()
+
+    /** What the screen holds in the first frame that shows the message: the frame's number and whether a popup is up. */
+    private data class FirstMessageFrame(val frame: Int, val popupShown: Boolean)
+
+    /** Steps the held clock frame by frame up to the first frame that shows the message; null when none does. */
+    private fun firstMessageFrame(): FirstMessageFrame? {
+        for (frame in 1..MAXIMUM_FRAMES) {
+            rule.mainClock.advanceTimeByFrame()
+            rule.waitForIdle()
+            if (isMessageShown()) return FirstMessageFrame(frame, isPopupShown())
+        }
+        return null
     }
 
     /** The message shows once, as a polite live region, and the ViewModel got the chip's tag. */
@@ -200,6 +245,40 @@ class CustomTagRemovalMessageTest {
 
         removeWithTheCustomAction()
 
+        assertRemovedSaidOnce()
+    }
+
+    /**
+     * On TalkBack's menu path the message's live region appears only once the menu's window is gone: the events sent
+     * while the popup closes were dropped by TalkBack ("node is null"), so it was shown and never spoken (walk 5.3 (b),
+     * 0 of 6 at 2d3ca53f). Its control: the same steps at 2d3ca53f show the message while the popup is still up.
+     */
+    @Test
+    fun `Through TalkBack's menu the message appears only once the menu's window is gone`() {
+        show()
+        openTheMenuAsTalkBackDoes()
+        assertTrue("the menu is up", isPopupShown())
+
+        pickRemoveAsTalkBackDoes()
+        val first = firstMessageFrame()
+
+        assertNotNull("the message showed", first)
+        assertFalse("no popup in the frame the message first shows ($first)", first!!.popupShown)
+        assertRemovedSaidOnce()
+    }
+
+    /** TalkBack's custom action has no popup, so nothing waits: the message shows in the frame after the action. */
+    @Test
+    fun `Through TalkBack's action the message appears at once`() {
+        show()
+        val action = chip().fetchSemanticsNode()
+            .config[SemanticsActions.CustomActions]
+            .single { it.label == REMOVE }
+
+        rule.runOnUiThread { action.action() }
+        val first = firstMessageFrame()
+
+        assertEquals(FirstMessageFrame(frame = 1, popupShown = false), first)
         assertRemovedSaidOnce()
     }
 

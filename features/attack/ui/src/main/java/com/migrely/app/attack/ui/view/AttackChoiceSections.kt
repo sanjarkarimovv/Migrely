@@ -206,7 +206,10 @@ private fun ChoiceGroup(
                     label = choice.label,
                     selected = isSelected(choice.tag),
                     onClick = { onToggle(choice.tag) },
-                    onArchive = choice.customTag?.let { tag -> { onArchive(tag) } }
+                    // A removed tag still shown on this attack offers no second remove until Undo (EC-ATK-28).
+                    onArchive = choice.customTag
+                        ?.takeUnless(CustomTagUiModel::archived)
+                        ?.let { tag -> { onArchive(tag) } }
                 )
             }
             if (addLabel != null) {
@@ -224,8 +227,8 @@ private fun ChoiceGroup(
 }
 
 /**
- * A choice chip. The user's own tags also offer "Remove from my list" through a long press and as an accessibility
- * action (BRD EC-ATK-11). Selection is announced as "selected" (BRD EC-UX-04).
+ * A choice chip. The user's own tags on their list also offer "Remove from my list" through a long press and as an
+ * accessibility action (BRD EC-ATK-11, EC-ATK-28). Selection is announced as "selected" (BRD EC-UX-04).
  */
 @Suppress("LongParameterList")
 @Composable
@@ -238,6 +241,7 @@ private fun ChoiceChip(
     isAction: Boolean = false
 ) {
     var menuOpen by remember { mutableStateOf(false) }
+    var removeChosen by remember { mutableStateOf(false) }
     val removeLabel = stringResource(R.string.custom_remove_from_list)
     // TalkBack says "Double-tap and hold to" before the long press's label (T23);
     // the actions menu shows removeLabel alone.
@@ -290,12 +294,22 @@ private fun ChoiceChip(
             }
         }
         if (onArchive != null) {
-            MigrelyDropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+            // The removal waits for the menu's window to go, so TalkBack speaks its message (BRD D199, #179).
+            MigrelyDropdownMenu(
+                expanded = menuOpen,
+                onDismissRequest = { menuOpen = false },
+                onClosed = {
+                    if (removeChosen) {
+                        removeChosen = false
+                        onArchive()
+                    }
+                }
+            ) {
                 DropdownMenuItem(
                     text = { Text(removeLabel) },
                     onClick = {
                         menuOpen = false
-                        onArchive()
+                        removeChosen = true
                     }
                 )
             }

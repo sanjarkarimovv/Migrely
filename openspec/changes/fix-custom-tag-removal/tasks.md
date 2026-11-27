@@ -53,17 +53,17 @@ D2). Commits also say `Refs #296` where they touch the focus wording.
   "Undo removing %1$s", DE as built "Rückgängig: %1$s zurück in die Liste" (changed by 4.5); Compose test: Undo restores
   a chip with the same label and selected state and shows "Undone."; full-list refusal shows `message_tag_limit`; a
   40-character name with an emoji is spoken whole. The keyboard-focus part moved to #296; done as recorded below.
-- [ ] 4.4 Spoken on every path (design D3). Red first: a Compose test that pins the chosen mechanism's observable
+- [x] 4.4 Spoken on every path (design D3). Red first: a Compose test that pins the chosen mechanism's observable
   condition, for example: on the menu path the message's live-region node first appears only after the menu's popup root
   is gone (no popup root in the rule's roots in that frame), and on the action path at once. Named negative control: red
   on 2d3ca53f's code (the message appears while the popup is still closing). Then implement; the touch path still shows
   the message once and Undo still works (rerun `CustomTagRemovalMessageTest`, `CustomTagUndoTest`). Verify:
   `./gradlew :features:attack:ui:testDebugUnitTest --tests '*CustomTag*'`. Acceptance is on the device, 5.3 (g).
-- [ ] 4.5 German: `snackbar_undo_tag_description` in `values-de/strings.xml` becomes "Rückgängig: %1$s zurück in deine
+- [x] 4.5 German: `snackbar_undo_tag_description` in `values-de/strings.xml` becomes "Rückgängig: %1$s zurück in deine
   Liste" (spec and design already say so); update the German assertion in `CustomTagUndoTest` first, so it is red on
   2d3ca53f, then the string. Verify: `git diff origin/develop -- 'features/attack/ui/src/main/res/values-de/strings.xml'`
   shows the two new keys with these values, and the test passes.
-- [ ] 4.6 Archived chip offers no remove (EC-ATK-28, design D7). Red first: a Compose test with a tag archived and selected
+- [x] 4.6 Archived chip offers no remove (EC-ATK-28, design D7). Red first: a Compose test with a tag archived and selected
   on this attack: a long press opens no menu, the chip has no `onLongClickLabel`, and its semantics have no "Remove from my
   list" custom action; after Undo (un-archived) all three return; a past attack's archived chip likewise offers none.
   Named negative control: red on 2d3ca53f (menu, label and action present). Then pass no `onArchive` for an archived
@@ -270,3 +270,49 @@ six custom tags added in the app. Not ticked: rows (b) and (e) below have open f
   difference); emulator off. Side effect fixed during the walk: Tab presses typed tab characters into the note twice;
   the note was cleared both times (database length 0) before going on.
 
+
+### Tasks 4.4 to 4.6 (android-engineer, 2026-11-28, JVM only, no device)
+
+Base 58816faf; its `features/attack` and `designsystem` trees equal 2d3ca53f's (`git diff --stat 2d3ca53f 58816faf --
+features/attack designsystem` empty), so each red run below is on 2d3ca53f's code with only the new test. Evidence:
+`migrely-work/179/t83/` (red, green, mutants, gate, permissions).
+
+- 4.4 mechanism: `MigrelyDropdownMenu` gets `onClosed`, run by a `DisposableEffect` placed before the `Popup`, so
+  Compose forgets it after the popup's own effect has removed the window: it runs once the menu's window is gone, after
+  its closing or when it leaves the screen while open. `ChoiceChip`'s "Remove from my list" item now only closes the
+  menu and marks the choice; the removal (and so the screen's existing message) runs in `onClosed`. No second message
+  path, no delay constant: the wait is the menu's own closing (Material's spring, about 0.3 s; none with "Remove
+  animations"). The custom action, which has no popup, removes at once as before.
+- 4.4 red: `:features:attack:ui:testDebugUnitTest --tests '*CustomTagRemovalMessageTest*'` exit 1, 6 tests, 1 failed:
+  "Through TalkBack's menu the message appears only once the menu's window is gone": `FirstMessageFrame(frame=1,
+  popupShown=true)`. The menu is opened by the chip's long-click action and the item picked by its click action, as
+  TalkBack does, then the held clock is stepped frame by frame. "Through TalkBack's action the message appears at once"
+  passed on 2d3ca53f too (frame 1, no popup) and stays green. Green: 6 of 6.
+- 4.4 the touch path (R6): `removeThroughTheMenu` now idles once under the held clock after the touch, since the click
+  lands at that idle and the removal then waits for the menu's closing; "Removing from the menu says Removed from your
+  list" 6 of 6 with the rest; `CustomTagUndoTest` 6 of 6; `CustomChipMenuTapTest` 2 of 2 (a tap on the chip with the
+  menu open still removes nothing). New `MigrelyDropdownMenuClosedTest` (designsystem) 2 of 2: `onClosed` is 0 in every
+  frame while the popup is up during the closing, 1 in the first frame without it, still 1 after 120 more frames; and 1
+  when the anchor leaves the screen with the menu open.
+- 4.4 mutant M2 (`DisposableEffect(expanded)`, so `onClosed` runs as the closing starts): both tests fail ("still
+  closing, frame 2 expected 0 but was 1"; `FirstMessageFrame(frame=3, popupShown=true)`).
+- 4.5 red: `--tests '*CustomTagUndoTest*'` exit 1, 6 tests, 1 failed (German: no node "Rückgängig: Jaw pain zurück in
+  deine Liste"). Green after `values-de` only: 6 of 6. `git diff origin/develop -- '.../values-de/strings.xml'` shows
+  the two new keys: "Aus deiner Liste entfernt", "Rückgängig: %1$s zurück in deine Liste". EN unchanged.
+- 4.6 red: new `ArchivedChipTest` exit 1, 3 tests, 2 failed, each `expected RemoveOffers(longPressLabel=null,
+  actions=[], menu=false) but was RemoveOffers(longPressLabel=remove from my list, actions=[Remove from my list],
+  menu=true)`: this attack's archived, selected symptom, and a past attack's archived, selected trigger. Fix:
+  `ChoiceGroup` passes no `onArchive` for a `CustomTagUiModel` that is `archived` (the UI model already carried it).
+  Green: 3 of 3; after Undo (the same tag un-archived) the label, the action and the menu are back and the chip stays
+  selected. Mutant M3 (the `archived` check removed): the same 2 fail. The archived chip's long press is then its tap,
+  as on a built-in chip (not asserted, no behaviour change asked).
+- Gate: the first run in the shared daemon failed in 7 s at `:app:kspDebugKotlin` ("RestoreCustomTagUseCase could not
+  be resolved", the stale-daemon pattern); no daemon was stopped. `--no-daemon` run: exit 1 in 194 s at ktlint (3 long
+  lines in `ArchivedChipTest`, wrapped). Then `nice -n 19 ./gradlew --no-daemon --max-workers=2 assembleDebug test
+  ktlintCheck detekt lint` exit 0 (load 5.8 at start); 4073 tests, 0 failed, 0 skipped.
+- Permissions: `:app:checkReleasePermissions` exit 0 on the branch and on develop 00262358 (a detached worktree, removed
+  after): `release.txt` and the merged release main manifest identical (`cmp` exit 0 each); no INTERNET. No manifest,
+  Gradle, catalog or Room schema change.
+- Not proved by these tests: that TalkBack speaks the message on a device (Robolectric has no TalkBack; walk row (g));
+  the order of the window's removal and `onClosed` inside one frame (the JVM sees frames, not that order; it rests on
+  Compose forgetting effects in reverse order, commented in the code).
