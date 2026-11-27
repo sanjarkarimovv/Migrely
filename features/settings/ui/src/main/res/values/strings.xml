@@ -23,7 +23,7 @@
     <string name="settings_theme_note">During a migraine, Migrely stays dark.</string>
 
     <string name="settings_warning_signs">Warning signs</string>
-    <string name="settings_warning_signs_summary">When a headache needs urgent care</string>
+    <string name="settings_warning_signs_summary">When to call your local emergency number and when to get urgent medical advice</string>
     <string name="settings_about">About Migrely</string>
     <string name="settings_about_summary">What Migrely is, and what it isn\'t</string>
     <string name="settings_privacy">Privacy</string>
