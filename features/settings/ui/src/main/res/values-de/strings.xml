@@ -20,7 +20,7 @@
     <string name="settings_theme_system">Wie das Handy</string>
     <string name="settings_theme_note">Während einer Migräne bleibt Migrely dunkel.</string>
     <string name="settings_warning_signs">Warnzeichen</string>
-    <string name="settings_warning_signs_summary">Wann Kopfschmerzen dringend ärztliche Hilfe brauchen</string>
+    <string name="settings_warning_signs_summary">Wann den Notruf wählen, wann dringend ärztlichen Rat holen</string>
     <string name="settings_about">Über Migrely</string>
     <string name="settings_about_summary">Was Migrely ist und was nicht</string>
     <string name="settings_privacy">Datenschutz</string>

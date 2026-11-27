@@ -1,6 +1,5 @@
 package com.migrely.app.settings.ui.view
 
-import android.content.ActivityNotFoundException
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -25,10 +24,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.platform.UriHandler
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -167,12 +166,13 @@ fun PrivacyContents(onBack: () -> Unit, modifier: Modifier = Modifier) = Setting
 
 /**
  * The full privacy policy on migrely.health, which Google Play asks health apps to reach from inside the app (BRD
- * D119). It opens in the browser, which needs no permission of Migrely's; the address is written out too, so it can be
- * typed where no browser opens it.
+ * D119). It opens in the browser, in a task of its own (EC-SHR-14, design D10), which needs no permission of Migrely's.
+ * Where nothing opens it, nothing shows: the address is written out too, so it can be typed elsewhere.
  */
 @Composable
 private fun PolicyLink() {
-    val uriHandler = LocalUriHandler.current
+    val context = LocalContext.current
+    val launcher = remember(context) { ExternalAppLauncher(context::startActivity) }
     val label = stringResource(R.string.settings_privacy_policy_link)
     // TalkBack says "Double-tap to" before it, so it is an action, not the link's words (T23).
     val action = stringResource(R.string.settings_privacy_policy_action)
@@ -182,7 +182,7 @@ private fun PolicyLink() {
             .fillMaxWidth()
             .heightIn(min = 48.dp)
             .clickable(role = Role.Button, onClickLabel = action) {
-                uriHandler.openInBrowserIfAny(PRIVACY_POLICY_URL)
+                launcher.openWebPage(PRIVACY_POLICY_URL)
             }
             .ownWords(label)
             .padding(vertical = 8.dp)
@@ -198,21 +198,6 @@ private fun PolicyLink() {
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-    }
-}
-
-/**
- * Opens [uri] in the browser, or does nothing where no app opens web pages: the address under the link can still be
- * typed elsewhere. Compose's handler reports a missing browser as [IllegalArgumentException]; the
- * [ActivityNotFoundException] catch covers a handler that passes Android's own exception on.
- */
-internal fun UriHandler.openInBrowserIfAny(uri: String) {
-    try {
-        openUri(uri)
-    } catch (_: IllegalArgumentException) {
-        // No browser; see above.
-    } catch (_: ActivityNotFoundException) {
-        // No browser; see above.
     }
 }
 
