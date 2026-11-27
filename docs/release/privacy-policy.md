@@ -1,6 +1,6 @@
 # Migrely privacy policy
 
-Effective date: 25 November 2026.
+Effective date: 27 November 2026.
 
 Migrely is a headache diary for Android, published on Google Play by Sulton UzDev ("we"). This policy explains what
 happens to the information you enter in the app, and, near the end, what happens on the website. In short: **Migrely has no internet permission, so the app cannot send your entries over the internet, and we never receive them.**
