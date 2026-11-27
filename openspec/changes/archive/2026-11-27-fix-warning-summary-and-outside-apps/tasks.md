@@ -58,7 +58,7 @@ activity's `startActivity` to the launcher.
 
 - [x] 4.1 No user doc changes. Phase 1 verification recorded below (2.1–3.3, 5.1, 5.2). Release-branch items are not in
   this change (see proposal: de-DE release notes, the Android 13–15 self-check QA row).
-- [ ] 4.2 Final verification record after 3.4–3.6 and 5.3–5.6, with the scenario map below filled in.
+- [x] 4.2 Final verification record after 3.4–3.6 and 5.3–5.6, with the scenario map below filled in.
 
 ## 5. Verify
 
@@ -88,12 +88,12 @@ activity's `startActivity` to the launcher.
   - (g) Double tap on each row opens one page or one sheet; split screen opens the other app without closing Migrely
     and Back or Recents returns Settings (which half is not promised).
   - If emulator-5570 has no Google Play app, say so: the Play case is then NOT CHECKED here and goes to QA.
-- [ ] 5.4 medical-reviewer re-checks the shipped `features/settings/ui/src/main/res/values/strings.xml` and
+- [x] 5.4 medical-reviewer re-checks the shipped `features/settings/ui/src/main/res/values/strings.xml` and
   `values-de/strings.xml` (the diff, not a table) after 2.2. Verify: a PASS file in `migrely-work/288/`.
-- [ ] 5.5 Independent code review (`code-reviewer`) on `git diff origin/develop...HEAD`, briefed with this spec and
+- [x] 5.5 Independent code review (`code-reviewer`) on `git diff origin/develop...HEAD`, briefed with this spec and
   risks R1–R3. Done: APPROVE WITH FIXES at ab416647 (`migrely-work/patch141/code-review-ab416647.md`); findings 1, 2, 3,
   5, 6, 7 answered in this plan, finding 4 taken into scope (3.4, 3.5). A short re-review of 3.4–3.6 before QA.
-- [ ] 5.6 QA independent check (Go/No-Go scope: only what this diff reaches, with negative controls):
+- [x] 5.6 QA independent check (Go/No-Go scope: only what this diff reaches, with negative controls):
   - Crash fixture (QA-owned, under `qa/`): a small app that throws in `onCreate` and handles https `ACTION_VIEW` (and
     `market://` if cheap), installed as the only handler (Google Play disabled or absent). `am force-stop` and a late
     `am crash` are not valid proofs (review finding 2).
@@ -104,7 +104,7 @@ activity's `startActivity` to the launcher.
   - Share: no crash control (AOSP chooser, design D5); record the chosen app's task id on API 36.
   - API 36: the task check of 5.3 (c) and the TalkBack return focus of 5.3 (f).
   - The summary row in EN and DE at 200% font, 360 dp, portrait and landscape (screenshots), and TalkBack speech.
-- [ ] 5.7 Archive: `openspec archive fix-warning-summary-and-outside-apps --yes`; keep `app-settings` Purpose real;
+- [x] 5.7 Archive: `openspec archive fix-warning-summary-and-outside-apps --yes`; keep `app-settings` Purpose real;
   `openspec validate --specs --strict` passes.
 
 ## Scenario map (review finding 7)
@@ -208,3 +208,28 @@ f1bfd34c, no conflict. `git diff --name-only e9e0db66 HEAD -- . ':!openspec' ':!
 |---|---|---|
 | 5.1 on the merge tree | `nice -n 19 ./gradlew --max-workers=2 assembleDebug test ktlintCheck detekt lint` (1-min load 7.0 at start) | exit 0, BUILD SUCCESSFUL in 3m 32s; 4022 tests (4013 + develop's 9), 0 failed |
 | 5.2 on the merge tree | `:app:checkReleasePermissions` here and on a detached develop f83dda71 worktree | both exit 0; `cmp` merged release manifest exit 0; `cmp` permission report exit 0; no INTERNET |
+
+### Final record (4.2), 2026-11-27
+
+- **5.4 medical-reviewer:** PASS on the shipped `values/strings.xml:26` and `values-de/strings.xml:23` at ab416647
+  (`migrely-work/288/medical-verdict.md`, "Shipped files re-check"). The res files have not changed since
+  (`git diff --quiet ab416647 HEAD -- features/settings/ui/src/main/res` exit 0). Not a clinician (T31 open); no native
+  German reader.
+- **5.5 code review:** APPROVE WITH FIXES at ab416647 (`migrely-work/patch141/code-review-ab416647.md`). Findings 1–3 and
+  5–7 were answered in this plan; finding 4 became 3.4 and 3.5. The delta re-review of 3.4–3.6 at e9e0db66 was APPROVE,
+  with three wording nits that product-manager fixed in 5a0ba93c (verdict relayed by the lead).
+- **5.6 QA:** GO WITH NOTES at code e9e0db66; no defect, no issue filed. Evidence: `migrely-work/qa-141a/` (82 rows in
+  `logs/rows.jsonl`); crash fixture source on `qa/141a-acceptance` a0c1dbae.
+  - API 36, real crash at launch, 2 of 2 runs per build. Develop 476f7a27 closes Migrely on Rate and on the policy link
+    (negative control). This branch keeps Settings and the Privacy page. Share survives on both builds (D5 confirmed).
+  - API 26: both builds close Migrely on Rate and on the policy link, and Migrely reopens at Home (EC-SHR-17 confirmed
+    on a device, no rewording).
+  - #288 row in EN and DE at 360 dp, 100% and 200%, API 36 and 26: pass. TalkBack reads title and summary once.
+  - The permissions of the debug APKs equal develop's (6, no INTERNET).
+  - Not proved by QA: the real Google Play app (stub on the image), OEM choosers, API 27, the release (R8) build,
+    TalkBack on API 26.
+- **Verdict carry-over:** QA's APK was built at e9e0db66. Since then only docs, openspec and develop's four test-support
+  files (f83dda71, merged as f1bfd34c) changed. The helper module is `testDebugImplementation` only, so the app APK does
+  not contain it, and the verdict carries to c10921a0. The merge-tree gate and the manifest proof are recorded above.
+- **Scenario map:** every row above has its proof. 5.3 (engineer, API 36) and 5.6 (QA, API 36 and 26) cover the device
+  rows; JVM tests cover the flags and strings; 5.2 covers the manifest.
